@@ -23,6 +23,7 @@ import { getComponentValue } from "@dojoengine/recs";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { gameEntityKey } from "@/sync/game-scope";
+import { resolveBestPrice } from "./best-prices";
 
 const ONE_MONTH = 2628000;
 /** Keep in step with the `h-9 max-lg:h-10` on `OrderRow`; the virtualizer positions rows from these numbers. */
@@ -30,6 +31,30 @@ const ORDER_ROW_HEIGHT_PX = { desktop: 36, compact: 40 } as const;
 const ORDER_GRID = "grid grid-cols-[1.2fr_1fr_1fr_auto] items-center gap-2";
 const COMPACT_NUMBER_INPUT = "h-8 rounded-md text-sm";
 
+/** The selected resource's two book sides in display order: the best offer leads each side. */
+export const useSelectedResourceOffers = (
+  resourceId: ResourcesIds,
+  resourceAskOffers: MarketInterface[],
+  resourceBidOffers: MarketInterface[],
+) => {
+  const bids = useMemo(
+    () =>
+      resourceBidOffers
+        .filter((offer) => (resourceId ? offer.makerGets[0]?.resourceId === resourceId : true))
+        .toSorted((a, b) => b.ratio - a.ratio),
+    [resourceBidOffers, resourceId],
+  );
+  const asks = useMemo(
+    () =>
+      resourceAskOffers
+        .filter((offer) => offer.takerGets[0].resourceId === resourceId)
+        .toSorted((a, b) => b.ratio - a.ratio),
+    [resourceAskOffers, resourceId],
+  );
+  return { asks, bids };
+};
+
+/** The desktop book: asks to buy from on the left, bids to sell to on the right. */
 export const MarketOrderPanel = memo(
   ({
     resourceId,
@@ -42,28 +67,18 @@ export const MarketOrderPanel = memo(
     resourceAskOffers: MarketInterface[];
     resourceBidOffers: MarketInterface[];
   }) => {
-    const selectedResourceBidOffers = useMemo(() => {
-      return resourceBidOffers
-        .filter((offer) => (resourceId ? offer.makerGets[0]?.resourceId === resourceId : true))
-        .toSorted((a, b) => b.ratio - a.ratio);
-    }, [resourceBidOffers, resourceId]);
-
-    const selectedResourceAskOffers = useMemo(() => {
-      return resourceAskOffers
-        .filter((offer) => offer.takerGets[0].resourceId === resourceId)
-        .toSorted((a, b) => b.ratio - a.ratio);
-    }, [resourceAskOffers, resourceId]);
+    const { asks, bids } = useSelectedResourceOffers(resourceId, resourceAskOffers, resourceBidOffers);
 
     return (
-      <div className="order-book-selector grid min-h-0 flex-1 grid-cols-2 gap-3 p-3 max-lg:flex-none max-lg:grid-cols-1">
-        <MarketOrders offers={selectedResourceAskOffers} resourceId={resourceId} entityId={entityId} />
-        <MarketOrders offers={selectedResourceBidOffers} resourceId={resourceId} entityId={entityId} isBuy />
+      <div className="order-book-selector grid min-h-0 flex-1 grid-cols-2 gap-3 p-3">
+        <MarketOrders offers={asks} resourceId={resourceId} entityId={entityId} />
+        <MarketOrders offers={bids} resourceId={resourceId} entityId={entityId} isBuy />
       </div>
     );
   },
 );
 
-const VirtualizedOrderList = memo(
+export const VirtualizedOrderList = memo(
   ({
     offers,
     entityId,
@@ -147,44 +162,19 @@ const MarketOrders = memo(
   }) => {
     const [updateBalance, setUpdateBalance] = useState(false);
 
-    // Asks: the cheapest one is the best buy. Bids: the highest one pays the most.
-    const bestPrice = useMemo(() => {
-      if (offers.length === 0) return 0;
-      const prices = offers.map((offer) => offer.perLords);
-      return isBuy ? Math.max(...prices) : Math.min(...prices);
-    }, [offers, isBuy]);
-    const trait = findResourceById(resourceId)?.trait ?? "";
-
     return (
       <div className="flex min-h-0 flex-col gap-2">
-        <div
-          className={cn(
-            "flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-md border px-3 py-1.5",
-            isBuy ? "border-red/30 bg-red/5" : "border-green/30 bg-green/5",
-          )}
-        >
-          <span className="flex items-center gap-2">
-            <ResourceIcon withTooltip={false} size="sm" resource={trait} />
-            <span className={HUD_LABEL}>{isBuy ? "Sell to" : "Buy from"}</span>
-            <span className={cn(HUD_VALUE, isBuy ? "text-red" : "text-green")}>{formatNumber(bestPrice, 4)}</span>
-            <span className={HUD_CUE}>Lords each</span>
-          </span>
-          <span className={HUD_CUE}>
-            {offers.length} {isBuy ? "bids" : "asks"}
-          </span>
-        </div>
+        <OrderBookSideHeader resourceId={resourceId} isBuy={isBuy} offers={offers} />
 
         <div
           className={cn(
-            "flex min-h-0 flex-1 flex-col rounded-md border border-gold/15 bg-black/25 max-lg:h-64 max-lg:flex-none",
+            "flex min-h-0 flex-1 flex-col rounded-md border border-gold/15 bg-black/25",
             isBuy ? "order-buy-selector" : "order-sell-selector",
           )}
         >
           <OrderRowHeader resourceId={resourceId} isBuy={isBuy} />
           {offers.length === 0 ? (
-            <div className="flex flex-1 items-center justify-center py-8">
-              <span className={HUD_BODY_MUTED}>No {isBuy ? "buy" : "sell"} orders yet</span>
-            </div>
+            <EmptyBookSide isBuy={isBuy} />
           ) : (
             <VirtualizedOrderList
               offers={offers}
@@ -202,7 +192,55 @@ const MarketOrders = memo(
   },
 );
 
-const OrderRowHeader = memo(({ resourceId, isBuy }: { resourceId?: number; isBuy: boolean }) => {
+/** One book side's headline: the resource, the best price on that side, and how deep the side is. */
+export const OrderBookSideHeader = ({
+  resourceId,
+  isBuy,
+  offers,
+  className,
+  trailing,
+}: {
+  resourceId: ResourcesIds;
+  isBuy: boolean;
+  offers: MarketInterface[];
+  className?: string;
+  trailing?: ReactNode;
+}) => {
+  const trait = findResourceById(resourceId)?.trait ?? "";
+  // Asks: the cheapest one is the best buy. Bids: the highest one pays the most.
+  const bestPrice = resolveBestPrice(offers, isBuy ? "bid" : "ask");
+
+  return (
+    <div
+      className={cn(
+        "flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-md border px-3 py-1.5",
+        isBuy ? "border-red/30 bg-red/5" : "border-green/30 bg-green/5",
+        className,
+      )}
+    >
+      <span className="flex items-center gap-2">
+        <ResourceIcon withTooltip={false} size="sm" resource={trait} />
+        <span className={HUD_LABEL}>{isBuy ? "Sell to" : "Buy from"}</span>
+        <span className={cn(HUD_VALUE, isBuy ? "text-red" : "text-green")}>{formatNumber(bestPrice, 4)}</span>
+        <span className={HUD_CUE}>Lords each</span>
+      </span>
+      <span className="flex items-center gap-2">
+        <span className={HUD_CUE}>
+          {offers.length} {isBuy ? "bids" : "asks"}
+        </span>
+        {trailing}
+      </span>
+    </div>
+  );
+};
+
+export const EmptyBookSide = ({ isBuy }: { isBuy: boolean }) => (
+  <div className="flex flex-1 items-center justify-center py-8">
+    <span className={HUD_BODY_MUTED}>No {isBuy ? "buy" : "sell"} orders yet</span>
+  </div>
+);
+
+export const OrderRowHeader = memo(({ resourceId, isBuy }: { resourceId?: number; isBuy: boolean }) => {
   return (
     <div className={cn(ORDER_GRID, "border-b border-gold/15 px-2 py-1.5", HUD_LABEL)}>
       <span>Qty</span>
@@ -221,7 +259,7 @@ const OrderRowHeader = memo(({ resourceId, isBuy }: { resourceId?: number; isBuy
   );
 });
 
-const OrderRow = memo(
+export const OrderRow = memo(
   ({
     offer,
     entityId,
@@ -249,7 +287,7 @@ const OrderRow = memo(
     );
 
     const resourceBalance = useMemo(
-      () => Number(resourceManager.balanceWithProduction(currentDefaultTick, offer.makerGets[0].resourceId)),
+      () => Number(resourceManager.balanceWithProduction(currentDefaultTick, offer.makerGets[0].resourceId).balance),
       [resourceManager, currentDefaultTick, offer.makerGets[0].resourceId, updateBalance],
     );
 
@@ -484,12 +522,29 @@ const ConfirmOrderPopup = memo(
   },
 );
 
-const OrderCreation = memo(
-  ({ entityId, resourceId, isBuy = false }: { entityId: ID; resourceId: ResourcesIds; isBuy?: boolean }) => {
+/** How the form lays out: three inputs in a row on the desk, two inputs plus a computed total on a phone. */
+type OrderCreationLayout = "desktop" | "compact";
+
+export const OrderCreation = memo(
+  ({
+    entityId,
+    resourceId,
+    isBuy = false,
+    layout = "desktop",
+    suggestedPrice,
+  }: {
+    entityId: ID;
+    resourceId: ResourcesIds;
+    isBuy?: boolean;
+    layout?: OrderCreationLayout;
+    /** The best price on the side being traded against; fills the price until the player types their own. */
+    suggestedPrice?: number;
+  }) => {
     const [loading, setLoading] = useState(false);
     const [resource, setResource] = useState(100);
     const [lords, setLords] = useState(100);
     const [bid, setBid] = useState(String(lords / resource));
+    const [priceTouched, setPriceTouched] = useState(false);
     const [showConfirmation, setShowConfirmation] = useState(false);
     const currentBlockTimestamp = useCurrentBlockTimestamp();
 
@@ -519,13 +574,25 @@ const OrderCreation = memo(
       }
     };
 
+    const typePrice = (newBid: number) => {
+      setPriceTouched(true);
+      handleBidChange(newBid);
+    };
+
+    // The market's best price stands in until the player types one; a typed price survives side and resource changes.
+    useEffect(() => {
+      if (priceTouched || suggestedPrice === undefined || suggestedPrice <= 0) return;
+      setBid(String(suggestedPrice));
+      updateLords(suggestedPrice, resource);
+    }, [suggestedPrice, priceTouched, updateLords]);
+
     const takerGives = useMemo(() => {
       return isBuy ? [resourceId, multiplyByPrecision(resource)] : [ResourcesIds.Lords, multiplyByPrecision(lords)];
-    }, [resource, resourceId, lords]);
+    }, [isBuy, resource, resourceId, lords]);
 
     const makerGives = useMemo(() => {
       return isBuy ? [ResourcesIds.Lords, multiplyByPrecision(lords)] : [resourceId, multiplyByPrecision(resource)];
-    }, [resource, resourceId, lords]);
+    }, [isBuy, resource, resourceId, lords]);
 
     const createOrderParams = useMemo(() => {
       const maxDecimalPlaces = 7;
@@ -594,7 +661,7 @@ const OrderCreation = memo(
         },
       ]);
       return totalWeight;
-    }, [resource, lords]);
+    }, [isBuy, resourceId, resource, lords]);
 
     const donkeysNeeded = useMemo(() => {
       return calculateDonkeysNeeded(orderWeightKg);
@@ -611,7 +678,7 @@ const OrderCreation = memo(
 
     const resourceBalance = useMemo(() => {
       return resourceManager.balanceWithProduction(currentDefaultTick, resourceId).balance;
-    }, [resourceManager, currentDefaultTick]);
+    }, [resourceManager, currentDefaultTick, resourceId]);
 
     const lordsBalance = useMemo(() => {
       return resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Lords).balance;
@@ -619,7 +686,7 @@ const OrderCreation = memo(
 
     const canBuy = useMemo(() => {
       return isBuy ? lordsBalance > lords : resourceBalance > resource;
-    }, [resource, lords, lordsBalance, resourceBalance]);
+    }, [isBuy, resource, lords, lordsBalance, resourceBalance]);
 
     const enoughDonkeys = useMemo(() => {
       if (resourceId === ResourcesIds.Donkey) return true;
@@ -659,6 +726,62 @@ const OrderCreation = memo(
 
     const trait = findResourceById(resourceId)?.trait ?? "";
 
+    const amountField = (
+      <OrderField label={isBuy ? "Buy" : "Sell"} icon={trait} available={currencyFormat(Number(resourceBalance), 0)}>
+        <NumberInput
+          value={resource}
+          className={COMPACT_NUMBER_INPUT}
+          onChange={(value) => setResource(Number(value))}
+          max={!isBuy ? divideByPrecision(resourceBalance) : Infinity}
+        />
+      </OrderField>
+    );
+    const priceField = (
+      <OrderField label={`Lords / ${trait}`} icon="Lords">
+        <NumberInput
+          allowDecimals={true}
+          value={Number(bid)}
+          onChange={typePrice}
+          className={COMPACT_NUMBER_INPUT}
+          max={Infinity}
+        />
+      </OrderField>
+    );
+    const lordsField = (
+      <OrderField label={isBuy ? "Cost" : "Gain"} icon="Lords" available={currencyFormat(Number(lordsBalance), 0)}>
+        <NumberInput
+          value={lords}
+          className={COMPACT_NUMBER_INPUT}
+          onChange={(value) => setLords(Number(value))}
+          max={isBuy ? divideByPrecision(lordsBalance) : Infinity}
+        />
+      </OrderField>
+    );
+    const logisticsChips = (
+      <div className="flex items-center gap-1.5">
+        <span
+          className={cn("donkeys-used-selector", REQUIREMENT_CHIP, enoughDonkeys ? "text-gold" : "text-red")}
+          title="Donkeys needed / available"
+        >
+          <ResourceIcon resource="Donkey" size="xs" withTooltip={false} />
+          {donkeysNeeded.toLocaleString()} / {currencyFormat(Number(donkeyBalance), 0)}
+        </span>
+        <span className={cn(REQUIREMENT_CHIP, "text-gold/70")} title="Weight">
+          {orderWeightKg.toLocaleString()} kg
+        </span>
+      </div>
+    );
+    const submitButton = (
+      <button
+        type="button"
+        disabled={!enoughDonkeys || !canBuy || loading}
+        onClick={() => setShowConfirmation(true)}
+        className={cn(HUD_PILL_BUTTON, "border-gold/60 bg-gold/15", layout === "compact" && "min-h-11 w-full")}
+      >
+        {loading ? "…" : `${isBuy ? "Buy" : "Sell"} ${resource.toLocaleString()} ${trait}`}
+      </button>
+    );
+
     return (
       <div
         className={cn(
@@ -666,63 +789,45 @@ const OrderCreation = memo(
           isBuy ? "order-create-buy-selector border-l-red" : "order-create-sell-selector border-l-green",
         )}
       >
-        <div className="grid grid-cols-3 gap-2 max-sm:grid-cols-1">
-          <OrderField
-            label={isBuy ? "Buy" : "Sell"}
-            icon={trait}
-            available={currencyFormat(Number(resourceBalance), 0)}
-          >
-            <NumberInput
-              value={resource}
-              className={COMPACT_NUMBER_INPUT}
-              onChange={(value) => setResource(Number(value))}
-              max={!isBuy ? divideByPrecision(resourceBalance) : Infinity}
-            />
-          </OrderField>
-          <OrderField label={`Lords / ${trait}`} icon="Lords">
-            <NumberInput
-              allowDecimals={true}
-              value={Number(bid)}
-              onChange={handleBidChange}
-              className={COMPACT_NUMBER_INPUT}
-              max={Infinity}
-            />
-          </OrderField>
-          <OrderField label={isBuy ? "Cost" : "Gain"} icon="Lords" available={currencyFormat(Number(lordsBalance), 0)}>
-            <NumberInput
-              value={lords}
-              className={COMPACT_NUMBER_INPUT}
-              onChange={(value) => setLords(Number(value))}
-              max={isBuy ? divideByPrecision(lordsBalance) : Infinity}
-            />
-          </OrderField>
-        </div>
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-1.5">
-            <span
-              className={cn("donkeys-used-selector", REQUIREMENT_CHIP, enoughDonkeys ? "text-gold" : "text-red")}
-              title="Donkeys needed / available"
-            >
-              <ResourceIcon resource="Donkey" size="xs" withTooltip={false} />
-              {donkeysNeeded.toLocaleString()} / {currencyFormat(Number(donkeyBalance), 0)}
-            </span>
-            <span className={cn(REQUIREMENT_CHIP, "text-gold/70")} title="Weight">
-              {orderWeightKg.toLocaleString()} kg
-            </span>
-          </div>
-          <button
-            type="button"
-            disabled={!enoughDonkeys || !canBuy || loading}
-            onClick={() => setShowConfirmation(true)}
-            className={cn(HUD_PILL_BUTTON, "border-gold/60 bg-gold/15")}
-          >
-            {loading ? "…" : `${isBuy ? "Buy" : "Sell"} ${resource.toLocaleString()} ${trait}`}
-          </button>
-        </div>
+        {layout === "compact" ? (
+          <>
+            <div className="grid grid-cols-2 gap-2">
+              {amountField}
+              {priceField}
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <LordsTotal isBuy={isBuy} lords={lords} available={currencyFormat(Number(lordsBalance), 0)} />
+              {logisticsChips}
+            </div>
+            {submitButton}
+          </>
+        ) : (
+          <>
+            <div className="grid grid-cols-3 gap-2 max-sm:grid-cols-1">
+              {amountField}
+              {priceField}
+              {lordsField}
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              {logisticsChips}
+              {submitButton}
+            </div>
+          </>
+        )}
         {showConfirmation && renderConfirmationPopupCreateOrder()}
       </div>
     );
   },
+);
+
+/** The compact form's third value as a line instead of an input: the Lords the order costs or gains. */
+const LordsTotal = ({ isBuy, lords, available }: { isBuy: boolean; lords: number; available: string }) => (
+  <span className="flex items-center gap-1" title={`${isBuy ? "Cost" : "Gain"} / Lords available`}>
+    <ResourceIcon withTooltip={false} size="xs" resource="Lords" />
+    <span className={HUD_LABEL}>{isBuy ? "Cost" : "Gain"}</span>
+    <span className={HUD_VALUE}>{lords.toLocaleString()}</span>
+    <span className={HUD_CUE}>/ {available}</span>
+  </span>
 );
 
 const OrderField = ({

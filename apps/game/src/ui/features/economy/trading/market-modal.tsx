@@ -1,9 +1,9 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { useCompactLane } from "@/hooks/helpers/use-compact-hud";
+import { useCompactLane, type CompactLane } from "@/hooks/helpers/use-compact-hud";
 import { useMarketStore } from "@/hooks/store/use-market-store";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { HUD_VALUE } from "@/ui/design-system/atoms/hud-typography";
+import { HUD_CUE, HUD_VALUE } from "@/ui/design-system/atoms/hud-typography";
 import { DROPDOWN_CONTENT, DROPDOWN_TRIGGER, HUD_PILL_BUTTON } from "@/ui/design-system/atoms/overlay-surface";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/design-system/atoms/select";
@@ -12,17 +12,21 @@ import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation
 import { SURFACE_WORKSPACE_CLASS, SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { REQUIREMENT_CHIP } from "@/ui/design-system/molecules/requirement-chips";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { currencyFormat } from "@/ui/utils/utils";
+import { currencyFormat, formatNumber } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 import { useMarket, useResourceManager } from "@bibliothecadao/react";
 import { findResourceById, ID, MarketInterface, ResourcesIds } from "@bibliothecadao/types";
 import Store from "lucide-react/dist/esm/icons/store";
 import { lazy, Suspense, useMemo, useState } from "react";
+import { resolveBestPrices } from "./best-prices";
 import { MarketResourceSidebar } from "./market-resource-sidebar";
 import { TradeSummaryBar } from "./trade-summary-bar";
 
 const MarketOrderPanel = lazy(() =>
   import("./market-order-panel").then((module) => ({ default: module.MarketOrderPanel })),
+);
+const CompactOrderBook = lazy(() =>
+  import("./compact-order-book").then((module) => ({ default: module.CompactOrderBook })),
 );
 const BankPanel = lazy(() => import("@/ui/features/economy/banking").then((module) => ({ default: module.BankList })));
 const MarketTradingHistory = lazy(() =>
@@ -38,6 +42,7 @@ type MarketTab = (typeof MARKET_TABS)[number]["key"];
 
 /** Everything the market's views render from, resolved once so desktop and compact share one data path. */
 interface MarketDesk {
+  lane: CompactLane | null;
   tab: MarketTab;
   onTabChange: (tab: MarketTab) => void;
   structureEntityId: ID;
@@ -69,12 +74,12 @@ export const MarketModal = () => {
 
 const MarketContent = () => {
   const desk = useMarketDesk();
-  const lane = useCompactLane();
 
-  return lane === null ? <DesktopMarketContent desk={desk} /> : <CompactMarketContent desk={desk} />;
+  return desk.lane === null ? <DesktopMarketContent desk={desk} /> : <CompactMarketContent desk={desk} />;
 };
 
 const useMarketDesk = (): MarketDesk => {
+  const lane = useCompactLane();
   const [tab, setTab] = useState<MarketTab>("orderbook");
   const selectedEntityId = useUIStore((state) => state.structureEntityId);
   const [structureEntityId, setStructureEntityId] = useState<ID>(selectedEntityId);
@@ -84,6 +89,7 @@ const useMarketDesk = (): MarketDesk => {
   const { bidOffers, askOffers } = useMarket(currentBlockTimestamp);
 
   return {
+    lane,
     tab,
     onTabChange: setTab,
     structureEntityId,
@@ -126,7 +132,7 @@ const CompactMarketContent = ({ desk }: { desk: MarketDesk }) => {
         hidden={view === "picker"}
         className={cn("market-modal-selector h-full min-h-0 flex-col", view === "trade" && "flex")}
       >
-        <SelectedResourceHeader resourceId={desk.selectedResource} onChange={() => setView("picker")} />
+        <SelectedResourceHeader desk={desk} onChange={() => setView("picker")} />
         <MarketTradeView desk={desk} className="min-h-0 flex-1" />
       </div>
     </>
@@ -154,20 +160,44 @@ const MarketResourcePicker = ({
   </div>
 );
 
-/** The compact trade view's header: which resource is on the desk, and the way back to the list. */
-const SelectedResourceHeader = ({ resourceId, onChange }: { resourceId: number; onChange: () => void }) => {
-  const trait = findResourceById(resourceId)?.trait ?? "";
+/** The compact trade view's header: the resource on the desk, its balance and best prices, and the way back. */
+const SelectedResourceHeader = ({ desk, onChange }: { desk: MarketDesk; onChange: () => void }) => {
+  const trait = findResourceById(desk.selectedResource)?.trait ?? "";
+  const balance = useStructureResourceBalance(desk.structureEntityId, desk.selectedResource);
+  const bestPrices = useMemo(() => resolveBestPrices(desk.bidOffers, desk.askOffers), [desk.bidOffers, desk.askOffers]);
 
   return (
     <div className="flex items-center justify-between gap-3 border-b border-gold/15 px-3 py-2">
       <span className="flex min-w-0 items-center gap-2">
         <ResourceIcon resource={trait} size="sm" withTooltip={false} />
-        <span className={cn(HUD_VALUE, "truncate")}>{trait}</span>
+        <span className="flex min-w-0 flex-col">
+          <span className={cn(HUD_VALUE, "truncate")}>{trait}</span>
+          <span className={cn(HUD_CUE, "flex flex-wrap gap-x-2")}>
+            <span title="Balance">{currencyFormat(balance, 0)} owned</span>
+            <span className="text-green" title="Best ask">
+              Buy {formatPrice(bestPrices.lowestAsk.get(desk.selectedResource))}
+            </span>
+            <span className="text-red" title="Best bid">
+              Sell {formatPrice(bestPrices.highestBid.get(desk.selectedResource))}
+            </span>
+          </span>
+        </span>
       </span>
       <button type="button" onClick={onChange} className={cn(HUD_PILL_BUTTON, "shrink-0 py-2")}>
         Change
       </button>
     </div>
+  );
+};
+
+const formatPrice = (price: number | undefined) => (price === undefined ? "—" : formatNumber(price, 4));
+
+const useStructureResourceBalance = (structureEntityId: ID, resourceId: number) => {
+  const { currentDefaultTick } = getBlockTimestamp();
+  const resourceManager = useResourceManager(structureEntityId);
+  return useMemo(
+    () => Number(resourceManager.balanceWithProduction(currentDefaultTick, resourceId).balance),
+    [resourceManager, currentDefaultTick, resourceId],
   );
 };
 
@@ -188,19 +218,23 @@ const MarketTradeView = ({ desk, className }: { desk: MarketDesk; className?: st
 const MarketTabContent = ({ desk }: { desk: MarketDesk }) => {
   switch (desk.tab) {
     case "orderbook":
-      return (
-        <MarketOrderPanel
-          resourceId={desk.selectedResource}
-          entityId={desk.structureEntityId}
-          resourceAskOffers={desk.askOffers}
-          resourceBidOffers={desk.bidOffers}
-        />
-      );
+      return <OrderBookTab desk={desk} />;
     case "amm":
       return <BankPanel structureEntityId={desk.structureEntityId} selectedResource={desk.selectedResource} />;
     case "history":
       return <MarketTradingHistory />;
   }
+};
+
+/** The two-column book on the desk; on a phone, one side at a time led by the order form. */
+const OrderBookTab = ({ desk }: { desk: MarketDesk }) => {
+  const book = {
+    resourceId: desk.selectedResource,
+    entityId: desk.structureEntityId,
+    resourceAskOffers: desk.askOffers,
+    resourceBidOffers: desk.bidOffers,
+  };
+  return desk.lane === null ? <MarketOrderPanel {...book} /> : <CompactOrderBook {...book} lane={desk.lane} />;
 };
 
 /** Which structure trades, and what it can pay and carry with. */

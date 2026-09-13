@@ -4,7 +4,7 @@ import {
   type CompactLane,
 } from "@/hooks/helpers/use-compact-hud";
 import { useMarketStore } from "@/hooks/store/use-market-store";
-import { ResourcesIds } from "@bibliothecadao/types";
+import { ResourcesIds, type MarketInterface } from "@bibliothecadao/types";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -14,8 +14,8 @@ vi.mock("@bibliothecadao/eternum", () => ({
   getBlockTimestamp: () => ({ currentBlockTimestamp: 0, currentDefaultTick: 0 }),
 }));
 vi.mock("@bibliothecadao/react", () => ({
-  useMarket: () => ({ bidOffers: [], askOffers: [] }),
-  useResourceManager: () => ({ balanceWithProduction: () => ({ balance: 0n }) }),
+  useMarket: () => ({ bidOffers: [woodOffer("bid", 0.4)], askOffers: [woodOffer("ask", 0.5)] }),
+  useResourceManager: () => ({ balanceWithProduction: () => ({ balance: 1234 }) }),
 }));
 vi.mock("@/hooks/store/use-ui-store", async () => {
   const { create } = await import("zustand");
@@ -24,7 +24,10 @@ vi.mock("@/hooks/store/use-ui-store", async () => {
 vi.mock("@/config/game-modes/use-game-mode-config", () => ({
   useGameModeConfig: () => ({ structure: { getName: () => ({ name: "Realm" }) } }),
 }));
-vi.mock("@/ui/utils/utils", () => ({ currencyFormat: (value: number) => String(value) }));
+vi.mock("@/ui/utils/utils", () => ({
+  currencyFormat: (value: number) => String(value),
+  formatNumber: (value: number) => String(value),
+}));
 vi.mock("@/ui/design-system/molecules/requirement-chips", () => ({ REQUIREMENT_CHIP: "" }));
 vi.mock("@/ui/design-system/molecules/resource-icon", () => ({
   ResourceIcon: ({ resource }: { resource: string }) => <i data-resource={resource} />,
@@ -50,6 +53,13 @@ vi.mock("./market-order-panel", () => ({
     <article data-resource={resourceId}>Order book</article>
   ),
 }));
+vi.mock("./compact-order-book", () => ({
+  CompactOrderBook: ({ resourceId, lane }: { resourceId: number; lane: string }) => (
+    <article data-resource={resourceId} data-lane={lane}>
+      Compact order book
+    </article>
+  ),
+}));
 vi.mock("@/ui/features/economy/banking", async () => {
   const { BankPanel } = await import("@/ui/features/economy/banking/bank-list");
   return { BankList: BankPanel };
@@ -66,6 +76,28 @@ vi.mock("@/ui/features/economy/banking/liquidity-table", () => ({ LiquidityTable
 vi.mock("./market-trading-history", () => ({ MarketTradingHistory: () => <article>History</article> }));
 
 import { MarketModal } from "./market-modal";
+
+/** A Wood offer on one side of the book: bids are made by whoever gets Wood, asks by whoever gets Lords. */
+const woodOffer = (side: "bid" | "ask", perLords: number): MarketInterface => {
+  const wood = { resourceId: ResourcesIds.Wood, amount: 100 };
+  const lords = { resourceId: ResourcesIds.Lords, amount: 100 * perLords };
+  return {
+    tradeId: 1,
+    makerId: 9,
+    takerId: 0,
+    makerName: "",
+    originName: "",
+    makerOrder: 0,
+    makerGivesMinResourceAmount: 1,
+    takerPaysMinResourceAmount: 1,
+    makerGivesMaxResourceCount: 1,
+    expiresAt: 0,
+    makerGets: [side === "bid" ? wood : lords],
+    takerGets: [side === "bid" ? lords : wood],
+    ratio: 1,
+    perLords,
+  };
+};
 
 /** The compact lane is two media queries (`use-compact-hud`); the modal reads them, so the test answers both. */
 const stubCompactLane = (lane: CompactLane | null) => {
@@ -129,9 +161,18 @@ describe("MarketModal", () => {
       expect(container.querySelector("[data-resource='Wood']")).not.toBeNull();
       expect(button("Change")).toBeDefined();
       expect(tabs()).toEqual(["Order Book", "AMM", "History"]);
-      expect(orderBook()?.textContent).toBe("Order book");
+      expect(orderBook()?.textContent).toBe("Compact order book");
+      expect(orderBook()?.getAttribute("data-lane")).toBe(lane);
     },
   );
+
+  it("shows the structure's balance and the best prices for the selected resource on a phone", async () => {
+    await mount("portrait");
+    const header = button("Change")!.parentElement!;
+    expect(header.textContent).toContain("1234 owned");
+    expect(header.textContent).toContain("Buy 0.5");
+    expect(header.textContent).toContain("Sell 0.4");
+  });
 
   it("swaps the trade view for the resource list when the player taps Change", async () => {
     await mount("portrait");
