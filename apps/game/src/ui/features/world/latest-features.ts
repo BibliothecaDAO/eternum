@@ -34,6 +34,44 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-09-13",
+    title: "Notification Settings Across Tabs",
+    description: "Changing your account notification level also updates your other open game tabs.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-13",
+    title: "Install Realms Easily",
+    description:
+      "Use Install Realms on the home page or in Settings to install the game or see instructions for your browser.",
+    type: "feature",
+  },
+  {
+    date: "2026-09-13",
+    title: "Game Activity Compatibility",
+    description: "Game activity remains available as new kinds of events are introduced.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-12",
+    title: "Local Game Notifications",
+    description:
+      "Enable device alerts in Settings for new confirmed activity involving you while the game remains running. Test delivery before relying on it.",
+    type: "feature",
+  },
+  {
+    date: "2026-09-12",
+    title: "Notification Preferences",
+    description: "Choose a notification level in Settings and save it to your account.",
+    type: "feature",
+  },
+  {
+    date: "2026-09-12",
+    title: "Confirmed Game Activity",
+    description: "Game activity keeps its confirmed version when live updates and history overlap.",
+    type: "fix",
+  },
+  {
     date: "2026-09-12",
     title: "Install Realms",
     description:

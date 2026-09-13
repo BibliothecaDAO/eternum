@@ -11,6 +11,13 @@ export interface GameSyncEntityBatch {
   transactionHash?: string;
 }
 
+export interface GameSyncEventConfirmation {
+  block: number | null;
+  preconfirmed: boolean;
+  /** True only for confirmations newer than this socket's advertised head. Disconnect catch-up is excluded. */
+  confirmedAfterAttach?: boolean;
+}
+
 export interface GameSyncSnapshotChunkProgress {
   bytesReceived: number;
   model: string;
@@ -38,7 +45,7 @@ export interface GameSyncWriter {
 export interface GameSyncSubscriptionHandlers {
   onEntity: (entity: GameSyncEntity) => void;
   onEntityBatch?: (batch: GameSyncEntityBatch) => void;
-  onEvent: (event: GameSyncEntity) => void;
+  onEvent: (event: GameSyncEntity, confirmation?: GameSyncEventConfirmation) => void;
   onEventGapFill: (replayedEventCount: number) => void;
   onHead?: (head: GameSyncHead) => void;
   onSnapshotChunk?: (progress: GameSyncSnapshotChunkProgress) => void;
@@ -106,7 +113,7 @@ export interface GameSyncSessionStart {
   onSubscriptionActive?: () => void;
   onLiveUpdate?: (kind: "entity" | "event") => void;
   onError?: (error: Error) => void;
-  onEvent?: (event: GameSyncEntity) => void;
+  onEvent?: (event: GameSyncEntity, confirmation?: GameSyncEventConfirmation) => void;
   onMetrics?: (metrics: GameSyncRuntimeMetrics) => void;
   onSnapshotProgress?: (progress: GameSyncSnapshotProgress) => void;
   onHead?: (head: GameSyncHead) => void;

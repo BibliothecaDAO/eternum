@@ -3,6 +3,26 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { createIdentityClient } from "./client";
 
 describe("identity client", () => {
+  it("uses the credentialed identity transport for preference reads and conditional saves", async () => {
+    const preferences = { owner: "0x1", level: "standard", revision: 2 };
+    const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(async () => Response.json(preferences));
+    const client = createIdentityClient({ baseUrl: "https://realms.test/api/auth", fetch });
+    expect(await client.getNotificationPreferences()).toEqual(preferences);
+    expect(fetch.mock.calls[0]).toEqual([
+      "https://realms.test/api/notifications/preferences",
+      expect.objectContaining({ credentials: "include", cache: "no-store", method: "GET" }),
+    ]);
+    await client.saveNotificationPreferences({ owner: "0x1", level: "standard", revision: 1 });
+    expect(fetch.mock.calls[1]?.[1]).toMatchObject({
+      credentials: "include",
+      method: "POST",
+      body: JSON.stringify({ owner: "0x1", level: "standard", revision: 1 }),
+    });
+    fetch.mockResolvedValueOnce(Response.json({ error: "preference_conflict" }, { status: 409 }));
+    await expect(client.saveNotificationPreferences({ owner: "0x1", level: "off", revision: 1 })).rejects.toThrow(
+      "another device",
+    );
+  });
   it("signs the server nonce and returns the resulting session", async () => {
     const session = {
       session: { id: "session-1", expiresAt: "2026-08-26T00:00:00.000Z", userId: "0x123" },

@@ -10,6 +10,12 @@ const digest = (bytes) => createHash("sha256").update(bytes).digest("hex");
 export async function verifyClientDeployment(dist, origin) {
   const checks = await checkPublishedAssets(dist, origin);
   const modules = checks.length;
+  for (const [path, type] of [
+    ["/sw.js", /(?:javascript|ecmascript)/i],
+    ["/manifest.webmanifest", /application\/(?:manifest\+json|json)/i],
+    ["/offline.html", /text\/html/i],
+  ])
+    checks.push(await checkMutableInstallAsset(dist, origin, path, type));
   const entry = await readClientModuleEntries(dist);
   for (const route of [
     "/",
@@ -44,6 +50,38 @@ async function fetchResponse(origin, path) {
   return fetch(new URL(path, origin), { signal: AbortSignal.timeout(30_000) });
 }
 
+async function checkMutableInstallAsset(dist, origin, path, expectedType) {
+  try {
+    const response = await fetchResponse(origin, path);
+    const type = response.headers.get("content-type") ?? "";
+    const cache = response.headers.get("cache-control") ?? "";
+    const expected = await readFile(join(dist, path.slice(1)));
+    const actual = Buffer.from(await response.arrayBuffer());
+    return {
+      path,
+      status: response.status,
+      type,
+      cache,
+      ok:
+        response.status === 200 &&
+        expectedType.test(type) &&
+        requiresRevalidation(cache) &&
+        digest(actual) === digest(expected),
+    };
+  } catch (error) {
+    return { path, ok: false, error: error.message };
+  }
+}
+
+function requiresRevalidation(cache) {
+  const directives = cache
+    .toLowerCase()
+    .split(",")
+    .map((value) => value.trim());
+  if (directives.includes("immutable")) return false;
+  return directives.includes("no-cache") || directives.includes("no-store") || directives.includes("max-age=0");
+}
+
 async function checkPublishedAsset(dist, origin, file) {
   const path = `/assets/${file}`;
   try {
@@ -73,11 +111,7 @@ async function checkPublishedRoute(origin, path, entry) {
       path,
       status: response.status,
       cache,
-      ok:
-        response.status === 200 &&
-        entry.every((module) => html.includes(module)) &&
-        /no-cache|max-age=0\b/.test(cache) &&
-        !cache.includes("immutable"),
+      ok: response.status === 200 && entry.every((module) => html.includes(module)) && requiresRevalidation(cache),
     };
   } catch (error) {
     return { path, ok: false, error: error.message };

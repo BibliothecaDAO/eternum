@@ -18,10 +18,21 @@ test("deployment gate rejects HTML modules, stale bytes and cached shells", asyn
   await writeFile(join(dist, "index.html"), html);
   await writeFile(join(dist, "assets/main-abc.js"), js);
   await writeFile(join(dist, "assets/vendor-shared.js"), js);
+  const installAssets = {
+    "/sw.js": [js, "application/javascript"],
+    "/manifest.webmanifest": ['{"name":"Realms"}', "application/manifest+json"],
+    "/offline.html": ["Offline", "text/html"],
+  };
+  for (const [path, [body]] of Object.entries(installAssets)) await writeFile(join(dist, path.slice(1)), body);
   let mode = "healthy";
   const server = createServer((request, response) => {
     response.setHeader("Cache-Control", mode === "cached-shell" ? "public, max-age=300" : "no-cache");
-    if (request.url.startsWith("/assets/deployment-check-missing")) {
+    if (installAssets[request.url]) {
+      const [body, type] = installAssets[request.url];
+      response.setHeader("Content-Type", mode === "html-worker" && request.url === "/sw.js" ? "text/html" : type);
+      if (mode === "cached-worker" && request.url === "/sw.js") response.setHeader("Cache-Control", "max-age=14400");
+      response.end(mode === "stale-worker" && request.url === "/sw.js" ? "old worker" : body);
+    } else if (request.url.startsWith("/assets/deployment-check-missing")) {
       response.statusCode = mode === "spa-fallback" ? 200 : 404;
       response.end(html);
     } else if (["/assets/main-abc.js", "/assets/vendor-shared.js"].includes(request.url)) {
@@ -36,7 +47,16 @@ test("deployment gate rejects HTML modules, stale bytes and cached shells", asyn
   const origin = `http://127.0.0.1:${server.address().port}`;
   try {
     assert.equal((await verifyClientDeployment(dist, origin)).ok, true);
-    for (mode of ["html-module", "stale-module", "cached-shell", "spa-fallback", "stale-main-entry"]) {
+    for (mode of [
+      "html-module",
+      "stale-module",
+      "cached-shell",
+      "spa-fallback",
+      "stale-main-entry",
+      "cached-worker",
+      "html-worker",
+      "stale-worker",
+    ]) {
       assert.equal((await verifyClientDeployment(dist, origin)).ok, false, mode);
     }
   } finally {

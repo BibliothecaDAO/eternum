@@ -1,0 +1,65 @@
+name: notifications
+
+on:
+  pull_request:
+    paths:
+      - "packages/notifications/**"
+      - "packages/identity/**"
+      - "packages/db/**"
+      - "apps/realms/**"
+      - "contracts/l3/game/manifest_madara.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - ".github/workflows/test-notifications.yml"
+
+concurrency:
+  group: notifications-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  preferences-and-policy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: identity_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d identity_test" --health-interval 5s --health-timeout 5s
+          --health-retries 10
+    env:
+      IDENTITY_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/identity_test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Build identity and notification contracts
+        run: |
+          pnpm --dir packages/chain build
+          pnpm --dir packages/notifications build
+          pnpm --dir packages/identity build
+      - name: Verify policy against the generated event inventory
+        run: pnpm --dir packages/notifications test
+      - name: Verify authenticated preference transport
+        run: pnpm --dir packages/identity test
+      - name: Verify API and PostgreSQL preference races
+        run:
+          pnpm --dir apps/realms test server/main.test.ts server/api-cors.test.ts
+          server/notification-preference-store.integration.test.ts
+      - name: Typecheck identity server
+        run: pnpm --dir apps/realms typecheck

@@ -164,6 +164,7 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
   private helloTimer?: ReturnType<typeof setTimeout>;
   private epoch = "";
   private seq = 0;
+  private attachedThroughBlock = Number.MAX_SAFE_INTEGER;
   private stopped = true;
   private forceFreshSnapshot = true;
   private acceptingSnapshotOverlay = false;
@@ -298,6 +299,7 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
   }
 
   private acceptHello(message: Extract<HeraldMessage, { type: "hello" }>): void {
+    this.attachedThroughBlock = message.confirmed_block;
     this.clearHelloTimer();
     this.socket?.send(
       JSON.stringify({
@@ -370,7 +372,7 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
 
   private acceptDiff(message: Extract<HeraldMessage, { type: "diff" }>): void {
     const entities = [
-      ...message.set.flatMap((change) => this.acceptSet(change)),
+      ...message.set.flatMap((change) => this.acceptSet(change, message)),
       ...message.del.flatMap((change) => this.acceptDelete(change)),
     ];
     this.deliverEntities(entities, {
@@ -379,9 +381,17 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
     });
   }
 
-  private acceptSet(change: HeraldSet): GameSyncEntity[] {
+  private acceptSet(
+    change: HeraldSet,
+    confirmation: { block: number | null; preconfirmed: boolean },
+  ): GameSyncEntity[] {
     if (getGameSyncModel(change.model).deletion === "event-ephemeral") {
-      this.handlers?.onEvent(toEntity(change));
+      this.handlers?.onEvent(toEntity(change), {
+        block: confirmation.block,
+        preconfirmed: confirmation.preconfirmed,
+        confirmedAfterAttach:
+          !confirmation.preconfirmed && confirmation.block !== null && confirmation.block > this.attachedThroughBlock,
+      });
       return [];
     }
 

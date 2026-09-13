@@ -2,6 +2,7 @@ import type { Headline } from "../news-headlines/headline-types";
 import { TransactionType } from "@bibliothecadao/provider";
 import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
 import type { FeedRow, FeedRows } from "./event-feed-rows";
+import { includesStoryNotification, logicalStoryIdentity, storyRecipients } from "@bibliothecadao/notifications";
 
 export type ImportantFeedFilter = "all" | "mine" | "combat";
 export type ImportantFeedRow =
@@ -18,19 +19,10 @@ const sameOwner = (left: unknown, right: string | null): boolean => {
   }
 };
 export const involvesPlayer = (event: ProcessedStoryEvent, address: string | null): boolean =>
-  [event.owner, event.storyPayload.attacker_owner_address, event.storyPayload.defender_owner_address].some((owner) =>
-    sameOwner(owner, address),
-  );
+  storyRecipients(event.story, event.owner, event.storyPayload).some((owner) => sameOwner(owner, address));
 
 export const battleIdentity = (event: ProcessedStoryEvent): string =>
-  [
-    event.tx_hash,
-    event.timestampMs,
-    event.storyPayload.attacker_id,
-    event.storyPayload.defender_id,
-    event.storyPayload.attacker_troops_before,
-    event.storyPayload.defender_troops_before,
-  ].join(":");
+  logicalStoryIdentity(event.event_id, event.story, event, event.storyPayload);
 
 const routineProductionTypes = new Set<TransactionType>([
   TransactionType.BURN_RESOURCE_FOR_RESOURCE_PRODUCTION,
@@ -53,7 +45,10 @@ export function selectImportantFeedRows(
 ): ImportantFeedRow[] {
   const battles = new Set<string>();
   const rows: ImportantFeedRow[] = stories
-    .filter((event) => event.story === "BattleStory" && (filter !== "mine" || involvesPlayer(event, address)))
+    .filter(
+      (event) =>
+        includesStoryNotification("important", event.story) && (filter !== "mine" || involvesPlayer(event, address)),
+    )
     .filter((event) => {
       const identity = battleIdentity(event);
       if (battles.has(identity)) return false;

@@ -11,12 +11,13 @@ export function StoryEventAudioCues() {
   const seen = useRef<Set<string> | null>(null);
   useEffect(() => {
     const previous = seen.current;
-    seen.current = new Set(events.map(battleIdentity));
+    const battles = events.filter((event) => event.story === "BattleStory");
+    seen.current = new Set(battles.map(battleIdentity));
     if (!previous) return;
     const address = useAccountStore.getState().account?.address ?? null;
-    for (const event of events) {
+    for (const event of battles) {
       const key = battleIdentity(event);
-      if (event.story !== "BattleStory" || previous.has(key)) continue;
+      if (previous.has(key)) continue;
       previous.add(key);
       if (Date.now() - event.timestampMs > 20_000 || !involvesPlayer(event, address)) continue;
       const payload = event.storyPayload;
