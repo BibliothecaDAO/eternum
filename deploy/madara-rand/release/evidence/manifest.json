@@ -1,0 +1,101 @@
+{
+  "schema": 1,
+  "scope": "local protocol review; no production approval",
+  "base_commit": "e67432177060197bb0fb03502f2d07d1194764f5",
+  "patch_revision": "c7525988938e93fb9a16b663f1effd3f2a15818a",
+  "fsync_fix": "3e6e0f472dcaa83a332aea9e092d333d6be62df5",
+  "fsync_upstream": "a0b1d029cc2cf9433cd5ea8ff99ec85105ad5f9c",
+  "envelope_version": 1,
+  "journal_version": 1,
+  "profile": "release",
+  "features": {
+    "madara": [
+      "sequencer-randomness"
+    ],
+    "madara-baseline": [],
+    "randomness-sidecar": []
+  },
+  "image": "127.0.0.1:15000/madara-rand@sha256:a7cd050b8429ee3e6adde66fe8172bf33b1886714bca8df5b62af3145a2660d9",
+  "builder_image_id": "sha256:bd669ce537ba106aaa37afb6be73279b035382446ed0447be2b66ef0e81aa3c8",
+  "build_command": [
+    "docker",
+    "run",
+    "--rm",
+    "--name",
+    "madara-rand-release-build",
+    "--mount",
+    "type=bind,source=/home/djizus/projects/madara,target=/workspace",
+    "--mount",
+    "type=bind,source=/tmp/madara-rand-release-confirmed,target=/release",
+    "--mount",
+    "type=bind,source=/home/djizus/.cargo/registry,target=/usr/local/cargo/registry",
+    "--mount",
+    "type=bind,source=/home/djizus/.cargo/git,target=/usr/local/cargo/git",
+    "--mount",
+    "type=volume,source=madara-rand-build-target,target=/workspace/target",
+    "--mount",
+    "type=volume,source=madara-rand-rustup,target=/usr/local/rustup",
+    "--workdir",
+    "/workspace",
+    "--env",
+    "CARGO_BUILD_JOBS=2",
+    "--env",
+    "RUSTC_WRAPPER=",
+    "--env",
+    "RUST_BUILD_DOCKER=1",
+    "--env",
+    "GIT_CONFIG_COUNT=1",
+    "--env",
+    "GIT_CONFIG_KEY_0=safe.directory",
+    "--env",
+    "GIT_CONFIG_VALUE_0=/workspace",
+    "sha256:bd669ce537ba106aaa37afb6be73279b035382446ed0447be2b66ef0e81aa3c8",
+    "bash",
+    "-c",
+    "cargo build --release -p madara --features sequencer-randomness --locked && cp target/release/madara /release/madara && cargo build --release -p madara --no-default-features --locked && cp target/release/madara /release/madara-baseline && cargo build --release -p mc-sequencer-randomness --bin randomness-sidecar --locked && cp target/release/randomness-sidecar /release/randomness-sidecar"
+  ],
+  "contract_artifacts": {
+    "image": "ghcr.io/madara-alliance/artifacts@sha256:127fe7f8191e916715af2d1ae4043b18d9d2e85c455cc65759aad065d4326708",
+    "archive_sha256": "c5a873f3a931ade8a48e60d15dc8781baefd0a7ed2b06fa86e659fbb5271c66d"
+  },
+  "binaries": {
+    "madara": "72f0d15340b8a7a9fec982065330d116f2ee6312624e766e753be5834cb7e05f",
+    "madara-baseline": "c64f0ccd38f84ef225a8751baa18b847dd75632ca8d831b6173e3846c152293c",
+    "randomness-sidecar": "49da800d2947fbd83ff75fdf1cec8eb8468f3634fad7094570ca268558d92d92"
+  },
+  "resolved_dependencies": {
+    "madara": {
+      "artifact": "madara-dependencies.txt",
+      "sha256": "de832c436092ee31c109bcf0ce3ba2e7fa41f46eb03c607aa0cf2832996cad79"
+    },
+    "madara-baseline": {
+      "artifact": "madara-baseline-dependencies.txt",
+      "sha256": "ad6a4781e6873c06476a6f2f7fafc89f623dc0a168d179f39f1a4b06d6eb770f"
+    },
+    "randomness-sidecar": {
+      "artifact": "randomness-sidecar-dependencies.txt",
+      "sha256": "84994e79c5b82ad4aebc358f62dbcd3f4cdd66ac5556d1d607ca64bb6f4618af"
+    }
+  },
+  "build_tool": {
+    "name": "starknet-native-compile",
+    "version": "0.9.0-rc.6",
+    "command": [
+      "cargo",
+      "install",
+      "--locked",
+      "starknet-native-compile",
+      "--version",
+      "0.9.0-rc.6"
+    ],
+    "dependencies": {
+      "artifact": "native-compiler-Cargo.lock",
+      "sha256": "2cfb3391cff0374f82756f9f0b81a071a8905582f0872878041e81d8d262a205"
+    }
+  },
+  "dependency_audit": {
+    "artifact": "dependencies.json",
+    "sha256": "9fef5736a29d2bfb8635157003b5caa69390ea1c6b3ad7758353d0dcabb6fb4e"
+  },
+  "cargo_lock_sha256": "dbf8416e3229b5a4156764345950929bcc40c9e02e778c61a1982c28057182fa"
+}
