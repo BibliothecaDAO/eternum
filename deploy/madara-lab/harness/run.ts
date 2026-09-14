@@ -121,7 +121,8 @@ export function parseHarnessArgs(args: string[]): HarnessCliOptions {
   );
 
   if (bots > 96) throw new Error(`The harness supports at most 96 bots, received ${bots}`);
-  if (values.games !== undefined) throw new Error("The game client holds one game per process; run one harness per game");
+  if (values.games !== undefined)
+    throw new Error("The game client holds one game per process; run one harness per game");
   if (ledger && gameId !== undefined)
     throw new Error("--ledger always creates a fresh game; --game-id is not supported");
   if (ledger && sweepOnlyManifestPath) throw new Error("--ledger and --sweep-only are separate modes");
@@ -174,6 +175,9 @@ async function main(): Promise<void> {
   ]);
   const systems = resolveSystemAddresses(manifest);
   assertChainId(chainId, "madara", "RPC_URL");
+  if (!options.ledger && BigInt(gameplayContracts.playerRegistryAddress) !== 0n) {
+    requiredEnvironmentValue("BINDING_AUTHORITY_PRIVATE_KEY", "harness with PlayerRegistry");
+  }
   const ledgerEnvironment = options.ledger ? resolveLedgerEnvironment() : undefined;
   const ledgerIdentities = options.ledger
     ? await loadLedgerBotIdentities(path.resolve(REPOSITORY_ROOT, options.ledgerAccountsPath!), options.bots)
@@ -203,7 +207,9 @@ async function main(): Promise<void> {
     });
 
     const evidenceBefore = await collectHarnessEvidenceBeforeRun();
-    console.log("Waiting until every bot has explorer stamina for its first action, then starting the measured workload");
+    console.log(
+      "Waiting until every bot has explorer stamina for its first action, then starting the measured workload",
+    );
     const workload = await runWorkload({
       bots: run.bots,
       game: harnessGame,
@@ -387,7 +393,8 @@ async function prepareGameRun({
 
   let binding: LedgerHarnessEvidence["binding"] | undefined;
   // Settlement is keyed by the bound owner whenever the chain has a player registry, so guests bind as their own owners.
-  const authorityPrivateKey = ledgerEnvironment?.authorityPrivateKey ?? process.env.BINDING_AUTHORITY_PRIVATE_KEY?.trim();
+  const authorityPrivateKey =
+    ledgerEnvironment?.authorityPrivateKey ?? process.env.BINDING_AUTHORITY_PRIVATE_KEY?.trim();
   if (authorityPrivateKey) {
     console.log(`Binding ${accounts.length} gameplay accounts to their ${ledger ? "mainnet" : "own"} owners`);
     binding = await bindLedgerGameplayAccounts({
