@@ -1,12 +1,4 @@
-import {
-  AdditiveBlending,
-  BufferGeometry,
-  Group,
-  InstancedBufferAttribute,
-  InstancedMesh,
-  MeshStandardMaterial,
-  Sphere,
-} from "three";
+import { AdditiveBlending, BufferGeometry, Group, InstancedMesh, MeshStandardMaterial, Sphere } from "three";
 import { mergeVertices } from "three/addons/utils/BufferGeometryUtils.js";
 import { color, normalLocal, normalView, positionLocal, positionViewDirection } from "three/tsl";
 import { MeshBasicNodeMaterial } from "three/webgpu";
@@ -58,12 +50,8 @@ export class SpireVeins {
   }
 
   dispose(): void {
-    for (const { mesh } of this.halos) {
-      mesh.removeFromParent();
-      // The source owns the shared instance buffer; detach before Three's dispose listener frees attributes.
-      mesh.instanceMatrix = new InstancedBufferAttribute(new Float32Array(0), 16);
-      mesh.dispose();
-    }
+    // A halo owns no GPU buffer: its matrices belong to the source, and its geometry and material are released below.
+    for (const { mesh } of this.halos) mesh.removeFromParent();
     for (const geometry of this.geometries.values()) geometry.dispose();
     for (const material of this.materials.values()) material.dispose();
     this.group.removeFromParent();

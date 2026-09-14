@@ -101,12 +101,12 @@ replacement; retain its experimental status until validated.
 
 ## Existing pipeline
 
-| Family  | Editable source                                                                                           | Optimization from repository root                |
-| ------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
-| Realms  | `apps/game/scripts/settlements/build-{settlement,city,kingdom,empire}.py` and shared construction helpers | `pnpm --dir apps/game run optimize:realms`       |
-| Spire   | `apps/game/scripts/spires/build-spire.py`                                                                 | `pnpm --dir apps/game run optimize:spire`        |
-| Rewards | `apps/game/scripts/reward-tiles/build-reward-tiles.py`                                                    | `pnpm --dir apps/game run optimize:reward-tiles` |
-| Fleet   | `apps/game/scripts/fleet/build-fleet.py` and `fleet-model.py`                                             | `pnpm --dir apps/game run optimize:fleet`        |
+| Family  | Editable source                                                                                                                                                              | Optimization from repository root                |
+| ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| Realms  | `apps/game/scripts/settlements/build-{settlement,city,kingdom,empire}.py` and shared construction helpers                                                                    | `pnpm --dir apps/game run optimize:realms`       |
+| Spire   | `apps/game/asset-sources/ethereal/spire/spire.blend` exported by `apps/game/scripts/spires/export-spire.py` (Blender 5.2.1); `build-spire.py` is the unwired obelisk variant | `pnpm --dir apps/game run optimize:spire`        |
+| Rewards | `apps/game/scripts/reward-tiles/build-reward-tiles.py`                                                                                                                       | `pnpm --dir apps/game run optimize:reward-tiles` |
+| Fleet   | `apps/game/scripts/fleet/build-fleet.py` and `fleet-model.py`                                                                                                                | `pnpm --dir apps/game run optimize:fleet`        |
 
 Inspect each builder's arguments and output paths before running it. Regenerate only the intended assets.
 `stone_textures.py` supplies the shared stone bake; the construction helpers own realm material treatment and roof

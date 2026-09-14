@@ -83,18 +83,17 @@ describe("spire vein diffusion", () => {
     source.geometry.dispose();
   });
 
-  it("disposes only owned shells and detaches shared matrix storage before disposing follower meshes", () => {
+  it("disposes only owned shells and never touches the shared matrix storage", () => {
     const { source, group, veins, halo } = fixture();
     const ownedGeometryDisposal = vi.spyOn(halo.geometry as BufferGeometry, "dispose");
     const sourceGeometryDisposal = vi.spyOn(source.geometry, "dispose");
     const sharedMatrices = source.instanceMatrix;
-    let disposedMatrix = sharedMatrices;
-    halo.addEventListener("dispose", () => {
-      disposedMatrix = halo.instanceMatrix;
-    });
+    const haloDisposal = vi.fn();
+    halo.addEventListener("dispose", haloDisposal);
     veins.dispose();
     veins.dispose();
-    expect(disposedMatrix).not.toBe(sharedMatrices);
+    expect(haloDisposal).not.toHaveBeenCalled();
+    expect(halo.instanceMatrix).toBe(sharedMatrices);
     expect(source.instanceMatrix).toBe(sharedMatrices);
     expect(group.children).toEqual([source]);
     expect(ownedGeometryDisposal).toHaveBeenCalledOnce();

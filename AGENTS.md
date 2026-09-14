@@ -74,7 +74,9 @@ and `packages/*`.
    each confirmed head. The client never predicts or overrides RECS rows. An acting surface may keep local pending UI
    state for its own click, but that state must not become an alternative game fact or a bespoke reconciliation channel.
 6. **Wired or deleted.** If it is exported, something imports it; if it is config, something reads it. Do not land a
-   capability without its call site.
+   capability without its call site. The one exception is an asset variant kept for a later cosmetic: its generator or
+   source may stay unwired if it writes to its own path, its output is not committed, and the family's `SOURCE.md` names
+   what it waits on.
 
 ## Clean Code Standard
 
