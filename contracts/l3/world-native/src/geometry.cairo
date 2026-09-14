@@ -1,0 +1,52 @@
+use crate::map::TileKey;
+use crate::troops::Coord;
+
+pub fn tile_key(game_id: u32, coord: Coord) -> TileKey {
+    TileKey { game_id, alt: coord.alt, col: coord.x, row: coord.y }
+}
+
+pub fn neighbor(coord: Coord, direction: u8) -> Coord {
+    let stride: u32 = if coord.alt {
+        15
+    } else {
+        1
+    };
+    let east = if coord.y % 2 == 0 {
+        stride
+    } else {
+        0
+    };
+    let west = stride - east;
+    match direction {
+        0 => Coord { x: coord.x + stride, ..coord },
+        1 => Coord { x: coord.x + east, y: coord.y + stride, ..coord },
+        2 => Coord { x: coord.x - west, y: coord.y + stride, ..coord },
+        3 => Coord { x: coord.x - stride, ..coord },
+        4 => Coord { x: coord.x - west, y: coord.y - stride, ..coord },
+        5 => Coord { x: coord.x + east, y: coord.y - stride, ..coord },
+        _ => panic!("invalid direction"),
+    }
+}
+
+pub fn spire_neighbor(coord: Coord, direction: u8) -> Coord {
+    let adjacent = neighbor(Coord { alt: false, ..coord }, direction);
+    Coord { alt: coord.alt, ..adjacent }
+}
+
+pub fn distance(left: Coord, right: Coord) -> u128 {
+    let left_row: i128 = left.y.into();
+    let right_row: i128 = right.y.into();
+    let left_q: i128 = left.x.into() - (left_row + (left.y % 2).into()) / 2;
+    let right_q: i128 = right.x.into() - (right_row + (right.y % 2).into()) / 2;
+    let dq = left_q - right_q;
+    let dr = left_row - right_row;
+    core::cmp::max(core::cmp::max(abs(dq), abs(dr)), abs(dq + dr)).try_into().unwrap()
+}
+
+fn abs(value: i128) -> i128 {
+    if value < 0 {
+        -value
+    } else {
+        value
+    }
+}

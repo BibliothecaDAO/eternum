@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - "contracts/l3/world-native/**"
+      - "contracts/l3/randomness-protocol/**"
       - "apps/herald/src/model-registry.ts"
       - ".github/workflows/native-world.yml"
       - "pnpm-lock.yaml"
@@ -11,6 +12,7 @@ on:
     branches: [next]
     paths:
       - "contracts/l3/world-native/**"
+      - "contracts/l3/randomness-protocol/**"
       - "apps/herald/src/model-registry.ts"
       - ".github/workflows/native-world.yml"
       - "pnpm-lock.yaml"
@@ -38,6 +40,21 @@ jobs:
         working-directory: contracts/l3/world-native
         run: snforge test
 
+  protocol:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: software-mansion/setup-scarb@v1
+        with:
+          tool-versions: .tool-versions
+      - uses: foundry-rs/setup-snfoundry@v3
+        with:
+          tool-versions: .tool-versions
+      - name: Test the retained protocol fixture
+        working-directory: contracts/l3/randomness-protocol
+        run: snforge test
+
   schema:
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -61,3 +78,10 @@ jobs:
         run: scarb build
       - name: Reject schema and fixture drift
         run: bun contracts/l3/world-native/scripts/generate-schema.mjs --check
+      - name: Build the published interface reference
+        working-directory: contracts/l3/randomness-protocol
+        run: scarb build
+      - name: Check the season ABI against the published interface
+        run:
+          python3 contracts/l3/randomness-protocol/check-entrypoint.py
+          contracts/l3/world-native/target/dev/world_native_SeasonDomain.contract_class.json /tmp/native-entrypoint.json

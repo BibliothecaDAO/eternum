@@ -7,6 +7,12 @@
   "domains": {
     "season": {
       "contract": "SeasonDomain",
+      "systems": [
+        "troop_management_systems",
+        "troop_movement_systems",
+        "troop_battle_systems",
+        "alt_movement_systems"
+      ],
       "events": [
         {
           "name": "RowSet",
@@ -445,6 +451,7 @@
     },
     "map": {
       "contract": "MapDomain",
+      "systems": [],
       "events": [
         {
           "name": "RowSet",
@@ -540,6 +547,50 @@
         }
       ],
       "entrypoints": [
+        {
+          "type": "function",
+          "name": "biome",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::map::TileKey"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::integer::u8"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "discovery",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::map::TileKey"
+            },
+            {
+              "name": "seed",
+              "type": "core::integer::u256"
+            },
+            {
+              "name": "hyperstructures",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "timestamp",
+              "type": "core::integer::u64"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "world_native::discovery::Discovery"
+            }
+          ],
+          "state_mutability": "view"
+        },
         {
           "type": "function",
           "name": "tile",
@@ -658,6 +709,7 @@
     },
     "troops": {
       "contract": "TroopsDomain",
+      "systems": [],
       "events": [
         {
           "name": "RowSet",
@@ -774,6 +826,64 @@
               "kind": "data"
             }
           ]
+        },
+        {
+          "name": "BattleEvent",
+          "prefix": [
+            "0x1f2a859ff6d82254f122800be40d0837341227d1e7d10e20a20748250947366"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "game_id",
+              "type": "core::integer::u32",
+              "kind": "key"
+            },
+            {
+              "name": "attacker_id",
+              "type": "core::integer::u32",
+              "kind": "key"
+            },
+            {
+              "name": "defender_id",
+              "type": "core::integer::u32",
+              "kind": "key"
+            },
+            {
+              "name": "attacker_owner",
+              "type": "core::integer::u32",
+              "kind": "key"
+            },
+            {
+              "name": "defender_owner",
+              "type": "core::integer::u32",
+              "kind": "key"
+            },
+            {
+              "name": "winner_id",
+              "type": "core::integer::u32",
+              "kind": "data"
+            },
+            {
+              "name": "coord",
+              "type": "world_native::troops::Coord",
+              "kind": "data"
+            },
+            {
+              "name": "max_reward",
+              "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>",
+              "kind": "data"
+            },
+            {
+              "name": "timestamp",
+              "type": "core::integer::u64",
+              "kind": "data"
+            }
+          ]
         }
       ],
       "entrypoints": [
@@ -792,6 +902,800 @@
             }
           ],
           "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "create_explorer",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "command",
+              "type": "world_native::commands::CreateExplorer"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "explore",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "command",
+              "type": "world_native::commands::Explore"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "battle",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "command",
+              "type": "world_native::commands::Battle"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "move_explorer",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "command",
+              "type": "world_native::commands::Move"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "toggle_alternate",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "command",
+              "type": "world_native::commands::ToggleAlternate"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "domain_state",
+          "inputs": [],
+          "outputs": [
+            {
+              "type": "world_native::lifecycle::DomainState"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "configure",
+          "inputs": [
+            {
+              "name": "peers",
+              "type": "world_native::lifecycle::Peers"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "activate",
+          "inputs": [],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "upgrade",
+          "inputs": [
+            {
+              "name": "class_hash",
+              "type": "core::starknet::class_hash::ClassHash"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        }
+      ]
+    },
+    "structures": {
+      "contract": "StructuresDomain",
+      "systems": [],
+      "events": [
+        {
+          "name": "RowSet",
+          "prefix": [
+            "0x1517f684ec2bc21ca20251bbef26b7ad0434759388fc50e84858abf49e4024b",
+            "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "model",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "keys",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            },
+            {
+              "name": "values",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            }
+          ]
+        },
+        {
+          "name": "RowSet",
+          "prefix": [
+            "0x39e1872116c7663c8921f9ee75ba10cccc267663c7087f62af7ae609f2dc747",
+            "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "model",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "keys",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            },
+            {
+              "name": "values",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            }
+          ]
+        },
+        {
+          "name": "RowMemberSet",
+          "prefix": [
+            "0x39e1872116c7663c8921f9ee75ba10cccc267663c7087f62af7ae609f2dc747",
+            "0x2016d01ac221539fcc960c46b5ba2df505fc9c7032934961e1eeaec5f23b587"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "model",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "member",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "keys",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            },
+            {
+              "name": "values",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            }
+          ]
+        },
+        {
+          "name": "RowSet",
+          "prefix": [
+            "0x3c3e892e516aae8b2e7cf7e7e2add5cb200d857c58305d1b11c5184d0dfee06",
+            "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "model",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "keys",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            },
+            {
+              "name": "values",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            }
+          ]
+        },
+        {
+          "name": "RowMemberSet",
+          "prefix": [
+            "0x3c3e892e516aae8b2e7cf7e7e2add5cb200d857c58305d1b11c5184d0dfee06",
+            "0x2016d01ac221539fcc960c46b5ba2df505fc9c7032934961e1eeaec5f23b587"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "model",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "member",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "keys",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            },
+            {
+              "name": "values",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            }
+          ]
+        },
+        {
+          "name": "RowDeleted",
+          "prefix": [
+            "0x3c3e892e516aae8b2e7cf7e7e2add5cb200d857c58305d1b11c5184d0dfee06",
+            "0x34ee03e4825cf92d0335b5828e3389af6c145ecff05fce078c3753d871cc7f5"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "model",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "keys",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            }
+          ]
+        },
+        {
+          "name": "RowSet",
+          "prefix": [
+            "0xb320b5e6e914bcfb0f18a720f2bd58d60b8965aebf70a049034844d40ad710",
+            "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "model",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "keys",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            },
+            {
+              "name": "values",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            }
+          ]
+        },
+        {
+          "name": "RowSet",
+          "prefix": [
+            "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "model",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "keys",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            },
+            {
+              "name": "values",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            }
+          ]
+        }
+      ],
+      "entrypoints": [
+        {
+          "type": "function",
+          "name": "hyperstructure_count",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::integer::u32"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "create_discovery",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "coord",
+              "type": "world_native::troops::Coord"
+            },
+            {
+              "name": "discovery",
+              "type": "world_native::discovery::Discovery"
+            },
+            {
+              "name": "seed",
+              "type": "core::integer::u256"
+            },
+            {
+              "name": "timestamp",
+              "type": "core::integer::u64"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::integer::u32"
+            }
+          ],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "building",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::buildings::BuildingKey"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::option::Option::<world_native::buildings::Building>"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "structure_buildings",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::resources::ResourceKey"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "world_native::buildings::StructureBuildings"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "structure",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::resources::ResourceKey"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::option::Option::<world_native::structures::Structure>"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "has_resource",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::resources::ResourceKey"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::bool"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "hyperstructure",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::resources::ResourceKey"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::option::Option::<world_native::structures::Hyperstructure>"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "owner_count",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "owner",
+              "type": "core::starknet::contract_address::ContractAddress"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::integer::u32"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "provision_spire",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "coord",
+              "type": "world_native::troops::Coord"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::integer::u32"
+            }
+          ],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "resource",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::resources::ResourceKey"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "world_native::resources::Resource"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "configure_resources",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "rules",
+              "type": "core::array::Span::<world_native::structures::ResourceRule>"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "provision_producer",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::resources::ResourceKey"
+            },
+            {
+              "name": "output",
+              "type": "core::integer::u128"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "provision_realm",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "coord",
+              "type": "world_native::troops::Coord"
+            },
+            {
+              "name": "grants",
+              "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::integer::u32"
+            }
+          ],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "pay_for_explorer",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::resources::ResourceKey"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "resource_type",
+              "type": "core::integer::u8"
+            },
+            {
+              "name": "amount",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "explorer_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "timestamp",
+              "type": "core::integer::u64"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "initialize_explorer_resources",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::resources::ResourceKey"
+            },
+            {
+              "name": "amount",
+              "type": "core::integer::u128"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "remove_explorer",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::resources::ResourceKey"
+            },
+            {
+              "name": "explorer_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "reduce_explorer_capacity",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::resources::ResourceKey"
+            },
+            {
+              "name": "lost",
+              "type": "core::integer::u128"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "spend_food",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::resources::ResourceKey"
+            },
+            {
+              "name": "wheat",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "fish",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "timestamp",
+              "type": "core::integer::u64"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "spend_spire_fee",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::resources::ResourceKey"
+            },
+            {
+              "name": "timestamp",
+              "type": "core::integer::u64"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "claim_production",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "structure_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
         },
         {
           "type": "function",
@@ -920,6 +1824,1018 @@
       ],
       "keyLength": 2,
       "valueLength": 18
+    },
+    {
+      "name": "Structure",
+      "identity": "0x537472756374757265",
+      "owners": [
+        "structures"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "entity_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "owner",
+          "type": "core::starknet::contract_address::ContractAddress",
+          "id": "0x6f776e6572",
+          "feltLength": 1
+        },
+        {
+          "name": "base",
+          "type": "world_native::structures::StructureBase",
+          "id": "0x62617365",
+          "feltLength": 10
+        },
+        {
+          "name": "troop_guards",
+          "type": "world_native::structures::GuardTroops",
+          "id": "0x74726f6f705f677561726473",
+          "feltLength": 60
+        },
+        {
+          "name": "troop_explorers",
+          "type": "core::array::Span::<core::integer::u32>",
+          "id": "0x74726f6f705f6578706c6f72657273",
+          "feltLength": null
+        },
+        {
+          "name": "resources_packed",
+          "type": "core::integer::u128",
+          "id": "0x7265736f75726365735f7061636b6564",
+          "feltLength": 1
+        },
+        {
+          "name": "metadata",
+          "type": "world_native::structures::StructureMetadata",
+          "id": "0x6d65746164617461",
+          "feltLength": 5
+        },
+        {
+          "name": "category",
+          "type": "core::integer::u8",
+          "id": "0x63617465676f7279",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": null
+    },
+    {
+      "name": "Resource",
+      "identity": "0x5265736f75726365",
+      "owners": [
+        "structures"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "entity_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "STONE_BALANCE",
+          "type": "core::integer::u128",
+          "id": "0x53544f4e455f42414c414e4345",
+          "feltLength": 1
+        },
+        {
+          "name": "COAL_BALANCE",
+          "type": "core::integer::u128",
+          "id": "0x434f414c5f42414c414e4345",
+          "feltLength": 1
+        },
+        {
+          "name": "WOOD_BALANCE",
+          "type": "core::integer::u128",
+          "id": "0x574f4f445f42414c414e4345",
+          "feltLength": 1
+        },
+        {
+          "name": "COPPER_BALANCE",
+          "type": "core::integer::u128",
+          "id": "0x434f505045525f42414c414e4345",
+          "feltLength": 1
+        },
+        {
+          "name": "IRONWOOD_BALANCE",
+          "type": "core::integer::u128",
+          "id": "0x49524f4e574f4f445f42414c414e4345",
+          "feltLength": 1
+        },
+        {
+          "name": "OBSIDIAN_BALANCE",
+          "type": "core::integer::u128",
+          "id": "0x4f4253494449414e5f42414c414e4345",
+          "feltLength": 1
+        },
+        {
+          "name": "GOLD_BALANCE",
+          "type": "core::integer::u128",
+          "id": "0x474f4c445f42414c414e4345",
+          "feltLength": 1
+        },
+        {
+          "name": "SILVER_BALANCE",
+          "type": "core::integer::u128",
+          "id": "0x53494c5645525f42414c414e4345",
+          "feltLength": 1
+        },
+        {
+          "name": "MITHRAL_BALANCE",
+          "type": "core::integer::u128",
+          "id": "0x4d49544852414c5f42414c414e4345",
+          "feltLength": 1
+        },
+        {
+          "name": "ALCHEMICAL_SILVER_BALANCE",
+          "type": "core::integer::u128",
+          "id": "0x414c4348454d4943414c5f53494c5645525f42414c414e4345",
+          "feltLength": 1
+        },
+        {
+          "name": "COLD_IRON_BALANCE",
+          "type": "core::integer::u128",
+          "id": "0x434f4c445f49524f4e5f42414c414e4345",
+          "feltLength": 1
+        },
+        {
+          "name": "DEEP_CRYSTAL_BALANCE",
+          "type": "core::integer::u128",
+          "id": "0x444545505f4352595354414c5f42414c414e4345",
+          "feltLength": 1
+        },
+        {
+          "name": "RUBY_BALANCE",
+          "type": "core::integer::u128",
+          "id": "0x525542595f42414c414e4345",
+          "feltLength": 1
+        },
+        {
+          "name": "DIAMONDS_BALANCE",
+          "type": "core::integer::u128",
+          "id": "0x4449414d4f4e44535f42414c414e4345",
+          "feltLength": 1
+        },
+        {
+          "name": "HARTWOOD_BALANCE",
+          "type": "core::integer::u128",
+          "id": "0x48415254574f4f445f42414c414e4345",
+          "feltLength": 1
+        },
+        {
+          "name": "IGNIUM_BALANCE",
+          "type": "core::integer::u128",
+          "id": "0x49474e49554d5f42414c414e4345",
+          "feltLength": 1
+        },
+        {
+          "name": "TWILIGHT_QUARTZ_BALANCE",
+          "type": "core::integer::u128",
+          "id": "0x5457494c494748545f51554152545a5f42414c414e4345",
+          "feltLength": 1
+        },
+        {
+          "name": "TRUE_ICE_BALANCE",
+          "type": "core::integer::u128",
+          "id": "0x545255455f4943455f42414c414e4345",
+          "feltLength": 1
+        },
+        {
+          "name": "ADAMANTINE_BALANCE",
+          "type": "core::integer::u128",
+          "id": "0x4144414d414e54494e455f42414c414e4345",
+          "feltLength": 1
+        },
+        {
+          "name": "SAPPHIRE_BALANCE",
+          "type": "core::integer::u128",
+          "id": "0x53415050484952455f42414c414e4345",
+          "feltLength": 1
+        },
+        {
+          "name": "ETHEREAL_SILICA_BALANCE",
+          "type": "core::integer::u128",
+          "id": "0x455448455245414c5f53494c4943415f42414c414e4345",
+          "feltLength": 1
+        },
+        {
+          "name": "DRAGONHIDE_BALANCE",
+          "type": "core::integer::u128",
+          "id": "0x445241474f4e484944455f42414c414e4345",
+          "feltLength": 1
+        },
+        {
+          "name": "LABOR_BALANCE",
+          "type": "core::integer::u128",
+          "id": "0x4c41424f525f42414c414e4345",
+          "feltLength": 1
+        },
+        {
+          "name": "EARTHEN_SHARD_BALANCE",
+          "type": "core::integer::u128",
+          "id": "0x4541525448454e5f53484152445f42414c414e4345",
+          "feltLength": 1
+        },
+        {
+          "name": "DONKEY_BALANCE",
+          "type": "core::integer::u128",
+          "id": "0x444f4e4b45595f42414c414e4345",
+          "feltLength": 1
+        },
+        {
+          "name": "KNIGHT_T1_BALANCE",
+          "type": "core::integer::u128",
+          "id": "0x4b4e494748545f54315f42414c414e4345",
+          "feltLength": 1
+        },
+        {
+          "name": "KNIGHT_T2_BALANCE",
+          "type": "core::integer::u128",
+          "id": "0x4b4e494748545f54325f42414c414e4345",
+          "feltLength": 1
+        },
+        {
+          "name": "KNIGHT_T3_BALANCE",
+          "type": "core::integer::u128",
+          "id": "0x4b4e494748545f54335f42414c414e4345",
+          "feltLength": 1
+        },
+        {
+          "name": "CROSSBOWMAN_T1_BALANCE",
+          "type": "core::integer::u128",
+          "id": "0x43524f5353424f574d414e5f54315f42414c414e4345",
+          "feltLength": 1
+        },
+        {
+          "name": "CROSSBOWMAN_T2_BALANCE",
+          "type": "core::integer::u128",
+          "id": "0x43524f5353424f574d414e5f54325f42414c414e4345",
+          "feltLength": 1
+        },
+        {
+          "name": "CROSSBOWMAN_T3_BALANCE",
+          "type": "core::integer::u128",
+          "id": "0x43524f5353424f574d414e5f54335f42414c414e4345",
+          "feltLength": 1
+        },
+        {
+          "name": "PALADIN_T1_BALANCE",
+          "type": "core::integer::u128",
+          "id": "0x50414c4144494e5f54315f42414c414e4345",
+          "feltLength": 1
+        },
+        {
+          "name": "PALADIN_T2_BALANCE",
+          "type": "core::integer::u128",
+          "id": "0x50414c4144494e5f54325f42414c414e4345",
+          "feltLength": 1
+        },
+        {
+          "name": "PALADIN_T3_BALANCE",
+          "type": "core::integer::u128",
+          "id": "0x50414c4144494e5f54335f42414c414e4345",
+          "feltLength": 1
+        },
+        {
+          "name": "WHEAT_BALANCE",
+          "type": "core::integer::u128",
+          "id": "0x57484541545f42414c414e4345",
+          "feltLength": 1
+        },
+        {
+          "name": "FISH_BALANCE",
+          "type": "core::integer::u128",
+          "id": "0x464953485f42414c414e4345",
+          "feltLength": 1
+        },
+        {
+          "name": "LORDS_BALANCE",
+          "type": "core::integer::u128",
+          "id": "0x4c4f5244535f42414c414e4345",
+          "feltLength": 1
+        },
+        {
+          "name": "ESSENCE_BALANCE",
+          "type": "core::integer::u128",
+          "id": "0x455353454e43455f42414c414e4345",
+          "feltLength": 1
+        },
+        {
+          "name": "RELIC_E1_BALANCE",
+          "type": "core::integer::u128",
+          "id": "0x52454c49435f45315f42414c414e4345",
+          "feltLength": 1
+        },
+        {
+          "name": "RELIC_E2_BALANCE",
+          "type": "core::integer::u128",
+          "id": "0x52454c49435f45325f42414c414e4345",
+          "feltLength": 1
+        },
+        {
+          "name": "RELIC_E3_BALANCE",
+          "type": "core::integer::u128",
+          "id": "0x52454c49435f45335f42414c414e4345",
+          "feltLength": 1
+        },
+        {
+          "name": "RELIC_E4_BALANCE",
+          "type": "core::integer::u128",
+          "id": "0x52454c49435f45345f42414c414e4345",
+          "feltLength": 1
+        },
+        {
+          "name": "RELIC_E5_BALANCE",
+          "type": "core::integer::u128",
+          "id": "0x52454c49435f45355f42414c414e4345",
+          "feltLength": 1
+        },
+        {
+          "name": "RELIC_E6_BALANCE",
+          "type": "core::integer::u128",
+          "id": "0x52454c49435f45365f42414c414e4345",
+          "feltLength": 1
+        },
+        {
+          "name": "RELIC_E7_BALANCE",
+          "type": "core::integer::u128",
+          "id": "0x52454c49435f45375f42414c414e4345",
+          "feltLength": 1
+        },
+        {
+          "name": "RELIC_E8_BALANCE",
+          "type": "core::integer::u128",
+          "id": "0x52454c49435f45385f42414c414e4345",
+          "feltLength": 1
+        },
+        {
+          "name": "RELIC_E9_BALANCE",
+          "type": "core::integer::u128",
+          "id": "0x52454c49435f45395f42414c414e4345",
+          "feltLength": 1
+        },
+        {
+          "name": "RELIC_E10_BALANCE",
+          "type": "core::integer::u128",
+          "id": "0x52454c49435f4531305f42414c414e4345",
+          "feltLength": 1
+        },
+        {
+          "name": "RELIC_E11_BALANCE",
+          "type": "core::integer::u128",
+          "id": "0x52454c49435f4531315f42414c414e4345",
+          "feltLength": 1
+        },
+        {
+          "name": "RELIC_E12_BALANCE",
+          "type": "core::integer::u128",
+          "id": "0x52454c49435f4531325f42414c414e4345",
+          "feltLength": 1
+        },
+        {
+          "name": "RELIC_E13_BALANCE",
+          "type": "core::integer::u128",
+          "id": "0x52454c49435f4531335f42414c414e4345",
+          "feltLength": 1
+        },
+        {
+          "name": "RELIC_E14_BALANCE",
+          "type": "core::integer::u128",
+          "id": "0x52454c49435f4531345f42414c414e4345",
+          "feltLength": 1
+        },
+        {
+          "name": "RELIC_E15_BALANCE",
+          "type": "core::integer::u128",
+          "id": "0x52454c49435f4531355f42414c414e4345",
+          "feltLength": 1
+        },
+        {
+          "name": "RELIC_E16_BALANCE",
+          "type": "core::integer::u128",
+          "id": "0x52454c49435f4531365f42414c414e4345",
+          "feltLength": 1
+        },
+        {
+          "name": "RELIC_E17_BALANCE",
+          "type": "core::integer::u128",
+          "id": "0x52454c49435f4531375f42414c414e4345",
+          "feltLength": 1
+        },
+        {
+          "name": "RELIC_E18_BALANCE",
+          "type": "core::integer::u128",
+          "id": "0x52454c49435f4531385f42414c414e4345",
+          "feltLength": 1
+        },
+        {
+          "name": "RESEARCH_BALANCE",
+          "type": "core::integer::u128",
+          "id": "0x52455345415243485f42414c414e4345",
+          "feltLength": 1
+        },
+        {
+          "name": "SATOSHI_BALANCE",
+          "type": "core::integer::u128",
+          "id": "0x5341544f5348495f42414c414e4345",
+          "feltLength": 1
+        },
+        {
+          "name": "weight",
+          "type": "world_native::resources::Weight",
+          "id": "0x776569676874",
+          "feltLength": 2
+        },
+        {
+          "name": "STONE_PRODUCTION",
+          "type": "world_native::resources::Production",
+          "id": "0x53544f4e455f50524f44554354494f4e",
+          "feltLength": 4
+        },
+        {
+          "name": "COAL_PRODUCTION",
+          "type": "world_native::resources::Production",
+          "id": "0x434f414c5f50524f44554354494f4e",
+          "feltLength": 4
+        },
+        {
+          "name": "WOOD_PRODUCTION",
+          "type": "world_native::resources::Production",
+          "id": "0x574f4f445f50524f44554354494f4e",
+          "feltLength": 4
+        },
+        {
+          "name": "COPPER_PRODUCTION",
+          "type": "world_native::resources::Production",
+          "id": "0x434f505045525f50524f44554354494f4e",
+          "feltLength": 4
+        },
+        {
+          "name": "IRONWOOD_PRODUCTION",
+          "type": "world_native::resources::Production",
+          "id": "0x49524f4e574f4f445f50524f44554354494f4e",
+          "feltLength": 4
+        },
+        {
+          "name": "OBSIDIAN_PRODUCTION",
+          "type": "world_native::resources::Production",
+          "id": "0x4f4253494449414e5f50524f44554354494f4e",
+          "feltLength": 4
+        },
+        {
+          "name": "GOLD_PRODUCTION",
+          "type": "world_native::resources::Production",
+          "id": "0x474f4c445f50524f44554354494f4e",
+          "feltLength": 4
+        },
+        {
+          "name": "SILVER_PRODUCTION",
+          "type": "world_native::resources::Production",
+          "id": "0x53494c5645525f50524f44554354494f4e",
+          "feltLength": 4
+        },
+        {
+          "name": "MITHRAL_PRODUCTION",
+          "type": "world_native::resources::Production",
+          "id": "0x4d49544852414c5f50524f44554354494f4e",
+          "feltLength": 4
+        },
+        {
+          "name": "ALCHEMICAL_SILVER_PRODUCTION",
+          "type": "world_native::resources::Production",
+          "id": "0x414c4348454d4943414c5f53494c5645525f50524f44554354494f4e",
+          "feltLength": 4
+        },
+        {
+          "name": "COLD_IRON_PRODUCTION",
+          "type": "world_native::resources::Production",
+          "id": "0x434f4c445f49524f4e5f50524f44554354494f4e",
+          "feltLength": 4
+        },
+        {
+          "name": "DEEP_CRYSTAL_PRODUCTION",
+          "type": "world_native::resources::Production",
+          "id": "0x444545505f4352595354414c5f50524f44554354494f4e",
+          "feltLength": 4
+        },
+        {
+          "name": "RUBY_PRODUCTION",
+          "type": "world_native::resources::Production",
+          "id": "0x525542595f50524f44554354494f4e",
+          "feltLength": 4
+        },
+        {
+          "name": "DIAMONDS_PRODUCTION",
+          "type": "world_native::resources::Production",
+          "id": "0x4449414d4f4e44535f50524f44554354494f4e",
+          "feltLength": 4
+        },
+        {
+          "name": "HARTWOOD_PRODUCTION",
+          "type": "world_native::resources::Production",
+          "id": "0x48415254574f4f445f50524f44554354494f4e",
+          "feltLength": 4
+        },
+        {
+          "name": "IGNIUM_PRODUCTION",
+          "type": "world_native::resources::Production",
+          "id": "0x49474e49554d5f50524f44554354494f4e",
+          "feltLength": 4
+        },
+        {
+          "name": "TWILIGHT_QUARTZ_PRODUCTION",
+          "type": "world_native::resources::Production",
+          "id": "0x5457494c494748545f51554152545a5f50524f44554354494f4e",
+          "feltLength": 4
+        },
+        {
+          "name": "TRUE_ICE_PRODUCTION",
+          "type": "world_native::resources::Production",
+          "id": "0x545255455f4943455f50524f44554354494f4e",
+          "feltLength": 4
+        },
+        {
+          "name": "ADAMANTINE_PRODUCTION",
+          "type": "world_native::resources::Production",
+          "id": "0x4144414d414e54494e455f50524f44554354494f4e",
+          "feltLength": 4
+        },
+        {
+          "name": "SAPPHIRE_PRODUCTION",
+          "type": "world_native::resources::Production",
+          "id": "0x53415050484952455f50524f44554354494f4e",
+          "feltLength": 4
+        },
+        {
+          "name": "ETHEREAL_SILICA_PRODUCTION",
+          "type": "world_native::resources::Production",
+          "id": "0x455448455245414c5f53494c4943415f50524f44554354494f4e",
+          "feltLength": 4
+        },
+        {
+          "name": "DRAGONHIDE_PRODUCTION",
+          "type": "world_native::resources::Production",
+          "id": "0x445241474f4e484944455f50524f44554354494f4e",
+          "feltLength": 4
+        },
+        {
+          "name": "LABOR_PRODUCTION",
+          "type": "world_native::resources::Production",
+          "id": "0x4c41424f525f50524f44554354494f4e",
+          "feltLength": 4
+        },
+        {
+          "name": "EARTHEN_SHARD_PRODUCTION",
+          "type": "world_native::resources::Production",
+          "id": "0x4541525448454e5f53484152445f50524f44554354494f4e",
+          "feltLength": 4
+        },
+        {
+          "name": "DONKEY_PRODUCTION",
+          "type": "world_native::resources::Production",
+          "id": "0x444f4e4b45595f50524f44554354494f4e",
+          "feltLength": 4
+        },
+        {
+          "name": "KNIGHT_T1_PRODUCTION",
+          "type": "world_native::resources::Production",
+          "id": "0x4b4e494748545f54315f50524f44554354494f4e",
+          "feltLength": 4
+        },
+        {
+          "name": "KNIGHT_T2_PRODUCTION",
+          "type": "world_native::resources::Production",
+          "id": "0x4b4e494748545f54325f50524f44554354494f4e",
+          "feltLength": 4
+        },
+        {
+          "name": "KNIGHT_T3_PRODUCTION",
+          "type": "world_native::resources::Production",
+          "id": "0x4b4e494748545f54335f50524f44554354494f4e",
+          "feltLength": 4
+        },
+        {
+          "name": "CROSSBOWMAN_T1_PRODUCTION",
+          "type": "world_native::resources::Production",
+          "id": "0x43524f5353424f574d414e5f54315f50524f44554354494f4e",
+          "feltLength": 4
+        },
+        {
+          "name": "CROSSBOWMAN_T2_PRODUCTION",
+          "type": "world_native::resources::Production",
+          "id": "0x43524f5353424f574d414e5f54325f50524f44554354494f4e",
+          "feltLength": 4
+        },
+        {
+          "name": "CROSSBOWMAN_T3_PRODUCTION",
+          "type": "world_native::resources::Production",
+          "id": "0x43524f5353424f574d414e5f54335f50524f44554354494f4e",
+          "feltLength": 4
+        },
+        {
+          "name": "PALADIN_T1_PRODUCTION",
+          "type": "world_native::resources::Production",
+          "id": "0x50414c4144494e5f54315f50524f44554354494f4e",
+          "feltLength": 4
+        },
+        {
+          "name": "PALADIN_T2_PRODUCTION",
+          "type": "world_native::resources::Production",
+          "id": "0x50414c4144494e5f54325f50524f44554354494f4e",
+          "feltLength": 4
+        },
+        {
+          "name": "PALADIN_T3_PRODUCTION",
+          "type": "world_native::resources::Production",
+          "id": "0x50414c4144494e5f54335f50524f44554354494f4e",
+          "feltLength": 4
+        },
+        {
+          "name": "WHEAT_PRODUCTION",
+          "type": "world_native::resources::Production",
+          "id": "0x57484541545f50524f44554354494f4e",
+          "feltLength": 4
+        },
+        {
+          "name": "FISH_PRODUCTION",
+          "type": "world_native::resources::Production",
+          "id": "0x464953485f50524f44554354494f4e",
+          "feltLength": 4
+        },
+        {
+          "name": "LORDS_PRODUCTION",
+          "type": "world_native::resources::Production",
+          "id": "0x4c4f5244535f50524f44554354494f4e",
+          "feltLength": 4
+        },
+        {
+          "name": "ESSENCE_PRODUCTION",
+          "type": "world_native::resources::Production",
+          "id": "0x455353454e43455f50524f44554354494f4e",
+          "feltLength": 4
+        },
+        {
+          "name": "RESEARCH_PRODUCTION",
+          "type": "world_native::resources::Production",
+          "id": "0x52455345415243485f50524f44554354494f4e",
+          "feltLength": 4
+        },
+        {
+          "name": "SATOSHI_PRODUCTION",
+          "type": "world_native::resources::Production",
+          "id": "0x5341544f5348495f50524f44554354494f4e",
+          "feltLength": 4
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 220
+    },
+    {
+      "name": "Building",
+      "identity": "0x4275696c64696e67",
+      "owners": [
+        "structures"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "alt",
+          "type": "core::bool",
+          "feltLength": 1
+        },
+        {
+          "name": "outer_col",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "outer_row",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "inner_col",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "inner_row",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "category",
+          "type": "core::integer::u8",
+          "id": "0x63617465676f7279",
+          "feltLength": 1
+        },
+        {
+          "name": "bonus_percent",
+          "type": "core::integer::u32",
+          "id": "0x626f6e75735f70657263656e74",
+          "feltLength": 1
+        },
+        {
+          "name": "entity_id",
+          "type": "core::integer::u32",
+          "id": "0x656e746974795f6964",
+          "feltLength": 1
+        },
+        {
+          "name": "outer_entity_id",
+          "type": "core::integer::u32",
+          "id": "0x6f757465725f656e746974795f6964",
+          "feltLength": 1
+        },
+        {
+          "name": "paused",
+          "type": "core::bool",
+          "id": "0x706175736564",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 6,
+      "valueLength": 5
+    },
+    {
+      "name": "StructureBuildings",
+      "identity": "0x5374727563747572654275696c64696e6773",
+      "owners": [
+        "structures"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "entity_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "packed_counts_1",
+          "type": "core::integer::u128",
+          "id": "0x7061636b65645f636f756e74735f31",
+          "feltLength": 1
+        },
+        {
+          "name": "packed_counts_2",
+          "type": "core::integer::u128",
+          "id": "0x7061636b65645f636f756e74735f32",
+          "feltLength": 1
+        },
+        {
+          "name": "packed_counts_3",
+          "type": "core::integer::u128",
+          "id": "0x7061636b65645f636f756e74735f33",
+          "feltLength": 1
+        },
+        {
+          "name": "population",
+          "type": "world_native::buildings::Population",
+          "id": "0x706f70756c6174696f6e",
+          "feltLength": 2
+        },
+        {
+          "name": "coord",
+          "type": "world_native::troops::Coord",
+          "id": "0x636f6f7264",
+          "feltLength": 3
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 8
+    },
+    {
+      "name": "Hyperstructure",
+      "identity": "0x4879706572737472756374757265",
+      "owners": [
+        "structures"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "hyperstructure_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "initialized",
+          "type": "core::bool",
+          "id": "0x696e697469616c697a6564",
+          "feltLength": 1
+        },
+        {
+          "name": "completed",
+          "type": "core::bool",
+          "id": "0x636f6d706c65746564",
+          "feltLength": 1
+        },
+        {
+          "name": "access",
+          "type": "world_native::structures::ConstructionAccess",
+          "id": "0x616363657373",
+          "feltLength": 1
+        },
+        {
+          "name": "randomness",
+          "type": "core::felt252",
+          "id": "0x72616e646f6d6e657373",
+          "feltLength": 1
+        },
+        {
+          "name": "points_multiplier",
+          "type": "core::integer::u8",
+          "id": "0x706f696e74735f6d756c7469706c696572",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 5
+    },
+    {
+      "name": "HyperstructureGlobals",
+      "identity": "0x4879706572737472756374757265476c6f62616c73",
+      "owners": [
+        "structures"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "created_count",
+          "type": "core::integer::u32",
+          "id": "0x637265617465645f636f756e74",
+          "feltLength": 1
+        },
+        {
+          "name": "completed_count",
+          "type": "core::integer::u32",
+          "id": "0x636f6d706c657465645f636f756e74",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": 2
+    },
+    {
+      "name": "StructureOwnerStats",
+      "identity": "0x5374727563747572654f776e65725374617473",
+      "owners": [
+        "structures"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "owner",
+          "type": "core::starknet::contract_address::ContractAddress",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "structures_num",
+          "type": "core::integer::u32",
+          "id": "0x737472756374757265735f6e756d",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 1
+    },
+    {
+      "name": "ResourceRule",
+      "identity": "0x5265736f7572636552756c65",
+      "owners": [
+        "structures"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "resource_type",
+          "type": "core::integer::u8",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "unit_weight",
+          "type": "core::integer::u128",
+          "id": "0x756e69745f776569676874",
+          "feltLength": 1
+        },
+        {
+          "name": "realm_rate",
+          "type": "core::integer::u64",
+          "id": "0x7265616c6d5f72617465",
+          "feltLength": 1
+        },
+        {
+          "name": "village_rate",
+          "type": "core::integer::u64",
+          "id": "0x76696c6c6167655f72617465",
+          "feltLength": 1
+        },
+        {
+          "name": "labor_output_per_resource",
+          "type": "core::integer::u64",
+          "id": "0x6c61626f725f6f75747075745f7065725f7265736f75726365",
+          "feltLength": 1
+        },
+        {
+          "name": "building_population_cost",
+          "type": "core::integer::u8",
+          "id": "0x6275696c64696e675f706f70756c6174696f6e5f636f7374",
+          "feltLength": 1
+        },
+        {
+          "name": "building_capacity_grant",
+          "type": "core::integer::u8",
+          "id": "0x6275696c64696e675f63617061636974795f6772616e74",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 6
+    },
+    {
+      "name": "ResourceRulesReady",
+      "identity": "0x5265736f7572636552756c65735265616479",
+      "owners": [
+        "structures"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "ready",
+          "type": "core::bool",
+          "id": "0x7265616479",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": 1
     },
     {
       "name": "GameRegistry",
@@ -1219,7 +3135,8 @@
       "owners": [
         "season",
         "map",
-        "troops"
+        "troops",
+        "structures"
       ],
       "scope": "deployment",
       "emitterKey": "address",
@@ -1259,7 +3176,8 @@
       "owners": [
         "season",
         "map",
-        "troops"
+        "troops",
+        "structures"
       ],
       "scope": "deployment",
       "emitterKey": "address",
@@ -1449,7 +3367,93 @@
       "valueLength": 1
     }
   ],
+  "absentCollections": [
+    "WorldConfig",
+    "BlitzSettlement",
+    "PresetConfig",
+    "HyperstructureShareholders"
+  ],
+  "projections": [
+    {
+      "name": "BattleEvent",
+      "owners": [
+        "troops"
+      ],
+      "scope": "game",
+      "version": 1,
+      "derivedRows": [
+        "LastBattle"
+      ],
+      "event": {
+        "type": "event",
+        "name": "world_native::troops::BattleEvent",
+        "kind": "struct",
+        "members": [
+          {
+            "name": "version",
+            "type": "core::integer::u8",
+            "kind": "key"
+          },
+          {
+            "name": "game_id",
+            "type": "core::integer::u32",
+            "kind": "key"
+          },
+          {
+            "name": "attacker_id",
+            "type": "core::integer::u32",
+            "kind": "key"
+          },
+          {
+            "name": "defender_id",
+            "type": "core::integer::u32",
+            "kind": "key"
+          },
+          {
+            "name": "attacker_owner",
+            "type": "core::integer::u32",
+            "kind": "key"
+          },
+          {
+            "name": "defender_owner",
+            "type": "core::integer::u32",
+            "kind": "key"
+          },
+          {
+            "name": "winner_id",
+            "type": "core::integer::u32",
+            "kind": "data"
+          },
+          {
+            "name": "coord",
+            "type": "world_native::troops::Coord",
+            "kind": "data"
+          },
+          {
+            "name": "max_reward",
+            "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>",
+            "kind": "data"
+          },
+          {
+            "name": "timestamp",
+            "type": "core::integer::u64",
+            "kind": "data"
+          }
+        ]
+      }
+    }
+  ],
   "types": {
+    "core::array::Span::<(core::integer::u8, core::integer::u128)>": {
+      "type": "struct",
+      "name": "core::array::Span::<(core::integer::u8, core::integer::u128)>",
+      "members": [
+        {
+          "name": "snapshot",
+          "type": "@core::array::Array::<(core::integer::u8, core::integer::u128)>"
+        }
+      ]
+    },
     "core::array::Span::<core::felt252>": {
       "type": "struct",
       "name": "core::array::Span::<core::felt252>",
@@ -1460,6 +3464,16 @@
         }
       ]
     },
+    "core::array::Span::<core::integer::u32>": {
+      "type": "struct",
+      "name": "core::array::Span::<core::integer::u32>",
+      "members": [
+        {
+          "name": "snapshot",
+          "type": "@core::array::Array::<core::integer::u32>"
+        }
+      ]
+    },
     "core::array::Span::<core::integer::u8>": {
       "type": "struct",
       "name": "core::array::Span::<core::integer::u8>",
@@ -1467,6 +3481,16 @@
         {
           "name": "snapshot",
           "type": "@core::array::Array::<core::integer::u8>"
+        }
+      ]
+    },
+    "core::array::Span::<world_native::structures::ResourceRule>": {
+      "type": "struct",
+      "name": "core::array::Span::<world_native::structures::ResourceRule>",
+      "members": [
+        {
+          "name": "snapshot",
+          "type": "@core::array::Array::<world_native::structures::ResourceRule>"
         }
       ]
     },
@@ -1498,6 +3522,20 @@
         }
       ]
     },
+    "core::option::Option::<world_native::buildings::Building>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::buildings::Building>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::buildings::Building"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
     "core::option::Option::<world_native::map::TileOpt>": {
       "type": "enum",
       "name": "core::option::Option::<world_native::map::TileOpt>",
@@ -1505,6 +3543,34 @@
         {
           "name": "Some",
           "type": "world_native::map::TileOpt"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
+    "core::option::Option::<world_native::structures::Hyperstructure>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::structures::Hyperstructure>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::structures::Hyperstructure"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
+    "core::option::Option::<world_native::structures::Structure>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::structures::Structure>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::structures::Structure"
         },
         {
           "name": "None",
@@ -1654,6 +3720,102 @@
         }
       ]
     },
+    "world_native::buildings::Building": {
+      "type": "struct",
+      "name": "world_native::buildings::Building",
+      "members": [
+        {
+          "name": "category",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "bonus_percent",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "entity_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "outer_entity_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "paused",
+          "type": "core::bool"
+        }
+      ]
+    },
+    "world_native::buildings::BuildingKey": {
+      "type": "struct",
+      "name": "world_native::buildings::BuildingKey",
+      "members": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "alt",
+          "type": "core::bool"
+        },
+        {
+          "name": "outer_col",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "outer_row",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "inner_col",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "inner_row",
+          "type": "core::integer::u32"
+        }
+      ]
+    },
+    "world_native::buildings::Population": {
+      "type": "struct",
+      "name": "world_native::buildings::Population",
+      "members": [
+        {
+          "name": "current",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "max",
+          "type": "core::integer::u32"
+        }
+      ]
+    },
+    "world_native::buildings::StructureBuildings": {
+      "type": "struct",
+      "name": "world_native::buildings::StructureBuildings",
+      "members": [
+        {
+          "name": "packed_counts_1",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "packed_counts_2",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "packed_counts_3",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "population",
+          "type": "world_native::buildings::Population"
+        },
+        {
+          "name": "coord",
+          "type": "world_native::troops::Coord"
+        }
+      ]
+    },
     "world_native::commands::Battle": {
       "type": "struct",
       "name": "world_native::commands::Battle",
@@ -1724,6 +3886,20 @@
         }
       ]
     },
+    "world_native::commands::ExecutionContext": {
+      "type": "struct",
+      "name": "world_native::commands::ExecutionContext",
+      "members": [
+        {
+          "name": "raw_root",
+          "type": "core::integer::u256"
+        },
+        {
+          "name": "timestamp",
+          "type": "core::integer::u64"
+        }
+      ]
+    },
     "world_native::commands::Explore": {
       "type": "struct",
       "name": "world_native::commands::Explore",
@@ -1763,6 +3939,28 @@
         {
           "name": "spire_direction",
           "type": "core::integer::u8"
+        }
+      ]
+    },
+    "world_native::discovery::Discovery": {
+      "type": "enum",
+      "name": "world_native::discovery::Discovery",
+      "variants": [
+        {
+          "name": "None",
+          "type": "()"
+        },
+        {
+          "name": "Mine",
+          "type": "()"
+        },
+        {
+          "name": "Hyperstructure",
+          "type": "()"
+        },
+        {
+          "name": "BitcoinMine",
+          "type": "()"
         }
       ]
     },
@@ -1949,6 +4147,458 @@
         {
           "name": "root",
           "type": "core::integer::u256"
+        }
+      ]
+    },
+    "world_native::resources::Production": {
+      "type": "struct",
+      "name": "world_native::resources::Production",
+      "members": [
+        {
+          "name": "building_count",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "production_rate",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "output_amount_left",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "last_updated_at",
+          "type": "core::integer::u32"
+        }
+      ]
+    },
+    "world_native::resources::Resource": {
+      "type": "struct",
+      "name": "world_native::resources::Resource",
+      "members": [
+        {
+          "name": "STONE_BALANCE",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "COAL_BALANCE",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "WOOD_BALANCE",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "COPPER_BALANCE",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "IRONWOOD_BALANCE",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "OBSIDIAN_BALANCE",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "GOLD_BALANCE",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "SILVER_BALANCE",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "MITHRAL_BALANCE",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "ALCHEMICAL_SILVER_BALANCE",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "COLD_IRON_BALANCE",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "DEEP_CRYSTAL_BALANCE",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "RUBY_BALANCE",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "DIAMONDS_BALANCE",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "HARTWOOD_BALANCE",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "IGNIUM_BALANCE",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "TWILIGHT_QUARTZ_BALANCE",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "TRUE_ICE_BALANCE",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "ADAMANTINE_BALANCE",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "SAPPHIRE_BALANCE",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "ETHEREAL_SILICA_BALANCE",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "DRAGONHIDE_BALANCE",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "LABOR_BALANCE",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "EARTHEN_SHARD_BALANCE",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "DONKEY_BALANCE",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "KNIGHT_T1_BALANCE",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "KNIGHT_T2_BALANCE",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "KNIGHT_T3_BALANCE",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "CROSSBOWMAN_T1_BALANCE",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "CROSSBOWMAN_T2_BALANCE",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "CROSSBOWMAN_T3_BALANCE",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "PALADIN_T1_BALANCE",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "PALADIN_T2_BALANCE",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "PALADIN_T3_BALANCE",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "WHEAT_BALANCE",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "FISH_BALANCE",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "LORDS_BALANCE",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "ESSENCE_BALANCE",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "RELIC_E1_BALANCE",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "RELIC_E2_BALANCE",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "RELIC_E3_BALANCE",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "RELIC_E4_BALANCE",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "RELIC_E5_BALANCE",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "RELIC_E6_BALANCE",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "RELIC_E7_BALANCE",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "RELIC_E8_BALANCE",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "RELIC_E9_BALANCE",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "RELIC_E10_BALANCE",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "RELIC_E11_BALANCE",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "RELIC_E12_BALANCE",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "RELIC_E13_BALANCE",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "RELIC_E14_BALANCE",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "RELIC_E15_BALANCE",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "RELIC_E16_BALANCE",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "RELIC_E17_BALANCE",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "RELIC_E18_BALANCE",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "RESEARCH_BALANCE",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "SATOSHI_BALANCE",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "weight",
+          "type": "world_native::resources::Weight"
+        },
+        {
+          "name": "STONE_PRODUCTION",
+          "type": "world_native::resources::Production"
+        },
+        {
+          "name": "COAL_PRODUCTION",
+          "type": "world_native::resources::Production"
+        },
+        {
+          "name": "WOOD_PRODUCTION",
+          "type": "world_native::resources::Production"
+        },
+        {
+          "name": "COPPER_PRODUCTION",
+          "type": "world_native::resources::Production"
+        },
+        {
+          "name": "IRONWOOD_PRODUCTION",
+          "type": "world_native::resources::Production"
+        },
+        {
+          "name": "OBSIDIAN_PRODUCTION",
+          "type": "world_native::resources::Production"
+        },
+        {
+          "name": "GOLD_PRODUCTION",
+          "type": "world_native::resources::Production"
+        },
+        {
+          "name": "SILVER_PRODUCTION",
+          "type": "world_native::resources::Production"
+        },
+        {
+          "name": "MITHRAL_PRODUCTION",
+          "type": "world_native::resources::Production"
+        },
+        {
+          "name": "ALCHEMICAL_SILVER_PRODUCTION",
+          "type": "world_native::resources::Production"
+        },
+        {
+          "name": "COLD_IRON_PRODUCTION",
+          "type": "world_native::resources::Production"
+        },
+        {
+          "name": "DEEP_CRYSTAL_PRODUCTION",
+          "type": "world_native::resources::Production"
+        },
+        {
+          "name": "RUBY_PRODUCTION",
+          "type": "world_native::resources::Production"
+        },
+        {
+          "name": "DIAMONDS_PRODUCTION",
+          "type": "world_native::resources::Production"
+        },
+        {
+          "name": "HARTWOOD_PRODUCTION",
+          "type": "world_native::resources::Production"
+        },
+        {
+          "name": "IGNIUM_PRODUCTION",
+          "type": "world_native::resources::Production"
+        },
+        {
+          "name": "TWILIGHT_QUARTZ_PRODUCTION",
+          "type": "world_native::resources::Production"
+        },
+        {
+          "name": "TRUE_ICE_PRODUCTION",
+          "type": "world_native::resources::Production"
+        },
+        {
+          "name": "ADAMANTINE_PRODUCTION",
+          "type": "world_native::resources::Production"
+        },
+        {
+          "name": "SAPPHIRE_PRODUCTION",
+          "type": "world_native::resources::Production"
+        },
+        {
+          "name": "ETHEREAL_SILICA_PRODUCTION",
+          "type": "world_native::resources::Production"
+        },
+        {
+          "name": "DRAGONHIDE_PRODUCTION",
+          "type": "world_native::resources::Production"
+        },
+        {
+          "name": "LABOR_PRODUCTION",
+          "type": "world_native::resources::Production"
+        },
+        {
+          "name": "EARTHEN_SHARD_PRODUCTION",
+          "type": "world_native::resources::Production"
+        },
+        {
+          "name": "DONKEY_PRODUCTION",
+          "type": "world_native::resources::Production"
+        },
+        {
+          "name": "KNIGHT_T1_PRODUCTION",
+          "type": "world_native::resources::Production"
+        },
+        {
+          "name": "KNIGHT_T2_PRODUCTION",
+          "type": "world_native::resources::Production"
+        },
+        {
+          "name": "KNIGHT_T3_PRODUCTION",
+          "type": "world_native::resources::Production"
+        },
+        {
+          "name": "CROSSBOWMAN_T1_PRODUCTION",
+          "type": "world_native::resources::Production"
+        },
+        {
+          "name": "CROSSBOWMAN_T2_PRODUCTION",
+          "type": "world_native::resources::Production"
+        },
+        {
+          "name": "CROSSBOWMAN_T3_PRODUCTION",
+          "type": "world_native::resources::Production"
+        },
+        {
+          "name": "PALADIN_T1_PRODUCTION",
+          "type": "world_native::resources::Production"
+        },
+        {
+          "name": "PALADIN_T2_PRODUCTION",
+          "type": "world_native::resources::Production"
+        },
+        {
+          "name": "PALADIN_T3_PRODUCTION",
+          "type": "world_native::resources::Production"
+        },
+        {
+          "name": "WHEAT_PRODUCTION",
+          "type": "world_native::resources::Production"
+        },
+        {
+          "name": "FISH_PRODUCTION",
+          "type": "world_native::resources::Production"
+        },
+        {
+          "name": "LORDS_PRODUCTION",
+          "type": "world_native::resources::Production"
+        },
+        {
+          "name": "ESSENCE_PRODUCTION",
+          "type": "world_native::resources::Production"
+        },
+        {
+          "name": "RESEARCH_PRODUCTION",
+          "type": "world_native::resources::Production"
+        },
+        {
+          "name": "SATOSHI_PRODUCTION",
+          "type": "world_native::resources::Production"
+        }
+      ]
+    },
+    "world_native::resources::ResourceKey": {
+      "type": "struct",
+      "name": "world_native::resources::ResourceKey",
+      "members": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "entity_id",
+          "type": "core::integer::u32"
+        }
+      ]
+    },
+    "world_native::resources::Weight": {
+      "type": "struct",
+      "name": "world_native::resources::Weight",
+      "members": [
+        {
+          "name": "capacity",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "weight",
+          "type": "core::integer::u128"
         }
       ]
     },
@@ -2468,6 +5118,228 @@
         }
       ]
     },
+    "world_native::structures::ConstructionAccess": {
+      "type": "enum",
+      "name": "world_native::structures::ConstructionAccess",
+      "variants": [
+        {
+          "name": "Public",
+          "type": "()"
+        },
+        {
+          "name": "Private",
+          "type": "()"
+        },
+        {
+          "name": "GuildOnly",
+          "type": "()"
+        }
+      ]
+    },
+    "world_native::structures::GuardTroops": {
+      "type": "struct",
+      "name": "world_native::structures::GuardTroops",
+      "members": [
+        {
+          "name": "delta",
+          "type": "world_native::troops::Troops"
+        },
+        {
+          "name": "charlie",
+          "type": "world_native::troops::Troops"
+        },
+        {
+          "name": "bravo",
+          "type": "world_native::troops::Troops"
+        },
+        {
+          "name": "alpha",
+          "type": "world_native::troops::Troops"
+        },
+        {
+          "name": "delta_destroyed_tick",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "charlie_destroyed_tick",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "bravo_destroyed_tick",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "alpha_destroyed_tick",
+          "type": "core::integer::u32"
+        }
+      ]
+    },
+    "world_native::structures::Hyperstructure": {
+      "type": "struct",
+      "name": "world_native::structures::Hyperstructure",
+      "members": [
+        {
+          "name": "initialized",
+          "type": "core::bool"
+        },
+        {
+          "name": "completed",
+          "type": "core::bool"
+        },
+        {
+          "name": "access",
+          "type": "world_native::structures::ConstructionAccess"
+        },
+        {
+          "name": "randomness",
+          "type": "core::felt252"
+        },
+        {
+          "name": "points_multiplier",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
+    "world_native::structures::ResourceRule": {
+      "type": "struct",
+      "name": "world_native::structures::ResourceRule",
+      "members": [
+        {
+          "name": "resource_type",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "unit_weight",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "realm_rate",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "village_rate",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "labor_output_per_resource",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "building_population_cost",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "building_capacity_grant",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
+    "world_native::structures::Structure": {
+      "type": "struct",
+      "name": "world_native::structures::Structure",
+      "members": [
+        {
+          "name": "owner",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "base",
+          "type": "world_native::structures::StructureBase"
+        },
+        {
+          "name": "troop_guards",
+          "type": "world_native::structures::GuardTroops"
+        },
+        {
+          "name": "troop_explorers",
+          "type": "core::array::Span::<core::integer::u32>"
+        },
+        {
+          "name": "resources_packed",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "metadata",
+          "type": "world_native::structures::StructureMetadata"
+        },
+        {
+          "name": "category",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
+    "world_native::structures::StructureBase": {
+      "type": "struct",
+      "name": "world_native::structures::StructureBase",
+      "members": [
+        {
+          "name": "troop_guard_count",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "troop_explorer_count",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "troop_max_guard_count",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "troop_max_explorer_count",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "created_at",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "category",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "coord_x",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "coord_y",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "level",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "starting_troops_granted",
+          "type": "core::bool"
+        }
+      ]
+    },
+    "world_native::structures::StructureMetadata": {
+      "type": "struct",
+      "name": "world_native::structures::StructureMetadata",
+      "members": [
+        {
+          "name": "realm_id",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "order",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "has_wonder",
+          "type": "core::bool"
+        },
+        {
+          "name": "villages_count",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "village_realm",
+          "type": "core::integer::u32"
+        }
+      ]
+    },
     "world_native::troops::Coord": {
       "type": "struct",
       "name": "world_native::troops::Coord",
@@ -2637,5 +5509,5 @@
       ]
     }
   },
-  "identity": "57cafe85b1dbf94f6b7315bececcb04c88dc03a2f8fe606bd8155f6577f8db2d"
+  "identity": "1a1ddbd619e34cbc5218fc13b794a8f7835dbcb03740a491bad5c31d276f7bdb"
 }

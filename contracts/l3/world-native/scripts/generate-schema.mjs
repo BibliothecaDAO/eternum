@@ -9,7 +9,7 @@ const root = new URL("../", import.meta.url);
 const { CallData } = await import(
   Bun.resolveSync("starknet", fileURLToPath(new URL("../../../../apps/herald/src/", import.meta.url)))
 );
-const contracts = { season: "SeasonDomain", map: "MapDomain", troops: "TroopsDomain" };
+const contracts = { season: "SeasonDomain", map: "MapDomain", troops: "TroopsDomain", structures: "StructuresDomain" };
 const artifacts = Object.fromEntries(
   await Promise.all(
     Object.entries(contracts).map(async ([domain, name]) => {
@@ -44,12 +44,12 @@ function method(domain, name) {
 
 function feltLength(type) {
   if (type === "()") return 0;
-  if (type === "core::integer::u256") return 2;
+  if (/^core::array::(Span|Array)::</.test(type)) return null;
   const item = types.get(type);
-  if (item?.type === "struct") return item.members.reduce((length, member) => length + feltLength(member.type), 0);
+  if (item?.type === "struct") return sumLengths(item.members.map((member) => feltLength(member.type)));
   if (item?.type === "enum") {
     const lengths = item.variants.map((variant) => feltLength(variant.type));
-    if (new Set(lengths).size !== 1) throw new Error(`Variable row enum ${type}`);
+    if (lengths.includes(null) || new Set(lengths).size !== 1) return null;
     return 1 + lengths[0];
   }
   if (
@@ -60,6 +60,10 @@ function feltLength(type) {
     return 1;
   }
   throw new Error(`Unsupported row type ${type}`);
+}
+
+function sumLengths(lengths) {
+  return lengths.includes(null) ? null : lengths.reduce((sum, length) => sum + length, 0);
 }
 
 function model(name, owners, scope, keys, members, emitterKey) {
@@ -76,7 +80,7 @@ function model(name, owners, scope, keys, members, emitterKey) {
       feltLength: feltLength(member.type),
     })),
     keyLength: keys.reduce((length, key) => length + feltLength(key.type), 0),
-    valueLength: members.reduce((length, member) => length + feltLength(member.type), 0),
+    valueLength: sumLengths(members.map((member) => feltLength(member.type))),
   };
 }
 
@@ -84,6 +88,47 @@ const domainKey = [{ name: "address", type: struct("lifecycle::Peers")[0].type }
 const models = [
   model("TileOpt", ["map"], "game", struct("map::TileKey"), struct("map::TileOpt")),
   model("ExplorerTroops", ["troops"], "game", struct("troops::ExplorerKey"), struct("troops::ExplorerTroops")),
+  model("Structure", ["structures"], "game", struct("resources::ResourceKey"), struct("structures::Structure")),
+  model("Resource", ["structures"], "game", struct("resources::ResourceKey"), struct("resources::Resource")),
+  model("Building", ["structures"], "game", struct("buildings::BuildingKey"), struct("buildings::Building")),
+  model(
+    "StructureBuildings",
+    ["structures"],
+    "game",
+    struct("resources::ResourceKey"),
+    struct("buildings::StructureBuildings"),
+  ),
+  model(
+    "Hyperstructure",
+    ["structures"],
+    "game",
+    [
+      struct("resources::ResourceKey")[0],
+      { name: "hyperstructure_id", type: struct("resources::ResourceKey")[1].type },
+    ],
+    struct("structures::Hyperstructure"),
+  ),
+  model("HyperstructureGlobals", ["structures"], "game", method("structures", "hyperstructure_count").inputs, [
+    { name: "created_count", type: method("structures", "hyperstructure_count").outputs[0].type },
+    { name: "completed_count", type: method("structures", "hyperstructure_count").outputs[0].type },
+  ]),
+  model("StructureOwnerStats", ["structures"], "game", method("structures", "owner_count").inputs, [
+    { name: "structures_num", type: method("structures", "owner_count").outputs[0].type },
+  ]),
+  model(
+    "ResourceRule",
+    ["structures"],
+    "game",
+    [struct("resources::ResourceKey")[0], struct("structures::ResourceRule")[0]],
+    struct("structures::ResourceRule").slice(1),
+  ),
+  model(
+    "ResourceRulesReady",
+    ["structures"],
+    "game",
+    [struct("resources::ResourceKey")[0]],
+    [{ name: "ready", type: "core::bool" }],
+  ),
   model("GameRegistry", ["season"], "game", method("season", "game").inputs, struct("game::GameRegistry")),
   model("SliceRules", ["season"], "game", method("season", "rules").inputs, struct("rules::SliceRules")),
   model("EntitySequence", ["season"], "game", method("season", "allocate_entity").inputs, [
@@ -136,7 +181,8 @@ function eventLayouts(abi) {
       return;
     }
     const name = event.name.split("::").at(-1);
-    if (!["RowSet", "RowMemberSet", "RowDeleted"].includes(name)) throw new Error(`Unexpected event ${name}`);
+    if (!["RowSet", "RowMemberSet", "RowDeleted", "BattleEvent"].includes(name))
+      throw new Error(`Unexpected event ${name}`);
     layouts.push({ name, prefix, members: event.members });
   }
   visit(rootEvent, []);
@@ -154,27 +200,35 @@ const schema = {
       domain,
       {
         contract,
+        systems:
+          domain === "season"
+            ? ["troop_management_systems", "troop_movement_systems", "troop_battle_systems", "alt_movement_systems"]
+            : [],
         events: eventLayouts(artifacts[domain]),
         entrypoints: artifacts[domain].filter((item) => item.type === "interface").flatMap((item) => item.items),
       },
     ]),
   ),
   models,
+  absentCollections: ["WorldConfig", "BlitzSettlement", "PresetConfig", "HyperstructureShareholders"],
+  projections: [
+    {
+      name: "BattleEvent",
+      owners: ["troops"],
+      scope: "game",
+      version: 1,
+      derivedRows: ["LastBattle"],
+      event: artifacts.troops.find(
+        (item) => item.type === "event" && item.name === "world_native::troops::BattleEvent",
+      ),
+    },
+  ],
   types: Object.fromEntries([...types].sort(([left], [right]) => left.localeCompare(right))),
 };
 schema.identity = createHash("sha256").update(JSON.stringify(schema)).digest("hex");
 await writeJson("schema/schema.json", schema);
 await writeFixtures(schema);
-const preset = JSON.parse(await readFile(new URL("fixtures/preset-1.json", root)));
-const encodedRules = new CallData(artifacts.season).compile("rules_commitment", { rules: preset.rules });
-const rulesPath = new URL("tests/fixtures/preset-1.txt", root);
-const rulesText = encodedRules.map(String).join(" ") + "\n";
-if (process.argv.includes("--check")) {
-  if ((await readFile(rulesPath, "utf8")) !== rulesText) throw new Error("Generated preset rules differ");
-} else {
-  await mkdir(new URL("./", rulesPath), { recursive: true });
-  await writeFile(rulesPath, rulesText);
-}
+await writePresetFixture();
 
 async function writeJson(path, value) {
   const url = new URL(path, root);
@@ -189,10 +243,12 @@ async function writeJson(path, value) {
 
 async function writeFixtures(schema) {
   const emitter = "0x100";
-  const deployment = { season: "0x101", map: "0x102", troops: emitter };
+  const deployment = { season: "0x101", map: "0x102", structures: "0x103", troops: emitter };
   const model = schema.models.find((model) => model.name === "ExplorerTroops");
   function raw(name, values = []) {
-    const layout = schema.domains.troops.events.find((event) => event.name === name);
+    const layout = schema.domains.troops.events.find(
+      (event) => event.name === name && event.prefix[0] === hash.getSelectorFromName("TroopEvent"),
+    );
     const keys = [...layout.prefix, "0x1", model.identity];
     if (name === "RowMemberSet") keys.push(shortString.encodeShortString("troops"));
     const data = [2, 1, 7];
@@ -244,3 +300,70 @@ async function writeFixtures(schema) {
   });
 }
 console.log(`Generated ${schema.models.length} models at ${fileURLToPath(new URL("schema/schema.json", root))}`);
+
+function clientType(type) {
+  if (type === "core::bool") return "Boolean";
+  if (["core::integer::u64", "core::integer::u256"].includes(type)) return "BigInt";
+  if (/^core::integer::u(8|16|32)$/.test(type)) return "Number";
+  if (
+    type === "core::integer::u128" ||
+    type === "core::felt252" ||
+    type.endsWith("::ContractAddress") ||
+    type.endsWith("::ClassHash")
+  )
+    return "BigInt";
+  const span = /^core::array::(?:Span|Array)::<(.+)>$/.exec(type);
+  if (span) return [clientType(span[1])];
+  const definition = types.get(type);
+  if (definition?.type === "struct")
+    return Object.fromEntries(definition.members.map((member) => [member.name, clientType(member.type)]));
+  if (definition?.type === "enum" && definition.variants.every((variant) => variant.type === "()")) return "String";
+  throw new Error(`Unsupported client binding ${type}`);
+}
+await writeJson("schema/bindings.json", {
+  schemaIdentity: schema.identity,
+  commandAbi: artifacts.season,
+  events: schema.projections.map(({ name, scope }) => ({ name, scope })),
+  models: [
+    ...schema.models.map((model) => ({
+      name: model.name,
+      scope: model.scope,
+      schema: Object.fromEntries(
+        [...model.keys, ...model.members].map((member) => [member.name, clientType(member.type)]),
+      ),
+    })),
+    {
+      name: "LastBattle",
+      scope: "game",
+      schema: {
+        game_id: "Number",
+        entity_id: "Number",
+        latest_attacker_id: "OptionalNumber",
+        latest_attack_timestamp: "OptionalNumber",
+        latest_defender_id: "OptionalNumber",
+        latest_defense_timestamp: "OptionalNumber",
+      },
+    },
+  ],
+});
+
+async function writePresetFixture() {
+  const preset = JSON.parse(await readFile(new URL("fixtures/preset-1.json", root), "utf8"));
+  const members = [
+    { name: "rules", type: "world_native::rules::SliceRules" },
+    { name: "resources", type: "core::array::Span::<world_native::structures::ResourceRule>" },
+  ];
+  const codec = new CallData([
+    ...types.values(),
+    { type: "function", name: "fixture", inputs: members, outputs: [], state_mutability: "view" },
+  ]);
+  const values = codec.compile("fixture", { rules: preset.rules, resources: preset.resources });
+  const url = new URL("tests/fixtures/preset-1.txt", root);
+  const text = `${values.join("\n")}\n`;
+  if (process.argv.includes("--check")) {
+    if ((await readFile(url, "utf8")) !== text) throw new Error("Generated preset fixture differs");
+  } else {
+    await mkdir(new URL("./", url), { recursive: true });
+    await writeFile(url, text);
+  }
+}

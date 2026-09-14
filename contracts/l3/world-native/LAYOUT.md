@@ -12,9 +12,6 @@ game-scoped storage key starts with `game_id`. Presets remain immutable per game
 | `TroopState`   | `explorers: Map<(u32,u32),ExplorerTroops>`, `exists: Map<(u32,u32),bool>`                          | Keys are game and explorer id. Destruction clears existence; recreation overwrites the entire record. Preserve every nested struct and enum layout. New fields use separate storage slots.                     |
 | `SeasonDomain` | `lifecycle` substorage, `authentication: Authentication`, `nonces: Map<(u32,ContractAddress),u64>` | Keys are game and gameplay account. An unused nonce is zero. Authentication fields and existing storage slots are never reordered.                                                                             |
 
-`GameState` stores immutable games and rules, game-scoped entity counters, and points keyed by game and player. Its
-stored record fields and map names retain their order; added fields use independent slots.
-
 The `map`, `troops` and `lifecycle` substorage names and `v0` component identifiers are stable. Appending a new field
 inside a stored struct is not automatically compatible: the mapping value layout can overlap another value or change
 nested offsets. This revision appends independent fields only.
@@ -23,6 +20,26 @@ nested offsets. This revision appends independent fields only.
 9–40, biome bits 41–48, row bits 49–80, column bits 81–112, reward-extracted bit 113, layer bit 127. Occupancy updates
 preserve the remaining bits. Troop category and tier serialization retain the existing zero-based variant order; storage
 uses Cairo's native enum encoding. Herald consumes serialization, not storage slots.
+
+The behavioral slice adds these independent component stores:
+
+| Component          | Storage                                                                                                                                         | Layout rule                                                                                                                                                 |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GameState`        | Games and immutable rules keyed by game; entity counters; points keyed by game and player                                                       | `GameRegistry` and `SliceRules` retain their field order. Changes to stored records need separate appended slots and an upgrade test.                       |
+| `StructureState`   | Structure records and existence keyed by game and entity; explorer ids keyed by game, structure and index; owner counts keyed by game and owner | The variable explorer list has a fixed record count and indexed storage. Removal compacts that list and clears its tail.                                    |
+| `ResourceState`    | Balances and production keyed by game, entity and resource; weight and `resource_exists` keyed by game and entity                               | The full `Resource` row is a typed projection of these stores. Destruction clears every balance, production record and weight before emitting `RowDeleted`. |
+| `BuildingState`    | Buildings and existence keyed by game, layer, outer coordinates and inner coordinates; building counts keyed by game and structure              | Preserve the six-part building key and the three packed category counters.                                                                                  |
+| `StructuresDomain` | Hyperstructure counts and seeds; immutable resource rules and their initialization flag                                                         | Configuration is set once for each game. Hyperstructure rows derive from the stored seed and structure category.                                            |
+
+Component storage uses `v0` embedding. Field names must be unique across components embedded in the same domain;
+component names do not isolate colliding field names. Resource existence therefore uses `resource_exists`, distinct from
+structure existence. The populated replacement test remains the compatibility gate for each supported upgrade.
+
+The slice implements the pinned season rules. Development provisioning supplies the initial realms, productive building
+and portal fixtures; it requires domain authority and a development game. It does not expose a general storage writer.
+Resource views return stored balances without harvesting. The authenticated production claim settles resources; spending
+settles the affected resource before deducting it. LORDS production remains a reserved zero record, matching the pinned
+resource store.
 
 ## Wire protocol
 
@@ -41,15 +58,21 @@ in the schema; no decoder searches arbitrary event positions for a known selecto
 - `RowDeleted` data: key length, serialized keys. No value length or trailing data.
 
 Lengths count felts. Serialization follows Cairo `Serde`: integers respect their bit width, `u256` is low then high,
-booleans are 0 or 1, and enums include their zero-based variant index. Version 1 rows have fixed lengths recorded in the
-schema. Reject unknown versions, unknown members, foreign emitters, missing required fields, invalid values and trailing
-data. Operational rows keyed by contract address must name their actual emitter. Zero is a value, never a delete.
-Deletion is explicit; subsequent recreation requires a complete `RowSet`.
+booleans are 0 or 1, and enums include their zero-based variant index. A span starts with its element count, followed by
+serialized elements. The schema records fixed lengths where available and `null` for variable-length values, including a
+structure’s explorer list. Decoders validate the complete type tree against the supplied frame length. Reject unknown
+versions, unknown members, foreign emitters, missing required fields, invalid values and trailing data. Operational rows
+keyed by contract address must name their actual emitter. Zero is a value, never a delete. Deletion is explicit;
+subsequent recreation requires a complete `RowSet`.
 
 The fixtures pair raw events with Herald's existing JSON projection: integers as hex strings, unit enums as names,
 booleans as booleans. They include all three event shapes, a wrong-domain emitter and a truncated row. The Cairo event
 test asserts the same ExplorerTroops key and serialized payloads, including a present explorer with zero troops and its
 delete/recreate sequence.
+
+The typed `BattleEvent` is an ephemeral combat notification. Its ABI declares its version, keyed participant ids,
+coordinate, reward span and timestamp. It preserves the existing combat event payload so Herald can rebuild `LastBattle`
+from confirmed history through its existing projection. It does not replace any storage mutation's row event.
 
 ## Authenticated command boundary
 
@@ -106,7 +129,7 @@ occupancy, executes `replace_class`, checks the new class hash and existing rows
 mutates an old tile without changing the other game. This is storage compatibility evidence, separate from deployment
 inspection.
 
-`late_domain_failure_consumes_ticket_and_rolls_back_gameplay_rows` checks a nested-call rollback while the accepted
+`late_domain_failure_consumes_ticket_and_rolls_back_gameplay_rows` checks a real nested-call rollback while the accepted
 nonce remains consumed. Its event spy includes reverted emissions and cannot establish receipt-level event removal; that
 assertion belongs to the live transaction gate. Identity unit tests use registry/account interface fixtures; live
 deployment must use the existing PlayerRegistry and approved RealmsPlayerAccount class.

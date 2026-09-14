@@ -1,0 +1,2259 @@
+{
+  "schemaIdentity": "1a1ddbd619e34cbc5218fc13b794a8f7835dbcb03740a491bad5c31d276f7bdb",
+  "commandAbi": [
+    {
+      "type": "impl",
+      "name": "Season",
+      "interface_name": "world_native::season::ISeason"
+    },
+    {
+      "type": "struct",
+      "name": "world_native::commands::CreateExplorer",
+      "members": [
+        {
+          "name": "structure_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "category",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "tier",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "amount",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "direction",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::commands::Explore",
+      "members": [
+        {
+          "name": "explorer_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "direction",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::commands::Battle",
+      "members": [
+        {
+          "name": "attacker_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "defender_id",
+          "type": "core::integer::u32"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "core::array::Span::<core::integer::u8>",
+      "members": [
+        {
+          "name": "snapshot",
+          "type": "@core::array::Array::<core::integer::u8>"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::commands::Move",
+      "members": [
+        {
+          "name": "explorer_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "directions",
+          "type": "core::array::Span::<core::integer::u8>"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::commands::ToggleAlternate",
+      "members": [
+        {
+          "name": "explorer_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "spire_direction",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
+    {
+      "type": "enum",
+      "name": "world_native::commands::Command",
+      "variants": [
+        {
+          "name": "CreateExplorer",
+          "type": "world_native::commands::CreateExplorer"
+        },
+        {
+          "name": "Explore",
+          "type": "world_native::commands::Explore"
+        },
+        {
+          "name": "ClaimProduction",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "Battle",
+          "type": "world_native::commands::Battle"
+        },
+        {
+          "name": "Move",
+          "type": "world_native::commands::Move"
+        },
+        {
+          "name": "ToggleAlternate",
+          "type": "world_native::commands::ToggleAlternate"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::rules::BattleConfig",
+      "members": [
+        {
+          "name": "regular_immunity_ticks",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "village_immunity_ticks",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "village_raid_immunity_ticks",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::rules::MapConfig",
+      "members": [
+        {
+          "name": "reward_resource_amount",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "shards_mines_win_probability",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "shards_mines_fail_probability",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "agent_discovery_prob",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "agent_discovery_fail_prob",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "camp_win_probability",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "camp_fail_probability",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "holysite_win_probability",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "holysite_fail_probability",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "bitcoin_mine_win_probability",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "bitcoin_mine_fail_probability",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "hyps_win_prob",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "hyps_fail_prob",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "hyps_fail_prob_increase_p_hex",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "hyps_fail_prob_increase_p_fnd",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "relic_discovery_interval_sec",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "relic_hex_dist_from_center",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "relic_chest_relics_per_chest",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::rules::BiomeClimateConfig",
+      "members": [
+        {
+          "name": "elevation_scale_bps",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "moisture_scale_bps",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "elevation_bias_bps",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "moisture_bias_bps",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "elevation_seed",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "moisture_seed",
+          "type": "core::integer::u32"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::rules::TickConfig",
+      "members": [
+        {
+          "name": "armies_tick_in_seconds",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "delivery_tick_in_seconds",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "bitcoin_phase_in_seconds",
+          "type": "core::integer::u64"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::rules::TroopDamageConfig",
+      "members": [
+        {
+          "name": "damage_raid_percent_num",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "damage_biome_bonus_num",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "damage_beta_small",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "damage_beta_large",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "damage_scaling_factor",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "damage_c0",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "damage_delta",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "t1_damage_value",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "t2_damage_multiplier",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "t3_damage_multiplier",
+          "type": "core::integer::u128"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::rules::TroopStaminaConfig",
+      "members": [
+        {
+          "name": "stamina_gain_per_tick",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "stamina_initial",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "stamina_bonus_value",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "stamina_knight_max",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "stamina_paladin_max",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "stamina_crossbowman_max",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "stamina_attack_req",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "stamina_defense_req",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "stamina_explore_stamina_cost",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "stamina_travel_stamina_cost",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "stamina_explore_wheat_cost",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "stamina_explore_fish_cost",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "stamina_travel_wheat_cost",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "stamina_travel_fish_cost",
+          "type": "core::integer::u32"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::rules::TroopLimitConfig",
+      "members": [
+        {
+          "name": "guard_resurrection_delay",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "mercenaries_troop_lower_bound",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "mercenaries_troop_upper_bound",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "agents_troop_lower_bound",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "agents_troop_upper_bound",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "settlement_deployment_cap",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "city_deployment_cap",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "kingdom_deployment_cap",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "empire_deployment_cap",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "t1_tier_strength",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "t2_tier_strength",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "t3_tier_strength",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "t1_tier_modifier",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "t2_tier_modifier",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "t3_tier_modifier",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::rules::CapacityConfig",
+      "members": [
+        {
+          "name": "structure_capacity",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "troop_capacity",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "donkey_capacity",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "storehouse_boost_capacity",
+          "type": "core::integer::u32"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::rules::StructureCapacityConfig",
+      "members": [
+        {
+          "name": "realm_capacity",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "village_capacity",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "hyperstructure_capacity",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "fragment_mine_capacity",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "bank_structure_capacity",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "holysite_capacity",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "camp_capacity",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "bitcoin_mine_capacity",
+          "type": "core::integer::u64"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::rules::BuildingConfig",
+      "members": [
+        {
+          "name": "base_population",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "base_cost_percent_increase",
+          "type": "core::integer::u16"
+        }
+      ]
+    },
+    {
+      "type": "enum",
+      "name": "core::bool",
+      "variants": [
+        {
+          "name": "False",
+          "type": "()"
+        },
+        {
+          "name": "True",
+          "type": "()"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::rules::BitcoinMineConfig",
+      "members": [
+        {
+          "name": "enabled",
+          "type": "core::bool"
+        },
+        {
+          "name": "prize_per_phase",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "min_labor_per_contribution",
+          "type": "core::integer::u128"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::rules::VictoryPointsGrantConfig",
+      "members": [
+        {
+          "name": "hyp_points_per_second",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "claim_hyperstructure_points",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "claim_otherstructure_points",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "explore_tiles_points",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "relic_open_points",
+          "type": "core::integer::u32"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::rules::SliceRules",
+      "members": [
+        {
+          "name": "battle_config",
+          "type": "world_native::rules::BattleConfig"
+        },
+        {
+          "name": "map_config",
+          "type": "world_native::rules::MapConfig"
+        },
+        {
+          "name": "biome_climate_config",
+          "type": "world_native::rules::BiomeClimateConfig"
+        },
+        {
+          "name": "tick_config",
+          "type": "world_native::rules::TickConfig"
+        },
+        {
+          "name": "troop_damage_config",
+          "type": "world_native::rules::TroopDamageConfig"
+        },
+        {
+          "name": "troop_stamina_config",
+          "type": "world_native::rules::TroopStaminaConfig"
+        },
+        {
+          "name": "troop_limit_config",
+          "type": "world_native::rules::TroopLimitConfig"
+        },
+        {
+          "name": "capacity_config",
+          "type": "world_native::rules::CapacityConfig"
+        },
+        {
+          "name": "structure_capacity_config",
+          "type": "world_native::rules::StructureCapacityConfig"
+        },
+        {
+          "name": "building_config",
+          "type": "world_native::rules::BuildingConfig"
+        },
+        {
+          "name": "bitcoin_mine_config",
+          "type": "world_native::rules::BitcoinMineConfig"
+        },
+        {
+          "name": "victory_points_grant_config",
+          "type": "world_native::rules::VictoryPointsGrantConfig"
+        },
+        {
+          "name": "map_center_offset",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "spire_travel_essence_cost",
+          "type": "core::integer::u128"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::season::Authentication",
+      "members": [
+        {
+          "name": "submitter",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "registry",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "account_class",
+          "type": "core::starknet::class_hash::ClassHash"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "core::integer::u256",
+      "members": [
+        {
+          "name": "low",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "high",
+          "type": "core::integer::u128"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::recording::ExecutionHead",
+      "members": [
+        {
+          "name": "order",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "binding",
+          "type": "core::felt252"
+        },
+        {
+          "name": "state",
+          "type": "core::felt252"
+        },
+        {
+          "name": "timestamp",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "root",
+          "type": "core::integer::u256"
+        }
+      ]
+    },
+    {
+      "type": "interface",
+      "name": "world_native::season::ISeason",
+      "items": [
+        {
+          "type": "function",
+          "name": "set_authentication",
+          "inputs": [
+            {
+              "name": "submitter",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "registry",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "approved_account_class",
+              "type": "core::starknet::class_hash::ClassHash"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "command_commitment",
+          "inputs": [
+            {
+              "name": "command",
+              "type": "world_native::commands::Command"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::felt252"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "rules_commitment",
+          "inputs": [
+            {
+              "name": "rules",
+              "type": "world_native::rules::SliceRules"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::felt252"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "authentication",
+          "inputs": [],
+          "outputs": [
+            {
+              "type": "world_native::season::Authentication"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "next_nonce",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::integer::u64"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "execution_head",
+          "inputs": [],
+          "outputs": [
+            {
+              "type": "world_native::recording::ExecutionHead"
+            }
+          ],
+          "state_mutability": "view"
+        }
+      ]
+    },
+    {
+      "type": "impl",
+      "name": "Execute",
+      "interface_name": "eternum_randomness_protocol::entrypoint::IRecordedExecution"
+    },
+    {
+      "type": "struct",
+      "name": "eternum_randomness_protocol::Intent",
+      "members": [
+        {
+          "name": "chain",
+          "type": "core::felt252"
+        },
+        {
+          "name": "deployment",
+          "type": "core::felt252"
+        },
+        {
+          "name": "game_id",
+          "type": "core::felt252"
+        },
+        {
+          "name": "actor",
+          "type": "core::felt252"
+        },
+        {
+          "name": "nonce",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "command",
+          "type": "core::felt252"
+        },
+        {
+          "name": "rules",
+          "type": "core::felt252"
+        },
+        {
+          "name": "valid_from",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "valid_until",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "last_order",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "arguments",
+          "type": "core::array::Array::<core::felt252>"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "eternum_randomness_protocol::entrypoint::ExecutionContext",
+      "members": [
+        {
+          "name": "envelope",
+          "type": "core::array::Array::<core::felt252>"
+        },
+        {
+          "name": "authority_epoch",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "accepted_public_key",
+          "type": "core::felt252"
+        }
+      ]
+    },
+    {
+      "type": "interface",
+      "name": "eternum_randomness_protocol::entrypoint::IRecordedExecution",
+      "items": [
+        {
+          "type": "function",
+          "name": "execute",
+          "inputs": [
+            {
+              "name": "intent",
+              "type": "eternum_randomness_protocol::Intent"
+            },
+            {
+              "name": "context",
+              "type": "eternum_randomness_protocol::entrypoint::ExecutionContext"
+            },
+            {
+              "name": "r",
+              "type": "core::felt252"
+            },
+            {
+              "name": "s",
+              "type": "core::felt252"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        }
+      ]
+    },
+    {
+      "type": "impl",
+      "name": "AdmissionViews",
+      "interface_name": "eternum_randomness_protocol::entrypoint::IRecordedExecutionViews"
+    },
+    {
+      "type": "struct",
+      "name": "eternum_randomness_protocol::entrypoint::Admission",
+      "members": [
+        {
+          "name": "public_key",
+          "type": "core::felt252"
+        },
+        {
+          "name": "rules",
+          "type": "core::felt252"
+        },
+        {
+          "name": "execution_config",
+          "type": "core::felt252"
+        },
+        {
+          "name": "nonce",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "order",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "predecessor",
+          "type": "core::felt252"
+        },
+        {
+          "name": "preceding_state",
+          "type": "core::felt252"
+        },
+        {
+          "name": "timestamp",
+          "type": "core::integer::u64"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "eternum_randomness_protocol::entrypoint::ExecutionResult",
+      "members": [
+        {
+          "name": "status",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "binding",
+          "type": "core::felt252"
+        },
+        {
+          "name": "result",
+          "type": "core::felt252"
+        },
+        {
+          "name": "state",
+          "type": "core::felt252"
+        }
+      ]
+    },
+    {
+      "type": "interface",
+      "name": "eternum_randomness_protocol::entrypoint::IRecordedExecutionViews",
+      "items": [
+        {
+          "type": "function",
+          "name": "get_admission",
+          "inputs": [
+            {
+              "name": "game",
+              "type": "core::felt252"
+            },
+            {
+              "name": "actor",
+              "type": "core::felt252"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "eternum_randomness_protocol::entrypoint::Admission"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "get_result",
+          "inputs": [
+            {
+              "name": "order",
+              "type": "core::integer::u64"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "eternum_randomness_protocol::entrypoint::ExecutionResult"
+            }
+          ],
+          "state_mutability": "view"
+        }
+      ]
+    },
+    {
+      "type": "impl",
+      "name": "Games",
+      "interface_name": "world_native::game::IGame"
+    },
+    {
+      "type": "enum",
+      "name": "world_native::game::GameStatus",
+      "variants": [
+        {
+          "name": "Created",
+          "type": "()"
+        },
+        {
+          "name": "Registration",
+          "type": "()"
+        },
+        {
+          "name": "Live",
+          "type": "()"
+        },
+        {
+          "name": "Ended",
+          "type": "()"
+        },
+        {
+          "name": "Settled",
+          "type": "()"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::game::GameRegistry",
+      "members": [
+        {
+          "name": "name",
+          "type": "core::felt252"
+        },
+        {
+          "name": "series_id",
+          "type": "core::felt252"
+        },
+        {
+          "name": "game_number_in_series",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "preset_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "creator",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "status",
+          "type": "world_native::game::GameStatus"
+        },
+        {
+          "name": "dev_mode_on",
+          "type": "core::bool"
+        },
+        {
+          "name": "start_settling_at",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "start_main_at",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "end_at",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "end_grace_seconds",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "registration_grace_seconds",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "final_trial_id",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "seed",
+          "type": "core::felt252"
+        }
+      ]
+    },
+    {
+      "type": "interface",
+      "name": "world_native::game::IGame",
+      "items": [
+        {
+          "type": "function",
+          "name": "game",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "world_native::game::GameRegistry"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "rules",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "world_native::rules::SliceRules"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "create_game",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "game",
+              "type": "world_native::game::GameRegistry"
+            },
+            {
+              "name": "rules",
+              "type": "world_native::rules::SliceRules"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "allocate_entity",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::integer::u32"
+            }
+          ],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "register_exploration",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "player_points",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::integer::u128"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "season_points",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::integer::u128"
+            }
+          ],
+          "state_mutability": "view"
+        }
+      ]
+    },
+    {
+      "type": "impl",
+      "name": "Domain",
+      "interface_name": "world_native::lifecycle::IDomain"
+    },
+    {
+      "type": "struct",
+      "name": "world_native::lifecycle::Peers",
+      "members": [
+        {
+          "name": "season",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "map",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "structures",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "troops",
+          "type": "core::starknet::contract_address::ContractAddress"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::lifecycle::DomainState",
+      "members": [
+        {
+          "name": "authority",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "peers",
+          "type": "world_native::lifecycle::Peers"
+        },
+        {
+          "name": "active",
+          "type": "core::bool"
+        }
+      ]
+    },
+    {
+      "type": "interface",
+      "name": "world_native::lifecycle::IDomain",
+      "items": [
+        {
+          "type": "function",
+          "name": "domain_state",
+          "inputs": [],
+          "outputs": [
+            {
+              "type": "world_native::lifecycle::DomainState"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "configure",
+          "inputs": [
+            {
+              "name": "peers",
+              "type": "world_native::lifecycle::Peers"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "activate",
+          "inputs": [],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "upgrade",
+          "inputs": [
+            {
+              "name": "class_hash",
+              "type": "core::starknet::class_hash::ClassHash"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        }
+      ]
+    },
+    {
+      "type": "constructor",
+      "name": "constructor",
+      "inputs": [
+        {
+          "name": "authority",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "authentication",
+          "type": "world_native::season::Authentication"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "core::array::Span::<core::felt252>",
+      "members": [
+        {
+          "name": "snapshot",
+          "type": "@core::array::Array::<core::felt252>"
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "name": "world_native::events::RowSet",
+      "kind": "struct",
+      "members": [
+        {
+          "name": "version",
+          "type": "core::integer::u8",
+          "kind": "key"
+        },
+        {
+          "name": "model",
+          "type": "core::felt252",
+          "kind": "key"
+        },
+        {
+          "name": "keys",
+          "type": "core::array::Span::<core::felt252>",
+          "kind": "data"
+        },
+        {
+          "name": "values",
+          "type": "core::array::Span::<core::felt252>",
+          "kind": "data"
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "name": "world_native::lifecycle::Lifecycle::Event",
+      "kind": "enum",
+      "variants": [
+        {
+          "name": "RowSet",
+          "type": "world_native::events::RowSet",
+          "kind": "nested"
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "name": "world_native::game::GameState::Event",
+      "kind": "enum",
+      "variants": [
+        {
+          "name": "RowSet",
+          "type": "world_native::events::RowSet",
+          "kind": "nested"
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "name": "world_native::recording::RecordedState::Event",
+      "kind": "enum",
+      "variants": [
+        {
+          "name": "RowSet",
+          "type": "world_native::events::RowSet",
+          "kind": "nested"
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "name": "world_native::season::SeasonDomain::Event",
+      "kind": "enum",
+      "variants": [
+        {
+          "name": "LifecycleEvent",
+          "type": "world_native::lifecycle::Lifecycle::Event",
+          "kind": "nested"
+        },
+        {
+          "name": "RowSet",
+          "type": "world_native::events::RowSet",
+          "kind": "nested"
+        },
+        {
+          "name": "GameEvent",
+          "type": "world_native::game::GameState::Event",
+          "kind": "nested"
+        },
+        {
+          "name": "RecordingEvent",
+          "type": "world_native::recording::RecordedState::Event",
+          "kind": "nested"
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "BattleEvent",
+      "scope": "game"
+    }
+  ],
+  "models": [
+    {
+      "name": "TileOpt",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "alt": "Boolean",
+        "col": "Number",
+        "row": "Number",
+        "data": "BigInt"
+      }
+    },
+    {
+      "name": "ExplorerTroops",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "explorer_id": "Number",
+        "owner": "Number",
+        "troops": {
+          "category": "String",
+          "tier": "String",
+          "count": "BigInt",
+          "stamina": {
+            "amount": "BigInt",
+            "updated_tick": "BigInt"
+          },
+          "boosts": {
+            "incr_damage_dealt_percent_num": "Number",
+            "incr_damage_dealt_end_tick": "Number",
+            "decr_damage_gotten_percent_num": "Number",
+            "decr_damage_gotten_end_tick": "Number",
+            "incr_stamina_regen_percent_num": "Number",
+            "incr_stamina_regen_tick_count": "Number",
+            "incr_explore_reward_percent_num": "Number",
+            "incr_explore_reward_end_tick": "Number"
+          },
+          "battle_cooldown_end": "Number"
+        },
+        "coord": {
+          "alt": "Boolean",
+          "x": "Number",
+          "y": "Number"
+        }
+      }
+    },
+    {
+      "name": "Structure",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "entity_id": "Number",
+        "owner": "BigInt",
+        "base": {
+          "troop_guard_count": "Number",
+          "troop_explorer_count": "Number",
+          "troop_max_guard_count": "Number",
+          "troop_max_explorer_count": "Number",
+          "created_at": "Number",
+          "category": "Number",
+          "coord_x": "Number",
+          "coord_y": "Number",
+          "level": "Number",
+          "starting_troops_granted": "Boolean"
+        },
+        "troop_guards": {
+          "delta": {
+            "category": "String",
+            "tier": "String",
+            "count": "BigInt",
+            "stamina": {
+              "amount": "BigInt",
+              "updated_tick": "BigInt"
+            },
+            "boosts": {
+              "incr_damage_dealt_percent_num": "Number",
+              "incr_damage_dealt_end_tick": "Number",
+              "decr_damage_gotten_percent_num": "Number",
+              "decr_damage_gotten_end_tick": "Number",
+              "incr_stamina_regen_percent_num": "Number",
+              "incr_stamina_regen_tick_count": "Number",
+              "incr_explore_reward_percent_num": "Number",
+              "incr_explore_reward_end_tick": "Number"
+            },
+            "battle_cooldown_end": "Number"
+          },
+          "charlie": {
+            "category": "String",
+            "tier": "String",
+            "count": "BigInt",
+            "stamina": {
+              "amount": "BigInt",
+              "updated_tick": "BigInt"
+            },
+            "boosts": {
+              "incr_damage_dealt_percent_num": "Number",
+              "incr_damage_dealt_end_tick": "Number",
+              "decr_damage_gotten_percent_num": "Number",
+              "decr_damage_gotten_end_tick": "Number",
+              "incr_stamina_regen_percent_num": "Number",
+              "incr_stamina_regen_tick_count": "Number",
+              "incr_explore_reward_percent_num": "Number",
+              "incr_explore_reward_end_tick": "Number"
+            },
+            "battle_cooldown_end": "Number"
+          },
+          "bravo": {
+            "category": "String",
+            "tier": "String",
+            "count": "BigInt",
+            "stamina": {
+              "amount": "BigInt",
+              "updated_tick": "BigInt"
+            },
+            "boosts": {
+              "incr_damage_dealt_percent_num": "Number",
+              "incr_damage_dealt_end_tick": "Number",
+              "decr_damage_gotten_percent_num": "Number",
+              "decr_damage_gotten_end_tick": "Number",
+              "incr_stamina_regen_percent_num": "Number",
+              "incr_stamina_regen_tick_count": "Number",
+              "incr_explore_reward_percent_num": "Number",
+              "incr_explore_reward_end_tick": "Number"
+            },
+            "battle_cooldown_end": "Number"
+          },
+          "alpha": {
+            "category": "String",
+            "tier": "String",
+            "count": "BigInt",
+            "stamina": {
+              "amount": "BigInt",
+              "updated_tick": "BigInt"
+            },
+            "boosts": {
+              "incr_damage_dealt_percent_num": "Number",
+              "incr_damage_dealt_end_tick": "Number",
+              "decr_damage_gotten_percent_num": "Number",
+              "decr_damage_gotten_end_tick": "Number",
+              "incr_stamina_regen_percent_num": "Number",
+              "incr_stamina_regen_tick_count": "Number",
+              "incr_explore_reward_percent_num": "Number",
+              "incr_explore_reward_end_tick": "Number"
+            },
+            "battle_cooldown_end": "Number"
+          },
+          "delta_destroyed_tick": "Number",
+          "charlie_destroyed_tick": "Number",
+          "bravo_destroyed_tick": "Number",
+          "alpha_destroyed_tick": "Number"
+        },
+        "troop_explorers": [
+          "Number"
+        ],
+        "resources_packed": "BigInt",
+        "metadata": {
+          "realm_id": "Number",
+          "order": "Number",
+          "has_wonder": "Boolean",
+          "villages_count": "Number",
+          "village_realm": "Number"
+        },
+        "category": "Number"
+      }
+    },
+    {
+      "name": "Resource",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "entity_id": "Number",
+        "STONE_BALANCE": "BigInt",
+        "COAL_BALANCE": "BigInt",
+        "WOOD_BALANCE": "BigInt",
+        "COPPER_BALANCE": "BigInt",
+        "IRONWOOD_BALANCE": "BigInt",
+        "OBSIDIAN_BALANCE": "BigInt",
+        "GOLD_BALANCE": "BigInt",
+        "SILVER_BALANCE": "BigInt",
+        "MITHRAL_BALANCE": "BigInt",
+        "ALCHEMICAL_SILVER_BALANCE": "BigInt",
+        "COLD_IRON_BALANCE": "BigInt",
+        "DEEP_CRYSTAL_BALANCE": "BigInt",
+        "RUBY_BALANCE": "BigInt",
+        "DIAMONDS_BALANCE": "BigInt",
+        "HARTWOOD_BALANCE": "BigInt",
+        "IGNIUM_BALANCE": "BigInt",
+        "TWILIGHT_QUARTZ_BALANCE": "BigInt",
+        "TRUE_ICE_BALANCE": "BigInt",
+        "ADAMANTINE_BALANCE": "BigInt",
+        "SAPPHIRE_BALANCE": "BigInt",
+        "ETHEREAL_SILICA_BALANCE": "BigInt",
+        "DRAGONHIDE_BALANCE": "BigInt",
+        "LABOR_BALANCE": "BigInt",
+        "EARTHEN_SHARD_BALANCE": "BigInt",
+        "DONKEY_BALANCE": "BigInt",
+        "KNIGHT_T1_BALANCE": "BigInt",
+        "KNIGHT_T2_BALANCE": "BigInt",
+        "KNIGHT_T3_BALANCE": "BigInt",
+        "CROSSBOWMAN_T1_BALANCE": "BigInt",
+        "CROSSBOWMAN_T2_BALANCE": "BigInt",
+        "CROSSBOWMAN_T3_BALANCE": "BigInt",
+        "PALADIN_T1_BALANCE": "BigInt",
+        "PALADIN_T2_BALANCE": "BigInt",
+        "PALADIN_T3_BALANCE": "BigInt",
+        "WHEAT_BALANCE": "BigInt",
+        "FISH_BALANCE": "BigInt",
+        "LORDS_BALANCE": "BigInt",
+        "ESSENCE_BALANCE": "BigInt",
+        "RELIC_E1_BALANCE": "BigInt",
+        "RELIC_E2_BALANCE": "BigInt",
+        "RELIC_E3_BALANCE": "BigInt",
+        "RELIC_E4_BALANCE": "BigInt",
+        "RELIC_E5_BALANCE": "BigInt",
+        "RELIC_E6_BALANCE": "BigInt",
+        "RELIC_E7_BALANCE": "BigInt",
+        "RELIC_E8_BALANCE": "BigInt",
+        "RELIC_E9_BALANCE": "BigInt",
+        "RELIC_E10_BALANCE": "BigInt",
+        "RELIC_E11_BALANCE": "BigInt",
+        "RELIC_E12_BALANCE": "BigInt",
+        "RELIC_E13_BALANCE": "BigInt",
+        "RELIC_E14_BALANCE": "BigInt",
+        "RELIC_E15_BALANCE": "BigInt",
+        "RELIC_E16_BALANCE": "BigInt",
+        "RELIC_E17_BALANCE": "BigInt",
+        "RELIC_E18_BALANCE": "BigInt",
+        "RESEARCH_BALANCE": "BigInt",
+        "SATOSHI_BALANCE": "BigInt",
+        "weight": {
+          "capacity": "BigInt",
+          "weight": "BigInt"
+        },
+        "STONE_PRODUCTION": {
+          "building_count": "Number",
+          "production_rate": "BigInt",
+          "output_amount_left": "BigInt",
+          "last_updated_at": "Number"
+        },
+        "COAL_PRODUCTION": {
+          "building_count": "Number",
+          "production_rate": "BigInt",
+          "output_amount_left": "BigInt",
+          "last_updated_at": "Number"
+        },
+        "WOOD_PRODUCTION": {
+          "building_count": "Number",
+          "production_rate": "BigInt",
+          "output_amount_left": "BigInt",
+          "last_updated_at": "Number"
+        },
+        "COPPER_PRODUCTION": {
+          "building_count": "Number",
+          "production_rate": "BigInt",
+          "output_amount_left": "BigInt",
+          "last_updated_at": "Number"
+        },
+        "IRONWOOD_PRODUCTION": {
+          "building_count": "Number",
+          "production_rate": "BigInt",
+          "output_amount_left": "BigInt",
+          "last_updated_at": "Number"
+        },
+        "OBSIDIAN_PRODUCTION": {
+          "building_count": "Number",
+          "production_rate": "BigInt",
+          "output_amount_left": "BigInt",
+          "last_updated_at": "Number"
+        },
+        "GOLD_PRODUCTION": {
+          "building_count": "Number",
+          "production_rate": "BigInt",
+          "output_amount_left": "BigInt",
+          "last_updated_at": "Number"
+        },
+        "SILVER_PRODUCTION": {
+          "building_count": "Number",
+          "production_rate": "BigInt",
+          "output_amount_left": "BigInt",
+          "last_updated_at": "Number"
+        },
+        "MITHRAL_PRODUCTION": {
+          "building_count": "Number",
+          "production_rate": "BigInt",
+          "output_amount_left": "BigInt",
+          "last_updated_at": "Number"
+        },
+        "ALCHEMICAL_SILVER_PRODUCTION": {
+          "building_count": "Number",
+          "production_rate": "BigInt",
+          "output_amount_left": "BigInt",
+          "last_updated_at": "Number"
+        },
+        "COLD_IRON_PRODUCTION": {
+          "building_count": "Number",
+          "production_rate": "BigInt",
+          "output_amount_left": "BigInt",
+          "last_updated_at": "Number"
+        },
+        "DEEP_CRYSTAL_PRODUCTION": {
+          "building_count": "Number",
+          "production_rate": "BigInt",
+          "output_amount_left": "BigInt",
+          "last_updated_at": "Number"
+        },
+        "RUBY_PRODUCTION": {
+          "building_count": "Number",
+          "production_rate": "BigInt",
+          "output_amount_left": "BigInt",
+          "last_updated_at": "Number"
+        },
+        "DIAMONDS_PRODUCTION": {
+          "building_count": "Number",
+          "production_rate": "BigInt",
+          "output_amount_left": "BigInt",
+          "last_updated_at": "Number"
+        },
+        "HARTWOOD_PRODUCTION": {
+          "building_count": "Number",
+          "production_rate": "BigInt",
+          "output_amount_left": "BigInt",
+          "last_updated_at": "Number"
+        },
+        "IGNIUM_PRODUCTION": {
+          "building_count": "Number",
+          "production_rate": "BigInt",
+          "output_amount_left": "BigInt",
+          "last_updated_at": "Number"
+        },
+        "TWILIGHT_QUARTZ_PRODUCTION": {
+          "building_count": "Number",
+          "production_rate": "BigInt",
+          "output_amount_left": "BigInt",
+          "last_updated_at": "Number"
+        },
+        "TRUE_ICE_PRODUCTION": {
+          "building_count": "Number",
+          "production_rate": "BigInt",
+          "output_amount_left": "BigInt",
+          "last_updated_at": "Number"
+        },
+        "ADAMANTINE_PRODUCTION": {
+          "building_count": "Number",
+          "production_rate": "BigInt",
+          "output_amount_left": "BigInt",
+          "last_updated_at": "Number"
+        },
+        "SAPPHIRE_PRODUCTION": {
+          "building_count": "Number",
+          "production_rate": "BigInt",
+          "output_amount_left": "BigInt",
+          "last_updated_at": "Number"
+        },
+        "ETHEREAL_SILICA_PRODUCTION": {
+          "building_count": "Number",
+          "production_rate": "BigInt",
+          "output_amount_left": "BigInt",
+          "last_updated_at": "Number"
+        },
+        "DRAGONHIDE_PRODUCTION": {
+          "building_count": "Number",
+          "production_rate": "BigInt",
+          "output_amount_left": "BigInt",
+          "last_updated_at": "Number"
+        },
+        "LABOR_PRODUCTION": {
+          "building_count": "Number",
+          "production_rate": "BigInt",
+          "output_amount_left": "BigInt",
+          "last_updated_at": "Number"
+        },
+        "EARTHEN_SHARD_PRODUCTION": {
+          "building_count": "Number",
+          "production_rate": "BigInt",
+          "output_amount_left": "BigInt",
+          "last_updated_at": "Number"
+        },
+        "DONKEY_PRODUCTION": {
+          "building_count": "Number",
+          "production_rate": "BigInt",
+          "output_amount_left": "BigInt",
+          "last_updated_at": "Number"
+        },
+        "KNIGHT_T1_PRODUCTION": {
+          "building_count": "Number",
+          "production_rate": "BigInt",
+          "output_amount_left": "BigInt",
+          "last_updated_at": "Number"
+        },
+        "KNIGHT_T2_PRODUCTION": {
+          "building_count": "Number",
+          "production_rate": "BigInt",
+          "output_amount_left": "BigInt",
+          "last_updated_at": "Number"
+        },
+        "KNIGHT_T3_PRODUCTION": {
+          "building_count": "Number",
+          "production_rate": "BigInt",
+          "output_amount_left": "BigInt",
+          "last_updated_at": "Number"
+        },
+        "CROSSBOWMAN_T1_PRODUCTION": {
+          "building_count": "Number",
+          "production_rate": "BigInt",
+          "output_amount_left": "BigInt",
+          "last_updated_at": "Number"
+        },
+        "CROSSBOWMAN_T2_PRODUCTION": {
+          "building_count": "Number",
+          "production_rate": "BigInt",
+          "output_amount_left": "BigInt",
+          "last_updated_at": "Number"
+        },
+        "CROSSBOWMAN_T3_PRODUCTION": {
+          "building_count": "Number",
+          "production_rate": "BigInt",
+          "output_amount_left": "BigInt",
+          "last_updated_at": "Number"
+        },
+        "PALADIN_T1_PRODUCTION": {
+          "building_count": "Number",
+          "production_rate": "BigInt",
+          "output_amount_left": "BigInt",
+          "last_updated_at": "Number"
+        },
+        "PALADIN_T2_PRODUCTION": {
+          "building_count": "Number",
+          "production_rate": "BigInt",
+          "output_amount_left": "BigInt",
+          "last_updated_at": "Number"
+        },
+        "PALADIN_T3_PRODUCTION": {
+          "building_count": "Number",
+          "production_rate": "BigInt",
+          "output_amount_left": "BigInt",
+          "last_updated_at": "Number"
+        },
+        "WHEAT_PRODUCTION": {
+          "building_count": "Number",
+          "production_rate": "BigInt",
+          "output_amount_left": "BigInt",
+          "last_updated_at": "Number"
+        },
+        "FISH_PRODUCTION": {
+          "building_count": "Number",
+          "production_rate": "BigInt",
+          "output_amount_left": "BigInt",
+          "last_updated_at": "Number"
+        },
+        "LORDS_PRODUCTION": {
+          "building_count": "Number",
+          "production_rate": "BigInt",
+          "output_amount_left": "BigInt",
+          "last_updated_at": "Number"
+        },
+        "ESSENCE_PRODUCTION": {
+          "building_count": "Number",
+          "production_rate": "BigInt",
+          "output_amount_left": "BigInt",
+          "last_updated_at": "Number"
+        },
+        "RESEARCH_PRODUCTION": {
+          "building_count": "Number",
+          "production_rate": "BigInt",
+          "output_amount_left": "BigInt",
+          "last_updated_at": "Number"
+        },
+        "SATOSHI_PRODUCTION": {
+          "building_count": "Number",
+          "production_rate": "BigInt",
+          "output_amount_left": "BigInt",
+          "last_updated_at": "Number"
+        }
+      }
+    },
+    {
+      "name": "Building",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "alt": "Boolean",
+        "outer_col": "Number",
+        "outer_row": "Number",
+        "inner_col": "Number",
+        "inner_row": "Number",
+        "category": "Number",
+        "bonus_percent": "Number",
+        "entity_id": "Number",
+        "outer_entity_id": "Number",
+        "paused": "Boolean"
+      }
+    },
+    {
+      "name": "StructureBuildings",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "entity_id": "Number",
+        "packed_counts_1": "BigInt",
+        "packed_counts_2": "BigInt",
+        "packed_counts_3": "BigInt",
+        "population": {
+          "current": "Number",
+          "max": "Number"
+        },
+        "coord": {
+          "alt": "Boolean",
+          "x": "Number",
+          "y": "Number"
+        }
+      }
+    },
+    {
+      "name": "Hyperstructure",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "hyperstructure_id": "Number",
+        "initialized": "Boolean",
+        "completed": "Boolean",
+        "access": "String",
+        "randomness": "BigInt",
+        "points_multiplier": "Number"
+      }
+    },
+    {
+      "name": "HyperstructureGlobals",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "created_count": "Number",
+        "completed_count": "Number"
+      }
+    },
+    {
+      "name": "StructureOwnerStats",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "owner": "BigInt",
+        "structures_num": "Number"
+      }
+    },
+    {
+      "name": "ResourceRule",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "resource_type": "Number",
+        "unit_weight": "BigInt",
+        "realm_rate": "BigInt",
+        "village_rate": "BigInt",
+        "labor_output_per_resource": "BigInt",
+        "building_population_cost": "Number",
+        "building_capacity_grant": "Number"
+      }
+    },
+    {
+      "name": "ResourceRulesReady",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "ready": "Boolean"
+      }
+    },
+    {
+      "name": "GameRegistry",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "name": "BigInt",
+        "series_id": "BigInt",
+        "game_number_in_series": "Number",
+        "preset_id": "Number",
+        "creator": "BigInt",
+        "status": "String",
+        "dev_mode_on": "Boolean",
+        "start_settling_at": "BigInt",
+        "start_main_at": "BigInt",
+        "end_at": "BigInt",
+        "end_grace_seconds": "Number",
+        "registration_grace_seconds": "Number",
+        "final_trial_id": "BigInt",
+        "seed": "BigInt"
+      }
+    },
+    {
+      "name": "SliceRules",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "battle_config": {
+          "regular_immunity_ticks": "Number",
+          "village_immunity_ticks": "Number",
+          "village_raid_immunity_ticks": "Number"
+        },
+        "map_config": {
+          "reward_resource_amount": "Number",
+          "shards_mines_win_probability": "Number",
+          "shards_mines_fail_probability": "Number",
+          "agent_discovery_prob": "Number",
+          "agent_discovery_fail_prob": "Number",
+          "camp_win_probability": "Number",
+          "camp_fail_probability": "Number",
+          "holysite_win_probability": "Number",
+          "holysite_fail_probability": "Number",
+          "bitcoin_mine_win_probability": "Number",
+          "bitcoin_mine_fail_probability": "Number",
+          "hyps_win_prob": "Number",
+          "hyps_fail_prob": "Number",
+          "hyps_fail_prob_increase_p_hex": "Number",
+          "hyps_fail_prob_increase_p_fnd": "Number",
+          "relic_discovery_interval_sec": "Number",
+          "relic_hex_dist_from_center": "Number",
+          "relic_chest_relics_per_chest": "Number"
+        },
+        "biome_climate_config": {
+          "elevation_scale_bps": "Number",
+          "moisture_scale_bps": "Number",
+          "elevation_bias_bps": "Number",
+          "moisture_bias_bps": "Number",
+          "elevation_seed": "Number",
+          "moisture_seed": "Number"
+        },
+        "tick_config": {
+          "armies_tick_in_seconds": "BigInt",
+          "delivery_tick_in_seconds": "BigInt",
+          "bitcoin_phase_in_seconds": "BigInt"
+        },
+        "troop_damage_config": {
+          "damage_raid_percent_num": "Number",
+          "damage_biome_bonus_num": "Number",
+          "damage_beta_small": "BigInt",
+          "damage_beta_large": "BigInt",
+          "damage_scaling_factor": "BigInt",
+          "damage_c0": "BigInt",
+          "damage_delta": "BigInt",
+          "t1_damage_value": "BigInt",
+          "t2_damage_multiplier": "BigInt",
+          "t3_damage_multiplier": "BigInt"
+        },
+        "troop_stamina_config": {
+          "stamina_gain_per_tick": "Number",
+          "stamina_initial": "Number",
+          "stamina_bonus_value": "Number",
+          "stamina_knight_max": "Number",
+          "stamina_paladin_max": "Number",
+          "stamina_crossbowman_max": "Number",
+          "stamina_attack_req": "Number",
+          "stamina_defense_req": "Number",
+          "stamina_explore_stamina_cost": "Number",
+          "stamina_travel_stamina_cost": "Number",
+          "stamina_explore_wheat_cost": "Number",
+          "stamina_explore_fish_cost": "Number",
+          "stamina_travel_wheat_cost": "Number",
+          "stamina_travel_fish_cost": "Number"
+        },
+        "troop_limit_config": {
+          "guard_resurrection_delay": "Number",
+          "mercenaries_troop_lower_bound": "Number",
+          "mercenaries_troop_upper_bound": "Number",
+          "agents_troop_lower_bound": "Number",
+          "agents_troop_upper_bound": "Number",
+          "settlement_deployment_cap": "Number",
+          "city_deployment_cap": "Number",
+          "kingdom_deployment_cap": "Number",
+          "empire_deployment_cap": "Number",
+          "t1_tier_strength": "Number",
+          "t2_tier_strength": "Number",
+          "t3_tier_strength": "Number",
+          "t1_tier_modifier": "Number",
+          "t2_tier_modifier": "Number",
+          "t3_tier_modifier": "Number"
+        },
+        "capacity_config": {
+          "structure_capacity": "BigInt",
+          "troop_capacity": "Number",
+          "donkey_capacity": "Number",
+          "storehouse_boost_capacity": "Number"
+        },
+        "structure_capacity_config": {
+          "realm_capacity": "BigInt",
+          "village_capacity": "BigInt",
+          "hyperstructure_capacity": "BigInt",
+          "fragment_mine_capacity": "BigInt",
+          "bank_structure_capacity": "BigInt",
+          "holysite_capacity": "BigInt",
+          "camp_capacity": "BigInt",
+          "bitcoin_mine_capacity": "BigInt"
+        },
+        "building_config": {
+          "base_population": "Number",
+          "base_cost_percent_increase": "Number"
+        },
+        "bitcoin_mine_config": {
+          "enabled": "Boolean",
+          "prize_per_phase": "BigInt",
+          "min_labor_per_contribution": "BigInt"
+        },
+        "victory_points_grant_config": {
+          "hyp_points_per_second": "Number",
+          "claim_hyperstructure_points": "Number",
+          "claim_otherstructure_points": "Number",
+          "explore_tiles_points": "Number",
+          "relic_open_points": "Number"
+        },
+        "map_center_offset": "Number",
+        "spire_travel_essence_cost": "BigInt"
+      }
+    },
+    {
+      "name": "EntitySequence",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "next_entity_id": "Number"
+      }
+    },
+    {
+      "name": "PlayerRegisteredPoints",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "address": "BigInt",
+        "registered_points": "BigInt"
+      }
+    },
+    {
+      "name": "SeasonPrize",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "total_registered_points": "BigInt",
+        "total_lords_pool": "BigInt"
+      }
+    },
+    {
+      "name": "DomainState",
+      "scope": "deployment",
+      "schema": {
+        "address": "BigInt",
+        "authority": "BigInt",
+        "peers": {
+          "season": "BigInt",
+          "map": "BigInt",
+          "structures": "BigInt",
+          "troops": "BigInt"
+        },
+        "active": "Boolean"
+      }
+    },
+    {
+      "name": "DomainClass",
+      "scope": "deployment",
+      "schema": {
+        "address": "BigInt",
+        "class_hash": "BigInt"
+      }
+    },
+    {
+      "name": "Authentication",
+      "scope": "deployment",
+      "schema": {
+        "address": "BigInt",
+        "submitter": "BigInt",
+        "registry": "BigInt",
+        "account_class": "BigInt"
+      }
+    },
+    {
+      "name": "ExecutionHead",
+      "scope": "deployment",
+      "schema": {
+        "address": "BigInt",
+        "order": "BigInt",
+        "binding": "BigInt",
+        "state": "BigInt",
+        "timestamp": "BigInt",
+        "root": "BigInt"
+      }
+    },
+    {
+      "name": "ExecutionResult",
+      "scope": "deployment",
+      "schema": {
+        "address": "BigInt",
+        "order": "BigInt",
+        "status": "Number",
+        "binding": "BigInt",
+        "result": "BigInt",
+        "state": "BigInt"
+      }
+    },
+    {
+      "name": "ActionNonce",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "actor": "BigInt",
+        "next_nonce": "BigInt"
+      }
+    },
+    {
+      "name": "LastBattle",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "entity_id": "Number",
+        "latest_attacker_id": "OptionalNumber",
+        "latest_attack_timestamp": "OptionalNumber",
+        "latest_defender_id": "OptionalNumber",
+        "latest_defense_timestamp": "OptionalNumber"
+      }
+    }
+  ]
+}

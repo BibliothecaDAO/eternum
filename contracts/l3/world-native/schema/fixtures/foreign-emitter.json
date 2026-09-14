@@ -1,14 +1,15 @@
 {
-  "schemaIdentity": "57cafe85b1dbf94f6b7315bececcb04c88dc03a2f8fe606bd8155f6577f8db2d",
+  "schemaIdentity": "1a1ddbd619e34cbc5218fc13b794a8f7835dbcb03740a491bad5c31d276f7bdb",
   "deployment": {
     "season": "0x101",
     "map": "0x102",
+    "structures": "0x103",
     "troops": "0x100"
   },
   "raw": {
     "from_address": "0x102",
     "keys": [
-      "0x1517f684ec2bc21ca20251bbef26b7ad0434759388fc50e84858abf49e4024b",
+      "0x180b36ec8d71b3255573975f1049032352bd6289f08164236e0da1770e7ec40",
       "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724",
       "0x1",
       "0x4578706c6f72657254726f6f7073"

@@ -228,6 +228,14 @@ pub mod MapUpgradeFixture {
     }
     #[abi(embed_v0)]
     impl Map of crate::map::IMap<ContractState> {
+        fn biome(self: @ContractState, key: TileKey) -> u8 {
+            panic!("storage upgrade fixture")
+        }
+        fn discovery(
+            self: @ContractState, key: TileKey, seed: u256, hyperstructures: u32, timestamp: u64,
+        ) -> crate::discovery::Discovery {
+            panic!("storage upgrade fixture")
+        }
         fn tile(self: @ContractState, key: TileKey) -> Option<TileOpt> {
             self.map.tile(key)
         }

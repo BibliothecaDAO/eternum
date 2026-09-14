@@ -1,8 +1,9 @@
 {
-  "schemaIdentity": "57cafe85b1dbf94f6b7315bececcb04c88dc03a2f8fe606bd8155f6577f8db2d",
+  "schemaIdentity": "1a1ddbd619e34cbc5218fc13b794a8f7835dbcb03740a491bad5c31d276f7bdb",
   "deployment": {
     "season": "0x101",
     "map": "0x102",
+    "structures": "0x103",
     "troops": "0x100"
   },
   "raw": {
