@@ -19,7 +19,8 @@ import {
   formatGuilds,
   getAddressName,
   getGuildFromPlayerAddress,
-  getStructure,
+  readStructures,
+  structuresByOwnerQuery,
   ResourceManager,
   summarizeIncomingTroopArrivals,
 } from "@bibliothecadao/eternum";
@@ -32,7 +33,7 @@ import {
   ResourcesIds,
   type Structure,
 } from "@bibliothecadao/types";
-import { type Component, getComponentEntities, getComponentValue } from "@dojoengine/recs";
+import { type Component, getComponentEntities, getComponentValue, runQuery } from "@dojoengine/recs";
 import { type IdentityProfile, profileOfIdentityUser } from "@realms-world/identity";
 import { env } from "../../env";
 
@@ -120,19 +121,8 @@ const readBuildings = (components: ClientComponents) =>
 // Explicit spectator sessions are pure observers: no owned structures means no ownership chrome anywhere.
 const readPlayerStructures = (components: ClientComponents, account: string): Structure[] => {
   if (account === NO_ACCOUNT || isExplicitSpectateSession()) return [];
-  const owner = BigInt(account);
-  return [...getComponentEntities(components.Structure as Component)]
-    .flatMap((entity) => {
-      const structure = getComponentValue(components.Structure, entity);
-      if (!structure || structure.owner !== owner) return [];
-      const info = getStructure(entity, ContractAddress(account), components);
-      return info ? [info] : [];
-    })
-    .toSorted(
-      (left, right) =>
-        (left.structure?.base?.category ?? 0) - (right.structure?.base?.category ?? 0) ||
-        Number(left.entityId ?? 0) - Number(right.entityId ?? 0),
-    );
+  const owner = ContractAddress(account);
+  return readStructures(components, [...runQuery(structuresByOwnerQuery(components, owner))], owner);
 };
 
 const readSelectableArmies = (components: ClientComponents, account: string) =>

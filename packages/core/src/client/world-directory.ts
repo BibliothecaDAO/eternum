@@ -94,4 +94,11 @@ export const getWorldDirectory = (): WorldDeployment[] => {
 export const getWorldById = (worldId: string | null | undefined): WorldDeployment | null =>
   worldId ? (getWorldDirectory().find((world) => world.id === worldId) ?? null) : null;
 
+/** A selected world must resolve exactly; never redirect an action to another deployment. */
+export const requireWorldById = (worldId: string | null | undefined): WorldDeployment => {
+  const world = getWorldById(worldId);
+  if (!world) throw new Error(`World "${worldId ?? ""}" is not configured`);
+  return world;
+};
+
 export const getDefaultWorld = (): WorldDeployment => getWorldDirectory()[0];

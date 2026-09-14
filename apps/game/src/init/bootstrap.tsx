@@ -8,7 +8,7 @@ import { world, type SystemCallAuthHandler } from "@bibliothecadao/types";
 
 import { resolveEntryContextCacheKey, type ResolvedEntryContext } from "@/game-entry/context";
 import { applyWorldSelection, patchManifestWithFactory, type WorldProfile } from "@/runtime/world";
-import { getDefaultWorld, getWorldById } from "@/runtime/world/world-directory";
+import { requireWorldById } from "@/runtime/world/world-directory";
 import { getGameManifest } from "@contracts";
 import type { GameChain as Chain } from "@realms-world/chain";
 import { dojoConfig } from "../../dojo-config";
@@ -236,7 +236,7 @@ const createEntryGameClient = async (input: EntryGameClientInput): Promise<GameC
   verboseLog("[STARTING DOJO SETUP]");
   markGameEntryMilestone("setup-started");
   const client = await createGameClient({
-    world: getWorldById(input.profile.worldId) ?? getDefaultWorld(),
+    world: requireWorldById(input.profile.worldId),
     gameId: input.profile.gameId ?? 0,
     presetId: input.profile.presetId ?? 0,
     dojoConfig: configureDojoRuntime(input.chain, input.profile),

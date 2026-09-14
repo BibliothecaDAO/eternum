@@ -2,7 +2,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
 import { getActiveWorld } from "@/runtime/world";
 import { fetchHeraldGameHistory } from "@bibliothecadao/eternum/game-client";
-import { getDefaultWorld, getWorldById } from "@/runtime/world/world-directory";
+import { requireWorldById } from "@/runtime/world/world-directory";
 import { HUD_BODY_MUTED, HUD_CUE } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_PILL_BUTTON } from "@/ui/design-system/atoms/overlay-surface";
@@ -32,7 +32,7 @@ export const MarketTradingHistory = memo(() => {
   // Owner lookup comes from the bridge's structures slice, one array per ingest slice instead of one per row.
   const structures = useWorldSlicesStore((state) => state.structures);
   const profile = getActiveWorld();
-  const world = getWorldById(profile?.worldId ?? "blitz") ?? getDefaultWorld();
+  const world = requireWorldById(profile?.worldId);
   const gameId = configManager.getActiveGameId();
 
   useEffect(() => {

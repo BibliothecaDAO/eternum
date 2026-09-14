@@ -1,7 +1,7 @@
 import type { HeraldGameDirectoryEntry } from "../sync/herald-http-types";
 
 import { fetchHeraldGameDirectory } from "./herald-http";
-import { getDefaultWorld, getWorldById, getWorldDirectory } from "./world-directory";
+import { requireWorldById, getWorldDirectory } from "./world-directory";
 import type { WorldDeployment } from "./world-directory";
 
 /**
@@ -65,7 +65,8 @@ export const resolveGameId = async (worldName: string, worldId?: string): Promis
   if (!worldName) return null;
 
   const resolvedWorldId = worldId ?? (await resolveWorldIdForGame(worldName));
-  const world = getWorldById(resolvedWorldId) ?? getDefaultWorld();
+  if (!resolvedWorldId) return null;
+  const world = requireWorldById(resolvedWorldId);
   const cacheKey = `${world.id}:${worldName}`;
   const cached = gameIds.get(cacheKey);
   if (cached !== undefined) return cached;

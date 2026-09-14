@@ -26,7 +26,7 @@
  *                                         fixture's GameRegistry row, so --game-id is not accepted alongside it
  *   --rpc-url <url>                       Chain RPC (default: https://rpc.realms.party)
  *   --herald-url <url>                    Herald base URL (default: https://herald.realms.party)
- *   --chain <name>                        madara | appchain (default: madara)
+ *   --chain <name>                        madara (default: madara)
  *   --game-id <number>                    Game to hydrate; omitted: the first `Live` game in the Herald directory
  *   --player-account-class-hash <felt>    or VITE_PUBLIC_PLAYER_ACCOUNT_CLASS_HASH
  *   --player-registry-address <felt>      or VITE_PUBLIC_PLAYER_REGISTRY_ADDRESS
@@ -60,7 +60,6 @@ const DEFAULT_WATCH_MS = 5_000;
 const WORLD_ID = "blitz";
 const MANIFEST_BY_CHAIN = {
   madara: "manifest_madara.json",
-  appchain: "manifest_appchain_blitz.json",
 };
 const ACCOUNT_FIELDS = [
   ["playerAccountClassHash", "player-account-class-hash", "VITE_PUBLIC_PLAYER_ACCOUNT_CLASS_HASH"],

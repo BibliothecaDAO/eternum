@@ -21,13 +21,13 @@ const { deployment } = vi.hoisted(() => ({
   },
 }));
 
-vi.mock("./world-directory", () => ({
-  getDefaultWorld: () => deployment,
-  getWorldById: () => deployment,
-  getWorldDirectory: () => [deployment],
-}));
+vi.mock("./world-directory", async () => {
+  const { requireWorldById } = await import("@bibliothecadao/eternum/game-client");
+  return { requireWorldById };
+});
 
 import { installWorldDirectory } from "@bibliothecadao/eternum/game-client";
+import { buildWorldProfile } from "./profile-builder";
 import { applyWorldSelection } from "./selection";
 import { getActiveWorldName, getWorldProfile, saveWorldProfile, setActiveWorldName } from "./store";
 
@@ -88,6 +88,14 @@ describe("game entry profile resolution", () => {
 
     expect(profile).toMatchObject({ gameId: 2, presetId: 1, worldAddress: deployment.worldAddress });
     expect(getWorldProfile("eternum-fresh-01")).toEqual(profile);
+  });
+
+  it("rejects an unknown explicit world before fetching another deployment", async () => {
+    await expect(buildWorldProfile("madara", "blitz-daily-0001", "retired-world")).rejects.toThrow(
+      'World "retired-world" is not configured',
+    );
+    expect(fetch).not.toHaveBeenCalled();
+    expect(getActiveWorldName()).toBeNull();
   });
 
   it("does not enter a saved game when its directory is unavailable", async () => {

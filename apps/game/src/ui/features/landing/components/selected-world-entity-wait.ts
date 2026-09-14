@@ -1,5 +1,5 @@
 import { resolveWorldIdForGame } from "@bibliothecadao/eternum/game-client";
-import { getDefaultWorld, getWorldById } from "@/runtime/world/world-directory";
+import { requireWorldById } from "@/runtime/world/world-directory";
 import { buildHeraldGameStreamUrl } from "@bibliothecadao/eternum/game-client";
 import type { GameChain as Chain } from "@realms-world/chain";
 import { HeraldGameSyncTransport } from "@bibliothecadao/eternum/game-sync";
@@ -50,7 +50,7 @@ const resolveEntitySubscriptionTarget = async ({
     throw new Error(`Cannot subscribe to selected ${chain} game "${worldName}" without its game id`);
   }
   const resolvedWorldId = worldId ?? (await resolveWorldIdForGame(worldName));
-  const world = getWorldById(resolvedWorldId) ?? getDefaultWorld();
+  const world = requireWorldById(resolvedWorldId);
   return {
     gameId,
     chain,

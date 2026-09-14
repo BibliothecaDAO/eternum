@@ -1,6 +1,6 @@
 import { getPlayerName } from "@/hooks/use-player-profile";
 import { fetchHeraldGameHistory } from "@bibliothecadao/eternum/game-client";
-import { getDefaultWorld, getWorldById } from "@/runtime/world/world-directory";
+import { requireWorldById } from "@/runtime/world/world-directory";
 import { getActiveWorld } from "@/runtime/world";
 import { buildStoryEventPresentation, configManager } from "@bibliothecadao/eternum";
 import type { GameSyncEntity, HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
@@ -176,7 +176,7 @@ export const useStoryEvents = (limit: number = 100, story?: string) => {
   } = useDojo();
   const streamed = useStoryEventsStore((state) => state.streamed);
   const profile = getActiveWorld();
-  const world = getWorldById(profile?.worldId ?? "blitz") ?? getDefaultWorld();
+  const world = requireWorldById(profile?.worldId);
   const gameId = configManager.getActiveGameId();
   const scope = { chain: world.chain, worldAddress: world.worldAddress, gameId };
   const scopeKey = storyEventScopeKey(scope);

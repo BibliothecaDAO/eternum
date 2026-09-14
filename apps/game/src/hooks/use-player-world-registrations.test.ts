@@ -4,7 +4,7 @@ import type { WorldDeployment } from "@/runtime/world/world-directory";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const reactQueryMocks = vi.hoisted(() => ({ useQueries: vi.fn() }));
-const directoryMocks = vi.hoisted(() => ({ getDefaultWorld: vi.fn(), getWorldById: vi.fn() }));
+const directoryMocks = vi.hoisted(() => ({ getDefaultWorld: vi.fn(), requireWorldById: vi.fn() }));
 
 vi.mock("@tanstack/react-query", () => reactQueryMocks);
 vi.mock("@/runtime/world/world-directory", () => directoryMocks);
@@ -52,7 +52,7 @@ const makeSummary = (overrides: Partial<WorldSummary>): WorldSummary => ({
 beforeEach(() => {
   reactQueryMocks.useQueries.mockReset();
   directoryMocks.getDefaultWorld.mockReturnValue(blitzDeployment);
-  directoryMocks.getWorldById.mockImplementation((worldId: string) =>
+  directoryMocks.requireWorldById.mockImplementation((worldId: string) =>
     worldId === "eternum" ? eternumDeployment : worldId === "blitz" ? blitzDeployment : undefined,
   );
 });

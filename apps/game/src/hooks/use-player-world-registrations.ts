@@ -9,7 +9,7 @@
  */
 import type { WorldSummary } from "@bibliothecadao/types";
 import { fetchHeraldGameDirectory } from "@bibliothecadao/eternum/game-client";
-import { getDefaultWorld, getWorldById, type WorldDeployment } from "@/runtime/world/world-directory";
+import { requireWorldById, type WorldDeployment } from "@/runtime/world/world-directory";
 import { PLAYER_WORLD_REGISTRATION_QUERY_KEY } from "@/hooks/world-list-queries";
 import { useQueries } from "@tanstack/react-query";
 
@@ -72,8 +72,7 @@ export const usePlayerWorldRegistrations = ({
   };
 };
 
-const resolveDeployment = (world: Pick<WorldSummary, "worldId">): WorldDeployment =>
-  getWorldById(world.worldId) ?? getDefaultWorld();
+const resolveDeployment = (world: Pick<WorldSummary, "worldId">): WorldDeployment => requireWorldById(world.worldId);
 
 const collectDeployments = (worlds: readonly WorldSummary[]): WorldDeployment[] => {
   const deployments = new Map<string, WorldDeployment>();

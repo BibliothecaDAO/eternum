@@ -40,7 +40,7 @@ import {
   type RealmVillageSlot,
   type SettlementSnapshot,
 } from "@/runtime/world/herald-pre-session-reader";
-import { getDefaultWorld, getWorldById } from "@/runtime/world/world-directory";
+import { requireWorldById } from "@/runtime/world/world-directory";
 import Button from "@/ui/design-system/atoms/button";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
@@ -1043,8 +1043,8 @@ export const GameEntryModal = ({
 
   const navigationEntryContext = entryContext;
   const selectedWorldRpcUrl = useMemo(() => getRpcUrlForChain(chain), [chain]);
-  const selectedWorldReader = useMemo(
-    () => createHeraldPreSessionReader(getWorldById(worldMeta?.worldId) ?? getDefaultWorld(), worldMeta?.gameId ?? 0),
+  const getSelectedWorldReader = useCallback(
+    () => createHeraldPreSessionReader(requireWorldById(worldMeta?.worldId), worldMeta?.gameId ?? 0),
     [worldMeta?.gameId, worldMeta?.worldId],
   );
   const seasonAddresses = getSeasonAddresses(chain);
@@ -1070,7 +1070,14 @@ export const GameEntryModal = ({
     };
   }, [systemManifest]);
   const resolvedWorldSystemAddresses = useMemo<ResolvedWorldSystemAddresses>(() => {
-    const contracts = (getWorldById(worldMeta?.worldId) ?? getDefaultWorld()).contractsBySelector;
+    if (!worldMeta)
+      return {
+        blitzRealmSystemsAddress: null,
+        nameSystemsAddress: null,
+        realmSystemsAddress: null,
+        villageSystemsAddress: null,
+      };
+    const contracts = requireWorldById(worldMeta.worldId).contractsBySelector;
     const resolveAddress = (selector: string | null): string | null =>
       selector ? (contracts[selector] ?? null) : null;
 
@@ -1104,7 +1111,7 @@ export const GameEntryModal = ({
     enabled: isOpen && isEternumMode && Boolean(worldMeta?.gameId) && Boolean(account?.address),
     queryFn: async () => {
       if (!account?.address) return [];
-      return await selectedWorldReader.fetchPlayerStructures(account.address);
+      return await getSelectedWorldReader().fetchPlayerStructures(account.address);
     },
     staleTime: 10_000,
   });
@@ -1115,7 +1122,7 @@ export const GameEntryModal = ({
   } = useQuery({
     queryKey: ["eternumRealmVillageSlots", chain, worldName, worldMeta?.gameId],
     enabled: isOpen && isEternumMode && Boolean(worldMeta?.gameId),
-    queryFn: async () => await selectedWorldReader.fetchRealmVillageSlots(),
+    queryFn: async () => await getSelectedWorldReader().fetchRealmVillageSlots(),
     staleTime: 10_000,
   });
   const ownedStructuresError = ownedStructuresErrorRaw instanceof Error ? ownedStructuresErrorRaw.message : null;
@@ -1432,8 +1439,8 @@ export const GameEntryModal = ({
 
   const readSettlementSnapshot = useCallback(async (): Promise<SettlementSnapshot | null> => {
     if (!account?.address || !worldMeta?.gameId) return null;
-    return selectedWorldReader.fetchSettlementSnapshot(account.address);
-  }, [account?.address, selectedWorldReader, worldMeta?.gameId]);
+    return getSelectedWorldReader().fetchSettlementSnapshot(account.address);
+  }, [account?.address, getSelectedWorldReader, worldMeta?.gameId]);
 
   const syncSettlementStateFromSnapshot = useCallback(
     (snapshot: SettlementSnapshot) => {
@@ -1529,7 +1536,7 @@ export const GameEntryModal = ({
   const resolveOptionalPlayerNameForSettlement = useCallback(async (): Promise<string | null> => {
     if (!account?.address) return null;
 
-    const addressName = await selectedWorldReader.fetchAddressName(account.address);
+    const addressName = await getSelectedWorldReader().fetchAddressName(account.address);
     if (hasAddressNameValue(addressName)) {
       return null;
     }
@@ -1539,7 +1546,7 @@ export const GameEntryModal = ({
     }
 
     return usernameFelt;
-  }, [account?.address, selectedWorldReader, usernameFelt]);
+  }, [account?.address, getSelectedWorldReader, usernameFelt]);
 
   const buildSetAddressNameCall = useCallback(
     (playerName: string): Call => ({
@@ -1609,7 +1616,7 @@ export const GameEntryModal = ({
         modelNames: ["Structure"],
         onSlow: (elapsedMs) => {},
         read: async () => {
-          const structures = await selectedWorldReader.fetchPlayerStructures(ownerAddress);
+          const structures = await getSelectedWorldReader().fetchPlayerStructures(ownerAddress);
           const newVillage = structures
             .filter(
               (structure) =>
@@ -1639,7 +1646,7 @@ export const GameEntryModal = ({
       }
       return result;
     },
-    [beginEntityWait, chain, selectedWorldReader, worldMeta?.gameId, worldMeta?.worldId, worldName],
+    [beginEntityWait, chain, getSelectedWorldReader, worldMeta?.gameId, worldMeta?.worldId, worldName],
   );
 
   // Check settlement status after bootstrap completes

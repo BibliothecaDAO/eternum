@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { ETHEREAL_STRIDE, getLayeredAttackDistance } from "../../../packages/types/src/constants/hex";
+import { ETHEREAL_STRIDE, getLayeredAttackDistance } from "@bibliothecadao/types";
 import { describe, expect, it } from "bun:test";
 import type { Account, Call, RpcProvider } from "starknet";
 import { neighbor, type HarnessBot } from "./driver";

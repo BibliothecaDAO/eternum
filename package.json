@@ -108,6 +108,7 @@
     "manifest:copy-abis:appchain:eternum": "node scripts/copy-abis.mjs appchain-eternum"
   },
   "dependencies": {
+    "@bibliothecadao/types": "workspace:*",
     "@dojoengine/react": "catalog:game",
     "@dojoengine/recs": "catalog:game",
     "@dojoengine/sdk": "catalog:game",

@@ -16,7 +16,7 @@ vi.mock("@bibliothecadao/eternum/game-client", async (importOriginal) => ({
 }));
 vi.mock("@/runtime/world", () => ({ getActiveWorld: () => ({ worldId: "blitz" }) }));
 vi.mock("@/runtime/world/world-directory", () => ({
-  getWorldById: () => ({
+  requireWorldById: () => ({
     id: "blitz",
     chain: "madara",
     heraldBaseUrl: "https://herald.example",

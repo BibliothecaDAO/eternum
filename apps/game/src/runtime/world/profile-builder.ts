@@ -4,7 +4,7 @@ import { recordGameEntryDuration } from "@/ui/layouts/game-entry-timeline";
 import { fetchHeraldGameDirectory, normalizeRpcUrl, resolveWorldIdForGame } from "@bibliothecadao/eternum/game-client";
 import { saveWorldProfile } from "./store";
 import type { GameProfile, WorldProfile } from "./types";
-import { getDefaultWorld, getWorldById } from "./world-directory";
+import { requireWorldById } from "./world-directory";
 
 const measureAsyncDuration = async <T>(name: string, run: () => Promise<T>): Promise<T> => {
   const startedAt = performance.now();
@@ -17,7 +17,8 @@ const measureAsyncDuration = async <T>(name: string, run: () => Promise<T>): Pro
 
 export const buildWorldProfile = async (chain: GameChain, name: string, worldId?: string): Promise<WorldProfile> => {
   const resolvedWorldId = worldId ?? (await resolveWorldIdForGame(name));
-  const world = getWorldById(resolvedWorldId) ?? getDefaultWorld();
+  if (!resolvedWorldId) throw new Error(`Game "${name}" not found in the world directory`);
+  const world = requireWorldById(resolvedWorldId);
   if (world.chain !== chain) {
     throw new Error(`Game "${name}" is not deployed on ${chain}`);
   }

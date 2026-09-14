@@ -6,7 +6,7 @@ const reactQueryMocks = vi.hoisted(() => ({
 }));
 
 const directoryMocks = vi.hoisted(() => ({
-  getWorldById: vi.fn(),
+  requireWorldById: vi.fn(),
   getDefaultWorld: vi.fn(),
   getWorldDirectory: vi.fn(() => []),
 }));
@@ -94,8 +94,8 @@ const runAvailabilityQuery = async (worldName: string, playerAddress?: string | 
 beforeEach(() => {
   vi.stubGlobal("fetch", mockFetch);
   reactQueryMocks.useQueries.mockReset();
-  directoryMocks.getWorldById.mockReset();
-  directoryMocks.getWorldById.mockReturnValue(blitzWorld);
+  directoryMocks.requireWorldById.mockReset();
+  directoryMocks.requireWorldById.mockReturnValue(blitzWorld);
   directoryMocks.getDefaultWorld.mockReset();
   directoryMocks.getDefaultWorld.mockReturnValue(blitzWorld);
   registryMocks.resolveWorldIdForGame.mockReset();

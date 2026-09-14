@@ -12,7 +12,7 @@ import {
   resolveWorldIdForGame,
 } from "@bibliothecadao/eternum/game-client";
 import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
-import { getDefaultWorld, getWorldById } from "@/runtime/world/world-directory";
+import { requireWorldById } from "@/runtime/world/world-directory";
 import { resolveBlitzGrantStartingTroops } from "@/services/blitz/blitz-settlement-options";
 import { getGameManifest } from "@contracts";
 import type { GameChain as Chain } from "@realms-world/chain";
@@ -111,16 +111,12 @@ export const useWorldRegistration = ({
 
   const isSettling = entryStage !== "idle" && entryStage !== "done" && entryStage !== "error";
 
-  /**
-   * Resolve contract addresses: the appchain worlds ship their contract map
-   * in the committed manifest (world directory); legacy chains resolve from
-   * the factory (dormant path, kept until the W7 excision).
-   */
+  /** Resolve the selected game's contract addresses from its deployment manifest. */
   const resolveContracts = useCallback(async (): Promise<Record<string, string>> => {
     if (contractsCacheRef.current) return contractsCacheRef.current;
 
     const worldId = await resolveWorldIdForGame(worldName);
-    const contracts = (getWorldById(worldId) ?? getDefaultWorld()).contractsBySelector;
+    const contracts = requireWorldById(worldId).contractsBySelector;
     contractsCacheRef.current = contracts;
     return contracts;
   }, [chain, worldName]);

@@ -10,7 +10,7 @@ import { WORLD_AVAILABILITY_QUERY_KEY } from "@/hooks/world-list-queries";
 import type { HeraldGameDirectoryEntry } from "@bibliothecadao/eternum/game-sync";
 import type { ResolvedGameMode } from "@/config/game-modes/resolved-mode";
 import { fetchHeraldGameDirectory, resolveWorldIdForGame } from "@bibliothecadao/eternum/game-client";
-import { getDefaultWorld, getWorldById } from "@/runtime/world/world-directory";
+import { requireWorldById } from "@/runtime/world/world-directory";
 import type { WorldDeployment } from "@/runtime/world/world-directory";
 import type { GameChain as Chain } from "@realms-world/chain";
 import { useQueries } from "@tanstack/react-query";
@@ -154,7 +154,7 @@ const checkWorldAvailability = async (
   playerAddress?: string | null,
 ): Promise<{ isAvailable: boolean; meta: WorldConfigMeta | null }> => {
   const worldId = world.worldId ?? (await resolveWorldIdForGame(world.name)) ?? undefined;
-  const deployment = getWorldById(worldId) ?? getDefaultWorld();
+  const deployment = requireWorldById(worldId);
 
   const meta = await fetchGameMeta(deployment, world.name, playerAddress);
   if (meta) meta.worldId = deployment.id;

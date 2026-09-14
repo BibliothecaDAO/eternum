@@ -35,6 +35,12 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-14",
+    title: "World selection validation",
+    description: "Game entry and registration report an unavailable world instead of selecting another deployment.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-14",
     title: "Mobile Action Menu and Market",
     description:
       "The Build, Production, Military, Transfer and Trade menu now appears on phones: a rail on the left in landscape and a row above the tab bar in portrait. The Market fits a phone screen and keeps your AMM tab open when you change resources. The phone order book now leads with a Buy/Sell toggle and the order form, shows the three best offers beneath it, and opens the full list on See all.",

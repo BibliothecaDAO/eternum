@@ -1,7 +1,6 @@
-import { ETHEREAL_STRIDE } from "../../../packages/types/src/constants/hex";
+import { ETHEREAL_STRIDE, tileDataToTile } from "@bibliothecadao/types";
 import { setTimeout as sleep } from "node:timers/promises";
 import { CallData, type Call, type RpcProvider } from "starknet";
-import { tileDataToTile } from "../../../packages/types/src/utils/tile";
 import {
   cubeDistance,
   neighbor,

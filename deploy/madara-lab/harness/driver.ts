@@ -2,7 +2,7 @@ import { setTimeout as sleep } from "node:timers/promises";
 import { shortString, type Account, type Call, type RpcProvider } from "starknet";
 import { type ActionPath, ActionPaths, ActionType, type GameActions } from "@bibliothecadao/eternum";
 import { buildBlitzSettleCalls, buildEternumSettleCalls } from "@bibliothecadao/eternum/game-client";
-import { ContractAddress, TroopTier, type ID, type TroopType } from "../../../packages/types/src";
+import { ContractAddress, TroopTier, type ID, type TroopType } from "@bibliothecadao/types";
 import { mapWithConcurrency, type HarnessAccount } from "./account-factory";
 import {
   EXPLORER_TROOP_COUNT,

@@ -32,6 +32,7 @@ installWorldDirectory(() => [buildAppWorld(env.VITE_PUBLIC_CHAIN, "blitz")]);
 export {
   getDefaultWorld,
   getWorldById,
+  requireWorldById,
   getWorldDirectory,
   type WorldDeployment,
 } from "@bibliothecadao/eternum/game-client";

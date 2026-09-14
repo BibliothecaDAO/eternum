@@ -1,7 +1,7 @@
 # Madara lab: a single pinned Madara sequencer running the Realms game world locally.
 #
 #   docker compose up -d                 # madara only
-#   scripts/deploy-world.sh              # sozo build + migrate the s2 world (writes world address to .lab/)
+#   scripts/deploy-world.sh              # Scarb build + deploy the s2 world (writes world address to .lab/)
 #   docker compose --profile web up -d   # postgres for the identity session store
 #   docker compose --profile server --profile web up -d madara postgres cloudflared   # the rented box (README "Server profile")
 #

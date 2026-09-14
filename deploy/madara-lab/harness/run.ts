@@ -171,7 +171,7 @@ async function main(): Promise<void> {
   const [chainId, gameplayContracts, manifest] = await Promise.all([
     provider.getChainId(),
     readJson<GameplayContractsArtifact>(path.join(LAB_DIRECTORY, ".lab/gameplay-contracts.json")),
-    readJson<WorldManifest>(path.join(REPOSITORY_ROOT, "contracts/l3/game/manifest_madara.json")),
+    readJson<WorldManifest>(path.resolve(REPOSITORY_ROOT, process.env.GAME_MANIFEST_PATH)),
   ]);
   const systems = resolveSystemAddresses(manifest);
   assertChainId(chainId, "madara", "RPC_URL");

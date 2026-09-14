@@ -6,6 +6,7 @@ import {
   buildWorldDeployment,
   getDefaultWorld,
   getWorldById,
+  requireWorldById,
   getWorldDirectory,
   installWorldDirectory,
 } from "./world-directory";
@@ -75,4 +76,12 @@ describe("world directory", () => {
     getWorldDirectory();
     expect(builds).toBe(1);
   });
+});
+
+it("rejects missing and unknown selected worlds instead of returning the default", () => {
+  installWorldDirectory(() => [buildBlitzWorld()]);
+  expect(requireWorldById("blitz").id).toBe("blitz");
+  for (const id of ["eternum", "", null, undefined]) {
+    expect(() => requireWorldById(id)).toThrow("is not configured");
+  }
 });
