@@ -7452,8 +7452,8 @@ export default class WorldmapScene extends WarpTravel {
       this.armyManager.update(deltaTime, animationContext, this.animationsPaused),
     );
     this.structureManager.updateAnimations(deltaTime, animationContext, this.animationsPaused);
+    this.spireManager.update(this.animationsPaused ? 0 : deltaTime, this.camera);
     if (!this.animationsPaused) {
-      this.spireManager.update(deltaTime);
       this.syncTerrainMovementInteractions();
       this.proceduralTerrain.update(deltaTime);
       this.combatPresentation?.update(deltaTime);

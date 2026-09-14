@@ -122,6 +122,7 @@ Procfile          text
 
 # Graphics
 *.ai              binary
+*.blend           binary
 *.bmp             binary
 *.bin             binary
 *.eps             binary

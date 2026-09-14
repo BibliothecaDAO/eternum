@@ -21,6 +21,7 @@ vi.mock("../utils/utils", () => ({
 vi.mock("../structures/spire-model", () => ({
   SpireModel: class {
     group = new Group();
+    labelHeight = 4.25;
     setCount = vi.fn();
     setMatrixAt = vi.fn();
     needsUpdate = vi.fn();
@@ -81,6 +82,7 @@ describe("spire presentation lifecycle", () => {
     harness.alt = false;
     harness.onLayer();
     expect(labels.children).toHaveLength(1);
+    expect(labels.children[0].position.y).toBe(4.25);
     expect(harness.models[0].setCount).toHaveBeenLastCalledWith(1);
     expect(harness.load).toHaveBeenCalledTimes(1);
     manager.destroy();
