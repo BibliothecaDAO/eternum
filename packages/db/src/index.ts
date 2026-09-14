@@ -2,6 +2,7 @@ export * from "drizzle-orm";
 export * from "./schema/bridge";
 export * from "./schema/auth";
 export * from "./schema/mmr";
+export * from "./schema/notifications";
 export * from "./schema/realm-ownership";
 export * from "./realm-ownership";
 export * from "./realm-ownership-policy.mjs";

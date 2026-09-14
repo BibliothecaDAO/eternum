@@ -86,6 +86,36 @@ afterEach(() => {
 });
 
 describe("HeraldGameSyncTransport", () => {
+  it("preserves each story event's provisional or confirmed block metadata", async () => {
+    const harness = streamHarness();
+    harness.handlers.onEvent = vi.fn();
+    const subscribed = harness.transport.subscribe(harness.handlers);
+    const socket = harness.sockets[0]!;
+    socket.receive(hello("epoch-a", 0));
+    const writer = await subscribed;
+    snapshot("epoch-a", 0, "0x1", 1).forEach((message) => socket.receive(message));
+    await harness.transport.fetchSnapshotPage();
+    const set = [{ key: "0xstory", model: "StoryEvent", value: { timestamp: 100 } }];
+    socket.receive({ ...diff("epoch-a", 1, "0x1", 1, true), set });
+    socket.receive({ ...diff("epoch-a", 2, "0x1", 1, false), set });
+    expect(harness.handlers.onEvent).toHaveBeenNthCalledWith(1, expect.anything(), {
+      block: null,
+      preconfirmed: true,
+      confirmedAfterAttach: false,
+    });
+    expect(harness.handlers.onEvent).toHaveBeenNthCalledWith(2, expect.anything(), {
+      block: 13,
+      preconfirmed: false,
+      confirmedAfterAttach: true,
+    });
+    socket.receive({ ...diff("epoch-a", 3, "0x1", 1, false), block: 12, set });
+    expect(harness.handlers.onEvent).toHaveBeenLastCalledWith(expect.anything(), {
+      block: 12,
+      preconfirmed: false,
+      confirmedAfterAttach: false,
+    });
+    writer.cancel();
+  });
   it("retries a stalled handshake without waiting for the browser's close event", async () => {
     vi.useFakeTimers();
     const warning = vi.spyOn(console, "warn").mockImplementation(() => {});

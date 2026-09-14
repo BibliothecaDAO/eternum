@@ -23,7 +23,10 @@ vi.mock("@/audio", () => ({
 vi.mock("@/hooks/context/identity-session", () => ({
   useIdentitySession: () => ({ session: { user: { name: "Owner", id: "0x123456789" } } }),
   useIdentitySessionStore: { getState: () => ({ refresh: mocks.refresh }) },
-  identityClient: { updateUser: mocks.updateUser },
+  identityClient: {
+    updateUser: mocks.updateUser,
+    getNotificationPreferences: async () => ({ owner: "0x123456789", level: "off", revision: 0 }),
+  },
   signOutIdentitySession: mocks.signOut,
 }));
 vi.mock("@/hooks/store/use-account-store", () => ({ useAccountStore: () => "0x123456789" }));

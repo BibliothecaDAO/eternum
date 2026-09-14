@@ -1,0 +1,53 @@
+name: herald
+
+on:
+  pull_request:
+    paths:
+      - "apps/herald/**"
+      - "packages/**"
+      - "pnpm-lock.yaml"
+      - "package.json"
+      - ".github/workflows/test-herald.yml"
+
+concurrency:
+  group: herald-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  history-and-stream:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: herald_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d herald_test" --health-interval 5s --health-timeout 5s --health-retries
+          10
+    env:
+      HERALD_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/herald_test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Build shared packages
+        run: pnpm run build:packages
+      - name: Typecheck Herald
+        run: pnpm --dir apps/herald typecheck
+      - name: Test history recovery and stream protocols
+        run: pnpm --dir apps/herald test

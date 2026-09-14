@@ -75,14 +75,14 @@ export class OverlayLedger {
     return delta;
   }
 
-  /** A confirmed row leaves the overlay; it goes on the wire only when subscribers hold a different value for it. */
+  /** Unchanged entity values stay off the wire; events must still convey their confirmation. */
   public settleConfirmed(changes: FoldChange[]): FoldChange[] {
     const published: FoldChange[] = [];
     for (const change of changes) {
       const entry = ledgerEntry(change);
       const identity = rowIdentity(entry.model, entry.key);
       const held = this.held.get(identity);
-      if (!held || !isSameHeldRow(held.row, entry.row)) published.push(change);
+      if (change.event || !held || !isSameHeldRow(held.row, entry.row)) published.push(change);
       this.held.delete(identity);
     }
     return published;

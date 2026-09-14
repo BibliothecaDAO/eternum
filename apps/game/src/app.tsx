@@ -3,6 +3,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 
 import "./index.css";
 import { PwaUpdatePrompt } from "./pwa/pwa-update-prompt";
+import { PwaInstallRuntime } from "./pwa/pwa-install-control";
 
 const DebugThreeChunkView = lazy(() =>
   import("./ui/features/debug/three-chunk-debug-view").then((module) => ({ default: module.ThreeChunkDebugView })),
@@ -54,6 +55,7 @@ function App() {
   return (
     <BrowserRouter>
       <PwaUpdatePrompt />
+      <PwaInstallRuntime />
       <Routes>
         <Route
           path="/lab/*"

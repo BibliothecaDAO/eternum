@@ -42,10 +42,12 @@ const Host = () => {
 const battle = (id: string, at: number) =>
   ({
     id,
+    event_id: `story:v1:madara:0x123:0x7:0xabc:0x${Math.floor(at).toString(16)}`,
+    entity_id: 11,
     timestampMs: at,
     story: "BattleStory",
     owner: "0x1",
-    storyPayload: {},
+    storyPayload: { attacker_id: 11, defender_id: 22, attacker_owner_address: "0x1", defender_owner_address: "0x2" },
     presentation: { title: "Battle", description: "Attacker [Ann] · Defender [Bob] · Winner: Ann" },
   }) as any;
 

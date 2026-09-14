@@ -34,6 +34,72 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-09-14",
+    title: "Mobile Action Menu and Market",
+    description:
+      "The Build, Production, Military, Transfer and Trade menu now appears on phones: a rail on the left in landscape and a row above the tab bar in portrait. The Market fits a phone screen and keeps your AMM tab open when you change resources. The phone order book now leads with a Buy/Sell toggle and the order form, shows the three best offers beneath it, and opens the full list on See all.",
+    type: "feature",
+  },
+  {
+    date: "2026-09-13",
+    title: "Background Notification Account Safety",
+    description:
+      "Signing out or disabling background notifications stops this device from accepting alerts immediately, even while setup is waiting for a connection.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-13",
+    title: "Automatic Background Game Alerts",
+    description:
+      "When available, enable game alerts on this device to receive confirmed activity with the game closed. Your account notification level controls which alerts arrive.",
+    type: "feature",
+  },
+  {
+    date: "2026-09-13",
+    title: "Notification Settings Across Tabs",
+    description: "Changing your account notification level also updates your other open game tabs.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-13",
+    title: "Install Realms Easily",
+    description:
+      "Use Install Realms on the home page or in Settings to install the game or see instructions for your browser.",
+    type: "feature",
+  },
+  {
+    date: "2026-09-13",
+    title: "Game Activity Compatibility",
+    description: "Game activity remains available as new kinds of events are introduced.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-12",
+    title: "Local Game Notifications",
+    description:
+      "Enable device alerts in Settings for new confirmed activity involving you while the game remains running. Test delivery before relying on it.",
+    type: "feature",
+  },
+  {
+    date: "2026-09-12",
+    title: "Notification Preferences",
+    description: "Choose a notification level in Settings and save it to your account.",
+    type: "feature",
+  },
+  {
+    date: "2026-09-12",
+    title: "Confirmed Game Activity",
+    description: "Game activity keeps its confirmed version when live updates and history overlap.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-12",
+    title: "Living hyperstructure towers",
+    description:
+      "Hyperstructures rise piece by piece into distinctive magic towers, including instant builds in Blitz. Six architectural families and eight crowns feature moving wings, orbiting gems and swirling power cores: unstable violet or calm teal. They awaken on completion and freeze when the game ends.",
+    type: "feature",
+  },
+  {
     date: "2026-09-12",
     title: "Install Realms",
     description:

@@ -25,6 +25,16 @@ describe("collapseChanges", () => {
 });
 
 describe("OverlayLedger", () => {
+  it("publishes an event's confirmation even when its provisional payload is unchanged", () => {
+    const ledger = new OverlayLedger();
+    const event = {
+      gameId: "7",
+      event: true as const,
+      set: { key: "0x1", model: "StoryEvent", value: { timestamp: 1 } },
+    };
+    expect(ledger.delta([event], noConfirmedRow)).toEqual([event]);
+    expect(ledger.settleConfirmed([event])).toEqual([event]);
+  });
   it("keeps only the changes that alter what subscribers hold", () => {
     const ledger = new OverlayLedger();
 

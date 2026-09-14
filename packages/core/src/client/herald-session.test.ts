@@ -70,13 +70,18 @@ describe("createHeraldGameSyncSession", () => {
     const head = { block: 13, preconfirmed: false, timestamp: 100 };
     const event = { hashed_keys: "0x1", models: {} };
     session.onHead?.(head);
-    session.onEvent?.(event);
+    const confirmation = { block: 13, preconfirmed: false, confirmedAfterAttach: true };
+    session.onEvent?.(event, confirmation);
     session.onTransactionEntitiesReceived?.("0xabc");
     session.onTransactionEntitiesApplied?.("0xabc");
     session.onError?.(new Error("boom"));
 
     expect(observer.onHead).toHaveBeenCalledWith(head);
-    expect(observer.onStoryEvent).toHaveBeenCalledWith(event, { chain: "madara", worldAddress: "0x1", gameId: 54 });
+    expect(observer.onStoryEvent).toHaveBeenCalledWith(
+      event,
+      { chain: "madara", worldAddress: "0x1", gameId: 54 },
+      confirmation,
+    );
     expect(observer.onDiffReceived).toHaveBeenCalledWith("0xabc");
     expect(observer.onRecsApplied).toHaveBeenCalledWith("0xabc");
     expect(observer.onLiveApplyFailed).toHaveBeenCalledWith(expect.objectContaining({ message: "boom" }));

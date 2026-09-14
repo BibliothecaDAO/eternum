@@ -22,7 +22,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@realms-world/chain": "workspace:*"
+    "@realms-world/chain": "workspace:*",
+    "@bibliothecadao/notifications": "workspace:*"
   },
   "devDependencies": {
     "tsup": "^8.0.2",

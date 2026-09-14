@@ -4,7 +4,13 @@ import { getDefaultWorld, getWorldById } from "@/runtime/world/world-directory";
 import { getActiveWorld } from "@/runtime/world";
 import { buildStoryEventPresentation, configManager } from "@bibliothecadao/eternum";
 import type { GameSyncEntity, HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
-import { storyEventIdentity, storyEventScopeKey, type StoryEventScope } from "@bibliothecadao/eternum/game-sync";
+import {
+  eventConfirmationRank,
+  storyEventIdentity,
+  storyEventScopeKey,
+  type GameSyncEventConfirmation,
+  type StoryEventScope,
+} from "@bibliothecadao/eternum/game-sync";
 import { useDojo } from "@bibliothecadao/react";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
@@ -13,6 +19,7 @@ import { useConnectionStore } from "./use-connection-store";
 
 interface StoryEventData {
   scopeKey: string;
+  confirmation: GameSyncEventConfirmation | null;
   entity_id: number | null;
   event_id: string;
   id: string | null;
@@ -44,12 +51,17 @@ const STREAM_EVENT_LIMIT = 512;
 const useStoryEventsStore = create<StoryEventsState>((set) => ({
   streamed: [],
   accept: (event) =>
-    set((state) => ({
-      streamed: [event, ...state.streamed.filter((existing) => existing.event_id !== event.event_id)].slice(
-        0,
-        STREAM_EVENT_LIMIT,
-      ),
-    })),
+    set((state) => {
+      const previous = state.streamed.find((existing) => existing.event_id === event.event_id);
+      if (previous && eventConfirmationRank(previous.confirmation) > eventConfirmationRank(event.confirmation))
+        return state;
+      return {
+        streamed: [event, ...state.streamed.filter((existing) => existing.event_id !== event.event_id)].slice(
+          0,
+          STREAM_EVENT_LIMIT,
+        ),
+      };
+    }),
   reset: () => set({ streamed: [] }),
 }));
 
@@ -87,11 +99,16 @@ const legacyHeadlineFields = (type: string, payload: Record<string, unknown>): R
 // The leaderboard carries registered points; the log does not repeat them as a story.
 const STORIES_OUTSIDE_THE_LOG = new Set(["PointsRegisteredStory"]);
 
-const storyEventFromValue = (value: Record<string, unknown>, scope: StoryEventScope): StreamStoryEvent | null => {
+const storyEventFromValue = (
+  value: Record<string, unknown>,
+  scope: StoryEventScope,
+  confirmation?: GameSyncEventConfirmation,
+): StreamStoryEvent | null => {
   const variant = storyVariant(value.story);
   if (!variant || STORIES_OUTSIDE_THE_LOG.has(variant.type)) return null;
   return {
     scopeKey: storyEventScopeKey(scope),
+    confirmation: confirmation ?? null,
     owner: value.owner === null || value.owner === undefined ? null : String(value.owner),
     entity_id: toOptionalNumber(value.entity_id),
     id: value.id === undefined ? null : String(value.id),
@@ -105,19 +122,27 @@ const storyEventFromValue = (value: Record<string, unknown>, scope: StoryEventSc
   };
 };
 
-export const toStreamStoryEvent = (event: GameSyncEntity, scope: StoryEventScope): StreamStoryEvent | null => {
+export const toStreamStoryEvent = (
+  event: GameSyncEntity,
+  scope: StoryEventScope,
+  confirmation?: GameSyncEventConfirmation,
+): StreamStoryEvent | null => {
   const modelEntry = Object.entries(event.models).find(
     ([model]) => model === "StoryEvent" || model.endsWith("-StoryEvent"),
   );
   const value = modelEntry ? asRecord(modelEntry[1]) : null;
-  return value ? storyEventFromValue(value, scope) : null;
+  return value ? storyEventFromValue(value, scope, confirmation) : null;
 };
 
 const historyStoryEvent = (event: HeraldHistoryEvent, scope: StoryEventScope): StreamStoryEvent | null =>
-  storyEventFromValue(event.value, scope);
+  storyEventFromValue(event.value, scope, { block: event.block_number, preconfirmed: false });
 
-export const acceptGameSyncStoryEvent = (event: GameSyncEntity, scope: StoryEventScope): void => {
-  const storyEvent = toStreamStoryEvent(event, scope);
+export const acceptGameSyncStoryEvent = (
+  event: GameSyncEntity,
+  scope: StoryEventScope,
+  confirmation?: GameSyncEventConfirmation,
+): void => {
+  const storyEvent = toStreamStoryEvent(event, scope, confirmation);
   if (storyEvent) useStoryEventsStore.getState().accept(storyEvent);
 };
 
@@ -179,16 +204,14 @@ export const useStoryEvents = (limit: number = 100, story?: string) => {
   }, [confirmedBlock, handshake, story, refetch, isError]);
 
   const data = useMemo(() => {
-    const identities = new Set<string>();
-    return [...streamed, ...(query.data ?? [])]
-      .filter((event) => event.scopeKey === scopeKey)
-      .filter((event) => !story || event.story === story)
-      .filter((event) => {
-        const identity = event.event_id;
-        if (identities.has(identity)) return false;
-        identities.add(identity);
-        return true;
-      })
+    const events = new Map<string, StoryEventData>();
+    for (const event of [...streamed, ...(query.data ?? [])]) {
+      if (event.scopeKey !== scopeKey || (story && event.story !== story)) continue;
+      const previous = events.get(event.event_id);
+      if (!previous || eventConfirmationRank(event.confirmation) > eventConfirmationRank(previous.confirmation))
+        events.set(event.event_id, event);
+    }
+    return [...events.values()]
       .sort((left, right) => Number(BigInt(right.timestamp) - BigInt(left.timestamp)))
       .slice(0, limit)
       .map((event) => processStoryEvent(event, components));

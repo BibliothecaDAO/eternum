@@ -3,6 +3,7 @@ import type { GameChain } from "@realms-world/chain";
 
 import type {
   GameSyncEntity,
+  GameSyncEventConfirmation,
   GameSyncHead,
   GameSyncRuntimeMetrics,
   GameSyncSessionStart,
@@ -32,7 +33,7 @@ export interface GameClientObserver {
   /** Herald reported a head: a confirmed block, or the pre-confirmed sequencer clock. */
   onHead?: (head: GameSyncHead) => void;
   /** A story event row arrived on the live stream, scoped to the chain, world and game it belongs to. */
-  onStoryEvent?: (event: GameSyncEntity, scope: StoryEventScope) => void;
+  onStoryEvent?: (event: GameSyncEntity, scope: StoryEventScope, confirmation?: GameSyncEventConfirmation) => void;
   /** A new session starts; story events from the previous one are stale. */
   onStoryEventsReset?: () => void;
   /** The diff for a submitted transaction reached the client. */
@@ -89,7 +90,7 @@ export function createHeraldGameSyncSession(input: CreateHeraldGameSyncSessionIn
       observer.onLiveApplyFailed?.(error);
       console.error(`[GameSync] live entity apply failed: ${error.message}`);
     },
-    onEvent: (event) => observer.onStoryEvent?.(event, scope),
+    onEvent: (event, confirmation) => observer.onStoryEvent?.(event, scope, confirmation),
     onMetrics: observer.onMetrics,
     onSnapshotProgress: createSnapshotProgressObserver(observer),
     onTransactionEntitiesApplied: observer.onRecsApplied,

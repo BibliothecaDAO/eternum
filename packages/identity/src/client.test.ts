@@ -3,6 +3,26 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { createIdentityClient } from "./client";
 
 describe("identity client", () => {
+  it("uses the credentialed identity transport for preference reads and conditional saves", async () => {
+    const preferences = { owner: "0x1", level: "standard", revision: 2 };
+    const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(async () => Response.json(preferences));
+    const client = createIdentityClient({ baseUrl: "https://realms.test/api/auth", fetch });
+    expect(await client.getNotificationPreferences()).toEqual(preferences);
+    expect(fetch.mock.calls[0]).toEqual([
+      "https://realms.test/api/notifications/preferences",
+      expect.objectContaining({ credentials: "include", cache: "no-store", method: "GET" }),
+    ]);
+    await client.saveNotificationPreferences({ owner: "0x1", level: "standard", revision: 1 });
+    expect(fetch.mock.calls[1]?.[1]).toMatchObject({
+      credentials: "include",
+      method: "POST",
+      body: JSON.stringify({ owner: "0x1", level: "standard", revision: 1 }),
+    });
+    fetch.mockResolvedValueOnce(Response.json({ error: "preference_conflict" }, { status: 409 }));
+    await expect(client.saveNotificationPreferences({ owner: "0x1", level: "off", revision: 1 })).rejects.toThrow(
+      "another device",
+    );
+  });
   it("signs the server nonce and returns the resulting session", async () => {
     const session = {
       session: { id: "session-1", expiresAt: "2026-08-26T00:00:00.000Z", userId: "0x123" },
@@ -89,4 +109,51 @@ it.each([
   expect(fetch.mock.calls.at(-1)?.[1]?.credentials).toBe("include");
   await reloaded.signOut();
   expect(stored.size).toBe(0);
+});
+
+it("uses credentialed identity routes for push setup and a device capability for post-logout revocation", async () => {
+  const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(async () => Response.json({ enabled: false }));
+  const client = createIdentityClient({ baseUrl: "https://realms.test/api/auth", fetch });
+  await client.getPushConfiguration();
+  expect(fetch.mock.calls.at(-1)?.[0]).toBe("https://realms.test/api/notifications/push/config");
+  const id = "11111111-1111-4111-8111-111111111111";
+  const registration = {
+    owner: "0x1",
+    id,
+    token: id,
+    subscription: { endpoint: "https://web.push.apple.com/test", keys: { p256dh: "key", auth: "secret" } },
+  };
+  await client.registerPushSubscription(registration);
+  expect(fetch.mock.calls.at(-1)).toEqual([
+    "https://realms.test/api/notifications/push/subscribe",
+    expect.objectContaining({ method: "POST", credentials: "include", body: JSON.stringify(registration) }),
+  ]);
+  await client.getPushSubscriptionStatus("0x1", id);
+  expect(fetch.mock.calls.at(-1)?.[0]).toBe("https://realms.test/api/notifications/push/status");
+  await client.sendPushTest("0x1", id, "/enter/madara/game");
+  expect(fetch.mock.calls.at(-1)?.[0]).toBe("https://realms.test/api/notifications/push/test");
+  await client.revokePushSubscription(id, id);
+  expect(fetch.mock.calls.at(-1)?.[1]?.body).toBe(JSON.stringify({ id, token: id }));
+  expect(fetch.mock.calls.at(-1)?.[0]).toBe("https://realms.test/api/notifications/push/revoke");
+});
+
+it("bounds a stalled push request with an abort signal", async () => {
+  const controller = new AbortController();
+  const timeout = vi.spyOn(AbortSignal, "timeout").mockReturnValue(controller.signal);
+  try {
+    const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(
+      (_url, init) =>
+        new Promise((_resolve, reject) => {
+          init!.signal!.addEventListener("abort", () => reject(init!.signal!.reason), { once: true });
+        }),
+    );
+    const client = createIdentityClient({ baseUrl: "https://realms.test/api/auth", fetch });
+    const request = client.getPushSubscriptionStatus("0x1", "device");
+    const rejected = expect(request).rejects.toThrow("Timed out");
+    expect(timeout).toHaveBeenCalledWith(10_000);
+    controller.abort(new Error("Timed out"));
+    await rejected;
+  } finally {
+    timeout.mockRestore();
+  }
 });

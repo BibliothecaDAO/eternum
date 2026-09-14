@@ -62,6 +62,7 @@ jobs:
       - name: Test deployment verification and chunk recovery
         run: |
           node --test apps/game/scripts/verify-client-deployment.test.mjs
+          node --test apps/game/scripts/ensure-pwa-cache-rule.test.mjs
           node --test apps/game/scripts/verify-pwa-build.test.mjs
           pnpm --dir apps/game test src/utils/chunk-load-recovery.test.ts src/pwa
           pnpm --dir apps/game verify:assets
@@ -88,6 +89,11 @@ jobs:
           set -euo pipefail
           # Never ship sourcemaps publicly.
           find dist -name "*.js.map" -delete
+
+      - name: Enforce origin cache headers for PWA resources
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: node apps/game/scripts/ensure-pwa-cache-rule.mjs https://play.realms.party realms.party
 
       # wrangler-action@v3 auto-installs wrangler with `pnpm add`, which pnpm refuses at a workspace root
       # (ERR_PNPM_ADDING_TO_ROOT). Run wrangler with `pnpm dlx` instead — isolated, no workspace mutation.

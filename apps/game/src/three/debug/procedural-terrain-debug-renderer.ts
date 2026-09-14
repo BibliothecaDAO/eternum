@@ -124,7 +124,7 @@ export interface ProceduralTerrainDebugRendererHandle {
   resetCamera(): void;
   focusSelection(): void;
   previewExploration(entryEdge: number): Promise<void>;
-  placeBuilding(path: string, yaw: number): Promise<void>;
+  placeBuilding(path: string, yaw: number, hyperstructureId?: number, constructionProgress?: number): Promise<void>;
   removeBuilding(clearAll?: boolean): Promise<void>;
   setPreview(preview: TerrainLabPreview): Promise<void>;
   setCycleProgress(progress: number): void;
@@ -232,7 +232,7 @@ export async function mountProceduralTerrainDebugRenderer(
       getStats: () => readStats(runtime, input.forceWebGL, input.texturedGround),
       resetCamera: () => positionCamera(runtime.camera, runtime.controls, runtime.cameraFrame),
       previewExploration: (entryEdge) => runtime.interaction.previewExploration(entryEdge),
-      placeBuilding: (path, yaw) => runtime.interaction.placeBuilding(path, yaw),
+      placeBuilding: (path, yaw, id, progress) => runtime.interaction.placeBuilding(path, yaw, id, progress),
       removeBuilding: (clearAll) => runtime.interaction.removeBuilding(clearAll),
       setPreview: (preview) => runtime.interaction.configure(preview),
       setWeatherEvolving: (enabled) => runtime.weather.setEvolving(enabled),

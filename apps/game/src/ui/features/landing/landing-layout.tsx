@@ -10,6 +10,7 @@ import { DynamicBackground } from "./components/background/dynamic-background";
 import { LandingHeader } from "./components/landing-header";
 import { LandingMusicPlayer } from "./components/landing-music-player";
 import { LandingSettings } from "./components/landing-settings";
+import { PwaInstallControl } from "@/pwa/pwa-install-control";
 import { LandingSidebar } from "./components/landing-sidebar";
 import { MobileBottomNav } from "./components/mobile-bottom-nav";
 import { LandingProvider, useLandingContext } from "./context/landing-context";
@@ -109,6 +110,9 @@ const LandingLayoutContent = () => {
       >
         {/* Page content */}
         <div className="flex-1 px-6 lg:px-10">
+          <div className="mb-4 flex justify-end">
+            <PwaInstallControl />
+          </div>
           <Outlet />
         </div>
       </main>

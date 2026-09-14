@@ -1,5 +1,6 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
+import { resolveBestPrices } from "./best-prices";
 import { MarketResourceRow } from "./market-resource-row";
 import { MarketManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
@@ -42,24 +43,11 @@ export const MarketResourceSidebar = ({
     return prices;
   }, [tradableResources, dojo.setup.components]);
 
-  // Best price per resource, indexed once per offer set instead of once per row.
-  const bestPrices = useMemo(() => {
-    const highestBid = new Map<number, number>();
-    const lowestAsk = new Map<number, number>();
-    for (const offer of resourceBidOffers) {
-      const resourceId = offer.makerGets[0]?.resourceId;
-      if (resourceId !== undefined && offer.perLords > (highestBid.get(resourceId) ?? -Infinity)) {
-        highestBid.set(resourceId, offer.perLords);
-      }
-    }
-    for (const offer of resourceAskOffers) {
-      const resourceId = offer.takerGets[0]?.resourceId;
-      if (resourceId !== undefined && offer.perLords < (lowestAsk.get(resourceId) ?? Infinity)) {
-        lowestAsk.set(resourceId, offer.perLords);
-      }
-    }
-    return { highestBid, lowestAsk };
-  }, [resourceBidOffers, resourceAskOffers]);
+  // Indexed once per offer set instead of once per row.
+  const bestPrices = useMemo(
+    () => resolveBestPrices(resourceBidOffers, resourceAskOffers),
+    [resourceBidOffers, resourceAskOffers],
+  );
 
   const visibleResources = useMemo(() => {
     const needle = search.trim().toLowerCase();

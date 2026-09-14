@@ -1,3 +1,4 @@
+import { parseStoryHistoryCursor } from "@bibliothecadao/eternum/game-sync";
 import { buildLiveLeaderboard } from "./live-leaderboard";
 import { buildGameDirectory } from "./game-directory";
 import type { FoldRow, GameSnapshot, ReplayMetrics } from "./types";
@@ -10,12 +11,16 @@ interface SnapshotSource {
 
 interface HeraldHttpState {
   chain: string;
+  worldAddress: string;
   confirmedBlock: () => number;
   chainTimestamp: () => number;
   decodedModelCount: number;
   fold: SnapshotSource;
   metrics: ReplayMetrics;
-  history?: Pick<HistoryStore, "queryEvents" | "reviewSnapshot" | "transactionCount" | "leaderboard">;
+  history?: Pick<
+    HistoryStore,
+    "queryStoryCursor" | "queryEvents" | "reviewSnapshot" | "transactionCount" | "leaderboard"
+  >;
   undecodableEventCount: () => number;
 }
 
@@ -103,14 +108,15 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
 
     if (request.method === "GET" && url.pathname === directoryPath) {
       try {
-        return jsonResponse(
-          buildGameDirectory({
+        return jsonResponse({
+          ...buildGameDirectory({
             chain: state.chain,
             confirmedBlock: state.confirmedBlock(),
             fold: state.fold,
             playerAddress: requestedPlayer(url),
           }),
-        );
+          world_address: state.worldAddress,
+        });
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         return jsonResponse({ error: message }, 400);
@@ -128,6 +134,24 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
         );
       } catch (error) {
         return jsonResponse({ error: error instanceof Error ? error.message : String(error) }, 503);
+      }
+    }
+
+    if (request.method === "GET" && url.pathname === `/${state.chain}/history/story-events`) {
+      if (!state.history || state.undecodableEventCount() > 0)
+        return jsonResponse({ error: "story_history_unavailable" }, 503);
+      let after, limit;
+      try {
+        after = url.searchParams.has("after") ? parseStoryHistoryCursor(url.searchParams.get("after")) : null;
+        limit = paginationValue(url, "limit", 100);
+        if (limit < 1) throw new Error("Story page size must be positive");
+      } catch {
+        return jsonResponse({ error: "invalid_story_cursor" }, 400);
+      }
+      try {
+        return jsonResponse(await state.history.queryStoryCursor(after, limit));
+      } catch {
+        return jsonResponse({ error: "story_history_unavailable" }, 503);
       }
     }
 

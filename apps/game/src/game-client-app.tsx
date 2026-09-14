@@ -14,6 +14,7 @@ import { useBootDocumentState } from "./ui/modules/boot-loader";
 import { ConstructionGate } from "./ui/modules/construction-gate";
 import { LoadingScreen } from "./ui/modules/loading-screen";
 import { getRandomBackgroundImage } from "./ui/utils/utils";
+import { LocalNotificationLifecycle } from "./pwa/local-notification-lifecycle";
 
 const LazyGameRoute = lazy(loadGameRouteForPlayEntry);
 
@@ -51,7 +52,12 @@ export const GameClientApp = () => {
     return <ConstructionGate />;
   }
 
-  return <GameClientRoutes backgroundImage={backgroundImage} />;
+  return (
+    <>
+      <LocalNotificationLifecycle />
+      <GameClientRoutes backgroundImage={backgroundImage} />
+    </>
+  );
 };
 
 const GameClientRoutes = ({ backgroundImage }: { backgroundImage: string }) => (

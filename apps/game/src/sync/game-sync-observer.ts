@@ -6,6 +6,7 @@ import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { acceptGameSyncStoryEvent, resetGameSyncStoryEvents } from "@/hooks/store/use-story-events-store";
 import { recordClientActionDiffReceived, recordClientActionRecsApplied } from "@/observability/client-action-latency";
+import { dispatchLocalStoryNotification } from "@/pwa/local-story-notifications";
 import { publishSyncMetrics } from "@/observability/sync-metrics";
 import { markGameEntryMilestone, recordGameEntryDuration } from "@/ui/layouts/game-entry-timeline";
 import { DEV_MODE_ENABLED } from "@/utils/dev-mode";
@@ -65,7 +66,10 @@ export const createGameSyncObserver = (input: GameSyncObserverInput): GameClient
   onLiveUpdate: recordGamewideLiveUpdate,
   onLiveApplyFailed: () => useConnectionStore.getState().setGlobalStatus("failed"),
   onHead: recordHeraldHead,
-  onStoryEvent: acceptGameSyncStoryEvent,
+  onStoryEvent: (event, scope, confirmation) => {
+    acceptGameSyncStoryEvent(event, scope, confirmation);
+    dispatchLocalStoryNotification(event, scope, confirmation);
+  },
   onStoryEventsReset: resetGameSyncStoryEvents,
   onDiffReceived: recordClientActionDiffReceived,
   onRecsApplied: recordClientActionRecsApplied,

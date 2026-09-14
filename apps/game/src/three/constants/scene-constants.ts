@@ -9,6 +9,7 @@ import {
 } from "@bibliothecadao/types";
 import { Color } from "three";
 import { HyperstructureTypesNames } from "../types";
+import { HYPERSTRUCTURE_MODEL_PATH } from "../structures/hyperstructure-design";
 
 export const HEX_SIZE = 1;
 
@@ -37,15 +38,11 @@ enum BuildingFilenames {
   LumberMill = "lumber_mill.glb",
   Dragonhide = "dragonhide.glb",
   Wonder = "wonder2.glb",
-  HyperstructureInit = "hyperstructure_init.glb",
-  HyperstructureHalf = "hyperstructure_half.glb",
-  Hyperstructure = "hyperstructure_finish.glb",
   WonderAnimated = "wonder2.glb",
 }
 
 export const ChestModelPath = "/models/reward-tiles/chest.glb";
 export const RiftModelPath = "/models/reward-tiles/rift.glb";
-export const ReservedHyperstructureModelPath = "/models/new-buildings-opt/" + BuildingFilenames.HyperstructureInit;
 
 export const VILLAGE_MODEL_PATH = "/models/settlements/village.glb";
 export const REALM_MODEL_PATHS = {
@@ -68,6 +65,7 @@ export const SHARED_BUILDING_MODEL_PATHS = buildUniqueAssetPaths([
   RiftModelPath,
   ...Object.values(REALM_MODEL_PATHS),
   VILLAGE_MODEL_PATH,
+  HYPERSTRUCTURE_MODEL_PATH,
 ]);
 
 export const structureTypeToBuildingType: Record<StructureType, BuildingType> = {
@@ -151,9 +149,9 @@ export const buildingModelPaths = (isBlitz: boolean) => {
       [StructureType.Camp]: VILLAGE_MODEL_PATH,
     },
     [BUILDINGS_GROUPS.HYPERSTRUCTURE]: {
-      [HyperstructureTypesNames.STAGE_1]: BUILDINGS_MODELS_PATH + BuildingFilenames.HyperstructureInit,
-      [HyperstructureTypesNames.STAGE_2]: BUILDINGS_MODELS_PATH + BuildingFilenames.HyperstructureHalf,
-      [HyperstructureTypesNames.STAGE_3]: BUILDINGS_MODELS_PATH + BuildingFilenames.Hyperstructure,
+      [HyperstructureTypesNames.STAGE_1]: HYPERSTRUCTURE_MODEL_PATH,
+      [HyperstructureTypesNames.STAGE_2]: HYPERSTRUCTURE_MODEL_PATH,
+      [HyperstructureTypesNames.STAGE_3]: HYPERSTRUCTURE_MODEL_PATH,
     },
     [BUILDINGS_GROUPS.WONDER]: {
       [WONDER_REALM]: BUILDINGS_MODELS_PATH + BuildingFilenames.Wonder,
@@ -173,11 +171,7 @@ export function getStructureModelPaths(isBlitz: boolean): Record<StructureType, 
       REALM_MODEL_PATHS[RealmLevelNames.Empire],
       BUILDINGS_MODELS_PATH + BuildingFilenames.WonderAnimated,
     ],
-    [StructureType.Hyperstructure]: [
-      BUILDINGS_MODELS_PATH + BuildingFilenames.HyperstructureInit,
-      BUILDINGS_MODELS_PATH + BuildingFilenames.HyperstructureHalf,
-      BUILDINGS_MODELS_PATH + BuildingFilenames.Hyperstructure,
-    ],
+    [StructureType.Hyperstructure]: [HYPERSTRUCTURE_MODEL_PATH],
     [StructureType.Bank]: [BUILDINGS_MODELS_PATH + BuildingFilenames.Bank],
     [StructureType.FragmentMine]: isBlitz ? [RiftModelPath] : [BUILDINGS_MODELS_PATH + BuildingFilenames.Mine],
     [StructureType.Village]: [VILLAGE_MODEL_PATH],

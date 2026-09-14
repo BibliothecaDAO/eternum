@@ -1,4 +1,6 @@
 import { SettlementAnimation } from "../structures/settlement-animation";
+import { HyperstructureModel } from "../structures/hyperstructure-model";
+import { readHyperstructureConstruction } from "../structures/hyperstructure-state";
 import {
   SettlementAppearance,
   resolveSettlementRelationship,
@@ -174,6 +176,7 @@ export default class HexceptionScene extends HexagonScene {
   private pendingBuildingKeys: Set<string> = new Set();
   private wonderInstances: Map<string, Group> = new Map();
   private buildingMixers: Map<string, AnimationMixer> = new Map();
+  private hyperstructureModel?: HyperstructureModel;
   private buildings: HexceptionBuilding[] = [];
   centerColRow: number[] = [0, 0];
   private highlights: { col: number; row: number }[] = [];
@@ -236,6 +239,16 @@ export default class HexceptionScene extends HexagonScene {
     this.ambienceSystem = new HexceptionAmbienceSystem(this.scene);
     this.applyAmbienceAppearance();
     this.storeUnsubscribes.push(useWorldAppearanceStore.subscribe(() => this.applyAmbienceAppearance()));
+    const towerSubscription = this.dojo.components.Hyperstructure.update$.subscribe(() =>
+      this.syncHyperstructureConstruction(),
+    );
+    const constructionSubscription = this.dojo.components.HyperstructureRequirements.update$.subscribe(() =>
+      this.syncHyperstructureConstruction(),
+    );
+    this.storeUnsubscribes.push(
+      () => towerSubscription.unsubscribe(),
+      () => constructionSubscription.unsubscribe(),
+    );
 
     this.inputManager.addListener("contextmenu", (raycaster) => {
       this.clearBuildingMode();
@@ -474,6 +487,7 @@ export default class HexceptionScene extends HexagonScene {
   private loadBuildingModels() {
     const modelLoadsByPath = new Map<string, Promise<{ model: Group; animations: AnimationClip[] }>>();
     for (const category of Object.values(BUILDINGS_GROUPS)) {
+      if (category === BUILDINGS_GROUPS.HYPERSTRUCTURE) continue;
       const categoryPaths = this.mode.assets.buildingModelPaths[category];
       if (!this.buildingModels.has(category)) {
         this.buildingModels.set(category, new Map());
@@ -746,6 +760,8 @@ export default class HexceptionScene extends HexagonScene {
       categoryMap.clear();
     });
     this.buildingModels.clear();
+    this.hyperstructureModel?.dispose();
+    this.hyperstructureModel = undefined;
 
     // OPTIMIZED: Release any matrices back to the pool
 
@@ -1440,6 +1456,16 @@ export default class HexceptionScene extends HexagonScene {
     signature: string,
   ): void {
     const key = buildingKey(building);
+    if (selection.group === BUILDINGS_GROUPS.HYPERSTRUCTURE) {
+      const model = (this.hyperstructureModel ??= new HyperstructureModel(1));
+      model.setMatrixAt(0, building.matrix);
+      model.setCount(1);
+      this.syncHyperstructureConstruction();
+      model.group.userData[BUILDING_RENDER_SIGNATURE] = signature;
+      this.scene.add(model.group);
+      this.buildingInstances.set(key, model.group);
+      return;
+    }
     this.addWonderInstance(building, key);
 
     const buildingData = this.buildingModels
@@ -1466,6 +1492,14 @@ export default class HexceptionScene extends HexagonScene {
     this.buildingInstances.set(key, instance);
     this.animateBuildingScale(instance);
     this.startBuildingAnimations(key, instance, buildingData.animations);
+  }
+
+  private syncHyperstructureConstruction(): void {
+    if (!this.hyperstructureModel || this.tileManager.structureType() !== StructureType.Hyperstructure) return;
+    this.hyperstructureModel.setConstructionAt(
+      0,
+      readHyperstructureConstruction(this.dojo.components, Number(this.state.structureEntityId)),
+    );
   }
 
   private addWonderInstance(building: HexceptionBuilding, key: string): void {
@@ -1824,6 +1858,7 @@ export default class HexceptionScene extends HexagonScene {
     this.buildingMixers.forEach((mixer) => {
       mixer.update(deltaTime);
     });
+    if (this.hyperstructureModel?.group.parent) this.hyperstructureModel.updateAnimations(deltaTime);
 
     // Update ambience system with time progress and delta
     const cycleProgress = this.state.cycleProgress || 0;

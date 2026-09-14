@@ -1,4 +1,11 @@
 import { isLoopbackOrigin, resolveEndpoint } from "@realms-world/chain";
+import {
+  parseNotificationPreferences,
+  type NotificationPreferences,
+  type PushRegistration,
+  type PushConfiguration,
+  type AutomaticPushSource,
+} from "@bibliothecadao/notifications";
 import type { SiwsTypedData } from "./siws";
 import { buildSiwsMessage } from "./siws";
 import type { IdentityChainId, Session } from "./types";
@@ -31,9 +38,9 @@ export const createIdentityClient = ({ baseUrl, fetch = globalThis.fetch }: Iden
   const storage =
     typeof window !== "undefined" && isLoopbackOrigin(window.location.origin) ? window.localStorage : null;
   const tokenKey = `identity-session:${authBaseUrl}`;
-  const request = (path: string, init?: RequestInit) => {
+  const request = (path: string, init?: RequestInit, requestBase = authBaseUrl) => {
     const token = storage?.getItem(tokenKey);
-    return fetch(`${authBaseUrl}${path}`, {
+    return fetch(`${requestBase}${path}`, {
       ...init,
       credentials: "include",
       headers: {
@@ -96,5 +103,49 @@ export const createIdentityClient = ({ baseUrl, fetch = globalThis.fetch }: Iden
     return session;
   };
 
-  return { getSession, signIn, signOut, updateUser };
+  const preferencesUrl = new URL("../notifications/preferences", `${authBaseUrl}/`).toString();
+  const getNotificationPreferences = async (): Promise<NotificationPreferences> =>
+    parseNotificationPreferences(
+      await readJson(await request("", { method: "GET", cache: "no-store" }, preferencesUrl)),
+    );
+  const saveNotificationPreferences = async (
+    preferences: NotificationPreferences,
+  ): Promise<NotificationPreferences> => {
+    const response = await request("", { method: "POST", body: JSON.stringify(preferences) }, preferencesUrl);
+    if (response.status === 409)
+      throw new Error("Preferences changed on another device. Reload them before saving again.");
+    if (response.status === 403 || response.status === 401)
+      throw new Error("Your account changed or signed out. Reload your preferences.");
+    return parseNotificationPreferences(await readJson(response));
+  };
+
+  const pushUrl = new URL("../notifications/push", `${authBaseUrl}/`).toString();
+  const pushRequest = async <T>(action: string, body?: unknown): Promise<T> =>
+    readJson<T>(
+      await request(
+        `/${action}`,
+        {
+          ...(body === undefined
+            ? { method: "GET", cache: "no-store" as const }
+            : { method: "POST", body: JSON.stringify(body) }),
+          signal: AbortSignal.timeout(10_000),
+        },
+        pushUrl,
+      ),
+    );
+  return {
+    getSession,
+    signIn,
+    signOut,
+    updateUser,
+    getNotificationPreferences,
+    saveNotificationPreferences,
+    getPushConfiguration: () => pushRequest<PushConfiguration>("config"),
+    registerPushSubscription: (input: PushRegistration) => pushRequest<{ id: string }>("subscribe", input),
+    getPushSubscriptionStatus: (owner: string, id: string) =>
+      pushRequest<{ registered: boolean; automatic: AutomaticPushSource | null }>("status", { owner, id }),
+    revokePushSubscription: (id: string, token: string) => pushRequest<{ revoked: boolean }>("revoke", { id, token }),
+    sendPushTest: (owner: string, id: string, target: string) =>
+      pushRequest<{ status: "accepted" }>("test", { owner, id, target }),
+  };
 };

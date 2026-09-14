@@ -153,6 +153,8 @@ export interface FoldDelete {
 }
 
 export interface FoldChange {
+  /** Event confirmations remain observable even if their provisional payload did not change. */
+  event?: true;
   gameId?: string;
   set?: FoldSet;
   del?: FoldDelete;

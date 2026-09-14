@@ -10,7 +10,8 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "with-env": "dotenv -e ../../.env --"
+    "with-env": "dotenv -e ../../.env --",
+    "push:test": "pnpm with-env bun run server/send-push-test.ts"
   },
   "dependencies": {
     "@realms-world/chain": "workspace:*",
@@ -23,7 +24,10 @@
     "react": "catalog:web",
     "react-dom": "catalog:web",
     "starknet": "catalog:web",
-    "zod": "catalog:web"
+    "zod": "catalog:web",
+    "@bibliothecadao/notifications": "workspace:*",
+    "web-push": "3.6.7",
+    "@bibliothecadao/eternum": "workspace:*"
   },
   "devDependencies": {
     "@realms-world/eslint-config": "workspace:*",
@@ -39,6 +43,10 @@
     "typescript": "catalog:web",
     "vite": "catalog:web",
     "vite-tsconfig-paths": "^5.1.4",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.4",
+    "pg": "^8.18.0",
+    "@types/pg": "^8.16.0",
+    "drizzle-kit": "catalog:web",
+    "@types/web-push": "3.6.4"
   }
 }
