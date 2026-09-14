@@ -44,5 +44,6 @@
   ],
   "host_independent_recovery_gate": "not demonstrated",
   "latency_gate": "not measured",
-  "integration_stop": "The requested independent host/storage failure boundary is not available in the selected local-only topology. Do not count local process or volume failure as that gate."
+  "open_gate": "The host-loss drill is the one gate left open until the owner provides the second host",
+  "local_work": "Items 2 through 6 and local rehearsals proceed on isolated resources."
 }

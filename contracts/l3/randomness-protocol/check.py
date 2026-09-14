@@ -39,8 +39,9 @@ def main():
     output.mkdir(parents=True, exist_ok=True)
     rust = madara / "madara/crates/client/sequencer-randomness"
     fixture = protocol / "tests/fixtures/v1.txt"
-    if fixture.read_bytes() != (rust / "tests/fixtures/v1.txt").read_bytes():
-        raise SystemExit("Rust and Cairo fixtures differ")
+    for name in ["v1.txt", "context-v1.txt"]:
+        if (protocol / "tests/fixtures" / name).read_bytes() != (rust / "tests/fixtures" / name).read_bytes():
+            raise SystemExit(f"Rust and Cairo fixtures differ: {name}")
     gates = [
         run_gate("rust-vectors", ["cargo", "test", "-p", "mc-sequencer-randomness", "--locked"], madara, output),
         run_gate("rust-clippy", ["cargo", "clippy", "-p", "mc-sequencer-randomness", "--all-targets",

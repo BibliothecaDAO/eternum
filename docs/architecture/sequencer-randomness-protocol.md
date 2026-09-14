@@ -123,7 +123,38 @@ The local topology inspection is recorded in `sequencer-randomness-local-evidenc
 remains unproved with that local-only topology. No protected explore, replicated-journal drill, release-image build or
 baseline/embedded/sidecar measurement is claimed by this increment.
 
-The native foundation worktree's draft interface currently uses `execute(intent, context, r, s)`, where context carries
-`raw_root` and `timestamp`. The integration must agree on signed deployment/rules/validity fields, ticket order and
-authority fencing, and acceptance-time expiry and authorization semantics with that implementation. A wrapper must not
-silently re-sign another identity, change a pending timestamp, or treat a reverted nonce write as consumption.
+## Acceptance context and entrypoint conformance
+
+`contracts/l3/randomness-protocol/src/entrypoint.cairo` defines the required `execute(intent, context, r, s)` interface
+for #4994. `Intent` is the existing v1 struct, serialized in its declared field order. The signature covers
+`action_identity(intent)`, including the existing v1 tag and version. Context contains an array of canonical v1 envelope
+felts, a submission authority epoch, and the gameplay public key verified at acceptance. The latter two fields are
+witnesses, outside action identity and envelope binding. No alternate entrypoint is introduced.
+
+The maximum context age is **300 seconds**, inclusive; future context timestamps are rejected. The signed validity
+interval is evaluated against the recorded acceptance timestamp, not execution's block time. A ticket accepted at 1005
+with validity ending at 1010 executes at block time 1100 using gameplay time 1005. It is rejected at block time 1306;
+that rejection retains its original journal binding and nonce reservation and stops that ordered stream. Operators
+cannot refresh the timestamp, cancel the losing action, or admit its nonce again. A protocol change would be required to
+recover such a permanently stale context; this version does not pretend every outage can resume gameplay.
+
+Authorization is resolved before acceptance using PlayerRegistry and the approved gameplay account implementation. The
+journal records that evidence and the exact public key alongside the signed intent. Revocations received before
+acceptance reject admission. Changes after acceptance govern future actions and cannot invalidate the accepted signature
+or release its nonce. The trusted sequencing authority attests the recorded key in context; the entrypoint verifies the
+signature using that key. It must not resolve a newer key and silently substitute it for pending authorization.
+Authority credential rotation changes neither this evidence nor action identity. The native implementation owns registry
+resolution; the conformance stub deliberately uses one fixed actor/key fixture and makes no registry-integration claim.
+
+The conformance suite currently verifies delayed execution, signed-field changes, foreign identities, duplicate and
+out-of-order consumption, envelope framing/version, zero bounds, authority epoch, authorization witness, predecessor,
+configuration, and timestamp bounds. Its fixture's progress getter exists only to observe test effects. Replace fixture
+deployment and observation with native deployment/rows once #4994 implements the interface; retain the execution tests.
+`tests/fixtures/context-v1.txt` contains the same acceptance and timestamp boundary vectors in Rust and Cairo.
+
+The ticket working set serializes duplicate admission by the five-part nonce key. It retains sampled bytes privately
+until a commit acknowledgement and preserves them through submitted, executed or terminal-rejected, and consumed states.
+Sampling uses a direct `rustix::rand::getrandom` syscall on exactly 32 bytes, with initialization required and the returned byte count checked. Syscall errors and short reads fail without a fallback. Its one-attempt flag is
+set before calling the source. The working set is not durable storage: the journal increment must durably reserve
+exclusive sampling ownership before this call and must never reconstruct a sampler from an unresolved proposal. Losing
+the process between that durable reservation and replication of its root stops the proposal without regeneration.

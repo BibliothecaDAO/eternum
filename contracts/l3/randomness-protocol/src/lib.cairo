@@ -1,3 +1,4 @@
+pub mod entrypoint;
 use core::poseidon::poseidon_hash_span;
 
 const ACTION_TAG: felt252 = 'ETERNUM_ACTION';
@@ -5,28 +6,28 @@ const ENVELOPE_TAG: felt252 = 'ETERNUM_ENTROPY';
 
 #[derive(Drop, Debug, PartialEq, Serde)]
 pub struct Intent {
-    chain: felt252,
-    deployment: felt252,
-    game: felt252,
-    actor: felt252,
-    nonce: u64,
-    command: felt252,
-    rules: felt252,
-    valid_from: u64,
-    valid_until: u64,
-    last_order: u64,
-    arguments: Array<felt252>,
+    pub chain: felt252,
+    pub deployment: felt252,
+    pub game: felt252,
+    pub actor: felt252,
+    pub nonce: u64,
+    pub command: felt252,
+    pub rules: felt252,
+    pub valid_from: u64,
+    pub valid_until: u64,
+    pub last_order: u64,
+    pub arguments: Array<felt252>,
 }
 
 #[derive(Drop, PartialEq, Serde)]
 pub struct Envelope {
     pub action: felt252,
-    order: u64,
-    predecessor: felt252,
-    preceding_state: felt252,
-    timestamp: u64,
-    execution_config: felt252,
-    l2_gas: u64,
+    pub order: u64,
+    pub predecessor: felt252,
+    pub preceding_state: felt252,
+    pub timestamp: u64,
+    pub execution_config: felt252,
+    pub l2_gas: u64,
     pub root: u256,
 }
 
