@@ -178,6 +178,9 @@ async function main(): Promise<void> {
   ]);
   const systems = resolveSystemAddresses(manifest);
   assertChainId(chainId, "madara", "RPC_URL");
+  if (!options.ledger && BigInt(gameplayContracts.playerRegistryAddress) !== 0n) {
+    requiredEnvironmentValue("BINDING_AUTHORITY_PRIVATE_KEY", "harness with PlayerRegistry");
+  }
   const ledgerEnvironment = options.ledger ? resolveLedgerEnvironment() : undefined;
   const ledgerIdentities = options.ledger
     ? await loadLedgerBotIdentities(path.resolve(REPOSITORY_ROOT, options.ledgerAccountsPath!), options.bots)
@@ -402,7 +405,8 @@ async function prepareGameRun({
 
   let binding: LedgerHarnessEvidence["binding"] | undefined;
   // Settlement is keyed by the bound owner whenever the chain has a player registry, so guests bind as their own owners.
-  const authorityPrivateKey = ledgerEnvironment?.authorityPrivateKey ?? process.env.BINDING_AUTHORITY_PRIVATE_KEY?.trim();
+  const authorityPrivateKey =
+    ledgerEnvironment?.authorityPrivateKey ?? process.env.BINDING_AUTHORITY_PRIVATE_KEY?.trim();
   if (authorityPrivateKey) {
     console.log(`Binding ${accounts.length} gameplay accounts to their ${ledger ? "mainnet" : "own"} owners`);
     binding = await bindLedgerGameplayAccounts({
