@@ -45,7 +45,7 @@ export const ArmyTypeToggle = ({
           onClick={() => onSelect(true)}
           disabled={!canCreateAttackArmy}
           className={clsx(
-            "flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 transition-all duration-150",
+            "flex-1 max-lg:min-h-11 flex items-center justify-center gap-1.5 px-3 py-1.5 transition-all duration-150",
             "border-b-2 -mb-[1px]",
             armyType
               ? "border-gold text-gold bg-gold/5"
@@ -68,7 +68,7 @@ export const ArmyTypeToggle = ({
           onClick={() => onSelect(false)}
           disabled={!canInteractWithDefense}
           className={clsx(
-            "flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 transition-all duration-150",
+            "flex-1 max-lg:min-h-11 flex items-center justify-center gap-1.5 px-3 py-1.5 transition-all duration-150",
             "border-b-2 -mb-[1px]",
             !armyType
               ? "border-gold text-gold bg-gold/5"

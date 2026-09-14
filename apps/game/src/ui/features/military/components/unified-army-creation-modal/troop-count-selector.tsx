@@ -87,7 +87,7 @@ export const TroopCountSelector = ({
             step={100}
             value={troopCount}
             onChange={onChange}
-            className="h-9 text-sm"
+            className="h-9 text-sm max-lg:h-11 max-lg:text-base"
           />
         </label>
 

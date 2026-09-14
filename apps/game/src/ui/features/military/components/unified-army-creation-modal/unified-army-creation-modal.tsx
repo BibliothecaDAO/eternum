@@ -115,8 +115,8 @@ export const UnifiedArmyCreationBody = ({
   const rightColumnClass = "flex flex-1 min-w-0 flex-col";
 
   return (
-    <div className="p-3">
-      <div className="flex items-stretch gap-3">
+    <div className="flex min-h-full flex-col p-3">
+      <div className="flex flex-1 flex-col items-stretch gap-3 lg:flex-row">
         <div className={leftColumnClass}>
           <div className="flex flex-1 flex-col rounded-xl border border-gold/25 bg-black/25 p-2 gap-3">
             <TroopSelectionGrid
@@ -191,17 +191,17 @@ export const UnifiedArmyCreationBody = ({
               )}
             </div>
           </div>
-          <div className="mt-2">
-            <ActionFooter
-              armyType={form.armyType}
-              label={form.actionLabel}
-              isLoading={form.isLoading}
-              isDisabled={form.isActionDisabled}
-              onSubmit={form.handleCreate}
-              embedded
-            />
-          </div>
         </div>
+      </div>{" "}
+      <div className="sticky bottom-0 z-10 mt-2 shrink-0 bg-[#101c23] py-2">
+        <ActionFooter
+          armyType={form.armyType}
+          label={form.actionLabel}
+          isLoading={form.isLoading}
+          isDisabled={form.isActionDisabled}
+          onSubmit={form.handleCreate}
+          embedded
+        />
       </div>
     </div>
   );

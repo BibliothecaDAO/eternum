@@ -26,8 +26,8 @@ import { gameEntityKey } from "@/sync/game-scope";
 import { resolveBestPrice } from "./best-prices";
 
 const ONE_MONTH = 2628000;
-/** Keep in step with the `h-9 max-lg:h-10` on `OrderRow`; the virtualizer positions rows from these numbers. */
-const ORDER_ROW_HEIGHT_PX = { desktop: 36, compact: 40 } as const;
+/** Keep in step with the `h-9 max-lg:h-11` on `OrderRow`; the virtualizer positions rows from these numbers. */
+const ORDER_ROW_HEIGHT_PX = { desktop: 36, compact: 44 } as const;
 const ORDER_GRID = "grid grid-cols-[1.2fr_1fr_1fr_auto] items-center gap-2";
 const COMPACT_NUMBER_INPUT = "h-8 rounded-md text-sm";
 
@@ -406,7 +406,7 @@ export const OrderRow = memo(
       <div
         className={cn(
           ORDER_GRID,
-          "h-9 border-b border-gold/10 px-2 text-[11px] tabular-nums transition-colors hover:bg-gold/10 max-lg:h-10",
+          "h-9 border-b border-gold/10 px-2 text-[11px] tabular-nums transition-colors hover:bg-gold/10 max-lg:h-11",
           isSelf && "bg-blueish/10",
         )}
         title={`Expires ${new Date(offer.expiresAt * 1000).toLocaleString()}`}
@@ -424,7 +424,11 @@ export const OrderRow = memo(
           type="button"
           disabled={loading}
           onClick={() => setConfirmOrderModal(true)}
-          className={cn(HUD_PILL_BUTTON, "w-14 px-0 py-0.5 text-center", isSelf && "text-red hover:border-red/60")}
+          className={cn(
+            HUD_PILL_BUTTON,
+            "w-14 px-0 py-0.5 text-center max-lg:min-h-11",
+            isSelf && "text-red hover:border-red/60",
+          )}
         >
           {loading ? "…" : actionLabel}
         </button>
@@ -791,7 +795,7 @@ export const OrderCreation = memo(
       >
         {layout === "compact" ? (
           <>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,200px),1fr))] gap-2">
               {amountField}
               {priceField}
             </div>

@@ -1,3 +1,4 @@
+import { StructureWorkspace } from "@/ui/design-system/molecules/structure-workspace";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -54,6 +55,7 @@ export const MilitaryModal = memo(({ structureEntityId }: MilitaryModalProps) =>
   const [initialDirection, setInitialDirection] = useState<Direction | undefined>(undefined);
   const [initialGuardSlot, setInitialGuardSlot] = useState<number | undefined>(undefined);
   const [bodyKey, setBodyKey] = useState(0);
+  const [mobileTab, setMobileTab] = useState<"deploy" | "armies">("deploy");
 
   // Follow the global active structure if it changes (chip click outside modal).
   useEffect(() => {
@@ -67,6 +69,7 @@ export const MilitaryModal = memo(({ structureEntityId }: MilitaryModalProps) =>
   // re-initializes from the new props.
   useEffect(() => {
     if (!pendingMilitaryAction) return;
+    setMobileTab("deploy");
     setFocusedRealmId(pendingMilitaryAction.structureId as ID);
     setInitialIsExplorer(pendingMilitaryAction.isExplorer);
     setInitialDirection(pendingMilitaryAction.direction);
@@ -100,8 +103,8 @@ export const MilitaryModal = memo(({ structureEntityId }: MilitaryModalProps) =>
       className={SURFACE_WORKSPACE_CLASS}
       bodyClassName="overflow-hidden"
     >
-      <div className="grid h-full grid-cols-12 min-h-0">
-        <div className="col-span-3 border-r border-gold/15 min-h-0">
+      <StructureWorkspace
+        sidebar={
           <StructureSidebar
             selectedEntityId={focusedRealmId}
             onSelectStructure={handleSelectStructure}
@@ -110,24 +113,50 @@ export const MilitaryModal = memo(({ structureEntityId }: MilitaryModalProps) =>
             statsVariant="military"
             enableCategoryFilter
           />
-        </div>
-        <div className="col-span-9 flex min-h-0 flex-col">
+        }
+      >
+        <div className="hidden lg:block">
           <MilitaryDeployHeader focusedRealmId={focusedRealmId} />
-          <div className="flex-1 min-h-0 overflow-y-auto">
-            <UnifiedArmyCreationBody
-              key={bodyKey}
-              embedded
-              structureId={Number(focusedRealmId)}
-              isExplorer={initialIsExplorer}
-              direction={initialDirection}
-              initialGuardSlot={initialGuardSlot}
-            />
-            <div className="px-2 pb-3 pt-1">
-              <ExistingArmiesPanel structureId={focusedRealmId} />
-            </div>
-          </div>
         </div>
-      </div>
+        <div
+          className="flex shrink-0 gap-2 border-b border-gold/15 px-2 lg:hidden"
+          role="tablist"
+          aria-label="Military view"
+        >
+          {(["deploy", "armies"] as const).map((tab) => (
+            <button
+              key={tab}
+              type="button"
+              role="tab"
+              aria-selected={mobileTab === tab}
+              onClick={() => setMobileTab(tab)}
+              className={cn("min-h-11 flex-1 rounded text-sm", mobileTab === tab && "bg-gold/15 text-gold")}
+            >
+              {tab === "deploy" ? "Deploy" : "Existing armies"}
+            </button>
+          ))}
+        </div>
+        <div
+          className={cn("min-h-0 flex-1 overflow-y-auto overscroll-contain", mobileTab !== "deploy" && "max-lg:hidden")}
+        >
+          <UnifiedArmyCreationBody
+            key={bodyKey}
+            embedded
+            structureId={Number(focusedRealmId)}
+            isExplorer={initialIsExplorer}
+            direction={initialDirection}
+            initialGuardSlot={initialGuardSlot}
+          />
+        </div>
+        <div
+          className={cn(
+            "min-h-0 overflow-y-auto p-2 lg:max-h-[240px] lg:shrink-0",
+            mobileTab === "armies" ? "max-lg:flex-1" : "max-lg:hidden",
+          )}
+        >
+          <ExistingArmiesPanel structureId={focusedRealmId} />
+        </div>
+      </StructureWorkspace>
     </SurfaceFrame>
   );
 });

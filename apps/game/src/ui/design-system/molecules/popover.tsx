@@ -1,5 +1,5 @@
 import { useAudio } from "@/audio/hooks/useAudio";
-import { resolveCompactLane } from "@/hooks/helpers/use-compact-hud";
+import { resolveCompactLane, useCompactLane } from "@/hooks/helpers/use-compact-hud";
 import {
   type PopoverMapClick,
   type SurfaceAnchor,
@@ -27,7 +27,7 @@ const VIEWPORT_MARGIN_PX = 8;
 const HEADER_CLEARANCE_PX = 56;
 /** Space the sheet keeps under its content so it clears the iOS home indicator; never less than the panel's padding. */
 const COMPACT_SHEET_BOTTOM_INSET = "max(1rem, env(safe-area-inset-bottom))";
-/** Keep in step with `max-lg:h-[85dvh]` in `SURFACE_WORKSPACE_CLASS`; Tailwind needs that class as a literal. */
+/** Portrait sheets use at most 85% of the screen; the keyboard can reduce the content height further. */
 const COMPACT_SHEET_CONTENT_HEIGHT = "85dvh";
 /** The landscape drawer's width cap; keep in step with the `max-lg:landscape:w-[...]` in `SURFACE_WORKSPACE_CLASS`. */
 const COMPACT_DRAWER_MAX_WIDTH = "min(100vw, 640px)";
@@ -39,7 +39,7 @@ const COMPACT_DRAWER_MAX_WIDTH = "min(100vw, 640px)";
  * fits the drawer exactly; Tailwind needs the class as a literal, so keep the three in step.
  */
 export const SURFACE_WORKSPACE_CLASS =
-  "w-[1180px] h-[calc(100dvh-9rem)] max-lg:w-screen max-lg:h-[85dvh] max-lg:landscape:w-[min(60vw,640px)] max-lg:landscape:h-[calc(100dvh-3.5rem-max(1rem,env(safe-area-inset-bottom)))]";
+  "w-[1180px] h-[calc(100dvh-9rem)] max-lg:w-screen max-lg:h-[min(85dvh,calc(var(--surface-viewport-height,100dvh)-4rem))] max-lg:landscape:w-[min(60vw,640px)] max-lg:landscape:h-[calc(var(--surface-viewport-height,100dvh)-3.5rem-max(1rem,env(safe-area-inset-bottom))-2px)]";
 
 type PopoverAlign = "start" | "end";
 
@@ -90,7 +90,8 @@ export const PopoverPanel = ({
 }: PopoverPanelProps) => {
   const panelRef = useRef<HTMLDivElement>(null);
   const [panelStyle, setPanelStyle] = useState<CSSProperties | null>(null);
-  const drag = useSurfaceDrag(rememberPosition);
+  const lane = useCompactLane();
+  const drag = useSurfaceDrag(rememberPosition, lane === null);
   const resolveAnchor = typeof anchor === "function" ? anchor : () => anchor;
   const resolveAnchorRef = useRef(resolveAnchor);
   resolveAnchorRef.current = resolveAnchor;
@@ -106,11 +107,22 @@ export const PopoverPanel = ({
       setPanelStyle(resolvePanelStyle(resolveAnchorRef.current(), align, placement, panelRef.current));
     place();
     window.addEventListener("resize", place);
-    return () => window.removeEventListener("resize", place);
-  }, [align, anchor, placement, Boolean(panelStyle)]);
+    window.visualViewport?.addEventListener("resize", place);
+    window.visualViewport?.addEventListener("scroll", place);
+    return () => {
+      window.removeEventListener("resize", place);
+      window.visualViewport?.removeEventListener("resize", place);
+      window.visualViewport?.removeEventListener("scroll", place);
+    };
+  }, [align, anchor, placement, lane, Boolean(panelStyle)]);
 
   useEffect(() => {
     const closeOnOutsidePointer = (event: PointerEvent) => {
+      if (
+        event.target instanceof Element &&
+        event.target.closest("[data-popover-anchor]")?.getAttribute("data-popover-anchor") === id
+      )
+        return;
       if (isInsideAnchorRef.current(event.target) || isInside(event.target, panelRef.current)) return;
       const policy = mapClickRef.current;
       if (event.target instanceof HTMLCanvasElement && policy !== "dismiss" && policy.reanchor(event)) return;
@@ -129,18 +141,34 @@ export const PopoverPanel = ({
       document.removeEventListener("pointerdown", closeOnOutsidePointer, true);
       window.removeEventListener("keydown", closeOnEscape);
     };
-  }, []);
+  }, [id]);
+
+  useEffect(() => {
+    if (!panelStyle) return;
+    const previousFocus = document.activeElement;
+    panelRef.current?.focus({ preventScroll: true });
+    return () => {
+      if (
+        previousFocus instanceof HTMLElement &&
+        previousFocus.isConnected &&
+        (document.activeElement === document.body || panelRef.current?.contains(document.activeElement))
+      ) {
+        previousFocus.focus({ preventScroll: true });
+      }
+    };
+  }, [id, Boolean(panelStyle)]);
 
   if (!panelStyle) return null;
 
   return createPortal(
     <div
       ref={panelRef}
+      tabIndex={-1}
       role="dialog"
       aria-label={ariaLabel}
       data-popover-panel={id}
       className={cn(
-        "pointer-events-auto fixed z-[130] w-80 touch-pan-y overflow-y-auto overscroll-contain rounded-xl p-4 text-gold",
+        "pointer-events-auto fixed z-[130] w-80 touch-pan-y overflow-y-auto outline-none overscroll-contain rounded-xl p-4 text-gold",
         "max-lg:w-screen max-lg:rounded-b-none",
         "max-lg:landscape:w-auto max-lg:landscape:rounded-b-xl max-lg:landscape:rounded-r-none",
         OVERLAY_SURFACE_BASE,
@@ -248,7 +276,7 @@ interface PopoverHeaderProps {
 const PopoverHeader = ({ title, icon: Icon, onClose }: PopoverHeaderProps) => (
   <div
     data-popover-drag-handle
-    className="flex cursor-move select-none touch-none items-center justify-between gap-2 border-b border-gold/15 px-4 py-2.5"
+    className="flex shrink-0 cursor-move max-lg:cursor-default select-none touch-none items-center justify-between gap-2 border-b border-gold/15 px-4 py-2.5 max-lg:py-1"
   >
     <span className={cn("flex items-center gap-2", HUD_LABEL_BRIGHT)}>
       {Icon && <Icon className="h-4 w-4 text-gold" />}
@@ -287,10 +315,10 @@ export const SurfaceFrame = ({
   bodyClassName,
   children,
 }: SurfaceFrameProps) => (
-  <div className={cn("flex max-w-full flex-col", className)}>
+  <div className={cn("flex max-w-full min-h-0 flex-col", className)}>
     <PopoverHeader title={title} icon={icon} onClose={onClose} />
     <div className={cn("min-h-0 flex-1 overflow-y-auto", bodyClassName)}>{children}</div>
-    {footer && <div className="border-t border-gold/15 p-4">{footer}</div>}
+    {footer && <div className="shrink-0 border-t border-gold/15 p-4 max-lg:p-2">{footer}</div>}
   </div>
 );
 
@@ -343,23 +371,32 @@ const resolveBesidePanelStyle = (anchor: SurfaceAnchor, panel: HTMLElement | nul
   };
 };
 
+/** The visual viewport excludes the keyboard, unlike the layout viewport on mobile Safari. */
+const compactViewportStyle = (): CSSProperties => {
+  const viewport = window.visualViewport;
+  return {
+    "--surface-viewport-height": `${viewport?.height ?? window.innerHeight}px`,
+    bottom: viewport ? Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop) : 0,
+  } as CSSProperties;
+};
+
 const resolveCompactSheetStyle = (): CSSProperties => ({
   left: 0,
   right: 0,
-  bottom: 0,
+  ...compactViewportStyle(),
   maxWidth: "100vw",
-  maxHeight: `calc(${COMPACT_SHEET_CONTENT_HEIGHT} + ${COMPACT_SHEET_BOTTOM_INSET})`,
+  maxHeight: `min(calc(${COMPACT_SHEET_CONTENT_HEIGHT} + ${COMPACT_SHEET_BOTTOM_INSET} + 2px), var(--surface-viewport-height, 100dvh))`,
   paddingLeft: "env(safe-area-inset-left)",
   paddingRight: "env(safe-area-inset-right)",
   paddingBottom: COMPACT_SHEET_BOTTOM_INSET,
 });
 
 const resolveCompactDrawerStyle = (): CSSProperties => ({
-  top: HEADER_CLEARANCE_PX,
+  ...compactViewportStyle(),
+  top: (window.visualViewport?.offsetTop ?? 0) + HEADER_CLEARANCE_PX,
   right: 0,
-  bottom: 0,
   maxWidth: COMPACT_DRAWER_MAX_WIDTH,
-  maxHeight: `calc(100dvh - ${HEADER_CLEARANCE_PX}px)`,
+  maxHeight: `calc(var(--surface-viewport-height, 100dvh) - ${HEADER_CLEARANCE_PX}px)`,
   paddingRight: "env(safe-area-inset-right)",
   paddingBottom: COMPACT_SHEET_BOTTOM_INSET,
 });
@@ -435,10 +472,11 @@ const writeFreeSurfaceOffset = (offset: { x: number; y: number }): void => {
  * A surface with a header can be dragged by it. An anchored popover keeps its offset until it closes; a free desk
  * remembers where it was left and every free desk opens there.
  */
-function useSurfaceDrag(isFreeSurface: boolean) {
+function useSurfaceDrag(isFreeSurface: boolean, enabled: boolean) {
   const [offset, setOffset] = useState(() => (isFreeSurface ? readFreeSurfaceOffset() : { x: 0, y: 0 }));
   const dragStart = useRef<{ pointerX: number; pointerY: number; offsetX: number; offsetY: number } | null>(null);
   const onPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!enabled) return;
     const target = event.target as Element;
     if (!target.closest("[data-popover-drag-handle]") || target.closest("button,a,input,select,textarea")) return;
     dragStart.current = { pointerX: event.clientX, pointerY: event.clientY, offsetX: offset.x, offsetY: offset.y };
@@ -446,7 +484,7 @@ function useSurfaceDrag(isFreeSurface: boolean) {
   };
   const onPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
     const start = dragStart.current;
-    if (!start) return;
+    if (!enabled || !start) return;
     const next = {
       x: start.offsetX + event.clientX - start.pointerX,
       y: start.offsetY + event.clientY - start.pointerY,
@@ -458,7 +496,7 @@ function useSurfaceDrag(isFreeSurface: boolean) {
     dragStart.current = null;
   };
   const apply = (style: CSSProperties): CSSProperties =>
-    offset.x === 0 && offset.y === 0
+    !enabled || (offset.x === 0 && offset.y === 0)
       ? style
       : { ...style, transform: [style.transform, `translate(${offset.x}px, ${offset.y}px)`].filter(Boolean).join(" ") };
   return { apply, onPointerDown, onPointerMove, onPointerUp };

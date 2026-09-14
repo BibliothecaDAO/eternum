@@ -1,3 +1,5 @@
+import { useCompactLane } from "@/hooks/helpers/use-compact-hud";
+import { StructureSelect } from "@/ui/design-system/molecules/structure-select";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { HUD_BODY_MUTED, HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
 import { StructureStatusRow } from "@/ui/features/world/components/structure-status-row/structure-status-row";
@@ -58,6 +60,7 @@ export const StructureSidebar = memo(
     statsVariant,
     enableCategoryFilter = false,
   }: StructureSidebarProps) => {
+    const lane = useCompactLane();
     const {
       setup: { components },
     } = useDojo();
@@ -92,6 +95,17 @@ export const StructureSidebar = memo(
       () => sortStructures(filtered, leftListSort, selectedEntityId, favoriteOrder),
       [filtered, leftListSort, selectedEntityId, favoriteOrder],
     );
+
+    if (lane !== null) {
+      const options = allMetadata
+        .filter((structure) => !filter?.length || filter.includes(structure.category as StructureType))
+        .map((structure) => ({ entityId: structure.entityId, name: structure.displayName }));
+      return (
+        <div className="px-3 py-1">
+          <StructureSelect value={selectedEntityId} onChange={onSelectStructure} options={options} />
+        </div>
+      );
+    }
 
     if (ordered.length === 0) {
       return (

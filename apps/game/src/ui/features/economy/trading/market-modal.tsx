@@ -1,12 +1,12 @@
+import { StructureSelect } from "@/ui/design-system/molecules/structure-select";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useCompactLane, type CompactLane } from "@/hooks/helpers/use-compact-hud";
 import { useMarketStore } from "@/hooks/store/use-market-store";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { HUD_CUE, HUD_VALUE } from "@/ui/design-system/atoms/hud-typography";
-import { DROPDOWN_CONTENT, DROPDOWN_TRIGGER, HUD_PILL_BUTTON } from "@/ui/design-system/atoms/overlay-surface";
+import { HUD_PILL_BUTTON } from "@/ui/design-system/atoms/overlay-surface";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/design-system/atoms/select";
 import { HudTabStrip } from "@/ui/design-system/molecules/hud-tab-strip";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { SURFACE_WORKSPACE_CLASS, SurfaceFrame } from "@/ui/design-system/molecules/popover";
@@ -132,7 +132,10 @@ const CompactMarketContent = ({ desk }: { desk: MarketDesk }) => {
         hidden={view === "picker"}
         className={cn("market-modal-selector h-full min-h-0 flex-col", view === "trade" && "flex")}
       >
-        <SelectedResourceHeader desk={desk} onChange={() => setView("picker")} />
+        <div className="shrink-0 max-lg:landscape:grid max-lg:landscape:grid-cols-2">
+          <TradingStructureHeader structureEntityId={desk.structureEntityId} onSelect={desk.onStructureChange} />
+          <SelectedResourceHeader desk={desk} onChange={() => setView("picker")} />
+        </div>
         <MarketTradeView desk={desk} className="min-h-0 flex-1" />
       </div>
     </>
@@ -167,7 +170,7 @@ const SelectedResourceHeader = ({ desk, onChange }: { desk: MarketDesk; onChange
   const bestPrices = useMemo(() => resolveBestPrices(desk.bidOffers, desk.askOffers), [desk.bidOffers, desk.askOffers]);
 
   return (
-    <div className="flex items-center justify-between gap-3 border-b border-gold/15 px-3 py-2">
+    <div className="flex min-w-0 shrink-0 items-center justify-between gap-2 border-b border-gold/15 px-3 py-1">
       <span className="flex min-w-0 items-center gap-2">
         <ResourceIcon resource={trait} size="sm" withTooltip={false} />
         <span className="flex min-w-0 flex-col">
@@ -183,7 +186,7 @@ const SelectedResourceHeader = ({ desk, onChange }: { desk: MarketDesk; onChange
           </span>
         </span>
       </span>
-      <button type="button" onClick={onChange} className={cn(HUD_PILL_BUTTON, "shrink-0 py-2")}>
+      <button type="button" onClick={onChange} className={cn(HUD_PILL_BUTTON, "shrink-0 min-h-11 py-2")}>
         Change
       </button>
     </div>
@@ -203,9 +206,16 @@ const useStructureResourceBalance = (structureEntityId: ID, resourceId: number) 
 
 const MarketTradeView = ({ desk, className }: { desk: MarketDesk; className?: string }) => (
   <div className={cn("flex min-h-0 flex-col", className)}>
-    <div className="flex items-center justify-between gap-3 border-b border-gold/15 px-3 py-2 max-lg:flex-wrap">
-      <HudTabStrip tabs={MARKET_TABS} selected={desk.tab} onSelect={desk.onTabChange} />
-      <TradeSummaryBar bidOffers={desk.bidOffers} askOffers={desk.askOffers} entityId={desk.structureEntityId} />
+    <div className="flex shrink-0 items-center justify-between gap-3 border-b border-gold/15 px-3 py-2 max-lg:flex-wrap max-lg:landscape:py-0">
+      <HudTabStrip
+        className="max-lg:[&_button]:min-h-11"
+        tabs={MARKET_TABS}
+        selected={desk.tab}
+        onSelect={desk.onTabChange}
+      />
+      <div className="max-lg:landscape:hidden">
+        <TradeSummaryBar bidOffers={desk.bidOffers} askOffers={desk.askOffers} entityId={desk.structureEntityId} />
+      </div>
     </div>
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
       <Suspense fallback={<LoadingAnimation />}>
@@ -256,19 +266,15 @@ const TradingStructureHeader = ({
   }, [resourceManager, currentDefaultTick]);
 
   return (
-    <div className="market-realm-selector flex flex-col gap-2 border-b border-gold/15 px-3 py-2">
-      <Select value={structureEntityId.toString()} onValueChange={(value) => onSelect(ID(value))}>
-        <SelectTrigger className={cn(DROPDOWN_TRIGGER, "h-8 w-full text-xs max-lg:h-10")}>
-          <SelectValue placeholder="Select structure" />
-        </SelectTrigger>
-        <SelectContent className={DROPDOWN_CONTENT}>
-          {playerStructures.map((structure) => (
-            <SelectItem key={structure.entityId} value={structure.entityId.toString()}>
-              {mode.structure.getName(structure.structure).name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+    <div className="market-realm-selector min-w-0 flex shrink-0 flex-col gap-1 border-b border-gold/15 px-3 py-1 max-lg:landscape:[&>div:last-child]:hidden">
+      <StructureSelect
+        value={structureEntityId}
+        onChange={onSelect}
+        options={playerStructures.map((structure) => ({
+          entityId: structure.entityId,
+          name: mode.structure.getName(structure.structure).name,
+        }))}
+      />
       <div className="flex items-center gap-1.5">
         <span className={cn(REQUIREMENT_CHIP, "text-gold")} title="Lords">
           <ResourceIcon resource="Lords" size="xs" withTooltip={false} />

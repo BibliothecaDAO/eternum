@@ -43,7 +43,7 @@ export const ExistingArmiesPanel = memo(({ structureId, className }: ExistingArm
       {ownedArmies.length === 0 ? (
         <p className={cn(HUD_BODY_MUTED, "text-[11px]")}>None deployed yet.</p>
       ) : (
-        <ul className="grid grid-cols-1 gap-1.5 sm:grid-cols-2 lg:grid-cols-3 max-h-[220px] overflow-y-auto pr-0.5 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
+        <ul className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,220px),1fr))] gap-1.5 lg:max-h-[220px] overflow-y-auto pr-0.5 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
           {ownedArmies.map((army) => (
             <ExistingArmyRow key={army.entityId} army={army} structureId={structureId} />
           ))}
@@ -184,7 +184,7 @@ const IconButton = ({ icon: Icon, title, onClick, tone, disabled, spinning }: Ic
     title={title}
     aria-label={title}
     className={cn(
-      "inline-flex h-6 w-6 items-center justify-center rounded border bg-black/30 transition",
+      "inline-flex h-6 w-6 max-lg:h-11 max-lg:w-11 items-center justify-center rounded border bg-black/30 transition",
       TONE_CLASS[tone],
       disabled && "opacity-50 cursor-not-allowed",
     )}

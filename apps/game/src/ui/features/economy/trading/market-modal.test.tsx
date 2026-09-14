@@ -197,6 +197,8 @@ describe("MarketModal", () => {
     await tap("AMM");
     await tap("Change");
     await tap("Stone");
+    expect(button("AMM")?.getAttribute("aria-selected")).toBe("true");
+    await act(async () => vi.dynamicImportSettled());
     expect(orderBook()?.textContent).toBe("Swap form");
   });
 

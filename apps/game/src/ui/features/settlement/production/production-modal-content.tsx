@@ -1,3 +1,5 @@
+import { StructureSelect } from "@/ui/design-system/molecules/structure-select";
+import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { useOwnedProductionStructureInfos } from "@/hooks/helpers/use-owned-structure-info";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
@@ -22,6 +24,8 @@ const ProductionContainer = ({
   preSelectedRealmId?: ID;
   preSelectedResource?: ResourcesIds;
 }) => {
+  const mode = useGameModeConfig();
+  const [pickerOpen, setPickerOpen] = useState(false);
   const initialRealm = useMemo(() => {
     return resolveInitialSelectedRealm({
       realms: playerStructures,
@@ -61,6 +65,7 @@ const ProductionContainer = ({
       });
       setSelectedRealm(realm);
       setSelectedResource(null);
+      setPickerOpen(false);
     },
     [playerStructures],
   );
@@ -76,14 +81,41 @@ const ProductionContainer = ({
       if (realm) {
         setSelectedRealm(realm);
         setSelectedResource(resource);
+        setPickerOpen(false);
       }
     },
     [playerStructures, selectedRealm],
   );
 
   return (
-    <div className="production-modal-selector grid h-full min-h-0 grid-cols-1 overflow-hidden lg:grid-cols-12">
-      <div className="order-1 col-span-1 min-h-0 overflow-y-auto border-b border-gold/15 px-2 py-3 lg:order-1 lg:col-span-3 lg:border-b-0 lg:border-r">
+    <div className="production-modal-selector flex h-full min-h-0 flex-col overflow-hidden lg:grid lg:grid-cols-12">
+      <div className="flex shrink-0 items-center gap-2 border-b border-gold/15 px-3 py-1 lg:hidden">
+        <div className="min-w-0 flex-1">
+          <StructureSelect
+            value={selectedRealm?.entityId ?? 0}
+            onChange={handleSelectRealm}
+            options={playerStructures.map((realm) => ({
+              entityId: realm.entityId,
+              name: mode.structure.getName(realm.structure).name,
+            }))}
+          />
+        </div>
+        <button
+          type="button"
+          onClick={() => setPickerOpen(!pickerOpen)}
+          aria-expanded={pickerOpen}
+          className="min-h-11 shrink-0 px-2 text-sm text-gold underline underline-offset-4"
+          aria-label={pickerOpen ? "Back to production" : "Browse production and presets"}
+        >
+          {pickerOpen ? "Back" : "Browse"}
+        </button>
+      </div>
+      <div
+        className={cn(
+          "min-h-0 flex-1 overflow-y-auto px-2 py-3 lg:col-span-3 lg:border-r lg:border-gold/15",
+          !pickerOpen && "max-lg:hidden",
+        )}
+      >
         <Suspense fallback={<LoadingAnimation />}>
           {playerStructures.length > 0 && (
             <ProductionSidebar
@@ -95,7 +127,12 @@ const ProductionContainer = ({
           )}
         </Suspense>
       </div>
-      <div className="order-2 col-span-1 min-h-0 overflow-y-auto p-4 lg:order-2 lg:col-span-9">
+      <div
+        className={cn(
+          "min-h-0 flex-1 overflow-y-auto overscroll-contain p-3 lg:col-span-9 lg:p-4",
+          pickerOpen && "max-lg:hidden",
+        )}
+      >
         <Suspense fallback={<LoadingAnimation />}>
           {selectedRealm && (
             <ProductionBody

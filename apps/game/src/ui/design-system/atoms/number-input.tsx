@@ -50,11 +50,14 @@ export const NumberInput = ({
   };
 
   return (
-    <div className={cn("flex items-center h-10 text-lg bg-gold/20 w-full rounded-xl", className)}>
+    <div className={cn("flex items-center h-10 max-lg:min-h-11 text-lg bg-gold/20 w-full rounded-xl", className)}>
       {arrows && (
-        <div
+        <button
+          type="button"
+          aria-label="Decrease amount"
+          disabled={disabled}
           className={cn(
-            "flex items-center justify-center h-full px-1 border-r border-gold/10",
+            "flex items-center justify-center h-full px-1 max-lg:min-h-11 max-lg:min-w-11 border-r border-gold/10",
             disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:bg-gold/30",
           )}
           onClick={() => {
@@ -65,11 +68,12 @@ export const NumberInput = ({
           }}
         >
           <ArrowLeft className="fill-gold " width={"6px"} height={"8px"} />
-        </div>
+        </button>
       )}
       <input
+        inputMode={allowDecimals ? "decimal" : "numeric"}
         min={min}
-        className="btn-bronze w-full appearance-none !outline-none h-full text-center bg-transparent text-gold flex-grow"
+        className="btn-bronze w-full min-w-0 max-lg:text-base appearance-none !outline-none h-full text-center bg-transparent text-gold flex-grow"
         value={displayValue}
         onFocus={onFocus}
         disabled={disabled}
@@ -111,9 +115,12 @@ export const NumberInput = ({
       />
 
       {arrows && (
-        <div
+        <button
+          type="button"
+          aria-label="Increase amount"
+          disabled={disabled}
           className={cn(
-            "flex items-center justify-center h-full px-1 border-l border-gold/10",
+            "flex items-center justify-center h-full px-1 max-lg:min-h-11 max-lg:min-w-11 border-l border-gold/10",
             disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:bg-gold/30",
           )}
           onClick={() => {
@@ -124,7 +131,7 @@ export const NumberInput = ({
           }}
         >
           <ArrowRight className="fill-gold" width={"6px"} height={"8px"} />
-        </div>
+        </button>
       )}
     </div>
   );
