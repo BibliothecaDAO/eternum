@@ -14,12 +14,20 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/ui/features/event-feed/notify", () => ({ toast: { error: mocks.toastError } }));
+vi.mock("@/sync/active-game-client", () => ({
+  requireActiveGameClient: () => ({
+    setup: { components: {} },
+    views: {
+      buildingTiles: () => ({
+        getHexCoords: () => ({ col: 20, row: 30 }),
+        getRealmLevel: () => 1,
+        isHexOccupied: mocks.isHexOccupied,
+      }),
+    },
+    actions: { placeBuilding: mocks.placeBuilding },
+  }),
+}));
 vi.mock("@bibliothecadao/eternum", () => ({
-  TileManager: vi.fn().mockImplementation(() => ({
-    getRealmLevel: () => 1,
-    isHexOccupied: mocks.isHexOccupied,
-    placeBuilding: mocks.placeBuilding,
-  })),
   divideByPrecision: (value: bigint | number) => Number(value),
   getBlockTimestamp: () => ({ currentDefaultTick: 123 }),
   getBalance: mocks.getBalance,
@@ -29,7 +37,10 @@ vi.mock("@bibliothecadao/eternum", () => ({
     getBasePopulationCapacity: () => 0,
   },
 }));
-vi.mock("@dojoengine/recs", () => ({ getComponentValue: mocks.getComponentValue }));
+vi.mock("@dojoengine/recs", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@dojoengine/recs")>()),
+  getComponentValue: mocks.getComponentValue,
+}));
 vi.mock("@dojoengine/utils", () => ({ getEntityIdFromKeys: (keys: bigint[]) => keys.join(":") }));
 
 const buildableRealm = {
@@ -48,7 +59,6 @@ const buildOptions = () => ({
   mode: { rules: { isBuildingTypeAllowed: () => true, autoAllocateHyperstructureShares: false } },
   target: { type: BuildingType.ResourceWheat },
   useSimpleCost: true,
-  world: { account: {}, components: {}, systemCalls: {} },
 });
 
 const deferred = <T>() => {
@@ -81,22 +91,18 @@ describe("buildRealmBuilding", () => {
     mocks.placeBuilding.mockRejectedValueOnce(new Error("space is occupied"));
 
     await expect(buildRealmBuilding(buildOptions())).resolves.toBe(true);
-    expect(mocks.placeBuilding).toHaveBeenNthCalledWith(
-      1,
-      {},
-      101,
-      BuildingType.ResourceWheat,
-      { col: 11, row: 10 },
-      true,
-    );
-    expect(mocks.placeBuilding).toHaveBeenNthCalledWith(
-      2,
-      {},
-      101,
-      BuildingType.ResourceWheat,
-      { col: 11, row: 11 },
-      true,
-    );
+    expect(mocks.placeBuilding).toHaveBeenNthCalledWith(1, {
+      structureId: 101,
+      buildingType: BuildingType.ResourceWheat,
+      hex: { col: 11, row: 10 },
+      useSimpleCost: true,
+    });
+    expect(mocks.placeBuilding).toHaveBeenNthCalledWith(2, {
+      structureId: 101,
+      buildingType: BuildingType.ResourceWheat,
+      hex: { col: 11, row: 11 },
+      useSimpleCost: true,
+    });
   });
 
   it("serializes four quick clicks per realm and resolves each slot when its turn starts", async () => {
@@ -106,10 +112,10 @@ describe("buildRealmBuilding", () => {
     mocks.isHexOccupied.mockImplementation((spot: { col: number; row: number }) =>
       occupied.has(`${spot.col},${spot.row}`),
     );
-    mocks.placeBuilding.mockImplementation((_account, _entityId, _buildingType, spot: { col: number; row: number }) => {
+    mocks.placeBuilding.mockImplementation(({ hex }: { hex: { col: number; row: number } }) => {
       const submission = submissions[submissionIndex++]!;
       return submission.promise.then((result) => {
-        occupied.add(`${spot.col},${spot.row}`);
+        occupied.add(`${hex.col},${hex.row}`);
         return result;
       });
     });
@@ -130,7 +136,7 @@ describe("buildRealmBuilding", () => {
     }
 
     await expect(Promise.all(builds)).resolves.toEqual([true, true, true, true]);
-    const selectedSpots = mocks.placeBuilding.mock.calls.map((call) => call[3] as { col: number; row: number });
+    const selectedSpots = mocks.placeBuilding.mock.calls.map(([input]) => input.hex as { col: number; row: number });
     expect(new Set(selectedSpots.map(({ col, row }) => `${col},${row}`)).size).toBe(4);
   });
 });

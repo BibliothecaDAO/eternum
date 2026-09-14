@@ -1,7 +1,6 @@
-import { formatArmies } from "@bibliothecadao/eternum";
+import { explorersByStructureQuery, readExplorers } from "@bibliothecadao/eternum";
 import { ContractAddress, ID } from "@bibliothecadao/types";
 import { useEntityQuery } from "@dojoengine/react";
-import { HasValue } from "@dojoengine/recs";
 import { useMemo } from "react";
 import { useDojo } from "../";
 
@@ -11,11 +10,10 @@ export const useExplorersByStructure = ({ structureEntityId }: { structureEntity
     account: { account },
   } = useDojo();
 
-  const armies = useEntityQuery([HasValue(components.ExplorerTroops, { owner: structureEntityId })]);
+  const explorerEntities = useEntityQuery(explorersByStructureQuery(components, structureEntityId));
 
-  const explorers = useMemo(() => {
-    return formatArmies(armies, ContractAddress(account.address), components);
-  }, [armies]);
-
-  return explorers;
+  return useMemo(
+    () => readExplorers(components, explorerEntities, ContractAddress(account.address)),
+    [explorerEntities],
+  );
 };

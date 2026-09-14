@@ -52,6 +52,13 @@ export class TileManager {
     this.FELT_CENTER = FELT_CENTER();
   }
 
+  /** Bound to where the structure stands, so callers name the structure instead of plumbing its hex. */
+  static forStructure(components: ClientComponents, systemCalls: SystemCalls, structureEntityId: ID): TileManager {
+    const structure = getComponentValue(components.Structure, gameEntityKey([BigInt(structureEntityId)]));
+    if (!structure) throw new Error(`Structure ${structureEntityId} is not in RECS; its building slots are unknown`);
+    return new TileManager(components, systemCalls, { col: structure.base.coord_x, row: structure.base.coord_y });
+  }
+
   getHexCoords = () => {
     return { col: this.col, row: this.row };
   };

@@ -79,7 +79,8 @@ vi.mock("@bibliothecadao/types", () => ({
   ID: Number,
 }));
 
-vi.mock("@dojoengine/recs", () => ({
+vi.mock("@dojoengine/recs", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@dojoengine/recs")>()),
   getComponentValue: () => ({ owner: "0xowner" }),
 }));
 

@@ -3,7 +3,7 @@ import { configManager, getRealmInfo } from "@bibliothecadao/eternum";
 import { ResourcesIds, ContractAddress } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { gameEntityKey } from "@/sync/game-scope";
+import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { ProductionControls } from "./production-controls";
 

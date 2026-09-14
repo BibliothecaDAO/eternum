@@ -1,56 +1,33 @@
-import { getRealmInfo } from "@bibliothecadao/eternum";
-import { ClientComponents, ContractAddress, RealmInfo, StructureType } from "@bibliothecadao/types";
+import {
+  allRealmsQuery,
+  readRealmInfos,
+  readStructureRows,
+  realmsByOwnerQuery,
+  villagesByOwnerQuery,
+} from "@bibliothecadao/eternum";
+import { ContractAddress, RealmInfo } from "@bibliothecadao/types";
 import { useEntityQuery } from "@dojoengine/react";
-import { ComponentValue, getComponentValue, Has, HasValue } from "@dojoengine/recs";
 import { useMemo } from "react";
 import { useDojo } from "../context";
 
 export function usePlayerOwnedRealmsInfo(): RealmInfo[] {
   const {
-    account: { account },
     setup: { components },
   } = useDojo();
 
-  const { Structure } = components;
+  const realmEntities = usePlayerOwnedRealmEntities();
 
-  const realmEntities = useEntityQuery([
-    Has(Structure),
-    HasValue(Structure, { owner: ContractAddress(account.address), category: StructureType.Realm }),
-  ]);
-
-  const realms = useMemo(() => {
-    return realmEntities
-      .map((entity) => {
-        return getRealmInfo(entity, components);
-      })
-      .filter(Boolean) as RealmInfo[];
-  }, [realmEntities]);
-
-  return realms;
+  return useMemo(() => readRealmInfos(components, realmEntities), [realmEntities]);
 }
 
 export function usePlayerOwnedVillagesInfo(): RealmInfo[] {
   const {
-    account: { account },
     setup: { components },
   } = useDojo();
 
-  const { Structure } = components;
+  const villageEntities = usePlayerOwnedVillageEntities();
 
-  const villageEntities = useEntityQuery([
-    Has(Structure),
-    HasValue(Structure, { owner: ContractAddress(account.address), category: StructureType.Village }),
-  ]);
-
-  const villages = useMemo(() => {
-    return villageEntities
-      .map((entity) => {
-        return getRealmInfo(entity, components);
-      })
-      .filter(Boolean) as RealmInfo[];
-  }, [villageEntities]);
-
-  return villages;
+  return useMemo(() => readRealmInfos(components, villageEntities), [villageEntities]);
 }
 
 export const usePlayerOwnedVillageEntities = () => {
@@ -59,14 +36,7 @@ export const usePlayerOwnedVillageEntities = () => {
     setup: { components },
   } = useDojo();
 
-  const { Structure } = components;
-
-  const villageEntities = useEntityQuery([
-    Has(Structure),
-    HasValue(Structure, { owner: ContractAddress(account.address), category: StructureType.Village }),
-  ]);
-
-  return villageEntities;
+  return useEntityQuery(villagesByOwnerQuery(components, ContractAddress(account.address)));
 };
 
 export const usePlayerOwnedRealmEntities = () => {
@@ -75,32 +45,15 @@ export const usePlayerOwnedRealmEntities = () => {
     setup: { components },
   } = useDojo();
 
-  const { Structure } = components;
-
-  const realmEntities = useEntityQuery([
-    Has(Structure),
-    HasValue(Structure, { owner: ContractAddress(account.address), category: StructureType.Realm }),
-  ]);
-
-  return realmEntities;
+  return useEntityQuery(realmsByOwnerQuery(components, ContractAddress(account.address)));
 };
 
 export const useAllRealms = () => {
   const {
-    setup: {
-      components: { Structure },
-    },
+    setup: { components },
   } = useDojo();
 
-  const realmEntities = useEntityQuery([Has(Structure), HasValue(Structure, { category: StructureType.Realm })]);
+  const realmEntities = useEntityQuery(allRealmsQuery(components));
 
-  const realms = useMemo(() => {
-    return realmEntities
-      .map((entity) => {
-        return getComponentValue(Structure, entity);
-      })
-      .filter(Boolean) as ComponentValue<ClientComponents["Structure"]["schema"]>[];
-  }, [realmEntities]);
-
-  return realms;
+  return useMemo(() => readStructureRows(components, realmEntities), [realmEntities]);
 };

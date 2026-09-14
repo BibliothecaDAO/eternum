@@ -15,7 +15,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@/hooks/store/use-ui-store", () => ({ useUIStore: (select: any) => select({}) }));
 vi.mock("@/utils/can-issue-orders", () => ({ canIssueOrders: () => mocks.allowed }));
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({ useCurrentDefaultTick: () => 1 }));
-vi.mock("@/sync/game-scope", () => ({ gameEntityKey: () => "realm" }));
+vi.mock("@bibliothecadao/eternum/game-client", () => ({ gameEntityKey: () => "realm" }));
 vi.mock("@dojoengine/react", () => ({ useComponentValue: () => undefined }));
 vi.mock("@bibliothecadao/react", () => ({
   useDojo: () => ({

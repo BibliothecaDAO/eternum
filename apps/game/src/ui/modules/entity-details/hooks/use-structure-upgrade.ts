@@ -1,4 +1,4 @@
-import { gameEntityKey } from "@/sync/game-scope";
+import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { configManager, divideByPrecision, getBalance, getRealmInfo } from "@bibliothecadao/eternum";
 import { useArrivalsByStructure, useDojo } from "@bibliothecadao/react";

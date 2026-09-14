@@ -1,4 +1,4 @@
-import { recoverGameSyncSession } from "@/sync/game-sync";
+import { recoverGameSyncSession } from "@/sync/active-game-client";
 import { addNetworkBreadcrumb } from "@/observability/network-health-reporting";
 
 export const triggerConnectionForceReconnect = async (): Promise<void> => {

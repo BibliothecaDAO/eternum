@@ -3,7 +3,7 @@ import { useDojo } from "@bibliothecadao/react";
 import { RELICS, ResourcesIds } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import { useMemo } from "react";
-import { gameEntityKey } from "@/sync/game-scope";
+import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 import { useCurrentArmiesTick } from "@/hooks/helpers/use-block-timestamp";
 
 export function useProductionBonuses(entityId: number) {

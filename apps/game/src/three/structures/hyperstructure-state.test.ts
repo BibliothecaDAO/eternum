@@ -5,7 +5,7 @@ const rows = vi.hoisted(() => ({ structure: undefined as unknown, requirements: 
 vi.mock("@dojoengine/recs", () => ({
   getComponentValue: (component: string) => (component === "structure" ? rows.structure : rows.requirements),
 }));
-vi.mock("@/sync/game-scope", () => ({ gameEntityKey: (key: bigint[]) => key.join(":") }));
+vi.mock("@bibliothecadao/eternum/game-client", () => ({ gameEntityKey: (key: bigint[]) => key.join(":") }));
 import { readHyperstructureConstruction } from "./hyperstructure-state";
 
 const components = {

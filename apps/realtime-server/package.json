@@ -28,7 +28,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.13.5",
-    "bun-types": "^1.2.2",
+    "bun-types": "catalog:web",
     "drizzle-kit": "^0.31.5",
     "eslint": "^9.23.0",
     "typescript": "^5.8.2",

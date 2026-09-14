@@ -3,12 +3,12 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
+import { createRecsGameSyncStore } from "@bibliothecadao/eternum/game-client";
 import { WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
 import { BiomeType, StructureType, TileOccupier, defineContractComponents } from "@bibliothecadao/types";
 import { createWorld, getComponentValue } from "@dojoengine/recs";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { createRecsGameSyncStore } from "@/sync/recs-game-sync-store";
 import { FrameBudgetWorkQueue } from "@/three/frame-budget-work-queue";
 import { ProceduralTerrain } from "@/three/terrain/procedural-terrain";
 import { prepareTerrainPage } from "@/three/terrain/terrain-page-builder";
@@ -34,7 +34,9 @@ interface StructureComponentValue {
 }
 
 const structureTemplate = (
-  JSON.parse(readFileSync(resolve(process.cwd(), "src/sync/recs-game-sync-store.parity.json"), "utf8")) as {
+  JSON.parse(
+    readFileSync(resolve(process.cwd(), "../../packages/core/src/client/recs-game-sync-store.parity.json"), "utf8"),
+  ) as {
     entities: FixtureEntity[];
   }
 ).entities.find((entity) => "Structure" in entity.models)!.models.Structure;

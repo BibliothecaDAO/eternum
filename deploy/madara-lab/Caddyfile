@@ -1,4 +1,4 @@
-# TLS front for every browser-facing host of the lab. Browsers are the only TLS clients; sozo, the deployer,
+# TLS front for every browser-facing host of the lab. Browsers are the only TLS clients; the deployer,
 # the harness and probes talk plain HTTP to the host services directly (README "Bring the chain up").
 #
 # One wildcard certificate, issued by scripts/issue-certs.sh from the mkcert root that the game's Vite plugin
@@ -12,7 +12,7 @@
 	tls /certs/realms.test.pem /certs/realms.test-key.pem
 }
 
-# apps/web dev server (plain HTTP on the host)
+# apps/realms identity SPA and API (plain HTTP on the host, REALMS_SERVER_PORT=3000)
 realms.test {
 	import lab_tls
 	reverse_proxy host.docker.internal:3000 {

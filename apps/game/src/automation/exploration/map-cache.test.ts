@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@/sync/game-scope", () => ({ gameEntityKey: (keys: bigint[]) => keys[0].toString() }));
+vi.mock("@bibliothecadao/eternum/game-client", () => ({ gameEntityKey: (keys: bigint[]) => keys[0].toString() }));
 
 vi.mock("@dojoengine/recs", () => ({
   getComponentValue: (component: unknown, entity: unknown) =>

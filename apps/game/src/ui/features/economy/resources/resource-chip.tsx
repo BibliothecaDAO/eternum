@@ -32,7 +32,7 @@ import FlaskConical from "lucide-react/dist/esm/icons/flask-conical";
 import Sparkles from "lucide-react/dist/esm/icons/sparkles";
 import { getComponentValue } from "@dojoengine/recs";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { gameEntityKey } from "@/sync/game-scope";
+import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 
 export const ResourceChip = ({
   resourceId,

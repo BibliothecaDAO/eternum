@@ -5,6 +5,7 @@ import { setTimeout as sleep } from "node:timers/promises";
 import { Account, CallData, RpcProvider, ec, uint256, validateAndParseAddress, type Call } from "starknet";
 import { assertProviderChain } from "../../../packages/chain/chain-guard.js";
 
+import { bindGameplayAccounts, type GameplayAccountBindingResult } from "@bibliothecadao/eternum";
 import { decodeGameLedgerGame } from "../../../packages/core/src/data/abi/GameLedger";
 import { mapWithConcurrency, type HarnessAccount, type HarnessGameplayIdentity } from "./account-factory";
 import { HeraldObserver } from "./herald-observer";
@@ -53,10 +54,7 @@ export interface LedgerRegistrationEvidence {
   sweepManifestPath: string;
 }
 
-export interface LedgerBindingEvidence {
-  alreadyBound: number;
-  bindingTransactionHashes: string[];
-}
+export type LedgerBindingEvidence = GameplayAccountBindingResult;
 
 export interface LedgerFinalizationEvidence {
   dustBaseUnits: string;
@@ -121,7 +119,6 @@ interface LedgerPresetCosts {
 }
 
 const FUNDING_BATCH_SIZE = 12;
-const BINDING_BATCH_SIZE = 24;
 const RELAY_TIMEOUT_MS = 15 * 60 * 1_000;
 const FINALIZATION_TIMEOUT_MS = 15 * 60 * 1_000;
 
@@ -242,40 +239,18 @@ export async function registerLedgerBots(
 export async function bindLedgerGameplayAccounts(
   options: BindLedgerGameplayAccountsOptions,
 ): Promise<LedgerBindingEvidence> {
-  const calls: Call[] = [];
-  let alreadyBound = 0;
-
-  for (const account of options.accounts) {
-    const [boundAccount, boundOwner] = await Promise.all([
-      readRegistryAddress(options.provider, options.playerRegistryAddress, "account_of", account.owner),
-      readRegistryAddress(options.provider, options.playerRegistryAddress, "owner_of", account.address),
-    ]);
-    if (sameAddress(boundAccount, account.address) && sameAddress(boundOwner, account.owner)) {
-      alreadyBound += 1;
-      continue;
-    }
-    if (BigInt(boundAccount) !== 0n || BigInt(boundOwner) !== 0n) {
-      throw new Error(
-        `PlayerRegistry binding conflict for owner ${account.owner}: account_of=${boundAccount}, owner_of(${account.address})=${boundOwner}`,
-      );
-    }
-    calls.push({
-      contractAddress: options.playerRegistryAddress,
-      entrypoint: "bind",
-      calldata: CallData.compile([account.owner, account.address]),
-    });
-  }
-
   const authority = new Account({
     provider: options.provider,
     address: options.authorityAddress,
     signer: options.authorityPrivateKey,
   });
-  const bindingTransactionHashes: string[] = [];
-  for (const batch of chunk(calls, BINDING_BATCH_SIZE)) {
-    bindingTransactionHashes.push(await executeMadaraAndWait(authority, batch, "bind gameplay accounts"));
-  }
-  return { alreadyBound, bindingTransactionHashes };
+  return bindGameplayAccounts({
+    accounts: options.accounts.map(({ address, owner }) => ({ address, owner })),
+    authority,
+    chain: "madara",
+    playerRegistryAddress: options.playerRegistryAddress,
+    provider: options.provider,
+  });
 }
 
 export async function waitForRelayedLedgerRegistrations(
@@ -591,16 +566,6 @@ async function readLedgerRegistration(
     "latest",
   );
   return truthyFelt(result[0]);
-}
-
-async function readRegistryAddress(
-  provider: RpcProvider,
-  registry: string,
-  entrypoint: "account_of" | "owner_of",
-  address: string,
-): Promise<string> {
-  const result = await provider.callContract({ contractAddress: registry, entrypoint, calldata: [address] }, "latest");
-  return validateAndParseAddress(result[0] ?? "0x0");
 }
 
 async function readGameSchedule(observer: HeraldObserver, gameId: number) {

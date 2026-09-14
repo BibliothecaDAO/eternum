@@ -19,7 +19,8 @@ import { configManager } from "./config-manager";
 import { StaminaManager } from "./stamina-manager";
 import { ActionPaths, ActionType } from "../utils/action-paths";
 
-vi.mock("@dojoengine/recs", () => ({
+vi.mock("@dojoengine/recs", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@dojoengine/recs")>()),
   getComponentValue: (component: unknown, entity: unknown) => {
     if (component instanceof Map) {
       return component.get(entity);

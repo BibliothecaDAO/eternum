@@ -26,7 +26,7 @@ import ShieldCheck from "lucide-react/dist/esm/icons/shield-check";
 import X from "lucide-react/dist/esm/icons/x";
 import { Dispatch, memo, ReactNode, SetStateAction, useCallback, useEffect, useMemo, useState } from "react";
 import { BigNumberish } from "starknet";
-import { gameEntityKey } from "@/sync/game-scope";
+import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 
 type transferCall = {
   structureId: ID;

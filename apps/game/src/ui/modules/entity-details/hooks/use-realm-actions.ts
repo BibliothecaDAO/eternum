@@ -6,7 +6,7 @@ import { getContractByName } from "@dojoengine/core";
 import { dojoConfig } from "../../../../../dojo-config";
 import { env } from "../../../../../env";
 import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
-import { gameCallArgs, getGameNamespace } from "@/sync/game-scope";
+import { gameCallArgs, getGameNamespace } from "@bibliothecadao/eternum/game-client";
 import { useDojo } from "@bibliothecadao/react";
 import { type ID } from "@bibliothecadao/types";
 import { extractReadableErrorMessage } from "@/utils/error-message";

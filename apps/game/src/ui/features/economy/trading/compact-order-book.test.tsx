@@ -13,7 +13,7 @@ vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
   useCurrentBlockTimestamp: () => 1_000,
   useCurrentDefaultTick: () => 0,
 }));
-vi.mock("@/sync/game-scope", () => ({ gameEntityKey: () => "" }));
+vi.mock("@bibliothecadao/eternum/game-client", () => ({ gameEntityKey: () => "" }));
 vi.mock("@dojoengine/recs", () => ({ getComponentValue: () => undefined }));
 vi.mock("@bibliothecadao/eternum", () => ({
   calculateDonkeysNeeded: () => 0,

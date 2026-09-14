@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import { BiomeType } from "../../../packages/types/src/constants/hex";
+import { ActionPaths, ActionType, type GameActions } from "@bibliothecadao/eternum";
+import type { Account, RpcProvider } from "starknet";
 import { mapWithConcurrency } from "./account-factory";
 import {
   RECEIPT_POLL_INTERVAL_MS,
@@ -7,18 +8,15 @@ import {
   classifyWorkloadFailure,
   classifyWorkloadRevertReason,
   createRpcMetrics,
-  hasExplorerWithStamina,
-  millisecondsUntilNextArmyTick,
   neighbor,
   oppositeDirection,
-  parseStructureIds,
   prioritizeExplorer,
   resolveActionKind,
-  resolveExplorerActionStaminaCost,
   resolveWorkloadTicks,
   runWorkload,
   type HarnessBot,
 } from "./driver";
+import type { Coord, ExplorerRow, HarnessGame, ProductionState } from "./harness-game";
 import {
   isThresholdBlockingFailure,
   percentile,
@@ -30,7 +28,7 @@ import {
 import { createHarnessProvider, parseHarnessArgs } from "./run";
 import { parseLedgerBotIdentities, rankPlayersByRegisteredPoints, toHarnessGameplayIdentities } from "./ledger-mode";
 import { BlockTag } from "starknet";
-import { HeraldObserver } from "./herald-observer";
+import { HeraldObserver, parseStructureIds } from "./herald-observer";
 
 describe("Madara harness workload", () => {
   it("selects Eternum and rejects incompatible ledger registration", () => {
@@ -83,26 +81,6 @@ describe("Madara harness workload", () => {
     expect(oppositeDirection(5)).toBe(2);
   });
 
-  it("waits through the next complete army tick", () => {
-    expect(millisecondsUntilNextArmyTick(Date.UTC(2026, 7, 25, 12, 0, 0))).toBe(61_000);
-    expect(millisecondsUntilNextArmyTick(Date.UTC(2026, 7, 25, 12, 0, 59))).toBe(2_000);
-  });
-
-  it("starts once each bot has one explorer action of stamina", () => {
-    expect(hasExplorerWithStamina([{ stamina: 29, staminaUpdatedTick: 10 }], 10, 30)).toBe(false);
-    expect(hasExplorerWithStamina([{ stamina: 0, staminaUpdatedTick: 10 }], 11, 30)).toBe(true);
-    expect(
-      hasExplorerWithStamina(
-        [
-          { stamina: 0, staminaUpdatedTick: 10 },
-          { stamina: 30, staminaUpdatedTick: 10 },
-        ],
-        10,
-        30,
-      ),
-    ).toBe(true);
-  });
-
   it("keeps an explorer at the frontier throughout the acceptance workload", () => {
     const explorers = [0, 1, 2].map((id) => ({ atFrontier: true, id, lastUsedAt: -1 }));
 
@@ -136,22 +114,14 @@ describe("Madara harness workload", () => {
         if (blockReads === 1) return { timestamp: 60 };
         throw new Error("The socket connection was closed unexpectedly");
       },
-    };
+    } as unknown as RpcProvider;
+    const world = fakeWorld();
     const workload = await runWorkload({
-      bots: [readyHarnessBot()],
+      bots: [readyHarnessBot(world)],
+      game: world.game,
       intervalSeconds: 1,
       minutes: 0.001,
-      provider: provider as never,
-      systems: {
-        registrar: "0x9",
-        realm: "0xa",
-        blitzRealm: "0x1",
-        prizeDistribution: "0x5",
-        production: "0x2",
-        troopManagement: "0x3",
-        troopMovement: "0x4",
-      },
-      heraldUrl: "http://127.0.0.1:1",
+      provider,
     });
 
     expect(workload.actions).toHaveLength(1);
@@ -160,6 +130,38 @@ describe("Madara harness workload", () => {
       outcome: "driver_failed",
       rpc: { getBlock: { calls: 1 } },
     });
+  });
+
+  it("plays every explorer step through the bot's client actions and reads the result from RECS", async () => {
+    const world = fakeWorld();
+    const bot = readyHarnessBot(world);
+    const workload = await runWorkload({
+      bots: [bot],
+      game: world.game,
+      intervalSeconds: 0.01,
+      minutes: 0.001,
+      provider: confirmingProvider(),
+    });
+
+    expect(workload.actions.map(({ kind, outcome }) => `${kind}:${outcome}`)).toEqual([
+      "explore:completed",
+      "explore:completed",
+      "explore:completed",
+      "move:completed",
+      "produce:completed",
+      "move:completed",
+    ]);
+    expect(world.moves.map((move) => ActionPaths.getActionType(move.path))).toEqual([
+      ActionType.Explore,
+      ActionType.Explore,
+      ActionType.Explore,
+      ActionType.Move,
+      ActionType.Move,
+    ]);
+    expect(world.moves.every((move) => move.explorerId === 1 && move.path.length === 2)).toBe(true);
+    expect(workload.actions[4]?.productionDelta).toMatchObject({ laborDelta: "-1", woodOutputDelta: "1" });
+    expect(bot.explorers[0]).toMatchObject({ atFrontier: true, pathDirections: [0, 0, 0] });
+    expect(world.game.explorer(1)?.coord).toEqual({ x: 4, y: 1 });
   });
 
   it("classifies revert reasons without treating human tile contention as a threshold failure", () => {
@@ -178,15 +180,6 @@ describe("Madara harness workload", () => {
       labor: 0,
       other: 0,
     });
-  });
-
-  it("uses the game-configured stamina cost for each explorer action", () => {
-    expect(resolveExplorerActionStaminaCost("explore", BiomeType.Scorched, 0)).toBe(30);
-    expect(resolveExplorerActionStaminaCost("move", BiomeType.DeepOcean, 0)).toBe(10);
-    expect(resolveExplorerActionStaminaCost("move", BiomeType.Beach, 0)).toBe(20);
-    expect(resolveExplorerActionStaminaCost("move", BiomeType.Scorched, 0)).toBe(30);
-    expect(resolveExplorerActionStaminaCost("move", BiomeType.Taiga, 1)).toBe(30);
-    expect(resolveExplorerActionStaminaCost("move", BiomeType.Tundra, 1)).toBe(10);
   });
 
   it("keeps every cadence boundary inside a probe window", () => {
@@ -325,42 +318,6 @@ describe("Madara harness Herald observer", () => {
     }
   });
 
-  it("observes a production labor or wood-output delta", async () => {
-    let resourceReads = 0;
-    const server = Bun.serve({
-      port: 0,
-      fetch() {
-        resourceReads += 1;
-        return heraldSnapshot("Resource", [resourceRow("11", "100", resourceReads === 1 ? "4" : "9")]);
-      },
-    });
-
-    try {
-      const observer = new HeraldObserver(`http://127.0.0.1:${server.port}`, "madara", 5);
-      const before = await observer.readResource(7, "11");
-      const after = await observer.waitForResource(7, "11", before, 12, 1_000);
-      expect(after).toMatchObject({ structureId: "11", laborBalance: 100n, woodOutput: 9n });
-    } finally {
-      server.stop(true);
-    }
-  });
-
-  it("rejects a production action with no resource delta", async () => {
-    const server = Bun.serve({
-      port: 0,
-      fetch() {
-        return heraldSnapshot("Resource", [resourceRow("11", "100", "4")]);
-      },
-    });
-
-    try {
-      const observer = new HeraldObserver(`http://127.0.0.1:${server.port}`, "madara", 5);
-      const before = await observer.readResource(7, "11");
-      await expect(observer.waitForResource(7, "11", before, 12, 20)).rejects.toThrow("did not show a labor or wood");
-    } finally {
-      server.stop(true);
-    }
-  });
 });
 
 describe("Madara harness CLI and concurrency", () => {
@@ -370,18 +327,13 @@ describe("Madara harness CLI and concurrency", () => {
     ).toMatchObject({ bots: 4, minutes: 0.5, intervalSeconds: 5, gameId: 9, gameName: "game-9" });
   });
 
-  it("parameterizes concurrent games in one process", () => {
-    expect(parseHarnessArgs(["--games", "4"])).toMatchObject({ bots: 96, games: 4, intervalSeconds: 15 });
-    expect(() => parseHarnessArgs(["--games", "2", "--game-id", "9"])).toThrow(
-      "--game-id can only be used with --games 1",
-    );
+  it("holds one game per process", () => {
+    expect(parseHarnessArgs([])).toMatchObject({ bots: 96, intervalSeconds: 15 });
+    expect(() => parseHarnessArgs(["--games", "2"])).toThrow("one game per process");
   });
 
   it("requires an exact persistent identity roster in ledger mode", () => {
     expect(() => parseHarnessArgs(["--ledger"])).toThrow("--ledger-accounts is required with --ledger or --sweep-only");
-    expect(() => parseHarnessArgs(["--ledger", "--ledger-accounts", "bots.json", "--games", "2"])).toThrow(
-      "--ledger supports one game per run",
-    );
     expect(
       parseHarnessArgs([
         "--ledger",
@@ -490,30 +442,121 @@ function resourceRow(structureId: string, laborBalance: string, woodOutput: stri
   };
 }
 
-function readyHarnessBot(): HarnessBot {
+function readyHarnessBot(world: FakeWorld): HarnessBot {
   return {
-    account: {},
+    account: { address: "0x1" } as Account,
+    actions: world.actions,
     address: "0x1",
     botId: 1,
     explorers: [
       {
         atFrontier: true,
         blockedDirections: new Map(),
-        coord: { x: 1, y: 1 },
-        explorerId: "1",
+        explorerId: 1,
         lastUsedAt: -1,
         outwardDirection: 0,
         pathDirections: [],
-        stamina: 30,
-        staminaUpdatedTick: 1,
-        structureId: "1",
-        troopType: 0,
+        structureId: 1,
       },
     ],
     gameId: 1,
     nextProductionStructure: 0,
-    structures: [{ coord: { x: 0, y: 0 }, direction: 0, structureId: "1" }],
-  } as HarnessBot;
+    structures: [{ coord: { x: 0, y: 0 }, direction: 0, structureId: 1 }],
+  } as unknown as HarnessBot;
+}
+
+interface FakeWorld {
+  actions: GameActions;
+  game: HarnessGame;
+  moves: Array<{ explorerId: number; path: Array<{ hex: { col: number; row: number }; actionType: ActionType }> }>;
+}
+
+/** One explorer at (1, 1) with full stamina on an unexplored map; every action lands in "RECS" as it is submitted. */
+function fakeWorld(): FakeWorld {
+  const explorers = new Map<number, ExplorerRow>([
+    [1, { coord: { x: 1, y: 1 }, staminaAmount: 120n, staminaUpdatedTick: 1n }],
+  ]);
+  const production = new Map<number, ProductionState>([[1, { laborBalance: 100n, woodOutput: 4n }]]);
+  const explored = new Set<string>(["1:1"]);
+  const listeners = new Set<() => void>();
+  const moves: FakeWorld["moves"] = [];
+  const key = (coord: Coord) => `${coord.x}:${coord.y}`;
+  const changed = () => listeners.forEach((listener) => listener());
+  let nextHash = 1;
+
+  const actions = {
+    armyPaths: ({ explorerId }: { explorerId: number }) => {
+      const paths = new ActionPaths();
+      const from = explorers.get(explorerId)!.coord;
+      for (const direction of [0, 1, 2, 3, 4, 5]) {
+        const target = neighbor(from, direction);
+        paths.set(ActionPaths.posKey({ col: target.x, row: target.y }), [
+          { hex: { col: from.x, row: from.y }, actionType: ActionType.Move },
+          {
+            hex: { col: target.x, row: target.y },
+            actionType: explored.has(key(target)) ? ActionType.Move : ActionType.Explore,
+          },
+        ]);
+      }
+      return paths;
+    },
+    moveArmy: async ({ explorerId, path }: FakeWorld["moves"][number]) => {
+      moves.push({ explorerId, path });
+      const step = path.at(-1)!.hex;
+      const current = explorers.get(explorerId)!;
+      explorers.set(explorerId, { ...current, coord: { x: step.col, y: step.row }, staminaAmount: current.staminaAmount - 10n });
+      explored.add(key({ x: step.col, y: step.row }));
+      changed();
+    },
+  } as unknown as GameActions;
+
+  const game: HarnessGame = {
+    gameId: 1,
+    actionsFor: () => actions,
+    ticksAt: (timestamp) => ({ armies: Math.floor(timestamp / 60), default: timestamp }),
+    mapCenter: () => ({ x: 0, y: 0 }),
+    settlementStructureIds: () => undefined,
+    structureCoord: () => undefined,
+    startingTroopType: () => undefined,
+    explorerOf: () => undefined,
+    explorer: (explorerId) => explorers.get(explorerId),
+    explorerStamina: (explorerId) => Number(explorers.get(explorerId)!.staminaAmount),
+    minimumStaminaFor: (kind) => (kind === "explore" ? 30 : 10),
+    production: (structureId) => production.get(structureId),
+    armyPathIndexes: () => ({ structureHexes: new Map(), armyHexes: new Map(), exploredHexes: new Map(), chestHexes: new Map() }),
+    produceWood: async (_signer, structureId) => {
+      const current = production.get(structureId)!;
+      production.set(structureId, { laborBalance: current.laborBalance - 1n, woodOutput: current.woodOutput + 1n });
+      changed();
+    },
+    submit: async (_signer, act) => ({ transactionHash: `0x${(nextHash++).toString(16)}`, confirmed: act() }),
+    waitFor: (read, timeoutMs, describe) =>
+      new Promise((resolve, reject) => {
+        const timer = setTimeout(() => {
+          listeners.delete(check);
+          reject(new Error(`${describe()} did not change`));
+        }, timeoutMs);
+        const check = () => {
+          const value = read();
+          if (value === undefined) return;
+          clearTimeout(timer);
+          listeners.delete(check);
+          resolve(value);
+        };
+        listeners.add(check);
+        check();
+      }),
+  };
+  return { actions, game, moves };
+}
+
+/** Every hash is accepted on L2 in block 5 as soon as it is polled. */
+function confirmingProvider(): RpcProvider {
+  return {
+    getBlock: async () => ({ timestamp: 60 }),
+    getTransactionStatus: async () => ({ finality_status: "ACCEPTED_ON_L2", execution_status: "SUCCEEDED" }),
+    getTransactionReceipt: async () => ({ block_number: 5 }),
+  } as unknown as RpcProvider;
 }
 
 function blockRow(blockNumber: number, transactions: number, blockProductionMs: number) {

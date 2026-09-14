@@ -122,7 +122,7 @@ describe("console discipline", () => {
       );
     }
 
-    const syncSource = readFileSync(join(CLIENT_ROOT, "src/sync/game-sync.ts"), "utf8");
+    const syncSource = readFileSync(join(CLIENT_ROOT, "src/sync/game-sync-observer.ts"), "utf8");
     expect(syncSource).not.toContain("[GameSyncMetrics]");
 
     const worldmapSource = readFileSync(join(CLIENT_ROOT, "src/three/scenes/worldmap.tsx"), "utf8");

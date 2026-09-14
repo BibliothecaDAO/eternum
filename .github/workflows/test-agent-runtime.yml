@@ -1,0 +1,59 @@
+name: agent-runtime
+
+on:
+  pull_request:
+    paths:
+      - "apps/agent-runner/**"
+      - "deploy/madara-lab/harness/**"
+      - "deploy/madara-lab/scripts/**"
+      - "packages/**"
+      - "config/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - ".github/workflows/test-agent-runtime.yml"
+
+concurrency:
+  group: agent-runtime-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  offline-tests:
+    name: ${{ matrix.suite }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [runner, harness, sandbox-proxy]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.0
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Build shared packages
+        run: pnpm run build:packages
+      - name: Test runner and typecheck
+        if: matrix.suite == 'runner'
+        run: |
+          pnpm --dir apps/agent-runner test
+          pnpm --dir apps/agent-runner typecheck
+      - name: Test harness without a chain
+        if: matrix.suite == 'harness'
+        run: bun test deploy/madara-lab/harness
+      - name: Test sandbox proxy without external services
+        if: matrix.suite == 'sandbox-proxy'
+        run: bun test deploy/madara-lab/scripts/sandbox-proxy-handler.test.ts

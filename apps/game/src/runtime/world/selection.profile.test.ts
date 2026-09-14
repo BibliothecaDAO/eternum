@@ -9,8 +9,8 @@ vi.mock("@/ui/layouts/game-entry-timeline", () => ({
 const { deployment } = vi.hoisted(() => ({
   deployment: {
     id: "blitz",
-    chain: "madara",
-    namespace: "s2",
+    chain: "madara" as const,
+    namespace: "s2" as const,
     heraldBaseUrl: "https://herald.realms.test",
     rpcUrl: "https://rpc.realms.test",
     worldAddress: "0x222",
@@ -21,17 +21,20 @@ const { deployment } = vi.hoisted(() => ({
   },
 }));
 
-vi.mock("./world-directory", () => ({
-  getDefaultWorld: () => deployment,
-  getWorldById: () => deployment,
-  getWorldDirectory: () => [deployment],
-}));
+vi.mock("./world-directory", async () => {
+  const { requireWorldById } = await import("@bibliothecadao/eternum/game-client");
+  return { requireWorldById };
+});
 
+import { installWorldDirectory } from "@bibliothecadao/eternum/game-client";
+import { buildWorldProfile } from "./profile-builder";
 import { applyWorldSelection } from "./selection";
 import { getActiveWorldName, getWorldProfile, saveWorldProfile, setActiveWorldName } from "./store";
 
 describe("game entry profile resolution", () => {
   beforeEach(() => {
+    // The shim mock above never runs the app install, so give core's registry the same single world.
+    installWorldDirectory(() => [deployment]);
     localStorage.clear();
     vi.stubGlobal(
       "fetch",
@@ -85,6 +88,14 @@ describe("game entry profile resolution", () => {
 
     expect(profile).toMatchObject({ gameId: 2, presetId: 1, worldAddress: deployment.worldAddress });
     expect(getWorldProfile("eternum-fresh-01")).toEqual(profile);
+  });
+
+  it("rejects an unknown explicit world before fetching another deployment", async () => {
+    await expect(buildWorldProfile("madara", "blitz-daily-0001", "retired-world")).rejects.toThrow(
+      'World "retired-world" is not configured',
+    );
+    expect(fetch).not.toHaveBeenCalled();
+    expect(getActiveWorldName()).toBeNull();
   });
 
   it("does not enter a saved game when its directory is unavailable", async () => {

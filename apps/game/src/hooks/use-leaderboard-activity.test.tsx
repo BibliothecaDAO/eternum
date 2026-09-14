@@ -8,7 +8,7 @@ const state = vi.hoisted(() => ({ gameId: 28, confirmedBlock: 10, handshake: 0, 
 vi.mock("@bibliothecadao/eternum", () => ({ configManager: { getActiveGameId: () => state.gameId } }));
 vi.mock("@/runtime/world", () => ({ getActiveWorld: () => ({ worldId: "blitz" }) }));
 vi.mock("@/runtime/world/world-directory", () => ({
-  getWorldById: () => ({ id: "blitz", chain: "madara", heraldBaseUrl: "https://herald.example" }),
+  requireWorldById: () => ({ id: "blitz", chain: "madara", heraldBaseUrl: "https://herald.example" }),
   getDefaultWorld: vi.fn(),
 }));
 vi.mock("@/services/leaderboard/player-activity-breakdown-service", () => ({

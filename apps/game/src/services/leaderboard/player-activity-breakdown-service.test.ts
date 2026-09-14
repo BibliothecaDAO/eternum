@@ -1,6 +1,9 @@
 import { expect, it, vi } from "vitest";
 const { leaderboard } = vi.hoisted(() => ({ leaderboard: vi.fn() }));
-vi.mock("@/runtime/world/herald-http", () => ({ fetchHeraldGameLeaderboard: leaderboard }));
+vi.mock("@bibliothecadao/eternum/game-client", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@bibliothecadao/eternum/game-client")>()),
+  fetchHeraldGameLeaderboard: leaderboard,
+}));
 import { fetchLeaderboardActivityBreakdowns } from "./player-activity-breakdown-service";
 import type { WorldDeployment } from "@/runtime/world/world-directory";
 it("reads Herald's prepared aggregate with one scoped request", async () => {

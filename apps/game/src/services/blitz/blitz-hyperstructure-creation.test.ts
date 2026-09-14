@@ -23,7 +23,8 @@ vi.mock("@/runtime/world", () => ({
   getActiveWorld: mocks.getActiveWorld,
 }));
 
-vi.mock("@/runtime/world/normalize", () => ({
+vi.mock("@bibliothecadao/eternum/game-client", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@bibliothecadao/eternum/game-client")>()),
   normalizeSelector: mocks.normalizeSelector,
 }));
 

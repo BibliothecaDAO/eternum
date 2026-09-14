@@ -1,4 +1,5 @@
-import { getActiveWorld, normalizeRpcUrl, patchManifestWithFactory, resolveChain } from "@/runtime/world";
+import { getActiveWorld, patchManifestWithFactory, resolveChain } from "@/runtime/world";
+import { normalizeRpcUrl } from "@bibliothecadao/eternum/game-client";
 import { getGameManifest } from "@contracts";
 import type { GameChain as Chain } from "@realms-world/chain";
 import { env } from "./env";

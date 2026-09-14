@@ -120,6 +120,9 @@
         "@bibliothecadao/eternum/game-sync": [
           "../../packages/core/src/sync/index.ts"
         ],
+        "@bibliothecadao/eternum/game-client": [
+          "../../packages/core/src/client/index.ts"
+        ],
         "@bibliothecadao/provider": [
           "../../packages/provider/src/index.ts"
         ],

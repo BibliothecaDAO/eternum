@@ -1,4 +1,4 @@
-import { gameEntityKey } from "@/sync/game-scope";
+import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 import { getIsBlitz, getStructureName } from "@bibliothecadao/eternum";
 import { getPlayerDisplayName } from "@/hooks/use-player-profile";
 import type { WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";

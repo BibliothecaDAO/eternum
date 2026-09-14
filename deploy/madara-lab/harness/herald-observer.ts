@@ -10,12 +10,6 @@ export interface HeraldExplorer {
   y: number;
 }
 
-export interface HeraldResource {
-  laborBalance: bigint;
-  structureId: string;
-  woodOutput: bigint;
-}
-
 interface SnapshotModel {
   model: string;
   rows: Array<{ key: string; value: Record<string, unknown> }>;
@@ -69,13 +63,6 @@ export class HeraldObserver {
     return rows.map(toExplorer);
   }
 
-  async readResource(gameId: number, structureId: string): Promise<HeraldResource> {
-    const rows = await this.readRows(gameId, "Resource");
-    const row = rows.find((candidate) => entityId(candidate.entity_id) === entityId(structureId));
-    if (!row) throw new Error(`Resource ${structureId} in game ${gameId} is absent from Herald`);
-    return toResource(row);
-  }
-
   async waitForExplorer(
     gameId: number,
     explorerId: string,
@@ -97,32 +84,6 @@ export class HeraldObserver {
       await sleep(this.pollMs);
     }
     throw new Error(`Explorer ${explorerId} did not change in Herald within ${timeoutMs / 1_000} seconds`);
-  }
-
-  async waitForResource(
-    gameId: number,
-    structureId: string,
-    previous: HeraldResource,
-    acceptedBlock: number,
-    timeoutMs: number,
-  ): Promise<HeraldResource> {
-    const deadline = Date.now() + timeoutMs;
-    while (Date.now() <= deadline) {
-      const snapshot = await this.readSnapshot(gameId, ["Resource"]);
-      const row = rowsForModel(snapshot, "Resource").find(
-        (candidate) => entityId(candidate.entity_id) === entityId(structureId),
-      );
-      const current = row ? toResource(row) : undefined;
-      if (snapshot.confirmed_block < acceptedBlock) {
-        await sleep(this.pollMs);
-        continue;
-      }
-      if (current && resourceChanged(previous, current)) return current;
-      await sleep(this.pollMs);
-    }
-    throw new Error(
-      `Resource ${structureId} did not show a labor or wood output delta in Herald within ${timeoutMs / 1_000} seconds`,
-    );
   }
 
   private async readRows(gameId: number, model: string): Promise<Record<string, unknown>[]> {
@@ -202,12 +163,6 @@ const toExplorer = (row: Record<string, unknown>): HeraldExplorer => {
   };
 };
 
-const toResource = (row: Record<string, unknown>): HeraldResource => ({
-  laborBalance: BigInt(row.LABOR_BALANCE as string),
-  structureId: entityId(row.entity_id),
-  woodOutput: BigInt(record(row.WOOD_PRODUCTION, "Resource.WOOD_PRODUCTION").output_amount_left as string),
-});
-
 const explorerChanged = (
   previous: Pick<HeraldExplorer, "stamina" | "staminaUpdatedTick" | "alt" | "x" | "y">,
   current: HeraldExplorer,
@@ -218,5 +173,25 @@ const explorerChanged = (
   previous.stamina !== current.stamina ||
   previous.staminaUpdatedTick !== current.staminaUpdatedTick;
 
-const resourceChanged = (previous: HeraldResource, current: HeraldResource): boolean =>
-  previous.laborBalance !== current.laborBalance || previous.woodOutput !== current.woodOutput;
+/** Settlement rows carry structure_ids as an array; saved fixtures kept older string encodings of the same list. */
+export function parseStructureIds(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.map(entityId);
+  }
+  if (typeof value !== "string") {
+    throw new Error(`Unexpected settlement structure_ids value: ${String(value)}`);
+  }
+
+  try {
+    const decoded = JSON.parse(value) as unknown;
+    if (Array.isArray(decoded)) return decoded.map(entityId);
+  } catch {
+    // Preserve compatibility with historical string encodings in saved fixtures.
+  }
+
+  const ids = value.match(/0x[0-9a-f]+|\d+/gi)?.map(entityId) ?? [];
+  if (ids.length === 0) {
+    throw new Error(`Could not parse settlement structure_ids: ${value}`);
+  }
+  return ids;
+}

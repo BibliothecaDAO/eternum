@@ -9,7 +9,7 @@ vi.mock("@bibliothecadao/eternum", () => ({
 }));
 vi.mock("@bibliothecadao/react", () => ({ useDojo: () => ({ setup: { components: {} } }) }));
 vi.mock("@dojoengine/react", () => ({ useComponentValue: () => mocks.boost }));
-vi.mock("@/sync/game-scope", () => ({ gameEntityKey: () => "realm" }));
+vi.mock("@bibliothecadao/eternum/game-client", () => ({ gameEntityKey: () => "realm" }));
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({ useCurrentArmiesTick: () => mocks.tick }));
 import { useProductionBonuses } from "./use-production-bonuses";
 let root: Root, result: ReturnType<typeof useProductionBonuses>;

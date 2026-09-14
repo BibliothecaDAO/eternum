@@ -1,6 +1,10 @@
-import { fetchHeraldGameDirectory, fetchHeraldGameSnapshot, snapshotModelRows } from "@/runtime/world/herald-http";
+import {
+  fetchHeraldGameDirectory,
+  fetchHeraldGameSnapshot,
+  normalizeHex,
+  snapshotModelRows,
+} from "@bibliothecadao/eternum/game-client";
 import { getDefaultWorld } from "@/runtime/world/world-directory";
-import { normalizeHex } from "@/runtime/world/normalize";
 import type { GameChain as Chain } from "@realms-world/chain";
 import { useQuery } from "@tanstack/react-query";
 import { shortString } from "starknet";

@@ -1,5 +1,6 @@
 import { ec, stark, type Account, type RpcProvider } from "starknet";
-import { ensureGameplayAccount } from "../../../packages/core/src/account/gameplay-account";
+import { ensureGameplayAccount } from "@bibliothecadao/eternum";
+import { configureGameplayAccountSubmits } from "@bibliothecadao/eternum/game-client";
 
 export interface HarnessAccount {
   account: Account;
@@ -53,14 +54,18 @@ export async function createHarnessAccounts({
     const startedAt = performance.now();
 
     try {
-      const account = await ensureGameplayAccount({
-        authority,
-        classHash,
-        owner: constructorOwner,
-        privateKey,
-        provider,
-        publicKey,
-      });
+      // Every send a bot makes, raw or through the client's provider, takes the client's nonce and fee path.
+      const account = configureGameplayAccountSubmits(
+        await ensureGameplayAccount({
+          authority,
+          classHash,
+          owner: constructorOwner,
+          privateKey,
+          provider,
+          publicKey,
+        }),
+        "madara",
+      );
 
       return {
         account,

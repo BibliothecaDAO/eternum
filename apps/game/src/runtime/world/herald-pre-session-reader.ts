@@ -1,4 +1,4 @@
-import { feltEquals, fetchHeraldGameSnapshot, snapshotModelRows } from "./herald-http";
+import { feltEquals, fetchHeraldGameSnapshot, snapshotModelRows } from "@bibliothecadao/eternum/game-client";
 import type { WorldDeployment } from "./world-directory";
 
 type DirectionString = "East" | "NorthEast" | "NorthWest" | "West" | "SouthWest" | "SouthEast";

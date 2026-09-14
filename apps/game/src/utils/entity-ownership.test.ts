@@ -8,7 +8,7 @@ vi.mock("@dojoengine/recs", () => ({
   },
 }));
 
-vi.mock("@/sync/game-scope", () => ({
+vi.mock("@bibliothecadao/eternum/game-client", () => ({
   gameEntityKey: (keys: bigint[]) => keys.map((k) => k.toString()).join(":"),
 }));
 

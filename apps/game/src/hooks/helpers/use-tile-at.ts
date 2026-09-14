@@ -1,4 +1,4 @@
-import { gameEntityKey } from "@/sync/game-scope";
+import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 import { DEFAULT_COORD_ALT, Position, tileOptToTile } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import type { Tile, TileOpt } from "@bibliothecadao/types";

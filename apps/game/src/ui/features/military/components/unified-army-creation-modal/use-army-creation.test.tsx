@@ -31,7 +31,7 @@ vi.mock("@bibliothecadao/react", () => ({
 vi.mock("@dojoengine/react", () => ({
   useComponentValue: (component: string) => (component === "Structure" ? mocks.structure : mocks.resource),
 }));
-vi.mock("@/sync/game-scope", () => ({ gameEntityKey: () => "structure" }));
+vi.mock("@bibliothecadao/eternum/game-client", () => ({ gameEntityKey: () => "structure" }));
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
   useCurrentArmiesTick: () => 1,
   useCurrentBlockTimestamp: () => 60,
@@ -42,13 +42,14 @@ vi.mock("@/ui/modules/entity-details/hooks/use-blitz-realm-provision", () => ({
   useBlitzRealmProvision: () => ({ needsBootstrap: mocks.needsBootstrap }),
 }));
 vi.mock("../../utils/guard-stamina", () => ({ getGuardStaminaSnapshot: () => null }));
+vi.mock("@/sync/active-game-client", () => ({
+  requireActiveGameClient: () => ({
+    actions: { createExplorerArmy: mocks.createExplorer, addTroopsToGuard: mocks.addGuard },
+  }),
+}));
 vi.mock("@bibliothecadao/eternum", async () => {
   const types = await import("@bibliothecadao/types");
   return {
-    ArmyManager: class {
-      createExplorerArmy = mocks.createExplorer;
-      addTroopsToGuard = mocks.addGuard;
-    },
     configManager: { getMaxArmySize: () => 3000, getWorldStructureDefenseSlotsConfig: () => ({}) },
     divideByPrecision: (value: number) => Number(value),
     getBalance: () => ({ balance: mocks.resource.balance }),
@@ -104,13 +105,13 @@ describe("shared army creation form", () => {
     await act(async () => root.render(<Harness direction={Direction.EAST} />));
     await act(async () => form.handleCreate());
     expect(onSubmit).toHaveBeenCalledTimes(1);
-    expect(mocks.createExplorer).toHaveBeenCalledWith(
-      expect.objectContaining({ address: "0x1" }),
-      TroopType.Knight,
-      TroopTier.T2,
-      500,
-      Direction.EAST,
-    );
+    expect(mocks.createExplorer).toHaveBeenCalledWith({
+      structureId: 42,
+      troopType: TroopType.Knight,
+      troopTier: TroopTier.T2,
+      troopCount: 500,
+      spawnDirection: Direction.EAST,
+    });
     expect(mocks.addGuard).not.toHaveBeenCalled();
   });
 
@@ -132,11 +133,7 @@ describe("shared army creation form", () => {
     await act(async () => form.handleTroopCountChange(2000));
     await act(async () => form.handleCreate());
     expect(mocks.addGuard).toHaveBeenCalledWith(
-      expect.anything(),
-      expect.anything(),
-      expect.anything(),
-      2000,
-      GuardSlot.Delta,
+      expect.objectContaining({ structureId: 42, troopCount: 2000, slot: GuardSlot.Delta }),
     );
   });
 

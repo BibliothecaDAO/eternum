@@ -1,37 +1,32 @@
-import { ContractAddress, StructureType, type ID } from "@bibliothecadao/types";
+import {
+  hyperstructuresByOwnerQuery,
+  hyperstructureUpdatesQuery,
+  readHyperstructureUpdates,
+  readStructureIds,
+} from "@bibliothecadao/eternum";
+import { ContractAddress, type ID } from "@bibliothecadao/types";
 import { useEntityQuery } from "@dojoengine/react";
-import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "../context";
 
 export const useOwnedHyperstructuresEntityIds = (): ID[] => {
   const {
     account: { account },
-    setup: {
-      components: { Structure },
-    },
+    setup: { components },
   } = useDojo();
 
-  const hyperstructures = useEntityQuery([
-    HasValue(Structure, { owner: ContractAddress(account.address), category: StructureType.Hyperstructure }),
-  ]);
+  const hyperstructureEntities = useEntityQuery(
+    hyperstructuresByOwnerQuery(components, ContractAddress(account.address)),
+  );
 
-  return hyperstructures.map((hyperstructureEntityId) => {
-    const hyperstructure = getComponentValue(Structure, hyperstructureEntityId);
-    return hyperstructure!.entity_id;
-  });
+  return readStructureIds(components, hyperstructureEntities);
 };
 
 export const useHyperstructureUpdates = (hyperstructureEntityId: ID) => {
   const {
-    setup: {
-      components: { Hyperstructure },
-    },
+    setup: { components },
   } = useDojo();
 
-  const updates = useEntityQuery([
-    Has(Hyperstructure),
-    HasValue(Hyperstructure, { hyperstructure_id: hyperstructureEntityId }),
-  ]);
+  const updateEntities = useEntityQuery(hyperstructureUpdatesQuery(components, hyperstructureEntityId));
 
-  return updates.map((updateEntityId) => getComponentValue(Hyperstructure, updateEntityId));
+  return readHyperstructureUpdates(components, updateEntities);
 };

@@ -1,5 +1,5 @@
 import { activeGameRows } from "@/sync/recs-rows";
-import { getScopedGameId } from "@/sync/game-scope";
+import { getScopedGameId } from "@bibliothecadao/eternum/game-client";
 import { createBuildingMilestones } from "./building-milestones";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";

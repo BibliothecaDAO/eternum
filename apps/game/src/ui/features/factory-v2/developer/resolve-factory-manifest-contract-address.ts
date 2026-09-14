@@ -1,4 +1,4 @@
-import { resolveWorldIdForGame } from "@/runtime/world/game-registry";
+import { resolveWorldIdForGame } from "@bibliothecadao/eternum/game-client";
 import { getWorldById } from "@/runtime/world/world-directory";
 import { getGameManifest } from "@contracts";
 import { DEFAULT_FACTORY_NAMESPACE } from "@/ui/features/factory/shared/factory-metadata";

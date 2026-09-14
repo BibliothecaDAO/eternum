@@ -7,7 +7,7 @@ import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { buildingEntityKey, gameEntityKey } from "@/sync/game-scope";
+import { buildingEntityKey, gameEntityKey } from "@bibliothecadao/eternum/game-client";
 import { useTileAt } from "@/hooks/helpers/use-tile-at";
 import { isVillageLikeStructureCategory, normalizeStructureCategory } from "@/lib/structure-type-utils";
 import { formatTilePanelTitle } from "./tile-panel-title";
@@ -45,7 +45,7 @@ import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { SelectedWorldmapEntity } from "@/ui/features/world/components/actions/selected-worldmap-entity";
 import { RealmUpgradeCompact } from "@/ui/modules/entity-details/realm/realm-details";
 import { resolveRealmHasAvailableBuildingTile } from "@/ui/features/settlement/construction/realm-build-actions";
-import { TileManager } from "@bibliothecadao/eternum";
+import { requireActiveGameClient } from "@/sync/active-game-client";
 import Factory from "lucide-react/dist/esm/icons/factory";
 import Hammer from "lucide-react/dist/esm/icons/hammer";
 import Info from "lucide-react/dist/esm/icons/info";
@@ -188,7 +188,7 @@ const MapTilePanel = () => {
 };
 
 const LocalTilePanel = () => {
-  const { setup, account } = useDojo();
+  const { setup } = useDojo();
   const buildingComponent = setup.components.Building;
   const ordersAllowed = useUIStore(canIssueOrders);
   const selectedBuildingHex = useUIStore((state) => state.selectedBuildingHex);
@@ -362,24 +362,15 @@ const LocalTilePanel = () => {
     if (!selectedBuildingHex || !canManageBuilding || isActionLoading) return;
     setIsActionLoading(true);
     try {
-      const tileManager = new TileManager(setup.components, setup.systemCalls, {
-        col: selectedBuildingHex.outerCol,
-        row: selectedBuildingHex.outerRow,
-      });
+      const { actions } = requireActiveGameClient();
+      const slot = {
+        structureId: structureEntityId,
+        hex: { col: selectedBuildingHex.innerCol, row: selectedBuildingHex.innerRow },
+      };
       if (isPaused) {
-        await tileManager.resumeProduction(
-          account.account,
-          structureEntityId,
-          selectedBuildingHex.innerCol,
-          selectedBuildingHex.innerRow,
-        );
+        await actions.resumeProduction(slot);
       } else {
-        await tileManager.pauseProduction(
-          account.account,
-          structureEntityId,
-          selectedBuildingHex.innerCol,
-          selectedBuildingHex.innerRow,
-        );
+        await actions.pauseProduction(slot);
       }
     } catch (error) {
       console.error("Failed to toggle production", error);
@@ -397,16 +388,10 @@ const LocalTilePanel = () => {
     }
     setIsActionLoading(true);
     try {
-      const tileManager = new TileManager(setup.components, setup.systemCalls, {
-        col: selectedBuildingHex.outerCol,
-        row: selectedBuildingHex.outerRow,
+      await requireActiveGameClient().actions.destroyBuilding({
+        structureId: structureEntityId,
+        hex: { col: selectedBuildingHex.innerCol, row: selectedBuildingHex.innerRow },
       });
-      await tileManager.destroyBuilding(
-        account.account,
-        structureEntityId,
-        selectedBuildingHex.innerCol,
-        selectedBuildingHex.innerRow,
-      );
     } catch (error) {
       console.error("Failed to destroy building", error);
     } finally {
@@ -499,10 +484,6 @@ const LocalTilePanel = () => {
     return resolveRealmHasAvailableBuildingTile({
       entityId: structureEntityId,
       realmPosition: { x: selectedStructure.outerCol, y: selectedStructure.outerRow },
-      world: {
-        components: setup.components,
-        systemCalls: setup.systemCalls,
-      },
     });
   })();
 

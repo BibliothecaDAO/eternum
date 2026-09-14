@@ -39,7 +39,7 @@ import Star from "lucide-react/dist/esm/icons/star";
 import Tent from "lucide-react/dist/esm/icons/tent";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
-import { gameEntityKey } from "@/sync/game-scope";
+import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 
 const BLITZ_FRAGMENT_MINE_ALLOWED_RESOURCES = new Set<ResourcesIds>([ResourcesIds.Donkey, ResourcesIds.Essence]);
 const ETERNUM_FRAGMENT_MINE_ALLOWED_RESOURCES = new Set<ResourcesIds>([

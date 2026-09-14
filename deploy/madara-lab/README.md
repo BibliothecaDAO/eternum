@@ -10,8 +10,9 @@ Branch: `feat/madara-lab`. Brief: `docs/plans/realms-phase-1-brief.md`. Directio
 ## Prerequisites
 
 - Docker with Compose v2 (`docker compose`), ~2 GB free for images and the chain volume.
-- `sozo 1.8.7` through asdf (`ASDF_SOZO_VERSION=1.8.7`; the repo's `.tool-versions` pins 1.8.0, which does not
-  speak this chain's RPC), `scarb 2.13.1`, `jq`, `bun`, `mkcert`.
+- `scarb 2.13.1`, the repository-pinned `snforge`, `pnpm`, `jq`, `bun`, and `mkcert`. Run
+  `pnpm install --frozen-lockfile` and `pnpm run build:packages` from the repository root before deploying.
+  World deployment uses our starknet.js deployer; Sozo is not required.
 - The lab hosts in `/etc/hosts` (once, with sudo):
   `127.0.0.1 realms.test play.realms.test rpc.realms.test herald.realms.test identity-rpc.realms.test`.
 - Nothing from Cartridge: no Slot, no Controller, no paymaster, no hosted VRF.
@@ -40,12 +41,12 @@ Endpoints (all bound to localhost only):
 
 ### HTTPS: Caddy in front of everything a browser touches
 
-Browsers are the only TLS clients. `sozo`, the deployer, the harness and the probe stay on plain HTTP to
+Browsers are the only TLS clients. The deployer, the harness and the probe stay on plain HTTP to
 the host services. Caddy (`Caddyfile`) terminates TLS on `127.0.0.1:443` with one wildcard certificate:
 
 | Host                        | Upstream                                                           |
 | --------------------------- | ------------------------------------------------------------------ |
-| `realms.test`               | `apps/web` dev server on the host, `http://localhost:3000`         |
+| `realms.test`               | `apps/realms` identity SPA and API on the host, `http://localhost:3000`         |
 | `play.realms.test`          | `apps/game` dev server on the host, `https://localhost:5173`       |
 | `herald.realms.test`        | `apps/herald` on the host, `http://localhost:3003`                 |
 | `rpc.realms.test`           | `madara:9944` (paths pass through: `/rpc/v0_9_0` works)            |
@@ -84,21 +85,43 @@ It starts Madara and Caddy, deploys the world, then bootstraps the gameplay cont
 individual commands are below.
 
 ```bash
-deploy/madara-lab/scripts/deploy-world.sh              # sozo build (~40 s) + migrate (measured 22 m 40 s)
+deploy/madara-lab/scripts/deploy-world.sh              # Scarb build + starknet.js deployment
 deploy/madara-lab/scripts/deploy-world.sh --migrate-only
+deploy/madara-lab/scripts/deploy-world.sh --inspect     # JSON report: synced must be true
 cat deploy/madara-lab/.lab/world-address
 
 # Declare RealmsPlayerAccount, deploy PlayerRegistry, bootstrap ChainConfig,
 # and register the fee-free 96-player preset.
 deploy/madara-lab/scripts/bootstrap-game.sh
 
-# The second run must report that ChainConfig and preset 1 already exist.
+# The second run must report that ChainConfig and the default Blitz preset already exist.
 deploy/madara-lab/scripts/bootstrap-game.sh
 ```
 
-The world script writes `contracts/l3/game/manifest_madara.json` (gitignored, like the spike manifest) and records the
+The world script refreshes `contracts/l3/game/manifest_madara.json` and records the
 world address under `.lab/`. The bootstrap script writes the gameplay contract class hashes and registry address to
 `.lab/gameplay-contracts.json`.
+
+A second world deployment should submit zero transactions. Inspect checks declarations, class hashes, writer
+permissions, and initialization. It does not establish storage-layout compatibility for a changed model.
+
+For an isolated world on an existing lab chain, pass `--seed <name>` to deployment and every later inspect or
+redeployment command. The manifest and `.lab/world-address` identify that world; keep Herald and the harness on
+that same manifest. Local deployment addresses are not release configuration for the box.
+
+Start Herald with a dedicated local database after deploying the world:
+
+```bash
+docker exec madara-lab-postgres createdb -U realms herald_lab  # once per database
+HERALD_CHAIN=madara \
+HERALD_RPC_URL=http://127.0.0.1:5050/rpc/v0_10_2 \
+DATABASE_URL=postgres://realms:realms@127.0.0.1:5432/herald_lab \
+HERALD_MANIFEST_PATH="$PWD/contracts/l3/game/manifest_madara.json" \
+pnpm --dir apps/herald start
+```
+
+Herald rebuilds from confirmed events when no matching checkpoint exists. Wait for its ready log, then check
+`http://127.0.0.1:3003/madara/games`. Restart Herald after changing the manifest.
 
 Create a game after Herald is running:
 
@@ -109,28 +132,6 @@ DOJO_PRIVATE_KEY=0x077e56c6dc32d40a67f6f7e6625c8dc5e570abe49c0a24e9202e4ae906abc
 bun config/deployer/clean/cli/create.ts \
   --environment madara.blitz --game madara-phase1-96 --start-time 2026-08-25T19:00:00Z
 ```
-
-### Why these flags
-
-Two things make Madara different from Katana for `sozo`, and both are encoded in the script and in
-`contracts/l3/game/dojo_madara.toml`:
-
-1. **`--use-blake2s-casm-class-hash` is mandatory.** The chain runs Starknet protocol 0.14.2, which hashes compiled
-   (CASM) classes with blake2s. `sozo 1.8.7` only turns blake2s on by itself when the RPC URL contains `sepolia` or
-   `testnet`; everywhere else it uses poseidon and the world declare fails with `CompiledClassHashMismatch`. Verified
-   both ways on 2026-08-24: three migrations without the flag failed identically (default route, `/rpc/v0_9_0`, and a
-   chain rebuilt at protocol 0.14.0); the first run with the flag deployed the world.
-2. **Use the `/rpc/v0_9_0` route.** `sozo 1.8.7` is built against RPC 0.9.0 and prints a "version mismatch, continuing
-   anyway" warning against the default 0.10.2 route. The versioned route removes the warning so a real failure is not
-   hidden behind an expected one.
-
-Migration is slow by construction, not by Madara: sozo declares 160 classes sequentially and waits for each receipt.
-Measured on 2026-08-24 (VM execution, this laptop): **22 m 40 s** for 161 declares + 156 deploys + 43 permission
-syncs + 43 initializations, 189 transactions, 0 reverts. Madara's side of that is small — block close p50 2.2 ms — and
-the 1.7–2.0 s `block_production` spikes are the node compiling each declared Sierra class to CASM. Everything else is
-sozo's declare → wait-for-receipt → next-class cycle (~8 s per class). The lab config closes a block every 2 s and updates
-the pre-confirmed block every 250 ms so that wait is as short as it can be; on the upstream devnet preset (20–30 s
-blocks) the same migration takes over an hour.
 
 ## Gameplay accounts
 
@@ -164,6 +165,9 @@ contract. It rejects a registry address that contains a different class.
 
 ## Session store for `apps/realms`
 
+The identity server defaults to port 3001. Caddy routes to port 3000, so set `REALMS_SERVER_PORT=3000` in the root
+`.env` before starting `bun apps/realms/server/main.ts`.
+
 ```bash
 docker compose --profile web up -d --wait postgres
 # root .env
@@ -193,21 +197,30 @@ config.
 
 ### 96-player harness
 
+Set `BINDING_AUTHORITY_PRIVATE_KEY` in the root `.env` using the public lab key documented above. Guest gameplay
+accounts bind to themselves through PlayerRegistry before settlement. The harness checks for this setting before
+creating a game.
+
 The harness creates a fresh dev-mode game, deploys 96 guest gameplay accounts, settles and provisions each player,
 then rotates actions across the three realm explorers each settlement receives. The measured window starts when every
-bot has enough explorer stamina for one legal action; it does not wait for every explorer to refill. Run the acceptance
-workload from the repository root:
+bot has enough explorer stamina for one legal action; it does not wait for every explorer to refill. The harness plays
+through the shared game client (`@bibliothecadao/eternum`): one client subscribes to the game's Herald stream and holds
+it in RECS, and each bot acts through its own `createGameActions(client, { signer })` facade, so build the packages
+first. Run the acceptance workload from the repository root:
 
 ```bash
+pnpm build:packages
 pnpm lab:harness -- --bots 96 --minutes 10
 # equivalent: bun deploy/madara-lab/harness/run.ts --bots 96 --minutes 10
 ```
 
 Every transaction records hash submission, the first observed `PRE_CONFIRMED` status, and `ACCEPTED_ON_L2`. Receipt
 status is polled every 50 ms, and the interval is stored in the report. Pre-confirmed latency is therefore quantized at
-the poll boundary; it is an observed upper bound, not Madara's internal execution time. Setup and action state reads use
-Herald's selective confirmed snapshots; Produce completes only after Herald shows a labor or wood production-output
-delta. Every action also records the call count and summed wall time for `getBlock` and status polling.
+the poll boundary; it is an observed upper bound, not Madara's internal execution time. Setup and action state reads
+come from RECS as the client applies Herald's confirmed snapshot and live diffs; explorer moves are planned by the
+client's `armyPaths` and a Produce completes only after RECS shows a labor or wood production-output delta. Every action
+also records the call count and summed wall time for `getBlock` and status polling. The client holds one game per
+process, so a run plays exactly one game.
 
 The JSON report is written under `deploy/madara-lab/.lab/runs/`. It includes the source revision, image digest, exact
 requested and completed action mixes, latency percentiles, RPC load, host-state snapshots, threshold results, and
@@ -531,7 +544,7 @@ Compose now carries the three E.2 pieces; drills run only between Codex's harnes
 ## What Madara does not give you (as of the nightly pin)
 
 - **WebSocket subscriptions are version-scoped.** They exist only on `/rpc/v0_10_2`; the v0.8/v0.9 subscribe methods
-  are removed. Herald subscribes there; sozo and the harness stay on `/rpc/v0_9_0`.
+  are removed. Herald, the deployer and the harness use that route.
 - **No `dev_predeployedAccounts`.** Player accounts do not need it: each key deploys its own account fee-free
   ("Gameplay accounts" above). The deployer and the binding authority use the deterministic genesis accounts.
 - **No embedded VRF, paymaster, or Controller.** The contracts fall back to transaction-hash randomness when the VRF
@@ -654,10 +667,10 @@ deploy/madara-lab/
   docker-compose.yml       madara + caddy (+ web/postgres profile), pinned images, localhost ports
   Caddyfile                TLS front: *.realms.test → dev servers, madara, herald, identity RPC upstream
   chain-config.yaml        full chain config (see Pinning)
-  harness/                 account factory, workload driver, Herald observer, and JSON report writer
+  harness/                 account factory, game client boot, workload driver, and JSON report writer
   scripts/issue-certs.sh   wildcard certificate from the shared mkcert root into .lab/certs/
-  scripts/deploy-world.sh  sozo build + migrate with the Madara-specific flags
-  scripts/bootstrap-game.sh  gameplay contracts + ChainConfig + preset 1
+  scripts/deploy-world.sh  Scarb build + starknet.js deployment
+  scripts/bootstrap-game.sh  gameplay contracts + ChainConfig + default Blitz preset
   scripts/deploy-box.sh    redeploy host services from next; run by .github/workflows/deploy-box.yml
   scripts/deploy-gameplay-contracts.ts  idempotent class declaration and registry deployment
   scripts/probe-deploy-account.ts  fee-free deploy_account proof + timings

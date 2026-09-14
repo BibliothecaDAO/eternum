@@ -14,11 +14,10 @@ import { writeFile } from "node:fs/promises";
 import { Account, BlockTag, CallData, RpcProvider, logger, shortString, type Call } from "starknet";
 import { EternumProvider, TransactionType } from "../../../packages/provider/src/index";
 import { resolveGameTransactionResourceBounds } from "../../../packages/core/src/account/transaction-resource-bounds";
-import { configureGameplayAccountSubmits } from "../../../apps/game/src/account/gameplay-account-submit";
+import { buildBlitzSettleCalls, configureGameplayAccountSubmits } from "@bibliothecadao/eternum/game-client";
 import { createHarnessAccounts } from "../harness/account-factory";
-import { parseStructureIds, type HarnessSystemAddresses } from "../harness/driver";
-import { HeraldObserver } from "../harness/herald-observer";
-import { buildBlitzSettleCalls } from "../../../apps/game/src/services/blitz/blitz-settlement-calls";
+import type { HarnessSystemAddresses } from "../harness/driver";
+import { HeraldObserver, parseStructureIds } from "../harness/herald-observer";
 
 logger.setLogLevel("FATAL");
 
@@ -128,6 +127,7 @@ if (reuseFile) {
       usernameFelt: shortString.encodeShortString("probe-sg"),
       gameId,
       cosmeticTokenIds: [],
+      grantStartingTroops: true,
     }),
     "settle",
   );

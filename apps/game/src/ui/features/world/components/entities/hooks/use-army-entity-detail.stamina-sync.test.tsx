@@ -19,7 +19,7 @@ const components = {
 
 vi.mock("@bibliothecadao/react", () => ({ useDojo: useDojoMock }));
 vi.mock("@dojoengine/react", () => ({ useComponentValue: useComponentValueMock }));
-vi.mock("@/sync/game-scope", () => ({ gameEntityKey: ([id]: [bigint]) => `entity:${id}` }));
+vi.mock("@bibliothecadao/eternum/game-client", () => ({ gameEntityKey: ([id]: [bigint]) => `entity:${id}` }));
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
   useBlockTimestamp: () => ({ currentArmiesTick: 5 }),
 }));

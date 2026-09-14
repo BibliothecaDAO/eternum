@@ -23,8 +23,14 @@ vi.mock("@/hooks/store/use-ui-store", () => ({
   useUIStore: (select: any) => select({ useSimpleCost: true, setUseSimpleCost: vi.fn() }),
 }));
 vi.mock("@/hooks/store/use-popover-store", () => ({ usePopoverStore: { getState: () => ({ close: mocks.close }) } }));
-vi.mock("@/sync/game-scope", () => ({ gameEntityKey: () => "entity", buildingEntityKey: () => "building" }));
+vi.mock("@bibliothecadao/eternum/game-client", () => ({
+  gameEntityKey: () => "entity",
+  buildingEntityKey: () => "building",
+}));
 vi.mock("@/utils/can-issue-orders", () => ({ canIssueOrders: () => mocks.allowed }));
+vi.mock("@/sync/active-game-client", () => ({
+  requireActiveGameClient: () => ({ actions: { placeBuilding: mocks.place } }),
+}));
 vi.mock("@/config/game-modes/use-game-mode-config", () => ({ useGameModeConfig: () => ({}) }));
 vi.mock("./construction-groups", () => ({
   getConstructionBuildingGroups: () => [{ label: "Economic", buildings: [1] }],
@@ -40,7 +46,7 @@ function Harness() {
   form = usePlotConstruction({
     entityId: 5,
     spot: { col: 1, row: 2 },
-    tileManager: { getHexCoords: () => ({ col: 10, row: 10 }), placeBuilding: mocks.place } as any,
+    tileManager: { getHexCoords: () => ({ col: 10, row: 10 }) } as any,
     isCurrentTarget: () => mocks.current,
   });
   return null;
@@ -68,11 +74,16 @@ it.each(["allowed", "current"] as const)("prevents submission when %s changes", 
   await act(async () => form.build(1 as BuildingType));
   expect(mocks.place).not.toHaveBeenCalled();
 });
-it("uses TileManager once for the selected plot and closes on success", async () => {
+it("submits the selected plot once and closes on success", async () => {
   await act(async () => {
     await Promise.all([form.build(1 as BuildingType), form.build(1 as BuildingType)]);
   });
   expect(mocks.place).toHaveBeenCalledTimes(1);
-  expect(mocks.place).toHaveBeenCalledWith({ address: "0x1" }, 5, 1, { col: 1, row: 2 }, true);
+  expect(mocks.place).toHaveBeenCalledWith({
+    structureId: 5,
+    buildingType: 1,
+    hex: { col: 1, row: 2 },
+    useSimpleCost: true,
+  });
   expect(mocks.close).toHaveBeenCalledWith("plot-construction");
 });

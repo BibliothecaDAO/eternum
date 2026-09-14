@@ -7,7 +7,7 @@ import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
 import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
-import { gameCallArgs, gameEntityKey, getGameNamespace } from "@/sync/game-scope";
+import { gameCallArgs, gameEntityKey, getGameNamespace } from "@bibliothecadao/eternum/game-client";
 import { toast } from "@/ui/features/event-feed/notify";
 import {
   createRealmProvisionRunner,

@@ -80,7 +80,8 @@ vi.mock("@bibliothecadao/types", () => {
   );
 });
 
-vi.mock("@dojoengine/recs", () => ({
+vi.mock("@dojoengine/recs", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@dojoengine/recs")>()),
   getComponentValue: vi.fn(),
 }));
 

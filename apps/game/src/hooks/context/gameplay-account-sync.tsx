@@ -1,7 +1,7 @@
 import { recoverGameplaySigner, rotateBoundGameplaySigner } from "@/account/gameplay-signer-recovery";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import { configureGameplayAccountSubmits } from "@/account/gameplay-account-submit";
+import { configureGameplayAccountSubmits } from "@bibliothecadao/eternum/game-client";
 import { identityOrigin, useIdentitySession } from "@/hooks/context/identity-session";
 import { getDefaultWorld } from "@/runtime/world/world-directory";
 import { getCachedRpcProvider } from "@/utils/cached-rpc-provider";

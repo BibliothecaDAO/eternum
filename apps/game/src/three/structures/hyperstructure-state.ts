@@ -1,6 +1,6 @@
 import type { ClientComponents } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
-import { gameEntityKey } from "@/sync/game-scope";
+import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 import type { HyperstructureConstruction } from "./hyperstructure-design";
 
 /** Missing snapshot rows keep the foundation visible until the authoritative rows arrive. */

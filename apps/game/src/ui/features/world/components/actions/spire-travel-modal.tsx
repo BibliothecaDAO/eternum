@@ -1,5 +1,5 @@
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
-import { gameEntityKey } from "@/sync/game-scope";
+import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 import Button from "@/ui/design-system/atoms/button";
 import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { getTileAt } from "@bibliothecadao/eternum";

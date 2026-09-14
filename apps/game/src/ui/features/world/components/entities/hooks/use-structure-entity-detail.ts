@@ -1,5 +1,5 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { gameEntityKey } from "@/sync/game-scope";
+import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 import { getComponentValue } from "@dojoengine/recs";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { isVillageLikeStructureCategory } from "@/lib/structure-type-utils";

@@ -6,7 +6,7 @@ const reactQueryMocks = vi.hoisted(() => ({
 }));
 
 const directoryMocks = vi.hoisted(() => ({
-  getWorldById: vi.fn(),
+  requireWorldById: vi.fn(),
   getDefaultWorld: vi.fn(),
   getWorldDirectory: vi.fn(() => []),
 }));
@@ -17,7 +17,10 @@ const registryMocks = vi.hoisted(() => ({
 
 vi.mock("@tanstack/react-query", () => reactQueryMocks);
 vi.mock("@/runtime/world/world-directory", () => directoryMocks);
-vi.mock("@/runtime/world/game-registry", () => registryMocks);
+vi.mock("@bibliothecadao/eternum/game-client", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@bibliothecadao/eternum/game-client")>()),
+  ...registryMocks,
+}));
 
 import type { WorldDeployment } from "@/runtime/world/world-directory";
 import { useWorldsAvailability } from "./use-world-availability";
@@ -91,8 +94,8 @@ const runAvailabilityQuery = async (worldName: string, playerAddress?: string | 
 beforeEach(() => {
   vi.stubGlobal("fetch", mockFetch);
   reactQueryMocks.useQueries.mockReset();
-  directoryMocks.getWorldById.mockReset();
-  directoryMocks.getWorldById.mockReturnValue(blitzWorld);
+  directoryMocks.requireWorldById.mockReset();
+  directoryMocks.requireWorldById.mockReturnValue(blitzWorld);
   directoryMocks.getDefaultWorld.mockReset();
   directoryMocks.getDefaultWorld.mockReturnValue(blitzWorld);
   registryMocks.resolveWorldIdForGame.mockReset();

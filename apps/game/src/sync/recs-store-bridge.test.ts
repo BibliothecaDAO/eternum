@@ -3,11 +3,11 @@ import { resolve } from "node:path";
 
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
+import { createRecsGameSyncStore } from "@bibliothecadao/eternum/game-client";
 import { defineContractComponents } from "@bibliothecadao/types";
 import { createWorld } from "@dojoengine/recs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { createRecsGameSyncStore } from "./recs-game-sync-store";
 import { installRecsStoreBridge } from "./recs-store-bridge";
 
 interface ParityEntity {
@@ -18,7 +18,9 @@ interface ParityEntity {
 // A real herald Structure row (from the parity fixture) written through the real store: RECS only reads back
 // complete rows, so a hand-made partial would never reach the bridge.
 const structureRow = (
-  JSON.parse(readFileSync(resolve(process.cwd(), "src/sync/recs-game-sync-store.parity.json"), "utf8")) as {
+  JSON.parse(
+    readFileSync(resolve(process.cwd(), "../../packages/core/src/client/recs-game-sync-store.parity.json"), "utf8"),
+  ) as {
     entities: ParityEntity[];
   }
 ).entities.find((entity) => "Structure" in entity.models)!;

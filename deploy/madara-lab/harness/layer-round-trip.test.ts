@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { ETHEREAL_STRIDE, getLayeredAttackDistance } from "../../../packages/types/src/constants/hex";
+import { ETHEREAL_STRIDE, getLayeredAttackDistance } from "@bibliothecadao/types";
 import { describe, expect, it } from "bun:test";
 import type { Account, Call, RpcProvider } from "starknet";
 import { neighbor, type HarnessBot } from "./driver";
@@ -139,8 +139,8 @@ function fixture(
     address: account.address,
     gameId: 7,
     botId: 1,
-    explorers: [{ explorerId: "9" }],
-  } as HarnessBot;
+    explorers: [{ explorerId: 9 }],
+  } as unknown as HarnessBot;
   return {
     server,
     calls,

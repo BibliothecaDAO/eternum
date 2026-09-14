@@ -35,7 +35,8 @@ vi.mock("@bibliothecadao/eternum", () => ({
   },
 }));
 
-vi.mock("@dojoengine/recs", () => ({
+vi.mock("@dojoengine/recs", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@dojoengine/recs")>()),
   getComponentValue,
 }));
 

@@ -32,7 +32,8 @@ vi.mock("@dojoengine/utils", () => ({
 
 const getComponentValueMock = vi.fn();
 
-vi.mock("@dojoengine/recs", () => ({
+vi.mock("@dojoengine/recs", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@dojoengine/recs")>()),
   getComponentValue: (...args: unknown[]) => getComponentValueMock(...args),
 }));
 

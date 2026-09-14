@@ -35,6 +35,12 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-14",
+    title: "World selection validation",
+    description: "Game entry and registration report an unavailable world instead of selecting another deployment.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-14",
     title: "Roomier Mobile Action Menus",
     description:
       "Build, Production, Military, Transfer and Trade adapt to portrait and landscape with compact structure selection, larger touch controls and clearer actions. Building costs are visible before you build, and menus stay in place when you rotate or enter an amount.",

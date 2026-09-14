@@ -17,7 +17,7 @@ import { REALM_PRESETS, RealmPresetId } from "@/utils/automation-presets";
 import { useAutomationStore } from "@/hooks/store/use-automation-store";
 import { ProductionStatusBadge } from "@/ui/shared";
 import { formatTimeRemaining } from "../../economy/resources/entity-resource-table/utils";
-import { gameEntityKey } from "@/sync/game-scope";
+import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 
 interface ProductionSidebarProps {
   realms: RealmInfo[];
