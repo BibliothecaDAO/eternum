@@ -1,0 +1,109 @@
+{
+  "scope": "deployed stub admission; not gameplay or latency-budget evidence",
+  "action": "0x7b1523a63ac9864bc87d06e8157a89969501745bc9001546137bf98855e5944",
+  "order": "0x4",
+  "submissionEpochMs": 1789405682134.306,
+  "acknowledgementEpochMs": 1789405682213.166,
+  "previews": [
+    {
+      "name": "simulation",
+      "rejection": {
+        "code": 41,
+        "message": "Transaction execution error",
+        "data": {
+          "transaction_index": 0,
+          "execution_error": {
+            "contract_address": "0x227da98c5c062d40233b0b7c1d77d2286e122f95949a04f4d43840eb3773969",
+            "class_hash": "0x50b8bdf178120f0aa08cb6cfcf4f0768decc431fb00b14d980574efeed8d424",
+            "error": "\"invalid authority signature\"",
+            "selector": "0x162da33a4585851fe8d3af3c2a9c60b557814e221e0d4f30ff0b2189d9c7775"
+          }
+        }
+      }
+    },
+    {
+      "name": "simulation skipping validation",
+      "rejection": "Transaction execution has failed:\n0: Error in the called contract (contract address: 0x0227da98c5c062d40233b0b7c1d77d2286e122f95949a04f4d43840eb3773969, class hash: 0x050b8bdf178120f0aa08cb6cfcf4f0768decc431fb00b14d980574efeed8d424, selector: 0x015d40a3d6ca2ac30f4031e42be28da9b056fef9bb7357ac5e85627ee876e5ad):\nExecution failed. Failure reason:\nError in contract (contract address: 0x0227da98c5c062d40233b0b7c1d77d2286e122f95949a04f4d43840eb3773969, class hash: 0x050b8bdf178120f0aa08cb6cfcf4f0768decc431fb00b14d980574efeed8d424, selector: 0x015d40a3d6ca2ac30f4031e42be28da9b056fef9bb7357ac5e85627ee876e5ad):\n\"invalid authority signature\".\n"
+    },
+    {
+      "name": "estimation",
+      "rejection": {
+        "code": 41,
+        "message": "Transaction execution error",
+        "data": {
+          "transaction_index": 0,
+          "execution_error": {
+            "contract_address": "0x227da98c5c062d40233b0b7c1d77d2286e122f95949a04f4d43840eb3773969",
+            "class_hash": "0x50b8bdf178120f0aa08cb6cfcf4f0768decc431fb00b14d980574efeed8d424",
+            "error": {
+              "contract_address": "0x227da98c5c062d40233b0b7c1d77d2286e122f95949a04f4d43840eb3773969",
+              "class_hash": "0x50b8bdf178120f0aa08cb6cfcf4f0768decc431fb00b14d980574efeed8d424",
+              "error": "\"invalid authority signature\"",
+              "selector": "0x15d40a3d6ca2ac30f4031e42be28da9b056fef9bb7357ac5e85627ee876e5ad"
+            },
+            "selector": "0x15d40a3d6ca2ac30f4031e42be28da9b056fef9bb7357ac5e85627ee876e5ad"
+          }
+        }
+      }
+    },
+    {
+      "name": "direct entrypoint call",
+      "rejection": {
+        "code": 40,
+        "message": "Contract error",
+        "data": {
+          "revert_error": {
+            "contract_address": "0x1db5f79a057ac9eeecd7306fa966ae9cd7c2fdc773f904dce20d8155eecb316",
+            "class_hash": "0x6f861c567225aeb6065a8c6bbb38669e0aa67324c711af1510fb420542731d5",
+            "error": {
+              "contract_address": "0x1db5f79a057ac9eeecd7306fa966ae9cd7c2fdc773f904dce20d8155eecb316",
+              "class_hash": "0x6f861c567225aeb6065a8c6bbb38669e0aa67324c711af1510fb420542731d5",
+              "error": "\"only sequencing submitter\"",
+              "selector": "0x240060cdb34fcc260f41eac7474ee1d7c80b7e3607daff9ac67c7ea2ebb1c44"
+            },
+            "selector": "0x240060cdb34fcc260f41eac7474ee1d7c80b7e3607daff9ac67c7ea2ebb1c44"
+          }
+        }
+      }
+    }
+  ],
+  "rejections": [
+    {
+      "name": "player-supplied root",
+      "status": 422
+    },
+    {
+      "name": "transport identity",
+      "status": 422
+    },
+    {
+      "name": "malformed intent",
+      "status": 400
+    },
+    {
+      "name": "forged signature",
+      "status": 400
+    },
+    {
+      "name": "foreign actor",
+      "status": 400
+    },
+    {
+      "name": "foreign game",
+      "status": 400
+    },
+    {
+      "name": "altered arguments",
+      "status": 400
+    }
+  ],
+  "duplicates": 16,
+  "conflict": 400,
+  "result_selector": "0x1179ac451c36b461fcd4401eb9dc86c94d30a9eae5cb26d828ff914320a45db",
+  "result": [
+    "0x1",
+    "0x6d7a971e483f86bb1ebcdf8a5d3e2eedf1220daf059b0d1fcd865effe81876a",
+    "0x6202db1f7b3758285f3d22cbf9aa6a1443c2c1ea32e075968ffe3578dd9ccac",
+    "0x3219c0a801d2dbd2ce6e4751e7baa30e213af2cf178f7cdb5140e440395d99e"
+  ]
+}

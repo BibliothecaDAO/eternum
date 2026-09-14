@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Build both node configurations and publish only to the isolated local registry."""
 
-import hashlib
 import json
 from pathlib import Path
 import subprocess
@@ -9,24 +8,11 @@ import sys
 import tarfile
 import tempfile
 import tomllib
+from build_tools import digest, read, run
 
 BASE = 'e67432177060197bb0fb03502f2d07d1194764f5'
 FSYNC = '3e6e0f472dcaa83a332aea9e092d333d6be62df5'
 ARTIFACT_IMAGE = 'ghcr.io/madara-alliance/artifacts@sha256:127fe7f8191e916715af2d1ae4043b18d9d2e85c455cc65759aad065d4326708'
-
-
-def read(command, directory=None):
-    return subprocess.check_output(command, cwd=directory, text=True).strip()
-
-
-def run(command, log, directory=None):
-    with log.open('w') as stream:
-        subprocess.run(command, cwd=directory, stdout=stream, stderr=subprocess.STDOUT, check=True)
-
-
-def digest(path):
-    with path.open('rb') as stream:
-        return hashlib.file_digest(stream, 'sha256').hexdigest()
 
 
 def require_revision(madara, revision):

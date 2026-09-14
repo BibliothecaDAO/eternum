@@ -34,6 +34,22 @@ pub mod RecordedExecutionStub {
         results: Map<u64, ExecutionResult>,
     }
 
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    enum Event {
+        RowSet: RowSet,
+    }
+
+    #[derive(Drop, starknet::Event)]
+    struct RowSet {
+        #[key]
+        version: u8,
+        #[key]
+        model: felt252,
+        keys: Span<felt252>,
+        values: Span<felt252>,
+    }
+
     #[constructor]
     fn constructor(ref self: ContractState, submitter: ContractAddress, actor: felt252, public_key: felt252) {
         self.submitter.write(submitter);
@@ -47,7 +63,7 @@ pub mod RecordedExecutionStub {
             assert!(get_caller_address() == self.submitter.read(), "only sequencing submitter");
             assert!(intent.chain == get_tx_info().unbox().chain_id, "foreign chain");
             assert!(intent.deployment == get_contract_address().into(), "foreign deployment");
-            assert!(intent.game == 7, "foreign game");
+            assert!(intent.game_id == 7, "foreign game");
             assert!(intent.actor == self.actor.read(), "foreign actor");
             assert!(intent.rules == 789, "rules mismatch");
             assert!(intent.nonce == self.nonce.read(), "consumed nonce");
@@ -77,6 +93,15 @@ pub mod RecordedExecutionStub {
             let state = poseidon_hash_span(array![self.state.read(), action, binding, result].span());
             self.state.write(state);
             self.results.write(envelope.order, ExecutionResult { status, binding, result, state });
+            self
+                .emit(
+                    RowSet {
+                        version: 1,
+                        model: 'ActionNonce',
+                        keys: array![intent.game_id, intent.actor].span(),
+                        values: array![(intent.nonce + 1).into()].span(),
+                    },
+                );
         }
     }
 

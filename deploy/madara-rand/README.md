@@ -136,9 +136,9 @@ python3 deploy/madara-rand/drills/entropy-failure.py ~/projects/madara /tmp/rand
 ```
 
 The deployed fixture is `RecordedExecutionStub`. Its result rows exercise admission, authority checks, nonce consumption
-and recovery. They do not represent native exploration, discovery rows or Herald delivery. Deployed-explore measurements
-need the conforming native entrypoint and gameplay fixtures. Freeze the measurement manifest before collecting those
-results.
+and recovery. Their native `ActionNonce` event now exercises Herald delivery, but does not represent exploration or
+discovery rows. Deployed-explore measurements need the conforming native entrypoint and gameplay fixtures. Freeze the
+measurement manifest before collecting those results.
 
 The checked [release manifest](release/evidence/manifest.json) records image
 `sha256:a7cd050b8429ee3e6adde66fe8172bf33b1886714bca8df5b62af3145a2660d9` from Madara `c75259889`. Its dependency
@@ -151,3 +151,43 @@ At this pin, pending RPC calls and headers can synthesize wall time ahead of the
 confirmed block timestamp after checking the declared 300-second skew; execution never substitutes another timestamp.
 The two earlier [timestamp regressions](timestamp-regression.json) remain recorded with their rejected transactions and
 retained bindings. Their stopped test deployments were preserved. The corrected runner uses a new deployment identity.
+
+## Timing instrumentation and native Herald
+
+The instrumented [node release](release/measurement/node/manifest.json) is Madara `c342e4737`, image
+`sha256:dee06fd2348a400b67681e20d41a7868d9b6cef4a1894ac5a632ab92e9339004`. Both feature configurations and the sidecar
+were rebuilt. JSON records correlate canonical action/order with the ordinary transaction hash. Sampling and journal
+timings are emitted only after the replicated acceptance acknowledgement. The executor records batch wall time and its
+amortized per-member value; the latter is not an individual transaction wall-time measurement when a batch has multiple
+members.
+
+Build native Herald from its pinned archive, then start it with separate live and reconstruction databases:
+
+```sh
+python3 deploy/madara-rand/release/build-herald.py 1b787c57ae36a860679d805e9e7cdb52730d2ae2 \
+  /tmp/madara-rand-release /tmp/randomness-herald-release
+python3 deploy/madara-rand/start-herald.py /tmp/madara-rand-release /tmp/randomness-herald-release \
+  /tmp/madara-rand-fixture /tmp/randomness-herald
+bun deploy/madara-rand/check-herald.ts /tmp/madara-rand-fixture/fixture.json sidecar /tmp/randomness-herald-delivery
+```
+
+Herald uses RPC v0.10.2 for subscriptions and serves this project's loopback port 13003. The replay container
+uses 13004. Its compiled artifact imports the pinned source and requires a matching dependency lock. The build log
+retains a Bun directory-mismatch warning; compilation exited successfully and the resulting image passed the delivery
+check.
+
+The [instrumentation manifest](release/measurement/run-manifest.json) was written before the two recorded checks: one
+embedded action and one sidecar action, each with sixteen concurrent duplicate requests and no warmup. The
+[evidence index](release/measurement/index.json) records the raw logs, images, fixture and reports by digest. Both
+actions produced native pre-confirmed row diffs with all timing stages present. Recheck each capture with
+`check-telemetry.py DELIVERY_REPORT NODE_LOG WORKER_LOG OUTPUT_JSON`; use the node log as the worker log for embedded
+placement. `check-native-routing.ts NATIVE_SOURCE SIERRA_ARTIFACT OUTPUT_JSON` checks the compiled `execute` calldata
+against native Herald's game routing. The Cairo intent field is named `game_id`; its felt position and canonical bytes
+are unchanged.
+
+These are single-host instrumentation checks, not gameplay percentile or budget results. The baseline/embedded/sidecar
+explore comparison has not run. Its immutable manifest must include the actual gameplay release, discovery fixtures,
+hardware, offered load, action mix, warmup and sample counts before collection. The fixed limits remain +25 ms p95 and
++50 ms p99 submission-to-pre-confirmed-row latency, at least 95% of baseline throughput, no additional failed actions
+and no ticket-order violations. Native #4994 at `1b787c57ae36` still lacks the required recorded-context interface and
+recovery views, so this package continues to use the explicit conformance stub.

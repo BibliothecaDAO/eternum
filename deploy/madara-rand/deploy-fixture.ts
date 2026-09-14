@@ -1,8 +1,9 @@
 #!/usr/bin/env bun
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { type Account, ec, hash, RpcProvider } from "starknet";
+import { type Abi, type Account, ec, hash, RpcProvider, shortString } from "starknet";
 import { assertProviderChain } from "../../packages/chain/chain-guard.js";
 import { declareClass, readClassArtifact, waitForSuccess } from "../../config/deployer/clean/shared/declare";
 import { createMadaraAccount } from "../../config/deployer/clean/shared/madara-account";
@@ -47,6 +48,77 @@ async function deploy(account: Account, name: string, constructorCalldata: strin
     classHash: compiled.classHash,
     compiledClassHash: compiled.compiledClassHash,
     transactionHash: result.transaction_hash,
+  };
+}
+
+function nativeManifest(execution: { address: string; classHash: string }, deploymentBlock: number) {
+  const abi = artifact("RecordedExecutionStub").sierra.abi as Abi;
+  const row = abi.find((item) => item.type === "event" && item.kind === "struct" && item.name.endsWith("::RowSet"));
+  if (!row) throw new Error("Compiled fixture has no RowSet event");
+  const schema = {
+    version: 1,
+    cairoVersion: "2.13.1",
+    encoding: "cairo-serde",
+    domains: {
+      season: {
+        contract: "RecordedExecutionStub",
+        events: [{ name: "RowSet", prefix: [hash.getSelectorFromName("RowSet")], members: row.members }],
+        entrypoints: abi
+          .flatMap((item) => (item.type === "interface" ? item.items : [item]))
+          .filter((item) => item.type === "function")
+          .map((item) => ({ name: item.name, inputs: item.inputs })),
+      },
+    },
+    models: [
+      {
+        name: "DomainClass",
+        identity: shortString.encodeShortString("DomainClass"),
+        owners: ["season"],
+        scope: "deployment",
+        emitterKey: "address",
+        keys: [{ name: "address", type: "core::starknet::contract_address::ContractAddress" }],
+        members: [{ name: "class_hash", type: "core::starknet::class_hash::ClassHash" }],
+        keyLength: 1,
+        valueLength: 1,
+      },
+      {
+        name: "ActionNonce",
+        identity: shortString.encodeShortString("ActionNonce"),
+        owners: ["season"],
+        scope: "game",
+        keys: [
+          { name: "game_id", type: "core::integer::u32" },
+          { name: "actor", type: "core::starknet::contract_address::ContractAddress" },
+        ],
+        members: [{ name: "nonce", type: "core::integer::u64" }],
+        keyLength: 2,
+        valueLength: 1,
+      },
+    ],
+    absentCollections: [],
+    types: Object.fromEntries(
+      abi.filter((item) => item.type === "struct" || item.type === "enum").map((item) => [item.name, item]),
+    ),
+    projections: [],
+  };
+  const identity = createHash("sha256").update(JSON.stringify(schema)).digest("hex");
+  return {
+    world: { address: execution.address },
+    models: [],
+    events: [],
+    native: {
+      version: 1,
+      deploymentBlock,
+      activeSchema: identity,
+      schemas: { [identity]: { ...schema, identity } },
+      domains: {
+        season: {
+          address: execution.address,
+          initialClassHash: execution.classHash,
+          classes: { [execution.classHash]: identity },
+        },
+      },
+    },
   };
 }
 
@@ -100,6 +172,11 @@ async function main() {
   };
   mkdirSync(output, { recursive: true });
   writeFileSync(resolve(output, "fixture.json"), `${JSON.stringify(manifest, null, 2)}\n`, { flag: "wx" });
+  writeFileSync(
+    resolve(output, "native-manifest.json"),
+    `${JSON.stringify(nativeManifest(execution, await provider.getBlockNumber()), null, 2)}\n`,
+    { flag: "wx" },
+  );
   writeFileSync(
     resolve(output, "service.env"),
     [

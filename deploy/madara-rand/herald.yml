@@ -1,0 +1,26 @@
+services:
+  herald:
+    <<: &herald
+      image: ${HERALD_IMAGE:?Set the compiled native Herald image digest}
+      volumes:
+        - ${HERALD_MANIFEST:?Set the fixture native manifest}:/fixture/native-manifest.json:ro
+      healthcheck:
+        test: [CMD, curl, -fsS, http://127.0.0.1:3003/health]
+        interval: 1s
+        timeout: 3s
+        retries: 30
+    environment:
+      <<: &herald-environment
+        PORT: 3003
+        HERALD_CHAIN: madara
+        HERALD_RPC_URL: http://madara:9944/rpc/v0_10_2
+        HERALD_MANIFEST_PATH: /fixture/native-manifest.json
+      DATABASE_URL: ${HERALD_DATABASE_URL:?Set the isolated Herald database}
+    ports: ["127.0.0.1:13003:3003"]
+  herald-replay:
+    <<: *herald
+    profiles: [replay]
+    environment:
+      <<: *herald-environment
+      DATABASE_URL: ${HERALD_REPLAY_DATABASE_URL:?Set the empty reconstruction database}
+    ports: ["127.0.0.1:13004:3003"]

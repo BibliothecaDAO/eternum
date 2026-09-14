@@ -1,0 +1,49 @@
+{
+  "schema": 1,
+  "scope": "single-host instrumentation check; not explore or latency-budget evidence",
+  "placement": "sidecar",
+  "action": "0x7b1523a63ac9864bc87d06e8157a89969501745bc9001546137bf98855e5944",
+  "order": "0x4",
+  "transaction": "0x3bb6c1105f96e8675ee821f66593a344ca834ca11d8093254f2cccb37ca00f7",
+  "stages": {
+    "journal": {
+      "reservation_ms": 7.991652,
+      "sampling_ms": 0.049518,
+      "commit_ms": 3.735141,
+      "witness_ms": 1.312188
+    },
+    "admission_checks": {
+      "checks_ms": 2.163351
+    },
+    "admission": {
+      "queue_ms": 0.013899,
+      "admission_ms": 16.319803
+    },
+    "submission": {
+      "submission_ms": 8.328848
+    },
+    "submission_checks": {
+      "checks_ms": 16.315822
+    },
+    "execution": {
+      "batch_count": 1,
+      "batch_execution_ms": 6.425728,
+      "amortized_execution_ms": 6.425728,
+      "l2_gas": 4409255
+    },
+    "preconfirmed_persistence": {
+      "batch_count": 1,
+      "batch_persistence_ms": 1.3838469999999998
+    },
+    "result_persistence": {
+      "persistence_ms": 10.653604000000001
+    }
+  },
+  "submission_to_preconfirmed_row_ms": 52.534423828125,
+  "execution_basis": "batch wall time; amortized per member, not individual transaction wall time",
+  "artifacts": {
+    "/tmp/randomness-instrumentation-sidecar/worker.log": "5a321f612792e189500b4978948f34db6efb495f692ff1a7319b7598ce616b84",
+    "/tmp/randomness-instrumentation-sidecar/report.json": "a41f2a205bd87f78f67b30c6d9722105e793af66571ef5bcaf944514fa6ba63a",
+    "/tmp/randomness-instrumentation-sidecar/node.log": "3b9ddb8d23983a23ada68f8ed7bbdb0281685e1f4f8e5bc7155cf9b473febab5"
+  }
+}

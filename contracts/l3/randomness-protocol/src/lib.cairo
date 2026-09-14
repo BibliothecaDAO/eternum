@@ -10,7 +10,7 @@ const ENVELOPE_TAG: felt252 = 'ETERNUM_ENTROPY';
 pub struct Intent {
     pub chain: felt252,
     pub deployment: felt252,
-    pub game: felt252,
+    pub game_id: felt252,
     pub actor: felt252,
     pub nonce: u64,
     pub command: felt252,

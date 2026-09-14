@@ -4,6 +4,8 @@ version = "0.1.0"
 cairo-version = "2.13.1"
 edition = "2024_07"
 
+[lib]
+
 [dependencies]
 starknet = "2.13.1"
 

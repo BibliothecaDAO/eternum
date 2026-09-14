@@ -200,7 +200,9 @@ async function main() {
     assert(response.status >= 400 && response.status < 500, `${name}: ${response.status}`);
     rejections.push({ name, status: response.status });
   }
+  const submissionEpochMs = performance.timeOrigin + performance.now();
   const responses = await Promise.all(Array.from({ length: 16 }, () => post(endpoint, request)));
+  const acknowledgementEpochMs = performance.timeOrigin + performance.now();
   for (const response of responses) {
     assert.equal(response.status, 200, response.body);
     const accepted = JSON.parse(response.body);
@@ -230,7 +232,7 @@ async function main() {
   assert.deepEqual(replayResult, result);
   writeFileSync(
     outputPath,
-    `${JSON.stringify({ scope: "deployed stub admission; not gameplay or latency-budget evidence", action, order, previews, rejections, duplicates: responses.length, conflict: conflict.status, result_selector: hash.getSelectorFromName("get_result"), result }, null, 2)}\n`,
+    `${JSON.stringify({ scope: "deployed stub admission; not gameplay or latency-budget evidence", action, order, submissionEpochMs, acknowledgementEpochMs, previews, rejections, duplicates: responses.length, conflict: conflict.status, result_selector: hash.getSelectorFromName("get_result"), result }, null, 2)}\n`,
     { flag: "wx" },
   );
 }

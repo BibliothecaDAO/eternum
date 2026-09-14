@@ -31,7 +31,9 @@
       "entry": [
         "deploy/madara-lab/scripts/deploy-box-plan.mjs",
         "deploy/madara-rand/deploy-fixture.ts",
-        "deploy/madara-rand/exercise-fixture.ts"
+        "deploy/madara-rand/exercise-fixture.ts",
+        "deploy/madara-rand/check-native-routing.ts",
+        "deploy/madara-rand/check-herald.ts"
       ]
     },
     "apps/realms": {
