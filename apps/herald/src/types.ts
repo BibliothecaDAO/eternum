@@ -60,6 +60,7 @@ export interface RpcReceipt {
 }
 
 export interface RpcTransaction {
+  calldata?: Felt[];
   transaction_hash?: Felt;
   sender_address?: Felt;
   contract_address?: Felt;
@@ -136,6 +137,7 @@ export interface FoldCheckpointModel {
 }
 
 export interface FoldCheckpoint {
+  native_schema_identity?: string;
   version: 1;
   world_address: Felt;
   models: FoldCheckpointModel[];

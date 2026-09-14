@@ -1,10 +1,14 @@
+import { createNativeWorldIngestion } from "./native/world-ingestion";
+import { createDojoWorldIngestion } from "./world-ingestion";
+import { NativeDecoder } from "./native/decoder";
+import { NativeIngestion } from "./native/ingestion";
+import { backfillNativeHistory } from "./native/load";
+import type { NativeManifest } from "./native/schema";
 import { resolve } from "node:path";
 
-import { loadConfirmedWorld } from "./checkpoint-loader";
 import { CheckpointStore } from "./checkpoint-store";
 import type { GameStreamSession } from "./game-stream";
 import { createHeraldRequestHandler } from "./http";
-import { LiveWorld } from "./live-world";
 import { MadaraRpc } from "./madara-rpc";
 import { MadaraSubscriptions } from "./madara-subscriptions";
 import { createModelRegistry, readWorldManifest } from "./model-registry";
@@ -85,25 +89,19 @@ const parseResume = (message: string | Buffer): ResumeRequest => {
 const main = async (): Promise<void> => {
   const config = readConfig();
   const manifest = await readWorldManifest(config.manifestPath);
-  const registry = createModelRegistry(manifest);
-  const rpc = new MadaraRpc(config.rpcUrl);
-  const checkpointStore = new CheckpointStore(config.databaseUrl);
-  const historyStore = new HistoryStore(config.databaseUrl, config.chain, registry.worldAddress);
+  const native =
+    "native" in manifest ? new NativeIngestion(new NativeDecoder(manifest as unknown as NativeManifest)) : undefined;
   const decodeMonitor = new WorldEventDecodeMonitor();
+  const ingestion = native
+    ? createNativeWorldIngestion(native)
+    : createDojoWorldIngestion(createModelRegistry(manifest), decodeMonitor);
+  const registry = ingestion.registry;
+  const rpc = new MadaraRpc(config.rpcUrl);
+  const checkpointStore = new CheckpointStore(config.databaseUrl, ingestion.checkpointCodec);
+  const historyStore = new HistoryStore(config.databaseUrl, config.chain, registry.worldAddress);
   await historyStore.initialize();
-  const loaded = await loadConfirmedWorld({
-    chain: config.chain,
-    checkpointStore,
-    decodeMonitor,
-    onPage: ({ number, eventCount }) => {
-      if (number % 25 === 0) {
-        console.info(JSON.stringify({ event: "herald_replay_progress", eventCount, page: number }));
-      }
-    },
-    registry,
-    rpc,
-  });
-  const live = new LiveWorld({
+  const loaded = await ingestion.load({ chain: config.chain, checkpointStore, rpc });
+  const liveInput = {
     chain: config.chain,
     checkpointBlock: loaded.checkpointBlock,
     checkpointEveryBlocks: CHECKPOINT_EVERY_BLOCKS,
@@ -114,7 +112,8 @@ const main = async (): Promise<void> => {
     historyStore,
     registry,
     rpc,
-  });
+  };
+  const live = ingestion.createLive(liveInput);
   const confirmedHead = await rpc.getBlockWithReceipts(loaded.confirmedBlock);
   await live.freezeEndedReviewSnapshots(confirmedHead.timestamp);
   let server: ReturnType<typeof Bun.serve<HeraldSocketData>> | undefined;
@@ -166,7 +165,11 @@ const main = async (): Promise<void> => {
     },
     history: historyStore,
     metrics: loaded.metrics,
-    undecodableEventCount: () => decodeMonitor.failures,
+    undecodableEventCount: () => decodeMonitor.failures + (native?.receiptFailures ?? 0),
+    ingestionFailure: () =>
+      native?.halted
+        ? { block: native.halted.block, transactionHash: native.halted.transactionHash, error: native.halted.message }
+        : undefined,
   });
   server = Bun.serve<HeraldSocketData>({
     port: config.port,
@@ -210,13 +213,17 @@ const main = async (): Promise<void> => {
       wsUrl: config.wsUrl,
     }),
   );
-  void backfillHistory({
-    decodeMonitor,
-    historyStore,
-    registry,
-    rpc,
-    toBlock: loaded.confirmedBlock,
-  })
+  void (
+    native
+      ? backfillNativeHistory(native, rpc, historyStore, loaded.confirmedBlock)
+      : backfillHistory({
+          decodeMonitor,
+          historyStore,
+          registry,
+          rpc,
+          toBlock: loaded.confirmedBlock,
+        })
+  )
     .then(() => historyStore.markLeaderboardReady())
     .catch((error) => {
       console.error(

@@ -20,10 +20,23 @@ export interface LoadedCheckpoint {
   fold: WorldFold;
 }
 
+export interface CheckpointCodec {
+  mismatch: typeof checkpointModelMismatch;
+  restore: typeof WorldFold.restore;
+}
+
+const dojoCheckpointCodec: CheckpointCodec = {
+  mismatch: checkpointModelMismatch,
+  restore: (registry, checkpoint) => WorldFold.restore(registry, checkpoint),
+};
+
 export class CheckpointStore {
   private readonly pool: Pool;
 
-  constructor(databaseUrl: string) {
+  constructor(
+    databaseUrl: string,
+    private readonly codec: CheckpointCodec = dojoCheckpointCodec,
+  ) {
     this.pool = new Pool({ connectionString: databaseUrl, max: 2 });
   }
 
@@ -55,13 +68,13 @@ export class CheckpointStore {
     if (!Number.isSafeInteger(confirmedBlock) || confirmedBlock < 0) {
       throw new Error(`Checkpoint has invalid confirmed block ${row.confirmed_block}`);
     }
-    const mismatch = checkpointModelMismatch(registry, checkpoint);
+    const mismatch = this.codec.mismatch(registry, checkpoint);
     if (mismatch) {
       // The sync manifest changed since this fold was saved: replay from genesis and let the next save replace it.
       console.warn(JSON.stringify({ confirmedBlock, event: "herald_checkpoint_discarded", mismatch }));
       return undefined;
     }
-    return { confirmedBlock, fold: WorldFold.restore(registry, checkpoint) };
+    return { confirmedBlock, fold: this.codec.restore(registry, checkpoint) };
   }
 
   public async save(chain: string, confirmedBlock: number, fold: WorldFold): Promise<void> {
