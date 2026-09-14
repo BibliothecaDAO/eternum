@@ -16,6 +16,10 @@ const ALLOWED_TIMERS: Record<string, AllowedTimer> = {
     class: "clock",
     reason: "local interpolation between Herald heads",
   },
+  "apps/game/src/pwa/push-foreground-lifecycle.ts": {
+    class: "external",
+    reason: "refreshes the crash-safe foreground presence lease used by background push delivery",
+  },
   "apps/game/src/three/managers/ambience-manager.ts": { class: "debug", reason: "developer ambience counters" },
   "apps/game/src/three/managers/army-manager.ts": { class: "debug", reason: "developer army counters" },
   "apps/game/src/three/managers/structure-manager.ts": { class: "clock", reason: "local timed-label interpolation" },
