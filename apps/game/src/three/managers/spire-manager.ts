@@ -8,7 +8,7 @@ import {
   type WorldSpatialProjection,
 } from "@bibliothecadao/eternum/game-sync";
 import { TileOccupier } from "@bibliothecadao/types";
-import { Group, Object3D, Scene } from "three";
+import { Camera, Group, Object3D, Scene } from "three";
 import { CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
 import type { SpireModel } from "../structures/spire-model";
 import { FLAT_TERRAIN_SURFACE, placePositionOnTerrain, type TerrainSurface } from "../terrain/terrain-surface";
@@ -56,8 +56,8 @@ export class SpireManager {
     if (this.model) this.model.group.visible = visible;
   }
 
-  public update(delta: number): void {
-    this.model?.updateAnimations(delta);
+  public update(delta: number, camera?: Camera): void {
+    this.model?.updateAnimations(delta, { camera });
   }
 
   public destroy(): void {
@@ -103,7 +103,7 @@ export class SpireManager {
     element.style.pointerEvents = "none";
     const label = new CSS2DObject(element);
     label.position.copy(position);
-    label.position.y += 2.5;
+    label.position.y += this.model!.labelHeight;
     this.labels.add(label);
   }
 

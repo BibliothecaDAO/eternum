@@ -34,6 +34,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-09-15",
+    title: "Ethereal Spire Portals",
+    description:
+      "Spires rise above dark basalt steps with floating shards and swirling neon portals, making passages between layers easier to recognise.",
+    type: "improvement",
+  },
+  {
     date: "2026-09-14",
     title: "World selection validation",
     description: "Game entry and registration report an unavailable world instead of selecting another deployment.",
