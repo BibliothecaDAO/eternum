@@ -1,4 +1,5 @@
-import { type Building, type RealmInfo as RealmInfoType, type ResourcesIds } from "@bibliothecadao/types";
+import { resolveCompactLane } from "@/hooks/helpers/use-compact-hud";
+import { type Building, type RealmInfo as RealmInfoType, ResourcesIds } from "@bibliothecadao/types";
 import Bot from "lucide-react/dist/esm/icons/bot";
 import Hammer from "lucide-react/dist/esm/icons/hammer";
 import { useEffect, useRef, useState } from "react";
@@ -29,7 +30,7 @@ export const ProductionWorkflows = ({
   selectedResource,
   onSelectResource,
 }: ProductionWorkflowsProps) => {
-  const [activeTab, setActiveTab] = useState(() => (selectedResource ? 0 : 1));
+  const [activeTab, setActiveTab] = useState(() => (selectedResource || resolveCompactLane() !== null ? 0 : 1));
   const previousSelectedResourceRef = useRef<ResourcesIds | null>(selectedResource ?? null);
 
   useEffect(() => {
@@ -58,13 +59,32 @@ export const ProductionWorkflows = ({
             <p className={HUD_BODY_MUTED}>Pick a resource below to inspect its buildings and start production.</p>
           )}
 
-          <BuildingsList
-            realm={realm}
-            onSelectProduction={onSelectResource}
-            selectedResource={selectedResource}
-            producedResources={producedResources}
-            productionBuildings={productionBuildings}
-          />
+          <label className="flex flex-col gap-1 text-sm text-gold lg:hidden">
+            Resource
+            <select
+              value={selectedResource ?? ""}
+              onChange={(event) =>
+                onSelectResource(event.target.value ? (Number(event.target.value) as ResourcesIds) : null)
+              }
+              className="min-h-11 w-full rounded border border-gold/30 bg-[#101c23] px-2 text-base"
+            >
+              <option value="">Select a resource</option>
+              {producedResources.map((resource) => (
+                <option key={resource} value={resource}>
+                  {ResourcesIds[resource]}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="hidden lg:block">
+            <BuildingsList
+              realm={realm}
+              onSelectProduction={onSelectResource}
+              selectedResource={selectedResource}
+              producedResources={producedResources}
+              productionBuildings={productionBuildings}
+            />
+          </div>
 
           {selectedResource && <ProductionControls selectedResource={selectedResource} realm={realm} />}
         </div>
@@ -96,7 +116,7 @@ export const ProductionWorkflows = ({
               isActive
                 ? "border-gold/60 bg-gold/15 text-gold"
                 : "border-transparent text-gold/65 hover:border-gold/40 hover:text-gold"
-            } !px-3 !py-1.5 text-center !transition-none`;
+            } !px-3 !py-1.5 min-h-11 text-center !transition-none`;
             return (
               <Tabs.Tab key={workflow.label} className={tabClass} title={workflow.description}>
                 <Icon className="h-4 w-4" />

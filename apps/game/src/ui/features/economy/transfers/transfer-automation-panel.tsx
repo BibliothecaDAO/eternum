@@ -104,7 +104,7 @@ const CategoryFilterChips = ({
             key={String(option.value)}
             type="button"
             onClick={() => onToggle(option.value)}
-            className={`inline-flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md border transition ${
+            className={`inline-flex h-6 w-6 max-lg:h-11 max-lg:w-11 flex-shrink-0 items-center justify-center rounded-md border transition ${
               isActive
                 ? "border-gold/60 bg-gold/15 text-gold shadow-[0_0_6px_rgba(223,170,84,0.22)]"
                 : "border-gold/15 bg-black/20 text-gold/65 hover:border-gold/40 hover:text-gold"
@@ -853,26 +853,59 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
   return (
     <div className="p-3 md:p-4 space-y-3">
       <section className="space-y-2">
+        <h3 className="text-sm font-semibold text-gold">1. Send from</h3>
+        <CategoryFilterChips
+          categories={sourceCategories}
+          selected={sourceCategoryFilter}
+          onToggle={toggleSourceCategory}
+        />
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,160px),1fr))] gap-2">
+          {eligibleSources
+            .filter((ps) => sourceCategoryFilter.size === 0 || sourceCategoryFilter.has(ps.category as StructureType))
+            .map((ps) => {
+              const name = mode.structure.getName(ps.structure).name;
+              const entityId = Number(ps.entityId);
+              const isSel = selectedSourceId === entityId;
+              const Icon = getStructureIcon(ps.category, mode.ui.villageIconKey);
+              return (
+                <button
+                  key={ps.entityId}
+                  type="button"
+                  className={`min-h-11 min-w-0 text-left px-2 py-2 rounded border ${isSel ? "border-gold text-gold bg-gold/10" : "border-gold/30 text-gold/70 hover:border-gold/60 hover:text-gold"}`}
+                  onClick={() => setSelectedSourceId(isSel ? null : entityId)}
+                >
+                  <div className="flex min-w-0 items-center gap-2">
+                    <Icon className="h-4 w-4 shrink-0 text-gold" aria-hidden />
+                    <div className="truncate text-sm font-semibold">{name}</div>
+                  </div>
+                </button>
+              );
+            })}
+        </div>
+      </section>
+
+      <section className="space-y-2">
+        <h3 className="text-sm font-semibold text-gold">2. Resources</h3>
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-1 rounded-full border border-gold/40 bg-brown/40 px-1 py-0.5 text-xxs font-semibold uppercase tracking-widest">
             <button
               type="button"
               onClick={() => setResourceFilter("all")}
-              className={`rounded-full px-2 py-0.5 ${resourceFilter === "all" ? "bg-gold text-brown" : "text-gold/70 hover:text-gold"}`}
+              className={`rounded-full px-2 py-0.5 max-lg:min-h-11 ${resourceFilter === "all" ? "bg-gold text-brown" : "text-gold/70 hover:text-gold"}`}
             >
               All
             </button>
             <button
               type="button"
               onClick={() => setResourceFilter("production")}
-              className={`rounded-full px-2 py-0.5 ${resourceFilter === "production" ? "bg-gold text-brown" : "text-gold/70 hover:text-gold"}`}
+              className={`rounded-full px-2 py-0.5 max-lg:min-h-11 ${resourceFilter === "production" ? "bg-gold text-brown" : "text-gold/70 hover:text-gold"}`}
             >
               Production
             </button>
             <button
               type="button"
               onClick={() => setResourceFilter("military")}
-              className={`rounded-full px-2 py-0.5 ${resourceFilter === "military" ? "bg-gold text-brown" : "text-gold/70 hover:text-gold"}`}
+              className={`rounded-full px-2 py-0.5 max-lg:min-h-11 ${resourceFilter === "military" ? "bg-gold text-brown" : "text-gold/70 hover:text-gold"}`}
             >
               Military
             </button>
@@ -882,7 +915,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
           </Button>
         </div>
         {restrictToFragmentMinePayload && <p className="text-xxs text-gold/60">{fragmentMineTransferMessage}</p>}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,140px),1fr))] gap-2">
           {visibleResourceIds.map((rid) => {
             const resourceId = rid as ResourcesIds;
             const sel = selectedResources.includes(resourceId);
@@ -896,7 +929,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
                     prev.includes(resourceId) ? prev.filter((r) => r !== resourceId) : [...prev, resourceId],
                   )
                 }
-                className={`min-w-0 px-2 py-1 rounded border text-xs flex items-center gap-1 ${sel ? "border-gold text-gold bg-gold/10" : "border-gold/30 text-gold/70 hover:border-gold/60 hover:text-gold"}`}
+                className={`min-h-11 min-w-0 px-2 py-1 rounded border text-sm flex items-center gap-1 ${sel ? "border-gold text-gold bg-gold/10" : "border-gold/30 text-gold/70 hover:border-gold/60 hover:text-gold"}`}
                 title={ResourcesIds[resourceId] as string}
               >
                 <ResourceIcon resource={ResourcesIds[resourceId]} size="xs" />
@@ -908,39 +941,9 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
         </div>
       </section>
 
-      <section className="space-y-2">
-        <CategoryFilterChips
-          categories={sourceCategories}
-          selected={sourceCategoryFilter}
-          onToggle={toggleSourceCategory}
-        />
-        <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
-          {eligibleSources
-            .filter((ps) => sourceCategoryFilter.size === 0 || sourceCategoryFilter.has(ps.category as StructureType))
-            .map((ps) => {
-              const name = mode.structure.getName(ps.structure).name;
-              const entityId = Number(ps.entityId);
-              const isSel = selectedSourceId === entityId;
-              const Icon = getStructureIcon(ps.category, mode.ui.villageIconKey);
-              return (
-                <button
-                  key={ps.entityId}
-                  type="button"
-                  className={`min-w-0 text-left px-2 py-2 rounded border ${isSel ? "border-gold text-gold bg-gold/10" : "border-gold/30 text-gold/70 hover:border-gold/60 hover:text-gold"}`}
-                  onClick={() => setSelectedSourceId(isSel ? null : entityId)}
-                >
-                  <div className="flex min-w-0 items-center gap-2">
-                    <Icon className="h-4 w-4 shrink-0 text-gold" aria-hidden />
-                    <div className="truncate text-sm font-semibold">{name}</div>
-                  </div>
-                </button>
-              );
-            })}
-        </div>
-      </section>
-
       {selectedResources.length > 0 && selectedSourceId && (
         <section className="space-y-2">
+          <h3 className="text-sm font-semibold text-gold">3. Destination</h3>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-wrap items-center gap-3 text-xxs text-gold/60">
               <CategoryFilterChips
@@ -948,7 +951,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
                 selected={destCategoryFilter}
                 onToggle={toggleDestCategory}
               />
-              <label className="flex items-center gap-2">
+              <label className="flex min-h-11 items-center gap-2">
                 <input type="checkbox" checked={ownedDestOnly} onChange={(e) => setOwnedDestOnly(e.target.checked)} />
                 Owned only
               </label>
@@ -957,7 +960,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
               {allowMultiDestination && actualDestinationCount > 0 ? `${actualDestinationCount} selected` : ""}
             </div>
           </div>
-          <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,160px),1fr))] gap-2">
             {destinations.map((ps) => {
               const name = mode.structure.getName(ps.structure).name;
               const entityId = Number(ps.entityId);
@@ -968,7 +971,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
                 <button
                   key={`dst-${ps.entityId}`}
                   type="button"
-                  className={`min-w-0 text-left px-2 py-2 rounded border ${isSel ? "border-gold text-gold bg-gold/10" : "border-gold/30 text-gold/70 hover:border-gold/60 hover:text-gold"}`}
+                  className={`min-h-11 min-w-0 text-left px-2 py-2 rounded border ${isSel ? "border-gold text-gold bg-gold/10" : "border-gold/30 text-gold/70 hover:border-gold/60 hover:text-gold"}`}
                   onClick={() => toggleDestinationSelection(entityId)}
                 >
                   <div className="flex min-w-0 items-center gap-2">
@@ -985,7 +988,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
 
       {selectedResources.length > 0 && selectedSourceId && (
         <section className="space-y-2">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,220px),1fr))] gap-2">
             {selectedResources.map((rid) => {
               const cfg = resourceConfigs[rid] ?? { amount: 0 };
               let available = sourceBalances.get(rid) ?? 0;
@@ -1066,7 +1069,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
                           [rid]: { amount: Math.max(0, Math.min(maxAmount, nextValue)) },
                         }));
                       }}
-                      className="mt-2 w-full rounded border border-gold/30 bg-black/40 px-2 py-1 text-xs text-gold/80 placeholder:text-gold/40 focus:border-gold/60 focus:outline-none disabled:opacity-50"
+                      className="mt-2 w-full rounded border border-gold/30 bg-black/40 px-2 py-1 text-xs max-lg:min-h-11 max-lg:text-base text-gold/80 placeholder:text-gold/40 focus:border-gold/60 focus:outline-none disabled:opacity-50"
                       disabled={maxAmount === 0}
                     />
                   </div>
@@ -1141,13 +1144,14 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
         </section>
       )}
 
-      <div className="flex items-center justify-between pt-2 border-t border-gold/20">
-        <div className="flex items-center gap-3">
+      <div className="sticky bottom-0 z-10 flex flex-wrap items-center justify-between gap-2 bg-[#101c23] py-2 border-t border-gold/20">
+        <div className="flex w-full flex-wrap items-center gap-3">
           {selectedResources.length > 0 && selectedSourceId && (
             <>
               <Button
                 variant="primary"
                 size="md"
+                className="min-h-11 w-full lg:w-auto"
                 onClick={submit}
                 isLoading={isSubmitting}
                 disabled={
@@ -1160,7 +1164,11 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
               >
                 {repeat ? "Schedule" : "Transfer"}
               </Button>
-              {statusMessage && <span className="text-xxs text-gold/70">{statusMessage}</span>}
+              {statusMessage && (
+                <span role="status" className="text-sm text-gold/70">
+                  {statusMessage}
+                </span>
+              )}
             </>
           )}
         </div>

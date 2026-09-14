@@ -159,7 +159,7 @@ const OffersDisclosure = ({
             <button
               type="button"
               onClick={() => setReveal(reveal === "all" ? "top" : "all")}
-              className="min-h-10 w-full border-t border-gold/15 font-sans text-xs text-gold transition-colors hover:bg-gold/10"
+              className="min-h-11 w-full border-t border-gold/15 font-sans text-xs text-gold transition-colors hover:bg-gold/10"
             >
               {reveal === "all" ? "Show less" : `See all ${offers.length}`}
             </button>

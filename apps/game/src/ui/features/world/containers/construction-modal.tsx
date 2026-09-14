@@ -1,3 +1,4 @@
+import { StructureWorkspace } from "@/ui/design-system/molecules/structure-workspace";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
 import { SURFACE_WORKSPACE_CLASS, SurfaceFrame } from "@/ui/design-system/molecules/popover";
@@ -52,21 +53,22 @@ export const ConstructionModal = memo(({ structureEntityId }: ConstructionModalP
       className={SURFACE_WORKSPACE_CLASS}
       bodyClassName="overflow-hidden"
     >
-      <div className="grid h-full grid-cols-12 min-h-0">
-        <div className="col-span-3 border-r border-gold/15 min-h-0">
+      <StructureWorkspace
+        sidebar={
           <StructureSidebar
             selectedEntityId={focusedRealmId}
             onSelectStructure={setFocusedRealmId}
             attention={buildAttention}
             filter={BUILDABLE_FILTER}
           />
-        </div>
-        <div className="col-span-9 min-h-0 overflow-y-auto">
+        }
+      >
+        <div className="min-h-0 overflow-y-auto overscroll-contain">
           <Suspense fallback={<div className="flex h-full items-center justify-center p-8">Loading…</div>}>
             <SelectPreviewBuildingMenu entityId={focusedRealmId} />
           </Suspense>
         </div>
-      </div>
+      </StructureWorkspace>
     </SurfaceFrame>
   );
 });
