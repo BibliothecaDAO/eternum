@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "scope": "local rehearsal, not the host-independence gate; deployed conformance stub",
+  "mode": "before-broadcast",
+  "image": "127.0.0.1:15000/madara-rand@sha256:dee06fd2348a400b67681e20d41a7868d9b6cef4a1894ac5a632ab92e9339004",
+  "order": 5,
+  "original_binding_consumed": true,
+  "artifacts": {
+    "node.log": "e03706a6eed931f4320cc9658e9f2044dea12b18449b3c0e0bbe744d4a7efd83",
+    "worker.log": "6d8299fab88023b0ac537b69420ec1d7dc78402af4a0ae486c297490e5b82eb4",
+    "chain-after-recovery.json": "53f6eb386f43fdc5bc4f5512a020e19b87bbd7825cdca70838c7fa670d844dc4",
+    "after.json": "99ab6b1ac7cc606f8dfe2e75703219595423816ccddfe209857225133614cfb3",
+    "recover.log": "0d384b8bc5185c4e89cd41fe27d2b39c5920e05f28b2cdbb2dfe1417ae139bf1",
+    "kill.log": "6d0f2a4a47396edd5339a0ac3c23c52830d2d246f63d0e405cf648c49867e8e5",
+    "chain-before-crash.json": "b0f1ac1319d78b621f1110595164d3c40859850ea52b34987bf60579f9aa2198",
+    "pending.json": "56af9412e0c6e8781f88647f56ca3db658c5ca6c884984ef21af657a996ad7c6",
+    "submitted-transaction.json": "856bc72dd4180ac37a9e3b1ef08b5891aae630f94068fb46b050e21291a55474",
+    "client.log": "2b57ad7298c2f04dcd94388d38e3fa8c6954f4c869d80b18cf3de633d4fdf54a",
+    "proxy-start.log": "9d7a28bec31b3b6bfa2ec8f91910364ea356cc4075f702bcc801d3e83df2ef6a",
+    "proxy.env": "5fd1e1da9bb5e1f6f551002d5dcfe1136e6097a2260361622eab1bcf9e5a43fb",
+    "before.json": "6840167e3ba60c17a18097b935bb8b82493d937f0ce12cf09d69f35c5fd4751a"
+  }
+}

@@ -1,0 +1,449 @@
+{
+  "schema": 1,
+  "scope": "native explore row delivery; not latency-budget evidence",
+  "placement": "embedded",
+  "action": "0x11b6445d2e2a378671addff4360aba9823d7ff5832c08452d8fc8ad0fe6cd3d",
+  "order": "0x70",
+  "submission_to_preconfirmed_row_ms": 527.138671875,
+  "delivery": {
+    "elapsed_ms": 679.286342,
+    "epoch_ms": 1789427156846.5427,
+    "message": {
+      "block": 13102,
+      "del": [],
+      "preconfirmed": true,
+      "set": [
+        {
+          "key": "0x2f35dd6d460800d6e0fe50412d23370f6661eb223e359be0abdd801d2d0619e",
+          "model": "ActionNonce",
+          "value": {
+            "game_id": "0x7",
+            "actor": "0x5d1b3e35807f0fcb299fc5efe1914590285f466f6f5c29298e188adccf3c34d",
+            "next_nonce": "0x70"
+          }
+        },
+        {
+          "key": "0x642ec9818893f74f8f8afa725e7063509cec0aebcd9a6ed422ef0e4d057eda1",
+          "model": "TileOpt",
+          "value": {
+            "game_id": "0x7",
+            "alt": false,
+            "col": "0x80000383",
+            "row": "0x7fffffea",
+            "data": "0x100000706ffffffd4000000000000"
+          }
+        },
+        {
+          "key": "0x12ba38e4d23f9c34985cc9383976d201d5b075d39305f9b61231664a1189b9c",
+          "model": "TileOpt",
+          "value": {
+            "game_id": "0x7",
+            "alt": false,
+            "col": "0x80000384",
+            "row": "0x7fffffea",
+            "data": "0x100000708ffffffd4160000013a1e"
+          }
+        },
+        {
+          "key": "0x2f35dd6d460800d6e0fe50412d23370f6661eb223e359be0abdd801d2d0619e",
+          "model": "PlayerRegisteredPoints",
+          "value": {
+            "game_id": "0x7",
+            "address": "0x5d1b3e35807f0fcb299fc5efe1914590285f466f6f5c29298e188adccf3c34d",
+            "registered_points": "0x1ad27480"
+          }
+        },
+        {
+          "key": "0x647ec7114541c9ec11e29d532f000b42f601e3d2529a08ad2073fc6121c3d53",
+          "model": "SeasonPrize",
+          "value": {
+            "game_id": "0x7",
+            "total_registered_points": "0x1ad27480",
+            "total_lords_pool": "0x0"
+          }
+        },
+        {
+          "key": "0x59e217e9205474aa09b2b289c3560f7382a2c514683f25eea825282e60436ed",
+          "model": "Resource",
+          "value": {
+            "game_id": "0x7",
+            "entity_id": "0x2f",
+            "STONE_BALANCE": "0x0",
+            "COAL_BALANCE": "0x0",
+            "WOOD_BALANCE": "0x0",
+            "COPPER_BALANCE": "0x0",
+            "IRONWOOD_BALANCE": "0x0",
+            "OBSIDIAN_BALANCE": "0x0",
+            "GOLD_BALANCE": "0x0",
+            "SILVER_BALANCE": "0x0",
+            "MITHRAL_BALANCE": "0x0",
+            "ALCHEMICAL_SILVER_BALANCE": "0x0",
+            "COLD_IRON_BALANCE": "0x0",
+            "DEEP_CRYSTAL_BALANCE": "0x0",
+            "RUBY_BALANCE": "0x0",
+            "DIAMONDS_BALANCE": "0x0",
+            "HARTWOOD_BALANCE": "0x0",
+            "IGNIUM_BALANCE": "0x0",
+            "TWILIGHT_QUARTZ_BALANCE": "0x0",
+            "TRUE_ICE_BALANCE": "0x0",
+            "ADAMANTINE_BALANCE": "0x0",
+            "SAPPHIRE_BALANCE": "0x0",
+            "ETHEREAL_SILICA_BALANCE": "0x0",
+            "DRAGONHIDE_BALANCE": "0x0",
+            "LABOR_BALANCE": "0x0",
+            "EARTHEN_SHARD_BALANCE": "0x0",
+            "DONKEY_BALANCE": "0x0",
+            "KNIGHT_T1_BALANCE": "0xe8990a4600",
+            "KNIGHT_T2_BALANCE": "0x0",
+            "KNIGHT_T3_BALANCE": "0x0",
+            "CROSSBOWMAN_T1_BALANCE": "0x0",
+            "CROSSBOWMAN_T2_BALANCE": "0x0",
+            "CROSSBOWMAN_T3_BALANCE": "0x0",
+            "PALADIN_T1_BALANCE": "0x0",
+            "PALADIN_T2_BALANCE": "0x0",
+            "PALADIN_T3_BALANCE": "0x0",
+            "WHEAT_BALANCE": "0x48c256f8c80",
+            "FISH_BALANCE": "0x48c256f8c80",
+            "LORDS_BALANCE": "0x0",
+            "ESSENCE_BALANCE": "0x174876e800",
+            "RELIC_E1_BALANCE": "0x0",
+            "RELIC_E2_BALANCE": "0x0",
+            "RELIC_E3_BALANCE": "0x0",
+            "RELIC_E4_BALANCE": "0x0",
+            "RELIC_E5_BALANCE": "0x0",
+            "RELIC_E6_BALANCE": "0x0",
+            "RELIC_E7_BALANCE": "0x0",
+            "RELIC_E8_BALANCE": "0x0",
+            "RELIC_E9_BALANCE": "0x0",
+            "RELIC_E10_BALANCE": "0x0",
+            "RELIC_E11_BALANCE": "0x0",
+            "RELIC_E12_BALANCE": "0x0",
+            "RELIC_E13_BALANCE": "0x0",
+            "RELIC_E14_BALANCE": "0x0",
+            "RELIC_E15_BALANCE": "0x0",
+            "RELIC_E16_BALANCE": "0x0",
+            "RELIC_E17_BALANCE": "0x0",
+            "RELIC_E18_BALANCE": "0x0",
+            "RESEARCH_BALANCE": "0x0",
+            "SATOSHI_BALANCE": "0x0",
+            "weight": {
+              "capacity": "0x3b9ac9ffffffffffc4653600",
+              "weight": "0x1555829e3f9400"
+            },
+            "STONE_PRODUCTION": {
+              "building_count": "0x0",
+              "production_rate": "0x0",
+              "output_amount_left": "0x0",
+              "last_updated_at": "0x0"
+            },
+            "COAL_PRODUCTION": {
+              "building_count": "0x0",
+              "production_rate": "0x0",
+              "output_amount_left": "0x0",
+              "last_updated_at": "0x0"
+            },
+            "WOOD_PRODUCTION": {
+              "building_count": "0x0",
+              "production_rate": "0x0",
+              "output_amount_left": "0x0",
+              "last_updated_at": "0x0"
+            },
+            "COPPER_PRODUCTION": {
+              "building_count": "0x0",
+              "production_rate": "0x0",
+              "output_amount_left": "0x0",
+              "last_updated_at": "0x0"
+            },
+            "IRONWOOD_PRODUCTION": {
+              "building_count": "0x0",
+              "production_rate": "0x0",
+              "output_amount_left": "0x0",
+              "last_updated_at": "0x0"
+            },
+            "OBSIDIAN_PRODUCTION": {
+              "building_count": "0x0",
+              "production_rate": "0x0",
+              "output_amount_left": "0x0",
+              "last_updated_at": "0x0"
+            },
+            "GOLD_PRODUCTION": {
+              "building_count": "0x0",
+              "production_rate": "0x0",
+              "output_amount_left": "0x0",
+              "last_updated_at": "0x0"
+            },
+            "SILVER_PRODUCTION": {
+              "building_count": "0x0",
+              "production_rate": "0x0",
+              "output_amount_left": "0x0",
+              "last_updated_at": "0x0"
+            },
+            "MITHRAL_PRODUCTION": {
+              "building_count": "0x0",
+              "production_rate": "0x0",
+              "output_amount_left": "0x0",
+              "last_updated_at": "0x0"
+            },
+            "ALCHEMICAL_SILVER_PRODUCTION": {
+              "building_count": "0x0",
+              "production_rate": "0x0",
+              "output_amount_left": "0x0",
+              "last_updated_at": "0x0"
+            },
+            "COLD_IRON_PRODUCTION": {
+              "building_count": "0x0",
+              "production_rate": "0x0",
+              "output_amount_left": "0x0",
+              "last_updated_at": "0x0"
+            },
+            "DEEP_CRYSTAL_PRODUCTION": {
+              "building_count": "0x0",
+              "production_rate": "0x0",
+              "output_amount_left": "0x0",
+              "last_updated_at": "0x0"
+            },
+            "RUBY_PRODUCTION": {
+              "building_count": "0x0",
+              "production_rate": "0x0",
+              "output_amount_left": "0x0",
+              "last_updated_at": "0x0"
+            },
+            "DIAMONDS_PRODUCTION": {
+              "building_count": "0x0",
+              "production_rate": "0x0",
+              "output_amount_left": "0x0",
+              "last_updated_at": "0x0"
+            },
+            "HARTWOOD_PRODUCTION": {
+              "building_count": "0x0",
+              "production_rate": "0x0",
+              "output_amount_left": "0x0",
+              "last_updated_at": "0x0"
+            },
+            "IGNIUM_PRODUCTION": {
+              "building_count": "0x0",
+              "production_rate": "0x0",
+              "output_amount_left": "0x0",
+              "last_updated_at": "0x0"
+            },
+            "TWILIGHT_QUARTZ_PRODUCTION": {
+              "building_count": "0x0",
+              "production_rate": "0x0",
+              "output_amount_left": "0x0",
+              "last_updated_at": "0x0"
+            },
+            "TRUE_ICE_PRODUCTION": {
+              "building_count": "0x0",
+              "production_rate": "0x0",
+              "output_amount_left": "0x0",
+              "last_updated_at": "0x0"
+            },
+            "ADAMANTINE_PRODUCTION": {
+              "building_count": "0x0",
+              "production_rate": "0x0",
+              "output_amount_left": "0x0",
+              "last_updated_at": "0x0"
+            },
+            "SAPPHIRE_PRODUCTION": {
+              "building_count": "0x0",
+              "production_rate": "0x0",
+              "output_amount_left": "0x0",
+              "last_updated_at": "0x0"
+            },
+            "ETHEREAL_SILICA_PRODUCTION": {
+              "building_count": "0x0",
+              "production_rate": "0x0",
+              "output_amount_left": "0x0",
+              "last_updated_at": "0x0"
+            },
+            "DRAGONHIDE_PRODUCTION": {
+              "building_count": "0x0",
+              "production_rate": "0x0",
+              "output_amount_left": "0x0",
+              "last_updated_at": "0x0"
+            },
+            "LABOR_PRODUCTION": {
+              "building_count": "0x0",
+              "production_rate": "0x0",
+              "output_amount_left": "0x0",
+              "last_updated_at": "0x0"
+            },
+            "EARTHEN_SHARD_PRODUCTION": {
+              "building_count": "0x0",
+              "production_rate": "0x0",
+              "output_amount_left": "0x0",
+              "last_updated_at": "0x0"
+            },
+            "DONKEY_PRODUCTION": {
+              "building_count": "0x0",
+              "production_rate": "0x0",
+              "output_amount_left": "0x0",
+              "last_updated_at": "0x0"
+            },
+            "KNIGHT_T1_PRODUCTION": {
+              "building_count": "0x0",
+              "production_rate": "0x0",
+              "output_amount_left": "0x0",
+              "last_updated_at": "0x6aa862d4"
+            },
+            "KNIGHT_T2_PRODUCTION": {
+              "building_count": "0x0",
+              "production_rate": "0x0",
+              "output_amount_left": "0x0",
+              "last_updated_at": "0x0"
+            },
+            "KNIGHT_T3_PRODUCTION": {
+              "building_count": "0x0",
+              "production_rate": "0x0",
+              "output_amount_left": "0x0",
+              "last_updated_at": "0x0"
+            },
+            "CROSSBOWMAN_T1_PRODUCTION": {
+              "building_count": "0x0",
+              "production_rate": "0x0",
+              "output_amount_left": "0x0",
+              "last_updated_at": "0x0"
+            },
+            "CROSSBOWMAN_T2_PRODUCTION": {
+              "building_count": "0x0",
+              "production_rate": "0x0",
+              "output_amount_left": "0x0",
+              "last_updated_at": "0x0"
+            },
+            "CROSSBOWMAN_T3_PRODUCTION": {
+              "building_count": "0x0",
+              "production_rate": "0x0",
+              "output_amount_left": "0x0",
+              "last_updated_at": "0x0"
+            },
+            "PALADIN_T1_PRODUCTION": {
+              "building_count": "0x0",
+              "production_rate": "0x0",
+              "output_amount_left": "0x0",
+              "last_updated_at": "0x0"
+            },
+            "PALADIN_T2_PRODUCTION": {
+              "building_count": "0x0",
+              "production_rate": "0x0",
+              "output_amount_left": "0x0",
+              "last_updated_at": "0x0"
+            },
+            "PALADIN_T3_PRODUCTION": {
+              "building_count": "0x0",
+              "production_rate": "0x0",
+              "output_amount_left": "0x0",
+              "last_updated_at": "0x0"
+            },
+            "WHEAT_PRODUCTION": {
+              "building_count": "0x0",
+              "production_rate": "0x0",
+              "output_amount_left": "0x0",
+              "last_updated_at": "0x6aa87dd1"
+            },
+            "FISH_PRODUCTION": {
+              "building_count": "0x0",
+              "production_rate": "0x0",
+              "output_amount_left": "0x0",
+              "last_updated_at": "0x6aa87dd1"
+            },
+            "LORDS_PRODUCTION": {
+              "building_count": "0x0",
+              "production_rate": "0x0",
+              "output_amount_left": "0x0",
+              "last_updated_at": "0x0"
+            },
+            "ESSENCE_PRODUCTION": {
+              "building_count": "0x0",
+              "production_rate": "0x0",
+              "output_amount_left": "0x0",
+              "last_updated_at": "0x6aa86244"
+            },
+            "RESEARCH_PRODUCTION": {
+              "building_count": "0x0",
+              "production_rate": "0x0",
+              "output_amount_left": "0x0",
+              "last_updated_at": "0x0"
+            },
+            "SATOSHI_PRODUCTION": {
+              "building_count": "0x0",
+              "production_rate": "0x0",
+              "output_amount_left": "0x0",
+              "last_updated_at": "0x0"
+            }
+          }
+        },
+        {
+          "key": "0x3a28ce772447e6ed02cf9e9f4ceeed7b376f8c5d03fe44f258fb38eda11cbbe",
+          "model": "ExplorerTroops",
+          "value": {
+            "game_id": "0x7",
+            "explorer_id": "0x9d",
+            "owner": "0x2f",
+            "troops": {
+              "category": "Knight",
+              "tier": "T1",
+              "count": "0x3b9aca00",
+              "stamina": {
+                "amount": "0x5a",
+                "updated_tick": "0x1c71329"
+              },
+              "boosts": {
+                "incr_damage_dealt_percent_num": "0x0",
+                "incr_damage_dealt_end_tick": "0x0",
+                "decr_damage_gotten_percent_num": "0x0",
+                "decr_damage_gotten_end_tick": "0x0",
+                "incr_stamina_regen_percent_num": "0x0",
+                "incr_stamina_regen_tick_count": "0x0",
+                "incr_explore_reward_percent_num": "0x0",
+                "incr_explore_reward_end_tick": "0x0"
+              },
+              "battle_cooldown_end": "0x0"
+            },
+            "coord": {
+              "alt": false,
+              "x": "0x80000384",
+              "y": "0x7fffffea"
+            }
+          }
+        },
+        {
+          "key": "0x647ec7114541c9ec11e29d532f000b42f601e3d2529a08ad2073fc6121c3d53",
+          "model": "EntitySequence",
+          "value": {
+            "game_id": "0x7",
+            "next_entity_id": "0x11b"
+          }
+        },
+        {
+          "key": "0x6fe1550955ba10ef42c517c51387d160e5aa2d18fb8f8036b9a780c65d1cce2",
+          "model": "ExecutionHead",
+          "value": {
+            "address": "0xc5c589403f0a0eb68a179c1d2aa363bf7098b395e00398db2e5131c27eaae7",
+            "order": "0x70",
+            "binding": "0x854092cefcaf7624deb296866cde9e670f7cc13bab047bd297dd98fa78430d",
+            "state": "0x4ddfb96f991e9015a224ca585b6bd19ab3d684c8dca6192b1950ecc8d530600",
+            "timestamp": "0x6aa87dd1",
+            "root": "0x889d994ab2b6b52df0325ecbc089bafd4c1296bce3d34395b02af3d8f65111c0"
+          }
+        },
+        {
+          "key": "0x747abed7f69870e0dd1d05af592c3b7d77d838032a162212b669f4ed8957642",
+          "model": "ExecutionResult",
+          "value": {
+            "address": "0xc5c589403f0a0eb68a179c1d2aa363bf7098b395e00398db2e5131c27eaae7",
+            "order": "0x70",
+            "status": "0x1",
+            "binding": "0x854092cefcaf7624deb296866cde9e670f7cc13bab047bd297dd98fa78430d",
+            "result": "0xd855f0393191118d3d2e266b5f2fd319f64ee80d7bf9304e36def8c9c5d7ae",
+            "state": "0x4ddfb96f991e9015a224ca585b6bd19ab3d684c8dca6192b1950ecc8d530600"
+          }
+        }
+      ],
+      "transaction_hash": "0x4f28f25664a705f98adc9f8c39a8ae90ae609247fc5cfa59c0020e0b645d010",
+      "type": "diff",
+      "epoch": "3ecd8be7-9c90-4734-977e-f735c7c3d8c7",
+      "seq": 353
+    }
+  },
+  "rawReport": "raw.tar.gz:madara-rand-selected-embedded-delivery/report.json"
+}

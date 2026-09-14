@@ -1,21 +1,17 @@
 #!/usr/bin/env bun
 import assert from "node:assert/strict";
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, writeFileSync } from "node:fs";
 import { setTimeout as sleep } from "node:timers/promises";
-import { ec, hash, RpcProvider, shortString } from "starknet";
+import { hash, RpcProvider, shortString } from "starknet";
 
-interface Fixture {
-  scope: string;
-  rpc: string;
-  chain: string;
-  authority: { address: string };
-  execution: { address: string };
-  actor: string;
-  game: string;
-}
-
-const PLAYER_KEY = "0x3039";
-const hex = (value: string | number | bigint) => `0x${BigInt(value).toString(16)}`;
+import {
+  admissionFor,
+  exploreArguments,
+  hex,
+  readFixture,
+  signedRequest,
+  type NativeFixture as Fixture,
+} from "./native-intent";
 
 async function post(endpoint: string, body: unknown) {
   const response = await fetch(endpoint, {
@@ -62,7 +58,11 @@ async function previewAttempts(
     "0x1",
     "0x2",
   ];
-  const execution = [...intent.slice(2), hex(envelope.length), ...envelope, "0x1", admission[0], r, s];
+  const [epoch] = await provider.callContract(
+    { contractAddress: fixture.authority.address, entrypoint: "authority_epoch", calldata: [] },
+    "pre_confirmed",
+  );
+  const execution = [...intent.slice(2), hex(envelope.length), ...envelope, epoch, admission[0], r, s];
   const calldata = [
     "0x1",
     fixture.execution.address,
@@ -150,40 +150,14 @@ async function main() {
     throw new Error("usage: bun deploy/madara-rand/exercise-fixture.ts FIXTURE_JSON OUTPUT_JSON PLACEMENT");
   if (placement !== "embedded" && placement !== "sidecar") throw new Error("Select embedded or sidecar");
   const endpoint = `http://127.0.0.1:${placement === "embedded" ? 15080 : 15081}/actions`;
-  const fixture = JSON.parse(readFileSync(manifestPath, "utf8")) as Fixture;
-  assert.equal(fixture.rpc, "http://127.0.0.1:15050/rpc/v0_9_0");
+  const fixture = readFixture(manifestPath);
   const provider = new RpcProvider({ nodeUrl: fixture.rpc });
   assert.equal(BigInt(await provider.getChainId()), BigInt(fixture.chain));
-  const admission = await provider.callContract(
-    {
-      contractAddress: fixture.execution.address,
-      entrypoint: "get_admission",
-      calldata: [fixture.game, fixture.actor],
-    },
-    "pre_confirmed",
-  );
-  assert.equal(admission.length, 8);
-  const [, rules, , nonce, order, , , timestamp] = admission;
-  const intent = [
-    shortString.encodeShortString("ETERNUM_ACTION"),
-    "0x1",
-    fixture.chain,
-    fixture.execution.address,
-    fixture.game,
-    fixture.actor,
-    nonce,
-    shortString.encodeShortString("explore"),
-    rules,
-    hex(BigInt(timestamp) - 300n),
-    hex(BigInt(timestamp) + 60n),
-    hex(BigInt(order) + 100n),
-    "0x2",
-    "0x1",
-    "0x2",
-  ].map(hex);
-  const action = hash.computePoseidonHashOnElements(intent);
-  const signature = ec.starkCurve.sign(action, PLAYER_KEY);
-  const request = { intent, r: hex(signature.r), s: hex(signature.s) };
+  const admission = await admissionFor(provider, fixture);
+  const nonce = admission[3];
+  const order = admission[4];
+  const { action, ...request } = signedRequest(fixture, admission, exploreArguments(fixture, nonce));
+  const intent = request.intent;
   const previews = await previewAttempts(provider, fixture, intent, admission, action, request.r, request.s);
   const rejections: { name: string; status: number }[] = [];
   const attempts = [
@@ -200,6 +174,13 @@ async function main() {
     assert(response.status >= 400 && response.status < 500, `${name}: ${response.status}`);
     rejections.push({ name, status: response.status });
   }
+  const gate = process.env.RANDOMNESS_ADMISSION_GATE;
+  if (gate) {
+    writeFileSync(`${gate}.ready.json`, JSON.stringify({ action, order }) + "\n", { flag: "wx" });
+    const deadline = Date.now() + 20_000;
+    while (!existsSync(`${gate}.go`) && Date.now() < deadline) await sleep(10);
+    assert(existsSync(`${gate}.go`), "Rehearsal did not release the admission gate");
+  }
   const submissionEpochMs = performance.timeOrigin + performance.now();
   const responses = await Promise.all(Array.from({ length: 16 }, () => post(endpoint, request)));
   const acknowledgementEpochMs = performance.timeOrigin + performance.now();
@@ -211,6 +192,7 @@ async function main() {
     assert.equal(BigInt(accepted.order), BigInt(order));
   }
   const result = await waitForResult(provider, fixture.execution.address, order);
+  assert.equal(BigInt(result[0]), 1n, "Native explore was terminally rejected");
   const following = await provider.callContract(
     {
       contractAddress: fixture.execution.address,
@@ -232,7 +214,7 @@ async function main() {
   assert.deepEqual(replayResult, result);
   writeFileSync(
     outputPath,
-    `${JSON.stringify({ scope: "deployed stub admission; not gameplay or latency-budget evidence", action, order, submissionEpochMs, acknowledgementEpochMs, previews, rejections, duplicates: responses.length, conflict: conflict.status, result_selector: hash.getSelectorFromName("get_result"), result }, null, 2)}\n`,
+    `${JSON.stringify({ scope: "native explore admission and recovery; not latency-budget evidence", action, order, nonce, submissionEpochMs, acknowledgementEpochMs, previews, rejections, duplicates: responses.length, conflict: conflict.status, result_selector: hash.getSelectorFromName("get_result"), result }, null, 2)}\n`,
     { flag: "wx" },
   );
 }

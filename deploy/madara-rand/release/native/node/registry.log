@@ -1,0 +1,2 @@
+time="2026-09-15T00:42:13+02:00" level=warning msg="Found orphan containers (madara-rand-herald-baseline-1, madara-rand-herald-1, madara-rand-randomness-sidecar-1, madara-rand-madara-1, madara-rand-journal-quarantine-5, madara-rand-herald-replay-1, madara-rand-journal-successor-1, madara-rand-journal-replacement-1, madara-rand-journal-standby-1, madara-rand-journal-primary-1) for this project. If you removed or renamed this service in your compose file, you can run this command with the --remove-orphans flag to clean it up."
+ Container madara-rand-registry-1 Running 

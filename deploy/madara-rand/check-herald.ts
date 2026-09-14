@@ -53,7 +53,7 @@ async function main() {
     );
     writeFileSync(resolve(output, "admission.log"), child.stdout + child.stderr, { flag: "wx" });
     const result = JSON.parse(readFileSync(resolve(output, "admission.json"), "utf8"));
-    const expectedNonce = BigInt(result.order);
+    const expectedNonce = BigInt(result.nonce) + 1n;
     const rowDeadline = Date.now() + 10_000;
     const delivery = () =>
       messages.find(
@@ -62,8 +62,10 @@ async function main() {
           message.preconfirmed === true &&
           Array.isArray(message.set) &&
           message.set.some(
-            (row: { model: string; value: { nonce?: string } }) =>
-              row.model === "ActionNonce" && row.value.nonce !== undefined && BigInt(row.value.nonce) === expectedNonce,
+            (row: { model: string; value: { next_nonce?: string } }) =>
+              row.model === "ActionNonce" &&
+              row.value.next_nonce !== undefined &&
+              BigInt(row.value.next_nonce) === expectedNonce,
           ),
       );
     while (!delivery() && !failure && Date.now() < rowDeadline) await sleep(10);
@@ -74,7 +76,7 @@ async function main() {
       JSON.stringify(
         {
           schema: 1,
-          scope: "conformance row delivery; not explore or latency-budget evidence",
+          scope: "native explore row delivery; not latency-budget evidence",
           placement,
           action: result.action,
           order: result.order,

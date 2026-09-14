@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "scope": "local rehearsal, not the host-independence gate; deployed conformance stub",
+  "mode": "after-broadcast",
+  "image": "127.0.0.1:15000/madara-rand@sha256:dee06fd2348a400b67681e20d41a7868d9b6cef4a1894ac5a632ab92e9339004",
+  "order": 6,
+  "original_binding_consumed": true,
+  "artifacts": {
+    "node.log": "1b209adc4594f7259a0f44118a62141dfcb1d15250884d8318f8fc6256940f6c",
+    "worker.log": "41ea714c85c3e462df61a72ad929e77d031b1e9d3edc124c587d03ccd2f4d082",
+    "chain-after-recovery.json": "05ac4eddd613a13c8b2d85e8c95e7ca994ff530c6eb3961d12da2043a4aecbe3",
+    "after.json": "794810a170ebbc83311db1d255e74d704dcb6d36dbab52b4297c7b2a4da1c85a",
+    "recover.log": "7e7e7f51cf51d1c27b93f644c349df26444aa5042d89d1891ca81b180a6f98fd",
+    "kill.log": "6d0f2a4a47396edd5339a0ac3c23c52830d2d246f63d0e405cf648c49867e8e5",
+    "chain-before-crash.json": "05ac4eddd613a13c8b2d85e8c95e7ca994ff530c6eb3961d12da2043a4aecbe3",
+    "pending.json": "545940d38c5523a47388814ae6b3a2a70acecf29d5e569d5b10c561dabad1f4f",
+    "broadcast-response.json": "9fb98cc50cb8aa5707bcaf61c7da1821b26c6aee1e82c5394ff71e03f476864a",
+    "submitted-transaction.json": "7fccc0ccccef148262cb3c3c4c96572ea935755709ec6891df3d119e5fa9c42b",
+    "client.log": "2b57ad7298c2f04dcd94388d38e3fa8c6954f4c869d80b18cf3de633d4fdf54a",
+    "proxy-start.log": "47c298d5dc58aa4f7ef55eb695c476ecdd8822821d743541cfaa2c37ea3ed141",
+    "proxy.env": "5fd1e1da9bb5e1f6f551002d5dcfe1136e6097a2260361622eab1bcf9e5a43fb",
+    "before.json": "99ab6b1ac7cc606f8dfe2e75703219595423816ccddfe209857225133614cfb3"
+  }
+}

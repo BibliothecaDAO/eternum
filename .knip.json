@@ -33,7 +33,12 @@
         "deploy/madara-rand/deploy-fixture.ts",
         "deploy/madara-rand/exercise-fixture.ts",
         "deploy/madara-rand/check-native-routing.ts",
-        "deploy/madara-rand/check-herald.ts"
+        "deploy/madara-rand/check-herald.ts",
+        "deploy/madara-rand/rotate-fixture.ts",
+        "deploy/madara-rand/prepare-native-actions.ts",
+        "deploy/madara-rand/prepare-baseline.ts",
+        "deploy/madara-rand/race-native-intents.ts",
+        "deploy/madara-rand/explore-benchmark.ts"
       ]
     },
     "apps/realms": {

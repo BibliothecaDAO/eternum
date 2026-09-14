@@ -1,0 +1,389 @@
+{
+  "schema": 1,
+  "scope": "single-host measurement; no cross-host network or host-loss claim",
+  "planSha256": "c742b6b53c9588471bf82c42feaa053e897e5ed5e0a9a0848e1dfd4d01a016e0",
+  "runs": {
+    "baseline": {
+      "summary": {
+        "samples": 256,
+        "failedActions": 0,
+        "trafficFailures": 0,
+        "ticketOrderViolations": 0,
+        "throughputActionsPerSecond": 4.007794823360828,
+        "rowLatencyMs": {
+          "p50": 34.445068359375,
+          "p95": 62.653076171875,
+          "p99": 75.741943359375
+        },
+        "heraldDeliveryMs": {
+          "p50": 2.12353515625,
+          "p95": 3.660400390625,
+          "p99": 14.309326171875
+        },
+        "scheduleDelayMs": {
+          "p50": 0,
+          "p95": 0.26025390625,
+          "p99": 0.519775390625
+        },
+        "stages": {
+          "execution": {
+            "batch_count": {
+              "p50": 1,
+              "p95": 1,
+              "p99": 1
+            },
+            "batch_execution_ms": {
+              "p50": 26.937562000000003,
+              "p95": 46.331372,
+              "p99": 58.310705999999996
+            },
+            "amortized_execution_ms": {
+              "p50": 26.937562000000003,
+              "p95": 46.331372,
+              "p99": 58.310705999999996
+            },
+            "l2_gas": {
+              "p50": 96664583,
+              "p95": 96736183,
+              "p99": 199973719
+            }
+          },
+          "preconfirmed_persistence": {
+            "batch_count": {
+              "p50": 1,
+              "p95": 1,
+              "p99": 1
+            },
+            "batch_persistence_ms": {
+              "p50": 1.884681,
+              "p95": 2.277332,
+              "p99": 3.676612
+            },
+            "event_count": {
+              "p50": 21,
+              "p95": 21,
+              "p99": 33
+            }
+          }
+        },
+        "singletonExecutionSamples": 256,
+        "executionBasis": "batch wall time and batch size recorded per transaction; singleton batches are direct action timings, larger batches are explicitly amortized",
+        "eventVolume": 5444,
+        "layerCounts": {
+          "surface": 128,
+          "ethereal": 128
+        },
+        "discoveryCounts": {
+          "0x8": 4,
+          "0x4": 1
+        }
+      },
+      "failures": []
+    },
+    "embedded": {
+      "summary": {
+        "samples": 256,
+        "failedActions": 0,
+        "trafficFailures": 0,
+        "ticketOrderViolations": 0,
+        "throughputActionsPerSecond": 4.008141414930308,
+        "rowLatencyMs": {
+          "p50": 56.989501953125,
+          "p95": 67.023193359375,
+          "p99": 80.72021484375
+        },
+        "heraldDeliveryMs": {
+          "p50": 7.70068359375,
+          "p95": 9.25390625,
+          "p99": 20.46044921875
+        },
+        "scheduleDelayMs": {
+          "p50": 0.0029296875,
+          "p95": 1.08349609375,
+          "p99": 1.2431640625
+        },
+        "stages": {
+          "execution": {
+            "batch_count": {
+              "p50": 1,
+              "p95": 1,
+              "p99": 1
+            },
+            "batch_execution_ms": {
+              "p50": 11.5269,
+              "p95": 23.413135,
+              "p99": 24.399304
+            },
+            "amortized_execution_ms": {
+              "p50": 11.5269,
+              "p95": 23.413135,
+              "p99": 24.399304
+            },
+            "l2_gas": {
+              "p50": 46665875,
+              "p95": 46759075,
+              "p99": 75864197
+            }
+          },
+          "preconfirmed_persistence": {
+            "batch_count": {
+              "p50": 1,
+              "p95": 1,
+              "p99": 1
+            },
+            "batch_persistence_ms": {
+              "p50": 1.8967630000000002,
+              "p95": 2.318469,
+              "p99": 3.2219420000000003
+            },
+            "event_count": {
+              "p50": 21,
+              "p95": 21,
+              "p99": 30
+            }
+          },
+          "journal": {
+            "reservation_ms": {
+              "p50": 4.752873999999999,
+              "p95": 5.521065,
+              "p99": 6.291558
+            },
+            "sampling_ms": {
+              "p50": 0.078712,
+              "p95": 0.106439,
+              "p99": 0.12229299999999999
+            },
+            "commit_ms": {
+              "p50": 3.673608,
+              "p95": 4.281512,
+              "p99": 5.212014
+            },
+            "witness_ms": {
+              "p50": 1.611599,
+              "p95": 1.9622749999999998,
+              "p99": 2.1430949999999998
+            }
+          },
+          "admission_checks": {
+            "checks_ms": {
+              "p50": 8.009318,
+              "p95": 9.126646000000001,
+              "p99": 9.291753
+            }
+          },
+          "admission": {
+            "queue_ms": {
+              "p50": 0.016972,
+              "p95": 0.037156,
+              "p99": 0.073404
+            },
+            "admission_ms": {
+              "p50": 19.855256,
+              "p95": 22.129443,
+              "p99": 22.958954
+            }
+          },
+          "submission": {
+            "submission_ms": {
+              "p50": 7.948416,
+              "p95": 9.053942000000001,
+              "p99": 10.020062999999999
+            }
+          },
+          "submission_checks": {
+            "checks_ms": {
+              "p50": 3.356178,
+              "p95": 4.082393,
+              "p99": 5.1569780000000005
+            }
+          },
+          "result_persistence": {
+            "persistence_ms": {
+              "p50": 9.805718,
+              "p95": 11.083195,
+              "p99": 13.922754000000001
+            }
+          }
+        },
+        "singletonExecutionSamples": 256,
+        "executionBasis": "batch wall time and batch size recorded per transaction; singleton batches are direct action timings, larger batches are explicitly amortized",
+        "eventVolume": 5406,
+        "layerCounts": {
+          "surface": 128,
+          "ethereal": 128
+        },
+        "discoveryCounts": {
+          "0x8": 2,
+          "0x4": 1
+        }
+      },
+      "failures": []
+    },
+    "sidecar": {
+      "summary": {
+        "samples": 256,
+        "failedActions": 0,
+        "trafficFailures": 0,
+        "ticketOrderViolations": 0,
+        "throughputActionsPerSecond": 4.0082149109534955,
+        "rowLatencyMs": {
+          "p50": 58.1484375,
+          "p95": 73.853759765625,
+          "p99": 150.309326171875
+        },
+        "heraldDeliveryMs": {
+          "p50": 8.1923828125,
+          "p95": 12.771240234375,
+          "p99": 60.731201171875
+        },
+        "scheduleDelayMs": {
+          "p50": 0,
+          "p95": 0.99169921875,
+          "p99": 1.27978515625
+        },
+        "stages": {
+          "execution": {
+            "batch_count": {
+              "p50": 1,
+              "p95": 1,
+              "p99": 1
+            },
+            "batch_execution_ms": {
+              "p50": 11.413059,
+              "p95": 23.601012,
+              "p99": 25.515864999999998
+            },
+            "amortized_execution_ms": {
+              "p50": 11.413059,
+              "p95": 23.601012,
+              "p99": 25.515864999999998
+            },
+            "l2_gas": {
+              "p50": 46671675,
+              "p95": 46747035,
+              "p99": 83202709
+            }
+          },
+          "preconfirmed_persistence": {
+            "batch_count": {
+              "p50": 1,
+              "p95": 1,
+              "p99": 1
+            },
+            "batch_persistence_ms": {
+              "p50": 1.893481,
+              "p95": 3.405277,
+              "p99": 4.586232
+            },
+            "event_count": {
+              "p50": 21,
+              "p95": 21,
+              "p99": 30
+            }
+          },
+          "journal": {
+            "reservation_ms": {
+              "p50": 4.716137,
+              "p95": 5.21376,
+              "p99": 6.9997560000000005
+            },
+            "sampling_ms": {
+              "p50": 0.072985,
+              "p95": 0.101411,
+              "p99": 0.122573
+            },
+            "commit_ms": {
+              "p50": 3.6210880000000003,
+              "p95": 4.009967,
+              "p99": 4.341855000000001
+            },
+            "witness_ms": {
+              "p50": 1.738362,
+              "p95": 2.038753,
+              "p99": 2.156785
+            }
+          },
+          "admission_checks": {
+            "checks_ms": {
+              "p50": 8.175053,
+              "p95": 9.309703,
+              "p99": 9.547863
+            }
+          },
+          "admission": {
+            "queue_ms": {
+              "p50": 0.037085999999999994,
+              "p95": 0.07920100000000001,
+              "p99": 0.089257
+            },
+            "admission_ms": {
+              "p50": 20.281571000000003,
+              "p95": 22.364463,
+              "p99": 23.881356999999998
+            }
+          },
+          "submission": {
+            "submission_ms": {
+              "p50": 8.090684000000001,
+              "p95": 9.37724,
+              "p99": 10.438276
+            }
+          },
+          "submission_checks": {
+            "checks_ms": {
+              "p50": 3.3276820000000003,
+              "p95": 3.712162,
+              "p99": 5.186312999999999
+            }
+          },
+          "result_persistence": {
+            "persistence_ms": {
+              "p50": 9.890787,
+              "p95": 10.671688,
+              "p99": 12.606865
+            }
+          }
+        },
+        "singletonExecutionSamples": 256,
+        "executionBasis": "batch wall time and batch size recorded per transaction; singleton batches are direct action timings, larger batches are explicitly amortized",
+        "eventVolume": 5424,
+        "layerCounts": {
+          "surface": 128,
+          "ethereal": 128
+        },
+        "discoveryCounts": {
+          "0x4": 1,
+          "0x8": 4
+        }
+      },
+      "failures": []
+    }
+  },
+  "budget": {
+    "p95RegressionMs": 25,
+    "p99RegressionMs": 50,
+    "minimumThroughputRatio": 0.95,
+    "additionalFailedActions": 0,
+    "ticketOrderViolations": 0
+  },
+  "checks": {
+    "embedded": {
+      "p95RegressionMs": 4.3701171875,
+      "p99RegressionMs": 4.978271484375,
+      "throughputRatio": 1.0000864793695177,
+      "additionalFailedActions": 0,
+      "ticketOrderViolations": 0,
+      "passed": true
+    },
+    "sidecar": {
+      "p95RegressionMs": 11.20068359375,
+      "p99RegressionMs": 74.5673828125,
+      "throughputRatio": 1.0001048176394207,
+      "additionalFailedActions": 0,
+      "ticketOrderViolations": 0,
+      "passed": false
+    }
+  },
+  "passed": false,
+  "rawReport": "raw.tar.gz:report.json"
+}

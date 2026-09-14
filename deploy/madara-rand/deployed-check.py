@@ -1,47 +1,18 @@
 #!/usr/bin/env python3
-"""Exercise both placements on one retained deployed stub and journal."""
+"""Exercise both placements on one retained native deployment and journal."""
 
 import hashlib
 import json
 from pathlib import Path
 import sys
-import time
 import urllib.error
 import urllib.request
 from runtime import compose, read_release, run
-
-
-def wait_for_admission(port):
-    deadline = time.monotonic() + 30
-    request = urllib.request.Request(f'http://127.0.0.1:{port}/actions', data=b'{"intent":[],"r":"0x1","s":"0x1"}',
-                                     headers={'content-type': 'application/json'})
-    while time.monotonic() < deadline:
-        try:
-            urllib.request.urlopen(request, timeout=1).close()
-            raise RuntimeError('malformed admission unexpectedly succeeded')
-        except urllib.error.HTTPError as error:
-            if error.code == 400:
-                return
-            raise
-        except (urllib.error.URLError, TimeoutError, ConnectionError):
-            time.sleep(0.1)
-    raise RuntimeError('admission did not become ready after prefix recovery')
+from placement import configure_placement, wait_for_admission
 
 
 def exercise(placement, deployment, release, fixture, output):
-    environment = fixture / 'service.env'
-    command = compose(deployment, release, environment)
-    run([*command, 'stop', 'randomness-sidecar'], output / f'{placement}-stop-sidecar.log', deployment)
-    values = environment.read_text().splitlines()
-    if sum(line.startswith('RANDOMNESS_PLACEMENT=') for line in values) != 1:
-        raise RuntimeError('fixture must declare one placement')
-    environment.write_text('\n'.join(f'RANDOMNESS_PLACEMENT={placement}' if line.startswith('RANDOMNESS_PLACEMENT=')
-                                     else line for line in values) + '\n')
-    run([*command, 'up', '-d', '--wait', 'madara'], output / f'{placement}-start-node.log', deployment)
-    if placement == 'sidecar':
-        run([*command, '--profile', 'sidecar', 'up', '-d', 'randomness-sidecar'],
-            output / 'sidecar-start-worker.log', deployment)
-    wait_for_admission(15081 if placement == 'sidecar' else 15080)
+    configure_placement(placement, deployment, release, fixture, output)
     for index in range(8):
         run(['bun', 'deploy/madara-rand/exercise-fixture.ts', str(fixture / 'fixture.json'),
              str(output / f'{placement}-{index}.json'), placement],
@@ -76,10 +47,20 @@ def main():
     if orders != list(range(orders[0], orders[0] + 16)):
         raise RuntimeError('ticket order did not survive placement switch')
     fixture_manifest = json.loads((fixture / 'fixture.json').read_text())
+    disabled_preparation = output / 'disabled-preparation'
+    disabled_preparation.mkdir()
+    configure_placement('sidecar', deployment, release, fixture, disabled_preparation)
     command = compose(deployment, release, fixture / 'service.env')
     run([*command, '-f', str(deployment / 'baseline.yml'), 'up', '-d', '--wait', 'madara'],
         output / 'disabled-start-node.log', deployment)
     verify_results(fixture_manifest, results)
+    run(['bun', 'deploy/madara-rand/exercise-fixture.ts', str(fixture / 'fixture.json'),
+         str(output / 'disabled-explore.json'), 'sidecar'], output / 'disabled-explore.log', deployment.parents[1])
+    disabled = json.loads((output / 'disabled-explore.json').read_text())
+    if int(disabled['order'], 16) != orders[-1] + 1:
+        raise RuntimeError('feature-disabled explore changed ticket order')
+    results.append(disabled)
+    orders.append(int(disabled['order'], 16))
     try:
         urllib.request.urlopen('http://127.0.0.1:15080/actions', timeout=1).close()
         raise RuntimeError('disabled node unexpectedly runs admission')
@@ -88,14 +69,14 @@ def main():
     except (urllib.error.URLError, TimeoutError, ConnectionError):
         pass
     run([*command, 'up', '-d', '--wait', 'madara'], output / 'enabled-restore-node.log', deployment)
-    wait_for_admission(15080)
+    wait_for_admission(15081)
     verify_results(fixture_manifest, results)
-    report = {'schema': 1, 'scope': 'local rehearsal, not the host-independence gate; deployed conformance stub only',
+    report = {'schema': 1, 'scope': 'local rehearsal, not the host-independence gate; native gameplay deployment',
               'image': manifest['image'], 'patch_revision': manifest['patch_revision'],
-              'fixture': fixture_manifest, 'disabled_and_restored_results_match': True,
+              'fixture': fixture_manifest, 'disabled_and_restored_results_match': True, 'feature_disabled_explore_executed': True,
               'orders': orders, 'duplicates_per_action': 16, 'passed': True,
-              'artifacts': {path.name: hashlib.sha256(path.read_bytes()).hexdigest()
-                            for path in sorted(output.iterdir()) if path.is_file()}}
+              'artifacts': {str(path.relative_to(output)): hashlib.sha256(path.read_bytes()).hexdigest()
+                            for path in sorted(output.rglob('*')) if path.is_file()}}
     (output / 'report.json').write_text(json.dumps(report, indent=2) + '\n')
     print(json.dumps({'report': str(output / 'report.json'), 'passed': True}))
 

@@ -1,7 +1,7 @@
 # Recorded randomness rehearsal
 
-This isolated Compose project uses `docker compose -p madara-rand`. It does not operate the existing lab node. All
-current evidence is **local rehearsal, not the host-independence gate**. Operator honesty remains trusted.
+This isolated Compose project uses `docker compose -p madara-rand`. It does not operate the existing lab node. Evidence
+is **single-host rehearsal, not the host-independence gate**. Operator honesty remains trusted.
 
 ## Journal mechanism
 
@@ -19,7 +19,8 @@ acceptance separately commits the complete immutable intent, root, order, contex
 that commit returns and its record is read from the standby can the client release a ticket. A primary-local row after
 an ambiguous timeout is not an acknowledgement. An unresolved sampling reservation stops; no replacement sampler exists.
 An accepted predecessor must have a recorded terminal result before accepting its successor, so its state identity is
-known without speculative execution.
+known without speculative execution. Indexed lookups read the current ticket and its retained submissions. Startup and
+recovery still validate the complete prefix. There is no second in-memory nonce registry.
 
 The login role has no direct table privileges. Every mutation is a security-definer function that checks both the
 current authority epoch and `session_user` against the locked stream row. A caller cannot escape fencing with `SET ROLE`
@@ -34,7 +35,7 @@ head, contiguous prefix, canonical intent/envelope hashes, nonce uniqueness, pre
 entry integrity and chain results. Submitted transaction bytes and hashes survive credential changes. A chain result
 observed before the journal records it is reconciled with its existing ticket, never admitted again.
 
-## Start and reproduce
+## Journal-only rehearsal
 
 The checkout layout is `~/projects/madara` beside `~/projects/eternum-randomness`. Only this rehearsal uses the public
 fixture password `local-rehearsal`; real-host connections use private networking or authenticated SSH tunnels and
@@ -45,7 +46,7 @@ an existing deployment are a recovery incident, not permission to initialize ano
 ```sh
 deploy/madara-rand/journal/start.sh
 cd deploy/madara-rand
-docker compose -p madara-rand exec -T journal-primary psql -U postgres -d randomness -v ON_ERROR_STOP=1 -f /schema.sql
+docker compose -p madara-rand exec -T journal-primary psql -U postgres -d randomness -v ON_ERROR_STOP=1 -f /schema.sql -f /lookup.sql
 ```
 
 The following **replaces this project's rehearsal schema**, including deliberately corrupting/removing test entries. It
@@ -93,10 +94,13 @@ CPU cores, 32 GiB RAM, 200 GiB free SSD space and Docker. Private bidirectional 
 power/network fencing must be available before promotion. Replenishing the lost storage is required before new
 acknowledgements. No drill uses the excluded remote box.
 
-The host-loss drill is the one gate left open until the owner provides the second host. Single-host rehearsals and items
-2–6 proceed independently of that hardware gate.
+The host-loss drill is deferred at the owner’s request. Cross-host recovery and durability remain unverified. Consult
+the gate index for the separate latency and integration results; a local promotion does not clear this hardware gate.
 
-## Local image and deployed conformance
+## Native release on the retained lab
+
+The native fixture starter uses the already-running isolated lab and refuses to switch deployments with pending accepted
+work. It is not a bootstrap command for a missing node or lost journal.
 
 The release builder compiles the patched node with `sequencer-randomness`, the same revision with the feature disabled,
 and the shared sidecar. Both node binaries include the fsync correction. It publishes to a registry bound to
@@ -105,7 +109,9 @@ image, feature configurations, dependency graphs and binary hashes.
 
 ```sh
 python3 deploy/madara-rand/release/build.py ~/projects/madara /tmp/madara-rand-release
-python3 deploy/madara-rand/start-fixture.py /tmp/madara-rand-release /tmp/madara-rand-fixture 1
+python3 deploy/madara-rand/start-fixture.py /tmp/madara-rand-release /tmp/madara-rand-fixture 10 \
+  ~/projects/eternum-native-world 288
+bun deploy/madara-rand/prepare-native-actions.ts /tmp/madara-rand-fixture/fixture.json
 bun deploy/madara-rand/exercise-fixture.ts /tmp/madara-rand-fixture/fixture.json /tmp/randomness-sidecar-smoke.json sidecar
 python3 deploy/madara-rand/deployed-check.py /tmp/madara-rand-release /tmp/madara-rand-fixture /tmp/randomness-deployed
 ```
@@ -135,59 +141,110 @@ The OS sampler calls the initialized Linux `getrandom` syscall directly. The fol
 python3 deploy/madara-rand/drills/entropy-failure.py ~/projects/madara /tmp/randomness-entropy-failure
 ```
 
-The deployed fixture is `RecordedExecutionStub`. Its result rows exercise admission, authority checks, nonce consumption
-and recovery. Their native `ActionNonce` event now exercises Herald delivery, but does not represent exploration or
-discovery rows. Deployed-explore measurements need the conforming native entrypoint and gameplay fixtures. Freeze the
-measurement manifest before collecting those results.
+The release fixture deploys the conforming native season, map, structures and troops domains through the existing
+deployer. It uses PlayerRegistry and the real gameplay account class. Typed commands arrive in the published intent's
+arguments, and the season verifies their commitment before execution. Both placements submit real explorer creation,
+Ethereal entry and exploration through the same authority account. The conformance stub remains only as the second
+implementation exercised by the shared protocol invariant tests; it is absent from the deployment path.
 
-The checked [release manifest](release/evidence/manifest.json) records image
-`sha256:a7cd050b8429ee3e6adde66fe8172bf33b1886714bca8df5b62af3145a2660d9` from Madara `c75259889`. Its dependency
-inventories and build logs are beside it. The [deployed report](release/deployed/report.json) records eight sidecar
-actions and eight embedded actions on one retained journal, each with sixteen concurrent duplicate requests. Simulation,
-estimation and direct-call rejections are recorded per action. All results match after restarting with the disabled
-binary and then restoring the enabled binary. These runs use separate local containers and volumes.
-
-At this pin, pending RPC calls and headers can synthesize wall time ahead of the batcher. New admission records the last
-confirmed block timestamp after checking the declared 300-second skew; execution never substitutes another timestamp.
-The two earlier [timestamp regressions](timestamp-regression.json) remain recorded with their rejected transactions and
-retained bindings. Their stopped test deployments were preserved. The corrected runner uses a new deployment identity.
-
-## Timing instrumentation and native Herald
-
-The instrumented [node release](release/measurement/node/manifest.json) is Madara `c342e4737`, image
-`sha256:dee06fd2348a400b67681e20d41a7868d9b6cef4a1894ac5a632ab92e9339004`. Both feature configurations and the sidecar
-were rebuilt. JSON records correlate canonical action/order with the ordinary transaction hash. Sampling and journal
-timings are emitted only after the replicated acceptance acknowledgement. The executor records batch wall time and its
-amortized per-member value; the latter is not an individual transaction wall-time measurement when a batch has multiple
-members.
-
-Build native Herald from its pinned archive, then start it with separate live and reconstruction databases:
+Herald is compiled from the native foundation checkout and consumes its generated schema. Live ingestion serves 13003;
+confirmed-history reconstruction uses a separate database on 13004. The unchanged Dojo baseline uses 13005. Readers
+retain checkpoints and restart after a node restart. Their rows, rather than a direct gameplay state fetch, establish
+submission-to-row latency.
 
 ```sh
-python3 deploy/madara-rand/release/build-herald.py 1b787c57ae36a860679d805e9e7cdb52730d2ae2 \
-  /tmp/madara-rand-release /tmp/randomness-herald-release
-python3 deploy/madara-rand/start-herald.py /tmp/madara-rand-release /tmp/randomness-herald-release \
-  /tmp/madara-rand-fixture /tmp/randomness-herald
-bun deploy/madara-rand/check-herald.ts /tmp/madara-rand-fixture/fixture.json sidecar /tmp/randomness-herald-delivery
+python3 deploy/madara-rand/release/build-herald.py NATIVE_REVISION RELEASE HERALD_RELEASE
+python3 deploy/madara-rand/start-herald.py RELEASE HERALD_RELEASE FIXTURE HERALD_DIRECTORY
+bun deploy/madara-rand/check-herald.ts FIXTURE/fixture.json sidecar DELIVERY_OUTPUT
 ```
 
-Herald uses RPC v0.10.2 for subscriptions and serves this project's loopback port 13003. The replay container
-uses 13004. Its compiled artifact imports the pinned source and requires a matching dependency lock. The build log
-retains a Bun directory-mismatch warning; compilation exited successfully and the resulting image passed the delivery
-check.
+## Matched explore measurement
 
-The [instrumentation manifest](release/measurement/run-manifest.json) was written before the two recorded checks: one
-embedded action and one sidecar action, each with sixteen concurrent duplicate requests and no warmup. The
-[evidence index](release/measurement/index.json) records the raw logs, images, fixture and reports by digest. Both
-actions produced native pre-confirmed row diffs with all timing stages present. Recheck each capture with
-`check-telemetry.py DELIVERY_REPORT NODE_LOG WORKER_LOG OUTPUT_JSON`; use the node log as the worker log for embedded
-placement. `check-native-routing.ts NATIVE_SOURCE SIERRA_ARTIFACT OUTPUT_JSON` checks the compiled `execute` calldata
-against native Herald's game routing. The Cairo intent field is named `game_id`; its felt position and canonical bytes
-are unchanged.
+Prepare a fresh Dojo world using the original artifacts and the existing deployer with `--manifest` under the local
+output directory. `prepare-baseline.ts` provisions unchanged Dojo rules and both layers; its usage requires the native
+fixture, native source and original Dojo artifacts. Provision two independent native fixtures with 288 explorers each.
+The original preset pools and weights remain intact. Raw-root parity is separately checked by the foundation oracle;
+these performance runs use the actual baseline placeholder and independently sampled native roots.
 
-These are single-host instrumentation checks, not gameplay percentile or budget results. The baseline/embedded/sidecar
-explore comparison has not run. Its immutable manifest must include the actual gameplay release, discovery fixtures,
-hardware, offered load, action mix, warmup and sample counts before collection. The fixed limits remain +25 ms p95 and
-+50 ms p99 submission-to-pre-confirmed-row latency, at least 95% of baseline throughput, no additional failed actions
-and no ticket-order violations. Native #4994 at `1b787c57ae36` still lacks the required recorded-context interface and
-recovery views, so this package continues to use the explicit conformance stub.
+Freeze all inputs before collection:
+
+```sh
+python3 deploy/madara-rand/freeze-explore-run.py BASELINE_FIXTURE_JSON EMBEDDED_FIXTURE_JSON \
+  SIDECAR_FIXTURE_JSON RELEASE HERALD_RELEASE RUN/plan.json
+python3 deploy/madara-rand/collect-explore-run.py RUN RELEASE EMBEDDED_HERALD_DIRECTORY SIDECAR_HERALD_DIRECTORY
+python3 deploy/madara-rand/analyze-explore-run.py RUN
+```
+
+Each placement has 32 warmup actions and 256 measured actions, alternating surface and Ethereal at four explores per
+second, with four independently signed token transfers per second. The manifest records deterministic arrival jitter,
+source and image revisions, hardware, discovery fixtures, preparation rest and exclusions before the first sample. All
+placements run the same enabled node binary at a 250 ms pre-confirmed cadence. Singleton execution batches provide
+direct action times; any shared batch is labelled as amortized. Every measured failure and timeout remains in evidence.
+
+The limits are unchanged: at most +25 ms p95 and +50 ms p99 submission-to-pre-confirmed-row latency, at least 95% of
+baseline throughput, no additional failed actions and no ticket-order violations. The
+[first native comparison](release/native/comparison-initial/summary.json) failed both placement budgets. The
+[indexed-journal comparison](release/native/comparison-indexed/summary.json) passes for embedded: +4.37 ms p95 and +4.98
+ms p99 versus baseline, with no added failures or ordering violations. Sidecar passes p95 but misses p99 (+74.57 ms), so
+embedded is selected. The combined comparison report correctly remains false because sidecar failed. Both runs and all
+samples remain in evidence; the budget and discovery pools are unchanged. Stage percentiles, event counts, gas,
+execution time and throughput are recorded in each machine-readable comparison report.
+
+## Local recovery gates
+
+The [gate index](release/gates/index.json) identifies current native evidence and retained historical rehearsals. The
+compiled ABI check and shared conformance assertions pass on both the native season and the isolated test stub. Do not
+carry historical stub measurements forward as native gameplay results.
+
+Run the recovery checks in this order on a fresh isolated fixture, preserving each output directory:
+
+```sh
+python3 deploy/madara-rand/drills/herald-replay.py RELEASE FIXTURE HERALD_DIRECTORY REPLAY_OUTPUT
+python3 deploy/madara-rand/drills/submission-crash.py RELEASE FIXTURE before-broadcast BEFORE_OUTPUT
+python3 deploy/madara-rand/drills/submission-crash.py RELEASE FIXTURE after-broadcast AFTER_OUTPUT
+python3 deploy/madara-rand/drills/submission-crash.py RELEASE FIXTURE promote-before-broadcast PROMOTION_OUTPUT
+python3 deploy/madara-rand/drills/restore.py FIXTURE RESTORE_OUTPUT
+python3 deploy/madara-rand/drills/missing-journal.py RELEASE FIXTURE MISSING_OUTPUT
+```
+
+The crash runner holds the ordinary signed transaction before sending it, or withholds the successful RPC response after
+sending it. It kills the worker, then checks the retained binding and chain result after recovery. A disconnected client
+in these fault logs is expected; it does not cancel the accepted action. The promotion variant keeps that ticket
+pending, stops and disconnects the old primary, verifies the survivor with
+`survivor_prefix_matches_chain_before_promotion`, promotes it and builds a new synchronous witness on a fresh volume.
+Only after that peer is synchronous does it rotate the database writer and sequencing credential. The old epoch fails in
+storage and the old signature fails at chain submission. The original root, context and order are retained. Historical
+manual continuations and their original failures remain in evidence. Standby construction now requests a fast checkpoint
+so it fits the accepted context's 300-second bound; exceeding that bound still stops the stream rather than changing its
+timestamp.
+
+After promotion, retired primaries remain stopped and disconnected. The fixture's `service.env` declares the active
+primary, witness and epoch. Shared runtime helpers select the matching Compose overlays; do not start a retired pair.
+Promotion stops Herald readers while their database endpoint changes. Update their database URLs to the promoted host
+and restart them using their existing checkpoint databases. With those readers running, verify the partition boundary:
+
+```sh
+python3 deploy/madara-rand/drills/preview-partition.py RELEASE FIXTURE PARTITION_OUTPUT
+```
+
+That check pauses the replacement witness before admission. The accepted prefix stays unchanged, the worker logs no
+unaccepted action, and the subscription delivers its row only after replication resumes. The stale-disk restore copies
+the retired volume into a fresh volume and starts it without networking and with read-only transactions; its bindings
+match the captured prefix and writes fail. Missing-history startup exits on the missing journal schema and creates no
+replacement stream. Neither drill deletes accepted storage. Rust recovery tests also cover every accepted lifecycle
+state, unresolved sampling ownership and corrupted or missing entries. The separate Herald reconstruction began with an
+empty database and decoded chain history into the same rows as the live fold.
+
+The current release and recovery results are indexed in `release/gates/index.json`; its historical index retains the
+earlier stub rehearsals. Current measurements were frozen from clean source trees before the requested history rewrite.
+The measured runtime sources are archived with their original hashes, alongside raw measurements, image provenance and
+all recovery commands. Verify those files without extracting them:
+
+```sh
+python3 deploy/madara-rand/verify-native-evidence.py
+```
+
+The selected embedded release passes the local gates. The host-loss drill is deferred at the owner’s request, not
+passed. Cross-host recovery and durability remain unverified. The sidecar p99 failure is retained as a rejected
+placement result. These measurements cover four explores per second on one host, not saturation capacity or a cross-host
+latency guarantee.

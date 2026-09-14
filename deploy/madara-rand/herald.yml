@@ -1,5 +1,6 @@
 services:
   herald:
+    restart: unless-stopped
     <<: &herald
       image: ${HERALD_IMAGE:?Set the compiled native Herald image digest}
       volumes:
@@ -18,6 +19,7 @@ services:
       DATABASE_URL: ${HERALD_DATABASE_URL:?Set the isolated Herald database}
     ports: ["127.0.0.1:13003:3003"]
   herald-replay:
+    restart: unless-stopped
     <<: *herald
     profiles: [replay]
     environment:

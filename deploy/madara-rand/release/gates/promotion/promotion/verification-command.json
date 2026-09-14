@@ -1,0 +1,1 @@
+["cargo", "test", "-p", "mc-sequencer-randomness", "--test", "recovery_snapshot", "--locked", "--", "--ignored", "--exact", "survivor_prefix_matches_chain_before_promotion"]

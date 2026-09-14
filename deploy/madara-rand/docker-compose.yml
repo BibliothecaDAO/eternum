@@ -4,12 +4,28 @@ services:
     environment:
       POSTGRES_PASSWORD: local-rehearsal
       POSTGRES_DB: randomness
-    command: [postgres, -c, fsync=on, -c, full_page_writes=on, -c, synchronous_commit=remote_apply, -c, wal_level=replica, -c, max_wal_senders=4, -c, max_replication_slots=4]
+    command:
+      [
+        postgres,
+        -c,
+        fsync=on,
+        -c,
+        full_page_writes=on,
+        -c,
+        synchronous_commit=remote_apply,
+        -c,
+        wal_level=replica,
+        -c,
+        max_wal_senders=4,
+        -c,
+        max_replication_slots=4,
+      ]
     ports: ["127.0.0.1:55432:5432"]
     volumes:
       - journal-primary:/var/lib/postgresql/data
       - ./journal/initialize.sh:/docker-entrypoint-initdb.d/initialize.sh:ro
       - ../../../madara/madara/crates/client/sequencer-randomness/src/journal.sql:/schema.sql:ro
+      - ../../../madara/madara/crates/client/sequencer-randomness/src/journal-lookup.sql:/lookup.sql:ro
     healthcheck:
       test: [CMD-SHELL, "pg_isready -U postgres -d randomness"]
       interval: 1s
@@ -20,6 +36,7 @@ services:
     entrypoint: [/bin/sh, /standby.sh]
     environment:
       PGDATA: /var/lib/postgresql/data
+      JOURNAL_UPSTREAM: journal-primary
     ports: ["127.0.0.1:55433:5432"]
     depends_on:
       journal-primary:

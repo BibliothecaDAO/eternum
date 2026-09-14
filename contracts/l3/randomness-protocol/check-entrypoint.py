@@ -11,6 +11,9 @@ class Interface:
         abi = json.loads(Path(artifact).read_text())['abi']
         self.items = json.loads(abi) if isinstance(abi, str) else abi
         self.types = {item['name']: item for item in self.items if item['type'] in {'struct', 'enum'}}
+        self.functions = [candidate for item in self.items
+                          for candidate in (item.get('items', []) if item['type'] == 'interface' else [item])
+                          if candidate['type'] == 'function']
 
     def shape(self, name):
         item = self.types.get(name)
@@ -20,10 +23,7 @@ class Interface:
         return {item['type']: [{'name': member['name'], 'type': self.shape(member['type'])} for member in members]}
 
     def function(self, name):
-        functions = []
-        for item in self.items:
-            candidates = item.get('items', []) if item['type'] == 'interface' else [item]
-            functions.extend(candidate for candidate in candidates if candidate['type'] == 'function' and candidate['name'] == name)
+        functions = [candidate for candidate in self.functions if candidate['name'] == name]
         if len(functions) != 1:
             return {'error': f'expected one {name} function, found {len(functions)}'}
         function = functions[0]
@@ -43,6 +43,8 @@ def main():
         required = expected.function(name)
         actual = native.function(name)
         comparisons.append({'function': name, 'matches': required == actual, 'required': required, 'actual': actual})
+    alternate = [function['name'] for function in native.functions if function['name'] == 'execute_root']
+    comparisons.append({'function': 'execute_root', 'matches': not alternate, 'required': 'absent', 'actual': alternate})
     report = {'scope': 'compiled ABI conformance only; behavioral and deployed gates remain required',
               'comparisons': comparisons}
     Path(sys.argv[2]).write_text(json.dumps(report, indent=2) + '\n')
