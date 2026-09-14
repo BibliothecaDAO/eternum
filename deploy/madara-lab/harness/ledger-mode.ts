@@ -646,7 +646,7 @@ async function waitForLedgerFinalization(
   provider: RpcProvider,
   ledgerAddress: string,
   gameId: number,
-): Promise<LedgerGame> {
+): Promise<ReturnType<typeof decodeGameLedgerGame>> {
   const deadline = Date.now() + FINALIZATION_TIMEOUT_MS;
   while (Date.now() <= deadline) {
     const game = await readLedgerGame(provider, ledgerAddress, gameId);

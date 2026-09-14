@@ -7,6 +7,7 @@ const root = resolve(import.meta.dir, "../../../..");
 const scope = [
   "apps/herald",
   "contracts/l3/world-native",
+  "contracts/l3/randomness-protocol",
   "packages",
   "config",
   "deploy/madara-lab/harness",

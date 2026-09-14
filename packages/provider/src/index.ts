@@ -39,6 +39,10 @@ import {
   TransactionType,
 } from "./types";
 import { createVrfRequestRandomCall, isVrfEnabled, isVrfRequestRandomCall, type VrfSource } from "./vrf";
+export type NativeSubmission = (
+  signer: AccountInterface,
+  calls: AllowArray<Call>,
+) => Promise<{ transaction_hash: string }>;
 export const NAMESPACE = "s1_eternum";
 export {
   CATEGORY_BATCH_LIMITS,
@@ -219,6 +223,14 @@ const resolveTransactionFailureStage = (error: unknown, fallback: TransactionFai
  * @throws Error if contract not found
  */
 export const getContractByName = (manifest: Manifest, name: string) => {
+  if ("native" in manifest) {
+    const system = name.slice(name.indexOf("-") + 1);
+    const contract = manifest.contracts.find(
+      (contract) => Array.isArray(contract.systems) && contract.systems.includes(system),
+    );
+    if (contract) return contract.address;
+    throw new Error(`System ${system} is outside the native slice`);
+  }
   const contract = manifest.contracts.find((item) => item.tag === name);
   if (!contract) {
     throw new Error(`Contract ${name} not found in manifest`);
@@ -304,6 +316,7 @@ export class EternumProvider extends EnhancedDojoProvider {
   private cachedExploreExecutionDetails = new Map<string, CachedExploreExecutionDetails>();
   private lastEstimateError?: { error: unknown; atMs: number };
   private readonly retryConfig?: RetryConfig;
+  private nativeSubmission?: NativeSubmission;
   private transactionSubmitGuard?: TransactionSubmitGuard;
   private transactionStreamWaiter?: TransactionStreamWaiter;
   private transactionStreamSubmitObserver?: (transactionHash: string) => void;
@@ -358,6 +371,11 @@ export class EternumProvider extends EnhancedDojoProvider {
     // latency (and a merged multicall makes one revert fail unrelated actions). The queue
     // stays for per-signer serialization; a backlog still coalesces naturally.
     this.promiseQueue = new PromiseQueue(this, { batchDelayMs: 0 });
+  }
+
+  public setNativeSubmission(submit: NativeSubmission): void {
+    if (!("native" in this.manifest)) throw new Error("Native submission requires a native deployment");
+    this.nativeSubmission = submit;
   }
 
   public setTransactionStreamWaiter(
@@ -728,6 +746,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     executionDetails: UniversalDetails,
     options?: { executionDetailsCacheKey?: string },
   ): Promise<{ transaction_hash: string }> {
+    if (this.nativeSubmission) return this.nativeSubmission(signer, transactionDetails);
     if (this.retryConfig && this.retryConfig.maxRetries > 0) {
       let currentExecutionDetails = executionDetails;
       return await withRetry(
@@ -2631,12 +2650,13 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [explorer_id, directions, 1],
     });
 
-    // Extract reward
-    callData.push({
-      contractAddress: troopMovementSystemsAddress,
-      entrypoint: "explorer_extract_reward",
-      calldata: [explorer_id],
-    });
+    // The native slice exposes tile exploration separately from reward extraction.
+    if (!this.nativeSubmission)
+      callData.push({
+        contractAddress: troopMovementSystemsAddress,
+        entrypoint: "explorer_extract_reward",
+        calldata: [explorer_id],
+      });
 
     this.emit("transactionProgress", {
       stage: "explore_calls_built",

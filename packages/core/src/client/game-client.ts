@@ -1,3 +1,6 @@
+import { nativeModelDefinition } from "./native-models";
+import { nativeSubmission, type NativeClientConnection } from "./native-submission";
+import { nativeConfiguration } from "./native-config";
 import { setup, type DojoSetupConfig, type SetupNetworkEnvironment, type SetupResult } from "@bibliothecadao/dojo";
 import { type Config, ContractAddress, type SystemCallAuthHandler } from "@bibliothecadao/types";
 import type { AccountInterface } from "starknet";
@@ -24,6 +27,7 @@ import type { WorldDeployment } from "./world-directory";
 type GameClientSetupEnvironment = Pick<SetupNetworkEnvironment, "executionResourceBounds" | "vrfProviderAddress">;
 
 export interface CreateGameClientInput {
+  native?: NativeClientConnection;
   world: WorldDeployment;
   gameId: number;
   presetId: number;
@@ -67,11 +71,15 @@ export interface GameClient {
 export async function createGameClient(input: CreateGameClientInput): Promise<GameClient> {
   selectGame(input);
   const setupResult = await bootstrapWorld(input);
+  if (input.native)
+    setupResult.network.provider.setNativeSubmission(
+      nativeSubmission(input.native, setupResult.components, input.gameId, input.world.worldAddress),
+    );
   input.observer?.onSetupCompleted?.(setupResult);
   const runtime = installFreshGameSyncRuntime();
   try {
     const projection = await startSync(runtime, setupResult, input);
-    applyGameConfig(setupResult, input.resolveGameConfig);
+    applyGameConfig(setupResult, input);
     return buildGameClient(input, setupResult, runtime, projection);
   } catch (error) {
     // A superseding session owns the runtime now; anything else leaves a half-started client to tear down.
@@ -86,8 +94,14 @@ const selectGame = ({ world, gameId, presetId }: CreateGameClientInput): void =>
   setGameScope(world.namespace, gameId);
 };
 
-const bootstrapWorld = (input: CreateGameClientInput): Promise<SetupResult> =>
-  setup(
+const bootstrapWorld = (input: CreateGameClientInput): Promise<SetupResult> => {
+  const release = (input.dojoConfig.manifest as unknown as { native?: { activeSchema: string } }).native;
+  if (
+    Boolean(release) !== Boolean(input.native) ||
+    (release && release.activeSchema !== input.native?.bindings.schemaIdentity)
+  )
+    throw new Error("Native client bindings do not match the deployment");
+  return setup(
     input.dojoConfig,
     {
       ...input.setupEnvironment,
@@ -95,9 +109,11 @@ const bootstrapWorld = (input: CreateGameClientInput): Promise<SetupResult> =>
       namespace: input.world.namespace,
       gameId: input.gameId,
       useBurner: false,
+      nativeBindings: input.native?.bindings,
     },
     input.authHandler,
   );
+};
 
 const startSync = async (
   runtime: GameSyncRuntime,
@@ -108,8 +124,11 @@ const startSync = async (
     createHeraldGameSyncSession({
       baseUrl: input.world.heraldBaseUrl,
       chain: input.world.chain,
-      entityModels: syncModelNames("gamewide-entity"),
-      eventModels: syncModelNames("global-event"),
+      entityModels: input.native
+        ? input.native.bindings.models.map((model) => model.name)
+        : syncModelNames("gamewide-entity"),
+      eventModels: input.native ? [] : syncModelNames("global-event"),
+      modelDefinition: input.native ? nativeModelDefinition(input.native.bindings) : undefined,
       gameId: input.gameId,
       worldAddress: input.world.worldAddress,
       observer: input.observer,
@@ -143,8 +162,12 @@ const installWorldSpatialProjection = (runtime: GameSyncRuntime, setupResult: Se
 };
 
 /** From here on an empty keyed config lookup is a bug, not a sync still in flight. */
-const applyGameConfig = (setupResult: SetupResult, resolveGameConfig: CreateGameClientInput["resolveGameConfig"]) => {
-  configManager.setDojo(setupResult.components, resolveGameConfig(setupResult));
+const applyGameConfig = (setupResult: SetupResult, input: CreateGameClientInput) => {
+  configManager.setDojo(
+    setupResult.components,
+    input.resolveGameConfig(setupResult),
+    input.native ? nativeConfiguration(setupResult.components, input.gameId) : undefined,
+  );
   configManager.markConfigSynced();
 };
 

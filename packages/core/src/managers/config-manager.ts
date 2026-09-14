@@ -1,3 +1,4 @@
+import type { NativeConfiguration } from "../client/native-config";
 import {
   BiomeType,
   BuildingType,
@@ -37,6 +38,7 @@ export class ClientConfigManager {
   private static _instance: ClientConfigManager;
   private components!: ContractComponents;
   private config!: Config;
+  private nativeConfiguration?: NativeConfiguration;
   buildingOutputs: Record<number, number> = {};
   complexSystemResourceInputs: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
   complexSystemResourceOutput: Record<number, { resource: ResourcesIds; amount: number }> = {};
@@ -71,6 +73,7 @@ export class ClientConfigManager {
   /** Must be called before setDojo on the s2 arm so cost snapshots read the right preset. */
   public setActiveGame(gameId: number, presetId: number) {
     disposeActiveGameSyncRuntime();
+    this.nativeConfiguration = undefined;
     this.gameId = gameId;
     this.presetId = presetId;
     // Mirror the active game into the leaf key-helper module (see its header
@@ -102,7 +105,8 @@ export class ClientConfigManager {
   /** Per-game state row: WorldConfig[gameId] on s2, WorldConfig[WORLD_CONFIG_ID] legacy. */
   private getWorldConfig() {
     const key = this.gameId > 0 ? BigInt(this.gameId) : WORLD_CONFIG_ID;
-    return getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([key]));
+    const config = getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([key]));
+    return this.nativeConfiguration ? (this.nativeConfiguration.world() as NonNullable<typeof config>) : config;
   }
 
   /** Immutable rulebook row for the active preset (s2 only; undefined on legacy). */
@@ -120,6 +124,8 @@ export class ClientConfigManager {
   /** Rulebook members: PresetConfig[presetId] on s2. On legacy worlds the same
    *  members lived inline on WorldConfig — read them there via a structural cast. */
   private getRulebook() {
+    if (this.nativeConfiguration)
+      return this.nativeConfiguration.rules() as NonNullable<ReturnType<ClientConfigManager["getPresetConfig"]>>;
     if (this.presetId > 0) return this.getPresetConfig();
     return this.getWorldConfig() as unknown as ReturnType<ClientConfigManager["getPresetConfig"]>;
   }
@@ -149,10 +155,15 @@ export class ClientConfigManager {
     return this.presetId > 0 ? [BigInt(this.presetId), ...keys] : keys;
   }
 
-  public setDojo(components: ContractComponents, config: Config) {
+  public setDojo(components: ContractComponents, config: Config, nativeConfiguration?: NativeConfiguration) {
+    this.nativeConfiguration = nativeConfiguration;
     this.components = components;
     this.config = config;
 
+    if (nativeConfiguration) {
+      this.initializeMapCenter();
+      return;
+    }
     this.initializeResourceProduction();
     this.initializeHyperstructureTotalCosts();
     this.initializeRealmUpgradeCosts();
@@ -175,6 +186,11 @@ export class ClientConfigManager {
       return defaultValue;
     }
 
+    if (this.nativeConfiguration) {
+      const value = callback();
+      if (value == null) throw new Error("Native configuration lookup returned no value");
+      return value;
+    }
     try {
       const value = callback();
       if (value === undefined || value === null) {
@@ -455,6 +471,7 @@ export class ClientConfigManager {
 
   // weight in grams, per actual resource (without precision)
   getResourceWeightKg(resourceId: number): number {
+    if (this.nativeConfiguration) return this.nativeConfiguration.weight(resourceId);
     return this.resourceWeightsKg[resourceId] || 0;
   }
   getTravelStaminaCost(biome: BiomeType, troopType: TroopType) {

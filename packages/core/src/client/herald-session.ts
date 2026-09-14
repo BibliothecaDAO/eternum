@@ -1,3 +1,4 @@
+import type { GameSyncModelDefinition } from "../sync/model-manifest";
 import type { SetupResult } from "@bibliothecadao/dojo";
 import type { GameChain } from "@realms-world/chain";
 
@@ -47,6 +48,7 @@ export interface GameClientObserver {
 }
 
 export interface CreateHeraldGameSyncSessionInput {
+  modelDefinition?: (name: string) => GameSyncModelDefinition;
   baseUrl: string;
   chain: GameChain;
   entityModels: readonly string[];
@@ -101,6 +103,7 @@ export function createHeraldGameSyncSession(input: CreateHeraldGameSyncSessionIn
     snapshotModels: input.entityModels,
     store: createRecsGameSyncStore(input.setup, syncModels),
     transport: new HeraldGameSyncTransport({
+      modelDefinition: input.modelDefinition,
       socketFactory: input.socketFactory,
       url: buildHeraldGameStreamUrl(input.baseUrl, input.chain, input.gameId),
     }),
