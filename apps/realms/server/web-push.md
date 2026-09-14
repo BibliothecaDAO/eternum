@@ -16,6 +16,8 @@ Set these server-only variables to enable the transport:
 - `WEB_PUSH_ENABLED=true`
 - `WEB_PUSH_VAPID_PUBLIC_KEY` and `WEB_PUSH_VAPID_PRIVATE_KEY`: one persistent matching P-256 VAPID key pair
 - `WEB_PUSH_VAPID_SUBJECT`: a contact `mailto:` or HTTPS URL
+- `CHAT_NOTIFICATION_SECRET`: the same random 32+ character value used by the realtime chat service; omit it to disable
+  DM push publishing.
 
 Generate the key pair once using the installed web-push library and store it in the deployment's secret manager. Never
 commit it or rotate it on every deploy. The public key is returned by the configuration API; the private key never
@@ -36,12 +38,19 @@ All routes live under `/api/notifications/push/`, use existing identity CORS pol
   under a database lock.
 - `POST status`: authenticated `{owner,id}` → `{registered,automatic}`; the latter identifies the persisted automatic
   source or null.
+- `POST foreground`: authenticated `{owner,id,foreground}` refreshes or clears the device's short-lived game-foreground
+  lease. Automatic delivery rechecks this lease immediately before contacting the push provider.
 - `POST test`: authenticated `{owner,id,target}` → `{status:"accepted"}`. Sends server-owned test text only. This is an
   explicit transport diagnostic, independent of the account's automatic notification level. At most five tests per
   account per minute; requests are bounded to 4 KiB. A 404/410 push provider result removes the expired registration.
 - `POST revoke`: `{id,token}` → `{revoked:true}`. This device-only capability can remove its own registration after
   logout without a still-valid session. The database stores only the token's SHA-256 digest. Unknown/wrong capabilities
   are indistinguishable from successful deletion. The endpoint cannot send notifications or read registrations.
+
+The separate internal `POST /api/notifications/direct-message` route accepts a bearer-authenticated, bounded message
+identity, recipient, sender display name and timestamp from the realtime server. It never accepts the private message
+body. Direct messages notify every background device unless the account level is Off, collapse by thread, and share the
+same foreground lease as game alerts. Its structured 202 response reports accepted, expired and failed device sends.
 
 Authenticated operations revalidate the session and require the expected owner. Subscription URLs are restricted to
 HTTPS browser-provider hosts (Google, Mozilla, Apple and Windows); credentials, fragments and non-default ports are
@@ -59,6 +68,13 @@ Revocation marks the local registration inactive before calling the server; a fa
 IndexedDB and exposes a retry. On a subsequent app open, mismatched accounts and pending revocations are reconciled.
 Revoking also closes that registration's displayed push tests. Removal remains possible when server sending is disabled.
 Session expiry alone does not wake a closed app to revoke a subscription; opening signed out reconciles it.
+
+Visible game windows ask the service worker whether any same-origin game client is visible, without relying on the
+browser's less-consistent focus flag. They refresh the authenticated foreground lease every twenty seconds and on page,
+route, visibility and connectivity changes. Requests use fetch keepalive so hiding or closing can clear the lease; its
+one-minute expiry is the fallback when that final request cannot complete. The server suppresses automatic delivery
+before Web Push is sent rather than silently consuming a push event, which would violate Safari's user-visible-push
+requirement.
 
 The v2 IndexedDB upgrade preserves local devices and durable delivery claims. Push envelopes carry a registration ID and
 the shared bounded notification payload; only the active matching registration/account may display or handle a click.

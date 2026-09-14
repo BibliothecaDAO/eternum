@@ -13,10 +13,16 @@ Account, gameplay recipient, preference state, game scope and permission are che
 preference changes invalidate asynchronous work. Successful account saves notify other same-origin tabs to reload the
 server-owned preference, without putting its value in browser storage. Delivery remains paused during refresh, including
 when invalidation arrives during an existing read or save. Refresh failures keep delivery paused and surface in
-Settings; focus and browser-online events also reload preferences. For local delivery, focused activity stays in the
-feed; a matching focused tab suppresses OS output from background tabs too. Automatic push owns OS alerts on devices
-that explicitly enable game alerts, including while the page is open. Preview-only devices retain local delivery. Both
-paths share logical identity and durable claims.
+Settings; focus and browser-online events also reload preferences. For local delivery, visible activity stays in the
+feed; a matching visible tab suppresses OS output from background tabs too. Automatic push owns OS alerts on devices
+that explicitly enable game alerts. While any game window is visible, it refreshes a short server lease that suppresses
+automatic sends; hiding or leaving the game clears the lease, and expiry covers crashes or lost connections.
+Preview-only devices retain local delivery. Both paths share logical identity and durable claims.
+
+Direct-message push begins only after chat persistence. The realtime service sends the identity server message/thread
+identity, recipient, sender display name and timestamp, but never private message content. The device sees a themed
+“raven” alert, repeated messages collapse per thread, Off suppresses them, and the game foreground lease keeps them in
+the live chat UI while the player is active.
 
 The worker receives bounded version-1 display envelopes: source/logical ID, account owner, title/body, an allowlisted
 game entry path, and creation/expiry times. There are no gameplay entity rows or arbitrary URLs. Local payloads expire

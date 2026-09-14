@@ -72,6 +72,16 @@ describe.skipIf(!databaseUrl)("push subscriptions in PostgreSQL", () => {
     expect(changed?.gameAlertsSource).toBe("madara:0x999");
     expect(changed!.gameAlertsEnabledAt!.getTime()).toBeGreaterThan(Date.now() - 10000);
   });
+  it("refreshes and clears the foreground lease only for the owner's device", async () => {
+    const now = Date.now();
+    expect(await run(store.setGameForeground("0x1", first.id, true, now))).toBe(true);
+    expect((await run(store.find("0x1", first.id)))!.gameForegroundUntil!.getTime()).toBeGreaterThan(now);
+    expect(await run(store.findBackgroundDevices("0x1", now))).toEqual([]);
+    expect(await run(store.setGameForeground("0x2", first.id, false, now))).toBe(false);
+    expect(await run(store.setGameForeground("0x1", first.id, false, now))).toBe(true);
+    expect((await run(store.find("0x1", first.id)))!.gameForegroundUntil).toBeNull();
+    expect(await run(store.findBackgroundDevices("0x1", now))).toHaveLength(1);
+  });
   it("requires the device revocation capability, isolates expiration, and cascades account deletion", async () => {
     await run(store.revoke(first.id, randomUUID()));
     expect(await run(store.find("0x1", first.id))).not.toBeNull();

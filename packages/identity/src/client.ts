@@ -120,7 +120,7 @@ export const createIdentityClient = ({ baseUrl, fetch = globalThis.fetch }: Iden
   };
 
   const pushUrl = new URL("../notifications/push", `${authBaseUrl}/`).toString();
-  const pushRequest = async <T>(action: string, body?: unknown): Promise<T> =>
+  const pushRequest = async <T>(action: string, body?: unknown, options: { keepalive?: boolean } = {}): Promise<T> =>
     readJson<T>(
       await request(
         `/${action}`,
@@ -128,6 +128,7 @@ export const createIdentityClient = ({ baseUrl, fetch = globalThis.fetch }: Iden
           ...(body === undefined
             ? { method: "GET", cache: "no-store" as const }
             : { method: "POST", body: JSON.stringify(body) }),
+          keepalive: options.keepalive,
           signal: AbortSignal.timeout(10_000),
         },
         pushUrl,
@@ -144,6 +145,8 @@ export const createIdentityClient = ({ baseUrl, fetch = globalThis.fetch }: Iden
     registerPushSubscription: (input: PushRegistration) => pushRequest<{ id: string }>("subscribe", input),
     getPushSubscriptionStatus: (owner: string, id: string) =>
       pushRequest<{ registered: boolean; automatic: AutomaticPushSource | null }>("status", { owner, id }),
+    setPushGameForeground: (owner: string, id: string, foreground: boolean) =>
+      pushRequest<{ foreground: boolean }>("foreground", { owner, id, foreground }, { keepalive: true }),
     revokePushSubscription: (id: string, token: string) => pushRequest<{ revoked: boolean }>("revoke", { id, token }),
     sendPushTest: (owner: string, id: string, target: string) =>
       pushRequest<{ status: "accepted" }>("test", { owner, id, target }),

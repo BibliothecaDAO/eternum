@@ -60,6 +60,19 @@ it("encrypts the payload and signs a bounded request without redirects", async (
   expect(Number(options.headers.TTL)).toBeLessThanOrEqual(120);
   expect(Buffer.from(options.body).includes(Buffer.from("Secret message"))).toBe(false);
 });
+it("collapses related notifications by their shared display tag", async () => {
+  const request = vi.fn().mockResolvedValue(new Response(null, { status: 201 }));
+  const sender = createWebPushSender(config, request);
+  const tagged = { ...envelope, notification: { ...envelope.notification, tag: "direct-thread:one" } };
+  await Effect.runPromise(sender.send(subscription, tagged));
+  await Effect.runPromise(
+    sender.send(subscription, {
+      ...tagged,
+      notification: { ...tagged.notification, id: "another-message" },
+    }),
+  );
+  expect(request.mock.calls[0]![1].headers.Topic).toBe(request.mock.calls[1]![1].headers.Topic);
+});
 it.each([404, 410])("reports expired subscription for %i", async (status) => {
   expect(
     await Effect.runPromise(

@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => ({
   revoke: vi.fn(),
   send: vi.fn(),
   status: vi.fn(),
+  foreground: vi.fn(),
   worker: vi.fn(),
   permission: vi.fn(),
   subscribe: vi.fn(),
@@ -18,6 +19,7 @@ vi.mock("@/hooks/context/identity-session", () => ({
     revokePushSubscription: mocks.revoke,
     sendPushTest: mocks.send,
     getPushSubscriptionStatus: mocks.status,
+    setPushGameForeground: mocks.foreground,
   },
   useIdentitySessionStore: { getState: () => ({ session: mocks.owner ? { user: { id: mocks.owner } } : null }) },
 }));
@@ -27,6 +29,7 @@ import {
   enablePushNotifications,
   reconcilePushAccount,
   sendBackgroundPushTest,
+  syncPushGameForeground,
 } from "./push-notification-client";
 const id = "11111111-1111-4111-8111-111111111111";
 const subscriptionJson = {
@@ -42,14 +45,17 @@ beforeEach(() => {
   mocks.revoke.mockReset().mockResolvedValue({ revoked: true });
   mocks.send.mockResolvedValue({ status: "accepted" });
   mocks.status.mockReset().mockResolvedValue({ registered: true, automatic: null });
+  mocks.foreground.mockReset().mockResolvedValue({ foreground: true });
   mocks.permission.mockResolvedValue("granted");
   mocks.unsubscribe.mockResolvedValue(true);
   mocks.subscribe.mockImplementation(
     async () => (mocks.subscription = { toJSON: () => subscriptionJson, unsubscribe: mocks.unsubscribe }),
   );
   mocks.worker.mockImplementation(async (owner: string, action: string, input: any) => {
-    if (action === "push-capabilities") return { automaticGameAlerts: true };
+    if (action === "push-capabilities")
+      return { automaticGameAlerts: true, directMessageAlerts: true, gameForegroundLease: true };
     if (action === "push-status") return mocks.device;
+    if (action === "game-foreground-status") return true;
     if (action === "prepare-push")
       return (mocks.device ??= { owner, id, token: id, enabledAt: Date.now(), state: "preparing" });
     if (action === "activate-push") {
@@ -133,6 +139,20 @@ it("sends a test only for the active account's acknowledged registration", async
   expect(mocks.send).toHaveBeenCalledOnce();
 });
 
+it("reports visible gameplay for any active push device", async () => {
+  await syncPushGameForeground("0x1");
+  expect(mocks.foreground).not.toHaveBeenCalled();
+  mocks.device = {
+    owner: "0x1",
+    id,
+    token: id,
+    state: "active",
+  };
+  await syncPushGameForeground("0x1");
+  expect(mocks.worker).toHaveBeenCalledWith("0x1", "game-foreground-status");
+  expect(mocks.foreground).toHaveBeenCalledWith("0x1", id, true);
+});
+
 it("does not revoke a new account when an earlier reconciliation finishes late", async () => {
   const device = { owner: "0x2", id, token: id, state: "active" };
   let finish!: (value: unknown) => void;
@@ -176,6 +196,16 @@ it("requires a compatible worker before upgrading a preview subscription", async
   );
   expect(mocks.register).not.toHaveBeenCalled();
   expect(mocks.revoke).not.toHaveBeenCalled();
+});
+
+it("requires foreground-aware worker support before enabling direct-message alerts", async () => {
+  mocks.worker.mockImplementation(async (_owner: string, action: string) => {
+    if (action === "push-capabilities")
+      return { automaticGameAlerts: true, directMessageAlerts: false, gameForegroundLease: true };
+    return null;
+  });
+  await expect(enablePushNotifications("0x1", "BAAA", null, true)).rejects.toThrow("latest game update");
+  expect(mocks.register).not.toHaveBeenCalled();
 });
 
 it.each([false, true])(

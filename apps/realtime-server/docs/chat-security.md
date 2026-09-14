@@ -15,3 +15,8 @@ accepts only `game:<id>` channels for the Blitz MVP and checks the cached Herald
 Message metadata is untrusted data. Input is limited by key count, encoded byte size, and nesting depth. Every renderer
 must continue to treat content and metadata as data: React text interpolation or equivalent escaping is required;
 injecting either field into HTML is forbidden.
+
+After a direct message commits, the chat service may publish bounded notification context to the identity service using
+`CHAT_NOTIFICATION_SECRET`. The same 32+ character secret must be configured on both processes. The request contains the
+message/thread IDs, recipient owner, sender display name and timestamp—never the private message body. Notification
+failure cannot roll back or delay the durable chat message; the recipient still recovers it from direct-message history.

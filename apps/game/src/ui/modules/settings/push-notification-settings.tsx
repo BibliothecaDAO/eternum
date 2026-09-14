@@ -69,7 +69,12 @@ export function PushNotificationSettings({ owner }: { owner: string | null }) {
     try {
       if (action === "enable") {
         if (!config?.enabled) throw new Error("Background tests are unavailable.");
-        await enablePushNotifications(owner, config.publicKey, config.automatic ?? null);
+        await enablePushNotifications(
+          owner,
+          config.publicKey,
+          config.automatic ?? null,
+          config.directMessages === true,
+        );
       } else if (action === "disable") {
         await disablePushNotifications(device?.owner ?? owner);
       } else {
@@ -101,17 +106,15 @@ export function PushNotificationSettings({ owner }: { owner: string | null }) {
       </p>
     ) : null;
   const automatic = config?.enabled ? config.automatic : null;
+  const directMessages = config?.enabled === true && config.directMessages === true;
+  const backgroundAlerts = Boolean(automatic || directMessages);
   return (
     <section aria-label="Background notifications" className="space-y-2">
       <p className={HUD_BODY}>
         Background notifications:{" "}
         {device?.state === "active" && device.owner === owner ? "Enabled" : device ? "Cleanup required" : "Off"}.
       </p>
-      <p className={HUD_BODY}>
-        {automatic
-          ? "Receive confirmed game activity with the game closed, using your account notification level."
-          : "Preview: server-sent tests can arrive with the game closed. Automatic game alerts still require an open page."}
-      </p>
+      <p className={HUD_BODY}>{backgroundNotificationDescription(Boolean(automatic), directMessages)}</p>
       {capability && <p className={HUD_BODY}>{capability}</p>}
       {!owner ? (
         <p className={HUD_BODY}>Sign in to enable background notifications.</p>
@@ -127,7 +130,7 @@ export function PushNotificationSettings({ owner }: { owner: string | null }) {
           >
             {device
               ? "Disable background notifications"
-              : automatic
+              : backgroundAlerts
                 ? "Enable background notifications"
                 : "Enable background tests"}
           </button>
@@ -173,4 +176,12 @@ export function PushNotificationSettings({ owner }: { owner: string | null }) {
       )}
     </section>
   );
+}
+
+function backgroundNotificationDescription(gameAlerts: boolean, directMessages: boolean): string {
+  if (gameAlerts && directMessages)
+    return "Receive confirmed game activity and new direct messages with the game closed, using your account notification level.";
+  if (gameAlerts) return "Receive confirmed game activity with the game closed, using your account notification level.";
+  if (directMessages) return "Receive new direct messages with the game closed, using your account notification level.";
+  return "Preview: server-sent tests can arrive with the game closed. Automatic game alerts still require an open page.";
 }

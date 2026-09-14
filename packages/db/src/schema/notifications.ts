@@ -30,6 +30,7 @@ export const notificationPushSubscriptions = pgTable(
     revocationHash: text("revocation_hash").notNull(),
     gameAlertsSource: text("game_alerts_source"),
     gameAlertsEnabledAt: timestamp("game_alerts_enabled_at", { withTimezone: true }),
+    gameForegroundUntil: timestamp("game_foreground_until", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [index("notification_push_owner_idx").on(table.owner)],
