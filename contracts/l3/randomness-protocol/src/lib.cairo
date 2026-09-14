@@ -1,4 +1,6 @@
+pub mod authority;
 pub mod entrypoint;
+pub mod stub;
 use core::poseidon::poseidon_hash_span;
 
 const ACTION_TAG: felt252 = 'ETERNUM_ACTION';

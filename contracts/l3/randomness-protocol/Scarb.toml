@@ -12,6 +12,7 @@ snforge_std = "0.51.2"
 
 [[target.starknet-contract]]
 sierra = true
+casm = true
 
 [scripts]
 test = "snforge test"

@@ -154,7 +154,27 @@ deployment and observation with native deployment/rows once #4994 implements the
 
 The ticket working set serializes duplicate admission by the five-part nonce key. It retains sampled bytes privately
 until a commit acknowledgement and preserves them through submitted, executed or terminal-rejected, and consumed states.
-Sampling uses a direct `rustix::rand::getrandom` syscall on exactly 32 bytes, with initialization required and the returned byte count checked. Syscall errors and short reads fail without a fallback. Its one-attempt flag is
-set before calling the source. The working set is not durable storage: the journal increment must durably reserve
-exclusive sampling ownership before this call and must never reconstruct a sampler from an unresolved proposal. Losing
-the process between that durable reservation and replication of its root stops the proposal without regeneration.
+Sampling uses a direct `rustix::rand::getrandom` syscall on exactly 32 bytes, with initialization required and the
+returned byte count checked. Syscall errors and short reads fail without a fallback. Its one-attempt flag is set before
+calling the source. The working set is not durable storage: the journal increment must durably reserve exclusive
+sampling ownership before this call and must never reconstruct a sampler from an unresolved proposal. Losing the process
+between that durable reservation and replication of its root stops the proposal without regeneration.
+
+### Submission conformance
+
+The action entrypoint remains `execute(intent, context, r, s)`. The companion `IRecordedExecutionViews` interface
+supplies `get_admission(game, actor)` and `get_result(order)`. Admission returns the current gameplay key, rules
+identity, execution configuration identity, actor nonce, next order, predecessor binding, predecessor state identity and
+timestamp. The service records these values before sampling; retries use the retained record. Results return status 0
+(absent), 1 (executed, including a loss), or 2 (terminal rejection), plus the envelope binding, result identity and
+following state identity. Result rows remain available for recovery and must agree with the native row fold.
+
+The conformance account permits exactly one call to the configured deployment's `execute` selector. Both account
+validation and execution verify the ordinary v3 transaction signature. The entrypoint independently verifies the
+sequencing account signature, current authority epoch and recorded L2 resource bound. Query versions, missing
+signatures, callbacks and extra calls fail, including when an RPC simulation skips account validation. Credential
+rotation changes the account's key and epoch without changing its address or a pending action's identity, entropy,
+player authorization witness, order or recorded context.
+
+`RecordedExecutionStub` exercises this interface only. Its fixed game, rules, configuration and transcript state are
+test fixtures; they are not a deployed explore or evidence of native registry, gameplay or Herald integration.

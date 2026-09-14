@@ -54,7 +54,7 @@ def main():
     for relative in ["src/utils/random.cairo", "tests/randomness_protocol.cairo", "Scarb.toml", "Scarb.lock"]:
         sources[f"game/{relative}"] = digest(protocol.parent / "game" / relative)
     sources["madara/Cargo.lock"] = digest(madara / "Cargo.lock")
-    report = {"schema": 1, "scope": "protocol encoding and existing derivation only",
+    report = {"schema": 1, "scope": "protocol, ticket lifecycle, stub conformance and existing game derivation",
               "fixture_sha256": digest(fixture), "sources": sources,
               "gates": gates}
     (output / "report.json").write_text(json.dumps(report, indent=2) + "\n")
