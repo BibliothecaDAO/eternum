@@ -1,0 +1,4452 @@
+{
+  "rulesRevision": "55dc510f5e7af119d1efac9a60426e81fee8e408",
+  "gameId": 1,
+  "gameSeed": "0x1",
+  "mapCenterOffset": 20,
+  "rules": {
+    "battle_config": {
+      "regular_immunity_ticks": 24,
+      "village_immunity_ticks": 0,
+      "village_raid_immunity_ticks": 24
+    },
+    "map_config": {
+      "reward_resource_amount": 750,
+      "shards_mines_win_probability": 1000,
+      "shards_mines_fail_probability": 49000,
+      "agent_discovery_prob": 0,
+      "agent_discovery_fail_prob": 100,
+      "camp_win_probability": 1500,
+      "camp_fail_probability": 48500,
+      "holysite_win_probability": 0,
+      "holysite_fail_probability": 0,
+      "bitcoin_mine_win_probability": 200,
+      "bitcoin_mine_fail_probability": 9800,
+      "hyps_win_prob": 2000,
+      "hyps_fail_prob": 98000,
+      "hyps_fail_prob_increase_p_hex": 9820,
+      "hyps_fail_prob_increase_p_fnd": 1,
+      "relic_discovery_interval_sec": 0,
+      "relic_hex_dist_from_center": 0,
+      "relic_chest_relics_per_chest": 0
+    },
+    "biome_climate_config": {
+      "elevation_scale_bps": 10000,
+      "moisture_scale_bps": 10000,
+      "elevation_bias_bps": 10000,
+      "moisture_bias_bps": 10000,
+      "elevation_seed": 0,
+      "moisture_seed": 0
+    },
+    "tick_config": {
+      "armies_tick_in_seconds": 60,
+      "delivery_tick_in_seconds": 180,
+      "bitcoin_phase_in_seconds": 600
+    },
+    "troop_damage_config": {
+      "damage_raid_percent_num": 1000,
+      "damage_biome_bonus_num": 3000,
+      "damage_beta_small": "4611686018427387904",
+      "damage_beta_large": "2213609288845146193",
+      "damage_scaling_factor": "36893488147419103232",
+      "damage_c0": "1844674407370955161600000",
+      "damage_delta": "922337203685477580800000",
+      "t1_damage_value": "1844674407370955161600",
+      "t2_damage_multiplier": "55340232221128654848",
+      "t3_damage_multiplier": "166020696663385964544"
+    },
+    "troop_stamina_config": {
+      "stamina_gain_per_tick": 20,
+      "stamina_initial": 20,
+      "stamina_bonus_value": 10,
+      "stamina_knight_max": 120,
+      "stamina_paladin_max": 120,
+      "stamina_crossbowman_max": 120,
+      "stamina_attack_req": 50,
+      "stamina_defense_req": 40,
+      "stamina_explore_stamina_cost": 30,
+      "stamina_travel_stamina_cost": 20,
+      "stamina_explore_wheat_cost": 30000000,
+      "stamina_explore_fish_cost": 30000000,
+      "stamina_travel_wheat_cost": 30000000,
+      "stamina_travel_fish_cost": 30000000
+    },
+    "troop_limit_config": {
+      "guard_resurrection_delay": 600,
+      "mercenaries_troop_lower_bound": 800,
+      "mercenaries_troop_upper_bound": 1500,
+      "agents_troop_lower_bound": 500,
+      "agents_troop_upper_bound": 15000,
+      "settlement_deployment_cap": 3000,
+      "city_deployment_cap": 15000,
+      "kingdom_deployment_cap": 45000,
+      "empire_deployment_cap": 90000,
+      "t1_tier_strength": 1,
+      "t2_tier_strength": 3,
+      "t3_tier_strength": 9,
+      "t1_tier_modifier": 50,
+      "t2_tier_modifier": 100,
+      "t3_tier_modifier": 150
+    },
+    "capacity_config": {
+      "structure_capacity": 0,
+      "troop_capacity": 10000,
+      "donkey_capacity": 50000,
+      "storehouse_boost_capacity": 0
+    },
+    "structure_capacity_config": {
+      "realm_capacity": "18446744073709551615",
+      "village_capacity": "18446744073709551615",
+      "hyperstructure_capacity": "18446744073709551615",
+      "fragment_mine_capacity": "18446744073709551615",
+      "bank_structure_capacity": "18446744073709551615",
+      "holysite_capacity": 0,
+      "camp_capacity": "18446744073709551615",
+      "bitcoin_mine_capacity": "18446744073709551615"
+    },
+    "building_config": {
+      "base_population": 6,
+      "base_cost_percent_increase": 1000
+    },
+    "bitcoin_mine_config": {
+      "enabled": true,
+      "prize_per_phase": 1000000000,
+      "min_labor_per_contribution": 100000000000
+    },
+    "victory_points_grant_config": {
+      "hyp_points_per_second": "1000000",
+      "claim_hyperstructure_points": "3000000000",
+      "claim_otherstructure_points": "500000000",
+      "explore_tiles_points": "10000000",
+      "relic_open_points": "1000000000"
+    },
+    "map_center_offset": 20,
+    "spire_travel_essence_cost": "10000000000"
+  },
+  "resources": [
+    {
+      "resource_type": 1,
+      "unit_weight": 1000,
+      "realm_rate": 1000000000,
+      "village_rate": 500000000,
+      "labor_output_per_resource": 11000000000,
+      "building_population_cost": 2,
+      "building_capacity_grant": 0
+    },
+    {
+      "resource_type": 2,
+      "unit_weight": 1000,
+      "realm_rate": 1000000000,
+      "village_rate": 500000000,
+      "labor_output_per_resource": 12000000000,
+      "building_population_cost": 2,
+      "building_capacity_grant": 0
+    },
+    {
+      "resource_type": 3,
+      "unit_weight": 1000,
+      "realm_rate": 1000000000,
+      "village_rate": 500000000,
+      "labor_output_per_resource": 10000000000,
+      "building_population_cost": 2,
+      "building_capacity_grant": 0
+    },
+    {
+      "resource_type": 4,
+      "unit_weight": 1000,
+      "realm_rate": 1000000000,
+      "village_rate": 500000000,
+      "labor_output_per_resource": 14000000000,
+      "building_population_cost": 2,
+      "building_capacity_grant": 0
+    },
+    {
+      "resource_type": 5,
+      "unit_weight": 1000,
+      "realm_rate": 1000000000,
+      "village_rate": 500000000,
+      "labor_output_per_resource": 16000000000,
+      "building_population_cost": 2,
+      "building_capacity_grant": 0
+    },
+    {
+      "resource_type": 6,
+      "unit_weight": 1000,
+      "realm_rate": 1000000000,
+      "village_rate": 500000000,
+      "labor_output_per_resource": 15000000000,
+      "building_population_cost": 2,
+      "building_capacity_grant": 0
+    },
+    {
+      "resource_type": 7,
+      "unit_weight": 1000,
+      "realm_rate": 1000000000,
+      "village_rate": 500000000,
+      "labor_output_per_resource": 16000000000,
+      "building_population_cost": 2,
+      "building_capacity_grant": 0
+    },
+    {
+      "resource_type": 8,
+      "unit_weight": 1000,
+      "realm_rate": 1000000000,
+      "village_rate": 500000000,
+      "labor_output_per_resource": 16000000000,
+      "building_population_cost": 2,
+      "building_capacity_grant": 0
+    },
+    {
+      "resource_type": 9,
+      "unit_weight": 1000,
+      "realm_rate": 1000000000,
+      "village_rate": 500000000,
+      "labor_output_per_resource": 30000000000,
+      "building_population_cost": 2,
+      "building_capacity_grant": 0
+    },
+    {
+      "resource_type": 10,
+      "unit_weight": 1000,
+      "realm_rate": 1000000000,
+      "village_rate": 500000000,
+      "labor_output_per_resource": 30000000000,
+      "building_population_cost": 2,
+      "building_capacity_grant": 0
+    },
+    {
+      "resource_type": 11,
+      "unit_weight": 1000,
+      "realm_rate": 1000000000,
+      "village_rate": 500000000,
+      "labor_output_per_resource": 16000000000,
+      "building_population_cost": 2,
+      "building_capacity_grant": 0
+    },
+    {
+      "resource_type": 12,
+      "unit_weight": 1000,
+      "realm_rate": 1000000000,
+      "village_rate": 500000000,
+      "labor_output_per_resource": 25000000000,
+      "building_population_cost": 2,
+      "building_capacity_grant": 0
+    },
+    {
+      "resource_type": 13,
+      "unit_weight": 1000,
+      "realm_rate": 1000000000,
+      "village_rate": 500000000,
+      "labor_output_per_resource": 25000000000,
+      "building_population_cost": 2,
+      "building_capacity_grant": 0
+    },
+    {
+      "resource_type": 14,
+      "unit_weight": 1000,
+      "realm_rate": 1000000000,
+      "village_rate": 500000000,
+      "labor_output_per_resource": 20000000000,
+      "building_population_cost": 2,
+      "building_capacity_grant": 0
+    },
+    {
+      "resource_type": 15,
+      "unit_weight": 1000,
+      "realm_rate": 1000000000,
+      "village_rate": 500000000,
+      "labor_output_per_resource": 20000000000,
+      "building_population_cost": 2,
+      "building_capacity_grant": 0
+    },
+    {
+      "resource_type": 16,
+      "unit_weight": 1000,
+      "realm_rate": 1000000000,
+      "village_rate": 500000000,
+      "labor_output_per_resource": 30000000000,
+      "building_population_cost": 2,
+      "building_capacity_grant": 0
+    },
+    {
+      "resource_type": 17,
+      "unit_weight": 1000,
+      "realm_rate": 1000000000,
+      "village_rate": 500000000,
+      "labor_output_per_resource": 30000000000,
+      "building_population_cost": 2,
+      "building_capacity_grant": 0
+    },
+    {
+      "resource_type": 18,
+      "unit_weight": 1000,
+      "realm_rate": 1000000000,
+      "village_rate": 500000000,
+      "labor_output_per_resource": 30000000000,
+      "building_population_cost": 2,
+      "building_capacity_grant": 0
+    },
+    {
+      "resource_type": 19,
+      "unit_weight": 1000,
+      "realm_rate": 1000000000,
+      "village_rate": 500000000,
+      "labor_output_per_resource": 30000000000,
+      "building_population_cost": 2,
+      "building_capacity_grant": 0
+    },
+    {
+      "resource_type": 20,
+      "unit_weight": 1000,
+      "realm_rate": 1000000000,
+      "village_rate": 500000000,
+      "labor_output_per_resource": 20000000000,
+      "building_population_cost": 2,
+      "building_capacity_grant": 0
+    },
+    {
+      "resource_type": 21,
+      "unit_weight": 1000,
+      "realm_rate": 1000000000,
+      "village_rate": 500000000,
+      "labor_output_per_resource": 30000000000,
+      "building_population_cost": 2,
+      "building_capacity_grant": 0
+    },
+    {
+      "resource_type": 22,
+      "unit_weight": 1000,
+      "realm_rate": 1000000000,
+      "village_rate": 500000000,
+      "labor_output_per_resource": 30000000000,
+      "building_population_cost": 2,
+      "building_capacity_grant": 0
+    },
+    {
+      "resource_type": 23,
+      "unit_weight": 1000,
+      "realm_rate": 1000000000,
+      "village_rate": 500000000,
+      "labor_output_per_resource": 0,
+      "building_population_cost": 0,
+      "building_capacity_grant": 0
+    },
+    {
+      "resource_type": 24,
+      "unit_weight": 100,
+      "realm_rate": 3000000000,
+      "village_rate": 1500000000,
+      "labor_output_per_resource": 0,
+      "building_population_cost": 2,
+      "building_capacity_grant": 0
+    },
+    {
+      "resource_type": 25,
+      "unit_weight": 0,
+      "realm_rate": 3000000000,
+      "village_rate": 1500000000,
+      "labor_output_per_resource": 0,
+      "building_population_cost": 3,
+      "building_capacity_grant": 0
+    },
+    {
+      "resource_type": 26,
+      "unit_weight": 5000,
+      "realm_rate": 5000000000,
+      "village_rate": 2500000000,
+      "labor_output_per_resource": 0,
+      "building_population_cost": 3,
+      "building_capacity_grant": 0
+    },
+    {
+      "resource_type": 27,
+      "unit_weight": 5000,
+      "realm_rate": 5000000000,
+      "village_rate": 2500000000,
+      "labor_output_per_resource": 0,
+      "building_population_cost": 3,
+      "building_capacity_grant": 0
+    },
+    {
+      "resource_type": 28,
+      "unit_weight": 5000,
+      "realm_rate": 5000000000,
+      "village_rate": 2500000000,
+      "labor_output_per_resource": 0,
+      "building_population_cost": 3,
+      "building_capacity_grant": 0
+    },
+    {
+      "resource_type": 29,
+      "unit_weight": 5000,
+      "realm_rate": 5000000000,
+      "village_rate": 2500000000,
+      "labor_output_per_resource": 0,
+      "building_population_cost": 3,
+      "building_capacity_grant": 0
+    },
+    {
+      "resource_type": 30,
+      "unit_weight": 5000,
+      "realm_rate": 5000000000,
+      "village_rate": 2500000000,
+      "labor_output_per_resource": 0,
+      "building_population_cost": 3,
+      "building_capacity_grant": 0
+    },
+    {
+      "resource_type": 31,
+      "unit_weight": 5000,
+      "realm_rate": 5000000000,
+      "village_rate": 2500000000,
+      "labor_output_per_resource": 0,
+      "building_population_cost": 3,
+      "building_capacity_grant": 0
+    },
+    {
+      "resource_type": 32,
+      "unit_weight": 5000,
+      "realm_rate": 5000000000,
+      "village_rate": 2500000000,
+      "labor_output_per_resource": 0,
+      "building_population_cost": 3,
+      "building_capacity_grant": 0
+    },
+    {
+      "resource_type": 33,
+      "unit_weight": 5000,
+      "realm_rate": 5000000000,
+      "village_rate": 2500000000,
+      "labor_output_per_resource": 0,
+      "building_population_cost": 3,
+      "building_capacity_grant": 0
+    },
+    {
+      "resource_type": 34,
+      "unit_weight": 5000,
+      "realm_rate": 5000000000,
+      "village_rate": 2500000000,
+      "labor_output_per_resource": 0,
+      "building_population_cost": 3,
+      "building_capacity_grant": 0
+    },
+    {
+      "resource_type": 35,
+      "unit_weight": 100,
+      "realm_rate": 6000000000,
+      "village_rate": 3000000000,
+      "labor_output_per_resource": 0,
+      "building_population_cost": 1,
+      "building_capacity_grant": 0
+    },
+    {
+      "resource_type": 36,
+      "unit_weight": 100,
+      "realm_rate": 6000000000,
+      "village_rate": 3000000000,
+      "labor_output_per_resource": 0,
+      "building_population_cost": 1,
+      "building_capacity_grant": 0
+    },
+    {
+      "resource_type": 37,
+      "unit_weight": 0,
+      "realm_rate": 0,
+      "village_rate": 0,
+      "labor_output_per_resource": 0,
+      "building_population_cost": 0,
+      "building_capacity_grant": 0
+    },
+    {
+      "resource_type": 38,
+      "unit_weight": 100,
+      "realm_rate": 10000000000,
+      "village_rate": 5000000000,
+      "labor_output_per_resource": 0,
+      "building_population_cost": 0,
+      "building_capacity_grant": 0
+    },
+    {
+      "resource_type": 39,
+      "unit_weight": 0,
+      "realm_rate": 0,
+      "village_rate": 0,
+      "labor_output_per_resource": 0,
+      "building_population_cost": 0,
+      "building_capacity_grant": 0
+    },
+    {
+      "resource_type": 40,
+      "unit_weight": 0,
+      "realm_rate": 0,
+      "village_rate": 0,
+      "labor_output_per_resource": 0,
+      "building_population_cost": 0,
+      "building_capacity_grant": 0
+    },
+    {
+      "resource_type": 41,
+      "unit_weight": 0,
+      "realm_rate": 0,
+      "village_rate": 0,
+      "labor_output_per_resource": 0,
+      "building_population_cost": 0,
+      "building_capacity_grant": 0
+    },
+    {
+      "resource_type": 42,
+      "unit_weight": 0,
+      "realm_rate": 0,
+      "village_rate": 0,
+      "labor_output_per_resource": 0,
+      "building_population_cost": 0,
+      "building_capacity_grant": 0
+    },
+    {
+      "resource_type": 43,
+      "unit_weight": 0,
+      "realm_rate": 0,
+      "village_rate": 0,
+      "labor_output_per_resource": 0,
+      "building_population_cost": 0,
+      "building_capacity_grant": 0
+    },
+    {
+      "resource_type": 44,
+      "unit_weight": 0,
+      "realm_rate": 0,
+      "village_rate": 0,
+      "labor_output_per_resource": 0,
+      "building_population_cost": 0,
+      "building_capacity_grant": 0
+    },
+    {
+      "resource_type": 45,
+      "unit_weight": 0,
+      "realm_rate": 0,
+      "village_rate": 0,
+      "labor_output_per_resource": 0,
+      "building_population_cost": 0,
+      "building_capacity_grant": 0
+    },
+    {
+      "resource_type": 46,
+      "unit_weight": 0,
+      "realm_rate": 0,
+      "village_rate": 0,
+      "labor_output_per_resource": 0,
+      "building_population_cost": 0,
+      "building_capacity_grant": 0
+    },
+    {
+      "resource_type": 47,
+      "unit_weight": 0,
+      "realm_rate": 0,
+      "village_rate": 0,
+      "labor_output_per_resource": 0,
+      "building_population_cost": 0,
+      "building_capacity_grant": 0
+    },
+    {
+      "resource_type": 48,
+      "unit_weight": 0,
+      "realm_rate": 0,
+      "village_rate": 0,
+      "labor_output_per_resource": 0,
+      "building_population_cost": 0,
+      "building_capacity_grant": 0
+    },
+    {
+      "resource_type": 49,
+      "unit_weight": 0,
+      "realm_rate": 0,
+      "village_rate": 0,
+      "labor_output_per_resource": 0,
+      "building_population_cost": 0,
+      "building_capacity_grant": 0
+    },
+    {
+      "resource_type": 50,
+      "unit_weight": 0,
+      "realm_rate": 0,
+      "village_rate": 0,
+      "labor_output_per_resource": 0,
+      "building_population_cost": 0,
+      "building_capacity_grant": 0
+    },
+    {
+      "resource_type": 51,
+      "unit_weight": 0,
+      "realm_rate": 0,
+      "village_rate": 0,
+      "labor_output_per_resource": 0,
+      "building_population_cost": 0,
+      "building_capacity_grant": 0
+    },
+    {
+      "resource_type": 52,
+      "unit_weight": 0,
+      "realm_rate": 0,
+      "village_rate": 0,
+      "labor_output_per_resource": 0,
+      "building_population_cost": 0,
+      "building_capacity_grant": 0
+    },
+    {
+      "resource_type": 53,
+      "unit_weight": 0,
+      "realm_rate": 0,
+      "village_rate": 0,
+      "labor_output_per_resource": 0,
+      "building_population_cost": 0,
+      "building_capacity_grant": 0
+    },
+    {
+      "resource_type": 54,
+      "unit_weight": 0,
+      "realm_rate": 0,
+      "village_rate": 0,
+      "labor_output_per_resource": 0,
+      "building_population_cost": 0,
+      "building_capacity_grant": 0
+    },
+    {
+      "resource_type": 55,
+      "unit_weight": 0,
+      "realm_rate": 0,
+      "village_rate": 0,
+      "labor_output_per_resource": 0,
+      "building_population_cost": 0,
+      "building_capacity_grant": 0
+    },
+    {
+      "resource_type": 56,
+      "unit_weight": 0,
+      "realm_rate": 0,
+      "village_rate": 0,
+      "labor_output_per_resource": 0,
+      "building_population_cost": 0,
+      "building_capacity_grant": 0
+    },
+    {
+      "resource_type": 57,
+      "unit_weight": 0,
+      "realm_rate": 1000000000,
+      "village_rate": 500000000,
+      "labor_output_per_resource": 0,
+      "building_population_cost": 2,
+      "building_capacity_grant": 0
+    },
+    {
+      "resource_type": 58,
+      "unit_weight": 0,
+      "realm_rate": 0,
+      "village_rate": 0,
+      "labor_output_per_resource": 0,
+      "building_population_cost": 0,
+      "building_capacity_grant": 0
+    }
+  ],
+  "absentBaselineResourceConfigs": [
+    39,
+    40,
+    41,
+    42,
+    43,
+    44,
+    45,
+    46,
+    47,
+    48,
+    49,
+    50,
+    51,
+    52,
+    53,
+    54,
+    55,
+    56,
+    58
+  ],
+  "oraclePreset": {
+    "presetConfig": {
+      "preset_id": 1,
+      "hyperstructure_config": {
+        "initialize_shards_amount": 20000000000000000
+      },
+      "hyperstructure_cost_config": {
+        "construction_resources_ids": [
+          3,
+          1,
+          2,
+          4,
+          6,
+          8,
+          5,
+          11,
+          7,
+          15,
+          14,
+          20,
+          13,
+          12,
+          16,
+          21,
+          18,
+          17,
+          10,
+          19,
+          9,
+          22,
+          23
+        ]
+      },
+      "speed_config": {
+        "donkey_sec_per_km": 9,
+        "donkey_sec_per_km_troops": 27
+      },
+      "map_config": {
+        "reward_resource_amount": 750,
+        "shards_mines_win_probability": 1000,
+        "shards_mines_fail_probability": 49000,
+        "agent_discovery_prob": 0,
+        "agent_discovery_fail_prob": 100,
+        "camp_win_probability": 1500,
+        "camp_fail_probability": 48500,
+        "holysite_win_probability": 0,
+        "holysite_fail_probability": 0,
+        "bitcoin_mine_win_probability": 200,
+        "bitcoin_mine_fail_probability": 9800,
+        "hyps_win_prob": 2000,
+        "hyps_fail_prob": 98000,
+        "hyps_fail_prob_increase_p_hex": 9820,
+        "hyps_fail_prob_increase_p_fnd": 1,
+        "relic_discovery_interval_sec": 0,
+        "relic_hex_dist_from_center": 0,
+        "relic_chest_relics_per_chest": 0
+      },
+      "tick_config": {
+        "armies_tick_in_seconds": 60,
+        "delivery_tick_in_seconds": 180,
+        "bitcoin_phase_in_seconds": 600
+      },
+      "structure_max_level_config": {
+        "realm_max": 3,
+        "village_max": 0
+      },
+      "building_config": {
+        "base_population": 6,
+        "base_cost_percent_increase": 1000
+      },
+      "troop_damage_config": {
+        "damage_raid_percent_num": 1000,
+        "damage_biome_bonus_num": 3000,
+        "damage_beta_small": "4611686018427387904",
+        "damage_beta_large": "2213609288845146193",
+        "damage_scaling_factor": "36893488147419103232",
+        "damage_c0": "1844674407370955161600000",
+        "damage_delta": "922337203685477580800000",
+        "t1_damage_value": "1844674407370955161600",
+        "t2_damage_multiplier": "55340232221128654848",
+        "t3_damage_multiplier": "166020696663385964544"
+      },
+      "troop_stamina_config": {
+        "stamina_gain_per_tick": 20,
+        "stamina_initial": 20,
+        "stamina_bonus_value": 10,
+        "stamina_knight_max": 120,
+        "stamina_paladin_max": 120,
+        "stamina_crossbowman_max": 120,
+        "stamina_attack_req": 50,
+        "stamina_defense_req": 40,
+        "stamina_explore_stamina_cost": 30,
+        "stamina_travel_stamina_cost": 20,
+        "stamina_explore_wheat_cost": 30000000,
+        "stamina_explore_fish_cost": 30000000,
+        "stamina_travel_wheat_cost": 30000000,
+        "stamina_travel_fish_cost": 30000000
+      },
+      "troop_limit_config": {
+        "guard_resurrection_delay": 600,
+        "mercenaries_troop_lower_bound": 800,
+        "mercenaries_troop_upper_bound": 1500,
+        "agents_troop_lower_bound": 500,
+        "agents_troop_upper_bound": 15000,
+        "settlement_deployment_cap": 3000,
+        "city_deployment_cap": 15000,
+        "kingdom_deployment_cap": 45000,
+        "empire_deployment_cap": 90000,
+        "t1_tier_strength": 1,
+        "t2_tier_strength": 3,
+        "t3_tier_strength": 9,
+        "t1_tier_modifier": 50,
+        "t2_tier_modifier": 100,
+        "t3_tier_modifier": 150
+      },
+      "capacity_config": {
+        "structure_capacity": 0,
+        "troop_capacity": 10000,
+        "donkey_capacity": 50000,
+        "storehouse_boost_capacity": 0
+      },
+      "battle_config": {
+        "regular_immunity_ticks": 24,
+        "village_immunity_ticks": 0,
+        "village_raid_immunity_ticks": 24
+      },
+      "bank_config": {
+        "lp_fee_num": 15,
+        "lp_fee_denom": 100,
+        "owner_fee_num": 15,
+        "owner_fee_denom": 100
+      },
+      "trade_config": {
+        "max_count": 10
+      },
+      "quest_config": {
+        "quest_discovery_prob": 0,
+        "quest_discovery_fail_prob": 0
+      },
+      "faith_config": {
+        "enabled": true,
+        "wonder_base_fp_per_sec": 500,
+        "holy_site_fp_per_sec": 0,
+        "realm_fp_per_sec": 100,
+        "village_fp_per_sec": 50,
+        "owner_share_percent": 3000,
+        "reward_token": "0x0"
+      },
+      "bitcoin_mine_config": {
+        "enabled": true,
+        "prize_per_phase": 1000000000,
+        "min_labor_per_contribution": 100000000000
+      },
+      "resource_bridge_config": {
+        "deposit_paused": false,
+        "withdraw_paused": false
+      },
+      "res_bridge_fee_split_config": {
+        "velords_fee_on_dpt_percent": 250,
+        "velords_fee_on_wtdr_percent": 250,
+        "season_pool_fee_on_dpt_percent": 250,
+        "season_pool_fee_on_wtdr_percent": 250,
+        "client_fee_on_dpt_percent": 250,
+        "client_fee_on_wtdr_percent": 250,
+        "realm_fee_dpt_percent": 500,
+        "realm_fee_wtdr_percent": 500,
+        "velords_fee_recipient": "0x045c587318c9ebcf2fbe21febf288ee2e3597a21cd48676005a5770a50d433c5",
+        "season_pool_fee_recipient": "0x04CD21aA3E634E36d6379bdbB3FeF78F7E0A882Eb8a048624c4b02eeAD1bC553"
+      },
+      "village_troop_config": {
+        "troop_delay_ticks": 0
+      },
+      "quest_games": [],
+      "realm_start_resources_config": {
+        "resources_list_id": 1,
+        "resources_list_count": 10
+      },
+      "village_start_resources_config": {
+        "resources_list_id": 2,
+        "resources_list_count": 10
+      },
+      "village_find_resources_config": {
+        "resources_mm_list_id": 1,
+        "resources_mm_list_count": 4
+      },
+      "structure_capacity_config": {
+        "realm_capacity": "18446744073709551615",
+        "village_capacity": "18446744073709551615",
+        "hyperstructure_capacity": "18446744073709551615",
+        "fragment_mine_capacity": "18446744073709551615",
+        "bank_structure_capacity": "18446744073709551615",
+        "holysite_capacity": 0,
+        "camp_capacity": "18446744073709551615",
+        "bitcoin_mine_capacity": "18446744073709551615"
+      },
+      "victory_points_grant_config": {
+        "hyp_points_per_second": "1000000",
+        "claim_hyperstructure_points": "3000000000",
+        "claim_otherstructure_points": "500000000",
+        "explore_tiles_points": "10000000",
+        "relic_open_points": "1000000000"
+      },
+      "victory_points_win_config": {
+        "points_for_win": "10000000000000"
+      },
+      "blitz_exploration_config": {
+        "reward_profile_id": 2
+      },
+      "artificer_config": {
+        "research_cost_for_relic": 50000
+      },
+      "blitz_registration_rules_config": {
+        "collectibles_cosmetics_max": 0
+      },
+      "mercenaries_name": "0x5468652056616e6775617264",
+      "spire_travel_essence_cost": "10000000000"
+    },
+    "gameConfig": {
+      "preset_id": 1,
+      "blitz_mode_on": false,
+      "settlement_config": {
+        "center": 2147483646,
+        "base_distance": 10,
+        "layers_skipped": 2,
+        "layer_max": 6,
+        "layer_capacity_increment": 6,
+        "layer_capacity_bps": 8000,
+        "spires_layer_distance": 6,
+        "spires_max_count": 6,
+        "spires_settled_count": 0
+      },
+      "blitz_settlement_config": {
+        "base_distance": 8,
+        "side": 0,
+        "step": 1,
+        "point": 1,
+        "open_settlement_count": 0,
+        "single_realm_mode": false,
+        "two_player_mode": false
+      },
+      "blitz_registration_config": {
+        "registration_count": 0,
+        "registration_count_max": 0,
+        "registration_start_at": 0
+      },
+      "agent_max_lifetime_count": 10000,
+      "agent_max_current_count": 1000,
+      "agent_min_spawn_lords_amount": 10,
+      "agent_max_spawn_lords_amount": 35
+    },
+    "sideTables": {
+      "weights": [
+        {
+          "preset_id": 0,
+          "resource_type": 1,
+          "weight_gram": 1000
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 2,
+          "weight_gram": 1000
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 3,
+          "weight_gram": 1000
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 4,
+          "weight_gram": 1000
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 5,
+          "weight_gram": 1000
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 6,
+          "weight_gram": 1000
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 7,
+          "weight_gram": 1000
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 8,
+          "weight_gram": 1000
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 9,
+          "weight_gram": 1000
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 10,
+          "weight_gram": 1000
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 11,
+          "weight_gram": 1000
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 12,
+          "weight_gram": 1000
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 13,
+          "weight_gram": 1000
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 14,
+          "weight_gram": 1000
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 15,
+          "weight_gram": 1000
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 16,
+          "weight_gram": 1000
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 17,
+          "weight_gram": 1000
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 18,
+          "weight_gram": 1000
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 19,
+          "weight_gram": 1000
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 20,
+          "weight_gram": 1000
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 21,
+          "weight_gram": 1000
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 22,
+          "weight_gram": 1000
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 23,
+          "weight_gram": 1000
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 24,
+          "weight_gram": 100
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 25,
+          "weight_gram": 0
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 26,
+          "weight_gram": 5000
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 27,
+          "weight_gram": 5000
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 28,
+          "weight_gram": 5000
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 29,
+          "weight_gram": 5000
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 30,
+          "weight_gram": 5000
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 31,
+          "weight_gram": 5000
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 32,
+          "weight_gram": 5000
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 33,
+          "weight_gram": 5000
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 34,
+          "weight_gram": 5000
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 35,
+          "weight_gram": 100
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 36,
+          "weight_gram": 100
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 37,
+          "weight_gram": 0
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 38,
+          "weight_gram": 100
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 57,
+          "weight_gram": 0
+        }
+      ],
+      "resource_factories": [
+        {
+          "preset_id": 0,
+          "resource_type": 1,
+          "realm_output_per_second": 1000000000,
+          "village_output_per_second": 500000000,
+          "labor_output_per_resource": 11000000000,
+          "output_per_simple_input": 1000000000,
+          "output_per_complex_input": 1000000000,
+          "simple_input_list_id": 3,
+          "complex_input_list_id": 4,
+          "simple_input_list_count": 0,
+          "complex_input_list_count": 0
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 2,
+          "realm_output_per_second": 1000000000,
+          "village_output_per_second": 500000000,
+          "labor_output_per_resource": 12000000000,
+          "output_per_simple_input": 1000000000,
+          "output_per_complex_input": 1000000000,
+          "simple_input_list_id": 5,
+          "complex_input_list_id": 6,
+          "simple_input_list_count": 3,
+          "complex_input_list_count": 4
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 3,
+          "realm_output_per_second": 1000000000,
+          "village_output_per_second": 500000000,
+          "labor_output_per_resource": 10000000000,
+          "output_per_simple_input": 1000000000,
+          "output_per_complex_input": 1000000000,
+          "simple_input_list_id": 7,
+          "complex_input_list_id": 8,
+          "simple_input_list_count": 3,
+          "complex_input_list_count": 4
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 4,
+          "realm_output_per_second": 1000000000,
+          "village_output_per_second": 500000000,
+          "labor_output_per_resource": 14000000000,
+          "output_per_simple_input": 1000000000,
+          "output_per_complex_input": 1000000000,
+          "simple_input_list_id": 9,
+          "complex_input_list_id": 10,
+          "simple_input_list_count": 3,
+          "complex_input_list_count": 4
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 5,
+          "realm_output_per_second": 1000000000,
+          "village_output_per_second": 500000000,
+          "labor_output_per_resource": 16000000000,
+          "output_per_simple_input": 1000000000,
+          "output_per_complex_input": 1000000000,
+          "simple_input_list_id": 11,
+          "complex_input_list_id": 12,
+          "simple_input_list_count": 3,
+          "complex_input_list_count": 4
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 6,
+          "realm_output_per_second": 1000000000,
+          "village_output_per_second": 500000000,
+          "labor_output_per_resource": 15000000000,
+          "output_per_simple_input": 1000000000,
+          "output_per_complex_input": 1000000000,
+          "simple_input_list_id": 13,
+          "complex_input_list_id": 14,
+          "simple_input_list_count": 0,
+          "complex_input_list_count": 0
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 7,
+          "realm_output_per_second": 1000000000,
+          "village_output_per_second": 500000000,
+          "labor_output_per_resource": 16000000000,
+          "output_per_simple_input": 1000000000,
+          "output_per_complex_input": 1000000000,
+          "simple_input_list_id": 15,
+          "complex_input_list_id": 16,
+          "simple_input_list_count": 3,
+          "complex_input_list_count": 4
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 8,
+          "realm_output_per_second": 1000000000,
+          "village_output_per_second": 500000000,
+          "labor_output_per_resource": 16000000000,
+          "output_per_simple_input": 1000000000,
+          "output_per_complex_input": 1000000000,
+          "simple_input_list_id": 17,
+          "complex_input_list_id": 18,
+          "simple_input_list_count": 0,
+          "complex_input_list_count": 0
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 9,
+          "realm_output_per_second": 1000000000,
+          "village_output_per_second": 500000000,
+          "labor_output_per_resource": 30000000000,
+          "output_per_simple_input": 1000000000,
+          "output_per_complex_input": 1000000000,
+          "simple_input_list_id": 19,
+          "complex_input_list_id": 20,
+          "simple_input_list_count": 3,
+          "complex_input_list_count": 4
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 10,
+          "realm_output_per_second": 1000000000,
+          "village_output_per_second": 500000000,
+          "labor_output_per_resource": 30000000000,
+          "output_per_simple_input": 1000000000,
+          "output_per_complex_input": 1000000000,
+          "simple_input_list_id": 21,
+          "complex_input_list_id": 22,
+          "simple_input_list_count": 0,
+          "complex_input_list_count": 0
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 11,
+          "realm_output_per_second": 1000000000,
+          "village_output_per_second": 500000000,
+          "labor_output_per_resource": 16000000000,
+          "output_per_simple_input": 1000000000,
+          "output_per_complex_input": 1000000000,
+          "simple_input_list_id": 23,
+          "complex_input_list_id": 24,
+          "simple_input_list_count": 3,
+          "complex_input_list_count": 4
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 12,
+          "realm_output_per_second": 1000000000,
+          "village_output_per_second": 500000000,
+          "labor_output_per_resource": 25000000000,
+          "output_per_simple_input": 1000000000,
+          "output_per_complex_input": 1000000000,
+          "simple_input_list_id": 25,
+          "complex_input_list_id": 26,
+          "simple_input_list_count": 0,
+          "complex_input_list_count": 0
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 13,
+          "realm_output_per_second": 1000000000,
+          "village_output_per_second": 500000000,
+          "labor_output_per_resource": 25000000000,
+          "output_per_simple_input": 1000000000,
+          "output_per_complex_input": 1000000000,
+          "simple_input_list_id": 27,
+          "complex_input_list_id": 28,
+          "simple_input_list_count": 0,
+          "complex_input_list_count": 0
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 14,
+          "realm_output_per_second": 1000000000,
+          "village_output_per_second": 500000000,
+          "labor_output_per_resource": 20000000000,
+          "output_per_simple_input": 1000000000,
+          "output_per_complex_input": 1000000000,
+          "simple_input_list_id": 29,
+          "complex_input_list_id": 30,
+          "simple_input_list_count": 0,
+          "complex_input_list_count": 0
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 15,
+          "realm_output_per_second": 1000000000,
+          "village_output_per_second": 500000000,
+          "labor_output_per_resource": 20000000000,
+          "output_per_simple_input": 1000000000,
+          "output_per_complex_input": 1000000000,
+          "simple_input_list_id": 31,
+          "complex_input_list_id": 32,
+          "simple_input_list_count": 0,
+          "complex_input_list_count": 0
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 16,
+          "realm_output_per_second": 1000000000,
+          "village_output_per_second": 500000000,
+          "labor_output_per_resource": 30000000000,
+          "output_per_simple_input": 1000000000,
+          "output_per_complex_input": 1000000000,
+          "simple_input_list_id": 33,
+          "complex_input_list_id": 34,
+          "simple_input_list_count": 0,
+          "complex_input_list_count": 0
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 17,
+          "realm_output_per_second": 1000000000,
+          "village_output_per_second": 500000000,
+          "labor_output_per_resource": 30000000000,
+          "output_per_simple_input": 1000000000,
+          "output_per_complex_input": 1000000000,
+          "simple_input_list_id": 35,
+          "complex_input_list_id": 36,
+          "simple_input_list_count": 0,
+          "complex_input_list_count": 0
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 18,
+          "realm_output_per_second": 1000000000,
+          "village_output_per_second": 500000000,
+          "labor_output_per_resource": 30000000000,
+          "output_per_simple_input": 1000000000,
+          "output_per_complex_input": 1000000000,
+          "simple_input_list_id": 37,
+          "complex_input_list_id": 38,
+          "simple_input_list_count": 0,
+          "complex_input_list_count": 0
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 19,
+          "realm_output_per_second": 1000000000,
+          "village_output_per_second": 500000000,
+          "labor_output_per_resource": 30000000000,
+          "output_per_simple_input": 1000000000,
+          "output_per_complex_input": 1000000000,
+          "simple_input_list_id": 39,
+          "complex_input_list_id": 40,
+          "simple_input_list_count": 3,
+          "complex_input_list_count": 4
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 20,
+          "realm_output_per_second": 1000000000,
+          "village_output_per_second": 500000000,
+          "labor_output_per_resource": 20000000000,
+          "output_per_simple_input": 1000000000,
+          "output_per_complex_input": 1000000000,
+          "simple_input_list_id": 41,
+          "complex_input_list_id": 42,
+          "simple_input_list_count": 0,
+          "complex_input_list_count": 0
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 21,
+          "realm_output_per_second": 1000000000,
+          "village_output_per_second": 500000000,
+          "labor_output_per_resource": 30000000000,
+          "output_per_simple_input": 1000000000,
+          "output_per_complex_input": 1000000000,
+          "simple_input_list_id": 43,
+          "complex_input_list_id": 44,
+          "simple_input_list_count": 0,
+          "complex_input_list_count": 0
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 22,
+          "realm_output_per_second": 1000000000,
+          "village_output_per_second": 500000000,
+          "labor_output_per_resource": 30000000000,
+          "output_per_simple_input": 1000000000,
+          "output_per_complex_input": 1000000000,
+          "simple_input_list_id": 45,
+          "complex_input_list_id": 46,
+          "simple_input_list_count": 3,
+          "complex_input_list_count": 4
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 23,
+          "realm_output_per_second": 1000000000,
+          "village_output_per_second": 500000000,
+          "labor_output_per_resource": 0,
+          "output_per_simple_input": 1000000000,
+          "output_per_complex_input": 1000000000,
+          "simple_input_list_id": 47,
+          "complex_input_list_id": 48,
+          "simple_input_list_count": 0,
+          "complex_input_list_count": 0
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 24,
+          "realm_output_per_second": 3000000000,
+          "village_output_per_second": 1500000000,
+          "labor_output_per_resource": 0,
+          "output_per_simple_input": 3000000000,
+          "output_per_complex_input": 3000000000,
+          "simple_input_list_id": 49,
+          "complex_input_list_id": 50,
+          "simple_input_list_count": 0,
+          "complex_input_list_count": 0
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 25,
+          "realm_output_per_second": 3000000000,
+          "village_output_per_second": 1500000000,
+          "labor_output_per_resource": 0,
+          "output_per_simple_input": 3000000000,
+          "output_per_complex_input": 3000000000,
+          "simple_input_list_id": 51,
+          "complex_input_list_id": 52,
+          "simple_input_list_count": 0,
+          "complex_input_list_count": 2
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 26,
+          "realm_output_per_second": 5000000000,
+          "village_output_per_second": 2500000000,
+          "labor_output_per_resource": 0,
+          "output_per_simple_input": 5000000000,
+          "output_per_complex_input": 5000000000,
+          "simple_input_list_id": 53,
+          "complex_input_list_id": 54,
+          "simple_input_list_count": 3,
+          "complex_input_list_count": 3
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 27,
+          "realm_output_per_second": 5000000000,
+          "village_output_per_second": 2500000000,
+          "labor_output_per_resource": 0,
+          "output_per_simple_input": 5000000000,
+          "output_per_complex_input": 5000000000,
+          "simple_input_list_id": 55,
+          "complex_input_list_id": 56,
+          "simple_input_list_count": 0,
+          "complex_input_list_count": 6
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 28,
+          "realm_output_per_second": 5000000000,
+          "village_output_per_second": 2500000000,
+          "labor_output_per_resource": 0,
+          "output_per_simple_input": 5000000000,
+          "output_per_complex_input": 5000000000,
+          "simple_input_list_id": 57,
+          "complex_input_list_id": 58,
+          "simple_input_list_count": 0,
+          "complex_input_list_count": 6
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 29,
+          "realm_output_per_second": 5000000000,
+          "village_output_per_second": 2500000000,
+          "labor_output_per_resource": 0,
+          "output_per_simple_input": 5000000000,
+          "output_per_complex_input": 5000000000,
+          "simple_input_list_id": 59,
+          "complex_input_list_id": 60,
+          "simple_input_list_count": 3,
+          "complex_input_list_count": 3
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 30,
+          "realm_output_per_second": 5000000000,
+          "village_output_per_second": 2500000000,
+          "labor_output_per_resource": 0,
+          "output_per_simple_input": 5000000000,
+          "output_per_complex_input": 5000000000,
+          "simple_input_list_id": 61,
+          "complex_input_list_id": 62,
+          "simple_input_list_count": 0,
+          "complex_input_list_count": 6
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 31,
+          "realm_output_per_second": 5000000000,
+          "village_output_per_second": 2500000000,
+          "labor_output_per_resource": 0,
+          "output_per_simple_input": 5000000000,
+          "output_per_complex_input": 5000000000,
+          "simple_input_list_id": 63,
+          "complex_input_list_id": 64,
+          "simple_input_list_count": 0,
+          "complex_input_list_count": 6
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 32,
+          "realm_output_per_second": 5000000000,
+          "village_output_per_second": 2500000000,
+          "labor_output_per_resource": 0,
+          "output_per_simple_input": 5000000000,
+          "output_per_complex_input": 5000000000,
+          "simple_input_list_id": 65,
+          "complex_input_list_id": 66,
+          "simple_input_list_count": 3,
+          "complex_input_list_count": 3
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 33,
+          "realm_output_per_second": 5000000000,
+          "village_output_per_second": 2500000000,
+          "labor_output_per_resource": 0,
+          "output_per_simple_input": 5000000000,
+          "output_per_complex_input": 5000000000,
+          "simple_input_list_id": 67,
+          "complex_input_list_id": 68,
+          "simple_input_list_count": 0,
+          "complex_input_list_count": 6
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 34,
+          "realm_output_per_second": 5000000000,
+          "village_output_per_second": 2500000000,
+          "labor_output_per_resource": 0,
+          "output_per_simple_input": 5000000000,
+          "output_per_complex_input": 5000000000,
+          "simple_input_list_id": 69,
+          "complex_input_list_id": 70,
+          "simple_input_list_count": 0,
+          "complex_input_list_count": 6
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 35,
+          "realm_output_per_second": 6000000000,
+          "village_output_per_second": 3000000000,
+          "labor_output_per_resource": 0,
+          "output_per_simple_input": 6000000000,
+          "output_per_complex_input": 6000000000,
+          "simple_input_list_id": 71,
+          "complex_input_list_id": 72,
+          "simple_input_list_count": 0,
+          "complex_input_list_count": 0
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 36,
+          "realm_output_per_second": 6000000000,
+          "village_output_per_second": 3000000000,
+          "labor_output_per_resource": 0,
+          "output_per_simple_input": 6000000000,
+          "output_per_complex_input": 6000000000,
+          "simple_input_list_id": 73,
+          "complex_input_list_id": 74,
+          "simple_input_list_count": 0,
+          "complex_input_list_count": 0
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 37,
+          "realm_output_per_second": 0,
+          "village_output_per_second": 0,
+          "labor_output_per_resource": 0,
+          "output_per_simple_input": 0,
+          "output_per_complex_input": 0,
+          "simple_input_list_id": 75,
+          "complex_input_list_id": 76,
+          "simple_input_list_count": 0,
+          "complex_input_list_count": 0
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 38,
+          "realm_output_per_second": 10000000000,
+          "village_output_per_second": 5000000000,
+          "labor_output_per_resource": 0,
+          "output_per_simple_input": 10000000000,
+          "output_per_complex_input": 10000000000,
+          "simple_input_list_id": 77,
+          "complex_input_list_id": 78,
+          "simple_input_list_count": 0,
+          "complex_input_list_count": 0
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 57,
+          "realm_output_per_second": 1000000000,
+          "village_output_per_second": 500000000,
+          "labor_output_per_resource": 0,
+          "output_per_simple_input": 1000000000,
+          "output_per_complex_input": 1000000000,
+          "simple_input_list_id": 79,
+          "complex_input_list_id": 80,
+          "simple_input_list_count": 0,
+          "complex_input_list_count": 3
+        }
+      ],
+      "building_categories": [
+        {
+          "preset_id": 0,
+          "category": 0,
+          "complex_erection_cost_id": 81,
+          "complex_erection_cost_count": 0,
+          "simple_erection_cost_id": 82,
+          "simple_erection_cost_count": 0,
+          "population_cost": 0,
+          "capacity_grant": 0
+        },
+        {
+          "preset_id": 0,
+          "category": 1,
+          "complex_erection_cost_id": 83,
+          "complex_erection_cost_count": 2,
+          "simple_erection_cost_id": 84,
+          "simple_erection_cost_count": 1,
+          "population_cost": 0,
+          "capacity_grant": 6
+        },
+        {
+          "preset_id": 0,
+          "category": 3,
+          "complex_erection_cost_id": 85,
+          "complex_erection_cost_count": 1,
+          "simple_erection_cost_id": 86,
+          "simple_erection_cost_count": 1,
+          "population_cost": 2,
+          "capacity_grant": 0
+        },
+        {
+          "preset_id": 0,
+          "category": 4,
+          "complex_erection_cost_id": 87,
+          "complex_erection_cost_count": 2,
+          "simple_erection_cost_id": 88,
+          "simple_erection_cost_count": 1,
+          "population_cost": 2,
+          "capacity_grant": 0
+        },
+        {
+          "preset_id": 0,
+          "category": 5,
+          "complex_erection_cost_id": 89,
+          "complex_erection_cost_count": 1,
+          "simple_erection_cost_id": 90,
+          "simple_erection_cost_count": 1,
+          "population_cost": 2,
+          "capacity_grant": 0
+        },
+        {
+          "preset_id": 0,
+          "category": 6,
+          "complex_erection_cost_id": 91,
+          "complex_erection_cost_count": 3,
+          "simple_erection_cost_id": 92,
+          "simple_erection_cost_count": 1,
+          "population_cost": 2,
+          "capacity_grant": 0
+        },
+        {
+          "preset_id": 0,
+          "category": 7,
+          "complex_erection_cost_id": 93,
+          "complex_erection_cost_count": 4,
+          "simple_erection_cost_id": 94,
+          "simple_erection_cost_count": 1,
+          "population_cost": 2,
+          "capacity_grant": 0
+        },
+        {
+          "preset_id": 0,
+          "category": 8,
+          "complex_erection_cost_id": 95,
+          "complex_erection_cost_count": 2,
+          "simple_erection_cost_id": 96,
+          "simple_erection_cost_count": 1,
+          "population_cost": 2,
+          "capacity_grant": 0
+        },
+        {
+          "preset_id": 0,
+          "category": 9,
+          "complex_erection_cost_id": 97,
+          "complex_erection_cost_count": 4,
+          "simple_erection_cost_id": 98,
+          "simple_erection_cost_count": 1,
+          "population_cost": 2,
+          "capacity_grant": 0
+        },
+        {
+          "preset_id": 0,
+          "category": 10,
+          "complex_erection_cost_id": 99,
+          "complex_erection_cost_count": 4,
+          "simple_erection_cost_id": 100,
+          "simple_erection_cost_count": 1,
+          "population_cost": 2,
+          "capacity_grant": 0
+        },
+        {
+          "preset_id": 0,
+          "category": 11,
+          "complex_erection_cost_id": 101,
+          "complex_erection_cost_count": 5,
+          "simple_erection_cost_id": 102,
+          "simple_erection_cost_count": 1,
+          "population_cost": 2,
+          "capacity_grant": 0
+        },
+        {
+          "preset_id": 0,
+          "category": 12,
+          "complex_erection_cost_id": 103,
+          "complex_erection_cost_count": 4,
+          "simple_erection_cost_id": 104,
+          "simple_erection_cost_count": 1,
+          "population_cost": 2,
+          "capacity_grant": 0
+        },
+        {
+          "preset_id": 0,
+          "category": 13,
+          "complex_erection_cost_id": 105,
+          "complex_erection_cost_count": 4,
+          "simple_erection_cost_id": 106,
+          "simple_erection_cost_count": 1,
+          "population_cost": 2,
+          "capacity_grant": 0
+        },
+        {
+          "preset_id": 0,
+          "category": 14,
+          "complex_erection_cost_id": 107,
+          "complex_erection_cost_count": 4,
+          "simple_erection_cost_id": 108,
+          "simple_erection_cost_count": 1,
+          "population_cost": 2,
+          "capacity_grant": 0
+        },
+        {
+          "preset_id": 0,
+          "category": 15,
+          "complex_erection_cost_id": 109,
+          "complex_erection_cost_count": 4,
+          "simple_erection_cost_id": 110,
+          "simple_erection_cost_count": 1,
+          "population_cost": 2,
+          "capacity_grant": 0
+        },
+        {
+          "preset_id": 0,
+          "category": 16,
+          "complex_erection_cost_id": 111,
+          "complex_erection_cost_count": 4,
+          "simple_erection_cost_id": 112,
+          "simple_erection_cost_count": 1,
+          "population_cost": 2,
+          "capacity_grant": 0
+        },
+        {
+          "preset_id": 0,
+          "category": 17,
+          "complex_erection_cost_id": 113,
+          "complex_erection_cost_count": 4,
+          "simple_erection_cost_id": 114,
+          "simple_erection_cost_count": 1,
+          "population_cost": 2,
+          "capacity_grant": 0
+        },
+        {
+          "preset_id": 0,
+          "category": 18,
+          "complex_erection_cost_id": 115,
+          "complex_erection_cost_count": 4,
+          "simple_erection_cost_id": 116,
+          "simple_erection_cost_count": 1,
+          "population_cost": 2,
+          "capacity_grant": 0
+        },
+        {
+          "preset_id": 0,
+          "category": 19,
+          "complex_erection_cost_id": 117,
+          "complex_erection_cost_count": 4,
+          "simple_erection_cost_id": 118,
+          "simple_erection_cost_count": 1,
+          "population_cost": 2,
+          "capacity_grant": 0
+        },
+        {
+          "preset_id": 0,
+          "category": 20,
+          "complex_erection_cost_id": 119,
+          "complex_erection_cost_count": 4,
+          "simple_erection_cost_id": 120,
+          "simple_erection_cost_count": 1,
+          "population_cost": 2,
+          "capacity_grant": 0
+        },
+        {
+          "preset_id": 0,
+          "category": 21,
+          "complex_erection_cost_id": 121,
+          "complex_erection_cost_count": 5,
+          "simple_erection_cost_id": 122,
+          "simple_erection_cost_count": 1,
+          "population_cost": 2,
+          "capacity_grant": 0
+        },
+        {
+          "preset_id": 0,
+          "category": 22,
+          "complex_erection_cost_id": 123,
+          "complex_erection_cost_count": 4,
+          "simple_erection_cost_id": 124,
+          "simple_erection_cost_count": 1,
+          "population_cost": 2,
+          "capacity_grant": 0
+        },
+        {
+          "preset_id": 0,
+          "category": 23,
+          "complex_erection_cost_id": 125,
+          "complex_erection_cost_count": 4,
+          "simple_erection_cost_id": 126,
+          "simple_erection_cost_count": 1,
+          "population_cost": 2,
+          "capacity_grant": 0
+        },
+        {
+          "preset_id": 0,
+          "category": 24,
+          "complex_erection_cost_id": 127,
+          "complex_erection_cost_count": 5,
+          "simple_erection_cost_id": 128,
+          "simple_erection_cost_count": 1,
+          "population_cost": 2,
+          "capacity_grant": 0
+        },
+        {
+          "preset_id": 0,
+          "category": 25,
+          "complex_erection_cost_id": 129,
+          "complex_erection_cost_count": 0,
+          "simple_erection_cost_id": 130,
+          "simple_erection_cost_count": 0,
+          "population_cost": 0,
+          "capacity_grant": 0
+        },
+        {
+          "preset_id": 0,
+          "category": 26,
+          "complex_erection_cost_id": 131,
+          "complex_erection_cost_count": 0,
+          "simple_erection_cost_id": 132,
+          "simple_erection_cost_count": 0,
+          "population_cost": 2,
+          "capacity_grant": 0
+        },
+        {
+          "preset_id": 0,
+          "category": 27,
+          "complex_erection_cost_id": 133,
+          "complex_erection_cost_count": 2,
+          "simple_erection_cost_id": 134,
+          "simple_erection_cost_count": 1,
+          "population_cost": 3,
+          "capacity_grant": 0
+        },
+        {
+          "preset_id": 0,
+          "category": 28,
+          "complex_erection_cost_id": 135,
+          "complex_erection_cost_count": 3,
+          "simple_erection_cost_id": 136,
+          "simple_erection_cost_count": 1,
+          "population_cost": 3,
+          "capacity_grant": 0
+        },
+        {
+          "preset_id": 0,
+          "category": 29,
+          "complex_erection_cost_id": 137,
+          "complex_erection_cost_count": 5,
+          "simple_erection_cost_id": 138,
+          "simple_erection_cost_count": 0,
+          "population_cost": 3,
+          "capacity_grant": 0
+        },
+        {
+          "preset_id": 0,
+          "category": 30,
+          "complex_erection_cost_id": 139,
+          "complex_erection_cost_count": 5,
+          "simple_erection_cost_id": 140,
+          "simple_erection_cost_count": 0,
+          "population_cost": 3,
+          "capacity_grant": 0
+        },
+        {
+          "preset_id": 0,
+          "category": 31,
+          "complex_erection_cost_id": 141,
+          "complex_erection_cost_count": 3,
+          "simple_erection_cost_id": 142,
+          "simple_erection_cost_count": 1,
+          "population_cost": 3,
+          "capacity_grant": 0
+        },
+        {
+          "preset_id": 0,
+          "category": 32,
+          "complex_erection_cost_id": 143,
+          "complex_erection_cost_count": 5,
+          "simple_erection_cost_id": 144,
+          "simple_erection_cost_count": 0,
+          "population_cost": 3,
+          "capacity_grant": 0
+        },
+        {
+          "preset_id": 0,
+          "category": 33,
+          "complex_erection_cost_id": 145,
+          "complex_erection_cost_count": 5,
+          "simple_erection_cost_id": 146,
+          "simple_erection_cost_count": 0,
+          "population_cost": 3,
+          "capacity_grant": 0
+        },
+        {
+          "preset_id": 0,
+          "category": 34,
+          "complex_erection_cost_id": 147,
+          "complex_erection_cost_count": 3,
+          "simple_erection_cost_id": 148,
+          "simple_erection_cost_count": 1,
+          "population_cost": 3,
+          "capacity_grant": 0
+        },
+        {
+          "preset_id": 0,
+          "category": 35,
+          "complex_erection_cost_id": 149,
+          "complex_erection_cost_count": 5,
+          "simple_erection_cost_id": 150,
+          "simple_erection_cost_count": 0,
+          "population_cost": 3,
+          "capacity_grant": 0
+        },
+        {
+          "preset_id": 0,
+          "category": 36,
+          "complex_erection_cost_id": 151,
+          "complex_erection_cost_count": 5,
+          "simple_erection_cost_id": 152,
+          "simple_erection_cost_count": 0,
+          "population_cost": 3,
+          "capacity_grant": 0
+        },
+        {
+          "preset_id": 0,
+          "category": 37,
+          "complex_erection_cost_id": 153,
+          "complex_erection_cost_count": 1,
+          "simple_erection_cost_id": 154,
+          "simple_erection_cost_count": 1,
+          "population_cost": 1,
+          "capacity_grant": 0
+        },
+        {
+          "preset_id": 0,
+          "category": 38,
+          "complex_erection_cost_id": 155,
+          "complex_erection_cost_count": 1,
+          "simple_erection_cost_id": 156,
+          "simple_erection_cost_count": 1,
+          "population_cost": 1,
+          "capacity_grant": 0
+        },
+        {
+          "preset_id": 0,
+          "category": 40,
+          "complex_erection_cost_id": 157,
+          "complex_erection_cost_count": 3,
+          "simple_erection_cost_id": 158,
+          "simple_erection_cost_count": 1,
+          "population_cost": 2,
+          "capacity_grant": 0
+        }
+      ],
+      "structure_levels": [
+        {
+          "preset_id": 0,
+          "level": 1,
+          "required_resources_id": 159,
+          "required_resource_count": 4
+        },
+        {
+          "preset_id": 0,
+          "level": 2,
+          "required_resources_id": 160,
+          "required_resource_count": 5
+        },
+        {
+          "preset_id": 0,
+          "level": 3,
+          "required_resources_id": 161,
+          "required_resource_count": 7
+        }
+      ],
+      "hyperstructure_construction": [
+        {
+          "preset_id": 0,
+          "resource_type": 3,
+          "resource_contribution_points": 21732000000,
+          "min_amount": 250000000,
+          "max_amount": 400000000
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 1,
+          "resource_contribution_points": 21732000000,
+          "min_amount": 250000000,
+          "max_amount": 400000000
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 2,
+          "resource_contribution_points": 21732000000,
+          "min_amount": 250000000,
+          "max_amount": 400000000
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 4,
+          "resource_contribution_points": 21732000000,
+          "min_amount": 175000000,
+          "max_amount": 250000000
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 6,
+          "resource_contribution_points": 21732000000,
+          "min_amount": 175000000,
+          "max_amount": 250000000
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 8,
+          "resource_contribution_points": 21732000000,
+          "min_amount": 175000000,
+          "max_amount": 250000000
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 5,
+          "resource_contribution_points": 21732000000,
+          "min_amount": 75000000,
+          "max_amount": 125000000
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 11,
+          "resource_contribution_points": 21732000000,
+          "min_amount": 75000000,
+          "max_amount": 125000000
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 7,
+          "resource_contribution_points": 21732000000,
+          "min_amount": 75000000,
+          "max_amount": 125000000
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 15,
+          "resource_contribution_points": 21732000000,
+          "min_amount": 45000000,
+          "max_amount": 60000000
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 14,
+          "resource_contribution_points": 21732000000,
+          "min_amount": 45000000,
+          "max_amount": 60000000
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 20,
+          "resource_contribution_points": 21732000000,
+          "min_amount": 45000000,
+          "max_amount": 60000000
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 13,
+          "resource_contribution_points": 21732000000,
+          "min_amount": 45000000,
+          "max_amount": 60000000
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 12,
+          "resource_contribution_points": 21732000000,
+          "min_amount": 35000000,
+          "max_amount": 45000000
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 16,
+          "resource_contribution_points": 21732000000,
+          "min_amount": 35000000,
+          "max_amount": 45000000
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 21,
+          "resource_contribution_points": 21732000000,
+          "min_amount": 35000000,
+          "max_amount": 45000000
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 18,
+          "resource_contribution_points": 21732000000,
+          "min_amount": 30000000,
+          "max_amount": 35000000
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 17,
+          "resource_contribution_points": 21732000000,
+          "min_amount": 30000000,
+          "max_amount": 35000000
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 10,
+          "resource_contribution_points": 21732000000,
+          "min_amount": 30000000,
+          "max_amount": 35000000
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 19,
+          "resource_contribution_points": 21732000000,
+          "min_amount": 25000000,
+          "max_amount": 30000000
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 9,
+          "resource_contribution_points": 21732000000,
+          "min_amount": 25000000,
+          "max_amount": 30000000
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 22,
+          "resource_contribution_points": 21732000000,
+          "min_amount": 25000000,
+          "max_amount": 30000000
+        },
+        {
+          "preset_id": 0,
+          "resource_type": 23,
+          "resource_contribution_points": 21732000000,
+          "min_amount": 50000000,
+          "max_amount": 50000000
+        }
+      ],
+      "resource_lists": [
+        {
+          "preset_id": 0,
+          "entity_id": 1,
+          "index": 0,
+          "resource_type": 35,
+          "amount": 1000000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 1,
+          "index": 1,
+          "resource_type": 36,
+          "amount": 1000000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 1,
+          "index": 2,
+          "resource_type": 23,
+          "amount": 1200000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 1,
+          "index": 3,
+          "resource_type": 3,
+          "amount": 180000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 1,
+          "index": 4,
+          "resource_type": 2,
+          "amount": 120000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 1,
+          "index": 5,
+          "resource_type": 4,
+          "amount": 60000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 1,
+          "index": 6,
+          "resource_type": 25,
+          "amount": 200000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 1,
+          "index": 7,
+          "resource_type": 26,
+          "amount": 1500000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 1,
+          "index": 8,
+          "resource_type": 29,
+          "amount": 1500000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 1,
+          "index": 9,
+          "resource_type": 32,
+          "amount": 1500000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 2,
+          "index": 0,
+          "resource_type": 35,
+          "amount": 500000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 2,
+          "index": 1,
+          "resource_type": 36,
+          "amount": 500000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 2,
+          "index": 2,
+          "resource_type": 23,
+          "amount": 600000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 2,
+          "index": 3,
+          "resource_type": 3,
+          "amount": 90000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 2,
+          "index": 4,
+          "resource_type": 2,
+          "amount": 60000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 2,
+          "index": 5,
+          "resource_type": 4,
+          "amount": 30000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 2,
+          "index": 6,
+          "resource_type": 25,
+          "amount": 100000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 2,
+          "index": 7,
+          "resource_type": 26,
+          "amount": 500000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 2,
+          "index": 8,
+          "resource_type": 29,
+          "amount": 500000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 2,
+          "index": 9,
+          "resource_type": 32,
+          "amount": 500000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 5,
+          "index": 0,
+          "resource_type": 35,
+          "amount": 1000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 5,
+          "index": 1,
+          "resource_type": 36,
+          "amount": 1000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 5,
+          "index": 2,
+          "resource_type": 23,
+          "amount": 1000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 6,
+          "index": 0,
+          "resource_type": 35,
+          "amount": 1000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 6,
+          "index": 1,
+          "resource_type": 36,
+          "amount": 1000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 6,
+          "index": 2,
+          "resource_type": 3,
+          "amount": 300000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 6,
+          "index": 3,
+          "resource_type": 4,
+          "amount": 200000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 7,
+          "index": 0,
+          "resource_type": 35,
+          "amount": 1000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 7,
+          "index": 1,
+          "resource_type": 36,
+          "amount": 1000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 7,
+          "index": 2,
+          "resource_type": 23,
+          "amount": 500000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 8,
+          "index": 0,
+          "resource_type": 35,
+          "amount": 1000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 8,
+          "index": 1,
+          "resource_type": 36,
+          "amount": 1000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 8,
+          "index": 2,
+          "resource_type": 2,
+          "amount": 200000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 8,
+          "index": 3,
+          "resource_type": 4,
+          "amount": 200000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 9,
+          "index": 0,
+          "resource_type": 35,
+          "amount": 1000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 9,
+          "index": 1,
+          "resource_type": 36,
+          "amount": 1000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 9,
+          "index": 2,
+          "resource_type": 23,
+          "amount": 1000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 10,
+          "index": 0,
+          "resource_type": 35,
+          "amount": 1000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 10,
+          "index": 1,
+          "resource_type": 36,
+          "amount": 1000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 10,
+          "index": 2,
+          "resource_type": 3,
+          "amount": 300000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 10,
+          "index": 3,
+          "resource_type": 2,
+          "amount": 200000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 11,
+          "index": 0,
+          "resource_type": 35,
+          "amount": 2000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 11,
+          "index": 1,
+          "resource_type": 36,
+          "amount": 2000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 11,
+          "index": 2,
+          "resource_type": 23,
+          "amount": 2500000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 12,
+          "index": 0,
+          "resource_type": 35,
+          "amount": 2000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 12,
+          "index": 1,
+          "resource_type": 36,
+          "amount": 2000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 12,
+          "index": 2,
+          "resource_type": 2,
+          "amount": 600000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 12,
+          "index": 3,
+          "resource_type": 4,
+          "amount": 400000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 15,
+          "index": 0,
+          "resource_type": 35,
+          "amount": 2000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 15,
+          "index": 1,
+          "resource_type": 36,
+          "amount": 2000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 15,
+          "index": 2,
+          "resource_type": 23,
+          "amount": 2500000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 16,
+          "index": 0,
+          "resource_type": 35,
+          "amount": 2000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 16,
+          "index": 1,
+          "resource_type": 36,
+          "amount": 2000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 16,
+          "index": 2,
+          "resource_type": 2,
+          "amount": 600000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 16,
+          "index": 3,
+          "resource_type": 4,
+          "amount": 400000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 19,
+          "index": 0,
+          "resource_type": 35,
+          "amount": 4000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 19,
+          "index": 1,
+          "resource_type": 36,
+          "amount": 4000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 19,
+          "index": 2,
+          "resource_type": 23,
+          "amount": 10000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 20,
+          "index": 0,
+          "resource_type": 35,
+          "amount": 3000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 20,
+          "index": 1,
+          "resource_type": 36,
+          "amount": 3000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 20,
+          "index": 2,
+          "resource_type": 2,
+          "amount": 900000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 20,
+          "index": 3,
+          "resource_type": 11,
+          "amount": 600000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 23,
+          "index": 0,
+          "resource_type": 35,
+          "amount": 2000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 23,
+          "index": 1,
+          "resource_type": 36,
+          "amount": 2000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 23,
+          "index": 2,
+          "resource_type": 23,
+          "amount": 2500000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 24,
+          "index": 0,
+          "resource_type": 35,
+          "amount": 2000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 24,
+          "index": 1,
+          "resource_type": 36,
+          "amount": 2000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 24,
+          "index": 2,
+          "resource_type": 2,
+          "amount": 600000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 24,
+          "index": 3,
+          "resource_type": 4,
+          "amount": 400000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 39,
+          "index": 0,
+          "resource_type": 35,
+          "amount": 4000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 39,
+          "index": 1,
+          "resource_type": 36,
+          "amount": 4000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 39,
+          "index": 2,
+          "resource_type": 23,
+          "amount": 10000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 40,
+          "index": 0,
+          "resource_type": 35,
+          "amount": 3000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 40,
+          "index": 1,
+          "resource_type": 36,
+          "amount": 3000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 40,
+          "index": 2,
+          "resource_type": 2,
+          "amount": 900000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 40,
+          "index": 3,
+          "resource_type": 5,
+          "amount": 600000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 45,
+          "index": 0,
+          "resource_type": 35,
+          "amount": 4000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 45,
+          "index": 1,
+          "resource_type": 36,
+          "amount": 4000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 45,
+          "index": 2,
+          "resource_type": 23,
+          "amount": 10000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 46,
+          "index": 0,
+          "resource_type": 35,
+          "amount": 3000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 46,
+          "index": 1,
+          "resource_type": 36,
+          "amount": 3000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 46,
+          "index": 2,
+          "resource_type": 2,
+          "amount": 900000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 46,
+          "index": 3,
+          "resource_type": 7,
+          "amount": 600000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 52,
+          "index": 0,
+          "resource_type": 35,
+          "amount": 3000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 52,
+          "index": 1,
+          "resource_type": 36,
+          "amount": 3000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 53,
+          "index": 0,
+          "resource_type": 35,
+          "amount": 2000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 53,
+          "index": 1,
+          "resource_type": 36,
+          "amount": 2000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 53,
+          "index": 2,
+          "resource_type": 23,
+          "amount": 500000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 54,
+          "index": 0,
+          "resource_type": 35,
+          "amount": 2000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 54,
+          "index": 1,
+          "resource_type": 36,
+          "amount": 2000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 54,
+          "index": 2,
+          "resource_type": 4,
+          "amount": 400000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 56,
+          "index": 0,
+          "resource_type": 35,
+          "amount": 3000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 56,
+          "index": 1,
+          "resource_type": 36,
+          "amount": 3000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 56,
+          "index": 2,
+          "resource_type": 26,
+          "amount": 10000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 56,
+          "index": 3,
+          "resource_type": 4,
+          "amount": 200000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 56,
+          "index": 4,
+          "resource_type": 11,
+          "amount": 600000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 56,
+          "index": 5,
+          "resource_type": 38,
+          "amount": 1000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 58,
+          "index": 0,
+          "resource_type": 35,
+          "amount": 4000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 58,
+          "index": 1,
+          "resource_type": 36,
+          "amount": 4000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 58,
+          "index": 2,
+          "resource_type": 27,
+          "amount": 10000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 58,
+          "index": 3,
+          "resource_type": 11,
+          "amount": 400000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 58,
+          "index": 4,
+          "resource_type": 9,
+          "amount": 800000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 58,
+          "index": 5,
+          "resource_type": 38,
+          "amount": 3000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 59,
+          "index": 0,
+          "resource_type": 35,
+          "amount": 2000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 59,
+          "index": 1,
+          "resource_type": 36,
+          "amount": 2000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 59,
+          "index": 2,
+          "resource_type": 23,
+          "amount": 500000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 60,
+          "index": 0,
+          "resource_type": 35,
+          "amount": 2000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 60,
+          "index": 1,
+          "resource_type": 36,
+          "amount": 2000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 60,
+          "index": 2,
+          "resource_type": 4,
+          "amount": 400000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 62,
+          "index": 0,
+          "resource_type": 35,
+          "amount": 3000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 62,
+          "index": 1,
+          "resource_type": 36,
+          "amount": 3000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 62,
+          "index": 2,
+          "resource_type": 29,
+          "amount": 10000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 62,
+          "index": 3,
+          "resource_type": 4,
+          "amount": 200000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 62,
+          "index": 4,
+          "resource_type": 5,
+          "amount": 600000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 62,
+          "index": 5,
+          "resource_type": 38,
+          "amount": 1000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 64,
+          "index": 0,
+          "resource_type": 35,
+          "amount": 4000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 64,
+          "index": 1,
+          "resource_type": 36,
+          "amount": 4000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 64,
+          "index": 2,
+          "resource_type": 30,
+          "amount": 10000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 64,
+          "index": 3,
+          "resource_type": 5,
+          "amount": 400000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 64,
+          "index": 4,
+          "resource_type": 19,
+          "amount": 800000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 64,
+          "index": 5,
+          "resource_type": 38,
+          "amount": 3000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 65,
+          "index": 0,
+          "resource_type": 35,
+          "amount": 2000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 65,
+          "index": 1,
+          "resource_type": 36,
+          "amount": 2000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 65,
+          "index": 2,
+          "resource_type": 23,
+          "amount": 500000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 66,
+          "index": 0,
+          "resource_type": 35,
+          "amount": 2000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 66,
+          "index": 1,
+          "resource_type": 36,
+          "amount": 2000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 66,
+          "index": 2,
+          "resource_type": 4,
+          "amount": 400000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 68,
+          "index": 0,
+          "resource_type": 35,
+          "amount": 3000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 68,
+          "index": 1,
+          "resource_type": 36,
+          "amount": 3000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 68,
+          "index": 2,
+          "resource_type": 32,
+          "amount": 10000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 68,
+          "index": 3,
+          "resource_type": 4,
+          "amount": 200000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 68,
+          "index": 4,
+          "resource_type": 7,
+          "amount": 600000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 68,
+          "index": 5,
+          "resource_type": 38,
+          "amount": 1000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 70,
+          "index": 0,
+          "resource_type": 35,
+          "amount": 4000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 70,
+          "index": 1,
+          "resource_type": 36,
+          "amount": 4000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 70,
+          "index": 2,
+          "resource_type": 33,
+          "amount": 10000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 70,
+          "index": 3,
+          "resource_type": 7,
+          "amount": 400000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 70,
+          "index": 4,
+          "resource_type": 22,
+          "amount": 800000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 70,
+          "index": 5,
+          "resource_type": 38,
+          "amount": 3000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 80,
+          "index": 0,
+          "resource_type": 36,
+          "amount": 15000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 80,
+          "index": 1,
+          "resource_type": 37,
+          "amount": 1000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 80,
+          "index": 2,
+          "resource_type": 24,
+          "amount": 500000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 83,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 20000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 83,
+          "index": 1,
+          "resource_type": 3,
+          "amount": 20000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 84,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 60000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 85,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 30000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 86,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 30000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 87,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 30000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 87,
+          "index": 1,
+          "resource_type": 3,
+          "amount": 30000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 88,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 90000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 89,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 30000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 90,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 30000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 91,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 60000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 91,
+          "index": 1,
+          "resource_type": 3,
+          "amount": 60000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 91,
+          "index": 2,
+          "resource_type": 2,
+          "amount": 30000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 92,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 300000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 93,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 120000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 93,
+          "index": 1,
+          "resource_type": 3,
+          "amount": 120000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 93,
+          "index": 2,
+          "resource_type": 2,
+          "amount": 60000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 93,
+          "index": 3,
+          "resource_type": 4,
+          "amount": 30000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 94,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 720000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 95,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 30000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 95,
+          "index": 1,
+          "resource_type": 3,
+          "amount": 30000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 96,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 90000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 97,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 120000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 97,
+          "index": 1,
+          "resource_type": 3,
+          "amount": 120000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 97,
+          "index": 2,
+          "resource_type": 2,
+          "amount": 60000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 97,
+          "index": 3,
+          "resource_type": 4,
+          "amount": 30000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 98,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 720000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 99,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 120000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 99,
+          "index": 1,
+          "resource_type": 3,
+          "amount": 120000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 99,
+          "index": 2,
+          "resource_type": 2,
+          "amount": 60000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 99,
+          "index": 3,
+          "resource_type": 4,
+          "amount": 30000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 100,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 720000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 101,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 240000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 101,
+          "index": 1,
+          "resource_type": 3,
+          "amount": 180000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 101,
+          "index": 2,
+          "resource_type": 4,
+          "amount": 120000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 101,
+          "index": 3,
+          "resource_type": 11,
+          "amount": 60000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 101,
+          "index": 4,
+          "resource_type": 38,
+          "amount": 600000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 102,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 2400000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 103,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 240000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 103,
+          "index": 1,
+          "resource_type": 3,
+          "amount": 240000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 103,
+          "index": 2,
+          "resource_type": 2,
+          "amount": 180000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 103,
+          "index": 3,
+          "resource_type": 4,
+          "amount": 120000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 104,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 1800000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 105,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 120000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 105,
+          "index": 1,
+          "resource_type": 3,
+          "amount": 120000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 105,
+          "index": 2,
+          "resource_type": 2,
+          "amount": 60000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 105,
+          "index": 3,
+          "resource_type": 4,
+          "amount": 30000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 106,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 720000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 107,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 240000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 107,
+          "index": 1,
+          "resource_type": 3,
+          "amount": 240000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 107,
+          "index": 2,
+          "resource_type": 2,
+          "amount": 180000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 107,
+          "index": 3,
+          "resource_type": 4,
+          "amount": 120000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 108,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 1800000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 109,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 180000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 109,
+          "index": 1,
+          "resource_type": 3,
+          "amount": 180000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 109,
+          "index": 2,
+          "resource_type": 2,
+          "amount": 120000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 109,
+          "index": 3,
+          "resource_type": 4,
+          "amount": 60000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 110,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 1200000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 111,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 180000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 111,
+          "index": 1,
+          "resource_type": 3,
+          "amount": 180000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 111,
+          "index": 2,
+          "resource_type": 2,
+          "amount": 120000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 111,
+          "index": 3,
+          "resource_type": 4,
+          "amount": 60000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 112,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 1200000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 113,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 180000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 113,
+          "index": 1,
+          "resource_type": 3,
+          "amount": 180000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 113,
+          "index": 2,
+          "resource_type": 2,
+          "amount": 120000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 113,
+          "index": 3,
+          "resource_type": 4,
+          "amount": 60000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 114,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 1200000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 115,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 240000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 115,
+          "index": 1,
+          "resource_type": 3,
+          "amount": 240000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 115,
+          "index": 2,
+          "resource_type": 2,
+          "amount": 180000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 115,
+          "index": 3,
+          "resource_type": 4,
+          "amount": 120000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 116,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 1800000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 117,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 240000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 117,
+          "index": 1,
+          "resource_type": 3,
+          "amount": 240000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 117,
+          "index": 2,
+          "resource_type": 2,
+          "amount": 180000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 117,
+          "index": 3,
+          "resource_type": 4,
+          "amount": 120000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 118,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 1800000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 119,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 240000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 119,
+          "index": 1,
+          "resource_type": 3,
+          "amount": 240000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 119,
+          "index": 2,
+          "resource_type": 2,
+          "amount": 180000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 119,
+          "index": 3,
+          "resource_type": 4,
+          "amount": 120000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 120,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 1800000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 121,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 240000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 121,
+          "index": 1,
+          "resource_type": 3,
+          "amount": 180000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 121,
+          "index": 2,
+          "resource_type": 4,
+          "amount": 120000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 121,
+          "index": 3,
+          "resource_type": 5,
+          "amount": 60000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 121,
+          "index": 4,
+          "resource_type": 38,
+          "amount": 600000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 122,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 2400000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 123,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 180000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 123,
+          "index": 1,
+          "resource_type": 3,
+          "amount": 180000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 123,
+          "index": 2,
+          "resource_type": 2,
+          "amount": 120000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 123,
+          "index": 3,
+          "resource_type": 4,
+          "amount": 60000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 124,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 1200000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 125,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 240000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 125,
+          "index": 1,
+          "resource_type": 3,
+          "amount": 240000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 125,
+          "index": 2,
+          "resource_type": 2,
+          "amount": 180000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 125,
+          "index": 3,
+          "resource_type": 4,
+          "amount": 120000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 126,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 1800000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 127,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 240000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 127,
+          "index": 1,
+          "resource_type": 3,
+          "amount": 180000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 127,
+          "index": 2,
+          "resource_type": 4,
+          "amount": 120000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 127,
+          "index": 3,
+          "resource_type": 7,
+          "amount": 60000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 127,
+          "index": 4,
+          "resource_type": 38,
+          "amount": 600000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 128,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 2400000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 133,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 60000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 133,
+          "index": 1,
+          "resource_type": 3,
+          "amount": 60000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 134,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 180000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 135,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 180000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 135,
+          "index": 1,
+          "resource_type": 3,
+          "amount": 180000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 135,
+          "index": 2,
+          "resource_type": 4,
+          "amount": 120000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 136,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 1200000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 137,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 360000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 137,
+          "index": 1,
+          "resource_type": 3,
+          "amount": 240000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 137,
+          "index": 2,
+          "resource_type": 4,
+          "amount": 180000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 137,
+          "index": 3,
+          "resource_type": 11,
+          "amount": 60000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 137,
+          "index": 4,
+          "resource_type": 38,
+          "amount": 600000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 139,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 540000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 139,
+          "index": 1,
+          "resource_type": 3,
+          "amount": 360000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 139,
+          "index": 2,
+          "resource_type": 11,
+          "amount": 240000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 139,
+          "index": 3,
+          "resource_type": 9,
+          "amount": 120000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 139,
+          "index": 4,
+          "resource_type": 38,
+          "amount": 1200000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 141,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 180000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 141,
+          "index": 1,
+          "resource_type": 3,
+          "amount": 180000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 141,
+          "index": 2,
+          "resource_type": 4,
+          "amount": 120000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 142,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 1200000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 143,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 360000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 143,
+          "index": 1,
+          "resource_type": 3,
+          "amount": 240000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 143,
+          "index": 2,
+          "resource_type": 4,
+          "amount": 180000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 143,
+          "index": 3,
+          "resource_type": 5,
+          "amount": 60000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 143,
+          "index": 4,
+          "resource_type": 38,
+          "amount": 600000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 145,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 540000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 145,
+          "index": 1,
+          "resource_type": 3,
+          "amount": 360000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 145,
+          "index": 2,
+          "resource_type": 5,
+          "amount": 240000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 145,
+          "index": 3,
+          "resource_type": 19,
+          "amount": 120000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 145,
+          "index": 4,
+          "resource_type": 38,
+          "amount": 1200000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 147,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 180000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 147,
+          "index": 1,
+          "resource_type": 3,
+          "amount": 180000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 147,
+          "index": 2,
+          "resource_type": 4,
+          "amount": 120000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 148,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 1200000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 149,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 360000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 149,
+          "index": 1,
+          "resource_type": 3,
+          "amount": 240000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 149,
+          "index": 2,
+          "resource_type": 4,
+          "amount": 180000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 149,
+          "index": 3,
+          "resource_type": 7,
+          "amount": 60000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 149,
+          "index": 4,
+          "resource_type": 38,
+          "amount": 600000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 151,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 540000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 151,
+          "index": 1,
+          "resource_type": 3,
+          "amount": 360000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 151,
+          "index": 2,
+          "resource_type": 7,
+          "amount": 240000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 151,
+          "index": 3,
+          "resource_type": 22,
+          "amount": 120000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 151,
+          "index": 4,
+          "resource_type": 38,
+          "amount": 1200000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 153,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 10000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 154,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 10000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 155,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 10000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 156,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 10000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 157,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 120000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 157,
+          "index": 1,
+          "resource_type": 3,
+          "amount": 120000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 157,
+          "index": 2,
+          "resource_type": 4,
+          "amount": 60000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 158,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 360000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 159,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 180000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 159,
+          "index": 1,
+          "resource_type": 35,
+          "amount": 1200000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 159,
+          "index": 2,
+          "resource_type": 36,
+          "amount": 1200000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 159,
+          "index": 3,
+          "resource_type": 38,
+          "amount": 200000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 160,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 360000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 160,
+          "index": 1,
+          "resource_type": 35,
+          "amount": 2400000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 160,
+          "index": 2,
+          "resource_type": 36,
+          "amount": 2400000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 160,
+          "index": 3,
+          "resource_type": 38,
+          "amount": 600000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 160,
+          "index": 4,
+          "resource_type": 3,
+          "amount": 180000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 161,
+          "index": 0,
+          "resource_type": 23,
+          "amount": 720000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 161,
+          "index": 1,
+          "resource_type": 35,
+          "amount": 4800000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 161,
+          "index": 2,
+          "resource_type": 36,
+          "amount": 4800000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 161,
+          "index": 3,
+          "resource_type": 38,
+          "amount": 1200000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 161,
+          "index": 4,
+          "resource_type": 3,
+          "amount": 360000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 161,
+          "index": 5,
+          "resource_type": 2,
+          "amount": 180000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 161,
+          "index": 6,
+          "resource_type": 4,
+          "amount": 180000000000
+        }
+      ],
+      "resource_min_max_lists": [
+        {
+          "preset_id": 0,
+          "entity_id": 1,
+          "index": 0,
+          "resource_type": 35,
+          "min_amount": 500000000000,
+          "max_amount": 500000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 1,
+          "index": 1,
+          "resource_type": 36,
+          "min_amount": 500000000000,
+          "max_amount": 500000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 1,
+          "index": 2,
+          "resource_type": 23,
+          "min_amount": 2500000000000,
+          "max_amount": 2500000000000
+        },
+        {
+          "preset_id": 0,
+          "entity_id": 1,
+          "index": 3,
+          "resource_type": 25,
+          "min_amount": 200000000000,
+          "max_amount": 200000000000
+        }
+      ]
+    }
+  }
+}

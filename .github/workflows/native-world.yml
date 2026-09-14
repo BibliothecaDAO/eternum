@@ -1,0 +1,63 @@
+name: native-world
+
+on:
+  pull_request:
+    paths:
+      - "contracts/l3/world-native/**"
+      - "apps/herald/src/model-registry.ts"
+      - ".github/workflows/native-world.yml"
+      - "pnpm-lock.yaml"
+  push:
+    branches: [next]
+    paths:
+      - "contracts/l3/world-native/**"
+      - "apps/herald/src/model-registry.ts"
+      - ".github/workflows/native-world.yml"
+      - "pnpm-lock.yaml"
+
+concurrency:
+  group: native-world-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: software-mansion/setup-scarb@v1
+        with:
+          tool-versions: contracts/l3/world-native/.tool-versions
+      - uses: foundry-rs/setup-snfoundry@v3
+        with:
+          tool-versions: contracts/l3/world-native/.tool-versions
+      - name: Check native formatting
+        working-directory: contracts/l3/world-native
+        run: scarb fmt --check
+      - name: Test native storage, authorization and upgrades
+        working-directory: contracts/l3/world-native
+        run: snforge test
+
+  schema:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: software-mansion/setup-scarb@v1
+        with:
+          tool-versions: contracts/l3/world-native/.tool-versions
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+      - uses: oven-sh/setup-bun@v2
+      - name: Install schema dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build shared model registry dependencies
+        run: pnpm --filter @bibliothecadao/eternum... run build
+      - name: Build native domain ABIs
+        working-directory: contracts/l3/world-native
+        run: scarb build
+      - name: Reject schema and fixture drift
+        run: bun contracts/l3/world-native/scripts/generate-schema.mjs --check

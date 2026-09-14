@@ -1,0 +1,44 @@
+{
+  "schemaIdentity": "57cafe85b1dbf94f6b7315bececcb04c88dc03a2f8fe606bd8155f6577f8db2d",
+  "deployment": {
+    "season": "0x101",
+    "map": "0x102",
+    "troops": "0x100"
+  },
+  "raw": {
+    "from_address": "0x102",
+    "keys": [
+      "0x1517f684ec2bc21ca20251bbef26b7ad0434759388fc50e84858abf49e4024b",
+      "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724",
+      "0x1",
+      "0x4578706c6f72657254726f6f7073"
+    ],
+    "data": [
+      "0x2",
+      "0x1",
+      "0x7",
+      "0x12",
+      "0x7",
+      "0x0",
+      "0x0",
+      "0x0",
+      "0x0",
+      "0x0",
+      "0x0",
+      "0x0",
+      "0x0",
+      "0x0",
+      "0x0",
+      "0x0",
+      "0x0",
+      "0x0",
+      "0x0",
+      "0x0",
+      "0xc",
+      "0x22"
+    ]
+  },
+  "expected": {
+    "error": "foreign-emitter"
+  }
+}

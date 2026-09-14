@@ -1,0 +1,24 @@
+[package]
+name = "eternum_randomness_protocol"
+version = "0.1.0"
+cairo-version = "2.13.1"
+edition = "2024_07"
+
+[lib]
+
+[dependencies]
+starknet = "2.13.1"
+
+[dev-dependencies]
+snforge_std = "0.51.2"
+
+[[target.starknet-contract]]
+sierra = true
+casm = true
+
+[scripts]
+test = "snforge test"
+
+[tool.fmt]
+sort-module-level-items = true
+max-line-length = 120
