@@ -122,7 +122,7 @@ export const seedStructure = (
 
 export const seedExplorer = (
   components: ClientComponents,
-  input: { explorerId: number; owner: number; x: number; y: number; stamina?: bigint; count?: bigint },
+  input: { explorerId: number; owner: number; x: number; y: number; stamina?: bigint; count?: bigint; alt?: boolean },
 ): void =>
   setComponent(
     components.ExplorerTroops,
@@ -137,7 +137,7 @@ export const seedExplorer = (
         count: input.count ?? 10_000_000_000n,
         stamina: { amount: input.stamina ?? 50n },
       },
-      coord: { x: input.x, y: input.y, alt: false },
+      coord: { x: input.x, y: input.y, alt: input.alt ?? false },
     }),
   );
 
@@ -160,7 +160,7 @@ export const seedGameRegistry = (
 type DeepPartial<T> = { [Key in keyof T]?: T[Key] extends object ? DeepPartial<T[Key]> : T[Key] };
 
 /** A full row for a component: every field zeroed from the schema, with the fields under test overridden. */
-const rowOf = <S extends Schema>(
+export const rowOf = <S extends Schema>(
   component: Component<S>,
   overrides: DeepPartial<ComponentValue<S>>,
 ): ComponentValue<S> => merge(zeroRow(component.schema), overrides) as ComponentValue<S>;

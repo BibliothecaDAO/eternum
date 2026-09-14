@@ -7,7 +7,7 @@ import {
 } from "@bibliothecadao/eternum";
 import { ContractAddress, getNeighborHexes } from "@bibliothecadao/types";
 import type { AgentTool } from "@mariozechner/pi-agent-core";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createFakeGame, PLAYER, seedExplorer, seedGameRegistry, seedStructure } from "../test-support/fake-game";
 import { ACTION_CATALOG, ACTION_NAMES } from "./action-catalog";
@@ -190,5 +190,18 @@ describe("createRunnerTools", () => {
       "report_to_owner",
     ]);
     for (const tool of tools) expect(tool.parameters).toHaveProperty("type");
+  });
+});
+
+describe("army planner layers", () => {
+  it.each([false, true])("uses the explorer layer (alt=%s) for every index", async (alt) => {
+    const game = createFakeGame();
+    seedExplorer(game.components, { explorerId: 101, owner: 12, x: 100, y: 100, alt });
+    const armies = vi.spyOn(game.client.projection, "getArmies");
+    const tiles = vi.spyOn(game.client.projection, "getTiles");
+    game.actions.armyPaths.mockReturnValue(new ActionPaths());
+    await runAction(game, { action: "armyPaths", params: { explorerId: 101 } });
+    expect(armies).toHaveBeenCalledWith(alt);
+    expect(tiles).toHaveBeenCalledWith(alt);
   });
 });

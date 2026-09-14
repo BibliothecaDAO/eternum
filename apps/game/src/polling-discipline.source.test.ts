@@ -81,6 +81,8 @@ const ALLOWED_RECURRING_TIMEOUTS: Record<string, AllowedTimer & { callback: stri
 };
 
 const ALLOWED_TRANSACTION_WAITS: Record<string, string> = {
+  "packages/core/src/account/bind-gameplay-accounts.ts":
+    "confirms identity bindings before a gameplay Herald session exists",
   "packages/core/src/client/game-client.ts": "injects the Herald transaction channel into the provider",
   "apps/game/src/observability/observed-client-transaction.ts": "resolves an observed submit from the Herald channel",
   "apps/game/src/three/scenes/worldmap.tsx": "resolves movement from the Herald channel",

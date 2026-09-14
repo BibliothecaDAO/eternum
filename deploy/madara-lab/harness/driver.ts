@@ -2,7 +2,7 @@ import { setTimeout as sleep } from "node:timers/promises";
 import { shortString, type Account, type Call, type RpcProvider } from "starknet";
 import { type ActionPath, ActionPaths, ActionType, type GameActions } from "@bibliothecadao/eternum";
 import { buildBlitzSettleCalls, buildEternumSettleCalls } from "@bibliothecadao/eternum/game-client";
-import { ContractAddress, TroopTier, type ID, type TroopType } from "../../../packages/types";
+import { ContractAddress, TroopTier, type ID, type TroopType } from "../../../packages/types/src";
 import { mapWithConcurrency, type HarnessAccount } from "./account-factory";
 import {
   EXPLORER_TROOP_COUNT,
@@ -158,6 +158,7 @@ interface PathReservation {
 }
 
 interface TrackTransactionOptions {
+  confirmationTimeoutMs?: number;
   actionIndex?: number;
   botId: number;
   exploreRequested?: boolean;
@@ -328,7 +329,14 @@ export async function prepareHarnessBots({
     const troopTypes = await waitForStartingTroopTypes(game, structureIds);
     const actions = game.actionsFor(harnessAccount.account);
     for (const structure of structures) {
-      const createExplorer = await createBotExplorer({ actions, harnessAccount, game, provider, structure, troopTypes });
+      const createExplorer = await createBotExplorer({
+        actions,
+        harnessAccount,
+        game,
+        provider,
+        structure,
+        troopTypes,
+      });
       setupTransactions.push(createExplorer);
       assertCompleted(createExplorer);
     }
@@ -834,7 +842,9 @@ async function waitForEveryBotToHaveActionStamina(
   while (Date.now() <= deadline) {
     const { armies } = await readChainTicks(game, provider, rpc);
     const everyBotReady = bots.every((bot) =>
-      bot.explorers.some((explorer) => game.explorerStamina(explorer.explorerId, armies) >= FIRST_ACTION_REQUIRED_STAMINA),
+      bot.explorers.some(
+        (explorer) => game.explorerStamina(explorer.explorerId, armies) >= FIRST_ACTION_REQUIRED_STAMINA,
+      ),
     );
     if (everyBotReady) return Date.now() - startedAtMs;
     await sleep(ACTION_READINESS_POLL_INTERVAL_MS);
@@ -887,26 +897,67 @@ export async function trackTransaction(options: TrackTransactionOptions): Promis
     return record;
   }
 
-  // The receipt lifecycle is the measurement (pre-confirmed and L2 timings at the poll boundary); the client's own
-  // confirmation rides alongside so a bot never plans its next step before the client processed this one.
-  const timeoutMs = transactionTimeoutMs(options.stage);
-  const [lifecycle] = await Promise.all([
-    waitForReceiptLifecycle(options.provider, transactionHash, Date.parse(record.submittedAt!), timeoutMs, rpc),
-    settleQuietly(submission.confirmed),
-  ]);
-  Object.assign(record, lifecycle);
+  Object.assign(
+    record,
+    await waitForConfirmation(options, submission, transactionHash, Date.parse(record.submittedAt!), rpc),
+  );
   record.rpc = snapshotRpcMetrics(rpc);
   return record;
 }
 
-/** An action's rejection is the same revert the receipt lifecycle records, so only its completion matters here. */
-const settleQuietly = (confirmed: Promise<unknown> | undefined): Promise<void> =>
-  confirmed
-    ? confirmed.then(
-        () => undefined,
-        () => undefined,
-      )
-    : Promise.resolve();
+/** Receipt measurements and the Herald state barrier share one deadline, including stalled RPC requests. */
+async function waitForConfirmation(
+  options: TrackTransactionOptions,
+  submission: HarnessSubmission,
+  transactionHash: string,
+  submittedAtMs: number,
+  rpc: RpcMetrics,
+): Promise<Partial<TrackedTransaction>> {
+  const timeoutMs = options.confirmationTimeoutMs ?? transactionTimeoutMs(options.stage);
+  const stop = new AbortController();
+  let lifecycle: Partial<TrackedTransaction> = {};
+  let timer: ReturnType<typeof setTimeout>;
+  const deadline = new Promise<Partial<TrackedTransaction>>((resolve) => {
+    timer = setTimeout(
+      () =>
+        resolve({
+          ...lifecycle,
+          outcome: "confirmation_timeout",
+          error: `Receipt and Herald confirmation did not both complete within ${timeoutMs} ms`,
+        }),
+      timeoutMs,
+    );
+  });
+  const confirmed =
+    submission.confirmed?.then(
+      () => undefined,
+      (error: unknown) => errorMessage(error),
+    ) ?? Promise.resolve(undefined);
+  const measured = waitForReceiptLifecycle(
+    options.provider,
+    transactionHash,
+    submittedAtMs,
+    timeoutMs,
+    rpc,
+    stop.signal,
+  ).then((result) => {
+    lifecycle = result;
+    return result;
+  });
+  const complete = measured.then(async (result) => {
+    if (result.outcome !== "completed") return result;
+    const failure = await confirmed;
+    return failure === undefined
+      ? result
+      : { ...result, outcome: "driver_failed" as const, error: `Herald confirmation failed: ${failure}` };
+  });
+  try {
+    return await Promise.race([complete, deadline]);
+  } finally {
+    clearTimeout(timer!);
+    stop.abort();
+  }
+}
 
 async function waitForReceiptLifecycle(
   provider: RpcProvider,
@@ -914,12 +965,13 @@ async function waitForReceiptLifecycle(
   submittedAtMs: number,
   timeoutMs: number,
   rpc: RpcMetrics,
+  signal: AbortSignal,
 ): Promise<Partial<TrackedTransaction>> {
   const deadline = Date.now() + timeoutMs;
   let preConfirmedAtMs: number | undefined;
   let lastStatus: string | undefined;
 
-  while (Date.now() <= deadline) {
+  while (!signal.aborted && Date.now() <= deadline) {
     try {
       const status = (await measureRpc(rpc, "getTransactionStatus", () =>
         provider.getTransactionStatus(transactionHash),

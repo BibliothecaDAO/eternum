@@ -12,7 +12,7 @@ import {
 } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import type { Account } from "starknet";
-import { ResourcesIds, TickIds, TroopType, type ID } from "../../../packages/types";
+import { ResourcesIds, TickIds, TroopType, type ID } from "../../../packages/types/src";
 
 export interface Coord {
   x: number;

@@ -1,12 +1,13 @@
 import {
   FELT_CENTER,
   gameEntityKey,
+  getBuildingCount,
   multiplyByPrecision,
   waitForWorldState,
   type GameClient,
 } from "@bibliothecadao/eternum";
 import { buildBlitzSettleCalls } from "@bibliothecadao/eternum/game-client";
-import { getNeighborHexes, TroopTier, TroopType, type Direction, type ID } from "@bibliothecadao/types";
+import { BuildingType, getNeighborHexes, TroopTier, TroopType, type Direction, type ID } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { shortString, type AccountInterface, type Call } from "starknet";
 
@@ -43,7 +44,8 @@ export async function ensureSettled(
   const structures = await ensureSettlement(game, signer, username);
   const spawns = await waitForStructureSpawns(game.client, structures);
   await ensureProvisioned(game, signer, structures);
-  const troopTypes = await waitForStartingTroopTypes(game.client, structures);
+  const missingExplorers = structures.filter((id) => game.client.views.explorers(id).length === 0);
+  const troopTypes = await waitForStartingTroopTypes(game.client, missingExplorers);
   await ensureExplorers(game.client, spawns, troopTypes);
   const explorers = await waitForExplorers(game.client, structures);
   return { structures, explorers };
@@ -72,9 +74,17 @@ const buildSettleCalls = (game: RunnerGame, signer: AccountInterface, username: 
     grantStartingTroops: true,
   });
 
-/** Blitz realms produce nothing until provisioned; a funded T1 balance is the RECS sign it already happened. */
+/** The contract permits provisioning exactly until the realm has its first Labor building. */
 const ensureProvisioned = async (game: RunnerGame, signer: AccountInterface, structures: ID[]): Promise<void> => {
-  const unprovisioned = structures.filter((structureId) => startingTroopType(game.client, structureId) === undefined);
+  const unprovisioned = structures.filter((id) => {
+    const row = getComponentValue(game.client.setup.components.StructureBuildings, gameEntityKey([BigInt(id)]));
+    // Settlement creates no building-count row. The contract reads zero counts until the first building is placed.
+    if (!row) return true;
+    return (
+      getBuildingCount(BuildingType.ResourceLabor, [row.packed_counts_1, row.packed_counts_2, row.packed_counts_3]) ===
+      0
+    );
+  });
   if (unprovisioned.length === 0) return;
   await submitAndConfirm(
     game.client,

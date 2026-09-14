@@ -55,7 +55,7 @@ require_env() {
 # The newest open Blitz game on Herald, or the named one if it is open. Ended games are excluded by their clock, the
 # way the runner's phase check excludes them, so the run does not stop at its first tick.
 resolve_game_id() {
-  curl -fsS --max-time 15 "${VITE_PUBLIC_HERALD_URL%/}/madara/games" | python3 - "$GAME_NAME" <<'PY'
+  curl -fsS --max-time 15 "${VITE_PUBLIC_HERALD_URL%/}/madara/games" | python3 -c "$(cat <<'PY'
 import json, sys, time
 
 name = sys.argv[1]
@@ -74,6 +74,7 @@ if not chosen:
     sys.exit(f"play-blitz.sh: no open Blitz game{' named ' + name if name else ''} on Herald; listed: {listed}")
 print(chosen[0]["game_id"])
 PY
+)" "$GAME_NAME"
 }
 
 # The same command the image's ENTRYPOINT runs; the runner exits 0 when the game ends and 1 when its sync fails.
@@ -101,4 +102,6 @@ print(
 PY
 }
 
-main "$@"
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  main "$@"
+fi

@@ -85,10 +85,12 @@ const plan = (client: GameClient, action: PlannerName, params: Params): ActOutco
 };
 
 const armyPaths = (client: GameClient, explorerId: ID): ActionPaths => {
+  const explorer = getComponentValue(client.setup.components.ExplorerTroops, gameEntityKey([BigInt(explorerId)]));
+  if (!explorer) throw new Error(`Explorer ${explorerId} is not in RECS`);
   const { currentDefaultTick, currentArmiesTick } = getBlockTimestamp();
   return client.actions.armyPaths({
     explorerId,
-    ...buildArmyPathIndexes(client),
+    ...buildArmyPathIndexes(client, explorer.coord.alt),
     currentDefaultTick,
     currentArmiesTick,
     playerAddress: viewerOf(client),
