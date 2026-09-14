@@ -273,4 +273,24 @@ describe("SelectPreviewBuildingMenu production badge", () => {
     expect(uiMocks.setPreviewBuilding).toHaveBeenCalledWith({ type: BuildingType.ResourceWheat });
     expect(uiMocks.setLeftNavigationView).toHaveBeenCalledTimes(1);
   });
+  it("does not submit a second build while the first tap is pending", async () => {
+    let finish!: (result: boolean) => void;
+    buildMocks.buildRealmBuilding.mockImplementationOnce(
+      () =>
+        new Promise<boolean>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    routeMocks.isMapView = true;
+    const card = await renderMenu();
+    await act(async () => {
+      card.click();
+      card.click();
+    });
+    expect(buildMocks.buildRealmBuilding).toHaveBeenCalledTimes(1);
+    expect(card.textContent).toContain("…");
+    await act(async () => finish(true));
+    await act(async () => card.click());
+    expect(buildMocks.buildRealmBuilding).toHaveBeenCalledTimes(2);
+  });
 });

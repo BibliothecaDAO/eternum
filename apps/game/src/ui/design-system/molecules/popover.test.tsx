@@ -412,4 +412,86 @@ describe("Popover", () => {
     await act(async () => edgeRoot.unmount());
     edgeContainer.remove();
   });
+  it.each(["portrait", "landscape"] as const)(
+    "ignores remembered desktop offsets and header drags in %s",
+    async (lane) => {
+      stubCompactLane(lane);
+      window.localStorage.setItem("eternum.free-surface-offset", JSON.stringify({ x: 400, y: 250 }));
+      await act(async () =>
+        usePopoverStore.getState().openSurface({
+          id: "mobile",
+          content: (
+            <SurfaceFrame title="Build" onClose={() => {}}>
+              <input defaultValue="123" />
+            </SurfaceFrame>
+          ),
+        }),
+      );
+      const surface = panel("mobile")!;
+      const handle = surface.querySelector("[data-popover-drag-handle]")!;
+      await act(async () => {
+        handle.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true, clientX: 10, clientY: 10 }));
+        handle.dispatchEvent(new MouseEvent("pointermove", { bubbles: true, clientX: 300, clientY: 200 }));
+        handle.dispatchEvent(new MouseEvent("pointerup", { bubbles: true }));
+      });
+      expect(surface.style.transform).toBe("");
+      expect(surface.querySelector("input")!.value).toBe("123");
+      window.localStorage.removeItem("eternum.free-surface-offset");
+    },
+  );
+
+  it("keeps the current form above the keyboard and preserves it across rotation", async () => {
+    stubCompactLane("portrait");
+    vi.stubGlobal("innerHeight", 844);
+    const viewport = Object.assign(new EventTarget(), { height: 844, offsetTop: 0 });
+    vi.stubGlobal("visualViewport", viewport);
+    await act(async () =>
+      usePopoverStore.getState().openSurface({
+        id: "form",
+        content: (
+          <SurfaceFrame title="Transfer" onClose={() => {}}>
+            <input defaultValue="2500" />
+          </SurfaceFrame>
+        ),
+      }),
+    );
+    const input = panel("form")!.querySelector("input")!;
+    await act(async () => {
+      viewport.height = 480;
+      viewport.dispatchEvent(new Event("resize"));
+    });
+    expect(panel("form")!.style.bottom).toBe("364px");
+    expect(panel("form")!.style.getPropertyValue("--surface-viewport-height")).toBe("480px");
+    stubCompactLane("landscape");
+    await act(async () => window.dispatchEvent(new Event("resize")));
+    expect(panel("form")!.style.right).toBe("0px");
+    expect(panel("form")!.querySelector("input")).toBe(input);
+    expect(input.value).toBe("2500");
+  });
+
+  it("returns keyboard focus to the opening button on Escape", async () => {
+    trigger("open a").focus();
+    await act(async () => trigger("open a").click());
+    expect(document.activeElement).toBe(panel("a"));
+    await act(async () => window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" })));
+    expect(document.activeElement).toBe(trigger("open a"));
+  });
+
+  it("lets a workspace trigger handle its own pointer click without outside dismissal", async () => {
+    const onDismiss = vi.fn();
+    const unmount = await mountPanel("top-center", onDismiss);
+    const anchor = trigger("open a");
+    anchor.dataset.popoverAnchor = "sheet";
+    await act(async () => anchor.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true })));
+    expect(onDismiss).not.toHaveBeenCalled();
+    await unmount();
+  });
+  it("updates the trigger exemption when switching between store surfaces", async () => {
+    await act(async () => usePopoverStore.getState().openSurface({ id: "production", content: <p>Production</p> }));
+    await act(async () => usePopoverStore.getState().openSurface({ id: "market", content: <p>Market</p> }));
+    const anchor = trigger("open a");
+    anchor.dataset.popoverAnchor = "market";
+    await act(async () => anchor.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true })));
+    expect(usePopoverStore.getState().openId).toBe("market");
+  });
 });

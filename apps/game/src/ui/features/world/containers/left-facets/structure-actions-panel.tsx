@@ -42,7 +42,7 @@ const TILE_VARIANT_CLASS: Record<ActionTileVariant, { button: string; icon: stri
     button:
       "min-h-11 flex-1 justify-center gap-1 rounded-lg px-1 py-1.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold active:bg-gold/15",
     icon: "h-6 w-6",
-    label: "text-[10px] tracking-[0.04em]",
+    label: "text-[11px] normal-case tracking-normal",
   },
 };
 
@@ -53,6 +53,7 @@ export const ActionTile = ({ action, variant }: { action: StructureAction; varia
   return (
     <button
       type="button"
+      data-popover-anchor={action.id === "transfer" ? "logistics" : action.id === "trade" ? "market" : action.id}
       aria-label={label}
       aria-pressed={active}
       onClick={onClick}
@@ -63,7 +64,9 @@ export const ActionTile = ({ action, variant }: { action: StructureAction; varia
       )}
     >
       <img src={image} alt="" className={cn("object-contain", classes.icon)} />
-      <span className={cn(HUD_LABEL, "max-w-full truncate", classes.label, active && "text-gold")}>{label}</span>
+      <span className={cn(HUD_LABEL, "max-w-full truncate", classes.label, active && "text-gold")}>
+        {variant === "compact" && action.id === "production" ? "Produce" : label}
+      </span>
       {badges
         .filter((badge) => badge.count > 0)
         .map((badge, index) => (

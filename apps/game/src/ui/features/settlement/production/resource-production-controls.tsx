@@ -288,7 +288,7 @@ export const ResourceProductionControls = ({
 
   return (
     <div className="space-y-3 rounded-lg border border-gold/15 bg-black/25 p-4">
-      <div className={cn("grid gap-4", canUseLabor ? "grid-cols-2" : "grid-cols-1")}>
+      <div className={cn("grid gap-4", canUseLabor ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1")}>
         <div className="space-y-2">
           <h3 className={HUD_HEADLINE}>Start production · {ResourcesIds[selectedResource]}</h3>
           <div className="flex items-center gap-2">
@@ -297,7 +297,7 @@ export const ResourceProductionControls = ({
               value={Math.round(productionAmount)}
               onChange={(value) => setProductionAmount(value)}
               min={1}
-              className="h-9 w-52 text-sm"
+              className="min-h-11 w-full min-w-0 text-base lg:h-9 lg:w-52 lg:text-sm"
             />
           </div>
           <p className={HUD_BODY_MUTED}>Type the output; the inputs follow.</p>
@@ -342,7 +342,7 @@ export const ResourceProductionControls = ({
           {error}
         </p>
       )}
-      <div className="flex items-center justify-between gap-3 border-t border-gold/15 pt-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gold/15 pt-3">
         <span className={cn(HUD_VALUE, "flex items-center gap-1.5")}>
           {Math.round(productionAmount).toLocaleString()} {ResourcesIds[selectedResource]}
           <ResourceIcon resource={ResourcesIds[selectedResource]} size="xs" withTooltip={false} />
@@ -355,7 +355,7 @@ export const ResourceProductionControls = ({
         disabled={!ordersAllowed || isDisabled || isLoading}
         isLoading={isLoading}
         variant={isDisabled ? "outline" : "gold"}
-        className="w-full"
+        className="sticky bottom-0 min-h-11 w-full"
         size="md"
       >
         {isDisabled ? "Not enough resources" : "Start production"}

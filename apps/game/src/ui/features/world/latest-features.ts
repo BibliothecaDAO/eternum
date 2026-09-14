@@ -41,6 +41,13 @@ const allLatestFeatures: LatestFeature[] = [
   },
   {
     date: "2026-09-14",
+    title: "Roomier Mobile Action Menus",
+    description:
+      "Build, Production, Military, Transfer and Trade adapt to portrait and landscape with compact structure selection, larger touch controls and clearer actions. Building costs are visible before you build, and menus stay in place when you rotate or enter an amount.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-14",
     title: "Mobile Action Menu and Market",
     description:
       "The Build, Production, Military, Transfer and Trade menu now appears on phones: a rail on the left in landscape and a row above the tab bar in portrait. The Market fits a phone screen and keeps your AMM tab open when you change resources. The phone order book now leads with a Buy/Sell toggle and the order form, shows the three best offers beneath it, and opens the full list on See all.",

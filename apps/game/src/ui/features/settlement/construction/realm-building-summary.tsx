@@ -150,7 +150,7 @@ export const RealmBuildingSummary = ({
                 key={item.buildingId}
                 className={clsx(
                   "group relative flex items-center gap-1.5 rounded-full border border-gold/20 bg-brown/30 px-2 py-1 text-[11px] text-gold/90",
-                  buildAction && "pr-8",
+                  buildAction && "pr-8 max-lg:pr-12 max-lg:min-h-12",
                 )}
                 title={item.label}
                 aria-label={`${item.label}: ${item.count}`}
@@ -170,7 +170,7 @@ export const RealmBuildingSummary = ({
                     title={buildAction.title}
                     aria-label={`Build ${item.label}`}
                     className={clsx(
-                      "absolute right-1 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full border border-gold/40 bg-black/70 text-gold transition-opacity opacity-0 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus-visible:ring-1 focus-visible:ring-gold",
+                      "absolute right-1 top-1/2 flex h-5 w-5 max-lg:h-11 max-lg:w-11 max-lg:opacity-100 -translate-y-1/2 items-center justify-center rounded-full border border-gold/40 bg-black/70 text-gold transition-opacity opacity-0 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus-visible:ring-1 focus-visible:ring-gold",
                       !(buildAction.disabled || buildAction.loading) && "hover:bg-gold/15",
                       (buildAction.disabled || buildAction.loading) &&
                         "cursor-not-allowed opacity-40 group-hover:opacity-40",

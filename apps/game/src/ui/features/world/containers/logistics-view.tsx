@@ -1,3 +1,4 @@
+import { StructureWorkspace } from "@/ui/design-system/molecules/structure-workspace";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Tabs } from "@/ui/design-system/atoms/tab";
 import { EntityResourceTable } from "@/ui/features/economy/resources";
@@ -21,7 +22,7 @@ const TAB_INDEX_BY_KEY: Record<LogisticsTab, number> = {
 };
 
 const tabClass =
-  "!mx-0 flex items-center justify-center rounded-md border border-gold/20 bg-black/25 px-3 py-1.5 text-center text-[11px] font-semibold uppercase tracking-[0.14em] text-gold/75 transition hover:border-gold/40 hover:text-gold";
+  "!mx-0 min-h-11 flex items-center justify-center rounded-md border border-gold/20 bg-black/25 px-3 py-1.5 text-center text-[11px] font-semibold uppercase tracking-[0.14em] text-gold/75 transition hover:border-gold/40 hover:text-gold";
 
 interface LogisticsViewProps {
   hasArrivals: boolean;
@@ -57,7 +58,7 @@ export const LogisticsView = ({ hasArrivals }: LogisticsViewProps) => {
         onChange={(index) => setActiveTabKey(TAB_KEYS[index] ?? "arrivals")}
         className="flex flex-1 flex-col gap-2 min-h-0"
       >
-        <Tabs.List className="grid grid-cols-4 gap-1">
+        <Tabs.List className="grid grid-cols-2 gap-1 lg:grid-cols-4">
           <Tabs.Tab className={tabClass}>
             <span className="inline-flex items-center gap-1.5">
               Arrivals
@@ -115,22 +116,23 @@ const AllRealmsBalanceTab = ({ structures }: AllRealmsBalanceTabProps) => {
   }
 
   return (
-    <div className="grid h-full min-h-0 grid-cols-12">
-      <div className="col-span-3 min-h-0 border-r border-gold/15">
+    <StructureWorkspace
+      sidebar={
         <StructureSidebar
           selectedEntityId={selectedId ?? 0}
           onSelectStructure={setSelectedId}
           title="Your structures"
           enableCategoryFilter
         />
-      </div>
-      <div className="col-span-9 min-h-0 overflow-y-auto px-3 py-2">
+      }
+    >
+      <div className="min-h-0 overflow-y-auto px-3 py-2">
         {selectedId ? (
           <EntityResourceTable entityId={selectedId} />
         ) : (
           <p className={HUD_BODY_MUTED}>Select a structure.</p>
         )}
       </div>
-    </div>
+    </StructureWorkspace>
   );
 };

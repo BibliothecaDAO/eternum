@@ -33,7 +33,10 @@ export function useStructureActions(): StructureAction[] | null {
   );
   const view = useUIStore((state) => state.leftNavigationView);
   const setView = useUIStore((state) => state.setLeftNavigationView);
+  const openId = usePopoverStore((state) => state.openId);
+  const closePopover = usePopoverStore((state) => state.close);
   const openSurface = usePopoverStore((state) => state.openSurface);
+  const setTransferPanelSourceId = useUIStore((state) => state.setTransferPanelSourceId);
   const setLogisticsActiveTab = useUIStore((state) => state.setLogisticsActiveTab);
   const arrivedArrivalsNumber = useUIStore((state) => state.arrivedArrivalsNumber);
   const pendingArrivalsNumber = useUIStore((state) => state.pendingArrivalsNumber);
@@ -43,15 +46,26 @@ export function useStructureActions(): StructureAction[] | null {
   if (!ordersAllowed) return null;
   if (!isOwnStructure) return null;
 
-  const toggleView = (target: LeftView) => () => setView(view === target ? LeftView.None : target);
+  const toggleView = (target: LeftView) => () => {
+    closePopover();
+    setView(view === target ? LeftView.None : target);
+  };
   const openLogistics = () => {
     // Anything in flight or ready lands the player on Arrivals, where the badge they clicked points.
+    setTransferPanelSourceId(Number(structureEntityId));
     setLogisticsActiveTab(arrivedArrivalsNumber > 0 || pendingArrivalsNumber > 0 ? "arrivals" : "transfer");
     toggleView(LeftView.ResourceArrivals)();
   };
-  const openProduction = () =>
-    openSurface({ id: "production", content: <ProductionModal preSelectedRealmId={Number(structureEntityId)} /> });
-  const openMarket = () => openSurface({ id: "market", content: <MarketModal />, anchor: "right-edge" });
+  const openProduction = () => {
+    setView(LeftView.None);
+    if (openId === "production") closePopover();
+    else openSurface({ id: "production", content: <ProductionModal preSelectedRealmId={Number(structureEntityId)} /> });
+  };
+  const openMarket = () => {
+    setView(LeftView.None);
+    if (openId === "market") closePopover();
+    else openSurface({ id: "market", content: <MarketModal />, anchor: "right-edge" });
+  };
 
   const actions: StructureAction[] = [
     {
@@ -61,7 +75,13 @@ export function useStructureActions(): StructureAction[] | null {
       active: view === LeftView.ConstructionView,
       onClick: toggleView(LeftView.ConstructionView),
     },
-    { id: "production", label: "Production", image: BuildingThumbs.production, active: false, onClick: openProduction },
+    {
+      id: "production",
+      label: "Production",
+      image: BuildingThumbs.production,
+      active: openId === "production",
+      onClick: openProduction,
+    },
     {
       id: "military",
       label: "Military",
@@ -82,7 +102,13 @@ export function useStructureActions(): StructureAction[] | null {
     },
   ];
   if (mode.ui.showTradeMenu) {
-    actions.push({ id: "trade", label: "Trade", image: BuildingThumbs.scale, active: false, onClick: openMarket });
+    actions.push({
+      id: "trade",
+      label: "Trade",
+      image: BuildingThumbs.scale,
+      active: openId === "market",
+      onClick: openMarket,
+    });
   }
   return actions;
 }

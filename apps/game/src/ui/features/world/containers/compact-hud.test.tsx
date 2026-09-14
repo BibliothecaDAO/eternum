@@ -17,6 +17,8 @@ interface TestUiState {
   selectedBuildingHex: { outerCol: number; outerRow: number; innerCol: number; innerRow: number } | null;
   structureEntityId: number;
   playerStructures: { entityId: number }[];
+  transferPanelSourceId: number | null;
+  setTransferPanelSourceId: (id: number | null) => void;
   logisticsActiveTab: LogisticsTab;
   setLogisticsActiveTab: (tab: LogisticsTab) => void;
   arrivedArrivalsNumber: number;
@@ -40,6 +42,8 @@ vi.mock("@/hooks/store/use-ui-store", async () => {
       selectedBuildingHex: null,
       structureEntityId: OWNED_STRUCTURE_ID,
       playerStructures: [{ entityId: OWNED_STRUCTURE_ID }],
+      transferPanelSourceId: null,
+      setTransferPanelSourceId: (id) => set({ transferPanelSourceId: id }),
       logisticsActiveTab: "arrivals",
       setLogisticsActiveTab: (tab) => set({ logisticsActiveTab: tab }),
       arrivedArrivalsNumber: 0,
@@ -347,4 +351,22 @@ it("dismisses the sheet while renaming a structure", async () => {
   await tap("Map");
   expect(store.getState().pendingRenameStructureEntityId).toBeNull();
   expect(sheetContent()).toBe("Minimap");
+});
+
+it("switches exclusively between workspaces and highlights Production and Trade", async () => {
+  const action = (label: string) =>
+    document.querySelector<HTMLButtonElement>(`[aria-label="Structure actions"] button[aria-label="${label}"]`)!;
+  await act(async () => action("Build").click());
+  expect(store.getState().leftNavigationView).toBe(LeftView.ConstructionView);
+  await act(async () => action("Production").click());
+  expect(store.getState().leftNavigationView).toBe(LeftView.None);
+  expect(action("Production").getAttribute("aria-pressed")).toBe("true");
+  await act(async () => action("Trade").click());
+  expect(action("Production").getAttribute("aria-pressed")).toBe("false");
+  expect(action("Trade").getAttribute("aria-pressed")).toBe("true");
+  await act(async () => action("Military").click());
+  expect(usePopoverStore.getState().openId).toBeNull();
+  expect(store.getState().leftNavigationView).toBe(LeftView.MilitaryView);
+  await act(async () => action("Transfer").click());
+  expect(store.getState().transferPanelSourceId).toBe(OWNED_STRUCTURE_ID);
 });

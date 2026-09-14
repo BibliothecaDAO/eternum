@@ -1,3 +1,5 @@
+import { useCompactLane } from "@/hooks/helpers/use-compact-hud";
+import { CompactBuildingCard } from "./compact-building-card";
 import { getConstructionBuildingGroups } from "./construction-groups";
 import { usePlayResourceSound } from "@/audio";
 import { useNowMs } from "@/hooks/helpers/use-block-timestamp";
@@ -147,8 +149,12 @@ type ResourceProductionStatus = {
 
 export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?: string; entityId: number }) => {
   const dojo = useDojo();
+  const lane = useCompactLane();
+  const [summaryOpen, setSummaryOpen] = useState(false);
 
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
+  const buildPendingRef = useRef(false);
+  const [isBuildPending, setIsBuildPending] = useState(false);
   const [pendingAction, setPendingAction] = useState<"destroy" | "production" | null>(null);
 
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
@@ -193,18 +199,26 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
 
   const handleAutoBuild = useCallback(
     async (target: { type: BuildingType; resource?: ResourcesIds }) => {
-      await buildRealmBuilding({
-        entityId,
-        realmPosition: realm?.position,
-        realm,
-        mode,
-        target,
-        useSimpleCost,
-        onBuildSuccess: (selection) => {
-          setPreviewBuilding(null);
-          setSelectedBuildingHex(selection);
-        },
-      });
+      if (buildPendingRef.current) return;
+      buildPendingRef.current = true;
+      setIsBuildPending(true);
+      try {
+        await buildRealmBuilding({
+          entityId,
+          realmPosition: realm?.position,
+          realm,
+          mode,
+          target,
+          useSimpleCost,
+          onBuildSuccess: (selection) => {
+            setPreviewBuilding(null);
+            setSelectedBuildingHex(selection);
+          },
+        });
+      } finally {
+        buildPendingRef.current = false;
+        setIsBuildPending(false);
+      }
     },
     [entityId, realm, realm?.position, setPreviewBuilding, setSelectedBuildingHex, useSimpleCost, mode],
   );
@@ -558,13 +572,13 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
             {
               onBuild: () => void handleAutoBuild({ type: item.buildingId }),
               disabled: !buildState.canBuild,
-              loading: false,
+              loading: isBuildPending,
               title: buildState.disabledReason ?? `Build ${item.label}`,
             },
           ] as const;
         }),
       ),
-    [getSummaryBuildState, handleAutoBuild, realmBuildingSummary],
+    [getSummaryBuildState, handleAutoBuild, isBuildPending, realmBuildingSummary],
   );
 
   const tabs = useMemo(
@@ -590,7 +604,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                         {group.label}
                       </span>
                     </div>
-                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 p-2">
+                    <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,260px),1fr))] lg:grid-cols-3 gap-2 p-2">
                       {slots.map(({ resourceId, troopHint }) => {
                         const resource = findResourceById(resourceId)!;
                         const building = getBuildingFromResource(resourceId);
@@ -617,7 +631,9 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
 
                         return (
                           <BuildingCard
-                            key={resourceId}
+                            canPlaceOnMap={!isMapView}
+                            buildLoading={isBuildPending}
+                            key={`${entityId}:${resourceId}`}
                             buildingId={building}
                             requirements={resolveBuildingRequirements(
                               entityId,
@@ -679,7 +695,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                     <div className="border-b border-gold/10 px-3 py-1.5">
                       <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gold/80">Other</span>
                     </div>
-                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 p-2">
+                    <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,260px),1fr))] lg:grid-cols-3 gap-2 p-2">
                       {others.map((resourceId) => {
                         const resource = findResourceById(resourceId)!;
                         const building = getBuildingFromResource(resourceId);
@@ -703,7 +719,9 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                         const allPausedState = pausedByCategory.get(building);
                         return (
                           <BuildingCard
-                            key={resourceId}
+                            canPlaceOnMap={!isMapView}
+                            buildLoading={isBuildPending}
+                            key={`${entityId}:${resourceId}`}
                             buildingId={building}
                             requirements={resolveBuildingRequirements(
                               entityId,
@@ -763,7 +781,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
           </div>
         ),
         component: () => (
-          <div className="economy-selector grid grid-cols-2 lg:grid-cols-3 gap-2 p-2">
+          <div className="economy-selector grid grid-cols-[repeat(auto-fit,minmax(min(100%,260px),1fr))] lg:grid-cols-3 gap-2 p-2">
             {buildingTypes
               .filter((a) => isEconomyBuilding(BuildingType[a as keyof typeof BuildingType]))
               .toSorted((a, b) => {
@@ -813,13 +831,15 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
 
                 return (
                   <BuildingCard
+                    canPlaceOnMap={!isMapView}
+                    buildLoading={isBuildPending}
                     className={clsx({
                       "farm-card-selector": isFarm,
                       "fish-card-selector": isFishingVillage,
                       "workers-hut-card-selector": isWorkersHut,
                       "market-card-selector": isMarket,
                     })}
-                    key={index}
+                    key={`${entityId}:${index}`}
                     buildingId={building}
                     requirements={resolveBuildingRequirements(
                       entityId,
@@ -917,7 +937,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                           {bonusLabel}
                         </span>
                       </div>
-                      <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 p-2">
+                      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,260px),1fr))] lg:grid-cols-3 gap-2 p-2">
                         {group.buildings
                           .toSorted((a, b) => {
                             const buildingA = BuildingType[a as keyof typeof BuildingType];
@@ -955,12 +975,14 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
 
                             return (
                               <BuildingCard
+                                canPlaceOnMap={!isMapView}
+                                buildLoading={isBuildPending}
                                 className={clsx("border border-gold/10", {
                                   "bg-emerald-900/5": canBuild,
                                   "border-emerald-700/5": canBuild,
                                   "ring-1 ring-emerald-500/30": group.isRecommended,
                                 })}
-                                key={index}
+                                key={`${entityId}:${index}`}
                                 buildingId={building}
                                 requirements={resolveBuildingRequirements(
                                   entityId,
@@ -1026,6 +1048,8 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
       pausedByCategory,
       mode,
       handleAutoBuild,
+      isBuildPending,
+      isMapView,
       selectBuildingCard,
       handleDestroyBuilding,
       handlePauseResumeAll,
@@ -1046,10 +1070,10 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
 
   return (
     <div className={`${className}`}>
-      <div className="flex justify-between items-center px-3 py-2 gap-3 border-b border-gold/20">
+      <div className="flex flex-wrap justify-between items-center px-3 py-2 gap-3 border-b border-gold/20">
         <h6>Building Costs</h6>
         <div className="flex items-center gap-2">
-          <label className="inline-flex items-center cursor-pointer">
+          <label className="inline-flex min-h-11 items-center cursor-pointer">
             <span className={`mr-2 text-xs ${useSimpleCost ? "text-gold/50" : ""}`}>Resource</span>
             <div className="relative">
               <input
@@ -1065,12 +1089,22 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         </div>
       </div>
 
-      <RealmBuildingSummary
-        className="realm-summary-selector"
-        headline="Built here"
-        items={realmBuildingSummary}
-        buildActions={realmBuildingSummaryActions}
-      />
+      <details
+        open={lane === null || summaryOpen}
+        onToggle={(event) => {
+          if (lane !== null) setSummaryOpen(event.currentTarget.open);
+        }}
+      >
+        <summary className="flex min-h-11 cursor-pointer items-center px-3 text-sm text-gold underline underline-offset-4 lg:hidden">
+          Built here · view buildings
+        </summary>
+        <RealmBuildingSummary
+          className="realm-summary-selector"
+          headline="Built here"
+          items={realmBuildingSummary}
+          buildActions={realmBuildingSummaryActions}
+        />
+      </details>
 
       <Tabs
         selectedIndex={selectedTab}
@@ -1079,7 +1113,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         }}
         className="construction-panel-selector h-full mt-2"
       >
-        <Tabs.List className="construction-tabs-selector">
+        <Tabs.List className="construction-tabs-selector sticky top-0 z-10 bg-[#101c23] [&_button]:min-h-11">
           {tabs.map((tab, index) => (
             <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
           ))}
@@ -1097,6 +1131,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
 };
 
 const BuildingCard = ({
+  canPlaceOnMap = false,
   buildingId,
   onClick,
   active,
@@ -1125,6 +1160,7 @@ const BuildingCard = ({
   allPaused,
   troopHint,
 }: {
+  canPlaceOnMap?: boolean;
   buildingId: BuildingType;
   onClick: () => void;
   active: boolean;
@@ -1159,6 +1195,7 @@ const BuildingCard = ({
   pauseResumeAllLoading?: boolean;
   allPaused?: boolean;
 }) => {
+  const lane = useCompactLane();
   const setTooltip = useTooltipStore((state) => state.setTooltip);
   const isDisabled = disabled;
   const showDisabledMessage = isDisabled && disabledReason;
@@ -1216,6 +1253,40 @@ const BuildingCard = ({
       />
     ) : null;
 
+  if (lane !== null) {
+    return (
+      <CompactBuildingCard
+        name={buildingName}
+        image={
+          resourceId
+            ? BUILDING_IMAGES_PATH[ResourceIdToMiningType[resourceId] as ResourceMiningTypes]
+            : BUILDING_IMAGES_PATH[buildingId as keyof typeof BUILDING_IMAGES_PATH]
+        }
+        count={count}
+        status={
+          productionStatus
+            ? productionStatus.isProducing
+              ? `Producing${formattedRemaining ? ` · ${formattedRemaining} left` : ""}`
+              : "Idle"
+            : undefined
+        }
+        requirements={requirements}
+        disabledReason={disabledReason}
+        details={toolTip}
+        active={active}
+        onPlace={canPlaceOnMap ? onClick : undefined}
+        build={{ onClick: onBuild, disabled: buildDisabled || isDisabled, pending: buildLoading }}
+        production={{
+          onClick: onPauseResumeAll,
+          disabled: pauseResumeAllDisabled,
+          pending: pauseResumeAllLoading,
+          paused: allPaused,
+        }}
+        destroy={{ onClick: onDestroy, disabled: destroyDisabled, pending: destroyLoading }}
+      />
+    );
+  }
+
   const handleClick = () => {
     if (isDisabled) return;
     onClick();
@@ -1251,7 +1322,7 @@ const BuildingCard = ({
         <div className="flex flex-col items-start gap-1.5">
           <button
             type="button"
-            disabled={Boolean(buildDisabled || isDisabled)}
+            disabled={Boolean(buildDisabled || isDisabled || buildLoading)}
             onClick={(event) => {
               event.stopPropagation();
               if (buildDisabled || isDisabled) return;
@@ -1435,7 +1506,7 @@ const ResourceInfo = ({
         <div className="py-2 px-3 bg-red/20 text-red-200 rounded font-bold"> ⚠️ Building Production Paused </div>
       )}
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {resourceById && (
           <div>
             <h6 className="text-gold/70 text-xs uppercase tracking-wider mb-1">Produces</h6>
@@ -1606,7 +1677,7 @@ const BuildingInfo = ({
         <div className="py-2 px-3 bg-red/20 text-red-200 rounded font-bold"> ⚠️ Building Production Paused </div>
       )}
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <div>
           {population !== 0 && (
             <div className="mb-2">

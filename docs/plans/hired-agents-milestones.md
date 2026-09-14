@@ -57,10 +57,11 @@ Work items
 3. **Pi runtime smoke.** `apps/agent-runner` skeleton with `@mariozechner/pi-agent-core` + `pi-ai`, one tool, the
    `openrouter` provider, `steer()` exercised. Confirms package versions and that the runner fits a 1 vCPU / 2 GB
    sandbox.
-4. **Decisions recorded** in the project decision log: Vercel team/project and region, OpenRouter account and initial
-   model profile, Stripe test-mode account, per-game cost envelope target to measure in M2.
+4. **Decisions recorded in this document:** Vercel team/project and region, OpenRouter account and initial model
+   profile, Stripe test-mode account, per-game cost envelope target to measure in M2.
 
-Gate: the three probe scripts run from the repo with documented env, and the ledger lists every decision with an owner.
+Gate: the three probe scripts run from the repo with documented env, and this document lists every decision with an
+owner.
 
 Deletion: none.
 
