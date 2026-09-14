@@ -133,7 +133,7 @@
     "@types/react-dom": "^18.3.5",
     "@vercel/sandbox": "3.3.0",
     "autoprefixer": "^10.4.21",
-    "bun-types": "^1.4.0",
+    "bun-types": "catalog:web",
     "eslint": "^9.23.0",
     "postcss": "^8.5.3",
     "prettier": "^3.5.3",
