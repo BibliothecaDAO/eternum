@@ -26,8 +26,8 @@ describe("production spire asset", () => {
     expect(bytes.length).toBeLessThan(768 * 1024);
     expect(gltf.extensionsUsed).toEqual(expect.arrayContaining(["KHR_draco_mesh_compression", "KHR_texture_basisu"]));
     const primitives = gltf.meshes.flatMap((mesh) => mesh.primitives);
-    expect(primitives).toHaveLength(29);
-    expect(primitives.reduce((sum, primitive) => sum + gltf.accessors[primitive.indices].count / 3, 0)).toBe(16140);
+    expect(primitives).toHaveLength(25);
+    expect(primitives.reduce((sum, primitive) => sum + gltf.accessors[primitive.indices].count / 3, 0)).toBe(11712);
     expect(gltf.materials).toHaveLength(8);
     expect(gltf.images).toHaveLength(6);
     for (const image of gltf.images) {
@@ -39,6 +39,7 @@ describe("production spire asset", () => {
   });
 
   it("retains the true translucent sphere, semantic hierarchy and all six inward currents", () => {
+    expect(gltf.nodes.some((node) => node.extras?.spirePart === "base")).toBe(false);
     const core = gltf.nodes.filter((node) => node.extras?.trueSphereRadius === 0.3);
     expect(core).toHaveLength(1);
     const material = gltf.materials[gltf.meshes[core[0].mesh].primitives[0].material];
@@ -94,5 +95,41 @@ describe("production spire asset", () => {
       }
       expect(resets).toBe(2);
     }
+  });
+});
+
+describe("production Bitcoin mine asset", () => {
+  const mineBytes = readFileSync(new URL("../public/models/ethereal/bitcoin-mine.glb", import.meta.url));
+  const mine = JSON.parse(mineBytes.toString("utf8", 20, 20 + mineBytes.readUInt32LE(12)));
+
+  it("exports the equipment and block without a basalt base or ground veins", () => {
+    expect(mineBytes.length).toBeLessThan(192 * 1024);
+    expect(mine.extensionsUsed).toEqual(expect.arrayContaining(["KHR_draco_mesh_compression", "KHR_texture_basisu"]));
+    expect(mine.meshes).toHaveLength(6);
+    expect(mine.materials).toHaveLength(6);
+    expect(mine.images).toHaveLength(1);
+    expect(mine.animations ?? []).toHaveLength(0);
+    expect(mine.nodes.some((node) => node.name?.startsWith("land /"))).toBe(false);
+    expect(mine.materials.some((material) => /basalt|ground veins/i.test(material.name))).toBe(false);
+    expect(mine.materials.map((material) => material.name)).toEqual(
+      expect.arrayContaining([
+        "Satoshi gold / pixel core",
+        "Digital block / blue circuitry",
+        "Weathered oak / hand-built mining gear",
+      ]),
+    );
+  });
+
+  it("uses baked Y-up geometry with only a shallow terrain contact skirt", () => {
+    for (const node of mine.nodes.filter((node) => node.mesh !== undefined)) {
+      expect(node.scale ?? [1, 1, 1]).toEqual([1, 1, 1]);
+      expect(node.translation ?? [0, 0, 0]).toEqual([0, 0, 0]);
+      expect(node.rotation ?? [0, 0, 0, 1]).toEqual([0, 0, 0, 1]);
+    }
+    const positions = mine.meshes.flatMap((mesh) =>
+      mesh.primitives.map((primitive) => mine.accessors[primitive.attributes.POSITION]),
+    );
+    expect(Math.min(...positions.map((position) => position.min[1]))).toBeGreaterThan(-0.009);
+    expect(Math.max(...positions.map((position) => position.max[1]))).toBeLessThan(1.06);
   });
 });

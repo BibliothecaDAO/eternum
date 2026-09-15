@@ -4,6 +4,7 @@ import {
   RiftModelPath,
   VILLAGE_MODEL_PATH,
   SPIRE_MODEL_PATH,
+  BITCOIN_MINE_MODEL_PATH,
   isSettlementModelPath,
 } from "@/three/constants/scene-constants";
 import { SettlementModel } from "../structures/settlement-model";
@@ -272,7 +273,12 @@ export class TerrainLabInteraction {
       const model = this.models.get(building.path)!;
       const center = terrainHexToWorld(building.col, building.row);
       this.matrix.makeRotationY(building.yaw);
-      this.matrix.setPosition(center.x, this.terrain.sampleSurface(center.x, center.z).height + 0.025, center.z);
+      this.matrix.setPosition(
+        center.x,
+        this.terrain.sampleSurface(center.x, center.z).height +
+          (building.path === SPIRE_MODEL_PATH || building.path === BITCOIN_MINE_MODEL_PATH ? 0 : 0.025),
+        center.z,
+      );
       const index = counts.get(building.path) ?? 0;
       model.setMatrixAt(index, this.matrix);
       if (model instanceof SettlementModel) this.applySettlementHeraldry(model, index);

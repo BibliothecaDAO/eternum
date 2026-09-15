@@ -35,6 +35,20 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-15",
+    title: "Ethereal Basalt and Neon Borders",
+    type: "feature",
+    description:
+      "Explore dark basalt framed by flowing neon hex borders. Spires and Bitcoin mines stand directly on the terrain, and surface spire tiles share the ethereal ground.",
+  },
+  {
+    date: "2026-09-15",
+    title: "Bitcoin Block Excavations",
+    description:
+      "Bitcoin mines reveal golden digital blocks in ethereal basalt, with medieval mining equipment marking their working faces.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-15",
     title: "Direct Message Alert Controls",
     description:
       "Enable raven alerts for existing devices from Settings. Battle alerts report the correct outcome, and enabling alerts keeps them quiet while you play.",

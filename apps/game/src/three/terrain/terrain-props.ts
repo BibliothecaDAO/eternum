@@ -1,3 +1,4 @@
+import { isEtherealTerrainCell } from "./terrain-surface-presentation";
 import { BiomeType } from "@bibliothecadao/types/terrain";
 
 import { findNearestTerrainHex, terrainCellKey, terrainHexToWorld } from "./terrain-coordinates";
@@ -184,12 +185,14 @@ const MAX_PROFILE_DENSITY_BY_LAYER: Readonly<Record<TerrainPropPlacementLayer, n
 
 export function prepareTerrainPropInstances(request: TerrainPageRequest, field: TerrainField): TerrainPropInstance[] {
   const ownedCells = request.cells.filter(
-    (cell): cell is TerrainCellInput & { biome: BiomeType } => cell.explored && cell.biome !== null,
+    (cell): cell is TerrainCellInput & { biome: BiomeType } =>
+      cell.explored && cell.biome !== null && !isEtherealTerrainCell(request, cell),
   );
   if (ownedCells.length === 0) return [];
   const ownedByKey = new Map(ownedCells.map((cell) => [terrainCellKey(cell.col, cell.row), cell]));
   const eligibleCells = [...request.halo, ...ownedCells].filter(
-    (cell): cell is TerrainCellInput & { biome: BiomeType } => cell.explored && cell.biome !== null,
+    (cell): cell is TerrainCellInput & { biome: BiomeType } =>
+      cell.explored && cell.biome !== null && !isEtherealTerrainCell(request, cell),
   );
   const eligibleByKey = new Map(eligibleCells.map((cell) => [terrainCellKey(cell.col, cell.row), cell]));
   const elevationSeed = resolveSeed(request.climate.elevation_seed);

@@ -3,6 +3,7 @@ import { BiomeType, StructureType } from "@bibliothecadao/types/terrain";
 import { hexCellKey } from "./hex-cell-key";
 import type { TerrainCellInput, TerrainPageRequest } from "./terrain-types";
 import { isTerrainWaterBiome } from "./terrain-water";
+import { isEtherealTerrainCell } from "./terrain-surface-presentation";
 
 /** Presentation only: settlements reclaim sand from water without changing the game's biome rows. */
 export function applySettlementIslands(request: TerrainPageRequest): TerrainPageRequest {
@@ -18,7 +19,9 @@ export function applySettlementIslands(request: TerrainPageRequest): TerrainPage
   );
   if (sites.size === 0) return request;
   const resolveGround = (cell: TerrainCellInput) =>
-    sites.has(hexCellKey(cell.col, cell.row)) ? resolveSettlementLandCell(cell) : cell;
+    sites.has(hexCellKey(cell.col, cell.row)) && !isEtherealTerrainCell(request, cell)
+      ? resolveSettlementLandCell(cell)
+      : cell;
   return { ...request, cells: request.cells.map(resolveGround), halo: request.halo.map(resolveGround) };
 }
 

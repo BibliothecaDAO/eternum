@@ -47,6 +47,8 @@ function collectTransferables(page: PreparedTerrainPage): Transferable[] {
   return [
     ...collectGeometryTransferables(page.buffers),
     ...(page.waterBuffers ? collectGeometryTransferables(page.waterBuffers) : []),
+    ...(page.basaltInstances ? [page.basaltInstances.buffer as ArrayBuffer] : []),
+    ...(page.borderBuffers ? collectGeometryTransferables(page.borderBuffers) : []),
   ];
 }
 

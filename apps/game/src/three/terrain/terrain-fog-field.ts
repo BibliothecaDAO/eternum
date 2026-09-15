@@ -82,6 +82,7 @@ interface FogMaterialSet {
   maskTexture: TextureNode;
   mistStrength: UniformNode<"float", number>;
   motionStrength: UniformNode<"float", number>;
+  ethereal: UniformNode<"float", number>;
 }
 
 const FOG_MESH_NAME = "terrain-exploration-fog-field";
@@ -130,6 +131,10 @@ export class TerrainFogField {
       this.fogMesh.updateMatrixWorld();
     };
     this.fogMesh.visible = true;
+  }
+
+  setSurfacePresentation(presentation: "world" | "ethereal"): void {
+    this.materials.ethereal.value = presentation === "ethereal" ? 1 : 0;
   }
 
   setReducedMotion(reduced: boolean): void {
@@ -334,6 +339,7 @@ function createFogMaterial(maskTexture: DataTexture): FogMaterialSet {
   const streaming = uniform(0, "float");
   const clarity = uniform(1, "float");
   const motionStrength = uniform(1, "float");
+  const ethereal = uniform(0, "float");
   const mistStrength = uniform(1, "float");
   const material = new MeshBasicNodeMaterial();
   material.name = "terrain-exploration-mist";
@@ -381,7 +387,11 @@ function createFogMaterial(maskTexture: DataTexture): FogMaterialSet {
   const frontierOpacity = coverage.clamp(0, TERRAIN_DEEP_FOG_OPACITY);
   const deepFog = smoothstep(0.9, 0.985, mask);
   const surfaceOpacity = mix(frontierOpacity, float(TERRAIN_DEEP_FOG_OPACITY), deepFog);
-  material.colorNode = shadeFogHexBoundary(fogColor, fogGround.xz);
+  // Obscured basalt is a public-coordinate pattern, never a blur of hidden world geometry.
+  const slabDistance = terrainHexEdgeDistance(fogGround.xz.div(0.14)).mul(0.14);
+  const slab = smoothstep(0.025, 0.12, slabDistance).mul(0.003).mul(mistNoise.mul(0.6).add(0.4));
+  const basaltFog = color("#111318").add(slab).add(mistLight.mul(0.065));
+  material.colorNode = shadeFogHexBoundary(mix(fogColor, basaltFog, ethereal), fogGround.xz);
   material.opacityNode = mix(surfaceOpacity, float(1), streaming);
   return {
     bounds,
@@ -391,6 +401,7 @@ function createFogMaterial(maskTexture: DataTexture): FogMaterialSet {
     maskTexture: maskTextureNode,
     mistStrength,
     motionStrength,
+    ethereal,
   };
 }
 

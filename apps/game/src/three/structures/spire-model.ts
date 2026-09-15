@@ -5,7 +5,7 @@ import type { AnimationVisibilityContext } from "../types/animation";
 import { queueInstanceUpdate } from "../utils/instance-update-ranges";
 import { placedModelPhase } from "../utils/placed-model-phase";
 import { isPortalSurface, sortSpirePortals, SpirePortalMaterials } from "./spire-portal";
-import { SpireVeins } from "./spire-veins";
+import { LocalEmissiveGlow } from "./local-emissive-glow";
 
 interface SpirePlacement {
   matrix: Matrix4;
@@ -40,7 +40,7 @@ export class SpireModel extends InstancedModel {
   private readonly prepared: ReturnType<typeof prepareSpire>;
   private readonly clipMixer: AnimationMixer;
   private readonly portalMaterials: SpirePortalMaterials;
-  private readonly veins: SpireVeins;
+  private readonly veins: LocalEmissiveGlow;
   private readonly composed = new Matrix4();
   private readonly clipDuration: number;
   private readonly sweptBounds: Sphere[];
@@ -70,7 +70,7 @@ export class SpireModel extends InstancedModel {
       mesh.userData.spirePart = prepared.solids[index].userData.spirePart;
       mesh.frustumCulled = true;
     });
-    this.veins = new SpireVeins(this.instancedMeshes, this.group);
+    this.veins = new LocalEmissiveGlow(this.instancedMeshes, this.group);
   }
 
   override setMatrixAt(index: number, matrix: Matrix4): void {
