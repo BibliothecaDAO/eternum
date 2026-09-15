@@ -1,6 +1,8 @@
 import { createHash } from "node:crypto";
 
 export const requiredParityCases = {
+  structure: "world_parity_structure",
+  structure_rejections: "world_parity_structure_rejections",
   name: "world_parity_name",
   ownership: "world_parity_ownership",
   ownership_rejections: "world_parity_ownership_rejections",

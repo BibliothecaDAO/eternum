@@ -176,3 +176,15 @@ zero write emits RowSet and is not a deletion. Names may be overwritten, includi
 `SetAddressName` carries a name and one owned structure id. The structure is an authorization witness from the
 synchronized store, not a second ownership fact. The domain validates its existence and owner in the action's game; no
 owner-count storage or on-chain owner scan is needed. Internal calls require the authenticated season domain.
+
+## Structure upgrades
+
+`UpgradeState` appends to the season domain. Limits use `Map<game_id, Option<UpgradeLimits>>`: absence rejects an
+unconfigured game, and a present value cannot be replaced. Recipes store ordered costs keyed by game, level and index;
+one UpgradeRecipe row projects each level without retaining the oracle's resource-list entity ids. Configure emits
+limits and complete recipes in one transaction. Old games need explicit initialization before accepting upgrades.
+
+The structures domain validates ownership, clock, category and maximum level, spends the immutable recipe, then writes
+only level and the two troop limits. The map domain changes a realm's displayed level without vacating or revealing it;
+its command requires the structures domain and the matching realm occupant. Village tiles do not change on upgrade.
+`LevelUp` appends command variant 9. `StructureLevelUpStory` appends history variant 1.

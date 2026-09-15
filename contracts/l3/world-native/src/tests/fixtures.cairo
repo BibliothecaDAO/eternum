@@ -249,6 +249,12 @@ pub mod MapUpgradeFixture {
             assert!(starknet::get_caller_address() == peers.troops, "only troops domain");
             self.map.occupy(key, entity_id, category, is_structure);
         }
+        fn upgrade_realm(ref self: ContractState, key: TileKey, entity_id: u32, wonder: bool, level: u8) {
+            assert!(
+                starknet::get_caller_address() == self.lifecycle.require_active().structures, "only structures domain",
+            );
+            self.map.upgrade_realm(key, entity_id, wonder, level);
+        }
         fn vacate(ref self: ContractState, key: TileKey, entity_id: u32) {
             let peers = self.lifecycle.require_active();
             assert!(starknet::get_caller_address() == peers.troops, "only troops domain");

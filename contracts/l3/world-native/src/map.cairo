@@ -82,6 +82,23 @@ pub mod MapState {
             self.write_occupancy(key, data);
         }
 
+        fn upgrade_realm(
+            ref self: ComponentState<TContractState>, key: TileKey, entity_id: u32, wonder: bool, level: u8,
+        ) {
+            let tile = self.tile(key).expect('missing realm tile');
+            assert!(!key.alt && tile.data % 2 == 1, "not a surface structure");
+            assert!((tile.data / OCCUPIER_SCALE) % ENTITY_RANGE == entity_id.into(), "occupier mismatch");
+            let previous = (tile.data / 2) % BYTE_RANGE;
+            assert!(previous >= 1 && previous <= 8, "not a realm tile");
+            assert!(level <= 3, "invalid realm level");
+            let category: u128 = level.into() + if wonder {
+                5
+            } else {
+                1
+            };
+            self.write_occupancy(key, tile.data - previous * 2 + category * 2);
+        }
+
         fn vacate(ref self: ComponentState<TContractState>, key: TileKey, entity_id: u32) {
             let tile = self.tile(key).expect('undiscovered tile');
             assert!(tile.data % 2 == 0, "cannot vacate structure");
@@ -128,6 +145,7 @@ pub trait IMap<T> {
     fn tile(self: @T, key: TileKey) -> Option<TileOpt>;
     fn reveal(ref self: T, key: TileKey, biome: u8);
     fn occupy(ref self: T, key: TileKey, entity_id: u32, category: u8, is_structure: bool);
+    fn upgrade_realm(ref self: T, key: TileKey, entity_id: u32, wonder: bool, level: u8);
     fn vacate(ref self: T, key: TileKey, entity_id: u32);
 }
 
@@ -213,6 +231,10 @@ pub mod MapDomain {
             };
             assert!(get_caller_address() == expected, "wrong occupier domain");
             self.map.occupy(key, entity_id, category, is_structure);
+        }
+        fn upgrade_realm(ref self: ContractState, key: TileKey, entity_id: u32, wonder: bool, level: u8) {
+            assert!(get_caller_address() == self.lifecycle.require_active().structures, "only structures domain");
+            self.map.upgrade_realm(key, entity_id, wonder, level);
         }
         fn vacate(ref self: ContractState, key: TileKey, entity_id: u32) {
             let peers = self.lifecycle.require_active();

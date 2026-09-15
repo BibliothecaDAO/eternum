@@ -24,6 +24,7 @@ const reports = new Set(
     "combat-parity.json",
     "ownership-parity.json",
     "name-parity.json",
+    "structure-parity.json",
   ].map((file) => `contracts/l3/world-native/fixtures/${file}`),
 );
 

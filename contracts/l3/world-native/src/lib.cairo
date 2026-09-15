@@ -36,3 +36,5 @@ pub mod random;
 
 pub mod resources;
 pub mod structures;
+
+pub mod upgrades;

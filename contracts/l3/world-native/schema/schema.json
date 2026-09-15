@@ -13,7 +13,8 @@
         "troop_battle_systems",
         "alt_movement_systems",
         "ownership_systems",
-        "name_systems"
+        "name_systems",
+        "structure_systems"
       ],
       "events": [
         {
@@ -130,9 +131,94 @@
               "kind": "data"
             }
           ]
+        },
+        {
+          "name": "RowSet",
+          "prefix": [
+            "0x2a67f55ebbc91ddd8772d60674830a4521ec8a56824b1763b19349ccbe4cf93",
+            "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "model",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "keys",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            },
+            {
+              "name": "values",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            }
+          ]
         }
       ],
       "entrypoints": [
+        {
+          "type": "function",
+          "name": "configure_upgrades",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "limits",
+              "type": "world_native::upgrades::UpgradeLimits"
+            },
+            {
+              "name": "recipes",
+              "type": "core::array::Span::<world_native::upgrades::UpgradeRecipe>"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "upgrade_limits",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "world_native::upgrades::UpgradeLimits"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "upgrade_recipe",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "level",
+              "type": "core::integer::u8"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "world_native::upgrades::UpgradeRecipe"
+            }
+          ],
+          "state_mutability": "view"
+        },
         {
           "type": "function",
           "name": "set_agent_controller",
@@ -683,6 +769,30 @@
             {
               "name": "is_structure",
               "type": "core::bool"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "upgrade_realm",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::map::TileKey"
+            },
+            {
+              "name": "entity_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "wonder",
+              "type": "core::bool"
+            },
+            {
+              "name": "level",
+              "type": "core::integer::u8"
             }
           ],
           "outputs": [],
@@ -1838,6 +1948,30 @@
             {
               "name": "timestamp",
               "type": "core::integer::u64"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "level_up",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "structure_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
             }
           ],
           "outputs": [],
@@ -3579,6 +3713,80 @@
       "valueLength": 1
     },
     {
+      "name": "UpgradeLimits",
+      "identity": "0x557067726164654c696d697473",
+      "owners": [
+        "season"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "realm_max",
+          "type": "core::integer::u8",
+          "id": "0x7265616c6d5f6d6178",
+          "feltLength": 1
+        },
+        {
+          "name": "village_max",
+          "type": "core::integer::u8",
+          "id": "0x76696c6c6167655f6d6178",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": 2,
+      "observation": {
+        "domain": "structure",
+        "fields": {
+          "realmMaximum": "realm_max",
+          "villageMaximum": "village_max"
+        }
+      }
+    },
+    {
+      "name": "UpgradeRecipe",
+      "identity": "0x55706772616465526563697065",
+      "owners": [
+        "season"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "level",
+          "type": "core::integer::u8",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "costs",
+          "type": "core::array::Span::<world_native::upgrades::UpgradeCost>",
+          "id": "0x636f737473",
+          "feltLength": null
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": null,
+      "observation": {
+        "domain": "structure",
+        "fields": {
+          "costs": "costs"
+        }
+      }
+    },
+    {
       "name": "GameRegistry",
       "identity": "0x47616d655265676973747279",
       "owners": [
@@ -4366,6 +4574,26 @@
         }
       ]
     },
+    "core::array::Span::<world_native::upgrades::UpgradeCost>": {
+      "type": "struct",
+      "name": "core::array::Span::<world_native::upgrades::UpgradeCost>",
+      "members": [
+        {
+          "name": "snapshot",
+          "type": "@core::array::Array::<world_native::upgrades::UpgradeCost>"
+        }
+      ]
+    },
+    "core::array::Span::<world_native::upgrades::UpgradeRecipe>": {
+      "type": "struct",
+      "name": "core::array::Span::<world_native::upgrades::UpgradeRecipe>",
+      "members": [
+        {
+          "name": "snapshot",
+          "type": "@core::array::Array::<world_native::upgrades::UpgradeRecipe>"
+        }
+      ]
+    },
     "core::bool": {
       "type": "enum",
       "name": "core::bool",
@@ -4769,6 +4997,10 @@
         {
           "name": "SetAddressName",
           "type": "world_native::names::SetAddressName"
+        },
+        {
+          "name": "LevelUp",
+          "type": "core::integer::u32"
         }
       ]
     },
@@ -5151,6 +5383,20 @@
         {
           "name": "FaithPointsClaimedStory",
           "type": "world_native::ownership::FaithPointsClaimedStory"
+        },
+        {
+          "name": "StructureLevelUpStory",
+          "type": "world_native::ownership::StructureLevelUpStory"
+        }
+      ]
+    },
+    "world_native::ownership::StructureLevelUpStory": {
+      "type": "struct",
+      "name": "world_native::ownership::StructureLevelUpStory",
+      "members": [
+        {
+          "name": "new_level",
+          "type": "core::integer::u8"
         }
       ]
     },
@@ -6603,7 +6849,45 @@
           "type": "()"
         }
       ]
+    },
+    "world_native::upgrades::UpgradeCost": {
+      "type": "struct",
+      "name": "world_native::upgrades::UpgradeCost",
+      "members": [
+        {
+          "name": "resource_type",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "amount",
+          "type": "core::integer::u128"
+        }
+      ]
+    },
+    "world_native::upgrades::UpgradeLimits": {
+      "type": "struct",
+      "name": "world_native::upgrades::UpgradeLimits",
+      "members": [
+        {
+          "name": "realm_max",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "village_max",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
+    "world_native::upgrades::UpgradeRecipe": {
+      "type": "struct",
+      "name": "world_native::upgrades::UpgradeRecipe",
+      "members": [
+        {
+          "name": "costs",
+          "type": "core::array::Span::<world_native::upgrades::UpgradeCost>"
+        }
+      ]
     }
   },
-  "identity": "d292c3425d0b81cdcc3becc2bfd2756cec27fb8e7aa05c1fa70bed6853e5b1bb"
+  "identity": "84bec30da4efc70a961bf41073f142031c83cd21cdbda4cb4af83397b73be99b"
 }

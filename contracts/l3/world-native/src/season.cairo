@@ -46,10 +46,13 @@ pub mod SeasonDomain {
     use crate::lifecycle::{Lifecycle, Peers};
     use crate::recording::{ExecutionHead, RecordedState};
     use crate::rules::SliceRules;
+    use crate::upgrades::{UpgradeLimits, UpgradeRecipe, UpgradeState};
     use super::{
         Authentication, IGameplayKeyDispatcher, IGameplayKeyDispatcherTrait, IPlayerRegistryDispatcher,
         IPlayerRegistryDispatcherTrait,
     };
+    component!(path: UpgradeState, storage: upgrades, event: UpgradeEvent);
+    impl UpgradeInternal = UpgradeState::InternalImpl<ContractState>;
     component!(path: RecordedState, storage: recording, event: RecordingEvent);
     impl RecordingInternal = RecordedState::InternalImpl<ContractState>;
     component!(path: GameState, storage: games, event: GameEvent);
@@ -70,6 +73,8 @@ pub mod SeasonDomain {
         #[substorage(v0)]
         recording: RecordedState::Storage,
         agent_controller: ContractAddress,
+        #[substorage(v0)]
+        upgrades: UpgradeState::Storage,
     }
 
     #[event]
@@ -79,12 +84,30 @@ pub mod SeasonDomain {
         RowSet: RowSet,
         GameEvent: GameState::Event,
         RecordingEvent: RecordedState::Event,
+        UpgradeEvent: UpgradeState::Event,
     }
 
     #[constructor]
     fn constructor(ref self: ContractState, authority: ContractAddress, authentication: Authentication) {
         self.lifecycle.initialize(authority);
         self.write_authentication(authentication);
+    }
+
+    #[abi(embed_v0)]
+    impl UpgradeRules of crate::upgrades::IUpgradeRules<ContractState> {
+        fn configure_upgrades(
+            ref self: ContractState, game_id: u32, limits: UpgradeLimits, recipes: Span<UpgradeRecipe>,
+        ) {
+            assert!(get_caller_address() == self.lifecycle.domain_state().authority, "only domain authority");
+            let _ = self.games.game(game_id);
+            self.upgrades.configure(game_id, limits, recipes);
+        }
+        fn upgrade_limits(self: @ContractState, game_id: u32) -> UpgradeLimits {
+            self.upgrades.limits(game_id)
+        }
+        fn upgrade_recipe(self: @ContractState, game_id: u32, level: u8) -> UpgradeRecipe {
+            self.upgrades.recipe(game_id, level)
+        }
     }
 
     #[abi(embed_v0)]
@@ -333,6 +356,10 @@ pub mod SeasonDomain {
             Command::SetAddressName(value) => {
                 value.serialize(ref calldata);
                 (peers.structures, selector!("set_address_name"))
+            },
+            Command::LevelUp(value) => {
+                value.serialize(ref calldata);
+                (peers.structures, selector!("level_up"))
             },
             Command::ClaimProduction(value) => {
                 value.serialize(ref calldata);

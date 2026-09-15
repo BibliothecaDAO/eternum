@@ -1,0 +1,74 @@
+{
+  "version": 1,
+  "domain": "structure",
+  "rulesRevision": "55dc510f5e7af119d1efac9a60426e81fee8e408",
+  "factModel": "schema/schema.json#models[Structure,Resource,TileOpt,UpgradeLimits,UpgradeRecipe].observation",
+  "projectionGenerator": "deploy/madara-lab/harness/native/fact-projections.ts",
+  "systems": [
+    "structure_systems"
+  ],
+  "commands": [
+    "level_up"
+  ],
+  "requiredConfig": [
+    "preset-1.json#oraclePreset.presetConfig.structure_max_level_config",
+    "preset-1.json#oraclePreset.sideTables.structure_levels",
+    "preset-1.json#oraclePreset.sideTables.resource_lists"
+  ],
+  "normalization": [
+    "Account identities and structure ids map bijectively.",
+    "Recorded time governs native execution; the oracle receives the same block time."
+  ],
+  "measuredSequence": [
+    {
+      "case": "non_owner",
+      "command": "level_up",
+      "succeeded": false
+    },
+    {
+      "case": "insufficient_last_resource",
+      "command": "level_up",
+      "succeeded": false
+    },
+    {
+      "case": "level_one",
+      "command": "level_up",
+      "succeeded": true
+    },
+    {
+      "case": "level_two",
+      "command": "level_up",
+      "succeeded": true
+    },
+    {
+      "case": "level_three",
+      "command": "level_up",
+      "succeeded": true
+    },
+    {
+      "case": "maximum",
+      "command": "level_up",
+      "succeeded": false
+    },
+    {
+      "case": "after_end",
+      "command": "level_up",
+      "succeeded": false
+    }
+  ],
+  "parityCases": [
+    "structure",
+    "structure_rejections"
+  ],
+  "reductions": [
+    "Remove the ProductionBoostBonus read: the oracle's realm tile selection never consumes the bonus argument.",
+    "Write only level and the two troop limits; remove unchanged base, owner, guards and metadata writes."
+  ],
+  "harnessCoverage": {
+    "added": [
+      "Upgrade an owned realm and observe its level, troop limits, balances and tile through Herald."
+    ],
+    "liveRun": "pending full-game acceptance",
+    "workload": "deploy/madara-lab/harness/native/workload.ts"
+  }
+}

@@ -194,6 +194,9 @@ function translateCommand(call: Call, gameId: number, season: string, components
         owned_structure_id: ownedStructureWitness(components, gameId, actor),
         name: args[0],
       });
+    case "level_up":
+      if (args.length !== 1) break;
+      return build("LevelUp", args[0]);
     case "claim_production":
       if (args.length !== 1) break;
       return build("ClaimProduction", args[0]);

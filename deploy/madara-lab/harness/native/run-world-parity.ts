@@ -1,3 +1,4 @@
+import { upgradeRecipes } from "./upgrade-recipes";
 import { factProjectors } from "./fact-projections";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
@@ -16,7 +17,7 @@ const workspace = join(root, "deploy/madara-lab/.lab/native-oracle");
 const oracle = join(workspace, "contracts/l3/game");
 const spec = JSON.parse(await readFile(join(native, "fixtures/slice.json"), "utf8"));
 const domainFixtures = await Promise.all(
-  ["ownership", "name"].map(async (domain) =>
+  ["ownership", "name", "structure"].map(async (domain) =>
     JSON.parse(await readFile(join(native, `fixtures/${domain}.json`), "utf8")),
   ),
 );
@@ -259,14 +260,25 @@ async function writeNativeInputs(): Promise<void> {
       state_mutability: "view",
     },
   ];
+  abi.push({
+    type: "function", name: "upgrade_recipes",
+    inputs: [{ name: "recipes", type: "core::array::Span::<world_native::upgrades::UpgradeRecipe>" }],
+    outputs: [], state_mutability: "view",
+  });
+  const recipes = upgradeRecipes(fixture.oraclePreset.sideTables);
   const calldata = new CallData(abi as ConstructorParameters<typeof CallData>[0]);
   const rules = calldata.compile("rules", { rules: fixture.rules });
+  const upgrades = calldata.compile("upgrade_recipes", { recipes });
   const resources = calldata.compile("resources", { rules: fixture.resources });
+  const upgradeRows = fixture.oraclePreset.sideTables.structure_levels.map((row) =>
+    `world.write_model_test(@crate::models::config::StructureLevelConfig { preset_id: 1, level: ${row.level}, required_resources_id: ${row.required_resources_id}, required_resource_count: ${row.required_resource_count} });`,
+  ).join("\n");
+  const oracleUpgrades = `use dojo::model::ModelStorageTest; pub fn configure_upgrade_rows(ref world: dojo::world::WorldStorage) { ${upgradeRows} }`;
   const decode = (name: string, type: string, data: string[]) =>
     `pub fn ${name}() -> ${type} { let mut raw=array![${data.join(",")}].span(); let result=Serde::deserialize(ref raw).unwrap(); assert!(raw.is_empty()); result }`;
   await writeFile(
     join(oracle, "src/native_inputs.cairo"),
-    `${decode("rules", "world_native::rules::SliceRules", rules)}\n${decode("resource_rules", "Span<world_native::structures::ResourceRule>", resources)}\n`,
+    `${oracleUpgrades}\n${decode("upgrade_recipes", "Span<world_native::upgrades::UpgradeRecipe>", upgrades)}\n${decode("rules", "world_native::rules::SliceRules", rules)}\n${decode("resource_rules", "Span<world_native::structures::ResourceRule>", resources)}\n`,
   );
 }
 

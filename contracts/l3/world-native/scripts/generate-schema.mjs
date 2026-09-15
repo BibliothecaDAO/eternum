@@ -131,6 +131,7 @@ const schema = {
                 "alt_movement_systems",
                 "ownership_systems",
                 "name_systems",
+                "structure_systems",
               ]
             : [],
         events: eventLayouts(artifacts[domain]),

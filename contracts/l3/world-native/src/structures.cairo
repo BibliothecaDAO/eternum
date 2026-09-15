@@ -168,6 +168,28 @@ pub mod StructureState {
                     },
                 );
         }
+        fn upgrade(ref self: ComponentState<TContractState>, key: ResourceKey, mut base: super::StructureBase) {
+            base.level += 1;
+            let (explorers, guards) = crate::upgrades::troop_limits(base.level);
+            base.troop_max_explorer_count = explorers;
+            base.troop_max_guard_count = guards;
+            let path = self.structures.entry((key.game_id, key.entity_id)).base;
+            path.level.write(base.level);
+            path.troop_max_explorer_count.write(explorers);
+            path.troop_max_guard_count.write(guards);
+            let mut values = array![];
+            base.serialize(ref values);
+            self
+                .emit(
+                    RowMemberSet {
+                        version: 1,
+                        model: 'Structure',
+                        member: 'base',
+                        keys: array![key.game_id.into(), key.entity_id.into()].span(),
+                        values: values.span(),
+                    },
+                );
+        }
         fn append_explorer(ref self: ComponentState<TContractState>, key: ResourceKey, explorer_id: u32) {
             let mut record = self.record(key);
             assert!(
@@ -279,6 +301,7 @@ pub mod StructuresDomain {
     use crate::resources::{Resource, ResourceKey, ResourceState};
     use crate::rules::{RESOURCE_PRECISION, SliceRules};
     use crate::troops::Coord;
+    use crate::upgrades::IUpgradeRulesDispatcherTrait;
     use super::{ResourceRule, Structure, StructureBase, StructureRecord, StructureState};
     component!(path: FaithOwnershipState, storage: faith, event: FaithEvent);
     impl FaithInternal = FaithOwnershipState::InternalImpl<ContractState>;
@@ -523,6 +546,41 @@ pub mod StructuresDomain {
         }
     }
     #[abi(embed_v0)]
+    impl Upgrades of crate::upgrades::IStructureUpgrades<ContractState> {
+        fn level_up(
+            ref self: ContractState, game_id: u32, actor: ContractAddress, structure_id: u32, context: ExecutionContext,
+        ) {
+            let peers = self.lifecycle.require_active();
+            assert!(get_caller_address() == peers.season, "only authenticated command domain");
+            crate::commands::assert_context_time(context.timestamp);
+            assert_playing(self.game_dispatcher().game(game_id), context.timestamp);
+            let key = ResourceKey { game_id, entity_id: structure_id };
+            let record = self.structures.record(key);
+            assert!(record.owner == actor, "actor does not own structure");
+            assert!(record.base.category == 1 || record.base.category == 5, "structure is not a realm or village");
+            let rules = crate::upgrades::IUpgradeRulesDispatcher { contract_address: peers.season };
+            let limits = rules.upgrade_limits(game_id);
+            let maximum = if record.base.category == 1 {
+                limits.realm_max
+            } else {
+                limits.village_max
+            };
+            assert!(record.base.level < maximum, "structure is already at max level");
+            let next_level = record.base.level + 1;
+            for cost in rules.upgrade_recipe(game_id, next_level).costs {
+                self.spend(key, *cost.resource_type, *cost.amount, context.timestamp);
+            }
+            self.structures.upgrade(key, record.base);
+            if record.base.category == 1 {
+                let coord = Coord { alt: false, x: record.base.coord_x, y: record.base.coord_y };
+                self
+                    .map_dispatcher()
+                    .upgrade_realm(tile_key(game_id, coord), structure_id, record.metadata.has_wonder, next_level);
+            }
+            self.emit_structure_upgrade(key, actor, next_level, context.timestamp);
+        }
+    }
+    #[abi(embed_v0)]
     impl Names of crate::names::INames<ContractState> {
         fn address_name(self: @ContractState, address: ContractAddress) -> crate::names::AddressName {
             crate::names::AddressName { name: self.address_names.read(address) }
@@ -646,6 +704,25 @@ pub mod StructuresDomain {
     }
     #[generate_trait]
     impl Internal of InternalTrait {
+        fn emit_structure_upgrade(
+            ref self: ContractState, key: ResourceKey, actor: ContractAddress, next_level: u8, timestamp: u64,
+        ) {
+            self
+                .emit(
+                    StoryEvent {
+                        version: 1,
+                        game_id: key.game_id,
+                        id: self.game_dispatcher().allocate_entity(key.game_id),
+                        owner: Some(actor),
+                        entity_id: Some(key.entity_id),
+                        tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                        story: Story::StructureLevelUpStory(
+                            crate::ownership::StructureLevelUpStory { new_level: next_level },
+                        ),
+                        timestamp,
+                    },
+                );
+        }
         fn emit_faith_accrual(
             ref self: ContractState, game_id: u32, accrual: crate::ownership::Accrual, timestamp: u64,
         ) {

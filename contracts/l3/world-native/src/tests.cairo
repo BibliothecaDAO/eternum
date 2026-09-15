@@ -23,6 +23,10 @@ use crate::lifecycle::{
 use crate::map::{IMapDispatcher, IMapDispatcherTrait, IMapSafeDispatcher, IMapSafeDispatcherTrait, TileKey};
 use crate::season::{ISeasonDispatcher, ISeasonDispatcherTrait, ISeasonSafeDispatcher, ISeasonSafeDispatcherTrait};
 use crate::troops::ExplorerKey;
+use crate::upgrades::{
+    IUpgradeRulesDispatcher, IUpgradeRulesDispatcherTrait, IUpgradeRulesSafeDispatcher,
+    IUpgradeRulesSafeDispatcherTrait, UpgradeCost, UpgradeLimits, UpgradeRecipe,
+};
 
 #[derive(Drop, Copy)]
 struct Deployment {
@@ -508,4 +512,53 @@ fn activation_rejects_peer_mismatch_authority_mismatch_and_double_activation() {
     let deployment = setup(true);
     start_cheat_caller_address(deployment.peers.season, authority());
     assert!(IDomainSafeDispatcher { contract_address: deployment.peers.season }.activate().is_err());
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn upgrade_rules_are_immutable_complete_and_game_scoped() {
+    let deployment = setup(true);
+    let season = deployment.peers.season;
+    let rules = IUpgradeRulesDispatcher { contract_address: season };
+    let safe = IUpgradeRulesSafeDispatcher { contract_address: season };
+    let limits = UpgradeLimits { realm_max: 1, village_max: 0 };
+    let recipes = array![UpgradeRecipe { costs: array![UpgradeCost { resource_type: 23, amount: 17 }].span() }].span();
+    assert!(safe.upgrade_limits(1).is_err());
+    assert!(safe.configure_upgrades(1, limits, recipes).is_err());
+    start_cheat_caller_address(season, authority());
+    assert!(safe.configure_upgrades(1, limits, array![].span()).is_err());
+    assert!(safe.upgrade_limits(1).is_err());
+    rules.configure_upgrades(1, limits, recipes);
+    assert_eq!(rules.upgrade_limits(1), limits);
+    assert_eq!(rules.upgrade_recipe(1, 1), *recipes.at(0));
+    assert!(safe.configure_upgrades(1, limits, recipes).is_err());
+    assert!(safe.upgrade_limits(2).is_err());
+    assert!(safe.upgrade_recipe(1, 2).is_err());
+    rules.configure_upgrades(2, UpgradeLimits { realm_max: 0, village_max: 0 }, array![].span());
+    assert_eq!(rules.upgrade_limits(1), limits);
+    assert_eq!(rules.upgrade_limits(2).realm_max, 0);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn realm_upgrade_changes_only_its_display_and_rejects_foreign_occupants() {
+    let deployment = setup(true);
+    let address = deployment.peers.map;
+    let map = IMapDispatcher { contract_address: address };
+    let safe = IMapSafeDispatcher { contract_address: address };
+    let key = TileKey { game_id: 1, alt: false, col: 12, row: 34 };
+    start_cheat_caller_address(address, deployment.peers.structures);
+    map.reveal(key, 11);
+    map.occupy(key, 7, 1, true);
+    let before = map.tile(key).unwrap();
+    start_cheat_caller_address(address, deployment.peers.troops);
+    assert!(safe.upgrade_realm(key, 7, false, 1).is_err());
+    start_cheat_caller_address(address, deployment.peers.structures);
+    assert!(safe.upgrade_realm(key, 8, false, 1).is_err());
+    assert_eq!(map.tile(key).unwrap(), before);
+    map.upgrade_realm(key, 7, false, 1);
+    assert_eq!(map.tile(key).unwrap().data, before.data + 2);
+    map.upgrade_realm(key, 7, true, 3);
+    assert_eq!(map.tile(key).unwrap().data, before.data + 14);
+    assert!(safe.vacate(key, 7).is_err());
 }

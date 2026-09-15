@@ -27,6 +27,10 @@ use world_native::resources::ResourceKey;
 use world_native::season::{ISeasonDispatcher, ISeasonDispatcherTrait};
 use world_native::structures::{IStructuresDispatcher, IStructuresDispatcherTrait};
 use world_native::troops::{ExplorerKey, ITroopsDispatcher, ITroopsDispatcherTrait};
+use world_native::upgrades::{
+    IStructureUpgradesSafeDispatcher, IStructureUpgradesSafeDispatcherTrait, IUpgradeRulesDispatcher,
+    IUpgradeRulesDispatcherTrait, UpgradeLimits,
+};
 use crate::constants::{DEFAULT_NS, DEFAULT_NS_STR, RESOURCE_PRECISION};
 use crate::models::config::{GameMapConfig, PresetConfig, WorldConfig};
 use crate::models::game::GameRegistry;
@@ -92,6 +96,7 @@ fn namespace() -> NamespaceDef {
             TestResource::Model("ResourceList"), TestResource::Model("ExplorerTroops"), TestResource::Model("TileOpt"),
             TestResource::Model("PlayerRegisteredPoints"), TestResource::Model("SeasonPrize"),
             TestResource::Model("Hyperstructure"), TestResource::Model("HyperstructureGlobals"),
+            TestResource::Model("StructureLevelConfig"), TestResource::Contract("structure_systems"),
             TestResource::Model("AddressName"), TestResource::Contract("name_systems"),
             TestResource::Model("AgentConfig"), TestResource::Model("AgentCount"), TestResource::Model("AgentOwner"),
             TestResource::Model("WonderFaith"), TestResource::Model("FaithfulStructure"),
@@ -167,7 +172,7 @@ fn setup(case: felt252) -> PairedWorld {
         "alt_movement_systems", "parity_bootstrap_systems", "troop_management_systems", "troop_movement_systems",
         "troop_movement_util_systems", "troop_battle_systems", "hyperstructure_discovery_systems",
         "mine_discovery_systems", "camp_discovery_systems", "agent_discovery_systems", "relic_chest_discovery_systems",
-        "bitcoin_mine_discovery_systems", "ownership_systems", "name_systems",
+        "bitcoin_mine_discovery_systems", "ownership_systems", "name_systems", "structure_systems",
     ] {
         defs
             .append(
@@ -798,6 +803,7 @@ fn world_parity_rejected_actions_preserve_rows() {
 }
 #[starknet::interface]
 pub trait IParityAttempts<T> {
+    fn level_up(ref self: T, target: ContractAddress, id: u32) -> bool;
     fn name(ref self: T, target: ContractAddress, name: felt252) -> bool;
     fn ownership(ref self: T, target: ContractAddress, selector: felt252, id: u32, owner: ContractAddress) -> bool;
     fn native(
@@ -821,6 +827,10 @@ mod ParityAttempts {
     struct Storage {}
     #[abi(embed_v0)]
     impl Attempts of super::IParityAttempts<ContractState> {
+        fn level_up(ref self: ContractState, target: ContractAddress, id: u32) -> bool {
+            starknet::syscalls::call_contract_syscall(target, selector!("level_up"), array![1, id.into()].span())
+                .is_ok()
+        }
         fn name(ref self: ContractState, target: ContractAddress, name: felt252) -> bool {
             starknet::syscalls::call_contract_syscall(target, selector!("set_address_name"), array![1, name].span())
                 .is_ok()
@@ -1537,4 +1547,164 @@ fn world_parity_name() {
     worlds.opponent = worlds.actor;
     worlds.actor = owner;
     rename(ref worlds, 5, home, 'After end', 1000000, true);
+}
+
+fn upgrade_pair(ref worlds: PairedWorld, step: u32, home: u32, now: u64, succeeds: bool) {
+    start_cheat_block_timestamp_global(now);
+    let (target, _) = worlds.oracle.dns(@"structure_systems").unwrap();
+    start_cheat_caller_address(target, worlds.actor);
+    let attempts = IParityAttemptsDispatcher { contract_address: deploy("ParityAttempts", @array![]) };
+    assert_eq!(attempts.level_up(target, home), succeeds, "oracle upgrade outcome");
+    stop_cheat_caller_address(target);
+    let (order, outcome) = execute_outcome(worlds, Command::LevelUp(home), now, 1234);
+    assert_eq!(outcome, succeeds, "native upgrade outcome");
+    println!("FACT_ACTION {} {} {} {} {}", worlds.case, order, 'level_up', now, outcome);
+    compare_home(worlds, step, home);
+    let preset: PresetConfig = worlds.oracle.read_model(1_u32);
+    let rules = IUpgradeRulesDispatcher { contract_address: worlds.peers.season };
+    compare_facts(
+        worlds.case,
+        step,
+        'UpgradeLimits',
+        array![1].span(),
+        rules.upgrade_limits(1),
+        preset.structure_max_level_config,
+    );
+    for level in 1_u8..4 {
+        compare_facts(
+            worlds.case,
+            step,
+            'UpgradeRecipe',
+            array![1, level.into()].span(),
+            rules.upgrade_recipe(1, level),
+            OracleUpgradeRecipe { world: worlds.oracle, game_id: 1, level },
+        );
+    }
+    let structure = IStructuresDispatcher { contract_address: worlds.peers.structures }
+        .structure(ResourceKey { game_id: 1, entity_id: home })
+        .unwrap();
+    compare_tile(
+        worlds, step, world_native::troops::Coord { alt: false, x: structure.base.coord_x, y: structure.base.coord_y },
+    );
+}
+
+#[test]
+fn world_parity_structure() {
+    let mut worlds = setup('structure');
+    configure_upgrades(ref worlds);
+    let poor = provision_with_resources(
+        ref worlds,
+        Coord { alt: false, x: 2147483626, y: 2147483626 },
+        array![(23, 100000 * RESOURCE_PRECISION), (35, 100000 * RESOURCE_PRECISION), (36, 100000 * RESOURCE_PRECISION)]
+            .span(),
+    );
+    let home = provision_with_resources(
+        ref worlds,
+        Coord { alt: false, x: 2147483628, y: 2147483626 },
+        array![
+            (23, 100000 * RESOURCE_PRECISION), (35, 100000 * RESOURCE_PRECISION), (36, 100000 * RESOURCE_PRECISION),
+            (38, 100000 * RESOURCE_PRECISION), (2, 100000 * RESOURCE_PRECISION), (3, 100000 * RESOURCE_PRECISION),
+            (4, 100000 * RESOURCE_PRECISION),
+        ]
+            .span(),
+    );
+    let owner = worlds.actor;
+    worlds.actor = worlds.opponent;
+    upgrade_pair(ref worlds, 1, poor, 1800, false);
+    worlds.actor = owner;
+    upgrade_pair(ref worlds, 2, poor, 1800, false);
+    upgrade_pair(ref worlds, 3, home, 1800, true);
+    upgrade_pair(ref worlds, 4, home, 1800, true);
+    upgrade_pair(ref worlds, 5, home, 1800, true);
+    upgrade_pair(ref worlds, 6, home, 1800, false);
+    upgrade_pair(ref worlds, 7, home, 1000000, false);
+}
+
+fn configure_upgrades(ref worlds: PairedWorld) {
+    crate::native_inputs::configure_upgrade_rows(ref worlds.oracle);
+    start_cheat_caller_address(worlds.peers.season, authority());
+    let preset: PresetConfig = worlds.oracle.read_model(1_u32);
+    let limits = preset.structure_max_level_config;
+    IUpgradeRulesDispatcher { contract_address: worlds.peers.season }
+        .configure_upgrades(
+            1,
+            UpgradeLimits { realm_max: limits.realm_max, village_max: limits.village_max },
+            crate::native_inputs::upgrade_recipes(),
+        );
+    stop_cheat_caller_address(worlds.peers.season);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn world_parity_structure_rejections() {
+    let mut worlds = setup('structure_rejections');
+    configure_upgrades(ref worlds);
+    let home = provision_with_resources(
+        ref worlds,
+        Coord { alt: false, x: 2147483626, y: 2147483626 },
+        array![
+            (23, 100000 * RESOURCE_PRECISION), (35, 100000 * RESOURCE_PRECISION), (36, 100000 * RESOURCE_PRECISION),
+            (38, 100000 * RESOURCE_PRECISION),
+        ]
+            .span(),
+    );
+    let commands = IStructureUpgradesSafeDispatcher { contract_address: worlds.peers.structures };
+    let context = world_native::commands::ExecutionContext { raw_root: 1, timestamp: 1800 };
+    start_cheat_caller_address(worlds.peers.structures, worlds.actor);
+    assert!(commands.level_up(1, worlds.actor, home, context).is_err(), "direct player upgrade accepted");
+    start_cheat_caller_address(worlds.peers.structures, worlds.peers.season);
+    assert!(commands.level_up(2, worlds.actor, home, context).is_err(), "foreign-game upgrade accepted");
+    stop_cheat_caller_address(worlds.peers.structures);
+    ownership_category(ref worlds, home, 2);
+    upgrade_pair(ref worlds, 1, home, 1800, false);
+    ownership_category(ref worlds, home, 5);
+    upgrade_pair(ref worlds, 2, home, 1800, false);
+    ownership_category(ref worlds, home, 1);
+    let mut game: GameRegistry = worlds.oracle.read_model(1_u32);
+    game.dev_mode_on = false;
+    game.start_main_at = 2000;
+    worlds.oracle.write_model_test(@game);
+    set_native_fixture(
+        worlds.peers.season,
+        selector!("games"),
+        array![1].span(),
+        world_native::game::GameRegistry {
+            name: game.name,
+            series_id: game.series_id,
+            game_number_in_series: game.game_number_in_series,
+            preset_id: game.preset_id,
+            creator: game.creator,
+            status: convert(game.status),
+            dev_mode_on: false,
+            start_settling_at: game.start_settling_at,
+            start_main_at: game.start_main_at,
+            end_at: game.end_at,
+            end_grace_seconds: game.end_grace_seconds,
+            registration_grace_seconds: game.registration_grace_seconds,
+            final_trial_id: game.final_trial_id,
+            seed: game.seed,
+        },
+    );
+    upgrade_pair(ref worlds, 3, home, 1999, false);
+    let mut structure: Structure = worlds.oracle.read_model((1, home));
+    structure.metadata.has_wonder = true;
+    worlds.oracle.write_model_test(@structure);
+    let mut native = IStructuresDispatcher { contract_address: worlds.peers.structures }
+        .structure(ResourceKey { game_id: 1, entity_id: home })
+        .unwrap();
+    native.metadata.has_wonder = true;
+    set_native_fixture(
+        worlds.peers.structures,
+        selector!("structures"),
+        array![1, home.into()].span(),
+        world_native::structures::StructureRecord {
+            owner: native.owner,
+            base: native.base,
+            troop_guards: native.troop_guards,
+            resources_packed: native.resources_packed,
+            metadata: native.metadata,
+            category: native.category,
+        },
+    );
+    upgrade_pair(ref worlds, 4, home, 2000, true);
 }

@@ -27,6 +27,7 @@ export async function playSlice(input: SliceWorkload) {
   await claimProduction(input);
   await transferRealmAndReturn(input);
   await namePlayer(input);
+  await upgradeRealm(input);
   await verifyReconnect(input);
   return { defeatedExplorer, surfaceMine, bitcoinMine, ownershipTransferred: true, reconnected: true };
 }
@@ -184,4 +185,16 @@ async function namePlayer(input: SliceWorkload) {
     hash.computePoseidonHashOnElements([address]) as import("@dojoengine/recs").Entity,
   );
   if (!row || BigInt(row.name) !== BigInt(name)) throw new Error("Player name did not reach the shared client");
+}
+
+async function upgradeRealm(input: SliceWorkload) {
+  const key = gameEntityKey([BigInt(input.homes[0])]);
+  const before = getComponentValue(input.client.setup.components.Structure, key);
+  if (!before) throw new Error("Missing realm before upgrade");
+  await input.act("level_up", "surface", () => input.client.setup.systemCalls.upgrade_realm({
+    signer: input.players[0], realm_entity_id: input.homes[0],
+  }));
+  const after = getComponentValue(input.client.setup.components.Structure, key);
+  if (!after || after.base.level !== before.base.level + 1 || after.base.troop_max_explorer_count !== 3 || after.base.troop_max_guard_count !== 2)
+    throw new Error("Realm upgrade did not reach the shared client");
 }

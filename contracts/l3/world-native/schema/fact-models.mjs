@@ -94,6 +94,20 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
       [struct("resources::ResourceKey")[0]],
       [{ name: "ready", type: "core::bool" }],
     ),
+    model(
+      "UpgradeLimits",
+      ["season"],
+      "game",
+      method("season", "upgrade_limits").inputs,
+      struct("upgrades::UpgradeLimits"),
+    ),
+    model(
+      "UpgradeRecipe",
+      ["season"],
+      "game",
+      method("season", "upgrade_recipe").inputs,
+      struct("upgrades::UpgradeRecipe"),
+    ),
     model("GameRegistry", ["season"], "game", method("season", "game").inputs, struct("game::GameRegistry")),
     model("SliceRules", ["season"], "game", method("season", "rules").inputs, struct("rules::SliceRules")),
     model("EntitySequence", ["season"], "game", method("season", "allocate_entity").inputs, [
@@ -151,6 +165,8 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
 
 // Paths describe observable values, not serialized row positions. Oracle adapters live only in the parity fixture.
 const behaviouralFacts = {
+  UpgradeLimits: { domain: "structure", fields: { realmMaximum: "realm_max", villageMaximum: "village_max" } },
+  UpgradeRecipe: { domain: "structure", fields: { costs: "costs" } },
   AddressName: { domain: "name", fields: { name: "name" } },
   ExplorerTroops: {
     domain: "troops",

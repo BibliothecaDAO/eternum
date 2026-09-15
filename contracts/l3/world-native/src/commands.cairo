@@ -44,6 +44,7 @@ pub enum Command {
     TransferStructureOwnership: crate::ownership::TransferOwnership,
     TransferAgentOwnership: crate::ownership::TransferOwnership,
     SetAddressName: crate::names::SetAddressName,
+    LevelUp: u32,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]

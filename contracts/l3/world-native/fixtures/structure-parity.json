@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "domain": "ownership",
+  "domain": "structure",
   "factModel": {
     "source": "schema/fact-models.mjs",
     "schema": "84bec30da4efc70a961bf41073f142031c83cd21cdbda4cb4af83397b73be99b",
@@ -308,241 +308,189 @@
   },
   "costs": {
     "version": 1,
-    "traceSha256": "c1e2204a084bfd12be496258f77b4d688c849a87836b31d309270ef2719e10ed",
+    "traceSha256": "8953261d9378e8106c7e05883fe8d4636a2daf1773a54f663c7cead1df42c90a",
     "accounting": "Inclusive execution counters at each action entrypoint, including attempted operations before rollback. Event counts sum local emissions across descendants; syscall and gas counters are already inclusive. Account validation and fees are outside this fixture.",
     "actions": [
       {
-        "command": "transfer_structure_ownership",
+        "command": "level_up",
         "dojo": {
           "storageWrites": 0,
           "events": 0,
           "eventFelts": 0,
-          "l2Gas": 4663285,
-          "classHash": "0xe539645c51aba7c2f12d1228ed16a3823c045eb639af50d7d69fb8b02a19cb"
+          "l2Gas": 4106988,
+          "classHash": "0x1c6fc3062729c3cb3c945012c9632b603f7747f1d4923ba3ef24f93bea37f4e"
         },
         "nativeExecution": {
           "storageWrites": 11,
           "events": 3,
           "eventFelts": 33,
-          "l2Gas": 1924297,
+          "l2Gas": 1416418,
           "classHash": "0x4a679a0c4367d43671e21c04340696132dac32dbe77de886236f65bf5a219b3"
         },
         "nativeGameplay": {
           "storageWrites": 0,
           "events": 0,
           "eventFelts": 0,
-          "l2Gas": 900010,
+          "l2Gas": 392550,
           "classHash": "0x43d44fb5b5adbe83e57891a7989ca28787afb982b6bf6f0542c2957853db37"
         },
-        "case": "same_owner",
-        "expectedSuccess": true
-      },
-      {
-        "command": "transfer_structure_ownership",
-        "dojo": {
-          "storageWrites": 0,
-          "events": 0,
-          "eventFelts": 0,
-          "l2Gas": 3712059,
-          "classHash": "0xe539645c51aba7c2f12d1228ed16a3823c045eb639af50d7d69fb8b02a19cb"
-        },
-        "nativeExecution": {
-          "storageWrites": 11,
-          "events": 3,
-          "eventFelts": 33,
-          "l2Gas": 1938609,
-          "classHash": "0x4a679a0c4367d43671e21c04340696132dac32dbe77de886236f65bf5a219b3"
-        },
-        "nativeGameplay": {
-          "storageWrites": 0,
-          "events": 0,
-          "eventFelts": 0,
-          "l2Gas": 905360,
-          "classHash": "0x43d44fb5b5adbe83e57891a7989ca28787afb982b6bf6f0542c2957853db37"
-        },
-        "case": "zero_recipient",
+        "case": "non_owner",
         "expectedSuccess": false
       },
       {
-        "command": "transfer_structure_ownership",
+        "command": "level_up",
         "dojo": {
-          "storageWrites": 0,
-          "events": 0,
-          "eventFelts": 0,
-          "l2Gas": 3724729,
-          "classHash": "0xe539645c51aba7c2f12d1228ed16a3823c045eb639af50d7d69fb8b02a19cb"
+          "storageWrites": 22,
+          "events": 9,
+          "eventFelts": 67,
+          "l2Gas": 29089571,
+          "classHash": "0x1c6fc3062729c3cb3c945012c9632b603f7747f1d4923ba3ef24f93bea37f4e"
         },
         "nativeExecution": {
-          "storageWrites": 11,
-          "events": 3,
-          "eventFelts": 33,
-          "l2Gas": 1953700,
-          "classHash": "0x4a679a0c4367d43671e21c04340696132dac32dbe77de886236f65bf5a219b3"
-        },
-        "nativeGameplay": {
-          "storageWrites": 0,
-          "events": 0,
-          "eventFelts": 0,
-          "l2Gas": 916920,
-          "classHash": "0x43d44fb5b5adbe83e57891a7989ca28787afb982b6bf6f0542c2957853db37"
-        },
-        "case": "blitz",
-        "expectedSuccess": false
-      },
-      {
-        "command": "transfer_structure_ownership",
-        "dojo": {
-          "storageWrites": 34,
+          "storageWrites": 27,
           "events": 12,
-          "eventFelts": 133,
-          "l2Gas": 19552700,
-          "classHash": "0xe539645c51aba7c2f12d1228ed16a3823c045eb639af50d7d69fb8b02a19cb"
-        },
-        "nativeExecution": {
-          "storageWrites": 43,
-          "events": 13,
-          "eventFelts": 153,
-          "l2Gas": 2656697,
+          "eventFelts": 130,
+          "l2Gas": 3054828,
           "classHash": "0x4a679a0c4367d43671e21c04340696132dac32dbe77de886236f65bf5a219b3"
         },
         "nativeGameplay": {
-          "storageWrites": 32,
-          "events": 10,
-          "eventFelts": 120,
-          "l2Gas": 1632410,
+          "storageWrites": 16,
+          "events": 9,
+          "eventFelts": 97,
+          "l2Gas": 2030960,
           "classHash": "0x43d44fb5b5adbe83e57891a7989ca28787afb982b6bf6f0542c2957853db37"
         },
-        "case": "faith_transfer",
-        "expectedSuccess": true
-      },
-      {
-        "command": "transfer_structure_ownership",
-        "dojo": {
-          "storageWrites": 0,
-          "events": 0,
-          "eventFelts": 0,
-          "l2Gas": 4949331,
-          "classHash": "0xe539645c51aba7c2f12d1228ed16a3823c045eb639af50d7d69fb8b02a19cb"
-        },
-        "nativeExecution": {
-          "storageWrites": 11,
-          "events": 3,
-          "eventFelts": 33,
-          "l2Gas": 1427099,
-          "classHash": "0x4a679a0c4367d43671e21c04340696132dac32dbe77de886236f65bf5a219b3"
-        },
-        "nativeGameplay": {
-          "storageWrites": 0,
-          "events": 0,
-          "eventFelts": 0,
-          "l2Gas": 393850,
-          "classHash": "0x43d44fb5b5adbe83e57891a7989ca28787afb982b6bf6f0542c2957853db37"
-        },
-        "case": "foreign_owner",
+        "case": "insufficient_last_resource",
         "expectedSuccess": false
       },
       {
-        "command": "transfer_structure_ownership",
+        "command": "level_up",
         "dojo": {
-          "storageWrites": 34,
+          "storageWrites": 25,
           "events": 12,
-          "eventFelts": 133,
-          "l2Gas": 19629990,
-          "classHash": "0xe539645c51aba7c2f12d1228ed16a3823c045eb639af50d7d69fb8b02a19cb"
+          "eventFelts": 107,
+          "l2Gas": 31040445,
+          "classHash": "0x1c6fc3062729c3cb3c945012c9632b603f7747f1d4923ba3ef24f93bea37f4e"
         },
         "nativeExecution": {
-          "storageWrites": 43,
-          "events": 13,
-          "eventFelts": 153,
-          "l2Gas": 2672277,
+          "storageWrites": 29,
+          "events": 15,
+          "eventFelts": 168,
+          "l2Gas": 2922466,
           "classHash": "0x4a679a0c4367d43671e21c04340696132dac32dbe77de886236f65bf5a219b3"
         },
         "nativeGameplay": {
-          "storageWrites": 32,
-          "events": 10,
-          "eventFelts": 120,
-          "l2Gas": 1647990,
+          "storageWrites": 18,
+          "events": 12,
+          "eventFelts": 135,
+          "l2Gas": 1907560,
           "classHash": "0x43d44fb5b5adbe83e57891a7989ca28787afb982b6bf6f0542c2957853db37"
         },
-        "case": "faith_transfer_back",
+        "case": "level_one",
         "expectedSuccess": true
       },
       {
-        "command": "transfer_agent_ownership",
+        "command": "level_up",
         "dojo": {
-          "storageWrites": 1,
-          "events": 1,
-          "eventFelts": 8,
-          "l2Gas": 3692097,
-          "classHash": "0xe539645c51aba7c2f12d1228ed16a3823c045eb639af50d7d69fb8b02a19cb"
+          "storageWrites": 30,
+          "events": 14,
+          "eventFelts": 122,
+          "l2Gas": 35686126,
+          "classHash": "0x1c6fc3062729c3cb3c945012c9632b603f7747f1d4923ba3ef24f93bea37f4e"
         },
         "nativeExecution": {
-          "storageWrites": 12,
-          "events": 4,
-          "eventFelts": 41,
-          "l2Gas": 1674667,
+          "storageWrites": 32,
+          "events": 17,
+          "eventFelts": 189,
+          "l2Gas": 3187056,
           "classHash": "0x4a679a0c4367d43671e21c04340696132dac32dbe77de886236f65bf5a219b3"
         },
         "nativeGameplay": {
-          "storageWrites": 1,
-          "events": 1,
-          "eventFelts": 8,
-          "l2Gas": 650380,
-          "classHash": "0x671b2ca12baa5bd88bca56162654219bb61cdb5bb54d6e561c2b119518d6257"
+          "storageWrites": 21,
+          "events": 14,
+          "eventFelts": 156,
+          "l2Gas": 2172150,
+          "classHash": "0x43d44fb5b5adbe83e57891a7989ca28787afb982b6bf6f0542c2957853db37"
         },
-        "case": "agent_transfer",
+        "case": "level_two",
         "expectedSuccess": true
       },
       {
-        "command": "transfer_agent_ownership",
+        "command": "level_up",
         "dojo": {
-          "storageWrites": 1,
-          "events": 1,
-          "eventFelts": 8,
-          "l2Gas": 3692097,
-          "classHash": "0xe539645c51aba7c2f12d1228ed16a3823c045eb639af50d7d69fb8b02a19cb"
+          "storageWrites": 40,
+          "events": 18,
+          "eventFelts": 152,
+          "l2Gas": 44977098,
+          "classHash": "0x1c6fc3062729c3cb3c945012c9632b603f7747f1d4923ba3ef24f93bea37f4e"
         },
         "nativeExecution": {
-          "storageWrites": 12,
-          "events": 4,
-          "eventFelts": 41,
-          "l2Gas": 1674667,
+          "storageWrites": 38,
+          "events": 21,
+          "eventFelts": 231,
+          "l2Gas": 3715846,
           "classHash": "0x4a679a0c4367d43671e21c04340696132dac32dbe77de886236f65bf5a219b3"
         },
         "nativeGameplay": {
-          "storageWrites": 1,
-          "events": 1,
-          "eventFelts": 8,
-          "l2Gas": 650380,
-          "classHash": "0x671b2ca12baa5bd88bca56162654219bb61cdb5bb54d6e561c2b119518d6257"
+          "storageWrites": 27,
+          "events": 18,
+          "eventFelts": 198,
+          "l2Gas": 2700940,
+          "classHash": "0x43d44fb5b5adbe83e57891a7989ca28787afb982b6bf6f0542c2957853db37"
         },
-        "case": "agent_zero_recipient",
+        "case": "level_three",
         "expectedSuccess": true
       },
       {
-        "command": "transfer_structure_ownership",
+        "command": "level_up",
         "dojo": {
           "storageWrites": 0,
           "events": 0,
           "eventFelts": 0,
-          "l2Gas": 4813995,
-          "classHash": "0xe539645c51aba7c2f12d1228ed16a3823c045eb639af50d7d69fb8b02a19cb"
+          "l2Gas": 4693831,
+          "classHash": "0x1c6fc3062729c3cb3c945012c9632b603f7747f1d4923ba3ef24f93bea37f4e"
         },
         "nativeExecution": {
           "storageWrites": 11,
           "events": 3,
           "eventFelts": 33,
-          "l2Gas": 3981179,
+          "l2Gas": 1457609,
           "classHash": "0x4a679a0c4367d43671e21c04340696132dac32dbe77de886236f65bf5a219b3"
         },
         "nativeGameplay": {
           "storageWrites": 0,
           "events": 0,
           "eventFelts": 0,
-          "l2Gas": 2947930,
+          "l2Gas": 430110,
           "classHash": "0x43d44fb5b5adbe83e57891a7989ca28787afb982b6bf6f0542c2957853db37"
         },
-        "case": "ended",
+        "case": "maximum",
+        "expectedSuccess": false
+      },
+      {
+        "command": "level_up",
+        "dojo": {
+          "storageWrites": 0,
+          "events": 0,
+          "eventFelts": 0,
+          "l2Gas": 3971652,
+          "classHash": "0x1c6fc3062729c3cb3c945012c9632b603f7747f1d4923ba3ef24f93bea37f4e"
+        },
+        "nativeExecution": {
+          "storageWrites": 11,
+          "events": 3,
+          "eventFelts": 33,
+          "l2Gas": 2587748,
+          "classHash": "0x4a679a0c4367d43671e21c04340696132dac32dbe77de886236f65bf5a219b3"
+        },
+        "nativeGameplay": {
+          "storageWrites": 0,
+          "events": 0,
+          "eventFelts": 0,
+          "l2Gas": 1563880,
+          "classHash": "0x43d44fb5b5adbe83e57891a7989ca28787afb982b6bf6f0542c2957853db37"
+        },
+        "case": "after_end",
         "expectedSuccess": false
       }
     ]
@@ -580,27 +528,22 @@
   "parityReport": "world-parity.json",
   "cases": [
     {
-      "name": "ownership",
-      "test": "world_parity_ownership",
-      "comparedFactSnapshots": 101
+      "name": "structure",
+      "test": "world_parity_structure",
+      "comparedFactSnapshots": 49
     },
     {
-      "name": "ownership_rejections",
-      "test": "world_parity_ownership_rejections",
-      "comparedFactSnapshots": 63
-    },
-    {
-      "name": "ownership_faith",
-      "test": "world_parity_ownership_faith",
-      "comparedFactSnapshots": 36
+      "name": "structure_rejections",
+      "test": "world_parity_structure_rejections",
+      "comparedFactSnapshots": 28
     }
   ],
   "harnessCoverage": {
-    "workload": "deploy/madara-lab/harness/native/workload.ts",
     "added": [
-      "Transfer a realm to the second player and back, observing both changes through shared-client RECS."
+      "Upgrade an owned realm and observe its level, troop limits, balances and tile through Herald."
     ],
-    "liveRun": "pending full-game acceptance"
+    "liveRun": "pending full-game acceptance",
+    "workload": "deploy/madara-lab/harness/native/workload.ts"
   },
   "casm": {
     "native": {
@@ -626,17 +569,16 @@
       }
     },
     "dojo": {
-      "ownership_systems": {
-        "bytecodeFelts": 33095,
-        "jsonBytes": 713702,
-        "sha256": "fb2e4329356e6f14b27968eca489d68f13d227d216343edc06bee82d7b94edeb"
+      "structure_systems": {
+        "bytecodeFelts": 42257,
+        "jsonBytes": 899418,
+        "sha256": "b2f3c206b3e688ee2fd4b13b3b9a142dfced3873808f00aa2f90da8616a2d061"
       }
     }
   },
   "reductions": [
-    "Removed the unused StructureOwnerStats row, owner_counts map and owner_count view; ownership is stored once on Structure.",
-    "Replaced whole-structure storage writes during transfer with a single owner-field write.",
-    "Removed the intermediate wonder-faith write; settlement persists its final record once."
+    "Remove the ProductionBoostBonus read: the oracle's realm tile selection never consumes the bonus argument.",
+    "Write only level and the two troop limits; remove unchanged base, owner, guards and metadata writes."
   ],
   "divergence": null
 }

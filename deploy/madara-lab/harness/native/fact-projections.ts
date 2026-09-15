@@ -2,6 +2,8 @@ import type { NativeSchema } from "../../../../apps/herald/src/native/schema";
 
 // These are source adapters for the pinned oracle; native fact names and fields come from its generated schema.
 const recordTypes: Record<string, [string, string]> = {
+  UpgradeLimits: ["upgrades::UpgradeLimits", "config::StructureMaxLevelConfig"],
+  UpgradeRecipe: ["upgrades::UpgradeRecipe", "config::StructureLevelConfig"],
   AddressName: ["names::AddressName", "name::AddressName"],
   Structure: ["structures::Structure", "structure::Structure"],
   Resource: ["resources::Resource", "resource::resource::Resource"],
@@ -26,6 +28,8 @@ export function factProjectors(schema: NativeSchema): string {
       const type =
         world === "native"
           ? `world_native::${pair[0]}`
+          : model.name === "UpgradeRecipe"
+            ? "OracleUpgradeRecipe"
           : model.name === "Resource"
             ? "OracleResources"
             : `crate::models::${pair[1]}`;
@@ -41,14 +45,24 @@ export function factProjectors(schema: NativeSchema): string {
         }
         return emitValue(`self.${path}`, type, world);
       });
-      const body = model.observation.transform === "tile" ? tileProjection(world) : fields.join("\n");
+      const body = model.name === "UpgradeRecipe" && world === "oracle" ? `
+        let game: crate::models::game::GameRegistry = self.world.read_model(self.game_id);
+        let recipe: crate::models::config::StructureLevelConfig = self.world.read_model((game.preset_id, self.level));
+        facts.append(recipe.required_resource_count.into());
+        for index in 0..recipe.required_resource_count {
+          let cost: crate::models::resource::resource::ResourceList = self.world.read_model((game.preset_id, recipe.required_resources_id, index));
+          facts.append(cost.resource_type.into()); facts.append(cost.amount.into());
+        }` : model.observation.transform === "tile" ? tileProjection(world) : fields.join("\n");
       implementations.push(`impl ${world}_${model.name} of Observable<${type}> {
         fn observe(self: ${type}) -> Array<felt252> { let mut facts = array![]; ${model.name === "Resource" && world === "oracle" ? "let mut world = self.world;" : ""} ${body} facts }
       }`);
     }
   }
   return `// Generated from native schema fact declarations; regenerate with the behavioural parity command.
+    use dojo::model::ModelStorage;
     use crate::models::resource::resource::ResourceImpl;
+    #[derive(Copy, Drop)]
+    pub struct OracleUpgradeRecipe { pub world: dojo::world::WorldStorage, pub game_id: u32, pub level: u8 }
     #[derive(Copy, Drop)]
     pub struct OracleResources { pub world: dojo::world::WorldStorage, pub game_id: u32, pub entity_id: u32 }
     pub trait Observable<T> { fn observe(self: T) -> Array<felt252>; }

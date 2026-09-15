@@ -3,7 +3,7 @@
   "domain": "name",
   "factModel": {
     "source": "schema/fact-models.mjs",
-    "schema": "d292c3425d0b81cdcc3becc2bfd2756cec27fb8e7aa05c1fa70bed6853e5b1bb",
+    "schema": "84bec30da4efc70a961bf41073f142031c83cd21cdbda4cb4af83397b73be99b",
     "declarations": [
       {
         "model": "TileOpt",
@@ -268,6 +268,25 @@
         }
       },
       {
+        "model": "UpgradeLimits",
+        "observation": {
+          "domain": "structure",
+          "fields": {
+            "realmMaximum": "realm_max",
+            "villageMaximum": "village_max"
+          }
+        }
+      },
+      {
+        "model": "UpgradeRecipe",
+        "observation": {
+          "domain": "structure",
+          "fields": {
+            "costs": "costs"
+          }
+        }
+      },
+      {
         "model": "PlayerRegisteredPoints",
         "observation": {
           "domain": "points",
@@ -289,7 +308,7 @@
   },
   "costs": {
     "version": 1,
-    "traceSha256": "17216a784c6bda137886c32f893d5560c360ebdfdf7c30729aaa903d43de7455",
+    "traceSha256": "2334217b56a34ba3a164ed393e33fe5e4026ece98b160240341ae9d7a9da3693",
     "accounting": "Inclusive execution counters at each action entrypoint, including attempted operations before rollback. Event counts sum local emissions across descendants; syscall and gas counters are already inclusive. Account validation and fees are outside this fixture.",
     "actions": [
       {
@@ -305,15 +324,15 @@
           "storageWrites": 12,
           "events": 4,
           "eventFelts": 40,
-          "l2Gas": 1105437,
-          "classHash": "0x54b5d3fc00bfba1564dded3eeb7ec14317060a93f24ed6eff6664c495ee19c1"
+          "l2Gas": 1105637,
+          "classHash": "0x4a679a0c4367d43671e21c04340696132dac32dbe77de886236f65bf5a219b3"
         },
         "nativeGameplay": {
           "storageWrites": 1,
           "events": 1,
           "eventFelts": 7,
           "l2Gas": 82360,
-          "classHash": "0x7af8a6b84b450411801ae2ea2ea80185b69b68d0858fda187e61c794107dc4e"
+          "classHash": "0x43d44fb5b5adbe83e57891a7989ca28787afb982b6bf6f0542c2957853db37"
         },
         "case": "set",
         "expectedSuccess": true
@@ -331,15 +350,15 @@
           "storageWrites": 12,
           "events": 4,
           "eventFelts": 40,
-          "l2Gas": 1105437,
-          "classHash": "0x54b5d3fc00bfba1564dded3eeb7ec14317060a93f24ed6eff6664c495ee19c1"
+          "l2Gas": 1105637,
+          "classHash": "0x4a679a0c4367d43671e21c04340696132dac32dbe77de886236f65bf5a219b3"
         },
         "nativeGameplay": {
           "storageWrites": 1,
           "events": 1,
           "eventFelts": 7,
           "l2Gas": 82360,
-          "classHash": "0x7af8a6b84b450411801ae2ea2ea80185b69b68d0858fda187e61c794107dc4e"
+          "classHash": "0x43d44fb5b5adbe83e57891a7989ca28787afb982b6bf6f0542c2957853db37"
         },
         "case": "overwrite",
         "expectedSuccess": true
@@ -357,15 +376,15 @@
           "storageWrites": 12,
           "events": 4,
           "eventFelts": 40,
-          "l2Gas": 1105437,
-          "classHash": "0x54b5d3fc00bfba1564dded3eeb7ec14317060a93f24ed6eff6664c495ee19c1"
+          "l2Gas": 1105637,
+          "classHash": "0x4a679a0c4367d43671e21c04340696132dac32dbe77de886236f65bf5a219b3"
         },
         "nativeGameplay": {
           "storageWrites": 1,
           "events": 1,
           "eventFelts": 7,
           "l2Gas": 82360,
-          "classHash": "0x7af8a6b84b450411801ae2ea2ea80185b69b68d0858fda187e61c794107dc4e"
+          "classHash": "0x43d44fb5b5adbe83e57891a7989ca28787afb982b6bf6f0542c2957853db37"
         },
         "case": "clear",
         "expectedSuccess": true
@@ -383,15 +402,15 @@
           "storageWrites": 11,
           "events": 3,
           "eventFelts": 33,
-          "l2Gas": 1101629,
-          "classHash": "0x54b5d3fc00bfba1564dded3eeb7ec14317060a93f24ed6eff6664c495ee19c1"
+          "l2Gas": 1101829,
+          "classHash": "0x4a679a0c4367d43671e21c04340696132dac32dbe77de886236f65bf5a219b3"
         },
         "nativeGameplay": {
           "storageWrites": 0,
           "events": 0,
           "eventFelts": 0,
           "l2Gas": 69590,
-          "classHash": "0x7af8a6b84b450411801ae2ea2ea80185b69b68d0858fda187e61c794107dc4e"
+          "classHash": "0x43d44fb5b5adbe83e57891a7989ca28787afb982b6bf6f0542c2957853db37"
         },
         "case": "non_owner",
         "expectedSuccess": false
@@ -409,15 +428,15 @@
           "storageWrites": 12,
           "events": 4,
           "eventFelts": 40,
-          "l2Gas": 1105437,
-          "classHash": "0x54b5d3fc00bfba1564dded3eeb7ec14317060a93f24ed6eff6664c495ee19c1"
+          "l2Gas": 1105637,
+          "classHash": "0x4a679a0c4367d43671e21c04340696132dac32dbe77de886236f65bf5a219b3"
         },
         "nativeGameplay": {
           "storageWrites": 1,
           "events": 1,
           "eventFelts": 7,
           "l2Gas": 82360,
-          "classHash": "0x7af8a6b84b450411801ae2ea2ea80185b69b68d0858fda187e61c794107dc4e"
+          "classHash": "0x43d44fb5b5adbe83e57891a7989ca28787afb982b6bf6f0542c2957853db37"
         },
         "case": "after_end",
         "expectedSuccess": true
@@ -429,9 +448,9 @@
   "rulesRevision": "55dc510f5e7af119d1efac9a60426e81fee8e408",
   "oracleSourceSha256": "99034c1e0f31719df3d1ae0cf343a2e9b53fae2da8f972bb38c78b1fa7d73bce",
   "provenance": {
-    "revision": "161d068ae51e3521fd911ba37140eb6efba48438",
+    "revision": "880085bba80f80e8c8874c998654ba956dcccc3d",
     "dirty": false,
-    "sourceSha256": "6ba11c7f2c52f55da66654998b8f2648ec6246d6df13ca47b885d10102208438",
+    "sourceSha256": "6d7f50f52e959cac678b4570669269b0269ed581f513b402e7f97eca4b8796f6",
     "scope": [
       "apps/herald",
       "contracts/l3/world-native",
@@ -450,6 +469,7 @@
       "contracts/l3/world-native/fixtures/herald-replay.json",
       "contracts/l3/world-native/fixtures/name-parity.json",
       "contracts/l3/world-native/fixtures/ownership-parity.json",
+      "contracts/l3/world-native/fixtures/structure-parity.json",
       "contracts/l3/world-native/fixtures/world-parity.json"
     ]
   },
@@ -471,14 +491,14 @@
   "casm": {
     "native": {
       "SeasonDomain": {
-        "bytecodeFelts": 50361,
-        "jsonBytes": 1100264,
-        "sha256": "438ce281a8197000b1a3b3aa14fb770c8e4c600c5c9c55363f8c97f5981b8297"
+        "bytecodeFelts": 53898,
+        "jsonBytes": 1182865,
+        "sha256": "713530ac210b3c96063ee840b43ce9b7b4fa13b3cd02cc043c65f7f30c9416f3"
       },
       "StructuresDomain": {
-        "bytecodeFelts": 78992,
-        "jsonBytes": 1733812,
-        "sha256": "85e5e346eca1c0ea433016a9b08bc0e366476eb98574dc022e14c5a2f5e4c017"
+        "bytecodeFelts": 81474,
+        "jsonBytes": 1788882,
+        "sha256": "d0402dc8a038c61db9881625de5d570eb3e8ff5b4e84f491d9ba586e847aa96b"
       },
       "TroopsDomain": {
         "bytecodeFelts": 66466,
@@ -486,9 +506,9 @@
         "sha256": "7471cfad33f69cfb98904aa2e03bb305520b9a39b7a8c1881a18f0344877f00c"
       },
       "MapDomain": {
-        "bytecodeFelts": 37586,
-        "jsonBytes": 871873,
-        "sha256": "e27e84b7cf5f100776f44d01132b1b690437f7f0bfc4668a3b5626b57881d67a"
+        "bytecodeFelts": 38625,
+        "jsonBytes": 897159,
+        "sha256": "6f246a099eea0a16c884d5c40a2a463ccdb5119ee04270645220b328dd1e1008"
       }
     },
     "dojo": {

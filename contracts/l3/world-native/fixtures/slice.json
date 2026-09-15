@@ -171,7 +171,9 @@
     "ownership": "Structure and agent transfers, faith accrual, authorization and time boundaries",
     "ownership_rejections": "Village, mode, season boundaries, controller and domain authorization",
     "ownership_faith": "Faith winner ties, duplicate winners, disabled accrual and atomic late failure",
-    "name": "Naming with an owned-structure witness: set, overwrite, clear, non-owner rejection and after-end renaming."
+    "name": "Naming with an owned-structure witness: set, overwrite, clear, non-owner rejection and after-end renaming.",
+    "structure": "Realm upgrades consume the immutable recipes, update level and troop limits and preserve tile facts; rejected payments roll back all spending.",
+    "structure_rejections": "Reject non-settlement upgrades, villages at their configured maximum and pre-start upgrades without changing gameplay facts; wonder realms keep their tile category."
   },
   "randomness": {
     "rawRootSource": "injected identical root per action",

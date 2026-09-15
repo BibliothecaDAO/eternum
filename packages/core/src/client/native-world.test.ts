@@ -166,6 +166,8 @@ describe("native bindings in the shared game client", () => {
         calldata: [1, "0xabc"],
       }),
     ).rejects.toThrow("owned structure");
+    await send(actor, { contractAddress: "0x101", entrypoint: "level_up", calldata: [1, 9] });
+    expect((submit.mock.calls.at(-1)![0].calldata as string[]).slice(10, 13)).toEqual(["2", "9", "9"]);
     for (const [entrypoint, variant] of [
       ["transfer_structure_ownership", "6"],
       ["transfer_agent_ownership", "7"],
