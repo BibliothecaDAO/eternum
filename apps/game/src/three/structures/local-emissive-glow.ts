@@ -1,11 +1,4 @@
-import {
-  AdditiveBlending,
-  BufferGeometry,
-  Group,
-  InstancedMesh,
-  MeshStandardMaterial,
-  Sphere,
-} from "three";
+import { AdditiveBlending, BufferGeometry, Group, InstancedMesh, MeshStandardMaterial, Sphere } from "three";
 import { mergeVertices } from "three/addons/utils/BufferGeometryUtils.js";
 import { color, normalLocal, normalView, positionLocal, positionViewDirection } from "three/tsl";
 import { MeshBasicNodeMaterial } from "three/webgpu";

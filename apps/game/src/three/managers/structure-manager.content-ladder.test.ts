@@ -348,11 +348,18 @@ describe("StructureManager terrain placement", () => {
     const setMatrixAt = vi.fn((index: number, matrix: THREE.Matrix4) => matrices.set(index, matrix.clone()));
     const model = { ...models.realm, setMatrixAt };
     manager.attachmentManager = {
-      setVisible: vi.fn(), clear: vi.fn(), removeAttachments: vi.fn(),
+      setVisible: vi.fn(),
+      clear: vi.fn(),
+      removeAttachments: vi.fn(),
       spawnAttachments: vi.fn(),
-      updateAttachmentTransforms: vi.fn((entityId: number, base: { position: THREE.Vector3 }) => attachmentHeights.set(entityId, base.position.y)),
+      updateAttachmentTransforms: vi.fn((entityId: number, base: { position: THREE.Vector3 }) =>
+        attachmentHeights.set(entityId, base.position.y),
+      ),
     };
-    manager.compactLabelRenderer.setLabel.mockImplementation(({ entityId, position }: { entityId: number; position: THREE.Vector3 }) => compactHeights.set(entityId, position.y));
+    manager.compactLabelRenderer.setLabel.mockImplementation(
+      ({ entityId, position }: { entityId: number; position: THREE.Vector3 }) =>
+        compactHeights.set(entityId, position.y),
+    );
     vi.spyOn(manager, "resolveStructureAttachmentsForRender").mockReturnValue([{ id: "banner" }]);
     vi.spyOn(manager, "updateStructureLabelData").mockImplementation(() => {});
     for (const structure of structures) {

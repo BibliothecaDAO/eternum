@@ -1680,7 +1680,10 @@ export class StructureManager {
     model.setMatrixAt(instanceIndex, this.dummy.matrix);
     dirtyModels.add(model);
 
-    const terrainHeight = this.resolveTerrainSurface().sampleSurface(this.dummy.position.x, this.dummy.position.z).height;
+    const terrainHeight = this.resolveTerrainSurface().sampleSurface(
+      this.dummy.position.x,
+      this.dummy.position.z,
+    ).height;
     return { entityIdsByInstance, instanceIndex, model, terrainHeight };
   }
 

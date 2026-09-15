@@ -10,12 +10,12 @@ larger gameplay hex borders. The fog state uses opaque charcoal mist with a fain
 hidden terrain, borders or buildings beneath a transparent cover.
 
 Surface spires force this visual terrain on their own hex only. Authoritative biomes, movement costs and exploration
-rules remain unchanged. Existing map creation already generates paired surface/ethereal spires and pre-explores them;
-no contract or map-generation change is needed. `TileOccupier.Spire` selects the visual override, including after reload.
+rules remain unchanged. Existing map creation already generates paired surface/ethereal spires and pre-explores them; no
+contract or map-generation change is needed. `TileOccupier.Spire` selects the visual override, including after reload.
 
 Both landmark sources and runtime exports lose their authored ground bases and ground veins. Their upper emissions,
-portal motion and mine machinery remain. Occupied basalt tiles have a level 0.12 support surface across the full hex,
-so mine posts, cart and ladders stay grounded through all six rotations. Model-local Y=0 meets that surface. The spire's
+portal motion and mine machinery remain. Occupied basalt tiles have a level 0.12 support surface across the full hex, so
+mine posts, cart and ladders stay grounded through all six rotations. Model-local Y=0 meets that surface. The spire's
 authored hovering motion remains intentional.
 
 ## Implementation
@@ -40,8 +40,8 @@ authored hovering motion remains intentional.
 
 The original spire base had 61 clipped basalt columns, approximately 0.14 radius, with median height 0.0806. The first
 procedural version matched the appearance but expanded every slab into per-page arrays. A measured 24×24 explored page
-used 152.89 MiB and 1,005,217 triangles; sixteen pages would retain 2.389 GiB before GPU allocation. This is why the final
-implementation uses shared geometry and distance detail rather than the plan's initial expanded page buffers.
+used 152.89 MiB and 1,005,217 triangles; sixteen pages would retain 2.389 GiB before GPU allocation. This is why the
+final implementation uses shared geometry and distance detail rather than the plan's initial expanded page buffers.
 
 The mine's baseless compressed export is 130,784 bytes, six primitives and 27,346 triangles; the spire is 564,268 bytes,
 25 primitives and 11,712 triangles. Source checks verify all mine foundations and cart contacts at zero, all six rotated

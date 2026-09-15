@@ -389,7 +389,7 @@ function createFogMaterial(maskTexture: DataTexture): FogMaterialSet {
   const surfaceOpacity = mix(frontierOpacity, float(TERRAIN_DEEP_FOG_OPACITY), deepFog);
   // Obscured basalt is a public-coordinate pattern, never a blur of hidden world geometry.
   const slabDistance = terrainHexEdgeDistance(fogGround.xz.div(0.14)).mul(0.14);
-  const slab = smoothstep(0.008, 0.048, slabDistance).mul(0.012);
+  const slab = smoothstep(0.025, 0.12, slabDistance).mul(0.003).mul(mistNoise.mul(0.6).add(0.4));
   const basaltFog = color("#111318").add(slab).add(mistLight.mul(0.065));
   material.colorNode = shadeFogHexBoundary(mix(fogColor, basaltFog, ethereal), fogGround.xz);
   material.opacityNode = mix(surfaceOpacity, float(1), streaming);
