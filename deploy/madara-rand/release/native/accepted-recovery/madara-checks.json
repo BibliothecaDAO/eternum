@@ -1,0 +1,28 @@
+[
+  {
+    "command": [
+      "scarb",
+      "fmt"
+    ],
+    "exit_code": 1,
+    "log": "scarb-fmt.log"
+  },
+  {
+    "command": [
+      "pnpm",
+      "run",
+      "format"
+    ],
+    "exit_code": 1,
+    "log": "pnpm-format.log"
+  },
+  {
+    "command": [
+      "pnpm",
+      "run",
+      "knip"
+    ],
+    "exit_code": 1,
+    "log": "pnpm-knip.log"
+  }
+]

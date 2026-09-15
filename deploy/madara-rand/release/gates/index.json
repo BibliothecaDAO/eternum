@@ -1,0 +1,300 @@
+{
+  "schema": 2,
+  "scope": "single-host real native gameplay; selected embedded release",
+  "selectedPlacement": "embedded",
+  "latency_budget_result": "passed_for_embedded",
+  "sidecar_budget_result": "failed_p99; comparison complete, placement not selected",
+  "host_loss_gate": "The host-loss drill is deferred at the owner\u2019s request. Cross-host recovery and durability remain unverified.",
+  "release": "../native/node/manifest.json",
+  "gates": [
+    {
+      "gate": "published ABI and unchanged protocol assertions on native and stub",
+      "status": "passed",
+      "evidence": [
+        "../native/conformance/native-abi.json",
+        "../native/conformance/native-tests.log",
+        "../native/conformance/protocol-tests.log"
+      ]
+    },
+    {
+      "gate": "no preview, duplicate and conflicting nonces, terminal rejection, both feature configurations",
+      "status": "passed_on_real_native_domain",
+      "evidence": [
+        "../native/recovery-indexed/reports.json",
+        "../native/conformance/replicated-journal.log"
+      ]
+    },
+    {
+      "gate": "same binding after before/after broadcast crashes, local fencing, pending credential rotation, partition",
+      "status": "passed_on_real_native_domain",
+      "evidence": [
+        "../native/recovery-indexed/reports.json"
+      ]
+    },
+    {
+      "gate": "confirmed history reconstruction, stale-disk quarantine and missing-journal rejection",
+      "status": "passed_on_real_native_domain",
+      "note": "The first reconstruction command used a mismatched test database name. It stopped before reading history. The corrected configuration used the separately created empty database; both attempts are retained.",
+      "evidence": [
+        "../native/recovery-indexed/reports.json",
+        "../native/recovery-indexed/artifacts.json"
+      ]
+    },
+    {
+      "gate": "original discovery pools, matched explore gas, execution, row latency and throughput",
+      "status": "passed_for_selected_embedded_placement",
+      "note": "The aggregate comparison remains false because sidecar misses p99. The initial failed comparison is retained. No budget, sample exclusion or discovery pool changed.",
+      "evidence": [
+        "../native/comparison-indexed/summary.json",
+        "../native/comparison-indexed/plan.json",
+        "../native/comparison-initial/summary.json"
+      ]
+    },
+    {
+      "gate": "indexed reads preserve retained journal; lifecycle recovery and entropy-source failure",
+      "status": "passed",
+      "evidence": [
+        "../native/journal-lookup/measure.json",
+        "../native/conformance/rust-tests.log",
+        "../native/conformance/replicated-journal.log",
+        "../native/conformance/entropy-failure.log"
+      ]
+    },
+    {
+      "gate": "pinned release, fsync fix, both binaries and dependencies",
+      "status": "passed",
+      "evidence": [
+        "../native/node/manifest.json",
+        "../native/conformance/rust-fmt.log",
+        "../native/conformance/rust-clippy.log"
+      ],
+      "unavailableChecks": "Madara has no root Scarb.toml or pnpm format/knip scripts; attempts are recorded in ../native/conformance/madara-non-rust-checks.json."
+    },
+    {
+      "gate": "restore selected embedded placement and deliver a further real explore",
+      "status": "passed",
+      "note": "Post-promotion duplicate-request smoke; its 527 ms first delivery is not part of the frozen warmed latency workload.",
+      "evidence": [
+        "../native/selected-embedded/summary.json"
+      ]
+    },
+    {
+      "gate": "host and disk loss with promotion on another physical host",
+      "status": "deferred_by_owner",
+      "evidence": []
+    },
+    {
+      "gate": "accepted tickets retain recorded time and root through unbounded execution delay",
+      "status": "passed_in_source_conformance",
+      "note": "No lab image rebuild or deployed outage drill is claimed. The source test compares immediate execution, a one-day outage and execution after the fixture game ends, then checks fresh successor contexts.",
+      "evidence": [
+        "../native/accepted-recovery/report.json",
+        "../native/accepted-recovery/native-abi.json",
+        "../native/accepted-recovery/madara-checks.json"
+      ]
+    },
+    {
+      "gate": "authenticated terminal rejections advance order and preserve unrelated nonces",
+      "status": "passed_source_conformance",
+      "evidence": [
+        "../native/terminal-rejections/report.json"
+      ],
+      "note": "Native and stub shared assertions, ABI unchanged, stale admission guard. Source evidence only; deployed drills and image still predate this change."
+    },
+    {
+      "gate": "bound L2 cosmetic admission and retained settlement facts through delay and rebinding",
+      "status": "passed_source_conformance",
+      "evidence": [
+        "../native/settlement-admission/report.json",
+        "../native/settlement-admission/native-abi.json",
+        "../native/settlement-admission/madara-checks.json"
+      ],
+      "note": "Gameplay authentication still requires PlayerRegistry binding. Admission reads token ownership and attributes at one finalized L2 block; accepted execution retains that snapshot. No rebuilt image, live settlement or wallet-side lock issuance is claimed."
+    }
+  ],
+  "historicalRehearsals": "historical-index.json",
+  "sourceProvenance": "Measurements were frozen from clean trees before the requested history rewrite. The indexed comparison archives its measured runtime sources with the manifest hashes.",
+  "artifacts": {
+    "../native/comparison-indexed/artifacts.json": "b388533965178f52ff6651233b1761b27f34f600d4720c69a6e78e5d1323bb7a",
+    "../native/comparison-indexed/plan.json": "c742b6b53c9588471bf82c42feaa053e897e5ed5e0a9a0848e1dfd4d01a016e0",
+    "../native/comparison-indexed/raw.tar.gz": "a567b290ad606c799c83ba77ef76f7268d0f0991c8eb68f85cb06fa9375b8c33",
+    "../native/comparison-indexed/sources.tar.gz": "309125379b3e7fa519a6ff43681bcdd3e5516983db75fedf1c344cbec53ac20f",
+    "../native/comparison-indexed/summary.json": "f15870fd9a874188e3d670e35a536a46869f98af6a868c37f227f2f114b56324",
+    "../native/comparison-initial/artifacts.json": "6471acae132497003451e7e8c2a3de2cc5346c80e5bf4a3b1bbea9e53605de3e",
+    "../native/comparison-initial/plan.json": "64c7a9258bce2da2f15a86015d61f9a84047f4d3f0c2c526c3772bc5551a605f",
+    "../native/comparison-initial/raw.tar.gz": "3705d5736b3e07b3024859b0cac5c0b3da935ec131df561f752f7ddeb5f8f969",
+    "../native/comparison-initial/summary.json": "cf5069e9ef58b3d1e16b248917c7a3e9cec173e08aa838fb6908d73f5c389d2f",
+    "../native/conformance/entropy-failure.log": "899c0cc9f965d50b9c311b1ce2bc94dbb6a6473b98d6131f03fe9f95e68c3fc8",
+    "../native/conformance/madara-non-rust-checks.json": "5d38fab3e8dde9c6f8689a27646b7dfa304c5f485ca373bf5443a8532fee0063",
+    "../native/conformance/native-abi.json": "7ee4e6183cc86c772921dd892864ece06926c86a8dbb94f8e849061a22bafea9",
+    "../native/conformance/native-tests.log": "209163e87d95563764bec86a856a8fb89472b0993e42a4afbded535e169ec51b",
+    "../native/conformance/protocol-tests.log": "1e4be9f22c095c528a8f01fced242ef4001fd0b454cbea2c39c8c4a0045ade94",
+    "../native/conformance/replicated-journal.log": "68e682d6b39f198ad9b44df95437dffeed0d06198f9645f24119260a41ae2515",
+    "../native/conformance/rust-clippy.log": "c233b69c85159f775af8791a1449ae968c0b20b465c62c47eeb99697f8b92e65",
+    "../native/conformance/rust-fmt.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "../native/conformance/rust-tests.log": "e124d872a3afd16e2c3466a8d6bb22180e632a86801dcdd16cd37b7bc4406f35",
+    "../native/herald/compile.log": "ff859f08c17c47f79b03013b525b2c46ada98e62a383f163f1d8b874e52ac5d9",
+    "../native/herald/image-build.log": "93ee2f92c43b499af72ef25f8f2553c9c7020047f2ccd71658673c3a84f19119",
+    "../native/herald/image-push.log": "1ef68cbee2bf7927c204d16728f7ff1b26acd04d823bc9e6f3029470eb849c2e",
+    "../native/herald/image.env": "78c515895eb13b2976e0ef29062614c0a6db75f17dec9b266ade812d15693dbc",
+    "../native/herald/manifest.json": "c5f3b7a6bce966530f3b924e14fa7c2a6cf497455e9d0f2055bd760602ac6a65",
+    "../native/herald/modules.json": "9547985b06505733bf6f2d85e3b307961cb840adfafdd940715da53102a43cfa",
+    "../native/inputs/artifacts.json": "f4f90224a17e1aaa71a83f03a072cbbe2e8f36d5df11e6fd86b2806edec05cac",
+    "../native/inputs/raw.tar.gz": "c4411973fa1a054cb1481b5354198310eaf3e0cc1ac5aee1c08bf963694beb9a",
+    "../native/journal-lookup/artifacts.json": "1ea55a637f1f0205638209b6024d2a10ec0df2348bb9cdabe1fab436ad2f0da4",
+    "../native/journal-lookup/measure.json": "d042f65e929df83cf33f96fa67c148b47b1904e4490f13b593c34b26150cc1b7",
+    "../native/journal-lookup/raw.tar.gz": "f4116858ec8c21e5cf6d89cbb84f95111ff495d32c0753db32d199573e5f6566",
+    "../native/node/artifact-copy.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "../native/node/artifact-image.log": "1f3d12e691bcf2b9affb9fca39c57a0ef958809ab081dd7161f001bcc86b58de",
+    "../native/node/compile.log": "26f9df2ca1fc65a17fa9eff84a5d73b95322a4ea65bb72b012534ac6edb987e3",
+    "../native/node/dependencies.json": "9fef5736a29d2bfb8635157003b5caa69390ea1c6b3ad7758353d0dcabb6fb4e",
+    "../native/node/dependencies.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "../native/node/image-build.log": "cbcaaf734fe9abbfed155344ac3aabd7dacf1ed11813b1e34ff082042cf22eec",
+    "../native/node/image-push.log": "ebbc23d2979e792b4b02011f493af49bf577960d2fcd6c0a2f286f74109b4a53",
+    "../native/node/image.env": "f965bbaafcb161c044eba01994d65ad67c4ac32aa27e9c4ba63f51ed1b553ab8",
+    "../native/node/madara-baseline-dependencies.txt": "ad6a4781e6873c06476a6f2f7fafc89f623dc0a168d179f39f1a4b06d6eb770f",
+    "../native/node/madara-dependencies.txt": "d1bae3f02336732835781ee6514e740fd4d7e3328e276155ac4ddf35273ffb10",
+    "../native/node/manifest.json": "1379a851e26a56623bda92c93b10bda51fd8d4d51269b652b03bdcb2fd589ee7",
+    "../native/node/native-compiler-Cargo.lock": "2cfb3391cff0374f82756f9f0b81a071a8905582f0872878041e81d8d262a205",
+    "../native/node/randomness-sidecar-dependencies.txt": "ccc4e63bc3b7fcf7d632c6e0c87a6075a32441f0725cb151e63dbd007e394fa7",
+    "../native/node/registry.log": "5a641b385e28d65389e64c6119387230a9c20fc8bd937e398f3c84c4266fc691",
+    "../native/recovery-indexed/artifacts.json": "b95b7a18389b4f24654006045b0539eb46807838b26647894df7341ed2f6ccc0",
+    "../native/recovery-indexed/raw.tar.gz": "dd41a3961ae2f465789a68617b2697401c39397a3b18780f201504d7925efe7a",
+    "../native/recovery-indexed/reports.json": "1278313ea4d3c4c31a49d2af0f8c02bdf85f84626d7967b51c5704b95b32c311",
+    "../native/recovery-initial/artifacts.json": "50bf377b74480e156e85430e20d0b4c00622fd30a308b3d9666aa0f77854cfa0",
+    "../native/recovery-initial/raw.tar.gz": "651a7742cec3d342200e68855b7c2bfe4978bf486562f2514f814ba0d8a284db",
+    "../native/recovery-initial/reports.json": "8ea0f017c5beeb4bfe20f9bdf2acb8b0baf8e94d8143586c045c6362d52669cd",
+    "../native/selected-embedded/artifacts.json": "4c98866aa3ff668817113a25a4f21cda3f3056551904468746bb0e7df157f99a",
+    "../native/selected-embedded/raw.tar.gz": "43ff3e02499cf0ea191ff50e179f3b3eb465691c7b9852aa1c8d40095fb851a4",
+    "../native/selected-embedded/summary.json": "4f6420cc2858a1a2995a8ecc0103ec3d16bfff5e0e4041417a04596d7784ec45",
+    "historical-index.json": "0b0db55d998ccf7898110ed13c1ff3bf419f413905c5b89ec35192ecdcedaa39",
+    "../native/accepted-recovery/cairo-vectors.log": "e063e88d34b5fc6458f3352e63845eea6e22dec0911b4e75f092af6392aa6e67",
+    "../native/accepted-recovery/current-game.log": "9f5b1bb3e0ff4cdd65e7f88e4f94f4b3a70daf533e3d5652287a2af3afd05de9",
+    "../native/accepted-recovery/madara-checks.json": "b53fc3c82e80e92a32fa4c42f55e86c039b74c051b12e282d6535bcd2611c72c",
+    "../native/accepted-recovery/madara-pnpm-format.log": "60829aa45abc0a9f68606e39d10b09487c5dc081c9a265e6323bd81dc956af99",
+    "../native/accepted-recovery/madara-pnpm-knip.log": "fc3f99140419c705dab067a1e5c3e6c55b0847110d08b8642957b109d8c24236",
+    "../native/accepted-recovery/madara-scarb-fmt.log": "dcb30ebfab365955648ddc18b7ab7e32232cd78055054e1f93c86e87f4a97984",
+    "../native/accepted-recovery/native-abi.json": "7ee4e6183cc86c772921dd892864ece06926c86a8dbb94f8e849061a22bafea9",
+    "../native/accepted-recovery/native-abi.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "../native/accepted-recovery/native-build.log": "8ac41838aae119b0c47bfbf4097cfbdbb6a3b6b95323b024229850e6be29a018",
+    "../native/accepted-recovery/native-conformance.log": "ff26e8b90f91fbdad538b6c5d8bde63e4e2247d95a0416e1f1d5f383de3ef94c",
+    "../native/accepted-recovery/native-schema.log": "1af7d5eb36f2718e62ec796b051691272bc8c94efcf2d3da482bb71d1a7ec3a2",
+    "../native/accepted-recovery/protocol-build.log": "34b28aa16de9536eb5fd15046e8a1f60ba42305d4f8312a064d3f2166c69617a",
+    "../native/accepted-recovery/report.json": "0754d3ea56762532c32e05ffc127d618254a3d254fcc34d43499320cd97916b1",
+    "../native/accepted-recovery/rust-clippy.log": "a8dd5b4f852b782842253d071162bc7c3c44c3a9a07131cd1159e45bbb802a10",
+    "../native/accepted-recovery/rust-fmt.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "../native/accepted-recovery/rust-vectors.log": "95c2e27a6be2b9a4ed92e80b64768ab9e80343ba50f7d274f7d55f597dabb8a3",
+    "../native/accepted-recovery/schema-dependencies.log": "ef22b619a2c72e23984e4cfb407fcb5a0c863749d7935895d5470a8e2fbef754",
+    "../native/terminal-rejections/cairo-vectors.log": "77c40880a382dbe7c4d1c6505f1f3bcbac5b0efaf7349e868e5f5446600d0ca5",
+    "../native/terminal-rejections/current-game.log": "c1116e3b1e8b5c43753cb088ee7629e9296a99e44873ede2853fef19383486d6",
+    "../native/terminal-rejections/madara-format.log": "60829aa45abc0a9f68606e39d10b09487c5dc081c9a265e6323bd81dc956af99",
+    "../native/terminal-rejections/madara-knip.log": "fc3f99140419c705dab067a1e5c3e6c55b0847110d08b8642957b109d8c24236",
+    "../native/terminal-rejections/madara-scarb.log": "dcb30ebfab365955648ddc18b7ab7e32232cd78055054e1f93c86e87f4a97984",
+    "../native/terminal-rejections/native-abi.json": "7ee4e6183cc86c772921dd892864ece06926c86a8dbb94f8e849061a22bafea9",
+    "../native/terminal-rejections/native-abi.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "../native/terminal-rejections/native-build.log": "df75e9b78bfa467b0dece412d13aa2c8802eff52c5314ca6243b841f85c4d59f",
+    "../native/terminal-rejections/native-conformance.log": "d1c64febb92af8b8303d0e9538dac3914a70e884113259f3ba22da01d3c63bf3",
+    "../native/terminal-rejections/native-schema.log": "1af7d5eb36f2718e62ec796b051691272bc8c94efcf2d3da482bb71d1a7ec3a2",
+    "../native/terminal-rejections/protocol-build.log": "b67c4d15cc1f999c05591d24f31a76d2b2d0d411b5daee36a379373b50abfe62",
+    "../native/terminal-rejections/report.json": "cdce533e740617b74b7a45de8434843ad412b56c902913a5261e763661367971",
+    "../native/terminal-rejections/rust-clippy.log": "73596b79c23573c30ea3176cec2df235cf5a72cea804331b01f4aa027afa4a13",
+    "../native/terminal-rejections/rust-fmt.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "../native/terminal-rejections/rust-vectors.log": "97baffaa6c343297bb1913fa2e19bbf29edffc12f6968d08cb41c4a4fc5a4044",
+    "../native/terminal-rejections/schema-dependencies.log": "ab3d47f214846badd10b1eb44548eb2cd051ad9a228460b28f0406a2bc8e70d8",
+    "../native/settlement-admission/cairo-vectors.log": "c17ed7452cddc503c6ae726a82508001700bc8c361b3e446cdd1c7487fcc5a60",
+    "../native/settlement-admission/current-game.log": "021433637569bc5687f00231da6592a831347f92e9073fa032795853784afa5c",
+    "../native/settlement-admission/madara-checks.json": "d497a6af4334dc0e0df3c8e099ec44e7a2fc20254bb8e656639cfb39fab1d670",
+    "../native/settlement-admission/madara-pnpm-run-format.log": "76a2ed83e205e948fce24f40362bcea52bcf1f2d58cce2b8b9f44c2f85271c9d",
+    "../native/settlement-admission/madara-pnpm-run-knip.log": "d053021ea021e8193b43295b9e07ba4da67cbb8c65615da14d95e90291da1854",
+    "../native/settlement-admission/madara-scarb-fmt.log": "975c246405d345ba9142db44cde953bb132a2962816b368dbf4bf108f974918c",
+    "../native/settlement-admission/native-abi.json": "7ee4e6183cc86c772921dd892864ece06926c86a8dbb94f8e849061a22bafea9",
+    "../native/settlement-admission/native-abi.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "../native/settlement-admission/native-build.log": "3e683426b6d78bb60b32d478c1e3830d1d7f51e6e3b9d3b55642071939a35d70",
+    "../native/settlement-admission/native-conformance.log": "46e2c7ff3fee1809d0c4904d555290f539f0fcad3f8d5a6f8b045aed708e8a4e",
+    "../native/settlement-admission/native-schema.log": "b61dffbafba281366c98d3048b334d7ccceaa2d53ed253ca44dc04be4b4b1576",
+    "../native/settlement-admission/protocol-build.log": "c1d8f08b5097fe3b722d6b23b701ba5a54be4769247b1d7212a9cbb191c084f7",
+    "../native/settlement-admission/report.json": "59da4dfae68c168306dfa1b2b29a106a61e3ba4622021ab6e4f4c7e2becf86a1",
+    "../native/settlement-admission/rust-clippy.log": "0b9c85a57402765a9638848a90eec54abbd9a68f42a071a97aaa9d8acc5ba131",
+    "../native/settlement-admission/rust-fmt.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "../native/settlement-admission/rust-vectors.log": "e514e3847e01939e71b6f519f423e18b568a6639204113e3e130f4d8bb0dce65",
+    "../native/settlement-admission/schema-dependencies.log": "08fd23e1f1fa0921837e2ac6421a5cc6e6f024a34f37c758efcddaa59b4ba867"
+  },
+  "drills": [
+    {
+      "name": "after-broadcast",
+      "scope": "retained native slice rehearsal; repeat for full-game acceptance",
+      "status": "passed_on_slice",
+      "evidence": "../native/recovery-indexed/reports.json",
+      "reportKey": "after-broadcast/report.json"
+    },
+    {
+      "name": "before-broadcast",
+      "scope": "retained native slice rehearsal; repeat for full-game acceptance",
+      "status": "passed_on_slice",
+      "evidence": "../native/recovery-indexed/reports.json",
+      "reportKey": "before-broadcast/report.json"
+    },
+    {
+      "name": "missing-journal",
+      "scope": "retained native slice rehearsal; repeat for full-game acceptance",
+      "status": "passed_on_slice",
+      "evidence": "../native/recovery-indexed/reports.json",
+      "reportKey": "missing-journal/report.json"
+    },
+    {
+      "name": "partition/delivery",
+      "scope": "retained native slice rehearsal; repeat for full-game acceptance",
+      "status": "passed_on_slice",
+      "evidence": "../native/recovery-indexed/reports.json",
+      "reportKey": "partition/delivery/report.json"
+    },
+    {
+      "name": "partition",
+      "scope": "retained native slice rehearsal; repeat for full-game acceptance",
+      "status": "passed_on_slice",
+      "evidence": "../native/recovery-indexed/reports.json",
+      "reportKey": "partition/report.json"
+    },
+    {
+      "name": "placements",
+      "scope": "retained native slice rehearsal; repeat for full-game acceptance",
+      "status": "passed_on_slice",
+      "evidence": "../native/recovery-indexed/reports.json",
+      "reportKey": "placements/report.json"
+    },
+    {
+      "name": "promotion",
+      "scope": "retained native slice rehearsal; repeat for full-game acceptance",
+      "status": "passed_on_slice",
+      "evidence": "../native/recovery-indexed/reports.json",
+      "reportKey": "promotion/report.json"
+    },
+    {
+      "name": "replay-resumed",
+      "scope": "retained native slice rehearsal; repeat for full-game acceptance",
+      "status": "passed_on_slice",
+      "evidence": "../native/recovery-indexed/reports.json",
+      "reportKey": "replay-resumed/report.json"
+    },
+    {
+      "name": "restore",
+      "scope": "retained native slice rehearsal; repeat for full-game acceptance",
+      "status": "passed_on_slice",
+      "evidence": "../native/recovery-indexed/reports.json",
+      "reportKey": "restore/report.json"
+    },
+    {
+      "name": "nonce-races",
+      "scope": "retained native slice rehearsal; repeat for full-game acceptance",
+      "status": "passed_on_slice",
+      "evidence": "../native/recovery-indexed/reports.json",
+      "reportKey": "nonce-races.json"
+    },
+    {
+      "name": "host-and-disk-loss",
+      "status": "deferred_by_owner",
+      "evidence": null,
+      "note": "The host-loss drill remains open until the owner provides the second host. Cross-host recovery remains unverified."
+    }
+  ]
+}

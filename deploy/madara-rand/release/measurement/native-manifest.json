@@ -1,0 +1,324 @@
+{
+  "world": {
+    "address": "0x1db5f79a057ac9eeecd7306fa966ae9cd7c2fdc773f904dce20d8155eecb316"
+  },
+  "native": {
+    "version": 1,
+    "deploymentBlock": 2295,
+    "activeSchema": "60d9bb1d0331751b50f3e6f28efd8ab8beb984f37e224822d07607134c77a9cc",
+    "schemas": {
+      "60d9bb1d0331751b50f3e6f28efd8ab8beb984f37e224822d07607134c77a9cc": {
+        "version": 1,
+        "cairoVersion": "2.13.1",
+        "encoding": "cairo-serde",
+        "domains": {
+          "season": {
+            "contract": "RecordedExecutionStub",
+            "events": [
+              {
+                "name": "RowSet",
+                "prefix": [
+                  "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
+                ],
+                "members": [
+                  {
+                    "name": "version",
+                    "type": "core::integer::u8",
+                    "kind": "key"
+                  },
+                  {
+                    "name": "model",
+                    "type": "core::felt252",
+                    "kind": "key"
+                  },
+                  {
+                    "name": "keys",
+                    "type": "core::array::Span::<core::felt252>",
+                    "kind": "data"
+                  },
+                  {
+                    "name": "values",
+                    "type": "core::array::Span::<core::felt252>",
+                    "kind": "data"
+                  }
+                ]
+              }
+            ],
+            "entrypoints": [
+              {
+                "name": "execute",
+                "inputs": [
+                  {
+                    "name": "intent",
+                    "type": "eternum_randomness_protocol::Intent"
+                  },
+                  {
+                    "name": "context",
+                    "type": "eternum_randomness_protocol::entrypoint::ExecutionContext"
+                  },
+                  {
+                    "name": "r",
+                    "type": "core::felt252"
+                  },
+                  {
+                    "name": "s",
+                    "type": "core::felt252"
+                  }
+                ]
+              },
+              {
+                "name": "get_admission",
+                "inputs": [
+                  {
+                    "name": "game",
+                    "type": "core::felt252"
+                  },
+                  {
+                    "name": "actor",
+                    "type": "core::felt252"
+                  }
+                ]
+              },
+              {
+                "name": "get_result",
+                "inputs": [
+                  {
+                    "name": "order",
+                    "type": "core::integer::u64"
+                  }
+                ]
+              },
+              {
+                "name": "authority",
+                "inputs": []
+              },
+              {
+                "name": "progress",
+                "inputs": []
+              }
+            ]
+          }
+        },
+        "models": [
+          {
+            "name": "DomainClass",
+            "identity": "0x446f6d61696e436c617373",
+            "owners": [
+              "season"
+            ],
+            "scope": "deployment",
+            "emitterKey": "address",
+            "keys": [
+              {
+                "name": "address",
+                "type": "core::starknet::contract_address::ContractAddress"
+              }
+            ],
+            "members": [
+              {
+                "name": "class_hash",
+                "type": "core::starknet::class_hash::ClassHash"
+              }
+            ],
+            "keyLength": 1,
+            "valueLength": 1
+          },
+          {
+            "name": "ActionNonce",
+            "identity": "0x416374696f6e4e6f6e6365",
+            "owners": [
+              "season"
+            ],
+            "scope": "game",
+            "keys": [
+              {
+                "name": "game_id",
+                "type": "core::integer::u32"
+              },
+              {
+                "name": "actor",
+                "type": "core::starknet::contract_address::ContractAddress"
+              }
+            ],
+            "members": [
+              {
+                "name": "nonce",
+                "type": "core::integer::u64"
+              }
+            ],
+            "keyLength": 2,
+            "valueLength": 1
+          }
+        ],
+        "absentCollections": [],
+        "types": {
+          "eternum_randomness_protocol::Intent": {
+            "type": "struct",
+            "name": "eternum_randomness_protocol::Intent",
+            "members": [
+              {
+                "name": "chain",
+                "type": "core::felt252"
+              },
+              {
+                "name": "deployment",
+                "type": "core::felt252"
+              },
+              {
+                "name": "game_id",
+                "type": "core::felt252"
+              },
+              {
+                "name": "actor",
+                "type": "core::felt252"
+              },
+              {
+                "name": "nonce",
+                "type": "core::integer::u64"
+              },
+              {
+                "name": "command",
+                "type": "core::felt252"
+              },
+              {
+                "name": "rules",
+                "type": "core::felt252"
+              },
+              {
+                "name": "valid_from",
+                "type": "core::integer::u64"
+              },
+              {
+                "name": "valid_until",
+                "type": "core::integer::u64"
+              },
+              {
+                "name": "last_order",
+                "type": "core::integer::u64"
+              },
+              {
+                "name": "arguments",
+                "type": "core::array::Array::<core::felt252>"
+              }
+            ]
+          },
+          "eternum_randomness_protocol::entrypoint::ExecutionContext": {
+            "type": "struct",
+            "name": "eternum_randomness_protocol::entrypoint::ExecutionContext",
+            "members": [
+              {
+                "name": "envelope",
+                "type": "core::array::Array::<core::felt252>"
+              },
+              {
+                "name": "authority_epoch",
+                "type": "core::integer::u64"
+              },
+              {
+                "name": "accepted_public_key",
+                "type": "core::felt252"
+              }
+            ]
+          },
+          "eternum_randomness_protocol::entrypoint::Admission": {
+            "type": "struct",
+            "name": "eternum_randomness_protocol::entrypoint::Admission",
+            "members": [
+              {
+                "name": "public_key",
+                "type": "core::felt252"
+              },
+              {
+                "name": "rules",
+                "type": "core::felt252"
+              },
+              {
+                "name": "execution_config",
+                "type": "core::felt252"
+              },
+              {
+                "name": "nonce",
+                "type": "core::integer::u64"
+              },
+              {
+                "name": "order",
+                "type": "core::integer::u64"
+              },
+              {
+                "name": "predecessor",
+                "type": "core::felt252"
+              },
+              {
+                "name": "preceding_state",
+                "type": "core::felt252"
+              },
+              {
+                "name": "timestamp",
+                "type": "core::integer::u64"
+              }
+            ]
+          },
+          "eternum_randomness_protocol::entrypoint::ExecutionResult": {
+            "type": "struct",
+            "name": "eternum_randomness_protocol::entrypoint::ExecutionResult",
+            "members": [
+              {
+                "name": "status",
+                "type": "core::integer::u8"
+              },
+              {
+                "name": "binding",
+                "type": "core::felt252"
+              },
+              {
+                "name": "result",
+                "type": "core::felt252"
+              },
+              {
+                "name": "state",
+                "type": "core::felt252"
+              }
+            ]
+          },
+          "core::integer::u256": {
+            "type": "struct",
+            "name": "core::integer::u256",
+            "members": [
+              {
+                "name": "low",
+                "type": "core::integer::u128"
+              },
+              {
+                "name": "high",
+                "type": "core::integer::u128"
+              }
+            ]
+          },
+          "core::array::Span::<core::felt252>": {
+            "type": "struct",
+            "name": "core::array::Span::<core::felt252>",
+            "members": [
+              {
+                "name": "snapshot",
+                "type": "@core::array::Array::<core::felt252>"
+              }
+            ]
+          }
+        },
+        "projections": [],
+        "identity": "60d9bb1d0331751b50f3e6f28efd8ab8beb984f37e224822d07607134c77a9cc"
+      }
+    },
+    "domains": {
+      "season": {
+        "address": "0x1db5f79a057ac9eeecd7306fa966ae9cd7c2fdc773f904dce20d8155eecb316",
+        "initialClassHash": "0x6f861c567225aeb6065a8c6bbb38669e0aa67324c711af1510fb420542731d5",
+        "classes": {
+          "0x6f861c567225aeb6065a8c6bbb38669e0aa67324c711af1510fb420542731d5": "60d9bb1d0331751b50f3e6f28efd8ab8beb984f37e224822d07607134c77a9cc"
+        }
+      }
+    }
+  },
+  "models": [],
+  "events": []
+}

@@ -1,0 +1,12 @@
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.95s
+     Running tests/journal.rs (target/debug/deps/journal-0e141e886feeb687)
+
+running 1 test
+madara-rand-journal-standby-1
+madara-rand-journal-standby-1
+test replicated_journal_rehearsal ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 7.78s
+

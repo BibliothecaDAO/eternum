@@ -6,6 +6,7 @@ on:
       - next
     paths:
       - "contracts/l3/game/**"
+      - "contracts/l3/world-native/**"
       - "packages/core/src/data/full-realms.json"
       - "scripts/generate-realm-metadata.py"
       - "config/source/**"
@@ -14,6 +15,7 @@ on:
   pull_request:
     paths:
       - "contracts/l3/game/**"
+      - "contracts/l3/world-native/**"
       - "packages/core/src/data/full-realms.json"
       - "scripts/generate-realm-metadata.py"
       - "config/source/**"
@@ -95,3 +97,5 @@ jobs:
         run: |
           ! command -v sozo
           bun test config/deployer/clean/tests/world-deployment.test.ts
+      - name: Verify native deployment planning
+        run: bun test config/deployer/clean/world/native/plan.test.ts

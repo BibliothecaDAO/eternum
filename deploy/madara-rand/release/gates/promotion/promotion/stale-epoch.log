@@ -1,0 +1,4 @@
+ERROR:  fenced journal writer
+CONTEXT:  PL/pgSQL function require_writer(bigint) line 4 at RAISE
+SQL statement "SELECT randomness.require_writer(expected_epoch)"
+PL/pgSQL function head(bigint) line 3 at PERFORM

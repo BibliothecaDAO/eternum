@@ -1,0 +1,1 @@
+{"chain":"madara","checkpointBlock":null,"confirmedBlock":2508,"epoch":"4b92af2a-2a70-4cd0-afd5-ff90bb132da7","event":"herald_ready","metrics":{"decoded_events":4,"event_messages":0,"store_events":4,"pages":214,"retained_rows":1},"port":3003,"startupMs":66,"worldAddress":"0x1db5f79a057ac9eeecd7306fa966ae9cd7c2fdc773f904dce20d8155eecb316","wsUrl":"ws://madara:9944/rpc/v0_10_2"}

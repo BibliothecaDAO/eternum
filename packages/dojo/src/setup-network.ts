@@ -1,3 +1,5 @@
+import { installNativeComponents } from "./native-components";
+import type { NativeWorldBindings } from "@bibliothecadao/types";
 import { world } from "@bibliothecadao/types";
 import type { DojoConfig } from "@dojoengine/core";
 
@@ -15,6 +17,7 @@ interface SetupNetworkExplicitReturn {
 export type SetupNetworkResult = Awaited<ReturnType<typeof setupNetwork>>;
 
 export interface SetupNetworkEnvironment {
+  nativeBindings?: NativeWorldBindings;
   executionResourceBounds?: ResourceBoundsBN;
   gameId?: number;
   /** Model namespace: "s2" on appchain worlds, "s1_eternum" on legacy worlds. */
@@ -35,8 +38,13 @@ export async function setupNetwork(
     gameId: env.gameId,
   });
 
+  const namespace = env.namespace ?? "s1_eternum";
+  const legacyComponents = defineContractComponents(world, namespace);
+  const contractComponents = env.nativeBindings
+    ? installNativeComponents(world, legacyComponents, env.nativeBindings, namespace)
+    : legacyComponents;
   return {
-    contractComponents: defineContractComponents(world, env.namespace ?? "s1_eternum"),
+    contractComponents,
     provider,
     world,
   };

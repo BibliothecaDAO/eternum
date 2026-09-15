@@ -1,0 +1,1 @@
+../../randomness-protocol/tests/test_conformance.cairo

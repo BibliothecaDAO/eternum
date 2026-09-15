@@ -1,0 +1,475 @@
+[2026-09-14 17:07:42:528] INFO No private key provided, auto-generating one for block signing
+[2026-09-14 17:07:42:528] INFO 🥷  Madara Node
+[2026-09-14 17:07:42:528] INFO 💁 Support URL: https://github.com/madara-alliance/madara/issues
+[2026-09-14 17:07:42:528] INFO 🏷  Node Name: realms-randomness-rehearsal
+[2026-09-14 17:07:42:528] INFO 👤 Role: Sequencer
+[2026-09-14 17:07:42:528] INFO 🌐 Network: Realms Madara Lab (chain id `WP_REALMS_MADARA_LAB`)
+[2026-09-14 17:07:42:530] INFO 💻 Operating system: Linux 12 Debian GNU/Linux
+[2026-09-14 17:07:42:530] INFO 💻 CPU architecture: x86_64
+[2026-09-14 17:07:42:530] INFO 💻 CPU: AMD Ryzen 7 5800H with Radeon Graphics
+[2026-09-14 17:07:42:530] INFO 💻 CPU cores: 16
+[2026-09-14 17:07:42:530] INFO 💻 Memory: 27899MiB
+[2026-09-14 17:07:42:530] INFO 💻 Kernel: 7.2.4-200.fc44.x86_64
+[2026-09-14 17:07:42:530] INFO 💾 Cairo-native directory initialized: /data/native_classes
+[2026-09-14 17:07:42:530] INFO 🚀 Cairo native enabled - mode: Async (VM fallback enabled), memory_cache: 1000 classes, disk_cache: 10.0 GB, max_concurrent: 4
+[2026-09-14 17:07:42:530] INFO 💾 Opening database at: /data
+[2026-09-14 17:07:42:530] INFO 💾  Preconfirmed blocks will be saved to database
+[2026-09-14 17:07:42:590] INFO 📝 Database write mode: WAL enabled, fsync enabled (safest)
+[2026-09-14 17:07:42:590] INFO 💼 Starting chain with block: confirmed block: #2464
+
+==== DEVNET PREDEPLOYED CONTRACTS ====
+
+(#1) Address: 0x055be462e718c4166d656d11f89e341115b8bc82389c3762a10eade04fcb225d
+  Private key: 0x077e56c6dc32d40a67f6f7e6625c8dc5e570abe49c0a24e9202e4ae906abcc07
+  Balance: 9996 STRK, 10000 ETH
+
+(#2) Address: 0x008a1719e7ca19f3d91e8ef50a48fc456575f645497a1d55f30e3781f786afe4
+  Private key: 0x0514977443078cf1e0c36bc88b89ada9a46061a5cf728f40274caea21d76f174
+  Balance: 10000 STRK, 10000 ETH
+
+(#3) Address: 0x0733a8e2bcced14dcc2608462bd96524fb64eef061689b6d976708efc2c8ddfd
+  Private key: 0x00177100ae65c71074126963e695e17adf5b360146f960378b5cdfd9ed69870b
+  Balance: 10000 STRK, 10000 ETH
+
+(#4) Address: 0x025073e0772b1e348a5da66ea67fb46f75ecdca1bd24dbbc98567cbf4a0e00b3
+  Private key: 0x07ae55c8093920562c1cbab9edeb4eb52f788b93cac1d5721bda20c96100d743
+  Balance: 10000 STRK, 10000 ETH
+
+(#5) Address: 0x0294f066a54e07616fd0d50c935c2b5aa616d33631fec94b34af8bd4f6296f68
+  Private key: 0x02ce1754eb64b7899c64dcdd0cff138864be2514e70e7761c417b728f2bf7457
+  Balance: 10000 STRK, 10000 ETH
+
+(#6) Address: 0x005d1d65ea82aa0107286e68537adf0371601789e26b1cd6e455a8e5be5c5665
+  Private key: 0x037a683c3969bf18044c9d2bbe0b1739897c89cf25420342d6dfc36c30fc519d
+  Balance: 10000 STRK, 10000 ETH
+
+(#7) Address: 0x01d775883a0a6e5405a345f18d7639dcb54b212c362d5a99087f742fba668396
+  Private key: 0x07b4a2263d9cc475816a03163df7efd58552f1720c8df0bd2a813663895ef022
+  Balance: 10000 STRK, 10000 ETH
+
+(#8) Address: 0x04add50f5bcc31a8418b43b1ddc8d703986094baf998f8e9625e13dbcc3df18b
+  Private key: 0x064b37f84e667462b95dc56e3c5e93a703ef16d73de7b9c5bfd92b90f11f90e1
+  Balance: 10000 STRK, 10000 ETH
+
+(#9) Address: 0x03dbe3dd8c2f721bc24e87bcb739063a10ee738cef090bc752bc0d5a29f10b72
+  Private key: 0x0213d0d77d5ff9ffbeabdde0af7513e89aafd5e36ae99b8401283f6f57c57696
+  Balance: 10000 STRK, 10000 ETH
+
+(#10) Address: 0x07484e8e3af210b2ead47fa08c96f8d18b616169b350a8b75fe0dc4d2e01d493
+  Private key: 0x0410c6eadd73918ea90b6658d24f5f2c828e39773819c1443d8602a3c72344c2
+  Balance: 10000 STRK, 10000 ETH
+
+[2026-09-14 17:07:42:639] INFO 🌐 Gateway endpoint started at 0.0.0.0:8080
+[2026-09-14 17:07:42:639] INFO Running JSON-RPC (Admin) HTTP server at http://0.0.0.0:9943/rpc/v0.1.0/ (max_connections=100, max_request_size_mib=15, max_response_size_mib=15, allowed_origins=["*"], supported_versions=["/rpc/v0.1.0/"])
+[2026-09-14 17:07:42:639] INFO Running JSON-RPC (Admin) WebSocket server at ws://0.0.0.0:9943/rpc/v0.1.0/ (max_connections=100, max_subscriptions_per_connection=1024, message_buffer_capacity_per_connection=64, ws_ping_interval_secs=30, ws_inactive_timeout_secs=3600, ws_max_ping_failures=3, allowed_origins=["*"], supported_versions=["/rpc/v0.1.0/"])
+[2026-09-14 17:07:42:639] INFO Running JSON-RPC HTTP server at http://0.0.0.0:9944/rpc/v0.10.2/ (max_connections=100, max_request_size_mib=15, max_response_size_mib=15, allowed_origins=["*"], supported_versions=["/rpc/v0.7.1/", "/rpc/v0.8.1/", "/rpc/v0.9.0/", "/rpc/v0.10.0/", "/rpc/v0.10.2/"])
+[2026-09-14 17:07:42:639] INFO Running JSON-RPC WebSocket server at ws://0.0.0.0:9944/rpc/v0.10.2/ (max_connections=100, max_subscriptions_per_connection=1024, message_buffer_capacity_per_connection=64, ws_ping_interval_secs=30, ws_inactive_timeout_secs=3600, ws_max_ping_failures=3, allowed_origins=["*"], supported_versions=["/rpc/v0.7.1/", "/rpc/v0.8.1/", "/rpc/v0.9.0/", "/rpc/v0.10.0/", "/rpc/v0.10.2/"])
+[2026-09-14 17:07:42:639] WARN mc_mempool Could not re-add mempool transaction from db: Nonce mismatch: account nonce is Nonce(0x10)
+[2026-09-14 17:07:42:639] WARN mc_mempool Could not re-add mempool transaction from db: Nonce mismatch: account nonce is Nonce(0x10)
+[2026-09-14 17:07:42:639] WARN mc_mempool Could not re-add mempool transaction from db: Nonce mismatch: account nonce is Nonce(0x10)
+[2026-09-14 17:07:42:639] WARN mc_mempool Could not re-add mempool transaction from db: Nonce mismatch: account nonce is Nonce(0x10)
+[2026-09-14 17:07:42:639] WARN mc_mempool Could not re-add mempool transaction from db: Nonce mismatch: account nonce is Nonce(0x10)
+[2026-09-14 17:07:42:639] WARN mc_mempool Could not re-add mempool transaction from db: Nonce mismatch: account nonce is Nonce(0x10)
+[2026-09-14 17:07:42:639] WARN mc_mempool Could not re-add mempool transaction from db: Nonce mismatch: account nonce is Nonce(0x10)
+[2026-09-14 17:07:42:639] WARN mc_mempool Could not re-add mempool transaction from db: Nonce mismatch: account nonce is Nonce(0x10)
+[2026-09-14 17:07:42:639] WARN mc_mempool Could not re-add mempool transaction from db: Nonce mismatch: account nonce is Nonce(0x10)
+[2026-09-14 17:07:44:551] RPC starknet_V0_10_2_blockNumber 200 38 bytes - 47.000µs
+[2026-09-14 17:07:44:642] INFO Block 2465 final weights: BouncerWeights { l1_gas: 0, message_segment_length: 0, n_events: 0, state_diff_size: 0, sierra_gas: GasAmount(0), n_txs: 0, proving_gas: GasAmount(0), receipt_l2_gas: GasAmount(0) }.
+[2026-09-14 17:07:44:650] INFO Block hash 0x4402db4113c55a87137cddb0fe5bad68539bd18d5f14c5d4e27ac1feb114097 computed for #2465
+{"timestamp":"2026-09-14T17:07:44.666500467Z","level":"INFO","target":"close_block","message":"close_block_complete","block_number":2465,"tx_count":0,"event_count":0,"close_block_total_ms":20.918608000000003,"block_close_ms":20.918608000000003,"close_preconfirmed_ms":20.89088,"block_production_ms":20.924824,"batches_executed":0,"txs_added_to_block":0,"txs_executed":0,"txs_reverted":0,"txs_rejected":0,"classes_declared":0,"l2_gas_consumed":0,"state_diff_len":1,"declared_classes":0,"deployed_contracts":0,"storage_diffs":1,"nonce_updates":0,"consumed_l1_nonces":0,"bouncer_l1_gas":0,"bouncer_sierra_gas":0,"bouncer_n_events":0,"bouncer_message_segment_length":0,"bouncer_state_diff_size":0,"get_full_block_ms":0.003352,"commitments_ms":0.105322,"merklization_ms":9.547449,"contract_trie_ms":1.43944,"class_trie_ms":0.153093,"contract_storage_trie_commit_ms":3.013885,"contract_trie_commit_ms":2.70239,"class_trie_commit_ms":2.2417130000000003,"block_hash_ms":0.096661,"db_write_ms":6.80511}
+[2026-09-14 17:07:44:666] INFO ⛏️  Closed block #2465 with 0 transactions - 20.918608ms
+[2026-09-14 17:07:45:704] INFO WS subscription opened: method=subscribeNewTransactionReceipts subscription_id=3 active_subscriptions=4 active_method_subscriptions=1
+[2026-09-14 17:07:45:704] INFO WS subscription opened: method=subscribeNewTransactions subscription_id=1 active_subscriptions=4 active_method_subscriptions=1
+[2026-09-14 17:07:45:704] INFO WS subscription opened: method=subscribeNewHeads subscription_id=0 active_subscriptions=4 active_method_subscriptions=1
+[2026-09-14 17:07:45:704] INFO WS subscription opened: method=subscribeEvents subscription_id=2 active_subscriptions=4 active_method_subscriptions=1
+[2026-09-14 17:07:45:704] RPC starknet_V0_10_2_subscribeNewTransactionReceipts 200 37 bytes - 128.000µs
+[2026-09-14 17:07:45:704] RPC starknet_V0_10_2_subscribeNewTransactions 200 37 bytes - 156.000µs
+[2026-09-14 17:07:45:704] RPC starknet_V0_10_2_subscribeNewHeads 200 37 bytes - 183.000µs
+[2026-09-14 17:07:45:704] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 65.000µs
+[2026-09-14 17:07:45:704] RPC starknet_V0_10_2_subscribeEvents 200 37 bytes - 224.000µs
+[2026-09-14 17:07:45:704] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 29.000µs
+[2026-09-14 17:07:45:704] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 26.000µs
+[2026-09-14 17:07:45:704] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 30.000µs
+[2026-09-14 17:07:45:704] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 26.000µs
+[2026-09-14 17:07:45:704] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 26.000µs
+[2026-09-14 17:07:45:704] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 35.000µs
+[2026-09-14 17:07:45:707] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 22.000µs
+[2026-09-14 17:07:45:745] RPC starknet_V0_10_2_blockNumber 200 40 bytes - 11.000µs
+[2026-09-14 17:07:45:746] RPC starknet_V0_10_2_getBlockWithReceipts 200 870 bytes - 98.000µs
+[2026-09-14 17:07:45:746] RPC starknet_V0_10_2_getBlockWithReceipts 200 870 bytes - 60.000µs
+[2026-09-14 17:07:45:751] RPC starknet_V0_10_2_getBlockWithReceipts 200 368 bytes - 57.000µs
+[2026-09-14 17:07:45:809] RPC starknet_V0_10_2_chainId 200 78 bytes - 18.000µs
+[2026-09-14 17:07:45:829] RPC starknet_V0_10_2_call 200 244 bytes - 5.595ms
+[2026-09-14 17:07:45:830] RPC starknet_V0_10_2_call 200 245 bytes - 443.000µs
+[2026-09-14 17:07:45:831] RPC starknet_V0_10_2_call 200 245 bytes - 408.000µs
+[2026-09-14 17:07:45:831] RPC starknet_V0_10_2_call 200 59 bytes - 383.000µs
+[2026-09-14 17:07:46:208] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 134.000µs
+[2026-09-14 17:07:46:591] RPC starknet_V0_10_2_blockNumber 200 38 bytes - 11.000µs
+[2026-09-14 17:07:46:644] INFO Block 2466 final weights: BouncerWeights { l1_gas: 0, message_segment_length: 0, n_events: 0, state_diff_size: 0, sierra_gas: GasAmount(0), n_txs: 0, proving_gas: GasAmount(0), receipt_l2_gas: GasAmount(0) }.
+[2026-09-14 17:07:46:650] INFO Block hash 0x373815900e82244cd32006fab91b55970d84e9aefb54c9f99611fe62cab9df computed for #2466
+{"timestamp":"2026-09-14T17:07:46.668273058Z","level":"INFO","target":"close_block","message":"close_block_complete","block_number":2466,"tx_count":0,"event_count":0,"close_block_total_ms":21.815168,"block_close_ms":21.815168,"close_preconfirmed_ms":21.808463,"block_production_ms":21.820825,"batches_executed":0,"txs_added_to_block":0,"txs_executed":0,"txs_reverted":0,"txs_rejected":0,"classes_declared":0,"l2_gas_consumed":0,"state_diff_len":1,"declared_classes":0,"deployed_contracts":0,"storage_diffs":1,"nonce_updates":0,"consumed_l1_nonces":0,"bouncer_l1_gas":0,"bouncer_sierra_gas":0,"bouncer_n_events":0,"bouncer_message_segment_length":0,"bouncer_state_diff_size":0,"get_full_block_ms":0.002863,"commitments_ms":0.119639,"merklization_ms":9.833382,"contract_trie_ms":0.969055,"class_trie_ms":0.054826,"contract_storage_trie_commit_ms":3.3131570000000004,"contract_trie_commit_ms":2.8955729999999997,"class_trie_commit_ms":2.4746360000000003,"block_hash_ms":0.12487699999999999,"db_write_ms":7.623376}
+[2026-09-14 17:07:46:668] INFO ⛏️  Closed block #2466 with 0 transactions - 21.815168ms
+[2026-09-14 17:07:46:668] RPC starknet_V0_10_2_getBlockWithReceipts 200 870 bytes - 75.000µs
+[2026-09-14 17:07:46:673] RPC starknet_V0_10_2_getBlockWithReceipts 200 368 bytes - 31.000µs
+[2026-09-14 17:07:46:708] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 88.000µs
+[2026-09-14 17:07:47:209] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 136.000µs
+[2026-09-14 17:07:47:710] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 88.000µs
+[2026-09-14 17:07:48:210] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 90.000µs
+[2026-09-14 17:07:48:631] RPC starknet_V0_10_2_blockNumber 200 38 bytes - 10.000µs
+[2026-09-14 17:07:48:645] INFO Block 2467 final weights: BouncerWeights { l1_gas: 0, message_segment_length: 0, n_events: 0, state_diff_size: 0, sierra_gas: GasAmount(0), n_txs: 0, proving_gas: GasAmount(0), receipt_l2_gas: GasAmount(0) }.
+[2026-09-14 17:07:48:650] INFO Block hash 0x46b1a12dc0f321516eceedb33190220e15c486370f0b2c603992f9a667c9968 computed for #2467
+{"timestamp":"2026-09-14T17:07:48.667627864Z","level":"INFO","target":"close_block","message":"close_block_complete","block_number":2467,"tx_count":0,"event_count":0,"close_block_total_ms":20.469524999999997,"block_close_ms":20.469524999999997,"close_preconfirmed_ms":20.463867999999998,"block_production_ms":20.474902999999998,"batches_executed":0,"txs_added_to_block":0,"txs_executed":0,"txs_reverted":0,"txs_rejected":0,"classes_declared":0,"l2_gas_consumed":0,"state_diff_len":1,"declared_classes":0,"deployed_contracts":0,"storage_diffs":1,"nonce_updates":0,"consumed_l1_nonces":0,"bouncer_l1_gas":0,"bouncer_sierra_gas":0,"bouncer_n_events":0,"bouncer_message_segment_length":0,"bouncer_state_diff_size":0,"get_full_block_ms":0.0034230000000000003,"commitments_ms":0.084089,"merklization_ms":8.859926,"contract_trie_ms":0.815473,"class_trie_ms":0.020392999999999998,"contract_storage_trie_commit_ms":2.812601,"contract_trie_commit_ms":2.747927,"class_trie_commit_ms":2.369454,"block_hash_ms":0.074312,"db_write_ms":7.332485}
+[2026-09-14 17:07:48:667] INFO ⛏️  Closed block #2467 with 0 transactions - 20.469525ms
+[2026-09-14 17:07:48:668] RPC starknet_V0_10_2_getBlockWithReceipts 200 870 bytes - 90.000µs
+[2026-09-14 17:07:48:672] RPC starknet_V0_10_2_getBlockWithReceipts 200 368 bytes - 37.000µs
+[2026-09-14 17:07:48:709] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 62.000µs
+[2026-09-14 17:07:49:210] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 64.000µs
+[2026-09-14 17:07:49:711] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 103.000µs
+[2026-09-14 17:07:50:210] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 59.000µs
+[2026-09-14 17:07:50:646] INFO Block 2468 final weights: BouncerWeights { l1_gas: 0, message_segment_length: 0, n_events: 0, state_diff_size: 0, sierra_gas: GasAmount(0), n_txs: 0, proving_gas: GasAmount(0), receipt_l2_gas: GasAmount(0) }.
+[2026-09-14 17:07:50:652] INFO Block hash 0x3acc8ea770babe55829f0e42fc4e7c4564707c142528f46d4725ae1905ccea2 computed for #2468
+{"timestamp":"2026-09-14T17:07:50.668626887Z","level":"INFO","target":"close_block","message":"close_block_complete","block_number":2468,"tx_count":0,"event_count":0,"close_block_total_ms":20.054315,"block_close_ms":20.054315,"close_preconfirmed_ms":20.04803,"block_production_ms":20.058715000000003,"batches_executed":0,"txs_added_to_block":0,"txs_executed":0,"txs_reverted":0,"txs_rejected":0,"classes_declared":0,"l2_gas_consumed":0,"state_diff_len":1,"declared_classes":0,"deployed_contracts":0,"storage_diffs":1,"nonce_updates":0,"consumed_l1_nonces":0,"bouncer_l1_gas":0,"bouncer_sierra_gas":0,"bouncer_n_events":0,"bouncer_message_segment_length":0,"bouncer_state_diff_size":0,"get_full_block_ms":0.0038410000000000002,"commitments_ms":0.096172,"merklization_ms":8.79169,"contract_trie_ms":0.792425,"class_trie_ms":0.021929999999999998,"contract_storage_trie_commit_ms":2.933217,"contract_trie_commit_ms":2.615646,"class_trie_commit_ms":2.323848,"block_hash_ms":0.083601,"db_write_ms":7.115207}
+[2026-09-14 17:07:50:668] INFO ⛏️  Closed block #2468 with 0 transactions - 20.054315ms
+[2026-09-14 17:07:50:669] RPC starknet_V0_10_2_getBlockWithReceipts 200 871 bytes - 43.000µs
+[2026-09-14 17:07:50:670] RPC starknet_V0_10_2_blockNumber 200 38 bytes - 6.000µs
+[2026-09-14 17:07:50:672] RPC starknet_V0_10_2_getBlockWithReceipts 200 368 bytes - 44.000µs
+[2026-09-14 17:07:50:710] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 41.000µs
+[2026-09-14 17:07:51:211] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 71.000µs
+[2026-09-14 17:07:51:712] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 71.000µs
+[2026-09-14 17:07:52:213] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 111.000µs
+[2026-09-14 17:07:52:648] INFO Block 2469 final weights: BouncerWeights { l1_gas: 0, message_segment_length: 0, n_events: 0, state_diff_size: 0, sierra_gas: GasAmount(0), n_txs: 0, proving_gas: GasAmount(0), receipt_l2_gas: GasAmount(0) }.
+[2026-09-14 17:07:52:655] INFO Block hash 0x79d9af4d65f86ebcad1a8a6f85081b760926cbac08dcb116a15b0c68acd965f computed for #2469
+{"timestamp":"2026-09-14T17:07:52.673426073Z","level":"INFO","target":"close_block","message":"close_block_complete","block_number":2469,"tx_count":0,"event_count":0,"close_block_total_ms":22.282130000000002,"block_close_ms":22.282130000000002,"close_preconfirmed_ms":22.274448,"block_production_ms":22.287299,"batches_executed":0,"txs_added_to_block":0,"txs_executed":0,"txs_reverted":0,"txs_rejected":0,"classes_declared":0,"l2_gas_consumed":0,"state_diff_len":1,"declared_classes":0,"deployed_contracts":0,"storage_diffs":1,"nonce_updates":0,"consumed_l1_nonces":0,"bouncer_l1_gas":0,"bouncer_sierra_gas":0,"bouncer_n_events":0,"bouncer_message_segment_length":0,"bouncer_state_diff_size":0,"get_full_block_ms":0.003352,"commitments_ms":0.12159500000000001,"merklization_ms":10.044862,"contract_trie_ms":1.132486,"class_trie_ms":0.026191,"contract_storage_trie_commit_ms":3.36491,"contract_trie_commit_ms":2.915407,"class_trie_commit_ms":2.455779,"block_hash_ms":0.123201,"db_write_ms":7.753073}
+[2026-09-14 17:07:52:673] INFO ⛏️  Closed block #2469 with 0 transactions - 22.28213ms
+[2026-09-14 17:07:52:673] RPC starknet_V0_10_2_getBlockWithReceipts 200 871 bytes - 118.000µs
+[2026-09-14 17:07:52:678] RPC starknet_V0_10_2_getBlockWithReceipts 200 368 bytes - 56.000µs
+[2026-09-14 17:07:52:709] RPC starknet_V0_10_2_blockNumber 200 38 bytes - 10.000µs
+[2026-09-14 17:07:52:712] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 48.000µs
+[2026-09-14 17:07:53:215] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 114.000µs
+[2026-09-14 17:07:53:715] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 62.000µs
+[2026-09-14 17:07:54:217] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 121.000µs
+[2026-09-14 17:07:54:650] INFO Block 2470 final weights: BouncerWeights { l1_gas: 0, message_segment_length: 0, n_events: 0, state_diff_size: 0, sierra_gas: GasAmount(0), n_txs: 0, proving_gas: GasAmount(0), receipt_l2_gas: GasAmount(0) }.
+[2026-09-14 17:07:54:657] INFO Block hash 0x14d21cbe1f63c58853d014fd6c72ef09f992eda096390412a07a875094129ef computed for #2470
+{"timestamp":"2026-09-14T17:07:54.675180156Z","level":"INFO","target":"close_block","message":"close_block_complete","block_number":2470,"tx_count":0,"event_count":0,"close_block_total_ms":22.091532,"block_close_ms":22.091532,"close_preconfirmed_ms":22.081894000000002,"block_production_ms":22.098167,"batches_executed":0,"txs_added_to_block":0,"txs_executed":0,"txs_reverted":0,"txs_rejected":0,"classes_declared":0,"l2_gas_consumed":0,"state_diff_len":1,"declared_classes":0,"deployed_contracts":0,"storage_diffs":1,"nonce_updates":0,"consumed_l1_nonces":0,"bouncer_l1_gas":0,"bouncer_sierra_gas":0,"bouncer_n_events":0,"bouncer_message_segment_length":0,"bouncer_state_diff_size":0,"get_full_block_ms":0.004121,"commitments_ms":0.099245,"merklization_ms":9.908322,"contract_trie_ms":1.0555899999999998,"class_trie_ms":0.025842,"contract_storage_trie_commit_ms":3.1572,"contract_trie_commit_ms":3.03365,"class_trie_commit_ms":2.515843,"block_hash_ms":0.095753,"db_write_ms":7.4922130000000005}
+[2026-09-14 17:07:54:675] INFO ⛏️  Closed block #2470 with 0 transactions - 22.091532ms
+[2026-09-14 17:07:54:675] RPC starknet_V0_10_2_getBlockWithReceipts 200 871 bytes - 84.000µs
+[2026-09-14 17:07:54:680] RPC starknet_V0_10_2_getBlockWithReceipts 200 368 bytes - 37.000µs
+[2026-09-14 17:07:54:717] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 65.000µs
+[2026-09-14 17:07:54:749] RPC starknet_V0_10_2_blockNumber 200 38 bytes - 10.000µs
+[2026-09-14 17:07:55:218] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 91.000µs
+[2026-09-14 17:07:55:718] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 138.000µs
+[2026-09-14 17:07:56:219] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 72.000µs
+[2026-09-14 17:07:56:652] INFO Block 2471 final weights: BouncerWeights { l1_gas: 0, message_segment_length: 0, n_events: 0, state_diff_size: 0, sierra_gas: GasAmount(0), n_txs: 0, proving_gas: GasAmount(0), receipt_l2_gas: GasAmount(0) }.
+[2026-09-14 17:07:56:658] INFO Block hash 0x7716e6ccc1b020e4aa7d39aa42c0f5b33f86389606e61a93d0ce8a30fe3a1d6 computed for #2471
+{"timestamp":"2026-09-14T17:07:56.677408604Z","level":"INFO","target":"close_block","message":"close_block_complete","block_number":2471,"tx_count":0,"event_count":0,"close_block_total_ms":22.716337,"block_close_ms":22.716337,"close_preconfirmed_ms":22.709213,"block_production_ms":22.722413,"batches_executed":0,"txs_added_to_block":0,"txs_executed":0,"txs_reverted":0,"txs_rejected":0,"classes_declared":0,"l2_gas_consumed":0,"state_diff_len":1,"declared_classes":0,"deployed_contracts":0,"storage_diffs":1,"nonce_updates":0,"consumed_l1_nonces":0,"bouncer_l1_gas":0,"bouncer_sierra_gas":0,"bouncer_n_events":0,"bouncer_message_segment_length":0,"bouncer_state_diff_size":0,"get_full_block_ms":0.003911,"commitments_ms":0.126274,"merklization_ms":10.356567,"contract_trie_ms":1.043298,"class_trie_ms":0.024724,"contract_storage_trie_commit_ms":3.377202,"contract_trie_commit_ms":3.0060629999999997,"class_trie_commit_ms":2.753305,"block_hash_ms":0.119429,"db_write_ms":7.712006000000001}
+[2026-09-14 17:07:56:677] INFO ⛏️  Closed block #2471 with 0 transactions - 22.716337ms
+[2026-09-14 17:07:56:678] RPC starknet_V0_10_2_getBlockWithReceipts 200 871 bytes - 81.000µs
+[2026-09-14 17:07:56:682] RPC starknet_V0_10_2_getBlockWithReceipts 200 368 bytes - 35.000µs
+[2026-09-14 17:07:56:719] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 64.000µs
+[2026-09-14 17:07:56:788] RPC starknet_V0_10_2_blockNumber 200 38 bytes - 10.000µs
+[2026-09-14 17:07:57:221] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 65.000µs
+[2026-09-14 17:07:57:722] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 65.000µs
+[2026-09-14 17:07:58:223] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 64.000µs
+[2026-09-14 17:07:58:654] INFO Block 2472 final weights: BouncerWeights { l1_gas: 0, message_segment_length: 0, n_events: 0, state_diff_size: 0, sierra_gas: GasAmount(0), n_txs: 0, proving_gas: GasAmount(0), receipt_l2_gas: GasAmount(0) }.
+[2026-09-14 17:07:58:660] INFO Block hash 0x32967a67e1e2026dad39f58a6aa8c309c1a62da0ef821b6f347a79e8998bb30 computed for #2472
+{"timestamp":"2026-09-14T17:07:58.679301044Z","level":"INFO","target":"close_block","message":"close_block_complete","block_number":2472,"tx_count":0,"event_count":0,"close_block_total_ms":22.381166,"block_close_ms":22.381166,"close_preconfirmed_ms":22.374951,"block_production_ms":22.387731000000002,"batches_executed":0,"txs_added_to_block":0,"txs_executed":0,"txs_reverted":0,"txs_rejected":0,"classes_declared":0,"l2_gas_consumed":0,"state_diff_len":1,"declared_classes":0,"deployed_contracts":0,"storage_diffs":1,"nonce_updates":0,"consumed_l1_nonces":0,"bouncer_l1_gas":0,"bouncer_sierra_gas":0,"bouncer_n_events":0,"bouncer_message_segment_length":0,"bouncer_state_diff_size":0,"get_full_block_ms":0.003772,"commitments_ms":0.12634399999999998,"merklization_ms":9.742517,"contract_trie_ms":0.922052,"class_trie_ms":0.029613,"contract_storage_trie_commit_ms":3.147632,"contract_trie_commit_ms":2.9639480000000002,"class_trie_commit_ms":2.555931,"block_hash_ms":0.10217899999999999,"db_write_ms":7.863981000000001}
+[2026-09-14 17:07:58:679] INFO ⛏️  Closed block #2472 with 0 transactions - 22.381166ms
+[2026-09-14 17:07:58:679] RPC starknet_V0_10_2_getBlockWithReceipts 200 871 bytes - 129.000µs
+[2026-09-14 17:07:58:684] RPC starknet_V0_10_2_getBlockWithReceipts 200 368 bytes - 34.000µs
+[2026-09-14 17:07:58:723] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 90.000µs
+[2026-09-14 17:07:58:823] RPC starknet_V0_10_2_blockNumber 200 38 bytes - 10.000µs
+[2026-09-14 17:07:59:224] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 74.000µs
+[2026-09-14 17:07:59:724] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 115.000µs
+[2026-09-14 17:08:00:226] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 91.000µs
+[2026-09-14 17:08:00:655] INFO Block 2473 final weights: BouncerWeights { l1_gas: 0, message_segment_length: 0, n_events: 0, state_diff_size: 0, sierra_gas: GasAmount(0), n_txs: 0, proving_gas: GasAmount(0), receipt_l2_gas: GasAmount(0) }.
+[2026-09-14 17:08:00:661] INFO Block hash 0x491ab88c99dbaf084751b93e7796378940ad5ff8f27d5eeaee011d86c8cb4bd computed for #2473
+{"timestamp":"2026-09-14T17:08:00.679988641Z","level":"INFO","target":"close_block","message":"close_block_complete","block_number":2473,"tx_count":0,"event_count":0,"close_block_total_ms":22.32208,"block_close_ms":22.32208,"close_preconfirmed_ms":22.315305000000002,"block_production_ms":22.328226,"batches_executed":0,"txs_added_to_block":0,"txs_executed":0,"txs_reverted":0,"txs_rejected":0,"classes_declared":0,"l2_gas_consumed":0,"state_diff_len":1,"declared_classes":0,"deployed_contracts":0,"storage_diffs":1,"nonce_updates":0,"consumed_l1_nonces":0,"bouncer_l1_gas":0,"bouncer_sierra_gas":0,"bouncer_n_events":0,"bouncer_message_segment_length":0,"bouncer_state_diff_size":0,"get_full_block_ms":0.003842,"commitments_ms":0.106439,"merklization_ms":10.143410000000001,"contract_trie_ms":1.062504,"class_trie_ms":0.023467000000000002,"contract_storage_trie_commit_ms":3.323284,"contract_trie_commit_ms":2.969256,"class_trie_commit_ms":2.6429549999999997,"block_hash_ms":0.09742999999999999,"db_write_ms":7.5187539999999995}
+[2026-09-14 17:08:00:680] INFO ⛏️  Closed block #2473 with 0 transactions - 22.32208ms
+[2026-09-14 17:08:00:680] RPC starknet_V0_10_2_getBlockWithReceipts 200 871 bytes - 71.000µs
+[2026-09-14 17:08:00:685] RPC starknet_V0_10_2_getBlockWithReceipts 200 368 bytes - 35.000µs
+[2026-09-14 17:08:00:727] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 113.000µs
+[2026-09-14 17:08:00:863] RPC starknet_V0_10_2_blockNumber 200 38 bytes - 10.000µs
+[2026-09-14 17:08:01:229] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 96.000µs
+[2026-09-14 17:08:01:728] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 52.000µs
+[2026-09-14 17:08:02:084] RPC starknet_V0_9_0_chainId 200 78 bytes - 16.000µs
+[2026-09-14 17:08:02:088] RPC starknet_V0_9_0_call 200 280 bytes - 831.000µs
+[2026-09-14 17:08:02:115] RPC starknet_V0_9_0_getNonce 200 39 bytes - 108.000µs
+[2026-09-14 17:08:02:119] RPC starknet_V0_9_0_simulateTransactions 41 424 bytes - 3.444ms
+[2026-09-14 17:08:02:121] RPC starknet_V0_9_0_simulateTransactions 200 1368 bytes - 1.865ms
+[2026-09-14 17:08:02:124] RPC starknet_V0_9_0_estimateFee 41 681 bytes - 1.720ms
+[2026-09-14 17:08:02:124] RPC starknet_V0_9_0_call 40 641 bytes - 563.000µs
+[2026-09-14 17:08:02:128] RPC starknet_V0_10_2_call 200 280 bytes - 464.000µs
+[2026-09-14 17:08:02:128] RPC starknet_V0_10_2_getBlockWithTxHashes 200 869 bytes - 47.000µs
+[2026-09-14 17:08:02:130] RPC starknet_V0_10_2_call 40 645 bytes - 406.000µs
+[2026-09-14 17:08:02:131] RPC starknet_V0_10_2_call 40 645 bytes - 371.000µs
+[2026-09-14 17:08:02:133] RPC starknet_V0_10_2_call 200 280 bytes - 485.000µs
+[2026-09-14 17:08:02:133] RPC starknet_V0_10_2_getBlockWithTxHashes 200 869 bytes - 40.000µs
+[2026-09-14 17:08:02:135] RPC starknet_V0_10_2_call 200 280 bytes - 497.000µs
+[2026-09-14 17:08:02:136] RPC starknet_V0_10_2_getBlockWithTxHashes 200 869 bytes - 37.000µs
+[2026-09-14 17:08:02:151] RPC starknet_V0_10_2_call 200 59 bytes - 632.000µs
+[2026-09-14 17:08:02:153] RPC starknet_V0_10_2_getNonce 200 39 bytes - 45.000µs
+[2026-09-14 17:08:02:161] INFO 🔖 Inserted 1 transaction to the mempool [1/10000 transaction(s), 1 account(s), 1 ready]
+[2026-09-14 17:08:02:161] RPC starknet_V0_10_2_addInvokeTransaction 200 122 bytes - 1.855ms
+[2026-09-14 17:08:02:162] RPC starknet_V0_10_2_call 200 59 bytes - 848.000µs
+[2026-09-14 17:08:02:162] RPC starknet_V0_10_2_getTransactionStatus 200 88 bytes - 48.000µs
+[2026-09-14 17:08:02:174] RPC starknet_V0_10_2_call 200 59 bytes - 614.000µs
+[2026-09-14 17:08:02:174] RPC starknet_V0_10_2_getTransactionStatus 200 88 bytes - 23.000µs
+{"timestamp":"2026-09-14T17:08:02.177535223Z","level":"INFO","target":"sequencer_randomness","message":"randomness_submission_checks","action":"0x7b1523a63ac9864bc87d06e8157a89969501745bc9001546137bf98855e5944","order":4,"transaction":"0x3bb6c1105f96e8675ee821f66593a344ca834ca11d8093254f2cccb37ca00f7","checks_ms":16.315822}
+{"timestamp":"2026-09-14T17:08:02.184071092Z","level":"INFO","target":"execution_measurement","message":"execution_batch_member","transaction":"0x3bb6c1105f96e8675ee821f66593a344ca834ca11d8093254f2cccb37ca00f7","batch_count":1,"batch_execution_ms":6.425728,"amortized_execution_ms":6.425728,"l2_gas":4409255,"reverted":false}
+{"timestamp":"2026-09-14T17:08:02.185517936Z","level":"INFO","target":"execution_measurement","message":"preconfirmed_persistence","transaction":"0x3bb6c1105f96e8675ee821f66593a344ca834ca11d8093254f2cccb37ca00f7","block_number":2474,"batch_count":1,"event_count":1,"batch_persistence_ms":1.3838469999999998}
+[2026-09-14 17:08:02:185] INFO 🧮 Executed and added 1 transaction(s) to the preconfirmed block at height 2474 - 6.426ms
+[2026-09-14 17:08:02:186] RPC starknet_V0_10_2_call 200 245 bytes - 537.000µs
+[2026-09-14 17:08:02:214] RPC starknet_V0_9_0_call 200 245 bytes - 575.000µs
+[2026-09-14 17:08:02:215] RPC starknet_V0_9_0_call 200 280 bytes - 476.000µs
+[2026-09-14 17:08:02:217] RPC starknet_V0_10_2_call 200 280 bytes - 400.000µs
+[2026-09-14 17:08:02:219] RPC starknet_V0_9_0_call 200 245 bytes - 395.000µs
+[2026-09-14 17:08:02:228] RPC starknet_V0_10_2_getBlockWithTxHashes 200 435 bytes - 21.000µs
+[2026-09-14 17:08:02:656] INFO Block 2474 final weights: BouncerWeights { l1_gas: 0, message_segment_length: 0, n_events: 1, state_diff_size: 26, sierra_gas: GasAmount(40837655), n_txs: 1, proving_gas: GasAmount(51353106), receipt_l2_gas: GasAmount(4409255) }.
+[2026-09-14 17:08:02:659] INFO Block hash 0x29eacb31e3158a54b8b8dfda0a73c4d7f1d01984c12298731ebe08ead44580f computed for #2474
+{"timestamp":"2026-09-14T17:08:02.680406999Z","level":"INFO","target":"close_block","message":"close_block_complete","block_number":2474,"tx_count":1,"event_count":1,"close_block_total_ms":23.826263,"block_close_ms":23.826263,"close_preconfirmed_ms":23.817324,"block_production_ms":501.33930599999997,"batches_executed":1,"txs_added_to_block":1,"txs_executed":1,"txs_reverted":0,"txs_rejected":0,"classes_declared":0,"l2_gas_consumed":4409255,"state_diff_len":13,"declared_classes":0,"deployed_contracts":0,"storage_diffs":2,"nonce_updates":1,"consumed_l1_nonces":0,"bouncer_l1_gas":0,"bouncer_sierra_gas":40837655,"bouncer_n_events":1,"bouncer_message_segment_length":0,"bouncer_state_diff_size":26,"get_full_block_ms":0.02626,"commitments_ms":0.27370999999999995,"merklization_ms":10.16073,"contract_trie_ms":0.926592,"class_trie_ms":0.021232,"contract_storage_trie_commit_ms":3.662856,"contract_trie_commit_ms":2.9652749999999997,"class_trie_commit_ms":2.494821,"block_hash_ms":0.06872500000000001,"db_write_ms":10.023561}
+[2026-09-14 17:08:02:680] INFO ⛏️  Closed block #2474 with 1 transactions - 23.826263ms
+[2026-09-14 17:08:02:681] RPC starknet_V0_10_2_getBlockWithReceipts 200 3206 bytes - 92.000µs
+[2026-09-14 17:08:02:692] RPC starknet_V0_10_2_getBlockWithReceipts 200 368 bytes - 75.000µs
+[2026-09-14 17:08:02:729] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 86.000µs
+[2026-09-14 17:08:02:903] RPC starknet_V0_10_2_blockNumber 200 38 bytes - 10.000µs
+[2026-09-14 17:08:03:231] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 97.000µs
+[2026-09-14 17:08:03:731] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 58.000µs
+[2026-09-14 17:08:04:232] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 59.000µs
+[2026-09-14 17:08:04:657] INFO Block 2475 final weights: BouncerWeights { l1_gas: 0, message_segment_length: 0, n_events: 0, state_diff_size: 0, sierra_gas: GasAmount(0), n_txs: 0, proving_gas: GasAmount(0), receipt_l2_gas: GasAmount(0) }.
+[2026-09-14 17:08:04:664] INFO Block hash 0x58a2cd3751a7dc1fd5a5788c401779c8731b8bbf2990b17aa75a7b5799c3d10 computed for #2475
+{"timestamp":"2026-09-14T17:08:04.682337432Z","level":"INFO","target":"close_block","message":"close_block_complete","block_number":2475,"tx_count":0,"event_count":0,"close_block_total_ms":21.000113000000002,"block_close_ms":21.000113000000002,"close_preconfirmed_ms":20.992569999999997,"block_production_ms":21.005841,"batches_executed":0,"txs_added_to_block":0,"txs_executed":0,"txs_reverted":0,"txs_rejected":0,"classes_declared":0,"l2_gas_consumed":0,"state_diff_len":1,"declared_classes":0,"deployed_contracts":0,"storage_diffs":1,"nonce_updates":0,"consumed_l1_nonces":0,"bouncer_l1_gas":0,"bouncer_sierra_gas":0,"bouncer_n_events":0,"bouncer_message_segment_length":0,"bouncer_state_diff_size":0,"get_full_block_ms":0.003282,"commitments_ms":0.094216,"merklization_ms":9.27751,"contract_trie_ms":0.7039359999999999,"class_trie_ms":0.047911,"contract_storage_trie_commit_ms":2.903186,"contract_trie_commit_ms":3.011371,"class_trie_commit_ms":2.522478,"block_hash_ms":0.086953,"db_write_ms":7.359374}
+[2026-09-14 17:08:04:682] INFO ⛏️  Closed block #2475 with 0 transactions - 21.000113ms
+[2026-09-14 17:08:04:682] RPC starknet_V0_10_2_getBlockWithReceipts 200 871 bytes - 62.000µs
+[2026-09-14 17:08:04:687] RPC starknet_V0_10_2_getBlockWithReceipts 200 368 bytes - 69.000µs
+[2026-09-14 17:08:04:732] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 61.000µs
+[2026-09-14 17:08:04:940] RPC starknet_V0_10_2_blockNumber 200 38 bytes - 10.000µs
+[2026-09-14 17:08:05:234] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 58.000µs
+[2026-09-14 17:08:05:735] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 123.000µs
+[2026-09-14 17:08:06:236] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 66.000µs
+[2026-09-14 17:08:06:659] INFO Block 2476 final weights: BouncerWeights { l1_gas: 0, message_segment_length: 0, n_events: 0, state_diff_size: 0, sierra_gas: GasAmount(0), n_txs: 0, proving_gas: GasAmount(0), receipt_l2_gas: GasAmount(0) }.
+[2026-09-14 17:08:06:664] INFO Block hash 0x50c8d925c805a95e63880cb9b35b8d0bc689c449ace4b3daa4f9ef017ed4bf0 computed for #2476
+{"timestamp":"2026-09-14T17:08:06.682480543Z","level":"INFO","target":"close_block","message":"close_block_complete","block_number":2476,"tx_count":0,"event_count":0,"close_block_total_ms":21.24463,"block_close_ms":21.24463,"close_preconfirmed_ms":21.236668,"block_production_ms":21.251264,"batches_executed":0,"txs_added_to_block":0,"txs_executed":0,"txs_reverted":0,"txs_rejected":0,"classes_declared":0,"l2_gas_consumed":0,"state_diff_len":1,"declared_classes":0,"deployed_contracts":0,"storage_diffs":1,"nonce_updates":0,"consumed_l1_nonces":0,"bouncer_l1_gas":0,"bouncer_sierra_gas":0,"bouncer_n_events":0,"bouncer_message_segment_length":0,"bouncer_state_diff_size":0,"get_full_block_ms":0.003282,"commitments_ms":0.10448299999999999,"merklization_ms":9.111217,"contract_trie_ms":0.691644,"class_trie_ms":0.029054999999999997,"contract_storage_trie_commit_ms":2.930005,"contract_trie_commit_ms":2.8908240000000003,"class_trie_commit_ms":2.479246,"block_hash_ms":0.070959,"db_write_ms":7.4199269999999995}
+[2026-09-14 17:08:06:682] INFO ⛏️  Closed block #2476 with 0 transactions - 21.24463ms
+[2026-09-14 17:08:06:683] RPC starknet_V0_10_2_getBlockWithReceipts 200 871 bytes - 58.000µs
+[2026-09-14 17:08:06:687] RPC starknet_V0_10_2_getBlockWithReceipts 200 368 bytes - 59.000µs
+[2026-09-14 17:08:06:736] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 66.000µs
+[2026-09-14 17:08:06:979] RPC starknet_V0_10_2_blockNumber 200 38 bytes - 13.000µs
+[2026-09-14 17:08:07:236] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 63.000µs
+[2026-09-14 17:08:07:736] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 63.000µs
+[2026-09-14 17:08:08:238] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 59.000µs
+[2026-09-14 17:08:08:660] INFO Block 2477 final weights: BouncerWeights { l1_gas: 0, message_segment_length: 0, n_events: 0, state_diff_size: 0, sierra_gas: GasAmount(0), n_txs: 0, proving_gas: GasAmount(0), receipt_l2_gas: GasAmount(0) }.
+[2026-09-14 17:08:08:666] INFO Block hash 0x33e32fcdbd60c363810fd0026ad0b044e93e1c99c8e182bd9828cbcf3c72270 computed for #2477
+{"timestamp":"2026-09-14T17:08:08.683583909Z","level":"INFO","target":"close_block","message":"close_block_complete","block_number":2477,"tx_count":0,"event_count":0,"close_block_total_ms":20.910995000000003,"block_close_ms":20.910995000000003,"close_preconfirmed_ms":20.904709,"block_production_ms":20.916722,"batches_executed":0,"txs_added_to_block":0,"txs_executed":0,"txs_reverted":0,"txs_rejected":0,"classes_declared":0,"l2_gas_consumed":0,"state_diff_len":1,"declared_classes":0,"deployed_contracts":0,"storage_diffs":1,"nonce_updates":0,"consumed_l1_nonces":0,"bouncer_l1_gas":0,"bouncer_sierra_gas":0,"bouncer_n_events":0,"bouncer_message_segment_length":0,"bouncer_state_diff_size":0,"get_full_block_ms":0.0028640000000000002,"commitments_ms":0.10902300000000001,"merklization_ms":9.114989,"contract_trie_ms":0.644011,"class_trie_ms":0.027658,"contract_storage_trie_commit_ms":2.9714210000000003,"contract_trie_commit_ms":2.8905440000000002,"class_trie_commit_ms":2.4973349999999996,"block_hash_ms":0.07054,"db_write_ms":7.362447}
+[2026-09-14 17:08:08:683] INFO ⛏️  Closed block #2477 with 0 transactions - 20.910995ms
+[2026-09-14 17:08:08:684] RPC starknet_V0_10_2_getBlockWithReceipts 200 871 bytes - 53.000µs
+[2026-09-14 17:08:08:688] RPC starknet_V0_10_2_getBlockWithReceipts 200 368 bytes - 44.000µs
+[2026-09-14 17:08:08:738] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 55.000µs
+[2026-09-14 17:08:09:016] RPC starknet_V0_10_2_blockNumber 200 38 bytes - 10.000µs
+[2026-09-14 17:08:09:239] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 72.000µs
+[2026-09-14 17:08:09:740] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 53.000µs
+[2026-09-14 17:08:10:240] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 55.000µs
+[2026-09-14 17:08:10:662] INFO Block 2478 final weights: BouncerWeights { l1_gas: 0, message_segment_length: 0, n_events: 0, state_diff_size: 0, sierra_gas: GasAmount(0), n_txs: 0, proving_gas: GasAmount(0), receipt_l2_gas: GasAmount(0) }.
+[2026-09-14 17:08:10:667] INFO Block hash 0x4f3e4486f1b876c8332f009243dd51cc5996393bc11e4dc159bdfb39de2c8c6 computed for #2478
+{"timestamp":"2026-09-14T17:08:10.684312574Z","level":"INFO","target":"close_block","message":"close_block_complete","block_number":2478,"tx_count":0,"event_count":0,"close_block_total_ms":20.263632,"block_close_ms":20.263632,"close_preconfirmed_ms":20.256438000000003,"block_production_ms":20.26831,"batches_executed":0,"txs_added_to_block":0,"txs_executed":0,"txs_reverted":0,"txs_rejected":0,"classes_declared":0,"l2_gas_consumed":0,"state_diff_len":1,"declared_classes":0,"deployed_contracts":0,"storage_diffs":1,"nonce_updates":0,"consumed_l1_nonces":0,"bouncer_l1_gas":0,"bouncer_sierra_gas":0,"bouncer_n_events":0,"bouncer_message_segment_length":0,"bouncer_state_diff_size":0,"get_full_block_ms":0.0032830000000000003,"commitments_ms":0.078572,"merklization_ms":8.794623999999999,"contract_trie_ms":0.637167,"class_trie_ms":0.023257,"contract_storage_trie_commit_ms":2.738568,"contract_trie_commit_ms":2.733958,"class_trie_commit_ms":2.571436,"block_hash_ms":0.068515,"db_write_ms":7.18931}
+[2026-09-14 17:08:10:684] INFO ⛏️  Closed block #2478 with 0 transactions - 20.263632ms
+[2026-09-14 17:08:10:684] RPC starknet_V0_10_2_getBlockWithReceipts 200 871 bytes - 50.000µs
+[2026-09-14 17:08:10:688] RPC starknet_V0_10_2_getBlockWithReceipts 200 368 bytes - 56.000µs
+[2026-09-14 17:08:10:740] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 57.000µs
+[2026-09-14 17:08:11:053] RPC starknet_V0_10_2_blockNumber 200 38 bytes - 10.000µs
+[2026-09-14 17:08:11:241] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 56.000µs
+[2026-09-14 17:08:11:741] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 56.000µs
+[2026-09-14 17:08:12:243] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 56.000µs
+[2026-09-14 17:08:12:663] INFO Block 2479 final weights: BouncerWeights { l1_gas: 0, message_segment_length: 0, n_events: 0, state_diff_size: 0, sierra_gas: GasAmount(0), n_txs: 0, proving_gas: GasAmount(0), receipt_l2_gas: GasAmount(0) }.
+[2026-09-14 17:08:12:669] INFO Block hash 0x1268a8fd9f1425f772d167147fb38a54abc79758de03ad5dc83da3ba7442801 computed for #2479
+{"timestamp":"2026-09-14T17:08:12.686671906Z","level":"INFO","target":"close_block","message":"close_block_complete","block_number":2479,"tx_count":0,"event_count":0,"close_block_total_ms":20.415747000000003,"block_close_ms":20.415747000000003,"close_preconfirmed_ms":20.40995,"block_production_ms":20.421055,"batches_executed":0,"txs_added_to_block":0,"txs_executed":0,"txs_reverted":0,"txs_rejected":0,"classes_declared":0,"l2_gas_consumed":0,"state_diff_len":1,"declared_classes":0,"deployed_contracts":0,"storage_diffs":1,"nonce_updates":0,"consumed_l1_nonces":0,"bouncer_l1_gas":0,"bouncer_sierra_gas":0,"bouncer_n_events":0,"bouncer_message_segment_length":0,"bouncer_state_diff_size":0,"get_full_block_ms":0.003353,"commitments_ms":0.094287,"merklization_ms":8.803355,"contract_trie_ms":0.694228,"class_trie_ms":0.021511000000000002,"contract_storage_trie_commit_ms":2.911846,"contract_trie_commit_ms":2.726625,"class_trie_commit_ms":2.363448,"block_hash_ms":0.069562,"db_write_ms":7.3549050000000005}
+[2026-09-14 17:08:12:686] INFO ⛏️  Closed block #2479 with 0 transactions - 20.415747ms
+[2026-09-14 17:08:12:687] RPC starknet_V0_10_2_getBlockWithReceipts 200 871 bytes - 51.000µs
+[2026-09-14 17:08:12:690] RPC starknet_V0_10_2_getBlockWithReceipts 200 368 bytes - 36.000µs
+[2026-09-14 17:08:12:742] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 61.000µs
+[2026-09-14 17:08:13:089] RPC starknet_V0_10_2_blockNumber 200 38 bytes - 9.000µs
+[2026-09-14 17:08:13:245] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 55.000µs
+[2026-09-14 17:08:13:745] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 116.000µs
+[2026-09-14 17:08:14:245] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 56.000µs
+[2026-09-14 17:08:14:665] INFO Block 2480 final weights: BouncerWeights { l1_gas: 0, message_segment_length: 0, n_events: 0, state_diff_size: 0, sierra_gas: GasAmount(0), n_txs: 0, proving_gas: GasAmount(0), receipt_l2_gas: GasAmount(0) }.
+[2026-09-14 17:08:14:670] INFO Block hash 0x6d44ee4ecf08dddc662749f4523558eecc361dece3d96c65ee740a973819e96 computed for #2480
+{"timestamp":"2026-09-14T17:08:14.685927746Z","level":"INFO","target":"close_block","message":"close_block_complete","block_number":2480,"tx_count":0,"event_count":0,"close_block_total_ms":18.359254,"block_close_ms":18.359254,"close_preconfirmed_ms":18.354435,"block_production_ms":18.364073,"batches_executed":0,"txs_added_to_block":0,"txs_executed":0,"txs_reverted":0,"txs_rejected":0,"classes_declared":0,"l2_gas_consumed":0,"state_diff_len":1,"declared_classes":0,"deployed_contracts":0,"storage_diffs":1,"nonce_updates":0,"consumed_l1_nonces":0,"bouncer_l1_gas":0,"bouncer_sierra_gas":0,"bouncer_n_events":0,"bouncer_message_segment_length":0,"bouncer_state_diff_size":0,"get_full_block_ms":0.003352,"commitments_ms":0.070051,"merklization_ms":7.908191,"contract_trie_ms":0.677884,"class_trie_ms":0.021442,"contract_storage_trie_commit_ms":2.583939,"contract_trie_commit_ms":2.445652,"class_trie_commit_ms":2.0961640000000004,"block_hash_ms":0.06788599999999999,"db_write_ms":6.52637}
+[2026-09-14 17:08:14:685] INFO ⛏️  Closed block #2480 with 0 transactions - 18.359254ms
+[2026-09-14 17:08:14:686] RPC starknet_V0_10_2_getBlockWithReceipts 200 871 bytes - 60.000µs
+[2026-09-14 17:08:14:690] RPC starknet_V0_10_2_getBlockWithReceipts 200 368 bytes - 38.000µs
+[2026-09-14 17:08:14:745] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 54.000µs
+[2026-09-14 17:08:15:127] RPC starknet_V0_10_2_blockNumber 200 38 bytes - 10.000µs
+[2026-09-14 17:08:15:246] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 55.000µs
+[2026-09-14 17:08:15:746] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 58.000µs
+[2026-09-14 17:08:16:246] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 76.000µs
+[2026-09-14 17:08:16:666] INFO Block 2481 final weights: BouncerWeights { l1_gas: 0, message_segment_length: 0, n_events: 0, state_diff_size: 0, sierra_gas: GasAmount(0), n_txs: 0, proving_gas: GasAmount(0), receipt_l2_gas: GasAmount(0) }.
+[2026-09-14 17:08:16:672] INFO Block hash 0x6f2d6286b021a2da7b111bd01d6e7f23c3629727d8bed325ba516e456ce6aef computed for #2481
+{"timestamp":"2026-09-14T17:08:16.688948271Z","level":"INFO","target":"close_block","message":"close_block_complete","block_number":2481,"tx_count":0,"event_count":0,"close_block_total_ms":19.747919,"block_close_ms":19.747919,"close_preconfirmed_ms":19.741634,"block_production_ms":19.752598,"batches_executed":0,"txs_added_to_block":0,"txs_executed":0,"txs_reverted":0,"txs_rejected":0,"classes_declared":0,"l2_gas_consumed":0,"state_diff_len":1,"declared_classes":0,"deployed_contracts":0,"storage_diffs":1,"nonce_updates":0,"consumed_l1_nonces":0,"bouncer_l1_gas":0,"bouncer_sierra_gas":0,"bouncer_n_events":0,"bouncer_message_segment_length":0,"bouncer_state_diff_size":0,"get_full_block_ms":0.002375,"commitments_ms":0.071518,"merklization_ms":8.656966,"contract_trie_ms":0.696882,"class_trie_ms":0.021931,"contract_storage_trie_commit_ms":2.78641,"contract_trie_commit_ms":2.641908,"class_trie_commit_ms":2.426864,"block_hash_ms":0.067677,"db_write_ms":6.933059}
+[2026-09-14 17:08:16:689] INFO ⛏️  Closed block #2481 with 0 transactions - 19.747919ms
+[2026-09-14 17:08:16:689] RPC starknet_V0_10_2_getBlockWithReceipts 200 870 bytes - 53.000µs
+[2026-09-14 17:08:16:693] RPC starknet_V0_10_2_getBlockWithReceipts 200 368 bytes - 33.000µs
+[2026-09-14 17:08:16:746] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 55.000µs
+[2026-09-14 17:08:17:165] RPC starknet_V0_10_2_blockNumber 200 38 bytes - 10.000µs
+[2026-09-14 17:08:17:247] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 55.000µs
+[2026-09-14 17:08:17:748] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 71.000µs
+[2026-09-14 17:08:18:247] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 55.000µs
+[2026-09-14 17:08:18:667] INFO Block 2482 final weights: BouncerWeights { l1_gas: 0, message_segment_length: 0, n_events: 0, state_diff_size: 0, sierra_gas: GasAmount(0), n_txs: 0, proving_gas: GasAmount(0), receipt_l2_gas: GasAmount(0) }.
+[2026-09-14 17:08:18:672] INFO Block hash 0x33717ccf03012acfb7e00329c8893f1f8560d8874923c45dbd74115890b07d1 computed for #2482
+{"timestamp":"2026-09-14T17:08:18.688316137Z","level":"INFO","target":"close_block","message":"close_block_complete","block_number":2482,"tx_count":0,"event_count":0,"close_block_total_ms":19.013812,"block_close_ms":19.013812,"close_preconfirmed_ms":19.007665,"block_production_ms":19.020377,"batches_executed":0,"txs_added_to_block":0,"txs_executed":0,"txs_reverted":0,"txs_rejected":0,"classes_declared":0,"l2_gas_consumed":0,"state_diff_len":1,"declared_classes":0,"deployed_contracts":0,"storage_diffs":1,"nonce_updates":0,"consumed_l1_nonces":0,"bouncer_l1_gas":0,"bouncer_sierra_gas":0,"bouncer_n_events":0,"bouncer_message_segment_length":0,"bouncer_state_diff_size":0,"get_full_block_ms":0.003353,"commitments_ms":0.088699,"merklization_ms":8.441224,"contract_trie_ms":0.6334650000000001,"class_trie_ms":0.023676000000000003,"contract_storage_trie_commit_ms":2.615577,"contract_trie_commit_ms":2.567875,"class_trie_commit_ms":2.4964969999999997,"block_hash_ms":0.08255299999999999,"db_write_ms":6.696854}
+[2026-09-14 17:08:18:688] INFO ⛏️  Closed block #2482 with 0 transactions - 19.013812ms
+[2026-09-14 17:08:18:688] RPC starknet_V0_10_2_getBlockWithReceipts 200 871 bytes - 48.000µs
+[2026-09-14 17:08:18:692] RPC starknet_V0_10_2_getBlockWithReceipts 200 368 bytes - 33.000µs
+[2026-09-14 17:08:18:747] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 56.000µs
+[2026-09-14 17:08:19:203] RPC starknet_V0_10_2_blockNumber 200 38 bytes - 9.000µs
+[2026-09-14 17:08:19:247] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 57.000µs
+[2026-09-14 17:08:19:749] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 77.000µs
+[2026-09-14 17:08:20:249] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 56.000µs
+[2026-09-14 17:08:20:668] INFO Block 2483 final weights: BouncerWeights { l1_gas: 0, message_segment_length: 0, n_events: 0, state_diff_size: 0, sierra_gas: GasAmount(0), n_txs: 0, proving_gas: GasAmount(0), receipt_l2_gas: GasAmount(0) }.
+[2026-09-14 17:08:20:674] INFO Block hash 0x1229d7eb52477e97d9d11fcd9db76dbd262cf02d6ebad9931f30757397a83c computed for #2483
+{"timestamp":"2026-09-14T17:08:20.690977256Z","level":"INFO","target":"close_block","message":"close_block_complete","block_number":2483,"tx_count":0,"event_count":0,"close_block_total_ms":19.328308999999997,"block_close_ms":19.328308999999997,"close_preconfirmed_ms":19.321675,"block_production_ms":19.333897,"batches_executed":0,"txs_added_to_block":0,"txs_executed":0,"txs_reverted":0,"txs_rejected":0,"classes_declared":0,"l2_gas_consumed":0,"state_diff_len":1,"declared_classes":0,"deployed_contracts":0,"storage_diffs":1,"nonce_updates":0,"consumed_l1_nonces":0,"bouncer_l1_gas":0,"bouncer_sierra_gas":0,"bouncer_n_events":0,"bouncer_message_segment_length":0,"bouncer_state_diff_size":0,"get_full_block_ms":0.0032830000000000003,"commitments_ms":0.08388000000000001,"merklization_ms":8.562749,"contract_trie_ms":0.724609,"class_trie_ms":0.022139,"contract_storage_trie_commit_ms":2.973377,"contract_trie_commit_ms":2.513748,"class_trie_commit_ms":2.236545,"block_hash_ms":0.06900400000000001,"db_write_ms":6.568624000000001}
+[2026-09-14 17:08:20:691] INFO ⛏️  Closed block #2483 with 0 transactions - 19.328309ms
+[2026-09-14 17:08:20:691] RPC starknet_V0_10_2_getBlockWithReceipts 200 870 bytes - 50.000µs
+[2026-09-14 17:08:20:695] RPC starknet_V0_10_2_getBlockWithReceipts 200 368 bytes - 30.000µs
+[2026-09-14 17:08:20:750] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 58.000µs
+[2026-09-14 17:08:21:240] RPC starknet_V0_10_2_blockNumber 200 38 bytes - 11.000µs
+[2026-09-14 17:08:21:250] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 57.000µs
+[2026-09-14 17:08:21:752] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 53.000µs
+[2026-09-14 17:08:22:253] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 55.000µs
+[2026-09-14 17:08:22:670] INFO Block 2484 final weights: BouncerWeights { l1_gas: 0, message_segment_length: 0, n_events: 0, state_diff_size: 0, sierra_gas: GasAmount(0), n_txs: 0, proving_gas: GasAmount(0), receipt_l2_gas: GasAmount(0) }.
+[2026-09-14 17:08:22:675] INFO Block hash 0x79cf1d1def72a4e01bd94741b800898cf7894141ff36f267ce73e435e230e8a computed for #2484
+{"timestamp":"2026-09-14T17:08:22.690998911Z","level":"INFO","target":"close_block","message":"close_block_complete","block_number":2484,"tx_count":0,"event_count":0,"close_block_total_ms":18.81574,"block_close_ms":18.81574,"close_preconfirmed_ms":18.809664,"block_production_ms":18.821048,"batches_executed":0,"txs_added_to_block":0,"txs_executed":0,"txs_reverted":0,"txs_rejected":0,"classes_declared":0,"l2_gas_consumed":0,"state_diff_len":1,"declared_classes":0,"deployed_contracts":0,"storage_diffs":1,"nonce_updates":0,"consumed_l1_nonces":0,"bouncer_l1_gas":0,"bouncer_sierra_gas":0,"bouncer_n_events":0,"bouncer_message_segment_length":0,"bouncer_state_diff_size":0,"get_full_block_ms":0.002863,"commitments_ms":0.125925,"merklization_ms":8.132522999999999,"contract_trie_ms":0.736133,"class_trie_ms":0.025003,"contract_storage_trie_commit_ms":2.649869,"contract_trie_commit_ms":2.485182,"class_trie_commit_ms":2.1405819999999998,"block_hash_ms":0.069423,"db_write_ms":6.647196999999999}
+[2026-09-14 17:08:22:691] INFO ⛏️  Closed block #2484 with 0 transactions - 18.81574ms
+[2026-09-14 17:08:22:691] RPC starknet_V0_10_2_getBlockWithReceipts 200 870 bytes - 51.000µs
+[2026-09-14 17:08:22:695] RPC starknet_V0_10_2_getBlockWithReceipts 200 368 bytes - 30.000µs
+[2026-09-14 17:08:22:753] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 56.000µs
+[2026-09-14 17:08:23:252] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 54.000µs
+[2026-09-14 17:08:23:278] RPC starknet_V0_10_2_blockNumber 200 38 bytes - 11.000µs
+[2026-09-14 17:08:23:753] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 57.000µs
+[2026-09-14 17:08:24:254] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 65.000µs
+[2026-09-14 17:08:24:671] INFO Block 2485 final weights: BouncerWeights { l1_gas: 0, message_segment_length: 0, n_events: 0, state_diff_size: 0, sierra_gas: GasAmount(0), n_txs: 0, proving_gas: GasAmount(0), receipt_l2_gas: GasAmount(0) }.
+[2026-09-14 17:08:24:676] INFO Block hash 0x7a3e9e56624495573755ba780cd3e8a3c20429c89232988ed5ec3e2c4af0478 computed for #2485
+{"timestamp":"2026-09-14T17:08:24.692027477Z","level":"INFO","target":"close_block","message":"close_block_complete","block_number":2485,"tx_count":0,"event_count":0,"close_block_total_ms":18.713841,"block_close_ms":18.713841,"close_preconfirmed_ms":18.707136,"block_production_ms":18.721453999999998,"batches_executed":0,"txs_added_to_block":0,"txs_executed":0,"txs_reverted":0,"txs_rejected":0,"classes_declared":0,"l2_gas_consumed":0,"state_diff_len":1,"declared_classes":0,"deployed_contracts":0,"storage_diffs":1,"nonce_updates":0,"consumed_l1_nonces":0,"bouncer_l1_gas":0,"bouncer_sierra_gas":0,"bouncer_n_events":0,"bouncer_message_segment_length":0,"bouncer_state_diff_size":0,"get_full_block_ms":0.0029330000000000003,"commitments_ms":0.077315,"merklization_ms":8.353084,"contract_trie_ms":0.727683,"class_trie_ms":0.019626,"contract_storage_trie_commit_ms":2.6584600000000003,"contract_trie_commit_ms":2.4458610000000003,"class_trie_commit_ms":2.414153,"block_hash_ms":0.06872400000000001,"db_write_ms":6.56639}
+[2026-09-14 17:08:24:692] INFO ⛏️  Closed block #2485 with 0 transactions - 18.713841ms
+[2026-09-14 17:08:24:692] RPC starknet_V0_10_2_getBlockWithReceipts 200 871 bytes - 48.000µs
+[2026-09-14 17:08:24:695] RPC starknet_V0_10_2_getBlockWithReceipts 200 368 bytes - 24.000µs
+[2026-09-14 17:08:24:754] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 56.000µs
+[2026-09-14 17:08:25:256] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 65.000µs
+[2026-09-14 17:08:25:314] RPC starknet_V0_10_2_blockNumber 200 38 bytes - 11.000µs
+[2026-09-14 17:08:25:756] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 54.000µs
+[2026-09-14 17:08:26:257] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 66.000µs
+[2026-09-14 17:08:26:673] INFO Block 2486 final weights: BouncerWeights { l1_gas: 0, message_segment_length: 0, n_events: 0, state_diff_size: 0, sierra_gas: GasAmount(0), n_txs: 0, proving_gas: GasAmount(0), receipt_l2_gas: GasAmount(0) }.
+[2026-09-14 17:08:26:678] INFO Block hash 0x3cdb18d1ed7116d98ec38d3c9e21fd1ccb45d1ab4771bb33926f83c65af9b7d computed for #2486
+{"timestamp":"2026-09-14T17:08:26.694040743Z","level":"INFO","target":"close_block","message":"close_block_complete","block_number":2486,"tx_count":0,"event_count":0,"close_block_total_ms":18.943271000000003,"block_close_ms":18.943271000000003,"close_preconfirmed_ms":18.936706,"block_production_ms":18.948649000000003,"batches_executed":0,"txs_added_to_block":0,"txs_executed":0,"txs_reverted":0,"txs_rejected":0,"classes_declared":0,"l2_gas_consumed":0,"state_diff_len":1,"declared_classes":0,"deployed_contracts":0,"storage_diffs":1,"nonce_updates":0,"consumed_l1_nonces":0,"bouncer_l1_gas":0,"bouncer_sierra_gas":0,"bouncer_n_events":0,"bouncer_message_segment_length":0,"bouncer_state_diff_size":0,"get_full_block_ms":0.003771,"commitments_ms":0.11558800000000001,"merklization_ms":8.105355,"contract_trie_ms":0.694367,"class_trie_ms":0.025771000000000002,"contract_storage_trie_commit_ms":2.616625,"contract_trie_commit_ms":2.503131,"class_trie_commit_ms":2.170614,"block_hash_ms":0.082204,"db_write_ms":6.8665009999999995}
+[2026-09-14 17:08:26:694] INFO ⛏️  Closed block #2486 with 0 transactions - 18.943271ms
+[2026-09-14 17:08:26:694] RPC starknet_V0_10_2_getBlockWithReceipts 200 869 bytes - 50.000µs
+[2026-09-14 17:08:26:697] RPC starknet_V0_10_2_getBlockWithReceipts 200 368 bytes - 29.000µs
+[2026-09-14 17:08:26:757] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 56.000µs
+[2026-09-14 17:08:27:258] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 58.000µs
+[2026-09-14 17:08:27:349] RPC starknet_V0_10_2_blockNumber 200 38 bytes - 11.000µs
+[2026-09-14 17:08:27:759] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 57.000µs
+[2026-09-14 17:08:28:259] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 57.000µs
+[2026-09-14 17:08:28:674] INFO Block 2487 final weights: BouncerWeights { l1_gas: 0, message_segment_length: 0, n_events: 0, state_diff_size: 0, sierra_gas: GasAmount(0), n_txs: 0, proving_gas: GasAmount(0), receipt_l2_gas: GasAmount(0) }.
+[2026-09-14 17:08:28:680] INFO Block hash 0x1cee008e19db2ac539d9375d08f38a8dd23d72e3ba4d09e61e52eeecaa0e340 computed for #2487
+{"timestamp":"2026-09-14T17:08:28.696334423Z","level":"INFO","target":"close_block","message":"close_block_complete","block_number":2487,"tx_count":0,"event_count":0,"close_block_total_ms":19.628839,"block_close_ms":19.628839,"close_preconfirmed_ms":19.622273,"block_production_ms":19.634985,"batches_executed":0,"txs_added_to_block":0,"txs_executed":0,"txs_reverted":0,"txs_rejected":0,"classes_declared":0,"l2_gas_consumed":0,"state_diff_len":1,"declared_classes":0,"deployed_contracts":0,"storage_diffs":1,"nonce_updates":0,"consumed_l1_nonces":0,"bouncer_l1_gas":0,"bouncer_sierra_gas":0,"bouncer_n_events":0,"bouncer_message_segment_length":0,"bouncer_state_diff_size":0,"get_full_block_ms":0.003352,"commitments_ms":0.1188,"merklization_ms":8.467485,"contract_trie_ms":0.74612,"class_trie_ms":0.027308,"contract_storage_trie_commit_ms":2.840258,"contract_trie_commit_ms":2.569551,"class_trie_commit_ms":2.197992,"block_hash_ms":0.06921400000000001,"db_write_ms":6.912387}
+[2026-09-14 17:08:28:696] INFO ⛏️  Closed block #2487 with 0 transactions - 19.628839ms
+[2026-09-14 17:08:28:696] RPC starknet_V0_10_2_getBlockWithReceipts 200 871 bytes - 47.000µs
+[2026-09-14 17:08:28:700] RPC starknet_V0_10_2_getBlockWithReceipts 200 368 bytes - 55.000µs
+[2026-09-14 17:08:28:759] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 58.000µs
+[2026-09-14 17:08:29:261] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 56.000µs
+[2026-09-14 17:08:29:386] RPC starknet_V0_10_2_blockNumber 200 38 bytes - 10.000µs
+[2026-09-14 17:08:29:761] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 56.000µs
+[2026-09-14 17:08:30:262] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 55.000µs
+[2026-09-14 17:08:30:676] INFO Block 2488 final weights: BouncerWeights { l1_gas: 0, message_segment_length: 0, n_events: 0, state_diff_size: 0, sierra_gas: GasAmount(0), n_txs: 0, proving_gas: GasAmount(0), receipt_l2_gas: GasAmount(0) }.
+[2026-09-14 17:08:30:681] INFO Block hash 0x1c2f463a5de9f94ca68d04f2a4f151d495d06c9631b5ba086eb7c7b3269e360 computed for #2488
+{"timestamp":"2026-09-14T17:08:30.697210734Z","level":"INFO","target":"close_block","message":"close_block_complete","block_number":2488,"tx_count":0,"event_count":0,"close_block_total_ms":19.274392000000002,"block_close_ms":19.274392000000002,"close_preconfirmed_ms":19.267896,"block_production_ms":19.279559000000003,"batches_executed":0,"txs_added_to_block":0,"txs_executed":0,"txs_reverted":0,"txs_rejected":0,"classes_declared":0,"l2_gas_consumed":0,"state_diff_len":1,"declared_classes":0,"deployed_contracts":0,"storage_diffs":1,"nonce_updates":0,"consumed_l1_nonces":0,"bouncer_l1_gas":0,"bouncer_sierra_gas":0,"bouncer_n_events":0,"bouncer_message_segment_length":0,"bouncer_state_diff_size":0,"get_full_block_ms":0.007683000000000001,"commitments_ms":0.114401,"merklization_ms":8.384512,"contract_trie_ms":0.6989080000000001,"class_trie_ms":0.022908,"contract_storage_trie_commit_ms":2.708396,"contract_trie_commit_ms":2.547341,"class_trie_commit_ms":2.32273,"block_hash_ms":0.068934,"db_write_ms":6.934456}
+[2026-09-14 17:08:30:697] INFO ⛏️  Closed block #2488 with 0 transactions - 19.274392ms
+[2026-09-14 17:08:30:697] RPC starknet_V0_10_2_getBlockWithReceipts 200 871 bytes - 59.000µs
+[2026-09-14 17:08:30:701] RPC starknet_V0_10_2_getBlockWithReceipts 200 368 bytes - 49.000µs
+[2026-09-14 17:08:30:762] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 66.000µs
+[2026-09-14 17:08:31:262] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 58.000µs
+[2026-09-14 17:08:31:421] RPC starknet_V0_10_2_blockNumber 200 38 bytes - 10.000µs
+[2026-09-14 17:08:31:762] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 56.000µs
+[2026-09-14 17:08:32:263] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 57.000µs
+[2026-09-14 17:08:32:677] INFO Block 2489 final weights: BouncerWeights { l1_gas: 0, message_segment_length: 0, n_events: 0, state_diff_size: 0, sierra_gas: GasAmount(0), n_txs: 0, proving_gas: GasAmount(0), receipt_l2_gas: GasAmount(0) }.
+[2026-09-14 17:08:32:682] INFO Block hash 0x6f7fb05b7ffe3491a0beaa6365f6d208cc148e4485f7031f21aa9c1626250a7 computed for #2489
+{"timestamp":"2026-09-14T17:08:32.698678395Z","level":"INFO","target":"close_block","message":"close_block_complete","block_number":2489,"tx_count":0,"event_count":0,"close_block_total_ms":19.231928,"block_close_ms":19.231928,"close_preconfirmed_ms":19.222708,"block_production_ms":19.240099,"batches_executed":0,"txs_added_to_block":0,"txs_executed":0,"txs_reverted":0,"txs_rejected":0,"classes_declared":0,"l2_gas_consumed":0,"state_diff_len":1,"declared_classes":0,"deployed_contracts":0,"storage_diffs":1,"nonce_updates":0,"consumed_l1_nonces":0,"bouncer_l1_gas":0,"bouncer_sierra_gas":0,"bouncer_n_events":0,"bouncer_message_segment_length":0,"bouncer_state_diff_size":0,"get_full_block_ms":0.003772,"commitments_ms":0.09589299999999999,"merklization_ms":8.489415000000001,"contract_trie_ms":0.759949,"class_trie_ms":0.025842,"contract_storage_trie_commit_ms":2.833065,"contract_trie_commit_ms":2.545595,"class_trie_commit_ms":2.238291,"block_hash_ms":0.07047099999999999,"db_write_ms":6.63665}
+[2026-09-14 17:08:32:698] INFO ⛏️  Closed block #2489 with 0 transactions - 19.231928ms
+[2026-09-14 17:08:32:699] RPC starknet_V0_10_2_getBlockWithReceipts 200 871 bytes - 45.000µs
+[2026-09-14 17:08:32:702] RPC starknet_V0_10_2_getBlockWithReceipts 200 368 bytes - 39.000µs
+[2026-09-14 17:08:32:763] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 58.000µs
+[2026-09-14 17:08:33:265] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 57.000µs
+[2026-09-14 17:08:33:456] RPC starknet_V0_10_2_blockNumber 200 38 bytes - 10.000µs
+[2026-09-14 17:08:33:764] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 56.000µs
+[2026-09-14 17:08:34:266] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 59.000µs
+[2026-09-14 17:08:34:678] INFO Block 2490 final weights: BouncerWeights { l1_gas: 0, message_segment_length: 0, n_events: 0, state_diff_size: 0, sierra_gas: GasAmount(0), n_txs: 0, proving_gas: GasAmount(0), receipt_l2_gas: GasAmount(0) }.
+[2026-09-14 17:08:34:683] INFO Block hash 0x67da86974484b749b5e0ba1ef8921c6c6972d7915b01127dd6378c65074a536 computed for #2490
+{"timestamp":"2026-09-14T17:08:34.700297194Z","level":"INFO","target":"close_block","message":"close_block_complete","block_number":2490,"tx_count":0,"event_count":0,"close_block_total_ms":19.536019000000003,"block_close_ms":19.536019000000003,"close_preconfirmed_ms":19.530292000000003,"block_production_ms":19.541677,"batches_executed":0,"txs_added_to_block":0,"txs_executed":0,"txs_reverted":0,"txs_rejected":0,"classes_declared":0,"l2_gas_consumed":0,"state_diff_len":1,"declared_classes":0,"deployed_contracts":0,"storage_diffs":1,"nonce_updates":0,"consumed_l1_nonces":0,"bouncer_l1_gas":0,"bouncer_sierra_gas":0,"bouncer_n_events":0,"bouncer_message_segment_length":0,"bouncer_state_diff_size":0,"get_full_block_ms":0.002794,"commitments_ms":0.08988700000000001,"merklization_ms":8.289388,"contract_trie_ms":0.6593070000000001,"class_trie_ms":0.024305,"contract_storage_trie_commit_ms":2.6612530000000003,"contract_trie_commit_ms":2.604472,"class_trie_commit_ms":2.2549829999999997,"block_hash_ms":0.069772,"db_write_ms":7.162141}
+[2026-09-14 17:08:34:700] INFO ⛏️  Closed block #2490 with 0 transactions - 19.536019ms
+[2026-09-14 17:08:34:700] RPC starknet_V0_10_2_getBlockWithReceipts 200 871 bytes - 68.000µs
+[2026-09-14 17:08:34:704] RPC starknet_V0_10_2_getBlockWithReceipts 200 368 bytes - 36.000µs
+[2026-09-14 17:08:34:765] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 55.000µs
+[2026-09-14 17:08:35:267] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 56.000µs
+[2026-09-14 17:08:35:493] RPC starknet_V0_10_2_blockNumber 200 38 bytes - 10.000µs
+[2026-09-14 17:08:35:766] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 52.000µs
+[2026-09-14 17:08:36:268] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 57.000µs
+[2026-09-14 17:08:36:680] INFO Block 2491 final weights: BouncerWeights { l1_gas: 0, message_segment_length: 0, n_events: 0, state_diff_size: 0, sierra_gas: GasAmount(0), n_txs: 0, proving_gas: GasAmount(0), receipt_l2_gas: GasAmount(0) }.
+[2026-09-14 17:08:36:686] INFO Block hash 0x628a1af8d0e61684da38d03b5d3cd11e10983072afc0709ae011cb601a4178c computed for #2491
+{"timestamp":"2026-09-14T17:08:36.702110363Z","level":"INFO","target":"close_block","message":"close_block_complete","block_number":2491,"tx_count":0,"event_count":0,"close_block_total_ms":19.306938,"block_close_ms":19.306938,"close_preconfirmed_ms":19.30163,"block_production_ms":19.312594999999998,"batches_executed":0,"txs_added_to_block":0,"txs_executed":0,"txs_reverted":0,"txs_rejected":0,"classes_declared":0,"l2_gas_consumed":0,"state_diff_len":1,"declared_classes":0,"deployed_contracts":0,"storage_diffs":1,"nonce_updates":0,"consumed_l1_nonces":0,"bouncer_l1_gas":0,"bouncer_sierra_gas":0,"bouncer_n_events":0,"bouncer_message_segment_length":0,"bouncer_state_diff_size":0,"get_full_block_ms":0.003282,"commitments_ms":0.09198200000000001,"merklization_ms":8.407979,"contract_trie_ms":0.65791,"class_trie_ms":0.021022,"contract_storage_trie_commit_ms":2.909472,"contract_trie_commit_ms":2.536935,"class_trie_commit_ms":2.195128,"block_hash_ms":0.06900300000000001,"db_write_ms":6.731915}
+[2026-09-14 17:08:36:702] INFO ⛏️  Closed block #2491 with 0 transactions - 19.306938ms
+[2026-09-14 17:08:36:702] RPC starknet_V0_10_2_getBlockWithReceipts 200 870 bytes - 58.000µs
+[2026-09-14 17:08:36:706] RPC starknet_V0_10_2_getBlockWithReceipts 200 368 bytes - 41.000µs
+[2026-09-14 17:08:36:768] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 57.000µs
+[2026-09-14 17:08:37:269] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 74.000µs
+[2026-09-14 17:08:37:531] RPC starknet_V0_10_2_blockNumber 200 38 bytes - 10.000µs
+[2026-09-14 17:08:37:769] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 56.000µs
+[2026-09-14 17:08:38:270] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 56.000µs
+[2026-09-14 17:08:38:681] INFO Block 2492 final weights: BouncerWeights { l1_gas: 0, message_segment_length: 0, n_events: 0, state_diff_size: 0, sierra_gas: GasAmount(0), n_txs: 0, proving_gas: GasAmount(0), receipt_l2_gas: GasAmount(0) }.
+[2026-09-14 17:08:38:686] INFO Block hash 0x2febd752fda82b13ba52fdad7d49f90d0218e9a7449c4345670d3921a0ba63c computed for #2492
+{"timestamp":"2026-09-14T17:08:38.70265688Z","level":"INFO","target":"close_block","message":"close_block_complete","block_number":2492,"tx_count":0,"event_count":0,"close_block_total_ms":19.111311,"block_close_ms":19.111311,"close_preconfirmed_ms":19.105583999999997,"block_production_ms":19.115990999999998,"batches_executed":0,"txs_added_to_block":0,"txs_executed":0,"txs_reverted":0,"txs_rejected":0,"classes_declared":0,"l2_gas_consumed":0,"state_diff_len":1,"declared_classes":0,"deployed_contracts":0,"storage_diffs":1,"nonce_updates":0,"consumed_l1_nonces":0,"bouncer_l1_gas":0,"bouncer_sierra_gas":0,"bouncer_n_events":0,"bouncer_message_segment_length":0,"bouncer_state_diff_size":0,"get_full_block_ms":0.002794,"commitments_ms":0.103785,"merklization_ms":8.257959,"contract_trie_ms":0.691015,"class_trie_ms":0.022628000000000002,"contract_storage_trie_commit_ms":2.693521,"contract_trie_commit_ms":2.564313,"class_trie_commit_ms":2.203789,"block_hash_ms":0.067746,"db_write_ms":6.712849}
+[2026-09-14 17:08:38:702] INFO ⛏️  Closed block #2492 with 0 transactions - 19.111311ms
+[2026-09-14 17:08:38:703] RPC starknet_V0_10_2_getBlockWithReceipts 200 871 bytes - 62.000µs
+[2026-09-14 17:08:38:706] RPC starknet_V0_10_2_getBlockWithReceipts 200 368 bytes - 38.000µs
+[2026-09-14 17:08:38:770] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 55.000µs
+[2026-09-14 17:08:39:270] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 57.000µs
+[2026-09-14 17:08:39:568] RPC starknet_V0_10_2_blockNumber 200 38 bytes - 10.000µs
+[2026-09-14 17:08:39:771] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 56.000µs
+[2026-09-14 17:08:40:271] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 55.000µs
+[2026-09-14 17:08:40:683] INFO Block 2493 final weights: BouncerWeights { l1_gas: 0, message_segment_length: 0, n_events: 0, state_diff_size: 0, sierra_gas: GasAmount(0), n_txs: 0, proving_gas: GasAmount(0), receipt_l2_gas: GasAmount(0) }.
+[2026-09-14 17:08:40:688] INFO Block hash 0x6aa350b16ef6b94e1f56b86dbd3c9e6a3d15c936e82bff9585bc8ec5bc6d799 computed for #2493
+{"timestamp":"2026-09-14T17:08:40.704269743Z","level":"INFO","target":"close_block","message":"close_block_complete","block_number":2493,"tx_count":0,"event_count":0,"close_block_total_ms":19.230042,"block_close_ms":19.230042,"close_preconfirmed_ms":19.225781,"block_production_ms":19.234791,"batches_executed":0,"txs_added_to_block":0,"txs_executed":0,"txs_reverted":0,"txs_rejected":0,"classes_declared":0,"l2_gas_consumed":0,"state_diff_len":1,"declared_classes":0,"deployed_contracts":0,"storage_diffs":1,"nonce_updates":0,"consumed_l1_nonces":0,"bouncer_l1_gas":0,"bouncer_sierra_gas":0,"bouncer_n_events":0,"bouncer_message_segment_length":0,"bouncer_state_diff_size":0,"get_full_block_ms":0.0028640000000000002,"commitments_ms":0.077664,"merklization_ms":8.363211,"contract_trie_ms":0.677256,"class_trie_ms":0.018997,"contract_storage_trie_commit_ms":2.6671899999999997,"contract_trie_commit_ms":2.657971,"class_trie_commit_ms":2.246603,"block_hash_ms":0.069143,"db_write_ms":6.856513}
+[2026-09-14 17:08:40:704] INFO ⛏️  Closed block #2493 with 0 transactions - 19.230042ms
+[2026-09-14 17:08:40:704] RPC starknet_V0_10_2_getBlockWithReceipts 200 870 bytes - 44.000µs
+[2026-09-14 17:08:40:708] RPC starknet_V0_10_2_getBlockWithReceipts 200 368 bytes - 41.000µs
+[2026-09-14 17:08:40:771] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 59.000µs
+[2026-09-14 17:08:41:272] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 66.000µs
+[2026-09-14 17:08:41:603] RPC starknet_V0_10_2_blockNumber 200 38 bytes - 10.000µs
+[2026-09-14 17:08:41:773] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 58.000µs
+[2026-09-14 17:08:42:274] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 59.000µs
+[2026-09-14 17:08:42:684] INFO Block 2494 final weights: BouncerWeights { l1_gas: 0, message_segment_length: 0, n_events: 0, state_diff_size: 0, sierra_gas: GasAmount(0), n_txs: 0, proving_gas: GasAmount(0), receipt_l2_gas: GasAmount(0) }.
+[2026-09-14 17:08:42:690] INFO Block hash 0x58341a42fc27bf4bdf0ebe4de5d9c12fa1b73e6f1e9c8b4d9c37760a7eb6541 computed for #2494
+{"timestamp":"2026-09-14T17:08:42.706955725Z","level":"INFO","target":"close_block","message":"close_block_complete","block_number":2494,"tx_count":0,"event_count":0,"close_block_total_ms":19.369656,"block_close_ms":19.369656,"close_preconfirmed_ms":19.36337,"block_production_ms":19.374405,"batches_executed":0,"txs_added_to_block":0,"txs_executed":0,"txs_reverted":0,"txs_rejected":0,"classes_declared":0,"l2_gas_consumed":0,"state_diff_len":1,"declared_classes":0,"deployed_contracts":0,"storage_diffs":1,"nonce_updates":0,"consumed_l1_nonces":0,"bouncer_l1_gas":0,"bouncer_sierra_gas":0,"bouncer_n_events":0,"bouncer_message_segment_length":0,"bouncer_state_diff_size":0,"get_full_block_ms":0.003212,"commitments_ms":0.08974700000000001,"merklization_ms":8.389891,"contract_trie_ms":0.7238410000000001,"class_trie_ms":0.021931,"contract_storage_trie_commit_ms":2.71105,"contract_trie_commit_ms":2.582332,"class_trie_commit_ms":2.263015,"block_hash_ms":0.069213,"db_write_ms":6.830532}
+[2026-09-14 17:08:42:707] INFO ⛏️  Closed block #2494 with 0 transactions - 19.369656ms
+[2026-09-14 17:08:42:707] RPC starknet_V0_10_2_getBlockWithReceipts 200 871 bytes - 62.000µs
+[2026-09-14 17:08:42:711] RPC starknet_V0_10_2_getBlockWithReceipts 200 368 bytes - 32.000µs
+[2026-09-14 17:08:42:774] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 55.000µs
+[2026-09-14 17:08:43:275] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 55.000µs
+[2026-09-14 17:08:43:639] RPC starknet_V0_10_2_blockNumber 200 38 bytes - 10.000µs
+[2026-09-14 17:08:43:775] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 56.000µs
+[2026-09-14 17:08:44:275] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 51.000µs
+[2026-09-14 17:08:44:686] INFO Block 2495 final weights: BouncerWeights { l1_gas: 0, message_segment_length: 0, n_events: 0, state_diff_size: 0, sierra_gas: GasAmount(0), n_txs: 0, proving_gas: GasAmount(0), receipt_l2_gas: GasAmount(0) }.
+[2026-09-14 17:08:44:692] INFO Block hash 0x2f9f48caeaa8645a91361f276977296ceb08507c975bdd5c8578a83d6e48348 computed for #2495
+{"timestamp":"2026-09-14T17:08:44.708100717Z","level":"INFO","target":"close_block","message":"close_block_complete","block_number":2495,"tx_count":0,"event_count":0,"close_block_total_ms":19.3105,"block_close_ms":19.3105,"close_preconfirmed_ms":19.303794999999997,"block_production_ms":19.317135,"batches_executed":0,"txs_added_to_block":0,"txs_executed":0,"txs_reverted":0,"txs_rejected":0,"classes_declared":0,"l2_gas_consumed":0,"state_diff_len":1,"declared_classes":0,"deployed_contracts":0,"storage_diffs":1,"nonce_updates":0,"consumed_l1_nonces":0,"bouncer_l1_gas":0,"bouncer_sierra_gas":0,"bouncer_n_events":0,"bouncer_message_segment_length":0,"bouncer_state_diff_size":0,"get_full_block_ms":0.003352,"commitments_ms":0.09198200000000001,"merklization_ms":8.772414,"contract_trie_ms":0.723701,"class_trie_ms":0.029962,"contract_storage_trie_commit_ms":2.9370580000000004,"contract_trie_commit_ms":2.626053,"class_trie_commit_ms":2.3738539999999997,"block_hash_ms":0.069492,"db_write_ms":6.512612}
+[2026-09-14 17:08:44:708] INFO ⛏️  Closed block #2495 with 0 transactions - 19.3105ms
+[2026-09-14 17:08:44:708] RPC starknet_V0_10_2_getBlockWithReceipts 200 870 bytes - 40.000µs
+[2026-09-14 17:08:44:712] RPC starknet_V0_10_2_getBlockWithReceipts 200 368 bytes - 36.000µs
+[2026-09-14 17:08:44:776] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 69.000µs
+[2026-09-14 17:08:45:276] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 81.000µs
+[2026-09-14 17:08:45:676] RPC starknet_V0_10_2_blockNumber 200 38 bytes - 9.000µs
+[2026-09-14 17:08:45:776] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 79.000µs
+[2026-09-14 17:08:46:276] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 60.000µs
+[2026-09-14 17:08:46:687] INFO Block 2496 final weights: BouncerWeights { l1_gas: 0, message_segment_length: 0, n_events: 0, state_diff_size: 0, sierra_gas: GasAmount(0), n_txs: 0, proving_gas: GasAmount(0), receipt_l2_gas: GasAmount(0) }.
+[2026-09-14 17:08:46:692] INFO Block hash 0x29edb995bd4ae6df1f5904fda9bda17d3e62cb77b1f407732380c8880ee4e55 computed for #2496
+{"timestamp":"2026-09-14T17:08:46.708370241Z","level":"INFO","target":"close_block","message":"close_block_complete","block_number":2496,"tx_count":0,"event_count":0,"close_block_total_ms":18.989437000000002,"block_close_ms":18.989437000000002,"close_preconfirmed_ms":18.983151,"block_production_ms":18.995164,"batches_executed":0,"txs_added_to_block":0,"txs_executed":0,"txs_reverted":0,"txs_rejected":0,"classes_declared":0,"l2_gas_consumed":0,"state_diff_len":1,"declared_classes":0,"deployed_contracts":0,"storage_diffs":1,"nonce_updates":0,"consumed_l1_nonces":0,"bouncer_l1_gas":0,"bouncer_sierra_gas":0,"bouncer_n_events":0,"bouncer_message_segment_length":0,"bouncer_state_diff_size":0,"get_full_block_ms":0.0038410000000000002,"commitments_ms":0.090165,"merklization_ms":8.466647,"contract_trie_ms":0.846064,"class_trie_ms":0.021581,"contract_storage_trie_commit_ms":2.753654,"contract_trie_commit_ms":2.588408,"class_trie_commit_ms":2.1444229999999997,"block_hash_ms":0.086115,"db_write_ms":6.643215}
+[2026-09-14 17:08:46:708] INFO ⛏️  Closed block #2496 with 0 transactions - 18.989437ms
+[2026-09-14 17:08:46:708] RPC starknet_V0_10_2_getBlockWithReceipts 200 871 bytes - 52.000µs
+[2026-09-14 17:08:46:712] RPC starknet_V0_10_2_getBlockWithReceipts 200 368 bytes - 52.000µs
+[2026-09-14 17:08:46:776] RPC starknet_V0_10_2_getBlockWithTxHashes 200 368 bytes - 85.000µs

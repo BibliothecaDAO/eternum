@@ -1,0 +1,28 @@
+{
+  "name": "cubit",
+  "license": "MIT",
+  "originalProject": "https://github.com/influenceth/cubit",
+  "source": "https://github.com/credence0x/cubit",
+  "revision": "3b210f1eb323b9367197715fa6f91791689c1f31",
+  "subset": [
+    "src/f128/math/comp.cairo",
+    "src/f128/math/lut.cairo",
+    "src/f128/math/ops.cairo",
+    "src/f128/procgen/simplex3.cairo",
+    "src/f128/types/fixed.cairo",
+    "src/f128/types/vec3.cairo",
+    "src/f128/types/vec4.cairo",
+    "src/utils.cairo"
+  ],
+  "changes": [
+    "Cairo manifest pinned to 2.13.1 with no external source dependencies.",
+    "Excluded f64 conversions, trigonometry, hyperbolic methods and their unused modules.",
+    "Excluded upstream test modules for omitted APIs; combat parity exercises the retained arithmetic.",
+    "Module exports and formatting updated for the local package.",
+    "Local package namespace is eternum_cubit so parity tests can load the pinned upstream package beside it."
+  ],
+  "firstConsumer": "src/combat.cairo",
+  "additionalConsumers": [
+    "src/biome.cairo"
+  ]
+}

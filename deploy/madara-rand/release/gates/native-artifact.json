@@ -1,0 +1,6 @@
+{
+  "native_revision": "49a972a5cdcecc1f8be2925ffd1c3d316b8e9325",
+  "artifact": "world_native_SeasonDomain.contract_class.json",
+  "artifact_sha256": "48b6df0ed8fb77c541e19664673c1588ee3277d9e30514f1c685708134b1ab23",
+  "scope": "compiled ABI mismatch; native deployment has not been substituted"
+}

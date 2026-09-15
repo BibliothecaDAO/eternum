@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "archive": "raw.tar.gz",
+  "sha256": "f4116858ec8c21e5cf6d89cbb84f95111ff495d32c0753db32d199573e5f6566",
+  "files": {
+    "after.json": "28fddb58b9609582504a1b9b47d7c6b69f4a3f3f2336a85880d17d18ee5fd780",
+    "before.json": "28fddb58b9609582504a1b9b47d7c6b69f4a3f3f2336a85880d17d18ee5fd780",
+    "lookup-after.json": "ebee259b181be353492b77f7ef9ef583bd053ba5792e723fa206ccf7b4dbc5eb",
+    "lookup-before.json": "71ed9c059704421b6028a8fa78d3ff733e51d85056de7291a90c3591ef65b893",
+    "measure.json": "d042f65e929df83cf33f96fa67c148b47b1904e4490f13b593c34b26150cc1b7",
+    "measure.log": "94c7fb7e312d8bc11f70077759684d1e5cf95a96aa92a12ca13bd83812572fd6",
+    "measure.sql": "105a7ef0a772caab62986e676d9c0846f41b3aea017d1372d094c4b240231808",
+    "upgrade.log": "e368e2946af3aa4fb97fb5b8da13e1f3dd8d49156ff9c09881c3c2048081b90a"
+  }
+}

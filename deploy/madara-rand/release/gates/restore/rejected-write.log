@@ -1,0 +1,1 @@
+ERROR:  cannot execute UPDATE in a read-only transaction

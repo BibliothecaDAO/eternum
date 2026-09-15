@@ -1,0 +1,228 @@
+{
+  "version": 1,
+  "rulesRevision": "55dc510f5e7af119d1efac9a60426e81fee8e408",
+  "oracle": "contracts/l3/game",
+  "preset": {
+    "id": 1,
+    "gameType": "eternum",
+    "chain": "madara",
+    "source": "config/source/eternum/base.ts",
+    "poolOverrides": false,
+    "surface": {
+      "order": [
+        "relic",
+        "reservation",
+        "hyperstructure",
+        "mine",
+        "camp",
+        "agent"
+      ],
+      "mine": {
+        "success": 1000,
+        "failure": 49000,
+        "seedOffset": 2
+      },
+      "hyperstructure": {
+        "successAtCenter": 2000,
+        "failureAtCenter": 98000,
+        "radiusMultiplierBps": 9820,
+        "penaltyPerExisting": 1,
+        "seedOffset": 1
+      },
+      "camp": {
+        "success": 1500,
+        "failure": 48500,
+        "seedOffset": 7,
+        "seasonGuard": "skip"
+      },
+      "agent": {
+        "success": 0,
+        "failure": 100,
+        "seedOffset": 3
+      },
+      "relic": {
+        "intervalSeconds": 0
+      }
+    },
+    "ethereal": {
+      "order": [
+        "bitcoinMine"
+      ],
+      "bitcoinMine": {
+        "success": 200,
+        "failure": 9800,
+        "seedOffset": 10
+      },
+      "guards": [
+        "enabled",
+        "season mode",
+        "alternate layer",
+        "not adjacent to a spire"
+      ]
+    }
+  },
+  "discoveryOutcomes": [
+    {
+      "outcome": "None",
+      "handling": "required",
+      "layers": [
+        "surface",
+        "ethereal"
+      ]
+    },
+    {
+      "outcome": "Mine",
+      "handling": "required",
+      "layers": [
+        "surface"
+      ],
+      "resource": "EarthenShard",
+      "capMultiplier": [
+        1,
+        10
+      ],
+      "baseCap": 300000,
+      "capSalt": 124,
+      "neighboursRevealed": 0
+    },
+    {
+      "outcome": "Hyperstructure",
+      "handling": "required",
+      "layers": [
+        "surface"
+      ],
+      "neighboursRevealed": 6
+    },
+    {
+      "outcome": "BitcoinMine",
+      "handling": "required",
+      "layers": [
+        "ethereal"
+      ],
+      "guards": [
+        "Delta Paladin T2",
+        "Charlie Knight T2",
+        "Bravo Crossbowman T2",
+        "Alpha Paladin T2"
+      ],
+      "neighboursRevealed": 6
+    },
+    {
+      "outcome": "Camp",
+      "handling": "explicit unsupported outcome outside the season slice",
+      "originalPoolGuard": "skipped in season mode"
+    },
+    {
+      "outcome": "RelicChest",
+      "handling": "explicit unsupported outcome outside the season slice",
+      "originalPoolGuard": "interval zero in preset"
+    },
+    {
+      "outcome": "Agent",
+      "handling": "explicit unsupported outcome outside the season slice",
+      "originalPoolGuard": "success weight zero in preset"
+    }
+  ],
+  "requiredConfiguration": [
+    "GameRegistry",
+    "WorldConfig",
+    "GameMapConfig",
+    "PresetConfig",
+    "PresetGameConfig",
+    "WeightConfig",
+    "ResourceFactoryConfig",
+    "BuildingConfig",
+    "ResourceList",
+    "ResourceMinMaxList",
+    "StructureCapacityConfig",
+    "TroopDamageConfig",
+    "TroopStaminaConfig",
+    "TroopLimitConfig",
+    "TickConfig",
+    "VictoryPointsGrantConfig",
+    "BiomeClimateConfig",
+    "BitcoinMineConfig",
+    "SettlementConfig"
+  ],
+  "touchedGameplayModels": [
+    "TileOpt",
+    "ExplorerTroops",
+    "Structure",
+    "StructureOwnerStats",
+    "ResourceBalance",
+    "ResourceProduction",
+    "ResourceWeight",
+    "StructureBuildings",
+    "PlayerRegisteredPoints",
+    "Hyperstructure",
+    "HyperstructureGlobals",
+    "Building",
+    "SeasonPrize"
+  ],
+  "fixtureCases": {
+    "creation": "Explorer creation, troop payment and occupancy",
+    "travel": "Known and unknown surface travel, stamina and food",
+    "surface": "Original surface pool: empty tile, guarded mine with production, hyperstructure and surroundings",
+    "ethereal": "Spire entry with Essence payment, stride-15 exploration and guarded Bitcoin discovery",
+    "production": "Read-only production view, settlement and repeated settlement",
+    "production_cap": "Finite production cap boundary",
+    "production_capacity": "Weight capacity boundary",
+    "battle": "Surface combat, explorer/resource deletion and freed occupancy",
+    "ethereal_battle": "Ethereal combat with the original two rolls",
+    "rejections": "Unauthorized actor, occupied destination, resource spending and expired-game rollback",
+    "ownership": "Structure and agent transfers, faith accrual, authorization and time boundaries",
+    "ownership_rejections": "Village, mode, season boundaries, controller and domain authorization",
+    "ownership_faith": "Faith winner ties, duplicate winners, disabled accrual and atomic late failure",
+    "name": "Naming with an owned-structure witness: set, overwrite, clear, non-owner rejection and after-end renaming.",
+    "structure": "Realm upgrades consume the immutable recipes, update level and troop limits and preserve tile facts; rejected payments roll back all spending.",
+    "structure_rejections": "Reject non-settlement upgrades, villages at their configured maximum and pre-start upgrades without changing gameplay facts; wonder realms keep their tile category.",
+    "blitz_settlement": "Settle with and without immediate troop grants, provision once, reject repeat provisioning, and retain the same troops, buildings, production and balances.",
+    "blitz_entry_rejections": "Empty name, opening and closing timestamps, full registration, repeated player and incomplete reservations; all rejected gameplay facts remain unchanged.",
+    "blitz_entry_ledger": "A missing registration entitlement rejects, then the same player settles after the bound owner receives the entitlement.",
+    "blitz_cosmetics": "Enabled cosmetics preserve the token limit, ownership, nonzero attributes and repeated token ids. Lock timing and retained admission facts follow the separate behaviour rulings.",
+    "blitz_cosmetics_disabled": "Disabled cosmetics ignore token eligibility and count, as the pinned rules do.",
+    "blitz_settlement_displacement": "A blocking explorer moves to the first free neighbour without charging movement costs; compare troops, resources, home roster and both tiles.",
+    "blitz_settlement_blocked": "An explorer blocked on all six sides is deleted with its resource facts and removed from its home roster.",
+    "blitz_settlement_agent_blocked": "A surrounded agent is deleted with its resources and ownership row, and the current agent population decreases exactly once.",
+    "blitz_settlement_occupied": "A structure occupying the selected settlement rejects the complete action without partial entry, placement or pool changes.",
+    "blitz_settlement_modes": "Two three-realm settlements preserve selected coordinates, realm order, pool swap removal and remaining candidate locations.",
+    "blitz_settlement_duel": "Both players in two-player mode receive the same ordered realm locations and exhaust the same pool.",
+    "blitz_reservations": "Reserve the original coordinates without entity ids, enforce mode and clock guards, stop at the completed cursor, and materialize each reserved hyperstructure once."
+  },
+  "randomness": {
+    "rawRootSource": "injected identical root per action",
+    "incrementBeforeGameScoping": 1432,
+    "gameScoping": "Poseidon(raw.low, raw.high, game_id, game.seed)",
+    "rangeDerivation": "Poseidon(seed.low, seed.high, salt) mod upper_bound",
+    "weightedChoiceSalt": "block timestamp plus 18 before each selection",
+    "mercenarySalt": 1,
+    "mercenarySaltIncrement": 0,
+    "etherealBattleSalts": [
+      1,
+      2
+    ],
+    "surfaceBattleDraws": 0,
+    "tileSalt": "Poseidon(game_id, game.seed, alt * 2^64 + col * 2^32 + row)"
+  },
+  "comparison": {
+    "factModel": "schema/schema.json#models[*].observation",
+    "projectionGenerator": "deploy/madara-lab/harness/native/fact-projections.ts",
+    "afterEveryAction": true,
+    "compareDeletesAndFailures": true,
+    "timestampContext": "Identical recorded acceptance time and oracle block time.",
+    "metadataNormalization": [
+      "Deployment and account addresses map bijectively to logical identities.",
+      "Native transport nonces and result records are not player-observable gameplay facts.",
+      "Entity ids identify the same logical fixture entities; storage bookkeeping and row/event encoding are not compared."
+    ],
+    "unexplainedGameplayDivergence": "fail"
+  },
+  "fixturePreparation": {
+    "spires": "One access fixture on each required portal; uses original map and biome helpers. Spire settlement is outside this slice.",
+    "production": "A productive realm fixture starts with a configured building and finite output. The oracle claim adapter invokes the pinned SingleResourceStore settlement path with owner authorization.",
+    "recipes": "Full pinned factory and building tables are installed without balance overrides."
+  },
+  "derivedGameplayModels": {
+    "LastBattle": "Herald projects the matching BattleEvent for both participants, including deleted explorers."
+  }
+}

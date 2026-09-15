@@ -1,0 +1,65 @@
+{
+  "schemaIdentity": "9de8aa6464304e0c8362f1310a2af6b4c4d9ddceeb942a94f4aa29f51c5cd7f1",
+  "deployment": {
+    "season": "0x101",
+    "map": "0x102",
+    "structures": "0x103",
+    "troops": "0x100"
+  },
+  "raw": {
+    "from_address": "0x100",
+    "keys": [
+      "0x180b36ec8d71b3255573975f1049032352bd6289f08164236e0da1770e7ec40",
+      "0x34ee03e4825cf92d0335b5828e3389af6c145ecff05fce078c3753d871cc7f5",
+      "0x1",
+      "0x4578706c6f72657254726f6f7073"
+    ],
+    "data": [
+      "0x2",
+      "0x1",
+      "0x7"
+    ]
+  },
+  "expected": {
+    "kind": "delete",
+    "model": "ExplorerTroops",
+    "key": {
+      "game_id": "0x1",
+      "explorer_id": "0x7"
+    }
+  },
+  "before": {
+    "key": {
+      "game_id": "0x1",
+      "explorer_id": "0x7"
+    },
+    "value": {
+      "owner": "0x7",
+      "troops": {
+        "category": "Knight",
+        "tier": "T1",
+        "count": "0x0",
+        "stamina": {
+          "amount": "0x0",
+          "updated_tick": "0x0"
+        },
+        "boosts": {
+          "incr_damage_dealt_percent_num": "0x0",
+          "incr_damage_dealt_end_tick": "0x0",
+          "decr_damage_gotten_percent_num": "0x0",
+          "decr_damage_gotten_end_tick": "0x0",
+          "incr_stamina_regen_percent_num": "0x0",
+          "incr_stamina_regen_tick_count": "0x0",
+          "incr_explore_reward_percent_num": "0x0",
+          "incr_explore_reward_end_tick": "0x0"
+        },
+        "battle_cooldown_end": "0x0"
+      },
+      "coord": {
+        "alt": false,
+        "x": "0xc",
+        "y": "0x22"
+      }
+    }
+  }
+}

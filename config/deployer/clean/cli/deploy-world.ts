@@ -9,6 +9,7 @@ import { loadLocalWorld, readWorldProfile } from "../world/artifacts";
 import { deployWorld, isWorldSynced } from "../world/deploy";
 import { buildWorldManifest, writeWorldOutputs } from "../world/manifest";
 import { inspectWorld } from "../world/plan";
+import { runNativeDeployment } from "../world/native/cli";
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
@@ -22,10 +23,16 @@ async function main() {
     "rpc-url",
     "inspect",
   ]);
+  if (args.profile === "native") {
+    supported.add("identity");
+    supported.add("submitter");
+    supported.add("schema");
+  }
   for (const flag of Object.keys(args))
     if (!supported.has(flag)) throw new Error(`Unknown deployment option: --${flag}`);
   if (args.inspect !== undefined && args.inspect !== "true") throw new Error("--inspect does not take a value");
   const root = resolve(import.meta.dir, "../../../..");
+  if (args.profile === "native") return runNativeDeployment(args, root);
   const game = resolve(root, "contracts/l3/game");
   const profile = readWorldProfile(args.profile ?? resolve(game, "dojo_madara.toml"));
   if (args.seed) profile.world.seed = args.seed;

@@ -1,0 +1,3216 @@
+{
+  "version": 2,
+  "gate": "native-world-behaviour-parity",
+  "passed": true,
+  "rulesRevision": "55dc510f5e7af119d1efac9a60426e81fee8e408",
+  "factModel": {
+    "source": "schema/fact-models.mjs",
+    "schema": "9de8aa6464304e0c8362f1310a2af6b4c4d9ddceeb942a94f4aa29f51c5cd7f1",
+    "declarations": [
+      {
+        "model": "AgentPopulation",
+        "observation": {
+          "domain": "troops",
+          "fields": {
+            "active": "count"
+          }
+        }
+      },
+      {
+        "model": "RealmGrants",
+        "observation": {
+          "domain": "blitz-settlement",
+          "fields": {
+            "resources": "resources",
+            "startingTroops": "starting_troops",
+            "realmResources": "realm_resources"
+          }
+        }
+      },
+      {
+        "model": "HyperstructureReservations",
+        "observation": {
+          "domain": "blitz-settlement",
+          "fields": {
+            "placed": "placed"
+          }
+        }
+      },
+      {
+        "model": "SettlementRules",
+        "observation": {
+          "domain": "realm/blitz",
+          "fields": {
+            "registrationOpens": "registration_start",
+            "capacity": "registration_limit",
+            "mode": "mode",
+            "profile": "reward_profile",
+            "cosmeticLimit": "cosmetic_limit"
+          }
+        }
+      },
+      {
+        "model": "SettlementProgress",
+        "observation": {
+          "domain": "realm/blitz",
+          "fields": {
+            "players": "registered",
+            "realms": "realm_count"
+          }
+        }
+      },
+      {
+        "model": "SettlementPool",
+        "observation": {
+          "domain": "realm/blitz",
+          "fields": {
+            "availableLocations": "available"
+          }
+        }
+      },
+      {
+        "model": "EntryEntitlement",
+        "observation": {
+          "domain": "blitz-settlement",
+          "fields": {
+            "realmId": "realm_id",
+            "metadata1": "metadata_1",
+            "metadata2": "metadata_2",
+            "metadata3": "metadata_3",
+            "passKind": "pass_kind"
+          }
+        }
+      },
+      {
+        "model": "PlayerEntry",
+        "observation": {
+          "domain": "realm/blitz",
+          "fields": {
+            "player": "player"
+          }
+        }
+      },
+      {
+        "model": "PlayerCosmetics",
+        "observation": {
+          "domain": "realm/blitz",
+          "fields": {
+            "attributes": "attributes"
+          }
+        }
+      },
+      {
+        "model": "TileOpt",
+        "observation": {
+          "domain": "map",
+          "fields": {
+            "tile": "data"
+          },
+          "transform": "tile"
+        }
+      },
+      {
+        "model": "ExplorerTroops",
+        "observation": {
+          "domain": "troops",
+          "fields": {
+            "home": "owner",
+            "position": "coord",
+            "troops": "troops"
+          }
+        }
+      },
+      {
+        "model": "Structure",
+        "observation": {
+          "domain": "structures",
+          "fields": {
+            "owner": "owner",
+            "level": "base.level",
+            "kind": "base.category",
+            "column": "base.coord_x",
+            "row": "base.coord_y",
+            "foundedAt": "base.created_at",
+            "guards": "troop_guards",
+            "explorers": "troop_explorers",
+            "explorerLimit": "base.troop_max_explorer_count",
+            "guardLimit": "base.troop_max_guard_count",
+            "startingTroopsGranted": "base.starting_troops_granted",
+            "realm": "metadata.realm_id",
+            "order": "metadata.order",
+            "wonder": "metadata.has_wonder",
+            "connectedRealm": "metadata.village_realm",
+            "resourceTraits": "resources_packed"
+          }
+        }
+      },
+      {
+        "model": "ResourceBalance",
+        "observation": {
+          "domain": "resources",
+          "fields": {
+            "balance": "balance"
+          }
+        }
+      },
+      {
+        "model": "ResourceProduction",
+        "observation": {
+          "domain": "resources",
+          "fields": {
+            "buildingCount": "building_count",
+            "rate": "production_rate",
+            "outputRemaining": "output_amount_left",
+            "updatedAt": "last_updated_at"
+          }
+        }
+      },
+      {
+        "model": "ResourceWeight",
+        "observation": {
+          "domain": "resources",
+          "fields": {
+            "capacity": "capacity",
+            "weight": "weight"
+          }
+        }
+      },
+      {
+        "model": "Building",
+        "observation": {
+          "domain": "production",
+          "fields": {
+            "category": "category",
+            "bonus": "bonus_percent",
+            "structure": "outer_entity_id",
+            "paused": "paused"
+          }
+        }
+      },
+      {
+        "model": "StructureBuildings",
+        "observation": {
+          "domain": "production",
+          "fields": {
+            "population": "population",
+            "counts1": "packed_counts_1",
+            "counts2": "packed_counts_2",
+            "counts3": "packed_counts_3"
+          }
+        }
+      },
+      {
+        "model": "Hyperstructure",
+        "observation": {
+          "domain": "hyperstructures",
+          "fields": {
+            "initialized": "initialized",
+            "completed": "completed",
+            "access": "access",
+            "constructionSeed": "randomness",
+            "pointsMultiplier": "points_multiplier"
+          }
+        }
+      },
+      {
+        "model": "HyperstructureGlobals",
+        "observation": {
+          "domain": "hyperstructures",
+          "fields": {
+            "discovered": "created_count"
+          }
+        }
+      },
+      {
+        "model": "AddressName",
+        "observation": {
+          "domain": "name",
+          "fields": {
+            "name": "name"
+          }
+        }
+      },
+      {
+        "model": "AgentOwner",
+        "observation": {
+          "domain": "ownership",
+          "fields": {
+            "owner": "address"
+          }
+        }
+      },
+      {
+        "model": "WonderFaith",
+        "observation": {
+          "domain": "faith",
+          "fields": {
+            "points": "claimed_points",
+            "pointsPerSecond": "claim_per_sec",
+            "settledAt": "claim_last_at",
+            "ownerPointsPerSecond": "owner_claim_per_sec",
+            "pledgedStructures": "num_structures_pledged"
+          }
+        }
+      },
+      {
+        "model": "FaithfulStructure",
+        "observation": {
+          "domain": "faith",
+          "fields": {
+            "wonder": "wonder_id",
+            "pledgedAt": "faithful_since",
+            "wonderOwnerPointsPerSecond": "fp_to_wonder_owner_per_sec",
+            "structureOwnerPointsPerSecond": "fp_to_struct_owner_per_sec"
+          }
+        }
+      },
+      {
+        "model": "PlayerFaithPoints",
+        "observation": {
+          "domain": "faith",
+          "fields": {
+            "points": "points_claimed",
+            "ownershipPointsPerSecond": "points_per_sec_as_owner",
+            "pledgePointsPerSecond": "points_per_sec_as_pledger",
+            "settledAt": "last_updated_at"
+          }
+        }
+      },
+      {
+        "model": "WonderFaithWinners",
+        "observation": {
+          "domain": "faith",
+          "fields": {
+            "score": "high_score",
+            "wonders": "wonder_ids"
+          }
+        }
+      },
+      {
+        "model": "UpgradeLimits",
+        "observation": {
+          "domain": "structure",
+          "fields": {
+            "realmMaximum": "realm_max",
+            "villageMaximum": "village_max"
+          }
+        }
+      },
+      {
+        "model": "UpgradeRecipe",
+        "observation": {
+          "domain": "structure",
+          "fields": {
+            "costs": "costs"
+          }
+        }
+      },
+      {
+        "model": "PlayerRegisteredPoints",
+        "observation": {
+          "domain": "points",
+          "fields": {
+            "registered": "registered_points"
+          }
+        }
+      },
+      {
+        "model": "SeasonPrize",
+        "observation": {
+          "domain": "points",
+          "fields": {
+            "registered": "total_registered_points"
+          }
+        }
+      }
+    ]
+  },
+  "provenance": {
+    "revision": "13fcb5dc554afaf42dcf3522bd897f9c4250691d",
+    "dirty": false,
+    "sourceSha256": "ca17a730bdd50e60c8dd8da2f09814e9a01825b7cf40a6376f3390d093f2b191",
+    "scope": [
+      "apps/herald",
+      "contracts/l3/world-native",
+      "contracts/l3/randomness-protocol",
+      "packages",
+      "config",
+      "deploy/madara-lab/harness",
+      "package.json",
+      "pnpm-lock.yaml",
+      ".github/workflows/native-world.yml"
+    ],
+    "excludedReports": [
+      "contracts/l3/world-native/fixtures/blitz-settlement-parity.json",
+      "contracts/l3/world-native/fixtures/combat-parity.json",
+      "contracts/l3/world-native/fixtures/deploy-upgrade.json",
+      "contracts/l3/world-native/fixtures/harness.json",
+      "contracts/l3/world-native/fixtures/herald-replay.json",
+      "contracts/l3/world-native/fixtures/name-parity.json",
+      "contracts/l3/world-native/fixtures/ownership-parity.json",
+      "contracts/l3/world-native/fixtures/structure-parity.json",
+      "contracts/l3/world-native/fixtures/world-parity.json"
+    ]
+  },
+  "oracleSourceSha256": "99034c1e0f31719df3d1ae0cf343a2e9b53fae2da8f972bb38c78b1fa7d73bce",
+  "presetSha256": "05b6077c1f3c9585ad571779509d611afeea57467868e7f36cab5da69739164d",
+  "compiler": "2.13.1",
+  "foundry": "0.52.0",
+  "poolOverrides": false,
+  "settlementTests": [
+    "world_parity_settlement_geometry",
+    "world_parity_settlement_pool_windows",
+    "world_parity_starting_troop_table"
+  ],
+  "normalization": [
+    "Deployment and account addresses map bijectively to logical identities.",
+    "Native transport nonces and result records are not player-observable gameplay facts.",
+    "Entity ids identify the same logical fixture entities; storage bookkeeping and row/event encoding are not compared."
+  ],
+  "execution": {
+    "exitCode": 0,
+    "elapsedMs": 2515060,
+    "log": "deploy/madara-lab/.lab/native-oracle/world-parity.log",
+    "combinedLogSha256": "2bb2e4a29e7c1eddc51ae3d9020e3b278866ef4ca522324498d5bee2a7935a23",
+    "logEncoding": "stdout + newline + stderr; both logs are retained in the parity artifact",
+    "resourcesScope": "Fixture totals include both world deployments, configuration, actions, assertions and trace serialization. Per-action resources are measured by the lab harness."
+  },
+  "cases": [
+    {
+      "name": "blitz_settlement",
+      "test": "world_parity_blitz_settlement",
+      "fixtureL2Gas": "11599586762",
+      "actions": [
+        {
+          "case": "blitz_settlement",
+          "order": 1,
+          "action": "reserve_hyperstructures",
+          "timestamp": "1800",
+          "succeeded": true
+        },
+        {
+          "case": "blitz_settlement",
+          "order": 2,
+          "action": "settle",
+          "timestamp": "1800",
+          "succeeded": true
+        },
+        {
+          "case": "blitz_settlement",
+          "order": 3,
+          "action": "settle",
+          "timestamp": "1800",
+          "succeeded": true
+        },
+        {
+          "case": "blitz_settlement",
+          "order": 4,
+          "action": "provision_realm",
+          "timestamp": "2040",
+          "succeeded": true
+        },
+        {
+          "case": "blitz_settlement",
+          "order": 5,
+          "action": "provision_realm",
+          "timestamp": "2040",
+          "succeeded": false
+        },
+        {
+          "case": "blitz_settlement",
+          "order": 6,
+          "action": "provision_realm",
+          "timestamp": "2040",
+          "succeeded": true
+        },
+        {
+          "case": "blitz_settlement",
+          "order": 7,
+          "action": "provision_realm",
+          "timestamp": "2040",
+          "succeeded": false
+        }
+      ],
+      "roots": [
+        {
+          "case": "blitz_settlement",
+          "step": 1,
+          "rawRoot": "0x4d2",
+          "incrementedRoot": "0xa6a"
+        },
+        {
+          "case": "blitz_settlement",
+          "step": 2,
+          "rawRoot": "0x162e",
+          "incrementedRoot": "0x1bc6"
+        }
+      ],
+      "deletes": [],
+      "rejections": [],
+      "factSnapshots": 647,
+      "checkpoints": [
+        {
+          "step": 0,
+          "factSnapshots": 7,
+          "models": [
+            "TileOpt"
+          ],
+          "sha256": "63c05bffc2fb178cd3f10bfd511920144332620f03deadbb5b21af2b84356dc5"
+        },
+        {
+          "step": 1,
+          "factSnapshots": 104,
+          "models": [
+            "AddressName",
+            "PlayerCosmetics",
+            "PlayerEntry",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "SettlementPool",
+            "SettlementProgress",
+            "Structure"
+          ],
+          "sha256": "6179b794068042089f474ea8a16a29026b45bbb489552d56d4000ec9a46ce8cb"
+        },
+        {
+          "step": 2,
+          "factSnapshots": 104,
+          "models": [
+            "AddressName",
+            "PlayerCosmetics",
+            "PlayerEntry",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "SettlementPool",
+            "SettlementProgress",
+            "Structure"
+          ],
+          "sha256": "1cc0d3581a6837f502a2958c271c7c9b05af0774f0d6196162b7485c1c920928"
+        },
+        {
+          "step": 3,
+          "factSnapshots": 108,
+          "models": [
+            "Building",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "StructureBuildings",
+            "TileOpt"
+          ],
+          "sha256": "0dc4d172fe8eeb1ae149e5c8e8c797b8c7edcb2eebaa19101b0af30181075804"
+        },
+        {
+          "step": 4,
+          "factSnapshots": 108,
+          "models": [
+            "Building",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "StructureBuildings",
+            "TileOpt"
+          ],
+          "sha256": "d4bf2a794a9308278cadb99305b90da68ff2017b83a7096922a4dac96e152d3b"
+        },
+        {
+          "step": 5,
+          "factSnapshots": 108,
+          "models": [
+            "Building",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "StructureBuildings",
+            "TileOpt"
+          ],
+          "sha256": "14c86081b769f81495a9b4a39997ded1f9b81643d99a8afe32d8fe3be708aa84"
+        },
+        {
+          "step": 6,
+          "factSnapshots": 108,
+          "models": [
+            "Building",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "StructureBuildings",
+            "TileOpt"
+          ],
+          "sha256": "946899b132f73fb188c8bfee7076b211450cb6c792267b858b039dc6c457d87d"
+        }
+      ]
+    },
+    {
+      "name": "blitz_entry_rejections",
+      "test": "world_parity_blitz_entry_rejections",
+      "fixtureL2Gas": "8107005941",
+      "actions": [
+        {
+          "case": "blitz_entry_rejections",
+          "order": 1,
+          "action": "settle",
+          "timestamp": "1800",
+          "succeeded": false
+        },
+        {
+          "case": "blitz_entry_rejections",
+          "order": 2,
+          "action": "settle",
+          "timestamp": "1699",
+          "succeeded": false
+        },
+        {
+          "case": "blitz_entry_rejections",
+          "order": 3,
+          "action": "settle",
+          "timestamp": "2000",
+          "succeeded": false
+        },
+        {
+          "case": "blitz_entry_rejections",
+          "order": 4,
+          "action": "settle",
+          "timestamp": "1800",
+          "succeeded": false
+        },
+        {
+          "case": "blitz_entry_rejections",
+          "order": 5,
+          "action": "reserve_hyperstructures",
+          "timestamp": "1800",
+          "succeeded": true
+        },
+        {
+          "case": "blitz_entry_rejections",
+          "order": 6,
+          "action": "settle",
+          "timestamp": "1700",
+          "succeeded": true
+        },
+        {
+          "case": "blitz_entry_rejections",
+          "order": 7,
+          "action": "settle",
+          "timestamp": "1800",
+          "succeeded": false
+        },
+        {
+          "case": "blitz_entry_rejections",
+          "order": 8,
+          "action": "settle",
+          "timestamp": "1800",
+          "succeeded": true
+        },
+        {
+          "case": "blitz_entry_rejections",
+          "order": 9,
+          "action": "settle",
+          "timestamp": "1800",
+          "succeeded": false
+        }
+      ],
+      "roots": [
+        {
+          "case": "blitz_entry_rejections",
+          "step": 5,
+          "rawRoot": "0x32",
+          "incrementedRoot": "0x5ca"
+        },
+        {
+          "case": "blitz_entry_rejections",
+          "step": 7,
+          "rawRoot": "0x63",
+          "incrementedRoot": "0x5fb"
+        }
+      ],
+      "deletes": [],
+      "rejections": [],
+      "factSnapshots": 443,
+      "checkpoints": [
+        {
+          "step": 0,
+          "factSnapshots": 5,
+          "models": [
+            "AddressName",
+            "PlayerCosmetics",
+            "PlayerEntry",
+            "SettlementPool",
+            "SettlementProgress"
+          ],
+          "sha256": "1e8b8b56745e7cffe068a533b4563a09f7c38b591703f6b18e6f108aeef08091"
+        },
+        {
+          "step": 1,
+          "factSnapshots": 5,
+          "models": [
+            "AddressName",
+            "PlayerCosmetics",
+            "PlayerEntry",
+            "SettlementPool",
+            "SettlementProgress"
+          ],
+          "sha256": "f8136837e4dda430006a10cada5b276b552a0cdddbc480960ee0c91944063457"
+        },
+        {
+          "step": 2,
+          "factSnapshots": 5,
+          "models": [
+            "AddressName",
+            "PlayerCosmetics",
+            "PlayerEntry",
+            "SettlementPool",
+            "SettlementProgress"
+          ],
+          "sha256": "988fcf3fb9d0f0bcdbf3ce433fed1de8183e31eaef6738929eca64988fac8a29"
+        },
+        {
+          "step": 3,
+          "factSnapshots": 5,
+          "models": [
+            "AddressName",
+            "PlayerCosmetics",
+            "PlayerEntry",
+            "SettlementPool",
+            "SettlementProgress"
+          ],
+          "sha256": "b6a6dbbceb5d580d6a142e0ddde58497e0bd038e0257bc5535d6b17f215bd40f"
+        },
+        {
+          "step": 4,
+          "factSnapshots": 7,
+          "models": [
+            "TileOpt"
+          ],
+          "sha256": "b23ad96168456a80c1a0f7ad44c296adcda7b5023b55e143ec33bafcbc77840a"
+        },
+        {
+          "step": 5,
+          "factSnapshots": 104,
+          "models": [
+            "AddressName",
+            "PlayerCosmetics",
+            "PlayerEntry",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "SettlementPool",
+            "SettlementProgress",
+            "Structure"
+          ],
+          "sha256": "a6a854103a24b76dc1a8f57177f9a705b624c67484c76ee94b3e8c4df974a0c0"
+        },
+        {
+          "step": 6,
+          "factSnapshots": 104,
+          "models": [
+            "AddressName",
+            "PlayerCosmetics",
+            "PlayerEntry",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "SettlementPool",
+            "SettlementProgress",
+            "Structure"
+          ],
+          "sha256": "549a2aa3651bfbd72a7d8788bdd48c9dcc949c410f581532143a5491c8a6ec73"
+        },
+        {
+          "step": 7,
+          "factSnapshots": 104,
+          "models": [
+            "AddressName",
+            "PlayerCosmetics",
+            "PlayerEntry",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "SettlementPool",
+            "SettlementProgress",
+            "Structure"
+          ],
+          "sha256": "83fe7da9a0a0008c6a542e85353fcb770e4d633efd4c92410708b098e3c2fa56"
+        },
+        {
+          "step": 8,
+          "factSnapshots": 104,
+          "models": [
+            "AddressName",
+            "PlayerCosmetics",
+            "PlayerEntry",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "SettlementPool",
+            "SettlementProgress",
+            "Structure"
+          ],
+          "sha256": "cd6f9a6a9fc2af25b67f058bfe4f5343e42f347bc3c15f162978f92478b92616"
+        }
+      ]
+    },
+    {
+      "name": "blitz_entry_ledger",
+      "test": "world_parity_blitz_entry_ledger",
+      "fixtureL2Gas": "2634430137",
+      "actions": [
+        {
+          "case": "blitz_entry_ledger",
+          "order": 1,
+          "action": "reserve_hyperstructures",
+          "timestamp": "1800",
+          "succeeded": true
+        },
+        {
+          "case": "blitz_entry_ledger",
+          "order": 2,
+          "action": "settle",
+          "timestamp": "1800",
+          "succeeded": false
+        },
+        {
+          "case": "blitz_entry_ledger",
+          "order": 3,
+          "action": "settle",
+          "timestamp": "1800",
+          "succeeded": true
+        }
+      ],
+      "roots": [
+        {
+          "case": "blitz_entry_ledger",
+          "step": 11,
+          "rawRoot": "0x32",
+          "incrementedRoot": "0x5ca"
+        }
+      ],
+      "deletes": [],
+      "rejections": [],
+      "factSnapshots": 116,
+      "checkpoints": [
+        {
+          "step": 9,
+          "factSnapshots": 7,
+          "models": [
+            "TileOpt"
+          ],
+          "sha256": "3e661cd32ce5b07dc16c63cd23edef60bd9b25fe0c4a8989f9e1857a46024322"
+        },
+        {
+          "step": 10,
+          "factSnapshots": 5,
+          "models": [
+            "AddressName",
+            "PlayerCosmetics",
+            "PlayerEntry",
+            "SettlementPool",
+            "SettlementProgress"
+          ],
+          "sha256": "a09bd692a342241456537cc4b986ce91df9084e62d0ed6ca7c600a78b86e1d66"
+        },
+        {
+          "step": 11,
+          "factSnapshots": 104,
+          "models": [
+            "AddressName",
+            "PlayerCosmetics",
+            "PlayerEntry",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "SettlementPool",
+            "SettlementProgress",
+            "Structure"
+          ],
+          "sha256": "0e12848853dfd43d8a263d461e7f515b6343b3a8606ef4ebf669d6565719599b"
+        }
+      ]
+    },
+    {
+      "name": "blitz_cosmetics",
+      "test": "world_parity_blitz_cosmetics",
+      "fixtureL2Gas": "2786915804",
+      "actions": [
+        {
+          "case": "blitz_cosmetics",
+          "order": 1,
+          "action": "reserve_hyperstructures",
+          "timestamp": "1800",
+          "succeeded": true
+        },
+        {
+          "case": "blitz_cosmetics",
+          "order": 2,
+          "action": "settle",
+          "timestamp": "1800",
+          "succeeded": false
+        },
+        {
+          "case": "blitz_cosmetics",
+          "order": 3,
+          "action": "settle",
+          "timestamp": "1800",
+          "succeeded": false
+        },
+        {
+          "case": "blitz_cosmetics",
+          "order": 4,
+          "action": "settle",
+          "timestamp": "1800",
+          "succeeded": false
+        },
+        {
+          "case": "blitz_cosmetics",
+          "order": 5,
+          "action": "settle",
+          "timestamp": "1800",
+          "succeeded": true
+        }
+      ],
+      "roots": [
+        {
+          "case": "blitz_cosmetics",
+          "step": 4,
+          "rawRoot": "0x7",
+          "incrementedRoot": "0x59f"
+        }
+      ],
+      "deletes": [],
+      "rejections": [],
+      "factSnapshots": 126,
+      "checkpoints": [
+        {
+          "step": 0,
+          "factSnapshots": 7,
+          "models": [
+            "TileOpt"
+          ],
+          "sha256": "63c05bffc2fb178cd3f10bfd511920144332620f03deadbb5b21af2b84356dc5"
+        },
+        {
+          "step": 1,
+          "factSnapshots": 5,
+          "models": [
+            "AddressName",
+            "PlayerCosmetics",
+            "PlayerEntry",
+            "SettlementPool",
+            "SettlementProgress"
+          ],
+          "sha256": "f8136837e4dda430006a10cada5b276b552a0cdddbc480960ee0c91944063457"
+        },
+        {
+          "step": 2,
+          "factSnapshots": 5,
+          "models": [
+            "AddressName",
+            "PlayerCosmetics",
+            "PlayerEntry",
+            "SettlementPool",
+            "SettlementProgress"
+          ],
+          "sha256": "988fcf3fb9d0f0bcdbf3ce433fed1de8183e31eaef6738929eca64988fac8a29"
+        },
+        {
+          "step": 3,
+          "factSnapshots": 5,
+          "models": [
+            "AddressName",
+            "PlayerCosmetics",
+            "PlayerEntry",
+            "SettlementPool",
+            "SettlementProgress"
+          ],
+          "sha256": "b6a6dbbceb5d580d6a142e0ddde58497e0bd038e0257bc5535d6b17f215bd40f"
+        },
+        {
+          "step": 4,
+          "factSnapshots": 104,
+          "models": [
+            "AddressName",
+            "PlayerCosmetics",
+            "PlayerEntry",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "SettlementPool",
+            "SettlementProgress",
+            "Structure"
+          ],
+          "sha256": "8f4604caaef6fd763c606d94da8c5d822e8b64eebd06b75c660583e44ded2c38"
+        }
+      ]
+    },
+    {
+      "name": "blitz_cosmetics_disabled",
+      "test": "world_parity_blitz_cosmetics_disabled",
+      "fixtureL2Gas": "2669223465",
+      "actions": [
+        {
+          "case": "blitz_cosmetics_disabled",
+          "order": 1,
+          "action": "reserve_hyperstructures",
+          "timestamp": "1800",
+          "succeeded": true
+        },
+        {
+          "case": "blitz_cosmetics_disabled",
+          "order": 2,
+          "action": "settle",
+          "timestamp": "1800",
+          "succeeded": true
+        }
+      ],
+      "roots": [
+        {
+          "case": "blitz_cosmetics_disabled",
+          "step": 6,
+          "rawRoot": "0x7",
+          "incrementedRoot": "0x59f"
+        }
+      ],
+      "deletes": [],
+      "rejections": [],
+      "factSnapshots": 111,
+      "checkpoints": [
+        {
+          "step": 5,
+          "factSnapshots": 7,
+          "models": [
+            "TileOpt"
+          ],
+          "sha256": "ed36d19a6a9ccac80048662085b1ac7b32f96cb3cb3b72d717ffdf1d35e89781"
+        },
+        {
+          "step": 6,
+          "factSnapshots": 104,
+          "models": [
+            "AddressName",
+            "PlayerCosmetics",
+            "PlayerEntry",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "SettlementPool",
+            "SettlementProgress",
+            "Structure"
+          ],
+          "sha256": "820e038e13930dfe5ec725cbb1f314eda2bd33fde82a919e605272ee7e8aad12"
+        }
+      ]
+    },
+    {
+      "name": "blitz_settlement_displacement",
+      "test": "world_parity_blitz_settlement_displacement",
+      "fixtureL2Gas": "9818576151",
+      "actions": [
+        {
+          "case": "blitz_settlement_displacement",
+          "order": 1,
+          "action": "reserve_hyperstructures",
+          "timestamp": "1800",
+          "succeeded": true
+        },
+        {
+          "case": "blitz_settlement_displacement",
+          "order": 3,
+          "action": "settle",
+          "timestamp": "1800",
+          "succeeded": true
+        }
+      ],
+      "roots": [
+        {
+          "case": "blitz_settlement_displacement",
+          "step": 2,
+          "rawRoot": "0x13",
+          "incrementedRoot": "0x5ab"
+        }
+      ],
+      "deletes": [],
+      "rejections": [],
+      "factSnapshots": 515,
+      "checkpoints": [
+        {
+          "step": 0,
+          "factSnapshots": 7,
+          "models": [
+            "TileOpt"
+          ],
+          "sha256": "63c05bffc2fb178cd3f10bfd511920144332620f03deadbb5b21af2b84356dc5"
+        },
+        {
+          "step": 1,
+          "factSnapshots": 199,
+          "models": [
+            "ExplorerTroops",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "TileOpt"
+          ],
+          "sha256": "66778b231419d602a50a69657aa9604e79be39c94e3c123653d03e9ffed9e980"
+        },
+        {
+          "step": 2,
+          "factSnapshots": 104,
+          "models": [
+            "AddressName",
+            "PlayerCosmetics",
+            "PlayerEntry",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "SettlementPool",
+            "SettlementProgress",
+            "Structure"
+          ],
+          "sha256": "25a676591819a19bf035a79bb331dde4266440e61bd0b562a066f2a9125fb7e3"
+        },
+        {
+          "step": 3,
+          "factSnapshots": 205,
+          "models": [
+            "ExplorerTroops",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "TileOpt"
+          ],
+          "sha256": "95e07c824fd91901a8b7ba937551ed42fb14087154274940ac40883d8857fc48"
+        }
+      ]
+    },
+    {
+      "name": "blitz_settlement_blocked",
+      "test": "world_parity_blitz_settlement_blocked",
+      "fixtureL2Gas": "9676262825",
+      "actions": [
+        {
+          "case": "blitz_settlement_blocked",
+          "order": 1,
+          "action": "reserve_hyperstructures",
+          "timestamp": "1800",
+          "succeeded": true
+        },
+        {
+          "case": "blitz_settlement_blocked",
+          "order": 3,
+          "action": "settle",
+          "timestamp": "1800",
+          "succeeded": true
+        }
+      ],
+      "roots": [
+        {
+          "case": "blitz_settlement_blocked",
+          "step": 2,
+          "rawRoot": "0x13",
+          "incrementedRoot": "0x5ab"
+        }
+      ],
+      "deletes": [
+        {
+          "case": "blitz_settlement_blocked",
+          "step": 3,
+          "model": "ExplorerTroops",
+          "keys": [
+            "0x1",
+            "0x2"
+          ]
+        },
+        {
+          "case": "blitz_settlement_blocked",
+          "step": 3,
+          "model": "ResourceWeight",
+          "keys": [
+            "0x1",
+            "0x2"
+          ]
+        }
+      ],
+      "rejections": [],
+      "factSnapshots": 514,
+      "checkpoints": [
+        {
+          "step": 0,
+          "factSnapshots": 7,
+          "models": [
+            "TileOpt"
+          ],
+          "sha256": "63c05bffc2fb178cd3f10bfd511920144332620f03deadbb5b21af2b84356dc5"
+        },
+        {
+          "step": 1,
+          "factSnapshots": 199,
+          "models": [
+            "ExplorerTroops",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "TileOpt"
+          ],
+          "sha256": "66778b231419d602a50a69657aa9604e79be39c94e3c123653d03e9ffed9e980"
+        },
+        {
+          "step": 2,
+          "factSnapshots": 104,
+          "models": [
+            "AddressName",
+            "PlayerCosmetics",
+            "PlayerEntry",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "SettlementPool",
+            "SettlementProgress",
+            "Structure"
+          ],
+          "sha256": "611b4e4e61a8668ea8d31005c5983b3910094cdcbb229eb329b03b2166625c8c"
+        },
+        {
+          "step": 3,
+          "factSnapshots": 204,
+          "models": [
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "TileOpt"
+          ],
+          "sha256": "2d903d9f9028c0ac8fc6b963cf685cf1b71460ee6decfc60c9528a8d07bb8bd2"
+        }
+      ]
+    },
+    {
+      "name": "blitz_settlement_agent_blocked",
+      "test": "world_parity_blitz_settlement_agent_blocked",
+      "fixtureL2Gas": "10301702055",
+      "actions": [
+        {
+          "case": "blitz_settlement_agent_blocked",
+          "order": 1,
+          "action": "reserve_hyperstructures",
+          "timestamp": "1800",
+          "succeeded": true
+        },
+        {
+          "case": "blitz_settlement_agent_blocked",
+          "order": 3,
+          "action": "settle",
+          "timestamp": "1800",
+          "succeeded": true
+        }
+      ],
+      "roots": [
+        {
+          "case": "blitz_settlement_agent_blocked",
+          "step": 2,
+          "rawRoot": "0x13",
+          "incrementedRoot": "0x5ab"
+        }
+      ],
+      "deletes": [
+        {
+          "case": "blitz_settlement_agent_blocked",
+          "step": 3,
+          "model": "ExplorerTroops",
+          "keys": [
+            "0x1",
+            "0x2"
+          ]
+        },
+        {
+          "case": "blitz_settlement_agent_blocked",
+          "step": 3,
+          "model": "ResourceWeight",
+          "keys": [
+            "0x1",
+            "0x2"
+          ]
+        }
+      ],
+      "rejections": [],
+      "factSnapshots": 518,
+      "checkpoints": [
+        {
+          "step": 0,
+          "factSnapshots": 7,
+          "models": [
+            "TileOpt"
+          ],
+          "sha256": "63c05bffc2fb178cd3f10bfd511920144332620f03deadbb5b21af2b84356dc5"
+        },
+        {
+          "step": 1,
+          "factSnapshots": 201,
+          "models": [
+            "AgentOwner",
+            "AgentPopulation",
+            "ExplorerTroops",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "TileOpt"
+          ],
+          "sha256": "4d45388ade9f7666beeec255f1cad3572de4cb8e9081a786d338fb0401cec233"
+        },
+        {
+          "step": 2,
+          "factSnapshots": 104,
+          "models": [
+            "AddressName",
+            "PlayerCosmetics",
+            "PlayerEntry",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "SettlementPool",
+            "SettlementProgress",
+            "Structure"
+          ],
+          "sha256": "611b4e4e61a8668ea8d31005c5983b3910094cdcbb229eb329b03b2166625c8c"
+        },
+        {
+          "step": 3,
+          "factSnapshots": 206,
+          "models": [
+            "AgentOwner",
+            "AgentPopulation",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "TileOpt"
+          ],
+          "sha256": "5dd35c28ec583f0f47af7297156d1c9c6e778d11c78226fc7c8fd664b986b4bc"
+        }
+      ]
+    },
+    {
+      "name": "blitz_settlement_occupied",
+      "test": "world_parity_blitz_settlement_occupied",
+      "fixtureL2Gas": "2737488462",
+      "actions": [
+        {
+          "case": "blitz_settlement_occupied",
+          "order": 1,
+          "action": "reserve_hyperstructures",
+          "timestamp": "1800",
+          "succeeded": true
+        },
+        {
+          "case": "blitz_settlement_occupied",
+          "order": 2,
+          "action": "settle",
+          "timestamp": "1800",
+          "succeeded": false
+        }
+      ],
+      "roots": [],
+      "deletes": [],
+      "rejections": [],
+      "factSnapshots": 112,
+      "checkpoints": [
+        {
+          "step": 0,
+          "factSnapshots": 7,
+          "models": [
+            "TileOpt"
+          ],
+          "sha256": "63c05bffc2fb178cd3f10bfd511920144332620f03deadbb5b21af2b84356dc5"
+        },
+        {
+          "step": 1,
+          "factSnapshots": 105,
+          "models": [
+            "AddressName",
+            "PlayerCosmetics",
+            "PlayerEntry",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "SettlementPool",
+            "SettlementProgress",
+            "Structure",
+            "TileOpt"
+          ],
+          "sha256": "39070d08d07e7e6a4c544cd0362086b67ba58b30a89aee1a179e3a62008660d7"
+        }
+      ]
+    },
+    {
+      "name": "blitz_settlement_modes",
+      "test": "world_parity_blitz_settlement_modes",
+      "fixtureL2Gas": "11081747814",
+      "actions": [
+        {
+          "case": "blitz_settlement_modes",
+          "order": 1,
+          "action": "reserve_hyperstructures",
+          "timestamp": "1800",
+          "succeeded": true
+        },
+        {
+          "case": "blitz_settlement_modes",
+          "order": 2,
+          "action": "settle",
+          "timestamp": "1800",
+          "succeeded": true
+        },
+        {
+          "case": "blitz_settlement_modes",
+          "order": 3,
+          "action": "settle",
+          "timestamp": "1800",
+          "succeeded": true
+        }
+      ],
+      "roots": [
+        {
+          "case": "blitz_settlement_modes",
+          "step": 1,
+          "rawRoot": "0x13",
+          "incrementedRoot": "0x5ab"
+        },
+        {
+          "case": "blitz_settlement_modes",
+          "step": 2,
+          "rawRoot": "0x3e7",
+          "incrementedRoot": "0x97f"
+        }
+      ],
+      "deletes": [],
+      "rejections": [],
+      "factSnapshots": 611,
+      "checkpoints": [
+        {
+          "step": 0,
+          "factSnapshots": 7,
+          "models": [
+            "TileOpt"
+          ],
+          "sha256": "63c05bffc2fb178cd3f10bfd511920144332620f03deadbb5b21af2b84356dc5"
+        },
+        {
+          "step": 1,
+          "factSnapshots": 302,
+          "models": [
+            "AddressName",
+            "PlayerCosmetics",
+            "PlayerEntry",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "SettlementPool",
+            "SettlementProgress",
+            "Structure"
+          ],
+          "sha256": "658919bc8d80c381113735fd989e3c1048495537500c381f86df3e9f8577c895"
+        },
+        {
+          "step": 2,
+          "factSnapshots": 302,
+          "models": [
+            "AddressName",
+            "PlayerCosmetics",
+            "PlayerEntry",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "SettlementPool",
+            "SettlementProgress",
+            "Structure"
+          ],
+          "sha256": "3a379da49c9cd5afe63f1b854687e82f2cf64c18946434b8533f3a72488b1222"
+        }
+      ]
+    },
+    {
+      "name": "blitz_settlement_duel",
+      "test": "world_parity_blitz_settlement_duel",
+      "fixtureL2Gas": "10769496386",
+      "actions": [
+        {
+          "case": "blitz_settlement_duel",
+          "order": 1,
+          "action": "reserve_hyperstructures",
+          "timestamp": "1800",
+          "succeeded": true
+        },
+        {
+          "case": "blitz_settlement_duel",
+          "order": 2,
+          "action": "settle",
+          "timestamp": "1800",
+          "succeeded": true
+        },
+        {
+          "case": "blitz_settlement_duel",
+          "order": 3,
+          "action": "settle",
+          "timestamp": "1800",
+          "succeeded": true
+        }
+      ],
+      "roots": [
+        {
+          "case": "blitz_settlement_duel",
+          "step": 1,
+          "rawRoot": "0x13",
+          "incrementedRoot": "0x5ab"
+        },
+        {
+          "case": "blitz_settlement_duel",
+          "step": 2,
+          "rawRoot": "0x3e7",
+          "incrementedRoot": "0x97f"
+        }
+      ],
+      "deletes": [],
+      "rejections": [],
+      "factSnapshots": 607,
+      "checkpoints": [
+        {
+          "step": 0,
+          "factSnapshots": 3,
+          "models": [
+            "TileOpt"
+          ],
+          "sha256": "772d83c0ec30d6085205c4d4a539fc8d79847b0efbce48005064671cbf5df4bf"
+        },
+        {
+          "step": 1,
+          "factSnapshots": 302,
+          "models": [
+            "AddressName",
+            "PlayerCosmetics",
+            "PlayerEntry",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "SettlementPool",
+            "SettlementProgress",
+            "Structure"
+          ],
+          "sha256": "1e600f16e0f0ec2eac0e97b30a200890037fb067203430a01272357d9e0a4a9a"
+        },
+        {
+          "step": 2,
+          "factSnapshots": 302,
+          "models": [
+            "AddressName",
+            "PlayerCosmetics",
+            "PlayerEntry",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "SettlementPool",
+            "SettlementProgress",
+            "Structure"
+          ],
+          "sha256": "302d565b7f3705e12b32249d834f674b079815ea37b86c82330a7fc775e350b0"
+        }
+      ]
+    },
+    {
+      "name": "blitz_reservations",
+      "test": "world_parity_blitz_reservations",
+      "fixtureL2Gas": "4755070188",
+      "actions": [
+        {
+          "case": "blitz_reservations",
+          "order": 1,
+          "action": "reserve_hyperstructures",
+          "timestamp": "1800",
+          "succeeded": true
+        },
+        {
+          "case": "blitz_reservations",
+          "order": 2,
+          "action": "reserve_hyperstructures",
+          "timestamp": "1800",
+          "succeeded": true
+        },
+        {
+          "case": "blitz_reservations",
+          "order": 3,
+          "action": "reserve_hyperstructures",
+          "timestamp": "1800",
+          "succeeded": true
+        },
+        {
+          "case": "blitz_reservations",
+          "order": 4,
+          "action": "reserve_hyperstructures",
+          "timestamp": "1800",
+          "succeeded": true
+        },
+        {
+          "case": "blitz_reservations",
+          "order": 5,
+          "action": "create_hyperstructure",
+          "timestamp": "1800",
+          "succeeded": true
+        },
+        {
+          "case": "blitz_reservations",
+          "order": 6,
+          "action": "create_hyperstructure",
+          "timestamp": "1800",
+          "succeeded": false
+        }
+      ],
+      "roots": [],
+      "deletes": [],
+      "rejections": [],
+      "factSnapshots": 230,
+      "checkpoints": [
+        {
+          "step": 0,
+          "factSnapshots": 1,
+          "models": [
+            "TileOpt"
+          ],
+          "sha256": "91faaff9e55b11326b162e5ec9a9e830c0e1d7e82f7743ae6539b1a6bda5c89b"
+        },
+        {
+          "step": 1,
+          "factSnapshots": 1,
+          "models": [
+            "TileOpt"
+          ],
+          "sha256": "cb0c5a92910e10d8f2aa316297cbe9d5614889f24339dd068529273c91185525"
+        },
+        {
+          "step": 2,
+          "factSnapshots": 7,
+          "models": [
+            "TileOpt"
+          ],
+          "sha256": "50f1a927eeb61988980fc4cfdbbf0cbac0c128b3f13eab711f3b6d12e10e3419"
+        },
+        {
+          "step": 3,
+          "factSnapshots": 7,
+          "models": [
+            "TileOpt"
+          ],
+          "sha256": "a9d9de433263c97c1325656f7945b2e8031b65c309846a3f0504d40a533e6bd5"
+        },
+        {
+          "step": 4,
+          "factSnapshots": 107,
+          "models": [
+            "Hyperstructure",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "TileOpt"
+          ],
+          "sha256": "bb8cd27a6de9110ebf0c630744529fc1c20f35d1a3e5290a6e7fd1097d36036c"
+        },
+        {
+          "step": 5,
+          "factSnapshots": 107,
+          "models": [
+            "Hyperstructure",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "TileOpt"
+          ],
+          "sha256": "5749f8ad096b49e6ecbe761a7b52af62b2bb177ea48c46f4260a563d50dc224d"
+        }
+      ]
+    },
+    {
+      "name": "structure",
+      "test": "world_parity_structure",
+      "fixtureL2Gas": "11188366022",
+      "actions": [
+        {
+          "case": "structure",
+          "order": 1,
+          "action": "level_up",
+          "timestamp": "1800",
+          "succeeded": false
+        },
+        {
+          "case": "structure",
+          "order": 2,
+          "action": "level_up",
+          "timestamp": "1800",
+          "succeeded": false
+        },
+        {
+          "case": "structure",
+          "order": 3,
+          "action": "level_up",
+          "timestamp": "1800",
+          "succeeded": true
+        },
+        {
+          "case": "structure",
+          "order": 4,
+          "action": "level_up",
+          "timestamp": "1800",
+          "succeeded": true
+        },
+        {
+          "case": "structure",
+          "order": 5,
+          "action": "level_up",
+          "timestamp": "1800",
+          "succeeded": true
+        },
+        {
+          "case": "structure",
+          "order": 6,
+          "action": "level_up",
+          "timestamp": "1800",
+          "succeeded": false
+        },
+        {
+          "case": "structure",
+          "order": 7,
+          "action": "level_up",
+          "timestamp": "1000000",
+          "succeeded": false
+        }
+      ],
+      "roots": [],
+      "deletes": [],
+      "rejections": [],
+      "factSnapshots": 728,
+      "checkpoints": [
+        {
+          "step": 1,
+          "factSnapshots": 104,
+          "models": [
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "TileOpt",
+            "UpgradeLimits",
+            "UpgradeRecipe"
+          ],
+          "sha256": "bad0b8ae2f708015d9d92f48774c3f0a4dc221b6acb23a81c65a031765220151"
+        },
+        {
+          "step": 2,
+          "factSnapshots": 104,
+          "models": [
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "TileOpt",
+            "UpgradeLimits",
+            "UpgradeRecipe"
+          ],
+          "sha256": "7dde90af1b10585eff939a7066f5d887f2a1937aec5d40bb6462c1727dbc53b3"
+        },
+        {
+          "step": 3,
+          "factSnapshots": 104,
+          "models": [
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "TileOpt",
+            "UpgradeLimits",
+            "UpgradeRecipe"
+          ],
+          "sha256": "a67c28314a903279e50077d2e08312d51a45233d08ca500127a03b3c1b220104"
+        },
+        {
+          "step": 4,
+          "factSnapshots": 104,
+          "models": [
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "TileOpt",
+            "UpgradeLimits",
+            "UpgradeRecipe"
+          ],
+          "sha256": "511a1afb3b8cdcd00e628175571ba0ec29220ba345817a81dc18a5f30035e4b4"
+        },
+        {
+          "step": 5,
+          "factSnapshots": 104,
+          "models": [
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "TileOpt",
+            "UpgradeLimits",
+            "UpgradeRecipe"
+          ],
+          "sha256": "2a5432f5529f01d2296a35d70cc7887053cb32c5b52ea11b6698a5752c8fabfa"
+        },
+        {
+          "step": 6,
+          "factSnapshots": 104,
+          "models": [
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "TileOpt",
+            "UpgradeLimits",
+            "UpgradeRecipe"
+          ],
+          "sha256": "c7c572b017afa452eb304b77dbec4b0f0d1fa2c9339aeea97509974f0f713bde"
+        },
+        {
+          "step": 7,
+          "factSnapshots": 104,
+          "models": [
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "TileOpt",
+            "UpgradeLimits",
+            "UpgradeRecipe"
+          ],
+          "sha256": "e4f32c823371ad8a18f8fbe5012b69efc66e0b3ac3138e5232478453faa47e84"
+        }
+      ]
+    },
+    {
+      "name": "structure_rejections",
+      "test": "world_parity_structure_rejections",
+      "fixtureL2Gas": "7470562491",
+      "actions": [
+        {
+          "case": "structure_rejections",
+          "order": 1,
+          "action": "level_up",
+          "timestamp": "1800",
+          "succeeded": false
+        },
+        {
+          "case": "structure_rejections",
+          "order": 2,
+          "action": "level_up",
+          "timestamp": "1800",
+          "succeeded": false
+        },
+        {
+          "case": "structure_rejections",
+          "order": 3,
+          "action": "level_up",
+          "timestamp": "1999",
+          "succeeded": false
+        },
+        {
+          "case": "structure_rejections",
+          "order": 4,
+          "action": "level_up",
+          "timestamp": "2000",
+          "succeeded": true
+        }
+      ],
+      "roots": [],
+      "deletes": [],
+      "rejections": [],
+      "factSnapshots": 416,
+      "checkpoints": [
+        {
+          "step": 1,
+          "factSnapshots": 104,
+          "models": [
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "TileOpt",
+            "UpgradeLimits",
+            "UpgradeRecipe"
+          ],
+          "sha256": "e40d67069ec0c4da564f803876617a76afa8c7155f6a5d0a04d25a449b44b5db"
+        },
+        {
+          "step": 2,
+          "factSnapshots": 104,
+          "models": [
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "TileOpt",
+            "UpgradeLimits",
+            "UpgradeRecipe"
+          ],
+          "sha256": "c2a85fc831de3020a2c8fe8c7b56b1a93d975f1a837b462572f5e8a56ae7600d"
+        },
+        {
+          "step": 3,
+          "factSnapshots": 104,
+          "models": [
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "TileOpt",
+            "UpgradeLimits",
+            "UpgradeRecipe"
+          ],
+          "sha256": "8ef29ddb7fcaa60f385410a577c4b06ee94d11cde79b0d88b52a42b729b86725"
+        },
+        {
+          "step": 4,
+          "factSnapshots": 104,
+          "models": [
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "TileOpt",
+            "UpgradeLimits",
+            "UpgradeRecipe"
+          ],
+          "sha256": "de683d7b13859668f363e2d6d91dd504ceba5cafee157e1c5ea9ff138952aa53"
+        }
+      ]
+    },
+    {
+      "name": "name",
+      "test": "world_parity_name",
+      "fixtureL2Gas": "6781992078",
+      "actions": [
+        {
+          "case": "name",
+          "order": 1,
+          "action": "set_address_name",
+          "timestamp": "1800",
+          "succeeded": true
+        },
+        {
+          "case": "name",
+          "order": 2,
+          "action": "set_address_name",
+          "timestamp": "1800",
+          "succeeded": true
+        },
+        {
+          "case": "name",
+          "order": 3,
+          "action": "set_address_name",
+          "timestamp": "1800",
+          "succeeded": true
+        },
+        {
+          "case": "name",
+          "order": 4,
+          "action": "set_address_name",
+          "timestamp": "1800",
+          "succeeded": false
+        },
+        {
+          "case": "name",
+          "order": 5,
+          "action": "set_address_name",
+          "timestamp": "1000000",
+          "succeeded": true
+        }
+      ],
+      "roots": [],
+      "deletes": [],
+      "rejections": [],
+      "factSnapshots": 506,
+      "checkpoints": [
+        {
+          "step": 0,
+          "factSnapshots": 1,
+          "models": [
+            "AddressName"
+          ],
+          "sha256": "cd8461b8955cb8d05a81072399d0d926031900fe35cf1830335fbe17aad5ad8b"
+        },
+        {
+          "step": 1,
+          "factSnapshots": 101,
+          "models": [
+            "AddressName",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure"
+          ],
+          "sha256": "c80ae17222cff3574ca7032f4603726c420fb06be276f7dc5e5d7681e7ac68e1"
+        },
+        {
+          "step": 2,
+          "factSnapshots": 101,
+          "models": [
+            "AddressName",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure"
+          ],
+          "sha256": "5c4ebcbaea061a798efb6f40c5a51df8d509c33c05dc5561fb4b3c32ec2ca6a5"
+        },
+        {
+          "step": 3,
+          "factSnapshots": 101,
+          "models": [
+            "AddressName",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure"
+          ],
+          "sha256": "4d490598508d13ef95901c63b45c3f5b344b15659690a6804e12b4ad7853062a"
+        },
+        {
+          "step": 4,
+          "factSnapshots": 101,
+          "models": [
+            "AddressName",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure"
+          ],
+          "sha256": "11f0882f8fb5f320f1698db0b04fd73d54e63cdfd95b5a4e27e0d0bb5f87b556"
+        },
+        {
+          "step": 5,
+          "factSnapshots": 101,
+          "models": [
+            "AddressName",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure"
+          ],
+          "sha256": "f2df82f3e2a5510aa00b72ede066de4512a700359df91bc353a82a977ea1ed93"
+        }
+      ]
+    },
+    {
+      "name": "ownership",
+      "test": "world_parity_ownership",
+      "fixtureL2Gas": "16667747354",
+      "actions": [
+        {
+          "case": "ownership",
+          "order": 1,
+          "action": "structure_transfer",
+          "timestamp": "1800",
+          "succeeded": true
+        },
+        {
+          "case": "ownership",
+          "order": 2,
+          "action": "structure_transfer",
+          "timestamp": "1800",
+          "succeeded": false
+        },
+        {
+          "case": "ownership",
+          "order": 3,
+          "action": "structure_transfer",
+          "timestamp": "1800",
+          "succeeded": false
+        },
+        {
+          "case": "ownership",
+          "order": 4,
+          "action": "structure_transfer",
+          "timestamp": "1860",
+          "succeeded": true
+        },
+        {
+          "case": "ownership",
+          "order": 5,
+          "action": "structure_transfer",
+          "timestamp": "1900",
+          "succeeded": false
+        },
+        {
+          "case": "ownership",
+          "order": 6,
+          "action": "structure_transfer",
+          "timestamp": "1920",
+          "succeeded": true
+        },
+        {
+          "case": "ownership",
+          "order": 7,
+          "action": "agent_transfer",
+          "timestamp": "1920",
+          "succeeded": true
+        },
+        {
+          "case": "ownership",
+          "order": 8,
+          "action": "agent_transfer",
+          "timestamp": "1920",
+          "succeeded": true
+        },
+        {
+          "case": "ownership",
+          "order": 9,
+          "action": "structure_transfer",
+          "timestamp": "999999",
+          "succeeded": false
+        }
+      ],
+      "roots": [],
+      "deletes": [],
+      "rejections": [],
+      "factSnapshots": 1168,
+      "checkpoints": [
+        {
+          "step": 0,
+          "factSnapshots": 106,
+          "models": [
+            "FaithfulStructure",
+            "PlayerFaithPoints",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "WonderFaith",
+            "WonderFaithWinners"
+          ],
+          "sha256": "552169ce77e34e9525b238adb71c5ae7d9697262e06df1397b6e1266d4fc9209"
+        },
+        {
+          "step": 1,
+          "factSnapshots": 106,
+          "models": [
+            "FaithfulStructure",
+            "PlayerFaithPoints",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "WonderFaith",
+            "WonderFaithWinners"
+          ],
+          "sha256": "15b9c05db2125999c320e4e3f6155c9988973153c08e066d3205b723bdf847b4"
+        },
+        {
+          "step": 2,
+          "factSnapshots": 106,
+          "models": [
+            "FaithfulStructure",
+            "PlayerFaithPoints",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "WonderFaith",
+            "WonderFaithWinners"
+          ],
+          "sha256": "5541947d814a01c2f80067d072fd512fb4004695297e99c96e6f3c813a2f0200"
+        },
+        {
+          "step": 3,
+          "factSnapshots": 106,
+          "models": [
+            "FaithfulStructure",
+            "PlayerFaithPoints",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "WonderFaith",
+            "WonderFaithWinners"
+          ],
+          "sha256": "f5887cafe7deab2c8fc3e023f7011308ffc4093f246fd76934327775e9150d56"
+        },
+        {
+          "step": 4,
+          "factSnapshots": 106,
+          "models": [
+            "FaithfulStructure",
+            "PlayerFaithPoints",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "WonderFaith",
+            "WonderFaithWinners"
+          ],
+          "sha256": "7f7b1aead32deec2887eaca7a19d883dcfb31db780ab58f4b88f05d298d824e6"
+        },
+        {
+          "step": 5,
+          "factSnapshots": 106,
+          "models": [
+            "FaithfulStructure",
+            "PlayerFaithPoints",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "WonderFaith",
+            "WonderFaithWinners"
+          ],
+          "sha256": "5feb8c9dcd2526dd0f7b85b9e3f3e106cd8b596f70d66657346e298618fc444c"
+        },
+        {
+          "step": 6,
+          "factSnapshots": 106,
+          "models": [
+            "FaithfulStructure",
+            "PlayerFaithPoints",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "WonderFaith",
+            "WonderFaithWinners"
+          ],
+          "sha256": "bbbff31db611d428f5cab8b326de19a9087da831a268514cd3bd03b1e7e09b32"
+        },
+        {
+          "step": 7,
+          "factSnapshots": 106,
+          "models": [
+            "FaithfulStructure",
+            "PlayerFaithPoints",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "WonderFaith",
+            "WonderFaithWinners"
+          ],
+          "sha256": "85ed64a058e7c3cec3668d6c66471ca82ad845865a33ca3cb9f3e9a601cdcc50"
+        },
+        {
+          "step": 8,
+          "factSnapshots": 107,
+          "models": [
+            "AgentOwner",
+            "FaithfulStructure",
+            "PlayerFaithPoints",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "WonderFaith",
+            "WonderFaithWinners"
+          ],
+          "sha256": "d31cf520030e90c76ef1ab9624b5840e49823b183edc01abba2e7e9c447239ce"
+        },
+        {
+          "step": 9,
+          "factSnapshots": 107,
+          "models": [
+            "AgentOwner",
+            "FaithfulStructure",
+            "PlayerFaithPoints",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "WonderFaith",
+            "WonderFaithWinners"
+          ],
+          "sha256": "3a356657f584699f079a28a2d953295397e60932e6fc0aa59923a6b42bebc5c5"
+        },
+        {
+          "step": 10,
+          "factSnapshots": 106,
+          "models": [
+            "FaithfulStructure",
+            "PlayerFaithPoints",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "WonderFaith",
+            "WonderFaithWinners"
+          ],
+          "sha256": "f01133a7c79d8e0a3b0361514f3cb139aec8f2bc2581f5dd4b5d600f72f95811"
+        }
+      ]
+    },
+    {
+      "name": "ownership_rejections",
+      "test": "world_parity_ownership_rejections",
+      "fixtureL2Gas": "12298129992",
+      "actions": [
+        {
+          "case": "ownership_rejections",
+          "order": 1,
+          "action": "agent_transfer",
+          "timestamp": "1800",
+          "succeeded": false
+        },
+        {
+          "case": "ownership_rejections",
+          "order": 2,
+          "action": "structure_transfer",
+          "timestamp": "1800",
+          "succeeded": false
+        },
+        {
+          "case": "ownership_rejections",
+          "order": 3,
+          "action": "structure_transfer",
+          "timestamp": "1999",
+          "succeeded": false
+        },
+        {
+          "case": "ownership_rejections",
+          "order": 4,
+          "action": "structure_transfer",
+          "timestamp": "2000",
+          "succeeded": true
+        },
+        {
+          "case": "ownership_rejections",
+          "order": 5,
+          "action": "structure_transfer",
+          "timestamp": "999998",
+          "succeeded": true
+        },
+        {
+          "case": "ownership_rejections",
+          "order": 6,
+          "action": "structure_transfer",
+          "timestamp": "999999",
+          "succeeded": false
+        }
+      ],
+      "roots": [],
+      "deletes": [],
+      "rejections": [],
+      "factSnapshots": 742,
+      "checkpoints": [
+        {
+          "step": 1,
+          "factSnapshots": 106,
+          "models": [
+            "FaithfulStructure",
+            "PlayerFaithPoints",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "WonderFaith",
+            "WonderFaithWinners"
+          ],
+          "sha256": "15b9c05db2125999c320e4e3f6155c9988973153c08e066d3205b723bdf847b4"
+        },
+        {
+          "step": 2,
+          "factSnapshots": 106,
+          "models": [
+            "FaithfulStructure",
+            "PlayerFaithPoints",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "WonderFaith",
+            "WonderFaithWinners"
+          ],
+          "sha256": "5541947d814a01c2f80067d072fd512fb4004695297e99c96e6f3c813a2f0200"
+        },
+        {
+          "step": 3,
+          "factSnapshots": 106,
+          "models": [
+            "FaithfulStructure",
+            "PlayerFaithPoints",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "WonderFaith",
+            "WonderFaithWinners"
+          ],
+          "sha256": "ce1aa7f2390fb8742e420c6cc418edc75a85c3050a27bc744278f9c3800bdd24"
+        },
+        {
+          "step": 4,
+          "factSnapshots": 106,
+          "models": [
+            "FaithfulStructure",
+            "PlayerFaithPoints",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "WonderFaith",
+            "WonderFaithWinners"
+          ],
+          "sha256": "55c6fe51b98da4419281a0d00abc686de22fc8cb6d577c8b1a64cee49b831056"
+        },
+        {
+          "step": 5,
+          "factSnapshots": 106,
+          "models": [
+            "FaithfulStructure",
+            "PlayerFaithPoints",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "WonderFaith",
+            "WonderFaithWinners"
+          ],
+          "sha256": "b9fdb995e0ef454c59a0caaf780c51efdc6763f3b621b3be00993c2f867a6fb3"
+        },
+        {
+          "step": 6,
+          "factSnapshots": 106,
+          "models": [
+            "FaithfulStructure",
+            "PlayerFaithPoints",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "WonderFaith",
+            "WonderFaithWinners"
+          ],
+          "sha256": "6515dcc91f044befef7d47e48bf3dfae99da6bdb110d1d5ae240b9f97cf80a9d"
+        },
+        {
+          "step": 7,
+          "factSnapshots": 106,
+          "models": [
+            "FaithfulStructure",
+            "PlayerFaithPoints",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "WonderFaith",
+            "WonderFaithWinners"
+          ],
+          "sha256": "8d2f6b5808ac2242daec03b32b9e219c30663c43c0e277146729713fa2be5f4b"
+        }
+      ]
+    },
+    {
+      "name": "ownership_faith",
+      "test": "world_parity_ownership_faith",
+      "fixtureL2Gas": "6986196536",
+      "actions": [
+        {
+          "case": "ownership_faith",
+          "order": 1,
+          "action": "structure_transfer",
+          "timestamp": "1860",
+          "succeeded": true
+        },
+        {
+          "case": "ownership_faith",
+          "order": 2,
+          "action": "structure_transfer",
+          "timestamp": "1920",
+          "succeeded": true
+        },
+        {
+          "case": "ownership_faith",
+          "order": 3,
+          "action": "structure_transfer",
+          "timestamp": "1980",
+          "succeeded": true
+        },
+        {
+          "case": "ownership_faith",
+          "order": 4,
+          "action": "structure_transfer",
+          "timestamp": "2040",
+          "succeeded": false
+        }
+      ],
+      "roots": [],
+      "deletes": [],
+      "rejections": [],
+      "factSnapshots": 424,
+      "checkpoints": [
+        {
+          "step": 1,
+          "factSnapshots": 106,
+          "models": [
+            "FaithfulStructure",
+            "PlayerFaithPoints",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "WonderFaith",
+            "WonderFaithWinners"
+          ],
+          "sha256": "b87361f50df40416acd2bb26942de605d9854d90d14e5d0b628438a128b7c651"
+        },
+        {
+          "step": 2,
+          "factSnapshots": 106,
+          "models": [
+            "FaithfulStructure",
+            "PlayerFaithPoints",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "WonderFaith",
+            "WonderFaithWinners"
+          ],
+          "sha256": "6efb45400efa728846f2747a017b0abf352d599647d16f5e993d1a3c5b0405d2"
+        },
+        {
+          "step": 3,
+          "factSnapshots": 106,
+          "models": [
+            "FaithfulStructure",
+            "PlayerFaithPoints",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "WonderFaith",
+            "WonderFaithWinners"
+          ],
+          "sha256": "6d793abff310558d4ba723b201efff60caf79656fea3c6200e8d452f29084d7a"
+        },
+        {
+          "step": 4,
+          "factSnapshots": 106,
+          "models": [
+            "FaithfulStructure",
+            "PlayerFaithPoints",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "WonderFaith",
+            "WonderFaithWinners"
+          ],
+          "sha256": "9382a8aa5ac63b2e7befa02133cd305dc42ca4256dbdbf948b62844a776a2e09"
+        }
+      ]
+    },
+    {
+      "name": "creation",
+      "test": "world_parity_explorer_creation",
+      "fixtureL2Gas": "4407521774",
+      "actions": [],
+      "roots": [],
+      "deletes": [],
+      "rejections": [],
+      "factSnapshots": 298,
+      "checkpoints": [
+        {
+          "step": 0,
+          "factSnapshots": 99,
+          "models": [
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure"
+          ],
+          "sha256": "f5f96613054eb1dcfe83a6cbb9f8fa5fd95eb37009ddcbb6d7395d919835373e"
+        },
+        {
+          "step": 1,
+          "factSnapshots": 199,
+          "models": [
+            "ExplorerTroops",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "TileOpt"
+          ],
+          "sha256": "376e4d2685f1eca79fee1ab01927b707c8ea489013dc14f6a0202970db38a9f0"
+        }
+      ]
+    },
+    {
+      "name": "travel",
+      "test": "world_parity_travel_and_known_exploration",
+      "fixtureL2Gas": "13517172356",
+      "actions": [],
+      "roots": [
+        {
+          "case": "travel",
+          "step": 2,
+          "rawRoot": "0x1",
+          "incrementedRoot": "0x599"
+        },
+        {
+          "case": "travel",
+          "step": 3,
+          "rawRoot": "0x1",
+          "incrementedRoot": "0x599"
+        },
+        {
+          "case": "travel",
+          "step": 4,
+          "rawRoot": "0x12c",
+          "incrementedRoot": "0x6c4"
+        }
+      ],
+      "deletes": [],
+      "rejections": [],
+      "factSnapshots": 1005,
+      "checkpoints": [
+        {
+          "step": 1,
+          "factSnapshots": 199,
+          "models": [
+            "ExplorerTroops",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "TileOpt"
+          ],
+          "sha256": "29a8e17cb06090898348718f773cec0f1a59f429837053246d3595049a08d419"
+        },
+        {
+          "step": 2,
+          "factSnapshots": 202,
+          "models": [
+            "ExplorerTroops",
+            "PlayerRegisteredPoints",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "SeasonPrize",
+            "Structure",
+            "TileOpt"
+          ],
+          "sha256": "1e0459ca0599811103b32829e4f51c8a048753684ed88e6de7bb6dfcaf29dd86"
+        },
+        {
+          "step": 3,
+          "factSnapshots": 202,
+          "models": [
+            "ExplorerTroops",
+            "PlayerRegisteredPoints",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "SeasonPrize",
+            "Structure",
+            "TileOpt"
+          ],
+          "sha256": "d6f68e7c3ad7a719d8b27f148bb7ad59a07d69eccc4ec2cf1d910e9400b65712"
+        },
+        {
+          "step": 4,
+          "factSnapshots": 202,
+          "models": [
+            "ExplorerTroops",
+            "PlayerRegisteredPoints",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "SeasonPrize",
+            "Structure",
+            "TileOpt"
+          ],
+          "sha256": "e0d8c58548b9cbe9e1df4f663bcfc2d1ecf450b125d6a7f8da14761ab41088ff"
+        },
+        {
+          "step": 5,
+          "factSnapshots": 200,
+          "models": [
+            "ExplorerTroops",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "TileOpt"
+          ],
+          "sha256": "dfc207e96797dd9017ca613ef8d1bcbc0e5042a9bd4375e6d13b0a296c671aad"
+        }
+      ]
+    },
+    {
+      "name": "surface",
+      "test": "world_parity_surface_discoveries",
+      "fixtureL2Gas": "14233104935",
+      "actions": [],
+      "roots": [
+        {
+          "case": "surface",
+          "step": 2,
+          "rawRoot": "0x1",
+          "incrementedRoot": "0x599"
+        },
+        {
+          "case": "surface",
+          "step": 3,
+          "rawRoot": "0x24",
+          "incrementedRoot": "0x5bc"
+        },
+        {
+          "case": "surface",
+          "step": 4,
+          "rawRoot": "0x42",
+          "incrementedRoot": "0x5da"
+        }
+      ],
+      "deletes": [],
+      "rejections": [],
+      "factSnapshots": 1017,
+      "checkpoints": [
+        {
+          "step": 1,
+          "factSnapshots": 199,
+          "models": [
+            "ExplorerTroops",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "TileOpt"
+          ],
+          "sha256": "29a8e17cb06090898348718f773cec0f1a59f429837053246d3595049a08d419"
+        },
+        {
+          "step": 2,
+          "factSnapshots": 202,
+          "models": [
+            "ExplorerTroops",
+            "PlayerRegisteredPoints",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "SeasonPrize",
+            "Structure",
+            "TileOpt"
+          ],
+          "sha256": "1e0459ca0599811103b32829e4f51c8a048753684ed88e6de7bb6dfcaf29dd86"
+        },
+        {
+          "step": 3,
+          "factSnapshots": 308,
+          "models": [
+            "Building",
+            "ExplorerTroops",
+            "PlayerRegisteredPoints",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "SeasonPrize",
+            "Structure",
+            "StructureBuildings",
+            "TileOpt"
+          ],
+          "sha256": "5520b630fd0e65c39306c0da2d9d18b8cb935f62b1e82575ef3e6039fcb17151"
+        },
+        {
+          "step": 4,
+          "factSnapshots": 308,
+          "models": [
+            "ExplorerTroops",
+            "Hyperstructure",
+            "HyperstructureGlobals",
+            "PlayerRegisteredPoints",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "SeasonPrize",
+            "Structure",
+            "TileOpt"
+          ],
+          "sha256": "78faeae839a7391ab4dd6d2592f1b8791fb12b7af9e032183a6b4b98ca9946af"
+        }
+      ]
+    },
+    {
+      "name": "ethereal",
+      "test": "world_parity_ethereal_entry_and_discovery",
+      "fixtureL2Gas": "13046309580",
+      "actions": [],
+      "roots": [
+        {
+          "case": "ethereal",
+          "step": 3,
+          "rawRoot": "0x2",
+          "incrementedRoot": "0x59a"
+        },
+        {
+          "case": "ethereal",
+          "step": 4,
+          "rawRoot": "0x9",
+          "incrementedRoot": "0x5a1"
+        }
+      ],
+      "deletes": [],
+      "rejections": [],
+      "factSnapshots": 921,
+      "checkpoints": [
+        {
+          "step": 0,
+          "factSnapshots": 14,
+          "models": [
+            "TileOpt"
+          ],
+          "sha256": "c52d34bb49c04c7f3e4c08dc94331a2f48af42aa8edf5780a9ac100a3b74d78d"
+        },
+        {
+          "step": 1,
+          "factSnapshots": 199,
+          "models": [
+            "ExplorerTroops",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "TileOpt"
+          ],
+          "sha256": "5b16e7e7799e5aa3b8dbbe75a7cb44baa63faa72385eb74be5a2666cc0bfa335"
+        },
+        {
+          "step": 2,
+          "factSnapshots": 200,
+          "models": [
+            "ExplorerTroops",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "TileOpt"
+          ],
+          "sha256": "1ea3621414d90e857c94e974230dc12f66b085486db2282d1e004b5d274e1425"
+        },
+        {
+          "step": 3,
+          "factSnapshots": 202,
+          "models": [
+            "ExplorerTroops",
+            "PlayerRegisteredPoints",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "SeasonPrize",
+            "Structure",
+            "TileOpt"
+          ],
+          "sha256": "ca83deb18858e44a7c54bfba11447782920a12cdc4e8a9f669f29b997f6472df"
+        },
+        {
+          "step": 4,
+          "factSnapshots": 306,
+          "models": [
+            "ExplorerTroops",
+            "PlayerRegisteredPoints",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "SeasonPrize",
+            "Structure",
+            "TileOpt"
+          ],
+          "sha256": "2dc1599bbbcdb306439829ed73d49dde86fda96666a957bb62ce0c7ead9cbf76"
+        }
+      ]
+    },
+    {
+      "name": "production",
+      "test": "world_parity_production_settlement",
+      "fixtureL2Gas": "5089754444",
+      "actions": [],
+      "roots": [],
+      "deletes": [],
+      "rejections": [],
+      "factSnapshots": 297,
+      "checkpoints": [
+        {
+          "step": 0,
+          "factSnapshots": 99,
+          "models": [
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure"
+          ],
+          "sha256": "8281630b70d33f0e1aff1711d6176760462efa5adb7313e2ab696036346d0b42"
+        },
+        {
+          "step": 1,
+          "factSnapshots": 99,
+          "models": [
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure"
+          ],
+          "sha256": "8658d3ad057548176ff9fbaf623c7dc3d7fbc4ee48e4aefe5eecc54dc8508f4e"
+        },
+        {
+          "step": 2,
+          "factSnapshots": 99,
+          "models": [
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure"
+          ],
+          "sha256": "86cbb6ef18b92db958758e44fa63cbb7cf5a4ee8a8169f433c78e0ecfa5cde37"
+        }
+      ]
+    },
+    {
+      "name": "production_cap",
+      "test": "world_parity_production_cap",
+      "fixtureL2Gas": "5328966014",
+      "actions": [],
+      "roots": [],
+      "deletes": [],
+      "rejections": [],
+      "factSnapshots": 297,
+      "checkpoints": [
+        {
+          "step": 0,
+          "factSnapshots": 99,
+          "models": [
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure"
+          ],
+          "sha256": "8281630b70d33f0e1aff1711d6176760462efa5adb7313e2ab696036346d0b42"
+        },
+        {
+          "step": 1,
+          "factSnapshots": 99,
+          "models": [
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure"
+          ],
+          "sha256": "f3b733d2cc2a6e1e6edc9a86855b0448f39f21cd012db8ce9b227a3ccf34fd4f"
+        },
+        {
+          "step": 2,
+          "factSnapshots": 99,
+          "models": [
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure"
+          ],
+          "sha256": "234300e989bfad285d715e5eccf5f1344bac342279cbac2c45bdbec92c307694"
+        }
+      ]
+    },
+    {
+      "name": "production_capacity",
+      "test": "world_parity_production_capacity",
+      "fixtureL2Gas": "5589561113",
+      "actions": [],
+      "roots": [],
+      "deletes": [],
+      "rejections": [],
+      "factSnapshots": 297,
+      "checkpoints": [
+        {
+          "step": 0,
+          "factSnapshots": 99,
+          "models": [
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure"
+          ],
+          "sha256": "48d17c5df01f942742613f1d7c0d91ed6cc595cbd4682a355ee2a197d814c1e9"
+        },
+        {
+          "step": 1,
+          "factSnapshots": 99,
+          "models": [
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure"
+          ],
+          "sha256": "a13a30262fae46900c0f067ac3d3794d0ed96ef65ab6979e2e78521fcf6c2c61"
+        },
+        {
+          "step": 2,
+          "factSnapshots": 99,
+          "models": [
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure"
+          ],
+          "sha256": "cbe4e7bd8e0d5377fcf5f0d97f907587b80ed781c1207210df92d080d4b958a1"
+        }
+      ]
+    },
+    {
+      "name": "battle",
+      "test": "world_parity_battle_deletes_explorer",
+      "fixtureL2Gas": "11926002666",
+      "actions": [],
+      "roots": [],
+      "deletes": [
+        {
+          "case": "battle",
+          "step": 2,
+          "model": "ExplorerTroops",
+          "keys": [
+            "0x1",
+            "0x5"
+          ]
+        },
+        {
+          "case": "battle",
+          "step": 2,
+          "model": "ResourceWeight",
+          "keys": [
+            "0x1",
+            "0x5"
+          ]
+        }
+      ],
+      "rejections": [],
+      "factSnapshots": 795,
+      "checkpoints": [
+        {
+          "step": 1,
+          "factSnapshots": 398,
+          "models": [
+            "ExplorerTroops",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "TileOpt"
+          ],
+          "sha256": "4fc2b40cfb56d7a1b041ab2a46fe35e9355505e0b0080ec555aca073844cd6d5"
+        },
+        {
+          "step": 2,
+          "factSnapshots": 397,
+          "models": [
+            "ExplorerTroops",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "TileOpt"
+          ],
+          "sha256": "24ebc0353193b9cc6d5ca87de8de9b65b4bcb55b6c9ab40310651ead1daa45c3"
+        }
+      ]
+    },
+    {
+      "name": "ethereal_battle",
+      "test": "world_parity_ethereal_battle",
+      "fixtureL2Gas": "14522564738",
+      "actions": [],
+      "roots": [
+        {
+          "case": "ethereal_battle",
+          "step": 5,
+          "rawRoot": "0x1f5",
+          "incrementedRoot": "0x78d"
+        }
+      ],
+      "deletes": [
+        {
+          "case": "ethereal_battle",
+          "step": 5,
+          "model": "ExplorerTroops",
+          "keys": [
+            "0x1",
+            "0x7"
+          ]
+        },
+        {
+          "case": "ethereal_battle",
+          "step": 5,
+          "model": "ResourceWeight",
+          "keys": [
+            "0x1",
+            "0x7"
+          ]
+        }
+      ],
+      "rejections": [],
+      "factSnapshots": 923,
+      "checkpoints": [
+        {
+          "step": 0,
+          "factSnapshots": 28,
+          "models": [
+            "TileOpt"
+          ],
+          "sha256": "044b3a5d958463aeb3af82a7f486035cc21967b0257e5211c4ea2eb9645a9a25"
+        },
+        {
+          "step": 1,
+          "factSnapshots": 398,
+          "models": [
+            "ExplorerTroops",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "TileOpt"
+          ],
+          "sha256": "0a9ef00ec319c38a1ce944c4147a223c075aa4ac0118e8247b48c145f5b2ca3a"
+        },
+        {
+          "step": 4,
+          "factSnapshots": 100,
+          "models": [
+            "ExplorerTroops",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "TileOpt"
+          ],
+          "sha256": "a2d0a1ef68490ae87f7494235e4e12fbd35bfa3b15efdee8a6a209bf405f8d8a"
+        },
+        {
+          "step": 5,
+          "factSnapshots": 397,
+          "models": [
+            "ExplorerTroops",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "TileOpt"
+          ],
+          "sha256": "8c8111992cd6a6c95024587c23a62fec1e588b25249358fb6e02e2942fc3fecb"
+        }
+      ]
+    },
+    {
+      "name": "rejections",
+      "test": "world_parity_rejected_actions_preserve_rows",
+      "fixtureL2Gas": "14006226798",
+      "actions": [],
+      "roots": [],
+      "deletes": [],
+      "rejections": [
+        {
+          "case": "rejections",
+          "step": 2,
+          "explorerId": "0x2",
+          "timestamp": "1920"
+        },
+        {
+          "case": "rejections",
+          "step": 3,
+          "explorerId": "0x2",
+          "timestamp": "1920"
+        },
+        {
+          "case": "rejections",
+          "step": 4,
+          "explorerId": "0x2",
+          "timestamp": "1920"
+        },
+        {
+          "case": "rejections",
+          "step": 5,
+          "explorerId": "0x2",
+          "timestamp": "999999"
+        }
+      ],
+      "factSnapshots": 999,
+      "checkpoints": [
+        {
+          "step": 1,
+          "factSnapshots": 199,
+          "models": [
+            "ExplorerTroops",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "TileOpt"
+          ],
+          "sha256": "318a2b3b7f7416b2a87bf5b3b35bfab4bbaded04f6e0eb2e76413f53ae33c5fc"
+        },
+        {
+          "step": 2,
+          "factSnapshots": 200,
+          "models": [
+            "ExplorerTroops",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "TileOpt"
+          ],
+          "sha256": "5c695b12e922c94c32010eecff86f850da569be4efe4824f3105a1ac343a83fb"
+        },
+        {
+          "step": 3,
+          "factSnapshots": 200,
+          "models": [
+            "ExplorerTroops",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "TileOpt"
+          ],
+          "sha256": "621c61f0777744bc39af6c8d27b2d67cb3d84fe2878bbbc799ea8f4c5d7b6649"
+        },
+        {
+          "step": 4,
+          "factSnapshots": 200,
+          "models": [
+            "ExplorerTroops",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "TileOpt"
+          ],
+          "sha256": "8a26bdd36787cbc02bea65ed60819f3be2d07cfa1f2c03b4712511cde8638e6c"
+        },
+        {
+          "step": 5,
+          "factSnapshots": 200,
+          "models": [
+            "ExplorerTroops",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "TileOpt"
+          ],
+          "sha256": "27a118ced702856eb2ab80a0d04bb7b8d4a91c4610e73d67d6a16f7f8cfc2cb4"
+        }
+      ]
+    }
+  ]
+}

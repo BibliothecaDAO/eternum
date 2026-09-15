@@ -11,7 +11,7 @@ import type {
   GameSnapshot,
 } from "./types";
 
-interface StoredModelRow {
+export interface StoredModelRow {
   key: DecodedRecord;
   value: DecodedRecord;
 }
@@ -88,7 +88,7 @@ export const orderSnapshotModelsForStreaming = <TDefinition extends { name: stri
 };
 
 export class WorldFold {
-  private readonly registry: ModelRegistry;
+  protected readonly registry: ModelRegistry;
   private readonly parent?: WorldFold;
   private readonly rowsByModel = new Map<string, Map<string, StoredModelRow | null>>();
   private readonly entityIdsByGameByModel = new Map<string, Map<string, Set<string>>>();
@@ -113,7 +113,7 @@ export class WorldFold {
     const mismatch = checkpointModelMismatch(registry, checkpoint);
     if (mismatch) throw new Error(`Checkpoint model mismatch; ${mismatch}`);
 
-    const fold = new WorldFold(registry);
+    const fold = new this(registry);
     for (const model of checkpoint.models) {
       const rows = fold.rowsByModel.get(model.model)!;
       for (const row of model.rows) {
@@ -125,9 +125,9 @@ export class WorldFold {
     return fold;
   }
 
-  public apply(event: DecodedWorldEvent): FoldChange | undefined {
+  public apply(event: DecodedWorldEvent, onDerivedRow?: (change: FoldChange) => void): FoldChange | undefined {
     if (event.kind === "event") {
-      if (event.model.name === "BattleEvent") this.applyLastBattle(event);
+      if (event.model.name === "BattleEvent") this.applyLastBattle(event).forEach((change) => onDerivedRow?.(change));
       return {
         event: true,
         gameId: this.eventGameId(event),
@@ -279,32 +279,38 @@ export class WorldFold {
       .map((row) => scalarGameId(row.key, "GameRegistry"));
   }
 
-  private applyLastBattle(event: Extract<DecodedWorldEvent, { kind: "event" }>): void {
+  private applyLastBattle(event: Extract<DecodedWorldEvent, { kind: "event" }>): FoldChange[] {
     const gameId = scalarGameId(event.key, event.model.name);
     const attackerId = this.scalarBattleField(event.key.attacker_id, "attacker_id");
     const defenderId = this.scalarBattleField(event.key.defender_id, "defender_id");
     const timestamp = this.scalarBattleField(event.value.timestamp, "timestamp");
 
-    this.updateLastBattleParticipant(gameId, defenderId, {
+    const defender = this.updateLastBattleParticipant(gameId, defenderId, {
       latest_attacker_id: attackerId,
       latest_attack_timestamp: timestamp,
     });
-    this.updateLastBattleParticipant(gameId, attackerId, {
+    const attacker = this.updateLastBattleParticipant(gameId, attackerId, {
       latest_defender_id: defenderId,
       latest_defense_timestamp: timestamp,
     });
+    return [defender, attacker];
   }
 
-  private updateLastBattleParticipant(gameId: string, entityId: bigint, update: DecodedRecord): void {
+  protected previousBattleParticipant(storageKey: string) {
+    return this.rowsByModel.get(LAST_BATTLE_MODEL)!.get(storageKey);
+  }
+
+  private updateLastBattleParticipant(gameId: string, entityId: bigint, update: DecodedRecord): FoldChange {
     const rows = this.rowsByModel.get(LAST_BATTLE_MODEL)!;
     const storageKey = ((BigInt(gameId) << 128n) | entityId).toString();
-    const existing = rows.get(storageKey);
+    const existing = this.previousBattleParticipant(storageKey);
     const row: StoredModelRow = {
       key: { game_id: BigInt(gameId), entity_id: entityId },
       value: { ...(existing?.value ?? {}), ...update },
     };
     rows.set(storageKey, row);
     this.addEntityToGameIndex(LAST_BATTLE_MODEL, storageKey, row);
+    return { gameId, set: this.currentRow(LAST_BATTLE_MODEL, storageKey)! };
   }
 
   private scalarBattleField(value: unknown, field: string): bigint {
@@ -323,7 +329,7 @@ export class WorldFold {
     return scalarGameId(existing.key, event.model.name);
   }
 
-  private storedRow(model: string, entityId: string): StoredModelRow | undefined {
+  protected storedRow(model: string, entityId: string): StoredModelRow | undefined {
     const rows = this.rowsByModel.get(model);
     if (!rows) return undefined;
     if (rows.has(entityId)) return rows.get(entityId) ?? undefined;

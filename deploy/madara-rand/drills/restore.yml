@@ -1,0 +1,16 @@
+services:
+  journal-quarantine:
+    container_name: ${RESTORE_CONTAINER:?Set the isolated restore container}
+    image: postgres@sha256:18cfe3ef5e6815560c98237d6216d1e5119702fb0f3894c8785dd58b8bbe5d73
+    network_mode: none
+    command: [postgres, -c, "listen_addresses=", -c, default_transaction_read_only=on]
+    volumes:
+      - journal-quarantine:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U postgres -d randomness"]
+      interval: 1s
+      timeout: 2s
+      retries: 30
+volumes:
+  journal-quarantine:
+    name: ${RESTORE_VOLUME:?Set the fresh restore volume}

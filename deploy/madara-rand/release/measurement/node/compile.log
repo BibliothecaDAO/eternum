@@ -1,0 +1,106 @@
+   Compiling tracing-serde v0.2.0
+   Compiling mc-class-exec v0.10.0 (/workspace/madara/crates/client/cairo_native)
+   Compiling m-cairo-test-contracts v0.10.0 (/workspace/madara/crates/cairo-test-contracts)
+   Compiling madara v0.10.0 (/workspace/madara)
+   Compiling tracing-subscriber v0.3.22
+   Compiling cairo-lang-utils v2.17.0
+   Compiling cairo-lang-debug v2.17.0
+   Compiling cairo-lang-filesystem v2.17.0
+   Compiling cairo-lang-sierra v2.17.0
+   Compiling cairo-lang-diagnostics v2.17.0
+   Compiling cairo-lang-syntax v2.17.0
+   Compiling cairo-lang-sierra-type-size v2.17.0
+   Compiling cairo-lang-eq-solver v2.17.0
+   Compiling cairo-lang-sierra-ap-change v2.17.0
+   Compiling cairo-lang-parser v2.17.0
+   Compiling cairo-lang-defs v2.17.0
+   Compiling cairo-lang-formatter v2.17.0
+   Compiling cairo-lang-plugins v2.17.0
+   Compiling cairo-lang-test-utils v2.17.0
+   Compiling cairo-lang-sierra-gas v2.17.0
+   Compiling cairo-lang-casm v2.17.0
+   Compiling cairo-lang-sierra-to-casm v2.17.0
+   Compiling cairo-lang-semantic v2.17.0
+   Compiling cairo-lang-lowering v2.17.0
+   Compiling cairo-lang-sierra-generator v2.17.0
+   Compiling cairo-lang-runnable-utils v2.17.0
+   Compiling cairo-lang-project v2.17.0
+   Compiling cairo-lang-compiler v2.17.0
+   Compiling cairo-lang-starknet-classes v2.17.0
+   Compiling cairo-lang-starknet v2.17.0
+   Compiling apollo_infra_utils v0.18.0-rc.1 (https://github.com/starkware-libs/sequencer?tag=APOLLO-0.14.2-RC.7-fix#4251763b)
+   Compiling cairo-lang-runner v2.17.0
+   Compiling starknet_api v0.18.0-rc.1 (https://github.com/starkware-libs/sequencer?tag=APOLLO-0.14.2-RC.7-fix#4251763b)
+   Compiling apollo_config v0.18.0-rc.1 (https://github.com/starkware-libs/sequencer?tag=APOLLO-0.14.2-RC.7-fix#4251763b)
+   Compiling apollo_compile_to_native_types v0.18.0-rc.1 (https://github.com/starkware-libs/sequencer?tag=APOLLO-0.14.2-RC.7-fix#4251763b)
+   Compiling apollo_compilation_utils v0.18.0-rc.1 (https://github.com/starkware-libs/sequencer?tag=APOLLO-0.14.2-RC.7-fix#4251763b)
+   Compiling cairo-native v0.9.0-rc.6
+   Compiling blockifier_test_utils v0.18.0-rc.1 (https://github.com/starkware-libs/sequencer?tag=APOLLO-0.14.2-RC.7-fix#4251763b)
+   Compiling apollo_compile_to_native v0.18.0-rc.1 (https://github.com/starkware-libs/sequencer?tag=APOLLO-0.14.2-RC.7-fix#4251763b)
+   Compiling tracing-opentelemetry v0.31.0
+   Compiling opentelemetry-appender-tracing v0.30.1
+   Compiling mp-utils v0.10.0 (/workspace/madara/crates/primitives/utils)
+   Compiling blockifier v0.18.0-rc.1 (https://github.com/starkware-libs/sequencer?tag=APOLLO-0.14.2-RC.7-fix#4251763b)
+   Compiling mp-convert v0.10.0 (/workspace/madara/crates/primitives/convert)
+   Compiling mp-class v0.10.0 (/workspace/madara/crates/primitives/class)
+   Compiling mp-chain-config v0.10.0 (/workspace/madara/crates/primitives/chain_config)
+   Compiling mp-transactions v0.10.0 (/workspace/madara/crates/primitives/transactions)
+   Compiling mc-telemetry v0.10.0 (/workspace/madara/crates/client/telemetry)
+   Compiling mp-receipt v0.10.0 (/workspace/madara/crates/primitives/receipt)
+   Compiling mp-state-update v0.10.0 (/workspace/madara/crates/primitives/state_update)
+   Compiling mp-block v0.10.0 (/workspace/madara/crates/primitives/block)
+   Compiling mp-gateway v0.10.0 (/workspace/madara/crates/primitives/gateway)
+   Compiling mc-db v0.10.0 (/workspace/madara/crates/client/db)
+   Compiling mc-exec v0.10.0 (/workspace/madara/crates/client/exec)
+   Compiling mc-mempool v0.10.0 (/workspace/madara/crates/client/mempool)
+   Compiling mc-submit-tx v0.10.0 (/workspace/madara/crates/client/submit_tx)
+   Compiling mp-oracle v0.10.0 (/workspace/madara/crates/primitives/oracle)
+   Compiling mc-sequencer-randomness v0.10.0 (/workspace/madara/crates/client/sequencer-randomness)
+   Compiling mc-settlement-client v0.10.0 (/workspace/madara/crates/client/settlement_client)
+   Compiling mc-block-production v0.10.0 (/workspace/madara/crates/client/block_production)
+   Compiling mc-gateway-client v0.10.0 (/workspace/madara/crates/client/gateway/client)
+   Compiling mc-rpc v0.10.0 (/workspace/madara/crates/client/rpc)
+   Compiling mc-sync v0.10.0 (/workspace/madara/crates/client/sync)
+   Compiling mc-gateway-server v0.10.0 (/workspace/madara/crates/client/gateway/server)
+   Compiling mc-devnet v0.10.0 (/workspace/madara/crates/client/devnet)
+   Compiling mc-external-db v0.10.0 (/workspace/madara/crates/client/external_db)
+    Finished `release` profile [optimized] target(s) in 7m 31s
+   Compiling mc-telemetry v0.10.0 (/workspace/madara/crates/client/telemetry)
+   Compiling madara v0.10.0 (/workspace/madara)
+   Compiling mp-block v0.10.0 (/workspace/madara/crates/primitives/block)
+   Compiling mc-class-exec v0.10.0 (/workspace/madara/crates/client/cairo_native)
+   Compiling mc-db v0.10.0 (/workspace/madara/crates/client/db)
+   Compiling mp-gateway v0.10.0 (/workspace/madara/crates/primitives/gateway)
+   Compiling mc-exec v0.10.0 (/workspace/madara/crates/client/exec)
+   Compiling mc-mempool v0.10.0 (/workspace/madara/crates/client/mempool)
+   Compiling mc-submit-tx v0.10.0 (/workspace/madara/crates/client/submit_tx)
+   Compiling mc-settlement-client v0.10.0 (/workspace/madara/crates/client/settlement_client)
+   Compiling mc-gateway-client v0.10.0 (/workspace/madara/crates/client/gateway/client)
+   Compiling mc-block-production v0.10.0 (/workspace/madara/crates/client/block_production)
+   Compiling mc-sync v0.10.0 (/workspace/madara/crates/client/sync)
+   Compiling mc-rpc v0.10.0 (/workspace/madara/crates/client/rpc)
+   Compiling mc-external-db v0.10.0 (/workspace/madara/crates/client/external_db)
+   Compiling mc-devnet v0.10.0 (/workspace/madara/crates/client/devnet)
+   Compiling mc-gateway-server v0.10.0 (/workspace/madara/crates/client/gateway/server)
+    Finished `release` profile [optimized] target(s) in 3m 31s
+   Compiling tracing-core v0.1.35
+   Compiling regex-syntax v0.8.8
+   Compiling tracing v0.1.43
+   Compiling tower v0.5.2
+   Compiling hyper-util v0.1.19
+   Compiling tower-http v0.6.8
+   Compiling reqwest v0.13.2
+   Compiling regex-automata v0.4.13
+   Compiling lazy_static v1.5.0
+   Compiling sharded-slab v0.1.7
+   Compiling axum-core v0.4.5
+   Compiling starknet-rust-providers v0.19.0-rc.2
+   Compiling matchers v0.2.0
+   Compiling tracing-serde v0.2.0
+   Compiling tracing-log v0.2.0
+   Compiling tracing-subscriber v0.3.22
+   Compiling starknet-rust-accounts v0.19.0-rc.2
+   Compiling axum v0.7.9
+   Compiling tokio-postgres v0.7.13
+   Compiling mc-sequencer-randomness v0.10.0 (/workspace/madara/crates/client/sequencer-randomness)
+    Finished `release` profile [optimized] target(s) in 44.56s

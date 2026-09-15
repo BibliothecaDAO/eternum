@@ -1,0 +1,179 @@
+{
+  "version": 1,
+  "domain": "blitz-settlement",
+  "rulesRevision": "55dc510f5e7af119d1efac9a60426e81fee8e408",
+  "factModel": "schema/schema.json#models[SettlementRules,SettlementProgress,EntryEntitlement,PlayerEntry,PlayerCosmetics,Structure,ResourceBalance,ResourceProduction,ResourceWeight,Building,StructureBuildings,TileOpt,ExplorerTroops,AgentPopulation,AgentOwner].observation",
+  "projectionGenerator": "deploy/madara-lab/harness/native/fact-projections.ts",
+  "systems": [
+    "blitz_realm_systems",
+    "hyperstructure_create_systems"
+  ],
+  "commands": [
+    "settle",
+    "provision_realm",
+    "reserve_hyperstructures",
+    "create_hyperstructure"
+  ],
+  "requiredConfig": [
+    "Blitz registration start, capacity and cosmetic limit",
+    "Game clocks, development flag, seed and map center",
+    "Settlement mode and original reward profile distances",
+    "Hyperstructure reservation cursor and registration capacity",
+    "PlayerRegistry binding, ledger operator and registration entitlement",
+    "Cosmetic collection and timelock addresses",
+    "Realm starting resources, capacity, troop rules and Labor production",
+    "Immutable biome starting troops and realm resource traits, plus ordered starting grants from the pinned preset"
+  ],
+  "normalization": [
+    "Account and entity identities map bijectively.",
+    "Recorded execution time is supplied as the oracle block time.",
+    "Pool candidate numbers are internal native storage; the oracle compares selected coordinates and remaining candidate locations.",
+    "Duplicate settlement lists and owner counters are not facts; compare entry entitlement and canonical structure ownership.",
+    "The original realm provisioning reveal remains parity behaviour until the village commit applies the frozen reveal rule."
+  ],
+  "parityCases": [
+    "blitz_settlement",
+    "blitz_entry_rejections",
+    "blitz_entry_ledger",
+    "blitz_cosmetics",
+    "blitz_cosmetics_disabled",
+    "blitz_settlement_displacement",
+    "blitz_settlement_blocked",
+    "blitz_settlement_agent_blocked",
+    "blitz_settlement_occupied",
+    "blitz_settlement_modes",
+    "blitz_settlement_duel",
+    "blitz_reservations"
+  ],
+  "caseRequirements": {
+    "blitz_settlement": "Settle with and without immediate troop grants, provision once, reject repeat provisioning, and retain the same troops, buildings, production and balances.",
+    "blitz_entry_rejections": "Empty name, opening and closing timestamps, full registration, repeated player and incomplete reservations; all rejected gameplay facts remain unchanged.",
+    "blitz_cosmetics": "Enabled cosmetics preserve the token limit, nonzero attributes and repeated token ids. Equivalent eligible and ineligible owners follow the declared L2 custody divergence; retained admission facts and best-effort locks follow the recorded rulings.",
+    "blitz_settlement_displacement": "A blocking explorer moves to the first free neighbour without charging movement costs; compare troops, resources, home roster and both tiles.",
+    "blitz_settlement_modes": "Two three-realm settlements preserve selected coordinates, realm order, pool swap removal and remaining candidate locations.",
+    "blitz_reservations": "Reserve the original coordinates without entity ids, enforce mode and clock guards, stop at the completed cursor, and materialize each reserved hyperstructure once.",
+    "blitz_entry_ledger": "A missing registration entitlement rejects, then the same player settles after the bound owner receives the entitlement.",
+    "blitz_cosmetics_disabled": "Disabled cosmetics ignore token eligibility and count, as the pinned rules do.",
+    "blitz_settlement_blocked": "An explorer blocked on all six sides is deleted with its resource facts and removed from its home roster.",
+    "blitz_settlement_duel": "Both players in two-player mode receive the same ordered realm locations and exhaust the same pool.",
+    "blitz_settlement_agent_blocked": "A surrounded agent is deleted with its resources and ownership row, and the current agent population decreases exactly once.",
+    "blitz_settlement_occupied": "A structure occupying the selected settlement rejects the complete action without partial entry, placement or pool changes."
+  },
+  "harnessCoverage": {
+    "added": [],
+    "contractHarness": "The listed paired cases drive recorded settlement and provisioning, comparing gameplay facts after every action.",
+    "liveRun": "pending full-game acceptance"
+  },
+  "behaviourRulings": [
+    {
+      "rule": "Cosmetic locks are a best-effort L2 side effect outside ordered L3 settlement. Real-time lock predicates stay unchanged. Expired issue attempts are skipped and recorded with the accepted ticket.",
+      "gate": "Immediate and post-end recovery produce the same native settlement facts; failed or skipped locks cannot revert settlement, advance another ticket or allocate another root."
+    },
+    {
+      "rule": "Cosmetic token ownership and attributes are verified at admission and retained with the ticket beside the recorded root and context. Settlement uses those retained facts even after external ownership changes.",
+      "gate": "An L2 transfer during an outage changes neither accepted settlement facts nor its rejection outcome; best-effort lock issuance can fail or skip without cancelling the action."
+    }
+  ],
+  "initialization": {
+    "startingTroopsByBiome": [
+      2,
+      2,
+      2,
+      2,
+      1,
+      1,
+      2,
+      1,
+      1,
+      0,
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0
+    ],
+    "realmResources": [
+      3,
+      2,
+      4,
+      5,
+      11,
+      7,
+      19,
+      9,
+      22
+    ]
+  },
+  "supplementalCases": {
+    "world_parity_settlement_geometry": "All settlement modes and reward profiles, odd and even map centers, reservation limits and 96 successive candidate positions.",
+    "world_parity_settlement_pool_windows": "Original open-pool windows across registration limits and counts.",
+    "world_parity_starting_troop_table": "Every biome starting troop and ordered realm resource trait matches the pinned rules."
+  },
+  "nativeCommands": {
+    "settle": "settle_blitz",
+    "provision_realm": "activate_realm_economy",
+    "create_hyperstructure": "create_reserved_hyperstructure"
+  },
+  "measuredSequence": [
+    {
+      "case": "reservations",
+      "command": "reserve_hyperstructures",
+      "succeeded": true
+    },
+    {
+      "case": "settle_deferred_troops",
+      "command": "settle",
+      "succeeded": true
+    },
+    {
+      "case": "settle_immediate_troops",
+      "command": "settle",
+      "succeeded": true
+    },
+    {
+      "case": "provision_deferred_troops",
+      "command": "provision_realm",
+      "succeeded": true
+    },
+    {
+      "case": "repeat_deferred_provision",
+      "command": "provision_realm",
+      "succeeded": false
+    },
+    {
+      "case": "provision_immediate_troops",
+      "command": "provision_realm",
+      "succeeded": true
+    },
+    {
+      "case": "repeat_immediate_provision",
+      "command": "provision_realm",
+      "succeeded": false
+    }
+  ],
+  "reductions": [
+    "Replace stored coordinate arrays in the open pool with candidate numbers.",
+    "Remove the duplicate player-to-structure settlement list.",
+    "Delete the wide Resource projection and its balance/production member-name tables; emit sparse balance, production and weight facts only when they change.",
+    "Initialize biome starting troops and realm resource traits as immutable data, removing their compiled tables.",
+    "Update only the explorer roster count instead of rewriting the entire structure record.",
+    "Remove placeholder prize-pool and completed-count members from emitted facts; they were constant zeros, not stored gameplay state.",
+    "Set tile presence only on first insertion; revealing or changing the occupant of an existing tile no longer rewrites the same presence flag. The explicit flag retains valid zero-row semantics."
+  ],
+  "fixtureSetup": [
+    "Development realms without starting grants serve only as stationary obstacles in the surrounded-explorer fixtures.",
+    "The surrounded-agent fixture seeds a consistent agent, ownership and population from the same explorer state in both worlds; agent discovery is ported with its own domain."
+  ],
+  "ruledDivergences": [
+    {
+      "fact": "Cosmetic eligibility",
+      "oracle": "NFT ownership is checked against the L3 gameplay account.",
+      "native": "Admission verifies the bound L2 wallet at one L1-finalized L2 block and retains the wallet, token ownership, attributes, block hash and number in the ticket.",
+      "cause": "Collectible custody moves to L2; the L3 gameplay account does not hold L2 tokens.",
+      "projection": "The paired fixture supplies equivalent eligible or ineligible owners on the two chains and compares granted attributes and rejection outcomes. Admission finality, wallet ownership and retained snapshot checks run in the sequencing service tests.",
+      "recovery": "Later rebinding or token transfer cannot change accepted settlement. Gameplay authentication still requires a PlayerRegistry binding; guests bind to themselves. Locks remain best effort on real L2 time."
+    }
+  ]
+}

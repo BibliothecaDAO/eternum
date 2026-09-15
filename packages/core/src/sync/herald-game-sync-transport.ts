@@ -1,4 +1,4 @@
-import { getGameSyncModel } from "./model-manifest";
+import { getGameSyncModel, type GameSyncModelDefinition } from "./model-manifest";
 import type {
   GameSyncSnapshotPage,
   GameSyncEntity,
@@ -78,6 +78,7 @@ interface EntityDelivery {
 type StoredRow = HeraldSet;
 
 export interface HeraldGameSyncTransportOptions {
+  modelDefinition?: (name: string) => GameSyncModelDefinition;
   reconnectMs?: number;
   socketFactory?: (url: string) => HeraldSocket;
   url: string;
@@ -385,7 +386,7 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
     change: HeraldSet,
     confirmation: { block: number | null; preconfirmed: boolean },
   ): GameSyncEntity[] {
-    if (getGameSyncModel(change.model).deletion === "event-ephemeral") {
+    if ((this.options.modelDefinition ?? getGameSyncModel)(change.model).deletion === "event-ephemeral") {
       this.handlers?.onEvent(toEntity(change), {
         block: confirmation.block,
         preconfirmed: confirmation.preconfirmed,
@@ -405,7 +406,7 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
   // A delete is delivered even when the row is unknown here: removing an absent component is
   // free, and it keeps RECS honest for rows that reached it outside this stream.
   private acceptDelete(change: HeraldDelete): GameSyncEntity[] {
-    if (getGameSyncModel(change.model).deletion === "event-ephemeral") return [];
+    if ((this.options.modelDefinition ?? getGameSyncModel)(change.model).deletion === "event-ephemeral") return [];
     this.currentRows.delete(rowIdentity(change.model, change.key));
     return [toRemoval(change)];
   }

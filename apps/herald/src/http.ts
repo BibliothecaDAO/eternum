@@ -10,6 +10,7 @@ interface SnapshotSource {
 }
 
 interface HeraldHttpState {
+  ingestionFailure?: () => { block: number | null; transactionHash: string; error: string } | undefined;
   chain: string;
   worldAddress: string;
   confirmedBlock: () => number;
@@ -96,14 +97,19 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
     const url = new URL(request.url);
     if (request.method === "OPTIONS") return new Response(null, { headers: PUBLIC_READ_HEADERS, status: 204 });
     if (request.method === "GET" && url.pathname === "/health") {
-      return jsonResponse({
-        confirmed_block: state.confirmedBlock(),
-        decoded_models: state.decodedModelCount,
-        metrics: state.metrics,
-        service: "herald",
-        success: true,
-        undecodable_events: state.undecodableEventCount(),
-      });
+      const failure = state.ingestionFailure?.();
+      return jsonResponse(
+        {
+          ...(failure ? { ingestion_failure: failure } : {}),
+          confirmed_block: state.confirmedBlock(),
+          decoded_models: state.decodedModelCount,
+          metrics: state.metrics,
+          service: "herald",
+          success: !failure,
+          undecodable_events: state.undecodableEventCount(),
+        },
+        failure ? 503 : 200,
+      );
     }
 
     if (request.method === "GET" && url.pathname === directoryPath) {

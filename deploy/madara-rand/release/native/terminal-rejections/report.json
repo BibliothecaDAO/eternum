@@ -1,0 +1,249 @@
+{
+  "schema": 2,
+  "scope": "local protocol and native gameplay conformance; no deployed recovery or latency claim",
+  "sourceTreeDirty": false,
+  "sourceTreeSha256": "05c6111b096b783c3ac43cc2d8231eeb056b3d838a61d11e388b60a938aee87d",
+  "fixture_sha256": "c08140de1e7ff9d488b5903770761c3a860a3e5232cccdca4ebcf123a4cd8db7",
+  "sources": {
+    "rust/Cargo.toml": "65f5e82246d8bdbc5760f7acdaee950a08b713bdca003c065c2d5352c804aeb3",
+    "rust/README.md": "4cd8d6758af5e5333b4ef00e612ca3550f23ba5a31e41f9f22240019b886e1ee",
+    "rust/src/bin/randomness-sidecar.rs": "ccdc5f22eee1cec631c4d29ca506ce87020aa30ff518a155144c7f54d8d9b80b",
+    "rust/src/journal-lookup.sql": "c32d111617ad73167ba70d453916e626ceac8f40e8fed5b79cca1a116dfa401a",
+    "rust/src/journal.rs": "cf5b5ea870f6946f7d8fd3983d5ea3610a7515cef05f8b19f80bf7a95f41a726",
+    "rust/src/journal.sql": "e3789816a45ebbce09ebd378d8b155113afd8f53dfcdb2dffd3b8e4f0e21eeb7",
+    "rust/src/lib.rs": "80363a4083cf62c020c8d2a9fdb9fd839aa4f35372634359c35d967c7effcdf1",
+    "rust/src/protocol.rs": "7e33b7162073e61e7641015b177bf6fb5a3f4a3666bd2aaf10f01caee6ae5288",
+    "rust/src/service.rs": "8d58a58882643ea7b9f3ef60543abfec32037e741556ebbdf9cc39039a7c30cd",
+    "rust/src/submission.rs": "560130f4767cf05f2565230e230232d820b1add7d58f15a9591b29635f61b247",
+    "rust/src/ticket.rs": "de47dd4ce5e68a20ef9fdd629f4c1a2ca9a06fb1896f8657d6fd9e33cfee4af2",
+    "rust/tests/fixtures/context-v1.txt": "f1e024344e7543b6324f197ccdf9bd44942bac693dfffefc9c0c9840dd6e0b4d",
+    "rust/tests/fixtures/v1.txt": "c08140de1e7ff9d488b5903770761c3a860a3e5232cccdca4ebcf123a4cd8db7",
+    "rust/tests/journal.rs": "a7225608d619c42e63f4816a5600a560c84fb931993dd037f7e076642fc0530f",
+    "rust/tests/protocol.rs": "6ddedb4ef719bf3092d5f7db3e48424ca10275a25cf1e528b4e8a983beef668c",
+    "rust/tests/recovery_snapshot.rs": "7b8a355033bdd0e3aebeac867eb3bb142e0fc2d177a8feaa6d67a08163a07f56",
+    "cairo/.tool-versions": "7683323a709ef63f10ba9e8c89a15f71c0de0d790fd41110e8b533e816352698",
+    "cairo/Scarb.lock": "99a206ba44dc31bdc92b790adca163e08c7d10abd8ac2e72586e2b244b9d028c",
+    "cairo/Scarb.toml": "c67173f332e47642f1248025443aec18e5c77ae44527d023590e7e57f6d407ef",
+    "cairo/check-entrypoint.py": "7244abf53babea2415aadaeb7b373367059e296a6db41a81de6382a59ad02f88",
+    "cairo/check.py": "0af7a7885002e14148ce48da8be49e17175afd1d1c622e7e1ad954323d22730d",
+    "cairo/src/authority.cairo": "440aa56cfe777c4519cf0d5b32cf27ad56edb985c66fdc5129478b07a083e6a0",
+    "cairo/src/entrypoint.cairo": "1e0f6c502f32b41f8a84b982a5feacb790896821783cc929055f8c98b32a8dd9",
+    "cairo/src/lib.cairo": "b3ce1e9c72bbcbb5b213d53e97c69255e50f1dc3e5ad9723cb76b802e01d888b",
+    "cairo/src/stub.cairo": "bd5d2edb011b4ba1683cb68a5b5abf3121df9e4cf58df4ef21a081ec455a4ee9",
+    "cairo/tests/fixtures/context-v1.txt": "f1e024344e7543b6324f197ccdf9bd44942bac693dfffefc9c0c9840dd6e0b4d",
+    "cairo/tests/fixtures/v1.txt": "c08140de1e7ff9d488b5903770761c3a860a3e5232cccdca4ebcf123a4cd8db7",
+    "cairo/tests/test_conformance/fixture.cairo": "b028a9ebc1aa1aed4c3442c12a1802e7d4d2fe208d7ed1097fdd9a62bc808b77",
+    "cairo/tests/test_conformance.cairo": "2114e6f1cc512604ab9476e7b4e3304bee0478dac873246205e4361544175643",
+    "cairo/tests/test_protocol.cairo": "271e3a5cf7aaa30d62d358c36015a7fedbf576986d2dfa24aafdccba7a341793",
+    "madara/Cargo.lock": "36f8d77ee56589a8b07462b5dea228ba415a0161065f85b68997f0453ad3e867",
+    "madara/Cargo.toml": "0727d7fc2dba00639e15e0b0f68860b6f3f9cacd03646322e2be06636ea8e506",
+    "madara/rust-toolchain.toml": "b66b4b26d3efad08b6150ee0b20d47e479ac6c2645c7a3cc58fb635a9af0b9ed",
+    "native/src/biome.cairo": "00acf2683df4b2c11844fd0a3f6c4110719144e9e3c081ed3424f10aad52e8c7",
+    "native/src/buildings.cairo": "dab2a2431786bfb7f24aef5d842fadb1898859f5aaf6d64ff03d7f098d9920c5",
+    "native/src/combat.cairo": "8a903d120ad9d1a40c98a9a04ac2efa8d970e799e01c690e8295348ec3588607",
+    "native/src/commands.cairo": "415289926fa2fc7ec3e8806e17abf4f6392702e91630cf07abffa34606199ee4",
+    "native/src/discovery.cairo": "47c2ccb0023015ff162b1d2a48624aad0a3ed42e94ffaa76e32817318912e2bb",
+    "native/src/events.cairo": "f9c8213199a75ea1c8b21b6f188fa543a36b5ae4e55c5465903b6aa3e2a2cabe",
+    "native/src/fixed_constants.cairo": "90eeaaef39d863436e2d2fa84d06d4e21fbeb4e86f3c0b505e355cc51d66f1f1",
+    "native/src/game.cairo": "bb84dd18d5dd19a438c747582a85148d7efb9ee0f3a21185fdf6ec3f136aed97",
+    "native/src/geometry.cairo": "6194df623fa94f7ad923392c2ef9744918e431582ec54890abc89bbf6be3a9af",
+    "native/src/lib.cairo": "2dd44a1ea9dce5acbea11088f6f8d0b1880882d23b631e58f553766203e5e38a",
+    "native/src/lifecycle.cairo": "7a74f773907c7313ce5902ed163e7c589e61b4a9d3d2e213856f2f7c2018cc88",
+    "native/src/map.cairo": "b41ece01b410c877331f0f251304af712f5605aa07517d5e86e950d374b2147c",
+    "native/src/math.cairo": "801dbd4117c57a1b85b004bf3b18ea6b8b6e436a44a87f87584973f7e156ee3e",
+    "native/src/names.cairo": "3f10f23cc493f786c543656f7e90c260d04a62cdc46b9fb9cb65bddbf80f0444",
+    "native/src/ownership.cairo": "f15a47d1d2f1aef0d096ab8ea0da12f28b46f04f8344a18f3c942e837f5403c3",
+    "native/src/parity_vectors.cairo": "d11b3582ea946c9f9e31925f32940b41a41c0432ea08036462576e903db483a7",
+    "native/src/random.cairo": "484ffd1af3bf988ac4657d1f80b4c0f8a57c9bf50eafe31c47bfe45ec8cb46c5",
+    "native/src/recording.cairo": "9465d27f02de1b20ed07cd5fdba111af02b4261d1e5425f56d847cd705dfdde2",
+    "native/src/resources.cairo": "efd355d2089c1dd8fa2583736a06d5fb2704eb505fd583a987b374d109e3fc7e",
+    "native/src/rules.cairo": "9607b778fcf9c83caffb93f994cddc71f982f020ff76c2981760edb4dc6cd2f7",
+    "native/src/season.cairo": "4efd17cf25131965d51b7ae86a84275e67028c733b09b30d1529eb3d0143b7a3",
+    "native/src/stamina.cairo": "59c1e7db3d77e5750da03049584f120ead9bd6e08beb202e92b8dfefc2e84063",
+    "native/src/structures.cairo": "246b0b3703a3197bcc40d72aa52bf8f080986ad92a14595e08ff4f6129a89cd9",
+    "native/src/tests/fixtures.cairo": "579c40fde0a2f392caee5dec422c41c69636e42921924ae067fcda12f87c3f07",
+    "native/src/tests/recorded.cairo": "e9480725bb16a44e42c53fb986c5aa1dba75b46ba2e5676789b0c2891bbb64d6",
+    "native/src/tests.cairo": "2f9bf127e5e12cba92280490a0a21eb37eca324357f45b7c05052283bb230d7e",
+    "native/src/troops.cairo": "acde73c27f37a0492493dba8d7332d4826ccdeb20788fdab7e1f5cdecbc6c7f5",
+    "native/src/upgrades.cairo": "bab92cbd110a9767da61505b48aac05ad85129199f5c1081cb1ab55cb73b429a",
+    "native/tests/fixtures/context-v1.txt": "f1e024344e7543b6324f197ccdf9bd44942bac693dfffefc9c0c9840dd6e0b4d",
+    "native/tests/fixtures/preset-1.txt": "e8772501e9066bbcf6dac3dbc95af05019a4e1ed99965cdf3455164fc82ed95c",
+    "native/tests/lib.cairo": "8b2dd80e461cfa647847b975e94c468a7386c4ab145365061253071a17eefb33",
+    "native/tests/test_conformance/fixture.cairo": "3a9ef231b3499ffcda39c1ac0cc89123eb94095112803cc45d1b65abbb337837",
+    "native/tests/test_conformance.cairo": "2114e6f1cc512604ab9476e7b4e3304bee0478dac873246205e4361544175643",
+    "native/vendor/cubit/LICENSE": "9c193dc775f67857a90011bcdc1bad0f34581569cb08079cb810e9ad2a845cb6",
+    "native/vendor/cubit/PROVENANCE.json": "a3e32b63479d7afc6ea584c429186f59230f2091bd83ed2ed425cd91f47093dd",
+    "native/vendor/cubit/Scarb.toml": "f0f530abefcb274aaf8f70352a5dd54654ee88fc816d977d4212f17245c89e3c",
+    "native/vendor/cubit/src/f128/math/comp.cairo": "8b6320b496435c22ac2073a853dacd7f4148fe479ffeb7011d81c3916476fff9",
+    "native/vendor/cubit/src/f128/math/lut.cairo": "d0dc092ff38ab0b33f6b7963ed19b1bae9347f9e86d4388330f1b6c3414ea15f",
+    "native/vendor/cubit/src/f128/math/ops.cairo": "751c45509bb634cd45a11cc1af35d2fc57a88b9a368943f0ded641a39f216a9a",
+    "native/vendor/cubit/src/f128/math.cairo": "a507891c2cffdb2d7e29cffafc21a79af2a44f068e8b98fae3957f5e67c99eab",
+    "native/vendor/cubit/src/f128/procgen/simplex3.cairo": "a4bf276f06a108efa144010e1ae3ff0b27a6d2b3ef03e746e41f708b61a0c3f0",
+    "native/vendor/cubit/src/f128/procgen.cairo": "b8002fe42118c62cee464b529e065418cf1112cc6ded2bb6971925ca2e287f15",
+    "native/vendor/cubit/src/f128/types/fixed.cairo": "03504314f4e41ddca055112585a617af1ba272c28533f2b990f558c362136391",
+    "native/vendor/cubit/src/f128/types/vec3.cairo": "0872177ef80471d618a12cd5658b48d7cfc15007f6f51b761e7d4f3e2b14d17a",
+    "native/vendor/cubit/src/f128/types/vec4.cairo": "7dce0c484bddf2a7d6a70efba3e5db10016481f40f1a846653e1387bce4df925",
+    "native/vendor/cubit/src/f128/types.cairo": "470c1de64e0c0a3986d52b22f4f65a531fe618beccb7f0abf7f74999a44af123",
+    "native/vendor/cubit/src/f128.cairo": "458877b7c7e7e88e95d186ac7afe053502e6c3a2a719b07af0e984221b6fee33",
+    "native/vendor/cubit/src/lib.cairo": "fb3b75e46f0dafa93b51603ddc593f577959a1e5d3a5e188084a1746bef9eeb7",
+    "native/vendor/cubit/src/utils.cairo": "462e73abb8daa5ac31c518311ec7a8439d6e01af6b7f87d1d2473dbb4860bfe2",
+    "native/scripts/generate-schema.mjs": "d6dc330b6e43e7bdeac6040f346e5211554975cfcdd945bfb8a1ea7310cf74db",
+    "native/schema/bindings.json": "1f26f164206bf10b274ee9ac1936999b51b5be13c2f936ddcdb16aa2472b4878",
+    "native/schema/fact-models.mjs": "669092e44c3032c6b6a04468de21d6bb9992a68da3c169ada5781e36331f4d85",
+    "native/schema/fixtures/foreign-emitter.json": "be23d65084e9aeb31a71aaaa85ca94ff886919d3328d54a49450931e528907bf",
+    "native/schema/fixtures/malformed-row.json": "424061f581cdd31320cde70201b2fdbd5424c1116c96c8532f1ae34e0ef9e6ca",
+    "native/schema/fixtures/row-deleted.json": "d039daa60bf74c05701d74c5b6678d90f2c21d5b59888ca096e8647d0deab09a",
+    "native/schema/fixtures/row-member-set.json": "2259740dc20c82637cfe721122e952667eee94343222d065c85592c372f5ac0d",
+    "native/schema/fixtures/row-set.json": "7baac1f1d2ac659515fe504abb96836eec5aa2ac4f9ca1f610c2fec239dfc42c",
+    "native/schema/schema.json": "b8b60bb98aef47cbb99fffc4ef432f4c5bd7f173306f68ca17f769c2eb116bb0",
+    "native/Scarb.toml": "331b2cbcc37c05bbe6403d7fb75025b35a3c36e750dab3050fadcc6e9e343b67",
+    "native/Scarb.lock": "aa2212e9634a498e37d279c4f817005c44166dc82c54b73566e9c791d1556cf1",
+    "native/.tool-versions": "7683323a709ef63f10ba9e8c89a15f71c0de0d790fd41110e8b533e816352698",
+    "game/src/utils/random.cairo": "c0ac2ac36d90c2239cbe844b554a291fc9f192d47da190c77165a83021f9d0fd",
+    "game/tests/randomness_protocol.cairo": "b10495911463bebfc4235583fd8528ea7842e41142b00f1fca2143abb8e17745",
+    "game/Scarb.toml": "b5a54515798412ca5895bef6ef41976a9fc64050063fabc2e5494c7b70a75888",
+    "game/Scarb.lock": "374d69c3b685a1d45387b232b829b665af5b6ef8271556370a0dc3030fa675a1",
+    "schema-runtime/package.json": "7472cbcb0bb1c570ebe6a1ec8db4e99a9e3da062aeaca7ed5b3898526b7721e2",
+    "schema-runtime/pnpm-lock.yaml": "d317c404be75fb61d2ac48aa8249e1a9434a7d78550ab8e29b941bae8fa6b980",
+    "schema-runtime/pnpm-workspace.yaml": "3355a57e02264d36981d2a03d32571e0ea87f24a4c5e3570df3ee71027eb2ec2",
+    "schema-runtime/apps/herald/src/model-registry.ts": "d1ec96108edd4e312f638ae8ffe5e2464927a446b34f10ca4d13e35672398e26",
+    "schema-runtime/apps/herald/src/store-layout.ts": "5a1dfd2dd12d62d04a1b7dee0dece3c35cb5e270660f623b3afa2d067490020f",
+    "schema-runtime/apps/herald/src/types.ts": "0900a46562885c20277feb9a9e6cbe071a38a9b090cc2eafccb6d74dcbfe6018",
+    "schema-runtime/packages/core/package.json": "a1265259ebdd58c1cb9dc2b1ae1f399d672c36b671f3f294496b0f653cc7059a",
+    "schema-runtime/packages/core/tsup.config.ts": "615d2f2fe8a087e494c05a219acc5c27f318d4bdd8021496ba4c64310458f48d",
+    "schema-runtime/packages/core/src/sync/model-manifest.ts": "201b4e2535c8238743466544e5a1665a14c4cd51ea8ae49f998f5a4731568543"
+  },
+  "gates": [
+    {
+      "name": "rust-fmt",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "log": "rust-fmt.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "rust-vectors",
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "mc-sequencer-randomness",
+        "--locked"
+      ],
+      "exit_code": 0,
+      "log": "rust-vectors.log",
+      "log_sha256": "97baffaa6c343297bb1913fa2e19bbf29edffc12f6968d08cb41c4a4fc5a4044"
+    },
+    {
+      "name": "rust-clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "-p",
+        "mc-sequencer-randomness",
+        "--all-targets",
+        "--all-features",
+        "--locked",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "log": "rust-clippy.log",
+      "log_sha256": "73596b79c23573c30ea3176cec2df235cf5a72cea804331b01f4aa027afa4a13"
+    },
+    {
+      "name": "cairo-vectors",
+      "command": [
+        "snforge",
+        "test"
+      ],
+      "exit_code": 0,
+      "log": "cairo-vectors.log",
+      "log_sha256": "77c40880a382dbe7c4d1c6505f1f3bcbac5b0efaf7349e868e5f5446600d0ca5"
+    },
+    {
+      "name": "protocol-build",
+      "command": [
+        "scarb",
+        "build"
+      ],
+      "exit_code": 0,
+      "log": "protocol-build.log",
+      "log_sha256": "b67c4d15cc1f999c05591d24f31a76d2b2d0d411b5daee36a379373b50abfe62"
+    },
+    {
+      "name": "native-conformance",
+      "command": [
+        "snforge",
+        "test"
+      ],
+      "exit_code": 0,
+      "log": "native-conformance.log",
+      "log_sha256": "d1c64febb92af8b8303d0e9538dac3914a70e884113259f3ba22da01d3c63bf3"
+    },
+    {
+      "name": "native-build",
+      "command": [
+        "scarb",
+        "build"
+      ],
+      "exit_code": 0,
+      "log": "native-build.log",
+      "log_sha256": "df75e9b78bfa467b0dece412d13aa2c8802eff52c5314ca6243b841f85c4d59f"
+    },
+    {
+      "name": "schema-dependencies",
+      "command": [
+        "pnpm",
+        "--filter",
+        "@bibliothecadao/eternum...",
+        "run",
+        "build"
+      ],
+      "exit_code": 0,
+      "log": "schema-dependencies.log",
+      "log_sha256": "ab3d47f214846badd10b1eb44548eb2cd051ad9a228460b28f0406a2bc8e70d8"
+    },
+    {
+      "name": "native-schema",
+      "command": [
+        "bun",
+        "scripts/generate-schema.mjs",
+        "--check"
+      ],
+      "exit_code": 0,
+      "log": "native-schema.log",
+      "log_sha256": "1af7d5eb36f2718e62ec796b051691272bc8c94efcf2d3da482bb71d1a7ec3a2"
+    },
+    {
+      "name": "native-abi",
+      "command": [
+        "/usr/bin/python3",
+        "/home/djizus/projects/eternum-accepted-recovery/contracts/l3/randomness-protocol/check-entrypoint.py",
+        "/home/djizus/projects/eternum-accepted-recovery/contracts/l3/world-native/target/dev/world_native_SeasonDomain.contract_class.json",
+        "/tmp/terminal-rejection-evidence/native-abi.json"
+      ],
+      "exit_code": 0,
+      "log": "native-abi.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "current-game",
+      "command": [
+        "snforge",
+        "test",
+        "recorded_roots_preserve_current_game_derivation"
+      ],
+      "exit_code": 0,
+      "log": "current-game.log",
+      "log_sha256": "c1116e3b1e8b5c43753cb088ee7629e9296a99e44873ede2853fef19383486d6"
+    }
+  ]
+}

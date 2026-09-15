@@ -1,0 +1,226 @@
+{
+  "schema": 1,
+  "scope": "single-host deployed explore comparison",
+  "frozenAt": "2026-09-14T22:05:44.207449+00:00",
+  "sourceRevision": "0c0cf7cecc1c0fbab13bed215960b8540a86e6da",
+  "gitDirty": false,
+  "preparationRestSeconds": 65,
+  "warmup": 32,
+  "samples": 256,
+  "intervalMs": 250,
+  "trafficOffsetMs": 125,
+  "jitterMs": [
+    0,
+    37,
+    -29,
+    53,
+    -47,
+    19,
+    -11,
+    61
+  ],
+  "competingTraffic": "one STRK self-transfer per explore from the same independent genesis account",
+  "preconfirmedCadenceMs": 250,
+  "nodeBinary": "same enabled madara binary for baseline, embedded and sidecar; baseline stops the idle sidecar",
+  "runtimeSources": {
+    "deploy/madara-rand/analyze-explore-run.py": "be753f01ed88bb165cf247a1bf298d2ff2a6dbabfbcaf629d976f00c21590dd1",
+    "deploy/madara-rand/baseline-herald.yml": "d54009c4187ec64b17f13729d3abbc5c797c754318389dd1c0acd92cca869f7c",
+    "deploy/madara-rand/baseline.yml": "bed27c2a687af5c464bfdde522f9e1f8d5f6538150bcf7361a37eb5fa6539afc",
+    "deploy/madara-rand/check-dependencies.py": "f4a889deb1d06cab9b97b51c5e0f36449a40627abddcc42069995e29c93193a0",
+    "deploy/madara-rand/check-herald.ts": "fa6a01fae469c8d4a38b995a566380d81b4dc6ab2598bce9efd4d50e1e2f4151",
+    "deploy/madara-rand/check-native-routing.ts": "fe2c6e0c1ab0298e19d383f807a7c4fb24968d135ad423babb037d5973c1f392",
+    "deploy/madara-rand/check-telemetry.py": "d7a106f408113ad77af207d05c4a43c6cca2262bea1aaf1cdafe7765329fc358",
+    "deploy/madara-rand/collect-explore-run.py": "e4677e57559b5a210b2c87669695568d35aa3a82a999b1ccafe74b4514acc6f0",
+    "deploy/madara-rand/deploy-fixture.ts": "75b95bf792035231acd0b9944ef952fa8a340f896252aa7057c728183d3ae37c",
+    "deploy/madara-rand/deployed-check.py": "1c448a49f4e523ade084630bd1fa5fc7f54875bcc8554c8b24e815e6bc5d5d39",
+    "deploy/madara-rand/docker-compose.yml": "ad58f08464c2e5dad6f2092761273a110d79bea4fed2e15854c56cb1a027284a",
+    "deploy/madara-rand/drills/drill_runtime.py": "397b033ecc92985f2efe161b406f9229d6fb0c4f44ac29047dc9e793f53dc84f",
+    "deploy/madara-rand/drills/entropy-failure.py": "9870865747a41d5287e61599eccd65b63e649dceb679c1aee4497daec4f944be",
+    "deploy/madara-rand/drills/herald-replay.py": "e96441abc40cc5c97a5a68c68be32426a6bf82669fe8205f70e69b88d6eeaff1",
+    "deploy/madara-rand/drills/missing-journal.py": "f70537f6394237c08d923a6a7bbd5ed3987a3cf401b2113efe2562d44edd82c1",
+    "deploy/madara-rand/drills/preview-partition.py": "cbc4103a2b0621f6dfdf97c01e6c32469aa5047b0010e589c4e5e5654a83232b",
+    "deploy/madara-rand/drills/promote.py": "b78f40d908c18d2873414593b602bf7df618b8abc529b6cded326541cbd027dd",
+    "deploy/madara-rand/drills/promotion-next.yml": "b2f582a6705c2d9252ae1e8ccc8732d24ae5e0ea68f4c2f2ab44d6de21281e4c",
+    "deploy/madara-rand/drills/promotion.yml": "69327f62fce6f98f985161b4df40a43d0e5dd8a31d8a3dbdc7fa2a6c37308384",
+    "deploy/madara-rand/drills/restore.py": "6b98cca4b985addead3cdb8961e796132bd842667644d514cbf07e8de899162d",
+    "deploy/madara-rand/drills/restore.yml": "a51c31f7730095a5e78b58da2d9f03dc8bd83d924d7fa3e01841d3fd1b08f4db",
+    "deploy/madara-rand/drills/rpc-fault.yml": "ce56816f38cbe54bcc049a93acea1cfc543a6d2522b0c64b1427fef9cb4ce00c",
+    "deploy/madara-rand/drills/submission-crash.py": "909126ae7919b32bc42bfa663079173f6442c480997988e7a07d2e2168de28f4",
+    "deploy/madara-rand/exercise-fixture.ts": "a57b2ae5110c01f291c1c05ccb75d1f9a0d83d7c8aecf07a433026fe8fdba42a",
+    "deploy/madara-rand/explore-benchmark.ts": "f6156fd8d57bdb3608aa5db0c63d0dd72e10bc5d05fdeac813361cd0b43e84ca",
+    "deploy/madara-rand/fixture-admin.ts": "65ad847e75100ee7663df4b270af1cbfe2c0fc66ccdcf53641586534c8ef0856",
+    "deploy/madara-rand/freeze-explore-run.py": "538be6d96c5672631b006cef0d520c6fe6a0e944ffe915181a3dd454fe448a27",
+    "deploy/madara-rand/herald.yml": "e5d7832d473ecb9abfb0b675683aa6ba53950e15d409f28e0f51cbaa5f9a544b",
+    "deploy/madara-rand/journal/check.py": "63772572b21922b425d11d9d8d6f513628caf4f04145348575129de30919022e",
+    "deploy/madara-rand/native-intent.ts": "e5a3707968c463ffe85acd43245fc7a7c10b1178202efca6e701c19a240f320d",
+    "deploy/madara-rand/node.yml": "7d65d924077c5db4914f666a1e17ea6bcd44fa595d535f5af5026a2d1e90f82c",
+    "deploy/madara-rand/placement.py": "77322d72950f4f68713d236fcca03a20dad0e5cfa1082429b91e87896d504557",
+    "deploy/madara-rand/prepare-baseline.ts": "7a4e31f70314dfbf81ae7dc2a2354a2ceba864ec931a0ff2ccf71adaf14edd63",
+    "deploy/madara-rand/prepare-native-actions.ts": "a4045896259978a83ea103bb8bb37572bcb8a26568ebd8afc913cac8814ed13c",
+    "deploy/madara-rand/race-native-intents.ts": "151b8d7c09975ce3a1ddf7494f3a79737446b085e54ce23a60ab951f2761cf15",
+    "deploy/madara-rand/rotate-fixture.ts": "8d8e00505f09bec29cfc6a4f8a4c0f2acce2162dbdf0e3aedfe456f95e555ae7",
+    "deploy/madara-rand/runtime.py": "be687579f4440b558d1a4232fbb64e0f08e91f4243ded184996fd80187176c22",
+    "deploy/madara-rand/start-baseline-herald.py": "ba484dd7a2373b61ecacd31264c5c1e61b125e16e3b68f613d1a34a72dde9241",
+    "deploy/madara-rand/start-fixture.py": "a9a1da6145091de6362e65ce5575c507dda998ba38cf227606821d1976326c40",
+    "deploy/madara-rand/start-herald.py": "e73fd6e76af6cd31f48ef2cacead10594ee32c09f50b40c85ea57b7e5ef54de3"
+  },
+  "workload": "one eastward unexplored move per fresh explorer; alternating surface and Ethereal; original preset 1 pools and weights",
+  "discoveryFixtures": "same coordinates, grants, access spires, troop type and tier; independent draws, no outcome selection or pool changes",
+  "baselineRandomness": "unchanged Dojo zero-provider transaction-hash placeholder",
+  "nativeRandomness": "OS roots assigned once by the replicated accepted-ticket protocol",
+  "sampleExclusions": "exactly the first 32 scheduled warmup actions; retain every later failure and timeout",
+  "budget": {
+    "p95RegressionMs": 25,
+    "p99RegressionMs": 50,
+    "minimumThroughputRatio": 0.95,
+    "additionalFailedActions": 0,
+    "ticketOrderViolations": 0
+  },
+  "executionBasis": "batch wall time and batch size recorded per transaction; singleton batches are direct action timings, larger batches are explicitly amortized",
+  "fixtures": {
+    "baseline": {
+      "path": "/tmp/madara-rand-baseline-5/fixture.json",
+      "sha256": "a2aa3a405c4bf6a5f9736bebbbfba49b50c6066c1b79da01062323c4d8b60b83"
+    },
+    "embedded": {
+      "path": "/tmp/madara-rand-native-6/fixture.json",
+      "sha256": "2dac214dc00a92893a1fa81ddd42ffda7983c5963fdd3c6732652a9250201d8f"
+    },
+    "sidecar": {
+      "path": "/tmp/madara-rand-native-7/fixture.json",
+      "sha256": "bdf9709671c4815a507c5213dd108b7c36e856b192ffc261072f7aea4e205915"
+    }
+  },
+  "releases": {
+    "node": {
+      "schema": 1,
+      "scope": "local protocol review; no production approval",
+      "base_commit": "e67432177060197bb0fb03502f2d07d1194764f5",
+      "patch_revision": "c342e473799b16251e0e411f8c9d984ebbeb30cf",
+      "fsync_fix": "3e6e0f472dcaa83a332aea9e092d333d6be62df5",
+      "fsync_upstream": "a0b1d029cc2cf9433cd5ea8ff99ec85105ad5f9c",
+      "envelope_version": 1,
+      "journal_version": 1,
+      "profile": "release",
+      "features": {
+        "madara": [
+          "sequencer-randomness"
+        ],
+        "madara-baseline": [],
+        "randomness-sidecar": []
+      },
+      "image": "127.0.0.1:15000/madara-rand@sha256:dee06fd2348a400b67681e20d41a7868d9b6cef4a1894ac5a632ab92e9339004",
+      "builder_image_id": "sha256:bd669ce537ba106aaa37afb6be73279b035382446ed0447be2b66ef0e81aa3c8",
+      "build_command": [
+        "docker",
+        "run",
+        "--rm",
+        "--name",
+        "madara-rand-release-build",
+        "--mount",
+        "type=bind,source=/home/djizus/projects/madara,target=/workspace",
+        "--mount",
+        "type=bind,source=/tmp/madara-rand-release-measurement,target=/release",
+        "--mount",
+        "type=bind,source=/home/djizus/.cargo/registry,target=/usr/local/cargo/registry",
+        "--mount",
+        "type=bind,source=/home/djizus/.cargo/git,target=/usr/local/cargo/git",
+        "--mount",
+        "type=volume,source=madara-rand-build-target,target=/workspace/target",
+        "--mount",
+        "type=volume,source=madara-rand-rustup,target=/usr/local/rustup",
+        "--workdir",
+        "/workspace",
+        "--env",
+        "CARGO_BUILD_JOBS=2",
+        "--env",
+        "RUSTC_WRAPPER=",
+        "--env",
+        "RUST_BUILD_DOCKER=1",
+        "--env",
+        "GIT_CONFIG_COUNT=1",
+        "--env",
+        "GIT_CONFIG_KEY_0=safe.directory",
+        "--env",
+        "GIT_CONFIG_VALUE_0=/workspace",
+        "sha256:bd669ce537ba106aaa37afb6be73279b035382446ed0447be2b66ef0e81aa3c8",
+        "bash",
+        "-c",
+        "cargo build --release -p madara --features sequencer-randomness --locked && cp target/release/madara /release/madara && cargo build --release -p madara --no-default-features --locked && cp target/release/madara /release/madara-baseline && cargo build --release -p mc-sequencer-randomness --bin randomness-sidecar --locked && cp target/release/randomness-sidecar /release/randomness-sidecar"
+      ],
+      "contract_artifacts": {
+        "image": "ghcr.io/madara-alliance/artifacts@sha256:127fe7f8191e916715af2d1ae4043b18d9d2e85c455cc65759aad065d4326708",
+        "archive_sha256": "c5a873f3a931ade8a48e60d15dc8781baefd0a7ed2b06fa86e659fbb5271c66d"
+      },
+      "binaries": {
+        "madara": "6bb8255b85bc00ec865b900663ee7f879de59272f77b8cd08e282d08ed52b5e1",
+        "madara-baseline": "6f6499d62e5983c9715dcdb7d3c86432c9153df16f193d4c1178a30091291e60",
+        "randomness-sidecar": "3d0b7a6e22ae472b41f4b2ba58a890126a7c606a531f79e314b511b138da6225"
+      },
+      "resolved_dependencies": {
+        "madara": {
+          "artifact": "madara-dependencies.txt",
+          "sha256": "d1bae3f02336732835781ee6514e740fd4d7e3328e276155ac4ddf35273ffb10"
+        },
+        "madara-baseline": {
+          "artifact": "madara-baseline-dependencies.txt",
+          "sha256": "ad6a4781e6873c06476a6f2f7fafc89f623dc0a168d179f39f1a4b06d6eb770f"
+        },
+        "randomness-sidecar": {
+          "artifact": "randomness-sidecar-dependencies.txt",
+          "sha256": "ccc4e63bc3b7fcf7d632c6e0c87a6075a32441f0725cb151e63dbd007e394fa7"
+        }
+      },
+      "build_tool": {
+        "name": "starknet-native-compile",
+        "version": "0.9.0-rc.6",
+        "command": [
+          "cargo",
+          "install",
+          "--locked",
+          "starknet-native-compile",
+          "--version",
+          "0.9.0-rc.6"
+        ],
+        "dependencies": {
+          "artifact": "native-compiler-Cargo.lock",
+          "sha256": "2cfb3391cff0374f82756f9f0b81a071a8905582f0872878041e81d8d262a205"
+        }
+      },
+      "dependency_audit": {
+        "artifact": "dependencies.json",
+        "sha256": "9fef5736a29d2bfb8635157003b5caa69390ea1c6b3ad7758353d0dcabb6fb4e"
+      },
+      "cargo_lock_sha256": "36f8d77ee56589a8b07462b5dea228ba415a0161065f85b68997f0453ad3e867"
+    },
+    "herald": {
+      "schema": 1,
+      "scope": "isolated native Herald build",
+      "native_revision": "7ae3d93f840603130a761f78e6a59168d2dc6c03",
+      "madara_image": "127.0.0.1:15000/madara-rand@sha256:dee06fd2348a400b67681e20d41a7868d9b6cef4a1894ac5a632ab92e9339004",
+      "image": "127.0.0.1:15000/randomness-herald@sha256:cf5f886f1c07148f4c6fc1113f587c50cf1785bdafdf5ed6c97c33d67d108138",
+      "bun_version": "1.4.0",
+      "command": [
+        "bun",
+        "build",
+        "--tsconfig-override",
+        "herald-build-tsconfig.json",
+        "apps/herald/src/server.ts",
+        "--compile",
+        "--metafile=/tmp/madara-rand-native-herald-5/modules.json",
+        "--outfile",
+        "/tmp/madara-rand-native-herald-5/herald"
+      ],
+      "binary_sha256": "683606c116950e8298884175ca5a9b075acc5940f0441f10a37e379769e5a6c8",
+      "module_graph_sha256": "9547985b06505733bf6f2d85e3b307961cb840adfafdd940715da53102a43cfa",
+      "dependency_lock_sha256": "d317c404be75fb61d2ac48aa8249e1a9434a7d78550ab8e29b941bae8fa6b980",
+      "native_source_lock_sha256": "d317c404be75fb61d2ac48aa8249e1a9434a7d78550ab8e29b941bae8fa6b980"
+    }
+  },
+  "host": {
+    "platform": "Linux-7.2.4-200.fc44.x86_64-x86_64-with-glibc2.43",
+    "cpus": 16,
+    "cpuinfo": "processor\t: 0\nvendor_id\t: AuthenticAMD\ncpu family\t: 25\nmodel\t\t: 80\nmodel name\t: AMD Ryzen 7 5800H with Radeon Graphics\nstepping\t: 0\nmicrocode\t: 0xa500012\ncpu MHz\t\t: 3270.611\ncache size\t: 512 KB\nphysical id\t: 0\nsiblings\t: 16\ncore id\t\t: 0\ncpu cores\t: 8\napicid\t\t: 0\ninitial apicid\t: 0\nfpu\t\t: yes\nfpu_exception\t: yes\ncpuid level\t: 16\nwp\t\t: yes\nflags\t\t: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl xtopology nonstop_tsc cpuid extd_apicid aperfmperf rapl pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate ssbd mba ibrs ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 erms invpcid cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local user_shstk clzero irperf xsaveerptr rdpru wbnoinvd cppc arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif v_spec_ctrl umip pku ospke vaes vpclmulqdq rdpid overflow_recov succor smca fsrm debug_swap\nbugs\t\t: sysret_ss_attrs spectre_v1 spectre_v2 spec_store_bypass srso ibpb_no_ret spectre_v2_user tsa vmscape\nbogomips\t: 6387.75\nTLB size\t: 2560 4K pages\nclflush size\t: 64\ncache_alignment\t: 64\naddress sizes\t: 48 bits physical, 48 bits virtual\npower management: ts ttp tm hwpstate cpb eff_freq_ro [13] [14]",
+    "memory": "MemTotal:       28568788 kB\nMemFree:         6082552 kB\nMemAvailable:   17470224 kB\nBuffers:             552 kB\nCached:         12115536 kB\nSwapCached:       800108 kB\nActive:          4266060 kB\nInactive:       10890872 kB\nActive(anon):    1704736 kB\nInactive(anon):  1742044 kB\nActive(file):    2561324 kB\nInactive(file):  9148828 kB\nUnevictable:         116 kB\nMlocked:             116 kB\nSwapTotal:      47838712 kB\nSwapFree:       34533136 kB\nZswap:                 0 kB\nZswapped:              0 kB\nDirty:              4232 kB\nWriteback:           384 kB\nAnonPages:       3002924 kB\nMapped:          1014708 kB\nShmem:            406060 kB\nKReclaimable:     270880 kB\nSlab:             772108 kB\nSReclaimable:     270880 kB\nSUnreclaim:       501228 kB\nKernelStack:       33244 kB\nPageTables:       107540 kB\nSecPageTables:      4760 kB\nNFS_Unstable:          0 kB\nBounce:                0 kB\nWritebackTmp:          0 kB\nCommitLimit:    62123104 kB\nCommitted_AS:   27132200 kB\nVmallocTotal:   34359738367 kB\nVmallocUsed:      217488 kB\nVmallocChunk:          0 kB\nPercpu:            24128 kB\nHardwareCorrupted:     0 kB\nAnonHugePages:         0 kB\nShmemHugePages:        0 kB\nShmemPmdMapped:        0 kB\nFileHugePages:         0 kB\nFilePmdMapped:         0 kB\nCmaTotal:              0 kB\nCmaFree:               0 kB\nUnaccepted:            0 kB\nBalloon:               0 kB\nGPUActive:        160872 kB\nGPUReclaim:         4096 kB\nHugePages_Total:       0\nHugePages_Free:        0\nHugePages_Rsvd:        0\nHugePages_Surp:        0\nHugepagesize:       2048 kB\nHugetlb:               0 kB\nDirectMap4k:     4469188 kB\nDirectMap2M:    24739840 kB\nDirectMap1G:           0 kB\n"
+  }
+}

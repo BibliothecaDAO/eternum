@@ -50,9 +50,10 @@ export const readBuildingTiles = (
   structureEntityId: ID,
 ): BuildingTiles => TileManager.forStructure(components, systemCalls, structureEntityId);
 
-export const structuresByOwnerQuery = (components: ClientComponents, owner: ContractAddress): QueryFragment[] => [
-  HasValue(components.Structure, { owner }),
-];
+export const structuresByOwnerQuery = (
+  components: Pick<ClientComponents, "Structure">,
+  owner: ContractAddress,
+): QueryFragment[] => [HasValue(components.Structure, { owner })];
 
 /** Grouped by category, then by entity id, the order the structure panels list them; isMine is relative to the viewer. */
 export const readStructures = (

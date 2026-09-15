@@ -24,7 +24,7 @@ import type { WorldEventDecodeMonitor } from "./world-event-decoder";
 import { WorldFold } from "./world-fold";
 import type { HistoryStore } from "./history-store";
 
-interface LiveWorldInput {
+export interface LiveWorldInput {
   chain: string;
   checkpointEveryBlocks: number;
   checkpointStore: Pick<CheckpointStore, "save">;
@@ -61,7 +61,7 @@ interface OverlayTransaction {
 const MAX_PENDING_TRANSACTION_ENTRIES = 2_048;
 const MAX_RECEIPTS_PER_TRANSACTION = 4;
 
-const setBoundedTransactionEntry = <Value>(map: Map<string, Value>, key: string, value: Value): void => {
+export const setBoundedTransactionEntry = <Value>(map: Map<string, Value>, key: string, value: Value): void => {
   map.delete(key);
   map.set(key, value);
   while (map.size > MAX_PENDING_TRANSACTION_ENTRIES) {
@@ -73,27 +73,27 @@ const setBoundedTransactionEntry = <Value>(map: Map<string, Value>, key: string,
 
 export class LiveWorld {
   public readonly hub: GameStreamHub;
-  private confirmedFold: WorldFold;
-  private overlayFold: WorldFold;
-  private confirmedBlockValue: number;
-  private preconfirmedBlockValue: number | null = null;
+  protected confirmedFold: WorldFold;
+  protected overlayFold: WorldFold;
+  protected confirmedBlockValue: number;
+  protected preconfirmedBlockValue: number | null = null;
   private lastClockTimestamp = 0;
   private lastCheckpointBlock: number;
   private checkpointFailure?: Error;
   private checkpointInFlight = false;
   private checkpointWrite = Promise.resolve();
-  private readonly knownGames = new Set<string>();
-  private readonly overlayEvents = new Set<string>();
+  protected readonly knownGames = new Set<string>();
+  protected readonly overlayEvents = new Set<string>();
   private readonly preconfirmedReceiptEvents = new Map<string, Set<number>>();
-  private readonly transactionSenders = new Map<string, string | null>();
-  private readonly pendingReceipts = new Map<string, RpcReceipt[]>();
+  protected readonly transactionSenders = new Map<string, string | null>();
+  protected readonly pendingReceipts = new Map<string, RpcReceipt[]>();
   private readonly overlayTransactions: OverlayTransaction[] = [];
   private readonly overlayLedger = new OverlayLedger();
   private readonly diffLatency: DiffLatencyMonitor;
   private pendingPreconfirmed?: PendingPreconfirmedTransaction;
   private pendingPreconfirmedFlush?: ReturnType<typeof setImmediate>;
 
-  constructor(private readonly input: LiveWorldInput) {
+  constructor(protected readonly input: LiveWorldInput) {
     this.hub = input.hub ?? new GameStreamHub();
     this.diffLatency = input.diffLatency ?? new DiffLatencyMonitor();
     this.confirmedFold = input.confirmedFold;
@@ -214,7 +214,7 @@ export class LiveWorld {
     this.recordTransactionSender(transactionHash, transaction);
   }
 
-  private publishTransactionReceipt(
+  protected publishTransactionReceipt(
     transactionHash: string,
     sender: string | null | undefined,
     receipt: RpcReceipt,
@@ -276,7 +276,7 @@ export class LiveWorld {
     this.checkpointIfDue();
   }
 
-  private async applyConfirmedThrough(targetBlock: number): Promise<Map<number, FoldChange[]>> {
+  protected async applyConfirmedThrough(targetBlock: number): Promise<Map<number, FoldChange[]>> {
     if (targetBlock === this.confirmedBlockValue) return new Map();
     const changes = new Map<number, FoldChange[]>();
     const historyEvents: DecodedWorldEvent[] = [];
@@ -308,7 +308,7 @@ export class LiveWorld {
     this.broadcastChanges(published, block, false);
   }
 
-  private resetOverlay(): void {
+  protected resetOverlay(): void {
     this.overlayFold = this.confirmedFold.overlay();
     this.overlayEvents.clear();
     this.preconfirmedReceiptEvents.clear();
@@ -318,12 +318,12 @@ export class LiveWorld {
   }
 
   /** Subscribers keep overlay rows across a reset, so rows the rebuilt block dropped go back to confirmed state. */
-  private publishOverlayReverts(): void {
+  protected publishOverlayReverts(): void {
     const reverts = this.overlayLedger.settleReverts((model, key) => this.confirmedFold.currentRow(model, key));
     this.broadcastChanges(reverts, this.preconfirmedBlockValue, true);
   }
 
-  private async rebuildOverlay(): Promise<void> {
+  protected async rebuildOverlay(): Promise<void> {
     const block = await this.input.rpc.getBlockWithReceipts("pre_confirmed");
     this.preconfirmedBlockValue = block.block_number;
     block.transactions.forEach(({ receipt, transaction }) => {
@@ -442,7 +442,7 @@ export class LiveWorld {
   }
 
   /** The whole transaction feeds late subscribers' overlay; the wire carries only the rows whose value changes. */
-  private publishOverlayTransaction(transaction: OverlayTransaction): void {
+  protected publishOverlayTransaction(transaction: OverlayTransaction): void {
     const changes = collapseChanges(transaction.changes);
     if (changes.length === 0) return;
     this.overlayTransactions.push({ ...transaction, changes });
@@ -459,7 +459,7 @@ export class LiveWorld {
     });
   }
 
-  private acceptPreconfirmedReceipt(transactionHash: string, receipt: RpcReceipt): void {
+  protected acceptPreconfirmedReceipt(transactionHash: string, receipt: RpcReceipt): void {
     if (receipt.finality_status !== "PRE_CONFIRMED") return;
     const eventIndexes = this.worldEventIndexes(receipt);
     if (eventIndexes.size === 0) return;
@@ -490,7 +490,7 @@ export class LiveWorld {
     this.pendingPreconfirmedFlush ??= setImmediate(() => this.flushPreconfirmedTransaction());
   }
 
-  private recordTransactionSender(
+  protected recordTransactionSender(
     transactionHashValue: string,
     transaction: Pick<RpcTransaction, "contract_address" | "sender_address">,
   ): void {

@@ -1,0 +1,165 @@
+name: native-world
+
+on:
+  pull_request:
+    paths:
+      - "contracts/l3/world-native/**"
+      - "contracts/l3/randomness-protocol/**"
+      - "apps/herald/src/model-registry.ts"
+      - "deploy/madara-lab/harness/native/**"
+      - ".github/workflows/native-world.yml"
+      - "pnpm-lock.yaml"
+  push:
+    branches: [next]
+    paths:
+      - "contracts/l3/world-native/**"
+      - "contracts/l3/randomness-protocol/**"
+      - "apps/herald/src/model-registry.ts"
+      - "deploy/madara-lab/harness/native/**"
+      - ".github/workflows/native-world.yml"
+      - "pnpm-lock.yaml"
+
+concurrency:
+  group: native-world-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: software-mansion/setup-scarb@v1
+        with:
+          tool-versions: contracts/l3/world-native/.tool-versions
+      - uses: foundry-rs/setup-snfoundry@v3
+        with:
+          tool-versions: contracts/l3/world-native/.tool-versions
+      - name: Check native formatting
+        working-directory: contracts/l3/world-native
+        run: scarb fmt --check
+      - name: Test native storage, authorization and upgrades
+        working-directory: contracts/l3/world-native
+        run: snforge test
+
+  protocol:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: software-mansion/setup-scarb@v1
+        with:
+          tool-versions: contracts/l3/randomness-protocol/.tool-versions
+      - uses: foundry-rs/setup-snfoundry@v3
+        with:
+          tool-versions: contracts/l3/randomness-protocol/.tool-versions
+      - name: Test the retained protocol fixture
+        working-directory: contracts/l3/randomness-protocol
+        run: snforge test
+
+  schema:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: software-mansion/setup-scarb@v1
+        with:
+          tool-versions: contracts/l3/world-native/.tool-versions
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+      - uses: oven-sh/setup-bun@v2
+      - name: Install schema dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build shared model registry dependencies
+        run: pnpm --filter @bibliothecadao/eternum... run build
+      - name: Build native domain ABIs
+        working-directory: contracts/l3/world-native
+        run: scarb build
+      - name: Reject schema and fixture drift
+        run: bun contracts/l3/world-native/scripts/generate-schema.mjs --check
+      - name: Build the published interface reference
+        working-directory: contracts/l3/randomness-protocol
+        run: scarb build
+      - name: Check the season ABI against the published interface
+        run:
+          python3 contracts/l3/randomness-protocol/check-entrypoint.py
+          contracts/l3/world-native/target/dev/world_native_SeasonDomain.contract_class.json /tmp/native-entrypoint.json
+
+  parity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@1.89
+      - uses: software-mansion/setup-scarb@v1
+        with:
+          tool-versions: contracts/l3/world-native/.tool-versions
+      - uses: foundry-rs/setup-snfoundry@v3
+        with:
+          tool-versions: contracts/l3/world-native/.tool-versions
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+      - uses: oven-sh/setup-bun@v2
+      - name: Install pinned trace tools
+        run: |
+          python3 -m venv "$RUNNER_TEMP/native-trace-tools"
+          "$RUNNER_TEMP/native-trace-tools/bin/pip" install uv==0.12.10
+          echo "$RUNNER_TEMP/native-trace-tools/bin" >> "$GITHUB_PATH"
+      - name: Install oracle and schema dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build shared packages
+        run: pnpm --filter @bibliothecadao/eternum... run build
+      - name: Test action cost accounting
+        run: uv run deploy/madara-lab/harness/native/test_measure_trace.py
+      - name: Compare native domains with pinned gameplay rules
+        run: pnpm run lab:parity:native --measure
+      - name: Retain parity facts and execution logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-domain-parity
+          path: |
+            contracts/l3/world-native/fixtures/world-parity.json
+            contracts/l3/world-native/fixtures/ownership-parity.json
+            contracts/l3/world-native/fixtures/name-parity.json
+            contracts/l3/world-native/fixtures/structure-parity.json
+            contracts/l3/world-native/fixtures/blitz-settlement-parity.json
+            deploy/madara-lab/.lab/native-oracle/world-parity.log
+            deploy/madara-lab/.lab/native-oracle/world-parity.log.stderr
+            deploy/madara-lab/.lab/native-oracle/ownership-costs.json
+            deploy/madara-lab/.lab/native-oracle/ownership-cost.log
+            deploy/madara-lab/.lab/native-oracle/name-costs.json
+            deploy/madara-lab/.lab/native-oracle/name-cost.log
+            deploy/madara-lab/.lab/native-oracle/structure-costs.json
+            deploy/madara-lab/.lab/native-oracle/structure-cost.log
+            deploy/madara-lab/.lab/native-oracle/blitz-settlement-costs.json
+            deploy/madara-lab/.lab/native-oracle/blitz-settlement-cost.log
+            deploy/madara-lab/.lab/native-oracle/native-casm.json
+            deploy/madara-lab/.lab/native-oracle/native-build.log
+            deploy/madara-lab/.lab/native-oracle/native-build.stderr
+            deploy/madara-lab/.lab/native-oracle/size-tool-build.log
+            deploy/madara-lab/.lab/native-oracle/size-tool-build.stderr
+
+  class-size-tool:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: contracts/l3/world-native/tools/casm-size
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.89
+        with:
+          components: rustfmt, clippy
+      - name: Check class-size tool formatting
+        run: cargo fmt --check
+      - name: Check class-size tool lint errors
+        run: cargo clippy --locked --all-targets -- -D warnings
