@@ -1,5 +1,8 @@
 mod fixtures;
 mod recorded;
+use eternum_randomness_protocol::entrypoint::{
+    IRecordedExecutionViewsDispatcher, IRecordedExecutionViewsDispatcherTrait,
+};
 use fixtures::{
     IFixtureDispatcher, IFixtureDispatcherTrait, IRollbackFixtureDispatcher, IRollbackFixtureDispatcherTrait,
     IUpgradeFixtureDispatcher, IUpgradeFixtureDispatcherTrait,
@@ -128,15 +131,25 @@ fn forged_signature_actor_game_and_replayed_intent_are_rejected() {
     let (bad_r, bad_s) = keypair(999)
         .sign(ISeasonDispatcher { contract_address: deployment.peers.season }.hash_intent(action))
         .unwrap();
-    assert!(gateway.execute(action, context(), bad_r, bad_s).is_err());
+    let results = IRecordedExecutionViewsDispatcher { contract_address: deployment.peers.season };
+    gateway.execute(action, context(), bad_r, bad_s).unwrap();
+    assert_eq!(results.get_result(1).result, 'INVALID_SIGNATURE');
     let mut forged = action;
     forged.actor = 0x999.try_into().unwrap();
-    assert!(gateway.execute(forged, context(), r, s).is_err());
+    gateway.execute(forged, context(), r, s).unwrap();
+    assert_eq!(results.get_result(2).result, 'INVALID_SIGNATURE');
     forged = action;
     forged.game_id = 2;
-    assert!(gateway.execute(forged, context(), r, s).is_err());
-    assert!(gateway.execute(action, context(), r, s).is_ok());
-    assert!(gateway.execute(action, context(), r, s).is_err());
+    gateway.execute(forged, context(), r, s).unwrap();
+    assert_eq!(results.get_result(3).result, 'INVALID_SIGNATURE');
+    let mut successor = action;
+    successor.nonce = 1;
+    let (r, s) = signature(deployment, successor);
+    gateway.execute(successor, context(), r, s).unwrap();
+    assert_eq!(results.get_result(4).status, 1);
+    gateway.execute(successor, context(), r, s).unwrap();
+    assert_eq!(results.get_result(5).result, 'STALE_NONCE');
+    assert_eq!(ISeasonDispatcher { contract_address: deployment.peers.season }.next_nonce(1, deployment.actor), 2);
 }
 
 #[test]
@@ -287,16 +300,21 @@ fn signatures_are_bound_to_deployment_command_nonce_and_deadline() {
     let action = intent(first, 1);
     let (r, s) = signature(first, action);
     let gateway = ISeasonSafeDispatcher { contract_address: first.peers.season };
+    let results = IRecordedExecutionViewsDispatcher { contract_address: first.peers.season };
     let mut changed = action;
     changed.command = Command::ClaimProduction(7);
-    assert!(gateway.execute(changed, context(), r, s).is_err());
+    gateway.execute(changed, context(), r, s).unwrap();
+    assert_eq!(results.get_result(1).result, 'INVALID_SIGNATURE');
     changed = action;
     changed.nonce = 1;
-    assert!(gateway.execute(changed, context(), r, s).is_err());
+    gateway.execute(changed, context(), r, s).unwrap();
+    assert_eq!(results.get_result(2).result, 'INVALID_SIGNATURE');
     changed = action;
+    changed.nonce = 2;
     changed.deadline = 99;
     let (expired_r, expired_s) = signature(first, changed);
-    assert!(gateway.execute(changed, context(), expired_r, expired_s).is_err());
+    gateway.execute(changed, context(), expired_r, expired_s).unwrap();
+    assert_eq!(results.get_result(3).result, 'INVALID_ACCEPTANCE');
     assert!(gateway.execute(action, ExecutionContext { raw_root: 1, timestamp: 101 }, r, s).is_err());
     // Both deployments use the same test key; address binding still changes the digest.
     assert!(
@@ -304,7 +322,7 @@ fn signatures_are_bound_to_deployment_command_nonce_and_deadline() {
             .hash_intent(action) != ISeasonDispatcher { contract_address: first.peers.season }
             .hash_intent(action),
     );
-    assert_eq!(ISeasonDispatcher { contract_address: first.peers.season }.next_nonce(1, first.actor), 0);
+    assert_eq!(ISeasonDispatcher { contract_address: first.peers.season }.next_nonce(1, first.actor), 3);
 }
 
 #[test]

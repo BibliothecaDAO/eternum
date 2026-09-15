@@ -102,9 +102,10 @@ The appended `RecordedState` component owns one deployment-wide ordered executio
 binding, state-chain digest, recorded timestamp and root, in that order. Its result map is keyed by order and uses the
 published `ExecutionResult` layout. Existing lifecycle, authentication, game-scoped nonces and game storage are
 unchanged. Both new rows emit version-1 RowSet events with deployment address first; result keys append the order. Zero
-status means no result exists. Result status 1 is successful gameplay and 2 is a terminal command or domain rejection.
-The state digest commits to the preceding execution digest, action, binding and result; it is not a Merkle root of all
-domain storage.
+status means no result exists. Result status 1 is successful gameplay and 2 is a terminal action rejection. The existing
+result felt stores the output commitment on success and the ASCII reason code on rejection; older rejection commitments
+stay opaque and readable. No field or storage slot is added. The state digest commits to the preceding execution digest,
+action, binding and result; it is not a Merkle root of all domain storage.
 
 After authenticating the envelope, the season consumes the game/account nonce and invokes one domain command. A rejected
 domain call rolls back that call's gameplay writes and events; the season records its terminal result and advances the
@@ -188,3 +189,7 @@ The structures domain validates ownership, clock, category and maximum level, sp
 only level and the two troop limits. The map domain changes a realm's displayed level without vacating or revealing it;
 its command requires the structures domain and the matching realm occupant. Village tiles do not change on upgrade.
 `LevelUp` appends command variant 9. `StructureLevelUpStory` appends history variant 1.
+
+Authenticated next-order action rejections advance the recording head. Only a matching actor nonce with representable
+keys and successor advances; stale or unrepresentable nonces remain untouched. Envelope and authority failures precede
+all mutations. These are protocol consumption facts, independent of the gameplay parity projection.

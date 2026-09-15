@@ -61,7 +61,7 @@ fn cross_language_context_boundaries() {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn rejects_malformed_envelope_authority_and_authorization_witness() {
+fn malformed_transport_consumes_nothing_and_invalid_action_signature_is_terminal() {
     for case in 0_u32..6 {
         let address = setup();
         let action = intent(address);
@@ -84,10 +84,20 @@ fn rejects_malformed_envelope_authority_and_authorization_witness() {
                 witness.envelope.append_span(encode_envelope(@recorded).span().slice(9, 2));
             },
         }
-        assert!(
-            IRecordedExecutionSafeDispatcher { contract_address: address }.execute(action, witness, r, s).is_err(),
-            "malformed witness accepted",
-        );
+        let result = IRecordedExecutionSafeDispatcher { contract_address: address }.execute(action, witness, r, s);
+        if case == 1 || case == 2 {
+            assert!(result.is_ok(), "authenticated invalid signature blocked order");
+            let views = IRecordedExecutionViewsDispatcher { contract_address: address };
+            let rejected = views.get_result(1);
+            assert!(rejected.status == 2 && rejected.result == 'INVALID_SIGNATURE', "missing signature reason");
+            assert!(views.get_admission(7, 456).nonce == 1, "signature rejection did not consume nonce");
+        } else {
+            assert!(result.is_err(), "malformed witness accepted");
+            assert!(
+                IRecordedExecutionViewsDispatcher { contract_address: address }.get_result(1).status == 0,
+                "malformed witness consumed order",
+            );
+        }
     }
 }
 
@@ -111,7 +121,7 @@ fn delayed_execution_uses_recorded_time_after_intent_expiry_and_rejects_duplicat
 
 #[test]
 #[feature("safe_dispatcher")]
-fn rejects_invalid_context_without_changing_progress() {
+fn invalid_transport_is_non_consuming_and_invalid_acceptance_is_terminal() {
     for case in 0_u32..9 {
         let address = setup();
         let action = intent(address);
@@ -128,14 +138,16 @@ fn rejects_invalid_context_without_changing_progress() {
             7 => { start_cheat_block_timestamp(address, 1004); },
             _ => { start_cheat_caller_address(address, 456.try_into().unwrap()); },
         }
-        assert!(
-            IRecordedExecutionSafeDispatcher { contract_address: address }
-                .execute(action, context(@recorded), r, s)
-                .is_err(),
-            "invalid context accepted",
-        );
+        let result = IRecordedExecutionSafeDispatcher { contract_address: address }
+            .execute(action, context(@recorded), r, s);
         let (order, _, _, _, _) = IFixtureDispatcher { contract_address: address }.progress();
-        assert!(order == 0, "rejected execution effect");
+        if case == 5 || case == 6 {
+            assert!(result.is_ok() && order == 1, "invalid acceptance blocked order");
+            let rejected = IRecordedExecutionViewsDispatcher { contract_address: address }.get_result(1);
+            assert!(rejected.status == 2 && rejected.result == 'INVALID_ACCEPTANCE', "missing acceptance reason");
+        } else {
+            assert!(result.is_err() && order == 0, "invalid transport changed progress");
+        }
     }
 }
 
@@ -348,4 +360,93 @@ fn outage_recovery_consumes_the_accepted_prefix_before_fresh_work() {
     assert!(order == 2 && timestamp == fresh.timestamp && root == fresh.root, "fresh context not retained");
     assert!(views.get_result(1).binding == envelope_binding(@recorded), "recovery rewrote old binding");
     assert!(views.get_admission(7, 456).nonce == 2, "fresh ticket did not consume its nonce");
+}
+
+#[test]
+fn invalid_action_keys_and_nonces_cannot_block_a_valid_successor() {
+    for case in 0_u32..6 {
+        let address = setup();
+        let mut rejected = intent(address);
+        let reason = match case {
+            0 => {
+                rejected.game_id = 0x100000000;
+                'INVALID_GAME'
+            },
+            1 => {
+                rejected.actor = 0x800000000000000000000000000000000000000000000000000000000000000;
+                'INVALID_ACTOR'
+            },
+            2 => {
+                rejected.game_id = 0;
+                'INVALID_GAME'
+            },
+            3 => {
+                rejected.actor = 0;
+                'INVALID_ACTOR'
+            },
+            4 => {
+                rejected.nonce = 1;
+                'STALE_NONCE'
+            },
+            _ => {
+                rejected.rules = 1;
+                'INVALID_RULES'
+            },
+        };
+        let recorded = envelope(@rejected);
+        let (r, s) = pair().sign(action_identity(@rejected)).unwrap();
+        IRecordedExecutionDispatcher { contract_address: address }.execute(rejected, context(@recorded), r, s);
+        let views = IRecordedExecutionViewsDispatcher { contract_address: address };
+        let result = views.get_result(1);
+        assert!(result.status == 2 && result.result == reason, "terminal reason mismatch");
+        assert!(result.binding == envelope_binding(@recorded), "terminal ticket changed");
+        let next = views.get_admission(7, 456);
+        assert!(next.order == 2, "rejection blocked stream");
+        assert!(next.nonce == if case == 5 {
+            1
+        } else {
+            0
+        }, "rejection changed unrelated nonce");
+        let mut successor = intent(address);
+        successor.nonce = next.nonce;
+        let mut following = envelope(@successor);
+        following.order = next.order;
+        following.predecessor = next.predecessor;
+        following.preceding_state = next.preceding_state;
+        let (r, s) = pair().sign(action_identity(@successor)).unwrap();
+        IRecordedExecutionDispatcher { contract_address: address }.execute(successor, context(@following), r, s);
+        assert!(views.get_result(2).status == 1, "valid successor failed");
+        assert!(views.get_admission(7, 456).nonce == next.nonce + 1, "successor nonce not consumed");
+    }
+}
+
+#[test]
+fn stale_nonce_after_consumption_does_not_invalidate_the_next_action() {
+    let address = setup();
+    let mut first = intent(address);
+    terminal_arguments(ref first);
+    let recorded = envelope(@first);
+    let (r, s) = pair().sign(action_identity(@first)).unwrap();
+    IRecordedExecutionDispatcher { contract_address: address }.execute(first, context(@recorded), r, s);
+    let views = IRecordedExecutionViewsDispatcher { contract_address: address };
+    let next = views.get_admission(7, 456);
+    let stale = intent(address);
+    let mut recorded = envelope(@stale);
+    recorded.order = next.order;
+    recorded.predecessor = next.predecessor;
+    recorded.preceding_state = next.preceding_state;
+    let (r, s) = pair().sign(action_identity(@stale)).unwrap();
+    IRecordedExecutionDispatcher { contract_address: address }.execute(stale, context(@recorded), r, s);
+    assert!(views.get_result(2).result == 'STALE_NONCE', "stale nonce reason missing");
+    let next = views.get_admission(7, 456);
+    assert!(next.order == 3 && next.nonce == 1, "stale ticket consumed a future nonce");
+    let mut successor = intent(address);
+    successor.nonce = 1;
+    let mut recorded = envelope(@successor);
+    recorded.order = next.order;
+    recorded.predecessor = next.predecessor;
+    recorded.preceding_state = next.preceding_state;
+    let (r, s) = pair().sign(action_identity(@successor)).unwrap();
+    IRecordedExecutionDispatcher { contract_address: address }.execute(successor, context(@recorded), r, s);
+    assert!(views.get_result(3).status == 1, "successor invalidated by stale ticket");
 }

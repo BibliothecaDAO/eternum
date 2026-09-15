@@ -13,7 +13,7 @@ pub mod RecordedExecutionStub {
     use starknet::storage::{
         Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess, StoragePointerWriteAccess,
     };
-    use starknet::{ContractAddress, get_block_timestamp, get_caller_address, get_contract_address, get_tx_info};
+    use starknet::{ContractAddress, get_block_timestamp, get_contract_address, get_tx_info};
     use crate::entrypoint::{
         Admission, ExecutionContext, ExecutionResult, IRecordedExecution, accepted_context_matches,
         authenticate_submission, timestamp_in_bounds,
@@ -60,48 +60,87 @@ pub mod RecordedExecutionStub {
     #[abi(embed_v0)]
     impl Execute of IRecordedExecution<ContractState> {
         fn execute(ref self: ContractState, intent: Intent, context: ExecutionContext, r: felt252, s: felt252) {
-            assert!(get_caller_address() == self.submitter.read(), "only sequencing submitter");
-            assert!(intent.chain == get_tx_info().unbox().chain_id, "foreign chain");
-            assert!(intent.deployment == get_contract_address().into(), "foreign deployment");
-            assert!(intent.game_id == 7, "foreign game");
-            assert!(intent.actor == self.actor.read(), "foreign actor");
-            assert!(intent.rules == 789, "rules mismatch");
-            assert!(intent.nonce == self.nonce.read(), "consumed nonce");
-            let action = action_identity(@intent);
-            assert!(check_ecdsa_signature(action, context.accepted_public_key, r, s), "invalid intent signature");
             let envelope = decode_envelope(context.envelope.span()).expect('malformed envelope');
             authenticate_submission(self.submitter.read(), context.authority_epoch, envelope.l2_gas);
+            let action = action_identity(@intent);
             assert!(envelope.action == action, "altered action");
             assert!(envelope.order == self.order.read() + 1, "out of order");
             assert!(envelope.predecessor == self.binding.read(), "binding predecessor mismatch");
             assert!(envelope.preceding_state == self.state.read(), "state predecessor mismatch");
             assert!(envelope.execution_config == 987, "execution config mismatch");
-            assert!(accepted_context_matches(@intent, @envelope), "invalid acceptance context");
-            assert!(timestamp_in_bounds(envelope.timestamp, get_block_timestamp()), "execution timestamp mismatch");
-            self.nonce.write(intent.nonce + 1);
+            assert!(timestamp_in_bounds(envelope.timestamp, get_block_timestamp()), "future execution time");
+            let reason = self.validate_action(@intent, @context, @envelope, r, s).err();
+            if intent.game_id == 7
+                && intent.actor == self.actor.read()
+                && intent.nonce == self.nonce.read()
+                && intent.nonce < 0xffffffffffffffff {
+                self.nonce.write(intent.nonce + 1);
+                self
+                    .emit(
+                        RowSet {
+                            version: 1,
+                            model: 'ActionNonce',
+                            keys: array![intent.game_id, intent.actor].span(),
+                            values: array![(intent.nonce + 1).into()].span(),
+                        },
+                    );
+            }
             self.order.write(envelope.order);
             self.binding.write(envelope_binding(@envelope));
             self.timestamp.write(envelope.timestamp);
             self.root.write(envelope.root);
             let binding = envelope_binding(@envelope);
-            let status = if intent.arguments.len() == 2 {
-                1_u8
-            } else {
-                2_u8
+            let (status, result) = match reason {
+                Some(code) => (2_u8, code),
+                None => (1_u8, poseidon_hash_span(array![binding, 1, (envelope.root.low % 2).into()].span())),
             };
-            let result = poseidon_hash_span(array![binding, status.into(), (envelope.root.low % 2).into()].span());
             let state = poseidon_hash_span(array![self.state.read(), action, binding, result].span());
             self.state.write(state);
             self.results.write(envelope.order, ExecutionResult { status, binding, result, state });
-            self
-                .emit(
-                    RowSet {
-                        version: 1,
-                        model: 'ActionNonce',
-                        keys: array![intent.game_id, intent.actor].span(),
-                        values: array![(intent.nonce + 1).into()].span(),
-                    },
-                );
+        }
+    }
+
+    #[generate_trait]
+    impl Internal of InternalTrait {
+        fn validate_action(
+            self: @ContractState,
+            intent: @Intent,
+            context: @ExecutionContext,
+            envelope: @crate::Envelope,
+            r: felt252,
+            s: felt252,
+        ) -> Result<(), felt252> {
+            if *intent.game_id != 7 {
+                return Err('INVALID_GAME');
+            }
+            if *intent.actor != self.actor.read() {
+                return Err('INVALID_ACTOR');
+            }
+            if *intent.nonce != self.nonce.read() {
+                return Err('STALE_NONCE');
+            }
+            if *intent.nonce == 0xffffffffffffffff {
+                return Err('NONCE_EXHAUSTED');
+            }
+            if *intent.chain != get_tx_info().unbox().chain_id {
+                return Err('FOREIGN_CHAIN');
+            }
+            if *intent.deployment != get_contract_address().into() {
+                return Err('FOREIGN_DEPLOYMENT');
+            }
+            if *intent.rules != 789 {
+                return Err('INVALID_RULES');
+            }
+            if !check_ecdsa_signature(*envelope.action, *context.accepted_public_key, r, s) {
+                return Err('INVALID_SIGNATURE');
+            }
+            if !accepted_context_matches(intent, envelope) {
+                return Err('INVALID_ACCEPTANCE');
+            }
+            if intent.arguments.len() != 2 {
+                return Err('INVALID_COMMAND');
+            }
+            Ok(())
         }
     }
 

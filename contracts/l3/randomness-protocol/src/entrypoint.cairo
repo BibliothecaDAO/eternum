@@ -31,6 +31,7 @@ pub struct Admission {
 pub struct ExecutionResult {
     pub status: u8,
     pub binding: felt252,
+    /// Status 1: output commitment. Status 2: terminal rejection reason code.
     pub result: felt252,
     pub state: felt252,
 }

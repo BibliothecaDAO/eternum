@@ -92,6 +92,14 @@
         "../native/accepted-recovery/native-abi.json",
         "../native/accepted-recovery/madara-checks.json"
       ]
+    },
+    {
+      "gate": "authenticated terminal rejections advance order and preserve unrelated nonces",
+      "status": "passed_source_conformance",
+      "evidence": [
+        "../native/terminal-rejections/report.json"
+      ],
+      "note": "Native and stub shared assertions, ABI unchanged, stale admission guard. Source evidence only; deployed drills and image still predate this change."
     }
   ],
   "historicalRehearsals": "historical-index.json",
@@ -166,7 +174,23 @@
     "../native/accepted-recovery/rust-clippy.log": "a8dd5b4f852b782842253d071162bc7c3c44c3a9a07131cd1159e45bbb802a10",
     "../native/accepted-recovery/rust-fmt.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "../native/accepted-recovery/rust-vectors.log": "95c2e27a6be2b9a4ed92e80b64768ab9e80343ba50f7d274f7d55f597dabb8a3",
-    "../native/accepted-recovery/schema-dependencies.log": "ef22b619a2c72e23984e4cfb407fcb5a0c863749d7935895d5470a8e2fbef754"
+    "../native/accepted-recovery/schema-dependencies.log": "ef22b619a2c72e23984e4cfb407fcb5a0c863749d7935895d5470a8e2fbef754",
+    "../native/terminal-rejections/cairo-vectors.log": "77c40880a382dbe7c4d1c6505f1f3bcbac5b0efaf7349e868e5f5446600d0ca5",
+    "../native/terminal-rejections/current-game.log": "c1116e3b1e8b5c43753cb088ee7629e9296a99e44873ede2853fef19383486d6",
+    "../native/terminal-rejections/madara-format.log": "60829aa45abc0a9f68606e39d10b09487c5dc081c9a265e6323bd81dc956af99",
+    "../native/terminal-rejections/madara-knip.log": "fc3f99140419c705dab067a1e5c3e6c55b0847110d08b8642957b109d8c24236",
+    "../native/terminal-rejections/madara-scarb.log": "dcb30ebfab365955648ddc18b7ab7e32232cd78055054e1f93c86e87f4a97984",
+    "../native/terminal-rejections/native-abi.json": "7ee4e6183cc86c772921dd892864ece06926c86a8dbb94f8e849061a22bafea9",
+    "../native/terminal-rejections/native-abi.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "../native/terminal-rejections/native-build.log": "df75e9b78bfa467b0dece412d13aa2c8802eff52c5314ca6243b841f85c4d59f",
+    "../native/terminal-rejections/native-conformance.log": "d1c64febb92af8b8303d0e9538dac3914a70e884113259f3ba22da01d3c63bf3",
+    "../native/terminal-rejections/native-schema.log": "1af7d5eb36f2718e62ec796b051691272bc8c94efcf2d3da482bb71d1a7ec3a2",
+    "../native/terminal-rejections/protocol-build.log": "b67c4d15cc1f999c05591d24f31a76d2b2d0d411b5daee36a379373b50abfe62",
+    "../native/terminal-rejections/report.json": "cdce533e740617b74b7a45de8434843ad412b56c902913a5261e763661367971",
+    "../native/terminal-rejections/rust-clippy.log": "73596b79c23573c30ea3176cec2df235cf5a72cea804331b01f4aa027afa4a13",
+    "../native/terminal-rejections/rust-fmt.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "../native/terminal-rejections/rust-vectors.log": "97baffaa6c343297bb1913fa2e19bbf29edffc12f6968d08cb41c4a4fc5a4044",
+    "../native/terminal-rejections/schema-dependencies.log": "ab3d47f214846badd10b1eb44548eb2cd051ad9a228460b28f0406a2bc8e70d8"
   },
   "drills": [
     {

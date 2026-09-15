@@ -158,20 +158,8 @@ pub mod SeasonDomain {
         fn execute(ref self: ContractState, intent: Intent, context: ExecutionContext, r: felt252, s: felt252) {
             let peers = self.lifecycle.require_active();
             let envelope = decode_envelope(context.envelope.span()).expect('malformed envelope');
-            self.authenticate(@intent, @context, @envelope, r, s);
-            let game_id: u32 = intent.game_id.try_into().expect('invalid game id');
-            let actor: ContractAddress = intent.actor.try_into().expect('invalid actor');
-            self.consume_nonce(game_id, actor, intent.nonce);
-            let outcome = match decode_command(intent.arguments.span(), intent.command) {
-                Ok(command) => dispatch(
-                    peers,
-                    game_id,
-                    actor,
-                    command,
-                    DomainContext { raw_root: envelope.root, timestamp: envelope.timestamp },
-                ),
-                Err(error) => Err(error),
-            };
+            self.authenticate_ticket(@intent, @context, @envelope);
+            let outcome = self.execute_action(peers, @intent, @context, @envelope, r, s);
             self.recording.record(@envelope, outcome);
         }
     }
@@ -275,35 +263,81 @@ pub mod SeasonDomain {
             assert!(class == authentication.account_class, "unapproved gameplay account");
             IGameplayKeyDispatcher { contract_address: actor }.get_public_key()
         }
-        fn authenticate(
-            self: @ContractState,
+        fn authenticate_ticket(self: @ContractState, intent: @Intent, context: @ExecutionContext, envelope: @Envelope) {
+            authenticate_submission(self.authentication.read().submitter, *context.authority_epoch, *envelope.l2_gas);
+            let head = self.recording.head.read();
+            assert!(*envelope.action == action_identity(intent), "altered action");
+            assert!(*envelope.order == head.order + 1, "out of order");
+            assert!(*envelope.predecessor == head.binding, "binding predecessor mismatch");
+            assert!(*envelope.preceding_state == head.state, "state predecessor mismatch");
+            assert!(*envelope.execution_config == self.execution_config(), "execution config mismatch");
+            assert!(timestamp_in_bounds(*envelope.timestamp, starknet::get_block_timestamp()), "future execution time");
+        }
+        fn execute_action(
+            ref self: ContractState,
+            peers: Peers,
             intent: @Intent,
             context: @ExecutionContext,
             envelope: @Envelope,
             r: felt252,
             s: felt252,
-        ) {
-            authenticate_submission(self.authentication.read().submitter, *context.authority_epoch, *envelope.l2_gas);
-            assert!(*intent.chain == get_tx_info().unbox().chain_id, "foreign chain");
-            assert!(*intent.deployment == get_contract_address().into(), "foreign deployment");
-            let game_id: u32 = (*intent.game_id).try_into().expect('invalid game id');
-            let actor: ContractAddress = (*intent.actor).try_into().expect('invalid actor');
-            assert!(*intent.rules == self.rules_identity(game_id), "rules mismatch");
-            assert!(*intent.nonce == self.nonces.read((game_id, actor)), "consumed nonce");
-            let action = action_identity(intent);
-            // The authenticated authority attests to this key at admission, including across rotation.
-            assert!(check_ecdsa_signature(action, *context.accepted_public_key, r, s), "invalid intent signature");
-            let head = self.recording.head.read();
-            assert!(*envelope.action == action, "altered action");
-            assert!(*envelope.order == head.order + 1, "out of order");
-            assert!(*envelope.predecessor == head.binding, "binding predecessor mismatch");
-            assert!(*envelope.preceding_state == head.state, "state predecessor mismatch");
-            assert!(*envelope.execution_config == self.execution_config(), "execution config mismatch");
-            assert!(accepted_context_matches(intent, envelope), "invalid acceptance context");
-            assert!(
-                timestamp_in_bounds(*envelope.timestamp, starknet::get_block_timestamp()),
-                "execution timestamp mismatch",
-            );
+        ) -> Result<Span<felt252>, felt252> {
+            let game_id: u32 = (*intent.game_id).try_into().ok_or('INVALID_GAME')?;
+            let actor: ContractAddress = (*intent.actor).try_into().ok_or('INVALID_ACTOR')?;
+            if game_id == 0 {
+                return Err('INVALID_GAME');
+            }
+            if actor.is_zero() {
+                return Err('INVALID_ACTOR');
+            }
+            if *intent.nonce != self.nonces.read((game_id, actor)) {
+                return Err('STALE_NONCE');
+            }
+            // The last u64 value cannot represent a successor and is never admitted.
+            if *intent.nonce == 0xffffffffffffffff {
+                return Err('NONCE_EXHAUSTED');
+            }
+            self.consume_nonce(game_id, actor, *intent.nonce);
+            self.validate_action(intent, context, envelope, game_id, r, s)?;
+            let command = decode_command(intent.arguments.span(), *intent.command).map_err(|_error| 'INVALID_COMMAND')?;
+            dispatch(
+                peers,
+                game_id,
+                actor,
+                command,
+                DomainContext { raw_root: *envelope.root, timestamp: *envelope.timestamp },
+            )
+                .map_err(|_error| 'GAMEPLAY_REJECTED')
+        }
+        fn validate_action(
+            self: @ContractState,
+            intent: @Intent,
+            context: @ExecutionContext,
+            envelope: @Envelope,
+            game_id: u32,
+            r: felt252,
+            s: felt252,
+        ) -> Result<(), felt252> {
+            if *intent.chain != get_tx_info().unbox().chain_id {
+                return Err('FOREIGN_CHAIN');
+            }
+            if *intent.deployment != get_contract_address().into() {
+                return Err('FOREIGN_DEPLOYMENT');
+            }
+            if !self.games.exists.read(game_id) {
+                return Err('INVALID_GAME');
+            }
+            if *intent.rules != self.rules_identity(game_id) {
+                return Err('INVALID_RULES');
+            }
+            // The authority attests to the gameplay key at admission, including across rotation.
+            if !check_ecdsa_signature(*envelope.action, *context.accepted_public_key, r, s) {
+                return Err('INVALID_SIGNATURE');
+            }
+            if !accepted_context_matches(intent, envelope) {
+                return Err('INVALID_ACCEPTANCE');
+            }
+            Ok(())
         }
         fn consume_nonce(ref self: ContractState, game_id: u32, actor: ContractAddress, nonce: u64) {
             let next_nonce = nonce + 1;

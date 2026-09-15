@@ -74,10 +74,13 @@ or overtake their order. The journal retains the accepted authorization evidence
 this with its authentication interface before integration. No arbitrary player callback is permitted in that path.
 
 Execution consumes the committed ticket in order with its original root, predecessor state, timestamp, rules and bounds.
-Operational failure retains the ticket. A terminal rejection consumes the nonce without granting another draw; game
-losses must be ordinary successful state transitions. A reverted wrapper cannot be treated as a fresh admission. Zero
-bounds are invalid; nonzero bounds still require execution-specific sufficiency checks by the service. Neither player
-multicalls nor player-supplied roots are accepted command forms.
+Operational failure retains the ticket. An authenticated, next-order ticket with an invalid action records a terminal
+reason and advances order. Its actor nonce advances only when the game/actor key is representable and the nonce equals
+the current value. A stale nonce never consumes a different action's nonce. Zero game/actor keys and the final u64 nonce
+have no representable successor; they remain untouched. Admission rejects stale and exhausted nonces before sampling.
+Game losses must be ordinary successful state transitions. A reverted wrapper cannot be treated as a fresh admission.
+Zero bounds are invalid; nonzero bounds still require execution-specific sufficiency checks by the service. Neither
+player multicalls nor player-supplied roots are accepted command forms.
 
 Authority epochs belong to storage fencing and transaction submission authorization, outside the immutable intent and
 envelope. Promotion fences old storage writers and queued chain submissions before resuming the verified prefix. The new
@@ -182,3 +185,23 @@ player authorization witness, order or recorded context.
 
 `RecordedExecutionStub` exercises this interface only. Its fixed game, rules, configuration and transcript state are
 test fixtures; they are not a deployed explore or evidence of native registry, gameplay or Herald integration.
+
+## Terminal results
+
+The execute and recovery-view ABI is unchanged. `ExecutionResult.status` is 0 for absent, 1 for applied gameplay and 2
+for terminal rejection. For status 1, `result` is the existing output commitment. For status 2, it is an ASCII felt
+reason code: `INVALID_GAME`, `INVALID_ACTOR`, `STALE_NONCE`, `NONCE_EXHAUSTED`, `FOREIGN_CHAIN`, `FOREIGN_DEPLOYMENT`,
+`INVALID_RULES`, `INVALID_SIGNATURE`, `INVALID_ACCEPTANCE`, `INVALID_COMMAND` or `GAMEPLAY_REJECTED`. The binding
+retains the original envelope; the state commitment includes this result. Domain reverts roll back domain writes before
+recording `GAMEPLAY_REJECTED`. Detailed VM error traces are diagnostic data, not another persistent row. Existing
+recorded results remain readable and are not rewritten; historical status-2 results may contain their original opaque
+rejection commitment. Recovery treats the result as an opaque identity in either version.
+
+Malformed envelopes, altered action bindings, invalid predecessor/configuration/order, future timestamps and failed
+sequencing-authority authentication consume nothing. They cannot establish the next accepted ticket. Once those checks
+pass, invalid action signatures and acceptance windows are terminal results rather than transaction reverts.
+
+Cosmetic locks remain on real L2 block time, outside this ordered stream. Native settlement must not await or depend on
+a lock. Issuance is a best-effort side effect associated with the accepted ticket. If game end has passed at issue time,
+record the skip with that ticket. A lock failure cannot cancel settlement or allocate a replacement root. The L2 lock
+contracts are unchanged.

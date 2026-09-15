@@ -31,16 +31,13 @@ pub mod RecordedState {
     #[generate_trait]
     pub impl InternalImpl<TContractState, +HasComponent<TContractState>> of InternalTrait<TContractState> {
         fn record(
-            ref self: ComponentState<TContractState>,
-            envelope: @Envelope,
-            outcome: Result<Span<felt252>, Array<felt252>>,
+            ref self: ComponentState<TContractState>, envelope: @Envelope, outcome: Result<Span<felt252>, felt252>,
         ) {
             let binding = envelope_binding(envelope);
-            let (status, output) = match outcome {
-                Result::Ok(values) => (1_u8, poseidon_hash_span(values)),
-                Result::Err(error) => (2_u8, poseidon_hash_span(error.span())),
+            let (status, result) = match outcome {
+                Result::Ok(values) => (1_u8, poseidon_hash_span(array![binding, 1, poseidon_hash_span(values)].span())),
+                Result::Err(reason) => (2_u8, reason),
             };
-            let result = poseidon_hash_span(array![binding, status.into(), output].span());
             let state = poseidon_hash_span(array![self.head.read().state, *envelope.action, binding, result].span());
             let head = ExecutionHead {
                 order: *envelope.order, binding, state, timestamp: *envelope.timestamp, root: *envelope.root,
