@@ -1,6 +1,216 @@
 {
-  "schemaIdentity": "9de8aa6464304e0c8362f1310a2af6b4c4d9ddceeb942a94f4aa29f51c5cd7f1",
+  "schemaIdentity": "4b208f5758cfb5903eac03cac2dc58c1bf2d70300db495ec16240760cf14e11a",
   "commandAbi": [
+    {
+      "type": "impl",
+      "name": "SeasonRealms",
+      "interface_name": "world_native::realms::ISeasonRealms"
+    },
+    {
+      "type": "struct",
+      "name": "core::array::Span::<core::integer::u32>",
+      "members": [
+        {
+          "name": "snapshot",
+          "type": "@core::array::Array::<core::integer::u32>"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::realms::RealmCatalogue",
+      "members": [
+        {
+          "name": "initialized",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "digest",
+          "type": "core::felt252"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "core::array::Span::<core::integer::u8>",
+      "members": [
+        {
+          "name": "snapshot",
+          "type": "@core::array::Array::<core::integer::u8>"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::realms::RealmTraits",
+      "members": [
+        {
+          "name": "wonder",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "order",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "resources",
+          "type": "core::array::Span::<core::integer::u8>"
+        }
+      ]
+    },
+    {
+      "type": "enum",
+      "name": "core::option::Option::<core::integer::u32>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::realms::SettleSeason",
+      "members": [
+        {
+          "name": "name",
+          "type": "core::felt252"
+        },
+        {
+          "name": "owner",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "selected_realm",
+          "type": "core::option::Option::<core::integer::u32>"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "core::integer::u256",
+      "members": [
+        {
+          "name": "low",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "high",
+          "type": "core::integer::u128"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::commands::ExecutionContext",
+      "members": [
+        {
+          "name": "raw_root",
+          "type": "core::integer::u256"
+        },
+        {
+          "name": "timestamp",
+          "type": "core::integer::u64"
+        }
+      ]
+    },
+    {
+      "type": "interface",
+      "name": "world_native::realms::ISeasonRealms",
+      "items": [
+        {
+          "type": "function",
+          "name": "initialize_realm_traits",
+          "inputs": [
+            {
+              "name": "first_realm",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "packed_traits",
+              "type": "core::array::Span::<core::integer::u32>"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "realm_catalogue",
+          "inputs": [],
+          "outputs": [
+            {
+              "type": "world_native::realms::RealmCatalogue"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "realm_traits",
+          "inputs": [
+            {
+              "name": "realm_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "world_native::realms::RealmTraits"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "available_realm",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "index",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::integer::u32"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "settle_season",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "command",
+              "type": "world_native::realms::SettleSeason"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        }
+      ]
+    },
     {
       "type": "impl",
       "name": "SettlementConfiguration",
@@ -111,16 +321,6 @@
         {
           "name": "snapshot",
           "type": "@core::array::Array::<world_native::troops::TroopType>"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "core::array::Span::<core::integer::u8>",
-      "members": [
-        {
-          "name": "snapshot",
-          "type": "@core::array::Array::<core::integer::u8>"
         }
       ]
     },
@@ -352,20 +552,6 @@
     },
     {
       "type": "struct",
-      "name": "core::integer::u256",
-      "members": [
-        {
-          "name": "low",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "high",
-          "type": "core::integer::u128"
-        }
-      ]
-    },
-    {
-      "type": "struct",
       "name": "world_native::settlement::EntryEntitlement",
       "members": [
         {
@@ -562,20 +748,6 @@
         {
           "name": "grant_starting_troops",
           "type": "core::bool"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "world_native::commands::ExecutionContext",
-      "members": [
-        {
-          "name": "raw_root",
-          "type": "core::integer::u256"
-        },
-        {
-          "name": "timestamp",
-          "type": "core::integer::u64"
         }
       ]
     },
@@ -902,6 +1074,10 @@
         {
           "name": "CreateReservedHyperstructure",
           "type": "world_native::troops::Coord"
+        },
+        {
+          "name": "SettleSeason",
+          "type": "world_native::realms::SettleSeason"
         }
       ]
     },
@@ -2229,6 +2405,18 @@
     },
     {
       "type": "event",
+      "name": "world_native::realms::RealmState::Event",
+      "kind": "enum",
+      "variants": [
+        {
+          "name": "RowSet",
+          "type": "world_native::events::RowSet",
+          "kind": "nested"
+        }
+      ]
+    },
+    {
+      "type": "event",
       "name": "world_native::season::SeasonDomain::Event",
       "kind": "enum",
       "variants": [
@@ -2261,6 +2449,11 @@
           "name": "SettlementEvent",
           "type": "world_native::settlement::SettlementState::Event",
           "kind": "nested"
+        },
+        {
+          "name": "RealmEvent",
+          "type": "world_native::realms::RealmState::Event",
+          "kind": "nested"
         }
       ]
     }
@@ -2276,6 +2469,27 @@
     }
   ],
   "models": [
+    {
+      "name": "RealmTraits",
+      "scope": "deployment",
+      "schema": {
+        "realm_id": "Number",
+        "wonder": "Number",
+        "order": "Number",
+        "resources": [
+          "Number"
+        ]
+      }
+    },
+    {
+      "name": "RealmCatalogue",
+      "scope": "deployment",
+      "schema": {
+        "address": "BigInt",
+        "initialized": "Number",
+        "digest": "BigInt"
+      }
+    },
     {
       "name": "AgentPopulation",
       "scope": "game",

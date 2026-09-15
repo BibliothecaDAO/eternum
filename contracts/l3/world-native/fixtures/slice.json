@@ -187,7 +187,21 @@
     "blitz_settlement_occupied": "A structure occupying the selected settlement rejects the complete action without partial entry, placement or pool changes.",
     "blitz_settlement_modes": "Two three-realm settlements preserve selected coordinates, realm order, pool swap removal and remaining candidate locations.",
     "blitz_settlement_duel": "Both players in two-player mode receive the same ordered realm locations and exhaust the same pool.",
-    "blitz_reservations": "Reserve the original coordinates without entity ids, enforce mode and clock guards, stop at the completed cursor, and materialize each reserved hyperstructure once."
+    "blitz_reservations": "Reserve the original coordinates without entity ids, enforce mode and clock guards, stop at the completed cursor, and materialize each reserved hyperstructure once.",
+    "season_settlement": "Open-entry players draw canonical traits without replacement, settle through the same pool and receive the same immediate troops, production and starting resources; compare all touched facts after each action.",
+    "season_settlement_dev": "Explicit canonical realm selection requires development mode, skips ledger and one-entry reservation, permits successive distinct selections, rejects allocated and out-of-range ids, and preserves wonder tiles and metadata.",
+    "season_settlement_ledger": "Missing entitlement rejects; a season entitlement settles with recorded realm metadata; a second owner cannot allocate that realm again.",
+    "season_settlement_rejections": "Empty name, pre-settling and ended clocks, and selected entry outside development reject without gameplay changes.",
+    "season_settlement_occupied": "Occupied initial planner positions are discarded with the original root and salt before a vacant candidate settles.",
+    "season_ledger_pass": "A bound owner with the wrong pass kind cannot settle.",
+    "season_ledger_order": "An entitlement with invalid Order rejects without gameplay mutations.",
+    "season_ledger_empty": "An entitlement without production traits rejects without gameplay mutations.",
+    "season_wrong_mode": "The Eternum entrypoint rejects a Blitz game.",
+    "season_triple": "Season settlement rejects the three-realm planner mode.",
+    "season_duel": "Season settlement rejects the duel planner mode.",
+    "season_pre_main": "Settlement succeeds at the settling boundary before main-game start, with immediate provisioning.",
+    "season_explorer_occupied": "Season placement skips an occupied explorer tile and leaves the explorer unchanged.",
+    "season_search_limit": "Sixty-four occupied candidate draws reject without committing allocation or planner changes."
   },
   "randomness": {
     "rawRootSource": "injected identical root per action",

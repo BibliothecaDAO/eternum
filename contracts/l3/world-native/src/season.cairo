@@ -45,6 +45,10 @@ pub mod SeasonDomain {
     use crate::game::{GameRegistry, GameState};
     use crate::lifecycle::{Lifecycle, Peers};
     use crate::names::{INamesDispatcher, INamesDispatcherTrait, SetAddressName};
+    use crate::realms::{
+        ISeasonPlacementDispatcher, ISeasonPlacementDispatcherTrait, ISeasonRealmCreationDispatcher,
+        ISeasonRealmCreationDispatcherTrait,
+    };
     use crate::recording::{ExecutionHead, RecordedState};
     use crate::rules::SliceRules;
     use crate::settlement::{
@@ -57,6 +61,8 @@ pub mod SeasonDomain {
         Authentication, IGameplayKeyDispatcher, IGameplayKeyDispatcherTrait, IPlayerRegistryDispatcher,
         IPlayerRegistryDispatcherTrait,
     };
+    component!(path: crate::realms::RealmState, storage: realms, event: RealmEvent);
+    impl RealmInternal = crate::realms::RealmState::InternalImpl<ContractState>;
     component!(path: SettlementState, storage: settlements, event: SettlementEvent);
     impl SettlementInternal = SettlementState::InternalImpl<ContractState>;
     component!(path: UpgradeState, storage: upgrades, event: UpgradeEvent);
@@ -85,6 +91,8 @@ pub mod SeasonDomain {
         upgrades: UpgradeState::Storage,
         #[substorage(v0)]
         settlements: SettlementState::Storage,
+        #[substorage(v0)]
+        realms: crate::realms::RealmState::Storage,
     }
 
     #[event]
@@ -96,12 +104,69 @@ pub mod SeasonDomain {
         RecordingEvent: RecordedState::Event,
         UpgradeEvent: UpgradeState::Event,
         SettlementEvent: SettlementState::Event,
+        RealmEvent: crate::realms::RealmState::Event,
     }
 
     #[constructor]
     fn constructor(ref self: ContractState, authority: ContractAddress, authentication: Authentication) {
         self.lifecycle.initialize(authority);
         self.write_authentication(authentication);
+    }
+
+    #[abi(embed_v0)]
+    impl SeasonRealms of crate::realms::ISeasonRealms<ContractState> {
+        fn initialize_realm_traits(ref self: ContractState, first_realm: u32, packed_traits: Span<u32>) {
+            assert!(get_caller_address() == self.lifecycle.domain_state().authority, "only domain authority");
+            self.realms.initialize(first_realm, packed_traits);
+        }
+        fn realm_catalogue(self: @ContractState) -> crate::realms::RealmCatalogue {
+            crate::realms::RealmCatalogue {
+                initialized: self.realms.catalogue_count.read(), digest: self.realms.catalogue_digest.read(),
+            }
+        }
+        fn realm_traits(self: @ContractState, realm_id: u32) -> crate::realms::RealmTraits {
+            self.realms.traits(realm_id)
+        }
+        fn available_realm(self: @ContractState, game_id: u32, index: u32) -> u32 {
+            self.realms.available(game_id, index, self.settlements.progress.read(game_id).realm_count)
+        }
+        fn settle_season(
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            command: crate::realms::SettleSeason,
+            context: DomainContext,
+        ) {
+            let peers = self.lifecycle.require_active();
+            assert!(get_caller_address() == peers.season, "only authenticated command domain");
+            let game = self.games.game(game_id);
+            assert!(!self.games.rules(game_id).blitz_mode_on, "not a season game");
+            assert!(command.name != 0, "name cannot be empty");
+            assert!(game.dev_mode_on || context.timestamp >= game.start_settling_at, "settling not started");
+            assert!(game.end_at == 0 || context.timestamp < game.end_at, "game ended");
+            let key = EntryKey { game_id, owner: command.owner };
+            if command.selected_realm.is_some() {
+                assert!(game.dev_mode_on, "development mode required");
+                self.settlements.record_entry(key, actor);
+            } else {
+                self.settlements.reserve_entry(key, actor);
+            }
+            let mut root = context.raw_root;
+            let seed = crate::random::game_root(ref root, game_id, game.seed);
+            let mut progress = self.settlements.progress.read(game_id);
+            let (realm_id, traits) = self.resolve_season_realm(key, command.selected_realm, progress.realm_count, seed);
+            self.realms.reserve(game_id, realm_id, progress.realm_count);
+            let coord = ISeasonPlacementDispatcher { contract_address: peers.map }
+                .claim_season_settlement(game_id, progress.realm_count, seed);
+            let structure_id = ISeasonRealmCreationDispatcher { contract_address: peers.structures }
+                .create_season_realm(game_id, actor, realm_id.try_into().unwrap(), traits, coord, context);
+            progress.realm_count += 1;
+            self.settlements.write_progress(game_id, progress);
+            INamesDispatcher { contract_address: peers.structures }
+                .set_address_name(
+                    game_id, actor, SetAddressName { name: command.name, owned_structure_id: structure_id }, context,
+                );
+        }
     }
 
     #[abi(embed_v0)]
@@ -172,6 +237,7 @@ pub mod SeasonDomain {
             let peers = self.lifecycle.require_active();
             assert!(get_caller_address() == peers.season, "only recorded settlement dispatch");
             self.validate_registration(game_id, command.name, context.timestamp);
+            assert!(!self.settlements.entered_players.read((game_id, actor)), "player already settled");
             self.settlements.reserve_entry(EntryKey { game_id, owner: command.owner }, actor);
             self
                 .settlements
@@ -324,6 +390,28 @@ pub mod SeasonDomain {
 
     #[generate_trait]
     impl Internal of InternalTrait {
+        fn resolve_season_realm(
+            self: @ContractState, key: EntryKey, selected: Option<u32>, settled: u16, seed: u256,
+        ) -> (u32, crate::realms::RealmTraits) {
+            if let Some(realm_id) = selected {
+                return (realm_id, self.realms.traits(realm_id));
+            }
+            if self.settlements.rules(key.game_id).ledger_operator.is_zero() {
+                let remaining = crate::realms::CANONICAL_REALM_COUNT - settled.into();
+                assert!(remaining > 0, "all canonical realms allocated");
+                let index = crate::random::range(seed, 71419, remaining.into()).try_into().unwrap();
+                let realm_id = self.realms.available(key.game_id, index, settled);
+                return (realm_id, self.realms.traits(realm_id));
+            }
+            let entitlement = self
+                .settlements
+                .entitlements
+                .read((key.game_id, key.owner))
+                .expect('missing entitlement');
+            assert!(entitlement.pass_kind == 1, "season pass required");
+            let realm_id = entitlement.realm_id.try_into().expect('realm id exceeds u32');
+            (realm_id, crate::realms::decode_entitlement(entitlement.metadata_1))
+        }
         fn validate_registration(self: @ContractState, game_id: u32, name: felt252, timestamp: u64) {
             let game = self.games.game(game_id);
             let rules = self.settlements.rules(game_id);
@@ -529,6 +617,10 @@ pub mod SeasonDomain {
             Command::SetAddressName(value) => {
                 value.serialize(ref calldata);
                 (peers.structures, selector!("set_address_name"))
+            },
+            Command::SettleSeason(value) => {
+                value.serialize(ref calldata);
+                (peers.season, selector!("settle_season"))
             },
             Command::SettleBlitz(value) => {
                 value.serialize(ref calldata);

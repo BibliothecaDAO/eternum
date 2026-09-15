@@ -11,6 +11,7 @@ const scope = [
   "packages",
   "config",
   "deploy/madara-lab/harness",
+  "scripts/generate-realm-metadata.py",
   "package.json",
   "pnpm-lock.yaml",
   ".github/workflows/native-world.yml",
@@ -26,6 +27,7 @@ const reports = new Set(
     "name-parity.json",
     "structure-parity.json",
     "blitz-settlement-parity.json",
+    "season-settlement-parity.json",
   ].map((file) => `contracts/l3/world-native/fixtures/${file}`),
 );
 

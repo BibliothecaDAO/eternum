@@ -110,6 +110,16 @@
         "../native/settlement-admission/madara-checks.json"
       ],
       "note": "Gameplay authentication still requires PlayerRegistry binding. Admission reads token ownership and attributes at one finalized L2 block; accepted execution retains that snapshot. No rebuilt image, live settlement or wallet-side lock issuance is claimed."
+    },
+    {
+      "gate": "Eternum settlement admission retains the bound wallet and validates the canonical command payload",
+      "status": "passed_source_conformance",
+      "evidence": [
+        "../native/season-admission/report.json",
+        "../native/season-admission/native-abi.json",
+        "../native/season-admission/madara-checks.json"
+      ],
+      "note": "Normal and selected realm payloads bind the retained wallet and command commitment. Native and protocol assertions and the original random derivation pass. No rebuilt image or deployed Eternum settlement is claimed."
     }
   ],
   "historicalRehearsals": "historical-index.json",
@@ -217,7 +227,24 @@
     "../native/settlement-admission/rust-clippy.log": "0b9c85a57402765a9638848a90eec54abbd9a68f42a071a97aaa9d8acc5ba131",
     "../native/settlement-admission/rust-fmt.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "../native/settlement-admission/rust-vectors.log": "e514e3847e01939e71b6f519f423e18b568a6639204113e3e130f4d8bb0dce65",
-    "../native/settlement-admission/schema-dependencies.log": "08fd23e1f1fa0921837e2ac6421a5cc6e6f024a34f37c758efcddaa59b4ba867"
+    "../native/settlement-admission/schema-dependencies.log": "08fd23e1f1fa0921837e2ac6421a5cc6e6f024a34f37c758efcddaa59b4ba867",
+    "../native/season-admission/cairo-vectors.log": "8b4e2c0ca64fc05d71591c302fa790a64bf202685e86ab24dc306b8d0a9a630d",
+    "../native/season-admission/current-game.log": "1129e78b69946dc1435851c2b05239ba4d4ef965da6141df3892e0f16d1c93c8",
+    "../native/season-admission/madara-checks.json": "20c355750876d18b7b27fd3b421a1af9d77b55b6795078abbc1070a430cef549",
+    "../native/season-admission/madara-pnpm-run-format.log": "60829aa45abc0a9f68606e39d10b09487c5dc081c9a265e6323bd81dc956af99",
+    "../native/season-admission/madara-pnpm-run-knip.log": "fc3f99140419c705dab067a1e5c3e6c55b0847110d08b8642957b109d8c24236",
+    "../native/season-admission/madara-scarb-fmt.log": "dcb30ebfab365955648ddc18b7ab7e32232cd78055054e1f93c86e87f4a97984",
+    "../native/season-admission/native-abi.json": "7ee4e6183cc86c772921dd892864ece06926c86a8dbb94f8e849061a22bafea9",
+    "../native/season-admission/native-abi.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "../native/season-admission/native-build.log": "73c8be3416e3cad13664486c1386447f61b3fb9cc24160832dd5aa0e3432e5df",
+    "../native/season-admission/native-conformance.log": "b07e996dcb715cc2b89a03c630378e11c4e6f7999174bc258a28245434b3cf99",
+    "../native/season-admission/native-schema.log": "d86836a5e8a4972ba12ff92d2b1d8fe65c7e94755ec53f7d059584418431594f",
+    "../native/season-admission/protocol-build.log": "c42ec30a827a3428fe6aaa2d263060557098650c13edb30baa167825f635ecca",
+    "../native/season-admission/report.json": "c20b7638396b46779131d2b00cbf222afa535a49f5735b7d4191228500173687",
+    "../native/season-admission/rust-clippy.log": "a5887e1c4948c7b416c989ef310d2120aff52ab7094dcb1cb9b829543d9a1b3b",
+    "../native/season-admission/rust-fmt.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "../native/season-admission/rust-vectors.log": "e70a971bd03281d47e5218cb78904abedc217bb513fcd458b1af78221a4fb0b3",
+    "../native/season-admission/schema-dependencies.log": "8d363312cfa907f1a898d5d3513f65044a39b482b8e08767faa066e6108c7c0d"
   },
   "drills": [
     {

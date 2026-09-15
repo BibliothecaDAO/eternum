@@ -333,10 +333,13 @@ pub mod SettlementState {
         fn reserve_entry(ref self: ComponentState<TContractState>, key: EntryKey, player: starknet::ContractAddress) {
             assert!(key.owner.is_non_zero(), "gameplay account is not bound");
             assert!(self.entries.read((key.game_id, key.owner)).is_none(), "owner already settled");
-            assert!(!self.entered_players.read((key.game_id, player)), "player already settled");
             if self.rules(key.game_id).ledger_operator.is_non_zero() {
                 assert!(self.entitlements.read((key.game_id, key.owner)).is_some(), "entry entitlement required");
             }
+            self.record_entry(key, player);
+        }
+        fn record_entry(ref self: ComponentState<TContractState>, key: EntryKey, player: starknet::ContractAddress) {
+            assert!(key.owner.is_non_zero(), "gameplay account is not bound");
             self.entries.write((key.game_id, key.owner), Some(PlayerEntry { player }));
             self.entered_players.write((key.game_id, player), true);
             self

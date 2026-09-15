@@ -3,8 +3,28 @@
   "domain": "blitz-settlement",
   "factModel": {
     "source": "schema/fact-models.mjs",
-    "schema": "9de8aa6464304e0c8362f1310a2af6b4c4d9ddceeb942a94f4aa29f51c5cd7f1",
+    "schema": "4b208f5758cfb5903eac03cac2dc58c1bf2d70300db495ec16240760cf14e11a",
     "declarations": [
+      {
+        "model": "RealmTraits",
+        "observation": {
+          "domain": "realm/season",
+          "fields": {
+            "wonder": "wonder",
+            "order": "order",
+            "resources": "resources"
+          }
+        }
+      },
+      {
+        "model": "RealmCatalogue",
+        "observation": {
+          "domain": "realm/season",
+          "fields": {
+            "initialized": "initialized"
+          }
+        }
+      },
       {
         "model": "AgentPopulation",
         "observation": {
@@ -325,7 +345,7 @@
   },
   "costs": {
     "version": 1,
-    "traceSha256": "47f8302203cf0a283ea30fec231e4769117c472103bb6c1971aa37db009cd910",
+    "traceSha256": "98ae0e7a2a66fe8d1014c24666501f109de1c4825011e4f57ee4f5f93bfe5b1a",
     "accounting": "Inclusive execution counters at each action entrypoint, including attempted operations before rollback. Event counts sum local emissions across descendants; syscall and gas counters are already inclusive. Account validation and fees are outside this fixture.",
     "actions": [
       {
@@ -342,14 +362,14 @@
           "events": 18,
           "eventFelts": 201,
           "l2Gas": 92768196,
-          "classHash": "0x383e830584761aaaac432a438fa4fc7f2165b22449df707c6dd51db99c72ca3"
+          "classHash": "0x1f6fb7cca674c70fa561980a9ba4c62d67c7ee13ba543f367e917d954d57aeb"
         },
         "nativeGameplay": {
           "storageWrites": 22,
           "events": 15,
           "eventFelts": 168,
           "l2Gas": 91737440,
-          "classHash": "0x761d071303e5e4143b0ed5e3b3edc1a477bf728c9146ba64622c5ff738c41d1"
+          "classHash": "0x5c126d4310800cdce0b1c6469b3725153f1f9e653982fc6c5effc72f89265c6"
         },
         "case": "reservations",
         "expectedSuccess": true
@@ -367,15 +387,15 @@
           "storageWrites": 109,
           "events": 14,
           "eventFelts": 221,
-          "l2Gas": 18172896,
-          "classHash": "0x383e830584761aaaac432a438fa4fc7f2165b22449df707c6dd51db99c72ca3"
+          "l2Gas": 18174906,
+          "classHash": "0x1f6fb7cca674c70fa561980a9ba4c62d67c7ee13ba543f367e917d954d57aeb"
         },
         "nativeGameplay": {
           "storageWrites": 98,
           "events": 11,
           "eventFelts": 188,
-          "l2Gas": 17090165,
-          "classHash": "0x383e830584761aaaac432a438fa4fc7f2165b22449df707c6dd51db99c72ca3"
+          "l2Gas": 17092175,
+          "classHash": "0x1f6fb7cca674c70fa561980a9ba4c62d67c7ee13ba543f367e917d954d57aeb"
         },
         "case": "settle_deferred_troops",
         "expectedSuccess": true
@@ -393,15 +413,15 @@
           "storageWrites": 132,
           "events": 24,
           "eventFelts": 401,
-          "l2Gas": 33925126,
-          "classHash": "0x383e830584761aaaac432a438fa4fc7f2165b22449df707c6dd51db99c72ca3"
+          "l2Gas": 33927136,
+          "classHash": "0x1f6fb7cca674c70fa561980a9ba4c62d67c7ee13ba543f367e917d954d57aeb"
         },
         "nativeGameplay": {
           "storageWrites": 121,
           "events": 21,
           "eventFelts": 368,
-          "l2Gas": 32842695,
-          "classHash": "0x383e830584761aaaac432a438fa4fc7f2165b22449df707c6dd51db99c72ca3"
+          "l2Gas": 32844705,
+          "classHash": "0x1f6fb7cca674c70fa561980a9ba4c62d67c7ee13ba543f367e917d954d57aeb"
         },
         "case": "settle_immediate_troops",
         "expectedSuccess": true
@@ -419,15 +439,15 @@
           "storageWrites": 117,
           "events": 44,
           "eventFelts": 566,
-          "l2Gas": 99632486,
-          "classHash": "0x383e830584761aaaac432a438fa4fc7f2165b22449df707c6dd51db99c72ca3"
+          "l2Gas": 99896766,
+          "classHash": "0x1f6fb7cca674c70fa561980a9ba4c62d67c7ee13ba543f367e917d954d57aeb"
         },
         "nativeGameplay": {
           "storageWrites": 106,
           "events": 41,
           "eventFelts": 533,
-          "l2Gas": 98601730,
-          "classHash": "0x6da55a68dcdcd2686dd6a039025090d19b1c7b830c882b916c1062e2ca8197b"
+          "l2Gas": 98866010,
+          "classHash": "0x634dc1633a2bb180f8cc305fcf74fcc54318491ec56ea15903ff6b8133a61e8"
         },
         "case": "provision_deferred_troops",
         "expectedSuccess": true
@@ -445,15 +465,15 @@
           "storageWrites": 11,
           "events": 3,
           "eventFelts": 33,
-          "l2Gas": 1437263,
-          "classHash": "0x383e830584761aaaac432a438fa4fc7f2165b22449df707c6dd51db99c72ca3"
+          "l2Gas": 6355613,
+          "classHash": "0x1f6fb7cca674c70fa561980a9ba4c62d67c7ee13ba543f367e917d954d57aeb"
         },
         "nativeGameplay": {
           "storageWrites": 0,
           "events": 0,
           "eventFelts": 0,
-          "l2Gas": 420760,
-          "classHash": "0x6da55a68dcdcd2686dd6a039025090d19b1c7b830c882b916c1062e2ca8197b"
+          "l2Gas": 5339110,
+          "classHash": "0x634dc1633a2bb180f8cc305fcf74fcc54318491ec56ea15903ff6b8133a61e8"
         },
         "case": "repeat_deferred_provision",
         "expectedSuccess": false
@@ -471,15 +491,15 @@
           "storageWrites": 90,
           "events": 34,
           "eventFelts": 382,
-          "l2Gas": 83902186,
-          "classHash": "0x383e830584761aaaac432a438fa4fc7f2165b22449df707c6dd51db99c72ca3"
+          "l2Gas": 84166646,
+          "classHash": "0x1f6fb7cca674c70fa561980a9ba4c62d67c7ee13ba543f367e917d954d57aeb"
         },
         "nativeGameplay": {
           "storageWrites": 79,
           "events": 31,
           "eventFelts": 349,
-          "l2Gas": 82871430,
-          "classHash": "0x6da55a68dcdcd2686dd6a039025090d19b1c7b830c882b916c1062e2ca8197b"
+          "l2Gas": 83135890,
+          "classHash": "0x634dc1633a2bb180f8cc305fcf74fcc54318491ec56ea15903ff6b8133a61e8"
         },
         "case": "provision_immediate_troops",
         "expectedSuccess": true
@@ -497,15 +517,15 @@
           "storageWrites": 11,
           "events": 3,
           "eventFelts": 33,
-          "l2Gas": 1437353,
-          "classHash": "0x383e830584761aaaac432a438fa4fc7f2165b22449df707c6dd51db99c72ca3"
+          "l2Gas": 6355793,
+          "classHash": "0x1f6fb7cca674c70fa561980a9ba4c62d67c7ee13ba543f367e917d954d57aeb"
         },
         "nativeGameplay": {
           "storageWrites": 0,
           "events": 0,
           "eventFelts": 0,
-          "l2Gas": 420850,
-          "classHash": "0x6da55a68dcdcd2686dd6a039025090d19b1c7b830c882b916c1062e2ca8197b"
+          "l2Gas": 5339290,
+          "classHash": "0x634dc1633a2bb180f8cc305fcf74fcc54318491ec56ea15903ff6b8133a61e8"
         },
         "case": "repeat_immediate_provision",
         "expectedSuccess": false
@@ -517,9 +537,9 @@
   "rulesRevision": "55dc510f5e7af119d1efac9a60426e81fee8e408",
   "oracleSourceSha256": "99034c1e0f31719df3d1ae0cf343a2e9b53fae2da8f972bb38c78b1fa7d73bce",
   "provenance": {
-    "revision": "13fcb5dc554afaf42dcf3522bd897f9c4250691d",
+    "revision": "e8a967f9ebddfc2384a7b375a4607c9ec35d38bf",
     "dirty": false,
-    "sourceSha256": "ca17a730bdd50e60c8dd8da2f09814e9a01825b7cf40a6376f3390d093f2b191",
+    "sourceSha256": "ab0515b01e23b7ece9b6e69e6756d9d51e0fe9f6c4555a9b6fb95d147b7c17f5",
     "scope": [
       "apps/herald",
       "contracts/l3/world-native",
@@ -527,6 +547,7 @@
       "packages",
       "config",
       "deploy/madara-lab/harness",
+      "scripts/generate-realm-metadata.py",
       "package.json",
       "pnpm-lock.yaml",
       ".github/workflows/native-world.yml"
@@ -539,6 +560,7 @@
       "contracts/l3/world-native/fixtures/herald-replay.json",
       "contracts/l3/world-native/fixtures/name-parity.json",
       "contracts/l3/world-native/fixtures/ownership-parity.json",
+      "contracts/l3/world-native/fixtures/season-settlement-parity.json",
       "contracts/l3/world-native/fixtures/structure-parity.json",
       "contracts/l3/world-native/fixtures/world-parity.json"
     ]
@@ -614,33 +636,34 @@
   "casm": {
     "native": {
       "SeasonDomain": {
-        "bytecodeFelts": 70515,
-        "jsonBytes": 1573756,
-        "sha256": "fbb77fd4c227dc87a631b03466f7f94a805276f167bb1ffe0bf6b64fcf3766c6",
+        "bytecodeFelts": 78224,
+        "jsonBytes": 1762345,
+        "sha256": "deb540f7a4dd60d011793eb612874e990fe4197055f821c8413fb969d37c0bab",
         "limitFelts": 81920,
         "withinLimit": true,
         "attribution": "CASM segments in decoded Sierra function-entry order; generics attributed to their defining module",
         "moduleFelts": {
-          "commands": 2368,
-          "core": 7883,
+          "commands": 2437,
+          "core": 8594,
           "eternum_randomness_protocol": 2116,
           "game": 5140,
           "lifecycle": 3004,
-          "random": 134,
+          "random": 330,
+          "realms": 3851,
           "recording": 1103,
           "resources": 145,
           "rules": 23993,
-          "season": 15025,
-          "settlement": 7580,
+          "season": 17973,
+          "settlement": 7514,
           "settlement_grid": 246,
           "troops": 136,
           "upgrades": 1642
         }
       },
       "StructuresDomain": {
-        "bytecodeFelts": 80878,
-        "jsonBytes": 1818257,
-        "sha256": "18cbeb2b19b9be15366b1f7da748b546701ccc5ce4d907e9fa5671793d65a39a",
+        "bytecodeFelts": 81866,
+        "jsonBytes": 1840461,
+        "sha256": "6dbca4f616a706036130f2ef1f889e07570f920ec7b58565f5d5083fc0db7b7b",
         "limitFelts": 81920,
         "withinLimit": true,
         "attribution": "CASM segments in decoded Sierra function-entry order; generics attributed to their defining module",
@@ -654,11 +677,12 @@
           "map": 159,
           "ownership": 4640,
           "random": 196,
+          "realms": 194,
           "resources": 4836,
           "rules": 5461,
           "settlement": 227,
           "stamina": 435,
-          "structures": 48869,
+          "structures": 49663,
           "troops": 2507,
           "upgrades": 146
         }
@@ -688,22 +712,22 @@
         }
       },
       "MapDomain": {
-        "bytecodeFelts": 48507,
-        "jsonBytes": 1142666,
-        "sha256": "57536df78183c506da8185636080a9bfff1673905f5e848d69c744ccd0d70870",
+        "bytecodeFelts": 51096,
+        "jsonBytes": 1198077,
+        "sha256": "fe8f8420ae97f6310aff1ca15e793084a5602463ea68c50fcc925d0f96cd4803",
         "limitFelts": 81920,
         "withinLimit": true,
         "attribution": "CASM segments in decoded Sierra function-entry order; generics attributed to their defining module",
         "moduleFelts": {
           "biome": 3466,
           "commands": 160,
-          "core": 1265,
+          "core": 2357,
           "discovery": 430,
           "eternum_cubit": 16530,
           "game": 1270,
           "geometry": 1951,
           "lifecycle": 3008,
-          "map": 9783,
+          "map": 11280,
           "random": 1052,
           "rules": 5461,
           "settlement": 2127,

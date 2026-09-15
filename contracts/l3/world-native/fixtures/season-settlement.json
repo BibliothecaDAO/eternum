@@ -1,0 +1,104 @@
+{
+  "version": 1,
+  "domain": "season-settlement",
+  "rulesRevision": "55dc510f5e7af119d1efac9a60426e81fee8e408",
+  "factModel": "schema/schema.json#models[RealmTraits,RealmCatalogue,SettlementProgress,SettlementPool,PlayerEntry,Structure,AddressName,ResourceBalance,ResourceProduction,ResourceWeight,Building,StructureBuildings,TileOpt,ExplorerTroops].observation",
+  "projectionGenerator": "deploy/madara-lab/harness/native/fact-projections.ts",
+  "systems": [
+    "realm_systems"
+  ],
+  "commands": [
+    "settle",
+    "settle_dev"
+  ],
+  "requiredConfig": [
+    "The complete canonical 8,000-realm trait catalogue from the pinned rules, written once as immutable deployment data.",
+    "Recorded game settling start, main start, end, development flag, seed and map center.",
+    "Single-realm placement with the original reward profile and open-pool windows.",
+    "PlayerRegistry binding and the optional ledger operator with season-pass entitlement.",
+    "Realm starting grants, capacities, troops, buildings, resource rules and Labor production."
+  ],
+  "normalization": [
+    "Account and entity identities map bijectively.",
+    "Recorded execution time is supplied as the oracle block time.",
+    "Pool ordinals and sparse allocation indices are internal storage; compare available coordinates, remaining count, duplicate rejections and the next selected canonical realm. Structure owns realm identity and current ownership.",
+    "Canonical trait data is shared immutable deployment configuration rather than compiled code; every entry is compared with the pinned catalogue.",
+    "Wonder identity, position and realm id are projected from the canonical structure instead of duplicated in a Wonder row.",
+    "The original reveal behaviour remains until the village commit applies the frozen reveal rule."
+  ],
+  "parityCases": [
+    "season_settlement",
+    "season_settlement_dev",
+    "season_settlement_ledger",
+    "season_settlement_rejections",
+    "season_settlement_occupied",
+    "season_ledger_pass",
+    "season_ledger_order",
+    "season_ledger_empty",
+    "season_wrong_mode",
+    "season_triple",
+    "season_duel",
+    "season_pre_main",
+    "season_explorer_occupied",
+    "season_search_limit"
+  ],
+  "caseRequirements": {
+    "season_settlement": "Open-entry players draw canonical traits without replacement, settle through the same pool and receive the same immediate troops, production and starting resources; compare all touched facts after each action.",
+    "season_settlement_dev": "Explicit canonical realm selection requires development mode, skips ledger and one-entry reservation, permits successive distinct selections, rejects allocated and out-of-range ids, and preserves wonder tiles and metadata.",
+    "season_settlement_ledger": "Missing entitlement rejects; a season entitlement settles with recorded realm metadata; a second owner cannot allocate that realm again.",
+    "season_settlement_rejections": "Empty name, pre-settling and ended clocks, and selected entry outside development reject without gameplay changes.",
+    "season_settlement_occupied": "Occupied initial planner positions are discarded with the original root and salt before a vacant candidate settles.",
+    "season_ledger_pass": "A bound owner with the wrong pass kind cannot settle.",
+    "season_ledger_order": "An entitlement with invalid Order rejects without gameplay mutations.",
+    "season_ledger_empty": "An entitlement without production traits rejects without gameplay mutations.",
+    "season_wrong_mode": "The Eternum entrypoint rejects a Blitz game.",
+    "season_triple": "Season settlement rejects the three-realm planner mode.",
+    "season_duel": "Season settlement rejects the duel planner mode.",
+    "season_pre_main": "Settlement succeeds at the settling boundary before main-game start, with immediate provisioning.",
+    "season_explorer_occupied": "Season placement skips an occupied explorer tile and leaves the explorer unchanged.",
+    "season_search_limit": "Sixty-four occupied candidate draws reject without committing allocation or planner changes."
+  },
+  "supplementalCases": {
+    "world_parity_canonical_realm_traits": "All 8,000 immutable native records decode to the same wonder, order and ordered resource traits as the pinned catalogue.",
+    "world_parity_realm_allocation": "Sparse swap removal preserves selected ids, paid reservations, original draw salt 71419, exhaustion and game isolation."
+  },
+  "harnessCoverage": {
+    "added": [],
+    "contractHarness": "Paired normal, selected and paid settlements compare facts and rejection outcomes after every action.",
+    "liveRun": "pending full-game acceptance"
+  },
+  "reductions": [
+    "Move the compiled canonical realm table into immutable deployment configuration shared by games.",
+    "Remove the Wonder mirror; realm identity, position and wonder eligibility already belong to Structure.",
+    "Reuse the existing settlement planner and sparse resource facts instead of a second realm state representation.",
+    "Remove the allocation-player map and row: no gameplay or client reader used it, and a consumed reverse index enforces the same reservation guard without a second ownership fact."
+  ],
+  "ruledDivergences": [],
+  "nativeCommands": {
+    "settle": "settle_season",
+    "settle_dev": "settle_season"
+  },
+  "measuredSequence": [
+    {
+      "case": "first_open_entry",
+      "command": "settle",
+      "succeeded": true
+    },
+    {
+      "case": "second_open_entry",
+      "command": "settle",
+      "succeeded": true
+    },
+    {
+      "case": "repeat_entry",
+      "command": "settle",
+      "succeeded": false
+    }
+  ],
+  "fixtureSetup": [
+    "Immutable canonical catalogue storage is seeded before gameplay to avoid the test-runner event limit across deployment transactions. All 8,000 entries are checked against the pinned catalogue; initialization and interrupted-deploy gates execute the real entrypoint separately.",
+    "The allocation exhaustion fixture starts with three remaining ids in both worlds; gameplay uses the unchanged 8,000-realm pool.",
+    "Stationary obstacle realms have no starting resource grants; their ownership, tiles and resource existence remain paired facts.",
+    "The 64-draw exhaustion case seeds occupied tiles as planner inputs without constructing 70 unrelated economies. Every seeded tile is compared after rejection; full-structure collisions are exercised separately. The original candidate pool and search limit are unchanged."
+  ]
+}

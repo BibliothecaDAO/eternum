@@ -1,8 +1,9 @@
 import { CallData, type Account, type Call, type RawArgs } from "starknet";
 import { declareClass, waitForSuccess } from "../../shared/declare";
 import { nativePeers } from "./artifacts";
+import { canonicalRealmTraits } from "./realm-catalogue";
 import { inspectNativeWorld } from "./plan";
-import type { NativeDomain, NativeTransaction, NativeWorld } from "./types";
+import type { NativeDomain, NativePlan, NativeTransaction, NativeWorld } from "./types";
 
 export async function deployNativeWorld(
   local: NativeWorld,
@@ -28,6 +29,7 @@ export async function deployNativeWorld(
   const configured = await inspectNativeWorld(local, account);
   if (configured.blockers.length || configured.domains.some((domain) => !domain.configured))
     throw new Error(`Native peer verification failed: ${configured.blockers.join("; ")}`);
+  await initializeRealmCatalogue(local, account, configured, record);
   for (const domain of local.domains) {
     if (!configured.domains.find((state) => state.name === domain.name)!.active)
       await command(account, domain, "activate", {}, record);
@@ -37,10 +39,32 @@ export async function deployNativeWorld(
   return { before, after, transactions };
 }
 
+async function initializeRealmCatalogue(
+  local: NativeWorld,
+  account: Account,
+  configured: NativePlan,
+  record: (action: NativeTransaction["action"], domain: string, hash: string) => void,
+) {
+  const season = local.domains.find((domain) => domain.name === "season")!;
+  const catalogue = configured.domains.find((domain) => domain.name === "season")!.realmCatalogue;
+  if (!catalogue) throw new Error("Season catalogue inspection missing after declaration");
+  for (let offset = catalogue.initialized; offset < canonicalRealmTraits.length; offset += 128)
+    await command(
+      account,
+      season,
+      "initialize_realm_traits",
+      {
+        first_realm: offset + 1,
+        packed_traits: canonicalRealmTraits.slice(offset, offset + 128),
+      },
+      record,
+    );
+}
+
 async function command(
   account: Account,
   domain: NativeDomain,
-  entrypoint: "upgrade" | "configure" | "activate",
+  entrypoint: "upgrade" | "configure" | "activate" | "initialize_realm_traits",
   args: RawArgs,
   record: (action: NativeTransaction["action"], domain: string, hash: string) => void,
 ) {

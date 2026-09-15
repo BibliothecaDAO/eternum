@@ -231,3 +231,16 @@ recorded transaction data, not another current-state row. Settlement stores only
 and player. Later registry rebinding or collectible transfers are not read during execution. Gameplay registration
 remains required; unbound accounts cannot reach cosmetic eligibility. L2 locks use real time and cannot revert L3
 settlement. Tile presence remains explicit to distinguish a valid zero row; existing tiles no longer rewrite that flag.
+
+`RealmState` appends to SeasonDomain. Immutable canonical traits use one packed u32 per realm id; the catalogue count
+and ordered Poseidon digest make interrupted deployment initialization resumable and auditable. Initialization appends
+records and cannot rewrite a prefix. The schema projects decoded RealmTraits and catalogue progress. These are shared
+deployment facts, not per-game copies of the same 8,000 records.
+
+Allocation keys start with game_id. Sparse forward and reverse pool indices implement swap removal; unwritten entries
+denote the identity permutation. Remaining count is derived from SettlementProgress.realm_count instead of retaining a
+second counter. Internal permutation writes have no independent player fact. Removed realms retain their former tail
+index outside the active prefix, which rejects duplicates without a separate allocation-player map or row. Realm
+ownership, wonder identity and location remain in Structure; there is no duplicate Wonder row. SettleSeason appends
+command variant 14. Its owner is the retained admission wallet; execution does not re-resolve a binding that might have
+changed during recovery.

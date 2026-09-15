@@ -18,7 +18,7 @@ const sizeTool = join(native, "tools/casm-size");
 const oracle = join(workspace, "contracts/l3/game");
 const spec = JSON.parse(await readFile(join(native, "fixtures/slice.json"), "utf8"));
 const domainFixtures = await Promise.all(
-  ["ownership", "name", "structure", "blitz-settlement"].map(async (domain) =>
+  ["ownership", "name", "structure", "blitz-settlement", "season-settlement"].map(async (domain) =>
     JSON.parse(await readFile(join(native, `fixtures/${domain}.json`), "utf8")),
   ),
 );
@@ -34,6 +34,7 @@ const settlementTests = [
   "world_parity_settlement_pool_windows",
   "world_parity_starting_troop_table",
 ];
+const realmTests = ["world_parity_canonical_realm_traits", "world_parity_realm_allocation"];
 const fixture = JSON.parse(await readFile(join(native, "fixtures/preset-1.json"), "utf8"));
 
 if (JSON.stringify(Object.keys(spec.fixtureCases).sort()) !== JSON.stringify(Object.keys(requiredParityCases).sort()))
@@ -52,6 +53,7 @@ for (const [domain, size] of Object.entries(nativeCasm))
   if (!size.withinLimit)
     throw new Error(`${domain} exceeds the class limit: ${size.bytecodeFelts} felts; see native-casm.json`);
 await prepareOracle();
+if (process.argv.includes("--prepare-only")) process.exit(0);
 const sourceDigest = await oracleSourceDigest();
 const evidence = await collectEvidence();
 const factModel = describeFacts(JSON.parse(await readFile(join(native, "schema/schema.json"), "utf8")));
@@ -83,6 +85,9 @@ async function collectEvidence() {
       if (!execution.output.includes(`[PASS] eternum::native_settlement_grid::${test} (`))
         throw new Error(`Missing settlement comparison: ${test}`);
     }
+    for (const test of realmTests)
+      if (!execution.output.includes(`[PASS] eternum::native_parity::${test} (`))
+        throw new Error(`Missing canonical realm comparison: ${test}`);
     await verifySourceUnchanged();
     if (process.argv.includes("--measure")) costs = await measureActions();
     await verifySourceUnchanged();
@@ -201,6 +206,10 @@ async function prepareOracle(): Promise<void> {
     join(oracle, "src/native_parity/settlement.cairo"),
     await readFile(join(root, "deploy/madara-lab/harness/native/oracle-settlement.cairo")),
   );
+  await writeFile(
+    join(oracle, "src/native_parity/season_settlement.cairo"),
+    await readFile(join(root, "deploy/madara-lab/harness/native/oracle-season-settlement.cairo")),
+  );
   await writeNativeInputs();
   const schema = JSON.parse(await readFile(join(native, "schema/schema.json"), "utf8"));
   await writeFile(join(oracle, "src/native_facts.cairo"), factProjectors(schema));
@@ -264,6 +273,7 @@ async function runParity() {
     ...Object.values(requiredParityCases).map((test) => `eternum::native_parity::${test}`),
     "eternum::native_parity::world_parity_projection_ignores_storage_bookkeeping",
     ...settlementTests.map((test) => `eternum::native_settlement_grid::${test}`),
+    ...realmTests.map((test) => `eternum::native_parity::${test}`),
   ];
   let exitCode = 0;
   // Each oracle retains two worlds and their execution traces. Run cases separately to bound resident memory.
@@ -349,12 +359,17 @@ async function writeNativeInputs(): Promise<void> {
         `world.write_model_test(@crate::models::config::StructureLevelConfig { preset_id: 1, level: ${row.level}, required_resources_id: ${row.required_resources_id}, required_resource_count: ${row.required_resource_count} });`,
     )
     .join("\n");
+  const realmTraits: number[] = JSON.parse(
+    await readFile(join(root, "config/deployer/clean/world/native/realm-traits.json"), "utf8"),
+  );
+  const catalogue = `const CANONICAL_REALM_TRAITS: [u32; ${realmTraits.length}] = [${realmTraits.join(",")}];
+pub fn canonical_realm_traits() -> Span<u32> { CANONICAL_REALM_TRAITS.span() }`;
   const oracleUpgrades = `use dojo::model::ModelStorageTest; pub fn configure_upgrade_rows(ref world: dojo::world::WorldStorage) { ${upgradeRows} }`;
   const decode = (name: string, type: string, data: string[]) =>
     `pub fn ${name}() -> ${type} { let mut raw=array![${data.join(",")}].span(); let result=Serde::deserialize(ref raw).unwrap(); assert!(raw.is_empty()); result }`;
   await writeFile(
     join(oracle, "src/native_inputs.cairo"),
-    `${oracleUpgrades}\n${decode("realm_grants", "world_native::settlement::RealmGrants", grants)}\n${decode("upgrade_recipes", "Span<world_native::upgrades::UpgradeRecipe>", upgrades)}\n${decode("rules", "world_native::rules::SliceRules", rules)}\n${decode("resource_rules", "Span<world_native::structures::ResourceRule>", resources)}\n`,
+    `${catalogue}\n${oracleUpgrades}\n${decode("realm_grants", "world_native::settlement::RealmGrants", grants)}\n${decode("upgrade_recipes", "Span<world_native::upgrades::UpgradeRecipe>", upgrades)}\n${decode("rules", "world_native::rules::SliceRules", rules)}\n${decode("resource_rules", "Span<world_native::structures::ResourceRule>", resources)}\n`,
   );
 }
 

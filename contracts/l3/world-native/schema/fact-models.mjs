@@ -15,6 +15,14 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
   const domainKey = [{ name: "address", type: struct("lifecycle::Peers")[0].type }];
   return [
     model(
+      "RealmTraits",
+      ["season"],
+      "deployment",
+      method("season", "realm_traits").inputs,
+      struct("realms::RealmTraits"),
+    ),
+    model("RealmCatalogue", ["season"], "deployment", domainKey, struct("realms::RealmCatalogue"), "address"),
+    model(
       "AgentPopulation",
       ["troops"],
       "game",
@@ -223,6 +231,8 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
 
 // Paths describe observable values, not serialized row positions. Oracle adapters live only in the parity fixture.
 const behaviouralFacts = {
+  RealmTraits: { domain: "realm/season", fields: { wonder: "wonder", order: "order", resources: "resources" } },
+  RealmCatalogue: { domain: "realm/season", fields: { initialized: "initialized" } },
   ResourceBalance: { domain: "resources", fields: { balance: "balance" } },
   ResourceProduction: {
     domain: "resources",

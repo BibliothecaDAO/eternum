@@ -7,6 +7,9 @@ on:
       - "contracts/l3/randomness-protocol/**"
       - "apps/herald/src/model-registry.ts"
       - "deploy/madara-lab/harness/native/**"
+      - "config/deployer/clean/world/native/**"
+      - "scripts/generate-realm-metadata.py"
+      - "packages/core/src/data/full-realms.json"
       - ".github/workflows/native-world.yml"
       - "pnpm-lock.yaml"
   push:
@@ -16,6 +19,9 @@ on:
       - "contracts/l3/randomness-protocol/**"
       - "apps/herald/src/model-registry.ts"
       - "deploy/madara-lab/harness/native/**"
+      - "config/deployer/clean/world/native/**"
+      - "scripts/generate-realm-metadata.py"
+      - "packages/core/src/data/full-realms.json"
       - ".github/workflows/native-world.yml"
       - "pnpm-lock.yaml"
 
@@ -78,6 +84,8 @@ jobs:
       - name: Build native domain ABIs
         working-directory: contracts/l3/world-native
         run: scarb build
+      - name: Reject canonical realm configuration drift
+        run: python3 scripts/generate-realm-metadata.py --native --check
       - name: Reject schema and fixture drift
         run: bun contracts/l3/world-native/scripts/generate-schema.mjs --check
       - name: Build the published interface reference
@@ -132,6 +140,7 @@ jobs:
             contracts/l3/world-native/fixtures/name-parity.json
             contracts/l3/world-native/fixtures/structure-parity.json
             contracts/l3/world-native/fixtures/blitz-settlement-parity.json
+            contracts/l3/world-native/fixtures/season-settlement-parity.json
             deploy/madara-lab/.lab/native-oracle/world-parity.log
             deploy/madara-lab/.lab/native-oracle/world-parity.log.stderr
             deploy/madara-lab/.lab/native-oracle/ownership-costs.json
@@ -142,6 +151,8 @@ jobs:
             deploy/madara-lab/.lab/native-oracle/structure-cost.log
             deploy/madara-lab/.lab/native-oracle/blitz-settlement-costs.json
             deploy/madara-lab/.lab/native-oracle/blitz-settlement-cost.log
+            deploy/madara-lab/.lab/native-oracle/season-settlement-costs.json
+            deploy/madara-lab/.lab/native-oracle/season-settlement-cost.log
             deploy/madara-lab/.lab/native-oracle/native-casm.json
             deploy/madara-lab/.lab/native-oracle/native-build.log
             deploy/madara-lab/.lab/native-oracle/native-build.stderr

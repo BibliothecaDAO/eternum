@@ -30,6 +30,7 @@ export interface NativeDomainPlan {
   configured: boolean;
   active: boolean;
   declared: boolean;
+  realmCatalogue?: { initialized: number; digest: string };
 }
 export interface NativePlan {
   worldAddress: string;
@@ -39,7 +40,7 @@ export interface NativePlan {
   synced: boolean;
 }
 export interface NativeTransaction {
-  action: "declare" | "deploy" | "configure" | "activate" | "upgrade";
+  action: "declare" | "deploy" | "configure" | "activate" | "upgrade" | "initialize_realm_traits";
   domain: string;
   hash: string;
 }

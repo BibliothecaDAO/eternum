@@ -108,7 +108,7 @@ WONDER_IDS = {
     "Sky Mast": 51
 }
 
-def generate():
+def realm_trait_records():
     realms = json.loads(SOURCE.read_text())
     assert set(realms) == {str(i) for i in range(1, 8001)}, "Expected all 8000 canonical realms"
     resources = RESOURCE_IDS
@@ -122,6 +122,11 @@ def generate():
         wonder = next((wonders[a["value"]] for a in attributes if a["trait_type"] == "Wonder (translated)"), 1)
         assert mask > 0 and mask < (1 << 22) and 1 <= order <= 16 and 1 <= wonder <= 63
         packed.append(mask | ((order - 1) << 22) | (wonder << 26))
+    return packed
+
+
+def generate():
+    packed = realm_trait_records()
     chunks = [sum(value << (32 * offset) for offset, value in enumerate(packed[index:index + 7])) for index in range(0, len(packed), 7)]
     for index, expected in enumerate(packed):
         assert (chunks[index // 7] >> (32 * (index % 7))) & 0xffffffff == expected
@@ -177,11 +182,16 @@ mod tests {{
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--check", action="store_true")
+    parser.add_argument("--native", action="store_true")
     args = parser.parse_args()
-    generated = generate()
+    target = ROOT / "config/deployer/clean/world/native/realm-traits.json" if args.native else TARGET
+    generated = json.dumps(realm_trait_records(), indent=2) + "\n" if args.native else generate()
     if args.check:
         # Cairo formatting may split whitespace differently; the token stream must match.
         normalize = lambda text: re.sub(r",(?=[)\]])", "", re.sub(r"\s+", "", text))
-        assert normalize(TARGET.read_text()) == normalize(generated), "Regenerate canonical realm metadata"
+        if args.native:
+            assert json.loads(target.read_text()) == json.loads(generated), "Regenerate native realm metadata"
+        else:
+            assert normalize(target.read_text()) == normalize(generated), "Regenerate canonical realm metadata"
     else:
-        TARGET.write_text(generated)
+        target.write_text(generated)

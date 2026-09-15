@@ -189,9 +189,125 @@
               "kind": "data"
             }
           ]
+        },
+        {
+          "name": "RowSet",
+          "prefix": [
+            "0x226dcd383f367cb01aff84f158ff21525009015e05d21053c2800b647b91d93",
+            "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "model",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "keys",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            },
+            {
+              "name": "values",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            }
+          ]
         }
       ],
       "entrypoints": [
+        {
+          "type": "function",
+          "name": "initialize_realm_traits",
+          "inputs": [
+            {
+              "name": "first_realm",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "packed_traits",
+              "type": "core::array::Span::<core::integer::u32>"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "realm_catalogue",
+          "inputs": [],
+          "outputs": [
+            {
+              "type": "world_native::realms::RealmCatalogue"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "realm_traits",
+          "inputs": [
+            {
+              "name": "realm_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "world_native::realms::RealmTraits"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "available_realm",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "index",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::integer::u32"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "settle_season",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "command",
+              "type": "world_native::realms::SettleSeason"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
         {
           "type": "function",
           "name": "configure_settlement",
@@ -936,6 +1052,30 @@
         }
       ],
       "entrypoints": [
+        {
+          "type": "function",
+          "name": "claim_season_settlement",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "settled_count",
+              "type": "core::integer::u16"
+            },
+            {
+              "name": "seed",
+              "type": "core::integer::u256"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "world_native::troops::Coord"
+            }
+          ],
+          "state_mutability": "external"
+        },
         {
           "type": "function",
           "name": "settlement_pool",
@@ -2390,6 +2530,42 @@
         },
         {
           "type": "function",
+          "name": "create_season_realm",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "realm_id",
+              "type": "core::integer::u16"
+            },
+            {
+              "name": "traits",
+              "type": "world_native::realms::RealmTraits"
+            },
+            {
+              "name": "coord",
+              "type": "world_native::troops::Coord"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::integer::u32"
+            }
+          ],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
           "name": "create_blitz_realm",
           "inputs": [
             {
@@ -2670,6 +2846,89 @@
     }
   },
   "models": [
+    {
+      "name": "RealmTraits",
+      "identity": "0x5265616c6d547261697473",
+      "owners": [
+        "season"
+      ],
+      "scope": "deployment",
+      "keys": [
+        {
+          "name": "realm_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "wonder",
+          "type": "core::integer::u8",
+          "id": "0x776f6e646572",
+          "feltLength": 1
+        },
+        {
+          "name": "order",
+          "type": "core::integer::u8",
+          "id": "0x6f72646572",
+          "feltLength": 1
+        },
+        {
+          "name": "resources",
+          "type": "core::array::Span::<core::integer::u8>",
+          "id": "0x7265736f7572636573",
+          "feltLength": null
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": null,
+      "observation": {
+        "domain": "realm/season",
+        "fields": {
+          "wonder": "wonder",
+          "order": "order",
+          "resources": "resources"
+        }
+      }
+    },
+    {
+      "name": "RealmCatalogue",
+      "identity": "0x5265616c6d436174616c6f677565",
+      "owners": [
+        "season"
+      ],
+      "scope": "deployment",
+      "emitterKey": "address",
+      "keys": [
+        {
+          "name": "address",
+          "type": "core::starknet::contract_address::ContractAddress",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "initialized",
+          "type": "core::integer::u32",
+          "id": "0x696e697469616c697a6564",
+          "feltLength": 1
+        },
+        {
+          "name": "digest",
+          "type": "core::felt252",
+          "id": "0x646967657374",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": 2,
+      "observation": {
+        "domain": "realm/season",
+        "fields": {
+          "initialized": "initialized"
+        }
+      }
+    },
     {
       "name": "AgentPopulation",
       "identity": "0x4167656e74506f70756c6174696f6e",
@@ -5408,6 +5667,10 @@
         {
           "name": "CreateReservedHyperstructure",
           "type": "world_native::troops::Coord"
+        },
+        {
+          "name": "SettleSeason",
+          "type": "world_native::realms::SettleSeason"
         }
       ]
     },
@@ -5906,6 +6169,56 @@
         {
           "name": "wonder_ids",
           "type": "core::array::Span::<core::integer::u32>"
+        }
+      ]
+    },
+    "world_native::realms::RealmCatalogue": {
+      "type": "struct",
+      "name": "world_native::realms::RealmCatalogue",
+      "members": [
+        {
+          "name": "initialized",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "digest",
+          "type": "core::felt252"
+        }
+      ]
+    },
+    "world_native::realms::RealmTraits": {
+      "type": "struct",
+      "name": "world_native::realms::RealmTraits",
+      "members": [
+        {
+          "name": "wonder",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "order",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "resources",
+          "type": "core::array::Span::<core::integer::u8>"
+        }
+      ]
+    },
+    "world_native::realms::SettleSeason": {
+      "type": "struct",
+      "name": "world_native::realms::SettleSeason",
+      "members": [
+        {
+          "name": "name",
+          "type": "core::felt252"
+        },
+        {
+          "name": "owner",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "selected_realm",
+          "type": "core::option::Option::<core::integer::u32>"
         }
       ]
     },
@@ -7226,5 +7539,5 @@
       ]
     }
   },
-  "identity": "9de8aa6464304e0c8362f1310a2af6b4c4d9ddceeb942a94f4aa29f51c5cd7f1"
+  "identity": "4b208f5758cfb5903eac03cac2dc58c1bf2d70300db495ec16240760cf14e11a"
 }

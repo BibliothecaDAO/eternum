@@ -49,6 +49,7 @@ pub enum Command {
     SettleBlitz: crate::settlement::SettleBlitz,
     ProvisionRealm: u32,
     CreateReservedHyperstructure: crate::troops::Coord,
+    SettleSeason: crate::realms::SettleSeason,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]

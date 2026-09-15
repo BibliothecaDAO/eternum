@@ -1,6 +1,21 @@
 import { createHash } from "node:crypto";
 
 export const requiredParityCases = {
+  season_ledger_pass: "world_parity_season_ledger_pass",
+  season_ledger_order: "world_parity_season_ledger_order",
+  season_ledger_empty: "world_parity_season_ledger_empty",
+  season_wrong_mode: "world_parity_season_wrong_mode",
+  season_triple: "world_parity_season_triple",
+  season_duel: "world_parity_season_duel",
+  season_pre_main: "world_parity_season_pre_main",
+  season_explorer_occupied: "world_parity_season_explorer_occupied",
+  season_search_limit: "world_parity_season_search_limit",
+  season_settlement: "world_parity_season_settlement",
+  season_settlement_dev: "world_parity_season_settlement_dev",
+  season_settlement_ledger: "world_parity_season_settlement_ledger",
+  season_settlement_rejections: "world_parity_season_settlement_rejections",
+  season_settlement_occupied: "world_parity_season_settlement_occupied",
+
   blitz_settlement: "world_parity_blitz_settlement",
   blitz_entry_rejections: "world_parity_blitz_entry_rejections",
   blitz_entry_ledger: "world_parity_blitz_entry_ledger",

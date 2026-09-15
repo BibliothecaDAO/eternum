@@ -650,6 +650,35 @@ pub mod StructuresDomain {
         }
     }
     #[abi(embed_v0)]
+    impl SeasonRealmCreation of crate::realms::ISeasonRealmCreation<ContractState> {
+        fn create_season_realm(
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            realm_id: u16,
+            traits: crate::realms::RealmTraits,
+            coord: Coord,
+            context: ExecutionContext,
+        ) -> u32 {
+            assert!(get_caller_address() == self.lifecycle.require_active().season, "only season domain");
+            let mut record = realm_record(actor, coord, context.timestamp);
+            record.metadata.realm_id = realm_id;
+            record.metadata.order = traits.order;
+            record.metadata.has_wonder = traits.wonder != 1;
+            record.resources_packed = pack_realm_resources(traits.resources);
+            let key = self.place_realm(game_id, coord, record);
+            self.provision_realm_economy(key, context.timestamp);
+            self
+                .emit_realm_story(
+                    key,
+                    actor,
+                    Story::RealmCreatedStory(crate::ownership::RealmCreatedStory { coord }),
+                    context.timestamp,
+                );
+            key.entity_id
+        }
+    }
+    #[abi(embed_v0)]
     impl RealmCreation of crate::settlement::IRealmCreation<ContractState> {
         fn create_blitz_realm(
             ref self: ContractState,
@@ -663,9 +692,8 @@ pub mod StructuresDomain {
             assert!(get_caller_address() == self.lifecycle.require_active().season, "only season domain");
             let mut record = realm_record(actor, coord, context.timestamp);
             record.metadata.realm_id = realm_id;
-            for resource_type in self.settlement_rules().realm_grants(game_id).realm_resources {
-                record.resources_packed = record.resources_packed * 256 + (*resource_type).into();
-            }
+            record
+                .resources_packed = pack_realm_resources(self.settlement_rules().realm_grants(game_id).realm_resources);
             let key = self.place_realm(game_id, coord, record);
             if grant_troops {
                 self.grant_realm_troops(key, context.timestamp);
@@ -688,29 +716,7 @@ pub mod StructuresDomain {
             let record = self.structures.record(key);
             assert!(record.owner == actor, "actor does not own structure");
             assert!(record.category == 1, "not a realm");
-            let counts = self.buildings.structure_buildings.read((game_id, structure_id));
-            const LABOR_COUNT_SCALE: u128 = 0x10000000000000000;
-            assert!(counts.packed_counts_2 / LABOR_COUNT_SCALE % 256 == 0, "realm already provisioned");
-            let coord = Coord { alt: false, x: record.base.coord_x, y: record.base.coord_y };
-            self.reveal_surroundings(game_id, coord);
-            self.grant_realm_troops(key, context.timestamp);
-            let grants = self.settlement_rules().realm_grants(game_id);
-            for grant in grants.resources {
-                let resource_type = *grant.resource_type;
-                let amount = *grant.amount;
-                assert!(resource_type != crate::resources::LORDS, "invalid start resource");
-                if resource_type < 26 || resource_type > 34 {
-                    let weight = self.resource_rule(game_id, resource_type).unit_weight;
-                    self
-                        .resources
-                        .grant_resource(key, resource_type, amount, weight, context.timestamp.try_into().unwrap());
-                }
-            }
-            let rules = self.game_dispatcher().rules(game_id);
-            self
-                .create_producer(
-                    key, coord, 0xffffffffffffffffffffffffffffffff, true, 23, 25, rules, context.timestamp,
-                );
+            self.provision_realm_economy(key, context.timestamp);
         }
     }
     #[abi(embed_v0)]
@@ -849,6 +855,14 @@ pub mod StructuresDomain {
             }
         }
     }
+    #[inline(never)]
+    fn pack_realm_resources(resources: Span<u8>) -> u128 {
+        let mut packed = 0;
+        for resource in resources {
+            packed = packed * 256 + (*resource).into();
+        }
+        packed
+    }
     fn realm_record(actor: ContractAddress, coord: Coord, timestamp: u64) -> StructureRecord {
         StructureRecord {
             owner: actor,
@@ -921,7 +935,12 @@ pub mod StructuresDomain {
             let rules = self.game_dispatcher().rules(game_id);
             self.reveal_structure_tile(game_id, coord, rules);
             self.structures.create(key, record);
-            self.map_dispatcher().occupy(tile_key(game_id, coord), key.entity_id, 1, true);
+            let occupier = if record.metadata.has_wonder {
+                5
+            } else {
+                1
+            };
+            self.map_dispatcher().occupy(tile_key(game_id, coord), key.entity_id, occupier, true);
             self.resources.initialize(key, rules.structure_capacity_config.realm_capacity.into() * RESOURCE_PRECISION);
             key
         }
@@ -941,6 +960,27 @@ pub mod StructuresDomain {
                         timestamp,
                     },
                 );
+        }
+        fn provision_realm_economy(ref self: ContractState, key: ResourceKey, timestamp: u64) {
+            let record = self.structures.record(key);
+            let counts = self.buildings.structure_buildings.read((key.game_id, key.entity_id));
+            const LABOR_COUNT_SCALE: u128 = 0x10000000000000000;
+            assert!(counts.packed_counts_2 / LABOR_COUNT_SCALE % 256 == 0, "realm already provisioned");
+            let coord = Coord { alt: false, x: record.base.coord_x, y: record.base.coord_y };
+            self.reveal_surroundings(key.game_id, coord);
+            self.grant_realm_troops(key, timestamp);
+            let grants = self.settlement_rules().realm_grants(key.game_id);
+            for grant in grants.resources {
+                let resource_type = *grant.resource_type;
+                let amount = *grant.amount;
+                assert!(resource_type != crate::resources::LORDS, "invalid start resource");
+                if resource_type < 26 || resource_type > 34 {
+                    let weight = self.resource_rule(key.game_id, resource_type).unit_weight;
+                    self.resources.grant_resource(key, resource_type, amount, weight, timestamp.try_into().unwrap());
+                }
+            }
+            let rules = self.game_dispatcher().rules(key.game_id);
+            self.create_producer(key, coord, 0xffffffffffffffffffffffffffffffff, true, 23, 25, rules, timestamp);
         }
         fn grant_realm_troops(ref self: ContractState, key: ResourceKey, timestamp: u64) {
             let record = self.structures.record(key);

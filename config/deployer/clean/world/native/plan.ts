@@ -1,6 +1,7 @@
 import { CallData, type RpcProvider } from "starknet";
 import { isClassDeclared, rpcErrorCode } from "../../shared/declare";
 import { nativePeers } from "./artifacts";
+import { canonicalRealmTraits, realmCatalogueDigest } from "./realm-catalogue";
 import type { NativeDomain, NativeDomainPlan, NativePlan, NativeWorld } from "./types";
 
 export async function inspectNativeWorld(local: NativeWorld, provider: RpcProvider): Promise<NativePlan> {
@@ -15,7 +16,13 @@ export async function inspectNativeWorld(local: NativeWorld, provider: RpcProvid
     blockers,
     synced:
       blockers.length === 0 &&
-      domains.every((domain) => domain.active && domain.configured && domain.chainClassHash === domain.localClassHash),
+      domains.every(
+        (domain) =>
+          domain.active &&
+          domain.configured &&
+          domain.chainClassHash === domain.localClassHash &&
+          (domain.name !== "season" || domain.realmCatalogue?.initialized === canonicalRealmTraits.length),
+      ),
   };
 }
 
@@ -67,9 +74,28 @@ async function inspectDomain(
       ),
     ) as Record<string, bigint>;
     if (!sameAddresses(actual, { ...local.authentication })) blockers.push("season: authentication mismatch");
+    if (BigInt(chainClassHash) === BigInt(domain.classHash)) {
+      plan.realmCatalogue = await inspectRealmCatalogue(domain, provider, block, blockers);
+    }
   }
   return plan;
 }
+async function inspectRealmCatalogue(domain: NativeDomain, provider: RpcProvider, block: number, blockers: string[]) {
+  const raw = await provider.callContract(
+    { contractAddress: domain.address, entrypoint: "realm_catalogue", calldata: [] },
+    block,
+  );
+  const catalogue = new CallData(domain.sierra.abi).parse("realm_catalogue", raw) as {
+    initialized: bigint;
+    digest: bigint;
+  };
+  if (catalogue.initialized > BigInt(canonicalRealmTraits.length))
+    blockers.push("season: realm catalogue exceeds canonical count");
+  else if (BigInt(realmCatalogueDigest(Number(catalogue.initialized))) !== catalogue.digest)
+    blockers.push("season: realm catalogue content mismatch");
+  return { initialized: Number(catalogue.initialized), digest: `0x${catalogue.digest.toString(16)}` };
+}
+
 function sameAddresses(actual: Record<string, bigint>, expected: Record<string, string>): boolean {
   return Object.entries(expected).every(
     ([key, value]) => actual[key] !== undefined && BigInt(actual[key]) === BigInt(value),

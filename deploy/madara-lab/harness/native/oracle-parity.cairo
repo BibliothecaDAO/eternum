@@ -99,6 +99,8 @@ fn namespace() -> NamespaceDef {
             TestResource::Model("CompletedHyperstructure"), TestResource::Model("HyperstructureIndex"),
             TestResource::Model("StructureLevelConfig"), TestResource::Contract("structure_systems"),
             TestResource::Model("AddressName"), TestResource::Contract("name_systems"),
+            TestResource::Model("RealmAllocation"), TestResource::Model("RealmAllocationSlot"),
+            TestResource::Model("RealmAllocationPool"), TestResource::Model("Wonder"),
             TestResource::Model("BlitzSettlement"), TestResource::Model("BlitzSettlementPosition"),
             TestResource::Model("PlayerSettlement"), TestResource::Model("LedgerRegistration"),
             TestResource::Model("BlitzCosmeticAttrsRegister"), TestResource::Event("BlitzSettlementEvent"),
@@ -132,6 +134,9 @@ fn setup_game(case: felt252, blitz: bool) -> PairedWorld {
 }
 
 fn setup_world(case: felt252, blitz: bool, development: bool) -> PairedWorld {
+    setup_timed_world(case, blitz, development, 0, if blitz { 2000 } else { 0 }, 999999)
+}
+fn setup_timed_world(case: felt252, blitz: bool, development: bool, start_settling_at: u64, start_main_at: u64, end_at: u64) -> PairedWorld {
     start_cheat_block_timestamp_global(1800);
     start_cheat_chain_id_global('SN_TEST');
     native_protocol::deploy_submitter(submitter(), authority());
@@ -164,13 +169,9 @@ fn setup_world(case: felt252, blitz: bool, development: bool) -> PairedWorld {
         creator: authority(),
         status: world_native::game::GameStatus::Live,
         dev_mode_on: development,
-        start_settling_at: 0,
-        start_main_at: if blitz {
-            2000
-        } else {
-            0
-        },
-        end_at: 999999,
+        start_settling_at,
+        start_main_at,
+        end_at,
         end_grace_seconds: 0,
         registration_grace_seconds: 0,
         final_trial_id: 0,
@@ -809,6 +810,7 @@ fn world_parity_rejected_actions_preserve_rows() {
 }
 #[starknet::interface]
 pub trait IParityAttempts<T> {
+    fn settle_season(ref self: T, target: ContractAddress, name: felt252, selected: Option<u32>) -> bool;
     fn settle(ref self: T, target: ContractAddress, name: felt252, tokens: Span<u128>, grant: bool) -> bool;
     fn provision(ref self: T, target: ContractAddress, id: u32) -> bool;
     fn level_up(ref self: T, target: ContractAddress, id: u32) -> bool;
@@ -835,6 +837,14 @@ mod ParityAttempts {
     struct Storage {}
     #[abi(embed_v0)]
     impl Attempts of super::IParityAttempts<ContractState> {
+        fn settle_season(ref self: ContractState, target: ContractAddress, name: felt252, selected: Option<u32>) -> bool {
+            let mut args = array![1, name];
+            let entrypoint = match selected {
+                Some(realm_id) => { args.append(realm_id.into()); selector!("settle_dev") },
+                None => selector!("settle"),
+            };
+            starknet::syscalls::call_contract_syscall(target, entrypoint, args.span()).is_ok()
+        }
         fn settle(
             ref self: ContractState, target: ContractAddress, name: felt252, tokens: Span<u128>, grant: bool,
         ) -> bool {
@@ -1868,3 +1878,68 @@ fn world_parity_blitz_settlement_agent_blocked() {
 fn world_parity_blitz_settlement_occupied() {
     settlement::occupied();
 }
+
+mod season_settlement;
+
+#[test]
+#[feature("safe_dispatcher")]
+fn world_parity_season_settlement() { season_settlement::settlement(); }
+
+#[test]
+#[feature("safe_dispatcher")]
+fn world_parity_season_settlement_dev() { season_settlement::development(); }
+
+#[test]
+#[feature("safe_dispatcher")]
+fn world_parity_season_settlement_ledger() { season_settlement::ledger(); }
+
+#[test]
+#[feature("safe_dispatcher")]
+fn world_parity_season_settlement_rejections() { season_settlement::rejections(); }
+
+#[test]
+#[feature("safe_dispatcher")]
+fn world_parity_season_settlement_occupied() { season_settlement::occupied_candidates('season_settlement_occupied', 6, true); }
+
+#[test]
+fn world_parity_canonical_realm_traits() { season_settlement::canonical_traits(); }
+
+#[test]
+#[feature("safe_dispatcher")]
+fn world_parity_realm_allocation() { season_settlement::allocation(); }
+
+#[test]
+#[feature("safe_dispatcher")]
+fn world_parity_season_ledger_pass() { season_settlement::invalid_ledger('season_ledger_pass', 0, 3, false); }
+
+#[test]
+#[feature("safe_dispatcher")]
+fn world_parity_season_ledger_order() { season_settlement::invalid_ledger('season_ledger_order', 1, 17, false); }
+
+#[test]
+#[feature("safe_dispatcher")]
+fn world_parity_season_ledger_empty() { season_settlement::invalid_ledger('season_ledger_empty', 1, 3, true); }
+
+#[test]
+#[feature("safe_dispatcher")]
+fn world_parity_season_wrong_mode() { season_settlement::wrong_mode(); }
+
+#[test]
+#[feature("safe_dispatcher")]
+fn world_parity_season_triple() { season_settlement::wrong_planner('season_triple', world_native::settlement::SettlementMode::Triple); }
+
+#[test]
+#[feature("safe_dispatcher")]
+fn world_parity_season_duel() { season_settlement::wrong_planner('season_duel', world_native::settlement::SettlementMode::Duel); }
+
+#[test]
+#[feature("safe_dispatcher")]
+fn world_parity_season_pre_main() { season_settlement::before_main(); }
+
+#[test]
+#[feature("safe_dispatcher")]
+fn world_parity_season_explorer_occupied() { season_settlement::explorer_occupied(); }
+
+#[test]
+#[feature("safe_dispatcher")]
+fn world_parity_season_search_limit() { season_settlement::search_limit(); }

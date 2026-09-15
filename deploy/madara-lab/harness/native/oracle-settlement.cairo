@@ -16,10 +16,10 @@ fn setup_blitz(case: felt252, mode: world_native::settlement::SettlementMode) ->
 }
 
 fn setup_blitz_entry(case: felt252, mode: SettlementMode, cosmetics: bool, ledger: bool) -> PairedWorld {
-    configure_blitz_entry(setup_game(case, true), mode, cosmetics, ledger)
+    configure_entry(setup_game(case, true), mode, cosmetics, ledger)
 }
 
-fn configure_blitz_entry(mut worlds: PairedWorld, mode: SettlementMode, cosmetics: bool, ledger: bool) -> PairedWorld {
+pub fn configure_entry(mut worlds: PairedWorld, mode: SettlementMode, cosmetics: bool, ledger: bool) -> PairedWorld {
     let collection = if cosmetics {
         deploy("ParityCosmetics", @array![worlds.actor.into(), worlds.opponent.into()])
     } else {
@@ -160,7 +160,7 @@ fn settle_outcome_pair(
     settled.structure_ids
 }
 
-fn compare_blitz_entry(worlds: PairedWorld, step: u32) {
+pub fn compare_blitz_entry(worlds: PairedWorld, step: u32) {
     let views = ISettlementViewsDispatcher { contract_address: worlds.peers.season };
     compare_facts(
         worlds.case,
@@ -244,7 +244,7 @@ pub fn settlement() {
 }
 
 
-fn compare_realm_buildings(worlds: PairedWorld, step: u32, id: u32, coord: world_native::troops::Coord) {
+pub fn compare_realm_buildings(worlds: PairedWorld, step: u32, id: u32, coord: world_native::troops::Coord) {
     let structures = IStructuresDispatcher { contract_address: worlds.peers.structures };
     let key = world_native::buildings::BuildingKey {
         game_id: 1, alt: false, outer_col: coord.x, outer_row: coord.y, inner_col: 10, inner_row: 10,
@@ -508,7 +508,7 @@ pub fn settlement_modes(mode: SettlementMode, case: felt252) {
 
 #[feature("safe_dispatcher")]
 pub fn displacement(blocked: bool, agent: bool, case: felt252) {
-    let mut worlds = configure_blitz_entry(setup_world(case, true, true), SettlementMode::Single, false, false);
+    let mut worlds = configure_entry(setup_world(case, true, true), SettlementMode::Single, false, false);
     reserve_pair(worlds, 255, 0);
     let mut root = 19_u256;
     let seed = world_native::random::game_root(ref root, 1, 1);
@@ -641,7 +641,7 @@ fn compare_agent(worlds: PairedWorld, step: u32, id: u32) {
 
 #[feature("safe_dispatcher")]
 pub fn occupied() {
-    let mut worlds = configure_blitz_entry(
+    let mut worlds = configure_entry(
         setup_world('blitz_settlement_occupied', true, true), SettlementMode::Single, false, false,
     );
     reserve_pair(worlds, 255, 0);

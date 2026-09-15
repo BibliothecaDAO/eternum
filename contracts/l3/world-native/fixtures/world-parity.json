@@ -5,8 +5,28 @@
   "rulesRevision": "55dc510f5e7af119d1efac9a60426e81fee8e408",
   "factModel": {
     "source": "schema/fact-models.mjs",
-    "schema": "9de8aa6464304e0c8362f1310a2af6b4c4d9ddceeb942a94f4aa29f51c5cd7f1",
+    "schema": "4b208f5758cfb5903eac03cac2dc58c1bf2d70300db495ec16240760cf14e11a",
     "declarations": [
+      {
+        "model": "RealmTraits",
+        "observation": {
+          "domain": "realm/season",
+          "fields": {
+            "wonder": "wonder",
+            "order": "order",
+            "resources": "resources"
+          }
+        }
+      },
+      {
+        "model": "RealmCatalogue",
+        "observation": {
+          "domain": "realm/season",
+          "fields": {
+            "initialized": "initialized"
+          }
+        }
+      },
       {
         "model": "AgentPopulation",
         "observation": {
@@ -326,9 +346,9 @@
     ]
   },
   "provenance": {
-    "revision": "13fcb5dc554afaf42dcf3522bd897f9c4250691d",
+    "revision": "e8a967f9ebddfc2384a7b375a4607c9ec35d38bf",
     "dirty": false,
-    "sourceSha256": "ca17a730bdd50e60c8dd8da2f09814e9a01825b7cf40a6376f3390d093f2b191",
+    "sourceSha256": "ab0515b01e23b7ece9b6e69e6756d9d51e0fe9f6c4555a9b6fb95d147b7c17f5",
     "scope": [
       "apps/herald",
       "contracts/l3/world-native",
@@ -336,6 +356,7 @@
       "packages",
       "config",
       "deploy/madara-lab/harness",
+      "scripts/generate-realm-metadata.py",
       "package.json",
       "pnpm-lock.yaml",
       ".github/workflows/native-world.yml"
@@ -348,6 +369,7 @@
       "contracts/l3/world-native/fixtures/herald-replay.json",
       "contracts/l3/world-native/fixtures/name-parity.json",
       "contracts/l3/world-native/fixtures/ownership-parity.json",
+      "contracts/l3/world-native/fixtures/season-settlement-parity.json",
       "contracts/l3/world-native/fixtures/structure-parity.json",
       "contracts/l3/world-native/fixtures/world-parity.json"
     ]
@@ -369,17 +391,853 @@
   ],
   "execution": {
     "exitCode": 0,
-    "elapsedMs": 2515060,
+    "elapsedMs": 3894823,
     "log": "deploy/madara-lab/.lab/native-oracle/world-parity.log",
-    "combinedLogSha256": "2bb2e4a29e7c1eddc51ae3d9020e3b278866ef4ca522324498d5bee2a7935a23",
+    "combinedLogSha256": "230e325d06bfab6018d757faad66cb678b412a6eedc9c66705e45d558ae7a0ef",
     "logEncoding": "stdout + newline + stderr; both logs are retained in the parity artifact",
     "resourcesScope": "Fixture totals include both world deployments, configuration, actions, assertions and trace serialization. Per-action resources are measured by the lab harness."
   },
   "cases": [
     {
+      "name": "season_ledger_pass",
+      "test": "world_parity_season_ledger_pass",
+      "fixtureL2Gas": "668390707",
+      "actions": [
+        {
+          "case": "season_ledger_pass",
+          "order": 1,
+          "action": "settle",
+          "timestamp": "1800",
+          "succeeded": false
+        }
+      ],
+      "roots": [],
+      "deletes": [],
+      "rejections": [],
+      "factSnapshots": 5,
+      "checkpoints": [
+        {
+          "step": 1,
+          "factSnapshots": 5,
+          "models": [
+            "AddressName",
+            "PlayerCosmetics",
+            "PlayerEntry",
+            "SettlementPool",
+            "SettlementProgress"
+          ],
+          "sha256": "f8136837e4dda430006a10cada5b276b552a0cdddbc480960ee0c91944063457"
+        }
+      ]
+    },
+    {
+      "name": "season_ledger_order",
+      "test": "world_parity_season_ledger_order",
+      "fixtureL2Gas": "670225633",
+      "actions": [
+        {
+          "case": "season_ledger_order",
+          "order": 1,
+          "action": "settle",
+          "timestamp": "1800",
+          "succeeded": false
+        }
+      ],
+      "roots": [],
+      "deletes": [],
+      "rejections": [],
+      "factSnapshots": 5,
+      "checkpoints": [
+        {
+          "step": 1,
+          "factSnapshots": 5,
+          "models": [
+            "AddressName",
+            "PlayerCosmetics",
+            "PlayerEntry",
+            "SettlementPool",
+            "SettlementProgress"
+          ],
+          "sha256": "f8136837e4dda430006a10cada5b276b552a0cdddbc480960ee0c91944063457"
+        }
+      ]
+    },
+    {
+      "name": "season_ledger_empty",
+      "test": "world_parity_season_ledger_empty",
+      "fixtureL2Gas": "670039087",
+      "actions": [
+        {
+          "case": "season_ledger_empty",
+          "order": 1,
+          "action": "settle",
+          "timestamp": "1800",
+          "succeeded": false
+        }
+      ],
+      "roots": [],
+      "deletes": [],
+      "rejections": [],
+      "factSnapshots": 5,
+      "checkpoints": [
+        {
+          "step": 1,
+          "factSnapshots": 5,
+          "models": [
+            "AddressName",
+            "PlayerCosmetics",
+            "PlayerEntry",
+            "SettlementPool",
+            "SettlementProgress"
+          ],
+          "sha256": "f8136837e4dda430006a10cada5b276b552a0cdddbc480960ee0c91944063457"
+        }
+      ]
+    },
+    {
+      "name": "season_wrong_mode",
+      "test": "world_parity_season_wrong_mode",
+      "fixtureL2Gas": "648104439",
+      "actions": [
+        {
+          "case": "season_wrong_mode",
+          "order": 1,
+          "action": "settle",
+          "timestamp": "1800",
+          "succeeded": false
+        }
+      ],
+      "roots": [],
+      "deletes": [],
+      "rejections": [],
+      "factSnapshots": 5,
+      "checkpoints": [
+        {
+          "step": 1,
+          "factSnapshots": 5,
+          "models": [
+            "AddressName",
+            "PlayerCosmetics",
+            "PlayerEntry",
+            "SettlementPool",
+            "SettlementProgress"
+          ],
+          "sha256": "f8136837e4dda430006a10cada5b276b552a0cdddbc480960ee0c91944063457"
+        }
+      ]
+    },
+    {
+      "name": "season_triple",
+      "test": "world_parity_season_triple",
+      "fixtureL2Gas": "667956039",
+      "actions": [
+        {
+          "case": "season_triple",
+          "order": 1,
+          "action": "settle",
+          "timestamp": "1800",
+          "succeeded": false
+        }
+      ],
+      "roots": [],
+      "deletes": [],
+      "rejections": [],
+      "factSnapshots": 5,
+      "checkpoints": [
+        {
+          "step": 1,
+          "factSnapshots": 5,
+          "models": [
+            "AddressName",
+            "PlayerCosmetics",
+            "PlayerEntry",
+            "SettlementPool",
+            "SettlementProgress"
+          ],
+          "sha256": "f8136837e4dda430006a10cada5b276b552a0cdddbc480960ee0c91944063457"
+        }
+      ]
+    },
+    {
+      "name": "season_duel",
+      "test": "world_parity_season_duel",
+      "fixtureL2Gas": "667060429",
+      "actions": [
+        {
+          "case": "season_duel",
+          "order": 1,
+          "action": "settle",
+          "timestamp": "1800",
+          "succeeded": false
+        }
+      ],
+      "roots": [],
+      "deletes": [],
+      "rejections": [],
+      "factSnapshots": 5,
+      "checkpoints": [
+        {
+          "step": 1,
+          "factSnapshots": 5,
+          "models": [
+            "AddressName",
+            "PlayerCosmetics",
+            "PlayerEntry",
+            "SettlementPool",
+            "SettlementProgress"
+          ],
+          "sha256": "f8136837e4dda430006a10cada5b276b552a0cdddbc480960ee0c91944063457"
+        }
+      ]
+    },
+    {
+      "name": "season_pre_main",
+      "test": "world_parity_season_pre_main",
+      "fixtureL2Gas": "3143314671",
+      "actions": [
+        {
+          "case": "season_pre_main",
+          "order": 1,
+          "action": "settle",
+          "timestamp": "1700",
+          "succeeded": true
+        }
+      ],
+      "roots": [
+        {
+          "case": "season_pre_main",
+          "step": 1,
+          "rawRoot": "0xd",
+          "incrementedRoot": "0x5a5"
+        }
+      ],
+      "deletes": [],
+      "rejections": [],
+      "factSnapshots": 119,
+      "checkpoints": [
+        {
+          "step": 1,
+          "factSnapshots": 119,
+          "models": [
+            "AddressName",
+            "Building",
+            "PlayerCosmetics",
+            "PlayerEntry",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "SettlementPool",
+            "SettlementProgress",
+            "Structure",
+            "StructureBuildings",
+            "TileOpt"
+          ],
+          "sha256": "b9d7935cf22711d5179db27a901d6bf56742166e6ec66ef55b504c42f5874b05"
+        }
+      ]
+    },
+    {
+      "name": "season_explorer_occupied",
+      "test": "world_parity_season_explorer_occupied",
+      "fixtureL2Gas": "9900326849",
+      "actions": [
+        {
+          "case": "season_explorer_occupied",
+          "order": 2,
+          "action": "settle",
+          "timestamp": "1800",
+          "succeeded": true
+        }
+      ],
+      "roots": [
+        {
+          "case": "season_explorer_occupied",
+          "step": 200,
+          "rawRoot": "0x13",
+          "incrementedRoot": "0x5ab"
+        }
+      ],
+      "deletes": [],
+      "rejections": [],
+      "factSnapshots": 517,
+      "checkpoints": [
+        {
+          "step": 1,
+          "factSnapshots": 199,
+          "models": [
+            "ExplorerTroops",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "TileOpt"
+          ],
+          "sha256": "ff3e1ac1568d621738b89ed2e67758e6db3402c2d1b0b393804a3c4e592adf6d"
+        },
+        {
+          "step": 200,
+          "factSnapshots": 318,
+          "models": [
+            "AddressName",
+            "Building",
+            "ExplorerTroops",
+            "PlayerCosmetics",
+            "PlayerEntry",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "SettlementPool",
+            "SettlementProgress",
+            "Structure",
+            "StructureBuildings",
+            "TileOpt"
+          ],
+          "sha256": "4d74ee9c77087cc01474c19a973acaea2086c2c4260cb363d0f04ec2607b58ce"
+        }
+      ]
+    },
+    {
+      "name": "season_search_limit",
+      "test": "world_parity_season_search_limit",
+      "fixtureL2Gas": "3546287183",
+      "actions": [
+        {
+          "case": "season_search_limit",
+          "order": 1,
+          "action": "settle",
+          "timestamp": "1800",
+          "succeeded": false
+        }
+      ],
+      "roots": [],
+      "deletes": [],
+      "rejections": [],
+      "factSnapshots": 75,
+      "checkpoints": [
+        {
+          "step": 1,
+          "factSnapshots": 75,
+          "models": [
+            "AddressName",
+            "PlayerCosmetics",
+            "PlayerEntry",
+            "SettlementPool",
+            "SettlementProgress",
+            "TileOpt"
+          ],
+          "sha256": "f1270e9ef24dc20531258b900f4b34bf65162d198d3983f0954f8ec47a8f82ca"
+        }
+      ]
+    },
+    {
+      "name": "season_settlement",
+      "test": "world_parity_season_settlement",
+      "fixtureL2Gas": "7720986010",
+      "actions": [
+        {
+          "case": "season_settlement",
+          "order": 1,
+          "action": "settle",
+          "timestamp": "1800",
+          "succeeded": true
+        },
+        {
+          "case": "season_settlement",
+          "order": 2,
+          "action": "settle",
+          "timestamp": "1860",
+          "succeeded": true
+        },
+        {
+          "case": "season_settlement",
+          "order": 3,
+          "action": "settle",
+          "timestamp": "1920",
+          "succeeded": false
+        }
+      ],
+      "roots": [
+        {
+          "case": "season_settlement",
+          "step": 1,
+          "rawRoot": "0x4d2",
+          "incrementedRoot": "0xa6a"
+        },
+        {
+          "case": "season_settlement",
+          "step": 2,
+          "rawRoot": "0x162e",
+          "incrementedRoot": "0x1bc6"
+        }
+      ],
+      "deletes": [],
+      "rejections": [],
+      "factSnapshots": 357,
+      "checkpoints": [
+        {
+          "step": 1,
+          "factSnapshots": 119,
+          "models": [
+            "AddressName",
+            "Building",
+            "PlayerCosmetics",
+            "PlayerEntry",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "SettlementPool",
+            "SettlementProgress",
+            "Structure",
+            "StructureBuildings",
+            "TileOpt"
+          ],
+          "sha256": "e143c0bef4503837703ee735dfb280ddfc310cb636f8a0e9b8a8781fe16f64c9"
+        },
+        {
+          "step": 2,
+          "factSnapshots": 119,
+          "models": [
+            "AddressName",
+            "Building",
+            "PlayerCosmetics",
+            "PlayerEntry",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "SettlementPool",
+            "SettlementProgress",
+            "Structure",
+            "StructureBuildings",
+            "TileOpt"
+          ],
+          "sha256": "53d7998a1bba37e507ba72370a8e696e0867069356579869eddae64bc83f084f"
+        },
+        {
+          "step": 3,
+          "factSnapshots": 119,
+          "models": [
+            "AddressName",
+            "Building",
+            "PlayerCosmetics",
+            "PlayerEntry",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "SettlementPool",
+            "SettlementProgress",
+            "Structure",
+            "StructureBuildings",
+            "TileOpt"
+          ],
+          "sha256": "f29a5998bc75d9ff787f7b82aa92003f4a4454bc95b3f6f2ef4cbd86cdb2c125"
+        }
+      ]
+    },
+    {
+      "name": "season_settlement_dev",
+      "test": "world_parity_season_settlement_dev",
+      "fixtureL2Gas": "23431659570",
+      "actions": [
+        {
+          "case": "season_settlement_dev",
+          "order": 1,
+          "action": "settle_dev",
+          "timestamp": "1800",
+          "succeeded": true
+        },
+        {
+          "case": "season_settlement_dev",
+          "order": 2,
+          "action": "settle_dev",
+          "timestamp": "1800",
+          "succeeded": true
+        },
+        {
+          "case": "season_settlement_dev",
+          "order": 3,
+          "action": "settle_dev",
+          "timestamp": "1800",
+          "succeeded": false
+        },
+        {
+          "case": "season_settlement_dev",
+          "order": 4,
+          "action": "settle_dev",
+          "timestamp": "1800",
+          "succeeded": false
+        },
+        {
+          "case": "season_settlement_dev",
+          "order": 5,
+          "action": "settle_dev",
+          "timestamp": "1800",
+          "succeeded": false
+        },
+        {
+          "case": "season_settlement_dev",
+          "order": 6,
+          "action": "settle",
+          "timestamp": "1800",
+          "succeeded": false
+        }
+      ],
+      "roots": [
+        {
+          "case": "season_settlement_dev",
+          "step": 1,
+          "rawRoot": "0x4d2",
+          "incrementedRoot": "0xa6a"
+        },
+        {
+          "case": "season_settlement_dev",
+          "step": 2,
+          "rawRoot": "0x4d2",
+          "incrementedRoot": "0xa6a"
+        }
+      ],
+      "deletes": [],
+      "rejections": [],
+      "factSnapshots": 1284,
+      "checkpoints": [
+        {
+          "step": 1,
+          "factSnapshots": 119,
+          "models": [
+            "AddressName",
+            "Building",
+            "PlayerCosmetics",
+            "PlayerEntry",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "SettlementPool",
+            "SettlementProgress",
+            "Structure",
+            "StructureBuildings",
+            "TileOpt"
+          ],
+          "sha256": "c462a09b9bc117ee8ed5c9bd3fc6950626209e05c1fc59105664ac64640e2fe8"
+        },
+        {
+          "step": 2,
+          "factSnapshots": 233,
+          "models": [
+            "AddressName",
+            "Building",
+            "PlayerCosmetics",
+            "PlayerEntry",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "SettlementPool",
+            "SettlementProgress",
+            "Structure",
+            "StructureBuildings",
+            "TileOpt"
+          ],
+          "sha256": "1fc013a229af6dc1be2801e6db46cc79e214265c13152e9057465c3a91b3092e"
+        },
+        {
+          "step": 3,
+          "factSnapshots": 233,
+          "models": [
+            "AddressName",
+            "Building",
+            "PlayerCosmetics",
+            "PlayerEntry",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "SettlementPool",
+            "SettlementProgress",
+            "Structure",
+            "StructureBuildings",
+            "TileOpt"
+          ],
+          "sha256": "5a8183ee75add551c45c2623a0255f7ef0339c4161eb942342238bcadd7237b3"
+        },
+        {
+          "step": 4,
+          "factSnapshots": 233,
+          "models": [
+            "AddressName",
+            "Building",
+            "PlayerCosmetics",
+            "PlayerEntry",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "SettlementPool",
+            "SettlementProgress",
+            "Structure",
+            "StructureBuildings",
+            "TileOpt"
+          ],
+          "sha256": "e1014027433ce390a72d1a05ee067d8c2acd411ea30767900d2736ece9d51cdc"
+        },
+        {
+          "step": 5,
+          "factSnapshots": 233,
+          "models": [
+            "AddressName",
+            "Building",
+            "PlayerCosmetics",
+            "PlayerEntry",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "SettlementPool",
+            "SettlementProgress",
+            "Structure",
+            "StructureBuildings",
+            "TileOpt"
+          ],
+          "sha256": "dcb0629548e527831eee63218e952bdc8b90f75c243b7c439c7d8532989505ab"
+        },
+        {
+          "step": 6,
+          "factSnapshots": 233,
+          "models": [
+            "AddressName",
+            "Building",
+            "PlayerCosmetics",
+            "PlayerEntry",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "SettlementPool",
+            "SettlementProgress",
+            "Structure",
+            "StructureBuildings",
+            "TileOpt"
+          ],
+          "sha256": "2d9a840c8232db1db0e467209418f2f028ec27b7251484733978ddee9e651cc4"
+        }
+      ]
+    },
+    {
+      "name": "season_settlement_ledger",
+      "test": "world_parity_season_settlement_ledger",
+      "fixtureL2Gas": "3622061193",
+      "actions": [
+        {
+          "case": "season_settlement_ledger",
+          "order": 1,
+          "action": "settle",
+          "timestamp": "1800",
+          "succeeded": false
+        },
+        {
+          "case": "season_settlement_ledger",
+          "order": 2,
+          "action": "settle",
+          "timestamp": "1800",
+          "succeeded": true
+        },
+        {
+          "case": "season_settlement_ledger",
+          "order": 3,
+          "action": "settle",
+          "timestamp": "1800",
+          "succeeded": false
+        }
+      ],
+      "roots": [
+        {
+          "case": "season_settlement_ledger",
+          "step": 2,
+          "rawRoot": "0xc",
+          "incrementedRoot": "0x5a4"
+        }
+      ],
+      "deletes": [],
+      "rejections": [],
+      "factSnapshots": 129,
+      "checkpoints": [
+        {
+          "step": 1,
+          "factSnapshots": 5,
+          "models": [
+            "AddressName",
+            "PlayerCosmetics",
+            "PlayerEntry",
+            "SettlementPool",
+            "SettlementProgress"
+          ],
+          "sha256": "f8136837e4dda430006a10cada5b276b552a0cdddbc480960ee0c91944063457"
+        },
+        {
+          "step": 2,
+          "factSnapshots": 119,
+          "models": [
+            "AddressName",
+            "Building",
+            "PlayerCosmetics",
+            "PlayerEntry",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "SettlementPool",
+            "SettlementProgress",
+            "Structure",
+            "StructureBuildings",
+            "TileOpt"
+          ],
+          "sha256": "c328aa1be2272ac03cfa66218752c60021e76d77798c0a1c3fe2847d4f1326a0"
+        },
+        {
+          "step": 3,
+          "factSnapshots": 5,
+          "models": [
+            "AddressName",
+            "PlayerCosmetics",
+            "PlayerEntry",
+            "SettlementPool",
+            "SettlementProgress"
+          ],
+          "sha256": "4117861231fa956ae719176137dd148d17ff774854fabbcd6268e29b825a547e"
+        }
+      ]
+    },
+    {
+      "name": "season_settlement_rejections",
+      "test": "world_parity_season_settlement_rejections",
+      "fixtureL2Gas": "902029655",
+      "actions": [
+        {
+          "case": "season_settlement_rejections",
+          "order": 1,
+          "action": "settle",
+          "timestamp": "1800",
+          "succeeded": false
+        },
+        {
+          "case": "season_settlement_rejections",
+          "order": 2,
+          "action": "settle",
+          "timestamp": "1699",
+          "succeeded": false
+        },
+        {
+          "case": "season_settlement_rejections",
+          "order": 3,
+          "action": "settle",
+          "timestamp": "3000",
+          "succeeded": false
+        },
+        {
+          "case": "season_settlement_rejections",
+          "order": 4,
+          "action": "settle_dev",
+          "timestamp": "1800",
+          "succeeded": false
+        }
+      ],
+      "roots": [],
+      "deletes": [],
+      "rejections": [],
+      "factSnapshots": 20,
+      "checkpoints": [
+        {
+          "step": 1,
+          "factSnapshots": 5,
+          "models": [
+            "AddressName",
+            "PlayerCosmetics",
+            "PlayerEntry",
+            "SettlementPool",
+            "SettlementProgress"
+          ],
+          "sha256": "f8136837e4dda430006a10cada5b276b552a0cdddbc480960ee0c91944063457"
+        },
+        {
+          "step": 2,
+          "factSnapshots": 5,
+          "models": [
+            "AddressName",
+            "PlayerCosmetics",
+            "PlayerEntry",
+            "SettlementPool",
+            "SettlementProgress"
+          ],
+          "sha256": "988fcf3fb9d0f0bcdbf3ce433fed1de8183e31eaef6738929eca64988fac8a29"
+        },
+        {
+          "step": 3,
+          "factSnapshots": 5,
+          "models": [
+            "AddressName",
+            "PlayerCosmetics",
+            "PlayerEntry",
+            "SettlementPool",
+            "SettlementProgress"
+          ],
+          "sha256": "b6a6dbbceb5d580d6a142e0ddde58497e0bd038e0257bc5535d6b17f215bd40f"
+        },
+        {
+          "step": 4,
+          "factSnapshots": 5,
+          "models": [
+            "AddressName",
+            "PlayerCosmetics",
+            "PlayerEntry",
+            "SettlementPool",
+            "SettlementProgress"
+          ],
+          "sha256": "27ec075355370b169e68daa721705368d0f43905050f7793b1d2428d9dd0f3c5"
+        }
+      ]
+    },
+    {
+      "name": "season_settlement_occupied",
+      "test": "world_parity_season_settlement_occupied",
+      "fixtureL2Gas": "14008967047",
+      "actions": [
+        {
+          "case": "season_settlement_occupied",
+          "order": 1,
+          "action": "settle",
+          "timestamp": "1800",
+          "succeeded": true
+        }
+      ],
+      "roots": [
+        {
+          "case": "season_settlement_occupied",
+          "step": 1,
+          "rawRoot": "0x13",
+          "incrementedRoot": "0x5ab"
+        }
+      ],
+      "deletes": [],
+      "rejections": [],
+      "factSnapshots": 719,
+      "checkpoints": [
+        {
+          "step": 1,
+          "factSnapshots": 719,
+          "models": [
+            "AddressName",
+            "Building",
+            "PlayerCosmetics",
+            "PlayerEntry",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "SettlementPool",
+            "SettlementProgress",
+            "Structure",
+            "StructureBuildings",
+            "TileOpt"
+          ],
+          "sha256": "b69b89bdec73adeb1c9d20fda16a4f4a5d14a2ae90b574846d932665e2717a76"
+        }
+      ]
+    },
+    {
       "name": "blitz_settlement",
       "test": "world_parity_blitz_settlement",
-      "fixtureL2Gas": "11599586762",
+      "fixtureL2Gas": "11617420750",
       "actions": [
         {
           "case": "blitz_settlement",
@@ -550,7 +1408,7 @@
     {
       "name": "blitz_entry_rejections",
       "test": "world_parity_blitz_entry_rejections",
-      "fixtureL2Gas": "8107005941",
+      "fixtureL2Gas": "8110481119",
       "actions": [
         {
           "case": "blitz_entry_rejections",
@@ -759,7 +1617,7 @@
     {
       "name": "blitz_entry_ledger",
       "test": "world_parity_blitz_entry_ledger",
-      "fixtureL2Gas": "2634430137",
+      "fixtureL2Gas": "2638737495",
       "actions": [
         {
           "case": "blitz_entry_ledger",
@@ -836,7 +1694,7 @@
     {
       "name": "blitz_cosmetics",
       "test": "world_parity_blitz_cosmetics",
-      "fixtureL2Gas": "2786915804",
+      "fixtureL2Gas": "2791223682",
       "actions": [
         {
           "case": "blitz_cosmetics",
@@ -951,7 +1809,7 @@
     {
       "name": "blitz_cosmetics_disabled",
       "test": "world_parity_blitz_cosmetics_disabled",
-      "fixtureL2Gas": "2669223465",
+      "fixtureL2Gas": "2673529813",
       "actions": [
         {
           "case": "blitz_cosmetics_disabled",
@@ -1009,7 +1867,7 @@
     {
       "name": "blitz_settlement_displacement",
       "test": "world_parity_blitz_settlement_displacement",
-      "fixtureL2Gas": "9818576151",
+      "fixtureL2Gas": "9822882699",
       "actions": [
         {
           "case": "blitz_settlement_displacement",
@@ -1093,7 +1951,7 @@
     {
       "name": "blitz_settlement_blocked",
       "test": "world_parity_blitz_settlement_blocked",
-      "fixtureL2Gas": "9676262825",
+      "fixtureL2Gas": "9680570973",
       "actions": [
         {
           "case": "blitz_settlement_blocked",
@@ -1195,7 +2053,7 @@
     {
       "name": "blitz_settlement_agent_blocked",
       "test": "world_parity_blitz_settlement_agent_blocked",
-      "fixtureL2Gas": "10301702055",
+      "fixtureL2Gas": "10306010203",
       "actions": [
         {
           "case": "blitz_settlement_agent_blocked",
@@ -1301,7 +2159,7 @@
     {
       "name": "blitz_settlement_occupied",
       "test": "world_parity_blitz_settlement_occupied",
-      "fixtureL2Gas": "2737488462",
+      "fixtureL2Gas": "2741794810",
       "actions": [
         {
           "case": "blitz_settlement_occupied",
@@ -1353,7 +2211,7 @@
     {
       "name": "blitz_settlement_modes",
       "test": "world_parity_blitz_settlement_modes",
-      "fixtureL2Gas": "11081747814",
+      "fixtureL2Gas": "11086062272",
       "actions": [
         {
           "case": "blitz_settlement_modes",
@@ -1440,7 +2298,7 @@
     {
       "name": "blitz_settlement_duel",
       "test": "world_parity_blitz_settlement_duel",
-      "fixtureL2Gas": "10769496386",
+      "fixtureL2Gas": "10773810844",
       "actions": [
         {
           "case": "blitz_settlement_duel",
@@ -1527,7 +2385,7 @@
     {
       "name": "blitz_reservations",
       "test": "world_parity_blitz_reservations",
-      "fixtureL2Gas": "4755070188",
+      "fixtureL2Gas": "4759375426",
       "actions": [
         {
           "case": "blitz_reservations",
@@ -1640,7 +2498,7 @@
     {
       "name": "structure",
       "test": "world_parity_structure",
-      "fixtureL2Gas": "11188366022",
+      "fixtureL2Gas": "11192670960",
       "actions": [
         {
           "case": "structure",
@@ -1800,7 +2658,7 @@
     {
       "name": "structure_rejections",
       "test": "world_parity_structure_rejections",
-      "fixtureL2Gas": "7470562491",
+      "fixtureL2Gas": "7474867129",
       "actions": [
         {
           "case": "structure_rejections",
@@ -1897,7 +2755,7 @@
     {
       "name": "name",
       "test": "world_parity_name",
-      "fixtureL2Gas": "6781992078",
+      "fixtureL2Gas": "6786296716",
       "actions": [
         {
           "case": "name",
@@ -2013,7 +2871,7 @@
     {
       "name": "ownership",
       "test": "world_parity_ownership",
-      "fixtureL2Gas": "16667747354",
+      "fixtureL2Gas": "16672051992",
       "actions": [
         {
           "case": "ownership",
@@ -2256,7 +3114,7 @@
     {
       "name": "ownership_rejections",
       "test": "world_parity_ownership_rejections",
-      "fixtureL2Gas": "12298129992",
+      "fixtureL2Gas": "12302434630",
       "actions": [
         {
           "case": "ownership_rejections",
@@ -2416,7 +3274,7 @@
     {
       "name": "ownership_faith",
       "test": "world_parity_ownership_faith",
-      "fixtureL2Gas": "6986196536",
+      "fixtureL2Gas": "6990501174",
       "actions": [
         {
           "case": "ownership_faith",
@@ -2517,7 +3375,7 @@
     {
       "name": "creation",
       "test": "world_parity_explorer_creation",
-      "fixtureL2Gas": "4407521774",
+      "fixtureL2Gas": "4411826412",
       "actions": [],
       "roots": [],
       "deletes": [],
@@ -2553,7 +3411,7 @@
     {
       "name": "travel",
       "test": "world_parity_travel_and_known_exploration",
-      "fixtureL2Gas": "13517172356",
+      "fixtureL2Gas": "13521476994",
       "actions": [],
       "roots": [
         {
@@ -2655,7 +3513,7 @@
     {
       "name": "surface",
       "test": "world_parity_surface_discoveries",
-      "fixtureL2Gas": "14233104935",
+      "fixtureL2Gas": "14237409473",
       "actions": [],
       "roots": [
         {
@@ -2748,7 +3606,7 @@
     {
       "name": "ethereal",
       "test": "world_parity_ethereal_entry_and_discovery",
-      "fixtureL2Gas": "13046309580",
+      "fixtureL2Gas": "13050614218",
       "actions": [],
       "roots": [
         {
@@ -2837,7 +3695,7 @@
     {
       "name": "production",
       "test": "world_parity_production_settlement",
-      "fixtureL2Gas": "5089754444",
+      "fixtureL2Gas": "5094058982",
       "actions": [],
       "roots": [],
       "deletes": [],
@@ -2882,7 +3740,7 @@
     {
       "name": "production_cap",
       "test": "world_parity_production_cap",
-      "fixtureL2Gas": "5328966014",
+      "fixtureL2Gas": "5333270552",
       "actions": [],
       "roots": [],
       "deletes": [],
@@ -2927,7 +3785,7 @@
     {
       "name": "production_capacity",
       "test": "world_parity_production_capacity",
-      "fixtureL2Gas": "5589561113",
+      "fixtureL2Gas": "5593865651",
       "actions": [],
       "roots": [],
       "deletes": [],
@@ -2972,7 +3830,7 @@
     {
       "name": "battle",
       "test": "world_parity_battle_deletes_explorer",
-      "fixtureL2Gas": "11926002666",
+      "fixtureL2Gas": "11930307604",
       "actions": [],
       "roots": [],
       "deletes": [
@@ -3029,7 +3887,7 @@
     {
       "name": "ethereal_battle",
       "test": "world_parity_ethereal_battle",
-      "fixtureL2Gas": "14522564738",
+      "fixtureL2Gas": "14526869676",
       "actions": [],
       "roots": [
         {
@@ -3113,7 +3971,7 @@
     {
       "name": "rejections",
       "test": "world_parity_rejected_actions_preserve_rows",
-      "fixtureL2Gas": "14006226798",
+      "fixtureL2Gas": "14010531336",
       "actions": [],
       "roots": [],
       "deletes": [],

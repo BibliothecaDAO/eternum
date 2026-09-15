@@ -9,6 +9,7 @@ pub mod math;
 
 #[cfg(test)]
 mod parity_vectors;
+pub mod realms;
 pub mod recording;
 pub mod rules;
 pub mod season;

@@ -2,13 +2,14 @@ import type { NativeSchema } from "../../../../apps/herald/src/native/schema";
 
 // These are source adapters for the pinned oracle; native fact names and fields come from its generated schema.
 const recordTypes: Record<string, [string, string]> = {
+  RealmTraits: ["realms::RealmTraits", "OracleRealmTraits"],
   SettlementPool: ["settlement::SettlementPool", "OracleSettlementPool"],
   SettlementProgress: ["settlement::SettlementProgress", "OracleSettlementProgress"],
   PlayerEntry: ["settlement::PlayerEntry", "ledger::PlayerSettlement"],
   PlayerCosmetics: ["settlement::PlayerCosmetics", "config::BlitzCosmeticAttrsRegister"],
   AgentPopulation: ["troops::AgentPopulation", "agent::AgentCount"],
   UpgradeLimits: ["upgrades::UpgradeLimits", "config::StructureMaxLevelConfig"],
-  UpgradeRecipe: ["upgrades::UpgradeRecipe", "config::StructureLevelConfig"],
+  UpgradeRecipe: ["upgrades::UpgradeRecipe", "OracleUpgradeRecipe"],
   AddressName: ["names::AddressName", "name::AddressName"],
   Structure: ["structures::Structure", "structure::Structure"],
   ResourceProduction: ["resources::Production", "resource::production::production::Production"],
@@ -34,7 +35,7 @@ export function factProjectors(schema: NativeSchema): string {
       const type =
         world === "native"
           ? `world_native::${pair[0]}`
-          : ["UpgradeRecipe", "SettlementProgress", "SettlementPool"].includes(model.name)
+          : pair[1].startsWith("Oracle")
             ? `Oracle${model.name}`
             : `crate::models::${pair[1]}`;
       const fields = Object.values(model.observation.fields).flatMap((path) => {
@@ -74,6 +75,8 @@ export function factProjectors(schema: NativeSchema): string {
   return `// Generated from native schema fact declarations; regenerate with the behavioural parity command.
     use dojo::model::ModelStorage;
     use crate::models::resource::resource::ResourceImpl;
+    #[derive(Copy, Drop)]
+    pub struct OracleRealmTraits { pub wonder: u8, pub order: u8, pub resources: Span<u8> }
     #[derive(Copy, Drop)]
     pub struct OracleSettlementPool { pub world: dojo::world::WorldStorage, pub game_id: u32 }
     #[derive(Copy, Drop)]

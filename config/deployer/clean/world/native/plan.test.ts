@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { CallData, type Account, type RpcProvider } from "starknet";
 import schemaJson from "../../../../../contracts/l3/world-native/schema/schema.json";
+import { canonicalRealmTraits, realmCatalogueDigest } from "./realm-catalogue";
 import { loadNativeWorld } from "./artifacts";
 import { inspectNativeWorld } from "./plan";
 import { deployNativeWorld } from "./deploy";
@@ -31,6 +32,10 @@ function fixture() {
   } as unknown as NativeWorld;
   const peers = Object.fromEntries(domains.map((domain) => [domain.name, domain.address]));
   const state = { authority: local.authority, peers, active: true };
+  const catalogue = {
+    initialized: canonicalRealmTraits.length,
+    digest: realmCatalogueDigest(canonicalRealmTraits.length),
+  };
   const rpc = {
     getBlockNumber: async () => 10,
     getClass: async () => ({}),
@@ -45,10 +50,12 @@ function fixture() {
             state.peers.troops,
             state.active ? "1" : "0",
           ]
-        : Object.values(authentication)),
+        : entrypoint === "realm_catalogue"
+          ? [String(catalogue.initialized), catalogue.digest]
+          : Object.values(authentication)),
     ],
   };
-  return { local, rpc, state };
+  return { local, rpc, state, catalogue };
 }
 
 describe("native deployment planning", () => {
@@ -72,6 +79,47 @@ describe("native deployment planning", () => {
     expect(report.before.synced).toBe(true);
     expect(report.after.synced).toBe(true);
     expect(report.transactions).toEqual([]);
+  });
+  test("a matching catalogue prefix needs initialization without a blocker", async () => {
+    const { local, rpc, catalogue } = fixture();
+    catalogue.initialized = 128;
+    catalogue.digest = realmCatalogueDigest(128);
+    const plan = await inspectNativeWorld(local, rpc as unknown as RpcProvider);
+    expect(plan.synced).toBe(false);
+    expect(plan.blockers).toEqual([]);
+    expect(plan.domains.find((domain) => domain.name === "season")?.realmCatalogue).toEqual(catalogue);
+  });
+  test("a resumed deployment writes only the missing immutable suffix", async () => {
+    const { local, rpc, catalogue } = fixture();
+    catalogue.initialized = 7990;
+    catalogue.digest = realmCatalogueDigest(7990);
+    const submitted: string[] = [];
+    const account = {
+      ...rpc,
+      execute: async (call: { entrypoint: string; calldata: string[] }) => {
+        expect(call.entrypoint).toBe("initialize_realm_traits");
+        expect(call.calldata.map(BigInt)).toEqual([7991n, 10n, ...canonicalRealmTraits.slice(7990).map(BigInt)]);
+        catalogue.initialized = canonicalRealmTraits.length;
+        catalogue.digest = realmCatalogueDigest(catalogue.initialized);
+        return { transaction_hash: "0xabc" };
+      },
+      waitForTransaction: async () => ({ isSuccess: () => true }),
+    };
+    const report = await deployNativeWorld(local, account as unknown as Account, (transaction) =>
+      submitted.push(transaction.hash),
+    );
+    expect(submitted).toEqual(["0xabc"]);
+    expect(report.after.synced).toBe(true);
+    expect(report.transactions).toEqual([{ action: "initialize_realm_traits", domain: "season", hash: "0xabc" }]);
+  });
+  test("a changed catalogue prefix blocks before transactions", async () => {
+    const { local, rpc, catalogue } = fixture();
+    catalogue.digest = "0x1";
+    await expect(
+      deployNativeWorld(local, rpc as unknown as Account, () => {
+        throw new Error("unexpected transaction");
+      }),
+    ).rejects.toThrow("realm catalogue content mismatch");
   });
   test("peer and authority mismatches block before declaration or activation", async () => {
     const { local, rpc, state } = fixture();
