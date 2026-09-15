@@ -22,7 +22,8 @@ Preview-only devices retain local delivery. Both paths share logical identity an
 Direct-message push begins only after chat persistence. The realtime service sends the identity server message/thread
 identity, recipient, sender display name and timestamp, but never private message content. The device sees a themed
 “raven” alert, repeated messages collapse per thread, Off suppresses them, and the game foreground lease keeps them in
-the live chat UI while the player is active.
+the live chat UI while the player is active. DM delivery requires explicit consent on a compatible device. Existing
+subscriptions can enable DM alerts in Settings; the server excludes registrations that have not completed that upgrade.
 
 The worker receives bounded version-1 display envelopes: source/logical ID, account owner, title/body, an allowlisted
 game entry path, and creation/expiry times. There are no gameplay entity rows or arbitrary URLs. Local payloads expire

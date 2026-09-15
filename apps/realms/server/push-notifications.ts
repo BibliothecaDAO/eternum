@@ -66,6 +66,8 @@ function servePushRequest(request: Request, client: string) {
         try: () => parsePushRegistration(input),
         catch: () => new PushRequestError({ code: "invalid_subscription", status: 400 }),
       });
+      if (registration.directMessages && !serverEnv.CHAT_NOTIFICATION_SECRET?.trim())
+        return json({ error: "direct_message_push_disabled" }, 503);
       if (registration.gameAlerts) {
         const supported = automaticPublicSource();
         if (
@@ -83,6 +85,7 @@ function servePushRequest(request: Request, client: string) {
       const subscription = yield* store.find(owner, input.id);
       return json({
         registered: !!subscription,
+        directMessages: !!subscription?.directMessagesEnabledAt,
         automatic:
           subscription?.gameAlertsEnabledAt && subscription.gameAlertsSource
             ? parseAutomaticPushSource(subscription.gameAlertsSource)

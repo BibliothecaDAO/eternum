@@ -52,7 +52,7 @@ export async function enablePushNotifications(
       });
       assertCurrentOwner(owner);
       await notificationWorkerRequest(owner, "activate-push", { id: device.id });
-      window.dispatchEvent(new Event("pushRegistrationChanged"));
+      if (automatic || directMessages) await syncPushGameForeground(owner);
       assertCurrentOwner(owner);
       if (automatic) {
         await notificationWorkerRequest(owner, "prepare-automatic", { id: device.id, source: automatic });
@@ -61,6 +61,9 @@ export async function enablePushNotifications(
           registration,
         );
       }
+      if (directMessages) await registerDirectMessageAlerts(device, subscription);
+      if (automatic || directMessages) await syncPushGameForeground(owner);
+      window.dispatchEvent(new Event("pushRegistrationChanged"));
       assertCurrentOwner(owner);
     } catch (error) {
       // Persist local revocation first, so an offline detach cannot display an old account's push.
@@ -71,6 +74,20 @@ export async function enablePushNotifications(
       }
       throw error;
     }
+  });
+}
+
+async function registerDirectMessageAlerts(
+  device: PushNotificationDevice,
+  subscription: PushSubscription,
+): Promise<void> {
+  assertCurrentOwner(device.owner);
+  await identityClient.registerPushSubscription({
+    owner: device.owner,
+    id: device.id,
+    token: device.token,
+    subscription: parseWebPushSubscription(subscription.toJSON()),
+    directMessages: true,
   });
 }
 

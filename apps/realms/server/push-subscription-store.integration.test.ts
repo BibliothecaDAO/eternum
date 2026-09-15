@@ -74,13 +74,26 @@ describe.skipIf(!databaseUrl)("push subscriptions in PostgreSQL", () => {
   });
   it("refreshes and clears the foreground lease only for the owner's device", async () => {
     const now = Date.now();
+    expect(await run(store.findDirectMessageDevices("0x1", now))).toEqual([]);
+    await run(store.register({ ...first, directMessages: true }));
+    const enabledAt = (await run(store.find("0x1", first.id)))!.directMessagesEnabledAt;
+    expect(enabledAt).toBeInstanceOf(Date);
+    await run(store.register(first));
+    await run(store.register({ ...first, directMessages: true }));
+    expect((await run(store.find("0x1", first.id)))!.directMessagesEnabledAt).toEqual(enabledAt);
+    expect((await run(store.findDirectMessageDevices("0x1", now))).map((device) => device.id)).toEqual([first.id]);
     expect(await run(store.setGameForeground("0x1", first.id, true, now))).toBe(true);
+    const lease = (await run(store.find("0x1", first.id)))!.gameForegroundUntil;
+    await run(store.register({ ...first, gameAlerts: true, source: { chain: "madara", worldAddress: "0x456" } }));
+    expect((await run(store.find("0x1", first.id)))!.gameForegroundUntil).toEqual(lease);
     expect((await run(store.find("0x1", first.id)))!.gameForegroundUntil!.getTime()).toBeGreaterThan(now);
-    expect((await run(store.findBackgroundDevices("0x1", now))).some((device) => device.id === first.id)).toBe(false);
+    expect((await run(store.findDirectMessageDevices("0x1", now))).some((device) => device.id === first.id)).toBe(
+      false,
+    );
     expect(await run(store.setGameForeground("0x2", first.id, false, now))).toBe(false);
     expect(await run(store.setGameForeground("0x1", first.id, false, now))).toBe(true);
     expect((await run(store.find("0x1", first.id)))!.gameForegroundUntil).toBeNull();
-    expect((await run(store.findBackgroundDevices("0x1", now))).some((device) => device.id === first.id)).toBe(true);
+    expect((await run(store.findDirectMessageDevices("0x1", now))).some((device) => device.id === first.id)).toBe(true);
   });
   it("requires the device revocation capability, isolates expiration, and cascades account deletion", async () => {
     await run(store.revoke(first.id, randomUUID()));

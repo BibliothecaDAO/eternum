@@ -46,7 +46,7 @@ function serveDirectMessagePush(request: Request) {
     const sender = yield* WebPushSender;
     if (!sender.configuration().enabled) return json({ error: "push_disabled" }, 503);
     const subscriptions = yield* PushSubscriptionStore;
-    const devices = yield* subscriptions.findBackgroundDevices(notification.owner, now);
+    const devices = yield* subscriptions.findDirectMessageDevices(notification.owner, now);
     const outcomes = yield* Effect.forEach(
       devices,
       (device) => {

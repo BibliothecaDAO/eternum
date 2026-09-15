@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-15",
+    title: "Direct Message Alert Controls",
+    description:
+      "Enable raven alerts for existing devices from Settings. Battle alerts report the correct outcome, and enabling alerts keeps them quiet while you play.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-15",
     title: "Ravens and Richer Alerts",
     description:
       "Notifications now describe battles, caravans, construction, exploration and troop movements in the voice of the realm. New direct messages can also arrive as privacy-safe raven alerts while you are away.",

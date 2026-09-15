@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { Context, Data, Effect, Layer } from "effect";
-import { and, eq, isNull, lte, or, sql } from "drizzle-orm";
+import { and, eq, isNotNull, isNull, lte, or, sql } from "drizzle-orm";
 import { notificationPushSubscriptions as subscriptions } from "@realms-world/db";
 import { db, type Database } from "@realms-world/db/client";
 import { automaticPushSourceKey, parseAutomaticPushSource, type PushRegistration } from "@bibliothecadao/notifications";
@@ -23,7 +23,7 @@ export function createPushSubscriptionStore(
           .where(and(eq(subscriptions.id, id), eq(subscriptions.owner, owner)));
         return row ?? null;
       }),
-    findBackgroundDevices: (owner: string, now = Date.now()) =>
+    findDirectMessageDevices: (owner: string, now = Date.now()) =>
       storeEffect(() =>
         database
           .select()
@@ -31,6 +31,7 @@ export function createPushSubscriptionStore(
           .where(
             and(
               eq(subscriptions.owner, owner),
+              isNotNull(subscriptions.directMessagesEnabledAt),
               or(isNull(subscriptions.gameForegroundUntil), lte(subscriptions.gameForegroundUntil, new Date(now))),
             ),
           ),
@@ -74,8 +75,12 @@ async function registerSubscription(database: Pick<Database, "transaction">, inp
           .set({
             gameAlertsEnabledAt: new Date(),
             gameAlertsSource: registration.gameAlertsSource,
-            gameForegroundUntil: null,
           })
+          .where(eq(subscriptions.id, input.id));
+      if (input.directMessages && !existing.directMessagesEnabledAt)
+        await tx
+          .update(subscriptions)
+          .set({ directMessagesEnabledAt: new Date() })
           .where(eq(subscriptions.id, input.id));
       return "registered" as const;
     }
@@ -98,6 +103,7 @@ function buildSubscriptionRow(input: PushRegistration) {
     auth: input.subscription.keys.auth,
     revocationHash: tokenHash(input.token),
     gameAlertsEnabledAt: input.gameAlerts ? new Date() : null,
+    directMessagesEnabledAt: input.directMessages ? new Date() : null,
     gameAlertsSource: input.gameAlerts ? automaticPushSourceKey(parseAutomaticPushSource(input.source)) : null,
   };
 }

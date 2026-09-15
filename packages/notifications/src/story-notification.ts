@@ -85,7 +85,7 @@ export function storyNotificationCopy(
 }
 
 function battleCopy(payload: Record<string, unknown>, value: Record<string, unknown>): NotificationCopy {
-  const victory = compareInteger(payload.winner_id, value.entity_id);
+  const victory = battleVictory(payload, value);
   const structureTaken =
     record(payload.attacker_structure).structure_taken === true ||
     record(payload.defender_structure).structure_taken === true;
@@ -97,6 +97,15 @@ function battleCopy(payload: Record<string, unknown>, value: Record<string, unkn
   if (victory === false)
     return { title: "Your forces were defeated", body: "The battle is over. Your next move awaits." };
   return { title: "Battle lines have shifted", body: "The clash is over. Survey the field." };
+}
+
+function battleVictory(payload: Record<string, unknown>, value: Record<string, unknown>): boolean | null {
+  if (compareInteger(payload.winner_id, 0) !== false) return null;
+  const attacker = compareInteger(value.entity_id, payload.attacker_id);
+  const defender = compareInteger(value.entity_id, payload.defender_id);
+  if (attacker === true) return compareInteger(payload.winner_id, payload.attacker_owner_id);
+  if (defender === true) return compareInteger(payload.winner_id, payload.defender_owner_id);
+  return null;
 }
 
 function buildingCopy(payload: Record<string, unknown>): NotificationCopy {

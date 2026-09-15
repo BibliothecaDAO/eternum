@@ -80,7 +80,7 @@ beforeEach(() => {
       revoke: (id, token) => Effect.promise(() => mocks.revoke(id, token)),
       expire: (owner, id) => Effect.promise(() => mocks.expire(owner, id)),
       setGameForeground: (owner, id, foreground) => Effect.promise(() => mocks.foreground(owner, id, foreground)),
-      findBackgroundDevices: (owner, now) => Effect.promise(() => mocks.background(owner, now)),
+      findDirectMessageDevices: (owner, now) => Effect.promise(() => mocks.background(owner, now)),
     }),
     configurable: true,
   });
@@ -95,7 +95,11 @@ beforeEach(() => {
 it("authenticates owner-scoped registration and status, validates input, and exposes no credentials", async () => {
   expect(await (await request("subscribe")).json()).toEqual({ id });
   expect(mocks.session).toHaveBeenCalledWith(expect.objectContaining({ query: { disableCookieCache: true } }));
-  expect(await (await request("status", { owner: "0x1", id })).json()).toEqual({ registered: true, automatic: null });
+  expect(await (await request("status", { owner: "0x1", id })).json()).toEqual({
+    registered: true,
+    automatic: null,
+    directMessages: false,
+  });
   expect((await request("subscribe", { ...registration, owner: "0x2" })).status).toBe(403);
   expect(
     (
@@ -177,4 +181,17 @@ it("records authenticated foreground presence only for an owned subscription", a
   expect((await request("foreground", { owner: "0x1", id, foreground: "yes" })).status).toBe(400);
   mocks.foreground.mockResolvedValue(false);
   expect((await request("foreground", { owner: "0x1", id, foreground: false })).status).toBe(404);
+});
+
+it("persists explicit DM readiness and reports it without exposing subscription credentials", async () => {
+  const input = { ...registration, directMessages: true };
+  expect((await request("subscribe", input)).status).toBe(200);
+  expect(mocks.register).toHaveBeenCalledWith(input);
+  mocks.find.mockResolvedValue({ directMessagesEnabledAt: new Date() });
+  expect(await (await request("status", { owner: "0x1", id })).json()).toEqual({
+    registered: true,
+    automatic: null,
+    directMessages: true,
+  });
+  expect((await request("subscribe", { ...registration, directMessages: "true" })).status).toBe(400);
 });

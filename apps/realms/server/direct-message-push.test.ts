@@ -63,7 +63,7 @@ beforeEach(() => {
       find: () => Effect.die("unused"),
       revoke: () => Effect.die("unused"),
       setGameForeground: () => Effect.die("unused"),
-      findBackgroundDevices: (owner, now) => Effect.promise(() => mocks.devices(owner, now)),
+      findDirectMessageDevices: (owner, now) => Effect.promise(() => mocks.devices(owner, now)),
       expire: (owner, deviceId) => Effect.promise(() => mocks.expire(owner, deviceId)),
     }),
   });

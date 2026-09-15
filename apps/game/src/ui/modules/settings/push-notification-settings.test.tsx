@@ -67,6 +67,21 @@ it("offers background notifications when direct-message delivery is available by
     await ui.close();
   }
 });
+
+it("offers existing devices an explicit DM upgrade and hides it after consent", async () => {
+  mocks.config.mockResolvedValue({ enabled: true, publicKey: "key", directMessages: true });
+  mocks.device.mockResolvedValue({ owner: "0x1", id: "id", state: "active" });
+  mocks.status.mockResolvedValue({ registered: true, directMessages: false });
+  const ui = await mount();
+  try {
+    expect(mocks.enable).not.toHaveBeenCalled();
+    await ui.click("Enable direct-message alerts");
+    expect(mocks.enable).toHaveBeenCalledWith("0x1", "key", null, true);
+    expect(ui.container.textContent).not.toContain("Enable direct-message alerts");
+  } finally {
+    await ui.close();
+  }
+});
 it("keeps an existing device removable when server sending is disabled", async () => {
   mocks.config.mockResolvedValue({ enabled: false });
   mocks.device.mockResolvedValue({ owner: "0x1", id: "id", state: "active" });

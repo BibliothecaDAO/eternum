@@ -144,7 +144,10 @@ export const createIdentityClient = ({ baseUrl, fetch = globalThis.fetch }: Iden
     getPushConfiguration: () => pushRequest<PushConfiguration>("config"),
     registerPushSubscription: (input: PushRegistration) => pushRequest<{ id: string }>("subscribe", input),
     getPushSubscriptionStatus: (owner: string, id: string) =>
-      pushRequest<{ registered: boolean; automatic: AutomaticPushSource | null }>("status", { owner, id }),
+      pushRequest<{ registered: boolean; automatic: AutomaticPushSource | null; directMessages?: boolean }>("status", {
+        owner,
+        id,
+      }),
     setPushGameForeground: (owner: string, id: string, foreground: boolean) =>
       pushRequest<{ foreground: boolean }>("foreground", { owner, id, foreground }, { keepalive: true }),
     revokePushSubscription: (id: string, token: string) => pushRequest<{ revoked: boolean }>("revoke", { id, token }),

@@ -11,6 +11,7 @@ export interface PushRegistration {
   token: string;
   subscription: WebPushSubscription;
   gameAlerts?: boolean;
+  directMessages?: boolean;
   source?: AutomaticPushSource;
 }
 export type PushConfiguration =
@@ -36,7 +37,10 @@ export function parsePushRegistration(value: unknown): PushRegistration {
     throw new Error("invalid_push_registration");
   if (input.gameAlerts !== undefined && typeof input.gameAlerts !== "boolean")
     throw new Error("invalid_push_registration");
+  if (input.directMessages !== undefined && typeof input.directMessages !== "boolean")
+    throw new Error("invalid_push_registration");
   return {
+    ...(input.directMessages === undefined ? {} : { directMessages: input.directMessages }),
     ...(input.gameAlerts === undefined ? {} : { gameAlerts: input.gameAlerts }),
     ...(input.gameAlerts === true ? { source: parseAutomaticPushSource(input.source) } : {}),
     owner: input.owner,

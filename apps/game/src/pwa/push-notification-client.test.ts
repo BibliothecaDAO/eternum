@@ -208,6 +208,38 @@ it("requires foreground-aware worker support before enabling direct-message aler
   expect(mocks.register).not.toHaveBeenCalled();
 });
 
+it("registers DM consent only after worker activation and foreground synchronization", async () => {
+  mocks.register.mockImplementation(async (input) => {
+    if (input.directMessages) {
+      expect(mocks.device.state).toBe("active");
+      expect(mocks.foreground).toHaveBeenCalledWith("0x1", id, true);
+    }
+    return { id };
+  });
+  await enablePushNotifications("0x1", "BAAA", null, true);
+  expect(mocks.register).toHaveBeenLastCalledWith({
+    owner: "0x1",
+    id,
+    token: id,
+    subscription: subscriptionJson,
+    directMessages: true,
+  });
+  expect(mocks.foreground).toHaveBeenCalledTimes(2);
+});
+
+it("waits for foreground synchronization before and after automatic registration", async () => {
+  const order: string[] = [];
+  mocks.foreground.mockImplementation(async () => {
+    order.push("foreground");
+  });
+  mocks.register.mockImplementation(async (input) => {
+    order.push(input.gameAlerts ? "automatic" : "preview");
+    return { id };
+  });
+  await enablePushNotifications("0x1", "BAAA", { chain: "madara", worldAddress: "0x123" });
+  expect(order).toEqual(["preview", "foreground", "automatic", "foreground"]);
+});
+
 it.each([false, true])(
   "recovers interrupted automatic setup after reopen (server acknowledged: %s)",
   async (acknowledged) => {

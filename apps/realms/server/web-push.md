@@ -34,10 +34,11 @@ All routes live under `/api/notifications/push/`, use existing identity CORS pol
 - `POST subscribe`: authenticated `{owner,id,token,subscription:{endpoint,keys:{p256dh,auth}}}`. UUID device ID/token
   are generated and persisted in the service worker before subscribing. Repeats are idempotent; endpoint takeover and
   mismatched IDs/keys/tokens fail with 409. Optional `gameAlerts:true` plus the matching `source:{chain,worldAddress}`
-  explicitly opts into automatic delivery when the server enables it. Accounts have at most ten registrations, enforced
-  under a database lock.
-- `POST status`: authenticated `{owner,id}` → `{registered,automatic}`; the latter identifies the persisted automatic
-  source or null.
+  explicitly opts into automatic delivery when the server enables it. Optional `directMessages:true` records DM consent
+  only after the client verifies that its active worker supports DM envelopes and foreground leases. Accounts have at
+  most ten registrations, enforced under a database lock.
+- `POST status`: authenticated `{owner,id}` → `{registered,automatic,directMessages}`; `automatic` identifies the
+  persisted automatic source or null, and `directMessages` reports device DM consent.
 - `POST foreground`: authenticated `{owner,id,foreground}` refreshes or clears the device's short-lived game-foreground
   lease. Automatic delivery rechecks this lease immediately before contacting the push provider.
 - `POST test`: authenticated `{owner,id,target}` → `{status:"accepted"}`. Sends server-owned test text only. This is an
@@ -49,8 +50,11 @@ All routes live under `/api/notifications/push/`, use existing identity CORS pol
 
 The separate internal `POST /api/notifications/direct-message` route accepts a bearer-authenticated, bounded message
 identity, recipient, sender display name and timestamp from the realtime server. It never accepts the private message
-body. Direct messages notify every background device unless the account level is Off, collapse by thread, and share the
-same foreground lease as game alerts. Its structured 202 response reports accepted, expired and failed device sends.
+body. Direct messages notify only background devices with `direct_messages_enabled_at` set, unless the account level is
+Off, collapse by thread, and share the same foreground lease as game alerts. Its structured 202 response reports
+accepted, expired and failed device sends. Existing registrations default to no DM consent and can upgrade explicitly in
+Settings after applying the current worker. Apply the new nullable `direct_messages_enabled_at` schema column before
+deploying the API.
 
 Authenticated operations revalidate the session and require the expected owner. Subscription URLs are restricted to
 HTTPS browser-provider hosts (Google, Mozilla, Apple and Windows); credentials, fragments and non-default ports are
@@ -74,7 +78,9 @@ browser's less-consistent focus flag. They refresh the authenticated foreground 
 route, visibility and connectivity changes. Requests use fetch keepalive so hiding or closing can clear the lease; its
 one-minute expiry is the fallback when that final request cannot complete. The server suppresses automatic delivery
 before Web Push is sent rather than silently consuming a push event, which would violate Safari's user-visible-push
-requirement.
+requirement. Setup synchronizes foreground presence before enabling automatic or DM delivery and again before
+completing. Registration upgrades preserve the current lease so they cannot temporarily re-enable pushes in a visible
+game.
 
 The v2 IndexedDB upgrade preserves local devices and durable delivery claims. Push envelopes carry a registration ID and
 the shared bounded notification payload; only the active matching registration/account may display or handle a click.
