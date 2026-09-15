@@ -34,6 +34,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-09-16",
+    title: "Game-World Menu Icons",
+    description:
+      "Reworked key menus with illustrated tools, war gear, caravans, maps and artifacts that stay clear at compact HUD sizes and feel native to Eternum's world.",
+    type: "improvement",
+  },
+  {
     date: "2026-09-15",
     title: "Direct Message Alert Controls",
     description:
