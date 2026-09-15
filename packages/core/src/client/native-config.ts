@@ -19,8 +19,13 @@ export function nativeConfiguration(components: ContractComponents, gameId: numb
     rules,
     world: () =>
       requiredMembers(
-        { game_id: gameId, map_center_offset: rules().map_center_offset, season_mode_on: true, blitz_mode_on: false },
-        "native season slice",
+        {
+          game_id: gameId,
+          map_center_offset: rules().map_center_offset,
+          season_mode_on: !rules().blitz_mode_on,
+          blitz_mode_on: rules().blitz_mode_on,
+        },
+        "native world",
       ),
     weight: (resource) => Number(read("ResourceRule", [BigInt(gameId), BigInt(resource)]).unit_weight) / 1_000,
   };

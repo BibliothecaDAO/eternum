@@ -23,13 +23,13 @@ uses Cairo's native enum encoding. Herald consumes serialization, not storage sl
 
 The behavioral slice adds these independent component stores:
 
-| Component          | Storage                                                                                                                                         | Layout rule                                                                                                                                                 |
-| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GameState`        | Games and immutable rules keyed by game; entity counters; points keyed by game and player                                                       | `GameRegistry` and `SliceRules` retain their field order. Changes to stored records need separate appended slots and an upgrade test.                       |
-| `StructureState`   | Structure records and existence keyed by game and entity; explorer ids keyed by game, structure and index; owner counts keyed by game and owner | The variable explorer list has a fixed record count and indexed storage. Removal compacts that list and clears its tail.                                    |
-| `ResourceState`    | Balances and production keyed by game, entity and resource; weight and `resource_exists` keyed by game and entity                               | The full `Resource` row is a typed projection of these stores. Destruction clears every balance, production record and weight before emitting `RowDeleted`. |
-| `BuildingState`    | Buildings and existence keyed by game, layer, outer coordinates and inner coordinates; building counts keyed by game and structure              | Preserve the six-part building key and the three packed category counters.                                                                                  |
-| `StructuresDomain` | Hyperstructure counts and seeds; immutable resource rules and their initialization flag                                                         | Configuration is set once for each game. Hyperstructure rows derive from the stored seed and structure category.                                            |
+| Component          | Storage                                                                                                                                            | Layout rule                                                                                                                                                 |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GameState`        | Games and immutable rules keyed by game; entity counters; points keyed by game and player                                                          | `GameRegistry` and `SliceRules` retain their field order. Changes to stored records need separate appended slots and an upgrade test.                       |
+| `StructureState`   | Structure records and existence keyed by game and entity; explorer ids keyed by game, structure and index; ownership stored once in each structure | The variable explorer list has a fixed record count and indexed storage. Removal compacts that list and clears its tail.                                    |
+| `ResourceState`    | Balances and production keyed by game, entity and resource; weight and `resource_exists` keyed by game and entity                                  | The full `Resource` row is a typed projection of these stores. Destruction clears every balance, production record and weight before emitting `RowDeleted`. |
+| `BuildingState`    | Buildings and existence keyed by game, layer, outer coordinates and inner coordinates; building counts keyed by game and structure                 | Preserve the six-part building key and the three packed category counters.                                                                                  |
+| `StructuresDomain` | Hyperstructure counts and seeds; immutable resource rules and their initialization flag                                                            | Configuration is set once for each game. Hyperstructure rows derive from the stored seed and structure category.                                            |
 
 Component storage uses `v0` embedding. Field names must be unique across components embedded in the same domain;
 component names do not isolate colliding field names. Resource existence therefore uses `resource_exists`, distinct from
@@ -85,7 +85,7 @@ The protocol's versioned canonical encoding supplies the action identity and env
 unknown variants, malformed values, trailing fields and a different commitment. Authenticated malformed payloads consume
 their accepted ticket with status 2; they cannot stop the deployment stream. The generated command ABI exposes the same
 enum to consumers. Variants remain create explorer, explore, claim production, battle, movement and alternate-layer
-travel, in that order.
+travel, in that order. Structure and agent ownership transfer append as variants 6 and 7.
 
 Admission resolves the gameplay account through PlayerRegistry in both directions, checks the approved account class
 before reading its existing key, and returns the immutable rules digest and current execution position. Execution checks
@@ -119,8 +119,8 @@ epochs and credential rotation. `get_admission` and `get_result` expose the exac
 service.
 
 Season routes typed commands to configured peers. Map commands authenticate the owning gameplay domains. The paired
-oracle still compares gameplay rows against the pinned original rules. Protocol nonces and terminal results describe
-accepted-ticket consumption separately from Dojo's transaction rollback behavior.
+oracle compares declared player-observable facts and rejection outcomes against the pinned original rules. Protocol
+nonces and terminal results describe accepted-ticket consumption separately from Dojo's transaction rollback behavior.
 
 ## Upgrade evidence
 
@@ -133,3 +133,37 @@ inspection.
 nonce remains consumed. Its event spy includes reverted emissions and cannot establish receipt-level event removal; that
 assertion belongs to the live transaction gate. Identity unit tests use registry/account interface fixtures; live
 deployment must use the existing PlayerRegistry and approved RealmsPlayerAccount class.
+
+## Ownership extension
+
+Ownership commands append after the six original command variants. Structure transfers remain forbidden in Blitz and for
+villages (stored category 5), reject zero recipients and require the owner. Same-owner transfers are no-ops.
+`StructureState` updates only the owner field. Its unused owner-count map, view and row emissions are removed; clients
+derive counts from ownership. The retired map name must not be reused. Agent ownership appends the `agent_owners` map to
+the troops domain. It preserves the legacy controller-only rule, including zero recipients and assignments to
+identifiers with no explorer row.
+
+`FaithOwnershipState` is appended to the structures domain. It stores wonder accrual, pledges, player earning rates and
+the ordered winner list with game-scoped keys. Transfers settle the old owner's accrued points at the recorded action
+timestamp before moving rates. Pledge actions and faith prizes remain subsequent domain work. The history projection
+uses an independently versioned native Story enum; decoded variant names and payloads match legacy history.
+
+The rules row appends mode and faith-enabled fields, both included in the signed rules commitment. The deployment-wide
+agent controller is an authority-managed field in the season domain, matching its chain-wide legacy scope. Old native
+slice games require a fresh deployment or explicit compatible initialization before using these commands; an appended
+per-game readiness flag rejects ownership transfers for older uninitialized games. Zero-filled appended fields do not
+establish preservation of their intended immutable rules. The full-world populated upgrade gate must cover these fields
+separately from class-hash inspection.
+
+## Behavioural fact declarations
+
+`schema/fact-models.mjs` defines native rows from ABI types and declares their observable fields. The generated
+`schema.json` drives Herald and the client bindings. The paired-world fixture generates typed source adapters from the
+same observable field declarations; it compares those facts after each action, never serialized Dojo rows or event
+encodings. Oracle resources are read through the original read-only accessors. An event-shaped history assertion is not
+a behavioural parity assertion. Native receipt reconstruction is tested separately.
+
+Ownership removes the unused owner-count mirror and rewrites only the owner field. Faith ownership settlement writes the
+final wonder record once instead of persisting an intermediate copy. Per-action trace evidence reports executed storage
+syscalls, emitted events and felts, gas, and class sizes; retained transaction history establishes publication and
+rollback behavior separately.

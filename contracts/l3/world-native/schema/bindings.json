@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "1a1ddbd619e34cbc5218fc13b794a8f7835dbcb03740a491bad5c31d276f7bdb",
+  "schemaIdentity": "b21b360e6106617306839abab561b0b3601e474a1d887089da54f544e2570d7f",
   "commandAbi": [
     {
       "type": "impl",
@@ -99,6 +99,20 @@
       ]
     },
     {
+      "type": "struct",
+      "name": "world_native::ownership::TransferOwnership",
+      "members": [
+        {
+          "name": "entity_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "new_owner",
+          "type": "core::starknet::contract_address::ContractAddress"
+        }
+      ]
+    },
+    {
       "type": "enum",
       "name": "world_native::commands::Command",
       "variants": [
@@ -125,6 +139,14 @@
         {
           "name": "ToggleAlternate",
           "type": "world_native::commands::ToggleAlternate"
+        },
+        {
+          "name": "TransferStructureOwnership",
+          "type": "world_native::ownership::TransferOwnership"
+        },
+        {
+          "name": "TransferAgentOwnership",
+          "type": "world_native::ownership::TransferOwnership"
         }
       ]
     },
@@ -637,6 +659,14 @@
         {
           "name": "spire_travel_essence_cost",
           "type": "core::integer::u128"
+        },
+        {
+          "name": "blitz_mode_on",
+          "type": "core::bool"
+        },
+        {
+          "name": "faith_enabled",
+          "type": "core::bool"
         }
       ]
     },
@@ -702,6 +732,18 @@
       "type": "interface",
       "name": "world_native::season::ISeason",
       "items": [
+        {
+          "type": "function",
+          "name": "set_agent_controller",
+          "inputs": [
+            {
+              "name": "address",
+              "type": "core::starknet::contract_address::ContractAddress"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
         {
           "type": "function",
           "name": "set_authentication",
@@ -1107,6 +1149,33 @@
       "items": [
         {
           "type": "function",
+          "name": "agent_controller",
+          "inputs": [],
+          "outputs": [
+            {
+              "type": "core::starknet::contract_address::ContractAddress"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "ownership_rules_ready",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::bool"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
           "name": "game",
           "inputs": [
             {
@@ -1436,6 +1505,10 @@
     }
   ],
   "events": [
+    {
+      "name": "StoryEvent",
+      "scope": "game"
+    },
     {
       "name": "BattleEvent",
       "scope": "game"
@@ -1976,12 +2049,63 @@
       }
     },
     {
-      "name": "StructureOwnerStats",
+      "name": "AgentOwner",
       "scope": "game",
       "schema": {
         "game_id": "Number",
-        "owner": "BigInt",
-        "structures_num": "Number"
+        "explorer_id": "Number",
+        "address": "BigInt"
+      }
+    },
+    {
+      "name": "WonderFaith",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "wonder_id": "Number",
+        "last_recorded_owner": "BigInt",
+        "claimed_points": "BigInt",
+        "claim_per_sec": "Number",
+        "claim_last_at": "BigInt",
+        "owner_claim_per_sec": "Number",
+        "num_structures_pledged": "Number"
+      }
+    },
+    {
+      "name": "FaithfulStructure",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "structure_id": "Number",
+        "wonder_id": "Number",
+        "faithful_since": "BigInt",
+        "fp_to_wonder_owner_per_sec": "Number",
+        "fp_to_struct_owner_per_sec": "Number",
+        "last_recorded_owner": "BigInt"
+      }
+    },
+    {
+      "name": "PlayerFaithPoints",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "player": "BigInt",
+        "wonder_id": "Number",
+        "points_claimed": "BigInt",
+        "points_per_sec_as_owner": "Number",
+        "points_per_sec_as_pledger": "Number",
+        "last_updated_at": "BigInt"
+      }
+    },
+    {
+      "name": "WonderFaithWinners",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "high_score": "BigInt",
+        "wonder_ids": [
+          "Number"
+        ]
       }
     },
     {
@@ -2148,7 +2272,9 @@
           "relic_open_points": "Number"
         },
         "map_center_offset": "Number",
-        "spire_travel_essence_cost": "BigInt"
+        "spire_travel_essence_cost": "BigInt",
+        "blitz_mode_on": "Boolean",
+        "faith_enabled": "Boolean"
       }
     },
     {
@@ -2232,6 +2358,22 @@
         "binding": "BigInt",
         "result": "BigInt",
         "state": "BigInt"
+      }
+    },
+    {
+      "name": "OwnershipRulesReady",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "ready": "Boolean"
+      }
+    },
+    {
+      "name": "AgentController",
+      "scope": "deployment",
+      "schema": {
+        "address": "BigInt",
+        "controller": "BigInt"
       }
     },
     {

@@ -124,5 +124,14 @@ describe("native bindings in the shared game client", () => {
       send(actor, { contractAddress: "0x101", entrypoint: "explorer_extract_reward", calldata: [1, 7] }),
     ).rejects.toThrow("Unsupported");
     expect(submit).toHaveBeenCalledOnce();
+    for (const [entrypoint, variant] of [
+      ["transfer_structure_ownership", "6"],
+      ["transfer_agent_ownership", "7"],
+    ]) {
+      await send(actor, { contractAddress: "0x101", entrypoint, calldata: [1, 9, "0x456"] });
+      const encoded = submit.mock.calls.at(-1)![0].calldata as string[];
+      expect(encoded.slice(10, 14)).toEqual(["3", variant, "9", "1110"]);
+      expect(encoded[4]).toBe("3");
+    }
   });
 });

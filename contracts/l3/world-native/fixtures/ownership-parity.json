@@ -1,0 +1,612 @@
+{
+  "version": 1,
+  "domain": "ownership",
+  "factModel": {
+    "source": "schema/fact-models.mjs",
+    "schema": "b21b360e6106617306839abab561b0b3601e474a1d887089da54f544e2570d7f",
+    "declarations": [
+      {
+        "model": "TileOpt",
+        "observation": {
+          "domain": "map",
+          "fields": {
+            "tile": "data"
+          },
+          "transform": "tile"
+        }
+      },
+      {
+        "model": "ExplorerTroops",
+        "observation": {
+          "domain": "troops",
+          "fields": {
+            "home": "owner",
+            "position": "coord",
+            "troops": "troops"
+          }
+        }
+      },
+      {
+        "model": "Structure",
+        "observation": {
+          "domain": "structures",
+          "fields": {
+            "owner": "owner",
+            "level": "base.level",
+            "kind": "base.category",
+            "column": "base.coord_x",
+            "row": "base.coord_y",
+            "foundedAt": "base.created_at",
+            "guards": "troop_guards",
+            "explorers": "troop_explorers",
+            "explorerLimit": "base.troop_max_explorer_count",
+            "guardLimit": "base.troop_max_guard_count",
+            "startingTroopsGranted": "base.starting_troops_granted",
+            "realm": "metadata.realm_id",
+            "order": "metadata.order",
+            "wonder": "metadata.has_wonder",
+            "connectedRealm": "metadata.village_realm",
+            "resourceTraits": "resources_packed"
+          }
+        }
+      },
+      {
+        "model": "Resource",
+        "observation": {
+          "domain": "resources",
+          "fields": {
+            "STONE_BALANCE": "STONE_BALANCE",
+            "COAL_BALANCE": "COAL_BALANCE",
+            "WOOD_BALANCE": "WOOD_BALANCE",
+            "COPPER_BALANCE": "COPPER_BALANCE",
+            "IRONWOOD_BALANCE": "IRONWOOD_BALANCE",
+            "OBSIDIAN_BALANCE": "OBSIDIAN_BALANCE",
+            "GOLD_BALANCE": "GOLD_BALANCE",
+            "SILVER_BALANCE": "SILVER_BALANCE",
+            "MITHRAL_BALANCE": "MITHRAL_BALANCE",
+            "ALCHEMICAL_SILVER_BALANCE": "ALCHEMICAL_SILVER_BALANCE",
+            "COLD_IRON_BALANCE": "COLD_IRON_BALANCE",
+            "DEEP_CRYSTAL_BALANCE": "DEEP_CRYSTAL_BALANCE",
+            "RUBY_BALANCE": "RUBY_BALANCE",
+            "DIAMONDS_BALANCE": "DIAMONDS_BALANCE",
+            "HARTWOOD_BALANCE": "HARTWOOD_BALANCE",
+            "IGNIUM_BALANCE": "IGNIUM_BALANCE",
+            "TWILIGHT_QUARTZ_BALANCE": "TWILIGHT_QUARTZ_BALANCE",
+            "TRUE_ICE_BALANCE": "TRUE_ICE_BALANCE",
+            "ADAMANTINE_BALANCE": "ADAMANTINE_BALANCE",
+            "SAPPHIRE_BALANCE": "SAPPHIRE_BALANCE",
+            "ETHEREAL_SILICA_BALANCE": "ETHEREAL_SILICA_BALANCE",
+            "DRAGONHIDE_BALANCE": "DRAGONHIDE_BALANCE",
+            "LABOR_BALANCE": "LABOR_BALANCE",
+            "EARTHEN_SHARD_BALANCE": "EARTHEN_SHARD_BALANCE",
+            "DONKEY_BALANCE": "DONKEY_BALANCE",
+            "KNIGHT_T1_BALANCE": "KNIGHT_T1_BALANCE",
+            "KNIGHT_T2_BALANCE": "KNIGHT_T2_BALANCE",
+            "KNIGHT_T3_BALANCE": "KNIGHT_T3_BALANCE",
+            "CROSSBOWMAN_T1_BALANCE": "CROSSBOWMAN_T1_BALANCE",
+            "CROSSBOWMAN_T2_BALANCE": "CROSSBOWMAN_T2_BALANCE",
+            "CROSSBOWMAN_T3_BALANCE": "CROSSBOWMAN_T3_BALANCE",
+            "PALADIN_T1_BALANCE": "PALADIN_T1_BALANCE",
+            "PALADIN_T2_BALANCE": "PALADIN_T2_BALANCE",
+            "PALADIN_T3_BALANCE": "PALADIN_T3_BALANCE",
+            "WHEAT_BALANCE": "WHEAT_BALANCE",
+            "FISH_BALANCE": "FISH_BALANCE",
+            "LORDS_BALANCE": "LORDS_BALANCE",
+            "ESSENCE_BALANCE": "ESSENCE_BALANCE",
+            "RELIC_E1_BALANCE": "RELIC_E1_BALANCE",
+            "RELIC_E2_BALANCE": "RELIC_E2_BALANCE",
+            "RELIC_E3_BALANCE": "RELIC_E3_BALANCE",
+            "RELIC_E4_BALANCE": "RELIC_E4_BALANCE",
+            "RELIC_E5_BALANCE": "RELIC_E5_BALANCE",
+            "RELIC_E6_BALANCE": "RELIC_E6_BALANCE",
+            "RELIC_E7_BALANCE": "RELIC_E7_BALANCE",
+            "RELIC_E8_BALANCE": "RELIC_E8_BALANCE",
+            "RELIC_E9_BALANCE": "RELIC_E9_BALANCE",
+            "RELIC_E10_BALANCE": "RELIC_E10_BALANCE",
+            "RELIC_E11_BALANCE": "RELIC_E11_BALANCE",
+            "RELIC_E12_BALANCE": "RELIC_E12_BALANCE",
+            "RELIC_E13_BALANCE": "RELIC_E13_BALANCE",
+            "RELIC_E14_BALANCE": "RELIC_E14_BALANCE",
+            "RELIC_E15_BALANCE": "RELIC_E15_BALANCE",
+            "RELIC_E16_BALANCE": "RELIC_E16_BALANCE",
+            "RELIC_E17_BALANCE": "RELIC_E17_BALANCE",
+            "RELIC_E18_BALANCE": "RELIC_E18_BALANCE",
+            "RESEARCH_BALANCE": "RESEARCH_BALANCE",
+            "SATOSHI_BALANCE": "SATOSHI_BALANCE",
+            "weight": "weight",
+            "STONE_PRODUCTION": "STONE_PRODUCTION",
+            "COAL_PRODUCTION": "COAL_PRODUCTION",
+            "WOOD_PRODUCTION": "WOOD_PRODUCTION",
+            "COPPER_PRODUCTION": "COPPER_PRODUCTION",
+            "IRONWOOD_PRODUCTION": "IRONWOOD_PRODUCTION",
+            "OBSIDIAN_PRODUCTION": "OBSIDIAN_PRODUCTION",
+            "GOLD_PRODUCTION": "GOLD_PRODUCTION",
+            "SILVER_PRODUCTION": "SILVER_PRODUCTION",
+            "MITHRAL_PRODUCTION": "MITHRAL_PRODUCTION",
+            "ALCHEMICAL_SILVER_PRODUCTION": "ALCHEMICAL_SILVER_PRODUCTION",
+            "COLD_IRON_PRODUCTION": "COLD_IRON_PRODUCTION",
+            "DEEP_CRYSTAL_PRODUCTION": "DEEP_CRYSTAL_PRODUCTION",
+            "RUBY_PRODUCTION": "RUBY_PRODUCTION",
+            "DIAMONDS_PRODUCTION": "DIAMONDS_PRODUCTION",
+            "HARTWOOD_PRODUCTION": "HARTWOOD_PRODUCTION",
+            "IGNIUM_PRODUCTION": "IGNIUM_PRODUCTION",
+            "TWILIGHT_QUARTZ_PRODUCTION": "TWILIGHT_QUARTZ_PRODUCTION",
+            "TRUE_ICE_PRODUCTION": "TRUE_ICE_PRODUCTION",
+            "ADAMANTINE_PRODUCTION": "ADAMANTINE_PRODUCTION",
+            "SAPPHIRE_PRODUCTION": "SAPPHIRE_PRODUCTION",
+            "ETHEREAL_SILICA_PRODUCTION": "ETHEREAL_SILICA_PRODUCTION",
+            "DRAGONHIDE_PRODUCTION": "DRAGONHIDE_PRODUCTION",
+            "LABOR_PRODUCTION": "LABOR_PRODUCTION",
+            "EARTHEN_SHARD_PRODUCTION": "EARTHEN_SHARD_PRODUCTION",
+            "DONKEY_PRODUCTION": "DONKEY_PRODUCTION",
+            "KNIGHT_T1_PRODUCTION": "KNIGHT_T1_PRODUCTION",
+            "KNIGHT_T2_PRODUCTION": "KNIGHT_T2_PRODUCTION",
+            "KNIGHT_T3_PRODUCTION": "KNIGHT_T3_PRODUCTION",
+            "CROSSBOWMAN_T1_PRODUCTION": "CROSSBOWMAN_T1_PRODUCTION",
+            "CROSSBOWMAN_T2_PRODUCTION": "CROSSBOWMAN_T2_PRODUCTION",
+            "CROSSBOWMAN_T3_PRODUCTION": "CROSSBOWMAN_T3_PRODUCTION",
+            "PALADIN_T1_PRODUCTION": "PALADIN_T1_PRODUCTION",
+            "PALADIN_T2_PRODUCTION": "PALADIN_T2_PRODUCTION",
+            "PALADIN_T3_PRODUCTION": "PALADIN_T3_PRODUCTION",
+            "WHEAT_PRODUCTION": "WHEAT_PRODUCTION",
+            "FISH_PRODUCTION": "FISH_PRODUCTION",
+            "ESSENCE_PRODUCTION": "ESSENCE_PRODUCTION",
+            "RESEARCH_PRODUCTION": "RESEARCH_PRODUCTION",
+            "SATOSHI_PRODUCTION": "SATOSHI_PRODUCTION"
+          }
+        }
+      },
+      {
+        "model": "Building",
+        "observation": {
+          "domain": "production",
+          "fields": {
+            "category": "category",
+            "bonus": "bonus_percent",
+            "structure": "outer_entity_id",
+            "paused": "paused"
+          }
+        }
+      },
+      {
+        "model": "StructureBuildings",
+        "observation": {
+          "domain": "production",
+          "fields": {
+            "population": "population",
+            "counts1": "packed_counts_1",
+            "counts2": "packed_counts_2",
+            "counts3": "packed_counts_3"
+          }
+        }
+      },
+      {
+        "model": "Hyperstructure",
+        "observation": {
+          "domain": "hyperstructures",
+          "fields": {
+            "initialized": "initialized",
+            "completed": "completed",
+            "access": "access",
+            "constructionSeed": "randomness",
+            "pointsMultiplier": "points_multiplier"
+          }
+        }
+      },
+      {
+        "model": "HyperstructureGlobals",
+        "observation": {
+          "domain": "hyperstructures",
+          "fields": {
+            "discovered": "created_count"
+          }
+        }
+      },
+      {
+        "model": "AgentOwner",
+        "observation": {
+          "domain": "ownership",
+          "fields": {
+            "owner": "address"
+          }
+        }
+      },
+      {
+        "model": "WonderFaith",
+        "observation": {
+          "domain": "faith",
+          "fields": {
+            "points": "claimed_points",
+            "pointsPerSecond": "claim_per_sec",
+            "settledAt": "claim_last_at",
+            "ownerPointsPerSecond": "owner_claim_per_sec",
+            "pledgedStructures": "num_structures_pledged"
+          }
+        }
+      },
+      {
+        "model": "FaithfulStructure",
+        "observation": {
+          "domain": "faith",
+          "fields": {
+            "wonder": "wonder_id",
+            "pledgedAt": "faithful_since",
+            "wonderOwnerPointsPerSecond": "fp_to_wonder_owner_per_sec",
+            "structureOwnerPointsPerSecond": "fp_to_struct_owner_per_sec"
+          }
+        }
+      },
+      {
+        "model": "PlayerFaithPoints",
+        "observation": {
+          "domain": "faith",
+          "fields": {
+            "points": "points_claimed",
+            "ownershipPointsPerSecond": "points_per_sec_as_owner",
+            "pledgePointsPerSecond": "points_per_sec_as_pledger",
+            "settledAt": "last_updated_at"
+          }
+        }
+      },
+      {
+        "model": "WonderFaithWinners",
+        "observation": {
+          "domain": "faith",
+          "fields": {
+            "score": "high_score",
+            "wonders": "wonder_ids"
+          }
+        }
+      },
+      {
+        "model": "PlayerRegisteredPoints",
+        "observation": {
+          "domain": "points",
+          "fields": {
+            "registered": "registered_points"
+          }
+        }
+      },
+      {
+        "model": "SeasonPrize",
+        "observation": {
+          "domain": "points",
+          "fields": {
+            "registered": "total_registered_points"
+          }
+        }
+      }
+    ]
+  },
+  "costs": {
+    "version": 1,
+    "traceSha256": "da2588848b70bf3c2b0c79f7aa4164bec20da5af7c23703e958e1064b6bfbe7c",
+    "accounting": "Inclusive execution counters at each action entrypoint, including attempted operations before rollback. Event counts sum local emissions across descendants; syscall and gas counters are already inclusive. Account validation and fees are outside this fixture.",
+    "actions": [
+      {
+        "command": "transfer_structure_ownership",
+        "dojo": {
+          "storageWrites": 0,
+          "events": 0,
+          "eventFelts": 0,
+          "l2Gas": 4663285,
+          "classHash": "0xe539645c51aba7c2f12d1228ed16a3823c045eb639af50d7d69fb8b02a19cb"
+        },
+        "nativeExecution": {
+          "storageWrites": 11,
+          "events": 3,
+          "eventFelts": 33,
+          "l2Gas": 1925057,
+          "classHash": "0x2bc67762f14415f8a6f9db83fd3c05c3c63c4c4f216362270578c3689d97a49"
+        },
+        "nativeGameplay": {
+          "storageWrites": 0,
+          "events": 0,
+          "eventFelts": 0,
+          "l2Gas": 900010,
+          "classHash": "0x11636d5c0210ed8c6abdb369eb64966b16fa9438255308e51a059d258f0da6"
+        },
+        "case": "same_owner",
+        "expectedSuccess": true
+      },
+      {
+        "command": "transfer_structure_ownership",
+        "dojo": {
+          "storageWrites": 0,
+          "events": 0,
+          "eventFelts": 0,
+          "l2Gas": 3712059,
+          "classHash": "0xe539645c51aba7c2f12d1228ed16a3823c045eb639af50d7d69fb8b02a19cb"
+        },
+        "nativeExecution": {
+          "storageWrites": 11,
+          "events": 3,
+          "eventFelts": 33,
+          "l2Gas": 1939369,
+          "classHash": "0x2bc67762f14415f8a6f9db83fd3c05c3c63c4c4f216362270578c3689d97a49"
+        },
+        "nativeGameplay": {
+          "storageWrites": 0,
+          "events": 0,
+          "eventFelts": 0,
+          "l2Gas": 905360,
+          "classHash": "0x11636d5c0210ed8c6abdb369eb64966b16fa9438255308e51a059d258f0da6"
+        },
+        "case": "zero_recipient",
+        "expectedSuccess": false
+      },
+      {
+        "command": "transfer_structure_ownership",
+        "dojo": {
+          "storageWrites": 0,
+          "events": 0,
+          "eventFelts": 0,
+          "l2Gas": 3724729,
+          "classHash": "0xe539645c51aba7c2f12d1228ed16a3823c045eb639af50d7d69fb8b02a19cb"
+        },
+        "nativeExecution": {
+          "storageWrites": 11,
+          "events": 3,
+          "eventFelts": 33,
+          "l2Gas": 1954460,
+          "classHash": "0x2bc67762f14415f8a6f9db83fd3c05c3c63c4c4f216362270578c3689d97a49"
+        },
+        "nativeGameplay": {
+          "storageWrites": 0,
+          "events": 0,
+          "eventFelts": 0,
+          "l2Gas": 916920,
+          "classHash": "0x11636d5c0210ed8c6abdb369eb64966b16fa9438255308e51a059d258f0da6"
+        },
+        "case": "blitz",
+        "expectedSuccess": false
+      },
+      {
+        "command": "transfer_structure_ownership",
+        "dojo": {
+          "storageWrites": 34,
+          "events": 12,
+          "eventFelts": 133,
+          "l2Gas": 19552700,
+          "classHash": "0xe539645c51aba7c2f12d1228ed16a3823c045eb639af50d7d69fb8b02a19cb"
+        },
+        "nativeExecution": {
+          "storageWrites": 43,
+          "events": 13,
+          "eventFelts": 153,
+          "l2Gas": 2656957,
+          "classHash": "0x2bc67762f14415f8a6f9db83fd3c05c3c63c4c4f216362270578c3689d97a49"
+        },
+        "nativeGameplay": {
+          "storageWrites": 32,
+          "events": 10,
+          "eventFelts": 120,
+          "l2Gas": 1631910,
+          "classHash": "0x11636d5c0210ed8c6abdb369eb64966b16fa9438255308e51a059d258f0da6"
+        },
+        "case": "faith_transfer",
+        "expectedSuccess": true
+      },
+      {
+        "command": "transfer_structure_ownership",
+        "dojo": {
+          "storageWrites": 0,
+          "events": 0,
+          "eventFelts": 0,
+          "l2Gas": 4949331,
+          "classHash": "0xe539645c51aba7c2f12d1228ed16a3823c045eb639af50d7d69fb8b02a19cb"
+        },
+        "nativeExecution": {
+          "storageWrites": 11,
+          "events": 3,
+          "eventFelts": 33,
+          "l2Gas": 1427859,
+          "classHash": "0x2bc67762f14415f8a6f9db83fd3c05c3c63c4c4f216362270578c3689d97a49"
+        },
+        "nativeGameplay": {
+          "storageWrites": 0,
+          "events": 0,
+          "eventFelts": 0,
+          "l2Gas": 393850,
+          "classHash": "0x11636d5c0210ed8c6abdb369eb64966b16fa9438255308e51a059d258f0da6"
+        },
+        "case": "foreign_owner",
+        "expectedSuccess": false
+      },
+      {
+        "command": "transfer_structure_ownership",
+        "dojo": {
+          "storageWrites": 34,
+          "events": 12,
+          "eventFelts": 133,
+          "l2Gas": 19629990,
+          "classHash": "0xe539645c51aba7c2f12d1228ed16a3823c045eb639af50d7d69fb8b02a19cb"
+        },
+        "nativeExecution": {
+          "storageWrites": 43,
+          "events": 13,
+          "eventFelts": 153,
+          "l2Gas": 2672537,
+          "classHash": "0x2bc67762f14415f8a6f9db83fd3c05c3c63c4c4f216362270578c3689d97a49"
+        },
+        "nativeGameplay": {
+          "storageWrites": 32,
+          "events": 10,
+          "eventFelts": 120,
+          "l2Gas": 1647490,
+          "classHash": "0x11636d5c0210ed8c6abdb369eb64966b16fa9438255308e51a059d258f0da6"
+        },
+        "case": "faith_transfer_back",
+        "expectedSuccess": true
+      },
+      {
+        "command": "transfer_agent_ownership",
+        "dojo": {
+          "storageWrites": 1,
+          "events": 1,
+          "eventFelts": 8,
+          "l2Gas": 3692097,
+          "classHash": "0xe539645c51aba7c2f12d1228ed16a3823c045eb639af50d7d69fb8b02a19cb"
+        },
+        "nativeExecution": {
+          "storageWrites": 12,
+          "events": 4,
+          "eventFelts": 41,
+          "l2Gas": 1675427,
+          "classHash": "0x2bc67762f14415f8a6f9db83fd3c05c3c63c4c4f216362270578c3689d97a49"
+        },
+        "nativeGameplay": {
+          "storageWrites": 1,
+          "events": 1,
+          "eventFelts": 8,
+          "l2Gas": 650380,
+          "classHash": "0x671b2ca12baa5bd88bca56162654219bb61cdb5bb54d6e561c2b119518d6257"
+        },
+        "case": "agent_transfer",
+        "expectedSuccess": true
+      },
+      {
+        "command": "transfer_agent_ownership",
+        "dojo": {
+          "storageWrites": 1,
+          "events": 1,
+          "eventFelts": 8,
+          "l2Gas": 3692097,
+          "classHash": "0xe539645c51aba7c2f12d1228ed16a3823c045eb639af50d7d69fb8b02a19cb"
+        },
+        "nativeExecution": {
+          "storageWrites": 12,
+          "events": 4,
+          "eventFelts": 41,
+          "l2Gas": 1675427,
+          "classHash": "0x2bc67762f14415f8a6f9db83fd3c05c3c63c4c4f216362270578c3689d97a49"
+        },
+        "nativeGameplay": {
+          "storageWrites": 1,
+          "events": 1,
+          "eventFelts": 8,
+          "l2Gas": 650380,
+          "classHash": "0x671b2ca12baa5bd88bca56162654219bb61cdb5bb54d6e561c2b119518d6257"
+        },
+        "case": "agent_zero_recipient",
+        "expectedSuccess": true
+      },
+      {
+        "command": "transfer_structure_ownership",
+        "dojo": {
+          "storageWrites": 0,
+          "events": 0,
+          "eventFelts": 0,
+          "l2Gas": 4813995,
+          "classHash": "0xe539645c51aba7c2f12d1228ed16a3823c045eb639af50d7d69fb8b02a19cb"
+        },
+        "nativeExecution": {
+          "storageWrites": 11,
+          "events": 3,
+          "eventFelts": 33,
+          "l2Gas": 3981939,
+          "classHash": "0x2bc67762f14415f8a6f9db83fd3c05c3c63c4c4f216362270578c3689d97a49"
+        },
+        "nativeGameplay": {
+          "storageWrites": 0,
+          "events": 0,
+          "eventFelts": 0,
+          "l2Gas": 2947930,
+          "classHash": "0x11636d5c0210ed8c6abdb369eb64966b16fa9438255308e51a059d258f0da6"
+        },
+        "case": "ended",
+        "expectedSuccess": false
+      }
+    ]
+  },
+  "passed": true,
+  "factParityPassed": true,
+  "rulesRevision": "55dc510f5e7af119d1efac9a60426e81fee8e408",
+  "oracleSourceSha256": "99034c1e0f31719df3d1ae0cf343a2e9b53fae2da8f972bb38c78b1fa7d73bce",
+  "provenance": {
+    "revision": "47e092e0c313183bd39dc001910f939a01af5841",
+    "dirty": false,
+    "sourceSha256": "e3e3a462b61fe1cb3d98242b68222a1ef72d7ed8d7c92ea382fec6fcc345865c",
+    "scope": [
+      "apps/herald",
+      "contracts/l3/world-native",
+      "contracts/l3/randomness-protocol",
+      "packages",
+      "config",
+      "deploy/madara-lab/harness",
+      "package.json",
+      "pnpm-lock.yaml",
+      ".github/workflows/native-world.yml"
+    ],
+    "excludedReports": [
+      "contracts/l3/world-native/fixtures/combat-parity.json",
+      "contracts/l3/world-native/fixtures/deploy-upgrade.json",
+      "contracts/l3/world-native/fixtures/harness.json",
+      "contracts/l3/world-native/fixtures/herald-replay.json",
+      "contracts/l3/world-native/fixtures/ownership-parity.json",
+      "contracts/l3/world-native/fixtures/world-parity.json"
+    ]
+  },
+  "parityReport": "world-parity.json",
+  "cases": [
+    {
+      "name": "ownership",
+      "test": "world_parity_ownership",
+      "comparedFactSnapshots": 101
+    },
+    {
+      "name": "ownership_rejections",
+      "test": "world_parity_ownership_rejections",
+      "comparedFactSnapshots": 63
+    },
+    {
+      "name": "ownership_faith",
+      "test": "world_parity_ownership_faith",
+      "comparedFactSnapshots": 36
+    }
+  ],
+  "harnessCoverage": {
+    "workload": "deploy/madara-lab/harness/native/workload.ts",
+    "added": [
+      "Transfer a realm to the second player and back, observing both changes through shared-client RECS."
+    ],
+    "liveRun": "pending full-game acceptance"
+  },
+  "casm": {
+    "native": {
+      "SeasonDomain": {
+        "bytecodeFelts": 50197,
+        "jsonBytes": 1096214,
+        "sha256": "9b0cb29bccee346c2e8fb82859e62eea8907114a5c0cfeaf126001659bd29cda"
+      },
+      "StructuresDomain": {
+        "bytecodeFelts": 77907,
+        "jsonBytes": 1705768,
+        "sha256": "2b50f9fe9db4d2b77ede134515e5adac38878beadaf709a3b16aec2a9d9fa56e"
+      },
+      "TroopsDomain": {
+        "bytecodeFelts": 66466,
+        "jsonBytes": 1410551,
+        "sha256": "7471cfad33f69cfb98904aa2e03bb305520b9a39b7a8c1881a18f0344877f00c"
+      },
+      "MapDomain": {
+        "bytecodeFelts": 37586,
+        "jsonBytes": 871873,
+        "sha256": "e27e84b7cf5f100776f44d01132b1b690437f7f0bfc4668a3b5626b57881d67a"
+      }
+    },
+    "dojo": {
+      "ownership_systems": {
+        "bytecodeFelts": 33095,
+        "jsonBytes": 713702,
+        "sha256": "fb2e4329356e6f14b27968eca489d68f13d227d216343edc06bee82d7b94edeb"
+      }
+    }
+  },
+  "reductions": [
+    "Removed the unused StructureOwnerStats row, owner_counts map and owner_count view; ownership is stored once on Structure.",
+    "Replaced whole-structure storage writes during transfer with a single owner-field write.",
+    "Removed the intermediate wonder-faith write; settlement persists its final record once."
+  ],
+  "divergence": null
+}

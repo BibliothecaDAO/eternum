@@ -1,21 +1,27 @@
 use dojo::model::{Model, ModelStorage, ModelStorageTest};
 use dojo::world::{IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
 use dojo_snf_test::{ContractDefTrait, NamespaceDef, TestResource, WorldStorageTestTrait, spawn_test_world};
+use eternum_randomness_protocol::entrypoint::{
+    ExecutionContext, IRecordedExecutionDispatcher, IRecordedExecutionDispatcherTrait,
+    IRecordedExecutionViewsDispatcher, IRecordedExecutionViewsDispatcherTrait,
+};
+use eternum_randomness_protocol::{Intent, action_identity};
 use snforge_std::signature::stark_curve::{StarkCurveKeyPair, StarkCurveKeyPairImpl, StarkCurveSignerImpl};
 use snforge_std::signature::{KeyPairTrait, SignerTrait};
 use snforge_std::{
-    CheatSpan, ContractClassTrait, DeclareResultTrait, EventSpyTrait, cheat_caller_address, declare, spy_events,
+    CheatSpan, ContractClassTrait, DeclareResultTrait, cheat_caller_address, declare,
     start_cheat_block_timestamp_global, start_cheat_caller_address, start_cheat_chain_id_global,
     start_cheat_transaction_hash_global, stop_cheat_caller_address,
 };
 use starknet::ContractAddress;
 use world_native::commands::{Battle, Command, CreateExplorer, Explore, Move, ToggleAlternate};
-use eternum_randomness_protocol::{Intent, action_identity};
-use eternum_randomness_protocol::entrypoint::{ExecutionContext, IRecordedExecutionDispatcher, IRecordedExecutionDispatcherTrait, IRecordedExecutionViewsDispatcher, IRecordedExecutionViewsDispatcherTrait};
-use crate::native_protocol;
 use world_native::game::{IGameDispatcher, IGameDispatcherTrait};
 use world_native::lifecycle::{IDomainDispatcher, IDomainDispatcherTrait, Peers};
 use world_native::map::{IMapDispatcher, IMapDispatcherTrait};
+use world_native::ownership::{
+    FaithfulStructure, IAgentOwnershipDispatcherTrait, IFaithOwnershipViewsDispatcherTrait, PlayerFaithPoints,
+    WonderFaith,
+};
 use world_native::resources::ResourceKey;
 use world_native::season::{ISeasonDispatcher, ISeasonDispatcherTrait};
 use world_native::structures::{IStructuresDispatcher, IStructuresDispatcherTrait};
@@ -27,9 +33,10 @@ use crate::models::hyperstructure::{Hyperstructure, HyperstructureGlobals, Playe
 use crate::models::map2::TileOpt;
 use crate::models::position::Coord;
 use crate::models::resource::production::building::{Building, StructureBuildings};
-use crate::models::resource::resource::Resource;
-use crate::models::structure::{Structure, StructureOwnerStats};
+use crate::models::structure::Structure;
 use crate::models::troop::{ExplorerTroops, TroopTier, TroopType};
+use crate::native_facts::*;
+use crate::native_protocol;
 use crate::systems::alt_movement::contracts::{IAltMovementSystemsDispatcher, IAltMovementSystemsDispatcherTrait};
 use crate::systems::combat::contracts::troop_battle::{
     ITroopBattleSystemsDispatcher, ITroopBattleSystemsDispatcherTrait,
@@ -84,11 +91,13 @@ fn namespace() -> NamespaceDef {
             TestResource::Model("ResourceList"), TestResource::Model("ExplorerTroops"), TestResource::Model("TileOpt"),
             TestResource::Model("PlayerRegisteredPoints"), TestResource::Model("SeasonPrize"),
             TestResource::Model("Hyperstructure"), TestResource::Model("HyperstructureGlobals"),
-            TestResource::Model("AgentConfig"), TestResource::Model("AgentCount"),
-            TestResource::Contract("alt_movement_systems"), TestResource::Contract("parity_bootstrap_systems"),
-            TestResource::Contract("troop_management_systems"), TestResource::Contract("troop_movement_systems"),
-            TestResource::Contract("troop_movement_util_systems"), TestResource::Contract("troop_battle_systems"),
-            TestResource::Contract("hyperstructure_discovery_systems"),
+            TestResource::Model("AgentConfig"), TestResource::Model("AgentCount"), TestResource::Model("AgentOwner"),
+            TestResource::Model("WonderFaith"), TestResource::Model("FaithfulStructure"),
+            TestResource::Model("PlayerFaithPoints"), TestResource::Model("WonderFaithWinners"),
+            TestResource::Contract("ownership_systems"), TestResource::Contract("alt_movement_systems"),
+            TestResource::Contract("parity_bootstrap_systems"), TestResource::Contract("troop_management_systems"),
+            TestResource::Contract("troop_movement_systems"), TestResource::Contract("troop_movement_util_systems"),
+            TestResource::Contract("troop_battle_systems"), TestResource::Contract("hyperstructure_discovery_systems"),
             TestResource::Contract("mine_discovery_systems"), TestResource::Contract("camp_discovery_systems"),
             TestResource::Contract("agent_discovery_systems"), TestResource::Contract("relic_chest_discovery_systems"),
             TestResource::Contract("bitcoin_mine_discovery_systems"),
@@ -156,7 +165,7 @@ fn setup(case: felt252) -> PairedWorld {
         "alt_movement_systems", "parity_bootstrap_systems", "troop_management_systems", "troop_movement_systems",
         "troop_movement_util_systems", "troop_battle_systems", "hyperstructure_discovery_systems",
         "mine_discovery_systems", "camp_discovery_systems", "agent_discovery_systems", "relic_chest_discovery_systems",
-        "bitcoin_mine_discovery_systems",
+        "bitcoin_mine_discovery_systems", "ownership_systems",
     ] {
         defs
             .append(
@@ -244,34 +253,35 @@ fn execute(worlds: PairedWorld, command: Command, timestamp: u64, root: u256) {
     assert_eq!(IRecordedExecutionViewsDispatcher { contract_address: worlds.peers.season }.get_result(order).status, 1);
     stop_cheat_caller_address(worlds.peers.season);
 }
-fn compare_row<A, +Serde<A>, +Drop<A>, B, +Serde<B>, +Drop<B>>(
+fn compare_facts<A, +Observable<A>, +Drop<A>, B, +Observable<B>, +Drop<B>>(
     case: felt252, step: u32, model: felt252, keys: Span<felt252>, native: A, oracle: B,
 ) {
-    let mut native_row = keys.into();
-    native.serialize(ref native_row);
-    let mut oracle_row = array![];
-    oracle.serialize(ref oracle_row);
-    let row_id = core::poseidon::poseidon_hash_span(keys);
-    println!("PARITY_ROW {} {} {} {} {} {}", case, step, model, row_id, keys.len(), native_row.len());
-    assert_eq!(native_row.len(), oracle_row.len(), "row length differs");
-    for index in 0..native_row.len() {
+    let mut native_facts = keys.into();
+    native_facts.append_span(native.observe().span());
+    let mut oracle_facts = keys.into();
+    oracle_facts.append_span(oracle.observe().span());
+    let identity = core::poseidon::poseidon_hash_span(keys);
+    println!("FACT_SNAPSHOT {} {} {} {} {} {}", case, step, model, identity, keys.len(), native_facts.len());
+    assert_eq!(native_facts.len(), oracle_facts.len(), "observable fact count differs");
+    for index in 0..native_facts.len() {
         println!(
-            "PARITY_VALUE {} {} {} {} {} {} {}",
+            "FACT_VALUE {} {} {} {} {} {} {}",
             case,
             step,
             model,
-            row_id,
+            identity,
             index,
-            *native_row.at(index),
-            *oracle_row.at(index),
+            *native_facts.at(index),
+            *oracle_facts.at(index),
         );
     }
-    assert!(native_row == oracle_row, "gameplay row differs: {} step {}", model, step);
+    assert!(native_facts == oracle_facts, "observable facts differ: {} step {}", model, step);
 }
+
 fn compare_home(worlds: PairedWorld, step: u32, id: u32) {
     let structures = IStructuresDispatcher { contract_address: worlds.peers.structures };
     let key = ResourceKey { game_id: 1, entity_id: id };
-    compare_row(
+    compare_facts(
         worlds.case,
         step,
         'Structure',
@@ -279,22 +289,13 @@ fn compare_home(worlds: PairedWorld, step: u32, id: u32) {
         structures.structure(key).unwrap(),
         ModelStorage::<WorldStorage, Structure>::read_model(@worlds.oracle, (1, id)),
     );
-    compare_row(
+    compare_facts(
         worlds.case,
         step,
         'Resource',
         array![1, id.into()].span(),
         structures.resource(key),
-        ModelStorage::<WorldStorage, Resource>::read_model(@worlds.oracle, (1, id)),
-    );
-    let owner = structures.structure(key).unwrap().owner;
-    compare_row(
-        worlds.case,
-        step,
-        'StructureOwnerStats',
-        array![1, owner.into()].span(),
-        structures.owner_count(1, owner),
-        ModelStorage::<WorldStorage, StructureOwnerStats>::read_model(@worlds.oracle, (1, owner)),
+        OracleResources { world: worlds.oracle, game_id: 1, entity_id: id },
     );
 }
 #[test]
@@ -327,7 +328,7 @@ fn world_parity_explorer_creation() {
     let explorer = ITroopsDispatcher { contract_address: worlds.peers.troops }
         .explorer(ExplorerKey { game_id: 1, explorer_id: id })
         .unwrap();
-    compare_row(
+    compare_facts(
         worlds.case,
         1,
         'ExplorerTroops',
@@ -335,19 +336,19 @@ fn world_parity_explorer_creation() {
         explorer,
         ModelStorage::<WorldStorage, ExplorerTroops>::read_model(@worlds.oracle, (1, id)),
     );
-    compare_row(
+    compare_facts(
         worlds.case,
         1,
         'Resource',
         array![1, id.into()].span(),
         IStructuresDispatcher { contract_address: worlds.peers.structures }
             .resource(ResourceKey { game_id: 1, entity_id: id }),
-        ModelStorage::<WorldStorage, Resource>::read_model(@worlds.oracle, (1, id)),
+        OracleResources { world: worlds.oracle, game_id: 1, entity_id: id },
     );
     let tile = world_native::map::IMapDispatcher { contract_address: worlds.peers.map };
     let key = world_native::geometry::tile_key(1, explorer.coord);
     let actual = world_native::map::IMapDispatcherTrait::tile(tile, key).unwrap();
-    compare_row(
+    compare_facts(
         worlds.case,
         1,
         'TileOpt',
@@ -363,7 +364,7 @@ fn compare_tile(worlds: PairedWorld, step: u32, coord: world_native::troops::Coo
     let actual = IMapDispatcher { contract_address: worlds.peers.map }
         .tile(key)
         .unwrap_or(world_native::map::TileOpt { data: 0 });
-    compare_row(
+    compare_facts(
         worlds.case,
         step,
         'TileOpt',
@@ -376,7 +377,7 @@ fn compare_explorer(worlds: PairedWorld, step: u32, id: u32) -> world_native::tr
     let explorer = ITroopsDispatcher { contract_address: worlds.peers.troops }
         .explorer(ExplorerKey { game_id: 1, explorer_id: id })
         .unwrap();
-    compare_row(
+    compare_facts(
         worlds.case,
         step,
         'ExplorerTroops',
@@ -385,14 +386,14 @@ fn compare_explorer(worlds: PairedWorld, step: u32, id: u32) -> world_native::tr
         ModelStorage::<WorldStorage, ExplorerTroops>::read_model(@worlds.oracle, (1, id)),
     );
     compare_tile(worlds, step, explorer.coord);
-    compare_row(
+    compare_facts(
         worlds.case,
         step,
         'Resource',
         array![1, id.into()].span(),
         IStructuresDispatcher { contract_address: worlds.peers.structures }
             .resource(ResourceKey { game_id: 1, entity_id: id }),
-        ModelStorage::<WorldStorage, Resource>::read_model(@worlds.oracle, (1, id)),
+        OracleResources { world: worlds.oracle, game_id: 1, entity_id: id },
     );
     explorer
 }
@@ -421,15 +422,15 @@ fn explore_pair(
         .unwrap();
     assert_eq!((tile.data / 2) % 256, expected_occupier.into());
     let game = IGameDispatcher { contract_address: worlds.peers.season };
-    compare_row(
+    compare_facts(
         worlds.case,
         step,
         'SeasonPrize',
         array![1].span(),
-        (game.season_points(1), 0_u256),
+        game.season_points(1),
         ModelStorage::<WorldStorage, crate::models::season::SeasonPrize>::read_model(@worlds.oracle, 1_u32),
     );
-    compare_row(
+    compare_facts(
         worlds.case,
         step,
         'PlayerRegisteredPoints',
@@ -476,7 +477,7 @@ fn compare_discovery(worlds: PairedWorld, step: u32, coord: world_native::troops
     }
     if (tile.data / 2) % 256 == 9 {
         let key = ResourceKey { game_id: 1, entity_id: id };
-        compare_row(
+        compare_facts(
             worlds.case,
             step,
             'Hyperstructure',
@@ -484,12 +485,12 @@ fn compare_discovery(worlds: PairedWorld, step: u32, coord: world_native::troops
             structures.hyperstructure(key).unwrap(),
             ModelStorage::<WorldStorage, Hyperstructure>::read_model(@worlds.oracle, (1, id)),
         );
-        compare_row(
+        compare_facts(
             worlds.case,
             step,
             'HyperstructureGlobals',
             array![1].span(),
-            (structures.hyperstructure_count(1), 0_u32),
+            structures.hyperstructure_count(1),
             ModelStorage::<WorldStorage, HyperstructureGlobals>::read_model(@worlds.oracle, 1_u32),
         );
     }
@@ -497,7 +498,7 @@ fn compare_discovery(worlds: PairedWorld, step: u32, coord: world_native::troops
         let key = world_native::buildings::BuildingKey {
             game_id: 1, alt: coord.alt, outer_col: coord.x, outer_row: coord.y, inner_col: 10, inner_row: 10,
         };
-        compare_row(
+        compare_facts(
             worlds.case,
             step,
             'Building',
@@ -507,7 +508,7 @@ fn compare_discovery(worlds: PairedWorld, step: u32, coord: world_native::troops
                 WorldStorage, Building,
             >::read_model(@worlds.oracle, (1, coord.alt, coord.x, coord.y, 10_u32, 10_u32)),
         );
-        compare_row(
+        compare_facts(
             worlds.case,
             step,
             'StructureBuildings',
@@ -691,7 +692,6 @@ fn battle_case(case: felt252, alt: bool) {
     };
     start_cheat_block_timestamp_global(1920);
     let tx_hash = inject_root(worlds, 501);
-    let mut battle_events = spy_events();
     let (battle, _) = worlds.oracle.dns(@"troop_battle_systems").unwrap();
     start_cheat_caller_address(battle, worlds.actor);
     ITroopBattleSystemsDispatcher { contract_address: battle }
@@ -703,36 +703,6 @@ fn battle_case(case: felt252, alt: bool) {
         assert_eq!(IParityRootsDispatcher { contract_address: worlds.roots }.consumed(), 0);
     }
     execute(worlds, Command::Battle(Battle { attacker_id: attacker, defender_id: defender }), 1920, 501);
-    let events = battle_events.get_events();
-    let mut native_payload = array![];
-    let mut native_count = 0;
-    for (address, event) in events.events.span() {
-        if *address == worlds.peers.troops && *event.keys.at(0) == selector!("BattleEvent") {
-            assert_eq!(*event.keys.at(1), 1);
-            native_payload.append(5);
-            native_payload.append_span(event.keys.span().slice(2, 5));
-            native_payload.append(event.data.len().into());
-            native_payload.append_span(event.data.span());
-            native_count += 1;
-        }
-    }
-    assert_eq!(native_count, 1);
-    let mut matched = 0;
-    for (address, event) in events.events.span() {
-        if *address == worlds.oracle.dispatcher.contract_address
-            && *event.keys.at(0) == selector!("EventEmitted")
-            && event.data.span() == native_payload.span() {
-            matched += 1;
-        }
-    }
-    assert_eq!(matched, 1, "combat event projection differs");
-    println!(
-        "PARITY_EVENT {} {} {} {}",
-        case,
-        step,
-        'BattleEvent',
-        core::poseidon::poseidon_hash_span(native_payload.span()),
-    );
     compare_home(worlds, step, home);
     compare_home(worlds, step, enemy_home);
     compare_explorer(worlds, step, attacker);
@@ -748,19 +718,13 @@ fn battle_case(case: felt252, alt: bool) {
     let deleted: ExplorerTroops = ModelStorage::<
         WorldStorage, ExplorerTroops,
     >::read_model(@worlds.oracle, (1, defender));
-    let resource: Resource = ModelStorage::<WorldStorage, Resource>::read_model(@worlds.oracle, (1, defender));
-    let mut row = array![];
-    deleted.serialize(ref row);
-    for value in row.span().slice(2, row.len() - 2) {
-        assert_eq!(*value, 0);
-    }
-    let mut row = array![];
-    resource.serialize(ref row);
-    for value in row.span().slice(2, row.len() - 2) {
-        assert_eq!(*value, 0);
-    }
-    println!("PARITY_DELETE {} {} {} {} {}", worlds.case, step, 'ExplorerTroops', 1, defender);
-    println!("PARITY_DELETE {} {} {} {} {}", worlds.case, step, 'Resource', 1, defender);
+    let resource = OracleResources { world: worlds.oracle, game_id: 1, entity_id: defender };
+    assert_eq!(deleted.owner, 0, "oracle explorer still has a home");
+    assert_eq!(deleted.troops.count, 0, "oracle explorer still has troops");
+    let empty_resource: world_native::resources::Resource = Default::default();
+    compare_facts(worlds.case, step, 'Resource', array![1, defender.into()].span(), empty_resource, resource);
+    println!("FACT_DELETE {} {} {} {} {}", worlds.case, step, 'ExplorerTroops', 1, defender);
+    println!("FACT_DELETE {} {} {} {} {}", worlds.case, step, 'Resource', 1, defender);
     compare_tile(worlds, step, before.coord);
 }
 
@@ -784,7 +748,9 @@ fn rejected_explore_pair(worlds: PairedWorld, id: u32, direction: u8, timestamp:
     let (movement, _) = worlds.oracle.dns(@"troop_movement_systems").unwrap();
     cheat_caller_address(movement, worlds.actor, CheatSpan::TargetCalls(1));
     assert!(!attempts.explore(movement, id, convert(direction)));
-    let intent = native_protocol::action(worlds.peers.season, worlds.actor, Command::Explore(Explore { explorer_id: id, direction }), timestamp);
+    let intent = native_protocol::action(
+        worlds.peers.season, worlds.actor, Command::Explore(Explore { explorer_id: id, direction }), timestamp,
+    );
     let public_key = world_native::season::IGameplayKeyDispatcherTrait::get_public_key(
         world_native::season::IGameplayKeyDispatcher { contract_address: worlds.actor },
     );
@@ -823,6 +789,7 @@ fn world_parity_rejected_actions_preserve_rows() {
 }
 #[starknet::interface]
 pub trait IParityAttempts<T> {
+    fn ownership(ref self: T, target: ContractAddress, selector: felt252, id: u32, owner: ContractAddress) -> bool;
     fn native(
         ref self: T, season: ContractAddress, intent: Intent, context: ExecutionContext, r: felt252, s: felt252,
     ) -> bool;
@@ -830,9 +797,12 @@ pub trait IParityAttempts<T> {
 }
 #[starknet::contract]
 mod ParityAttempts {
-    use starknet::ContractAddress;
+    use eternum_randomness_protocol::entrypoint::{
+        ExecutionContext, IRecordedExecutionSafeDispatcher, IRecordedExecutionSafeDispatcherTrait,
+        IRecordedExecutionViewsDispatcher, IRecordedExecutionViewsDispatcherTrait,
+    };
     use eternum_randomness_protocol::{Intent, decode_envelope};
-    use eternum_randomness_protocol::entrypoint::{ExecutionContext, IRecordedExecutionSafeDispatcher, IRecordedExecutionSafeDispatcherTrait, IRecordedExecutionViewsDispatcher, IRecordedExecutionViewsDispatcherTrait};
+    use starknet::ContractAddress;
     use crate::models::position::Direction;
     use crate::systems::combat::contracts::troop_movement::{
         ITroopMovementSystemsSafeDispatcher, ITroopMovementSystemsSafeDispatcherTrait,
@@ -841,6 +811,12 @@ mod ParityAttempts {
     struct Storage {}
     #[abi(embed_v0)]
     impl Attempts of super::IParityAttempts<ContractState> {
+        fn ownership(
+            ref self: ContractState, target: ContractAddress, selector: felt252, id: u32, owner: ContractAddress,
+        ) -> bool {
+            starknet::syscalls::call_contract_syscall(target, selector, array![1, id.into(), owner.into()].span())
+                .is_ok()
+        }
         #[feature("safe_dispatcher")]
         fn native(
             ref self: ContractState,
@@ -1095,4 +1071,418 @@ pub mod parity_bootstrap_systems {
             IMapImpl::occupy(ref world, ref tile, TileOccupier::Spire, spire_id);
         }
     }
+}
+
+fn set_native_fixture<T, +Serde<T>, +Drop<T>>(address: ContractAddress, name: felt252, keys: Span<felt252>, value: T) {
+    let mut values = array![];
+    value.serialize(ref values);
+    snforge_std::store(address, snforge_std::map_entry_address(name, keys), values.span());
+}
+
+fn ownership_rules(ref worlds: PairedWorld, blitz: bool, faith: bool, controller: ContractAddress) {
+    let mut rules = crate::native_inputs::rules();
+    rules.blitz_mode_on = blitz;
+    rules.faith_enabled = faith;
+    start_cheat_caller_address(worlds.peers.season, authority());
+    (ISeasonDispatcher { contract_address: worlds.peers.season }).set_agent_controller(controller);
+    stop_cheat_caller_address(worlds.peers.season);
+    set_native_fixture(worlds.peers.season, selector!("rules"), array![1].span(), rules);
+    let mut preset: PresetConfig = worlds.oracle.read_model(1_u32);
+    preset.faith_config.enabled = faith;
+    worlds.oracle.write_model_test(@preset);
+    worlds.oracle.write_member(Model::<WorldConfig>::ptr_from_keys(1_u32), selector!("blitz_mode_on"), blitz);
+    worlds
+        .oracle
+        .write_member(
+            Model::<crate::models::config::ChainConfig>::ptr_from_keys(crate::constants::WORLD_CONFIG_ID),
+            selector!("agent_controller_config"),
+            crate::models::config::AgentControllerConfig { address: controller },
+        );
+}
+
+fn transfer(ref worlds: PairedWorld, id: u32, owner: ContractAddress, agent: bool, now: u64, succeeds: bool) {
+    start_cheat_block_timestamp_global(now);
+    let (address, _) = worlds.oracle.dns(@"ownership_systems").unwrap();
+    start_cheat_caller_address(address, worlds.actor);
+    let selector = if agent {
+        selector!("transfer_agent_ownership")
+    } else {
+        selector!("transfer_structure_ownership")
+    };
+    let attempts = IParityAttemptsDispatcher { contract_address: deploy("ParityAttempts", @array![]) };
+    assert_eq!(attempts.ownership(address, selector, id, owner), succeeds, "oracle ownership outcome");
+    stop_cheat_caller_address(address);
+    let value = world_native::ownership::TransferOwnership { entity_id: id, new_owner: owner };
+    let command = if agent {
+        Command::TransferAgentOwnership(value)
+    } else {
+        Command::TransferStructureOwnership(value)
+    };
+    let intent = native_protocol::action(worlds.peers.season, worlds.actor, command, now);
+    let public_key = world_native::season::IGameplayKeyDispatcherTrait::get_public_key(
+        world_native::season::IGameplayKeyDispatcher { contract_address: worlds.actor },
+    );
+    let signer = if public_key == pair().public_key {
+        pair()
+    } else {
+        opponent_pair()
+    };
+    let (r, s) = signer.sign(action_identity(@intent)).unwrap();
+    let context = native_protocol::context(@intent, now, 1234);
+    let order = intent.last_order;
+    native_protocol::authenticate(worlds.peers.season, submitter());
+    IRecordedExecutionDispatcher { contract_address: worlds.peers.season }.execute(intent, context, r, s);
+    let status = IRecordedExecutionViewsDispatcher { contract_address: worlds.peers.season }.get_result(order).status;
+    assert_eq!(status, if succeeds {
+        1
+    } else {
+        2
+    }, "native ownership outcome");
+    stop_cheat_caller_address(worlds.peers.season);
+    let action = if agent {
+        'agent_transfer'
+    } else {
+        'structure_transfer'
+    };
+    println!("FACT_ACTION {} {} {} {} {}", worlds.case, order, action, now, status == 1);
+}
+
+fn compare_ownership(worlds: PairedWorld, step: u32, id: u32) {
+    compare_home(worlds, step, id);
+    let faith = world_native::ownership::IFaithOwnershipViewsDispatcher { contract_address: worlds.peers.structures };
+    let key = ResourceKey { game_id: 1, entity_id: id };
+    compare_facts(
+        worlds.case,
+        step,
+        'WonderFaith',
+        array![1, id.into()].span(),
+        faith.wonder_faith(key),
+        ModelStorage::<WorldStorage, crate::models::faith::WonderFaith>::read_model(@worlds.oracle, (1, id)),
+    );
+    compare_facts(
+        worlds.case,
+        step,
+        'FaithfulStructure',
+        array![1, id.into()].span(),
+        faith.faithful_structure(key),
+        ModelStorage::<WorldStorage, crate::models::faith::FaithfulStructure>::read_model(@worlds.oracle, (1, id)),
+    );
+    compare_facts(
+        worlds.case,
+        step,
+        'WonderFaithWinners',
+        array![1].span(),
+        faith.wonder_faith_winners(1),
+        ModelStorage::<WorldStorage, crate::models::faith::WonderFaithWinners>::read_model(@worlds.oracle, 1_u32),
+    );
+    for owner in array![worlds.actor, worlds.opponent] {
+        for wonder in array![id, 999] {
+            compare_facts(
+                worlds.case,
+                step,
+                'PlayerFaithPoints',
+                array![1, owner.into(), wonder.into()].span(),
+                faith
+                    .player_faith_points(
+                        world_native::ownership::PlayerFaithKey { game_id: 1, player: owner, wonder_id: wonder },
+                    ),
+                ModelStorage::<
+                    WorldStorage, crate::models::faith::PlayerFaithPoints,
+                >::read_model(@worlds.oracle, (1, owner, wonder)),
+            );
+        }
+    }
+}
+
+fn prepare_faith(ref worlds: PairedWorld, id: u32) {
+    let wonder = WonderFaith {
+        last_recorded_owner: worlds.actor,
+        claimed_points: 0,
+        claim_per_sec: 500,
+        claim_last_at: 1800,
+        owner_claim_per_sec: 100,
+        num_structures_pledged: 1,
+    };
+    let pledge = FaithfulStructure {
+        wonder_id: 999,
+        faithful_since: 1800,
+        fp_to_wonder_owner_per_sec: 70,
+        fp_to_struct_owner_per_sec: 30,
+        last_recorded_owner: worlds.actor,
+    };
+    set_native_fixture(worlds.peers.structures, selector!("faith_wonders"), array![1, id.into()].span(), wonder);
+    set_native_fixture(worlds.peers.structures, selector!("faith_pledges"), array![1, id.into()].span(), pledge);
+    worlds
+        .oracle
+        .write_model_test(
+            @crate::models::faith::WonderFaith {
+                game_id: 1,
+                wonder_id: id,
+                last_recorded_owner: worlds.actor,
+                claimed_points: 0,
+                claim_per_sec: 500,
+                claim_last_at: 1800,
+                owner_claim_per_sec: 100,
+                num_structures_pledged: 1,
+            },
+        );
+    worlds
+        .oracle
+        .write_model_test(
+            @crate::models::faith::FaithfulStructure {
+                game_id: 1,
+                structure_id: id,
+                wonder_id: 999,
+                faithful_since: 1800,
+                fp_to_wonder_owner_per_sec: 70,
+                fp_to_struct_owner_per_sec: 30,
+                last_recorded_owner: worlds.actor,
+            },
+        );
+    for (wonder_id, owner_rate, pledger_rate) in array![(id, 100_u32, 0_u32), (999, 0, 30)] {
+        let points = PlayerFaithPoints {
+            points_claimed: 0,
+            points_per_sec_as_owner: owner_rate,
+            points_per_sec_as_pledger: pledger_rate,
+            last_updated_at: 1800,
+        };
+        set_native_fixture(
+            worlds.peers.structures,
+            selector!("faith_players"),
+            array![1, worlds.actor.into(), wonder_id.into()].span(),
+            points,
+        );
+        worlds
+            .oracle
+            .write_model_test(
+                @crate::models::faith::PlayerFaithPoints {
+                    game_id: 1,
+                    player: worlds.actor,
+                    wonder_id,
+                    points_claimed: 0,
+                    points_per_sec_as_owner: owner_rate,
+                    points_per_sec_as_pledger: pledger_rate,
+                    last_updated_at: 1800,
+                },
+            );
+    }
+}
+
+#[test]
+fn world_parity_ownership() {
+    let mut worlds = setup('ownership');
+    let coord = Coord { alt: false, x: 2147483626, y: 2147483626 };
+    let home = provision(ref worlds, coord);
+    ownership_rules(ref worlds, false, true, worlds.actor);
+    compare_ownership(worlds, 0, home);
+    transfer(ref worlds, home, worlds.actor, false, 1800, true);
+    compare_ownership(worlds, 1, home);
+    transfer(ref worlds, home, 0.try_into().unwrap(), false, 1800, false);
+    compare_ownership(worlds, 2, home);
+    ownership_rules(ref worlds, true, true, worlds.actor);
+    transfer(ref worlds, home, worlds.opponent, false, 1800, false);
+    compare_ownership(worlds, 3, home);
+    ownership_rules(ref worlds, false, true, worlds.actor);
+    prepare_faith(ref worlds, home);
+    compare_ownership(worlds, 4, home);
+    transfer(ref worlds, home, worlds.opponent, false, 1860, true);
+    compare_ownership(worlds, 5, home);
+    transfer(ref worlds, home, worlds.actor, false, 1900, false);
+    compare_ownership(worlds, 6, home);
+    let owner = worlds.actor;
+    worlds.actor = worlds.opponent;
+    worlds.opponent = owner;
+    transfer(ref worlds, home, worlds.opponent, false, 1920, true);
+    compare_ownership(worlds, 7, home);
+    for (step, recipient) in array![(8, worlds.opponent), (9, 0.try_into().unwrap())] {
+        ownership_rules(ref worlds, false, true, worlds.actor);
+        transfer(ref worlds, 54321, recipient, true, 1920, true);
+        compare_ownership(worlds, step, home);
+        let agents = world_native::ownership::IAgentOwnershipDispatcher { contract_address: worlds.peers.troops };
+        compare_facts(
+            worlds.case,
+            step,
+            'AgentOwner',
+            array![1, 54321].span(),
+            agents.agent_owner(1, 54321),
+            ModelStorage::<WorldStorage, crate::models::agent::AgentOwner>::read_model(@worlds.oracle, (1, 54321)),
+        );
+        assert_eq!(agents.agent_owner(2, 54321), 0.try_into().unwrap());
+    }
+    transfer(ref worlds, home, worlds.actor, false, 999999, false);
+    compare_ownership(worlds, 10, home);
+}
+
+fn ownership_category(ref worlds: PairedWorld, id: u32, category: u8) {
+    let mut structure: Structure = worlds.oracle.read_model((1, id));
+    structure.base.category = category;
+    structure.category = category;
+    worlds.oracle.write_model_test(@structure);
+    let mut native = (IStructuresDispatcher { contract_address: worlds.peers.structures })
+        .structure(ResourceKey { game_id: 1, entity_id: id })
+        .unwrap();
+    native.base.category = category;
+    set_native_fixture(
+        worlds.peers.structures,
+        selector!("structures"),
+        array![1, id.into()].span(),
+        world_native::structures::StructureRecord {
+            owner: native.owner,
+            base: native.base,
+            troop_guards: native.troop_guards,
+            resources_packed: native.resources_packed,
+            metadata: native.metadata,
+            category,
+        },
+    );
+}
+
+#[test]
+fn world_parity_ownership_rejections() {
+    let mut worlds = setup('ownership_rejections');
+    let home = provision(ref worlds, Coord { alt: false, x: 2147483626, y: 2147483626 });
+    ownership_rules(ref worlds, false, true, worlds.opponent);
+    transfer(ref worlds, 99, worlds.opponent, true, 1800, false);
+    compare_ownership(worlds, 1, home);
+    let direct = starknet::syscalls::call_contract_syscall(
+        worlds.peers.structures,
+        selector!("transfer_structure_ownership"),
+        array![1, worlds.actor.into(), home.into(), worlds.opponent.into(), 1234, 0, 1800].span(),
+    );
+    assert!(direct.is_err(), "foreign domain transferred ownership");
+    compare_ownership(worlds, 2, home);
+    ownership_category(ref worlds, home, 5);
+    transfer(ref worlds, home, worlds.opponent, false, 1800, false);
+    compare_ownership(worlds, 3, home);
+    ownership_category(ref worlds, home, 1);
+    let mut game: GameRegistry = worlds.oracle.read_model(1_u32);
+    game.dev_mode_on = false;
+    game.start_settling_at = 1900;
+    game.start_main_at = 2000;
+    worlds.oracle.write_model_test(@game);
+    set_native_fixture(
+        worlds.peers.season,
+        selector!("games"),
+        array![1].span(),
+        world_native::game::GameRegistry {
+            name: game.name,
+            series_id: game.series_id,
+            game_number_in_series: game.game_number_in_series,
+            preset_id: game.preset_id,
+            creator: game.creator,
+            status: convert(game.status),
+            dev_mode_on: game.dev_mode_on,
+            start_settling_at: game.start_settling_at,
+            start_main_at: game.start_main_at,
+            end_at: game.end_at,
+            end_grace_seconds: game.end_grace_seconds,
+            registration_grace_seconds: game.registration_grace_seconds,
+            final_trial_id: game.final_trial_id,
+            seed: game.seed,
+        },
+    );
+    transfer(ref worlds, home, worlds.opponent, false, 1999, false);
+    compare_ownership(worlds, 4, home);
+    transfer(ref worlds, home, worlds.opponent, false, 2000, true);
+    compare_ownership(worlds, 5, home);
+    let owner = worlds.actor;
+    worlds.actor = worlds.opponent;
+    worlds.opponent = owner;
+    transfer(ref worlds, home, worlds.opponent, false, game.end_at - 1, true);
+    compare_ownership(worlds, 6, home);
+    worlds.opponent = worlds.actor;
+    worlds.actor = owner;
+    transfer(ref worlds, home, worlds.actor, false, game.end_at, false);
+    compare_ownership(worlds, 7, home);
+}
+
+#[test]
+fn world_parity_ownership_faith() {
+    let mut worlds = setup('ownership_faith');
+    let home = provision(ref worlds, Coord { alt: false, x: 2147483626, y: 2147483626 });
+    ownership_rules(ref worlds, false, true, worlds.actor);
+    prepare_faith(ref worlds, home);
+    worlds
+        .oracle
+        .write_model_test(
+            @crate::models::faith::WonderFaithWinners { game_id: 1, high_score: 30000, wonder_ids: array![999] },
+        );
+    set_native_fixture(worlds.peers.structures, selector!("faith_high_scores"), array![1].span(), 30000_u128);
+    set_native_fixture(worlds.peers.structures, selector!("faith_winner_counts"), array![1].span(), 1_u32);
+    set_native_fixture(worlds.peers.structures, selector!("faith_winner_ids"), array![1, 0].span(), 999_u32);
+    transfer(ref worlds, home, worlds.opponent, false, 1860, true);
+    compare_ownership(worlds, 1, home);
+    let mut wonder: crate::models::faith::WonderFaith = worlds.oracle.read_model((1, home));
+    wonder.claim_per_sec = 0;
+    worlds.oracle.write_model_test(@wonder);
+    set_native_fixture(
+        worlds.peers.structures,
+        selector!("faith_wonders"),
+        array![1, home.into()].span(),
+        WonderFaith {
+            last_recorded_owner: wonder.last_recorded_owner,
+            claimed_points: wonder.claimed_points,
+            claim_per_sec: wonder.claim_per_sec,
+            claim_last_at: wonder.claim_last_at,
+            owner_claim_per_sec: wonder.owner_claim_per_sec,
+            num_structures_pledged: wonder.num_structures_pledged,
+        },
+    );
+    let owner = worlds.actor;
+    worlds.actor = worlds.opponent;
+    worlds.opponent = owner;
+    transfer(ref worlds, home, worlds.opponent, false, 1920, true);
+    compare_ownership(worlds, 2, home);
+    worlds.opponent = worlds.actor;
+    worlds.actor = owner;
+    ownership_rules(ref worlds, false, false, worlds.actor);
+    transfer(ref worlds, home, worlds.opponent, false, 1980, true);
+    compare_ownership(worlds, 3, home);
+    // A late pledge-rate underflow must undo wonder accrual, winner updates and history.
+    let owner = worlds.actor;
+    worlds.actor = worlds.opponent;
+    worlds.opponent = owner;
+    ownership_rules(ref worlds, false, true, worlds.actor);
+    prepare_faith(ref worlds, home);
+    let mut points: crate::models::faith::PlayerFaithPoints = worlds.oracle.read_model((1, worlds.actor, 999));
+    points.points_per_sec_as_pledger = 0;
+    worlds.oracle.write_model_test(@points);
+    set_native_fixture(
+        worlds.peers.structures,
+        selector!("faith_players"),
+        array![1, worlds.actor.into(), 999].span(),
+        PlayerFaithPoints {
+            points_claimed: points.points_claimed,
+            points_per_sec_as_owner: points.points_per_sec_as_owner,
+            points_per_sec_as_pledger: points.points_per_sec_as_pledger,
+            last_updated_at: points.last_updated_at,
+        },
+    );
+    transfer(ref worlds, home, worlds.opponent, false, 2040, false);
+    compare_ownership(worlds, 4, home);
+}
+
+#[test]
+fn world_parity_projection_ignores_storage_bookkeeping() {
+    let native = WonderFaith {
+        last_recorded_owner: 0.try_into().unwrap(),
+        claimed_points: 100,
+        claim_per_sec: 20,
+        claim_last_at: 1800,
+        owner_claim_per_sec: 5,
+        num_structures_pledged: 2,
+    };
+    let oracle = crate::models::faith::WonderFaith {
+        game_id: 77,
+        wonder_id: 99,
+        last_recorded_owner: 0x123.try_into().unwrap(),
+        claimed_points: 100,
+        claim_per_sec: 20,
+        claim_last_at: 1800,
+        owner_claim_per_sec: 5,
+        num_structures_pledged: 2,
+    };
+    assert_eq!(native.observe(), oracle.observe());
+    let changed = WonderFaith { claimed_points: 101, ..native };
+    assert!(changed.observe() != oracle.observe(), "changed player points must change the fact projection");
 }

@@ -248,3 +248,13 @@ The selected embedded release passes the local gates. The host-loss drill is def
 passed. Cross-host recovery and durability remain unverified. The sidecar p99 failure is retained as a rejected
 placement result. These measurements cover four explores per second on one host, not saturation capacity or a cross-host
 latency guarantee.
+
+## Full native port follow-up
+
+The combined native branch retains the recorded protocol and measured release above. Executor timing records under
+`execution_measurement` are unconditional in that Madara build, including the feature-disabled baseline. The comparison
+therefore includes their logging cost on every placement. New full-game measurements must retain the same logging policy.
+
+`get_admission.timestamp` is the current block timestamp offered for a proposed action. It is not a durable acceptance
+record. The accepted envelope fixes that timestamp in the journal; recovery reads the original envelope and never
+replaces its timestamp with a later admission view. Execution checks the recorded timestamp against the 300-second bound.

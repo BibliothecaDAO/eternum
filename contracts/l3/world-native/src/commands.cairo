@@ -41,6 +41,8 @@ pub enum Command {
     Battle: Battle,
     Move: Move,
     ToggleAlternate: ToggleAlternate,
+    TransferStructureOwnership: crate::ownership::TransferOwnership,
+    TransferAgentOwnership: crate::ownership::TransferOwnership,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]

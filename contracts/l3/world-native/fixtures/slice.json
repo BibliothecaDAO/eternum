@@ -167,7 +167,10 @@
     "production_capacity": "Weight capacity boundary",
     "battle": "Surface combat, explorer/resource deletion and freed occupancy",
     "ethereal_battle": "Ethereal combat with the original two rolls",
-    "rejections": "Unauthorized actor, occupied destination, resource spending and expired-game rollback"
+    "rejections": "Unauthorized actor, occupied destination, resource spending and expired-game rollback",
+    "ownership": "Structure and agent transfers, faith accrual, authorization and time boundaries",
+    "ownership_rejections": "Village, mode, season boundaries, controller and domain authorization",
+    "ownership_faith": "Faith winner ties, duplicate winners, disabled accrual and atomic late failure"
   },
   "randomness": {
     "rawRootSource": "injected identical root per action",
@@ -185,17 +188,15 @@
     "tileSalt": "Poseidon(game_id, game.seed, alt * 2^64 + col * 2^32 + row)"
   },
   "comparison": {
+    "factModel": "schema/schema.json#models[*].observation",
+    "projectionGenerator": "deploy/madara-lab/harness/native/fact-projections.ts",
     "afterEveryAction": true,
     "compareDeletesAndFailures": true,
-    "preserveEntityIdsAndAllocationOrder": true,
-    "timestampContext": "identical block timestamps supplied to both test worlds",
+    "timestampContext": "Identical recorded acceptance time and oracle block time.",
     "metadataNormalization": [
-      "Deployment addresses map bijectively to logical domain identities.",
-      "Registered fixture accounts map bijectively to logical players; gameplay ownership is compared after that mapping.",
-      "Dojo RNG and native ActionNonce, ExecutionHead and ExecutionResult are transport records. Native terminal domain rejection consumes its accepted nonce and order while rolling back gameplay; Dojo rejection rolls back the transaction. Gameplay rows remain equal.",
-      "Transaction hashes and event positions identify execution, not gameplay rows; historical ids still consume the same allocation sequence.",
-      "SeasonPrize.pool is fixed at zero: no prize deposit or payout is in the slice; season points remain compared.",
-      "HyperstructureGlobals.completed_count is fixed at zero: foundation discovery is supported, completion is not; discovered count remains compared."
+      "Deployment and account addresses map bijectively to logical identities.",
+      "Native transport nonces and result records are not player-observable gameplay facts.",
+      "Entity ids identify the same logical fixture entities; storage bookkeeping and row/event encoding are not compared."
     ],
     "unexplainedGameplayDivergence": "fail"
   },

@@ -68,7 +68,7 @@ export class NativeDecoder {
       candidate.prefix.every((key, index) => BigInt(key) === BigInt(event.keys[index] ?? -1)),
     );
     if (!layout) throw new Error("Unknown native event prefix");
-    return layout.name === "BattleEvent"
+    return schema.projections.some((projection) => projection.name === layout.name)
       ? decodeProjection(event, domain, schema, layout)
       : this.decodeRow(event, domain, schema, layout);
   }

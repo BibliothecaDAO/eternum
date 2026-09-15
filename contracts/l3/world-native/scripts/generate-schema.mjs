@@ -1,3 +1,4 @@
+import { defineFactModels } from "../schema/fact-models.mjs";
 import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
@@ -84,86 +85,7 @@ function model(name, owners, scope, keys, members, emitterKey) {
   };
 }
 
-const domainKey = [{ name: "address", type: struct("lifecycle::Peers")[0].type }];
-const models = [
-  model("TileOpt", ["map"], "game", struct("map::TileKey"), struct("map::TileOpt")),
-  model("ExplorerTroops", ["troops"], "game", struct("troops::ExplorerKey"), struct("troops::ExplorerTroops")),
-  model("Structure", ["structures"], "game", struct("resources::ResourceKey"), struct("structures::Structure")),
-  model("Resource", ["structures"], "game", struct("resources::ResourceKey"), struct("resources::Resource")),
-  model("Building", ["structures"], "game", struct("buildings::BuildingKey"), struct("buildings::Building")),
-  model(
-    "StructureBuildings",
-    ["structures"],
-    "game",
-    struct("resources::ResourceKey"),
-    struct("buildings::StructureBuildings"),
-  ),
-  model(
-    "Hyperstructure",
-    ["structures"],
-    "game",
-    [
-      struct("resources::ResourceKey")[0],
-      { name: "hyperstructure_id", type: struct("resources::ResourceKey")[1].type },
-    ],
-    struct("structures::Hyperstructure"),
-  ),
-  model("HyperstructureGlobals", ["structures"], "game", method("structures", "hyperstructure_count").inputs, [
-    { name: "created_count", type: method("structures", "hyperstructure_count").outputs[0].type },
-    { name: "completed_count", type: method("structures", "hyperstructure_count").outputs[0].type },
-  ]),
-  model("StructureOwnerStats", ["structures"], "game", method("structures", "owner_count").inputs, [
-    { name: "structures_num", type: method("structures", "owner_count").outputs[0].type },
-  ]),
-  model(
-    "ResourceRule",
-    ["structures"],
-    "game",
-    [struct("resources::ResourceKey")[0], struct("structures::ResourceRule")[0]],
-    struct("structures::ResourceRule").slice(1),
-  ),
-  model(
-    "ResourceRulesReady",
-    ["structures"],
-    "game",
-    [struct("resources::ResourceKey")[0]],
-    [{ name: "ready", type: "core::bool" }],
-  ),
-  model("GameRegistry", ["season"], "game", method("season", "game").inputs, struct("game::GameRegistry")),
-  model("SliceRules", ["season"], "game", method("season", "rules").inputs, struct("rules::SliceRules")),
-  model("EntitySequence", ["season"], "game", method("season", "allocate_entity").inputs, [
-    { name: "next_entity_id", type: method("season", "allocate_entity").outputs[0].type },
-  ]),
-  model(
-    "PlayerRegisteredPoints",
-    ["season"],
-    "game",
-    method("season", "player_points").inputs.map((key) => ({
-      ...key,
-      name: key.name === "actor" ? "address" : key.name,
-    })),
-    [{ name: "registered_points", type: method("season", "player_points").outputs[0].type }],
-  ),
-  model("SeasonPrize", ["season"], "game", method("season", "season_points").inputs, [
-    { name: "total_registered_points", type: method("season", "season_points").outputs[0].type },
-    { name: "total_lords_pool", type: "core::integer::u256" },
-  ]),
-  model("DomainState", Object.keys(contracts), "deployment", domainKey, struct("lifecycle::DomainState"), "address"),
-  model("DomainClass", Object.keys(contracts), "deployment", domainKey, method("season", "upgrade").inputs, "address"),
-  model("Authentication", ["season"], "deployment", domainKey, struct("season::Authentication"), "address"),
-  model("ExecutionHead", ["season"], "deployment", domainKey, struct("recording::ExecutionHead"), "address"),
-  model(
-    "ExecutionResult",
-    ["season"],
-    "deployment",
-    [...domainKey, ...method("season", "get_result").inputs],
-    types.get(method("season", "get_result").outputs[0].type).members,
-    "address",
-  ),
-  model("ActionNonce", ["season"], "game", method("season", "next_nonce").inputs, [
-    { name: "next_nonce", type: method("season", "next_nonce").outputs[0].type },
-  ]),
-];
+const models = defineFactModels({ contracts, struct, method, model, types });
 
 function eventLayouts(abi) {
   const events = new Map(abi.filter((item) => item.type === "event").map((item) => [item.name, item]));
@@ -181,7 +103,7 @@ function eventLayouts(abi) {
       return;
     }
     const name = event.name.split("::").at(-1);
-    if (!["RowSet", "RowMemberSet", "RowDeleted", "BattleEvent"].includes(name))
+    if (!["RowSet", "RowMemberSet", "RowDeleted", "BattleEvent", "StoryEvent"].includes(name))
       throw new Error(`Unexpected event ${name}`);
     layouts.push({ name, prefix, members: event.members });
   }
@@ -202,7 +124,13 @@ const schema = {
         contract,
         systems:
           domain === "season"
-            ? ["troop_management_systems", "troop_movement_systems", "troop_battle_systems", "alt_movement_systems"]
+            ? [
+                "troop_management_systems",
+                "troop_movement_systems",
+                "troop_battle_systems",
+                "alt_movement_systems",
+                "ownership_systems",
+              ]
             : [],
         events: eventLayouts(artifacts[domain]),
         entrypoints: artifacts[domain].filter((item) => item.type === "interface").flatMap((item) => item.items),
@@ -212,6 +140,16 @@ const schema = {
   models,
   absentCollections: ["WorldConfig", "BlitzSettlement", "PresetConfig", "HyperstructureShareholders"],
   projections: [
+    {
+      name: "StoryEvent",
+      owners: ["structures"],
+      scope: "game",
+      version: 1,
+      derivedRows: [],
+      event: artifacts.structures.find(
+        (item) => item.type === "event" && item.name === "world_native::ownership::StoryEvent",
+      ),
+    },
     {
       name: "BattleEvent",
       owners: ["troops"],

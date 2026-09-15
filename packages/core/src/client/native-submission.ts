@@ -180,6 +180,12 @@ function translateCommand(call: Call, gameId: number, season: string) {
     case "attack_explorer_vs_explorer":
       if (args.length !== 3 || Number(args[2]) !== 0) break;
       return build("Battle", { attacker_id: args[0], defender_id: args[1] });
+    case "transfer_structure_ownership":
+      if (args.length !== 2) break;
+      return build("TransferStructureOwnership", { entity_id: args[0], new_owner: args[1] });
+    case "transfer_agent_ownership":
+      if (args.length !== 2) break;
+      return build("TransferAgentOwnership", { entity_id: args[0], new_owner: args[1] });
     case "claim_production":
       if (args.length !== 1) break;
       return build("ClaimProduction", args[0]);

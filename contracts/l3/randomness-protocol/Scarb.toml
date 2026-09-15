@@ -10,7 +10,7 @@ edition = "2024_07"
 starknet = "2.13.1"
 
 [dev-dependencies]
-snforge_std = "0.51.2"
+snforge_std = "=0.52.0"
 
 [[target.starknet-contract]]
 sierra = true

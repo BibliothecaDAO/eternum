@@ -16,7 +16,7 @@ const scope = [
   ".github/workflows/native-world.yml",
 ];
 const reports = new Set(
-  ["harness.json", "herald-replay.json", "deploy-upgrade.json", "world-parity.json", "combat-parity.json"].map(
+  ["harness.json", "herald-replay.json", "deploy-upgrade.json", "world-parity.json", "combat-parity.json", "ownership-parity.json"].map(
     (file) => `contracts/l3/world-native/fixtures/${file}`,
   ),
 );

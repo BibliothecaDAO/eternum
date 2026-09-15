@@ -4,7 +4,7 @@
   "selectedPlacement": "embedded",
   "latency_budget_result": "passed_for_embedded",
   "sidecar_budget_result": "failed_p99; comparison complete, placement not selected",
-  "host_loss_gate": "The host-loss drill is deferred at the owner’s request. Cross-host recovery and durability remain unverified.",
+  "host_loss_gate": "The host-loss drill is deferred at the owner\u2019s request. Cross-host recovery and durability remain unverified.",
   "release": "../native/node/manifest.json",
   "gates": [
     {
@@ -140,5 +140,83 @@
     "../native/selected-embedded/raw.tar.gz": "43ff3e02499cf0ea191ff50e179f3b3eb465691c7b9852aa1c8d40095fb851a4",
     "../native/selected-embedded/summary.json": "4f6420cc2858a1a2995a8ecc0103ec3d16bfff5e0e4041417a04596d7784ec45",
     "historical-index.json": "0b0db55d998ccf7898110ed13c1ff3bf419f413905c5b89ec35192ecdcedaa39"
-  }
+  },
+  "drills": [
+    {
+      "name": "after-broadcast",
+      "scope": "retained native slice rehearsal; repeat for full-game acceptance",
+      "status": "passed_on_slice",
+      "evidence": "../native/recovery-indexed/reports.json",
+      "reportKey": "after-broadcast/report.json"
+    },
+    {
+      "name": "before-broadcast",
+      "scope": "retained native slice rehearsal; repeat for full-game acceptance",
+      "status": "passed_on_slice",
+      "evidence": "../native/recovery-indexed/reports.json",
+      "reportKey": "before-broadcast/report.json"
+    },
+    {
+      "name": "missing-journal",
+      "scope": "retained native slice rehearsal; repeat for full-game acceptance",
+      "status": "passed_on_slice",
+      "evidence": "../native/recovery-indexed/reports.json",
+      "reportKey": "missing-journal/report.json"
+    },
+    {
+      "name": "partition/delivery",
+      "scope": "retained native slice rehearsal; repeat for full-game acceptance",
+      "status": "passed_on_slice",
+      "evidence": "../native/recovery-indexed/reports.json",
+      "reportKey": "partition/delivery/report.json"
+    },
+    {
+      "name": "partition",
+      "scope": "retained native slice rehearsal; repeat for full-game acceptance",
+      "status": "passed_on_slice",
+      "evidence": "../native/recovery-indexed/reports.json",
+      "reportKey": "partition/report.json"
+    },
+    {
+      "name": "placements",
+      "scope": "retained native slice rehearsal; repeat for full-game acceptance",
+      "status": "passed_on_slice",
+      "evidence": "../native/recovery-indexed/reports.json",
+      "reportKey": "placements/report.json"
+    },
+    {
+      "name": "promotion",
+      "scope": "retained native slice rehearsal; repeat for full-game acceptance",
+      "status": "passed_on_slice",
+      "evidence": "../native/recovery-indexed/reports.json",
+      "reportKey": "promotion/report.json"
+    },
+    {
+      "name": "replay-resumed",
+      "scope": "retained native slice rehearsal; repeat for full-game acceptance",
+      "status": "passed_on_slice",
+      "evidence": "../native/recovery-indexed/reports.json",
+      "reportKey": "replay-resumed/report.json"
+    },
+    {
+      "name": "restore",
+      "scope": "retained native slice rehearsal; repeat for full-game acceptance",
+      "status": "passed_on_slice",
+      "evidence": "../native/recovery-indexed/reports.json",
+      "reportKey": "restore/report.json"
+    },
+    {
+      "name": "nonce-races",
+      "scope": "retained native slice rehearsal; repeat for full-game acceptance",
+      "status": "passed_on_slice",
+      "evidence": "../native/recovery-indexed/reports.json",
+      "reportKey": "nonce-races.json"
+    },
+    {
+      "name": "host-and-disk-loss",
+      "status": "deferred_by_owner",
+      "evidence": null,
+      "note": "The host-loss drill remains open until the owner provides the second host. Cross-host recovery remains unverified."
+    }
+  ]
 }

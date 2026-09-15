@@ -11,7 +11,8 @@
         "troop_management_systems",
         "troop_movement_systems",
         "troop_battle_systems",
-        "alt_movement_systems"
+        "alt_movement_systems",
+        "ownership_systems"
       ],
       "events": [
         {
@@ -131,6 +132,18 @@
         }
       ],
       "entrypoints": [
+        {
+          "type": "function",
+          "name": "set_agent_controller",
+          "inputs": [
+            {
+              "name": "address",
+              "type": "core::starknet::contract_address::ContractAddress"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
         {
           "type": "function",
           "name": "set_authentication",
@@ -281,6 +294,33 @@
           "outputs": [
             {
               "type": "eternum_randomness_protocol::entrypoint::ExecutionResult"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "agent_controller",
+          "inputs": [],
+          "outputs": [
+            {
+              "type": "core::starknet::contract_address::ContractAddress"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "ownership_rules_ready",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::bool"
             }
           ],
           "state_mutability": "view"
@@ -884,6 +924,34 @@
               "kind": "data"
             }
           ]
+        },
+        {
+          "name": "RowSet",
+          "prefix": [
+            "0x39d31a8346a7df98372837a3b1003b72bd3eb7da809fff89a68dbcf5ed30d0c"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "model",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "keys",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            },
+            {
+              "name": "values",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            }
+          ]
         }
       ],
       "entrypoints": [
@@ -902,6 +970,50 @@
             }
           ],
           "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "agent_owner",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "explorer_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::starknet::contract_address::ContractAddress"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "transfer_agent_ownership",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "command",
+              "type": "world_native::ownership::TransferOwnership"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
         },
         {
           "type": "function",
@@ -1282,6 +1394,83 @@
         {
           "name": "RowSet",
           "prefix": [
+            "0x25ae90a953996564a5d7abf58c4bf68d5e5219c38a2d22e8f351e922a143b40",
+            "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "model",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "keys",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            },
+            {
+              "name": "values",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            }
+          ]
+        },
+        {
+          "name": "StoryEvent",
+          "prefix": [
+            "0x33b7d96bc1ff34b0a89214516b6ef5d2b8bdd9c301222eda2a1e96f78b84b96"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "game_id",
+              "type": "core::integer::u32",
+              "kind": "key"
+            },
+            {
+              "name": "id",
+              "type": "core::integer::u32",
+              "kind": "key"
+            },
+            {
+              "name": "owner",
+              "type": "core::option::Option::<core::starknet::contract_address::ContractAddress>",
+              "kind": "key"
+            },
+            {
+              "name": "entity_id",
+              "type": "core::option::Option::<core::integer::u32>",
+              "kind": "key"
+            },
+            {
+              "name": "tx_hash",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "story",
+              "type": "world_native::ownership::Story",
+              "kind": "data"
+            },
+            {
+              "name": "timestamp",
+              "type": "core::integer::u64",
+              "kind": "data"
+            }
+          ]
+        },
+        {
+          "name": "RowSet",
+          "prefix": [
             "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
           ],
           "members": [
@@ -1433,26 +1622,6 @@
           "outputs": [
             {
               "type": "core::option::Option::<world_native::structures::Hyperstructure>"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "owner_count",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "owner",
-              "type": "core::starknet::contract_address::ContractAddress"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::integer::u32"
             }
           ],
           "state_mutability": "view"
@@ -1675,6 +1844,94 @@
         },
         {
           "type": "function",
+          "name": "transfer_structure_ownership",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "command",
+              "type": "world_native::ownership::TransferOwnership"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "wonder_faith",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::resources::ResourceKey"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "world_native::ownership::WonderFaith"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "faithful_structure",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::resources::ResourceKey"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "world_native::ownership::FaithfulStructure"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "player_faith_points",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::ownership::PlayerFaithKey"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "world_native::ownership::PlayerFaithPoints"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "wonder_faith_winners",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "world_native::ownership::WonderFaithWinners"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
           "name": "claim_production",
           "inputs": [
             {
@@ -1781,7 +2038,14 @@
         }
       ],
       "keyLength": 4,
-      "valueLength": 1
+      "valueLength": 1,
+      "observation": {
+        "domain": "map",
+        "fields": {
+          "tile": "data"
+        },
+        "transform": "tile"
+      }
     },
     {
       "name": "ExplorerTroops",
@@ -1823,7 +2087,15 @@
         }
       ],
       "keyLength": 2,
-      "valueLength": 18
+      "valueLength": 18,
+      "observation": {
+        "domain": "troops",
+        "fields": {
+          "home": "owner",
+          "position": "coord",
+          "troops": "troops"
+        }
+      }
     },
     {
       "name": "Structure",
@@ -1889,7 +2161,28 @@
         }
       ],
       "keyLength": 2,
-      "valueLength": null
+      "valueLength": null,
+      "observation": {
+        "domain": "structures",
+        "fields": {
+          "owner": "owner",
+          "level": "base.level",
+          "kind": "base.category",
+          "column": "base.coord_x",
+          "row": "base.coord_y",
+          "foundedAt": "base.created_at",
+          "guards": "troop_guards",
+          "explorers": "troop_explorers",
+          "explorerLimit": "base.troop_max_explorer_count",
+          "guardLimit": "base.troop_max_guard_count",
+          "startingTroopsGranted": "base.starting_troops_granted",
+          "realm": "metadata.realm_id",
+          "order": "metadata.order",
+          "wonder": "metadata.has_wonder",
+          "connectedRealm": "metadata.village_realm",
+          "resourceTraits": "resources_packed"
+        }
+      }
     },
     {
       "name": "Resource",
@@ -2507,7 +2800,110 @@
         }
       ],
       "keyLength": 2,
-      "valueLength": 220
+      "valueLength": 220,
+      "observation": {
+        "domain": "resources",
+        "fields": {
+          "STONE_BALANCE": "STONE_BALANCE",
+          "COAL_BALANCE": "COAL_BALANCE",
+          "WOOD_BALANCE": "WOOD_BALANCE",
+          "COPPER_BALANCE": "COPPER_BALANCE",
+          "IRONWOOD_BALANCE": "IRONWOOD_BALANCE",
+          "OBSIDIAN_BALANCE": "OBSIDIAN_BALANCE",
+          "GOLD_BALANCE": "GOLD_BALANCE",
+          "SILVER_BALANCE": "SILVER_BALANCE",
+          "MITHRAL_BALANCE": "MITHRAL_BALANCE",
+          "ALCHEMICAL_SILVER_BALANCE": "ALCHEMICAL_SILVER_BALANCE",
+          "COLD_IRON_BALANCE": "COLD_IRON_BALANCE",
+          "DEEP_CRYSTAL_BALANCE": "DEEP_CRYSTAL_BALANCE",
+          "RUBY_BALANCE": "RUBY_BALANCE",
+          "DIAMONDS_BALANCE": "DIAMONDS_BALANCE",
+          "HARTWOOD_BALANCE": "HARTWOOD_BALANCE",
+          "IGNIUM_BALANCE": "IGNIUM_BALANCE",
+          "TWILIGHT_QUARTZ_BALANCE": "TWILIGHT_QUARTZ_BALANCE",
+          "TRUE_ICE_BALANCE": "TRUE_ICE_BALANCE",
+          "ADAMANTINE_BALANCE": "ADAMANTINE_BALANCE",
+          "SAPPHIRE_BALANCE": "SAPPHIRE_BALANCE",
+          "ETHEREAL_SILICA_BALANCE": "ETHEREAL_SILICA_BALANCE",
+          "DRAGONHIDE_BALANCE": "DRAGONHIDE_BALANCE",
+          "LABOR_BALANCE": "LABOR_BALANCE",
+          "EARTHEN_SHARD_BALANCE": "EARTHEN_SHARD_BALANCE",
+          "DONKEY_BALANCE": "DONKEY_BALANCE",
+          "KNIGHT_T1_BALANCE": "KNIGHT_T1_BALANCE",
+          "KNIGHT_T2_BALANCE": "KNIGHT_T2_BALANCE",
+          "KNIGHT_T3_BALANCE": "KNIGHT_T3_BALANCE",
+          "CROSSBOWMAN_T1_BALANCE": "CROSSBOWMAN_T1_BALANCE",
+          "CROSSBOWMAN_T2_BALANCE": "CROSSBOWMAN_T2_BALANCE",
+          "CROSSBOWMAN_T3_BALANCE": "CROSSBOWMAN_T3_BALANCE",
+          "PALADIN_T1_BALANCE": "PALADIN_T1_BALANCE",
+          "PALADIN_T2_BALANCE": "PALADIN_T2_BALANCE",
+          "PALADIN_T3_BALANCE": "PALADIN_T3_BALANCE",
+          "WHEAT_BALANCE": "WHEAT_BALANCE",
+          "FISH_BALANCE": "FISH_BALANCE",
+          "LORDS_BALANCE": "LORDS_BALANCE",
+          "ESSENCE_BALANCE": "ESSENCE_BALANCE",
+          "RELIC_E1_BALANCE": "RELIC_E1_BALANCE",
+          "RELIC_E2_BALANCE": "RELIC_E2_BALANCE",
+          "RELIC_E3_BALANCE": "RELIC_E3_BALANCE",
+          "RELIC_E4_BALANCE": "RELIC_E4_BALANCE",
+          "RELIC_E5_BALANCE": "RELIC_E5_BALANCE",
+          "RELIC_E6_BALANCE": "RELIC_E6_BALANCE",
+          "RELIC_E7_BALANCE": "RELIC_E7_BALANCE",
+          "RELIC_E8_BALANCE": "RELIC_E8_BALANCE",
+          "RELIC_E9_BALANCE": "RELIC_E9_BALANCE",
+          "RELIC_E10_BALANCE": "RELIC_E10_BALANCE",
+          "RELIC_E11_BALANCE": "RELIC_E11_BALANCE",
+          "RELIC_E12_BALANCE": "RELIC_E12_BALANCE",
+          "RELIC_E13_BALANCE": "RELIC_E13_BALANCE",
+          "RELIC_E14_BALANCE": "RELIC_E14_BALANCE",
+          "RELIC_E15_BALANCE": "RELIC_E15_BALANCE",
+          "RELIC_E16_BALANCE": "RELIC_E16_BALANCE",
+          "RELIC_E17_BALANCE": "RELIC_E17_BALANCE",
+          "RELIC_E18_BALANCE": "RELIC_E18_BALANCE",
+          "RESEARCH_BALANCE": "RESEARCH_BALANCE",
+          "SATOSHI_BALANCE": "SATOSHI_BALANCE",
+          "weight": "weight",
+          "STONE_PRODUCTION": "STONE_PRODUCTION",
+          "COAL_PRODUCTION": "COAL_PRODUCTION",
+          "WOOD_PRODUCTION": "WOOD_PRODUCTION",
+          "COPPER_PRODUCTION": "COPPER_PRODUCTION",
+          "IRONWOOD_PRODUCTION": "IRONWOOD_PRODUCTION",
+          "OBSIDIAN_PRODUCTION": "OBSIDIAN_PRODUCTION",
+          "GOLD_PRODUCTION": "GOLD_PRODUCTION",
+          "SILVER_PRODUCTION": "SILVER_PRODUCTION",
+          "MITHRAL_PRODUCTION": "MITHRAL_PRODUCTION",
+          "ALCHEMICAL_SILVER_PRODUCTION": "ALCHEMICAL_SILVER_PRODUCTION",
+          "COLD_IRON_PRODUCTION": "COLD_IRON_PRODUCTION",
+          "DEEP_CRYSTAL_PRODUCTION": "DEEP_CRYSTAL_PRODUCTION",
+          "RUBY_PRODUCTION": "RUBY_PRODUCTION",
+          "DIAMONDS_PRODUCTION": "DIAMONDS_PRODUCTION",
+          "HARTWOOD_PRODUCTION": "HARTWOOD_PRODUCTION",
+          "IGNIUM_PRODUCTION": "IGNIUM_PRODUCTION",
+          "TWILIGHT_QUARTZ_PRODUCTION": "TWILIGHT_QUARTZ_PRODUCTION",
+          "TRUE_ICE_PRODUCTION": "TRUE_ICE_PRODUCTION",
+          "ADAMANTINE_PRODUCTION": "ADAMANTINE_PRODUCTION",
+          "SAPPHIRE_PRODUCTION": "SAPPHIRE_PRODUCTION",
+          "ETHEREAL_SILICA_PRODUCTION": "ETHEREAL_SILICA_PRODUCTION",
+          "DRAGONHIDE_PRODUCTION": "DRAGONHIDE_PRODUCTION",
+          "LABOR_PRODUCTION": "LABOR_PRODUCTION",
+          "EARTHEN_SHARD_PRODUCTION": "EARTHEN_SHARD_PRODUCTION",
+          "DONKEY_PRODUCTION": "DONKEY_PRODUCTION",
+          "KNIGHT_T1_PRODUCTION": "KNIGHT_T1_PRODUCTION",
+          "KNIGHT_T2_PRODUCTION": "KNIGHT_T2_PRODUCTION",
+          "KNIGHT_T3_PRODUCTION": "KNIGHT_T3_PRODUCTION",
+          "CROSSBOWMAN_T1_PRODUCTION": "CROSSBOWMAN_T1_PRODUCTION",
+          "CROSSBOWMAN_T2_PRODUCTION": "CROSSBOWMAN_T2_PRODUCTION",
+          "CROSSBOWMAN_T3_PRODUCTION": "CROSSBOWMAN_T3_PRODUCTION",
+          "PALADIN_T1_PRODUCTION": "PALADIN_T1_PRODUCTION",
+          "PALADIN_T2_PRODUCTION": "PALADIN_T2_PRODUCTION",
+          "PALADIN_T3_PRODUCTION": "PALADIN_T3_PRODUCTION",
+          "WHEAT_PRODUCTION": "WHEAT_PRODUCTION",
+          "FISH_PRODUCTION": "FISH_PRODUCTION",
+          "ESSENCE_PRODUCTION": "ESSENCE_PRODUCTION",
+          "RESEARCH_PRODUCTION": "RESEARCH_PRODUCTION",
+          "SATOSHI_PRODUCTION": "SATOSHI_PRODUCTION"
+        }
+      }
     },
     {
       "name": "Building",
@@ -2581,7 +2977,16 @@
         }
       ],
       "keyLength": 6,
-      "valueLength": 5
+      "valueLength": 5,
+      "observation": {
+        "domain": "production",
+        "fields": {
+          "category": "category",
+          "bonus": "bonus_percent",
+          "structure": "outer_entity_id",
+          "paused": "paused"
+        }
+      }
     },
     {
       "name": "StructureBuildings",
@@ -2635,7 +3040,16 @@
         }
       ],
       "keyLength": 2,
-      "valueLength": 8
+      "valueLength": 8,
+      "observation": {
+        "domain": "production",
+        "fields": {
+          "population": "population",
+          "counts1": "packed_counts_1",
+          "counts2": "packed_counts_2",
+          "counts3": "packed_counts_3"
+        }
+      }
     },
     {
       "name": "Hyperstructure",
@@ -2689,7 +3103,17 @@
         }
       ],
       "keyLength": 2,
-      "valueLength": 5
+      "valueLength": 5,
+      "observation": {
+        "domain": "hyperstructures",
+        "fields": {
+          "initialized": "initialized",
+          "completed": "completed",
+          "access": "access",
+          "constructionSeed": "randomness",
+          "pointsMultiplier": "points_multiplier"
+        }
+      }
     },
     {
       "name": "HyperstructureGlobals",
@@ -2720,11 +3144,53 @@
         }
       ],
       "keyLength": 1,
-      "valueLength": 2
+      "valueLength": 2,
+      "observation": {
+        "domain": "hyperstructures",
+        "fields": {
+          "discovered": "created_count"
+        }
+      }
     },
     {
-      "name": "StructureOwnerStats",
-      "identity": "0x5374727563747572654f776e65725374617473",
+      "name": "AgentOwner",
+      "identity": "0x4167656e744f776e6572",
+      "owners": [
+        "troops"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "explorer_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "address",
+          "type": "core::starknet::contract_address::ContractAddress",
+          "id": "0x61646472657373",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 1,
+      "observation": {
+        "domain": "ownership",
+        "fields": {
+          "owner": "address"
+        }
+      }
+    },
+    {
+      "name": "WonderFaith",
+      "identity": "0x576f6e6465724661697468",
       "owners": [
         "structures"
       ],
@@ -2736,21 +3202,224 @@
           "feltLength": 1
         },
         {
-          "name": "owner",
-          "type": "core::starknet::contract_address::ContractAddress",
+          "name": "wonder_id",
+          "type": "core::integer::u32",
           "feltLength": 1
         }
       ],
       "members": [
         {
-          "name": "structures_num",
+          "name": "last_recorded_owner",
+          "type": "core::starknet::contract_address::ContractAddress",
+          "id": "0x6c6173745f7265636f726465645f6f776e6572",
+          "feltLength": 1
+        },
+        {
+          "name": "claimed_points",
+          "type": "core::integer::u128",
+          "id": "0x636c61696d65645f706f696e7473",
+          "feltLength": 1
+        },
+        {
+          "name": "claim_per_sec",
           "type": "core::integer::u32",
-          "id": "0x737472756374757265735f6e756d",
+          "id": "0x636c61696d5f7065725f736563",
+          "feltLength": 1
+        },
+        {
+          "name": "claim_last_at",
+          "type": "core::integer::u64",
+          "id": "0x636c61696d5f6c6173745f6174",
+          "feltLength": 1
+        },
+        {
+          "name": "owner_claim_per_sec",
+          "type": "core::integer::u32",
+          "id": "0x6f776e65725f636c61696d5f7065725f736563",
+          "feltLength": 1
+        },
+        {
+          "name": "num_structures_pledged",
+          "type": "core::integer::u32",
+          "id": "0x6e756d5f737472756374757265735f706c6564676564",
           "feltLength": 1
         }
       ],
       "keyLength": 2,
-      "valueLength": 1
+      "valueLength": 6,
+      "observation": {
+        "domain": "faith",
+        "fields": {
+          "points": "claimed_points",
+          "pointsPerSecond": "claim_per_sec",
+          "settledAt": "claim_last_at",
+          "ownerPointsPerSecond": "owner_claim_per_sec",
+          "pledgedStructures": "num_structures_pledged"
+        }
+      }
+    },
+    {
+      "name": "FaithfulStructure",
+      "identity": "0x466169746866756c537472756374757265",
+      "owners": [
+        "structures"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "structure_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "wonder_id",
+          "type": "core::integer::u32",
+          "id": "0x776f6e6465725f6964",
+          "feltLength": 1
+        },
+        {
+          "name": "faithful_since",
+          "type": "core::integer::u64",
+          "id": "0x666169746866756c5f73696e6365",
+          "feltLength": 1
+        },
+        {
+          "name": "fp_to_wonder_owner_per_sec",
+          "type": "core::integer::u16",
+          "id": "0x66705f746f5f776f6e6465725f6f776e65725f7065725f736563",
+          "feltLength": 1
+        },
+        {
+          "name": "fp_to_struct_owner_per_sec",
+          "type": "core::integer::u16",
+          "id": "0x66705f746f5f7374727563745f6f776e65725f7065725f736563",
+          "feltLength": 1
+        },
+        {
+          "name": "last_recorded_owner",
+          "type": "core::starknet::contract_address::ContractAddress",
+          "id": "0x6c6173745f7265636f726465645f6f776e6572",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 5,
+      "observation": {
+        "domain": "faith",
+        "fields": {
+          "wonder": "wonder_id",
+          "pledgedAt": "faithful_since",
+          "wonderOwnerPointsPerSecond": "fp_to_wonder_owner_per_sec",
+          "structureOwnerPointsPerSecond": "fp_to_struct_owner_per_sec"
+        }
+      }
+    },
+    {
+      "name": "PlayerFaithPoints",
+      "identity": "0x506c617965724661697468506f696e7473",
+      "owners": [
+        "structures"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "player",
+          "type": "core::starknet::contract_address::ContractAddress",
+          "feltLength": 1
+        },
+        {
+          "name": "wonder_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "points_claimed",
+          "type": "core::integer::u128",
+          "id": "0x706f696e74735f636c61696d6564",
+          "feltLength": 1
+        },
+        {
+          "name": "points_per_sec_as_owner",
+          "type": "core::integer::u32",
+          "id": "0x706f696e74735f7065725f7365635f61735f6f776e6572",
+          "feltLength": 1
+        },
+        {
+          "name": "points_per_sec_as_pledger",
+          "type": "core::integer::u32",
+          "id": "0x706f696e74735f7065725f7365635f61735f706c6564676572",
+          "feltLength": 1
+        },
+        {
+          "name": "last_updated_at",
+          "type": "core::integer::u64",
+          "id": "0x6c6173745f757064617465645f6174",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 3,
+      "valueLength": 4,
+      "observation": {
+        "domain": "faith",
+        "fields": {
+          "points": "points_claimed",
+          "ownershipPointsPerSecond": "points_per_sec_as_owner",
+          "pledgePointsPerSecond": "points_per_sec_as_pledger",
+          "settledAt": "last_updated_at"
+        }
+      }
+    },
+    {
+      "name": "WonderFaithWinners",
+      "identity": "0x576f6e646572466169746857696e6e657273",
+      "owners": [
+        "structures"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "high_score",
+          "type": "core::integer::u128",
+          "id": "0x686967685f73636f7265",
+          "feltLength": 1
+        },
+        {
+          "name": "wonder_ids",
+          "type": "core::array::Span::<core::integer::u32>",
+          "id": "0x776f6e6465725f696473",
+          "feltLength": null
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": null,
+      "observation": {
+        "domain": "faith",
+        "fields": {
+          "score": "high_score",
+          "wonders": "wonder_ids"
+        }
+      }
     },
     {
       "name": "ResourceRule",
@@ -3038,10 +3707,22 @@
           "type": "core::integer::u128",
           "id": "0x73706972655f74726176656c5f657373656e63655f636f7374",
           "feltLength": 1
+        },
+        {
+          "name": "blitz_mode_on",
+          "type": "core::bool",
+          "id": "0x626c69747a5f6d6f64655f6f6e",
+          "feltLength": 1
+        },
+        {
+          "name": "faith_enabled",
+          "type": "core::bool",
+          "id": "0x66616974685f656e61626c6564",
+          "feltLength": 1
         }
       ],
       "keyLength": 1,
-      "valueLength": 93
+      "valueLength": 95
     },
     {
       "name": "EntitySequence",
@@ -3096,7 +3777,13 @@
         }
       ],
       "keyLength": 2,
-      "valueLength": 1
+      "valueLength": 1,
+      "observation": {
+        "domain": "points",
+        "fields": {
+          "registered": "registered_points"
+        }
+      }
     },
     {
       "name": "SeasonPrize",
@@ -3127,7 +3814,13 @@
         }
       ],
       "keyLength": 1,
-      "valueLength": 3
+      "valueLength": 3,
+      "observation": {
+        "domain": "points",
+        "fields": {
+          "registered": "total_registered_points"
+        }
+      }
     },
     {
       "name": "DomainState",
@@ -3337,6 +4030,57 @@
       "valueLength": 4
     },
     {
+      "name": "OwnershipRulesReady",
+      "identity": "0x4f776e65727368697052756c65735265616479",
+      "owners": [
+        "season"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "ready",
+          "type": "core::bool",
+          "id": "0x7265616479",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": 1
+    },
+    {
+      "name": "AgentController",
+      "identity": "0x4167656e74436f6e74726f6c6c6572",
+      "owners": [
+        "season"
+      ],
+      "scope": "deployment",
+      "emitterKey": "address",
+      "keys": [
+        {
+          "name": "address",
+          "type": "core::starknet::contract_address::ContractAddress",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "controller",
+          "type": "core::starknet::contract_address::ContractAddress",
+          "id": "0x636f6e74726f6c6c6572",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": 1
+    },
+    {
       "name": "ActionNonce",
       "identity": "0x416374696f6e4e6f6e6365",
       "owners": [
@@ -3374,6 +4118,62 @@
     "HyperstructureShareholders"
   ],
   "projections": [
+    {
+      "name": "StoryEvent",
+      "owners": [
+        "structures"
+      ],
+      "scope": "game",
+      "version": 1,
+      "derivedRows": [],
+      "event": {
+        "type": "event",
+        "name": "world_native::ownership::StoryEvent",
+        "kind": "struct",
+        "members": [
+          {
+            "name": "version",
+            "type": "core::integer::u8",
+            "kind": "key"
+          },
+          {
+            "name": "game_id",
+            "type": "core::integer::u32",
+            "kind": "key"
+          },
+          {
+            "name": "id",
+            "type": "core::integer::u32",
+            "kind": "key"
+          },
+          {
+            "name": "owner",
+            "type": "core::option::Option::<core::starknet::contract_address::ContractAddress>",
+            "kind": "key"
+          },
+          {
+            "name": "entity_id",
+            "type": "core::option::Option::<core::integer::u32>",
+            "kind": "key"
+          },
+          {
+            "name": "tx_hash",
+            "type": "core::felt252",
+            "kind": "key"
+          },
+          {
+            "name": "story",
+            "type": "world_native::ownership::Story",
+            "kind": "data"
+          },
+          {
+            "name": "timestamp",
+            "type": "core::integer::u64",
+            "kind": "data"
+          }
+        ]
+      }
+    },
     {
       "name": "BattleEvent",
       "owners": [
@@ -3519,6 +4319,34 @@
         {
           "name": "high",
           "type": "core::integer::u128"
+        }
+      ]
+    },
+    "core::option::Option::<core::integer::u32>": {
+      "type": "enum",
+      "name": "core::option::Option::<core::integer::u32>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
+    "core::option::Option::<core::starknet::contract_address::ContractAddress>": {
+      "type": "enum",
+      "name": "core::option::Option::<core::starknet::contract_address::ContractAddress>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "None",
+          "type": "()"
         }
       ]
     },
@@ -3857,6 +4685,14 @@
         {
           "name": "ToggleAlternate",
           "type": "world_native::commands::ToggleAlternate"
+        },
+        {
+          "name": "TransferStructureOwnership",
+          "type": "world_native::ownership::TransferOwnership"
+        },
+        {
+          "name": "TransferAgentOwnership",
+          "type": "world_native::ownership::TransferOwnership"
         }
       ]
     },
@@ -4121,6 +4957,158 @@
         {
           "name": "data",
           "type": "core::integer::u128"
+        }
+      ]
+    },
+    "world_native::ownership::FaithfulStructure": {
+      "type": "struct",
+      "name": "world_native::ownership::FaithfulStructure",
+      "members": [
+        {
+          "name": "wonder_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "faithful_since",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "fp_to_wonder_owner_per_sec",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "fp_to_struct_owner_per_sec",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "last_recorded_owner",
+          "type": "core::starknet::contract_address::ContractAddress"
+        }
+      ]
+    },
+    "world_native::ownership::FaithPointsClaimedStory": {
+      "type": "struct",
+      "name": "world_native::ownership::FaithPointsClaimedStory",
+      "members": [
+        {
+          "name": "wonder_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "new_points",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "total_points",
+          "type": "core::integer::u128"
+        }
+      ]
+    },
+    "world_native::ownership::PlayerFaithKey": {
+      "type": "struct",
+      "name": "world_native::ownership::PlayerFaithKey",
+      "members": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "player",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "wonder_id",
+          "type": "core::integer::u32"
+        }
+      ]
+    },
+    "world_native::ownership::PlayerFaithPoints": {
+      "type": "struct",
+      "name": "world_native::ownership::PlayerFaithPoints",
+      "members": [
+        {
+          "name": "points_claimed",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "points_per_sec_as_owner",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "points_per_sec_as_pledger",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "last_updated_at",
+          "type": "core::integer::u64"
+        }
+      ]
+    },
+    "world_native::ownership::Story": {
+      "type": "enum",
+      "name": "world_native::ownership::Story",
+      "variants": [
+        {
+          "name": "FaithPointsClaimedStory",
+          "type": "world_native::ownership::FaithPointsClaimedStory"
+        }
+      ]
+    },
+    "world_native::ownership::TransferOwnership": {
+      "type": "struct",
+      "name": "world_native::ownership::TransferOwnership",
+      "members": [
+        {
+          "name": "entity_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "new_owner",
+          "type": "core::starknet::contract_address::ContractAddress"
+        }
+      ]
+    },
+    "world_native::ownership::WonderFaith": {
+      "type": "struct",
+      "name": "world_native::ownership::WonderFaith",
+      "members": [
+        {
+          "name": "last_recorded_owner",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "claimed_points",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "claim_per_sec",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "claim_last_at",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "owner_claim_per_sec",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "num_structures_pledged",
+          "type": "core::integer::u32"
+        }
+      ]
+    },
+    "world_native::ownership::WonderFaithWinners": {
+      "type": "struct",
+      "name": "world_native::ownership::WonderFaithWinners",
+      "members": [
+        {
+          "name": "high_score",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "wonder_ids",
+          "type": "core::array::Span::<core::integer::u32>"
         }
       ]
     },
@@ -4841,6 +5829,14 @@
         {
           "name": "spire_travel_essence_cost",
           "type": "core::integer::u128"
+        },
+        {
+          "name": "blitz_mode_on",
+          "type": "core::bool"
+        },
+        {
+          "name": "faith_enabled",
+          "type": "core::bool"
         }
       ]
     },
@@ -5509,5 +6505,5 @@
       ]
     }
   },
-  "identity": "1a1ddbd619e34cbc5218fc13b794a8f7835dbcb03740a491bad5c31d276f7bdb"
+  "identity": "b21b360e6106617306839abab561b0b3601e474a1d887089da54f544e2570d7f"
 }

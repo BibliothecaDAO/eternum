@@ -64,6 +64,10 @@ describe("native transaction receipt routing", () => {
     ).not.toThrow();
     expect(native.routingFailures).toBe(1);
     expect(log).toHaveBeenCalledWith(expect.stringContaining("herald_native_transaction_routing_failed"));
+    expect(JSON.parse(log.mock.calls.at(-1)![0])).toMatchObject({
+      event: "herald_native_transaction_routing_failed",
+      transactionHash: "0xbad",
+    });
     log.mockRestore();
     live.acceptReceipt({ ...receipt([], "0x123"), execution_status: "REVERTED", revert_reason: "invalid command" });
     expect(messages).toEqual([]);

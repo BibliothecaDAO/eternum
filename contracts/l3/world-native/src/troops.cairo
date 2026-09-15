@@ -156,6 +156,7 @@ pub trait ITroops<T> {
 
 #[starknet::contract]
 pub mod TroopsDomain {
+    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
     use starknet::{ContractAddress, get_caller_address};
     use crate::combat::{CombatContext, TroopsTrait};
     use crate::commands::{Battle, CreateExplorer, ExecutionContext, Explore};
@@ -180,6 +181,7 @@ pub mod TroopsDomain {
         lifecycle: Lifecycle::Storage,
         #[substorage(v0)]
         troops: TroopState::Storage,
+        agent_owners: starknet::storage::Map<(u32, u32), ContractAddress>,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -187,6 +189,7 @@ pub mod TroopsDomain {
         LifecycleEvent: Lifecycle::Event,
         TroopEvent: TroopState::Event,
         BattleEvent: super::BattleEvent,
+        OwnershipRow: crate::events::RowSet,
     }
     #[constructor]
     fn constructor(ref self: ContractState, authority: ContractAddress) {
@@ -196,6 +199,32 @@ pub mod TroopsDomain {
     impl TroopViews of super::ITroops<ContractState> {
         fn explorer(self: @ContractState, key: ExplorerKey) -> Option<ExplorerTroops> {
             self.troops.explorer(key)
+        }
+    }
+    #[abi(embed_v0)]
+    impl Ownership of crate::ownership::IAgentOwnership<ContractState> {
+        fn agent_owner(self: @ContractState, game_id: u32, explorer_id: u32) -> ContractAddress {
+            self.agent_owners.read((game_id, explorer_id))
+        }
+        fn transfer_agent_ownership(
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            command: crate::ownership::TransferOwnership,
+            context: ExecutionContext,
+        ) {
+            let _ = self.authorize(game_id, context);
+            assert!(actor == self.game_dispatcher().agent_controller(), "actor is not agent controller");
+            self.agent_owners.write((game_id, command.entity_id), command.new_owner);
+            self
+                .emit(
+                    crate::events::RowSet {
+                        version: 1,
+                        model: 'AgentOwner',
+                        keys: array![game_id.into(), command.entity_id.into()].span(),
+                        values: array![command.new_owner.into()].span(),
+                    },
+                );
         }
     }
     #[abi(embed_v0)]

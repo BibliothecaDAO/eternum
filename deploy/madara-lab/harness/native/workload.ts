@@ -25,8 +25,9 @@ export async function playSlice(input: SliceWorkload) {
   const surfaceMine = await discover(input, 0);
   const bitcoinMine = await discover(input, 1);
   await claimProduction(input);
+  await transferRealmAndReturn(input);
   await verifyReconnect(input);
-  return { defeatedExplorer, surfaceMine, bitcoinMine, reconnected: true };
+  return { defeatedExplorer, surfaceMine, bitcoinMine, ownershipTransferred: true, reconnected: true };
 }
 
 function explorer(input: SliceWorkload, bot: number) {
@@ -150,4 +151,20 @@ function unexploredDirection(input: SliceWorkload, bot: number): number {
     if (!row || (BigInt(row.data) >> 41n) % 256n === 0n) return direction;
   }
   throw new Error(`Bot ${bot} has no adjacent unexplored tile`);
+}
+
+async function transferRealmAndReturn(input: SliceWorkload) {
+  const key = gameEntityKey([BigInt(input.homes[0])]);
+  for (const [from, to] of [[0, 1], [1, 0]]) {
+    await input.act("transfer_structure_ownership", "surface", () =>
+      input.client.setup.systemCalls.transfer_structure_ownership({
+        signer: input.players[from],
+        structure_id: input.homes[0],
+        new_owner: input.players[to].address,
+      }),
+    );
+    const structure = getComponentValue(input.client.setup.components.Structure, key);
+    if (!structure || BigInt(structure.owner) !== BigInt(input.players[to].address))
+      throw new Error("Ownership transfer did not reach the shared client");
+  }
 }

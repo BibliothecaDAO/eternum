@@ -30,6 +30,8 @@ pub struct GameRegistry {
 
 #[starknet::interface]
 pub trait IGame<T> {
+    fn agent_controller(self: @T) -> ContractAddress;
+    fn ownership_rules_ready(self: @T, game_id: u32) -> bool;
     fn game(self: @T, game_id: u32) -> GameRegistry;
     fn rules(self: @T, game_id: u32) -> SliceRules;
     fn create_game(ref self: T, game_id: u32, game: GameRegistry, rules: SliceRules);
@@ -57,6 +59,7 @@ pub mod GameState {
         pub next_entity: Map<u32, u32>,
         pub player_points: Map<(u32, starknet::ContractAddress), u128>,
         pub season_points: Map<u32, u128>,
+        pub ownership_rules_ready: Map<u32, bool>,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -116,6 +119,16 @@ pub mod GameState {
             );
             self.games.write(game_id, game);
             self.rules.write(game_id, rules);
+            self.ownership_rules_ready.write(game_id, true);
+            self
+                .emit(
+                    RowSet {
+                        version: 1,
+                        model: 'OwnershipRulesReady',
+                        keys: array![game_id.into()].span(),
+                        values: array![1].span(),
+                    },
+                );
             self.exists.write(game_id, true);
             self.next_entity.write(game_id, 1);
             let mut values = array![];

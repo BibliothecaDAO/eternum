@@ -172,6 +172,8 @@ pub struct SliceRules {
     pub victory_points_grant_config: VictoryPointsGrantConfig,
     pub map_center_offset: u32,
     pub spire_travel_essence_cost: u128,
+    pub blitz_mode_on: bool,
+    pub faith_enabled: bool,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]

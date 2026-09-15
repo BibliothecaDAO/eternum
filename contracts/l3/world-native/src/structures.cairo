@@ -91,7 +91,10 @@ pub struct ResourceRule {
 
 #[starknet::component]
 pub mod StructureState {
-    use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
+    use starknet::storage::{
+        Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess,
+        StoragePointerWriteAccess,
+    };
     use crate::events::{RowMemberSet, RowSet};
     use super::{ResourceKey, Structure, StructureRecord};
     #[storage]
@@ -99,7 +102,6 @@ pub mod StructureState {
         pub structures: Map<(u32, u32), StructureRecord>,
         pub exists: Map<(u32, u32), bool>,
         pub explorers: Map<(u32, u32, u16), u32>,
-        pub owner_counts: Map<(u32, starknet::ContractAddress), u32>,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -146,19 +148,25 @@ pub mod StructureState {
             let mut values = array![];
             self.structure(key).unwrap().serialize(ref values);
             self.emit(RowSet { version: 1, model: 'Structure', keys: keys.span(), values: values.span() });
-            if record.owner != 0.try_into().unwrap() {
-                let count = self.owner_counts.read((key.game_id, record.owner)) + 1;
-                self.owner_counts.write((key.game_id, record.owner), count);
-                self
-                    .emit(
-                        RowSet {
-                            version: 1,
-                            model: 'StructureOwnerStats',
-                            keys: array![key.game_id.into(), record.owner.into()].span(),
-                            values: array![count.into()].span(),
-                        },
-                    );
+        }
+        fn transfer_owner(
+            ref self: ComponentState<TContractState>, key: ResourceKey, owner: starknet::ContractAddress,
+        ) {
+            assert!(self.exists.read((key.game_id, key.entity_id)), "missing structure");
+            if self.structures.entry((key.game_id, key.entity_id)).owner.read() == owner {
+                return;
             }
+            self.structures.entry((key.game_id, key.entity_id)).owner.write(owner);
+            self
+                .emit(
+                    RowMemberSet {
+                        version: 1,
+                        model: 'Structure',
+                        member: 'owner',
+                        keys: array![key.game_id.into(), key.entity_id.into()].span(),
+                        values: array![owner.into()].span(),
+                    },
+                );
         }
         fn append_explorer(ref self: ComponentState<TContractState>, key: ResourceKey, explorer_id: u32) {
             let mut record = self.record(key);
@@ -227,7 +235,6 @@ pub trait IStructures<T> {
     fn structure(self: @T, key: ResourceKey) -> Option<Structure>;
     fn has_resource(self: @T, key: ResourceKey) -> bool;
     fn hyperstructure(self: @T, key: ResourceKey) -> Option<Hyperstructure>;
-    fn owner_count(self: @T, game_id: u32, owner: ContractAddress) -> u32;
     fn provision_spire(ref self: T, game_id: u32, coord: Coord) -> u32;
     fn resource(self: @T, key: ResourceKey) -> Resource;
     fn configure_resources(ref self: T, game_id: u32, rules: Span<ResourceRule>);
@@ -263,10 +270,16 @@ pub mod StructuresDomain {
     use crate::geometry::{neighbor, tile_key};
     use crate::lifecycle::Lifecycle;
     use crate::map::{IMapDispatcher, IMapDispatcherTrait};
+    use crate::ownership::{
+        FaithOwnershipState, FaithPointsClaimedStory, FaithfulStructure, PlayerFaithKey, PlayerFaithPoints, Story,
+        StoryEvent, TransferOwnership, WonderFaith, WonderFaithWinners,
+    };
     use crate::resources::{Resource, ResourceKey, ResourceState};
     use crate::rules::{RESOURCE_PRECISION, SliceRules};
     use crate::troops::Coord;
     use super::{ResourceRule, Structure, StructureBase, StructureRecord, StructureState};
+    component!(path: FaithOwnershipState, storage: faith, event: FaithEvent);
+    impl FaithInternal = FaithOwnershipState::InternalImpl<ContractState>;
     component!(path: BuildingState, storage: buildings, event: BuildingEvent);
     impl BuildingInternal = BuildingState::InternalImpl<ContractState>;
     component!(path: Lifecycle, storage: lifecycle, event: LifecycleEvent);
@@ -291,6 +304,8 @@ pub mod StructuresDomain {
         hyperstructure_seeds: Map<(u32, u32), felt252>,
         resource_rules: Map<(u32, u8), ResourceRule>,
         resources_configured: Map<u32, bool>,
+        #[substorage(v0)]
+        faith: FaithOwnershipState::Storage,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -299,6 +314,8 @@ pub mod StructuresDomain {
         StructureEvent: StructureState::Event,
         ResourceEvent: ResourceState::Event,
         BuildingEvent: BuildingState::Event,
+        FaithEvent: FaithOwnershipState::Event,
+        StoryEvent: StoryEvent,
         RowSet: RowSet,
     }
     #[constructor]
@@ -330,9 +347,6 @@ pub mod StructuresDomain {
                 },
                 _ => None,
             }
-        }
-        fn owner_count(self: @ContractState, game_id: u32, owner: ContractAddress) -> u32 {
-            self.structures.owner_counts.read((game_id, owner))
         }
         fn provision_spire(ref self: ContractState, game_id: u32, coord: Coord) -> u32 {
             self.assert_authority();
@@ -506,6 +520,56 @@ pub mod StructuresDomain {
         }
     }
     #[abi(embed_v0)]
+    impl Ownership of crate::ownership::IStructureOwnership<ContractState> {
+        fn transfer_structure_ownership(
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            command: TransferOwnership,
+            context: ExecutionContext,
+        ) {
+            let peers = self.lifecycle.require_active();
+            assert!(get_caller_address() == peers.season, "only authenticated command domain");
+            crate::commands::assert_context_time(context.timestamp);
+            let game = self.game_dispatcher().game(game_id);
+            assert_playing(game, context.timestamp);
+            let key = ResourceKey { game_id, entity_id: command.entity_id };
+            let record = self.structures.record(key);
+            assert!(record.owner == actor, "actor does not own structure");
+            assert!(self.game_dispatcher().ownership_rules_ready(game_id), "ownership rules require initialized game");
+            let rules = self.game_dispatcher().rules(game_id);
+            assert!(!rules.blitz_mode_on, "cannot transfer structure in Blitz");
+            assert!(command.new_owner != 0.try_into().unwrap(), "new owner is zero");
+            assert!(record.base.category != crate::ownership::VILLAGE_CATEGORY, "cannot transfer ownership of village");
+            if record.owner == command.new_owner {
+                return;
+            }
+            if record.owner != 0.try_into().unwrap() && rules.faith_enabled {
+                if let Some(accrual) = self
+                    .faith
+                    .transfer(game_id, command.entity_id, command.new_owner, context.timestamp, game.end_at) {
+                    self.emit_faith_accrual(game_id, accrual, context.timestamp);
+                }
+            }
+            self.structures.transfer_owner(key, command.new_owner);
+        }
+    }
+    #[abi(embed_v0)]
+    impl FaithViews of crate::ownership::IFaithOwnershipViews<ContractState> {
+        fn wonder_faith(self: @ContractState, key: ResourceKey) -> WonderFaith {
+            self.faith.faith_wonders.read((key.game_id, key.entity_id))
+        }
+        fn faithful_structure(self: @ContractState, key: ResourceKey) -> FaithfulStructure {
+            self.faith.faith_pledges.read((key.game_id, key.entity_id))
+        }
+        fn player_faith_points(self: @ContractState, key: PlayerFaithKey) -> PlayerFaithPoints {
+            self.faith.faith_players.read((key.game_id, key.player, key.wonder_id))
+        }
+        fn wonder_faith_winners(self: @ContractState, game_id: u32) -> WonderFaithWinners {
+            self.faith.winners(game_id)
+        }
+    }
+    #[abi(embed_v0)]
     impl ResourceCommands of crate::commands::IResourceCommands<ContractState> {
         fn claim_production(
             ref self: ContractState, game_id: u32, actor: ContractAddress, structure_id: u32, context: ExecutionContext,
@@ -548,6 +612,29 @@ pub mod StructuresDomain {
     }
     #[generate_trait]
     impl Internal of InternalTrait {
+        fn emit_faith_accrual(
+            ref self: ContractState, game_id: u32, accrual: crate::ownership::Accrual, timestamp: u64,
+        ) {
+            self
+                .emit(
+                    StoryEvent {
+                        version: 1,
+                        game_id,
+                        id: self.game_dispatcher().allocate_entity(game_id),
+                        owner: None,
+                        entity_id: Some(accrual.wonder_id),
+                        tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                        story: Story::FaithPointsClaimedStory(
+                            FaithPointsClaimedStory {
+                                wonder_id: accrual.wonder_id,
+                                new_points: accrual.new_points,
+                                total_points: accrual.total_points,
+                            },
+                        ),
+                        timestamp,
+                    },
+                );
+        }
         fn reveal_surroundings(ref self: ContractState, game_id: u32, coord: Coord) {
             for direction in 0_u8..6 {
                 let key = tile_key(game_id, neighbor(coord, direction));

@@ -1,6 +1,5 @@
 import { loadNativeWorld } from "./load";
 import { describe, expect, it, vi } from "vitest";
-import parity from "../../../../contracts/l3/world-native/fixtures/world-parity.json";
 import setFixture from "../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 import deleted from "../../../../contracts/l3/world-native/schema/fixtures/row-deleted.json";
 import malformed from "../../../../contracts/l3/world-native/schema/fixtures/malformed-row.json";
@@ -30,8 +29,7 @@ function block(number: number, events: RpcEvent[]): RpcBlockWithReceipts {
   };
 }
 function wireHistory() {
-  const surface = parity.cases.find((item) => item.name === "surface")!;
-  const events = surface.rows.map((row) => rowEvent(row.model, row.keys, row.value));
+  const events = [setFixture.raw, rowEvent("PlayerRegisteredPoints", ["1", "0x111"], ["100"])];
   const game = rowEvent(
     "GameRegistry",
     ["1"],
@@ -47,7 +45,7 @@ function wireHistory() {
 const metrics = { decoded_events: 1, event_messages: 0, pages: 1, store_events: 1, retained_rows: 1 };
 
 describe("native confirmed replay and transaction delivery", () => {
-  it("rebuilds parity-row fixtures through deletes and a checkpoint reconnect", async () => {
+  it("rebuilds native event fixtures through deletes and a checkpoint reconnect", async () => {
     const { native, decoder, fold } = setup();
     const history = wireHistory();
     const rpc = { getBlockWithReceipts: vi.fn(async (number: number) => history[number - 10]) };
