@@ -170,7 +170,8 @@
     "rejections": "Unauthorized actor, occupied destination, resource spending and expired-game rollback",
     "ownership": "Structure and agent transfers, faith accrual, authorization and time boundaries",
     "ownership_rejections": "Village, mode, season boundaries, controller and domain authorization",
-    "ownership_faith": "Faith winner ties, duplicate winners, disabled accrual and atomic late failure"
+    "ownership_faith": "Faith winner ties, duplicate winners, disabled accrual and atomic late failure",
+    "name": "Naming with an owned-structure witness: set, overwrite, clear, non-owner rejection and after-end renaming."
   },
   "randomness": {
     "rawRootSource": "injected identical root per action",

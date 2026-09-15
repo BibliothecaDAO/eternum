@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "domain": "name",
+  "rulesRevision": "55dc510f5e7af119d1efac9a60426e81fee8e408",
+  "factModel": "schema/schema.json#models[AddressName].observation",
+  "projectionGenerator": "deploy/madara-lab/harness/native/fact-projections.ts",
+  "systems": ["name_systems"],
+  "commands": ["set_address_name"],
+  "normalization": [
+    "Account identities map bijectively; names are deployment-global across games.",
+    "Native calldata supplies an owned structure as a witness for the oracle's positive owner-count check.",
+    "Absent and explicitly zero names both display as unnamed."
+  ],
+  "measuredSequence": [
+    {
+      "case": "set",
+      "command": "set_address_name",
+      "succeeded": true
+    },
+    {
+      "case": "overwrite",
+      "command": "set_address_name",
+      "succeeded": true
+    },
+    {
+      "case": "clear",
+      "command": "set_address_name",
+      "succeeded": true
+    },
+    {
+      "case": "non_owner",
+      "command": "set_address_name",
+      "succeeded": false
+    },
+    {
+      "case": "after_end",
+      "command": "set_address_name",
+      "succeeded": true
+    }
+  ],
+  "parityCases": ["name"],
+  "reductions": [
+    "Removed the naming guard's dependency on StructureOwnerStats and its maintained owner count; the witness is checked against canonical Structure ownership."
+  ],
+  "harnessCoverage": {
+    "workload": "deploy/madara-lab/harness/native/workload.ts",
+    "added": ["Set a player name and observe it through the shared client and Herald."],
+    "liveRun": "pending full-game acceptance"
+  }
+}

@@ -12,7 +12,8 @@
         "troop_movement_systems",
         "troop_battle_systems",
         "alt_movement_systems",
-        "ownership_systems"
+        "ownership_systems",
+        "name_systems"
       ],
       "events": [
         {
@@ -1844,6 +1845,46 @@
         },
         {
           "type": "function",
+          "name": "address_name",
+          "inputs": [
+            {
+              "name": "address",
+              "type": "core::starknet::contract_address::ContractAddress"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "world_native::names::AddressName"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "set_address_name",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "command",
+              "type": "world_native::names::SetAddressName"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
           "name": "transfer_structure_ownership",
           "inputs": [
             {
@@ -3149,6 +3190,37 @@
         "domain": "hyperstructures",
         "fields": {
           "discovered": "created_count"
+        }
+      }
+    },
+    {
+      "name": "AddressName",
+      "identity": "0x416464726573734e616d65",
+      "owners": [
+        "structures"
+      ],
+      "scope": "deployment",
+      "keys": [
+        {
+          "name": "address",
+          "type": "core::starknet::contract_address::ContractAddress",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "name",
+          "type": "core::felt252",
+          "id": "0x6e616d65",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": 1,
+      "observation": {
+        "domain": "name",
+        "fields": {
+          "name": "name"
         }
       }
     },
@@ -4693,6 +4765,10 @@
         {
           "name": "TransferAgentOwnership",
           "type": "world_native::ownership::TransferOwnership"
+        },
+        {
+          "name": "SetAddressName",
+          "type": "world_native::names::SetAddressName"
         }
       ]
     },
@@ -4957,6 +5033,30 @@
         {
           "name": "data",
           "type": "core::integer::u128"
+        }
+      ]
+    },
+    "world_native::names::AddressName": {
+      "type": "struct",
+      "name": "world_native::names::AddressName",
+      "members": [
+        {
+          "name": "name",
+          "type": "core::felt252"
+        }
+      ]
+    },
+    "world_native::names::SetAddressName": {
+      "type": "struct",
+      "name": "world_native::names::SetAddressName",
+      "members": [
+        {
+          "name": "owned_structure_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "name",
+          "type": "core::felt252"
         }
       ]
     },
@@ -6505,5 +6605,5 @@
       ]
     }
   },
-  "identity": "b21b360e6106617306839abab561b0b3601e474a1d887089da54f544e2570d7f"
+  "identity": "d292c3425d0b81cdcc3becc2bfd2756cec27fb8e7aa05c1fa70bed6853e5b1bb"
 }

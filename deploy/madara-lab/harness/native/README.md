@@ -64,9 +64,9 @@ assignment or adversarial randomness test.
 `fixtures/world-parity.json` compares declared player-observable facts and rejection outcomes in paired-world tests. The
 declarations live in `contracts/l3/world-native/schema/fact-models.mjs`; the adapters read each world independently.
 `fixtures/harness.json` records the live workload and matched transaction measurements. The retained report covers the
-earlier eight-action slice. The current workload adds ownership transfers; its full-game live acceptance is still
-pending. Neither is a load-capacity or latency-SLO test. Dojo random actions include the fixture call that injects a
-root; native transactions include authenticated intent dispatch. Exploration measures `explorer_move` with exploration
+earlier eight-action slice. The current workload adds ownership transfers and naming; its full-game live acceptance is
+still pending. Neither is a load-capacity or latency-SLO test. Dojo random actions include the fixture call that injects
+a root; native transactions include authenticated intent dispatch. Exploration measures `explorer_move` with exploration
 enabled; the separate reward-extraction action is outside this slice.
 
 Run `bun test deploy/madara-lab/harness` for harness tests. Reports retain failure details when an action, Herald
@@ -92,14 +92,15 @@ rejection halts that deployment at its last valid checkpoint and makes `/health`
 transaction. The process and subscription remain available. Correct the release/schema metadata and restart to replay
 the blocked range; the fold never silently skips the receipt.
 
-## Ownership cost evidence
+## Domain cost evidence
 
-`lab:parity:native --measure` compares the declared facts, then executes the nine-action ownership fixture with tracing.
-`measure_trace.py` streams the trace with pinned Python 3.12 and ijson; the compact result is included in
-`fixtures/ownership-parity.json` beside production CASM sizes. Account validation and fees are outside this fixture.
-Storage syscall and gas counters are inclusive; event totals sum each call's local emissions. Attempted operations
-before rollback are execution costs, not evidence that a reverted event reached Herald. The full recorded execution and
-its gameplay domain are reported separately. Large VM traces stay in the ignored oracle workspace.
+`lab:parity:native --measure` compares the declared facts, then executes the ownership and naming workloads declared in
+their fixture files with tracing. `measure_trace.py` streams the trace with pinned Python 3.12 and ijson; the compact
+result is included in `fixtures/ownership-parity.json` and `fixtures/name-parity.json` beside production CASM sizes.
+Account validation and fees are outside this fixture. Storage syscall and gas counters are inclusive; event totals sum
+each call's local emissions. Attempted operations before rollback are execution costs, not evidence that a reverted
+event reached Herald. The full recorded execution and its gameplay domain are reported separately. Large VM traces stay
+in the ignored oracle workspace.
 
 Run `uv run deploy/madara-lab/harness/native/test_measure_trace.py` to check pairing, streaming and counter accounting.
 The workflow runs this check and the measured parity command and retains their compact reports and logs.

@@ -330,6 +330,10 @@ pub mod SeasonDomain {
                 value.serialize(ref calldata);
                 (peers.troops, selector!("transfer_agent_ownership"))
             },
+            Command::SetAddressName(value) => {
+                value.serialize(ref calldata);
+                (peers.structures, selector!("set_address_name"))
+            },
             Command::ClaimProduction(value) => {
                 value.serialize(ref calldata);
                 (peers.structures, selector!("claim_production"))

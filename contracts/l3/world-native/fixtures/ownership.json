@@ -81,5 +81,22 @@
       "command": "transfer_structure_ownership",
       "succeeded": false
     }
-  ]
+  ],
+  "parityCases": [
+    "ownership",
+    "ownership_rejections",
+    "ownership_faith"
+  ],
+  "reductions": [
+    "Removed the unused StructureOwnerStats row, owner_counts map and owner_count view; ownership is stored once on Structure.",
+    "Replaced whole-structure storage writes during transfer with a single owner-field write.",
+    "Removed the intermediate wonder-faith write; settlement persists its final record once."
+  ],
+  "harnessCoverage": {
+    "workload": "deploy/madara-lab/harness/native/workload.ts",
+    "added": [
+      "Transfer a realm to the second player and back, observing both changes through shared-client RECS."
+    ],
+    "liveRun": "pending full-game acceptance"
+  }
 }

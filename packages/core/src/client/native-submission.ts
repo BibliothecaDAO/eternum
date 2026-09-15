@@ -1,3 +1,5 @@
+import { getComponentValue, runQuery } from "@dojoengine/recs";
+import { structuresByOwnerQuery } from "./views/structures";
 import {
   CallData,
   CairoCustomEnum,
@@ -35,7 +37,7 @@ export function nativeSubmission(
   return async (actor, calls) => {
     const batch = Array.isArray(calls) ? calls : [calls];
     if (batch.length !== 1) throw new Error("The native slice accepts one command per action");
-    const { name, command } = translateCommand(batch[0], gameId, season);
+    const { name, command } = translateCommand(batch[0], gameId, season, components, BigInt(actor.address));
     const context = input.executionContext(name, actor);
     const arguments_ = codec.compile("command_commitment", { command });
     const position = executionPosition(components, season);
@@ -150,7 +152,7 @@ function executionPosition(components: ContractComponents, season: string) {
     : { order: 0n, binding: 0n, state: 0n };
 }
 
-function translateCommand(call: Call, gameId: number, season: string) {
+function translateCommand(call: Call, gameId: number, season: string, components: ContractComponents, actor: bigint) {
   if (BigInt(call.contractAddress) !== BigInt(season) || !Array.isArray(call.calldata))
     throw new Error("Invalid native command target");
   const [scope, ...args] = call.calldata;
@@ -186,9 +188,26 @@ function translateCommand(call: Call, gameId: number, season: string) {
     case "transfer_agent_ownership":
       if (args.length !== 2) break;
       return build("TransferAgentOwnership", { entity_id: args[0], new_owner: args[1] });
+    case "set_address_name":
+      if (args.length !== 1) break;
+      return build("SetAddressName", {
+        owned_structure_id: ownedStructureWitness(components, gameId, actor),
+        name: args[0],
+      });
     case "claim_production":
       if (args.length !== 1) break;
       return build("ClaimProduction", args[0]);
   }
   throw new Error(`Unsupported native slice action ${call.entrypoint}`);
+}
+
+function ownedStructureWitness(components: ContractComponents, gameId: number, actor: bigint): number {
+  let witness: number | undefined;
+  for (const entity of runQuery(structuresByOwnerQuery(components, actor))) {
+    const row = getComponentValue(components.Structure, entity);
+    if (row?.game_id !== gameId) continue;
+    if (witness === undefined || row.entity_id < witness) witness = row.entity_id;
+  }
+  if (witness === undefined) throw new Error("Naming requires an owned structure in the current game");
+  return witness;
 }

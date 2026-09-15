@@ -84,8 +84,7 @@ The protocol's versioned canonical encoding supplies the action identity and env
 `Intent.command` is Poseidon over `ETERNUM_COMMAND`, encoding version 1 and those serialized fields. The decoder rejects
 unknown variants, malformed values, trailing fields and a different commitment. Authenticated malformed payloads consume
 their accepted ticket with status 2; they cannot stop the deployment stream. The generated command ABI exposes the same
-enum to consumers. Variants remain create explorer, explore, claim production, battle, movement and alternate-layer
-travel, in that order. Structure and agent ownership transfer append as variants 6 and 7.
+enum to consumers. Existing discriminants stay fixed; new commands append to the enum and regenerate the bindings.
 
 Admission resolves the gameplay account through PlayerRegistry in both directions, checks the approved account class
 before reading its existing key, and returns the immutable rules digest and current execution position. Execution checks
@@ -167,3 +166,13 @@ Ownership removes the unused owner-count mirror and rewrites only the owner fiel
 final wonder record once instead of persisting an intermediate copy. Per-action trace evidence reports executed storage
 syscalls, emitted events and felts, gas, and class sizes; retained transaction history establishes publication and
 rollback behavior separately.
+
+## Account naming
+
+`StructuresDomain.address_names: Map<ContractAddress, felt252>` is appended without moving existing storage. The row is
+keyed by account for the deployment, shared across its games. An absent or explicitly zero name displays as unnamed; a
+zero write emits RowSet and is not a deletion. Names may be overwritten, including after a game's clock ends.
+
+`SetAddressName` carries a name and one owned structure id. The structure is an authorization witness from the
+synchronized store, not a second ownership fact. The domain validates its existence and owner in the action's game; no
+owner-count storage or on-chain owner scan is needed. Internal calls require the authenticated season domain.

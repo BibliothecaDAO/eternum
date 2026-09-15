@@ -18,6 +18,7 @@ use world_native::commands::{Battle, Command, CreateExplorer, Explore, Move, Tog
 use world_native::game::{IGameDispatcher, IGameDispatcherTrait};
 use world_native::lifecycle::{IDomainDispatcher, IDomainDispatcherTrait, Peers};
 use world_native::map::{IMapDispatcher, IMapDispatcherTrait};
+use world_native::names::{INamesDispatcher, INamesDispatcherTrait, INamesSafeDispatcher, INamesSafeDispatcherTrait};
 use world_native::ownership::{
     FaithfulStructure, IAgentOwnershipDispatcherTrait, IFaithOwnershipViewsDispatcherTrait, PlayerFaithPoints,
     WonderFaith,
@@ -91,6 +92,7 @@ fn namespace() -> NamespaceDef {
             TestResource::Model("ResourceList"), TestResource::Model("ExplorerTroops"), TestResource::Model("TileOpt"),
             TestResource::Model("PlayerRegisteredPoints"), TestResource::Model("SeasonPrize"),
             TestResource::Model("Hyperstructure"), TestResource::Model("HyperstructureGlobals"),
+            TestResource::Model("AddressName"), TestResource::Contract("name_systems"),
             TestResource::Model("AgentConfig"), TestResource::Model("AgentCount"), TestResource::Model("AgentOwner"),
             TestResource::Model("WonderFaith"), TestResource::Model("FaithfulStructure"),
             TestResource::Model("PlayerFaithPoints"), TestResource::Model("WonderFaithWinners"),
@@ -165,7 +167,7 @@ fn setup(case: felt252) -> PairedWorld {
         "alt_movement_systems", "parity_bootstrap_systems", "troop_management_systems", "troop_movement_systems",
         "troop_movement_util_systems", "troop_battle_systems", "hyperstructure_discovery_systems",
         "mine_discovery_systems", "camp_discovery_systems", "agent_discovery_systems", "relic_chest_discovery_systems",
-        "bitcoin_mine_discovery_systems", "ownership_systems",
+        "bitcoin_mine_discovery_systems", "ownership_systems", "name_systems",
     ] {
         defs
             .append(
@@ -235,6 +237,10 @@ fn provision_with_resources(ref worlds: PairedWorld, coord: Coord, initial_resou
     id
 }
 fn execute(worlds: PairedWorld, command: Command, timestamp: u64, root: u256) {
+    let (_, succeeded) = execute_outcome(worlds, command, timestamp, root);
+    assert!(succeeded, "native gameplay rejected");
+}
+fn execute_outcome(worlds: PairedWorld, command: Command, timestamp: u64, root: u256) -> (u64, bool) {
     start_cheat_block_timestamp_global(timestamp);
     let intent = native_protocol::action(worlds.peers.season, worlds.actor, command, timestamp);
     let public_key = world_native::season::IGameplayKeyDispatcherTrait::get_public_key(
@@ -250,8 +256,11 @@ fn execute(worlds: PairedWorld, command: Command, timestamp: u64, root: u256) {
     let order = intent.last_order;
     native_protocol::authenticate(worlds.peers.season, submitter());
     IRecordedExecutionDispatcher { contract_address: worlds.peers.season }.execute(intent, context, r, s);
-    assert_eq!(IRecordedExecutionViewsDispatcher { contract_address: worlds.peers.season }.get_result(order).status, 1);
+    let succeeded = IRecordedExecutionViewsDispatcher { contract_address: worlds.peers.season }
+        .get_result(order)
+        .status == 1;
     stop_cheat_caller_address(worlds.peers.season);
+    (order, succeeded)
 }
 fn compare_facts<A, +Observable<A>, +Drop<A>, B, +Observable<B>, +Drop<B>>(
     case: felt252, step: u32, model: felt252, keys: Span<felt252>, native: A, oracle: B,
@@ -789,6 +798,7 @@ fn world_parity_rejected_actions_preserve_rows() {
 }
 #[starknet::interface]
 pub trait IParityAttempts<T> {
+    fn name(ref self: T, target: ContractAddress, name: felt252) -> bool;
     fn ownership(ref self: T, target: ContractAddress, selector: felt252, id: u32, owner: ContractAddress) -> bool;
     fn native(
         ref self: T, season: ContractAddress, intent: Intent, context: ExecutionContext, r: felt252, s: felt252,
@@ -811,6 +821,10 @@ mod ParityAttempts {
     struct Storage {}
     #[abi(embed_v0)]
     impl Attempts of super::IParityAttempts<ContractState> {
+        fn name(ref self: ContractState, target: ContractAddress, name: felt252) -> bool {
+            starknet::syscalls::call_contract_syscall(target, selector!("set_address_name"), array![1, name].span())
+                .is_ok()
+        }
         fn ownership(
             ref self: ContractState, target: ContractAddress, selector: felt252, id: u32, owner: ContractAddress,
         ) -> bool {
@@ -1118,33 +1132,14 @@ fn transfer(ref worlds: PairedWorld, id: u32, owner: ContractAddress, agent: boo
     } else {
         Command::TransferStructureOwnership(value)
     };
-    let intent = native_protocol::action(worlds.peers.season, worlds.actor, command, now);
-    let public_key = world_native::season::IGameplayKeyDispatcherTrait::get_public_key(
-        world_native::season::IGameplayKeyDispatcher { contract_address: worlds.actor },
-    );
-    let signer = if public_key == pair().public_key {
-        pair()
-    } else {
-        opponent_pair()
-    };
-    let (r, s) = signer.sign(action_identity(@intent)).unwrap();
-    let context = native_protocol::context(@intent, now, 1234);
-    let order = intent.last_order;
-    native_protocol::authenticate(worlds.peers.season, submitter());
-    IRecordedExecutionDispatcher { contract_address: worlds.peers.season }.execute(intent, context, r, s);
-    let status = IRecordedExecutionViewsDispatcher { contract_address: worlds.peers.season }.get_result(order).status;
-    assert_eq!(status, if succeeds {
-        1
-    } else {
-        2
-    }, "native ownership outcome");
-    stop_cheat_caller_address(worlds.peers.season);
+    let (order, outcome) = execute_outcome(worlds, command, now, 1234);
+    assert_eq!(outcome, succeeds, "native ownership outcome");
     let action = if agent {
         'agent_transfer'
     } else {
         'structure_transfer'
     };
-    println!("FACT_ACTION {} {} {} {} {}", worlds.case, order, action, now, status == 1);
+    println!("FACT_ACTION {} {} {} {} {}", worlds.case, order, action, now, outcome);
 }
 
 fn compare_ownership(worlds: PairedWorld, step: u32, id: u32) {
@@ -1485,4 +1480,61 @@ fn world_parity_projection_ignores_storage_bookkeeping() {
     assert_eq!(native.observe(), oracle.observe());
     let changed = WonderFaith { claimed_points: 101, ..native };
     assert!(changed.observe() != oracle.observe(), "changed player points must change the fact projection");
+}
+
+
+fn compare_name(worlds: PairedWorld, step: u32, address: ContractAddress) {
+    let oracle: crate::models::name::AddressName = worlds
+        .oracle
+        .read_model(Into::<ContractAddress, felt252>::into(address));
+    compare_facts(
+        worlds.case,
+        step,
+        'AddressName',
+        array![address.into()].span(),
+        INamesDispatcher { contract_address: worlds.peers.structures }.address_name(address),
+        oracle,
+    );
+}
+
+fn rename(ref worlds: PairedWorld, step: u32, home: u32, name: felt252, now: u64, succeeds: bool) {
+    start_cheat_block_timestamp_global(now);
+    let (address, _) = worlds.oracle.dns(@"name_systems").unwrap();
+    start_cheat_caller_address(address, worlds.actor);
+    let attempts = IParityAttemptsDispatcher { contract_address: deploy("ParityAttempts", @array![]) };
+    assert_eq!(attempts.name(address, name), succeeds, "oracle name outcome");
+    stop_cheat_caller_address(address);
+    let command = Command::SetAddressName(world_native::names::SetAddressName { owned_structure_id: home, name });
+    let (order, outcome) = execute_outcome(worlds, command, now, 1234);
+    assert_eq!(outcome, succeeds, "native name outcome");
+    println!("FACT_ACTION {} {} {} {} {}", worlds.case, order, 'set_address_name', now, outcome);
+    compare_name(worlds, step, worlds.actor);
+    compare_name(worlds, step, worlds.opponent);
+    compare_home(worlds, step, home);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn world_parity_name() {
+    let mut worlds = setup('name');
+    let home = provision(ref worlds, Coord { alt: false, x: 2147483626, y: 2147483626 });
+    let commands = INamesSafeDispatcher { contract_address: worlds.peers.structures };
+    let name = world_native::names::SetAddressName { owned_structure_id: home, name: 'forged' };
+    let context = world_native::commands::ExecutionContext { raw_root: 1234, timestamp: 1800 };
+    start_cheat_caller_address(worlds.peers.structures, worlds.actor);
+    assert!(commands.set_address_name(1, worlds.actor, name, context).is_err(), "direct player call accepted");
+    start_cheat_caller_address(worlds.peers.structures, worlds.peers.season);
+    assert!(commands.set_address_name(2, worlds.actor, name, context).is_err(), "foreign-game ownership accepted");
+    stop_cheat_caller_address(worlds.peers.structures);
+    compare_name(worlds, 0, worlds.actor);
+    rename(ref worlds, 1, home, 'Explorer', 1800, true);
+    rename(ref worlds, 2, home, 'New name', 1800, true);
+    rename(ref worlds, 3, home, 0, 1800, true);
+    let owner = worlds.actor;
+    worlds.actor = worlds.opponent;
+    worlds.opponent = owner;
+    rename(ref worlds, 4, home, 'Denied', 1800, false);
+    worlds.opponent = worlds.actor;
+    worlds.actor = owner;
+    rename(ref worlds, 5, home, 'After end', 1000000, true);
 }

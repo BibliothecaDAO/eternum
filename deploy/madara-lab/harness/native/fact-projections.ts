@@ -2,6 +2,7 @@ import type { NativeSchema } from "../../../../apps/herald/src/native/schema";
 
 // These are source adapters for the pinned oracle; native fact names and fields come from its generated schema.
 const recordTypes: Record<string, [string, string]> = {
+  AddressName: ["names::AddressName", "name::AddressName"],
   Structure: ["structures::Structure", "structure::Structure"],
   Resource: ["resources::Resource", "resource::resource::Resource"],
   ExplorerTroops: ["troops::ExplorerTroops", "troop::ExplorerTroops"],

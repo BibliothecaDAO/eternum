@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "b21b360e6106617306839abab561b0b3601e474a1d887089da54f544e2570d7f",
+  "schemaIdentity": "d292c3425d0b81cdcc3becc2bfd2756cec27fb8e7aa05c1fa70bed6853e5b1bb",
   "commandAbi": [
     {
       "type": "impl",
@@ -113,6 +113,20 @@
       ]
     },
     {
+      "type": "struct",
+      "name": "world_native::names::SetAddressName",
+      "members": [
+        {
+          "name": "owned_structure_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "name",
+          "type": "core::felt252"
+        }
+      ]
+    },
+    {
       "type": "enum",
       "name": "world_native::commands::Command",
       "variants": [
@@ -147,6 +161,10 @@
         {
           "name": "TransferAgentOwnership",
           "type": "world_native::ownership::TransferOwnership"
+        },
+        {
+          "name": "SetAddressName",
+          "type": "world_native::names::SetAddressName"
         }
       ]
     },
@@ -2046,6 +2064,14 @@
         "game_id": "Number",
         "created_count": "Number",
         "completed_count": "Number"
+      }
+    },
+    {
+      "name": "AddressName",
+      "scope": "deployment",
+      "schema": {
+        "address": "BigInt",
+        "name": "BigInt"
       }
     },
     {

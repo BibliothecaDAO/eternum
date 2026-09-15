@@ -124,6 +124,48 @@ describe("native bindings in the shared game client", () => {
       send(actor, { contractAddress: "0x101", entrypoint: "explorer_extract_reward", calldata: [1, 7] }),
     ).rejects.toThrow("Unsupported");
     expect(submit).toHaveBeenCalledOnce();
+    const emptyTroops = rowFixture.expected.value.troops;
+    const structure = {
+      base: {
+        troop_guard_count: 0,
+        troop_explorer_count: 0,
+        troop_max_guard_count: 0,
+        troop_max_explorer_count: 0,
+        created_at: 0,
+        category: 1,
+        coord_x: 0,
+        coord_y: 0,
+        level: 0,
+        starting_troops_granted: false,
+      },
+      troop_guards: {
+        alpha: emptyTroops,
+        bravo: emptyTroops,
+        charlie: emptyTroops,
+        delta: emptyTroops,
+        alpha_destroyed_tick: 0,
+        bravo_destroyed_tick: 0,
+        charlie_destroyed_tick: 0,
+        delta_destroyed_tick: 0,
+      },
+      troop_explorers: [],
+      resources_packed: "0",
+      category: 1,
+      metadata: { realm_id: 0, order: 0, has_wonder: false, villages_count: 0, village_realm: 0 },
+    };
+    write("Structure", [1n, 12n], { ...structure, game_id: 1, entity_id: 12, owner: "0x111" });
+    write("Structure", [1n, 9n], { ...structure, game_id: 1, entity_id: 9, owner: "0x111" });
+    write("Structure", [2n, 1n], { ...structure, game_id: 2, entity_id: 1, owner: "0x111" });
+    write("Structure", [1n, 2n], { ...structure, game_id: 1, entity_id: 2, owner: "0x456" });
+    await send(actor, { contractAddress: "0x101", entrypoint: "set_address_name", calldata: [1, "0xabc"] });
+    expect((submit.mock.calls.at(-1)![0].calldata as string[]).slice(10, 14)).toEqual(["3", "8", "9", "2748"]);
+    await expect(
+      send({ address: "0x789" } as AccountInterface, {
+        contractAddress: "0x101",
+        entrypoint: "set_address_name",
+        calldata: [1, "0xabc"],
+      }),
+    ).rejects.toThrow("owned structure");
     for (const [entrypoint, variant] of [
       ["transfer_structure_ownership", "6"],
       ["transfer_agent_ownership", "7"],

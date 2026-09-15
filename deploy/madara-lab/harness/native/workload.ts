@@ -1,6 +1,6 @@
 import { setTimeout as sleep } from "node:timers/promises";
 import { getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
-import type { Account } from "starknet";
+import { shortString, hash, type Account } from "starknet";
 import type { GameClient } from "@bibliothecadao/eternum";
 import { gameEntityKey } from "@bibliothecadao/eternum";
 
@@ -26,6 +26,7 @@ export async function playSlice(input: SliceWorkload) {
   const bitcoinMine = await discover(input, 1);
   await claimProduction(input);
   await transferRealmAndReturn(input);
+  await namePlayer(input);
   await verifyReconnect(input);
   return { defeatedExplorer, surfaceMine, bitcoinMine, ownershipTransferred: true, reconnected: true };
 }
@@ -155,7 +156,10 @@ function unexploredDirection(input: SliceWorkload, bot: number): number {
 
 async function transferRealmAndReturn(input: SliceWorkload) {
   const key = gameEntityKey([BigInt(input.homes[0])]);
-  for (const [from, to] of [[0, 1], [1, 0]]) {
+  for (const [from, to] of [
+    [0, 1],
+    [1, 0],
+  ]) {
     await input.act("transfer_structure_ownership", "surface", () =>
       input.client.setup.systemCalls.transfer_structure_ownership({
         signer: input.players[from],
@@ -167,4 +171,17 @@ async function transferRealmAndReturn(input: SliceWorkload) {
     if (!structure || BigInt(structure.owner) !== BigInt(input.players[to].address))
       throw new Error("Ownership transfer did not reach the shared client");
   }
+}
+
+async function namePlayer(input: SliceWorkload) {
+  const name = shortString.encodeShortString("Surface player");
+  await input.act("set_address_name", "surface", () =>
+    input.client.setup.systemCalls.set_address_name({ signer: input.players[0], name }),
+  );
+  const address = BigInt(input.players[0].address);
+  const row = getComponentValue(
+    input.client.setup.components.AddressName,
+    hash.computePoseidonHashOnElements([address]) as import("@dojoengine/recs").Entity,
+  );
+  if (!row || BigInt(row.name) !== BigInt(name)) throw new Error("Player name did not reach the shared client");
 }

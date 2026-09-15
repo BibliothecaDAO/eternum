@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 
 export const requiredParityCases = {
+  name: "world_parity_name",
   ownership: "world_parity_ownership",
   ownership_rejections: "world_parity_ownership_rejections",
   ownership_faith: "world_parity_ownership_faith",
@@ -28,7 +29,7 @@ type Observation = {
 
 export function parseWorldParity(output: string) {
   const observations = new Map<string, Observation>();
-  const actions: { case: string; order: number; action: string; timestamp: string; succeeded: boolean }[] = [];
+  const actions = parseActionOutcomes(output);
   const roots: { case: string; step: number; rawRoot: string; incrementedRoot: string }[] = [];
   const deletes: { case: string; step: number; model: string; keys: string[] }[] = [];
   const rejections: { case: string; step: number; explorerId: string; timestamp: string }[] = [];
@@ -37,16 +38,7 @@ export function parseWorldParity(output: string) {
     const parts = line.trim().split(/\s+/);
     if (parts[0] === "FACT_SNAPSHOT") registerObservation(observations, parts);
     else if (parts[0] === "FACT_VALUE") registerValue(observations, parts);
-    else if (parts[0] === "FACT_ACTION") {
-      if (parts.length !== 6 || !["true", "false"].includes(parts[5])) throw new Error("Malformed action outcome");
-      actions.push({
-        case: name(parts[1]),
-        order: Number(parts[2]),
-        action: name(parts[3]),
-        timestamp: parts[4],
-        succeeded: parts[5] === "true",
-      });
-    } else if (parts[0] === "PARITY_ROOT") {
+    else if (parts[0] === "PARITY_ROOT") {
       if (parts.length !== 5 || BigInt(parts[4]) !== BigInt(parts[3]) + 1432n)
         throw new Error("Invalid randomness consumption frame");
       roots.push({
@@ -157,4 +149,23 @@ function hex(value: string): string {
 }
 function name(value: string): string {
   return Buffer.from(BigInt(value).toString(16), "hex").toString("ascii");
+}
+
+export function parseActionOutcomes(output: string) {
+  return output
+    .split("\n")
+    .filter((line) => line.trim().startsWith("FACT_ACTION "))
+    .map((line) => {
+      const parts = line.trim().split(/\s+/);
+      if (parts.length !== 6 || !["true", "false"].includes(parts[5])) throw new Error("Malformed action outcome");
+      const order = Number(parts[2]);
+      if (!Number.isSafeInteger(order) || order < 1) throw new Error("Malformed action order");
+      return {
+        case: name(parts[1]),
+        order,
+        action: name(parts[3]),
+        timestamp: parts[4],
+        succeeded: parts[5] === "true",
+      };
+    });
 }

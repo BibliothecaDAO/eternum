@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { parseWorldParity, requiredParityCases } from "./parity-report";
+import { parseActionOutcomes, parseWorldParity, requiredParityCases } from "./parity-report";
 
 const felt = (value: string) => BigInt(`0x${Buffer.from(value).toString("hex")}`).toString();
 function trace(): string {
@@ -46,5 +46,19 @@ describe("world parity report", () => {
   test("rejects a conflicting repeated snapshot", () => {
     const duplicate = `FACT_VALUE ${felt("creation")} 1 ${felt("Resource")} 123 1 98 98`;
     expect(() => parseWorldParity(`${trace()}\n${duplicate}`)).toThrow("Conflicting fact value");
+  });
+});
+
+describe("measured action outcomes", () => {
+  test("retains order and terminal rejections", () => {
+    const output = "FACT_ACTION 1851878757 1 7233901 1800 true\nFACT_ACTION 1851878757 2 7233901 1801 false";
+    expect(parseActionOutcomes(output).map(({ order, succeeded }) => ({ order, succeeded }))).toEqual([
+      { order: 1, succeeded: true },
+      { order: 2, succeeded: false },
+    ]);
+  });
+  test("rejects invalid status and order frames", () => {
+    expect(() => parseActionOutcomes("FACT_ACTION 1 1 1 1800 maybe")).toThrow("Malformed action outcome");
+    expect(() => parseActionOutcomes("FACT_ACTION 1 0 1 1800 true")).toThrow("Malformed action order");
   });
 });

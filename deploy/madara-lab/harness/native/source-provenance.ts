@@ -16,9 +16,15 @@ const scope = [
   ".github/workflows/native-world.yml",
 ];
 const reports = new Set(
-  ["harness.json", "herald-replay.json", "deploy-upgrade.json", "world-parity.json", "combat-parity.json", "ownership-parity.json"].map(
-    (file) => `contracts/l3/world-native/fixtures/${file}`,
-  ),
+  [
+    "harness.json",
+    "herald-replay.json",
+    "deploy-upgrade.json",
+    "world-parity.json",
+    "combat-parity.json",
+    "ownership-parity.json",
+    "name-parity.json",
+  ].map((file) => `contracts/l3/world-native/fixtures/${file}`),
 );
 
 /** Output reports cannot hash themselves. The declared source/configuration scope is covered, including generated schemas. */

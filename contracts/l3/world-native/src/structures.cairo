@@ -260,7 +260,9 @@ pub trait IStructures<T> {
 
 #[starknet::contract]
 pub mod StructuresDomain {
-    use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
+    use starknet::storage::{
+        Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess,
+    };
     use starknet::{ContractAddress, get_block_timestamp, get_caller_address};
     use crate::buildings::{Building, BuildingKey, BuildingState, StructureBuildings};
     use crate::commands::ExecutionContext;
@@ -306,6 +308,7 @@ pub mod StructuresDomain {
         resources_configured: Map<u32, bool>,
         #[substorage(v0)]
         faith: FaithOwnershipState::Storage,
+        address_names: Map<ContractAddress, felt252>,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -517,6 +520,37 @@ pub mod StructuresDomain {
             if rules.spire_travel_essence_cost != 0 {
                 self.spend(key, 38, rules.spire_travel_essence_cost, timestamp);
             }
+        }
+    }
+    #[abi(embed_v0)]
+    impl Names of crate::names::INames<ContractState> {
+        fn address_name(self: @ContractState, address: ContractAddress) -> crate::names::AddressName {
+            crate::names::AddressName { name: self.address_names.read(address) }
+        }
+        fn set_address_name(
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            command: crate::names::SetAddressName,
+            context: ExecutionContext,
+        ) {
+            assert!(
+                get_caller_address() == self.lifecycle.require_active().season, "only authenticated command domain",
+            );
+            crate::commands::assert_context_time(context.timestamp);
+            let key = (game_id, command.owned_structure_id);
+            assert!(self.structures.exists.read(key), "actor does not own structure");
+            assert!(self.structures.structures.entry(key).owner.read() == actor, "actor does not own structure");
+            self.address_names.write(actor, command.name);
+            self
+                .emit(
+                    RowSet {
+                        version: 1,
+                        model: 'AddressName',
+                        keys: array![actor.into()].span(),
+                        values: array![command.name].span(),
+                    },
+                );
         }
     }
     #[abi(embed_v0)]

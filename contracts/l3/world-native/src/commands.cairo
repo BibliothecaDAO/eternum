@@ -43,6 +43,7 @@ pub enum Command {
     ToggleAlternate: ToggleAlternate,
     TransferStructureOwnership: crate::ownership::TransferOwnership,
     TransferAgentOwnership: crate::ownership::TransferOwnership,
+    SetAddressName: crate::names::SetAddressName,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]

@@ -128,7 +128,10 @@ jobs:
           path: |
             contracts/l3/world-native/fixtures/world-parity.json
             contracts/l3/world-native/fixtures/ownership-parity.json
+            contracts/l3/world-native/fixtures/name-parity.json
             deploy/madara-lab/.lab/native-oracle/world-parity.log
             deploy/madara-lab/.lab/native-oracle/world-parity.log.stderr
             deploy/madara-lab/.lab/native-oracle/ownership-costs.json
             deploy/madara-lab/.lab/native-oracle/ownership-cost.log
+            deploy/madara-lab/.lab/native-oracle/name-costs.json
+            deploy/madara-lab/.lab/native-oracle/name-cost.log

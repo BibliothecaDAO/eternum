@@ -43,6 +43,13 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
       { name: "created_count", type: method("structures", "hyperstructure_count").outputs[0].type },
       { name: "completed_count", type: method("structures", "hyperstructure_count").outputs[0].type },
     ]),
+    model(
+      "AddressName",
+      ["structures"],
+      "deployment",
+      method("structures", "address_name").inputs,
+      struct("names::AddressName"),
+    ),
     model("AgentOwner", ["troops"], "game", method("troops", "agent_owner").inputs, [
       { name: "address", type: method("troops", "agent_owner").outputs[0].type },
     ]),
@@ -144,6 +151,7 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
 
 // Paths describe observable values, not serialized row positions. Oracle adapters live only in the parity fixture.
 const behaviouralFacts = {
+  AddressName: { domain: "name", fields: { name: "name" } },
   ExplorerTroops: {
     domain: "troops",
     fields: { home: "owner", position: "coord", troops: "troops" },

@@ -30,6 +30,7 @@ pub mod fixed_constants;
 pub mod game;
 pub mod geometry;
 
+pub mod names;
 pub mod ownership;
 pub mod random;
 

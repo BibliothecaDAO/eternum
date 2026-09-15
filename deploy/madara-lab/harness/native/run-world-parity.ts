@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 import { CallData } from "starknet";
 import { buildConfig } from "../../../../config/source/build-config";
 import { buildPresetRegistration } from "../../../../config/deployer/clean/registrar/preset";
-import { parseWorldParity, requiredParityCases } from "./parity-report";
+import { parseActionOutcomes, parseWorldParity, requiredParityCases } from "./parity-report";
 import { sourceProvenance } from "./source-provenance";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../../../..");
@@ -15,6 +15,11 @@ const native = join(root, "contracts/l3/world-native");
 const workspace = join(root, "deploy/madara-lab/.lab/native-oracle");
 const oracle = join(workspace, "contracts/l3/game");
 const spec = JSON.parse(await readFile(join(native, "fixtures/slice.json"), "utf8"));
+const domainFixtures = await Promise.all(
+  ["ownership", "name"].map(async (domain) =>
+    JSON.parse(await readFile(join(native, `fixtures/${domain}.json`), "utf8")),
+  ),
+);
 const fixture = JSON.parse(await readFile(join(native, "fixtures/preset-1.json"), "utf8"));
 
 if (JSON.stringify(Object.keys(spec.fixtureCases).sort()) !== JSON.stringify(Object.keys(requiredParityCases).sort()))
@@ -28,10 +33,10 @@ const evidence = await collectEvidence();
 const factModel = describeFacts(JSON.parse(await readFile(join(native, "schema/schema.json"), "utf8")));
 const report = buildParityReport(evidence);
 await writeFile(join(native, "fixtures/world-parity.json"), `${JSON.stringify(report, null, 2)}\n`);
-await writeFile(
-  join(native, "fixtures/ownership-parity.json"),
-  `${JSON.stringify(await buildOwnershipReport(evidence), null, 2)}\n`,
-);
+for (const domain of domainFixtures) {
+  const report = await buildDomainReport(domain, evidence);
+  await writeFile(join(native, `fixtures/${domain.domain}-parity.json`), `${JSON.stringify(report, null, 2)}\n`);
+}
 console.log(
   JSON.stringify({
     gate: report.gate,
@@ -45,13 +50,13 @@ if (evidence.failure) process.exitCode = 1;
 async function collectEvidence() {
   const execution = await runParity();
   let cases: ReturnType<typeof parseWorldParity> = [];
-  let costs: Awaited<ReturnType<typeof measureOwnership>> | undefined;
+  let costs: Awaited<ReturnType<typeof measureActions>> | undefined;
   let failure: string | undefined;
   try {
     if (execution.exitCode !== 0) throw new Error(`Parity execution exited ${execution.exitCode}`);
     cases = parseWorldParity(execution.output);
     await verifySourceUnchanged();
-    if (process.argv.includes("--measure")) costs = await measureOwnership();
+    if (process.argv.includes("--measure")) costs = await measureActions();
     await verifySourceUnchanged();
   } catch (error) {
     failure = error instanceof Error ? error.message : String(error);
@@ -91,31 +96,27 @@ function buildParityReport({ execution, cases, failure }: Awaited<ReturnType<typ
   };
 }
 
-async function buildOwnershipReport({ cases, costs, failure }: Awaited<ReturnType<typeof collectEvidence>>) {
-  const ownershipCases = cases.filter((item) => item.name.startsWith("ownership"));
+async function buildDomainReport(
+  domain: { domain: string; parityCases: string[]; systems: string[]; reductions: string[]; harnessCoverage: unknown },
+  { cases, costs, failure }: Awaited<ReturnType<typeof collectEvidence>>,
+) {
+  const compared = cases.filter((item) => domain.parityCases.includes(item.name));
+  const measured = costs?.[domain.domain];
   return {
     version: 1,
-    domain: "ownership",
+    domain: domain.domain,
     factModel,
-    ...(costs ? { costs } : {}),
-    passed: !failure && ownershipCases.length === 3 && costs !== undefined,
-    factParityPassed: !failure && ownershipCases.length === 3,
+    ...(measured ? { costs: measured } : {}),
+    passed: !failure && compared.length === domain.parityCases.length && measured !== undefined,
+    factParityPassed: !failure && compared.length === domain.parityCases.length,
     rulesRevision: spec.rulesRevision,
     oracleSourceSha256: sourceDigest,
     provenance,
     parityReport: "world-parity.json",
-    cases: ownershipCases.map(({ name, test, facts }) => ({ name, test, comparedFactSnapshots: facts.length })),
-    harnessCoverage: {
-      workload: "deploy/madara-lab/harness/native/workload.ts",
-      added: ["Transfer a realm to the second player and back, observing both changes through shared-client RECS."],
-      liveRun: "pending full-game acceptance",
-    },
-    casm: await domainSizes(costs !== undefined),
-    reductions: [
-      "Removed the unused StructureOwnerStats row, owner_counts map and owner_count view; ownership is stored once on Structure.",
-      "Replaced whole-structure storage writes during transfer with a single owner-field write.",
-      "Removed the intermediate wonder-faith write; settlement persists its final record once.",
-    ],
+    cases: compared.map(({ name, test, facts }) => ({ name, test, comparedFactSnapshots: facts.length })),
+    harnessCoverage: domain.harnessCoverage,
+    casm: await domainSizes(measured ? domain.systems : []),
+    reductions: domain.reductions,
     divergence: failure ?? null,
   };
 }
@@ -295,10 +296,10 @@ function describeFacts(schema: { identity: string; models: { name: string; obser
   };
 }
 
-async function domainSizes(measured: boolean) {
+async function domainSizes(systems: string[]) {
   return {
     native: await classSizes(native, "world_native", ["SeasonDomain", "StructuresDomain", "TroopsDomain", "MapDomain"]),
-    ...(measured ? { dojo: await classSizes(oracle, "eternum", ["ownership_systems"]) } : {}),
+    ...(systems.length ? { dojo: await classSizes(oracle, "eternum", systems) } : {}),
   };
 }
 
@@ -350,20 +351,26 @@ async function buildNative() {
   await requireCompletion(build, "Native domain build (see native-build.log)", 10 * 60_000);
 }
 
-async function measureOwnership() {
+async function measureActions(): Promise<Record<string, unknown>> {
   const build = Bun.spawn(["scarb", "build"], {
     cwd: oracle,
     stdout: Bun.file(join(workspace, "oracle-build.log")),
     stderr: Bun.file(join(workspace, "oracle-build.stderr")),
   });
   await requireCompletion(build, "Oracle production build (see oracle-build.log)", 10 * 60_000);
-  const trace = join(oracle, "snfoundry_trace/eternum_native_parity_world_parity_ownership.json");
-  const output = join(workspace, "ownership-costs.json");
+  const costs: Record<string, unknown> = {};
+  for (const fixture of domainFixtures) costs[fixture.domain] = await measureDomain(fixture.domain);
+  return costs;
+}
+
+async function measureDomain(domain: string) {
+  const trace = join(oracle, `snfoundry_trace/eternum_native_parity_world_parity_${domain}.json`);
+  const output = join(workspace, `${domain}-costs.json`);
   const test = Bun.spawn(
     [
       "snforge",
       "test",
-      "eternum::native_parity::world_parity_ownership",
+      `eternum::native_parity::world_parity_${domain}`,
       "--exact",
       "--save-trace-data",
       "--max-n-steps",
@@ -372,23 +379,33 @@ async function measureOwnership() {
     {
       cwd: oracle,
       env: { ...process.env, ASDF_STARKNET_FOUNDRY_VERSION: "0.52.0" },
-      stdout: Bun.file(join(workspace, "ownership-cost.log")),
-      stderr: Bun.file(join(workspace, "ownership-cost.stderr")),
+      stdout: Bun.file(join(workspace, `${domain}-cost.log`)),
+      stderr: Bun.file(join(workspace, `${domain}-cost.stderr`)),
     },
   );
-  await requireCompletion(test, "Ownership cost fixture (see ownership-cost.log)", 15 * 60_000);
+  await requireCompletion(test, `${domain} cost fixture (see ${domain}-cost.log)`, 15 * 60_000);
+  const actual = parseActionOutcomes(await readFile(join(workspace, `${domain}-cost.log`), "utf8"));
+  const expected = domainFixtures.find((fixture) => fixture.domain === domain).measuredSequence;
+  if (
+    actual.length !== expected.length ||
+    actual.some(
+      (action, index) =>
+        action.case !== domain || action.order !== index + 1 || action.succeeded !== expected[index].succeeded,
+    )
+  )
+    throw new Error(`${domain} measured outcomes differ from the declared workload`);
   const measure = Bun.spawn(
     [
       "uv",
       "run",
       join(root, "deploy/madara-lab/harness/native/measure_trace.py"),
       trace,
-      join(native, "fixtures/ownership.json"),
+      join(native, `fixtures/${domain}.json`),
       join(native, "schema/schema.json"),
       output,
     ],
     { stdout: "inherit", stderr: "inherit" },
   );
-  await requireCompletion(measure, "Ownership cost extraction", 5 * 60_000);
+  await requireCompletion(measure, `${domain} cost extraction`, 5 * 60_000);
   return JSON.parse(await readFile(output, "utf8"));
 }

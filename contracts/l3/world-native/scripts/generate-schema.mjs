@@ -130,6 +130,7 @@ const schema = {
                 "troop_battle_systems",
                 "alt_movement_systems",
                 "ownership_systems",
+                "name_systems",
               ]
             : [],
         events: eventLayouts(artifacts[domain]),
