@@ -5,13 +5,24 @@ import { MeshBasicNodeMaterial } from "three/webgpu";
 import { createInstancedMeshWithSharedMatrices } from "../utils/create-instanced-mesh";
 import { MaterialPool } from "../utils/material-pool";
 
-interface GlowOptions {
+export interface GlowOptions {
   name?: string;
   width?: number;
   intensity?: number;
   opacity?: number;
   brightness?: number;
 }
+
+/** Authored materials that carry local light diffusion, keyed by the material name the exporter writes. */
+export const LOCAL_GLOW_MATERIALS: Readonly<Record<string, GlowOptions>> = {
+  "Satoshi gold / pixel core": {
+    name: "Bitcoin pixel light",
+    width: 0.006,
+    intensity: 0.78,
+    opacity: 0.1,
+    brightness: 0.7,
+  },
+};
 
 /** Local light diffusion for the game's renderer, which deliberately runs without screen-space bloom. */
 export class LocalEmissiveGlow {

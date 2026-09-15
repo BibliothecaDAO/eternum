@@ -1,4 +1,5 @@
-"""Rebuild the reviewed block excavation in Blender; source parts remain editable."""
+"""Build the Bitcoin mine in Blender and export its raw GLB. The script is the source; the .blend it saves is
+review output under .context and is not committed."""
 import bpy
 import bmesh
 import json
@@ -9,10 +10,10 @@ from mathutils import Vector, Euler, Matrix
 
 ROOT = Path(__file__).resolve().parents[4]
 APP = ROOT / 'apps/game'
-SOURCE = APP / 'asset-sources/ethereal/bitcoin-mine/bitcoin-mine.blend'
 WORK = ROOT / '.context/bitcoin-mine'
+SOURCE = WORK / 'bitcoin-mine.blend'
 REVIEW = WORK / 'review'
-RAW_EXPORT = WORK / 'bitcoin-mine.raw.glb'
+RAW_EXPORT = APP / 'public/models/ethereal/bitcoin-mine.glb'
 PARTS = None
 M = {}
 CONTACT_REPORT = {}

@@ -56,7 +56,8 @@ describe("ProceduralTerrain", () => {
       camera.updateMatrixWorld();
       for (const mesh of far)
         mesh.onBeforeRender(
-          null!,
+          // The shared instancing helper reads the backend on the first draw; a WebGL-shaped stub keeps it native.
+          {} as Parameters<Mesh["onBeforeRender"]>[0],
           new Scene(),
           camera,
           mesh.geometry,

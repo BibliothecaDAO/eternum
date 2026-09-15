@@ -103,7 +103,7 @@ describe("production Bitcoin mine asset", () => {
   const mine = JSON.parse(mineBytes.toString("utf8", 20, 20 + mineBytes.readUInt32LE(12)));
 
   it("exports the equipment and block without a basalt base or ground veins", () => {
-    expect(mineBytes.length).toBeLessThan(450948);
+    expect(mineBytes.length).toBeLessThan(192 * 1024);
     expect(mine.extensionsUsed).toEqual(expect.arrayContaining(["KHR_draco_mesh_compression", "KHR_texture_basisu"]));
     expect(mine.meshes).toHaveLength(6);
     expect(mine.materials).toHaveLength(6);

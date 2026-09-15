@@ -4,7 +4,6 @@ import {
   BufferAttribute,
   BufferGeometry,
   Box3,
-  DynamicDrawUsage,
   Matrix4,
   Group,
   InstancedMesh,
@@ -15,6 +14,7 @@ import {
   type Object3D,
   type Raycaster,
 } from "three";
+import { createInstancedMesh } from "../utils/create-instanced-mesh";
 
 import { MeshBasicNodeMaterial, MeshStandardNodeMaterial } from "three/webgpu";
 
@@ -681,17 +681,34 @@ function configureBasaltLod(tiles: Float32Array, far: InstancedMesh, near: Map<n
   const focus = new Vector3();
   const position = new Vector3();
   const direction = new Vector3();
-  let retainedCamera = "";
-  far.onBeforeRender = (_renderer, _scene, camera) => {
+  const retained = new Float64Array(6).fill(Number.NaN);
+  const selectLod: InstancedMesh["onBeforeRender"] = (_renderer, _scene, camera) => {
     camera.getWorldPosition(position);
     camera.getWorldDirection(direction);
-    const key = `${position.x}:${position.y}:${position.z}:${direction.x}:${direction.y}:${direction.z}`;
-    if (key === retainedCamera) return;
-    retainedCamera = key;
+    if (isRetainedCamera(retained, position, direction)) return;
     const distanceToGround = direction.y < -0.01 ? -position.y / direction.y : 0;
     focus.copy(position).addScaledVector(direction, distanceToGround);
     writeBasaltLod(tiles, far, near, matrix, position.y < BASALT_DETAIL_CAMERA_HEIGHT && distanceToGround > 0, focus);
   };
+  // The shared helper binds the backend instance buffers on the first draw and then restores the prototype hook;
+  // run that once, then keep LOD selection installed for every later draw.
+  const prepareBuffers = far.onBeforeRender;
+  far.onBeforeRender = function (this: InstancedMesh, ...args: Parameters<InstancedMesh["onBeforeRender"]>) {
+    prepareBuffers.call(this, ...args);
+    far.onBeforeRender = selectLod;
+    selectLod.call(this, ...args);
+  };
+}
+
+/** Six numbers compared in place: the camera rarely moves between draws of the same page. */
+function isRetainedCamera(retained: Float64Array, position: Vector3, direction: Vector3): boolean {
+  const current = [position.x, position.y, position.z, direction.x, direction.y, direction.z];
+  let same = true;
+  for (let index = 0; index < 6; index++) {
+    if (retained[index] !== current[index]) same = false;
+    retained[index] = current[index];
+  }
+  return same;
 }
 
 function writeBasaltLod(
@@ -741,8 +758,7 @@ function createBasaltInstances(
     geometry.userData.sharedBasalt = true;
     templates.set(variant, geometry);
   }
-  const mesh = new InstancedMesh(geometry, material, capacity);
-  mesh.instanceMatrix.setUsage(DynamicDrawUsage);
+  const mesh = createInstancedMesh(geometry, material, capacity);
   mesh.boundingSphere = bounds.clone();
   mesh.receiveShadow = true;
   mesh.userData.basaltInstances = true;

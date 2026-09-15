@@ -19,6 +19,7 @@ import { gltfLoader } from "../utils/utils";
 export class SpireManager {
   private readonly dummy = new Object3D();
   private readonly subscriptions: Array<() => void>;
+  private placements: Array<{ tile: TileSpatialRenderable; label: CSS2DObject }> = [];
   private model: SpireModel | null = null;
   private loading: Promise<void> | null = null;
   private capacity = 0;
@@ -64,9 +65,7 @@ export class SpireManager {
   public refreshTerrainPlacement(): void {
     if (!this.model || this.destroyed) return;
     let changed = false;
-    this.getSpireTiles().forEach((tile, index) => {
-      const label = this.labels.children[index];
-      if (!label) return;
+    this.placements.forEach(({ tile, label }, index) => {
       const position = this.getSpirePosition(tile);
       const labelHeight = position.y + this.model!.labelHeight;
       if (label.position.y === labelHeight) return;
@@ -123,6 +122,7 @@ export class SpireManager {
     label.position.copy(position);
     label.position.y += this.model!.labelHeight;
     this.labels.add(label);
+    this.placements.push({ tile, label });
   }
 
   private getSpirePosition(tile: TileSpatialRenderable) {
@@ -157,6 +157,7 @@ export class SpireManager {
 
   private clearLabels(): void {
     this.markLabelsDirty();
+    this.placements = [];
     for (const child of [...this.labels.children]) {
       if (child instanceof CSS2DObject) child.element.remove();
       this.labels.remove(child);

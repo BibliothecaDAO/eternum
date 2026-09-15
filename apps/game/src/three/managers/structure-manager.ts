@@ -176,6 +176,8 @@ interface StructureInstanceBinding {
   instanceIndex: number;
   model: StructureModel;
   terrainHeight: number;
+  worldX: number;
+  worldZ: number;
 }
 
 const isBoundStructureInstance = (binding: StructureInstanceBinding | undefined): binding is StructureInstanceBinding =>
@@ -790,11 +792,11 @@ export class StructureManager {
     if (this.isDestroyed) return;
     const terrain = this.resolveTerrainSurface();
     for (const [entityId, bindings] of this.structureInstanceBindings) {
+      // Every page completion visits every bound structure: sample from the binding and touch RECS only on a change.
+      const height = terrain.sampleSurface(bindings[0].worldX, bindings[0].worldZ).height;
+      if (bindings.every((binding) => binding.terrainHeight === height)) continue;
       const structure = this.resolveStructureInfoByEntityId(entityId);
       if (!structure) continue;
-      getWorldPositionForHexCoordsInto(structure.hexCoords.col, structure.hexCoords.row, this.scratchPosition);
-      const height = terrain.sampleSurface(this.scratchPosition.x, this.scratchPosition.z).height;
-      if (bindings.every((binding) => binding.terrainHeight === height)) continue;
 
       this.syncVisibleStructurePresentation(structure, this.resolveVisibleStructureRotationY(structure));
       for (const binding of bindings) {
@@ -1680,11 +1682,9 @@ export class StructureManager {
     model.setMatrixAt(instanceIndex, this.dummy.matrix);
     dirtyModels.add(model);
 
-    const terrainHeight = this.resolveTerrainSurface().sampleSurface(
-      this.dummy.position.x,
-      this.dummy.position.z,
-    ).height;
-    return { entityIdsByInstance, instanceIndex, model, terrainHeight };
+    const { x: worldX, z: worldZ } = this.dummy.position;
+    const terrainHeight = this.resolveTerrainSurface().sampleSurface(worldX, worldZ).height;
+    return { entityIdsByInstance, instanceIndex, model, terrainHeight, worldX, worldZ };
   }
 
   // An overflow is a sizing bug, not a runtime condition: count it, warn once, and keep the pass alive.

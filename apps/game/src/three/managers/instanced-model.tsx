@@ -1,4 +1,4 @@
-import { LocalEmissiveGlow } from "../structures/local-emissive-glow";
+import { LOCAL_GLOW_MATERIALS, LocalEmissiveGlow } from "../structures/local-emissive-glow";
 import { createInstancedMesh } from "../utils/create-instanced-mesh";
 import { MinesMaterialsParams, PREVIEW_BUILD_COLOR_INVALID } from "@/three/constants";
 import { ResourcesIds, StructureType } from "@bibliothecadao/types";
@@ -227,16 +227,8 @@ export default class InstancedModel {
     for (const mesh of this.instancedMeshes) {
       const material = mesh.material;
       if (!(material instanceof MeshStandardMaterial)) continue;
-      if (material.name !== "Satoshi gold / pixel core") continue;
-      this.goldGlow.push(
-        new LocalEmissiveGlow([mesh], this.group, {
-          name: "Bitcoin pixel light",
-          width: 0.006,
-          intensity: 0.78,
-          opacity: 0.1,
-          brightness: 0.7,
-        }),
-      );
+      const glow = LOCAL_GLOW_MATERIALS[material.name];
+      if (glow) this.goldGlow.push(new LocalEmissiveGlow([mesh], this.group, glow));
     }
     this.goldGlow.forEach((glow) => glow.updateBoundsAndCount());
     this.createContactShadowMesh(gltf);

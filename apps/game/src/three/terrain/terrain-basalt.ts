@@ -8,7 +8,9 @@ const BLOCK_RADIUS = BASALT_BLOCK_RADIUS;
 export const BASALT_VARIANT_COUNT = 16;
 export const BASALT_DETAIL_RADIUS = 5.8;
 export const BASALT_DETAIL_CAMERA_HEIGHT = 14;
-export const BASALT_DETAIL_TILE_LIMIT = 64;
+// Hexes whose centres can fall inside the detail radius, with one gameplay radius of margin for the sampling focus.
+const HEX_AREA = (3 * Math.sqrt(3)) / 2;
+export const BASALT_DETAIL_TILE_LIMIT = Math.ceil((Math.PI * (BASALT_DETAIL_RADIUS + 1) ** 2) / HEX_AREA);
 export const BASALT_FAR_TRIANGLES = 16;
 export const BASALT_FAR_VERTICES = 30;
 const BLOCK_SPACING_X = Math.sqrt(3) * BLOCK_RADIUS;
@@ -301,19 +303,22 @@ function positiveModulo(value: number, divisor: number): number {
   return ((value % divisor) + divisor) % divisor;
 }
 
-function blockHash(block: Block, salt: string): number {
+const HEIGHT_HASH_SALT = 0;
+const COLOR_HASH_SALT = 1;
+
+/** Deterministic per-block noise on the 4×4 lattice; the salt decorrelates height from colour. */
+function blockHash(block: Block, salt: number): number {
   const col = positiveModulo(block.col, 4);
   const row = positiveModulo(block.row, 4);
-  const colorOffset = salt === "ethereal-basalt-color" ? col * 41 + row * 67 : 0;
-  return ((col * 73 + row * 151 + col * row * 17 + colorOffset) % 251) / 251;
+  return ((col * 73 + row * 151 + col * row * 17 + salt * (col * 41 + row * 67)) % 251) / 251;
 }
 
 function blockHeight(block: Block): number {
-  return 0.09 + blockHash(block, "ethereal-basalt-height") * 0.04;
+  return 0.09 + blockHash(block, HEIGHT_HASH_SALT) * 0.04;
 }
 
 function blockColor(block: Block): Color {
-  const brightness = 0.85 + blockHash(block, "ethereal-basalt-color") * 0.3;
+  const brightness = 0.85 + blockHash(block, COLOR_HASH_SALT) * 0.3;
   return scaleColor([0.035, 0.04, 0.049], brightness);
 }
 
