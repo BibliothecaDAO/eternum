@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useIdentitySession, useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { useNotificationPreferences } from "@/hooks/use-notification-preferences";
 import { notificationWorkerRequest, reportNotificationDeliveryError } from "./local-notification-client";
+import { startPushForegroundLifecycle } from "./push-foreground-lifecycle";
 
 /** Keeps account preferences available outside Settings and revokes local device delivery on logout/account switch. */
 export function LocalNotificationLifecycle() {
@@ -38,6 +39,10 @@ export function LocalNotificationLifecycle() {
       reportNotificationDeliveryError(error);
     });
   }, [status, session?.user.id]);
+  useEffect(() => {
+    if (!session?.user.id) return;
+    return startPushForegroundLifecycle(session.user.id);
+  }, [session?.user.id]);
   return (
     <>
       {status !== "loading" && (

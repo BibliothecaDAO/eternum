@@ -14,6 +14,7 @@ export async function enablePushNotifications(
   owner: string,
   publicKey: string,
   automatic: AutomaticPushSource | null = null,
+  directMessages = false,
 ): Promise<void> {
   // Permission must begin in the button gesture, before waiting for a cross-tab lock or a worker.
   const permission =
@@ -21,15 +22,20 @@ export async function enablePushNotifications(
   if ((await permission) !== "granted") throw new Error("Notification permission was not granted.");
   await navigator.locks.request(pushLock, async () => {
     assertCurrentOwner(owner);
-    if (automatic) {
-      const capabilities = await notificationWorkerRequest<{ automaticGameAlerts: boolean }>(
-        owner,
-        "push-capabilities",
-      ).catch(() => {
-        throw new Error("Apply the latest game update before enabling automatic alerts.");
+    if (automatic || directMessages) {
+      const capabilities = await notificationWorkerRequest<{
+        automaticGameAlerts: boolean;
+        directMessageAlerts: boolean;
+        gameForegroundLease: boolean;
+      }>(owner, "push-capabilities").catch(() => {
+        throw new Error("Apply the latest game update before enabling background alerts.");
       });
-      if (!capabilities?.automaticGameAlerts)
-        throw new Error("Apply the latest game update before enabling automatic alerts.");
+      if (
+        !capabilities.gameForegroundLease ||
+        (automatic && !capabilities.automaticGameAlerts) ||
+        (directMessages && !capabilities.directMessageAlerts)
+      )
+        throw new Error("Apply the latest game update before enabling background alerts.");
     }
     try {
       const previous = await readPushDevice();
@@ -46,6 +52,7 @@ export async function enablePushNotifications(
       });
       assertCurrentOwner(owner);
       await notificationWorkerRequest(owner, "activate-push", { id: device.id });
+      if (automatic || directMessages) await syncPushGameForeground(owner);
       assertCurrentOwner(owner);
       if (automatic) {
         await notificationWorkerRequest(owner, "prepare-automatic", { id: device.id, source: automatic });
@@ -54,6 +61,9 @@ export async function enablePushNotifications(
           registration,
         );
       }
+      if (directMessages) await registerDirectMessageAlerts(device, subscription);
+      if (automatic || directMessages) await syncPushGameForeground(owner);
+      window.dispatchEvent(new Event("pushRegistrationChanged"));
       assertCurrentOwner(owner);
     } catch (error) {
       // Persist local revocation first, so an offline detach cannot display an old account's push.
@@ -64,6 +74,20 @@ export async function enablePushNotifications(
       }
       throw error;
     }
+  });
+}
+
+async function registerDirectMessageAlerts(
+  device: PushNotificationDevice,
+  subscription: PushSubscription,
+): Promise<void> {
+  assertCurrentOwner(device.owner);
+  await identityClient.registerPushSubscription({
+    owner: device.owner,
+    id: device.id,
+    token: device.token,
+    subscription: parseWebPushSubscription(subscription.toJSON()),
+    directMessages: true,
   });
 }
 
@@ -107,7 +131,10 @@ export async function reconcilePushAccount(): Promise<void> {
     const current = await readPushDevice();
     if (!current) return;
     if (requiresPushRevocation(current)) await revokePushDevice(current.owner);
-    else if (current.automatic && !current.automatic.acknowledged) await completeAutomaticSetup(current, registration);
+    else if (current.automatic && !current.automatic.acknowledged) {
+      await completeAutomaticSetup(current, registration);
+      await syncPushGameForeground(current.owner);
+    }
   });
 }
 
@@ -134,6 +161,16 @@ export async function sendBackgroundPushTest(owner: string, target: string): Pro
   if (device?.owner !== owner || device.state !== "active")
     throw new Error("Enable background notifications on this device first.");
   await identityClient.sendPushTest(owner, device.id, target);
+}
+
+/** Refreshes the server lease that prevents automatic push while any game window is visible. */
+export async function syncPushGameForeground(owner: string): Promise<void> {
+  assertCurrentOwner(owner);
+  const device = await readPushDevice();
+  if (device?.owner !== owner || device.state !== "active") return;
+  const foreground = await notificationWorkerRequest<boolean>(owner, "game-foreground-status");
+  assertCurrentOwner(owner);
+  await identityClient.setPushGameForeground(owner, device.id, foreground);
 }
 
 async function completeAutomaticSetup(

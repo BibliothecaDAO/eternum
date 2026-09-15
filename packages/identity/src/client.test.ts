@@ -130,6 +130,15 @@ it("uses credentialed identity routes for push setup and a device capability for
   ]);
   await client.getPushSubscriptionStatus("0x1", id);
   expect(fetch.mock.calls.at(-1)?.[0]).toBe("https://realms.test/api/notifications/push/status");
+  await client.setPushGameForeground("0x1", id, true);
+  expect(fetch.mock.calls.at(-1)).toEqual([
+    "https://realms.test/api/notifications/push/foreground",
+    expect.objectContaining({
+      method: "POST",
+      keepalive: true,
+      body: JSON.stringify({ owner: "0x1", id, foreground: true }),
+    }),
+  ]);
   await client.sendPushTest("0x1", id, "/enter/madara/game");
   expect(fetch.mock.calls.at(-1)?.[0]).toBe("https://realms.test/api/notifications/push/test");
   await client.revokePushSubscription(id, id);

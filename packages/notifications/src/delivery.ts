@@ -5,6 +5,7 @@ export interface LocalNotificationPayload {
   owner: string;
   title: string;
   body: string;
+  tag?: string;
   target: string;
   createdAt: number;
   expiresAt: number;
@@ -14,7 +15,7 @@ export interface LocalNotificationPayload {
 export function parseNotificationPayload(value: unknown, now: number): LocalNotificationPayload {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("invalid_notification");
   const input = value as Record<string, unknown>;
-  const fields = ["version", "id", "owner", "title", "body", "target", "createdAt", "expiresAt"];
+  const fields = ["version", "id", "owner", "title", "body", "tag", "target", "createdAt", "expiresAt"];
   if (
     Object.keys(input).some((key) => !fields.includes(key)) ||
     input.version !== 1 ||
@@ -23,6 +24,7 @@ export function parseNotificationPayload(value: unknown, now: number): LocalNoti
     !/^0x[\da-f]+$/.test(input.owner) ||
     !boundedText(input.title, 80) ||
     !boundedText(input.body, 240) ||
+    (input.tag !== undefined && !boundedText(input.tag, 240)) ||
     typeof input.target !== "string" ||
     !isNotificationTarget(input.target) ||
     !Number.isSafeInteger(input.createdAt) ||
@@ -77,11 +79,24 @@ function sameFelt(left: unknown, right: unknown): boolean {
 export function notificationMatchesGame(clientUrl: string, target: string, origin: string): boolean {
   const client = new URL(clientUrl);
   if (client.origin !== origin) return false;
-  const game = target.replace(/^\/enter\//, "/play/");
-  return client.pathname === target || ["map", "hex", "travel"].some((scene) => client.pathname === `${game}/${scene}`);
+  return client.pathname === target || notificationTargetForGameClient(clientUrl, origin) === target;
+}
+
+/** True only for a same-origin game scene that can surface its own live activity. */
+export function isNotificationGameClient(clientUrl: string, origin: string): boolean {
+  return notificationTargetForGameClient(clientUrl, origin) !== null;
+}
+
+function notificationTargetForGameClient(clientUrl: string, origin: string): string | null {
+  const client = new URL(clientUrl);
+  if (client.origin !== origin) return null;
+  const match = /^\/play\/([a-z0-9_-]+)\/([a-zA-Z0-9_-]{1,100})\/(map|hex|travel)\/?$/.exec(client.pathname);
+  if (!match || !Object.hasOwn(GAME_CHAIN_NAMES, match[1])) return null;
+  return `/enter/${match[1]}/${match[2]}`;
 }
 
 function isNotificationTarget(target: string): boolean {
+  if (target === "/") return true;
   const match = /^\/enter\/([a-z0-9_-]+)\/[a-zA-Z0-9_-]{1,100}$/.exec(target);
   return match !== null && Object.hasOwn(GAME_CHAIN_NAMES, match[1]);
 }

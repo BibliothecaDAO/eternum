@@ -1,6 +1,7 @@
 import { useCompactLane } from "@/hooks/helpers/use-compact-hud";
 import { HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
 import { HudHeaderLayout } from "./hud-header-layout";
+import { MapViewControls } from "./map-view-controls";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
@@ -8,18 +9,14 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position } from "@bibliothecadao/eternum";
 
 import { useUISound } from "@/audio/hooks/useUISound";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { SecondaryMenuItems } from "@/ui/features/world";
 import { GameClock } from "./game-clock";
 import { AttentionPill } from "./attention-pill";
 import { IdentityChip } from "./identity-chip";
-import { TOP_PILL } from "./top-pill";
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import EyeIcon from "lucide-react/dist/esm/icons/eye";
-import Mountain from "lucide-react/dist/esm/icons/mountain";
-import Sparkles from "lucide-react/dist/esm/icons/sparkles";
 import Swords from "lucide-react/dist/esm/icons/swords";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
@@ -111,6 +108,7 @@ export const TopHeader = memo(() => {
         settings={<SecondaryMenuItems />}
         viewControls={
           <MapViewControls
+            compact={lane !== null}
             isLocalView={isLocalView}
             mapLayer={mapLayer}
             showLayerSwitch={showLayerSwitch}
@@ -138,74 +136,3 @@ export const TopHeader = memo(() => {
 });
 
 TopHeader.displayName = "TopHeader";
-
-function MapViewControls({
-  isLocalView,
-  mapLayer,
-  showLayerSwitch,
-  onNavigate,
-  onLayerChange,
-}: {
-  isLocalView: boolean;
-  mapLayer: boolean;
-  showLayerSwitch: boolean;
-  onNavigate: (world: boolean) => void;
-  onLayerChange: (alt: boolean) => void;
-}) {
-  const pillButton = (active: boolean) =>
-    cn(
-      HUD_LABEL_BRIGHT,
-      "min-h-11 min-w-11 rounded-md px-3 font-sans transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold lg:min-h-7",
-      active ? "bg-gold/20 text-gold" : "text-gold/65",
-    );
-  const layerButton = (active: boolean) =>
-    cn(
-      HUD_LABEL_BRIGHT,
-      "inline-flex min-h-11 min-w-11 items-center gap-1.5 rounded-md px-3 font-sans transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold lg:min-h-7",
-      active ? "bg-cyan-400/15 text-cyan-100" : "text-gold/65",
-    );
-  return (
-    <div className="flex items-center gap-2">
-      <div role="group" aria-label="Map view" className={cn(TOP_PILL, "gap-0.5 px-1 max-lg:h-auto")}>
-        <button
-          type="button"
-          aria-pressed={isLocalView}
-          onClick={() => onNavigate(false)}
-          className={pillButton(isLocalView)}
-        >
-          Local
-        </button>
-        <button
-          type="button"
-          aria-pressed={!isLocalView}
-          onClick={() => onNavigate(true)}
-          className={pillButton(!isLocalView)}
-        >
-          World
-        </button>
-      </div>
-      {showLayerSwitch && (
-        <div role="group" aria-label="Map layer" className={cn(TOP_PILL, "gap-0.5 px-1 max-lg:h-auto")}>
-          <button
-            type="button"
-            aria-pressed={!mapLayer}
-            onClick={() => onLayerChange(false)}
-            className={layerButton(!mapLayer)}
-          >
-            <Mountain className="h-3.5 w-3.5" aria-hidden />
-            Surface
-          </button>
-          <button
-            type="button"
-            aria-pressed={mapLayer}
-            onClick={() => onLayerChange(true)}
-            className={layerButton(mapLayer)}
-          >
-            <Sparkles className="h-3.5 w-3.5" aria-hidden />
-            Ethereal
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}

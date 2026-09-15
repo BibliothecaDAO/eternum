@@ -15,6 +15,7 @@ import { clientAddressOf, createRateLimiter } from "./rate-limit";
 import { serverEnv } from "./env";
 import { serveStatic } from "./static";
 import { handleNotificationPreferences } from "./notification-preferences";
+import { handleDirectMessagePush } from "./direct-message-push";
 
 /**
  * The identity server for apps/realms, shaped like herald: one Bun fetch
@@ -88,6 +89,7 @@ const handleGameplayAccountAction = async (request: Request, action: string): Pr
 const handleApiRequest = async (request: Request, url: URL, client: string): Promise<Response> => {
   try {
     if (url.pathname.startsWith("/api/notifications/push/")) return handlePushNotifications(request, client);
+    if (url.pathname === "/api/notifications/direct-message") return handleDirectMessagePush(request);
     if (url.pathname === "/api/auth" || url.pathname.startsWith("/api/auth/")) return auth.handler(request);
     if (url.pathname === "/api/notifications/preferences") return handleNotificationPreferences(request);
 

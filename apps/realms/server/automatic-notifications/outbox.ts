@@ -126,6 +126,7 @@ async function buildDeliveries(tx: Transaction, source: string, candidates: Noti
         inArray(subscriptions.owner, owners),
         isNotNull(subscriptions.gameAlertsEnabledAt),
         eq(subscriptions.gameAlertsSource, source),
+        or(isNull(subscriptions.gameForegroundUntil), lte(subscriptions.gameForegroundUntil, new Date(now))),
       ),
     );
   const rows = new Map<string, typeof deliveries.$inferInsert>();
@@ -204,6 +205,7 @@ async function readEligibleDelivery(database: OutboxDatabase, lease: Notificatio
         isNull(deliveries.outcome),
         isNotNull(subscriptions.gameAlertsEnabledAt),
         eq(subscriptions.gameAlertsSource, lease.source),
+        or(isNull(subscriptions.gameForegroundUntil), lte(subscriptions.gameForegroundUntil, new Date(now))),
       ),
     );
   if (!row || !includesStoryNotification(parseNotificationPreferences(row.preference).level, row.delivery.story))

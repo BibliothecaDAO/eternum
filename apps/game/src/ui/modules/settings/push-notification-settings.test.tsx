@@ -51,7 +51,33 @@ it("labels the test-only milestone and enables on an explicit click", async () =
     expect(ui.container.textContent).toContain("Automatic game alerts still require an open page");
     expect(mocks.enable).not.toHaveBeenCalled();
     await ui.click("Enable background tests");
-    expect(mocks.enable).toHaveBeenCalledWith("0x1", "key", null);
+    expect(mocks.enable).toHaveBeenCalledWith("0x1", "key", null, false);
+  } finally {
+    await ui.close();
+  }
+});
+it("offers background notifications when direct-message delivery is available by itself", async () => {
+  mocks.config.mockResolvedValue({ enabled: true, publicKey: "key", directMessages: true });
+  const ui = await mount();
+  try {
+    expect(ui.container.textContent).toContain("Receive new direct messages with the game closed");
+    await ui.click("Enable background notifications");
+    expect(mocks.enable).toHaveBeenCalledWith("0x1", "key", null, true);
+  } finally {
+    await ui.close();
+  }
+});
+
+it("offers existing devices an explicit DM upgrade and hides it after consent", async () => {
+  mocks.config.mockResolvedValue({ enabled: true, publicKey: "key", directMessages: true });
+  mocks.device.mockResolvedValue({ owner: "0x1", id: "id", state: "active" });
+  mocks.status.mockResolvedValue({ registered: true, directMessages: false });
+  const ui = await mount();
+  try {
+    expect(mocks.enable).not.toHaveBeenCalled();
+    await ui.click("Enable direct-message alerts");
+    expect(mocks.enable).toHaveBeenCalledWith("0x1", "key", null, true);
+    expect(ui.container.textContent).not.toContain("Enable direct-message alerts");
   } finally {
     await ui.close();
   }
@@ -128,7 +154,7 @@ it("requires explicit consent to upgrade an existing test-only registration", as
   try {
     expect(mocks.enable).not.toHaveBeenCalled();
     await ui.click("Enable game alerts");
-    expect(mocks.enable).toHaveBeenCalledWith("0x1", "key", { chain: "madara", worldAddress: "0x123" });
+    expect(mocks.enable).toHaveBeenCalledWith("0x1", "key", { chain: "madara", worldAddress: "0x123" }, false);
   } finally {
     await ui.close();
   }

@@ -6,6 +6,8 @@ const mocks = vi.hoisted(() => ({
   find: vi.fn(),
   revoke: vi.fn(),
   expire: vi.fn(),
+  foreground: vi.fn(),
+  background: vi.fn(),
   send: vi.fn(),
   enabled: true,
   automatic: false,
@@ -20,6 +22,7 @@ vi.mock("./env", async () => {
       WEB_PUSH_VAPID_PUBLIC_KEY: keys.publicKey,
       WEB_PUSH_VAPID_PRIVATE_KEY: keys.privateKey,
       WEB_PUSH_VAPID_SUBJECT: "mailto:ops@realms.party",
+      CHAT_NOTIFICATION_SECRET: "s".repeat(32),
       get WEB_PUSH_AUTOMATIC_ENABLED() {
         return mocks.automatic ? "true" : "false";
       },
@@ -67,6 +70,8 @@ beforeEach(() => {
   });
   mocks.revoke.mockResolvedValue(undefined);
   mocks.expire.mockResolvedValue(undefined);
+  mocks.foreground.mockResolvedValue(true);
+  mocks.background.mockResolvedValue([]);
   mocks.send.mockResolvedValue("accepted");
   Object.defineProperty(PushSubscriptionStore, "layer", {
     value: Layer.succeed(PushSubscriptionStore, {
@@ -74,6 +79,8 @@ beforeEach(() => {
       find: (owner, id) => Effect.promise(() => mocks.find(owner, id)),
       revoke: (id, token) => Effect.promise(() => mocks.revoke(id, token)),
       expire: (owner, id) => Effect.promise(() => mocks.expire(owner, id)),
+      setGameForeground: (owner, id, foreground) => Effect.promise(() => mocks.foreground(owner, id, foreground)),
+      findDirectMessageDevices: (owner, now) => Effect.promise(() => mocks.background(owner, now)),
     }),
     configurable: true,
   });
@@ -88,7 +95,11 @@ beforeEach(() => {
 it("authenticates owner-scoped registration and status, validates input, and exposes no credentials", async () => {
   expect(await (await request("subscribe")).json()).toEqual({ id });
   expect(mocks.session).toHaveBeenCalledWith(expect.objectContaining({ query: { disableCookieCache: true } }));
-  expect(await (await request("status", { owner: "0x1", id })).json()).toEqual({ registered: true, automatic: null });
+  expect(await (await request("status", { owner: "0x1", id })).json()).toEqual({
+    registered: true,
+    automatic: null,
+    directMessages: false,
+  });
   expect((await request("subscribe", { ...registration, owner: "0x2" })).status).toBe(403);
   expect(
     (
@@ -155,8 +166,32 @@ it("exposes the configured automatic source and requires explicit matching-sourc
   expect((await request("subscribe", input)).status).toBe(503);
   mocks.automatic = true;
   expect((await (await request("config", undefined, "GET")).json()).automatic).toEqual(source);
+  expect((await (await request("config", undefined, "GET")).json()).directMessages).toBe(true);
   expect((await request("subscribe", input)).status).toBe(200);
   expect(mocks.register).toHaveBeenCalledWith(input);
   expect((await request("subscribe", { ...input, source: { ...source, worldAddress: "0x999" } })).status).toBe(503);
   expect((await request("subscribe", { ...input, source: undefined })).status).toBe(400);
+});
+
+it("records authenticated foreground presence only for an owned subscription", async () => {
+  expect(await (await request("foreground", { owner: "0x1", id, foreground: true })).json()).toEqual({
+    foreground: true,
+  });
+  expect(mocks.foreground).toHaveBeenCalledWith("0x1", id, true);
+  expect((await request("foreground", { owner: "0x1", id, foreground: "yes" })).status).toBe(400);
+  mocks.foreground.mockResolvedValue(false);
+  expect((await request("foreground", { owner: "0x1", id, foreground: false })).status).toBe(404);
+});
+
+it("persists explicit DM readiness and reports it without exposing subscription credentials", async () => {
+  const input = { ...registration, directMessages: true };
+  expect((await request("subscribe", input)).status).toBe(200);
+  expect(mocks.register).toHaveBeenCalledWith(input);
+  mocks.find.mockResolvedValue({ directMessagesEnabledAt: new Date() });
+  expect(await (await request("status", { owner: "0x1", id })).json()).toEqual({
+    registered: true,
+    automatic: null,
+    directMessages: true,
+  });
+  expect((await request("subscribe", { ...registration, directMessages: "true" })).status).toBe(400);
 });
