@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "scope": "local rehearsal, not the host-independence gate; conformance fixture",
+  "order": "0x8",
+  "witness_resumed_epoch_ms": 1789407375952.412,
+  "unaccepted_prefix_unchanged": true,
+  "unaccepted_action_absent_from_logs": true,
+  "row_delivered_only_after_witness_resumed": true,
+  "artifacts": {
+    "after.json": "74166b8cb89c24ab14c4773bbe0b26c9dd4ffb49a938ca813db25d301072b34a",
+    "unpause.log": "e24a0a55032db1c08c207c7f3625cbf2f2b479915ba4f5cfa5cb9496772f1de6",
+    "before-commit.log": "3ffeb089af1503e68ffcb21da75376dbbf77618633997d20e373991f83135ffc",
+    "during.json": "31a5fa99727cc0cfc913f678fe3060fdd56d48b5e247688ef13d79779ef86eea",
+    "admission.go": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "pause.log": "e24a0a55032db1c08c207c7f3625cbf2f2b479915ba4f5cfa5cb9496772f1de6",
+    "admission.ready.json": "ae1fedbab41fc1145f201ec9198d4c1df39d1ac4d71b42496860a271be3d923d",
+    "delivery.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "before.json": "31a5fa99727cc0cfc913f678fe3060fdd56d48b5e247688ef13d79779ef86eea",
+    "delivery/stream.json": "22cae022c6e4d8814bab1e5813a050fc628274bcad1ce9a6fd9a5428bc028f02",
+    "delivery/report.json": "f2aff4ce6d64280dbbb076a1fee51d30a87ee83a32f6586eb2168c44476bcb3e",
+    "delivery/admission.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "delivery/admission.json": "c391d5e7c1fe3542dc1aa85eccf35abbb33844e33e99d9d288fb04d72d0c1108"
+  }
+}

@@ -1,0 +1,85 @@
+{
+  "schema": 1,
+  "scope": "ticket lifecycle, canonical protocol, context conformance stub and existing game derivation",
+  "fixture_sha256": "c08140de1e7ff9d488b5903770761c3a860a3e5232cccdca4ebcf123a4cd8db7",
+  "sources": {
+    "rust/Cargo.toml": "2c46964d6657b38357ec49ed297bef3439692b3728d6d5a249f4460e45f9742b",
+    "rust/README.md": "989b24fee8dd6f15ae430083d54c22675970717cd5de5c7f2e5c86965e6bed07",
+    "rust/src/lib.rs": "7fca167cb55c99dbbadb7f388ecadf0a99d7de2ed3c0d759fffd951c2585cbd9",
+    "rust/src/protocol.rs": "7e33b7162073e61e7641015b177bf6fb5a3f4a3666bd2aaf10f01caee6ae5288",
+    "rust/src/ticket.rs": "6894dde0acb7a78d917eda3262834ebf326f0aabce2cd13ff1631166e8d8f0b7",
+    "rust/tests/fixtures/context-v1.txt": "682922fa80cf7cbb9d3c9fa1bda2e257247f372c132e5dc9b0cb2f5b8d8ae74f",
+    "rust/tests/fixtures/v1.txt": "c08140de1e7ff9d488b5903770761c3a860a3e5232cccdca4ebcf123a4cd8db7",
+    "rust/tests/protocol.rs": "6ddedb4ef719bf3092d5f7db3e48424ca10275a25cf1e528b4e8a983beef668c",
+    "cairo/Scarb.lock": "95189998676b7d5c8ef73815f5f2e60bc5e326afcb2f226f388bbf8bc44c4d76",
+    "cairo/Scarb.toml": "edff7ce4777bd296a03eab0b6b1992ccc1dd12546878a445d42753b89af836e4",
+    "cairo/check.py": "c84b2ab5589a283907cfd33358255c01a017ca82b5a5bb461afd0089fd03bb8c",
+    "cairo/src/entrypoint.cairo": "b5cf4fd886bc5dea169ce934b9773110e0ae38167e97806ca45449a394795e6d",
+    "cairo/src/lib.cairo": "076fa200f692497d807810422f9e64d9f14190f77a906362af3c1f6e44fdc9f6",
+    "cairo/tests/fixture.cairo": "c0e71dabe2d6e7d6768977daa67e0ac00e366aff71779da68f09f29d60dfdc28",
+    "cairo/tests/fixtures/context-v1.txt": "682922fa80cf7cbb9d3c9fa1bda2e257247f372c132e5dc9b0cb2f5b8d8ae74f",
+    "cairo/tests/fixtures/v1.txt": "c08140de1e7ff9d488b5903770761c3a860a3e5232cccdca4ebcf123a4cd8db7",
+    "cairo/tests/test_conformance.cairo": "8542b98506fa9f5cc3cee4f11fa5b082d6396b73510fe0f27517234e53597edb",
+    "cairo/tests/test_protocol.cairo": "271e3a5cf7aaa30d62d358c36015a7fedbf576986d2dfa24aafdccba7a341793",
+    "game/src/utils/random.cairo": "c0ac2ac36d90c2239cbe844b554a291fc9f192d47da190c77165a83021f9d0fd",
+    "game/tests/randomness_protocol.cairo": "b10495911463bebfc4235583fd8528ea7842e41142b00f1fca2143abb8e17745",
+    "game/Scarb.toml": "b5a54515798412ca5895bef6ef41976a9fc64050063fabc2e5494c7b70a75888",
+    "game/Scarb.lock": "374d69c3b685a1d45387b232b829b665af5b6ef8271556370a0dc3030fa675a1",
+    "madara/Cargo.lock": "466de030ca3b02ccf48768281393463a9546db9b7619239b9187ba7b9f92f705"
+  },
+  "gates": [
+    {
+      "name": "rust-vectors",
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "mc-sequencer-randomness",
+        "--locked"
+      ],
+      "exit_code": 0,
+      "log": "rust-vectors.log",
+      "log_sha256": "5406cceecbcd3c7407e027b2ced4cb7d68f75c5396d652d76357aae7658c21ff"
+    },
+    {
+      "name": "rust-clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "-p",
+        "mc-sequencer-randomness",
+        "--all-targets",
+        "--all-features",
+        "--locked",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "log": "rust-clippy.log",
+      "log_sha256": "7a7c5f339ce35cb7811e73ee64d146487d7e72eb2090f8175330980b4fb58593"
+    },
+    {
+      "name": "cairo-vectors",
+      "command": [
+        "snforge",
+        "test"
+      ],
+      "exit_code": 0,
+      "log": "cairo-vectors.log",
+      "log_sha256": "f529332f8fbc92783b57d322e5b3a92cdcf6defed598b9bf933f46d9a9fe8cd4"
+    },
+    {
+      "name": "current-game",
+      "command": [
+        "snforge",
+        "test",
+        "recorded_roots_preserve_current_game_derivation"
+      ],
+      "exit_code": 0,
+      "log": "current-game.log",
+      "log_sha256": "1b2026fc0be834c0c668272a5366126a942a12f304677976aede8d9baf052b94"
+    }
+  ],
+  "context_fixture_sha256": "682922fa80cf7cbb9d3c9fa1bda2e257247f372c132e5dc9b0cb2f5b8d8ae74f"
+}

@@ -1,0 +1,9 @@
+{
+  "jsonrpc": "2.0",
+  "error": {
+    "code": 55,
+    "message": "Account validation failed",
+    "data": "The `validate` entry point panicked with:\nError in contract (contract address: 0x0227da98c5c062d40233b0b7c1d77d2286e122f95949a04f4d43840eb3773969, class hash: 0x050b8bdf178120f0aa08cb6cfcf4f0768decc431fb00b14d980574efeed8d424, selector: 0x0162da33a4585851fe8d3af3c2a9c60b557814e221e0d4f30ff0b2189d9c7775):\n\"invalid authority signature\".\n"
+  },
+  "id": 1
+}

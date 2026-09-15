@@ -1,0 +1,21 @@
+services:
+  journal-primary:
+    profiles: [retired]
+  journal-standby:
+    depends_on: !reset {}
+  journal-replacement:
+    image: postgres@sha256:18cfe3ef5e6815560c98237d6216d1e5119702fb0f3894c8785dd58b8bbe5d73
+    entrypoint: [/bin/sh, /standby.sh]
+    environment:
+      PGDATA: /var/lib/postgresql/data
+      JOURNAL_UPSTREAM: journal-standby
+    volumes:
+      - journal-replacement:/var/lib/postgresql/data
+      - ./journal/standby.sh:/standby.sh:ro
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U postgres -d randomness"]
+      interval: 1s
+      timeout: 2s
+      retries: 30
+volumes:
+  journal-replacement:

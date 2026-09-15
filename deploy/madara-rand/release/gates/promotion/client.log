@@ -1,0 +1,2 @@
+TypeError: The socket connection was closed unexpectedly. For more information, pass `verbose: true` in the second argument to fetch()
+    at async post (/home/djizus/projects/eternum-randomness/deploy/madara-rand/exercise-fixture.ts:21:26)

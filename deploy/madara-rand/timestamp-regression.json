@@ -1,0 +1,67 @@
+{
+  "schema": 1,
+  "scope": "deployed stub regressions; no gameplay or budget measurement",
+  "cases": [
+    {
+      "schema": 1,
+      "scope": "deployed stub regression; no gameplay or budget measurement",
+      "image": "127.0.0.1:15000/madara-rand@sha256:c50dc37f4728c4a61573461eb1fc4206dfce0e572661baf5ab66b4c4860d0f22",
+      "ticket_order": 4,
+      "journal_status": "submitted",
+      "binding": "0x00609cebe796779c739d1cd0703a4ca4cea7b2e15834d6c0aed96013d36d868a",
+      "envelope_sha256": "a7f64944f5297ccf7053c996e4b0468b8c6aae574f8748b86b1f81079a7a09e4",
+      "recorded_timestamp": 1789401250,
+      "execution_block_timestamp": 1789401249,
+      "receipt": {
+        "type": "INVOKE",
+        "actual_fee": {
+          "amount": "0x27bc5b2cc0",
+          "unit": "FRI"
+        },
+        "events": [],
+        "execution_resources": {
+          "l1_gas": "0x0",
+          "l2_gas": "0x1a0a8e",
+          "l1_data_gas": "0x80"
+        },
+        "finality_status": "ACCEPTED_ON_L2",
+        "messages_sent": [],
+        "transaction_hash": "0x23d6ebe733be1b04fc768199ed51eacd482b8b46973e8155e3b557cab480401",
+        "execution_status": "REVERTED",
+        "revert_reason": "Transaction execution has failed:\n0: Error in the called contract (contract address: 0x032414e9754e3b549b292c48434ffa9608fdcd358da023d8dfaf731de642ae3c, class hash: 0x050b8bdf178120f0aa08cb6cfcf4f0768decc431fb00b14d980574efeed8d424, selector: 0x015d40a3d6ca2ac30f4031e42be28da9b056fef9bb7357ac5e85627ee876e5ad):\nExecution failed. Failure reason:\nError in contract (contract address: 0x032414e9754e3b549b292c48434ffa9608fdcd358da023d8dfaf731de642ae3c, class hash: 0x050b8bdf178120f0aa08cb6cfcf4f0768decc431fb00b14d980574efeed8d424, selector: 0x015d40a3d6ca2ac30f4031e42be28da9b056fef9bb7357ac5e85627ee876e5ad):\nError in contract (contract address: 0x058b0ddc1631569960e03af013e261c628dadf4396709076103bd7f2bb11d9f3, class hash: 0x005c1ee05da38e2a8739c9db824a636522e170dd889c49614e3d463f0ca08bda, selector: 0x0240060cdb34fcc260f41eac7474ee1d7c80b7e3607daff9ac67c7ea2ebb1c44):\n\"execution timestamp mismatch\".\n",
+        "block_hash": "0x62d22cf86be01df827e30ca8b29d6b520138de1dfa5381e4552cc029fa15f0d",
+        "block_number": 273
+      }
+    },
+    {
+      "image": "127.0.0.1:15000/madara-rand@sha256:b1526a3dcff1fb35085fd2980f86914cd03c55d6e65a63bc03245b8f8a1fcfcd",
+      "ticket_order": 9,
+      "journal_status": "submitted",
+      "binding": "0x068ba7420cc0c53d7bda5c362450110b1374f6e29192b11b2bec8d2ea4548af2",
+      "envelope_sha256": "10ea2016487e52be32ff42f95e1dd6b7ba0c62525c7050d0333dfd9bfd9a6f4b",
+      "recorded_timestamp": 1789402030,
+      "execution_block_timestamp": 1789402029,
+      "receipt": {
+        "type": "INVOKE",
+        "actual_fee": {
+          "amount": "0x27bc5b2cc0",
+          "unit": "FRI"
+        },
+        "events": [],
+        "execution_resources": {
+          "l1_gas": "0x0",
+          "l2_gas": "0x1a0a8e",
+          "l1_data_gas": "0x80"
+        },
+        "finality_status": "ACCEPTED_ON_L2",
+        "messages_sent": [],
+        "transaction_hash": "0x7c458461cde3c866fc6cb1f563c00bfa697fbf3f38a9f1fa40d10aeb9c30934",
+        "execution_status": "REVERTED",
+        "revert_reason": "Transaction execution has failed:\n0: Error in the called contract (contract address: 0x0740cca4a183211c549fc1a5506d01cad00ad569fef9eee50aa2f4b6438b7093, class hash: 0x050b8bdf178120f0aa08cb6cfcf4f0768decc431fb00b14d980574efeed8d424, selector: 0x015d40a3d6ca2ac30f4031e42be28da9b056fef9bb7357ac5e85627ee876e5ad):\nExecution failed. Failure reason:\nError in contract (contract address: 0x0740cca4a183211c549fc1a5506d01cad00ad569fef9eee50aa2f4b6438b7093, class hash: 0x050b8bdf178120f0aa08cb6cfcf4f0768decc431fb00b14d980574efeed8d424, selector: 0x015d40a3d6ca2ac30f4031e42be28da9b056fef9bb7357ac5e85627ee876e5ad):\nError in contract (contract address: 0x074bf9684f178a1fad3fcee6f5ef2dee7f639a64b40451896ed99d5f5f0b0566, class hash: 0x005c1ee05da38e2a8739c9db824a636522e170dd889c49614e3d463f0ca08bda, selector: 0x0240060cdb34fcc260f41eac7474ee1d7c80b7e3607daff9ac67c7ea2ebb1c44):\n\"execution timestamp mismatch\".\n",
+        "block_hash": "0x1de561942315bc99fdaf941a5fe4e1e63823baca889b6cf5d95eecf0be8b647",
+        "block_number": 659
+      }
+    }
+  ],
+  "resolution": "Pending RPC calls and headers can synthesize wall time. Admission now records the last confirmed timestamp, within the declared skew, before sampling. Both stopped deployments retain their original bindings."
+}

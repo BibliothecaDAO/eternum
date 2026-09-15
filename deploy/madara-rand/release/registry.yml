@@ -1,0 +1,8 @@
+services:
+  registry:
+    image: registry@sha256:a3d8aaa63ed8681a604f1dea0aa03f100d5895b6a58ace528858a7b332415373
+    ports: ["127.0.0.1:15000:5000"]
+    volumes:
+      - registry:/var/lib/registry
+volumes:
+  registry:

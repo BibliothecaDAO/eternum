@@ -1,0 +1,369 @@
+{
+  "scope": "compiled ABI conformance only; behavioral and deployed gates remain required",
+  "comparisons": [
+    {
+      "function": "execute",
+      "matches": false,
+      "required": {
+        "inputs": [
+          {
+            "name": "intent",
+            "type": {
+              "struct": [
+                {
+                  "name": "chain",
+                  "type": "core::felt252"
+                },
+                {
+                  "name": "deployment",
+                  "type": "core::felt252"
+                },
+                {
+                  "name": "game_id",
+                  "type": "core::felt252"
+                },
+                {
+                  "name": "actor",
+                  "type": "core::felt252"
+                },
+                {
+                  "name": "nonce",
+                  "type": "core::integer::u64"
+                },
+                {
+                  "name": "command",
+                  "type": "core::felt252"
+                },
+                {
+                  "name": "rules",
+                  "type": "core::felt252"
+                },
+                {
+                  "name": "valid_from",
+                  "type": "core::integer::u64"
+                },
+                {
+                  "name": "valid_until",
+                  "type": "core::integer::u64"
+                },
+                {
+                  "name": "last_order",
+                  "type": "core::integer::u64"
+                },
+                {
+                  "name": "arguments",
+                  "type": "core::array::Array::<core::felt252>"
+                }
+              ]
+            }
+          },
+          {
+            "name": "context",
+            "type": {
+              "struct": [
+                {
+                  "name": "envelope",
+                  "type": "core::array::Array::<core::felt252>"
+                },
+                {
+                  "name": "authority_epoch",
+                  "type": "core::integer::u64"
+                },
+                {
+                  "name": "accepted_public_key",
+                  "type": "core::felt252"
+                }
+              ]
+            }
+          },
+          {
+            "name": "r",
+            "type": "core::felt252"
+          },
+          {
+            "name": "s",
+            "type": "core::felt252"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "external"
+      },
+      "actual": {
+        "inputs": [
+          {
+            "name": "intent",
+            "type": {
+              "struct": [
+                {
+                  "name": "version",
+                  "type": "core::integer::u8"
+                },
+                {
+                  "name": "game_id",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "actor",
+                  "type": "core::starknet::contract_address::ContractAddress"
+                },
+                {
+                  "name": "nonce",
+                  "type": "core::integer::u64"
+                },
+                {
+                  "name": "deadline",
+                  "type": "core::integer::u64"
+                },
+                {
+                  "name": "command",
+                  "type": {
+                    "enum": [
+                      {
+                        "name": "CreateExplorer",
+                        "type": {
+                          "struct": [
+                            {
+                              "name": "structure_id",
+                              "type": "core::integer::u32"
+                            },
+                            {
+                              "name": "category",
+                              "type": "core::integer::u8"
+                            },
+                            {
+                              "name": "tier",
+                              "type": "core::integer::u8"
+                            },
+                            {
+                              "name": "amount",
+                              "type": "core::integer::u128"
+                            },
+                            {
+                              "name": "direction",
+                              "type": "core::integer::u8"
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "name": "Explore",
+                        "type": {
+                          "struct": [
+                            {
+                              "name": "explorer_id",
+                              "type": "core::integer::u32"
+                            },
+                            {
+                              "name": "direction",
+                              "type": "core::integer::u8"
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "name": "ClaimProduction",
+                        "type": "core::integer::u32"
+                      },
+                      {
+                        "name": "Battle",
+                        "type": {
+                          "struct": [
+                            {
+                              "name": "attacker_id",
+                              "type": "core::integer::u32"
+                            },
+                            {
+                              "name": "defender_id",
+                              "type": "core::integer::u32"
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "name": "Move",
+                        "type": {
+                          "struct": [
+                            {
+                              "name": "explorer_id",
+                              "type": "core::integer::u32"
+                            },
+                            {
+                              "name": "directions",
+                              "type": {
+                                "struct": [
+                                  {
+                                    "name": "snapshot",
+                                    "type": "@core::array::Array::<core::integer::u8>"
+                                  }
+                                ]
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "name": "ToggleAlternate",
+                        "type": {
+                          "struct": [
+                            {
+                              "name": "explorer_id",
+                              "type": "core::integer::u32"
+                            },
+                            {
+                              "name": "spire_direction",
+                              "type": "core::integer::u8"
+                            }
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "context",
+            "type": {
+              "struct": [
+                {
+                  "name": "raw_root",
+                  "type": {
+                    "struct": [
+                      {
+                        "name": "low",
+                        "type": "core::integer::u128"
+                      },
+                      {
+                        "name": "high",
+                        "type": "core::integer::u128"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "timestamp",
+                  "type": "core::integer::u64"
+                }
+              ]
+            }
+          },
+          {
+            "name": "r",
+            "type": "core::felt252"
+          },
+          {
+            "name": "s",
+            "type": "core::felt252"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "external"
+      }
+    },
+    {
+      "function": "get_admission",
+      "matches": false,
+      "required": {
+        "inputs": [
+          {
+            "name": "game",
+            "type": "core::felt252"
+          },
+          {
+            "name": "actor",
+            "type": "core::felt252"
+          }
+        ],
+        "outputs": [
+          {
+            "struct": [
+              {
+                "name": "public_key",
+                "type": "core::felt252"
+              },
+              {
+                "name": "rules",
+                "type": "core::felt252"
+              },
+              {
+                "name": "execution_config",
+                "type": "core::felt252"
+              },
+              {
+                "name": "nonce",
+                "type": "core::integer::u64"
+              },
+              {
+                "name": "order",
+                "type": "core::integer::u64"
+              },
+              {
+                "name": "predecessor",
+                "type": "core::felt252"
+              },
+              {
+                "name": "preceding_state",
+                "type": "core::felt252"
+              },
+              {
+                "name": "timestamp",
+                "type": "core::integer::u64"
+              }
+            ]
+          }
+        ],
+        "state_mutability": "view"
+      },
+      "actual": {
+        "error": "expected one get_admission function, found 0"
+      }
+    },
+    {
+      "function": "get_result",
+      "matches": false,
+      "required": {
+        "inputs": [
+          {
+            "name": "order",
+            "type": "core::integer::u64"
+          }
+        ],
+        "outputs": [
+          {
+            "struct": [
+              {
+                "name": "status",
+                "type": "core::integer::u8"
+              },
+              {
+                "name": "binding",
+                "type": "core::felt252"
+              },
+              {
+                "name": "result",
+                "type": "core::felt252"
+              },
+              {
+                "name": "state",
+                "type": "core::felt252"
+              }
+            ]
+          }
+        ],
+        "state_mutability": "view"
+      },
+      "actual": {
+        "error": "expected one get_result function, found 0"
+      }
+    },
+    {
+      "function": "execute_root",
+      "matches": false,
+      "required": "absent",
+      "actual": [
+        "execute_root"
+      ]
+    }
+  ]
+}

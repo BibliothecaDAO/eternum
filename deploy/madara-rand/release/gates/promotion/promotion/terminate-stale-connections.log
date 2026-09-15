@@ -1,0 +1,5 @@
+ pg_terminate_backend 
+----------------------
+ t
+(1 row)
+

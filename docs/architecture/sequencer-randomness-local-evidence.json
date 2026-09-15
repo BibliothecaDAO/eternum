@@ -1,0 +1,49 @@
+{
+  "schema": 1,
+  "scope": "Available local lab failure domains; read-only inspection",
+  "docker_endpoint": "unix:///var/run/docker.sock",
+  "containers": [
+    {
+      "name": "madara-lab",
+      "image_id": "sha256:ec30298d51ce0780e1ad88cc00e1c17bef31530d0e338fe7fcc1d71d1bad31b2",
+      "mounts": [
+        {
+          "type": "volume",
+          "name": "madara-lab_madara-data",
+          "source": "/var/lib/docker/volumes/madara-lab_madara-data/_data",
+          "destination": "/data"
+        },
+        {
+          "type": "bind",
+          "name": null,
+          "source": "/home/djizus/projects/eternum-native-lab-prep/deploy/madara-lab/chain-config.yaml",
+          "destination": "/config/chain-config.yaml"
+        }
+      ]
+    },
+    {
+      "name": "madara-lab-postgres",
+      "image_id": "sha256:18cfe3ef5e6815560c98237d6216d1e5119702fb0f3894c8785dd58b8bbe5d73",
+      "mounts": [
+        {
+          "type": "volume",
+          "name": "madara-lab_postgres-data",
+          "source": "/var/lib/docker/volumes/madara-lab_postgres-data/_data",
+          "destination": "/var/lib/postgresql/data"
+        }
+      ]
+    }
+  ],
+  "local_profile": "deploy/madara-lab/docker-compose.yml",
+  "promotion_script": "deploy/madara-lab/scripts/promote-replica.sh",
+  "observations": [
+    "The selected lab uses one local Docker daemon. Its chain and identity database volumes are local to that daemon.",
+    "The existing promotion script moves a startup token between local volumes and checks whether a local RPC port is closed.",
+    "This topology cannot establish survival of loss of the physical host and its local storage.",
+    "No host-loss drill was run against the existing lab. No random action or latency measurement was run."
+  ],
+  "host_independent_recovery_gate": "not demonstrated",
+  "latency_gate": "not measured",
+  "open_gate": "The host-loss drill is the one gate left open until the owner provides the second host",
+  "local_work": "Items 2 through 6 and local rehearsals proceed on isolated resources."
+}

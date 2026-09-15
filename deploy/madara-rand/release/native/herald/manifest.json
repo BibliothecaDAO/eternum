@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "scope": "isolated native Herald build",
+  "native_revision": "7ae3d93f840603130a761f78e6a59168d2dc6c03",
+  "madara_image": "127.0.0.1:15000/madara-rand@sha256:dee06fd2348a400b67681e20d41a7868d9b6cef4a1894ac5a632ab92e9339004",
+  "image": "127.0.0.1:15000/randomness-herald@sha256:cf5f886f1c07148f4c6fc1113f587c50cf1785bdafdf5ed6c97c33d67d108138",
+  "bun_version": "1.4.0",
+  "command": [
+    "bun",
+    "build",
+    "--tsconfig-override",
+    "herald-build-tsconfig.json",
+    "apps/herald/src/server.ts",
+    "--compile",
+    "--metafile=/tmp/madara-rand-native-herald-5/modules.json",
+    "--outfile",
+    "/tmp/madara-rand-native-herald-5/herald"
+  ],
+  "binary_sha256": "683606c116950e8298884175ca5a9b075acc5940f0441f10a37e379769e5a6c8",
+  "module_graph_sha256": "9547985b06505733bf6f2d85e3b307961cb840adfafdd940715da53102a43cfa",
+  "dependency_lock_sha256": "d317c404be75fb61d2ac48aa8249e1a9434a7d78550ab8e29b941bae8fa6b980",
+  "native_source_lock_sha256": "d317c404be75fb61d2ac48aa8249e1a9434a7d78550ab8e29b941bae8fa6b980"
+}

@@ -209,3 +209,6 @@ Procfile          text
 
 # Ignore files (like .npmignore or .gitignore)
 *.*ignore         text
+
+# Preserve captured command output for its recorded digests.
+deploy/madara-rand/release/**/*.log -text -whitespace

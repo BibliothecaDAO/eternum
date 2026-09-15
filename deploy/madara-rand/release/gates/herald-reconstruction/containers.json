@@ -1,0 +1,581 @@
+[
+    {
+        "Id": "a248e0f5e4c12ee1ecf755a538163ebb959344fbe92e6f3affacd13c9f3187c8",
+        "Created": "2026-09-14T17:03:16.913748836Z",
+        "Path": "tini",
+        "Args": [
+            "--",
+            "/bin/herald"
+        ],
+        "State": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 1657006,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-09-14T17:05:26.826198619Z",
+            "FinishedAt": "2026-09-14T17:04:26.915664338Z",
+            "Health": {
+                "Status": "healthy",
+                "FailingStreak": 0,
+                "Log": [
+                    {
+                        "Start": "2026-09-14T19:09:08.91663181+02:00",
+                        "End": "2026-09-14T19:09:08.954529387+02:00",
+                        "ExitCode": 0,
+                        "Output": "{\"confirmed_block\":2507,\"decoded_models\":2,\"metrics\":{\"decoded_events\":1,\"event_messages\":0,\"store_events\":1,\"pages\":104,\"retained_rows\":1},\"service\":\"herald\",\"success\":true,\"undecodable_events\":0}"
+                    },
+                    {
+                        "Start": "2026-09-14T19:09:09.954826113+02:00",
+                        "End": "2026-09-14T19:09:09.991933291+02:00",
+                        "ExitCode": 0,
+                        "Output": "{\"confirmed_block\":2507,\"decoded_models\":2,\"metrics\":{\"decoded_events\":1,\"event_messages\":0,\"store_events\":1,\"pages\":104,\"retained_rows\":1},\"service\":\"herald\",\"success\":true,\"undecodable_events\":0}"
+                    },
+                    {
+                        "Start": "2026-09-14T19:09:10.99230768+02:00",
+                        "End": "2026-09-14T19:09:11.030123403+02:00",
+                        "ExitCode": 0,
+                        "Output": "{\"confirmed_block\":2508,\"decoded_models\":2,\"metrics\":{\"decoded_events\":1,\"event_messages\":0,\"store_events\":1,\"pages\":104,\"retained_rows\":1},\"service\":\"herald\",\"success\":true,\"undecodable_events\":0}"
+                    },
+                    {
+                        "Start": "2026-09-14T19:09:12.030518746+02:00",
+                        "End": "2026-09-14T19:09:12.065875547+02:00",
+                        "ExitCode": 0,
+                        "Output": "{\"confirmed_block\":2508,\"decoded_models\":2,\"metrics\":{\"decoded_events\":1,\"event_messages\":0,\"store_events\":1,\"pages\":104,\"retained_rows\":1},\"service\":\"herald\",\"success\":true,\"undecodable_events\":0}"
+                    },
+                    {
+                        "Start": "2026-09-14T19:09:13.067261037+02:00",
+                        "End": "2026-09-14T19:09:13.103499243+02:00",
+                        "ExitCode": 0,
+                        "Output": "{\"confirmed_block\":2509,\"decoded_models\":2,\"metrics\":{\"decoded_events\":1,\"event_messages\":0,\"store_events\":1,\"pages\":104,\"retained_rows\":1},\"service\":\"herald\",\"success\":true,\"undecodable_events\":0}"
+                    }
+                ]
+            }
+        },
+        "Image": "sha256:2b44ea129b9e9722e3fa576da874519a295dfb42e94bd5cb5262b3770ea5930f",
+        "ResolvConfPath": "/var/lib/docker/containers/a248e0f5e4c12ee1ecf755a538163ebb959344fbe92e6f3affacd13c9f3187c8/resolv.conf",
+        "HostnamePath": "/var/lib/docker/containers/a248e0f5e4c12ee1ecf755a538163ebb959344fbe92e6f3affacd13c9f3187c8/hostname",
+        "HostsPath": "/var/lib/docker/containers/a248e0f5e4c12ee1ecf755a538163ebb959344fbe92e6f3affacd13c9f3187c8/hosts",
+        "LogPath": "/var/lib/docker/containers/a248e0f5e4c12ee1ecf755a538163ebb959344fbe92e6f3affacd13c9f3187c8/a248e0f5e4c12ee1ecf755a538163ebb959344fbe92e6f3affacd13c9f3187c8-json.log",
+        "Name": "/madara-rand-herald-1",
+        "RestartCount": 0,
+        "Driver": "overlayfs",
+        "Platform": "linux",
+        "MountLabel": "",
+        "ProcessLabel": "",
+        "AppArmorProfile": "",
+        "ExecIDs": [
+            "33610b4854548c70585b72f206efc52da7889c2ef49c0488a599e31ad33ead7d"
+        ],
+        "HostConfig": {
+            "Binds": [
+                "/tmp/madara-rand-fixture-4/native-manifest.json:/fixture/native-manifest.json:ro"
+            ],
+            "ContainerIDFile": "",
+            "LogConfig": {
+                "Type": "json-file",
+                "Config": {}
+            },
+            "NetworkMode": "madara-rand_default",
+            "PortBindings": {
+                "3003/tcp": [
+                    {
+                        "HostIp": "127.0.0.1",
+                        "HostPort": "13003"
+                    }
+                ]
+            },
+            "RestartPolicy": {
+                "Name": "no",
+                "MaximumRetryCount": 0
+            },
+            "AutoRemove": false,
+            "VolumeDriver": "",
+            "VolumesFrom": null,
+            "ConsoleSize": [
+                0,
+                0
+            ],
+            "CapAdd": null,
+            "CapDrop": null,
+            "CgroupnsMode": "private",
+            "Dns": null,
+            "DnsOptions": null,
+            "DnsSearch": null,
+            "ExtraHosts": [],
+            "GroupAdd": null,
+            "IpcMode": "private",
+            "Cgroup": "",
+            "Links": null,
+            "OomScoreAdj": 0,
+            "PidMode": "",
+            "Privileged": false,
+            "PublishAllPorts": false,
+            "ReadonlyRootfs": false,
+            "SecurityOpt": null,
+            "UTSMode": "",
+            "UsernsMode": "",
+            "ShmSize": 67108864,
+            "Runtime": "runc",
+            "Isolation": "",
+            "CpuShares": 0,
+            "Memory": 0,
+            "NanoCpus": 0,
+            "CgroupParent": "",
+            "BlkioWeight": 0,
+            "BlkioWeightDevice": null,
+            "BlkioDeviceReadBps": null,
+            "BlkioDeviceWriteBps": null,
+            "BlkioDeviceReadIOps": null,
+            "BlkioDeviceWriteIOps": null,
+            "CpuPeriod": 0,
+            "CpuQuota": 0,
+            "CpuRealtimePeriod": 0,
+            "CpuRealtimeRuntime": 0,
+            "CpusetCpus": "",
+            "CpusetMems": "",
+            "Devices": null,
+            "DeviceCgroupRules": null,
+            "DeviceRequests": null,
+            "MemoryReservation": 0,
+            "MemorySwap": 0,
+            "MemorySwappiness": null,
+            "OomKillDisable": null,
+            "PidsLimit": null,
+            "Ulimits": null,
+            "CpuCount": 0,
+            "CpuPercent": 0,
+            "IOMaximumIOps": 0,
+            "IOMaximumBandwidth": 0,
+            "MaskedPaths": [
+                "/proc/acpi",
+                "/proc/asound",
+                "/proc/interrupts",
+                "/proc/kcore",
+                "/proc/keys",
+                "/proc/latency_stats",
+                "/proc/sched_debug",
+                "/proc/scsi",
+                "/proc/timer_list",
+                "/proc/timer_stats",
+                "/sys/devices/virtual/powercap",
+                "/sys/firmware"
+            ],
+            "ReadonlyPaths": [
+                "/proc/bus",
+                "/proc/fs",
+                "/proc/irq",
+                "/proc/sys",
+                "/proc/sysrq-trigger"
+            ]
+        },
+        "Storage": {
+            "RootFS": {
+                "Snapshot": {
+                    "Name": "overlayfs"
+                }
+            }
+        },
+        "Mounts": [
+            {
+                "Type": "bind",
+                "Source": "/tmp/madara-rand-fixture-4/native-manifest.json",
+                "Destination": "/fixture/native-manifest.json",
+                "Mode": "ro",
+                "RW": false,
+                "Propagation": "rprivate"
+            }
+        ],
+        "Config": {
+            "Hostname": "a248e0f5e4c1",
+            "Domainname": "",
+            "User": "",
+            "AttachStdin": false,
+            "AttachStdout": true,
+            "AttachStderr": true,
+            "ExposedPorts": {
+                "3003/tcp": {}
+            },
+            "Tty": false,
+            "OpenStdin": false,
+            "StdinOnce": false,
+            "Env": [
+                "HERALD_MANIFEST_PATH=/fixture/native-manifest.json",
+                "DATABASE_URL=postgres://postgres:local-rehearsal@journal-primary:5432/randomness_herald_4",
+                "PORT=3003",
+                "HERALD_CHAIN=madara",
+                "HERALD_RPC_URL=http://madara:9944/rpc/v0_10_2",
+                "PATH=/usr/lib/llvm-19/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                "MLIR_SYS_190_PREFIX=/usr/lib/llvm-19",
+                "LLVM_SYS_191_PREFIX=/usr/lib/llvm-19",
+                "TABLEGEN_190_PREFIX=/usr/lib/llvm-19",
+                "CC=clang-19",
+                "CXX=clang-19",
+                "LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:/usr/lib:/lib/x86_64-linux-gnu:/lib",
+                "LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:/usr/lib:/lib/x86_64-linux-gnu:/lib",
+                "TINI_VERSION=v0.19.0"
+            ],
+            "Cmd": null,
+            "Healthcheck": {
+                "Test": [
+                    "CMD",
+                    "curl",
+                    "-fsS",
+                    "http://127.0.0.1:3003/health"
+                ],
+                "Interval": 1000000000,
+                "Timeout": 3000000000,
+                "Retries": 30
+            },
+            "Image": "127.0.0.1:15000/randomness-herald@sha256:2b44ea129b9e9722e3fa576da874519a295dfb42e94bd5cb5262b3770ea5930f",
+            "Volumes": null,
+            "WorkingDir": "/app",
+            "Entrypoint": [
+                "tini",
+                "--",
+                "/bin/herald"
+            ],
+            "Labels": {
+                "com.docker.compose.config-hash": "6c0f42126c23fb1016f219d9297c7e484b2432bbaa83386f7bb1c98de4772c3a",
+                "com.docker.compose.container-number": "1",
+                "com.docker.compose.depends_on": "",
+                "com.docker.compose.image": "sha256:1ce5520b6bae02298a60f8d412fd526a0d28b70d1ea78eb078e2a45e673e2ddd",
+                "com.docker.compose.oneoff": "False",
+                "com.docker.compose.project": "madara-rand",
+                "com.docker.compose.project.config_files": "/home/djizus/projects/eternum-randomness/deploy/madara-rand/docker-compose.yml,/home/djizus/projects/eternum-randomness/deploy/madara-rand/node.yml,/home/djizus/projects/eternum-randomness/deploy/madara-rand/herald.yml",
+                "com.docker.compose.project.environment_file": "/tmp/madara-rand-release-measurement/image.env,/tmp/madara-rand-fixture-4/service.env,/tmp/randomness-herald-4/herald.env",
+                "com.docker.compose.project.working_dir": "/home/djizus/projects/eternum-randomness/deploy/madara-rand",
+                "com.docker.compose.replace": "herald-1",
+                "com.docker.compose.service": "herald",
+                "com.docker.compose.version": "5.5.1"
+            }
+        },
+        "NetworkSettings": {
+            "SandboxID": "b669b1e4b4667576905452eca823bf5ce15d644c41f8d049fd7d0098bbdede62",
+            "SandboxKey": "/var/run/docker/netns/b669b1e4b466",
+            "Ports": {
+                "3003/tcp": [
+                    {
+                        "HostIp": "127.0.0.1",
+                        "HostPort": "13003"
+                    }
+                ]
+            },
+            "Networks": {
+                "madara-rand_default": {
+                    "IPAMConfig": null,
+                    "Links": null,
+                    "Aliases": [
+                        "madara-rand-herald-1",
+                        "herald"
+                    ],
+                    "DriverOpts": null,
+                    "GwPriority": 0,
+                    "NetworkID": "2d4fd076d421d2a8097f1711a1808bdd58c107c9318d57798b0b7be9ca3e616a",
+                    "EndpointID": "ccdd6f667fd9e281206b8d1224df6f475483066dd96ed00b1691bfcef39b8437",
+                    "Gateway": "172.19.0.1",
+                    "IPAddress": "172.19.0.7",
+                    "MacAddress": "1e:a8:44:98:09:61",
+                    "IPPrefixLen": 16,
+                    "IPv6Gateway": "",
+                    "GlobalIPv6Address": "",
+                    "GlobalIPv6PrefixLen": 0,
+                    "DNSNames": [
+                        "madara-rand-herald-1",
+                        "herald",
+                        "a248e0f5e4c1"
+                    ]
+                }
+            }
+        },
+        "ImageManifestDescriptor": {
+            "mediaType": "application/vnd.oci.image.manifest.v1+json",
+            "digest": "sha256:1ce5520b6bae02298a60f8d412fd526a0d28b70d1ea78eb078e2a45e673e2ddd",
+            "size": 2010,
+            "platform": {
+                "architecture": "amd64",
+                "os": "linux"
+            }
+        }
+    },
+    {
+        "Id": "05dc600150fe0234cea03263a20ce8acd1df61457c4678ae98b91b84fcf03e81",
+        "Created": "2026-09-14T17:09:12.110883513Z",
+        "Path": "tini",
+        "Args": [
+            "--",
+            "/bin/herald"
+        ],
+        "State": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 1685036,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-09-14T17:09:12.367840712Z",
+            "FinishedAt": "0001-01-01T00:00:00Z",
+            "Health": {
+                "Status": "healthy",
+                "FailingStreak": 0,
+                "Log": [
+                    {
+                        "Start": "2026-09-14T19:09:13.509421259+02:00",
+                        "End": "2026-09-14T19:09:13.549076616+02:00",
+                        "ExitCode": 0,
+                        "Output": "{\"confirmed_block\":2509,\"decoded_models\":2,\"metrics\":{\"decoded_events\":4,\"event_messages\":0,\"store_events\":4,\"pages\":214,\"retained_rows\":1},\"service\":\"herald\",\"success\":true,\"undecodable_events\":0}"
+                    }
+                ]
+            }
+        },
+        "Image": "sha256:2b44ea129b9e9722e3fa576da874519a295dfb42e94bd5cb5262b3770ea5930f",
+        "ResolvConfPath": "/var/lib/docker/containers/05dc600150fe0234cea03263a20ce8acd1df61457c4678ae98b91b84fcf03e81/resolv.conf",
+        "HostnamePath": "/var/lib/docker/containers/05dc600150fe0234cea03263a20ce8acd1df61457c4678ae98b91b84fcf03e81/hostname",
+        "HostsPath": "/var/lib/docker/containers/05dc600150fe0234cea03263a20ce8acd1df61457c4678ae98b91b84fcf03e81/hosts",
+        "LogPath": "/var/lib/docker/containers/05dc600150fe0234cea03263a20ce8acd1df61457c4678ae98b91b84fcf03e81/05dc600150fe0234cea03263a20ce8acd1df61457c4678ae98b91b84fcf03e81-json.log",
+        "Name": "/madara-rand-herald-replay-1",
+        "RestartCount": 0,
+        "Driver": "overlayfs",
+        "Platform": "linux",
+        "MountLabel": "",
+        "ProcessLabel": "",
+        "AppArmorProfile": "",
+        "ExecIDs": null,
+        "HostConfig": {
+            "Binds": [
+                "/tmp/madara-rand-fixture-4/native-manifest.json:/fixture/native-manifest.json:ro"
+            ],
+            "ContainerIDFile": "",
+            "LogConfig": {
+                "Type": "json-file",
+                "Config": {}
+            },
+            "NetworkMode": "madara-rand_default",
+            "PortBindings": {
+                "3003/tcp": [
+                    {
+                        "HostIp": "127.0.0.1",
+                        "HostPort": "13004"
+                    }
+                ]
+            },
+            "RestartPolicy": {
+                "Name": "no",
+                "MaximumRetryCount": 0
+            },
+            "AutoRemove": false,
+            "VolumeDriver": "",
+            "VolumesFrom": null,
+            "ConsoleSize": [
+                0,
+                0
+            ],
+            "CapAdd": null,
+            "CapDrop": null,
+            "CgroupnsMode": "private",
+            "Dns": null,
+            "DnsOptions": null,
+            "DnsSearch": null,
+            "ExtraHosts": [],
+            "GroupAdd": null,
+            "IpcMode": "private",
+            "Cgroup": "",
+            "Links": null,
+            "OomScoreAdj": 0,
+            "PidMode": "",
+            "Privileged": false,
+            "PublishAllPorts": false,
+            "ReadonlyRootfs": false,
+            "SecurityOpt": null,
+            "UTSMode": "",
+            "UsernsMode": "",
+            "ShmSize": 67108864,
+            "Runtime": "runc",
+            "Isolation": "",
+            "CpuShares": 0,
+            "Memory": 0,
+            "NanoCpus": 0,
+            "CgroupParent": "",
+            "BlkioWeight": 0,
+            "BlkioWeightDevice": null,
+            "BlkioDeviceReadBps": null,
+            "BlkioDeviceWriteBps": null,
+            "BlkioDeviceReadIOps": null,
+            "BlkioDeviceWriteIOps": null,
+            "CpuPeriod": 0,
+            "CpuQuota": 0,
+            "CpuRealtimePeriod": 0,
+            "CpuRealtimeRuntime": 0,
+            "CpusetCpus": "",
+            "CpusetMems": "",
+            "Devices": null,
+            "DeviceCgroupRules": null,
+            "DeviceRequests": null,
+            "MemoryReservation": 0,
+            "MemorySwap": 0,
+            "MemorySwappiness": null,
+            "OomKillDisable": null,
+            "PidsLimit": null,
+            "Ulimits": null,
+            "CpuCount": 0,
+            "CpuPercent": 0,
+            "IOMaximumIOps": 0,
+            "IOMaximumBandwidth": 0,
+            "MaskedPaths": [
+                "/proc/acpi",
+                "/proc/asound",
+                "/proc/interrupts",
+                "/proc/kcore",
+                "/proc/keys",
+                "/proc/latency_stats",
+                "/proc/sched_debug",
+                "/proc/scsi",
+                "/proc/timer_list",
+                "/proc/timer_stats",
+                "/sys/devices/virtual/powercap",
+                "/sys/firmware"
+            ],
+            "ReadonlyPaths": [
+                "/proc/bus",
+                "/proc/fs",
+                "/proc/irq",
+                "/proc/sys",
+                "/proc/sysrq-trigger"
+            ]
+        },
+        "Storage": {
+            "RootFS": {
+                "Snapshot": {
+                    "Name": "overlayfs"
+                }
+            }
+        },
+        "Mounts": [
+            {
+                "Type": "bind",
+                "Source": "/tmp/madara-rand-fixture-4/native-manifest.json",
+                "Destination": "/fixture/native-manifest.json",
+                "Mode": "ro",
+                "RW": false,
+                "Propagation": "rprivate"
+            }
+        ],
+        "Config": {
+            "Hostname": "05dc600150fe",
+            "Domainname": "",
+            "User": "",
+            "AttachStdin": false,
+            "AttachStdout": true,
+            "AttachStderr": true,
+            "ExposedPorts": {
+                "3003/tcp": {}
+            },
+            "Tty": false,
+            "OpenStdin": false,
+            "StdinOnce": false,
+            "Env": [
+                "HERALD_RPC_URL=http://madara:9944/rpc/v0_10_2",
+                "HERALD_MANIFEST_PATH=/fixture/native-manifest.json",
+                "DATABASE_URL=postgres://postgres:local-rehearsal@journal-primary:5432/randomness_replay_4",
+                "PORT=3003",
+                "HERALD_CHAIN=madara",
+                "PATH=/usr/lib/llvm-19/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                "MLIR_SYS_190_PREFIX=/usr/lib/llvm-19",
+                "LLVM_SYS_191_PREFIX=/usr/lib/llvm-19",
+                "TABLEGEN_190_PREFIX=/usr/lib/llvm-19",
+                "CC=clang-19",
+                "CXX=clang-19",
+                "LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:/usr/lib:/lib/x86_64-linux-gnu:/lib",
+                "LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:/usr/lib:/lib/x86_64-linux-gnu:/lib",
+                "TINI_VERSION=v0.19.0"
+            ],
+            "Cmd": null,
+            "Healthcheck": {
+                "Test": [
+                    "CMD",
+                    "curl",
+                    "-fsS",
+                    "http://127.0.0.1:3003/health"
+                ],
+                "Interval": 1000000000,
+                "Timeout": 3000000000,
+                "Retries": 30
+            },
+            "Image": "127.0.0.1:15000/randomness-herald@sha256:2b44ea129b9e9722e3fa576da874519a295dfb42e94bd5cb5262b3770ea5930f",
+            "Volumes": null,
+            "WorkingDir": "/app",
+            "Entrypoint": [
+                "tini",
+                "--",
+                "/bin/herald"
+            ],
+            "Labels": {
+                "com.docker.compose.config-hash": "56048887be9fed62b3814ba5f12e74f8bc344c43b6db0aebc7d1a4ec8be59cdf",
+                "com.docker.compose.container-number": "1",
+                "com.docker.compose.depends_on": "",
+                "com.docker.compose.image": "sha256:1ce5520b6bae02298a60f8d412fd526a0d28b70d1ea78eb078e2a45e673e2ddd",
+                "com.docker.compose.oneoff": "False",
+                "com.docker.compose.project": "madara-rand",
+                "com.docker.compose.project.config_files": "/home/djizus/projects/eternum-randomness/deploy/madara-rand/docker-compose.yml,/home/djizus/projects/eternum-randomness/deploy/madara-rand/node.yml,/home/djizus/projects/eternum-randomness/deploy/madara-rand/herald.yml",
+                "com.docker.compose.project.environment_file": "/tmp/madara-rand-release-measurement/image.env,/tmp/madara-rand-fixture-4/service.env,/tmp/randomness-herald-4/herald.env",
+                "com.docker.compose.project.working_dir": "/home/djizus/projects/eternum-randomness/deploy/madara-rand",
+                "com.docker.compose.service": "herald-replay",
+                "com.docker.compose.version": "5.5.1"
+            }
+        },
+        "NetworkSettings": {
+            "SandboxID": "c3d04eb0074bec8199dfa0bd17651279f01423ff4d0ce58308528759c837b6bb",
+            "SandboxKey": "/var/run/docker/netns/c3d04eb0074b",
+            "Ports": {
+                "3003/tcp": [
+                    {
+                        "HostIp": "127.0.0.1",
+                        "HostPort": "13004"
+                    }
+                ]
+            },
+            "Networks": {
+                "madara-rand_default": {
+                    "IPAMConfig": null,
+                    "Links": null,
+                    "Aliases": [
+                        "madara-rand-herald-replay-1",
+                        "herald-replay"
+                    ],
+                    "DriverOpts": null,
+                    "GwPriority": 0,
+                    "NetworkID": "2d4fd076d421d2a8097f1711a1808bdd58c107c9318d57798b0b7be9ca3e616a",
+                    "EndpointID": "f94a14e289bd5f028b140cc138246c44c76bc0ad83b9c6971b743fb2b47797a2",
+                    "Gateway": "172.19.0.1",
+                    "IPAddress": "172.19.0.8",
+                    "MacAddress": "6a:fd:15:dd:a6:ec",
+                    "IPPrefixLen": 16,
+                    "IPv6Gateway": "",
+                    "GlobalIPv6Address": "",
+                    "GlobalIPv6PrefixLen": 0,
+                    "DNSNames": [
+                        "madara-rand-herald-replay-1",
+                        "herald-replay",
+                        "05dc600150fe"
+                    ]
+                }
+            }
+        },
+        "ImageManifestDescriptor": {
+            "mediaType": "application/vnd.oci.image.manifest.v1+json",
+            "digest": "sha256:1ce5520b6bae02298a60f8d412fd526a0d28b70d1ea78eb078e2a45e673e2ddd",
+            "size": 2010,
+            "platform": {
+                "architecture": "amd64",
+                "os": "linux"
+            }
+        }
+    }
+]

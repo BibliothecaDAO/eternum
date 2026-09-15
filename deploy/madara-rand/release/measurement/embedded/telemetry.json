@@ -1,0 +1,48 @@
+{
+  "schema": 1,
+  "scope": "single-host instrumentation check; not explore or latency-budget evidence",
+  "placement": "embedded",
+  "action": "0x1dc36f5bb3320ef253801746987ea8cfa8aeabeac555b921396fa8f899951dd",
+  "order": "0x3",
+  "transaction": "0x52e68d1af824ccae2095d5622a1e2c6cbde076f9eb633e766c25c7620dc9a8d",
+  "stages": {
+    "journal": {
+      "reservation_ms": 8.106194,
+      "sampling_ms": 0.08723299999999999,
+      "commit_ms": 3.9165900000000002,
+      "witness_ms": 1.226283
+    },
+    "admission_checks": {
+      "checks_ms": 2.335791
+    },
+    "admission": {
+      "queue_ms": 0.008102,
+      "admission_ms": 16.709103
+    },
+    "submission": {
+      "submission_ms": 8.275909
+    },
+    "submission_checks": {
+      "checks_ms": 16.568999
+    },
+    "execution": {
+      "batch_count": 1,
+      "batch_execution_ms": 6.552073,
+      "amortized_execution_ms": 6.552073,
+      "l2_gas": 4409255
+    },
+    "preconfirmed_persistence": {
+      "batch_count": 1,
+      "batch_persistence_ms": 1.311071
+    },
+    "result_persistence": {
+      "persistence_ms": 12.277008
+    }
+  },
+  "submission_to_preconfirmed_row_ms": 52.805908203125,
+  "execution_basis": "batch wall time; amortized per member, not individual transaction wall time",
+  "artifacts": {
+    "/tmp/randomness-instrumentation-embedded/node.log": "f0ad2ac5218a5fc11d0a0e2dccf559ba423856e09458aa05e1b388a2ab478ccc",
+    "/tmp/randomness-instrumentation-embedded/report.json": "f08e21a10184634f79493d6728f5f1b04ea10db8ea7542e6725936d9966f970e"
+  }
+}

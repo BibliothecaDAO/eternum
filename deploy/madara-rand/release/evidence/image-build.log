@@ -1,0 +1,38 @@
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 259B done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for ghcr.io/madara-alliance/madara@sha256:ec30298d51ce0780e1ad88cc00e1c17bef31530d0e338fe7fcc1d71d1bad31b2
+#2 DONE 0.0s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [1/2] FROM ghcr.io/madara-alliance/madara@sha256:ec30298d51ce0780e1ad88cc00e1c17bef31530d0e338fe7fcc1d71d1bad31b2
+#4 resolve ghcr.io/madara-alliance/madara@sha256:ec30298d51ce0780e1ad88cc00e1c17bef31530d0e338fe7fcc1d71d1bad31b2 0.0s done
+#4 DONE 0.0s
+
+#5 [internal] load build context
+#5 transferring context: 612.63MB 1.9s done
+#5 DONE 2.0s
+
+#4 [1/2] FROM ghcr.io/madara-alliance/madara@sha256:ec30298d51ce0780e1ad88cc00e1c17bef31530d0e338fe7fcc1d71d1bad31b2
+#4 CACHED
+
+#6 [2/2] COPY madara madara-baseline randomness-sidecar /bin/
+#6 DONE 0.8s
+
+#7 exporting to image
+#7 exporting layers
+#7 exporting layers 16.3s done
+#7 exporting manifest sha256:dc241ce1666f1fe923e1ed0969681d86198fb4c4bb85efc03f4499faa63ea441 0.0s done
+#7 exporting config sha256:5bf08df90df30021bf54ebb5f3f56992c04e7d274d97e8405726c02d2a8c18a1 0.0s done
+#7 exporting attestation manifest sha256:be4122e5127e528f450ec0b5ffa3a7ee3bf72ab7d24987ada8a77c43cb2ff672 0.0s done
+#7 exporting manifest list sha256:a7cd050b8429ee3e6adde66fe8172bf33b1886714bca8df5b62af3145a2660d9 0.0s done
+#7 naming to 127.0.0.1:15000/madara-rand:c7525988938e93fb9a16b663f1effd3f2a15818a done
+#7 unpacking to 127.0.0.1:15000/madara-rand:c7525988938e93fb9a16b663f1effd3f2a15818a
+#7 unpacking to 127.0.0.1:15000/madara-rand:c7525988938e93fb9a16b663f1effd3f2a15818a 3.1s done
+#7 DONE 19.5s

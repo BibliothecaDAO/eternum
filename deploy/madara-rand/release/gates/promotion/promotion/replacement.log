@@ -1,0 +1,1 @@
+service "journal-standby" depends on undefined service "journal-primary": invalid compose project

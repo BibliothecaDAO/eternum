@@ -1,0 +1,23 @@
+{
+  "game_id": "7",
+  "confirmed_block": 2509,
+  "models": [
+    {
+      "model": "DomainClass",
+      "rows": []
+    },
+    {
+      "model": "ActionNonce",
+      "rows": [
+        {
+          "key": "0x18a8b6c0bed87186bad28516f7f9bd6e03814853940f32a8855a1157dcac292",
+          "value": {
+            "game_id": "0x7",
+            "actor": "0x1c8",
+            "nonce": "0x4"
+          }
+        }
+      ]
+    }
+  ]
+}

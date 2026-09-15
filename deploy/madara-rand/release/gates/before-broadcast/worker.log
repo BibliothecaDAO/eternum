@@ -1,0 +1,1 @@
+{"timestamp":"2026-09-14T17:12:27.912315Z","level":"INFO","fields":{"message":"randomness_result_persistence","action":"0x1ef545fa7da330e7d146ee39258a17fa1112080f666ff4156dbe4e009bee471","order":5,"persistence_ms":15.641848},"target":"sequencer_randomness"}
