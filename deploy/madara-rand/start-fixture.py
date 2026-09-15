@@ -31,10 +31,13 @@ def main():
     deployment = Path(__file__).resolve().parent
     repository = deployment.parents[1]
     primary, witness = running_journal_hosts()
+    native_source = Path(sys.argv[4]).resolve()
     bootstrap = output / 'bootstrap.env'
     bootstrap.write_text('\n'.join([
         'RANDOMNESS_ACCOUNT=0x1', 'RANDOMNESS_DEPLOYMENT=0x2', 'RANDOMNESS_EPOCH=1',
         'RANDOMNESS_PLACEMENT=sidecar', 'RANDOMNESS_PRIVATE_KEY=0xd431',
+        f'RANDOMNESS_SCHEMA_HOST_PATH={native_source / "contracts/l3/world-native/schema/schema.json"}',
+        'RANDOMNESS_L2_RPC_URL=http://madara:9944',
         f'RANDOMNESS_JOURNAL_PRIMARY=host={primary} dbname={database} user=randomness_writer_1 password=local-rehearsal',
         f'RANDOMNESS_JOURNAL_STANDBY=host={witness} dbname={database} user=randomness_writer_1 password=local-rehearsal', '',
     ]))
@@ -43,9 +46,13 @@ def main():
     run([*initial, 'stop', 'randomness-sidecar'], output / 'stop-previous-worker.log', deployment)
     run([*initial, 'config', '--format', 'json'], output / 'compose-bootstrap.json', deployment)
     run([*initial, 'up', '-d', '--wait', 'madara'], output / 'start-node.log', deployment)
-    native_source = Path(sys.argv[4]).resolve()
     for package in ('world-native', 'player-account'):
         run(['scarb', 'build'], output / f'{package}-contracts.log', native_source / 'contracts/l3' / package)
+    run(['bun', 'contracts/l3/world-native/scripts/generate-schema.mjs', '--check'],
+        output / 'native-schema-check.log', native_source)
+    run(['docker', 'run', '--rm', '--entrypoint', '/bin/randomness-sidecar',
+         '--mount', f'type=bind,source={native_source / "contracts/l3/world-native/schema/schema.json"},target=/schema.json,readonly',
+         manifest['image'], '--check-native-schema', '/schema.json'], output / 'admission-schema-check.log', deployment)
     run(['bun', 'deploy/madara-rand/deploy-fixture.ts', str(output), fixture_id, str(native_source), sys.argv[5], primary, witness], output / 'deploy.log', repository)
     initialize_database(deployment, output, database, primary)
     run([*initial, 'stop', 'madara'], output / 'stop-bootstrap.log', deployment)

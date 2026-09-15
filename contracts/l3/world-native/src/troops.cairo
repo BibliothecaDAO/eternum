@@ -1,5 +1,12 @@
 use crate::combat::TroopsTrait;
 use crate::stamina::StaminaTrait;
+pub const AGENT_HOME: u32 = 4294967288;
+const AGENT_OCCUPIER_OFFSET: u8 = 9;
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct AgentPopulation {
+    pub count: u16,
+}
 #[derive(Copy, Drop, Serde, Default, Debug, PartialEq, starknet::Store)]
 pub struct Coord {
     pub alt: bool,
@@ -12,6 +19,15 @@ pub enum TroopType {
     Knight,
     Paladin,
     Crossbowman,
+}
+impl TroopTypeIntoU8 of Into<TroopType, u8> {
+    fn into(self: TroopType) -> u8 {
+        match self {
+            TroopType::Knight => 0,
+            TroopType::Paladin => 1,
+            TroopType::Crossbowman => 2,
+        }
+    }
 }
 #[derive(Copy, Drop, Serde, Default, Debug, PartialEq, starknet::Store)]
 pub enum TroopTier {
@@ -86,6 +102,7 @@ pub mod TroopState {
     pub struct Storage {
         pub explorers: Map<(u32, u32), ExplorerTroops>,
         pub exists: Map<(u32, u32), bool>,
+        pub agent_count: Map<u32, u16>,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -108,6 +125,9 @@ pub mod TroopState {
             assert!(self.explorer(key).is_none(), "explorer already exists");
             self.explorers.write((key.game_id, key.explorer_id), explorer);
             self.exists.write((key.game_id, key.explorer_id), true);
+            if explorer.owner == super::AGENT_HOME {
+                self.write_agent_count(key.game_id, self.agent_count.read(key.game_id) + 1);
+            }
             let mut keys = array![];
             key.serialize(ref keys);
             let mut values = array![];
@@ -139,12 +159,27 @@ pub mod TroopState {
                 );
         }
         fn destroy(ref self: ComponentState<TContractState>, key: ExplorerKey) {
-            assert!(self.explorer(key).is_some(), "missing explorer");
+            let explorer = self.explorer(key).expect('missing explorer');
+            if explorer.owner == super::AGENT_HOME {
+                self.write_agent_count(key.game_id, self.agent_count.read(key.game_id) - 1);
+            }
             // The existence bit is authoritative; recreation overwrites the complete value.
             self.exists.write((key.game_id, key.explorer_id), false);
             let mut keys = array![];
             key.serialize(ref keys);
             self.emit(RowDeleted { version: 1, model: 'ExplorerTroops', keys: keys.span() });
+        }
+        fn write_agent_count(ref self: ComponentState<TContractState>, game_id: u32, count: u16) {
+            self.agent_count.write(game_id, count);
+            self
+                .emit(
+                    RowSet {
+                        version: 1,
+                        model: 'AgentPopulation',
+                        keys: array![game_id.into()].span(),
+                        values: array![count.into()].span(),
+                    },
+                );
         }
     }
 }
@@ -152,6 +187,7 @@ pub mod TroopState {
 #[starknet::interface]
 pub trait ITroops<T> {
     fn explorer(self: @T, key: ExplorerKey) -> Option<ExplorerTroops>;
+    fn agent_population(self: @T, game_id: u32) -> AgentPopulation;
 }
 
 #[starknet::contract]
@@ -190,6 +226,7 @@ pub mod TroopsDomain {
         TroopEvent: TroopState::Event,
         BattleEvent: super::BattleEvent,
         OwnershipRow: crate::events::RowSet,
+        OwnershipDeleted: crate::events::RowDeleted,
     }
     #[constructor]
     fn constructor(ref self: ContractState, authority: ContractAddress) {
@@ -199,6 +236,42 @@ pub mod TroopsDomain {
     impl TroopViews of super::ITroops<ContractState> {
         fn explorer(self: @ContractState, key: ExplorerKey) -> Option<ExplorerTroops> {
             self.troops.explorer(key)
+        }
+        fn agent_population(self: @ContractState, game_id: u32) -> super::AgentPopulation {
+            super::AgentPopulation { count: self.troops.agent_count.read(game_id) }
+        }
+    }
+    #[abi(embed_v0)]
+    impl SettlementDisplacement of crate::settlement::ISettlementDisplacement<ContractState> {
+        fn displace_explorer(ref self: ContractState, game_id: u32, explorer_id: u32) {
+            assert!(get_caller_address() == self.lifecycle.require_active().structures, "only structures domain");
+            let key = ExplorerKey { game_id, explorer_id };
+            let mut explorer = self.troops.explorer(key).expect('missing blocking explorer');
+            assert!(explorer.owner != 0, "blocking explorer has no owner");
+            let origin = tile_key(game_id, explorer.coord);
+            for direction in 0_u8..6 {
+                let destination = neighbor(explorer.coord, direction);
+                let tile = tile_key(game_id, destination);
+                let data = self.map_dispatcher().tile(tile).map(|tile| tile.data).unwrap_or(0);
+                if (data / 2) % 256 != 0 {
+                    continue;
+                }
+                if (data / 0x20000000000) % 256 == 0 {
+                    self.map_dispatcher().reveal(tile, self.map_dispatcher().biome(tile));
+                }
+                let category = super::troop_occupier(explorer.troops)
+                    + if explorer.owner == super::AGENT_HOME {
+                        super::AGENT_OCCUPIER_OFFSET
+                    } else {
+                        0
+                    };
+                self.map_dispatcher().occupy(tile, explorer_id, category, false);
+                explorer.coord = destination;
+                self.troops.save(key, explorer);
+                self.map_dispatcher().vacate(origin, explorer_id);
+                return;
+            }
+            self.destroy_explorer(key, explorer);
         }
     }
     #[abi(embed_v0)]
@@ -641,19 +714,33 @@ pub mod TroopsDomain {
                     ResourceKey { game_id: key.game_id, entity_id: key.explorer_id }, before - explorer.troops.count,
                 );
             if explorer.troops.count == 0 {
-                self
-                    .structures_dispatcher()
-                    .remove_explorer(ResourceKey { game_id: key.game_id, entity_id: explorer.owner }, key.explorer_id);
-                self.map_dispatcher().vacate(tile_key(key.game_id, explorer.coord), key.explorer_id);
-                self.troops.destroy(key);
+                self.destroy_explorer(key, explorer);
             } else {
                 self.troops.save(key, explorer);
+            }
+        }
+        fn destroy_explorer(ref self: ContractState, key: ExplorerKey, explorer: ExplorerTroops) {
+            self
+                .structures_dispatcher()
+                .remove_explorer(ResourceKey { game_id: key.game_id, entity_id: explorer.owner }, key.explorer_id);
+            self.map_dispatcher().vacate(tile_key(key.game_id, explorer.coord), key.explorer_id);
+            self.troops.destroy(key);
+            if explorer.owner == super::AGENT_HOME {
+                self.agent_owners.write((key.game_id, key.explorer_id), 0.try_into().unwrap());
+                self
+                    .emit(
+                        crate::events::RowDeleted {
+                            version: 1,
+                            model: 'AgentOwner',
+                            keys: array![key.game_id.into(), key.explorer_id.into()].span(),
+                        },
+                    );
             }
         }
     }
 }
 
-fn troop_resource(category: TroopType, tier: u8) -> u8 {
+pub fn troop_resource(category: TroopType, tier: u8) -> u8 {
     (match category {
         TroopType::Knight => 26,
         TroopType::Paladin => 32,
@@ -673,7 +760,7 @@ fn troop_occupier(troops: Troops) -> u8 {
     };
     category + tier
 }
-fn max_army_size(config: crate::rules::TroopLimitConfig, level: u8, tier: TroopTier) -> u32 {
+pub fn max_army_size(config: crate::rules::TroopLimitConfig, level: u8, tier: TroopTier) -> u32 {
     let cap = match level {
         0 => config.settlement_deployment_cap,
         1 => config.city_deployment_cap,

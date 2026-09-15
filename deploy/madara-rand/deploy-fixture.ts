@@ -230,6 +230,8 @@ async function main() {
     provision: game,
     configuredTransaction: configured.transaction_hash,
   };
+  const nativeSchema = readFileSync(resolve(source, "contracts/l3/world-native/schema/schema.json"), "utf8");
+  writeFileSync(resolve(output, "native-schema.json"), nativeSchema, { flag: "wx" });
   writeFileSync(resolve(output, "fixture.json"), JSON.stringify(fixture, null, 2) + "\n", { flag: "wx" });
   writeFileSync(resolve(output, "deploy.json"), JSON.stringify(deployment, null, 2) + "\n", { flag: "wx" });
   writeFileSync(
@@ -239,6 +241,8 @@ async function main() {
       `RANDOMNESS_DEPLOYMENT=${execution.address}`,
       "RANDOMNESS_EPOCH=1",
       "RANDOMNESS_PLACEMENT=sidecar",
+      `RANDOMNESS_SCHEMA_HOST_PATH=${resolve(output, "native-schema.json")}`,
+      "RANDOMNESS_L2_RPC_URL=http://madara:9944",
       `RANDOMNESS_PRIVATE_KEY=${SEQUENCER_KEY}`,
       `RANDOMNESS_JOURNAL_PRIMARY=host=${primary} dbname=randomness_execution_${fixtureId} user=randomness_writer_1 password=local-rehearsal`,
       `RANDOMNESS_JOURNAL_STANDBY=host=${witness} dbname=randomness_execution_${fixtureId} user=randomness_writer_1 password=local-rehearsal`,

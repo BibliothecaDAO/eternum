@@ -5,6 +5,7 @@ const ROW_SCALE: u128 = 0x2000000000000;
 const BIOME_SCALE: u128 = 0x20000000000;
 const ENTITY_RANGE: u128 = 0x100000000;
 const OCCUPIER_SCALE: u128 = 0x200;
+const RESERVED_HYPERSTRUCTURE: u128 = 39;
 const BYTE_RANGE: u128 = 0x100;
 
 #[derive(Copy, Drop, Serde, PartialEq, Debug)]
@@ -24,7 +25,10 @@ pub struct TileOpt {
 pub mod MapState {
     use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
     use crate::events::{RowMemberSet, RowSet};
-    use super::{BIOME_SCALE, BYTE_RANGE, ENTITY_RANGE, OCCUPIER_SCALE, TileKey, TileOpt, coordinate_bits};
+    use super::{
+        BIOME_SCALE, BYTE_RANGE, ENTITY_RANGE, OCCUPIER_SCALE, RESERVED_HYPERSTRUCTURE, TileKey, TileOpt,
+        coordinate_bits,
+    };
 
     #[storage]
     pub struct Storage {
@@ -54,11 +58,14 @@ pub mod MapState {
             assert!(key.game_id != 0, "reserved game id");
             assert!(biome > 0 && biome <= 17, "invalid biome");
             let storage_key = (key.game_id, key.alt, key.col, key.row);
-            let previous = self.tile(key).map(|tile| tile.data).unwrap_or(coordinate_bits(key));
+            let tile = self.tile(key);
+            let previous = tile.map(|tile| tile.data).unwrap_or(coordinate_bits(key));
             assert!((previous / BIOME_SCALE) % BYTE_RANGE == 0, "tile already revealed");
             let data = previous + biome.into() * BIOME_SCALE;
             self.tiles.write(storage_key, data);
-            self.exists.write(storage_key, true);
+            if tile.is_none() {
+                self.exists.write(storage_key, true);
+            }
             let mut keys = array![];
             key.serialize(ref keys);
             self.emit(RowSet { version: 1, model: 'TileOpt', keys: keys.span(), values: array![data.into()].span() });
@@ -82,6 +89,16 @@ pub mod MapState {
             self.write_occupancy(key, data);
         }
 
+        fn reserve_hyperstructure(ref self: ComponentState<TContractState>, key: TileKey) {
+            let tile = self.tile(key).expect('unrevealed reservation');
+            assert!(tile.data % BIOME_SCALE == 0, "occupied reservation tile");
+            self.write_occupancy(key, tile.data + RESERVED_HYPERSTRUCTURE * 2 + 1);
+        }
+        fn release_hyperstructure(ref self: ComponentState<TContractState>, key: TileKey) {
+            let tile = self.tile(key).expect('missing reservation');
+            assert!((tile.data / 2) % BYTE_RANGE == RESERVED_HYPERSTRUCTURE, "hyperstructure already created");
+            self.write_occupancy(key, tile.data - tile.data % BIOME_SCALE);
+        }
         fn upgrade_realm(
             ref self: ComponentState<TContractState>, key: TileKey, entity_id: u32, wonder: bool, level: u8,
         ) {
@@ -112,7 +129,9 @@ pub mod MapState {
             let storage_key = (key.game_id, key.alt, key.col, key.row);
             let existed = self.exists.read(storage_key);
             self.tiles.write(storage_key, data);
-            self.exists.write(storage_key, true);
+            if !existed {
+                self.exists.write(storage_key, true);
+            }
             let mut keys = array![];
             key.serialize(ref keys);
             if !existed {
@@ -151,14 +170,20 @@ pub trait IMap<T> {
 
 #[starknet::contract]
 pub mod MapDomain {
+    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
     use starknet::{ContractAddress, get_caller_address};
     use crate::game::{IGameDispatcher, IGameDispatcherTrait};
     use crate::geometry::{distance, spire_neighbor, tile_key};
     use crate::lifecycle::Lifecycle;
+    use crate::settlement::{
+        ISettlementViewsDispatcher, ISettlementViewsDispatcherTrait, SettlementPool, SettlementPoolState,
+    };
     use crate::troops::Coord;
-    use super::{BYTE_RANGE, MapState, TileKey, TileOpt};
+    use super::{BIOME_SCALE, BYTE_RANGE, MapState, TileKey, TileOpt};
     component!(path: Lifecycle, storage: lifecycle, event: LifecycleEvent);
     component!(path: MapState, storage: map, event: MapEvent);
+    component!(path: SettlementPoolState, storage: settlements, event: SettlementEvent);
+    impl SettlementInternal = SettlementPoolState::InternalImpl<ContractState>;
     #[abi(embed_v0)]
     impl Domain = Lifecycle::DomainImpl<ContractState>;
     impl LifeInternal = Lifecycle::InternalImpl<ContractState>;
@@ -170,16 +195,90 @@ pub mod MapDomain {
         lifecycle: Lifecycle::Storage,
         #[substorage(v0)]
         map: MapState::Storage,
+        #[substorage(v0)]
+        settlements: SettlementPoolState::Storage,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
         LifecycleEvent: Lifecycle::Event,
         MapEvent: MapState::Event,
+        SettlementEvent: SettlementPoolState::Event,
+        RowSet: crate::events::RowSet,
     }
     #[constructor]
     fn constructor(ref self: ContractState, authority: ContractAddress) {
         self.lifecycle.initialize(authority);
+    }
+    #[abi(embed_v0)]
+    impl Settlements of crate::settlement::ISettlementPool<ContractState> {
+        fn reserved_hyperstructures(self: @ContractState, game_id: u32) -> u32 {
+            self.settlements.reserved_hyperstructures.read(game_id)
+        }
+        fn settlement_pool(self: @ContractState, game_id: u32) -> SettlementPool {
+            let season = self.lifecycle.require_active().season;
+            let rules = ISettlementViewsDispatcher { contract_address: season }.settlement_rules(game_id);
+            let center = self.map_center(game_id);
+            self.settlements.pool(game_id, center, rules)
+        }
+        fn claim_settlement(ref self: ContractState, game_id: u32, registered: u16, seed: u256) -> Span<Coord> {
+            let season = self.lifecycle.require_active().season;
+            assert!(get_caller_address() == season, "only season domain");
+            let rules = ISettlementViewsDispatcher { contract_address: season }.settlement_rules(game_id);
+            let center = self.map_center(game_id);
+            self.settlements.claim(game_id, center, rules, registered, seed)
+        }
+    }
+    #[abi(embed_v0)]
+    impl Reservations of crate::settlement::IBlitzReservations<ContractState> {
+        fn reserve_hyperstructures(
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            count: u8,
+            context: crate::commands::ExecutionContext,
+        ) {
+            let season = self.lifecycle.require_active().season;
+            assert!(get_caller_address() == season, "only season domain");
+            let game = IGameDispatcher { contract_address: season }.game(game_id);
+            let game_rules = IGameDispatcher { contract_address: season }.rules(game_id);
+            assert!(game_rules.blitz_mode_on, "not a Blitz game");
+            assert!(game.end_at == 0 || context.timestamp < game.end_at, "game ended");
+            let rules = ISettlementViewsDispatcher { contract_address: season }.settlement_rules(game_id);
+            let required = crate::settlement_grid::reservation_count(rules.registration_limit, rules.mode);
+            let center = self.map_center(game_id);
+            let mut placed = self.settlements.reserved_hyperstructures.read(game_id);
+            let last = core::cmp::min(required, placed + count.into());
+            while placed < last {
+                let coord = crate::settlement_grid::reservation_location(
+                    center, rules.mode, rules.reward_profile, placed,
+                );
+                let key = tile_key(game_id, coord);
+                let previous = self.map.tile(key).map(|tile| tile.data).unwrap_or(0);
+                assert!(previous % BIOME_SCALE == 0, "occupied reservation tile");
+                if previous / BIOME_SCALE % BYTE_RANGE == 0 {
+                    self.map.reveal(key, self.biome(key));
+                }
+                self.map.reserve_hyperstructure(key);
+                placed += 1;
+            }
+            if placed != self.settlements.reserved_hyperstructures.read(game_id) {
+                self.settlements.reserved_hyperstructures.write(game_id, placed);
+                self
+                    .emit(
+                        crate::events::RowSet {
+                            version: 1,
+                            model: 'HyperstructureReservations',
+                            keys: array![game_id.into()].span(),
+                            values: array![placed.into()].span(),
+                        },
+                    );
+            }
+        }
+        fn release_hyperstructure(ref self: ContractState, game_id: u32, coord: Coord) {
+            assert!(get_caller_address() == self.lifecycle.require_active().structures, "only structures domain");
+            self.map.release_hyperstructure(tile_key(game_id, coord));
+        }
     }
     #[abi(embed_v0)]
     impl Map of super::IMap<ContractState> {
@@ -244,6 +343,11 @@ pub mod MapDomain {
     }
     #[generate_trait]
     impl Internal of InternalTrait {
+        fn map_center(self: @ContractState, game_id: u32) -> Coord {
+            let rules = IGameDispatcher { contract_address: self.lifecycle.require_active().season }.rules(game_id);
+            let center = 2147483646 - rules.map_center_offset;
+            Coord { alt: false, x: center, y: center }
+        }
         fn assert_domain_caller(self: @ContractState) {
             let peers = self.lifecycle.require_active();
             let caller = get_caller_address();

@@ -1,3 +1,4 @@
+import { nativeResourceModels, nativeResourceReader } from "./native-resource-reader";
 // import { getEntityIdFromKeys, gramToKg, multiplyByPrecision } from "@/ui/utils/utils";
 import { BuildingType, ClientComponents, ID, Resource, ResourcesIds, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
@@ -67,8 +68,40 @@ export class ResourceManager {
     this.entityId = entityId;
   }
 
+  public subscribe(onChange: () => void): () => void {
+    const models = nativeResourceModels(this.components) ?? [this.components.Resource];
+    const subscriptions = models.map((model) =>
+      model.update$.subscribe((update) => {
+        const row = update.value[0] ?? update.value[1];
+        if (!row || row.entity_id !== this.entityId) return;
+        const keys = [BigInt(this.entityId)];
+        if (typeof row.resource_type === "number") keys.push(BigInt(row.resource_type));
+        if (update.entity === gameEntityKey(keys)) onChange();
+      }),
+    );
+    return () => subscriptions.forEach((subscription) => subscription.unsubscribe());
+  }
+
+  public hasResources(): boolean {
+    return this.weight() !== undefined;
+  }
+
   public getResource() {
+    if (nativeResourceReader(this.components, this.entityId))
+      throw new Error("Native resources use balance, production and weight facts");
     return this._getResource();
+  }
+
+  private current(resourceId: ResourcesIds) {
+    const native = nativeResourceReader(this.components, this.entityId);
+    if (native) return native.current(resourceId);
+    const resource = this._getResource();
+    return resource ? ResourceManager.balanceAndProduction(resource, resourceId) : undefined;
+  }
+
+  private weight() {
+    const native = nativeResourceReader(this.components, this.entityId);
+    return native ? native.weight : this._getResource()?.weight;
   }
 
   private _getResource() {
@@ -86,9 +119,7 @@ export class ResourceManager {
   }
 
   public isActive(resourceId: ResourcesIds): boolean {
-    const resource = this._getResource();
-    if (!resource) return false;
-    return ResourceManager.isActiveStatic(resource, resourceId);
+    return ResourceManager.hasActiveProduction(this.current(resourceId)?.production, resourceId);
   }
 
   public static isActiveStatic(
@@ -96,7 +127,16 @@ export class ResourceManager {
     resourceId: ResourcesIds,
   ): boolean {
     if (!resource) return false;
-    const production = ResourceManager.balanceAndProduction(resource, resourceId).production;
+    return ResourceManager.hasActiveProduction(
+      ResourceManager.balanceAndProduction(resource, resourceId).production,
+      resourceId,
+    );
+  }
+
+  private static hasActiveProduction(
+    production: ReturnType<typeof ResourceManager.balanceAndProduction>["production"] | undefined,
+    resourceId: ResourcesIds,
+  ) {
     if (!production) return false;
 
     const isContinuousProductionResource = ResourceManager.isContinuousProductionResource(resourceId);
@@ -113,10 +153,9 @@ export class ResourceManager {
     currentTick: number,
     resourceId: ResourcesIds,
   ): { balance: number; hasReachedMaxCapacity: boolean; amountProduced: bigint; amountProducedLimited: bigint } {
-    const resource = this._getResource();
+    const resource = this.current(resourceId);
     if (!resource) return { balance: 0, hasReachedMaxCapacity: false, amountProduced: 0n, amountProducedLimited: 0n };
-    const production = ResourceManager.balanceAndProduction(resource, resourceId).production;
-    const balance = this.balance(resourceId);
+    const { balance, production } = resource;
     if (!production)
       return { balance: Number(balance), hasReachedMaxCapacity: false, amountProduced: 0n, amountProducedLimited: 0n };
     const amountProduced = ResourceManager._amountProducedStatic(production, currentTick, resourceId);
@@ -130,9 +169,9 @@ export class ResourceManager {
   }
 
   public timeUntilValueReached(currentTick: number, resourceId: ResourcesIds): number {
-    const resource = this._getResource();
+    const resource = this.current(resourceId);
     if (!resource) return 0;
-    const production = ResourceManager.balanceAndProduction(resource, resourceId).production;
+    const { production } = resource;
     if (!production || production.building_count === 0) return 0;
 
     // Get production details
@@ -156,9 +195,9 @@ export class ResourceManager {
   }
 
   public getProductionEndsAt(resourceId: ResourcesIds): number {
-    const resource = this._getResource();
+    const resource = this.current(resourceId);
     if (!resource) return 0;
-    const production = ResourceManager.balanceAndProduction(resource, resourceId).production;
+    const { production } = resource;
     if (!production || production.building_count === 0) return 0;
 
     const isContinuousProductionResource = ResourceManager.isContinuousProductionResource(resourceId);
@@ -174,7 +213,7 @@ export class ResourceManager {
   }
 
   public getStoreCapacityKg(): { capacityKg: number; capacityUsedKg: number; quantity: number } {
-    const resource = this._getResource()!;
+    const weight = this.weight();
     const structureBuildings = getComponentValue(
       this.components.StructureBuildings,
       gameEntityKey([BigInt(this.entityId || 0)]),
@@ -187,16 +226,14 @@ export class ResourceManager {
     const quantity = structureBuildings ? getBuildingCount(BuildingType.Storehouse, packBuildingCounts) || 0 : 0;
 
     return {
-      capacityKg: gramToKg(divideByPrecision(Number(resource?.weight.capacity || 0))),
-      capacityUsedKg: gramToKg(Math.max(0, divideByPrecision(Number(resource?.weight.weight || 0)))),
+      capacityKg: gramToKg(divideByPrecision(Number(weight?.capacity || 0))),
+      capacityUsedKg: gramToKg(Math.max(0, divideByPrecision(Number(weight?.weight || 0)))),
       quantity,
     };
   }
 
   public balance(resourceId: ResourcesIds): bigint {
-    const resource = this._getResource();
-    if (!resource) return 0n;
-    return ResourceManager.balanceAndProduction(resource, resourceId).balance;
+    return this.current(resourceId)?.balance ?? 0n;
   }
 
   private _limitProductionByStoreCapacity(amountProduced: bigint, resourceId: ResourcesIds): bigint {
@@ -622,6 +659,22 @@ export class ResourceManager {
     outputAmountLeft: bigint;
     lastUpdatedAt: number;
   }> {
+    const native = nativeResourceReader(this.components, this.entityId);
+    if (native)
+      return native.producingResources().flatMap((resourceId) => {
+        const production = native.current(resourceId)!.production;
+        return ResourceManager.hasActiveProduction(production, resourceId)
+          ? [
+              {
+                resourceId,
+                productionRate: production.production_rate,
+                buildingCount: production.building_count,
+                outputAmountLeft: production.output_amount_left,
+                lastUpdatedAt: production.last_updated_at,
+              },
+            ]
+          : [];
+      });
     const resource = this._getResource();
     if (!resource) return [];
 

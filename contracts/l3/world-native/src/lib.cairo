@@ -12,6 +12,8 @@ mod parity_vectors;
 pub mod recording;
 pub mod rules;
 pub mod season;
+pub mod settlement;
+pub mod settlement_grid;
 pub mod stamina;
 
 #[cfg(test)]

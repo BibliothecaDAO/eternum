@@ -1,6 +1,19 @@
 import { createHash } from "node:crypto";
 
 export const requiredParityCases = {
+  blitz_settlement: "world_parity_blitz_settlement",
+  blitz_entry_rejections: "world_parity_blitz_entry_rejections",
+  blitz_entry_ledger: "world_parity_blitz_entry_ledger",
+  blitz_cosmetics: "world_parity_blitz_cosmetics",
+  blitz_cosmetics_disabled: "world_parity_blitz_cosmetics_disabled",
+  blitz_settlement_displacement: "world_parity_blitz_settlement_displacement",
+  blitz_settlement_blocked: "world_parity_blitz_settlement_blocked",
+  blitz_settlement_agent_blocked: "world_parity_blitz_settlement_agent_blocked",
+  blitz_settlement_occupied: "world_parity_blitz_settlement_occupied",
+  blitz_settlement_modes: "world_parity_blitz_settlement_modes",
+  blitz_settlement_duel: "world_parity_blitz_settlement_duel",
+  blitz_reservations: "world_parity_blitz_reservations",
+
   structure: "world_parity_structure",
   structure_rejections: "world_parity_structure_rejections",
   name: "world_parity_name",

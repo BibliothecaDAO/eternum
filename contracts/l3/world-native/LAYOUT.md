@@ -23,13 +23,13 @@ uses Cairo's native enum encoding. Herald consumes serialization, not storage sl
 
 The behavioral slice adds these independent component stores:
 
-| Component          | Storage                                                                                                                                            | Layout rule                                                                                                                                                 |
-| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GameState`        | Games and immutable rules keyed by game; entity counters; points keyed by game and player                                                          | `GameRegistry` and `SliceRules` retain their field order. Changes to stored records need separate appended slots and an upgrade test.                       |
-| `StructureState`   | Structure records and existence keyed by game and entity; explorer ids keyed by game, structure and index; ownership stored once in each structure | The variable explorer list has a fixed record count and indexed storage. Removal compacts that list and clears its tail.                                    |
-| `ResourceState`    | Balances and production keyed by game, entity and resource; weight and `resource_exists` keyed by game and entity                                  | The full `Resource` row is a typed projection of these stores. Destruction clears every balance, production record and weight before emitting `RowDeleted`. |
-| `BuildingState`    | Buildings and existence keyed by game, layer, outer coordinates and inner coordinates; building counts keyed by game and structure                 | Preserve the six-part building key and the three packed category counters.                                                                                  |
-| `StructuresDomain` | Hyperstructure counts and seeds; immutable resource rules and their initialization flag                                                            | Configuration is set once for each game. Hyperstructure rows derive from the stored seed and structure category.                                            |
+| Component          | Storage                                                                                                                                            | Layout rule                                                                                                                                    |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GameState`        | Games and immutable rules keyed by game; entity counters; points keyed by game and player                                                          | `GameRegistry` and `SliceRules` retain their field order. Changes to stored records need separate appended slots and an upgrade test.          |
+| `StructureState`   | Structure records and existence keyed by game and entity; explorer ids keyed by game, structure and index; ownership stored once in each structure | The variable explorer list has a fixed record count and indexed storage. Removal compacts that list and clears its tail.                       |
+| `ResourceState`    | Balances and production keyed by game, entity and resource; weight and `resource_exists` keyed by game and entity                                  | Sparse `ResourceBalance`, `ResourceProduction` and `ResourceWeight` rows expose these stores. Destruction clears each existing row explicitly. |
+| `BuildingState`    | Buildings and existence keyed by game, layer, outer coordinates and inner coordinates; building counts keyed by game and structure                 | Preserve the six-part building key and the three packed category counters.                                                                     |
+| `StructuresDomain` | Hyperstructure counts, seeds and completion flags; immutable resource rules and their initialization flag                                          | Configuration is set once for each game. Hyperstructure rows derive from the stored seed, completion flag and structure category.              |
 
 Component storage uses `v0` embedding. Field names must be unique across components embedded in the same domain;
 component names do not isolate colliding field names. Resource existence therefore uses `resource_exists`, distinct from
@@ -40,6 +40,23 @@ and portal fixtures; it requires domain authority and a development game. It doe
 Resource views return stored balances without harvesting. The authenticated production claim settles resources; spending
 settles the affected resource before deducting it. LORDS production remains a reserved zero record, matching the pinned
 resource store.
+
+`StructuresDomain` appends `completed_hyperstructures`, keyed by game and entity. A true flag identifies an initialized,
+completed Blitz hyperstructure; existing discovered foundations retain the false default.
+
+Blitz settlement adds `SettlementState` to season and `SettlementPoolState` to map as independent component stores.
+`settlement_rules` and realm grant entries are immutable once configured; their absence is not a default preset. The
+pool stores candidate ordinals under `(game_id, index)` and a live count; coordinates are projected from the immutable
+grid rules. Removed tail entries are inaccessible past that count. Biome starting troops and realm resource traits are
+immutable grant tables initialized per game; neither table is compiled into settlement rules. `SettlementState` appends
+entry entitlements keyed by game and bound owner, and a player membership index for the existing duplicate-player guard.
+Only `PlayerEntry` projects entitlement consumption; the index is not another client fact. Realm grants and upgrade
+costs share the `ResourceAmount` value type; its `(resource_type: u8, amount: u128)` layout is unchanged from the former
+upgrade value.
+
+`TroopState` appends `agent_count: Map<u32,u16>`. Explorer creation and destruction maintain it only for the reserved
+agent home id. Settlement displacement preserves this population through `AgentPopulation` events. No existing explorer
+field or map key changes. Earlier native slice deployments could not create agents; the initial count is zero.
 
 ## Wire protocol
 
@@ -193,3 +210,24 @@ its command requires the structures domain and the matching realm occupant. Vill
 Authenticated next-order action rejections advance the recording head. Only a matching actor nonce with representable
 keys and successor advances; stale or unrepresentable nonces remain untouched. Envelope and authority failures precede
 all mutations. These are protocol consumption facts, independent of the gameplay parity projection.
+
+The settlement component appends a game/biome-keyed starting-troop table. Configuration requires all 17 playable biomes
+and writes the table once with the other immutable realm grants. Production code reads these values instead of embedding
+the biome assignment table. The schema and test input derive from the settlement fixture; the parity gate checks the
+assignments against the pinned game's troop rules. Existing component fields retain their order.
+
+Resource facts use `ResourceBalance(game_id, entity_id, resource_type)`,
+`ResourceProduction(game_id, entity_id, resource_type)` and `ResourceWeight(game_id, entity_id)`. The existing balance,
+production, weight and existence storage maps keep their keys and offsets. Zero balances and inactive production have no
+row; `ResourceWeight` establishes the resource owner's existence. Returning to zero emits a deletion. Unchanged values
+emit nothing and perform no storage write. The wide resource view and both resource-member name tables are deleted; the
+read-only views expose these facts directly. Existing native history uses its original schema revision. This codec
+change requires a fresh native rehearsal deployment; it must not be activated against a fold built with the previous
+resource projection.
+
+Settlement arguments retain the admission-time PlayerRegistry wallet, each cosmetic token's owner and attributes, and
+the L1-finalized L2 block hash and number used to verify those facts. They are part of the signed command commitment and
+recorded transaction data, not another current-state row. Settlement stores only the granted attributes keyed by game
+and player. Later registry rebinding or collectible transfers are not read during execution. Gameplay registration
+remains required; unbound accounts cannot reach cosmetic eligibility. L2 locks use real time and cannot revert L3
+settlement. Tile presence remains explicit to distinguish a valid zero row; existing tiles no longer rewrite that flag.

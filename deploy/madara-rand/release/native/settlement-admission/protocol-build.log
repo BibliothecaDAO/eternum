@@ -1,0 +1,3 @@
+   Compiling lib(eternum_randomness_protocol) eternum_randomness_protocol v0.1.0 (/home/djizus/projects/eternum-native-world/contracts/l3/randomness-protocol/Scarb.toml)
+   Compiling starknet-contract(eternum_randomness_protocol) eternum_randomness_protocol v0.1.0 (/home/djizus/projects/eternum-native-world/contracts/l3/randomness-protocol/Scarb.toml)
+    Finished `dev` profile target(s) in 2 seconds

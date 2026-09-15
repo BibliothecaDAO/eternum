@@ -100,6 +100,16 @@
         "../native/terminal-rejections/report.json"
       ],
       "note": "Native and stub shared assertions, ABI unchanged, stale admission guard. Source evidence only; deployed drills and image still predate this change."
+    },
+    {
+      "gate": "bound L2 cosmetic admission and retained settlement facts through delay and rebinding",
+      "status": "passed_source_conformance",
+      "evidence": [
+        "../native/settlement-admission/report.json",
+        "../native/settlement-admission/native-abi.json",
+        "../native/settlement-admission/madara-checks.json"
+      ],
+      "note": "Gameplay authentication still requires PlayerRegistry binding. Admission reads token ownership and attributes at one finalized L2 block; accepted execution retains that snapshot. No rebuilt image, live settlement or wallet-side lock issuance is claimed."
     }
   ],
   "historicalRehearsals": "historical-index.json",
@@ -190,7 +200,24 @@
     "../native/terminal-rejections/rust-clippy.log": "73596b79c23573c30ea3176cec2df235cf5a72cea804331b01f4aa027afa4a13",
     "../native/terminal-rejections/rust-fmt.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "../native/terminal-rejections/rust-vectors.log": "97baffaa6c343297bb1913fa2e19bbf29edffc12f6968d08cb41c4a4fc5a4044",
-    "../native/terminal-rejections/schema-dependencies.log": "ab3d47f214846badd10b1eb44548eb2cd051ad9a228460b28f0406a2bc8e70d8"
+    "../native/terminal-rejections/schema-dependencies.log": "ab3d47f214846badd10b1eb44548eb2cd051ad9a228460b28f0406a2bc8e70d8",
+    "../native/settlement-admission/cairo-vectors.log": "c17ed7452cddc503c6ae726a82508001700bc8c361b3e446cdd1c7487fcc5a60",
+    "../native/settlement-admission/current-game.log": "021433637569bc5687f00231da6592a831347f92e9073fa032795853784afa5c",
+    "../native/settlement-admission/madara-checks.json": "d497a6af4334dc0e0df3c8e099ec44e7a2fc20254bb8e656639cfb39fab1d670",
+    "../native/settlement-admission/madara-pnpm-run-format.log": "76a2ed83e205e948fce24f40362bcea52bcf1f2d58cce2b8b9f44c2f85271c9d",
+    "../native/settlement-admission/madara-pnpm-run-knip.log": "d053021ea021e8193b43295b9e07ba4da67cbb8c65615da14d95e90291da1854",
+    "../native/settlement-admission/madara-scarb-fmt.log": "975c246405d345ba9142db44cde953bb132a2962816b368dbf4bf108f974918c",
+    "../native/settlement-admission/native-abi.json": "7ee4e6183cc86c772921dd892864ece06926c86a8dbb94f8e849061a22bafea9",
+    "../native/settlement-admission/native-abi.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "../native/settlement-admission/native-build.log": "3e683426b6d78bb60b32d478c1e3830d1d7f51e6e3b9d3b55642071939a35d70",
+    "../native/settlement-admission/native-conformance.log": "46e2c7ff3fee1809d0c4904d555290f539f0fcad3f8d5a6f8b045aed708e8a4e",
+    "../native/settlement-admission/native-schema.log": "b61dffbafba281366c98d3048b334d7ccceaa2d53ed253ca44dc04be4b4b1576",
+    "../native/settlement-admission/protocol-build.log": "c1d8f08b5097fe3b722d6b23b701ba5a54be4769247b1d7212a9cbb191c084f7",
+    "../native/settlement-admission/report.json": "59da4dfae68c168306dfa1b2b29a106a61e3ba4622021ab6e4f4c7e2becf86a1",
+    "../native/settlement-admission/rust-clippy.log": "0b9c85a57402765a9638848a90eec54abbd9a68f42a071a97aaa9d8acc5ba131",
+    "../native/settlement-admission/rust-fmt.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "../native/settlement-admission/rust-vectors.log": "e514e3847e01939e71b6f519f423e18b568a6639204113e3e130f4d8bb0dce65",
+    "../native/settlement-admission/schema-dependencies.log": "08fd23e1f1fa0921837e2ac6421a5cc6e6f024a34f37c758efcddaa59b4ba867"
   },
   "drills": [
     {

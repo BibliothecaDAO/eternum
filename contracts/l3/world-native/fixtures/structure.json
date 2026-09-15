@@ -2,7 +2,7 @@
   "version": 1,
   "domain": "structure",
   "rulesRevision": "55dc510f5e7af119d1efac9a60426e81fee8e408",
-  "factModel": "schema/schema.json#models[Structure,Resource,TileOpt,UpgradeLimits,UpgradeRecipe].observation",
+  "factModel": "schema/schema.json#models[Structure,ResourceBalance,ResourceProduction,ResourceWeight,TileOpt,UpgradeLimits,UpgradeRecipe].observation",
   "projectionGenerator": "deploy/madara-lab/harness/native/fact-projections.ts",
   "systems": [
     "structure_systems"

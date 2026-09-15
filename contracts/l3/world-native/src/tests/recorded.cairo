@@ -21,6 +21,7 @@ use crate::season::{ISeasonDispatcher, ISeasonDispatcherTrait, ISeasonSafeDispat
 #[derive(Copy, Drop, Serde)]
 pub struct FixtureAction {
     pub game_id: u32,
+    pub rules: crate::rules::SliceRules,
     pub actor: ContractAddress,
     pub nonce: u64,
     pub deadline: u64,
@@ -83,7 +84,7 @@ pub fn configure_submitter(season: ContractAddress, account: ContractAddress) {
 }
 pub fn make_intent(season: ContractAddress, action: FixtureAction) -> Intent {
     let mut values = array!['ETERNUM_RULES', 1];
-    rules().serialize(ref values);
+    action.rules.serialize(ref values);
     let mut arguments = array![];
     action.command.serialize(ref arguments);
     Intent {

@@ -1,0 +1,34 @@
+{
+  "scope": "Required non-Rust commands attempted in the Madara repository; no root Scarb manifest or pnpm scripts exist.",
+  "checks": [
+    {
+      "command": [
+        "scarb",
+        "fmt"
+      ],
+      "exitCode": 1,
+      "log": "madara-scarb-fmt.log",
+      "logSha256": "975c246405d345ba9142db44cde953bb132a2962816b368dbf4bf108f974918c"
+    },
+    {
+      "command": [
+        "pnpm",
+        "run",
+        "format"
+      ],
+      "exitCode": 1,
+      "log": "madara-pnpm-run-format.log",
+      "logSha256": "76a2ed83e205e948fce24f40362bcea52bcf1f2d58cce2b8b9f44c2f85271c9d"
+    },
+    {
+      "command": [
+        "pnpm",
+        "run",
+        "knip"
+      ],
+      "exitCode": 1,
+      "log": "madara-pnpm-run-knip.log",
+      "logSha256": "d053021ea021e8193b43295b9e07ba4da67cbb8c65615da14d95e90291da1854"
+    }
+  ]
+}

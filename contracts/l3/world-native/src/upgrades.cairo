@@ -1,5 +1,6 @@
 use starknet::ContractAddress;
 use crate::commands::ExecutionContext;
+use crate::resources::ResourceAmount;
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct UpgradeLimits {
@@ -7,15 +8,9 @@ pub struct UpgradeLimits {
     pub village_max: u8,
 }
 
-#[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
-pub struct UpgradeCost {
-    pub resource_type: u8,
-    pub amount: u128,
-}
-
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct UpgradeRecipe {
-    pub costs: Span<UpgradeCost>,
+    pub costs: Span<ResourceAmount>,
 }
 
 #[starknet::interface]
@@ -34,13 +29,13 @@ pub trait IStructureUpgrades<T> {
 pub mod UpgradeState {
     use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
     use crate::events::RowSet;
-    use super::{UpgradeCost, UpgradeLimits, UpgradeRecipe};
+    use super::{ResourceAmount, UpgradeLimits, UpgradeRecipe};
 
     #[storage]
     pub struct Storage {
         pub limits: Map<u32, Option<UpgradeLimits>>,
         pub cost_counts: Map<(u32, u8), u32>,
-        pub costs: Map<(u32, u8, u32), UpgradeCost>,
+        pub costs: Map<(u32, u8, u32), ResourceAmount>,
     }
 
     #[event]

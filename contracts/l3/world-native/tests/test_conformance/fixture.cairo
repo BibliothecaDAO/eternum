@@ -1,3 +1,4 @@
+mod settlement;
 use eternum_randomness_protocol::authority::{
     ISequencingAccountSafeDispatcher, ISequencingAccountSafeDispatcherTrait, ISequencingAuthorityDispatcher,
     ISequencingAuthorityDispatcherTrait,
@@ -374,7 +375,7 @@ pub fn outcome(address: ContractAddress) -> Array<felt252> {
         let key = world_native::resources::ResourceKey { game_id: 7, entity_id };
         structures.structure(key).serialize(ref values);
         if structures.has_resource(key) {
-            structures.resource(key).serialize(ref values);
+            resource_snapshot(structures, key).serialize(ref values);
         }
         structures.hyperstructure(key).serialize(ref values);
     }
@@ -388,7 +389,7 @@ pub fn outcome(address: ContractAddress) -> Array<felt252> {
             let entity_id: u32 = (tile.data / 512 % 0x100000000).try_into().unwrap();
             let key = world_native::resources::ResourceKey { game_id: 7, entity_id };
             structures.structure(key).serialize(ref values);
-            structures.resource(key).serialize(ref values);
+            resource_snapshot(structures, key).serialize(ref values);
             structures.hyperstructure(key).serialize(ref values);
         }
     }
@@ -406,5 +407,20 @@ pub fn outcome(address: ContractAddress) -> Array<felt252> {
     game.player_points(7, 456.try_into().unwrap()).serialize(ref values);
     game.season_points(7).serialize(ref values);
     structures.hyperstructure_count(7).serialize(ref values);
+    values
+}
+
+fn resource_snapshot(structures: IStructuresDispatcher, key: world_native::resources::ResourceKey) -> Array<felt252> {
+    let mut values = array![];
+    structures.resource_weight(key).serialize(ref values);
+    for resource_type in 1_u8..59 {
+        let slot = world_native::resources::ResourceSlot {
+            game_id: key.game_id, entity_id: key.entity_id, resource_type,
+        };
+        structures.resource_balance(slot).serialize(ref values);
+        if resource_type < 39 || resource_type > 56 {
+            structures.resource_production(slot).serialize(ref values);
+        }
+    }
     values
 }

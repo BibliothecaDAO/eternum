@@ -76,7 +76,7 @@ async function resolveBattle(input: SliceWorkload): Promise<number> {
   const key = gameEntityKey([BigInt(defender)]);
   if (getComponentValue(input.client.setup.components.ExplorerTroops, key))
     throw new Error("Battle did not delete the defeated explorer");
-  if (getComponentValue(input.client.setup.components.Resource, key))
+  if (input.client.views.resources(defender).hasResources())
     throw new Error("Battle did not delete the defeated explorer's resources");
   return defender;
 }
@@ -94,7 +94,7 @@ async function enterEthereal(input: SliceWorkload) {
 
 async function discover(input: SliceWorkload, bot: number): Promise<number> {
   const category = bot === 0 ? 4 : 8;
-  const { Structure, Resource } = input.client.setup.components;
+  const { Structure } = input.client.setup.components;
   const discoveries = () => [...runQuery([HasValue(Structure, { game_id: input.client.gameId, category })])];
   for (let attempt = 0; attempt < 8 && discoveries().length === 0; attempt++) {
     await waitForStamina(input, bot, 30);
@@ -108,17 +108,17 @@ async function discover(input: SliceWorkload, bot: number): Promise<number> {
   const structure = getComponentValue(Structure, entity)!;
   if (structure.base.troop_guard_count === 0) throw new Error("Discovered mine has no guards");
   if (bot === 0) {
-    const resource = getComponentValue(Resource, entity);
-    if (!resource || BigInt(resource.EARTHEN_SHARD_PRODUCTION.output_amount_left) === 0n)
-      throw new Error("Discovered mine has no production cap");
+    const production = input.client.views
+      .resources(structure.entity_id)
+      .getActiveProductions()
+      .find((production) => production.resourceId === 24);
+    if (!production || production.outputAmountLeft === 0n) throw new Error("Discovered mine has no production cap");
   }
   return structure.entity_id;
 }
 
 async function claimProduction(input: SliceWorkload) {
-  const balance = () =>
-    getComponentValue(input.client.setup.components.Resource, gameEntityKey([BigInt(input.homes[0])]))!
-      .EARTHEN_SHARD_BALANCE;
+  const balance = () => input.client.views.resources(input.homes[0]).balance(24);
   const before = BigInt(balance());
   await input.act("claim_production", "surface", input.claim);
   if (BigInt(balance()) <= before) throw new Error("Production claim did not increase Earthen Shard balance");
@@ -191,10 +191,18 @@ async function upgradeRealm(input: SliceWorkload) {
   const key = gameEntityKey([BigInt(input.homes[0])]);
   const before = getComponentValue(input.client.setup.components.Structure, key);
   if (!before) throw new Error("Missing realm before upgrade");
-  await input.act("level_up", "surface", () => input.client.setup.systemCalls.upgrade_realm({
-    signer: input.players[0], realm_entity_id: input.homes[0],
-  }));
+  await input.act("level_up", "surface", () =>
+    input.client.setup.systemCalls.upgrade_realm({
+      signer: input.players[0],
+      realm_entity_id: input.homes[0],
+    }),
+  );
   const after = getComponentValue(input.client.setup.components.Structure, key);
-  if (!after || after.base.level !== before.base.level + 1 || after.base.troop_max_explorer_count !== 3 || after.base.troop_max_guard_count !== 2)
+  if (
+    !after ||
+    after.base.level !== before.base.level + 1 ||
+    after.base.troop_max_explorer_count !== 3 ||
+    after.base.troop_max_guard_count !== 2
+  )
     throw new Error("Realm upgrade did not reach the shared client");
 }

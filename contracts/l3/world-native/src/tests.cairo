@@ -1,5 +1,7 @@
 mod fixtures;
 mod recorded;
+mod resources;
+mod settlement;
 use eternum_randomness_protocol::entrypoint::{
     IRecordedExecutionViewsDispatcher, IRecordedExecutionViewsDispatcherTrait,
 };
@@ -28,7 +30,7 @@ use crate::season::{ISeasonDispatcher, ISeasonDispatcherTrait, ISeasonSafeDispat
 use crate::troops::ExplorerKey;
 use crate::upgrades::{
     IUpgradeRulesDispatcher, IUpgradeRulesDispatcherTrait, IUpgradeRulesSafeDispatcher,
-    IUpgradeRulesSafeDispatcherTrait, UpgradeCost, UpgradeLimits, UpgradeRecipe,
+    IUpgradeRulesSafeDispatcherTrait, UpgradeLimits, UpgradeRecipe,
 };
 
 #[derive(Drop, Copy)]
@@ -87,6 +89,7 @@ fn setup(activate: bool) -> Deployment {
 fn intent(deployment: Deployment, game_id: u32) -> Intent {
     Intent {
         game_id,
+        rules: recorded::rules(),
         actor: deployment.actor,
         nonce: 0,
         deadline: 200,
@@ -538,7 +541,10 @@ fn upgrade_rules_are_immutable_complete_and_game_scoped() {
     let rules = IUpgradeRulesDispatcher { contract_address: season };
     let safe = IUpgradeRulesSafeDispatcher { contract_address: season };
     let limits = UpgradeLimits { realm_max: 1, village_max: 0 };
-    let recipes = array![UpgradeRecipe { costs: array![UpgradeCost { resource_type: 23, amount: 17 }].span() }].span();
+    let recipes = array![
+        UpgradeRecipe { costs: array![crate::resources::ResourceAmount { resource_type: 23, amount: 17 }].span() },
+    ]
+        .span();
     assert!(safe.upgrade_limits(1).is_err());
     assert!(safe.configure_upgrades(1, limits, recipes).is_err());
     start_cheat_caller_address(season, authority());

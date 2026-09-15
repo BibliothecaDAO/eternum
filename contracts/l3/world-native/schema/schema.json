@@ -160,9 +160,214 @@
               "kind": "data"
             }
           ]
+        },
+        {
+          "name": "RowSet",
+          "prefix": [
+            "0x214106fd6d6670de9f5a11bc8d5c063e557cc450c49e25913b5047546822bc9",
+            "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "model",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "keys",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            },
+            {
+              "name": "values",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            }
+          ]
         }
       ],
       "entrypoints": [
+        {
+          "type": "function",
+          "name": "configure_settlement",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "rules",
+              "type": "world_native::settlement::SettlementRules"
+            },
+            {
+              "name": "grants",
+              "type": "world_native::settlement::RealmGrants"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "settlement_rules",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "world_native::settlement::SettlementRules"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "realm_grants",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "world_native::settlement::RealmGrants"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "settlement_progress",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "world_native::settlement::SettlementProgress"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "player_entry",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::settlement::EntryKey"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::option::Option::<world_native::settlement::PlayerEntry>"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "player_cosmetics",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::settlement::CosmeticsKey"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "world_native::settlement::PlayerCosmetics"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "register_entitlement",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::settlement::EntryKey"
+            },
+            {
+              "name": "entitlement",
+              "type": "world_native::settlement::EntryEntitlement"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "entry_entitlement",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::settlement::EntryKey"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::option::Option::<world_native::settlement::EntryEntitlement>"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "settlement_admission",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "world_native::settlement::SettlementAdmission"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "settle_blitz",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "command",
+              "type": "world_native::settlement::SettleBlitz"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
         {
           "type": "function",
           "name": "configure_upgrades",
@@ -671,9 +876,162 @@
               "kind": "data"
             }
           ]
+        },
+        {
+          "name": "RowSet",
+          "prefix": [
+            "0x214106fd6d6670de9f5a11bc8d5c063e557cc450c49e25913b5047546822bc9",
+            "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "model",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "keys",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            },
+            {
+              "name": "values",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            }
+          ]
+        },
+        {
+          "name": "RowSet",
+          "prefix": [
+            "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "model",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "keys",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            },
+            {
+              "name": "values",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            }
+          ]
         }
       ],
       "entrypoints": [
+        {
+          "type": "function",
+          "name": "settlement_pool",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "world_native::settlement::SettlementPool"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "reserved_hyperstructures",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::integer::u32"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "claim_settlement",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "registered",
+              "type": "core::integer::u16"
+            },
+            {
+              "name": "seed",
+              "type": "core::integer::u256"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::array::Span::<world_native::troops::Coord>"
+            }
+          ],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "reserve_hyperstructures",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "count",
+              "type": "core::integer::u8"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "release_hyperstructure",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "coord",
+              "type": "world_native::troops::Coord"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
         {
           "type": "function",
           "name": "biome",
@@ -1063,6 +1421,29 @@
               "kind": "data"
             }
           ]
+        },
+        {
+          "name": "RowDeleted",
+          "prefix": [
+            "0x21d9fae6da691e7b70368e8b4e59a5122e5e29edb70bdeb031272b2192f3893"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "model",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "keys",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            }
+          ]
         }
       ],
       "entrypoints": [
@@ -1081,6 +1462,38 @@
             }
           ],
           "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "agent_population",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "world_native::troops::AgentPopulation"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "displace_explorer",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "explorer_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
         },
         {
           "type": "function",
@@ -1416,40 +1829,6 @@
           ]
         },
         {
-          "name": "RowMemberSet",
-          "prefix": [
-            "0x3c3e892e516aae8b2e7cf7e7e2add5cb200d857c58305d1b11c5184d0dfee06",
-            "0x2016d01ac221539fcc960c46b5ba2df505fc9c7032934961e1eeaec5f23b587"
-          ],
-          "members": [
-            {
-              "name": "version",
-              "type": "core::integer::u8",
-              "kind": "key"
-            },
-            {
-              "name": "model",
-              "type": "core::felt252",
-              "kind": "key"
-            },
-            {
-              "name": "member",
-              "type": "core::felt252",
-              "kind": "key"
-            },
-            {
-              "name": "keys",
-              "type": "core::array::Span::<core::felt252>",
-              "kind": "data"
-            },
-            {
-              "name": "values",
-              "type": "core::array::Span::<core::felt252>",
-              "kind": "data"
-            }
-          ]
-        },
-        {
           "name": "RowDeleted",
           "prefix": [
             "0x3c3e892e516aae8b2e7cf7e7e2add5cb200d857c58305d1b11c5184d0dfee06",
@@ -1759,7 +2138,39 @@
         },
         {
           "type": "function",
-          "name": "resource",
+          "name": "resource_balance",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::resources::ResourceSlot"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::integer::u128"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "resource_production",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::resources::ResourceSlot"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "world_native::resources::Production"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "resource_weight",
           "inputs": [
             {
               "name": "key",
@@ -1768,7 +2179,7 @@
           ],
           "outputs": [
             {
-              "type": "world_native::resources::Resource"
+              "type": "world_native::resources::Weight"
             }
           ],
           "state_mutability": "view"
@@ -1948,6 +2359,90 @@
             {
               "name": "timestamp",
               "type": "core::integer::u64"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "create_reserved_hyperstructure",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "coord",
+              "type": "world_native::troops::Coord"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "create_blitz_realm",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "realm_id",
+              "type": "core::integer::u16"
+            },
+            {
+              "name": "coord",
+              "type": "world_native::troops::Coord"
+            },
+            {
+              "name": "grant_troops",
+              "type": "core::bool"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::integer::u32"
+            }
+          ],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "activate_realm_economy",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "structure_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
             }
           ],
           "outputs": [],
@@ -2176,6 +2671,401 @@
   },
   "models": [
     {
+      "name": "AgentPopulation",
+      "identity": "0x4167656e74506f70756c6174696f6e",
+      "owners": [
+        "troops"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "count",
+          "type": "core::integer::u16",
+          "id": "0x636f756e74",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": 1,
+      "observation": {
+        "domain": "troops",
+        "fields": {
+          "active": "count"
+        }
+      }
+    },
+    {
+      "name": "RealmGrants",
+      "identity": "0x5265616c6d4772616e7473",
+      "owners": [
+        "season"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "resources",
+          "type": "core::array::Span::<world_native::resources::ResourceAmount>",
+          "id": "0x7265736f7572636573",
+          "feltLength": null
+        },
+        {
+          "name": "starting_troops",
+          "type": "core::array::Span::<world_native::troops::TroopType>",
+          "id": "0x7374617274696e675f74726f6f7073",
+          "feltLength": null
+        },
+        {
+          "name": "realm_resources",
+          "type": "core::array::Span::<core::integer::u8>",
+          "id": "0x7265616c6d5f7265736f7572636573",
+          "feltLength": null
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": null,
+      "observation": {
+        "domain": "blitz-settlement",
+        "fields": {
+          "resources": "resources",
+          "startingTroops": "starting_troops",
+          "realmResources": "realm_resources"
+        }
+      }
+    },
+    {
+      "name": "HyperstructureReservations",
+      "identity": "0x48797065727374727563747572655265736572766174696f6e73",
+      "owners": [
+        "map"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "placed",
+          "type": "core::integer::u32",
+          "id": "0x706c61636564",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": 1,
+      "observation": {
+        "domain": "blitz-settlement",
+        "fields": {
+          "placed": "placed"
+        }
+      }
+    },
+    {
+      "name": "SettlementRules",
+      "identity": "0x536574746c656d656e7452756c6573",
+      "owners": [
+        "season"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "registration_start",
+          "type": "core::integer::u32",
+          "id": "0x726567697374726174696f6e5f7374617274",
+          "feltLength": 1
+        },
+        {
+          "name": "registration_limit",
+          "type": "core::integer::u16",
+          "id": "0x726567697374726174696f6e5f6c696d6974",
+          "feltLength": 1
+        },
+        {
+          "name": "mode",
+          "type": "world_native::settlement::SettlementMode",
+          "id": "0x6d6f6465",
+          "feltLength": 1
+        },
+        {
+          "name": "reward_profile",
+          "type": "core::integer::u8",
+          "id": "0x7265776172645f70726f66696c65",
+          "feltLength": 1
+        },
+        {
+          "name": "cosmetic_limit",
+          "type": "core::integer::u8",
+          "id": "0x636f736d657469635f6c696d6974",
+          "feltLength": 1
+        },
+        {
+          "name": "cosmetic_collection",
+          "type": "core::starknet::contract_address::ContractAddress",
+          "id": "0x636f736d657469635f636f6c6c656374696f6e",
+          "feltLength": 1
+        },
+        {
+          "name": "cosmetic_timelock",
+          "type": "core::starknet::contract_address::ContractAddress",
+          "id": "0x636f736d657469635f74696d656c6f636b",
+          "feltLength": 1
+        },
+        {
+          "name": "ledger_operator",
+          "type": "core::starknet::contract_address::ContractAddress",
+          "id": "0x6c65646765725f6f70657261746f72",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": 8,
+      "observation": {
+        "domain": "realm/blitz",
+        "fields": {
+          "registrationOpens": "registration_start",
+          "capacity": "registration_limit",
+          "mode": "mode",
+          "profile": "reward_profile",
+          "cosmeticLimit": "cosmetic_limit"
+        }
+      }
+    },
+    {
+      "name": "SettlementProgress",
+      "identity": "0x536574746c656d656e7450726f6772657373",
+      "owners": [
+        "season"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "registered",
+          "type": "core::integer::u16",
+          "id": "0x72656769737465726564",
+          "feltLength": 1
+        },
+        {
+          "name": "realm_count",
+          "type": "core::integer::u16",
+          "id": "0x7265616c6d5f636f756e74",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": 2,
+      "observation": {
+        "domain": "realm/blitz",
+        "fields": {
+          "players": "registered",
+          "realms": "realm_count"
+        }
+      }
+    },
+    {
+      "name": "SettlementPool",
+      "identity": "0x536574746c656d656e74506f6f6c",
+      "owners": [
+        "map"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "opened",
+          "type": "core::integer::u32",
+          "id": "0x6f70656e6564",
+          "feltLength": 1
+        },
+        {
+          "name": "available",
+          "type": "core::array::Span::<world_native::settlement::SettlementLocation>",
+          "id": "0x617661696c61626c65",
+          "feltLength": null
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": null,
+      "observation": {
+        "domain": "realm/blitz",
+        "fields": {
+          "availableLocations": "available"
+        }
+      }
+    },
+    {
+      "name": "EntryEntitlement",
+      "identity": "0x456e747279456e7469746c656d656e74",
+      "owners": [
+        "season"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "owner",
+          "type": "core::starknet::contract_address::ContractAddress",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "realm_id",
+          "type": "core::integer::u256",
+          "id": "0x7265616c6d5f6964",
+          "feltLength": 2
+        },
+        {
+          "name": "metadata_1",
+          "type": "core::felt252",
+          "id": "0x6d657461646174615f31",
+          "feltLength": 1
+        },
+        {
+          "name": "metadata_2",
+          "type": "core::felt252",
+          "id": "0x6d657461646174615f32",
+          "feltLength": 1
+        },
+        {
+          "name": "metadata_3",
+          "type": "core::felt252",
+          "id": "0x6d657461646174615f33",
+          "feltLength": 1
+        },
+        {
+          "name": "pass_kind",
+          "type": "core::integer::u8",
+          "id": "0x706173735f6b696e64",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 6,
+      "observation": {
+        "domain": "blitz-settlement",
+        "fields": {
+          "realmId": "realm_id",
+          "metadata1": "metadata_1",
+          "metadata2": "metadata_2",
+          "metadata3": "metadata_3",
+          "passKind": "pass_kind"
+        }
+      }
+    },
+    {
+      "name": "PlayerEntry",
+      "identity": "0x506c61796572456e747279",
+      "owners": [
+        "season"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "owner",
+          "type": "core::starknet::contract_address::ContractAddress",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "player",
+          "type": "core::starknet::contract_address::ContractAddress",
+          "id": "0x706c61796572",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 1,
+      "observation": {
+        "domain": "realm/blitz",
+        "fields": {
+          "player": "player"
+        }
+      }
+    },
+    {
+      "name": "PlayerCosmetics",
+      "identity": "0x506c61796572436f736d6574696373",
+      "owners": [
+        "season"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "player",
+          "type": "core::starknet::contract_address::ContractAddress",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "attributes",
+          "type": "core::array::Span::<core::integer::u128>",
+          "id": "0x61747472696275746573",
+          "feltLength": null
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": null,
+      "observation": {
+        "domain": "realm/blitz",
+        "fields": {
+          "attributes": "attributes"
+        }
+      }
+    },
+    {
       "name": "TileOpt",
       "identity": "0x54696c654f7074",
       "owners": [
@@ -2360,8 +3250,121 @@
       }
     },
     {
-      "name": "Resource",
-      "identity": "0x5265736f75726365",
+      "name": "ResourceBalance",
+      "identity": "0x5265736f7572636542616c616e6365",
+      "owners": [
+        "structures"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "entity_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "resource_type",
+          "type": "core::integer::u8",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "balance",
+          "type": "core::integer::u128",
+          "id": "0x62616c616e6365",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 3,
+      "valueLength": 1,
+      "absence": {
+        "parent": "ResourceWeight",
+        "value": "zero",
+        "meaning": "Zero balance or inactive production while the resource owner exists; no resource owner after its weight row is deleted."
+      },
+      "observation": {
+        "domain": "resources",
+        "fields": {
+          "balance": "balance"
+        }
+      }
+    },
+    {
+      "name": "ResourceProduction",
+      "identity": "0x5265736f7572636550726f64756374696f6e",
+      "owners": [
+        "structures"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "entity_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "resource_type",
+          "type": "core::integer::u8",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "building_count",
+          "type": "core::integer::u8",
+          "id": "0x6275696c64696e675f636f756e74",
+          "feltLength": 1
+        },
+        {
+          "name": "production_rate",
+          "type": "core::integer::u64",
+          "id": "0x70726f64756374696f6e5f72617465",
+          "feltLength": 1
+        },
+        {
+          "name": "output_amount_left",
+          "type": "core::integer::u128",
+          "id": "0x6f75747075745f616d6f756e745f6c656674",
+          "feltLength": 1
+        },
+        {
+          "name": "last_updated_at",
+          "type": "core::integer::u32",
+          "id": "0x6c6173745f757064617465645f6174",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 3,
+      "valueLength": 4,
+      "absence": {
+        "parent": "ResourceWeight",
+        "value": "zero",
+        "meaning": "Zero balance or inactive production while the resource owner exists; no resource owner after its weight row is deleted."
+      },
+      "observation": {
+        "domain": "resources",
+        "fields": {
+          "buildingCount": "building_count",
+          "rate": "production_rate",
+          "outputRemaining": "output_amount_left",
+          "updatedAt": "last_updated_at"
+        }
+      }
+    },
+    {
+      "name": "ResourceWeight",
+      "identity": "0x5265736f75726365576569676874",
       "owners": [
         "structures"
       ],
@@ -2380,703 +3383,25 @@
       ],
       "members": [
         {
-          "name": "STONE_BALANCE",
+          "name": "capacity",
           "type": "core::integer::u128",
-          "id": "0x53544f4e455f42414c414e4345",
-          "feltLength": 1
-        },
-        {
-          "name": "COAL_BALANCE",
-          "type": "core::integer::u128",
-          "id": "0x434f414c5f42414c414e4345",
-          "feltLength": 1
-        },
-        {
-          "name": "WOOD_BALANCE",
-          "type": "core::integer::u128",
-          "id": "0x574f4f445f42414c414e4345",
-          "feltLength": 1
-        },
-        {
-          "name": "COPPER_BALANCE",
-          "type": "core::integer::u128",
-          "id": "0x434f505045525f42414c414e4345",
-          "feltLength": 1
-        },
-        {
-          "name": "IRONWOOD_BALANCE",
-          "type": "core::integer::u128",
-          "id": "0x49524f4e574f4f445f42414c414e4345",
-          "feltLength": 1
-        },
-        {
-          "name": "OBSIDIAN_BALANCE",
-          "type": "core::integer::u128",
-          "id": "0x4f4253494449414e5f42414c414e4345",
-          "feltLength": 1
-        },
-        {
-          "name": "GOLD_BALANCE",
-          "type": "core::integer::u128",
-          "id": "0x474f4c445f42414c414e4345",
-          "feltLength": 1
-        },
-        {
-          "name": "SILVER_BALANCE",
-          "type": "core::integer::u128",
-          "id": "0x53494c5645525f42414c414e4345",
-          "feltLength": 1
-        },
-        {
-          "name": "MITHRAL_BALANCE",
-          "type": "core::integer::u128",
-          "id": "0x4d49544852414c5f42414c414e4345",
-          "feltLength": 1
-        },
-        {
-          "name": "ALCHEMICAL_SILVER_BALANCE",
-          "type": "core::integer::u128",
-          "id": "0x414c4348454d4943414c5f53494c5645525f42414c414e4345",
-          "feltLength": 1
-        },
-        {
-          "name": "COLD_IRON_BALANCE",
-          "type": "core::integer::u128",
-          "id": "0x434f4c445f49524f4e5f42414c414e4345",
-          "feltLength": 1
-        },
-        {
-          "name": "DEEP_CRYSTAL_BALANCE",
-          "type": "core::integer::u128",
-          "id": "0x444545505f4352595354414c5f42414c414e4345",
-          "feltLength": 1
-        },
-        {
-          "name": "RUBY_BALANCE",
-          "type": "core::integer::u128",
-          "id": "0x525542595f42414c414e4345",
-          "feltLength": 1
-        },
-        {
-          "name": "DIAMONDS_BALANCE",
-          "type": "core::integer::u128",
-          "id": "0x4449414d4f4e44535f42414c414e4345",
-          "feltLength": 1
-        },
-        {
-          "name": "HARTWOOD_BALANCE",
-          "type": "core::integer::u128",
-          "id": "0x48415254574f4f445f42414c414e4345",
-          "feltLength": 1
-        },
-        {
-          "name": "IGNIUM_BALANCE",
-          "type": "core::integer::u128",
-          "id": "0x49474e49554d5f42414c414e4345",
-          "feltLength": 1
-        },
-        {
-          "name": "TWILIGHT_QUARTZ_BALANCE",
-          "type": "core::integer::u128",
-          "id": "0x5457494c494748545f51554152545a5f42414c414e4345",
-          "feltLength": 1
-        },
-        {
-          "name": "TRUE_ICE_BALANCE",
-          "type": "core::integer::u128",
-          "id": "0x545255455f4943455f42414c414e4345",
-          "feltLength": 1
-        },
-        {
-          "name": "ADAMANTINE_BALANCE",
-          "type": "core::integer::u128",
-          "id": "0x4144414d414e54494e455f42414c414e4345",
-          "feltLength": 1
-        },
-        {
-          "name": "SAPPHIRE_BALANCE",
-          "type": "core::integer::u128",
-          "id": "0x53415050484952455f42414c414e4345",
-          "feltLength": 1
-        },
-        {
-          "name": "ETHEREAL_SILICA_BALANCE",
-          "type": "core::integer::u128",
-          "id": "0x455448455245414c5f53494c4943415f42414c414e4345",
-          "feltLength": 1
-        },
-        {
-          "name": "DRAGONHIDE_BALANCE",
-          "type": "core::integer::u128",
-          "id": "0x445241474f4e484944455f42414c414e4345",
-          "feltLength": 1
-        },
-        {
-          "name": "LABOR_BALANCE",
-          "type": "core::integer::u128",
-          "id": "0x4c41424f525f42414c414e4345",
-          "feltLength": 1
-        },
-        {
-          "name": "EARTHEN_SHARD_BALANCE",
-          "type": "core::integer::u128",
-          "id": "0x4541525448454e5f53484152445f42414c414e4345",
-          "feltLength": 1
-        },
-        {
-          "name": "DONKEY_BALANCE",
-          "type": "core::integer::u128",
-          "id": "0x444f4e4b45595f42414c414e4345",
-          "feltLength": 1
-        },
-        {
-          "name": "KNIGHT_T1_BALANCE",
-          "type": "core::integer::u128",
-          "id": "0x4b4e494748545f54315f42414c414e4345",
-          "feltLength": 1
-        },
-        {
-          "name": "KNIGHT_T2_BALANCE",
-          "type": "core::integer::u128",
-          "id": "0x4b4e494748545f54325f42414c414e4345",
-          "feltLength": 1
-        },
-        {
-          "name": "KNIGHT_T3_BALANCE",
-          "type": "core::integer::u128",
-          "id": "0x4b4e494748545f54335f42414c414e4345",
-          "feltLength": 1
-        },
-        {
-          "name": "CROSSBOWMAN_T1_BALANCE",
-          "type": "core::integer::u128",
-          "id": "0x43524f5353424f574d414e5f54315f42414c414e4345",
-          "feltLength": 1
-        },
-        {
-          "name": "CROSSBOWMAN_T2_BALANCE",
-          "type": "core::integer::u128",
-          "id": "0x43524f5353424f574d414e5f54325f42414c414e4345",
-          "feltLength": 1
-        },
-        {
-          "name": "CROSSBOWMAN_T3_BALANCE",
-          "type": "core::integer::u128",
-          "id": "0x43524f5353424f574d414e5f54335f42414c414e4345",
-          "feltLength": 1
-        },
-        {
-          "name": "PALADIN_T1_BALANCE",
-          "type": "core::integer::u128",
-          "id": "0x50414c4144494e5f54315f42414c414e4345",
-          "feltLength": 1
-        },
-        {
-          "name": "PALADIN_T2_BALANCE",
-          "type": "core::integer::u128",
-          "id": "0x50414c4144494e5f54325f42414c414e4345",
-          "feltLength": 1
-        },
-        {
-          "name": "PALADIN_T3_BALANCE",
-          "type": "core::integer::u128",
-          "id": "0x50414c4144494e5f54335f42414c414e4345",
-          "feltLength": 1
-        },
-        {
-          "name": "WHEAT_BALANCE",
-          "type": "core::integer::u128",
-          "id": "0x57484541545f42414c414e4345",
-          "feltLength": 1
-        },
-        {
-          "name": "FISH_BALANCE",
-          "type": "core::integer::u128",
-          "id": "0x464953485f42414c414e4345",
-          "feltLength": 1
-        },
-        {
-          "name": "LORDS_BALANCE",
-          "type": "core::integer::u128",
-          "id": "0x4c4f5244535f42414c414e4345",
-          "feltLength": 1
-        },
-        {
-          "name": "ESSENCE_BALANCE",
-          "type": "core::integer::u128",
-          "id": "0x455353454e43455f42414c414e4345",
-          "feltLength": 1
-        },
-        {
-          "name": "RELIC_E1_BALANCE",
-          "type": "core::integer::u128",
-          "id": "0x52454c49435f45315f42414c414e4345",
-          "feltLength": 1
-        },
-        {
-          "name": "RELIC_E2_BALANCE",
-          "type": "core::integer::u128",
-          "id": "0x52454c49435f45325f42414c414e4345",
-          "feltLength": 1
-        },
-        {
-          "name": "RELIC_E3_BALANCE",
-          "type": "core::integer::u128",
-          "id": "0x52454c49435f45335f42414c414e4345",
-          "feltLength": 1
-        },
-        {
-          "name": "RELIC_E4_BALANCE",
-          "type": "core::integer::u128",
-          "id": "0x52454c49435f45345f42414c414e4345",
-          "feltLength": 1
-        },
-        {
-          "name": "RELIC_E5_BALANCE",
-          "type": "core::integer::u128",
-          "id": "0x52454c49435f45355f42414c414e4345",
-          "feltLength": 1
-        },
-        {
-          "name": "RELIC_E6_BALANCE",
-          "type": "core::integer::u128",
-          "id": "0x52454c49435f45365f42414c414e4345",
-          "feltLength": 1
-        },
-        {
-          "name": "RELIC_E7_BALANCE",
-          "type": "core::integer::u128",
-          "id": "0x52454c49435f45375f42414c414e4345",
-          "feltLength": 1
-        },
-        {
-          "name": "RELIC_E8_BALANCE",
-          "type": "core::integer::u128",
-          "id": "0x52454c49435f45385f42414c414e4345",
-          "feltLength": 1
-        },
-        {
-          "name": "RELIC_E9_BALANCE",
-          "type": "core::integer::u128",
-          "id": "0x52454c49435f45395f42414c414e4345",
-          "feltLength": 1
-        },
-        {
-          "name": "RELIC_E10_BALANCE",
-          "type": "core::integer::u128",
-          "id": "0x52454c49435f4531305f42414c414e4345",
-          "feltLength": 1
-        },
-        {
-          "name": "RELIC_E11_BALANCE",
-          "type": "core::integer::u128",
-          "id": "0x52454c49435f4531315f42414c414e4345",
-          "feltLength": 1
-        },
-        {
-          "name": "RELIC_E12_BALANCE",
-          "type": "core::integer::u128",
-          "id": "0x52454c49435f4531325f42414c414e4345",
-          "feltLength": 1
-        },
-        {
-          "name": "RELIC_E13_BALANCE",
-          "type": "core::integer::u128",
-          "id": "0x52454c49435f4531335f42414c414e4345",
-          "feltLength": 1
-        },
-        {
-          "name": "RELIC_E14_BALANCE",
-          "type": "core::integer::u128",
-          "id": "0x52454c49435f4531345f42414c414e4345",
-          "feltLength": 1
-        },
-        {
-          "name": "RELIC_E15_BALANCE",
-          "type": "core::integer::u128",
-          "id": "0x52454c49435f4531355f42414c414e4345",
-          "feltLength": 1
-        },
-        {
-          "name": "RELIC_E16_BALANCE",
-          "type": "core::integer::u128",
-          "id": "0x52454c49435f4531365f42414c414e4345",
-          "feltLength": 1
-        },
-        {
-          "name": "RELIC_E17_BALANCE",
-          "type": "core::integer::u128",
-          "id": "0x52454c49435f4531375f42414c414e4345",
-          "feltLength": 1
-        },
-        {
-          "name": "RELIC_E18_BALANCE",
-          "type": "core::integer::u128",
-          "id": "0x52454c49435f4531385f42414c414e4345",
-          "feltLength": 1
-        },
-        {
-          "name": "RESEARCH_BALANCE",
-          "type": "core::integer::u128",
-          "id": "0x52455345415243485f42414c414e4345",
-          "feltLength": 1
-        },
-        {
-          "name": "SATOSHI_BALANCE",
-          "type": "core::integer::u128",
-          "id": "0x5341544f5348495f42414c414e4345",
+          "id": "0x6361706163697479",
           "feltLength": 1
         },
         {
           "name": "weight",
-          "type": "world_native::resources::Weight",
+          "type": "core::integer::u128",
           "id": "0x776569676874",
-          "feltLength": 2
-        },
-        {
-          "name": "STONE_PRODUCTION",
-          "type": "world_native::resources::Production",
-          "id": "0x53544f4e455f50524f44554354494f4e",
-          "feltLength": 4
-        },
-        {
-          "name": "COAL_PRODUCTION",
-          "type": "world_native::resources::Production",
-          "id": "0x434f414c5f50524f44554354494f4e",
-          "feltLength": 4
-        },
-        {
-          "name": "WOOD_PRODUCTION",
-          "type": "world_native::resources::Production",
-          "id": "0x574f4f445f50524f44554354494f4e",
-          "feltLength": 4
-        },
-        {
-          "name": "COPPER_PRODUCTION",
-          "type": "world_native::resources::Production",
-          "id": "0x434f505045525f50524f44554354494f4e",
-          "feltLength": 4
-        },
-        {
-          "name": "IRONWOOD_PRODUCTION",
-          "type": "world_native::resources::Production",
-          "id": "0x49524f4e574f4f445f50524f44554354494f4e",
-          "feltLength": 4
-        },
-        {
-          "name": "OBSIDIAN_PRODUCTION",
-          "type": "world_native::resources::Production",
-          "id": "0x4f4253494449414e5f50524f44554354494f4e",
-          "feltLength": 4
-        },
-        {
-          "name": "GOLD_PRODUCTION",
-          "type": "world_native::resources::Production",
-          "id": "0x474f4c445f50524f44554354494f4e",
-          "feltLength": 4
-        },
-        {
-          "name": "SILVER_PRODUCTION",
-          "type": "world_native::resources::Production",
-          "id": "0x53494c5645525f50524f44554354494f4e",
-          "feltLength": 4
-        },
-        {
-          "name": "MITHRAL_PRODUCTION",
-          "type": "world_native::resources::Production",
-          "id": "0x4d49544852414c5f50524f44554354494f4e",
-          "feltLength": 4
-        },
-        {
-          "name": "ALCHEMICAL_SILVER_PRODUCTION",
-          "type": "world_native::resources::Production",
-          "id": "0x414c4348454d4943414c5f53494c5645525f50524f44554354494f4e",
-          "feltLength": 4
-        },
-        {
-          "name": "COLD_IRON_PRODUCTION",
-          "type": "world_native::resources::Production",
-          "id": "0x434f4c445f49524f4e5f50524f44554354494f4e",
-          "feltLength": 4
-        },
-        {
-          "name": "DEEP_CRYSTAL_PRODUCTION",
-          "type": "world_native::resources::Production",
-          "id": "0x444545505f4352595354414c5f50524f44554354494f4e",
-          "feltLength": 4
-        },
-        {
-          "name": "RUBY_PRODUCTION",
-          "type": "world_native::resources::Production",
-          "id": "0x525542595f50524f44554354494f4e",
-          "feltLength": 4
-        },
-        {
-          "name": "DIAMONDS_PRODUCTION",
-          "type": "world_native::resources::Production",
-          "id": "0x4449414d4f4e44535f50524f44554354494f4e",
-          "feltLength": 4
-        },
-        {
-          "name": "HARTWOOD_PRODUCTION",
-          "type": "world_native::resources::Production",
-          "id": "0x48415254574f4f445f50524f44554354494f4e",
-          "feltLength": 4
-        },
-        {
-          "name": "IGNIUM_PRODUCTION",
-          "type": "world_native::resources::Production",
-          "id": "0x49474e49554d5f50524f44554354494f4e",
-          "feltLength": 4
-        },
-        {
-          "name": "TWILIGHT_QUARTZ_PRODUCTION",
-          "type": "world_native::resources::Production",
-          "id": "0x5457494c494748545f51554152545a5f50524f44554354494f4e",
-          "feltLength": 4
-        },
-        {
-          "name": "TRUE_ICE_PRODUCTION",
-          "type": "world_native::resources::Production",
-          "id": "0x545255455f4943455f50524f44554354494f4e",
-          "feltLength": 4
-        },
-        {
-          "name": "ADAMANTINE_PRODUCTION",
-          "type": "world_native::resources::Production",
-          "id": "0x4144414d414e54494e455f50524f44554354494f4e",
-          "feltLength": 4
-        },
-        {
-          "name": "SAPPHIRE_PRODUCTION",
-          "type": "world_native::resources::Production",
-          "id": "0x53415050484952455f50524f44554354494f4e",
-          "feltLength": 4
-        },
-        {
-          "name": "ETHEREAL_SILICA_PRODUCTION",
-          "type": "world_native::resources::Production",
-          "id": "0x455448455245414c5f53494c4943415f50524f44554354494f4e",
-          "feltLength": 4
-        },
-        {
-          "name": "DRAGONHIDE_PRODUCTION",
-          "type": "world_native::resources::Production",
-          "id": "0x445241474f4e484944455f50524f44554354494f4e",
-          "feltLength": 4
-        },
-        {
-          "name": "LABOR_PRODUCTION",
-          "type": "world_native::resources::Production",
-          "id": "0x4c41424f525f50524f44554354494f4e",
-          "feltLength": 4
-        },
-        {
-          "name": "EARTHEN_SHARD_PRODUCTION",
-          "type": "world_native::resources::Production",
-          "id": "0x4541525448454e5f53484152445f50524f44554354494f4e",
-          "feltLength": 4
-        },
-        {
-          "name": "DONKEY_PRODUCTION",
-          "type": "world_native::resources::Production",
-          "id": "0x444f4e4b45595f50524f44554354494f4e",
-          "feltLength": 4
-        },
-        {
-          "name": "KNIGHT_T1_PRODUCTION",
-          "type": "world_native::resources::Production",
-          "id": "0x4b4e494748545f54315f50524f44554354494f4e",
-          "feltLength": 4
-        },
-        {
-          "name": "KNIGHT_T2_PRODUCTION",
-          "type": "world_native::resources::Production",
-          "id": "0x4b4e494748545f54325f50524f44554354494f4e",
-          "feltLength": 4
-        },
-        {
-          "name": "KNIGHT_T3_PRODUCTION",
-          "type": "world_native::resources::Production",
-          "id": "0x4b4e494748545f54335f50524f44554354494f4e",
-          "feltLength": 4
-        },
-        {
-          "name": "CROSSBOWMAN_T1_PRODUCTION",
-          "type": "world_native::resources::Production",
-          "id": "0x43524f5353424f574d414e5f54315f50524f44554354494f4e",
-          "feltLength": 4
-        },
-        {
-          "name": "CROSSBOWMAN_T2_PRODUCTION",
-          "type": "world_native::resources::Production",
-          "id": "0x43524f5353424f574d414e5f54325f50524f44554354494f4e",
-          "feltLength": 4
-        },
-        {
-          "name": "CROSSBOWMAN_T3_PRODUCTION",
-          "type": "world_native::resources::Production",
-          "id": "0x43524f5353424f574d414e5f54335f50524f44554354494f4e",
-          "feltLength": 4
-        },
-        {
-          "name": "PALADIN_T1_PRODUCTION",
-          "type": "world_native::resources::Production",
-          "id": "0x50414c4144494e5f54315f50524f44554354494f4e",
-          "feltLength": 4
-        },
-        {
-          "name": "PALADIN_T2_PRODUCTION",
-          "type": "world_native::resources::Production",
-          "id": "0x50414c4144494e5f54325f50524f44554354494f4e",
-          "feltLength": 4
-        },
-        {
-          "name": "PALADIN_T3_PRODUCTION",
-          "type": "world_native::resources::Production",
-          "id": "0x50414c4144494e5f54335f50524f44554354494f4e",
-          "feltLength": 4
-        },
-        {
-          "name": "WHEAT_PRODUCTION",
-          "type": "world_native::resources::Production",
-          "id": "0x57484541545f50524f44554354494f4e",
-          "feltLength": 4
-        },
-        {
-          "name": "FISH_PRODUCTION",
-          "type": "world_native::resources::Production",
-          "id": "0x464953485f50524f44554354494f4e",
-          "feltLength": 4
-        },
-        {
-          "name": "LORDS_PRODUCTION",
-          "type": "world_native::resources::Production",
-          "id": "0x4c4f5244535f50524f44554354494f4e",
-          "feltLength": 4
-        },
-        {
-          "name": "ESSENCE_PRODUCTION",
-          "type": "world_native::resources::Production",
-          "id": "0x455353454e43455f50524f44554354494f4e",
-          "feltLength": 4
-        },
-        {
-          "name": "RESEARCH_PRODUCTION",
-          "type": "world_native::resources::Production",
-          "id": "0x52455345415243485f50524f44554354494f4e",
-          "feltLength": 4
-        },
-        {
-          "name": "SATOSHI_PRODUCTION",
-          "type": "world_native::resources::Production",
-          "id": "0x5341544f5348495f50524f44554354494f4e",
-          "feltLength": 4
+          "feltLength": 1
         }
       ],
       "keyLength": 2,
-      "valueLength": 220,
+      "valueLength": 2,
       "observation": {
         "domain": "resources",
         "fields": {
-          "STONE_BALANCE": "STONE_BALANCE",
-          "COAL_BALANCE": "COAL_BALANCE",
-          "WOOD_BALANCE": "WOOD_BALANCE",
-          "COPPER_BALANCE": "COPPER_BALANCE",
-          "IRONWOOD_BALANCE": "IRONWOOD_BALANCE",
-          "OBSIDIAN_BALANCE": "OBSIDIAN_BALANCE",
-          "GOLD_BALANCE": "GOLD_BALANCE",
-          "SILVER_BALANCE": "SILVER_BALANCE",
-          "MITHRAL_BALANCE": "MITHRAL_BALANCE",
-          "ALCHEMICAL_SILVER_BALANCE": "ALCHEMICAL_SILVER_BALANCE",
-          "COLD_IRON_BALANCE": "COLD_IRON_BALANCE",
-          "DEEP_CRYSTAL_BALANCE": "DEEP_CRYSTAL_BALANCE",
-          "RUBY_BALANCE": "RUBY_BALANCE",
-          "DIAMONDS_BALANCE": "DIAMONDS_BALANCE",
-          "HARTWOOD_BALANCE": "HARTWOOD_BALANCE",
-          "IGNIUM_BALANCE": "IGNIUM_BALANCE",
-          "TWILIGHT_QUARTZ_BALANCE": "TWILIGHT_QUARTZ_BALANCE",
-          "TRUE_ICE_BALANCE": "TRUE_ICE_BALANCE",
-          "ADAMANTINE_BALANCE": "ADAMANTINE_BALANCE",
-          "SAPPHIRE_BALANCE": "SAPPHIRE_BALANCE",
-          "ETHEREAL_SILICA_BALANCE": "ETHEREAL_SILICA_BALANCE",
-          "DRAGONHIDE_BALANCE": "DRAGONHIDE_BALANCE",
-          "LABOR_BALANCE": "LABOR_BALANCE",
-          "EARTHEN_SHARD_BALANCE": "EARTHEN_SHARD_BALANCE",
-          "DONKEY_BALANCE": "DONKEY_BALANCE",
-          "KNIGHT_T1_BALANCE": "KNIGHT_T1_BALANCE",
-          "KNIGHT_T2_BALANCE": "KNIGHT_T2_BALANCE",
-          "KNIGHT_T3_BALANCE": "KNIGHT_T3_BALANCE",
-          "CROSSBOWMAN_T1_BALANCE": "CROSSBOWMAN_T1_BALANCE",
-          "CROSSBOWMAN_T2_BALANCE": "CROSSBOWMAN_T2_BALANCE",
-          "CROSSBOWMAN_T3_BALANCE": "CROSSBOWMAN_T3_BALANCE",
-          "PALADIN_T1_BALANCE": "PALADIN_T1_BALANCE",
-          "PALADIN_T2_BALANCE": "PALADIN_T2_BALANCE",
-          "PALADIN_T3_BALANCE": "PALADIN_T3_BALANCE",
-          "WHEAT_BALANCE": "WHEAT_BALANCE",
-          "FISH_BALANCE": "FISH_BALANCE",
-          "LORDS_BALANCE": "LORDS_BALANCE",
-          "ESSENCE_BALANCE": "ESSENCE_BALANCE",
-          "RELIC_E1_BALANCE": "RELIC_E1_BALANCE",
-          "RELIC_E2_BALANCE": "RELIC_E2_BALANCE",
-          "RELIC_E3_BALANCE": "RELIC_E3_BALANCE",
-          "RELIC_E4_BALANCE": "RELIC_E4_BALANCE",
-          "RELIC_E5_BALANCE": "RELIC_E5_BALANCE",
-          "RELIC_E6_BALANCE": "RELIC_E6_BALANCE",
-          "RELIC_E7_BALANCE": "RELIC_E7_BALANCE",
-          "RELIC_E8_BALANCE": "RELIC_E8_BALANCE",
-          "RELIC_E9_BALANCE": "RELIC_E9_BALANCE",
-          "RELIC_E10_BALANCE": "RELIC_E10_BALANCE",
-          "RELIC_E11_BALANCE": "RELIC_E11_BALANCE",
-          "RELIC_E12_BALANCE": "RELIC_E12_BALANCE",
-          "RELIC_E13_BALANCE": "RELIC_E13_BALANCE",
-          "RELIC_E14_BALANCE": "RELIC_E14_BALANCE",
-          "RELIC_E15_BALANCE": "RELIC_E15_BALANCE",
-          "RELIC_E16_BALANCE": "RELIC_E16_BALANCE",
-          "RELIC_E17_BALANCE": "RELIC_E17_BALANCE",
-          "RELIC_E18_BALANCE": "RELIC_E18_BALANCE",
-          "RESEARCH_BALANCE": "RESEARCH_BALANCE",
-          "SATOSHI_BALANCE": "SATOSHI_BALANCE",
-          "weight": "weight",
-          "STONE_PRODUCTION": "STONE_PRODUCTION",
-          "COAL_PRODUCTION": "COAL_PRODUCTION",
-          "WOOD_PRODUCTION": "WOOD_PRODUCTION",
-          "COPPER_PRODUCTION": "COPPER_PRODUCTION",
-          "IRONWOOD_PRODUCTION": "IRONWOOD_PRODUCTION",
-          "OBSIDIAN_PRODUCTION": "OBSIDIAN_PRODUCTION",
-          "GOLD_PRODUCTION": "GOLD_PRODUCTION",
-          "SILVER_PRODUCTION": "SILVER_PRODUCTION",
-          "MITHRAL_PRODUCTION": "MITHRAL_PRODUCTION",
-          "ALCHEMICAL_SILVER_PRODUCTION": "ALCHEMICAL_SILVER_PRODUCTION",
-          "COLD_IRON_PRODUCTION": "COLD_IRON_PRODUCTION",
-          "DEEP_CRYSTAL_PRODUCTION": "DEEP_CRYSTAL_PRODUCTION",
-          "RUBY_PRODUCTION": "RUBY_PRODUCTION",
-          "DIAMONDS_PRODUCTION": "DIAMONDS_PRODUCTION",
-          "HARTWOOD_PRODUCTION": "HARTWOOD_PRODUCTION",
-          "IGNIUM_PRODUCTION": "IGNIUM_PRODUCTION",
-          "TWILIGHT_QUARTZ_PRODUCTION": "TWILIGHT_QUARTZ_PRODUCTION",
-          "TRUE_ICE_PRODUCTION": "TRUE_ICE_PRODUCTION",
-          "ADAMANTINE_PRODUCTION": "ADAMANTINE_PRODUCTION",
-          "SAPPHIRE_PRODUCTION": "SAPPHIRE_PRODUCTION",
-          "ETHEREAL_SILICA_PRODUCTION": "ETHEREAL_SILICA_PRODUCTION",
-          "DRAGONHIDE_PRODUCTION": "DRAGONHIDE_PRODUCTION",
-          "LABOR_PRODUCTION": "LABOR_PRODUCTION",
-          "EARTHEN_SHARD_PRODUCTION": "EARTHEN_SHARD_PRODUCTION",
-          "DONKEY_PRODUCTION": "DONKEY_PRODUCTION",
-          "KNIGHT_T1_PRODUCTION": "KNIGHT_T1_PRODUCTION",
-          "KNIGHT_T2_PRODUCTION": "KNIGHT_T2_PRODUCTION",
-          "KNIGHT_T3_PRODUCTION": "KNIGHT_T3_PRODUCTION",
-          "CROSSBOWMAN_T1_PRODUCTION": "CROSSBOWMAN_T1_PRODUCTION",
-          "CROSSBOWMAN_T2_PRODUCTION": "CROSSBOWMAN_T2_PRODUCTION",
-          "CROSSBOWMAN_T3_PRODUCTION": "CROSSBOWMAN_T3_PRODUCTION",
-          "PALADIN_T1_PRODUCTION": "PALADIN_T1_PRODUCTION",
-          "PALADIN_T2_PRODUCTION": "PALADIN_T2_PRODUCTION",
-          "PALADIN_T3_PRODUCTION": "PALADIN_T3_PRODUCTION",
-          "WHEAT_PRODUCTION": "WHEAT_PRODUCTION",
-          "FISH_PRODUCTION": "FISH_PRODUCTION",
-          "ESSENCE_PRODUCTION": "ESSENCE_PRODUCTION",
-          "RESEARCH_PRODUCTION": "RESEARCH_PRODUCTION",
-          "SATOSHI_PRODUCTION": "SATOSHI_PRODUCTION"
+          "capacity": "capacity",
+          "weight": "weight"
         }
       }
     },
@@ -3310,16 +3635,10 @@
           "type": "core::integer::u32",
           "id": "0x637265617465645f636f756e74",
           "feltLength": 1
-        },
-        {
-          "name": "completed_count",
-          "type": "core::integer::u32",
-          "id": "0x636f6d706c657465645f636f756e74",
-          "feltLength": 1
         }
       ],
       "keyLength": 1,
-      "valueLength": 2,
+      "valueLength": 1,
       "observation": {
         "domain": "hyperstructures",
         "fields": {
@@ -3772,7 +4091,7 @@
       "members": [
         {
           "name": "costs",
-          "type": "core::array::Span::<world_native::upgrades::UpgradeCost>",
+          "type": "core::array::Span::<world_native::resources::ResourceAmount>",
           "id": "0x636f737473",
           "feltLength": null
         }
@@ -4085,16 +4404,10 @@
           "type": "core::integer::u128",
           "id": "0x746f74616c5f726567697374657265645f706f696e7473",
           "feltLength": 1
-        },
-        {
-          "name": "total_lords_pool",
-          "type": "core::integer::u256",
-          "id": "0x746f74616c5f6c6f7264735f706f6f6c",
-          "feltLength": 2
         }
       ],
       "keyLength": 1,
-      "valueLength": 3,
+      "valueLength": 1,
       "observation": {
         "domain": "points",
         "fields": {
@@ -4544,6 +4857,16 @@
         }
       ]
     },
+    "core::array::Span::<core::integer::u128>": {
+      "type": "struct",
+      "name": "core::array::Span::<core::integer::u128>",
+      "members": [
+        {
+          "name": "snapshot",
+          "type": "@core::array::Array::<core::integer::u128>"
+        }
+      ]
+    },
     "core::array::Span::<core::integer::u32>": {
       "type": "struct",
       "name": "core::array::Span::<core::integer::u32>",
@@ -4564,6 +4887,36 @@
         }
       ]
     },
+    "core::array::Span::<world_native::resources::ResourceAmount>": {
+      "type": "struct",
+      "name": "core::array::Span::<world_native::resources::ResourceAmount>",
+      "members": [
+        {
+          "name": "snapshot",
+          "type": "@core::array::Array::<world_native::resources::ResourceAmount>"
+        }
+      ]
+    },
+    "core::array::Span::<world_native::settlement::AcceptedCosmetic>": {
+      "type": "struct",
+      "name": "core::array::Span::<world_native::settlement::AcceptedCosmetic>",
+      "members": [
+        {
+          "name": "snapshot",
+          "type": "@core::array::Array::<world_native::settlement::AcceptedCosmetic>"
+        }
+      ]
+    },
+    "core::array::Span::<world_native::settlement::SettlementLocation>": {
+      "type": "struct",
+      "name": "core::array::Span::<world_native::settlement::SettlementLocation>",
+      "members": [
+        {
+          "name": "snapshot",
+          "type": "@core::array::Array::<world_native::settlement::SettlementLocation>"
+        }
+      ]
+    },
     "core::array::Span::<world_native::structures::ResourceRule>": {
       "type": "struct",
       "name": "core::array::Span::<world_native::structures::ResourceRule>",
@@ -4574,13 +4927,23 @@
         }
       ]
     },
-    "core::array::Span::<world_native::upgrades::UpgradeCost>": {
+    "core::array::Span::<world_native::troops::Coord>": {
       "type": "struct",
-      "name": "core::array::Span::<world_native::upgrades::UpgradeCost>",
+      "name": "core::array::Span::<world_native::troops::Coord>",
       "members": [
         {
           "name": "snapshot",
-          "type": "@core::array::Array::<world_native::upgrades::UpgradeCost>"
+          "type": "@core::array::Array::<world_native::troops::Coord>"
+        }
+      ]
+    },
+    "core::array::Span::<world_native::troops::TroopType>": {
+      "type": "struct",
+      "name": "core::array::Span::<world_native::troops::TroopType>",
+      "members": [
+        {
+          "name": "snapshot",
+          "type": "@core::array::Array::<world_native::troops::TroopType>"
         }
       ]
     },
@@ -4671,6 +5034,34 @@
         {
           "name": "Some",
           "type": "world_native::map::TileOpt"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
+    "core::option::Option::<world_native::settlement::EntryEntitlement>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::settlement::EntryEntitlement>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::settlement::EntryEntitlement"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
+    "core::option::Option::<world_native::settlement::PlayerEntry>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::settlement::PlayerEntry>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::settlement::PlayerEntry"
         },
         {
           "name": "None",
@@ -5001,6 +5392,22 @@
         {
           "name": "LevelUp",
           "type": "core::integer::u32"
+        },
+        {
+          "name": "ReserveHyperstructures",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "SettleBlitz",
+          "type": "world_native::settlement::SettleBlitz"
+        },
+        {
+          "name": "ProvisionRealm",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "CreateReservedHyperstructure",
+          "type": "world_native::troops::Coord"
         }
       ]
     },
@@ -5336,6 +5743,32 @@
         }
       ]
     },
+    "world_native::ownership::GuardAddStory": {
+      "type": "struct",
+      "name": "world_native::ownership::GuardAddStory",
+      "members": [
+        {
+          "name": "structure_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "slot",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "category",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "tier",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "amount",
+          "type": "core::integer::u128"
+        }
+      ]
+    },
     "world_native::ownership::PlayerFaithKey": {
       "type": "struct",
       "name": "world_native::ownership::PlayerFaithKey",
@@ -5376,6 +5809,16 @@
         }
       ]
     },
+    "world_native::ownership::RealmCreatedStory": {
+      "type": "struct",
+      "name": "world_native::ownership::RealmCreatedStory",
+      "members": [
+        {
+          "name": "coord",
+          "type": "world_native::troops::Coord"
+        }
+      ]
+    },
     "world_native::ownership::Story": {
       "type": "enum",
       "name": "world_native::ownership::Story",
@@ -5387,6 +5830,14 @@
         {
           "name": "StructureLevelUpStory",
           "type": "world_native::ownership::StructureLevelUpStory"
+        },
+        {
+          "name": "RealmCreatedStory",
+          "type": "world_native::ownership::RealmCreatedStory"
+        },
+        {
+          "name": "GuardAddStory",
+          "type": "world_native::ownership::GuardAddStory"
         }
       ]
     },
@@ -5506,405 +5957,17 @@
         }
       ]
     },
-    "world_native::resources::Resource": {
+    "world_native::resources::ResourceAmount": {
       "type": "struct",
-      "name": "world_native::resources::Resource",
+      "name": "world_native::resources::ResourceAmount",
       "members": [
         {
-          "name": "STONE_BALANCE",
+          "name": "resource_type",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "amount",
           "type": "core::integer::u128"
-        },
-        {
-          "name": "COAL_BALANCE",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "WOOD_BALANCE",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "COPPER_BALANCE",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "IRONWOOD_BALANCE",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "OBSIDIAN_BALANCE",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "GOLD_BALANCE",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "SILVER_BALANCE",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "MITHRAL_BALANCE",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "ALCHEMICAL_SILVER_BALANCE",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "COLD_IRON_BALANCE",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "DEEP_CRYSTAL_BALANCE",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "RUBY_BALANCE",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "DIAMONDS_BALANCE",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "HARTWOOD_BALANCE",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "IGNIUM_BALANCE",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "TWILIGHT_QUARTZ_BALANCE",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "TRUE_ICE_BALANCE",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "ADAMANTINE_BALANCE",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "SAPPHIRE_BALANCE",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "ETHEREAL_SILICA_BALANCE",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "DRAGONHIDE_BALANCE",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "LABOR_BALANCE",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "EARTHEN_SHARD_BALANCE",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "DONKEY_BALANCE",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "KNIGHT_T1_BALANCE",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "KNIGHT_T2_BALANCE",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "KNIGHT_T3_BALANCE",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "CROSSBOWMAN_T1_BALANCE",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "CROSSBOWMAN_T2_BALANCE",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "CROSSBOWMAN_T3_BALANCE",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "PALADIN_T1_BALANCE",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "PALADIN_T2_BALANCE",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "PALADIN_T3_BALANCE",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "WHEAT_BALANCE",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "FISH_BALANCE",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "LORDS_BALANCE",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "ESSENCE_BALANCE",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "RELIC_E1_BALANCE",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "RELIC_E2_BALANCE",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "RELIC_E3_BALANCE",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "RELIC_E4_BALANCE",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "RELIC_E5_BALANCE",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "RELIC_E6_BALANCE",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "RELIC_E7_BALANCE",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "RELIC_E8_BALANCE",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "RELIC_E9_BALANCE",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "RELIC_E10_BALANCE",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "RELIC_E11_BALANCE",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "RELIC_E12_BALANCE",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "RELIC_E13_BALANCE",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "RELIC_E14_BALANCE",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "RELIC_E15_BALANCE",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "RELIC_E16_BALANCE",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "RELIC_E17_BALANCE",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "RELIC_E18_BALANCE",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "RESEARCH_BALANCE",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "SATOSHI_BALANCE",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "weight",
-          "type": "world_native::resources::Weight"
-        },
-        {
-          "name": "STONE_PRODUCTION",
-          "type": "world_native::resources::Production"
-        },
-        {
-          "name": "COAL_PRODUCTION",
-          "type": "world_native::resources::Production"
-        },
-        {
-          "name": "WOOD_PRODUCTION",
-          "type": "world_native::resources::Production"
-        },
-        {
-          "name": "COPPER_PRODUCTION",
-          "type": "world_native::resources::Production"
-        },
-        {
-          "name": "IRONWOOD_PRODUCTION",
-          "type": "world_native::resources::Production"
-        },
-        {
-          "name": "OBSIDIAN_PRODUCTION",
-          "type": "world_native::resources::Production"
-        },
-        {
-          "name": "GOLD_PRODUCTION",
-          "type": "world_native::resources::Production"
-        },
-        {
-          "name": "SILVER_PRODUCTION",
-          "type": "world_native::resources::Production"
-        },
-        {
-          "name": "MITHRAL_PRODUCTION",
-          "type": "world_native::resources::Production"
-        },
-        {
-          "name": "ALCHEMICAL_SILVER_PRODUCTION",
-          "type": "world_native::resources::Production"
-        },
-        {
-          "name": "COLD_IRON_PRODUCTION",
-          "type": "world_native::resources::Production"
-        },
-        {
-          "name": "DEEP_CRYSTAL_PRODUCTION",
-          "type": "world_native::resources::Production"
-        },
-        {
-          "name": "RUBY_PRODUCTION",
-          "type": "world_native::resources::Production"
-        },
-        {
-          "name": "DIAMONDS_PRODUCTION",
-          "type": "world_native::resources::Production"
-        },
-        {
-          "name": "HARTWOOD_PRODUCTION",
-          "type": "world_native::resources::Production"
-        },
-        {
-          "name": "IGNIUM_PRODUCTION",
-          "type": "world_native::resources::Production"
-        },
-        {
-          "name": "TWILIGHT_QUARTZ_PRODUCTION",
-          "type": "world_native::resources::Production"
-        },
-        {
-          "name": "TRUE_ICE_PRODUCTION",
-          "type": "world_native::resources::Production"
-        },
-        {
-          "name": "ADAMANTINE_PRODUCTION",
-          "type": "world_native::resources::Production"
-        },
-        {
-          "name": "SAPPHIRE_PRODUCTION",
-          "type": "world_native::resources::Production"
-        },
-        {
-          "name": "ETHEREAL_SILICA_PRODUCTION",
-          "type": "world_native::resources::Production"
-        },
-        {
-          "name": "DRAGONHIDE_PRODUCTION",
-          "type": "world_native::resources::Production"
-        },
-        {
-          "name": "LABOR_PRODUCTION",
-          "type": "world_native::resources::Production"
-        },
-        {
-          "name": "EARTHEN_SHARD_PRODUCTION",
-          "type": "world_native::resources::Production"
-        },
-        {
-          "name": "DONKEY_PRODUCTION",
-          "type": "world_native::resources::Production"
-        },
-        {
-          "name": "KNIGHT_T1_PRODUCTION",
-          "type": "world_native::resources::Production"
-        },
-        {
-          "name": "KNIGHT_T2_PRODUCTION",
-          "type": "world_native::resources::Production"
-        },
-        {
-          "name": "KNIGHT_T3_PRODUCTION",
-          "type": "world_native::resources::Production"
-        },
-        {
-          "name": "CROSSBOWMAN_T1_PRODUCTION",
-          "type": "world_native::resources::Production"
-        },
-        {
-          "name": "CROSSBOWMAN_T2_PRODUCTION",
-          "type": "world_native::resources::Production"
-        },
-        {
-          "name": "CROSSBOWMAN_T3_PRODUCTION",
-          "type": "world_native::resources::Production"
-        },
-        {
-          "name": "PALADIN_T1_PRODUCTION",
-          "type": "world_native::resources::Production"
-        },
-        {
-          "name": "PALADIN_T2_PRODUCTION",
-          "type": "world_native::resources::Production"
-        },
-        {
-          "name": "PALADIN_T3_PRODUCTION",
-          "type": "world_native::resources::Production"
-        },
-        {
-          "name": "WHEAT_PRODUCTION",
-          "type": "world_native::resources::Production"
-        },
-        {
-          "name": "FISH_PRODUCTION",
-          "type": "world_native::resources::Production"
-        },
-        {
-          "name": "LORDS_PRODUCTION",
-          "type": "world_native::resources::Production"
-        },
-        {
-          "name": "ESSENCE_PRODUCTION",
-          "type": "world_native::resources::Production"
-        },
-        {
-          "name": "RESEARCH_PRODUCTION",
-          "type": "world_native::resources::Production"
-        },
-        {
-          "name": "SATOSHI_PRODUCTION",
-          "type": "world_native::resources::Production"
         }
       ]
     },
@@ -5919,6 +5982,24 @@
         {
           "name": "entity_id",
           "type": "core::integer::u32"
+        }
+      ]
+    },
+    "world_native::resources::ResourceSlot": {
+      "type": "struct",
+      "name": "world_native::resources::ResourceSlot",
+      "members": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "entity_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "resource_type",
+          "type": "core::integer::u8"
         }
       ]
     },
@@ -6460,6 +6541,266 @@
         }
       ]
     },
+    "world_native::settlement::AcceptedCosmetic": {
+      "type": "struct",
+      "name": "world_native::settlement::AcceptedCosmetic",
+      "members": [
+        {
+          "name": "token_id",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "owner",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "attributes",
+          "type": "core::integer::u128"
+        }
+      ]
+    },
+    "world_native::settlement::CosmeticsKey": {
+      "type": "struct",
+      "name": "world_native::settlement::CosmeticsKey",
+      "members": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "player",
+          "type": "core::starknet::contract_address::ContractAddress"
+        }
+      ]
+    },
+    "world_native::settlement::EntryEntitlement": {
+      "type": "struct",
+      "name": "world_native::settlement::EntryEntitlement",
+      "members": [
+        {
+          "name": "realm_id",
+          "type": "core::integer::u256"
+        },
+        {
+          "name": "metadata_1",
+          "type": "core::felt252"
+        },
+        {
+          "name": "metadata_2",
+          "type": "core::felt252"
+        },
+        {
+          "name": "metadata_3",
+          "type": "core::felt252"
+        },
+        {
+          "name": "pass_kind",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
+    "world_native::settlement::EntryKey": {
+      "type": "struct",
+      "name": "world_native::settlement::EntryKey",
+      "members": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "owner",
+          "type": "core::starknet::contract_address::ContractAddress"
+        }
+      ]
+    },
+    "world_native::settlement::PlayerCosmetics": {
+      "type": "struct",
+      "name": "world_native::settlement::PlayerCosmetics",
+      "members": [
+        {
+          "name": "attributes",
+          "type": "core::array::Span::<core::integer::u128>"
+        }
+      ]
+    },
+    "world_native::settlement::PlayerEntry": {
+      "type": "struct",
+      "name": "world_native::settlement::PlayerEntry",
+      "members": [
+        {
+          "name": "player",
+          "type": "core::starknet::contract_address::ContractAddress"
+        }
+      ]
+    },
+    "world_native::settlement::RealmGrants": {
+      "type": "struct",
+      "name": "world_native::settlement::RealmGrants",
+      "members": [
+        {
+          "name": "resources",
+          "type": "core::array::Span::<world_native::resources::ResourceAmount>"
+        },
+        {
+          "name": "starting_troops",
+          "type": "core::array::Span::<world_native::troops::TroopType>"
+        },
+        {
+          "name": "realm_resources",
+          "type": "core::array::Span::<core::integer::u8>"
+        }
+      ]
+    },
+    "world_native::settlement::SettleBlitz": {
+      "type": "struct",
+      "name": "world_native::settlement::SettleBlitz",
+      "members": [
+        {
+          "name": "name",
+          "type": "core::felt252"
+        },
+        {
+          "name": "owner",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "cosmetics_block_hash",
+          "type": "core::felt252"
+        },
+        {
+          "name": "cosmetics_block_number",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "cosmetics",
+          "type": "core::array::Span::<world_native::settlement::AcceptedCosmetic>"
+        },
+        {
+          "name": "grant_starting_troops",
+          "type": "core::bool"
+        }
+      ]
+    },
+    "world_native::settlement::SettlementAdmission": {
+      "type": "struct",
+      "name": "world_native::settlement::SettlementAdmission",
+      "members": [
+        {
+          "name": "owner",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "collection",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "timelock",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "cosmetic_limit",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "game_end",
+          "type": "core::integer::u64"
+        }
+      ]
+    },
+    "world_native::settlement::SettlementLocation": {
+      "type": "struct",
+      "name": "world_native::settlement::SettlementLocation",
+      "members": [
+        {
+          "name": "coords",
+          "type": "core::array::Span::<world_native::troops::Coord>"
+        }
+      ]
+    },
+    "world_native::settlement::SettlementMode": {
+      "type": "enum",
+      "name": "world_native::settlement::SettlementMode",
+      "variants": [
+        {
+          "name": "Single",
+          "type": "()"
+        },
+        {
+          "name": "Triple",
+          "type": "()"
+        },
+        {
+          "name": "Duel",
+          "type": "()"
+        }
+      ]
+    },
+    "world_native::settlement::SettlementPool": {
+      "type": "struct",
+      "name": "world_native::settlement::SettlementPool",
+      "members": [
+        {
+          "name": "opened",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "available",
+          "type": "core::array::Span::<world_native::settlement::SettlementLocation>"
+        }
+      ]
+    },
+    "world_native::settlement::SettlementProgress": {
+      "type": "struct",
+      "name": "world_native::settlement::SettlementProgress",
+      "members": [
+        {
+          "name": "registered",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "realm_count",
+          "type": "core::integer::u16"
+        }
+      ]
+    },
+    "world_native::settlement::SettlementRules": {
+      "type": "struct",
+      "name": "world_native::settlement::SettlementRules",
+      "members": [
+        {
+          "name": "registration_start",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "registration_limit",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "mode",
+          "type": "world_native::settlement::SettlementMode"
+        },
+        {
+          "name": "reward_profile",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "cosmetic_limit",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "cosmetic_collection",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "cosmetic_timelock",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "ledger_operator",
+          "type": "core::starknet::contract_address::ContractAddress"
+        }
+      ]
+    },
     "world_native::structures::ConstructionAccess": {
       "type": "enum",
       "name": "world_native::structures::ConstructionAccess",
@@ -6682,6 +7023,16 @@
         }
       ]
     },
+    "world_native::troops::AgentPopulation": {
+      "type": "struct",
+      "name": "world_native::troops::AgentPopulation",
+      "members": [
+        {
+          "name": "count",
+          "type": "core::integer::u16"
+        }
+      ]
+    },
     "world_native::troops::Coord": {
       "type": "struct",
       "name": "world_native::troops::Coord",
@@ -6850,20 +7201,6 @@
         }
       ]
     },
-    "world_native::upgrades::UpgradeCost": {
-      "type": "struct",
-      "name": "world_native::upgrades::UpgradeCost",
-      "members": [
-        {
-          "name": "resource_type",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "amount",
-          "type": "core::integer::u128"
-        }
-      ]
-    },
     "world_native::upgrades::UpgradeLimits": {
       "type": "struct",
       "name": "world_native::upgrades::UpgradeLimits",
@@ -6884,10 +7221,10 @@
       "members": [
         {
           "name": "costs",
-          "type": "core::array::Span::<world_native::upgrades::UpgradeCost>"
+          "type": "core::array::Span::<world_native::resources::ResourceAmount>"
         }
       ]
     }
   },
-  "identity": "84bec30da4efc70a961bf41073f142031c83cd21cdbda4cb4af83397b73be99b"
+  "identity": "9de8aa6464304e0c8362f1310a2af6b4c4d9ddceeb942a94f4aa29f51c5cd7f1"
 }

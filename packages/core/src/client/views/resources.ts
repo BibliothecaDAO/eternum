@@ -5,11 +5,6 @@ import { ResourceManager } from "../../managers/resource-manager";
 import { formatArrivals } from "../../utils/resource-arrivals";
 import { readRows } from "./rows";
 
-/** The Resource row a manager reads; a hook subscribes to it, a one-shot reader does not need it. */
-export const resourcesOfEntityQuery = (components: ClientComponents, entityId: ID): QueryFragment[] => [
-  HasValue(components.Resource, { entity_id: entityId }),
-];
-
 export const readResourceManager = (components: ClientComponents, entityId: ID): ResourceManager =>
   new ResourceManager(components, entityId);
 

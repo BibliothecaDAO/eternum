@@ -90,11 +90,12 @@ jobs:
 
   parity:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@1.89
       - uses: software-mansion/setup-scarb@v1
         with:
           tool-versions: contracts/l3/world-native/.tool-versions
@@ -130,6 +131,7 @@ jobs:
             contracts/l3/world-native/fixtures/ownership-parity.json
             contracts/l3/world-native/fixtures/name-parity.json
             contracts/l3/world-native/fixtures/structure-parity.json
+            contracts/l3/world-native/fixtures/blitz-settlement-parity.json
             deploy/madara-lab/.lab/native-oracle/world-parity.log
             deploy/madara-lab/.lab/native-oracle/world-parity.log.stderr
             deploy/madara-lab/.lab/native-oracle/ownership-costs.json
@@ -138,3 +140,26 @@ jobs:
             deploy/madara-lab/.lab/native-oracle/name-cost.log
             deploy/madara-lab/.lab/native-oracle/structure-costs.json
             deploy/madara-lab/.lab/native-oracle/structure-cost.log
+            deploy/madara-lab/.lab/native-oracle/blitz-settlement-costs.json
+            deploy/madara-lab/.lab/native-oracle/blitz-settlement-cost.log
+            deploy/madara-lab/.lab/native-oracle/native-casm.json
+            deploy/madara-lab/.lab/native-oracle/native-build.log
+            deploy/madara-lab/.lab/native-oracle/native-build.stderr
+            deploy/madara-lab/.lab/native-oracle/size-tool-build.log
+            deploy/madara-lab/.lab/native-oracle/size-tool-build.stderr
+
+  class-size-tool:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: contracts/l3/world-native/tools/casm-size
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.89
+        with:
+          components: rustfmt, clippy
+      - name: Check class-size tool formatting
+        run: cargo fmt --check
+      - name: Check class-size tool lint errors
+        run: cargo clippy --locked --all-targets -- -D warnings

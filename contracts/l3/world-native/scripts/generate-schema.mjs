@@ -169,6 +169,7 @@ schema.identity = createHash("sha256").update(JSON.stringify(schema)).digest("he
 await writeJson("schema/schema.json", schema);
 await writeFixtures(schema);
 await writePresetFixture();
+await writeSettlementFixture();
 
 async function writeJson(path, value) {
   const url = new URL(path, root);
@@ -298,10 +299,34 @@ async function writePresetFixture() {
     { type: "function", name: "fixture", inputs: members, outputs: [], state_mutability: "view" },
   ]);
   const values = codec.compile("fixture", { rules: preset.rules, resources: preset.resources });
-  const url = new URL("tests/fixtures/preset-1.txt", root);
-  const text = `${values.join("\n")}\n`;
+  await writeText("tests/fixtures/preset-1.txt", `${values.join("\n")}\n`);
+}
+
+async function writeSettlementFixture() {
+  const fixture = JSON.parse(await readFile(new URL("fixtures/blitz-settlement.json", root), "utf8"));
+  const { oraclePreset } = JSON.parse(await readFile(new URL("fixtures/preset-1.json", root), "utf8"));
+  const reference = oraclePreset.presetConfig.realm_start_resources_config;
+  const grants = oraclePreset.sideTables.resource_lists
+    .filter((row) => row.entity_id === reference.resources_list_id)
+    .sort((a, b) => a.index - b.index);
+  if (grants.length !== reference.resources_list_count || grants.some((row, index) => row.index !== index))
+    throw new Error("Incomplete realm grant table");
+  const troops = fixture.initialization.startingTroopsByBiome;
+  if (troops.length !== 17 || troops.some((value) => !Number.isInteger(value) || value < 0 || value > 2))
+    throw new Error("Invalid starting troop table");
+  const resources = fixture.initialization.realmResources;
+  if (resources.length > 16 || resources.some((value) => !Number.isInteger(value) || value < 1 || value > 58))
+    throw new Error("Invalid realm resource table");
+  await writeText(
+    "tests/fixtures/settlement.txt",
+    `${[grants.length, ...grants.flatMap(({ resource_type, amount }) => [resource_type, amount]), troops.length, ...troops, resources.length, ...resources].join("\n")}\n`,
+  );
+}
+
+async function writeText(path, text) {
+  const url = new URL(path, root);
   if (process.argv.includes("--check")) {
-    if ((await readFile(url, "utf8")) !== text) throw new Error("Generated preset fixture differs");
+    if ((await readFile(url, "utf8")) !== text) throw new Error(`Generated artifact differs: ${path}`);
   } else {
     await mkdir(new URL("./", url), { recursive: true });
     await writeFile(url, text);

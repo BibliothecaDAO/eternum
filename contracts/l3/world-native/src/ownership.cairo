@@ -300,6 +300,8 @@ pub struct StructureLevelUpStory {
 pub enum Story {
     FaithPointsClaimedStory: FaithPointsClaimedStory,
     StructureLevelUpStory: StructureLevelUpStory,
+    RealmCreatedStory: RealmCreatedStory,
+    GuardAddStory: GuardAddStory,
 }
 
 #[derive(Drop, starknet::Event)]
@@ -318,4 +320,17 @@ pub struct StoryEvent {
     pub tx_hash: felt252,
     pub story: Story,
     pub timestamp: u64,
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct RealmCreatedStory {
+    pub coord: crate::troops::Coord,
+}
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct GuardAddStory {
+    pub structure_id: u32,
+    pub slot: u8,
+    pub category: u8,
+    pub tier: u8,
+    pub amount: u128,
 }

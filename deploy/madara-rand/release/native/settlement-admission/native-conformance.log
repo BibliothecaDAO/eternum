@@ -1,0 +1,174 @@
+   Compiling snforge_scarb_plugin v0.52.0
+    Finished `release` profile [optimized] target(s) in 0.07s
+   Compiling test(world_native_unittest) world_native v0.1.0 (/home/djizus/projects/eternum-native-world/contracts/l3/world-native/Scarb.toml)
+   Compiling test(world_native_tests) world_native_tests v0.1.0 (/home/djizus/projects/eternum-native-world/contracts/l3/world-native/Scarb.toml)
+    Finished `dev` profile target(s) in 15 seconds
+
+
+Collected 50 test(s) from world_native package
+Running 27 test(s) from src/
+PARITY_COMBAT 0 0 0
+PARITY_COMBAT 0 1 0
+PARITY_COMBAT 0 2 750000000000
+PARITY_COMBAT 0 3 70
+PARITY_COMBAT 0 4 20
+PARITY_COMBAT 0 5 0
+PARITY_COMBAT 0 6 0
+PARITY_COMBAT 0 7 0
+PARITY_COMBAT 0 8 0
+PARITY_COMBAT 0 9 0
+PARITY_COMBAT 0 10 0
+PARITY_COMBAT 0 11 0
+PARITY_COMBAT 0 12 0
+PARITY_COMBAT 0 13 1260
+PARITY_COMBAT 0 14 2
+PARITY_COMBAT 0 15 0
+PARITY_COMBAT 0 16 353000000000
+PARITY_COMBAT 0 17 80
+PARITY_COMBAT 0 18 20
+PARITY_COMBAT 0 19 0
+PARITY_COMBAT 0 20 0
+PARITY_COMBAT 0 21 0
+PARITY_COMBAT 0 22 0
+PARITY_COMBAT 0 23 0
+PARITY_COMBAT 0 24 0
+PARITY_COMBAT 0 25 0
+PARITY_COMBAT 0 26 0
+PARITY_COMBAT 0 27 1260
+PARITY_COMBAT 1 0 2
+PARITY_COMBAT 1 1 1
+PARITY_COMBAT 1 2 2243000000000
+PARITY_COMBAT 1 3 70
+PARITY_COMBAT 1 4 20
+PARITY_COMBAT 1 5 0
+PARITY_COMBAT 1 6 0
+PARITY_COMBAT 1 7 0
+PARITY_COMBAT 1 8 0
+PARITY_COMBAT 1 9 0
+PARITY_COMBAT 1 10 0
+PARITY_COMBAT 1 11 0
+PARITY_COMBAT 1 12 0
+PARITY_COMBAT 1 13 1260
+PARITY_COMBAT 1 14 1
+PARITY_COMBAT 1 15 1
+PARITY_COMBAT 1 16 766000000000
+PARITY_COMBAT 1 17 80
+PARITY_COMBAT 1 18 20
+PARITY_COMBAT 1 19 0
+PARITY_COMBAT 1 20 0
+PARITY_COMBAT 1 21 0
+PARITY_COMBAT 1 22 0
+PARITY_COMBAT 1 23 0
+PARITY_COMBAT 1 24 0
+PARITY_COMBAT 1 25 0
+PARITY_COMBAT 1 26 0
+PARITY_COMBAT 1 27 1260
+PARITY_COMBAT 2 0 2
+PARITY_COMBAT 2 1 0
+PARITY_COMBAT 2 2 1000000000000
+PARITY_COMBAT 2 3 70
+PARITY_COMBAT 2 4 20
+PARITY_COMBAT 2 5 0
+PARITY_COMBAT 2 6 0
+PARITY_COMBAT 2 7 0
+PARITY_COMBAT 2 8 0
+PARITY_COMBAT 2 9 0
+PARITY_COMBAT 2 10 0
+PARITY_COMBAT 2 11 0
+PARITY_COMBAT 2 12 0
+PARITY_COMBAT 2 13 1230
+PARITY_COMBAT 2 14 0
+PARITY_COMBAT 2 15 0
+PARITY_COMBAT 2 16 425000000000
+[PASS] world_native::tests::resources::sparse_resources_emit_typed_rows_and_skip_unchanged_values (l1_gas: ~0, l1_data_gas: ~672, l2_gas: ~3448980)
+PARITY_COMBAT 2 17 100
+PARITY_COMBAT 2 18 20
+PARITY_COMBAT 2 19 0
+PARITY_COMBAT 2 20 0
+PARITY_COMBAT 2 21 0
+PARITY_COMBAT 2 22 0
+PARITY_COMBAT 2 23 0
+PARITY_COMBAT 2 24 0
+PARITY_COMBAT 2 25 0
+PARITY_COMBAT 2 26 0
+PARITY_COMBAT 2 27 1230
+PARITY_COMBAT 3 0 0
+PARITY_COMBAT 3 1 2
+PARITY_COMBAT 3 2 2000000000000
+PARITY_COMBAT 3 3 120
+PARITY_COMBAT 3 4 20
+PARITY_COMBAT 3 5 0
+PARITY_COMBAT 3 6 0
+PARITY_COMBAT 3 7 0
+PARITY_COMBAT 3 8 0
+PARITY_COMBAT 3 9 0
+PARITY_COMBAT 3 10 0
+PARITY_COMBAT 3 11 0
+PARITY_COMBAT 3 12 0
+PARITY_COMBAT 3 13 1200
+PARITY_COMBAT 3 14 0
+PARITY_COMBAT 3 15 0
+PARITY_COMBAT 3 16 0
+PARITY_COMBAT 3 17 80
+PARITY_COMBAT 3 18 20
+PARITY_COMBAT 3 19 0
+PARITY_COMBAT 3 20 0
+PARITY_COMBAT 3 21 0
+PARITY_COMBAT 3 22 0
+PARITY_COMBAT 3 23 0
+PARITY_COMBAT 3 24 0
+PARITY_COMBAT 3 25 0
+PARITY_COMBAT 3 26 0
+PARITY_COMBAT 3 27 1260
+[PASS] world_native::parity_vectors::combat_parity_vectors (l1_gas: ~0, l1_data_gas: ~0, l2_gas: ~18092710)
+[PASS] world_native::tests::gameplay_before_activation_and_reinitialization_are_rejected (l1_gas: ~0, l1_data_gas: ~3456, l2_gas: ~10860151)
+[PASS] world_native::tests::admission_rejects_unregistered_actor_and_registry_round_trip_mismatch (l1_gas: ~0, l1_data_gas: ~21600, l2_gas: ~23032775)
+[PASS] world_native::tests::direct_player_submission_and_forged_domain_calls_are_rejected (l1_gas: ~0, l1_data_gas: ~21504, l2_gas: ~23794856)
+[PASS] world_native::tests::agent_controller_requires_authority_and_projects_the_new_address (l1_gas: ~0, l1_data_gas: ~21600, l2_gas: ~19087385)
+[PASS] world_native::tests::row_set_member_and_deleted_have_exact_wire_shapes_and_zero_is_present (l1_gas: ~0, l1_data_gas: ~23520, l2_gas: ~33634057)
+[PASS] world_native::tests::append_only_replace_class_preserves_and_mutates_existing_tiles (l1_gas: ~0, l1_data_gas: ~21984, l2_gas: ~22454875)
+[PASS] world_native::tests::settlement::realm_resource_table_rejects_invalid_ids_and_packing_overflow (l1_gas: ~0, l1_data_gas: ~26112, l2_gas: ~28320535)
+[PASS] world_native::tests::approved_account_class_can_follow_a_player_account_upgrade (l1_gas: ~0, l1_data_gas: ~23136, l2_gas: ~29892764)
+[PASS] world_native::tests::authority_rotates_authentication_without_replacing_the_domain (l1_gas: ~0, l1_data_gas: ~23520, l2_gas: ~29803963)
+[PASS] world_native::tests::signed_actor_and_root_reach_domain_with_game_scoped_nonces (l1_gas: ~0, l1_data_gas: ~24000, l2_gas: ~32094567)
+[PASS] world_native::tests::recorded_context_survives_outage_and_rejects_future_time (l1_gas: ~0, l1_data_gas: ~23136, l2_gas: ~28770092)
+[PASS] world_native::tests::activation_rejects_peer_mismatch_authority_mismatch_and_double_activation (l1_gas: ~0, l1_data_gas: ~26112, l2_gas: ~28537805)
+[PASS] world_native::tests::settlement::settlement_configuration_is_immutable_and_game_scoped (l1_gas: ~0, l1_data_gas: ~30720, l2_gas: ~30896965)
+[PASS] world_native::tests::resources::resource_deletion_clears_production_without_affecting_another_game (l1_gas: ~0, l1_data_gas: ~768, l2_gas: ~9329770)
+[PASS] world_native::tests::registered_account_with_unapproved_class_is_rejected_before_key_read (l1_gas: ~0, l1_data_gas: ~20832, l2_gas: ~15954235)
+[PASS] world_native::tests::signatures_are_bound_to_deployment_command_nonce_and_deadline (l1_gas: ~0, l1_data_gas: ~44352, l2_gas: ~55440196)
+[PASS] world_native::tests::settlement::reservations_use_recorded_actions_and_stop_at_completion (l1_gas: ~0, l1_data_gas: ~37056, l2_gas: ~89124999)
+[PASS] world_native::tests::realm_upgrade_changes_only_its_display_and_rejects_foreign_occupants (l1_gas: ~0, l1_data_gas: ~21696, l2_gas: ~21943525)
+[PASS] world_native::tests::settlement::starting_troop_table_must_be_complete_before_configuration_commits (l1_gas: ~0, l1_data_gas: ~26112, l2_gas: ~23450515)
+[PASS] world_native::tests::late_domain_failure_consumes_ticket_and_rolls_back_gameplay_rows (l1_gas: ~0, l1_data_gas: ~22464, l2_gas: ~25092908)
+[PASS] world_native::tests::forged_signature_actor_game_and_replayed_intent_are_rejected (l1_gas: ~0, l1_data_gas: ~24864, l2_gas: ~41045321)
+[PASS] world_native::tests::map_rejects_foreign_occupancy_commands_and_duplicate_mutations (l1_gas: ~0, l1_data_gas: ~21696, l2_gas: ~21552655)
+[PASS] world_native::tests::upgrade_rules_are_immutable_complete_and_game_scoped (l1_gas: ~0, l1_data_gas: ~22080, l2_gas: ~22112545)
+[PASS] world_native::tests::settlement::entry_entitlements_require_operator_and_compare_every_registration_field (l1_gas: ~0, l1_data_gas: ~26688, l2_gas: ~24116455)
+[PASS] world_native::tests::settlement::settlement_pool_claim_requires_season_and_keeps_games_separate (l1_gas: ~0, l1_data_gas: ~31968, l2_gas: ~944359857)
+Running 23 test(s) from tests/
+[PASS] world_native_tests::test_conformance::cross_language_context_boundaries (l1_gas: ~0, l1_data_gas: ~0, l2_gas: ~1362704)
+[PASS] world_native_tests::test_conformance::fixture::exploration_fixture_runs_the_real_domain (l1_gas: ~0, l1_data_gas: ~38464, l2_gas: ~97124274)
+[PASS] world_native_tests::test_conformance::authority_rejects_multicalls_callbacks_and_foreign_targets (l1_gas: ~0, l1_data_gas: ~38080, l2_gas: ~74253170)
+[PASS] world_native_tests::test_conformance::delayed_execution_uses_recorded_time_after_intent_expiry_and_rejects_duplicate (l1_gas: ~0, l1_data_gas: ~39424, l2_gas: ~111927188)
+[PASS] world_native_tests::test_conformance::fixture::settlement::cosmetic_snapshot_identity_is_bound_to_the_signed_command (l1_gas: ~0, l1_data_gas: ~76576, l2_gas: ~210593256)
+[PASS] world_native_tests::test_conformance::outage_recovery_consumes_the_accepted_prefix_before_fresh_work (l1_gas: ~0, l1_data_gas: ~39520, l2_gas: ~104168741)
+[PASS] world_native_tests::test_conformance::fixture::settlement::accepted_settlement_keeps_the_admitted_wallet_after_registry_rebinding (l1_gas: ~0, l1_data_gas: ~79168, l2_gas: ~237895086)
+[PASS] world_native_tests::test_conformance::losses_and_terminal_rejections_consume_the_original_nonce (l1_gas: ~0, l1_data_gas: ~78112, l2_gas: ~206255473)
+[PASS] world_native_tests::test_conformance::pending_binding_survives_authority_credential_rotation (l1_gas: ~0, l1_data_gas: ~39424, l2_gas: ~112294289)
+[PASS] world_native_tests::test_conformance::fixture::settlement::settlement_commands_reject_forged_domain_callers_before_mutating (l1_gas: ~0, l1_data_gas: ~79168, l2_gas: ~248633476)
+[PASS] world_native_tests::test_conformance::fixture::settlement::rejected_settlement_rolls_back_entry_and_leaves_later_ticket_executable (l1_gas: ~0, l1_data_gas: ~79936, l2_gas: ~254629286)
+[PASS] world_native_tests::test_conformance::rejects_changed_signed_fields_and_foreign_identities (l1_gas: ~0, l1_data_gas: ~38080, l2_gas: ~132455066)
+[PASS] world_native_tests::test_conformance::simulation_context_cannot_bypass_transaction_authorization (l1_gas: ~0, l1_data_gas: ~38080, l2_gas: ~124352312)
+[PASS] world_native_tests::test_conformance::fixture::settlement::delayed_provisioning_starts_labor_once_without_regranting_starting_troops (l1_gas: ~0, l1_data_gas: ~83968, l2_gas: ~384557022)
+[PASS] world_native_tests::test_conformance::malformed_transport_consumes_nothing_and_invalid_action_signature_is_terminal (l1_gas: ~0, l1_data_gas: ~115456, l2_gas: ~263918025)
+[PASS] world_native_tests::test_conformance::stale_nonce_after_consumption_does_not_invalidate_the_next_action (l1_gas: ~0, l1_data_gas: ~40192, l2_gas: ~133330472)
+[PASS] world_native_tests::test_conformance::fixture::settlement::accepted_settlement_keeps_recorded_cosmetics_and_time_after_game_end (l1_gas: ~0, l1_data_gas: ~157984, l2_gas: ~479445397)
+[PASS] world_native_tests::test_conformance::fixture::accepted_malformed_commands_are_terminal_and_cannot_stall_the_stream (l1_gas: ~0, l1_data_gas: ~118720, l2_gas: ~352367597)
+[PASS] world_native_tests::test_conformance::fixture::settlement::reserved_hyperstructure_uses_recorded_time_after_an_outage (l1_gas: ~0, l1_data_gas: ~160672, l2_gas: ~653697763)
+[PASS] world_native_tests::test_conformance::fixture::settlement::provisioning_accepts_stone_and_rejects_lords_without_partial_grants (l1_gas: ~0, l1_data_gas: ~157888, l2_gas: ~721657480)
+[PASS] world_native_tests::test_conformance::invalid_transport_is_non_consuming_and_invalid_acceptance_is_terminal (l1_gas: ~0, l1_data_gas: ~115456, l2_gas: ~288569257)
+[PASS] world_native_tests::test_conformance::invalid_action_keys_and_nonces_cannot_block_a_valid_successor (l1_gas: ~0, l1_data_gas: ~237088, l2_gas: ~709896038)
+[PASS] world_native_tests::test_conformance::accepted_execution_after_a_day_matches_immediate_execution (l1_gas: ~0, l1_data_gas: ~117568, l2_gas: ~443710144)
+Tests: 50 passed, 0 failed, 0 ignored, 0 filtered out
+

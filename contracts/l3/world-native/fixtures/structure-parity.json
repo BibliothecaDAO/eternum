@@ -3,8 +3,100 @@
   "domain": "structure",
   "factModel": {
     "source": "schema/fact-models.mjs",
-    "schema": "84bec30da4efc70a961bf41073f142031c83cd21cdbda4cb4af83397b73be99b",
+    "schema": "9de8aa6464304e0c8362f1310a2af6b4c4d9ddceeb942a94f4aa29f51c5cd7f1",
     "declarations": [
+      {
+        "model": "AgentPopulation",
+        "observation": {
+          "domain": "troops",
+          "fields": {
+            "active": "count"
+          }
+        }
+      },
+      {
+        "model": "RealmGrants",
+        "observation": {
+          "domain": "blitz-settlement",
+          "fields": {
+            "resources": "resources",
+            "startingTroops": "starting_troops",
+            "realmResources": "realm_resources"
+          }
+        }
+      },
+      {
+        "model": "HyperstructureReservations",
+        "observation": {
+          "domain": "blitz-settlement",
+          "fields": {
+            "placed": "placed"
+          }
+        }
+      },
+      {
+        "model": "SettlementRules",
+        "observation": {
+          "domain": "realm/blitz",
+          "fields": {
+            "registrationOpens": "registration_start",
+            "capacity": "registration_limit",
+            "mode": "mode",
+            "profile": "reward_profile",
+            "cosmeticLimit": "cosmetic_limit"
+          }
+        }
+      },
+      {
+        "model": "SettlementProgress",
+        "observation": {
+          "domain": "realm/blitz",
+          "fields": {
+            "players": "registered",
+            "realms": "realm_count"
+          }
+        }
+      },
+      {
+        "model": "SettlementPool",
+        "observation": {
+          "domain": "realm/blitz",
+          "fields": {
+            "availableLocations": "available"
+          }
+        }
+      },
+      {
+        "model": "EntryEntitlement",
+        "observation": {
+          "domain": "blitz-settlement",
+          "fields": {
+            "realmId": "realm_id",
+            "metadata1": "metadata_1",
+            "metadata2": "metadata_2",
+            "metadata3": "metadata_3",
+            "passKind": "pass_kind"
+          }
+        }
+      },
+      {
+        "model": "PlayerEntry",
+        "observation": {
+          "domain": "realm/blitz",
+          "fields": {
+            "player": "player"
+          }
+        }
+      },
+      {
+        "model": "PlayerCosmetics",
+        "observation": {
+          "domain": "realm/blitz",
+          "fields": {
+            "attributes": "attributes"
+          }
+        }
+      },
       {
         "model": "TileOpt",
         "observation": {
@@ -51,108 +143,33 @@
         }
       },
       {
-        "model": "Resource",
+        "model": "ResourceBalance",
         "observation": {
           "domain": "resources",
           "fields": {
-            "STONE_BALANCE": "STONE_BALANCE",
-            "COAL_BALANCE": "COAL_BALANCE",
-            "WOOD_BALANCE": "WOOD_BALANCE",
-            "COPPER_BALANCE": "COPPER_BALANCE",
-            "IRONWOOD_BALANCE": "IRONWOOD_BALANCE",
-            "OBSIDIAN_BALANCE": "OBSIDIAN_BALANCE",
-            "GOLD_BALANCE": "GOLD_BALANCE",
-            "SILVER_BALANCE": "SILVER_BALANCE",
-            "MITHRAL_BALANCE": "MITHRAL_BALANCE",
-            "ALCHEMICAL_SILVER_BALANCE": "ALCHEMICAL_SILVER_BALANCE",
-            "COLD_IRON_BALANCE": "COLD_IRON_BALANCE",
-            "DEEP_CRYSTAL_BALANCE": "DEEP_CRYSTAL_BALANCE",
-            "RUBY_BALANCE": "RUBY_BALANCE",
-            "DIAMONDS_BALANCE": "DIAMONDS_BALANCE",
-            "HARTWOOD_BALANCE": "HARTWOOD_BALANCE",
-            "IGNIUM_BALANCE": "IGNIUM_BALANCE",
-            "TWILIGHT_QUARTZ_BALANCE": "TWILIGHT_QUARTZ_BALANCE",
-            "TRUE_ICE_BALANCE": "TRUE_ICE_BALANCE",
-            "ADAMANTINE_BALANCE": "ADAMANTINE_BALANCE",
-            "SAPPHIRE_BALANCE": "SAPPHIRE_BALANCE",
-            "ETHEREAL_SILICA_BALANCE": "ETHEREAL_SILICA_BALANCE",
-            "DRAGONHIDE_BALANCE": "DRAGONHIDE_BALANCE",
-            "LABOR_BALANCE": "LABOR_BALANCE",
-            "EARTHEN_SHARD_BALANCE": "EARTHEN_SHARD_BALANCE",
-            "DONKEY_BALANCE": "DONKEY_BALANCE",
-            "KNIGHT_T1_BALANCE": "KNIGHT_T1_BALANCE",
-            "KNIGHT_T2_BALANCE": "KNIGHT_T2_BALANCE",
-            "KNIGHT_T3_BALANCE": "KNIGHT_T3_BALANCE",
-            "CROSSBOWMAN_T1_BALANCE": "CROSSBOWMAN_T1_BALANCE",
-            "CROSSBOWMAN_T2_BALANCE": "CROSSBOWMAN_T2_BALANCE",
-            "CROSSBOWMAN_T3_BALANCE": "CROSSBOWMAN_T3_BALANCE",
-            "PALADIN_T1_BALANCE": "PALADIN_T1_BALANCE",
-            "PALADIN_T2_BALANCE": "PALADIN_T2_BALANCE",
-            "PALADIN_T3_BALANCE": "PALADIN_T3_BALANCE",
-            "WHEAT_BALANCE": "WHEAT_BALANCE",
-            "FISH_BALANCE": "FISH_BALANCE",
-            "LORDS_BALANCE": "LORDS_BALANCE",
-            "ESSENCE_BALANCE": "ESSENCE_BALANCE",
-            "RELIC_E1_BALANCE": "RELIC_E1_BALANCE",
-            "RELIC_E2_BALANCE": "RELIC_E2_BALANCE",
-            "RELIC_E3_BALANCE": "RELIC_E3_BALANCE",
-            "RELIC_E4_BALANCE": "RELIC_E4_BALANCE",
-            "RELIC_E5_BALANCE": "RELIC_E5_BALANCE",
-            "RELIC_E6_BALANCE": "RELIC_E6_BALANCE",
-            "RELIC_E7_BALANCE": "RELIC_E7_BALANCE",
-            "RELIC_E8_BALANCE": "RELIC_E8_BALANCE",
-            "RELIC_E9_BALANCE": "RELIC_E9_BALANCE",
-            "RELIC_E10_BALANCE": "RELIC_E10_BALANCE",
-            "RELIC_E11_BALANCE": "RELIC_E11_BALANCE",
-            "RELIC_E12_BALANCE": "RELIC_E12_BALANCE",
-            "RELIC_E13_BALANCE": "RELIC_E13_BALANCE",
-            "RELIC_E14_BALANCE": "RELIC_E14_BALANCE",
-            "RELIC_E15_BALANCE": "RELIC_E15_BALANCE",
-            "RELIC_E16_BALANCE": "RELIC_E16_BALANCE",
-            "RELIC_E17_BALANCE": "RELIC_E17_BALANCE",
-            "RELIC_E18_BALANCE": "RELIC_E18_BALANCE",
-            "RESEARCH_BALANCE": "RESEARCH_BALANCE",
-            "SATOSHI_BALANCE": "SATOSHI_BALANCE",
-            "weight": "weight",
-            "STONE_PRODUCTION": "STONE_PRODUCTION",
-            "COAL_PRODUCTION": "COAL_PRODUCTION",
-            "WOOD_PRODUCTION": "WOOD_PRODUCTION",
-            "COPPER_PRODUCTION": "COPPER_PRODUCTION",
-            "IRONWOOD_PRODUCTION": "IRONWOOD_PRODUCTION",
-            "OBSIDIAN_PRODUCTION": "OBSIDIAN_PRODUCTION",
-            "GOLD_PRODUCTION": "GOLD_PRODUCTION",
-            "SILVER_PRODUCTION": "SILVER_PRODUCTION",
-            "MITHRAL_PRODUCTION": "MITHRAL_PRODUCTION",
-            "ALCHEMICAL_SILVER_PRODUCTION": "ALCHEMICAL_SILVER_PRODUCTION",
-            "COLD_IRON_PRODUCTION": "COLD_IRON_PRODUCTION",
-            "DEEP_CRYSTAL_PRODUCTION": "DEEP_CRYSTAL_PRODUCTION",
-            "RUBY_PRODUCTION": "RUBY_PRODUCTION",
-            "DIAMONDS_PRODUCTION": "DIAMONDS_PRODUCTION",
-            "HARTWOOD_PRODUCTION": "HARTWOOD_PRODUCTION",
-            "IGNIUM_PRODUCTION": "IGNIUM_PRODUCTION",
-            "TWILIGHT_QUARTZ_PRODUCTION": "TWILIGHT_QUARTZ_PRODUCTION",
-            "TRUE_ICE_PRODUCTION": "TRUE_ICE_PRODUCTION",
-            "ADAMANTINE_PRODUCTION": "ADAMANTINE_PRODUCTION",
-            "SAPPHIRE_PRODUCTION": "SAPPHIRE_PRODUCTION",
-            "ETHEREAL_SILICA_PRODUCTION": "ETHEREAL_SILICA_PRODUCTION",
-            "DRAGONHIDE_PRODUCTION": "DRAGONHIDE_PRODUCTION",
-            "LABOR_PRODUCTION": "LABOR_PRODUCTION",
-            "EARTHEN_SHARD_PRODUCTION": "EARTHEN_SHARD_PRODUCTION",
-            "DONKEY_PRODUCTION": "DONKEY_PRODUCTION",
-            "KNIGHT_T1_PRODUCTION": "KNIGHT_T1_PRODUCTION",
-            "KNIGHT_T2_PRODUCTION": "KNIGHT_T2_PRODUCTION",
-            "KNIGHT_T3_PRODUCTION": "KNIGHT_T3_PRODUCTION",
-            "CROSSBOWMAN_T1_PRODUCTION": "CROSSBOWMAN_T1_PRODUCTION",
-            "CROSSBOWMAN_T2_PRODUCTION": "CROSSBOWMAN_T2_PRODUCTION",
-            "CROSSBOWMAN_T3_PRODUCTION": "CROSSBOWMAN_T3_PRODUCTION",
-            "PALADIN_T1_PRODUCTION": "PALADIN_T1_PRODUCTION",
-            "PALADIN_T2_PRODUCTION": "PALADIN_T2_PRODUCTION",
-            "PALADIN_T3_PRODUCTION": "PALADIN_T3_PRODUCTION",
-            "WHEAT_PRODUCTION": "WHEAT_PRODUCTION",
-            "FISH_PRODUCTION": "FISH_PRODUCTION",
-            "ESSENCE_PRODUCTION": "ESSENCE_PRODUCTION",
-            "RESEARCH_PRODUCTION": "RESEARCH_PRODUCTION",
-            "SATOSHI_PRODUCTION": "SATOSHI_PRODUCTION"
+            "balance": "balance"
+          }
+        }
+      },
+      {
+        "model": "ResourceProduction",
+        "observation": {
+          "domain": "resources",
+          "fields": {
+            "buildingCount": "building_count",
+            "rate": "production_rate",
+            "outputRemaining": "output_amount_left",
+            "updatedAt": "last_updated_at"
+          }
+        }
+      },
+      {
+        "model": "ResourceWeight",
+        "observation": {
+          "domain": "resources",
+          "fields": {
+            "capacity": "capacity",
+            "weight": "weight"
           }
         }
       },
@@ -308,7 +325,7 @@
   },
   "costs": {
     "version": 1,
-    "traceSha256": "8953261d9378e8106c7e05883fe8d4636a2daf1773a54f663c7cead1df42c90a",
+    "traceSha256": "74a3b9c6de88e8caa715b4205c7315c1819002488640032918cc290f17f32064",
     "accounting": "Inclusive execution counters at each action entrypoint, including attempted operations before rollback. Event counts sum local emissions across descendants; syscall and gas counters are already inclusive. Account validation and fees are outside this fixture.",
     "actions": [
       {
@@ -324,15 +341,15 @@
           "storageWrites": 11,
           "events": 3,
           "eventFelts": 33,
-          "l2Gas": 1416418,
-          "classHash": "0x4a679a0c4367d43671e21c04340696132dac32dbe77de886236f65bf5a219b3"
+          "l2Gas": 1406813,
+          "classHash": "0x383e830584761aaaac432a438fa4fc7f2165b22449df707c6dd51db99c72ca3"
         },
         "nativeGameplay": {
           "storageWrites": 0,
           "events": 0,
           "eventFelts": 0,
-          "l2Gas": 392550,
-          "classHash": "0x43d44fb5b5adbe83e57891a7989ca28787afb982b6bf6f0542c2957853db37"
+          "l2Gas": 390310,
+          "classHash": "0x6da55a68dcdcd2686dd6a039025090d19b1c7b830c882b916c1062e2ca8197b"
         },
         "case": "non_owner",
         "expectedSuccess": false
@@ -347,18 +364,18 @@
           "classHash": "0x1c6fc3062729c3cb3c945012c9632b603f7747f1d4923ba3ef24f93bea37f4e"
         },
         "nativeExecution": {
-          "storageWrites": 27,
-          "events": 12,
-          "eventFelts": 130,
-          "l2Gas": 3054828,
-          "classHash": "0x4a679a0c4367d43671e21c04340696132dac32dbe77de886236f65bf5a219b3"
+          "storageWrites": 24,
+          "events": 10,
+          "eventFelts": 106,
+          "l2Gas": 3030733,
+          "classHash": "0x383e830584761aaaac432a438fa4fc7f2165b22449df707c6dd51db99c72ca3"
         },
         "nativeGameplay": {
-          "storageWrites": 16,
-          "events": 9,
-          "eventFelts": 97,
-          "l2Gas": 2030960,
-          "classHash": "0x43d44fb5b5adbe83e57891a7989ca28787afb982b6bf6f0542c2957853db37"
+          "storageWrites": 13,
+          "events": 7,
+          "eventFelts": 73,
+          "l2Gas": 2014230,
+          "classHash": "0x6da55a68dcdcd2686dd6a039025090d19b1c7b830c882b916c1062e2ca8197b"
         },
         "case": "insufficient_last_resource",
         "expectedSuccess": false
@@ -373,18 +390,18 @@
           "classHash": "0x1c6fc3062729c3cb3c945012c9632b603f7747f1d4923ba3ef24f93bea37f4e"
         },
         "nativeExecution": {
-          "storageWrites": 29,
+          "storageWrites": 28,
           "events": 15,
-          "eventFelts": 168,
-          "l2Gas": 2922466,
-          "classHash": "0x4a679a0c4367d43671e21c04340696132dac32dbe77de886236f65bf5a219b3"
+          "eventFelts": 164,
+          "l2Gas": 2903366,
+          "classHash": "0x383e830584761aaaac432a438fa4fc7f2165b22449df707c6dd51db99c72ca3"
         },
         "nativeGameplay": {
-          "storageWrites": 18,
+          "storageWrites": 17,
           "events": 12,
-          "eventFelts": 135,
-          "l2Gas": 1907560,
-          "classHash": "0x43d44fb5b5adbe83e57891a7989ca28787afb982b6bf6f0542c2957853db37"
+          "eventFelts": 131,
+          "l2Gas": 1872610,
+          "classHash": "0x6da55a68dcdcd2686dd6a039025090d19b1c7b830c882b916c1062e2ca8197b"
         },
         "case": "level_one",
         "expectedSuccess": true
@@ -399,18 +416,18 @@
           "classHash": "0x1c6fc3062729c3cb3c945012c9632b603f7747f1d4923ba3ef24f93bea37f4e"
         },
         "nativeExecution": {
-          "storageWrites": 32,
+          "storageWrites": 31,
           "events": 17,
-          "eventFelts": 189,
-          "l2Gas": 3187056,
-          "classHash": "0x4a679a0c4367d43671e21c04340696132dac32dbe77de886236f65bf5a219b3"
+          "eventFelts": 184,
+          "l2Gas": 3164416,
+          "classHash": "0x383e830584761aaaac432a438fa4fc7f2165b22449df707c6dd51db99c72ca3"
         },
         "nativeGameplay": {
-          "storageWrites": 21,
+          "storageWrites": 20,
           "events": 14,
-          "eventFelts": 156,
-          "l2Gas": 2172150,
-          "classHash": "0x43d44fb5b5adbe83e57891a7989ca28787afb982b6bf6f0542c2957853db37"
+          "eventFelts": 151,
+          "l2Gas": 2133660,
+          "classHash": "0x6da55a68dcdcd2686dd6a039025090d19b1c7b830c882b916c1062e2ca8197b"
         },
         "case": "level_two",
         "expectedSuccess": true
@@ -425,18 +442,18 @@
           "classHash": "0x1c6fc3062729c3cb3c945012c9632b603f7747f1d4923ba3ef24f93bea37f4e"
         },
         "nativeExecution": {
-          "storageWrites": 38,
+          "storageWrites": 37,
           "events": 21,
-          "eventFelts": 231,
-          "l2Gas": 3715846,
-          "classHash": "0x4a679a0c4367d43671e21c04340696132dac32dbe77de886236f65bf5a219b3"
+          "eventFelts": 224,
+          "l2Gas": 3686126,
+          "classHash": "0x383e830584761aaaac432a438fa4fc7f2165b22449df707c6dd51db99c72ca3"
         },
         "nativeGameplay": {
-          "storageWrites": 27,
+          "storageWrites": 26,
           "events": 18,
-          "eventFelts": 198,
-          "l2Gas": 2700940,
-          "classHash": "0x43d44fb5b5adbe83e57891a7989ca28787afb982b6bf6f0542c2957853db37"
+          "eventFelts": 191,
+          "l2Gas": 2655370,
+          "classHash": "0x6da55a68dcdcd2686dd6a039025090d19b1c7b830c882b916c1062e2ca8197b"
         },
         "case": "level_three",
         "expectedSuccess": true
@@ -454,15 +471,15 @@
           "storageWrites": 11,
           "events": 3,
           "eventFelts": 33,
-          "l2Gas": 1457609,
-          "classHash": "0x4a679a0c4367d43671e21c04340696132dac32dbe77de886236f65bf5a219b3"
+          "l2Gas": 1444373,
+          "classHash": "0x383e830584761aaaac432a438fa4fc7f2165b22449df707c6dd51db99c72ca3"
         },
         "nativeGameplay": {
           "storageWrites": 0,
           "events": 0,
           "eventFelts": 0,
-          "l2Gas": 430110,
-          "classHash": "0x43d44fb5b5adbe83e57891a7989ca28787afb982b6bf6f0542c2957853db37"
+          "l2Gas": 427870,
+          "classHash": "0x6da55a68dcdcd2686dd6a039025090d19b1c7b830c882b916c1062e2ca8197b"
         },
         "case": "maximum",
         "expectedSuccess": false
@@ -480,15 +497,15 @@
           "storageWrites": 11,
           "events": 3,
           "eventFelts": 33,
-          "l2Gas": 2587748,
-          "classHash": "0x4a679a0c4367d43671e21c04340696132dac32dbe77de886236f65bf5a219b3"
+          "l2Gas": 2578583,
+          "classHash": "0x383e830584761aaaac432a438fa4fc7f2165b22449df707c6dd51db99c72ca3"
         },
         "nativeGameplay": {
           "storageWrites": 0,
           "events": 0,
           "eventFelts": 0,
-          "l2Gas": 1563880,
-          "classHash": "0x43d44fb5b5adbe83e57891a7989ca28787afb982b6bf6f0542c2957853db37"
+          "l2Gas": 1562080,
+          "classHash": "0x6da55a68dcdcd2686dd6a039025090d19b1c7b830c882b916c1062e2ca8197b"
         },
         "case": "after_end",
         "expectedSuccess": false
@@ -500,9 +517,9 @@
   "rulesRevision": "55dc510f5e7af119d1efac9a60426e81fee8e408",
   "oracleSourceSha256": "99034c1e0f31719df3d1ae0cf343a2e9b53fae2da8f972bb38c78b1fa7d73bce",
   "provenance": {
-    "revision": "880085bba80f80e8c8874c998654ba956dcccc3d",
+    "revision": "13fcb5dc554afaf42dcf3522bd897f9c4250691d",
     "dirty": false,
-    "sourceSha256": "6d7f50f52e959cac678b4570669269b0269ed581f513b402e7f97eca4b8796f6",
+    "sourceSha256": "ca17a730bdd50e60c8dd8da2f09814e9a01825b7cf40a6376f3390d093f2b191",
     "scope": [
       "apps/herald",
       "contracts/l3/world-native",
@@ -515,6 +532,7 @@
       ".github/workflows/native-world.yml"
     ],
     "excludedReports": [
+      "contracts/l3/world-native/fixtures/blitz-settlement-parity.json",
       "contracts/l3/world-native/fixtures/combat-parity.json",
       "contracts/l3/world-native/fixtures/deploy-upgrade.json",
       "contracts/l3/world-native/fixtures/harness.json",
@@ -530,12 +548,12 @@
     {
       "name": "structure",
       "test": "world_parity_structure",
-      "comparedFactSnapshots": 49
+      "comparedFactSnapshots": 728
     },
     {
       "name": "structure_rejections",
       "test": "world_parity_structure_rejections",
-      "comparedFactSnapshots": 28
+      "comparedFactSnapshots": 416
     }
   ],
   "harnessCoverage": {
@@ -548,24 +566,102 @@
   "casm": {
     "native": {
       "SeasonDomain": {
-        "bytecodeFelts": 53898,
-        "jsonBytes": 1182865,
-        "sha256": "713530ac210b3c96063ee840b43ce9b7b4fa13b3cd02cc043c65f7f30c9416f3"
+        "bytecodeFelts": 70515,
+        "jsonBytes": 1573756,
+        "sha256": "fbb77fd4c227dc87a631b03466f7f94a805276f167bb1ffe0bf6b64fcf3766c6",
+        "limitFelts": 81920,
+        "withinLimit": true,
+        "attribution": "CASM segments in decoded Sierra function-entry order; generics attributed to their defining module",
+        "moduleFelts": {
+          "commands": 2368,
+          "core": 7883,
+          "eternum_randomness_protocol": 2116,
+          "game": 5140,
+          "lifecycle": 3004,
+          "random": 134,
+          "recording": 1103,
+          "resources": 145,
+          "rules": 23993,
+          "season": 15025,
+          "settlement": 7580,
+          "settlement_grid": 246,
+          "troops": 136,
+          "upgrades": 1642
+        }
       },
       "StructuresDomain": {
-        "bytecodeFelts": 81474,
-        "jsonBytes": 1788882,
-        "sha256": "d0402dc8a038c61db9881625de5d570eb3e8ff5b4e84f491d9ba586e847aa96b"
+        "bytecodeFelts": 80878,
+        "jsonBytes": 1818257,
+        "sha256": "18cbeb2b19b9be15366b1f7da748b546701ccc5ce4d907e9fa5671793d65a39a",
+        "limitFelts": 81920,
+        "withinLimit": true,
+        "attribution": "CASM segments in decoded Sierra function-entry order; generics attributed to their defining module",
+        "moduleFelts": {
+          "buildings": 3012,
+          "commands": 160,
+          "core": 5466,
+          "game": 1401,
+          "geometry": 327,
+          "lifecycle": 3036,
+          "map": 159,
+          "ownership": 4640,
+          "random": 196,
+          "resources": 4836,
+          "rules": 5461,
+          "settlement": 227,
+          "stamina": 435,
+          "structures": 48869,
+          "troops": 2507,
+          "upgrades": 146
+        }
       },
       "TroopsDomain": {
-        "bytecodeFelts": 66466,
-        "jsonBytes": 1410551,
-        "sha256": "7471cfad33f69cfb98904aa2e03bb305520b9a39b7a8c1881a18f0344877f00c"
+        "bytecodeFelts": 69512,
+        "jsonBytes": 1477879,
+        "sha256": "ad86e10f33571f74a55b98f4ec9666153c376572a8867b4faf9374a2159be7e4",
+        "limitFelts": 81920,
+        "withinLimit": true,
+        "attribution": "CASM segments in decoded Sierra function-entry order; generics attributed to their defining module",
+        "moduleFelts": {
+          "biome": 235,
+          "combat": 12814,
+          "commands": 560,
+          "core": 5439,
+          "eternum_cubit": 6222,
+          "game": 1401,
+          "geometry": 999,
+          "lifecycle": 3028,
+          "map": 303,
+          "random": 330,
+          "rules": 5461,
+          "stamina": 773,
+          "structures": 3115,
+          "troops": 28832
+        }
       },
       "MapDomain": {
-        "bytecodeFelts": 38625,
-        "jsonBytes": 897159,
-        "sha256": "6f246a099eea0a16c884d5c40a2a463ccdb5119ee04270645220b328dd1e1008"
+        "bytecodeFelts": 48507,
+        "jsonBytes": 1142666,
+        "sha256": "57536df78183c506da8185636080a9bfff1673905f5e848d69c744ccd0d70870",
+        "limitFelts": 81920,
+        "withinLimit": true,
+        "attribution": "CASM segments in decoded Sierra function-entry order; generics attributed to their defining module",
+        "moduleFelts": {
+          "biome": 3466,
+          "commands": 160,
+          "core": 1265,
+          "discovery": 430,
+          "eternum_cubit": 16530,
+          "game": 1270,
+          "geometry": 1951,
+          "lifecycle": 3008,
+          "map": 9783,
+          "random": 1052,
+          "rules": 5461,
+          "settlement": 2127,
+          "settlement_grid": 1868,
+          "troops": 136
+        }
       }
     },
     "dojo": {
@@ -580,5 +676,6 @@
     "Remove the ProductionBoostBonus read: the oracle's realm tile selection never consumes the bonus argument.",
     "Write only level and the two troop limits; remove unchanged base, owner, guards and metadata writes."
   ],
+  "ruledDivergences": [],
   "divergence": null
 }

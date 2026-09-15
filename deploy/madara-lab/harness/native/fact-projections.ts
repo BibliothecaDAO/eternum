@@ -2,11 +2,17 @@ import type { NativeSchema } from "../../../../apps/herald/src/native/schema";
 
 // These are source adapters for the pinned oracle; native fact names and fields come from its generated schema.
 const recordTypes: Record<string, [string, string]> = {
+  SettlementPool: ["settlement::SettlementPool", "OracleSettlementPool"],
+  SettlementProgress: ["settlement::SettlementProgress", "OracleSettlementProgress"],
+  PlayerEntry: ["settlement::PlayerEntry", "ledger::PlayerSettlement"],
+  PlayerCosmetics: ["settlement::PlayerCosmetics", "config::BlitzCosmeticAttrsRegister"],
+  AgentPopulation: ["troops::AgentPopulation", "agent::AgentCount"],
   UpgradeLimits: ["upgrades::UpgradeLimits", "config::StructureMaxLevelConfig"],
   UpgradeRecipe: ["upgrades::UpgradeRecipe", "config::StructureLevelConfig"],
   AddressName: ["names::AddressName", "name::AddressName"],
   Structure: ["structures::Structure", "structure::Structure"],
-  Resource: ["resources::Resource", "resource::resource::Resource"],
+  ResourceProduction: ["resources::Production", "resource::production::production::Production"],
+  ResourceWeight: ["resources::Weight", "weight::Weight"],
   ExplorerTroops: ["troops::ExplorerTroops", "troop::ExplorerTroops"],
   TileOpt: ["map::TileOpt", "map2::TileOpt"],
   Building: ["buildings::Building", "resource::production::building::Building"],
@@ -28,33 +34,40 @@ export function factProjectors(schema: NativeSchema): string {
       const type =
         world === "native"
           ? `world_native::${pair[0]}`
-          : model.name === "UpgradeRecipe"
-            ? "OracleUpgradeRecipe"
-          : model.name === "Resource"
-            ? "OracleResources"
+          : ["UpgradeRecipe", "SettlementProgress", "SettlementPool"].includes(model.name)
+            ? `Oracle${model.name}`
             : `crate::models::${pair[1]}`;
       const fields = Object.values(model.observation.fields).flatMap((path) => {
         const type = memberType(model.members, path.split("."));
-        if (model.name === "Resource" && world === "oracle") {
-          const resource = path.replace(/_(BALANCE|PRODUCTION)$/, "");
-          const value =
-            path === "weight"
-              ? "ResourceImpl::read_weight(ref world, self.game_id, self.entity_id)"
-              : `ResourceImpl::read_${path.endsWith("BALANCE") ? "balance" : "production"}(ref world, self.game_id, self.entity_id, crate::constants::ResourceTypes::${resource})`;
-          return ["{", `let value = ${value};`, ...emitValue("value", type, world), "}"];
-        }
-        return emitValue(`self.${path}`, type, world);
+        return emitValue(
+          `self.${world === "oracle" && model.name === "PlayerCosmetics" ? "attrs" : path}`,
+          type,
+          world,
+        );
       });
-      const body = model.name === "UpgradeRecipe" && world === "oracle" ? `
+      const body =
+        model.name === "UpgradeRecipe" && world === "oracle"
+          ? `
         let game: crate::models::game::GameRegistry = self.world.read_model(self.game_id);
         let recipe: crate::models::config::StructureLevelConfig = self.world.read_model((game.preset_id, self.level));
         facts.append(recipe.required_resource_count.into());
         for index in 0..recipe.required_resource_count {
           let cost: crate::models::resource::resource::ResourceList = self.world.read_model((game.preset_id, recipe.required_resources_id, index));
           facts.append(cost.resource_type.into()); facts.append(cost.amount.into());
-        }` : model.observation.transform === "tile" ? tileProjection(world) : fields.join("\n");
+        }`
+          : model.name === "SettlementPool" && world === "oracle"
+            ? `
+        let config: crate::models::config::BlitzSettlementConfig = crate::models::config::WorldConfigUtilImpl::get_member(self.world, self.game_id, selector!("blitz_settlement_config"));
+        facts.append(config.open_settlement_count.into());
+        for index in 0..config.open_settlement_count {
+          let location: crate::models::config::BlitzSettlementPosition = self.world.read_model((self.game_id, index + 1));
+          location.coords.serialize(ref facts);
+        }`
+            : model.observation.transform === "tile"
+              ? tileProjection(world)
+              : fields.join("\n");
       implementations.push(`impl ${world}_${model.name} of Observable<${type}> {
-        fn observe(self: ${type}) -> Array<felt252> { let mut facts = array![]; ${model.name === "Resource" && world === "oracle" ? "let mut world = self.world;" : ""} ${body} facts }
+        fn observe(self: ${type}) -> Array<felt252> { let mut facts = array![]; ${body} facts }
       }`);
     }
   }
@@ -62,9 +75,11 @@ export function factProjectors(schema: NativeSchema): string {
     use dojo::model::ModelStorage;
     use crate::models::resource::resource::ResourceImpl;
     #[derive(Copy, Drop)]
-    pub struct OracleUpgradeRecipe { pub world: dojo::world::WorldStorage, pub game_id: u32, pub level: u8 }
+    pub struct OracleSettlementPool { pub world: dojo::world::WorldStorage, pub game_id: u32 }
     #[derive(Copy, Drop)]
-    pub struct OracleResources { pub world: dojo::world::WorldStorage, pub game_id: u32, pub entity_id: u32 }
+    pub struct OracleSettlementProgress { pub registered: u16, pub realm_count: u16 }
+    #[derive(Copy, Drop)]
+    pub struct OracleUpgradeRecipe { pub world: dojo::world::WorldStorage, pub game_id: u32, pub level: u8 }
     pub trait Observable<T> { fn observe(self: T) -> Array<felt252>; }
     ${implementations.join("\n")}
     impl Scalar128 of Observable<u128> { fn observe(self: u128) -> Array<felt252> { array![self.into()] } }

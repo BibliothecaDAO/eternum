@@ -94,7 +94,7 @@ pub mod GameState {
                         version: 1,
                         model: 'SeasonPrize',
                         keys: array![game_id.into()].span(),
-                        values: array![total.into(), 0, 0].span(),
+                        values: array![total.into()].span(),
                     },
                 );
         }

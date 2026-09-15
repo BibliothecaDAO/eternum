@@ -2,25 +2,85 @@
 export function defineFactModels({ contracts, struct, method, model: declare, types }) {
   const model = (...arguments_) => {
     const row = declare(...arguments_);
-    const observation =
-      row.name === "Resource"
-        ? {
-            domain: "resources",
-            fields: Object.fromEntries(
-              row.members
-                .filter((member) => member.name !== "LORDS_PRODUCTION")
-                .map((member) => [member.name, member.name]),
-            ),
-          }
-        : behaviouralFacts[row.name];
+    if (row.name === "ResourceBalance" || row.name === "ResourceProduction")
+      row.absence = {
+        parent: "ResourceWeight",
+        value: "zero",
+        meaning:
+          "Zero balance or inactive production while the resource owner exists; no resource owner after its weight row is deleted.",
+      };
+    const observation = behaviouralFacts[row.name];
     return observation ? { ...row, observation } : row;
   };
   const domainKey = [{ name: "address", type: struct("lifecycle::Peers")[0].type }];
   return [
+    model(
+      "AgentPopulation",
+      ["troops"],
+      "game",
+      method("troops", "agent_population").inputs,
+      struct("troops::AgentPopulation"),
+    ),
+    model(
+      "RealmGrants",
+      ["season"],
+      "game",
+      method("season", "realm_grants").inputs,
+      struct("settlement::RealmGrants"),
+    ),
+    model("HyperstructureReservations", ["map"], "game", method("map", "reserved_hyperstructures").inputs, [
+      { name: "placed", type: "core::integer::u32" },
+    ]),
+    model(
+      "SettlementRules",
+      ["season"],
+      "game",
+      method("season", "settlement_rules").inputs,
+      struct("settlement::SettlementRules"),
+    ),
+    model(
+      "SettlementProgress",
+      ["season"],
+      "game",
+      method("season", "settlement_progress").inputs,
+      struct("settlement::SettlementProgress"),
+    ),
+    model(
+      "SettlementPool",
+      ["map"],
+      "game",
+      method("map", "settlement_pool").inputs,
+      struct("settlement::SettlementPool"),
+    ),
+    model(
+      "EntryEntitlement",
+      ["season"],
+      "game",
+      struct("settlement::EntryKey"),
+      struct("settlement::EntryEntitlement"),
+    ),
+    model("PlayerEntry", ["season"], "game", struct("settlement::EntryKey"), struct("settlement::PlayerEntry")),
+    model(
+      "PlayerCosmetics",
+      ["season"],
+      "game",
+      struct("settlement::CosmeticsKey"),
+      struct("settlement::PlayerCosmetics"),
+    ),
     model("TileOpt", ["map"], "game", struct("map::TileKey"), struct("map::TileOpt")),
     model("ExplorerTroops", ["troops"], "game", struct("troops::ExplorerKey"), struct("troops::ExplorerTroops")),
     model("Structure", ["structures"], "game", struct("resources::ResourceKey"), struct("structures::Structure")),
-    model("Resource", ["structures"], "game", struct("resources::ResourceKey"), struct("resources::Resource")),
+    model("ResourceBalance", ["structures"], "game", struct("resources::ResourceSlot"), [
+      { name: "balance", type: method("structures", "resource_balance").outputs[0].type },
+    ]),
+    model(
+      "ResourceProduction",
+      ["structures"],
+      "game",
+      struct("resources::ResourceSlot"),
+      struct("resources::Production"),
+    ),
+    model("ResourceWeight", ["structures"], "game", struct("resources::ResourceKey"), struct("resources::Weight")),
     model("Building", ["structures"], "game", struct("buildings::BuildingKey"), struct("buildings::Building")),
     model(
       "StructureBuildings",
@@ -41,7 +101,6 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
     ),
     model("HyperstructureGlobals", ["structures"], "game", method("structures", "hyperstructure_count").inputs, [
       { name: "created_count", type: method("structures", "hyperstructure_count").outputs[0].type },
-      { name: "completed_count", type: method("structures", "hyperstructure_count").outputs[0].type },
     ]),
     model(
       "AddressName",
@@ -125,7 +184,6 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
     ),
     model("SeasonPrize", ["season"], "game", method("season", "season_points").inputs, [
       { name: "total_registered_points", type: method("season", "season_points").outputs[0].type },
-      { name: "total_lords_pool", type: "core::integer::u256" },
     ]),
     model("DomainState", Object.keys(contracts), "deployment", domainKey, struct("lifecycle::DomainState"), "address"),
     model(
@@ -165,6 +223,47 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
 
 // Paths describe observable values, not serialized row positions. Oracle adapters live only in the parity fixture.
 const behaviouralFacts = {
+  ResourceBalance: { domain: "resources", fields: { balance: "balance" } },
+  ResourceProduction: {
+    domain: "resources",
+    fields: {
+      buildingCount: "building_count",
+      rate: "production_rate",
+      outputRemaining: "output_amount_left",
+      updatedAt: "last_updated_at",
+    },
+  },
+  ResourceWeight: { domain: "resources", fields: { capacity: "capacity", weight: "weight" } },
+  AgentPopulation: { domain: "troops", fields: { active: "count" } },
+  EntryEntitlement: {
+    domain: "blitz-settlement",
+    fields: {
+      realmId: "realm_id",
+      metadata1: "metadata_1",
+      metadata2: "metadata_2",
+      metadata3: "metadata_3",
+      passKind: "pass_kind",
+    },
+  },
+  RealmGrants: {
+    domain: "blitz-settlement",
+    fields: { resources: "resources", startingTroops: "starting_troops", realmResources: "realm_resources" },
+  },
+  HyperstructureReservations: { domain: "blitz-settlement", fields: { placed: "placed" } },
+  SettlementRules: {
+    domain: "realm/blitz",
+    fields: {
+      registrationOpens: "registration_start",
+      capacity: "registration_limit",
+      mode: "mode",
+      profile: "reward_profile",
+      cosmeticLimit: "cosmetic_limit",
+    },
+  },
+  SettlementProgress: { domain: "realm/blitz", fields: { players: "registered", realms: "realm_count" } },
+  SettlementPool: { domain: "realm/blitz", fields: { availableLocations: "available" } },
+  PlayerEntry: { domain: "realm/blitz", fields: { player: "player" } },
+  PlayerCosmetics: { domain: "realm/blitz", fields: { attributes: "attributes" } },
   UpgradeLimits: { domain: "structure", fields: { realmMaximum: "realm_max", villageMaximum: "village_max" } },
   UpgradeRecipe: { domain: "structure", fields: { costs: "costs" } },
   AddressName: { domain: "name", fields: { name: "name" } },

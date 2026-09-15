@@ -1,7 +1,6 @@
-import { readResourceManager, resourcesOfEntityQuery } from "@bibliothecadao/eternum";
+import { readResourceManager } from "@bibliothecadao/eternum";
 import { ID } from "@bibliothecadao/types";
-import { useEntityQuery } from "@dojoengine/react";
-import { useMemo } from "react";
+import { useEffect, useMemo, useReducer } from "react";
 import { useDojo } from "../context";
 
 export const useResourceManager = (entityId: ID) => {
@@ -9,7 +8,7 @@ export const useResourceManager = (entityId: ID) => {
     setup: { components },
   } = useDojo();
 
-  const resource = useEntityQuery(resourcesOfEntityQuery(components, entityId));
-
-  return useMemo(() => readResourceManager(components, entityId), [entityId, resource]);
+  const [revision, changed] = useReducer((value: number) => value + 1, 0);
+  useEffect(() => readResourceManager(components, entityId).subscribe(changed), [components, entityId]);
+  return useMemo(() => readResourceManager(components, entityId), [components, entityId, revision]);
 };

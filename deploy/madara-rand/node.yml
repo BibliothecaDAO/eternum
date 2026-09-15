@@ -31,10 +31,13 @@ services:
       RANDOMNESS_PRIVATE_KEY: ${RANDOMNESS_PRIVATE_KEY:?Set the local sequencing credential}
       RANDOMNESS_PLACEMENT: ${RANDOMNESS_PLACEMENT:?Select embedded or sidecar}
       RANDOMNESS_RPC_URL: http://madara:9944
+      RANDOMNESS_NATIVE_SCHEMA: /config/native-schema.json
+      RANDOMNESS_L2_RPC_URL: ${RANDOMNESS_L2_RPC_URL:-}
       RANDOMNESS_HTTP_BIND: 0.0.0.0:8081
       RUST_LOG: info
     volumes:
       - ../madara-lab/chain-config.yaml:/config/chain-config.yaml:ro
+      - ${RANDOMNESS_SCHEMA_HOST_PATH:?Set the native deployment schema}:/config/native-schema.json:ro
       - node-data:/data
     ports:
       - "127.0.0.1:15050:9944"
@@ -56,6 +59,8 @@ services:
     profiles: [sidecar]
     entrypoint: [tini, --, /bin/randomness-sidecar]
     environment: *randomness
+    volumes:
+      - ${RANDOMNESS_SCHEMA_HOST_PATH:?Set the native deployment schema}:/config/native-schema.json:ro
     ports: ["127.0.0.1:15081:8081"]
     depends_on:
       madara:

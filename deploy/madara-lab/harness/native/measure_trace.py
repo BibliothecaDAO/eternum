@@ -77,9 +77,11 @@ def pair_actions(tree, fixture, schema):
         if entry["contract_name"] == schema["domains"]["season"]["contract"] and entry["function_name"] == "execute":
             if not actions or "nativeExecution" in actions[-1]:
                 raise ValueError("Native execution lacks its oracle action")
+            command = actions[-1]["command"]
+            native_command = fixture.get("nativeCommands", {}).get(command, command)
             domain_calls = [
                 child for child in descendants(call)
-                if child["entry_point"]["function_name"] == actions[-1]["command"]
+                if child["entry_point"]["function_name"] == native_command
             ]
             if len(domain_calls) != 1:
                 raise ValueError("Expected one gameplay domain command per action")

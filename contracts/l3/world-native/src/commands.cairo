@@ -45,6 +45,10 @@ pub enum Command {
     TransferAgentOwnership: crate::ownership::TransferOwnership,
     SetAddressName: crate::names::SetAddressName,
     LevelUp: u32,
+    ReserveHyperstructures: u8,
+    SettleBlitz: crate::settlement::SettleBlitz,
+    ProvisionRealm: u32,
+    CreateReservedHyperstructure: crate::troops::Coord,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]

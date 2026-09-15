@@ -1,6 +1,614 @@
 {
-  "schemaIdentity": "84bec30da4efc70a961bf41073f142031c83cd21cdbda4cb4af83397b73be99b",
+  "schemaIdentity": "9de8aa6464304e0c8362f1310a2af6b4c4d9ddceeb942a94f4aa29f51c5cd7f1",
   "commandAbi": [
+    {
+      "type": "impl",
+      "name": "SettlementConfiguration",
+      "interface_name": "world_native::settlement::ISettlementConfiguration"
+    },
+    {
+      "type": "enum",
+      "name": "world_native::settlement::SettlementMode",
+      "variants": [
+        {
+          "name": "Single",
+          "type": "()"
+        },
+        {
+          "name": "Triple",
+          "type": "()"
+        },
+        {
+          "name": "Duel",
+          "type": "()"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::settlement::SettlementRules",
+      "members": [
+        {
+          "name": "registration_start",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "registration_limit",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "mode",
+          "type": "world_native::settlement::SettlementMode"
+        },
+        {
+          "name": "reward_profile",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "cosmetic_limit",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "cosmetic_collection",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "cosmetic_timelock",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "ledger_operator",
+          "type": "core::starknet::contract_address::ContractAddress"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::resources::ResourceAmount",
+      "members": [
+        {
+          "name": "resource_type",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "amount",
+          "type": "core::integer::u128"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "core::array::Span::<world_native::resources::ResourceAmount>",
+      "members": [
+        {
+          "name": "snapshot",
+          "type": "@core::array::Array::<world_native::resources::ResourceAmount>"
+        }
+      ]
+    },
+    {
+      "type": "enum",
+      "name": "world_native::troops::TroopType",
+      "variants": [
+        {
+          "name": "Knight",
+          "type": "()"
+        },
+        {
+          "name": "Paladin",
+          "type": "()"
+        },
+        {
+          "name": "Crossbowman",
+          "type": "()"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "core::array::Span::<world_native::troops::TroopType>",
+      "members": [
+        {
+          "name": "snapshot",
+          "type": "@core::array::Array::<world_native::troops::TroopType>"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "core::array::Span::<core::integer::u8>",
+      "members": [
+        {
+          "name": "snapshot",
+          "type": "@core::array::Array::<core::integer::u8>"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::settlement::RealmGrants",
+      "members": [
+        {
+          "name": "resources",
+          "type": "core::array::Span::<world_native::resources::ResourceAmount>"
+        },
+        {
+          "name": "starting_troops",
+          "type": "core::array::Span::<world_native::troops::TroopType>"
+        },
+        {
+          "name": "realm_resources",
+          "type": "core::array::Span::<core::integer::u8>"
+        }
+      ]
+    },
+    {
+      "type": "interface",
+      "name": "world_native::settlement::ISettlementConfiguration",
+      "items": [
+        {
+          "type": "function",
+          "name": "configure_settlement",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "rules",
+              "type": "world_native::settlement::SettlementRules"
+            },
+            {
+              "name": "grants",
+              "type": "world_native::settlement::RealmGrants"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        }
+      ]
+    },
+    {
+      "type": "impl",
+      "name": "SettlementViews",
+      "interface_name": "world_native::settlement::ISettlementViews"
+    },
+    {
+      "type": "struct",
+      "name": "world_native::settlement::SettlementProgress",
+      "members": [
+        {
+          "name": "registered",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "realm_count",
+          "type": "core::integer::u16"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::settlement::EntryKey",
+      "members": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "owner",
+          "type": "core::starknet::contract_address::ContractAddress"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::settlement::PlayerEntry",
+      "members": [
+        {
+          "name": "player",
+          "type": "core::starknet::contract_address::ContractAddress"
+        }
+      ]
+    },
+    {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::settlement::PlayerEntry>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::settlement::PlayerEntry"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::settlement::CosmeticsKey",
+      "members": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "player",
+          "type": "core::starknet::contract_address::ContractAddress"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "core::array::Span::<core::integer::u128>",
+      "members": [
+        {
+          "name": "snapshot",
+          "type": "@core::array::Array::<core::integer::u128>"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::settlement::PlayerCosmetics",
+      "members": [
+        {
+          "name": "attributes",
+          "type": "core::array::Span::<core::integer::u128>"
+        }
+      ]
+    },
+    {
+      "type": "interface",
+      "name": "world_native::settlement::ISettlementViews",
+      "items": [
+        {
+          "type": "function",
+          "name": "settlement_rules",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "world_native::settlement::SettlementRules"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "realm_grants",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "world_native::settlement::RealmGrants"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "settlement_progress",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "world_native::settlement::SettlementProgress"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "player_entry",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::settlement::EntryKey"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::option::Option::<world_native::settlement::PlayerEntry>"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "player_cosmetics",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::settlement::CosmeticsKey"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "world_native::settlement::PlayerCosmetics"
+            }
+          ],
+          "state_mutability": "view"
+        }
+      ]
+    },
+    {
+      "type": "impl",
+      "name": "SettlementEntry",
+      "interface_name": "world_native::settlement::ISettlementEntry"
+    },
+    {
+      "type": "struct",
+      "name": "core::integer::u256",
+      "members": [
+        {
+          "name": "low",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "high",
+          "type": "core::integer::u128"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::settlement::EntryEntitlement",
+      "members": [
+        {
+          "name": "realm_id",
+          "type": "core::integer::u256"
+        },
+        {
+          "name": "metadata_1",
+          "type": "core::felt252"
+        },
+        {
+          "name": "metadata_2",
+          "type": "core::felt252"
+        },
+        {
+          "name": "metadata_3",
+          "type": "core::felt252"
+        },
+        {
+          "name": "pass_kind",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
+    {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::settlement::EntryEntitlement>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::settlement::EntryEntitlement"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::settlement::SettlementAdmission",
+      "members": [
+        {
+          "name": "owner",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "collection",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "timelock",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "cosmetic_limit",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "game_end",
+          "type": "core::integer::u64"
+        }
+      ]
+    },
+    {
+      "type": "interface",
+      "name": "world_native::settlement::ISettlementEntry",
+      "items": [
+        {
+          "type": "function",
+          "name": "register_entitlement",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::settlement::EntryKey"
+            },
+            {
+              "name": "entitlement",
+              "type": "world_native::settlement::EntryEntitlement"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "entry_entitlement",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::settlement::EntryKey"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::option::Option::<world_native::settlement::EntryEntitlement>"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "settlement_admission",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "world_native::settlement::SettlementAdmission"
+            }
+          ],
+          "state_mutability": "view"
+        }
+      ]
+    },
+    {
+      "type": "impl",
+      "name": "SettlementCommands",
+      "interface_name": "world_native::settlement::ISettlementCommands"
+    },
+    {
+      "type": "struct",
+      "name": "world_native::settlement::AcceptedCosmetic",
+      "members": [
+        {
+          "name": "token_id",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "owner",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "attributes",
+          "type": "core::integer::u128"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "core::array::Span::<world_native::settlement::AcceptedCosmetic>",
+      "members": [
+        {
+          "name": "snapshot",
+          "type": "@core::array::Array::<world_native::settlement::AcceptedCosmetic>"
+        }
+      ]
+    },
+    {
+      "type": "enum",
+      "name": "core::bool",
+      "variants": [
+        {
+          "name": "False",
+          "type": "()"
+        },
+        {
+          "name": "True",
+          "type": "()"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::settlement::SettleBlitz",
+      "members": [
+        {
+          "name": "name",
+          "type": "core::felt252"
+        },
+        {
+          "name": "owner",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "cosmetics_block_hash",
+          "type": "core::felt252"
+        },
+        {
+          "name": "cosmetics_block_number",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "cosmetics",
+          "type": "core::array::Span::<world_native::settlement::AcceptedCosmetic>"
+        },
+        {
+          "name": "grant_starting_troops",
+          "type": "core::bool"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::commands::ExecutionContext",
+      "members": [
+        {
+          "name": "raw_root",
+          "type": "core::integer::u256"
+        },
+        {
+          "name": "timestamp",
+          "type": "core::integer::u64"
+        }
+      ]
+    },
+    {
+      "type": "interface",
+      "name": "world_native::settlement::ISettlementCommands",
+      "items": [
+        {
+          "type": "function",
+          "name": "settle_blitz",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "command",
+              "type": "world_native::settlement::SettleBlitz"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        }
+      ]
+    },
     {
       "type": "impl",
       "name": "UpgradeRules",
@@ -22,35 +630,11 @@
     },
     {
       "type": "struct",
-      "name": "world_native::upgrades::UpgradeCost",
-      "members": [
-        {
-          "name": "resource_type",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "amount",
-          "type": "core::integer::u128"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "core::array::Span::<world_native::upgrades::UpgradeCost>",
-      "members": [
-        {
-          "name": "snapshot",
-          "type": "@core::array::Array::<world_native::upgrades::UpgradeCost>"
-        }
-      ]
-    },
-    {
-      "type": "struct",
       "name": "world_native::upgrades::UpgradeRecipe",
       "members": [
         {
           "name": "costs",
-          "type": "core::array::Span::<world_native::upgrades::UpgradeCost>"
+          "type": "core::array::Span::<world_native::resources::ResourceAmount>"
         }
       ]
     },
@@ -187,16 +771,6 @@
     },
     {
       "type": "struct",
-      "name": "core::array::Span::<core::integer::u8>",
-      "members": [
-        {
-          "name": "snapshot",
-          "type": "@core::array::Array::<core::integer::u8>"
-        }
-      ]
-    },
-    {
-      "type": "struct",
       "name": "world_native::commands::Move",
       "members": [
         {
@@ -252,6 +826,24 @@
       ]
     },
     {
+      "type": "struct",
+      "name": "world_native::troops::Coord",
+      "members": [
+        {
+          "name": "alt",
+          "type": "core::bool"
+        },
+        {
+          "name": "x",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "y",
+          "type": "core::integer::u32"
+        }
+      ]
+    },
+    {
       "type": "enum",
       "name": "world_native::commands::Command",
       "variants": [
@@ -294,6 +886,22 @@
         {
           "name": "LevelUp",
           "type": "core::integer::u32"
+        },
+        {
+          "name": "ReserveHyperstructures",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "SettleBlitz",
+          "type": "world_native::settlement::SettleBlitz"
+        },
+        {
+          "name": "ProvisionRealm",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "CreateReservedHyperstructure",
+          "type": "world_native::troops::Coord"
         }
       ]
     },
@@ -690,20 +1298,6 @@
       ]
     },
     {
-      "type": "enum",
-      "name": "core::bool",
-      "variants": [
-        {
-          "name": "False",
-          "type": "()"
-        },
-        {
-          "name": "True",
-          "type": "()"
-        }
-      ]
-    },
-    {
       "type": "struct",
       "name": "world_native::rules::BitcoinMineConfig",
       "members": [
@@ -832,20 +1426,6 @@
         {
           "name": "account_class",
           "type": "core::starknet::class_hash::ClassHash"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "core::integer::u256",
-      "members": [
-        {
-          "name": "low",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "high",
-          "type": "core::integer::u128"
         }
       ]
     },
@@ -1637,6 +2217,18 @@
     },
     {
       "type": "event",
+      "name": "world_native::settlement::SettlementState::Event",
+      "kind": "enum",
+      "variants": [
+        {
+          "name": "RowSet",
+          "type": "world_native::events::RowSet",
+          "kind": "nested"
+        }
+      ]
+    },
+    {
+      "type": "event",
       "name": "world_native::season::SeasonDomain::Event",
       "kind": "enum",
       "variants": [
@@ -1664,6 +2256,11 @@
           "name": "UpgradeEvent",
           "type": "world_native::upgrades::UpgradeState::Event",
           "kind": "nested"
+        },
+        {
+          "name": "SettlementEvent",
+          "type": "world_native::settlement::SettlementState::Event",
+          "kind": "nested"
         }
       ]
     }
@@ -1679,6 +2276,117 @@
     }
   ],
   "models": [
+    {
+      "name": "AgentPopulation",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "count": "Number"
+      }
+    },
+    {
+      "name": "RealmGrants",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "resources": [
+          {
+            "resource_type": "Number",
+            "amount": "BigInt"
+          }
+        ],
+        "starting_troops": [
+          "String"
+        ],
+        "realm_resources": [
+          "Number"
+        ]
+      }
+    },
+    {
+      "name": "HyperstructureReservations",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "placed": "Number"
+      }
+    },
+    {
+      "name": "SettlementRules",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "registration_start": "Number",
+        "registration_limit": "Number",
+        "mode": "String",
+        "reward_profile": "Number",
+        "cosmetic_limit": "Number",
+        "cosmetic_collection": "BigInt",
+        "cosmetic_timelock": "BigInt",
+        "ledger_operator": "BigInt"
+      }
+    },
+    {
+      "name": "SettlementProgress",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "registered": "Number",
+        "realm_count": "Number"
+      }
+    },
+    {
+      "name": "SettlementPool",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "opened": "Number",
+        "available": [
+          {
+            "coords": [
+              {
+                "alt": "Boolean",
+                "x": "Number",
+                "y": "Number"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "EntryEntitlement",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "owner": "BigInt",
+        "realm_id": "BigInt",
+        "metadata_1": "BigInt",
+        "metadata_2": "BigInt",
+        "metadata_3": "BigInt",
+        "pass_kind": "Number"
+      }
+    },
+    {
+      "name": "PlayerEntry",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "owner": "BigInt",
+        "player": "BigInt"
+      }
+    },
+    {
+      "name": "PlayerCosmetics",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "player": "BigInt",
+        "attributes": [
+          "BigInt"
+        ]
+      }
+    },
     {
       "name": "TileOpt",
       "scope": "game",
@@ -1844,313 +2552,36 @@
       }
     },
     {
-      "name": "Resource",
+      "name": "ResourceBalance",
       "scope": "game",
       "schema": {
         "game_id": "Number",
         "entity_id": "Number",
-        "STONE_BALANCE": "BigInt",
-        "COAL_BALANCE": "BigInt",
-        "WOOD_BALANCE": "BigInt",
-        "COPPER_BALANCE": "BigInt",
-        "IRONWOOD_BALANCE": "BigInt",
-        "OBSIDIAN_BALANCE": "BigInt",
-        "GOLD_BALANCE": "BigInt",
-        "SILVER_BALANCE": "BigInt",
-        "MITHRAL_BALANCE": "BigInt",
-        "ALCHEMICAL_SILVER_BALANCE": "BigInt",
-        "COLD_IRON_BALANCE": "BigInt",
-        "DEEP_CRYSTAL_BALANCE": "BigInt",
-        "RUBY_BALANCE": "BigInt",
-        "DIAMONDS_BALANCE": "BigInt",
-        "HARTWOOD_BALANCE": "BigInt",
-        "IGNIUM_BALANCE": "BigInt",
-        "TWILIGHT_QUARTZ_BALANCE": "BigInt",
-        "TRUE_ICE_BALANCE": "BigInt",
-        "ADAMANTINE_BALANCE": "BigInt",
-        "SAPPHIRE_BALANCE": "BigInt",
-        "ETHEREAL_SILICA_BALANCE": "BigInt",
-        "DRAGONHIDE_BALANCE": "BigInt",
-        "LABOR_BALANCE": "BigInt",
-        "EARTHEN_SHARD_BALANCE": "BigInt",
-        "DONKEY_BALANCE": "BigInt",
-        "KNIGHT_T1_BALANCE": "BigInt",
-        "KNIGHT_T2_BALANCE": "BigInt",
-        "KNIGHT_T3_BALANCE": "BigInt",
-        "CROSSBOWMAN_T1_BALANCE": "BigInt",
-        "CROSSBOWMAN_T2_BALANCE": "BigInt",
-        "CROSSBOWMAN_T3_BALANCE": "BigInt",
-        "PALADIN_T1_BALANCE": "BigInt",
-        "PALADIN_T2_BALANCE": "BigInt",
-        "PALADIN_T3_BALANCE": "BigInt",
-        "WHEAT_BALANCE": "BigInt",
-        "FISH_BALANCE": "BigInt",
-        "LORDS_BALANCE": "BigInt",
-        "ESSENCE_BALANCE": "BigInt",
-        "RELIC_E1_BALANCE": "BigInt",
-        "RELIC_E2_BALANCE": "BigInt",
-        "RELIC_E3_BALANCE": "BigInt",
-        "RELIC_E4_BALANCE": "BigInt",
-        "RELIC_E5_BALANCE": "BigInt",
-        "RELIC_E6_BALANCE": "BigInt",
-        "RELIC_E7_BALANCE": "BigInt",
-        "RELIC_E8_BALANCE": "BigInt",
-        "RELIC_E9_BALANCE": "BigInt",
-        "RELIC_E10_BALANCE": "BigInt",
-        "RELIC_E11_BALANCE": "BigInt",
-        "RELIC_E12_BALANCE": "BigInt",
-        "RELIC_E13_BALANCE": "BigInt",
-        "RELIC_E14_BALANCE": "BigInt",
-        "RELIC_E15_BALANCE": "BigInt",
-        "RELIC_E16_BALANCE": "BigInt",
-        "RELIC_E17_BALANCE": "BigInt",
-        "RELIC_E18_BALANCE": "BigInt",
-        "RESEARCH_BALANCE": "BigInt",
-        "SATOSHI_BALANCE": "BigInt",
-        "weight": {
-          "capacity": "BigInt",
-          "weight": "BigInt"
-        },
-        "STONE_PRODUCTION": {
-          "building_count": "Number",
-          "production_rate": "BigInt",
-          "output_amount_left": "BigInt",
-          "last_updated_at": "Number"
-        },
-        "COAL_PRODUCTION": {
-          "building_count": "Number",
-          "production_rate": "BigInt",
-          "output_amount_left": "BigInt",
-          "last_updated_at": "Number"
-        },
-        "WOOD_PRODUCTION": {
-          "building_count": "Number",
-          "production_rate": "BigInt",
-          "output_amount_left": "BigInt",
-          "last_updated_at": "Number"
-        },
-        "COPPER_PRODUCTION": {
-          "building_count": "Number",
-          "production_rate": "BigInt",
-          "output_amount_left": "BigInt",
-          "last_updated_at": "Number"
-        },
-        "IRONWOOD_PRODUCTION": {
-          "building_count": "Number",
-          "production_rate": "BigInt",
-          "output_amount_left": "BigInt",
-          "last_updated_at": "Number"
-        },
-        "OBSIDIAN_PRODUCTION": {
-          "building_count": "Number",
-          "production_rate": "BigInt",
-          "output_amount_left": "BigInt",
-          "last_updated_at": "Number"
-        },
-        "GOLD_PRODUCTION": {
-          "building_count": "Number",
-          "production_rate": "BigInt",
-          "output_amount_left": "BigInt",
-          "last_updated_at": "Number"
-        },
-        "SILVER_PRODUCTION": {
-          "building_count": "Number",
-          "production_rate": "BigInt",
-          "output_amount_left": "BigInt",
-          "last_updated_at": "Number"
-        },
-        "MITHRAL_PRODUCTION": {
-          "building_count": "Number",
-          "production_rate": "BigInt",
-          "output_amount_left": "BigInt",
-          "last_updated_at": "Number"
-        },
-        "ALCHEMICAL_SILVER_PRODUCTION": {
-          "building_count": "Number",
-          "production_rate": "BigInt",
-          "output_amount_left": "BigInt",
-          "last_updated_at": "Number"
-        },
-        "COLD_IRON_PRODUCTION": {
-          "building_count": "Number",
-          "production_rate": "BigInt",
-          "output_amount_left": "BigInt",
-          "last_updated_at": "Number"
-        },
-        "DEEP_CRYSTAL_PRODUCTION": {
-          "building_count": "Number",
-          "production_rate": "BigInt",
-          "output_amount_left": "BigInt",
-          "last_updated_at": "Number"
-        },
-        "RUBY_PRODUCTION": {
-          "building_count": "Number",
-          "production_rate": "BigInt",
-          "output_amount_left": "BigInt",
-          "last_updated_at": "Number"
-        },
-        "DIAMONDS_PRODUCTION": {
-          "building_count": "Number",
-          "production_rate": "BigInt",
-          "output_amount_left": "BigInt",
-          "last_updated_at": "Number"
-        },
-        "HARTWOOD_PRODUCTION": {
-          "building_count": "Number",
-          "production_rate": "BigInt",
-          "output_amount_left": "BigInt",
-          "last_updated_at": "Number"
-        },
-        "IGNIUM_PRODUCTION": {
-          "building_count": "Number",
-          "production_rate": "BigInt",
-          "output_amount_left": "BigInt",
-          "last_updated_at": "Number"
-        },
-        "TWILIGHT_QUARTZ_PRODUCTION": {
-          "building_count": "Number",
-          "production_rate": "BigInt",
-          "output_amount_left": "BigInt",
-          "last_updated_at": "Number"
-        },
-        "TRUE_ICE_PRODUCTION": {
-          "building_count": "Number",
-          "production_rate": "BigInt",
-          "output_amount_left": "BigInt",
-          "last_updated_at": "Number"
-        },
-        "ADAMANTINE_PRODUCTION": {
-          "building_count": "Number",
-          "production_rate": "BigInt",
-          "output_amount_left": "BigInt",
-          "last_updated_at": "Number"
-        },
-        "SAPPHIRE_PRODUCTION": {
-          "building_count": "Number",
-          "production_rate": "BigInt",
-          "output_amount_left": "BigInt",
-          "last_updated_at": "Number"
-        },
-        "ETHEREAL_SILICA_PRODUCTION": {
-          "building_count": "Number",
-          "production_rate": "BigInt",
-          "output_amount_left": "BigInt",
-          "last_updated_at": "Number"
-        },
-        "DRAGONHIDE_PRODUCTION": {
-          "building_count": "Number",
-          "production_rate": "BigInt",
-          "output_amount_left": "BigInt",
-          "last_updated_at": "Number"
-        },
-        "LABOR_PRODUCTION": {
-          "building_count": "Number",
-          "production_rate": "BigInt",
-          "output_amount_left": "BigInt",
-          "last_updated_at": "Number"
-        },
-        "EARTHEN_SHARD_PRODUCTION": {
-          "building_count": "Number",
-          "production_rate": "BigInt",
-          "output_amount_left": "BigInt",
-          "last_updated_at": "Number"
-        },
-        "DONKEY_PRODUCTION": {
-          "building_count": "Number",
-          "production_rate": "BigInt",
-          "output_amount_left": "BigInt",
-          "last_updated_at": "Number"
-        },
-        "KNIGHT_T1_PRODUCTION": {
-          "building_count": "Number",
-          "production_rate": "BigInt",
-          "output_amount_left": "BigInt",
-          "last_updated_at": "Number"
-        },
-        "KNIGHT_T2_PRODUCTION": {
-          "building_count": "Number",
-          "production_rate": "BigInt",
-          "output_amount_left": "BigInt",
-          "last_updated_at": "Number"
-        },
-        "KNIGHT_T3_PRODUCTION": {
-          "building_count": "Number",
-          "production_rate": "BigInt",
-          "output_amount_left": "BigInt",
-          "last_updated_at": "Number"
-        },
-        "CROSSBOWMAN_T1_PRODUCTION": {
-          "building_count": "Number",
-          "production_rate": "BigInt",
-          "output_amount_left": "BigInt",
-          "last_updated_at": "Number"
-        },
-        "CROSSBOWMAN_T2_PRODUCTION": {
-          "building_count": "Number",
-          "production_rate": "BigInt",
-          "output_amount_left": "BigInt",
-          "last_updated_at": "Number"
-        },
-        "CROSSBOWMAN_T3_PRODUCTION": {
-          "building_count": "Number",
-          "production_rate": "BigInt",
-          "output_amount_left": "BigInt",
-          "last_updated_at": "Number"
-        },
-        "PALADIN_T1_PRODUCTION": {
-          "building_count": "Number",
-          "production_rate": "BigInt",
-          "output_amount_left": "BigInt",
-          "last_updated_at": "Number"
-        },
-        "PALADIN_T2_PRODUCTION": {
-          "building_count": "Number",
-          "production_rate": "BigInt",
-          "output_amount_left": "BigInt",
-          "last_updated_at": "Number"
-        },
-        "PALADIN_T3_PRODUCTION": {
-          "building_count": "Number",
-          "production_rate": "BigInt",
-          "output_amount_left": "BigInt",
-          "last_updated_at": "Number"
-        },
-        "WHEAT_PRODUCTION": {
-          "building_count": "Number",
-          "production_rate": "BigInt",
-          "output_amount_left": "BigInt",
-          "last_updated_at": "Number"
-        },
-        "FISH_PRODUCTION": {
-          "building_count": "Number",
-          "production_rate": "BigInt",
-          "output_amount_left": "BigInt",
-          "last_updated_at": "Number"
-        },
-        "LORDS_PRODUCTION": {
-          "building_count": "Number",
-          "production_rate": "BigInt",
-          "output_amount_left": "BigInt",
-          "last_updated_at": "Number"
-        },
-        "ESSENCE_PRODUCTION": {
-          "building_count": "Number",
-          "production_rate": "BigInt",
-          "output_amount_left": "BigInt",
-          "last_updated_at": "Number"
-        },
-        "RESEARCH_PRODUCTION": {
-          "building_count": "Number",
-          "production_rate": "BigInt",
-          "output_amount_left": "BigInt",
-          "last_updated_at": "Number"
-        },
-        "SATOSHI_PRODUCTION": {
-          "building_count": "Number",
-          "production_rate": "BigInt",
-          "output_amount_left": "BigInt",
-          "last_updated_at": "Number"
-        }
+        "resource_type": "Number",
+        "balance": "BigInt"
+      }
+    },
+    {
+      "name": "ResourceProduction",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "entity_id": "Number",
+        "resource_type": "Number",
+        "building_count": "Number",
+        "production_rate": "BigInt",
+        "output_amount_left": "BigInt",
+        "last_updated_at": "Number"
+      }
+    },
+    {
+      "name": "ResourceWeight",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "entity_id": "Number",
+        "capacity": "BigInt",
+        "weight": "BigInt"
       }
     },
     {
@@ -2208,8 +2639,7 @@
       "scope": "game",
       "schema": {
         "game_id": "Number",
-        "created_count": "Number",
-        "completed_count": "Number"
+        "created_count": "Number"
       }
     },
     {
@@ -2494,8 +2924,7 @@
       "scope": "game",
       "schema": {
         "game_id": "Number",
-        "total_registered_points": "BigInt",
-        "total_lords_pool": "BigInt"
+        "total_registered_points": "BigInt"
       }
     },
     {

@@ -33,6 +33,26 @@ pub fn spire_neighbor(coord: Coord, direction: u8) -> Coord {
     Coord { alt: coord.alt, ..adjacent }
 }
 
+pub fn neighbor_at_distance(coord: Coord, direction: u8, distance: u32) -> Coord {
+    let distance: i128 = (distance * if coord.alt {
+        15
+    } else {
+        1
+    }).into();
+    let row: i128 = coord.y.into();
+    let column: i128 = coord.x.into() - (row + row % 2) / 2;
+    let (column, row) = match direction {
+        0 => (column + distance, row),
+        1 => (column, row + distance),
+        2 => (column - distance, row + distance),
+        3 => (column - distance, row),
+        4 => (column, row - distance),
+        5 => (column + distance, row - distance),
+        _ => panic!("invalid direction"),
+    };
+    Coord { alt: coord.alt, x: (column + (row + row % 2) / 2).try_into().unwrap(), y: row.try_into().unwrap() }
+}
+
 pub fn distance(left: Coord, right: Coord) -> u128 {
     let left_row: i128 = left.y.into();
     let right_row: i128 = right.y.into();
