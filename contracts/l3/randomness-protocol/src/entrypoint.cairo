@@ -2,8 +2,6 @@ use starknet::ContractAddress;
 use crate::authority::{ISequencingAuthorityDispatcher, ISequencingAuthorityDispatcherTrait};
 use crate::{Envelope, Intent};
 
-pub const MAX_CONTEXT_SKEW_SECONDS: u64 = 300;
-
 /// Authority witnesses are outside the immutable action and envelope identities.
 #[derive(Drop, Serde)]
 pub struct ExecutionContext {
@@ -74,6 +72,7 @@ pub fn accepted_context_matches(intent: @Intent, envelope: @Envelope) -> bool {
         && *envelope.order <= *intent.last_order
 }
 
+/// Accepted contexts do not expire; recovery must retain their original time.
 pub fn timestamp_in_bounds(recorded: u64, block_time: u64) -> bool {
-    recorded <= block_time && block_time - recorded <= MAX_CONTEXT_SKEW_SECONDS
+    recorded <= block_time
 }

@@ -1,18 +1,13 @@
-use eternum_randomness_protocol::authority::{
-    ISequencingAccountSafeDispatcher, ISequencingAccountSafeDispatcherTrait, ISequencingAuthorityDispatcher,
-    ISequencingAuthorityDispatcherTrait,
-};
+use eternum_randomness_protocol::authority::{ISequencingAuthorityDispatcher, ISequencingAuthorityDispatcherTrait};
 use eternum_randomness_protocol::entrypoint::{
     ExecutionContext, IRecordedExecutionViewsDispatcher, IRecordedExecutionViewsDispatcherTrait,
-    accepted_context_matches, timestamp_in_bounds,
 };
 pub use eternum_randomness_protocol::entrypoint::{
     IRecordedExecutionDispatcher, IRecordedExecutionDispatcherTrait, IRecordedExecutionSafeDispatcher,
     IRecordedExecutionSafeDispatcherTrait,
 };
 pub use eternum_randomness_protocol::stub::{IFixtureDispatcher, IFixtureDispatcherTrait};
-use eternum_randomness_protocol::{Envelope, Intent, action_identity, encode_envelope, envelope_binding};
-use snforge_std::fs::{FileTrait, read_txt};
+use eternum_randomness_protocol::{Envelope, Intent, action_identity, encode_envelope};
 use snforge_std::signature::stark_curve::{StarkCurveKeyPair, StarkCurveKeyPairImpl, StarkCurveSignerImpl};
 use snforge_std::signature::{KeyPairTrait, SignerTrait};
 use snforge_std::{
@@ -20,7 +15,6 @@ use snforge_std::{
     start_cheat_caller_address, start_cheat_chain_id, start_cheat_resource_bounds, start_cheat_signature,
     start_cheat_transaction_hash, start_cheat_transaction_version,
 };
-use starknet::account::Call;
 use starknet::{ContractAddress, ResourcesBounds};
 
 pub fn pair() -> StarkCurveKeyPair {
@@ -80,4 +74,10 @@ pub fn context(envelope: @Envelope) -> ExecutionContext {
 
 pub fn terminal_arguments(ref action: Intent) {
     action.arguments = array![];
+}
+
+pub fn outcome(address: ContractAddress) -> Array<felt252> {
+    let (_, _, _, timestamp, root) = IFixtureDispatcher { contract_address: address }.progress();
+    let result = IRecordedExecutionViewsDispatcher { contract_address: address }.get_result(1);
+    array![result.status.into(), timestamp.into(), root.low.into(), root.high.into(), (root.low % 2).into()]
 }

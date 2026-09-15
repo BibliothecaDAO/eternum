@@ -339,17 +339,15 @@ fn registered_account_with_unapproved_class_is_rejected_before_key_read() {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn recorded_context_survives_delay_and_enforces_inclusive_skew() {
+fn recorded_context_survives_outage_and_rejects_future_time() {
     let deployment = setup(true);
     let mut action = intent(deployment, 1);
     action.deadline = 100;
     let (r, s) = signature(deployment, action);
     let gateway = ISeasonSafeDispatcher { contract_address: deployment.peers.season };
-    start_cheat_block_timestamp(deployment.peers.season, 401);
-    assert!(gateway.execute(action, context(), r, s).is_err());
     start_cheat_block_timestamp(deployment.peers.season, 99);
     assert!(gateway.execute(action, context(), r, s).is_err());
-    start_cheat_block_timestamp(deployment.peers.season, 400);
+    start_cheat_block_timestamp(deployment.peers.season, 86500);
     gateway.execute(action, context(), r, s).unwrap();
     let troops = IFixtureDispatcher { contract_address: deployment.peers.troops };
     assert_eq!(troops.received_timestamp(), 100);

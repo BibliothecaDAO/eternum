@@ -10,15 +10,16 @@ mod fixture;
 use eternum_randomness_protocol::{action_identity, encode_envelope, envelope_binding};
 use fixture::{
     IFixtureDispatcher, IFixtureDispatcherTrait, IRecordedExecutionDispatcher, IRecordedExecutionDispatcherTrait,
-    IRecordedExecutionSafeDispatcher, IRecordedExecutionSafeDispatcherTrait, context, envelope, intent, pair, setup,
-    terminal_arguments,
+    IRecordedExecutionSafeDispatcher, IRecordedExecutionSafeDispatcherTrait, context, envelope, intent, outcome, pair,
+    setup, terminal_arguments,
 };
 use snforge_std::fs::{FileTrait, read_txt};
 use snforge_std::signature::stark_curve::{StarkCurveKeyPair, StarkCurveKeyPairImpl, StarkCurveSignerImpl};
 use snforge_std::signature::{KeyPairTrait, SignerTrait};
 use snforge_std::{
-    start_cheat_account_contract_address, start_cheat_block_timestamp, start_cheat_caller_address,
-    start_cheat_resource_bounds, start_cheat_signature, start_cheat_transaction_hash, start_cheat_transaction_version,
+    start_cheat_account_contract_address, start_cheat_block_timestamp, start_cheat_block_timestamp_global,
+    start_cheat_caller_address, start_cheat_resource_bounds, start_cheat_signature, start_cheat_transaction_hash,
+    start_cheat_transaction_version,
 };
 use starknet::ResourcesBounds;
 use starknet::account::Call;
@@ -52,7 +53,9 @@ fn cross_language_context_boundaries() {
         recorded.order = vector.order;
         recorded.l2_gas = vector.l2_gas;
         assert!(accepted_context_matches(@action, @recorded) == vector.accepted, "acceptance boundary");
-        assert!(timestamp_in_bounds(vector.recorded, vector.block_time) == vector.executable, "skew boundary");
+        assert!(
+            timestamp_in_bounds(vector.recorded, vector.block_time) == vector.executable, "future timestamp boundary",
+        );
     }
 }
 
@@ -109,7 +112,7 @@ fn delayed_execution_uses_recorded_time_after_intent_expiry_and_rejects_duplicat
 #[test]
 #[feature("safe_dispatcher")]
 fn rejects_invalid_context_without_changing_progress() {
-    for case in 0_u32..10 {
+    for case in 0_u32..9 {
         let address = setup();
         let action = intent(address);
         let (r, s) = pair().sign(action_identity(@action)).unwrap();
@@ -122,8 +125,7 @@ fn rejects_invalid_context_without_changing_progress() {
             4 => { recorded.execution_config = 1; },
             5 => { recorded.timestamp = 999; },
             6 => { recorded.timestamp = 1011; },
-            7 => { start_cheat_block_timestamp(address, 1306); },
-            8 => { start_cheat_block_timestamp(address, 1004); },
+            7 => { start_cheat_block_timestamp(address, 1004); },
             _ => { start_cheat_caller_address(address, 456.try_into().unwrap()); },
         }
         assert!(
@@ -289,4 +291,61 @@ fn losses_and_terminal_rejections_consume_the_original_nonce() {
             "terminal result granted retry",
         );
     }
+}
+
+#[test]
+fn accepted_execution_after_a_day_matches_immediate_execution() {
+    let mut expected = None;
+    for delay in array![0_u64, 86400, 1000000] {
+        let address = setup();
+        let action = intent(address);
+        let recorded = envelope(@action);
+        let (r, s) = pair().sign(action_identity(@action)).unwrap();
+        start_cheat_block_timestamp_global(recorded.timestamp + delay);
+        start_cheat_block_timestamp(address, recorded.timestamp + delay);
+        IRecordedExecutionDispatcher { contract_address: address }.execute(action, context(@recorded), r, s);
+        let (order, _, _, timestamp, root) = IFixtureDispatcher { contract_address: address }.progress();
+        assert!(
+            order == 1 && timestamp == recorded.timestamp && root == recorded.root, "delay changed recorded context",
+        );
+        let actual = outcome(address);
+        if let Some(previous) = expected {
+            assert!(actual == previous, "delay changed gameplay outcome");
+        }
+        expected = Some(actual);
+    }
+}
+
+#[test]
+fn outage_recovery_consumes_the_accepted_prefix_before_fresh_work() {
+    let address = setup();
+    let mut action = intent(address);
+    terminal_arguments(ref action);
+    let recorded = envelope(@action);
+    let (r, s) = pair().sign(action_identity(@action)).unwrap();
+    start_cheat_block_timestamp_global(recorded.timestamp + 86400);
+    start_cheat_block_timestamp(address, recorded.timestamp + 86400);
+    IRecordedExecutionDispatcher { contract_address: address }.execute(action, context(@recorded), r, s);
+    let views = IRecordedExecutionViewsDispatcher { contract_address: address };
+    assert!(views.get_result(1).status == 2, "original rejection retained");
+    let next = views.get_admission(7, 456);
+    assert!(next.order == 2 && next.nonce == 1, "delayed ticket blocked successor");
+    assert!(next.timestamp == recorded.timestamp + 86400, "fresh admission must observe recovery time");
+    let mut successor = intent(address);
+    successor.nonce = next.nonce;
+    successor.valid_from = next.timestamp;
+    successor.valid_until = next.timestamp + 10;
+    terminal_arguments(ref successor);
+    let mut fresh = envelope(@successor);
+    fresh.timestamp = next.timestamp;
+    fresh.root = recorded.root ^ 1;
+    fresh.order = next.order;
+    fresh.predecessor = next.predecessor;
+    fresh.preceding_state = next.preceding_state;
+    let (r, s) = pair().sign(action_identity(@successor)).unwrap();
+    IRecordedExecutionDispatcher { contract_address: address }.execute(successor, context(@fresh), r, s);
+    let (order, _, _, timestamp, root) = IFixtureDispatcher { contract_address: address }.progress();
+    assert!(order == 2 && timestamp == fresh.timestamp && root == fresh.root, "fresh context not retained");
+    assert!(views.get_result(1).binding == envelope_binding(@recorded), "recovery rewrote old binding");
+    assert!(views.get_admission(7, 456).nonce == 2, "fresh ticket did not consume its nonce");
 }

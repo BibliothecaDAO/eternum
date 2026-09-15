@@ -94,9 +94,9 @@ player signature with `accepted_public_key`. Later credential changes do not rep
 signature. There is no player validation callback or additional key scheme.
 
 The recorded timestamp governs discovery, production, stamina and combat. The shared `timestamp_in_bounds` rejects
-future timestamps and ages above 300 seconds. Signed validity limits apply at recorded acceptance time. Expiry after
-acceptance therefore does not cancel an action that still satisfies the execution skew. No entropy is generated in this
-package; the lab authority supplies raw roots through the envelope.
+future timestamps, with no maximum age for accepted contexts. Signed validity limits apply at recorded acceptance time.
+An outage never cancels an accepted action; recovery executes its original context and root in order. No entropy is
+generated in this package; the lab authority supplies raw roots through the envelope.
 
 The appended `RecordedState` component owns one deployment-wide ordered execution chain. `ExecutionHead` stores order,
 binding, state-chain digest, recorded timestamp and root, in that order. Its result map is keyed by order and uses the

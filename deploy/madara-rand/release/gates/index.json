@@ -82,6 +82,16 @@
       "gate": "host and disk loss with promotion on another physical host",
       "status": "deferred_by_owner",
       "evidence": []
+    },
+    {
+      "gate": "accepted tickets retain recorded time and root through unbounded execution delay",
+      "status": "passed_in_source_conformance",
+      "note": "No lab image rebuild or deployed outage drill is claimed. The source test compares immediate execution, a one-day outage and execution after the fixture game ends, then checks fresh successor contexts.",
+      "evidence": [
+        "../native/accepted-recovery/report.json",
+        "../native/accepted-recovery/native-abi.json",
+        "../native/accepted-recovery/madara-checks.json"
+      ]
     }
   ],
   "historicalRehearsals": "historical-index.json",
@@ -139,7 +149,24 @@
     "../native/selected-embedded/artifacts.json": "4c98866aa3ff668817113a25a4f21cda3f3056551904468746bb0e7df157f99a",
     "../native/selected-embedded/raw.tar.gz": "43ff3e02499cf0ea191ff50e179f3b3eb465691c7b9852aa1c8d40095fb851a4",
     "../native/selected-embedded/summary.json": "4f6420cc2858a1a2995a8ecc0103ec3d16bfff5e0e4041417a04596d7784ec45",
-    "historical-index.json": "0b0db55d998ccf7898110ed13c1ff3bf419f413905c5b89ec35192ecdcedaa39"
+    "historical-index.json": "0b0db55d998ccf7898110ed13c1ff3bf419f413905c5b89ec35192ecdcedaa39",
+    "../native/accepted-recovery/cairo-vectors.log": "e063e88d34b5fc6458f3352e63845eea6e22dec0911b4e75f092af6392aa6e67",
+    "../native/accepted-recovery/current-game.log": "9f5b1bb3e0ff4cdd65e7f88e4f94f4b3a70daf533e3d5652287a2af3afd05de9",
+    "../native/accepted-recovery/madara-checks.json": "b53fc3c82e80e92a32fa4c42f55e86c039b74c051b12e282d6535bcd2611c72c",
+    "../native/accepted-recovery/madara-pnpm-format.log": "60829aa45abc0a9f68606e39d10b09487c5dc081c9a265e6323bd81dc956af99",
+    "../native/accepted-recovery/madara-pnpm-knip.log": "fc3f99140419c705dab067a1e5c3e6c55b0847110d08b8642957b109d8c24236",
+    "../native/accepted-recovery/madara-scarb-fmt.log": "dcb30ebfab365955648ddc18b7ab7e32232cd78055054e1f93c86e87f4a97984",
+    "../native/accepted-recovery/native-abi.json": "7ee4e6183cc86c772921dd892864ece06926c86a8dbb94f8e849061a22bafea9",
+    "../native/accepted-recovery/native-abi.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "../native/accepted-recovery/native-build.log": "8ac41838aae119b0c47bfbf4097cfbdbb6a3b6b95323b024229850e6be29a018",
+    "../native/accepted-recovery/native-conformance.log": "ff26e8b90f91fbdad538b6c5d8bde63e4e2247d95a0416e1f1d5f383de3ef94c",
+    "../native/accepted-recovery/native-schema.log": "1af7d5eb36f2718e62ec796b051691272bc8c94efcf2d3da482bb71d1a7ec3a2",
+    "../native/accepted-recovery/protocol-build.log": "34b28aa16de9536eb5fd15046e8a1f60ba42305d4f8312a064d3f2166c69617a",
+    "../native/accepted-recovery/report.json": "0754d3ea56762532c32e05ffc127d618254a3d254fcc34d43499320cd97916b1",
+    "../native/accepted-recovery/rust-clippy.log": "a8dd5b4f852b782842253d071162bc7c3c44c3a9a07131cd1159e45bbb802a10",
+    "../native/accepted-recovery/rust-fmt.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "../native/accepted-recovery/rust-vectors.log": "95c2e27a6be2b9a4ed92e80b64768ab9e80343ba50f7d274f7d55f597dabb8a3",
+    "../native/accepted-recovery/schema-dependencies.log": "ef22b619a2c72e23984e4cfb407fcb5a0c863749d7935895d5470a8e2fbef754"
   },
   "drills": [
     {

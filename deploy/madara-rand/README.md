@@ -81,8 +81,8 @@ destructive fixture rehearsal ignored; the command above runs it explicitly.
    account's credential and enforce the new epoch on chain before releasing submissions. None of these operations
    changes pending action identity, root, order, timestamp or accepted player key.
 6. Reconcile any chain-ahead result into its original record, consume terminal nonces, and resubmit unresolved accepted
-   tickets with unchanged bindings. Validate the recorded timestamp against the 300-second bound and the original
-   rules/config/state. Mismatch stops the stream; substituting current time or drawing again is forbidden. Only then
+   tickets with unchanged bindings. Retain the original timestamp, rules/config/state and root regardless of delay;
+   a future recorded timestamp must wait for chain time to catch up. Substituting current time or drawing again is forbidden. Only then
    resume admission.
 7. Restore a stale disk only as a replica of the chosen verified history. Never expose its old primary service while
    replaying. Loss of all journal copies stops the deployment. Backups without the complete accepted prefix cannot
@@ -214,9 +214,8 @@ pending, stops and disconnects the old primary, verifies the survivor with
 `survivor_prefix_matches_chain_before_promotion`, promotes it and builds a new synchronous witness on a fresh volume.
 Only after that peer is synchronous does it rotate the database writer and sequencing credential. The old epoch fails in
 storage and the old signature fails at chain submission. The original root, context and order are retained. Historical
-manual continuations and their original failures remain in evidence. Standby construction now requests a fast checkpoint
-so it fits the accepted context's 300-second bound; exceeding that bound still stops the stream rather than changing its
-timestamp.
+manual continuations and their original failures remain in evidence. Standby construction requests a fast checkpoint to reduce recovery time. Accepted contexts have no age limit;
+recovery preserves them even when replenishing the witness takes longer than 300 seconds.
 
 After promotion, retired primaries remain stopped and disconnected. The fixture's `service.env` declares the active
 primary, witness and epoch. Shared runtime helpers select the matching Compose overlays; do not start a retired pair.
@@ -257,4 +256,20 @@ therefore includes their logging cost on every placement. New full-game measurem
 
 `get_admission.timestamp` is the current block timestamp offered for a proposed action. It is not a durable acceptance
 record. The accepted envelope fixes that timestamp in the journal; recovery reads the original envelope and never
-replaces its timestamp with a later admission view. Execution checks the recorded timestamp against the 300-second bound.
+replaces its timestamp with a later admission view. Execution rejects only a future timestamp; accepted contexts have no
+maximum age. The leader emits `randomness_execution_lag` with `execution_lag_seconds` and warns above 300 seconds without
+cancelling or changing the ticket. These host-clock measurements are operational and do not govern execution.
+
+### Accepted-ticket outage rule
+
+Accepted tickets have no execution-age limit. To regenerate the source conformance evidence from committed source trees:
+
+```sh
+python3 contracts/l3/randomness-protocol/check.py ../madara /tmp/accepted-recovery-check
+```
+
+The command compares the shared Rust/Cairo context vectors, runs both conformance implementations and the original game
+root derivation, checks the compiled native ABI and schema, and records source-tree and log hashes. The delayed explore
+runs immediately, after one day, and after the fixture game's end; all three must produce identical gameplay state.
+A second test consumes a delayed terminal ticket and then a successor with a fresh recorded context.
+These source checks do not replace the deployed recovery drills or the full-game latency benchmark.

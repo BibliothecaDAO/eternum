@@ -131,12 +131,16 @@ for #4994. `Intent` is the existing v1 struct, serialized in its declared field 
 felts, a submission authority epoch, and the gameplay public key verified at acceptance. The latter two fields are
 witnesses, outside action identity and envelope binding. No alternate entrypoint is introduced.
 
-The maximum context age is **300 seconds**, inclusive; future context timestamps are rejected. The signed validity
-interval is evaluated against the recorded acceptance timestamp, not execution's block time. A ticket accepted at 1005
-with validity ending at 1010 executes at block time 1100 using gameplay time 1005. It is rejected at block time 1306;
-that rejection retains its original journal binding and nonce reservation and stops that ordered stream. Operators
-cannot refresh the timestamp, cancel the losing action, or admit its nonce again. A protocol change would be required to
-recover such a permanently stale context; this version does not pretend every outage can resume gameplay.
+Accepted tickets execute with their original recorded context and root, in journal order, however late they run. Delay
+is never a rejection reason. The contract rejects future context timestamps and checks the signed validity interval
+against recorded acceptance time. A ticket accepted at 1005 with validity ending at 1010 still executes a day later
+using gameplay time 1005. Expiry is decided once at acceptance. Recovery cannot refresh the timestamp, cancel a losing
+action, or admit its nonce again.
+
+Execution lag above **300 seconds** is an operational alert in the leader, measured against host wall time. It is not a
+consensus limit; a bad host clock cannot cancel accepted work. Admission still checks signed expiry against its current
+chain observation, preventing an old closed block from admitting an intent whose window has passed. Tickets admitted
+after recovery receive newly observed contexts.
 
 Authorization is resolved before acceptance using PlayerRegistry and the approved gameplay account implementation. The
 journal records that evidence and the exact public key alongside the signed intent. Revocations received before

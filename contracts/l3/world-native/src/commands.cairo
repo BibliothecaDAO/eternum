@@ -99,6 +99,6 @@ pub trait ITravelCommands<T> {
 pub fn assert_context_time(timestamp: u64) {
     assert!(
         eternum_randomness_protocol::entrypoint::timestamp_in_bounds(timestamp, starknet::get_block_timestamp()),
-        "execution timestamp outside skew",
+        "execution timestamp is in the future",
     );
 }

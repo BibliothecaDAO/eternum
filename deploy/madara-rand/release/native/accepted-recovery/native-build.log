@@ -1,0 +1,3 @@
+   Compiling lib(world_native) world_native v0.1.0 (/home/djizus/projects/eternum-accepted-recovery/contracts/l3/world-native/Scarb.toml)
+   Compiling starknet-contract(world_native) world_native v0.1.0 (/home/djizus/projects/eternum-accepted-recovery/contracts/l3/world-native/Scarb.toml)
+    Finished `dev` profile target(s) in 9 seconds

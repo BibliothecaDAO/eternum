@@ -23,9 +23,10 @@ use world_native::commands::{
 };
 use world_native::game::{GameRegistry, GameStatus, IGameDispatcher, IGameDispatcherTrait};
 use world_native::lifecycle::{IDomainDispatcher, IDomainDispatcherTrait, Peers};
+use world_native::map::IMapDispatcherTrait;
 use world_native::season::{ISeasonDispatcher, ISeasonDispatcherTrait};
 use world_native::structures::{IStructuresDispatcher, IStructuresDispatcherTrait, ResourceRule};
-use world_native::troops::Coord;
+use world_native::troops::{Coord, ITroopsDispatcherTrait};
 
 #[derive(Copy, Drop)]
 pub struct IRecordedExecutionDispatcher {
@@ -357,4 +358,53 @@ fn accepted_malformed_commands_are_terminal_and_cannot_stall_the_stream() {
         IRecordedExecutionDispatcher { contract_address: address }.execute(valid, context(@successor), r, s);
         assert!(views.get_result(2).status == 1, "valid successor must execute");
     }
+}
+
+// Compare gameplay state for the fixture's real explore, excluding deployment identities and recording hashes.
+pub fn outcome(address: ContractAddress) -> Array<felt252> {
+    let peers = IDomainDispatcher { contract_address: address }.domain_state().peers;
+    let structures = IStructuresDispatcher { contract_address: peers.structures };
+    let map = world_native::map::IMapDispatcher { contract_address: peers.map };
+    let troops = world_native::troops::ITroopsDispatcher { contract_address: peers.troops };
+    let game = IGameDispatcher { contract_address: address };
+    let mut values = array![];
+    IRecordedExecutionViewsDispatcher { contract_address: address }.get_result(1).status.serialize(ref values);
+    troops.explorer(world_native::troops::ExplorerKey { game_id: 7, explorer_id: 2 }).serialize(ref values);
+    for entity_id in array![1_u32, 2] {
+        let key = world_native::resources::ResourceKey { game_id: 7, entity_id };
+        structures.structure(key).serialize(ref values);
+        if structures.has_resource(key) {
+            structures.resource(key).serialize(ref values);
+        }
+        structures.hyperstructure(key).serialize(ref values);
+    }
+    let target = Coord { alt: false, x: 2147483628, y: 2147483626 };
+    for coord in array![Coord { x: target.x - 1, ..target }, target] {
+        map.tile(world_native::geometry::tile_key(7, coord)).serialize(ref values);
+    }
+    let target_tile = map.tile(world_native::geometry::tile_key(7, target));
+    if let Some(tile) = target_tile {
+        if tile.data % 2 == 1 {
+            let entity_id: u32 = (tile.data / 512 % 0x100000000).try_into().unwrap();
+            let key = world_native::resources::ResourceKey { game_id: 7, entity_id };
+            structures.structure(key).serialize(ref values);
+            structures.resource(key).serialize(ref values);
+            structures.hyperstructure(key).serialize(ref values);
+        }
+    }
+    for direction in 0_u8..6 {
+        let coord = world_native::geometry::neighbor(target, direction);
+        map.tile(world_native::geometry::tile_key(7, coord)).serialize(ref values);
+    }
+    structures
+        .building(
+            world_native::buildings::BuildingKey {
+                game_id: 7, alt: false, outer_col: target.x, outer_row: target.y, inner_col: 10, inner_row: 10,
+            },
+        )
+        .serialize(ref values);
+    game.player_points(7, 456.try_into().unwrap()).serialize(ref values);
+    game.season_points(7).serialize(ref values);
+    structures.hyperstructure_count(7).serialize(ref values);
+    values
 }
