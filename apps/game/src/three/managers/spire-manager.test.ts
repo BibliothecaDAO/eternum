@@ -3,6 +3,7 @@ import { Group, Scene, Vector3 } from "three";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { TileOccupier } from "@bibliothecadao/types";
 import type { WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
+import { FLAT_TERRAIN_SURFACE, type TerrainSurface } from "../terrain/terrain-surface";
 
 const harness = vi.hoisted(() => ({ alt: false, onLayer: () => {}, load: vi.fn(), models: [] as any[] }));
 vi.mock("@/three/map-layer", () => ({ activeMapLayer: () => harness.alt }));
@@ -34,7 +35,7 @@ vi.mock("../structures/spire-model", () => ({
 }));
 import { SpireManager } from "./spire-manager";
 
-function setup(surface: boolean, ethereal: boolean) {
+function setup(surface: boolean, ethereal: boolean, terrain: TerrainSurface = FLAT_TERRAIN_SURFACE) {
   const unsubscribe = vi.fn();
   const projection = {
     subscribeTiles: () => unsubscribe,
@@ -49,7 +50,7 @@ function setup(surface: boolean, ethereal: boolean) {
         : [],
   } as unknown as WorldSpatialProjection;
   const labels = new Group();
-  return { manager: new SpireManager(new Scene(), projection, labels), labels, unsubscribe };
+  return { manager: new SpireManager(new Scene(), projection, labels, terrain), labels, unsubscribe };
 }
 
 beforeEach(() => {
@@ -59,6 +60,25 @@ beforeEach(() => {
 });
 
 describe("spire presentation lifecycle", () => {
+  it("grounds an already loaded spire and its label when its terrain page arrives", async () => {
+    let height = 0;
+    harness.load.mockResolvedValue({});
+    const { manager, labels } = setup(true, true, {
+      sampleSurface: () => ({ biome: null, height, normal: [0, 1, 0] }),
+    });
+    await vi.waitFor(() => expect(labels.children).toHaveLength(1));
+    const label = labels.children[0];
+    const writes = harness.models[0].setMatrixAt.mock.calls.length;
+    height = 0.12;
+    manager.refreshTerrainPlacement();
+    expect(labels.children[0]).toBe(label);
+    expect(label.position.y).toBeCloseTo(4.37);
+    expect(harness.models[0].setMatrixAt.mock.lastCall[1].elements[13]).toBeCloseTo(0.12);
+    manager.refreshTerrainPlacement();
+    expect(harness.models[0].setMatrixAt).toHaveBeenCalledTimes(writes + 1);
+    expect(harness.load).toHaveBeenCalledTimes(1);
+    manager.destroy();
+  });
   it("does not request an asset when the game has no spires", () => {
     const { manager, labels } = setup(false, false);
     expect(harness.load).not.toHaveBeenCalled();

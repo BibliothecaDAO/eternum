@@ -9,13 +9,13 @@
   "artifacts": {
     "source": {
       "path": "apps/game/asset-sources/ethereal/spire/spire.blend",
-      "bytes": 3498119,
-      "sha256": "2615a8f0ebc623f82e9f13f1d9fc768b075931e727083788c64d8e7acfd712af"
+      "bytes": 3287430,
+      "sha256": "36cf013770b3e3fc3f771bf3eedc47ccde971ce31f2668ce05cc23605ddb61f0"
     },
     "production": {
       "path": "apps/game/public/models/ethereal/spire.glb",
-      "bytes": 603840,
-      "sha256": "699f4263a662bf96bbc5854d75800664936c167552b167db221f9fc7b38bfaf8"
+      "bytes": 564268,
+      "sha256": "097f2ac578d2cee045d33e063a57b2d4a0210e1204ac40d3eb6171fe94342f85"
     },
     "concept": {
       "path": "apps/game/asset-sources/ethereal/spire/review/concept-04.png",
@@ -88,10 +88,10 @@
       "sha256": "8e058021106ce6cff7fe16d4e92f9d0ae84bd1b23d4667f6c444713fd578b99c"
     }
   },
-  "rawExportBytes": 2251036,
-  "triangles": 16140,
-  "authoredMeshCount": 27,
-  "primitiveCount": 29,
+  "rawExportBytes": 1884300,
+  "triangles": 11712,
+  "authoredMeshCount": 25,
+  "primitiveCount": 25,
   "materialCount": 8,
   "textureCount": 6,
   "animation": {
@@ -100,103 +100,78 @@
     "channels": 43
   },
   "deterministicRawExport": true,
-  "deterministicCompressedExport": true,
-  "productionStructure": {
-    "rawBounds": {
-      "min": [
-        -0.8567888736724854,
-        0,
-        -0.9634263515472412
-      ],
-      "max": [
-        0.859443187713623,
-        3.958789825439453,
-        0.9904640913009644
-      ]
-    },
-    "compressedBounds": {
-      "min": [
-        -0.8567888736724854,
-        0,
-        -0.9634263515472412
-      ],
-      "max": [
-        0.8594838976860046,
-        3.958789825439453,
-        0.9904641509056091
-      ]
-    },
-    "swept": [
-      {
-        "min": [
-          -0.8567888736724854,
-          0,
-          -0.9634263515472412
-        ],
-        "max": [
-          0.859443187713623,
-          3.984789825975895,
-          0.9904640913009644
-        ]
+  "deterministicCompressedExport": null,
+  "previousBasaltBaseAcceptance": {
+    "productionStructure": {
+      "rawBounds": {
+        "min": [-0.8567888736724854, 0, -0.9634263515472412],
+        "max": [0.859443187713623, 3.958789825439453, 0.9904640913009644]
       },
-      {
-        "min": [
-          -0.8567888736724854,
-          0,
-          -0.9634263515472412
-        ],
-        "max": [
-          0.8594838976860046,
-          3.984789825975895,
-          0.9904641509056091
+      "compressedBounds": {
+        "min": [-0.8567888736724854, 0, -0.9634263515472412],
+        "max": [0.8594838976860046, 3.958789825439453, 0.9904641509056091]
+      },
+      "swept": [
+        {
+          "min": [-0.8567888736724854, 0, -0.9634263515472412],
+          "max": [0.859443187713623, 3.984789825975895, 0.9904640913009644]
+        },
+        {
+          "min": [-0.8567888736724854, 0, -0.9634263515472412],
+          "max": [0.8594838976860046, 3.984789825975895, 0.9904641509056091]
+        }
+      ],
+      "animationMatrixMaxDelta": 1.923412323188642e-6,
+      "nonFinite": 0,
+      "sampledPoses": 481
+    },
+    "validation": {
+      "format": "pass",
+      "knip": "pass",
+      "runtimeTests": 11,
+      "assetTests": 3,
+      "verifyStructures": "pass",
+      "clientBuild": "pass",
+      "builtAssetMatches": true,
+      "realWorld": {
+        "mode": "eternum",
+        "gameId": 2,
+        "gameName": "eternum-fresh-01",
+        "spires": 7,
+        "settledRealms": 13,
+        "renderers": ["webgpu", "webgl2-fallback"],
+        "cameraDistances": [20, 10, 35],
+        "animationPoses": 961,
+        "loopMatrixDelta": 0,
+        "videoDurationSeconds": 9.102675,
+        "videoCadence": "variable",
+        "modelCpuMeanMs": [0.532, 0.582],
+        "modelCpuP95Ms": [0.8, 1.1],
+        "visibleRenderItems": 48,
+        "submittedTriangles": 109712,
+        "limitations": [
+          "Existing cold-load army/structure catch-up timeouts",
+          "Live frame-cadence variation prevents precise isolated GPU-cost claim"
         ]
       }
-    ],
-    "animationMatrixMaxDelta": 1.923412323188642e-06,
-    "nonFinite": 0,
-    "sampledPoses": 481
+    }
+  },
+  "terrainRefit": {
+    "baseObjectsRemoved": 3,
+    "groundVeinsRemoved": true,
+    "upperEmissionRetained": true,
+    "placement": "model-local Y=0 aligns to occupied terrain support height; no extra lift",
+    "sourcePosesCompared": 241,
+    "upperHierarchyMatrixDelta": 0,
+    "loopMinimumY": 0.047302450984716415,
+    "loopMaximumY": 3.9847898483276367,
+    "runtimeValidation": "Pending this branch runtime review; earlier captures below include the removed base"
   },
   "validation": {
-    "format": "pass",
-    "knip": "pass",
-    "runtimeTests": 11,
-    "assetTests": 3,
-    "verifyStructures": "pass",
-    "clientBuild": "pass",
-    "builtAssetMatches": true,
-    "realWorld": {
-      "mode": "eternum",
-      "gameId": 2,
-      "gameName": "eternum-fresh-01",
-      "spires": 7,
-      "settledRealms": 13,
-      "renderers": [
-        "webgpu",
-        "webgl2-fallback"
-      ],
-      "cameraDistances": [
-        20,
-        10,
-        35
-      ],
-      "animationPoses": 961,
-      "loopMatrixDelta": 0,
-      "videoDurationSeconds": 9.102675,
-      "videoCadence": "variable",
-      "modelCpuMeanMs": [
-        0.532,
-        0.582
-      ],
-      "modelCpuP95Ms": [
-        0.8,
-        1.1
-      ],
-      "visibleRenderItems": 48,
-      "submittedTriangles": 109712,
-      "limitations": [
-        "Existing cold-load army/structure catch-up timeouts",
-        "Live frame-cadence variation prevents precise isolated GPU-cost claim"
-      ]
-    }
+    "assetTests": 5,
+    "verifyCompressedStructures": "pass",
+    "sourceAnimation": "241 poses, exact unchanged upper hierarchy",
+    "currentRuntime": "pending terrain integration",
+    "compressionRepeatability": "not rerun for this revision"
   }
 }

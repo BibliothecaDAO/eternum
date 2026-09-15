@@ -17,7 +17,8 @@ if Path(bpy.data.filepath).resolve() != SOURCE.resolve():
 scene = bpy.context.scene
 collection = bpy.data.collections["SPIRE_V2_PRODUCTION"]
 objects = list(collection.objects)
-assert len(objects) == 47 and sum(obj.type == "MESH" for obj in objects) == 27
+assert len(objects) == 44 and sum(obj.type == "MESH" for obj in objects) == 25
+assert all(obj.get("spirePart") != "base" for obj in objects), "Terrain owns the landmark base"
 scene.frame_start, scene.frame_end, scene.render.fps = 1, 241, 30
 scene.frame_set(1)
 # Scene properties from the review session otherwise become animation extras.

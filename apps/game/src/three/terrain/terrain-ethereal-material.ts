@@ -1,70 +1,72 @@
-import { applyGameEndFrost, mapAnimationTime as time } from "../effects/game-end-freeze";
-import { NormalRGPacking } from "three";
+import { applyGameEndFrost } from "../effects/game-end-freeze";
 import type Node from "three/src/nodes/core/Node.js";
-import type UniformNode from "three/src/nodes/core/UniformNode.js";
 import {
+  attribute,
   color,
+  float,
   fwidth,
-  int,
   mix,
-  mx_noise_float,
-  normalMap,
+  normalLocal,
   positionWorld,
   smoothstep,
-  texture,
-  uv,
+  transformNormalToView,
   vec2,
   vec3,
 } from "three/tsl";
 import { MeshStandardNodeMaterial } from "three/webgpu";
-
 import { createEtherealSurfacePalette } from "./ethereal-surface-palette";
-import { terrainHexEdgeDistance } from "./terrain-hex-node";
-import { TERRAIN_GROUND_SURFACE_IDS } from "./terrain-ground-profile";
-import type { TerrainGroundTextures } from "./terrain-ground-textures";
+import { BASALT_BLOCK_RADIUS } from "./terrain-basalt";
 
-const STONE_LAYER = TERRAIN_GROUND_SURFACE_IDS.indexOf("stone");
-const DUST_LAYER = TERRAIN_GROUND_SURFACE_IDS.indexOf("dry-earth");
+/** Clean regular basalt: geometry supplies relief; stone itself never emits light. */
+export function createEtherealTerrainMaterial(): MeshStandardNodeMaterial {
+  const material = new MeshStandardNodeMaterial({ metalness: 0, roughness: 0.9 });
+  material.name = "terrain-ethereal-basalt";
+  material.colorNode = applyGameEndFrost(attribute("terrainColor", "vec3"));
+  return material;
+}
 
-/** The alternate layer changes terrain presentation without inventing a gameplay biome. */
-export function createEtherealTerrainMaterial(
-  textures: TerrainGroundTextures,
-  groundMotion: UniformNode<"float", number>,
-): MeshStandardNodeMaterial {
-  const material = new MeshStandardNodeMaterial({ metalness: 0, roughness: 1 });
-  material.name = "terrain-ethereal";
-  const palette = createEtherealSurfacePalette();
+/** Analytic hex shading preserves slab readability after real bevels become subpixel. */
+export function createEtherealTerrainFarMaterial(): MeshStandardNodeMaterial {
+  const material = new MeshStandardNodeMaterial({ metalness: 0, roughness: 0.9 });
+  material.name = "terrain-ethereal-basalt-distant";
+  const radius = BASALT_BLOCK_RADIUS;
+  const spacing = vec2(Math.sqrt(3) * radius, 3 * radius);
   const ground = positionWorld.xz;
-  const drift = time.mul(groundMotion);
-  const cloud = mx_noise_float(vec3(ground.mul(0.38), 0))
-    .mul(0.5)
-    .add(0.5);
-  const stoneUv = uv().mul(0.52);
-  const dustUv = uv().mul(0.31).add(vec2(0.37, 0.61));
-  const stone = texture(textures.albedoHeight, stoneUv).depth(int(STONE_LAYER));
-  const dust = texture(textures.albedoHeight, dustUv).depth(int(DUST_LAYER));
-  const stoneMaterial = texture(textures.normalMaterial, stoneUv).depth(int(STONE_LAYER));
-  const dustMaterial = texture(textures.normalMaterial, dustUv).depth(int(DUST_LAYER));
-  // Pale mineral dust settles in the recesses; the existing stone atlas supplies real relief and grain.
-  const dustCover = smoothstep(0.25, 0.72, cloud.sub(stone.a.sub(0.5).mul(0.45)));
-  const stoneColor = stone.rgb.mul(color("#8b91b0"));
-  const dustColor = dust.rgb.mul(color("#8994b5"));
-  const base = mix(stoneColor, dustColor, dustCover.mul(0.72));
-  const flowingCloud = mx_noise_float(vec3(ground.mul(0.26), drift.mul(0.035)))
-    .mul(0.5)
-    .add(0.5);
-  const energy = createEtherealEnergy(ground, drift, flowingCloud);
-  const edgeDistance = terrainHexEdgeDistance(ground);
-  const border = smoothstep(0.006, fwidth(edgeDistance).max(0.001).add(0.006), edgeDistance).oneMinus();
-  material.colorNode = applyGameEndFrost(base);
-  // Emission keeps the void's identity through the day cycle without specular glare.
-  material.emissiveNode = base.mul(0.16).add(energy.mul(0.38)).add(color(palette.glowColor).mul(border).mul(0.035));
-  const surfaceMaterial = mix(stoneMaterial, dustMaterial, dustCover.mul(0.72));
-  const surfaceNormal = normalMap(vec3(surfaceMaterial.rg, 1), vec2(0.6));
-  surfaceNormal.unpackNormalMode = NormalRGPacking;
-  material.normalNode = surfaceNormal;
-  material.roughnessNode = surfaceMaterial.b.clamp(0.84, 1);
-  material.aoNode = mix(1, surfaceMaterial.a, 0.4);
+  const a = ground.sub(ground.div(spacing).round().mul(spacing));
+  const b = ground.sub(spacing.mul(0.5)).sub(ground.sub(spacing.mul(0.5)).div(spacing).round().mul(spacing));
+  const delta = a.dot(a).lessThanEqual(b.dot(b)).select(a, b);
+  const blockCenter = ground.sub(delta);
+  const row = blockCenter.y.div(1.5 * radius).round();
+  const col = blockCenter.x
+    .div(Math.sqrt(3) * radius)
+    .sub(row.mul(0.5))
+    .round();
+  const q = col.mod(4).add(4).mod(4);
+  const r = row.mod(4).add(4).mod(4);
+  const variation = q.mul(114).add(r.mul(218)).add(q.mul(r).mul(17)).mod(251).div(251);
+  const xDistance = delta.x.abs();
+  const diagonalA = delta.x.mul(0.5).add(delta.y.mul(Math.sqrt(3) / 2));
+  const diagonalB = delta.x.mul(-0.5).add(delta.y.mul(Math.sqrt(3) / 2));
+  const distance = xDistance.max(diagonalA.abs()).max(diagonalB.abs());
+  const slabEdge = ((radius - 0.004) * Math.sqrt(3)) / 2;
+  const capEdge = ((radius - 0.008) * Math.sqrt(3)) / 2;
+  const pixel = fwidth(distance).max(0.0001);
+  const slab = smoothstep(float(slabEdge).sub(pixel), float(slabEdge).add(pixel), distance).oneMinus();
+  const stone = vec3(0.035, 0.04, 0.049).mul(variation.mul(0.3).add(0.85));
+  material.colorNode = applyGameEndFrost(
+    mix(vec3(0.017, 0.02, 0.026), stone, slab).mul(attribute("terrainColor", "vec3")),
+  );
+
+  const faceX = vec2(delta.x.sign(), 0);
+  const faceA = vec2(0.5, Math.sqrt(3) / 2).mul(diagonalA.sign());
+  const faceB = vec2(-0.5, Math.sqrt(3) / 2).mul(diagonalB.sign());
+  const face = xDistance
+    .greaterThanEqual(diagonalA.abs().max(diagonalB.abs()))
+    .select(faceX, diagonalA.abs().greaterThanEqual(diagonalB.abs()).select(faceA, faceB));
+  const bevel = smoothstep(float(capEdge).sub(pixel), float(capEdge).add(pixel), distance).mul(slab);
+  const slope = bevel.mul(0.004 / (slabEdge - capEdge));
+  const relief = vec3(face.x.mul(slope), 1, face.y.mul(slope)).normalize();
+  material.normalNode = transformNormalToView(normalLocal.y.greaterThan(0.5).select(relief, normalLocal));
   return material;
 }
 

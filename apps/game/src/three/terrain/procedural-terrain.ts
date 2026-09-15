@@ -4,6 +4,8 @@ import {
   BufferAttribute,
   BufferGeometry,
   Box3,
+  DynamicDrawUsage,
+  Matrix4,
   Group,
   InstancedMesh,
   Mesh,
@@ -14,11 +16,22 @@ import {
   type Raycaster,
 } from "three";
 
-import { MeshStandardNodeMaterial } from "three/webgpu";
+import { MeshBasicNodeMaterial, MeshStandardNodeMaterial } from "three/webgpu";
 
+import {
+  BASALT_DETAIL_CAMERA_HEIGHT,
+  BASALT_DETAIL_RADIUS,
+  BASALT_DETAIL_TILE_LIMIT,
+  BASALT_FAR_TRIANGLES,
+  BASALT_FAR_VERTICES,
+  BASALT_VARIANT_COUNT,
+  buildBasaltFarTemplate,
+  buildBasaltTemplate,
+} from "./terrain-basalt";
 import { findNearestTerrainHex } from "./terrain-coordinates";
 import { TerrainField } from "./terrain-field";
-import { createEtherealTerrainMaterial } from "./terrain-ethereal-material";
+import { createEtherealBorderMaterial } from "./terrain-ethereal-border-material";
+import { createEtherealTerrainFarMaterial, createEtherealTerrainMaterial } from "./terrain-ethereal-material";
 import type { TerrainFogMask } from "./terrain-fog-mask";
 import { acquireTerrainGroundTextures, type TerrainGroundTextureHandle } from "./terrain-ground-textures";
 import { createTerrainGroundMaterial, createTerrainMaterials, type TerrainMaterials } from "./terrain-material";
@@ -93,7 +106,10 @@ export class ProceduralTerrain {
   private readonly presentationGroup = new Group();
   private groundTextureDetailEnabled = true;
   private groundTextureMaterial: TerrainMaterials["land"] | null = null;
-  private etherealMaterial: TerrainMaterials["land"] | null = null;
+  private readonly etherealMaterial = createEtherealTerrainMaterial();
+  private readonly etherealFarMaterial = createEtherealTerrainFarMaterial();
+  private readonly basaltTemplates = new Map<number, BufferGeometry>();
+  private readonly etherealBorders = createEtherealBorderMaterial();
   private surfacePresentation: "world" | "ethereal" = "world";
   private groundTextureHandle: TerrainGroundTextureHandle | null = null;
   private groundTexturesPromise: Promise<TerrainGroundTextureHandle> | null = null;
@@ -125,6 +141,9 @@ export class ProceduralTerrain {
     this.materials = createTerrainMaterials();
     this.fogField.applyRevealToMaterial(this.materials.flatLand);
     this.fogField.applyRevealToMaterial(this.materials.water);
+    this.fogField.applyRevealToMaterial(this.etherealMaterial);
+    this.fogField.applyRevealToMaterial(this.etherealFarMaterial);
+    this.fogField.applyRevealToMaterial(this.etherealBorders.material);
     this.setQualityTier(this.qualityTier);
     this.releaseAppearance = useWorldAppearanceStore.subscribe(() => this.applyAppearance());
   }
@@ -207,15 +226,8 @@ export class ProceduralTerrain {
   setSurfacePresentation(presentation: "world" | "ethereal"): void {
     this.requireActive();
     if (presentation === this.surfacePresentation) return;
-    if (presentation === "ethereal" && !this.etherealMaterial) {
-      if (!this.groundTextureHandle) throw new Error("Load ground textures before presenting the Ethereal layer");
-      this.etherealMaterial = createEtherealTerrainMaterial(
-        this.groundTextureHandle.textures,
-        this.materials.groundMotion,
-      );
-      this.fogField.applyRevealToMaterial(this.etherealMaterial);
-    }
     this.surfacePresentation = presentation;
+    this.fogField.setSurfacePresentation(presentation);
     this.refreshGroundMaterial();
     this.applyAppearance();
   }
@@ -237,6 +249,7 @@ export class ProceduralTerrain {
     const { fogStyle, reducedMotion } = useWorldAppearanceStore.getState();
     const profile = TERRAIN_QUALITY_PROFILES[this.qualityTier];
     const motion = reducedMotion ? 0 : 1;
+    this.etherealBorders.motion.value = motion;
     this.fogField.setStyle(fogStyle);
     this.fogField.setReducedMotion(reducedMotion);
     this.fogField.setQuality(profile.fogMotionStrength * motion, profile.fogMistStrength);
@@ -384,7 +397,21 @@ export class ProceduralTerrain {
 
   summarize(preparedPages: readonly PreparedTerrainPage[]): TerrainPresentationDiagnostics {
     this.requireActive();
-    return summarizePresentation(preparedPages, this.getPropStats(), this.getShroudStats());
+    const summary = summarizePresentation(preparedPages, this.getPropStats(), this.getShroudStats());
+    for (const geometry of this.basaltTemplates.values()) summary.geometryBytes += countBufferGeometryBytes(geometry);
+    for (const prepared of preparedPages) {
+      const group = this.pages.get(prepared.request.pageKey)?.group;
+      if (!group || !prepared.basaltInstances) continue;
+      summary.triangles -= (prepared.basaltInstances.length / 4) * BASALT_FAR_TRIANGLES;
+      summary.vertices -= (prepared.basaltInstances.length / 4) * BASALT_FAR_VERTICES;
+      group.traverse((object) => {
+        if (!(object instanceof InstancedMesh) || !object.userData.basaltInstances) return;
+        summary.triangles += object.count * ((object.geometry.index?.count ?? 0) / 3);
+        summary.vertices += object.count * object.geometry.getAttribute("position").count;
+        summary.geometryBytes += object.instanceMatrix.array.byteLength;
+      });
+    }
+    return summary;
   }
 
   refreshPropOccupancy(isOccupied: (col: number, row: number) => boolean): void {
@@ -440,6 +467,8 @@ export class ProceduralTerrain {
     this.releaseAppearance();
     this.pages.forEach(disposePageGeometry);
     this.pages.clear();
+    this.basaltTemplates.forEach((geometry) => geometry.dispose());
+    this.basaltTemplates.clear();
     this.presentationGroup.clear();
     this.object3d.clear();
     this.pageWorker?.dispose();
@@ -456,6 +485,8 @@ export class ProceduralTerrain {
         this.materials.water,
         this.groundTextureMaterial,
         this.etherealMaterial,
+        this.etherealFarMaterial,
+        this.etherealBorders.material,
       ].filter(Boolean),
     ).forEach((material) => material!.dispose());
     this.groundTextureHandle?.release();
@@ -525,7 +556,23 @@ export class ProceduralTerrain {
     const group = new Group();
     group.name = `terrain-page:${preparedPage.request.pageKey}`;
     try {
-      group.add(createTerrainMesh(preparedPage.buffers, this.materials.land, "land"));
+      if (preparedPage.buffers.indices.length)
+        group.add(createTerrainMesh(preparedPage.buffers, this.materials.land, "land"));
+      if (preparedPage.basaltInstances) {
+        group.add(
+          createBasaltPageGroup(
+            preparedPage.basaltInstances,
+            this.etherealMaterial,
+            this.etherealFarMaterial,
+            this.basaltTemplates,
+          ),
+        );
+      }
+      if (preparedPage.borderBuffers) {
+        const borders = createTerrainMesh(preparedPage.borderBuffers, this.etherealBorders.material, "borders");
+        borders.renderOrder = 2;
+        group.add(borders);
+      }
       if (preparedPage.waterBuffers) {
         group.add(createTerrainMesh(preparedPage.waterBuffers, this.materials.water, "water"));
       }
@@ -566,11 +613,9 @@ export class ProceduralTerrain {
 
   private refreshGroundMaterial(): void {
     this.materials.land =
-      this.surfacePresentation === "ethereal" && this.etherealMaterial
-        ? this.etherealMaterial
-        : this.groundTextureDetailEnabled && this.groundTextureMaterial
-          ? this.groundTextureMaterial
-          : this.materials.flatLand;
+      this.groundTextureDetailEnabled && this.groundTextureMaterial
+        ? this.groundTextureMaterial
+        : this.materials.flatLand;
     this.applyLandMaterial();
   }
 
@@ -579,10 +624,152 @@ export class ProceduralTerrain {
   }
 }
 
+function createBasaltPageGroup(
+  tiles: Float32Array,
+  nearMaterial: MeshStandardNodeMaterial,
+  farMaterial: MeshStandardNodeMaterial,
+  templates: Map<number, BufferGeometry>,
+): Group {
+  const group = new Group();
+  group.name = "procedural-terrain-basalt-lod";
+  const bounds = basaltPageBounds(tiles);
+  const far = createBasaltInstances(tiles.length / 4, BASALT_VARIANT_COUNT + 1, farMaterial, templates, bounds);
+  far.name = "procedural-terrain-basalt";
+  // LOD writes must precede every detail draw, including when this sentinel has zero instances.
+  far.renderOrder = -1;
+  group.add(far);
+  const near = createBasaltDetailMeshes(tiles, nearMaterial, templates, bounds);
+  group.add(...near.values());
+  configureBasaltLod(tiles, far, near);
+  return group;
+}
+
+function createBasaltDetailMeshes(
+  tiles: Float32Array,
+  nearMaterial: MeshStandardNodeMaterial,
+  templates: Map<number, BufferGeometry>,
+  bounds: Sphere,
+): Map<number, InstancedMesh> {
+  const near = new Map<number, InstancedMesh>();
+  const counts = new Map<number, number>();
+  for (let index = 0; index < tiles.length; index += 4) {
+    const variant = tiles[index + 3] ? BASALT_VARIANT_COUNT : tiles[index + 2];
+    counts.set(variant, (counts.get(variant) ?? 0) + 1);
+  }
+  for (const [variant, count] of counts) {
+    const mesh = createBasaltInstances(
+      Math.min(count, BASALT_DETAIL_TILE_LIMIT),
+      variant,
+      nearMaterial,
+      templates,
+      bounds,
+    );
+    mesh.name = "procedural-terrain-basalt-detail";
+    mesh.count = 0;
+    mesh.castShadow = true;
+    near.set(variant, mesh);
+  }
+
+  return near;
+}
+
+function configureBasaltLod(tiles: Float32Array, far: InstancedMesh, near: Map<number, InstancedMesh>): void {
+  const matrix = new Matrix4();
+  for (let index = 0; index < tiles.length; index += 4)
+    far.setMatrixAt(index / 4, matrix.makeTranslation(tiles[index], 0, tiles[index + 1]));
+  far.instanceMatrix.needsUpdate = true;
+  const focus = new Vector3();
+  const position = new Vector3();
+  const direction = new Vector3();
+  let retainedCamera = "";
+  far.onBeforeRender = (_renderer, _scene, camera) => {
+    camera.getWorldPosition(position);
+    camera.getWorldDirection(direction);
+    const key = `${position.x}:${position.y}:${position.z}:${direction.x}:${direction.y}:${direction.z}`;
+    if (key === retainedCamera) return;
+    retainedCamera = key;
+    const distanceToGround = direction.y < -0.01 ? -position.y / direction.y : 0;
+    focus.copy(position).addScaledVector(direction, distanceToGround);
+    writeBasaltLod(tiles, far, near, matrix, position.y < BASALT_DETAIL_CAMERA_HEIGHT && distanceToGround > 0, focus);
+  };
+}
+
+function writeBasaltLod(
+  tiles: Float32Array,
+  far: InstancedMesh,
+  near: Map<number, InstancedMesh>,
+  matrix: Matrix4,
+  detail: boolean,
+  focus: Vector3,
+): void {
+  far.count = 0;
+  near.forEach((mesh) => {
+    mesh.count = 0;
+  });
+  for (let index = 0; index < tiles.length; index += 4) {
+    const x = tiles[index];
+    const z = tiles[index + 1];
+    const withinDetail = detail && (x - focus.x) ** 2 + (z - focus.z) ** 2 < BASALT_DETAIL_RADIUS ** 2;
+    const variant = tiles[index + 3] ? BASALT_VARIANT_COUNT : tiles[index + 2];
+    const mesh = withinDetail ? near.get(variant)! : far;
+    mesh.setMatrixAt(mesh.count++, matrix.makeTranslation(x, 0, z));
+  }
+  far.instanceMatrix.needsUpdate = true;
+  near.forEach((mesh) => {
+    mesh.instanceMatrix.needsUpdate = true;
+  });
+}
+
+function createBasaltInstances(
+  capacity: number,
+  variant: number,
+  material: MeshStandardNodeMaterial,
+  templates: Map<number, BufferGeometry>,
+  bounds: Sphere,
+): InstancedMesh {
+  let geometry = templates.get(variant);
+  if (!geometry) {
+    const source =
+      variant > BASALT_VARIANT_COUNT
+        ? buildBasaltFarTemplate()
+        : buildBasaltTemplate(variant % BASALT_VARIANT_COUNT, variant === BASALT_VARIANT_COUNT);
+    geometry = new BufferGeometry();
+    geometry.setIndex(new BufferAttribute(new Uint16Array(source.indices), 1));
+    geometry.setAttribute("position", new BufferAttribute(new Float32Array(source.positions), 3));
+    geometry.setAttribute("normal", new BufferAttribute(new Float32Array(source.normals), 3));
+    geometry.setAttribute("terrainColor", new BufferAttribute(new Float32Array(source.colors), 3));
+    geometry.userData.sharedBasalt = true;
+    templates.set(variant, geometry);
+  }
+  const mesh = new InstancedMesh(geometry, material, capacity);
+  mesh.instanceMatrix.setUsage(DynamicDrawUsage);
+  mesh.boundingSphere = bounds.clone();
+  mesh.receiveShadow = true;
+  mesh.userData.basaltInstances = true;
+  mesh.raycast = disableTerrainRaycast;
+  return mesh;
+}
+
+function basaltPageBounds(tiles: Float32Array): Sphere {
+  const box = new Box3();
+  for (let index = 0; index < tiles.length; index += 4) {
+    box.expandByPoint(new Vector3(tiles[index] - 1, 0, tiles[index + 1] - 1));
+    box.expandByPoint(new Vector3(tiles[index] + 1, 0.14, tiles[index + 1] + 1));
+  }
+  return box.getBoundingSphere(new Sphere());
+}
+
+function countBufferGeometryBytes(geometry: BufferGeometry): number {
+  return (
+    Object.values(geometry.attributes).reduce((sum, attribute) => sum + attribute.array.byteLength, 0) +
+    (geometry.index?.array.byteLength ?? 0)
+  );
+}
+
 function createTerrainMesh(
   buffers: TerrainGeometryBuffers,
-  material: TerrainMaterials["land"],
-  layer: "land" | "water",
+  material: MeshStandardNodeMaterial | MeshBasicNodeMaterial,
+  layer: "land" | "water" | "borders",
 ): Mesh {
   const geometry = new BufferGeometry();
   try {
@@ -627,7 +814,7 @@ function disposePageGeometry(page: PresentedTerrainPage): void {
 function disposePageGroup(group: Group): void {
   group.traverse((object) => {
     if (object instanceof InstancedMesh) object.dispose();
-    if (object instanceof Mesh) object.geometry.dispose();
+    if (object instanceof Mesh && !object.geometry.userData.sharedBasalt) object.geometry.dispose();
   });
   group.clear();
 }

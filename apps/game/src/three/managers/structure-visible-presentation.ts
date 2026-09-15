@@ -1,3 +1,4 @@
+import { StructureType } from "@bibliothecadao/types";
 import { Euler, Object3D, Vector3 } from "three";
 
 /** Structures sit just above the terrain sample; the compact label floats above the roofline. */
@@ -64,7 +65,7 @@ export function applyVisibleStructurePresentation<
 ): void {
   const { col, row } = input.structure.hexCoords;
   input.getWorldPositionForHexCoordsInto(col, row, input.scratchPosition);
-  input.scratchPosition.y += STRUCTURE_SURFACE_LIFT;
+  input.scratchPosition.y += input.structure.structureType === StructureType.BitcoinMine ? 0 : STRUCTURE_SURFACE_LIFT;
   input.dummy.position.copy(input.scratchPosition);
   input.dummy.rotation.y = input.rotationY;
   input.dummy.updateMatrix();

@@ -175,6 +175,7 @@ interface StructureInstanceBinding {
   entityIdsByInstance: Map<number, ID>;
   instanceIndex: number;
   model: StructureModel;
+  terrainHeight: number;
 }
 
 const isBoundStructureInstance = (binding: StructureInstanceBinding | undefined): binding is StructureInstanceBinding =>
@@ -782,6 +783,26 @@ export class StructureManager {
 
   private resolveTerrainSurface(): TerrainSurface {
     return this.hexagonScene?.getTerrainSurface() ?? FLAT_TERRAIN_SURFACE;
+  }
+
+  /** Re-ground committed instances when streamed terrain replaces their initial fallback surface. */
+  public refreshTerrainPlacement(): void {
+    if (this.isDestroyed) return;
+    const terrain = this.resolveTerrainSurface();
+    for (const [entityId, bindings] of this.structureInstanceBindings) {
+      const structure = this.resolveStructureInfoByEntityId(entityId);
+      if (!structure) continue;
+      getWorldPositionForHexCoordsInto(structure.hexCoords.col, structure.hexCoords.row, this.scratchPosition);
+      const height = terrain.sampleSurface(this.scratchPosition.x, this.scratchPosition.z).height;
+      if (bindings.every((binding) => binding.terrainHeight === height)) continue;
+
+      this.syncVisibleStructurePresentation(structure, this.resolveVisibleStructureRotationY(structure));
+      for (const binding of bindings) {
+        binding.model.setMatrixAt(binding.instanceIndex, this.dummy.matrix);
+        binding.terrainHeight = height;
+      }
+      this.frustumVisibilityDirty = true;
+    }
   }
 
   private updateShadowFlags(): void {
@@ -1659,7 +1680,8 @@ export class StructureManager {
     model.setMatrixAt(instanceIndex, this.dummy.matrix);
     dirtyModels.add(model);
 
-    return { entityIdsByInstance, instanceIndex, model };
+    const terrainHeight = this.resolveTerrainSurface().sampleSurface(this.dummy.position.x, this.dummy.position.z).height;
+    return { entityIdsByInstance, instanceIndex, model, terrainHeight };
   }
 
   // An overflow is a sizing bug, not a runtime condition: count it, warn once, and keep the pass alive.

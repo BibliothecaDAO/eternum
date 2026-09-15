@@ -1,3 +1,7 @@
+import { BiomeTypeToId } from "@bibliothecadao/types/terrain";
+import { basaltVariantForCell, BASALT_FAR_TRIANGLES, BASALT_FAR_VERTICES } from "./terrain-basalt";
+import { buildEtherealBorderCell } from "./terrain-ethereal-borders";
+import { isEtherealTerrainCell } from "./terrain-surface-presentation";
 import {
   terrainHexCorners,
   terrainHexToWorld,
@@ -76,11 +80,19 @@ export function prepareTerrainPage(request: TerrainPageRequest): PreparedTerrain
   const vertexSampler = new TerrainVertexSampler(field);
   const land = createGeometryAccumulator();
   const water = createGeometryAccumulator();
+  const basalt: number[] = [];
+  const borders = createGeometryAccumulator();
   let fogTerrainCells = 0;
   let frontierEdges = 0;
 
   for (const cell of canonicalCells(request.cells)) {
     if (cell.explored && cell.biome) {
+      if (isEtherealTerrainCell(request, cell)) {
+        const center = terrainHexToWorld(cell.col, cell.row);
+        basalt.push(center.x, center.z, basaltVariantForCell(cell.col, cell.row), cell.occupied ? 1 : 0);
+        appendBorderGeometry(borders, buildEtherealBorderCell(cell.col, cell.row), cell);
+        continue;
+      }
       appendCellPatch(land, vertexSampler, cell, subdivisions);
       if (shouldAppendWaterCellPatch(field, cell)) appendWaterCellPatch(water, vertexSampler, cell, subdivisions);
       if (!request.flatSurface) frontierEdges += appendFrontierSkirts(land, field, cell);
@@ -92,14 +104,29 @@ export function prepareTerrainPage(request: TerrainPageRequest): PreparedTerrain
 
   const buffers = finalizeGeometry(land);
   const waterBuffers = water.positions.length > 0 ? finalizeGeometry(water) : null;
+  const basaltInstances = basalt.length ? new Float32Array(basalt) : null;
+  const borderBuffers = borders.positions.length ? finalizeGeometry(borders) : null;
   const propInstances = prepareTerrainPropInstances(request, field);
   const shroudInstances = prepareTerrainShroudInstances(request, field);
-  const geometryBytes = countGeometryBytes(buffers) + (waterBuffers ? countGeometryBytes(waterBuffers) : 0);
-  const fingerprint = fingerprintPreparedPage(request, buffers, waterBuffers, propInstances, shroudInstances);
+  const geometryBytes = [buffers, waterBuffers, borderBuffers].reduce<number>(
+    (sum, geometry) => sum + (geometry ? countGeometryBytes(geometry) : 0),
+    basaltInstances?.byteLength ?? 0,
+  );
+  const fingerprint = fingerprintPreparedPage(
+    request,
+    buffers,
+    waterBuffers,
+    propInstances,
+    shroudInstances,
+    basaltInstances,
+    borderBuffers,
+  );
   const prepareMs = performance.now() - startedAt;
 
   return {
     buffers,
+    basaltInstances,
+    borderBuffers,
     diagnostics: {
       biomeMismatchCount: field.getBiomeMismatchCount(),
       exploredSurfaceSamples: vertexSampler.exploredSamples,
@@ -110,8 +137,13 @@ export function prepareTerrainPage(request: TerrainPageRequest): PreparedTerrain
       roadSegments: request.roadSegments.length,
       settlementSites: request.settlementAnchors.length,
       shroudInstances: shroudInstances.length,
-      triangles: (buffers.indices.length + (waterBuffers?.indices.length ?? 0)) / 3,
-      vertices: (buffers.positions.length + (waterBuffers?.positions.length ?? 0)) / 3,
+      triangles:
+        [buffers, waterBuffers, borderBuffers].reduce((sum, geometry) => sum + (geometry?.indices.length ?? 0), 0) / 3 +
+        (basalt.length / 4) * BASALT_FAR_TRIANGLES,
+      vertices:
+        [buffers, waterBuffers, borderBuffers].reduce((sum, geometry) => sum + (geometry?.positions.length ?? 0), 0) /
+          3 +
+        (basalt.length / 4) * BASALT_FAR_VERTICES,
     },
     fingerprint,
     propInstances,
@@ -487,11 +519,14 @@ function fingerprintPreparedPage(
   water: TerrainGeometryBuffers | null,
   props: PreparedTerrainPage["propInstances"],
   shroud: PreparedTerrainPage["shroudInstances"],
+  basalt: Float32Array | null,
+  borders: TerrainGeometryBuffers | null,
 ): string {
   let hash = hashString(
     JSON.stringify({
       cells: canonicalCells(request.cells),
       climate: request.climate,
+      surfacePresentation: request.surfacePresentation,
       ...(request.flatSurface ? { flatSurface: true } : {}),
       halo: canonicalCells(request.halo),
       mapCenter: request.mapCenter,
@@ -507,6 +542,11 @@ function fingerprintPreparedPage(
   );
   hash = hashGeometry(land, hash);
   if (water) hash = hashGeometry(water, hash);
+  if (basalt) {
+    for (const byte of new Uint8Array(basalt.buffer, basalt.byteOffset, basalt.byteLength))
+      hash = Math.imul(hash ^ byte, 0x01000193) >>> 0;
+  }
+  if (borders) hash = hashGeometry(borders, hash);
   return hash.toString(16).padStart(8, "0");
 }
 
@@ -525,4 +565,30 @@ function hashString(value: string): number {
     hash = Math.imul(hash ^ value.charCodeAt(index), 0x01000193) >>> 0;
   }
   return hash;
+}
+
+function appendBorderGeometry(
+  target: GeometryAccumulator,
+  geometry: { positions: number[]; normals: number[]; colors: number[]; indices: number[]; uvs?: number[] },
+  cell: TerrainCellInput,
+): void {
+  const offset = target.positions.length / 3;
+  for (let index = 0; index < geometry.positions.length; index += 3) {
+    const x = geometry.positions[index],
+      height = geometry.positions[index + 1],
+      z = geometry.positions[index + 2];
+    target.positions.push(x, height, z);
+    target.normals.push(geometry.normals[index], geometry.normals[index + 1], geometry.normals[index + 2]);
+    target.colors.push(geometry.colors[index], geometry.colors[index + 1], geometry.colors[index + 2]);
+    target.uvs.push(geometry.uvs?.[(index / 3) * 2] ?? x, geometry.uvs?.[(index / 3) * 2 + 1] ?? z);
+    target.biomeIds.push(cell.biome ? BiomeTypeToId[cell.biome] : 0);
+    target.explored.push(1);
+    target.roughness.push(0.9);
+    target.shore.push(0);
+    target.heights.push(height);
+    target.waterDepth.push(0);
+    target.groundWeights0.push(0, 0, 0, 0);
+    target.groundWeights1.push(0, 0, 0, 255);
+  }
+  for (const index of geometry.indices) target.indices.push(offset + index);
 }

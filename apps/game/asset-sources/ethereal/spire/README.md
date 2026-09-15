@@ -1,9 +1,25 @@
 # S2 dimensional spire
 
 `spire.blend` is the editable source for `public/models/ethereal/spire.glb`. The production collection is
-`SPIRE_V2_PRODUCTION`: a grounded basalt hex, mixed neon veins, a floating shard and seven independently hovering
-fragments, plus a translucent purple sphere with accretion, corona and inward currents. All six textures are packed.
-Review cameras, lights and compositor bloom remain in the source for art review and are excluded from export.
+`SPIRE_V2_PRODUCTION`: a floating shard and seven independently hovering fragments with retained neon emission, plus a
+translucent purple sphere with accretion, corona and inward currents. All six textures are packed. Review cameras,
+lights and compositor bloom remain in the source for art review and are excluded from export.
+
+## Procedural terrain refit — 15 September 2026
+
+The full basalt hex and its ground veins have been removed from source and export. Three.js owns the support surface and
+gameplay-hex neon borders. Align model-local Y=0 to the occupied terrain support plane without an extra lift. The upper
+shard, fragment emission, portal and all 43 animation channels retain the existing placement and motion. A comparison of
+all 241 authored poses reports exactly zero upper-hierarchy matrix change. The lowest animated fragment stays at least
+0.0473 above model-local ground; intended levitation is retained.
+
+Current export: 44 authored objects, 25 mesh primitives, 11,712 triangles, eight materials, six KTX2 textures, 564,268
+bytes. The former export had 29 primitives, 16,140 triangles and 603,840 bytes. Five production asset tests cover both
+landmarks, base removal, compression, mine origin/contact bounds, and spire loop/reset semantics.
+
+All review images, performance counts and live-game acceptance farther below describe the **previous base-bearing
+revision**. They are retained as historical evidence, not acceptance of this terrain refit. Current source/refit checks
+are recorded in `production-manifest.json`; integrated runtime acceptance belongs to the terrain branch.
 
 ## Rebuild
 
@@ -24,8 +40,8 @@ Blender. Scene-only review metadata is omitted. The source's transforms and obje
 The optimizer resamples with tolerance `1e-6`, limits textures to 480 pixels, encodes the normal map as UASTC and color
 maps as ETC1S quality 180, stamps texture hashes, then applies Draco Edgebreaker geometry compression. It does not
 flatten the hierarchy: six current parent scales intentionally reach zero to hide their inward-motion resets. Other
-structure models still require unit node scales. Both repeated raw exports and repeated production builds are checked
-for equality.
+structure models still require unit node scales. Repeated raw exports are identical. Repeated compression was validated
+for the prior revision; this refit uses the same production optimizer and its structural checks.
 
 ## Runtime boundary
 
