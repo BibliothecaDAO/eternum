@@ -43,6 +43,12 @@ it("validates the nested notification and its expiry before push dispatch", () =
     expiresAt: 2000,
   };
   expect(parsePushEnvelope({ version: 1, subscriptionId: id, notification }, 1001).notification).toEqual(notification);
+  expect(
+    parsePushEnvelope(
+      { version: 1, kind: "direct-message", subscriptionId: id, notification: { ...notification, target: "/" } },
+      1001,
+    ).kind,
+  ).toBe("direct-message");
   expect(() => parsePushEnvelope({ version: 1, subscriptionId: id, notification }, 2000)).toThrow();
   expect(() =>
     parsePushEnvelope(

@@ -37,9 +37,18 @@ function servePushRequest(request: Request, client: string) {
     const sender = yield* WebPushSender;
     if (action === "config" && request.method === "GET") {
       const configuration = sender.configuration();
-      return json(configuration.enabled ? { ...configuration, automatic: automaticPublicSource() } : configuration);
+      return json(
+        configuration.enabled
+          ? {
+              ...configuration,
+              automatic: automaticPublicSource(),
+              directMessages: Boolean(serverEnv.CHAT_NOTIFICATION_SECRET?.trim()),
+            }
+          : configuration,
+      );
     }
-    if (!["subscribe", "status", "revoke", "test"].includes(action)) return json({ error: "not_found" }, 404);
+    if (!["subscribe", "status", "foreground", "revoke", "test"].includes(action))
+      return json({ error: "not_found" }, 404);
     if (request.method !== "POST") return json({ error: "method_not_allowed" }, 405);
     if (!limiter.allow(client)) return json({ error: "too_many_requests" }, 429);
     const input = yield* parsePushRequest(request);
@@ -57,6 +66,8 @@ function servePushRequest(request: Request, client: string) {
         try: () => parsePushRegistration(input),
         catch: () => new PushRequestError({ code: "invalid_subscription", status: 400 }),
       });
+      if (registration.directMessages && !serverEnv.CHAT_NOTIFICATION_SECRET?.trim())
+        return json({ error: "direct_message_push_disabled" }, 503);
       if (registration.gameAlerts) {
         const supported = automaticPublicSource();
         if (
@@ -74,11 +85,17 @@ function servePushRequest(request: Request, client: string) {
       const subscription = yield* store.find(owner, input.id);
       return json({
         registered: !!subscription,
+        directMessages: !!subscription?.directMessagesEnabledAt,
         automatic:
           subscription?.gameAlertsEnabledAt && subscription.gameAlertsSource
             ? parseAutomaticPushSource(subscription.gameAlertsSource)
             : null,
       });
+    }
+    if (action === "foreground") {
+      if (typeof input.foreground !== "boolean") return json({ error: "invalid_foreground_status" }, 400);
+      const found = yield* store.setGameForeground(owner, input.id, input.foreground);
+      return found ? json({ foreground: input.foreground }) : json({ error: "subscription_not_found" }, 404);
     }
     if (!testLimiter.allow(owner)) return json({ error: "too_many_tests" }, 429);
     const status = yield* sendPushTest(owner, input.id, input.target);

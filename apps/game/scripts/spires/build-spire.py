@@ -1,4 +1,9 @@
-"""A stationary stone socket, orbiting obelisks and a spherical essence portal."""
+"""A stationary stone socket, orbiting obelisks and a spherical essence portal.
+
+Kept as the obelisk spire variant for a later cosmetic. Nothing loads its output yet: the shipped spire is the
+hand-authored `spire.glb` (see public/models/ethereal/SOURCE.md), and the runtime spire model requires that asset's
+portal metadata and animation clip, so wiring this variant means giving it its own model path as well.
+"""
 
 import json
 import math
@@ -18,7 +23,7 @@ from town_architecture import palette
 from stone_textures import bake_limestone
 
 SOURCE = ROOT / ".context/ethereal-layer/spire"
-OUTPUT = ROOT / "apps/game/public/models/ethereal/spire.glb"
+OUTPUT = ROOT / "apps/game/public/models/ethereal/spire-obelisk.glb"
 
 
 def build_spire():

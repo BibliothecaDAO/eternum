@@ -34,10 +34,16 @@ import {
   type PlayerSession,
   type SessionResolver,
 } from "./http/middleware/auth";
-import directMessageRoutes from "./http/routes/direct-messages";
+import { createDirectMessageRoutes } from "./http/routes/direct-messages";
 import { createNotesRoutes } from "./http/routes/notes";
 import { createWorldChatRoutes } from "./http/routes/world-chat";
 import { DirectMessageError, persistDirectMessage, sortParticipants } from "./services/direct-messages";
+import {
+  createDirectMessageNotificationPublisher,
+  DISABLED_DIRECT_MESSAGE_NOTIFICATIONS,
+  publishDirectMessageNotification,
+  type DirectMessageNotificationPublisher,
+} from "./services/direct-message-notifications";
 import { startChatRetention } from "./services/retention";
 import { databaseEffect } from "./effect/database";
 import { fanOut } from "./effect/fan-out";
@@ -57,6 +63,7 @@ interface RealtimeDependencies {
   membership: MembershipResolver;
   sessions: SessionResolver;
   security: SecurityConfig;
+  directMessageNotifications?: DirectMessageNotificationPublisher;
 }
 
 const requiredEnvironment = (name: string): string => {
@@ -105,7 +112,12 @@ const toDirectThread = (record: DirectMessageThreadRecord, participants: [string
   typing: [],
 });
 
-export const createRealtimeApp = ({ membership, sessions, security }: RealtimeDependencies) => {
+export const createRealtimeApp = ({
+  membership,
+  sessions,
+  security,
+  directMessageNotifications = DISABLED_DIRECT_MESSAGE_NOTIFICATIONS,
+}: RealtimeDependencies) => {
   const app = new Hono<AppEnv>();
   const channels = createZoneRegistry();
   const chat = createChatChannelPolicy(membership);
@@ -238,6 +250,7 @@ export const createRealtimeApp = ({ membership, sessions, security }: RealtimeDe
       persisted.success.participants.flatMap((participant) => Array.from(presence.socketsFor(participant))),
     );
     await Effect.runPromise(fanOut(recipients, (recipient) => send(recipient, payload)));
+    publishDirectMessageNotification(directMessageNotifications, session, persisted.success.message);
   };
 
   const disconnect = (socket: Socket, session: PlayerSession) => {
@@ -267,7 +280,7 @@ export const createRealtimeApp = ({ membership, sessions, security }: RealtimeDe
   app.get("/health", (c) => c.json({ status: "ok", timestamp: new Date().toISOString() }));
   app.route("/api/notes", createNotesRoutes(membership));
   app.route("/api/chat/world", createWorldChatRoutes(chat));
-  app.route("/api/chat/dm", directMessageRoutes);
+  app.route("/api/chat/dm", createDirectMessageRoutes(directMessageNotifications));
 
   app.use("/ws", requirePlayerSession);
   app.use("/ws", async (c, next) => {
@@ -362,24 +375,30 @@ export const createRealtimeApp = ({ membership, sessions, security }: RealtimeDe
 
 const port = Number(process.env.PORT ?? 8080);
 const security = readSecurityConfig();
+const identityUrl = requiredEnvironment("IDENTITY_URL");
 const app = createRealtimeApp({
   ...createRealtimeDependencies({
-    identityUrl: requiredEnvironment("IDENTITY_URL"),
+    identityUrl,
     heraldUrl: requiredEnvironment("HERALD_URL"),
     heraldChain: process.env.HERALD_CHAIN ?? "madara",
     gameRpcUrl: requiredEnvironment("GAME_RPC_URL"),
     playerRegistryAddress: requiredEnvironment("PLAYER_REGISTRY_ADDRESS"),
   }),
   security,
+  directMessageNotifications: createDirectMessageNotificationPublisher({
+    identityUrl,
+    secret: process.env.CHAT_NOTIFICATION_SECRET,
+  }),
 });
 startChatRetention();
 
 console.log("Starting realtime server", {
   port,
   databaseUrl: process.env.DATABASE_URL ? "set" : "missing",
-  identityUrl: process.env.IDENTITY_URL,
+  identityUrl,
   heraldUrl: process.env.HERALD_URL,
   allowedOrigins: Array.from(security.allowedOrigins),
+  directMessageNotifications: Boolean(process.env.CHAT_NOTIFICATION_SECRET?.trim()),
 });
 
 const serverConfig = { port, hostname: "0.0.0.0", fetch: app.fetch, websocket };

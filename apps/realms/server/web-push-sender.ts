@@ -48,7 +48,10 @@ export function createWebPushSender(
             TTL: Math.min(ttl, 120),
             urgency: "normal",
             contentEncoding: "aes128gcm",
-            topic: createHash("sha256").update(envelope.notification.id).digest("base64url").slice(0, 32),
+            topic: createHash("sha256")
+              .update(envelope.notification.tag ?? envelope.notification.id)
+              .digest("base64url")
+              .slice(0, 32),
           });
           const response = await request(validated.endpoint, {
             method: "POST",

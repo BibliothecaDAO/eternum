@@ -49,6 +49,34 @@ const allLatestFeatures: LatestFeature[] = [
   },
   {
     date: "2026-09-15",
+    title: "Direct Message Alert Controls",
+    description:
+      "Enable raven alerts for existing devices from Settings. Battle alerts report the correct outcome, and enabling alerts keeps them quiet while you play.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-15",
+    title: "Ravens and Richer Alerts",
+    description:
+      "Notifications now describe battles, caravans, construction, exploration and troop movements in the voice of the realm. New direct messages can also arrive as privacy-safe raven alerts while you are away.",
+    type: "feature",
+  },
+  {
+    date: "2026-09-15",
+    title: "Quiet Foreground Alerts",
+    description:
+      "Background push alerts now stay quiet while you are actively playing; confirmed activity continues to appear in the in-game feed, and device alerts resume after you leave.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-15",
+    title: "Clearer Mobile Map Controls",
+    description:
+      "Improved the portrait game header with a stable settings position and a simpler one-tap map layer switch, keeping every control within reach on narrow screens.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-15",
     title: "Ethereal Spire Portals",
     description:
       "Spires rise above dark basalt steps with floating shards and swirling neon portals, making passages between layers easier to recognise.",
