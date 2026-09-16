@@ -23,7 +23,7 @@ pub fn setup() -> (Deployment, ResourceKey, ResourceKey) {
     setup_with_rules(recorded::rules())
 }
 
-fn setup_with_rules(rules: crate::rules::SliceRules) -> (Deployment, ResourceKey, ResourceKey) {
+pub fn setup_with_rules(rules: crate::rules::SliceRules) -> (Deployment, ResourceKey, ResourceKey) {
     let deployment = super::setup_with_domains(true, "StructuresDomain", "TroopsDomain");
     let peers = deployment.peers;
     let games = IGameDispatcher { contract_address: peers.season };
@@ -47,7 +47,15 @@ fn setup_with_rules(rules: crate::rules::SliceRules) -> (Deployment, ResourceKey
         rules
             .append(
                 ResourceRule {
-                    resource_type, unit_weight: 1, realm_rate: 2, village_rate: 1, labor_output_per_resource: 0,
+                    resource_type,
+                    unit_weight: if resource_type == 58 {
+                        0
+                    } else {
+                        1
+                    },
+                    realm_rate: 2,
+                    village_rate: 1,
+                    labor_output_per_resource: 0,
                 },
             );
     }
@@ -214,7 +222,7 @@ fn explorer_fixture(deployment: Deployment, id: u32, owner: u32, coord: Coord, c
     set_fixture(deployment.peers.troops, selector!("exists"), array![3, id.into()].span(), true);
     let key = ResourceKey { game_id: 3, entity_id: id };
     start_cheat_caller_address(deployment.peers.resources, deployment.peers.structures);
-    IResourcesDispatcher { contract_address: deployment.peers.resources }.initialize_resources(key, capacity);
+    IResourcesDispatcher { contract_address: deployment.peers.resources }.initialize_resources(key, capacity, 0, 30);
     stop_cheat_caller_address(deployment.peers.resources);
     key
 }
@@ -508,7 +516,6 @@ fn village_arrivals_wait_for_both_season_and_creation_immunity() {
                 base: crate::structures::StructureBase {
                     category: crate::ownership::VILLAGE_CATEGORY, ..structure.base,
                 },
-                troop_guards: structure.troop_guards,
                 resources_packed: structure.resources_packed,
                 metadata: structure.metadata,
             },
@@ -715,7 +722,6 @@ fn troop_deposit_ownership(blitz_mode_on: bool) {
                     metadata: crate::structures::StructureMetadata {
                         village_realm: home.entity_id, ..structure.metadata,
                     },
-                    troop_guards: structure.troop_guards,
                     resources_packed: structure.resources_packed,
                 },
             );
@@ -785,7 +791,6 @@ fn village_fixture(deployment: Deployment, key: ResourceKey, owner: starknet::Co
         StructureRecord {
             owner,
             base: crate::structures::StructureBase { category: crate::ownership::VILLAGE_CATEGORY, ..structure.base },
-            troop_guards: structure.troop_guards,
             resources_packed: structure.resources_packed,
             metadata: crate::structures::StructureMetadata { village_realm: 12345, ..structure.metadata },
         },

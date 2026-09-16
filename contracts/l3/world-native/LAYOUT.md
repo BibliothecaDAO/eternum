@@ -341,3 +341,18 @@ it is not a separate player fact.
 Mine kind is stored in Structure metadata. The layer is stored explicitly because ordinary mines may inhabit either
 layer. Discovery guard preparation belongs to TroopsDomain; it preserves each guard's type, tier, seed and recorded
 time.
+
+## Guard and Bitcoin rehearsal layout
+
+Guard state belongs to TroopsDomain in `GuardState.guards`, keyed by `(game_id, structure_id, slot)`. Slots 0 through 3
+are Delta through Alpha. Each row contains troops and its destruction tick; a default slot is absent. Structure records
+no longer embed four guard slots or store a redundant live-guard count. Their packed base leaves bits 0–7 unused. These
+changes require a fresh rehearsal deployment; no upgrade compatibility with earlier structure records is claimed.
+
+ResourcesDomain appends `BitcoinState`: phases `(game_id, phase)`, contributions `(game_id, phase, player)`, contributor
+indexes `(game_id, phase, index)`, mine accounting `(game_id, mine_id)`, and claimed markers
+`(game_id, phase, mine_id)`. Its settlement-id index supports nearest-destination lookup; owners and coordinates are
+read from StructuresDomain. Closing a phase prevents contributions. A later recorded command binds its root once; claims
+never use their own roots. Each mine processes phases in order so rollover cannot target an already paid phase. Unsplit
+prizes, forfeited winner shares and forfeited owner shares have separate balances; only unsplit prizes receive an owner
+cut. A missing destination for one recipient does not affect the other recipient's payment.

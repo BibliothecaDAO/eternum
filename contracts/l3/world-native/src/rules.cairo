@@ -136,7 +136,8 @@ pub struct StructureCapacityConfig {
 pub struct BitcoinMineConfig {
     pub enabled: bool,
     pub prize_per_phase: u128, // Amount of SATOSHI awarded per phase
-    pub min_labor_per_contribution: u128 // Minimum labor required per contribution
+    pub min_labor_per_contribution: u128, // Minimum labor required per contribution
+    pub owner_cut_bps: u16,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]

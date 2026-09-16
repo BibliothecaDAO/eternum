@@ -1,5 +1,6 @@
 pub mod arrivals;
 pub mod biome;
+pub mod bitcoin;
 
 pub mod combat;
 pub mod commands;
@@ -33,6 +34,8 @@ pub mod discovery;
 pub mod fixed_constants;
 pub mod game;
 pub mod geometry;
+
+pub mod guards;
 
 pub mod names;
 pub mod ownership;

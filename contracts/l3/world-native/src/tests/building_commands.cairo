@@ -253,7 +253,6 @@ fn building_actions_require_ownership_and_the_recorded_game_window() {
             owner: 0x999.try_into().unwrap(),
             base: structure.base,
             metadata: structure.metadata,
-            troop_guards: structure.troop_guards,
             resources_packed: structure.resources_packed,
         },
     );
@@ -277,11 +276,7 @@ fn labor_buildings_cannot_be_destroyed_and_population_blocks_overbuilding() {
         selector!("structures"),
         array![3, home.entity_id.into()].span(),
         crate::structures::StructureRecord {
-            owner: structure.owner,
-            base: structure.base,
-            metadata: structure.metadata,
-            troop_guards: structure.troop_guards,
-            resources_packed: 23,
+            owner: structure.owner, base: structure.base, metadata: structure.metadata, resources_packed: 23,
         },
     );
     assert!(execute(deployment, create(home, 25), 40));

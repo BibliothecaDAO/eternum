@@ -69,6 +69,11 @@ pub enum Command {
     DestroyBuilding: crate::buildings::ChangeBuilding,
     PauseBuildingProduction: crate::buildings::ChangeBuilding,
     ResumeBuildingProduction: crate::buildings::ChangeBuilding,
+    ContributeBitcoinLabor: crate::bitcoin::ContributeLabor,
+    CloseBitcoinPhase: u64,
+    BindBitcoinPhase: u64,
+    ClaimBitcoinPhase: crate::bitcoin::ClaimPhase,
+    BattleGuard: Battle,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]

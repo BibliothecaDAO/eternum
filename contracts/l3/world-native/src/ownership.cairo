@@ -308,6 +308,8 @@ pub enum Story {
     ProductionStory: ProductionStory,
     BuildingPlacementStory: BuildingPlacementStory,
     BuildingPaymentStory: BuildingPaymentStory,
+    BitcoinAwardStory: crate::bitcoin::BitcoinAwardStory,
+    StructureCapturedStory: StructureCapturedStory,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
@@ -390,4 +392,11 @@ pub struct BuildingPaymentStory {
     pub coord: crate::troops::Coord,
     pub category: u8,
     pub cost: Span<crate::resources::ResourceAmount>,
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct StructureCapturedStory {
+    pub previous_owner: ContractAddress,
+    pub new_owner: ContractAddress,
+    pub points: u128,
 }

@@ -21,7 +21,7 @@ use crate::village::{
 };
 use super::{Deployment, authority, context, intent, recorded, signature};
 
-fn village_rules() -> VillageRules {
+pub fn village_rules() -> VillageRules {
     let data = read_txt(@FileTrait::new("tests/fixtures/village.txt"));
     let mut fields = data.span();
     let rules = Serde::deserialize(ref fields).unwrap();
@@ -33,7 +33,7 @@ fn setup(dev: bool) -> (Deployment, u32) {
     setup_config(dev, SettlementMode::Single, recorded::rules())
 }
 fn setup_config(dev: bool, mode: SettlementMode, game_rules: crate::rules::SliceRules) -> (Deployment, u32) {
-    let deployment = super::setup_with_structures(true, "StructuresDomain");
+    let deployment = super::setup_with_domains(true, "StructuresDomain", "TroopsDomain");
     let games = IGameDispatcher { contract_address: deployment.peers.season };
     start_cheat_caller_address(deployment.peers.season, authority());
     games.create_game(3, crate::game::GameRegistry { dev_mode_on: dev, ..games.game(1) }, game_rules);
@@ -181,7 +181,15 @@ fn production_pass_is_atomic_single_use_and_army_grant_uses_recorded_time() {
     assert!(run(deployment, Command::ReceiveVillageArmy(village_id), claimable_at));
     let granted = structures.structure(key).unwrap();
     assert!(granted.base.starting_troops_granted);
-    assert!(granted.troop_guards.delta.count == 10 * crate::rules::RESOURCE_PRECISION);
+    assert!(
+        crate::guards::IGuardsDispatcherTrait::guard(
+            crate::guards::IGuardsDispatcher { contract_address: deployment.peers.troops },
+            crate::guards::GuardKey { game_id: 3, structure_id: village_id, slot: 0 },
+        )
+            .troops
+            .count == 10
+            * crate::rules::RESOURCE_PRECISION,
+    );
     assert!(!run(deployment, Command::ReceiveVillageArmy(village_id), claimable_at));
 }
 

@@ -1,11 +1,10 @@
 use starknet::ContractAddress;
 use crate::discovery::Discovery;
 use crate::resources::ResourceKey;
-use crate::troops::{Coord, Troops};
+use crate::troops::Coord;
 
 #[derive(Copy, Drop, Serde, Default, Debug, PartialEq)]
 pub struct StructureBase {
-    pub troop_guard_count: u8,
     pub troop_explorer_count: u16,
     pub troop_max_guard_count: u8,
     pub troop_max_explorer_count: u16,
@@ -33,7 +32,8 @@ const LAYER_SCALE: u128 = 0x2000000000000000000000000;
 const COORDINATE_SCALE: u128 = 0x100000000;
 
 // The low limb holds counts, limits, time and flags; the high limb holds the two coordinates.
-// All 162 field bits are retained. The unused gap keeps decoding within u128 arithmetic.
+// All 154 field bits are retained; the former guard-count byte is unused. The unused gap keeps decoding within u128
+// arithmetic.
 pub impl StructureBasePacking of starknet::storage_access::StorePacking<StructureBase, felt252> {
     fn pack(value: StructureBase) -> felt252 {
         let granted = if value.starting_troops_granted {
@@ -41,8 +41,7 @@ pub impl StructureBasePacking of starknet::storage_access::StorePacking<Structur
         } else {
             0
         };
-        let low = value.troop_guard_count.into()
-            + value.troop_max_guard_count.into() * 256
+        let low = value.troop_max_guard_count.into() * 256
             + value.troop_explorer_count.into() * EXPLORER_COUNT_SCALE
             + value.troop_max_explorer_count.into() * EXPLORER_LIMIT_SCALE
             + value.created_at.into() * CREATED_AT_SCALE
@@ -60,7 +59,6 @@ pub impl StructureBasePacking of starknet::storage_access::StorePacking<Structur
     fn unpack(value: felt252) -> StructureBase {
         let value: u256 = value.into();
         StructureBase {
-            troop_guard_count: (value.low % 256).try_into().unwrap(),
             troop_max_guard_count: (value.low / 256 % 256).try_into().unwrap(),
             troop_explorer_count: (value.low / EXPLORER_COUNT_SCALE % 0x10000).try_into().unwrap(),
             troop_max_explorer_count: (value.low / EXPLORER_LIMIT_SCALE % 0x10000).try_into().unwrap(),
@@ -111,27 +109,10 @@ pub impl StructureMetadataPacking of starknet::storage_access::StorePacking<Stru
         }
     }
 }
-#[derive(Copy, Drop, Serde, Default, Debug, PartialEq, starknet::Store)]
-pub struct GuardTroops {
-    // slot 4
-    pub delta: Troops,
-    // slot 3
-    pub charlie: Troops,
-    // slot 2
-    pub bravo: Troops,
-    // slot 1
-    pub alpha: Troops,
-    pub delta_destroyed_tick: u32,
-    pub charlie_destroyed_tick: u32,
-    pub bravo_destroyed_tick: u32,
-    pub alpha_destroyed_tick: u32,
-}
-
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct Structure {
     pub owner: ContractAddress,
     pub base: StructureBase,
-    pub troop_guards: GuardTroops,
     pub troop_explorers: Span<u32>,
     pub resources_packed: u128,
     pub metadata: StructureMetadata,
@@ -140,7 +121,6 @@ pub struct Structure {
 pub struct StructureRecord {
     pub owner: ContractAddress,
     pub base: StructureBase,
-    pub troop_guards: GuardTroops,
     pub resources_packed: u128,
     pub metadata: StructureMetadata,
 }
@@ -168,7 +148,6 @@ pub mod StructureState {
         StoragePointerWriteAccess,
     };
     use crate::events::{RowMemberSet, RowSet};
-    use crate::stamina::StaminaTrait;
     use super::{ContractAddress, ResourceKey, Structure, StructureRecord};
     #[storage]
     pub struct Storage {
@@ -191,67 +170,6 @@ pub mod StructureState {
             base.starting_troops_granted = true;
             self.structures.entry((key.game_id, key.entity_id)).base.write(base);
             self.emit_base(key, base);
-        }
-        fn add_starting_guard(
-            ref self: ComponentState<TContractState>,
-            key: ResourceKey,
-            category: crate::troops::TroopType,
-            amount: u128,
-            rules: crate::rules::SliceRules,
-            timestamp: u64,
-        ) {
-            let mut record = self.record(key);
-            let mut troops = record.troop_guards.delta;
-            let interval = rules.tick_config.armies_tick_in_seconds;
-            let current_tick = timestamp / interval;
-            if troops.count == 0 {
-                let destroyed = record.troop_guards.delta_destroyed_tick;
-                if destroyed != 0 {
-                    let delay: u64 = rules.troop_limit_config.guard_resurrection_delay.into();
-                    let ticks: u32 = (delay / interval + if delay % interval == 0 {
-                        0
-                    } else {
-                        1
-                    }).try_into().unwrap();
-                    assert!(current_tick >= (destroyed + ticks).into(), "guard resurrection delay");
-                }
-                assert!(record.base.troop_guard_count < record.base.troop_max_guard_count, "structure guard limit");
-                record.base.troop_guard_count += 1;
-                troops.category = category;
-                troops.tier = crate::troops::TroopTier::T1;
-                self.structures.entry((key.game_id, key.entity_id)).base.write(record.base);
-                self.emit_base(key, record.base);
-            } else {
-                assert!(
-                    troops.category == category && troops.tier == crate::troops::TroopTier::T1,
-                    "incorrect category or tier",
-                );
-            }
-            troops
-                .stamina
-                .refill(ref troops.boosts, troops.category, troops.tier, rules.troop_stamina_config, current_tick);
-            if troops.count == 0 {
-                troops.stamina.amount = 0;
-            }
-            troops.stamina.revert_initial_amount(rules.troop_stamina_config, current_tick);
-            troops.count += amount;
-            let limit: u128 = crate::troops::max_army_size(rules.troop_limit_config, record.base.level, troops.tier)
-                .into();
-            assert!(troops.count <= limit * crate::rules::RESOURCE_PRECISION, "structure guard troop limit");
-            record.troop_guards.delta = troops;
-            self.structures.entry((key.game_id, key.entity_id)).troop_guards.delta.write(troops);
-            let mut values = array![];
-            record.troop_guards.serialize(ref values);
-            self
-                .emit(
-                    RowMemberSet {
-                        version: 1,
-                        model: 'Structure',
-                        member: 'troop_guards',
-                        keys: array![key.game_id.into(), key.entity_id.into()].span(),
-                        values: values.span(),
-                    },
-                );
         }
         fn emit_base(ref self: ComponentState<TContractState>, key: ResourceKey, base: super::StructureBase) {
             let mut values = array![];
@@ -287,7 +205,6 @@ pub mod StructureState {
                 Structure {
                     owner: record.owner,
                     base: record.base,
-                    troop_guards: record.troop_guards,
                     troop_explorers: explorers.span(),
                     resources_packed: record.resources_packed,
                     metadata: record.metadata,
@@ -401,7 +318,6 @@ pub trait IStructures<T> {
     fn structure_owner(self: @T, key: ResourceKey) -> ContractAddress;
     fn hyperstructure(self: @T, key: ResourceKey) -> Option<Hyperstructure>;
     fn provision_spire(ref self: T, game_id: u32, coord: Coord) -> u32;
-    fn provision_producer(ref self: T, key: ResourceKey, output: u128);
     fn provision_realm(
         ref self: T, game_id: u32, actor: ContractAddress, coord: Coord, grants: Span<(u8, u128)>,
     ) -> u32;
@@ -428,7 +344,7 @@ pub mod StructuresDomain {
     use crate::discovery::Discovery;
     use crate::events::RowSet;
     use crate::game::{IGameDispatcher, IGameDispatcherTrait, assert_playing};
-    use crate::geometry::{neighbor, tile_key};
+    use crate::geometry::tile_key;
     use crate::lifecycle::Lifecycle;
     use crate::map::{IMapDispatcher, IMapDispatcherTrait};
     use crate::mines::{IMineRulesDispatcher, IMineRulesDispatcherTrait, MinePoolKey};
@@ -442,7 +358,7 @@ pub mod StructuresDomain {
         ISettlementDisplacementDispatcher, ISettlementDisplacementDispatcherTrait, ISettlementViewsDispatcher,
         ISettlementViewsDispatcherTrait,
     };
-    use crate::troops::{Coord, IDiscoveryGuardsDispatcherTrait};
+    use crate::troops::Coord;
     use crate::upgrades::IUpgradeRulesDispatcherTrait;
     use super::{Structure, StructureBase, StructureRecord, StructureState};
     component!(path: FaithOwnershipState, storage: faith, event: FaithEvent);
@@ -560,27 +476,6 @@ pub mod StructuresDomain {
         }
         fn structure(self: @ContractState, key: ResourceKey) -> Option<Structure> {
             self.structures.structure(key)
-        }
-        fn provision_producer(ref self: ContractState, key: ResourceKey, output: u128) {
-            self.assert_authority();
-            assert!(
-                self.game_dispatcher().game(key.game_id).dev_mode_on, "fixture provisioning requires development game",
-            );
-            let structure = self.structures.record(key);
-            assert!(structure.base.category == 1, "producer fixture requires realm");
-            let coord = Coord { alt: false, x: structure.base.coord_x, y: structure.base.coord_y };
-            let rules = self.game_dispatcher().rules(key.game_id);
-            self
-                .create_producer(
-                    key,
-                    coord,
-                    output,
-                    self.resources_dispatcher().resource_rule(key.game_id, 24).realm_rate,
-                    24,
-                    26,
-                    rules.building_config.base_population,
-                    get_block_timestamp(),
-                );
         }
         fn provision_realm(
             ref self: ContractState, game_id: u32, actor: ContractAddress, coord: Coord, grants: Span<(u8, u128)>,
@@ -930,14 +825,44 @@ pub mod StructuresDomain {
             if record.owner == command.new_owner {
                 return;
             }
-            if record.owner != 0.try_into().unwrap() && rules.faith_enabled {
-                if let Some(accrual) = self
-                    .faith
-                    .transfer(game_id, command.entity_id, command.new_owner, context.timestamp, game.end_at) {
-                    self.emit_faith_accrual(game_id, accrual, context.timestamp);
-                }
+            self.change_owner(key, command.new_owner, context.timestamp);
+        }
+    }
+    #[abi(embed_v0)]
+    impl Capture of crate::guards::IStructureCapture<ContractState> {
+        fn capture_structure(ref self: ContractState, key: ResourceKey, capturing_home: u32, timestamp: u64) {
+            self.assert_troops();
+            let record = self.structures.record(key);
+            let owner = self.structures.record(ResourceKey { game_id: key.game_id, entity_id: capturing_home }).owner;
+            assert!(owner != 0.try_into().unwrap(), "capturing home is unowned");
+            self.change_owner(key, owner, timestamp);
+            if record.base.category == 8 {
+                crate::bitcoin::IBitcoinFundingDispatcherTrait::bitcoin_mine_captured(
+                    crate::bitcoin::IBitcoinFundingDispatcher {
+                        contract_address: self.lifecycle.require_active().resources,
+                    },
+                    key,
+                    timestamp,
+                );
             }
-            self.structures.transfer_owner(key, command.new_owner);
+            let points = if record.owner == 0.try_into().unwrap() {
+                self.game_dispatcher().register_capture(key.game_id, owner, record.base.category)
+            } else {
+                0
+            };
+            if record.owner == 0.try_into().unwrap() {
+                self
+                    .emit_structure_story(
+                        key,
+                        owner,
+                        Story::StructureCapturedStory(
+                            crate::ownership::StructureCapturedStory {
+                                previous_owner: record.owner, new_owner: owner, points,
+                            },
+                        ),
+                        timestamp,
+                    );
+            }
         }
     }
     #[abi(embed_v0)]
@@ -967,7 +892,6 @@ pub mod StructuresDomain {
         StructureRecord {
             owner: actor,
             base: StructureBase {
-                troop_guard_count: 0,
                 troop_explorer_count: 0,
                 troop_max_guard_count: 1,
                 troop_max_explorer_count: 1,
@@ -979,7 +903,6 @@ pub mod StructuresDomain {
                 starting_troops_granted: false,
                 alt: coord.alt,
             },
-            troop_guards: Default::default(),
             resources_packed: 0,
             metadata: Default::default(),
         }
@@ -999,18 +922,15 @@ pub mod StructuresDomain {
             let id = self.game_dispatcher().allocate_entity(game_id);
             let key = ResourceKey { game_id, entity_id: id };
             let (mut record, occupier, capacity) = super::discovered_structure(
-                coord,
-                discovery,
-                rules.structure_capacity_config,
-                timestamp,
-                crate::troops::IDiscoveryGuardsDispatcher { contract_address: self.lifecycle.require_active().troops }
-                    .discovery_guards(game_id, discovery, seed, timestamp),
+                coord, discovery, rules.structure_capacity_config, timestamp,
             );
             self.reveal_structure_tile(game_id, coord);
             if discovery != Discovery::Mine {
-                self.reveal_surroundings(game_id, coord);
+                self.map_dispatcher().reveal_structure_surroundings(game_id, coord);
             }
-            self.resources_dispatcher().initialize_resources(key, capacity * RESOURCE_PRECISION);
+            self
+                .resources_dispatcher()
+                .initialize_resources(key, capacity * RESOURCE_PRECISION, record.base.category, timestamp);
             match discovery {
                 Discovery::Mine => {
                     let (kind, config, cap) = IMineRulesDispatcher {
@@ -1035,6 +955,13 @@ pub mod StructuresDomain {
                 Discovery::None => panic!("cannot create empty discovery"),
             }
             self.structures.create(key, record);
+            crate::guards::IGuardsDispatcherTrait::initialize_discovery_guards(
+                crate::guards::IGuardsDispatcher { contract_address: self.lifecycle.require_active().troops },
+                key,
+                discovery,
+                seed,
+                timestamp,
+            );
             self.map_dispatcher().occupy(tile_key(game_id, coord), id, if completed {
                 11
             } else {
@@ -1075,7 +1002,11 @@ pub mod StructuresDomain {
             } else {
                 rules.structure_capacity_config.realm_capacity
             };
-            self.resources_dispatcher().initialize_resources(key, capacity.into() * RESOURCE_PRECISION);
+            self
+                .resources_dispatcher()
+                .initialize_resources(
+                    key, capacity.into() * RESOURCE_PRECISION, record.base.category, record.base.created_at.into(),
+                );
             key
         }
         fn emit_structure_story(
@@ -1156,14 +1087,19 @@ pub mod StructuresDomain {
             let grants = self.settlement_rules().realm_grants(key.game_id);
             let category = *grants.starting_troops.at((biome - 1).into());
             let resource_type = crate::troops::troop_resource(category, 0);
-            let rules = self.game_dispatcher().rules(key.game_id);
             for grant in resources {
                 let kind = *grant.resource_type;
                 let amount = *grant.amount;
                 if kind == resource_type {
                     self.resources_dispatcher().grant_resource(key, kind, amount + guards, timestamp);
                     self.spend(key, kind, guards, timestamp);
-                    self.structures.add_starting_guard(key, category, guards, rules, timestamp);
+                    crate::guards::IGuardsDispatcherTrait::add_starting_guard(
+                        crate::guards::IGuardsDispatcher { contract_address: self.lifecycle.require_active().troops },
+                        key,
+                        category,
+                        guards,
+                        timestamp,
+                    );
                     self
                         .emit_structure_story(
                             key,
@@ -1201,6 +1137,17 @@ pub mod StructuresDomain {
                     },
                 );
         }
+        fn change_owner(ref self: ContractState, key: ResourceKey, owner: ContractAddress, timestamp: u64) {
+            let record = self.structures.record(key);
+            let rules = self.game_dispatcher().rules(key.game_id);
+            if record.owner != 0.try_into().unwrap() && rules.faith_enabled {
+                let game = self.game_dispatcher().game(key.game_id);
+                if let Some(accrual) = self.faith.transfer(key.game_id, key.entity_id, owner, timestamp, game.end_at) {
+                    self.emit_faith_accrual(key.game_id, accrual, timestamp);
+                }
+            }
+            self.structures.transfer_owner(key, owner);
+        }
         fn emit_faith_accrual(
             ref self: ContractState, game_id: u32, accrual: crate::ownership::Accrual, timestamp: u64,
         ) {
@@ -1223,15 +1170,6 @@ pub mod StructuresDomain {
                         timestamp,
                     },
                 );
-        }
-        fn reveal_surroundings(ref self: ContractState, game_id: u32, coord: Coord) {
-            for direction in 0_u8..6 {
-                let key = tile_key(game_id, neighbor(coord, direction));
-                let data = self.map_dispatcher().tile(key).map(|tile| tile.data).unwrap_or(0);
-                if (data / 0x20000000000) % 0x100 == 0 {
-                    self.map_dispatcher().reveal(key, self.map_dispatcher().biome(key));
-                }
-            }
         }
         fn erect_building(
             ref self: ContractState,
@@ -1510,12 +1448,11 @@ fn discovered_structure(
     discovery: crate::discovery::Discovery,
     capacities: crate::rules::StructureCapacityConfig,
     timestamp: u64,
-    guards: GuardTroops,
 ) -> (StructureRecord, u8, u128) {
-    let (category, occupier, level, count, capacity) = match discovery {
-        Discovery::Mine => (4_u8, 12_u8, 0_u8, 1_u8, capacities.fragment_mine_capacity),
-        Discovery::Hyperstructure => (2, 9, 3, 3, capacities.hyperstructure_capacity),
-        Discovery::BitcoinMine => (8, 38, 3, 4, capacities.bitcoin_mine_capacity),
+    let (category, occupier, level, capacity) = match discovery {
+        Discovery::Mine => (4_u8, 12_u8, 0_u8, capacities.fragment_mine_capacity),
+        Discovery::Hyperstructure => (2, 9, 3, capacities.hyperstructure_capacity),
+        Discovery::BitcoinMine => (8, 38, 3, capacities.bitcoin_mine_capacity),
         Discovery::None => panic!("cannot create empty discovery"),
     };
     assert!(
@@ -1527,7 +1464,6 @@ fn discovered_structure(
         4
     };
     let base = StructureBase {
-        troop_guard_count: count,
         troop_explorer_count: 0,
         troop_max_guard_count: max_guards,
         troop_max_explorer_count: 0,
@@ -1540,9 +1476,7 @@ fn discovered_structure(
         alt: coord.alt,
     };
     (
-        StructureRecord {
-            owner: 0.try_into().unwrap(), base, troop_guards: guards, resources_packed: 0, metadata: Default::default(),
-        },
+        StructureRecord { owner: 0.try_into().unwrap(), base, resources_packed: 0, metadata: Default::default() },
         occupier,
         capacity.into(),
     )

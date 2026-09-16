@@ -1,3 +1,4 @@
+use crate::troops::Coord;
 // TileOpt preserves the original packed wire layout.
 const LAYER_FLAG: u128 = 0x80000000000000000000000000000000;
 const COL_SCALE: u128 = 0x200000000000000000000;
@@ -163,6 +164,7 @@ pub trait IMap<T> {
     ) -> crate::discovery::Discovery;
     fn tile(self: @T, key: TileKey) -> Option<TileOpt>;
     fn reveal(ref self: T, key: TileKey, biome: u8);
+    fn reveal_structure_surroundings(ref self: T, game_id: u32, coord: Coord);
     fn occupy(ref self: T, key: TileKey, entity_id: u32, category: u8, is_structure: bool);
     fn upgrade_realm(ref self: T, key: TileKey, entity_id: u32, wonder: bool, level: u8);
     fn vacate(ref self: T, key: TileKey, entity_id: u32);
@@ -371,6 +373,16 @@ pub mod MapDomain {
         }
         fn tile(self: @ContractState, key: TileKey) -> Option<TileOpt> {
             self.map.tile(key)
+        }
+        fn reveal_structure_surroundings(ref self: ContractState, game_id: u32, coord: Coord) {
+            assert!(get_caller_address() == self.lifecycle.require_active().structures, "only structures domain");
+            for direction in 0_u8..6 {
+                let key = tile_key(game_id, crate::geometry::neighbor(coord, direction));
+                let data = self.map.tile(key).map(|tile| tile.data).unwrap_or(0);
+                if data / BIOME_SCALE % BYTE_RANGE == 0 {
+                    self.map.reveal(key, self.biome(key));
+                }
+            }
         }
         fn reveal(ref self: ContractState, key: TileKey, biome: u8) {
             self.assert_domain_caller();

@@ -239,6 +239,9 @@ pub mod MapUpgradeFixture {
         fn tile(self: @ContractState, key: TileKey) -> Option<TileOpt> {
             self.map.tile(key)
         }
+        fn reveal_structure_surroundings(ref self: ContractState, game_id: u32, coord: crate::troops::Coord) {
+            panic!("storage upgrade fixture")
+        }
         fn reveal(ref self: ContractState, key: TileKey, biome: u8) {
             let peers = self.lifecycle.require_active();
             assert!(starknet::get_caller_address() == peers.troops, "only troops domain");

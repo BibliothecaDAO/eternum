@@ -9,6 +9,7 @@ use snforge_std::{start_cheat_block_timestamp_global, start_cheat_caller_address
 use starknet::ContractAddress;
 use world_native::commands::{Command, command_commitment};
 use world_native::game::{IGameDispatcher, IGameDispatcherTrait};
+use world_native::guards::{GuardKey, IGuardsDispatcher, IGuardsDispatcherTrait};
 use world_native::lifecycle::{IDomainDispatcher, IDomainDispatcherTrait};
 use world_native::resources::{IResourcesDispatcher, IResourcesDispatcherTrait, ResourceKey, ResourceRule};
 use world_native::season::{ISeasonDispatcher, ISeasonDispatcherTrait};
@@ -271,9 +272,14 @@ fn delayed_provisioning_starts_labor_once_without_regranting_starting_troops() {
     let key = ResourceKey { game_id: 8, entity_id: 1 };
     let before = structures.structure(key).unwrap();
     assert!(before.base.starting_troops_granted);
-    assert!(before.base.troop_guard_count == 1);
-    assert!(before.troop_guards.delta.count == 1500 * world_native::rules::RESOURCE_PRECISION);
-    let troop_type = world_native::troops::troop_resource(before.troop_guards.delta.category, 0);
+    let guards = IGuardsDispatcher { contract_address: peers.troops };
+    let guard_key = GuardKey { game_id: 8, structure_id: 1, slot: 0 };
+    let before_guard = guards.guard(guard_key);
+    assert!(before_guard.troops.count == 1500 * world_native::rules::RESOURCE_PRECISION);
+    for slot in 1_u8..4 {
+        assert!(guards.guard(GuardKey { slot, ..guard_key }) == Default::default());
+    }
+    let troop_type = world_native::troops::troop_resource(before_guard.troops.category, 0);
     let slot = world_native::resources::ResourceSlot { game_id: 8, entity_id: 1, resource_type: troop_type };
     let troop_balance = resource_store.resource_balance(slot);
     let (action, envelope) = accepted(season, Command::ProvisionRealm(1), 1201);
@@ -281,7 +287,7 @@ fn delayed_provisioning_starts_labor_once_without_regranting_starting_troops() {
     submit(season, action, envelope);
     let results = IRecordedExecutionViewsDispatcher { contract_address: season };
     assert!(results.get_result(3).status == 1, "recorded provisioning rejected after outage");
-    assert!(structures.structure(key).unwrap().troop_guards == before.troop_guards);
+    assert!(guards.guard(guard_key) == before_guard);
     assert!(resource_store.resource_balance(slot) == troop_balance);
     let labor = world_native::resources::ResourceSlot { resource_type: 23, ..slot };
     let production = resource_store.resource_production(labor);

@@ -107,7 +107,8 @@
     "bitcoin_mine_config": {
       "enabled": true,
       "prize_per_phase": 1000000000,
-      "min_labor_per_contribution": 100000000000
+      "min_labor_per_contribution": 100000000000,
+      "owner_cut_bps": 2000
     },
     "victory_points_grant_config": {
       "hyp_points_per_second": "1000000",

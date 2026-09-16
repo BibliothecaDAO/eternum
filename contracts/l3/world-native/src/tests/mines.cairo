@@ -184,9 +184,33 @@ fn discovered_mines_use_kind_production_on_both_layers_without_revealing_neighbo
         assert_eq!(structure.metadata.mine_kind, kind);
         assert_eq!(structure.base.category, 4);
         assert_eq!(structure_coord(structure.base), coord);
-        assert_eq!(structure.troop_guards.delta.category, TroopType::Crossbowman);
-        assert_eq!(structure.troop_guards.delta.tier, TroopTier::T1);
-        assert_eq!(structure.base.troop_guard_count, 1);
+        assert_eq!(
+            crate::guards::IGuardsDispatcherTrait::guard(
+                crate::guards::IGuardsDispatcher { contract_address: deployment.peers.troops },
+                crate::guards::GuardKey { game_id: 3, structure_id: id, slot: 0 },
+            )
+                .troops
+                .category,
+            TroopType::Crossbowman,
+        );
+        assert_eq!(
+            crate::guards::IGuardsDispatcherTrait::guard(
+                crate::guards::IGuardsDispatcher { contract_address: deployment.peers.troops },
+                crate::guards::GuardKey { game_id: 3, structure_id: id, slot: 0 },
+            )
+                .troops
+                .tier,
+            TroopTier::T1,
+        );
+        for slot in 1_u8..4 {
+            assert_eq!(
+                crate::guards::IGuardsDispatcherTrait::guard(
+                    crate::guards::IGuardsDispatcher { contract_address: peers.troops },
+                    crate::guards::GuardKey { game_id: 3, structure_id: id, slot },
+                ),
+                Default::default(),
+            );
+        }
         let production = resources
             .resource_production(ResourceSlot { game_id: 3, entity_id: id, resource_type: config.resource_type });
         assert_eq!(production.production_rate, config.production_rate);

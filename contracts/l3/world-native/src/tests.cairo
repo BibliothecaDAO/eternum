@@ -1,3 +1,4 @@
+mod bitcoin;
 mod fixtures;
 mod mines;
 mod production;

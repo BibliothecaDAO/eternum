@@ -277,13 +277,6 @@ pub trait ITroops<T> {
     fn authorized_explorer(self: @T, key: ExplorerKey, actor: starknet::ContractAddress) -> ExplorerTroops;
 }
 
-#[starknet::interface]
-pub trait IDiscoveryGuards<T> {
-    fn discovery_guards(
-        self: @T, game_id: u32, discovery: crate::discovery::Discovery, seed: u256, timestamp: u64,
-    ) -> crate::structures::GuardTroops;
-}
-
 #[starknet::contract]
 pub mod TroopsDomain {
     use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
@@ -299,6 +292,8 @@ pub mod TroopsDomain {
     use crate::stamina::StaminaTrait;
     use crate::structures::{IStructuresDispatcher, IStructuresDispatcherTrait, Structure};
     use super::{Coord, ExplorerKey, ExplorerTroops, TroopState, TroopTier, TroopType, Troops};
+    component!(path: crate::guards::GuardState, storage: guards, event: GuardEvent);
+    impl GuardInternal = crate::guards::GuardState::InternalImpl<ContractState>;
     component!(path: Lifecycle, storage: lifecycle, event: LifecycleEvent);
     component!(path: TroopState, storage: troops, event: TroopEvent);
     #[abi(embed_v0)]
@@ -312,10 +307,13 @@ pub mod TroopsDomain {
         #[substorage(v0)]
         troops: TroopState::Storage,
         agent_owners: starknet::storage::Map<(u32, u32), ContractAddress>,
+        #[substorage(v0)]
+        guards: crate::guards::GuardState::Storage,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
+        GuardEvent: crate::guards::GuardState::Event,
         LifecycleEvent: Lifecycle::Event,
         TroopEvent: TroopState::Event,
         BattleEvent: super::BattleEvent,
@@ -327,12 +325,67 @@ pub mod TroopsDomain {
         self.lifecycle.initialize(authority);
     }
     #[abi(embed_v0)]
-    impl DiscoveryGuards of super::IDiscoveryGuards<ContractState> {
-        fn discovery_guards(
-            self: @ContractState, game_id: u32, discovery: crate::discovery::Discovery, seed: u256, timestamp: u64,
-        ) -> crate::structures::GuardTroops {
+    impl Guards of crate::guards::IGuards<ContractState> {
+        fn guard(self: @ContractState, key: crate::guards::GuardKey) -> crate::guards::Guard {
+            self.guards.guard(key)
+        }
+        fn initialize_discovery_guards(
+            ref self: ContractState,
+            key: ResourceKey,
+            discovery: crate::discovery::Discovery,
+            seed: u256,
+            timestamp: u64,
+        ) {
+            assert!(get_caller_address() == self.lifecycle.require_active().structures, "only structures domain");
             assert!(discovery != crate::discovery::Discovery::None, "cannot guard empty discovery");
-            super::discovery_guards(discovery, seed, self.game_dispatcher().rules(game_id), timestamp)
+            let guards = super::discovery_guards(discovery, seed, self.game_dispatcher().rules(key.game_id), timestamp);
+            for slot in 0..guards.len() {
+                let troops = *guards.at(slot);
+                let slot: u8 = slot.try_into().unwrap();
+                let guard_key = crate::guards::GuardKey { game_id: key.game_id, structure_id: key.entity_id, slot };
+                assert!(self.guards.guard(guard_key) == Default::default(), "guards already initialized");
+                self.guards.save(guard_key, crate::guards::Guard { troops, destroyed_tick: 0 });
+            }
+        }
+        fn add_starting_guard(
+            ref self: ContractState, key: ResourceKey, category: TroopType, amount: u128, timestamp: u64,
+        ) {
+            assert!(get_caller_address() == self.lifecycle.require_active().structures, "only structures domain");
+            let base = self.structures_dispatcher().structure(key).expect('missing guard structure').base;
+            assert!(base.troop_max_guard_count > 0, "structure guard limit");
+            let guard_key = crate::guards::GuardKey { game_id: key.game_id, structure_id: key.entity_id, slot: 0 };
+            let mut guard = self.guards.guard(guard_key);
+            let mut troops = guard.troops;
+            let rules = self.game_dispatcher().rules(key.game_id);
+            let interval = rules.tick_config.armies_tick_in_seconds;
+            let current_tick = timestamp / interval;
+            if troops.count == 0 {
+                if guard.destroyed_tick != 0 {
+                    let delay: u64 = rules.troop_limit_config.guard_resurrection_delay.into();
+                    let ticks = delay / interval + if delay % interval == 0 {
+                        0
+                    } else {
+                        1
+                    };
+                    assert!(current_tick >= guard.destroyed_tick.into() + ticks, "guard resurrection delay");
+                }
+                troops.category = category;
+                troops.tier = TroopTier::T1;
+            } else {
+                assert!(troops.category == category && troops.tier == TroopTier::T1, "incorrect category or tier");
+            }
+            troops
+                .stamina
+                .refill(ref troops.boosts, troops.category, troops.tier, rules.troop_stamina_config, current_tick);
+            if troops.count == 0 {
+                troops.stamina.amount = 0;
+            }
+            troops.stamina.revert_initial_amount(rules.troop_stamina_config, current_tick);
+            troops.count += amount;
+            let limit: u128 = super::max_army_size(rules.troop_limit_config, base.level, troops.tier).into();
+            assert!(troops.count <= limit * RESOURCE_PRECISION, "structure guard troop limit");
+            guard.troops = troops;
+            self.guards.save(guard_key, guard);
         }
     }
     #[abi(embed_v0)]
@@ -549,6 +602,124 @@ pub mod TroopsDomain {
                 );
             self.game_dispatcher().allocate_entity(game_id);
             self.game_dispatcher().allocate_entity(game_id);
+        }
+    }
+    #[abi(embed_v0)]
+    impl GuardCombat of crate::guards::IGuardCombat<ContractState> {
+        fn battle_guard(
+            ref self: ContractState, game_id: u32, actor: ContractAddress, command: Battle, context: ExecutionContext,
+        ) {
+            let rules = self.authorize(game_id, context);
+            let key = ExplorerKey { game_id, explorer_id: command.attacker_id };
+            let mut attacker = self.owned_explorer(key, actor);
+            let target_key = ResourceKey { game_id, entity_id: command.defender_id };
+            let target = self.structures_dispatcher().structure(target_key).expect('missing guarded structure');
+            assert!(target.owner != actor, "actor owns defender");
+            assert!(attacker.troops.count != 0, "aggressor has no troops");
+            if attacker.owner != super::AGENT_HOME {
+                self.assert_battle_immunity(game_id, attacker.owner, rules, context.timestamp);
+            }
+            self.assert_battle_immunity(game_id, command.defender_id, rules, context.timestamp);
+            let destination = crate::structures::structure_coord(target.base);
+            let stride: u128 = if destination.alt {
+                15
+            } else {
+                1
+            };
+            let separation = distance(attacker.coord, destination);
+            assert!(
+                attacker.coord.alt == destination.alt
+                    && separation > 0
+                    && separation <= attacker.troops.attack_range().into()
+                    * stride,
+                "structure is out of range",
+            );
+            let adjacent = separation == stride;
+            let slot = self.guards.next(target_key, target.base.troop_max_guard_count);
+            let tick = context.timestamp / rules.tick_config.armies_tick_in_seconds;
+            let mut guard: Troops = Default::default();
+            if let Some(slot) = slot {
+                guard = self.guards.guard(slot).troops;
+                let before = attacker.troops.count;
+                let defender = ExplorerTroops { owner: command.defender_id, coord: destination, troops: guard };
+                let combat = CombatContext {
+                    defender_is_structure_guard: true, ..self.combat_context(game_id, attacker, defender, context),
+                };
+                attacker
+                    .troops
+                    .attack_with_context(
+                        ref guard,
+                        combat,
+                        rules.troop_stamina_config,
+                        rules.troop_damage_config,
+                        tick,
+                        rules.tick_config.armies_tick_in_seconds,
+                    );
+                self.finish_battle(key, attacker, before);
+                let mut row = self.guards.guard(slot);
+                if guard.count == 0 {
+                    guard.stamina.reset();
+                    row.destroyed_tick = tick.try_into().unwrap();
+                }
+                row.troops = guard;
+                self.guards.save(slot, row);
+            } else {
+                assert!(adjacent, "structure claim requires adjacency");
+                attacker
+                    .troops
+                    .stamina
+                    .spend(
+                        ref attacker.troops.boosts,
+                        attacker.troops.category,
+                        attacker.troops.tier,
+                        rules.troop_stamina_config,
+                        rules.troop_stamina_config.stamina_attack_req.into(),
+                        tick,
+                        true,
+                    );
+                self.troops.save(key, attacker);
+            }
+            if adjacent
+                && attacker.troops.count != 0
+                && attacker.owner != super::AGENT_HOME
+                && (target.base.category != 5 || rules.blitz_mode_on)
+                && self.guards.next(target_key, target.base.troop_max_guard_count).is_none() {
+                self.guards.reset(target_key);
+                crate::guards::IStructureCaptureDispatcherTrait::capture_structure(
+                    crate::guards::IStructureCaptureDispatcher {
+                        contract_address: self.lifecycle.require_active().structures,
+                    },
+                    target_key,
+                    attacker.owner,
+                    context.timestamp,
+                );
+            }
+            if slot.is_some() {
+                let winner = if attacker.troops.count == 0 && guard.count != 0 {
+                    command.defender_id
+                } else if guard.count == 0 && attacker.troops.count != 0 {
+                    attacker.owner
+                } else {
+                    0
+                };
+                self
+                    .emit(
+                        super::BattleEvent {
+                            version: 1,
+                            game_id,
+                            attacker_id: command.attacker_id,
+                            defender_id: command.defender_id,
+                            attacker_owner: attacker.owner,
+                            defender_owner: 0,
+                            winner_id: winner,
+                            coord: destination,
+                            max_reward: array![].span(),
+                            timestamp: context.timestamp,
+                        },
+                    );
+                self.game_dispatcher().allocate_entity(game_id);
+                self.game_dispatcher().allocate_entity(game_id);
+            }
         }
     }
     #[abi(embed_v0)]
@@ -922,7 +1093,7 @@ fn spend_stamina(
 
 fn discovery_guards(
     discovery: crate::discovery::Discovery, seed: u256, rules: crate::rules::SliceRules, timestamp: u64,
-) -> crate::structures::GuardTroops {
+) -> Span<Troops> {
     use crate::troops::{TroopTier, TroopType};
     let mine = discovery == crate::discovery::Discovery::Mine;
     let hyperstructure = discovery == crate::discovery::Discovery::Hyperstructure;
@@ -938,7 +1109,7 @@ fn discovery_guards(
     } else {
         TroopTier::T2
     };
-    let mut guards: crate::structures::GuardTroops = Default::default();
+    let mut guards = array![];
     for slot in 0_u8..count {
         let category = if mine {
             TroopType::Crossbowman
@@ -955,14 +1126,9 @@ fn discovery_guards(
             0
         };
         let troops = discovery_guard(category, tier, guard_seed, rules, timestamp);
-        match slot {
-            0 => guards.delta = troops,
-            1 => guards.charlie = troops,
-            2 => guards.bravo = troops,
-            _ => guards.alpha = troops,
-        };
+        guards.append(troops);
     }
-    guards
+    guards.span()
 }
 
 fn discovery_guard(

@@ -9,6 +9,12 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
         meaning:
           "Zero balance or inactive production while the resource owner exists; no resource owner after its weight row is deleted.",
       };
+    if (row.name === "Guard")
+      row.absence = {
+        parent: "Structure",
+        value: "zero",
+        meaning: "No troops or resurrection delay in this guard slot.",
+      };
     if (row.name === "ResourceAllowance")
       row.absence = { value: "zero", meaning: "No approval for this owner, recipient and resource." };
     if (row.name === "ProductionBonus")
@@ -20,6 +26,15 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
   };
   const domainKey = [{ name: "address", type: struct("lifecycle::Peers")[0].type }];
   return [
+    model("Guard", ["troops"], "game", struct("guards::GuardKey"), struct("guards::Guard")),
+    model("BitcoinMine", ["resources"], "game", struct("resources::ResourceKey"), struct("bitcoin::MineFunding")),
+    model("BitcoinClaim", ["resources"], "game", struct("bitcoin::ClaimKey"), [
+      { name: "claimed", type: "core::bool" },
+    ]),
+    model("BitcoinPhase", ["resources"], "game", struct("bitcoin::PhaseKey"), struct("bitcoin::Phase")),
+    model("BitcoinContribution", ["resources"], "game", struct("bitcoin::ContributionKey"), [
+      { name: "labor", type: "core::integer::u128" },
+    ]),
     model("MineKindConfig", ["resources"], "game", struct("mines::MineKindKey"), struct("mines::MineKindConfig")),
     model("MinePool", ["resources"], "game", struct("mines::MinePoolKey"), [
       { name: "weights", type: "core::array::Span::<world_native::mines::MineWeight>" },
@@ -289,6 +304,23 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
 
 // Paths describe observable values, not serialized row positions. Oracle adapters live only in the parity fixture.
 const behaviouralFacts = {
+  Guard: { domain: "troops", fields: { troops: "troops", destroyedAt: "destroyed_tick" } },
+  BitcoinMine: {
+    domain: "bitcoin",
+    fields: {
+      eligibleFrom: "eligible_from",
+      nextClaim: "next_phase",
+      unsplitCarry: "unsplit_carry",
+      winnerCarry: "winner_carry",
+      ownerCarry: "owner_carry",
+    },
+  },
+  BitcoinClaim: { domain: "bitcoin", fields: { claimed: "claimed" } },
+  BitcoinPhase: {
+    domain: "bitcoin",
+    fields: { labor: "total_labor", contributors: "contributors", state: "state", root: "root" },
+  },
+  BitcoinContribution: { domain: "bitcoin", fields: { labor: "labor" } },
   RealmTraits: { domain: "realm/season", fields: { wonder: "wonder", order: "order", resources: "resources" } },
   RealmCatalogue: { domain: "realm/season", fields: { initialized: "initialized" } },
   ResourceBalance: { domain: "resources", fields: { balance: "balance" } },
@@ -419,7 +451,6 @@ const behaviouralFacts = {
       column: "base.coord_x",
       row: "base.coord_y",
       foundedAt: "base.created_at",
-      guards: "troop_guards",
       explorers: "troop_explorers",
       explorerLimit: "base.troop_max_explorer_count",
       guardLimit: "base.troop_max_guard_count",

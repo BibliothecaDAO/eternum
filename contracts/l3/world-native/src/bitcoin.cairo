@@ -1,0 +1,292 @@
+use starknet::ContractAddress;
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct PhaseKey {
+    pub game_id: u32,
+    pub phase: u64,
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct ContributionKey {
+    pub game_id: u32,
+    pub phase: u64,
+    pub player: ContractAddress,
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq, Default, starknet::Store)]
+pub enum PhaseStatus {
+    #[default]
+    Open,
+    Closed,
+    Bound,
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq, Default, starknet::Store)]
+pub struct Phase {
+    pub total_labor: u128,
+    pub contributors: u32,
+    pub state: PhaseStatus,
+    pub root: u256,
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct ContributeLabor {
+    pub structure_id: u32,
+    pub amount: u128,
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq, Default, starknet::Store)]
+pub struct MineFunding {
+    pub eligible_from: u64,
+    pub next_phase: u64,
+    pub unsplit_carry: u128,
+    pub winner_carry: u128,
+    pub owner_carry: u128,
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct ClaimKey {
+    pub game_id: u32,
+    pub phase: u64,
+    pub mine_id: u32,
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct ClaimPhase {
+    pub phase: u64,
+    pub mine_ids: Span<u32>,
+}
+
+#[starknet::interface]
+pub trait IBitcoinFunding<T> {
+    fn bitcoin_mine_captured(ref self: T, key: crate::resources::ResourceKey, timestamp: u64);
+}
+
+#[starknet::interface]
+pub trait IBitcoinViews<T> {
+    fn bitcoin_mine(self: @T, key: crate::resources::ResourceKey) -> MineFunding;
+    fn bitcoin_claimed(self: @T, key: ClaimKey) -> bool;
+    fn bitcoin_phase(self: @T, key: PhaseKey) -> Phase;
+    fn bitcoin_contribution(self: @T, key: ContributionKey) -> u128;
+    fn bitcoin_contributor(self: @T, key: PhaseKey, index: u32) -> ContractAddress;
+}
+
+#[starknet::interface]
+pub trait IBitcoinCommands<T> {
+    fn claim_bitcoin_phase(
+        ref self: T,
+        game_id: u32,
+        actor: ContractAddress,
+        command: ClaimPhase,
+        context: crate::commands::ExecutionContext,
+    );
+    fn contribute_bitcoin_labor(
+        ref self: T,
+        game_id: u32,
+        actor: ContractAddress,
+        command: ContributeLabor,
+        context: crate::commands::ExecutionContext,
+    );
+    fn close_bitcoin_phase(
+        ref self: T, game_id: u32, actor: ContractAddress, phase: u64, context: crate::commands::ExecutionContext,
+    );
+    fn bind_bitcoin_phase(
+        ref self: T, game_id: u32, actor: ContractAddress, phase: u64, context: crate::commands::ExecutionContext,
+    );
+}
+
+pub fn phase_end(phase: u64, interval: u64) -> u64 {
+    assert!(phase != 0 && interval != 0, "invalid Bitcoin phase");
+    (phase + 1) * interval - 1
+}
+
+#[starknet::component]
+pub mod BitcoinState {
+    use starknet::ContractAddress;
+    use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
+    use crate::events::RowSet;
+    use crate::resources::ResourceKey;
+    use super::{ClaimKey, ContributionKey, MineFunding, Phase, PhaseKey, PhaseStatus};
+
+    #[storage]
+    pub struct Storage {
+        pub phases: Map<(u32, u64), Phase>,
+        pub contributions: Map<(u32, u64, ContractAddress), u128>,
+        pub contributors: Map<(u32, u64, u32), ContractAddress>,
+        pub mines: Map<(u32, u32), MineFunding>,
+        pub claimed: Map<(u32, u64, u32), bool>,
+        pub settlement_count: Map<u32, u32>,
+        pub settlement_ids: Map<(u32, u32), u32>,
+    }
+
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    pub enum Event {
+        RowSet: RowSet,
+    }
+
+    #[generate_trait]
+    pub impl InternalImpl<TContractState, +HasComponent<TContractState>> of InternalTrait<TContractState> {
+        fn index_settlement(ref self: ComponentState<TContractState>, key: ResourceKey) {
+            let count = self.settlement_count.read(key.game_id);
+            self.settlement_ids.write((key.game_id, count), key.entity_id);
+            self.settlement_count.write(key.game_id, count + 1);
+        }
+        fn mine(self: @ComponentState<TContractState>, key: ResourceKey) -> MineFunding {
+            let funding = self.mines.read((key.game_id, key.entity_id));
+            assert!(funding.eligible_from != 0, "unknown Bitcoin mine");
+            funding
+        }
+        fn register_mine(ref self: ComponentState<TContractState>, key: ResourceKey, next_phase: u64) {
+            assert!(
+                next_phase != 0 && self.mines.read((key.game_id, key.entity_id)).eligible_from == 0,
+                "Bitcoin mine already registered",
+            );
+            self.write_mine(key, MineFunding { eligible_from: next_phase, next_phase, ..Default::default() });
+        }
+        fn capture_mine(ref self: ComponentState<TContractState>, key: ResourceKey, eligible_from: u64) {
+            let mut funding = self.mine(key);
+            assert!(eligible_from >= funding.eligible_from, "Bitcoin capture time decreased");
+            funding.eligible_from = eligible_from;
+            self.write_mine(key, funding);
+        }
+        fn write_mine(ref self: ComponentState<TContractState>, key: ResourceKey, funding: MineFunding) {
+            self.mines.write((key.game_id, key.entity_id), funding);
+            let mut values = array![];
+            funding.serialize(ref values);
+            self
+                .emit(
+                    RowSet {
+                        version: 1,
+                        model: 'BitcoinMine',
+                        keys: array![key.game_id.into(), key.entity_id.into()].span(),
+                        values: values.span(),
+                    },
+                );
+        }
+        fn was_claimed(self: @ComponentState<TContractState>, key: ClaimKey) -> bool {
+            self.claimed.read((key.game_id, key.phase, key.mine_id))
+        }
+        fn complete_claim(ref self: ComponentState<TContractState>, key: ClaimKey, mut funding: MineFunding) {
+            assert!(!self.was_claimed(key), "Bitcoin prize already claimed");
+            assert!(key.phase == funding.next_phase, "claim earlier Bitcoin phase first");
+            funding.next_phase += 1;
+            self.write_mine(ResourceKey { game_id: key.game_id, entity_id: key.mine_id }, funding);
+            self.claimed.write((key.game_id, key.phase, key.mine_id), true);
+            self
+                .emit(
+                    RowSet {
+                        version: 1,
+                        model: 'BitcoinClaim',
+                        keys: array![key.game_id.into(), key.phase.into(), key.mine_id.into()].span(),
+                        values: array![1].span(),
+                    },
+                );
+        }
+        fn winner(self: @ComponentState<TContractState>, key: ClaimKey) -> ContractAddress {
+            let phase_key = PhaseKey { game_id: key.game_id, phase: key.phase };
+            let phase = self.phase(phase_key);
+            assert!(phase.state == PhaseStatus::Bound && phase.total_labor != 0, "Bitcoin phase has no bound draw");
+            let hash: u256 = core::poseidon::poseidon_hash_span(
+                array![
+                    'BITCOIN_DRAW', 1, key.game_id.into(), key.phase.into(), key.mine_id.into(), phase.root.low.into(),
+                    phase.root.high.into(),
+                ]
+                    .span(),
+            )
+                .into();
+            let mut roll: u128 = (hash % phase.total_labor.into()).try_into().unwrap();
+            for index in 0..phase.contributors {
+                let player = self.contributor(phase_key, index);
+                let weight = self.labor(ContributionKey { game_id: key.game_id, phase: key.phase, player });
+                if roll < weight {
+                    return player;
+                }
+                roll -= weight;
+            }
+            panic!("inconsistent Bitcoin contributor pool");
+        }
+        fn phase(self: @ComponentState<TContractState>, key: PhaseKey) -> Phase {
+            self.phases.read((key.game_id, key.phase))
+        }
+        fn labor(self: @ComponentState<TContractState>, key: ContributionKey) -> u128 {
+            self.contributions.read((key.game_id, key.phase, key.player))
+        }
+        fn contributor(self: @ComponentState<TContractState>, key: PhaseKey, index: u32) -> ContractAddress {
+            assert!(index < self.phase(key).contributors, "unknown Bitcoin contributor");
+            self.contributors.read((key.game_id, key.phase, index))
+        }
+        fn contribute(ref self: ComponentState<TContractState>, key: ContributionKey, amount: u128) {
+            let phase_key = PhaseKey { game_id: key.game_id, phase: key.phase };
+            let mut phase = self.phase(phase_key);
+            assert!(phase.state == PhaseStatus::Open, "Bitcoin pool is closed");
+            assert!(amount != 0, "zero Bitcoin contribution");
+            let before = self.labor(key);
+            if before == 0 {
+                self.contributors.write((key.game_id, key.phase, phase.contributors), key.player);
+                phase.contributors += 1;
+            }
+            let labor = before + amount;
+            phase.total_labor += amount;
+            self.contributions.write((key.game_id, key.phase, key.player), labor);
+            self
+                .emit(
+                    RowSet {
+                        version: 1,
+                        model: 'BitcoinContribution',
+                        keys: array![key.game_id.into(), key.phase.into(), key.player.into()].span(),
+                        values: array![labor.into()].span(),
+                    },
+                );
+            self.write_phase(phase_key, phase);
+        }
+        fn close(ref self: ComponentState<TContractState>, key: PhaseKey) {
+            let mut phase = self.phase(key);
+            if phase.state != PhaseStatus::Open {
+                return;
+            }
+            phase.state = PhaseStatus::Closed;
+            self.write_phase(key, phase);
+        }
+        fn bind(ref self: ComponentState<TContractState>, key: PhaseKey, root: u256) {
+            let mut phase = self.phase(key);
+            assert!(phase.state == PhaseStatus::Closed, "Bitcoin pool must close before binding");
+            phase.root = root;
+            phase.state = PhaseStatus::Bound;
+            self.write_phase(key, phase);
+        }
+        fn write_phase(ref self: ComponentState<TContractState>, key: PhaseKey, phase: Phase) {
+            self.phases.write((key.game_id, key.phase), phase);
+            let mut values = array![];
+            phase.serialize(ref values);
+            self
+                .emit(
+                    RowSet {
+                        version: 1,
+                        model: 'BitcoinPhase',
+                        keys: array![key.game_id.into(), key.phase.into()].span(),
+                        values: values.span(),
+                    },
+                );
+        }
+    }
+}
+
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct BitcoinAwardStory {
+    pub phase: u64,
+    pub mine_id: u32,
+    pub winner: ContractAddress,
+    pub owner: ContractAddress,
+    pub winner_destination: u32,
+    pub owner_destination: u32,
+    pub winner_paid: u128,
+    pub owner_paid: u128,
+}
+
+pub fn split_prize(prize: u128, owner_cut_bps: u16) -> (u128, u128) {
+    assert!(owner_cut_bps <= 10000, "invalid Bitcoin owner cut");
+    let cut: u128 = (Into::<u128, u256>::into(prize) * owner_cut_bps.into() / 10000).try_into().unwrap();
+    (prize - cut, cut)
+}

@@ -494,7 +494,7 @@ pub trait IResources<T> {
     fn resource_weight(self: @T, key: ResourceKey) -> Weight;
     fn resource_rule(self: @T, game_id: u32, resource_type: u8) -> ResourceRule;
     fn configure_resources(ref self: T, game_id: u32, rules: Span<ResourceRule>);
-    fn initialize_resources(ref self: T, key: ResourceKey, capacity: u128);
+    fn initialize_resources(ref self: T, key: ResourceKey, capacity: u128, category: u8, timestamp: u64);
     fn initialize_explorer_resources(ref self: T, key: ResourceKey, amount: u128);
     fn destroy_resources(ref self: T, key: ResourceKey);
     fn reduce_explorer_capacity(ref self: T, key: ResourceKey, lost: u128);

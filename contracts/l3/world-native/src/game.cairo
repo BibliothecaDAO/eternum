@@ -37,6 +37,7 @@ pub trait IGame<T> {
     fn create_game(ref self: T, game_id: u32, game: GameRegistry, rules: SliceRules);
     fn allocate_entity(ref self: T, game_id: u32) -> u32;
     fn register_exploration(ref self: T, game_id: u32, actor: ContractAddress);
+    fn register_capture(ref self: T, game_id: u32, actor: ContractAddress, category: u8) -> u128;
     fn player_points(self: @T, game_id: u32, actor: ContractAddress) -> u128;
     fn season_points(self: @T, game_id: u32) -> u128;
 }
@@ -88,6 +89,11 @@ pub mod GameState {
             ref self: ComponentState<TContractState>, game_id: u32, actor: starknet::ContractAddress,
         ) {
             let amount: u128 = self.rules(game_id).victory_points_grant_config.explore_tiles_points.into();
+            self.register_points(game_id, actor, amount);
+        }
+        fn register_points(
+            ref self: ComponentState<TContractState>, game_id: u32, actor: starknet::ContractAddress, amount: u128,
+        ) {
             if amount == 0 {
                 return;
             }
@@ -129,6 +135,11 @@ pub mod GameState {
                 game.start_main_at >= game.start_settling_at && game.end_at > game.start_main_at, "invalid game times",
             );
             assert!(rules.tick_config.armies_tick_in_seconds != 0, "zero army tick");
+            if rules.bitcoin_mine_config.enabled {
+                assert!(rules.tick_config.bitcoin_phase_in_seconds != 0, "zero Bitcoin phase duration");
+                assert!(rules.bitcoin_mine_config.prize_per_phase != 0, "zero Bitcoin prize");
+            }
+            assert!(rules.bitcoin_mine_config.owner_cut_bps <= 10000, "invalid Bitcoin owner cut");
             assert!(
                 rules.map_config.relic_discovery_interval_sec == 0 && rules.map_config.agent_discovery_prob == 0,
                 "unsupported discovery rules",

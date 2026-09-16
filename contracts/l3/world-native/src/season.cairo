@@ -225,6 +225,17 @@ pub mod SeasonDomain {
         fn season_points(self: @ContractState, game_id: u32) -> u128 {
             self.games.season_points.read(game_id)
         }
+        fn register_capture(ref self: ContractState, game_id: u32, actor: ContractAddress, category: u8) -> u128 {
+            assert!(get_caller_address() == self.lifecycle.require_active().structures, "only structures domain");
+            let rules = self.games.rules(game_id).victory_points_grant_config;
+            let amount = if category == 2 {
+                rules.claim_hyperstructure_points
+            } else {
+                rules.claim_otherstructure_points
+            };
+            self.games.register_points(game_id, actor, amount.into());
+            amount.into()
+        }
         fn register_exploration(ref self: ContractState, game_id: u32, actor: ContractAddress) {
             assert!(get_caller_address() == self.lifecycle.require_active().troops, "only troops domain");
             self.games.register_exploration(game_id, actor);
@@ -386,6 +397,22 @@ pub mod SeasonDomain {
     ) -> Result<Span<felt252>, Array<felt252>> {
         let mut calldata = array![game_id.into(), actor.into()];
         let (target, selector) = match command {
+            Command::ClaimBitcoinPhase(value) => {
+                value.serialize(ref calldata);
+                (peers.resources, selector!("claim_bitcoin_phase"))
+            },
+            Command::ContributeBitcoinLabor(value) => {
+                value.serialize(ref calldata);
+                (peers.resources, selector!("contribute_bitcoin_labor"))
+            },
+            Command::CloseBitcoinPhase(value) => {
+                value.serialize(ref calldata);
+                (peers.resources, selector!("close_bitcoin_phase"))
+            },
+            Command::BindBitcoinPhase(value) => {
+                value.serialize(ref calldata);
+                (peers.resources, selector!("bind_bitcoin_phase"))
+            },
             Command::CreateExplorer(value) => {
                 value.serialize(ref calldata);
                 (peers.troops, selector!("create_explorer"))
@@ -393,6 +420,10 @@ pub mod SeasonDomain {
             Command::Explore(value) => {
                 value.serialize(ref calldata);
                 (peers.troops, selector!("explore"))
+            },
+            Command::BattleGuard(value) => {
+                value.serialize(ref calldata);
+                (peers.troops, selector!("battle_guard"))
             },
             Command::Battle(value) => {
                 value.serialize(ref calldata);

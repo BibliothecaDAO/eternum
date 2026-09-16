@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "fc698edb6bfbea0f7db518efd6f5b82a1fde1f866393c3e326d63aeabf7a93a4",
+  "schemaIdentity": "b517932d5d79b5a5b99c3b1860dc0517dafcfb3ef823570bd92ca7e775403298",
   "commandAbi": [
     {
       "type": "impl",
@@ -595,6 +595,34 @@
       ]
     },
     {
+      "type": "struct",
+      "name": "world_native::bitcoin::ContributeLabor",
+      "members": [
+        {
+          "name": "structure_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "amount",
+          "type": "core::integer::u128"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::bitcoin::ClaimPhase",
+      "members": [
+        {
+          "name": "phase",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "mine_ids",
+          "type": "core::array::Span::<core::integer::u32>"
+        }
+      ]
+    },
+    {
       "type": "enum",
       "name": "world_native::commands::Command",
       "variants": [
@@ -733,6 +761,26 @@
         {
           "name": "ResumeBuildingProduction",
           "type": "world_native::buildings::ChangeBuilding"
+        },
+        {
+          "name": "ContributeBitcoinLabor",
+          "type": "world_native::bitcoin::ContributeLabor"
+        },
+        {
+          "name": "CloseBitcoinPhase",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "BindBitcoinPhase",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "ClaimBitcoinPhase",
+          "type": "world_native::bitcoin::ClaimPhase"
+        },
+        {
+          "name": "BattleGuard",
+          "type": "world_native::commands::Battle"
         }
       ]
     },
@@ -1143,6 +1191,10 @@
         {
           "name": "min_labor_per_contribution",
           "type": "core::integer::u128"
+        },
+        {
+          "name": "owner_cut_bps",
+          "type": "core::integer::u16"
         }
       ]
     },
@@ -1850,6 +1902,30 @@
         },
         {
           "type": "function",
+          "name": "register_capture",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "category",
+              "type": "core::integer::u8"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::integer::u128"
+            }
+          ],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
           "name": "player_points",
           "inputs": [
             {
@@ -2131,6 +2207,81 @@
   ],
   "models": [
     {
+      "name": "Guard",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "structure_id": "Number",
+        "slot": "Number",
+        "troops": {
+          "category": "String",
+          "tier": "String",
+          "count": "BigInt",
+          "stamina": {
+            "amount": "BigInt",
+            "updated_tick": "BigInt"
+          },
+          "boosts": {
+            "incr_damage_dealt_percent_num": "Number",
+            "incr_damage_dealt_end_tick": "Number",
+            "decr_damage_gotten_percent_num": "Number",
+            "decr_damage_gotten_end_tick": "Number",
+            "incr_stamina_regen_percent_num": "Number",
+            "incr_stamina_regen_tick_count": "Number",
+            "incr_explore_reward_percent_num": "Number",
+            "incr_explore_reward_end_tick": "Number"
+          },
+          "battle_cooldown_end": "Number"
+        },
+        "destroyed_tick": "Number"
+      }
+    },
+    {
+      "name": "BitcoinMine",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "entity_id": "Number",
+        "eligible_from": "BigInt",
+        "next_phase": "BigInt",
+        "unsplit_carry": "BigInt",
+        "winner_carry": "BigInt",
+        "owner_carry": "BigInt"
+      }
+    },
+    {
+      "name": "BitcoinClaim",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "phase": "BigInt",
+        "mine_id": "Number",
+        "claimed": "Boolean"
+      }
+    },
+    {
+      "name": "BitcoinPhase",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "phase": "BigInt",
+        "total_labor": "BigInt",
+        "contributors": "Number",
+        "state": "String",
+        "root": "BigInt"
+      }
+    },
+    {
+      "name": "BitcoinContribution",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "phase": "BigInt",
+        "player": "BigInt",
+        "labor": "BigInt"
+      }
+    },
+    {
       "name": "MineKindConfig",
       "scope": "game",
       "schema": {
@@ -2391,7 +2542,6 @@
         "entity_id": "Number",
         "owner": "BigInt",
         "base": {
-          "troop_guard_count": "Number",
           "troop_explorer_count": "Number",
           "troop_max_guard_count": "Number",
           "troop_max_explorer_count": "Number",
@@ -2402,92 +2552,6 @@
           "level": "Number",
           "starting_troops_granted": "Boolean",
           "alt": "Boolean"
-        },
-        "troop_guards": {
-          "delta": {
-            "category": "String",
-            "tier": "String",
-            "count": "BigInt",
-            "stamina": {
-              "amount": "BigInt",
-              "updated_tick": "BigInt"
-            },
-            "boosts": {
-              "incr_damage_dealt_percent_num": "Number",
-              "incr_damage_dealt_end_tick": "Number",
-              "decr_damage_gotten_percent_num": "Number",
-              "decr_damage_gotten_end_tick": "Number",
-              "incr_stamina_regen_percent_num": "Number",
-              "incr_stamina_regen_tick_count": "Number",
-              "incr_explore_reward_percent_num": "Number",
-              "incr_explore_reward_end_tick": "Number"
-            },
-            "battle_cooldown_end": "Number"
-          },
-          "charlie": {
-            "category": "String",
-            "tier": "String",
-            "count": "BigInt",
-            "stamina": {
-              "amount": "BigInt",
-              "updated_tick": "BigInt"
-            },
-            "boosts": {
-              "incr_damage_dealt_percent_num": "Number",
-              "incr_damage_dealt_end_tick": "Number",
-              "decr_damage_gotten_percent_num": "Number",
-              "decr_damage_gotten_end_tick": "Number",
-              "incr_stamina_regen_percent_num": "Number",
-              "incr_stamina_regen_tick_count": "Number",
-              "incr_explore_reward_percent_num": "Number",
-              "incr_explore_reward_end_tick": "Number"
-            },
-            "battle_cooldown_end": "Number"
-          },
-          "bravo": {
-            "category": "String",
-            "tier": "String",
-            "count": "BigInt",
-            "stamina": {
-              "amount": "BigInt",
-              "updated_tick": "BigInt"
-            },
-            "boosts": {
-              "incr_damage_dealt_percent_num": "Number",
-              "incr_damage_dealt_end_tick": "Number",
-              "decr_damage_gotten_percent_num": "Number",
-              "decr_damage_gotten_end_tick": "Number",
-              "incr_stamina_regen_percent_num": "Number",
-              "incr_stamina_regen_tick_count": "Number",
-              "incr_explore_reward_percent_num": "Number",
-              "incr_explore_reward_end_tick": "Number"
-            },
-            "battle_cooldown_end": "Number"
-          },
-          "alpha": {
-            "category": "String",
-            "tier": "String",
-            "count": "BigInt",
-            "stamina": {
-              "amount": "BigInt",
-              "updated_tick": "BigInt"
-            },
-            "boosts": {
-              "incr_damage_dealt_percent_num": "Number",
-              "incr_damage_dealt_end_tick": "Number",
-              "decr_damage_gotten_percent_num": "Number",
-              "decr_damage_gotten_end_tick": "Number",
-              "incr_stamina_regen_percent_num": "Number",
-              "incr_stamina_regen_tick_count": "Number",
-              "incr_explore_reward_percent_num": "Number",
-              "incr_explore_reward_end_tick": "Number"
-            },
-            "battle_cooldown_end": "Number"
-          },
-          "delta_destroyed_tick": "Number",
-          "charlie_destroyed_tick": "Number",
-          "bravo_destroyed_tick": "Number",
-          "alpha_destroyed_tick": "Number"
         },
         "troop_explorers": [
           "Number"
@@ -2930,7 +2994,8 @@
         "bitcoin_mine_config": {
           "enabled": "Boolean",
           "prize_per_phase": "BigInt",
-          "min_labor_per_contribution": "BigInt"
+          "min_labor_per_contribution": "BigInt",
+          "owner_cut_bps": "Number"
         },
         "victory_points_grant_config": {
           "hyp_points_per_second": "Number",
