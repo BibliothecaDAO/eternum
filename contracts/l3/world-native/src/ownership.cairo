@@ -318,6 +318,7 @@ pub enum Story {
     HyperstructurePoints: crate::hyperstructures::SharePoints,
     RelicChestOpened: crate::relics::ChestOpened,
     ExplorationReward: crate::exploration_rewards::ExtractedReward,
+    SeasonEnded: ContractAddress,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]

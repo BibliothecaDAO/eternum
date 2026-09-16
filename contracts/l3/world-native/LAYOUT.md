@@ -393,3 +393,7 @@ time and immutable exploration-reward entries. Relic effects reuse the existing 
 chests use tile occupancy and extraction uses the existing packed tile bit 113. Neither has a duplicate status row.
 Relic rules retain all eighteen entries, including zero discovery weights. Exploration pools are ordered immutable
 configuration; their weights and whole-unit rewards are supplied by the preset, with no tables embedded in bytecode.
+
+GameState appends an optional victory threshold keyed by game. `None` means unconfigured and a configured zero disables
+point-triggered closure. Closing a season updates its existing end time and status after checkpointing completed
+hyperstructures; no duplicate end-state row is stored. The winner is part of immutable season-end history.

@@ -85,12 +85,55 @@ pub mod SeasonDomain {
         GameEvent: GameState::Event,
         RecordingEvent: RecordedState::Event,
         UpgradeEvent: UpgradeState::Event,
+        StoryEvent: crate::ownership::StoryEvent,
     }
 
     #[constructor]
     fn constructor(ref self: ContractState, authority: ContractAddress, authentication: Authentication) {
         self.lifecycle.initialize(authority);
         self.write_authentication(authentication);
+    }
+
+    #[abi(embed_v0)]
+    impl SeasonLifecycle of crate::game::ISeasonLifecycle<ContractState> {
+        fn configure_season_win(ref self: ContractState, game_id: u32, points: u128) {
+            self.lifecycle.assert_authority();
+            self.games.game(game_id);
+            assert!(self.games.win_thresholds.read(game_id).is_none(), "season win threshold already configured");
+            self.games.win_thresholds.write(game_id, Some(points));
+            self
+                .emit(
+                    RowSet {
+                        version: 1,
+                        model: 'SeasonWinThreshold',
+                        keys: array![game_id.into()].span(),
+                        values: array![points.into()].span(),
+                    },
+                );
+        }
+        fn season_win_threshold(self: @ContractState, game_id: u32) -> u128 {
+            self.games.win_thresholds.read(game_id).expect('missing season win threshold')
+        }
+        fn close_season(ref self: ContractState, game_id: u32, actor: ContractAddress, context: DomainContext) {
+            let peers = self.lifecycle.require_active();
+            assert!(get_caller_address() == get_contract_address(), "only authenticated command domain");
+            crate::commands::assert_context_time(context.timestamp);
+            let mut game = self.games.game(game_id);
+            crate::game::assert_playing(game, context.timestamp);
+            assert!(!self.games.rules(game_id).blitz_mode_on, "season closure requires Eternum");
+            crate::hyperstructures::IHyperstructuresDispatcherTrait::settle_completed_hyperstructures(
+                crate::hyperstructures::IHyperstructuresDispatcher { contract_address: peers.economy },
+                game_id,
+                context.timestamp,
+            );
+            let threshold = self.season_win_threshold(game_id);
+            assert!(threshold != 0, "season win threshold is zero");
+            assert!(self.games.player_points.read((game_id, actor)) >= threshold, "not enough points to end season");
+            game.end_at = context.timestamp;
+            game.status = crate::game::GameStatus::Ended;
+            self.games.write_game(game_id, game);
+            self.record_season_end(game_id, actor, context.timestamp);
+        }
     }
 
     #[abi(embed_v0)]
@@ -282,6 +325,21 @@ pub mod SeasonDomain {
 
     #[generate_trait]
     impl Internal of InternalTrait {
+        fn record_season_end(ref self: ContractState, game_id: u32, winner: ContractAddress, timestamp: u64) {
+            self
+                .emit(
+                    crate::ownership::StoryEvent {
+                        version: 1,
+                        game_id,
+                        id: self.games.allocate(game_id),
+                        entity_id: None,
+                        owner: Some(winner),
+                        timestamp,
+                        tx_hash: get_tx_info().unbox().transaction_hash,
+                        story: crate::ownership::Story::SeasonEnded(winner),
+                    },
+                );
+        }
         fn write_authentication(ref self: ContractState, authentication: Authentication) {
             assert!(
                 authentication.submitter.is_non_zero() && authentication.registry.is_non_zero(), "zero authentication",
@@ -430,6 +488,7 @@ pub mod SeasonDomain {
                 value.serialize(ref calldata);
                 (peers.resources, selector!("bind_bitcoin_phase"))
             },
+            Command::CloseSeason => (get_contract_address(), selector!("close_season")),
             Command::CreateExplorer(value) => {
                 value.serialize(ref calldata);
                 (peers.troops, selector!("create_explorer"))

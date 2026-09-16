@@ -45,6 +45,13 @@ pub trait IGame<T> {
     fn season_points(self: @T, game_id: u32) -> u128;
 }
 
+#[starknet::interface]
+pub trait ISeasonLifecycle<T> {
+    fn configure_season_win(ref self: T, game_id: u32, points: u128);
+    fn season_win_threshold(self: @T, game_id: u32) -> u128;
+    fn close_season(ref self: T, game_id: u32, actor: ContractAddress, context: crate::commands::ExecutionContext);
+}
+
 pub fn assert_playing(game: GameRegistry, now: u64) {
     assert!(game.dev_mode_on || (now >= game.start_main_at && now >= game.start_settling_at), "game not started");
     assert!(game.end_at == 0 || now < game.end_at, "game ended");
@@ -81,6 +88,7 @@ pub mod GameState {
         pub player_points: Map<(u32, starknet::ContractAddress), u128>,
         pub season_points: Map<u32, u128>,
         pub ownership_rules_ready: Map<u32, bool>,
+        pub win_thresholds: Map<u32, Option<u128>>,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -145,7 +153,6 @@ pub mod GameState {
             }
             assert!(rules.bitcoin_mine_config.owner_cut_bps <= 10000, "invalid Bitcoin owner cut");
             assert!(rules.map_config.agent_discovery_prob == 0, "unsupported discovery rules");
-            self.games.write(game_id, game);
             self.rules.write(game_id, rules);
             self.ownership_rules_ready.write(game_id, true);
             self
@@ -159,14 +166,7 @@ pub mod GameState {
                 );
             self.exists.write(game_id, true);
             self.next_entity.write(game_id, 1);
-            let mut values = array![];
-            game.serialize(ref values);
-            self
-                .emit(
-                    RowSet {
-                        version: 1, model: 'GameRegistry', keys: array![game_id.into()].span(), values: values.span(),
-                    },
-                );
+            self.write_game(game_id, game);
             let mut values = array![];
             rules.serialize(ref values);
             self
@@ -176,6 +176,17 @@ pub mod GameState {
                     },
                 );
             self.emit_counter(game_id, 1);
+        }
+        fn write_game(ref self: ComponentState<TContractState>, game_id: u32, game: GameRegistry) {
+            self.games.write(game_id, game);
+            let mut values = array![];
+            game.serialize(ref values);
+            self
+                .emit(
+                    RowSet {
+                        version: 1, model: 'GameRegistry', keys: array![game_id.into()].span(), values: values.span(),
+                    },
+                );
         }
         fn allocate(ref self: ComponentState<TContractState>, game_id: u32) -> u32 {
             let _ = self.game(game_id);

@@ -23,7 +23,7 @@ fn rules() -> HyperstructureRules {
             .span(),
     }
 }
-fn setup() -> (super::Deployment, ResourceKey, ResourceKey, ResourceKey) {
+pub fn setup() -> (super::Deployment, ResourceKey, ResourceKey, ResourceKey) {
     setup_mode(false)
 }
 fn setup_mode(blitz: bool) -> (super::Deployment, ResourceKey, ResourceKey, ResourceKey) {
@@ -57,7 +57,7 @@ fn setup_mode(blitz: bool) -> (super::Deployment, ResourceKey, ResourceKey, Reso
 fn view(deployment: super::Deployment) -> IHyperstructuresDispatcher {
     IHyperstructuresDispatcher { contract_address: deployment.peers.economy }
 }
-fn owner(deployment: super::Deployment, key: ResourceKey, owner: starknet::ContractAddress) {
+pub fn owner(deployment: super::Deployment, key: ResourceKey, owner: starknet::ContractAddress) {
     let value = IStructuresDispatcher { contract_address: deployment.peers.structures }.structure(key).unwrap();
     set_fixture(
         deployment.peers.structures,
@@ -84,7 +84,7 @@ fn points(deployment: super::Deployment, actor: starknet::ContractAddress) -> u1
 fn access(hyper: ResourceKey, access: ConstructionAccess) -> Command {
     Command::SetConstructionAccess(SetConstructionAccess { hyperstructure_id: hyper.entity_id, access })
 }
-fn complete(deployment: super::Deployment, hyper: ResourceKey, from: ResourceKey) {
+pub fn complete(deployment: super::Deployment, hyper: ResourceKey, from: ResourceKey) {
     assert!(execute(deployment, Command::InitializeHyperstructure(hyper.entity_id), 40));
     assert!(execute(deployment, contribute(hyper, from, array![amount(2, 10), amount(3, 20)].span()), 50));
 }

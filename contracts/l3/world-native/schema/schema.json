@@ -162,9 +162,109 @@
               "kind": "data"
             }
           ]
+        },
+        {
+          "name": "StoryEvent",
+          "prefix": [
+            "0x33b7d96bc1ff34b0a89214516b6ef5d2b8bdd9c301222eda2a1e96f78b84b96"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "game_id",
+              "type": "core::integer::u32",
+              "kind": "key"
+            },
+            {
+              "name": "id",
+              "type": "core::integer::u32",
+              "kind": "key"
+            },
+            {
+              "name": "owner",
+              "type": "core::option::Option::<core::starknet::contract_address::ContractAddress>",
+              "kind": "key"
+            },
+            {
+              "name": "entity_id",
+              "type": "core::option::Option::<core::integer::u32>",
+              "kind": "key"
+            },
+            {
+              "name": "tx_hash",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "story",
+              "type": "world_native::ownership::Story",
+              "kind": "data"
+            },
+            {
+              "name": "timestamp",
+              "type": "core::integer::u64",
+              "kind": "data"
+            }
+          ]
         }
       ],
       "entrypoints": [
+        {
+          "type": "function",
+          "name": "configure_season_win",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "points",
+              "type": "core::integer::u128"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "season_win_threshold",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::integer::u128"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "close_season",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
         {
           "type": "function",
           "name": "settlement_admission",
@@ -5926,6 +6026,22 @@
         },
         {
           "type": "function",
+          "name": "settle_completed_hyperstructures",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "timestamp",
+              "type": "core::integer::u64"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
           "name": "record_hyperstructure",
           "inputs": [
             {
@@ -6110,6 +6226,31 @@
     }
   },
   "models": [
+    {
+      "name": "SeasonWinThreshold",
+      "identity": "0x536561736f6e57696e5468726573686f6c64",
+      "owners": [
+        "season"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "points",
+          "type": "core::integer::u128",
+          "id": "0x706f696e7473",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": 1
+    },
     {
       "name": "ExtractionRewards",
       "identity": "0x45787472616374696f6e52657761726473",
@@ -10829,6 +10970,10 @@
         {
           "name": "ExtractExplorationReward",
           "type": "core::integer::u32"
+        },
+        {
+          "name": "CloseSeason",
+          "type": "()"
         }
       ]
     },
@@ -12035,6 +12180,10 @@
         {
           "name": "ExplorationReward",
           "type": "world_native::exploration_rewards::ExtractedReward"
+        },
+        {
+          "name": "SeasonEnded",
+          "type": "core::starknet::contract_address::ContractAddress"
         }
       ]
     },
@@ -14065,5 +14214,5 @@
       ]
     }
   },
-  "identity": "878415696c577ed55168e9e6c243c7e79d14ec6e7c0eb5345e42e697b8281cda"
+  "identity": "997ae130cd422960e12f73950c8254f654807831a256daa9fd4157d43b5dfd4a"
 }

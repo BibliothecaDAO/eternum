@@ -1,6 +1,97 @@
 {
-  "schemaIdentity": "878415696c577ed55168e9e6c243c7e79d14ec6e7c0eb5345e42e697b8281cda",
+  "schemaIdentity": "997ae130cd422960e12f73950c8254f654807831a256daa9fd4157d43b5dfd4a",
   "commandAbi": [
+    {
+      "type": "impl",
+      "name": "SeasonLifecycle",
+      "interface_name": "world_native::game::ISeasonLifecycle"
+    },
+    {
+      "type": "struct",
+      "name": "core::integer::u256",
+      "members": [
+        {
+          "name": "low",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "high",
+          "type": "core::integer::u128"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::commands::ExecutionContext",
+      "members": [
+        {
+          "name": "raw_root",
+          "type": "core::integer::u256"
+        },
+        {
+          "name": "timestamp",
+          "type": "core::integer::u64"
+        }
+      ]
+    },
+    {
+      "type": "interface",
+      "name": "world_native::game::ISeasonLifecycle",
+      "items": [
+        {
+          "type": "function",
+          "name": "configure_season_win",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "points",
+              "type": "core::integer::u128"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "season_win_threshold",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::integer::u128"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "close_season",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        }
+      ]
+    },
     {
       "type": "impl",
       "name": "SettlementAdmission",
@@ -1133,6 +1224,10 @@
         {
           "name": "ExtractExplorationReward",
           "type": "core::integer::u32"
+        },
+        {
+          "name": "CloseSeason",
+          "type": "()"
         }
       ]
     },
@@ -1679,20 +1774,6 @@
         {
           "name": "account_class",
           "type": "core::starknet::class_hash::ClassHash"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "core::integer::u256",
-      "members": [
-        {
-          "name": "low",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "high",
-          "type": "core::integer::u128"
         }
       ]
     },
@@ -2575,6 +2656,651 @@
       ]
     },
     {
+      "type": "enum",
+      "name": "core::option::Option::<core::starknet::contract_address::ContractAddress>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::ownership::FaithPointsClaimedStory",
+      "members": [
+        {
+          "name": "wonder_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "new_points",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "total_points",
+          "type": "core::integer::u128"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::ownership::StructureLevelUpStory",
+      "members": [
+        {
+          "name": "new_level",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::ownership::RealmCreatedStory",
+      "members": [
+        {
+          "name": "coord",
+          "type": "world_native::troops::Coord"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::ownership::GuardAddStory",
+      "members": [
+        {
+          "name": "structure_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "slot",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "category",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "tier",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "amount",
+          "type": "core::integer::u128"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::ownership::ResourceAmountsStory",
+      "members": [
+        {
+          "name": "resources",
+          "type": "core::array::Span::<world_native::resources::ResourceAmount>"
+        }
+      ]
+    },
+    {
+      "type": "enum",
+      "name": "world_native::ownership::TransferType",
+      "variants": [
+        {
+          "name": "Instant",
+          "type": "()"
+        },
+        {
+          "name": "InstantStorable",
+          "type": "()"
+        },
+        {
+          "name": "Delayed",
+          "type": "()"
+        },
+        {
+          "name": "InstantArrivals",
+          "type": "()"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::ownership::ResourceTransferStory",
+      "members": [
+        {
+          "name": "transfer_type",
+          "type": "world_native::ownership::TransferType"
+        },
+        {
+          "name": "from_entity_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "from_entity_owner_address",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "to_entity_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "to_entity_owner_address",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "resources",
+          "type": "core::array::Span::<world_native::resources::ResourceAmount>"
+        },
+        {
+          "name": "is_mint",
+          "type": "core::bool"
+        },
+        {
+          "name": "travel_time",
+          "type": "core::integer::u64"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::ownership::ProductionStory",
+      "members": [
+        {
+          "name": "received_resource_type",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "received_amount",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "cost",
+          "type": "core::array::Span::<world_native::resources::ResourceAmount>"
+        }
+      ]
+    },
+    {
+      "type": "enum",
+      "name": "world_native::ownership::BuildingChange",
+      "variants": [
+        {
+          "name": "Created",
+          "type": "()"
+        },
+        {
+          "name": "Destroyed",
+          "type": "()"
+        },
+        {
+          "name": "Paused",
+          "type": "()"
+        },
+        {
+          "name": "Resumed",
+          "type": "()"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::ownership::BuildingPlacementStory",
+      "members": [
+        {
+          "name": "coord",
+          "type": "world_native::troops::Coord"
+        },
+        {
+          "name": "category",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "change",
+          "type": "world_native::ownership::BuildingChange"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::ownership::BuildingPaymentStory",
+      "members": [
+        {
+          "name": "coord",
+          "type": "world_native::troops::Coord"
+        },
+        {
+          "name": "category",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "cost",
+          "type": "core::array::Span::<world_native::resources::ResourceAmount>"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::bitcoin::BitcoinAwardStory",
+      "members": [
+        {
+          "name": "phase",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "mine_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "winner",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "owner",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "winner_destination",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "owner_destination",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "winner_paid",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "owner_paid",
+          "type": "core::integer::u128"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::ownership::StructureCapturedStory",
+      "members": [
+        {
+          "name": "previous_owner",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "new_owner",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "points",
+          "type": "core::integer::u128"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::trade::TradeOrder",
+      "members": [
+        {
+          "name": "maker_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "taker_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "offered_resource",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "requested_resource",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "offered_per_lot",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "requested_per_lot",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "remaining_lots",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "expires_at",
+          "type": "core::integer::u32"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::trade::TradeListing",
+      "members": [
+        {
+          "name": "trade_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "order",
+          "type": "world_native::trade::TradeOrder"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::trade::TradeFill",
+      "members": [
+        {
+          "name": "trade_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "maker_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "taker_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "offered_resource",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "requested_resource",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "offered_amount",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "requested_amount",
+          "type": "core::integer::u128"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::market::SwapStory",
+      "members": [
+        {
+          "name": "bank_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "structure_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "resource_type",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "lords_amount",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "resource_amount",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "owner_fee",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "lp_fee",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "resource_price",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "buy",
+          "type": "core::bool"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::market::LiquidityStory",
+      "members": [
+        {
+          "name": "bank_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "structure_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "resource_type",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "lords_amount",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "resource_amount",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "shares",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "resource_price",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "add",
+          "type": "core::bool"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::hyperstructures::SharePoints",
+      "members": [
+        {
+          "name": "player",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "points",
+          "type": "core::integer::u128"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::relics::ChestOpened",
+      "members": [
+        {
+          "name": "explorer_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "coord",
+          "type": "world_native::troops::Coord"
+        },
+        {
+          "name": "relics",
+          "type": "core::array::Span::<core::integer::u8>"
+        },
+        {
+          "name": "points",
+          "type": "core::integer::u128"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::exploration_rewards::ExtractedReward",
+      "members": [
+        {
+          "name": "explorer_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "receiver",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "coord",
+          "type": "world_native::troops::Coord"
+        },
+        {
+          "name": "resource_type",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "amount",
+          "type": "core::integer::u128"
+        }
+      ]
+    },
+    {
+      "type": "enum",
+      "name": "world_native::ownership::Story",
+      "variants": [
+        {
+          "name": "FaithPointsClaimedStory",
+          "type": "world_native::ownership::FaithPointsClaimedStory"
+        },
+        {
+          "name": "StructureLevelUpStory",
+          "type": "world_native::ownership::StructureLevelUpStory"
+        },
+        {
+          "name": "RealmCreatedStory",
+          "type": "world_native::ownership::RealmCreatedStory"
+        },
+        {
+          "name": "GuardAddStory",
+          "type": "world_native::ownership::GuardAddStory"
+        },
+        {
+          "name": "ResourceBurnStory",
+          "type": "world_native::ownership::ResourceAmountsStory"
+        },
+        {
+          "name": "ResourceTransferStory",
+          "type": "world_native::ownership::ResourceTransferStory"
+        },
+        {
+          "name": "ResourceReceiveArrivalStory",
+          "type": "world_native::ownership::ResourceAmountsStory"
+        },
+        {
+          "name": "ProductionStory",
+          "type": "world_native::ownership::ProductionStory"
+        },
+        {
+          "name": "BuildingPlacementStory",
+          "type": "world_native::ownership::BuildingPlacementStory"
+        },
+        {
+          "name": "BuildingPaymentStory",
+          "type": "world_native::ownership::BuildingPaymentStory"
+        },
+        {
+          "name": "BitcoinAwardStory",
+          "type": "world_native::bitcoin::BitcoinAwardStory"
+        },
+        {
+          "name": "StructureCapturedStory",
+          "type": "world_native::ownership::StructureCapturedStory"
+        },
+        {
+          "name": "TradeCreated",
+          "type": "world_native::trade::TradeListing"
+        },
+        {
+          "name": "TradeAccepted",
+          "type": "world_native::trade::TradeFill"
+        },
+        {
+          "name": "TradeCancelled",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "BankSwap",
+          "type": "world_native::market::SwapStory"
+        },
+        {
+          "name": "BankLiquidity",
+          "type": "world_native::market::LiquidityStory"
+        },
+        {
+          "name": "HyperstructurePoints",
+          "type": "world_native::hyperstructures::SharePoints"
+        },
+        {
+          "name": "RelicChestOpened",
+          "type": "world_native::relics::ChestOpened"
+        },
+        {
+          "name": "ExplorationReward",
+          "type": "world_native::exploration_rewards::ExtractedReward"
+        },
+        {
+          "name": "SeasonEnded",
+          "type": "core::starknet::contract_address::ContractAddress"
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "name": "world_native::ownership::StoryEvent",
+      "kind": "struct",
+      "members": [
+        {
+          "name": "version",
+          "type": "core::integer::u8",
+          "kind": "key"
+        },
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "kind": "key"
+        },
+        {
+          "name": "id",
+          "type": "core::integer::u32",
+          "kind": "key"
+        },
+        {
+          "name": "owner",
+          "type": "core::option::Option::<core::starknet::contract_address::ContractAddress>",
+          "kind": "key"
+        },
+        {
+          "name": "entity_id",
+          "type": "core::option::Option::<core::integer::u32>",
+          "kind": "key"
+        },
+        {
+          "name": "tx_hash",
+          "type": "core::felt252",
+          "kind": "key"
+        },
+        {
+          "name": "story",
+          "type": "world_native::ownership::Story",
+          "kind": "data"
+        },
+        {
+          "name": "timestamp",
+          "type": "core::integer::u64",
+          "kind": "data"
+        }
+      ]
+    },
+    {
       "type": "event",
       "name": "world_native::season::SeasonDomain::Event",
       "kind": "enum",
@@ -2603,6 +3329,11 @@
           "name": "UpgradeEvent",
           "type": "world_native::upgrades::UpgradeState::Event",
           "kind": "nested"
+        },
+        {
+          "name": "StoryEvent",
+          "type": "world_native::ownership::StoryEvent",
+          "kind": "nested"
         }
       ]
     }
@@ -2618,6 +3349,14 @@
     }
   ],
   "models": [
+    {
+      "name": "SeasonWinThreshold",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "points": "BigInt"
+      }
+    },
     {
       "name": "ExtractionRewards",
       "scope": "game",

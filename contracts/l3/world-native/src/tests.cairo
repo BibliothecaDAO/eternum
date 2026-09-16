@@ -613,3 +613,5 @@ fn realm_upgrade_changes_only_its_display_and_rejects_foreign_occupants() {
 }
 
 mod building_commands;
+
+mod season_lifecycle;

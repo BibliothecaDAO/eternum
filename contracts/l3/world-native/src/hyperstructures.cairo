@@ -72,6 +72,7 @@ pub trait IHyperstructures<T> {
     fn hyperstructure_shares(self: @T, key: ResourceKey) -> ShareAllocation;
     fn hyperstructure_count(self: @T, game_id: u32) -> u32;
     fn completed_hyperstructure_count(self: @T, game_id: u32) -> u32;
+    fn settle_completed_hyperstructures(ref self: T, game_id: u32, timestamp: u64);
     fn record_hyperstructure(ref self: T, key: ResourceKey, seed: felt252, completed: bool);
     fn initialize_hyperstructure(ref self: T, game_id: u32, actor: ContractAddress, id: u32, context: ExecutionContext);
     fn contribute_hyperstructure(
@@ -330,6 +331,17 @@ pub mod HyperstructureState {
             }
             state.access = command.access;
             self.write_state(key, state);
+        }
+        fn settle_completed_hyperstructures(ref self: ComponentState<TContractState>, game_id: u32, timestamp: u64) {
+            assert!(get_caller_address() == self.peers().season, "only authenticated command domain");
+            crate::commands::assert_context_time(timestamp);
+            self.games().game(game_id);
+            for index in 0..self.hyper_counts.read(game_id) {
+                let id = self.hyper_ids.read((game_id, index));
+                if self.hyper_states.read((game_id, id)).stage == Stage::Complete {
+                    self.checkpoint(ResourceKey { game_id, entity_id: id }, timestamp);
+                }
+            }
         }
         fn checkpoint_hyperstructures(
             ref self: ComponentState<TContractState>,

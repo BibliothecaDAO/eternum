@@ -90,6 +90,7 @@ pub enum Command {
     OpenRelicChest: crate::relics::OpenChest,
     ApplyRelic: crate::relics::ApplyRelic,
     ExtractExplorationReward: u32,
+    CloseSeason,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]

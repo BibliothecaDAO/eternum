@@ -38,6 +38,9 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
   };
   const domainKey = [{ name: "address", type: struct("lifecycle::Peers")[0].type }];
   return [
+    model("SeasonWinThreshold", ["season"], "game", method("season", "season_win_threshold").inputs, [
+      { name: "points", type: "core::integer::u128" },
+    ]),
     model("ExtractionRewards", ["map"], "game", method("map", "extraction_rewards").inputs, [
       { name: "rewards", type: method("map", "extraction_rewards").outputs[0].type },
     ]),
