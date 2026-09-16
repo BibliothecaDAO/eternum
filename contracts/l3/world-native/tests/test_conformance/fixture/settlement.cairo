@@ -10,6 +10,7 @@ use starknet::ContractAddress;
 use world_native::commands::{Command, command_commitment};
 use world_native::game::{IGameDispatcher, IGameDispatcherTrait};
 use world_native::guards::{GuardKey, IGuardsDispatcher, IGuardsDispatcherTrait};
+use world_native::hyperstructures::{IHyperstructuresDispatcher, IHyperstructuresDispatcherTrait};
 use world_native::lifecycle::{IDomainDispatcher, IDomainDispatcherTrait};
 use world_native::resources::{IResourcesDispatcher, IResourcesDispatcherTrait, ResourceKey, ResourceRule};
 use world_native::season::{ISeasonDispatcher, ISeasonDispatcherTrait};
@@ -356,8 +357,8 @@ fn reserved_hyperstructure_uses_recorded_time_after_an_outage() {
         let peers = IDomainDispatcher { contract_address: season }.domain_state().peers;
         let structures = IStructuresDispatcher { contract_address: peers.structures };
         let key = ResourceKey { game_id: 8, entity_id: 1 };
-        let hyper = structures.hyperstructure(key).unwrap();
-        assert!(hyper.initialized && hyper.completed);
+        let hyper = IHyperstructuresDispatcher { contract_address: peers.economy }.hyperstructure(key).unwrap();
+        assert!(hyper.stage == world_native::hyperstructures::Stage::Complete);
         let mut facts = array![];
         hyper.serialize(ref facts);
         structures.structure(key).unwrap().serialize(ref facts);
@@ -368,7 +369,7 @@ fn reserved_hyperstructure_uses_recorded_time_after_an_outage() {
         }
         execute(season, Command::CreateReservedHyperstructure(coord), 1201);
         assert!(results.get_result(3).status == 2);
-        assert!(structures.hyperstructure(key).unwrap() == hyper);
+        assert!(IHyperstructuresDispatcher { contract_address: peers.economy }.hyperstructure(key).unwrap() == hyper);
     }
 }
 

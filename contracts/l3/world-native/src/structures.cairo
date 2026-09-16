@@ -125,22 +125,6 @@ pub struct StructureRecord {
     pub metadata: StructureMetadata,
 }
 
-#[derive(Copy, Drop, Serde, Debug, PartialEq)]
-pub enum ConstructionAccess {
-    Public,
-    Private,
-    GuildOnly,
-}
-#[derive(Copy, Drop, Serde, Debug, PartialEq)]
-pub struct Hyperstructure {
-    pub initialized: bool,
-    pub completed: bool,
-    pub access: ConstructionAccess,
-    pub randomness: felt252,
-    pub points_multiplier: u8,
-}
-
-
 #[starknet::component]
 pub mod StructureState {
     use starknet::storage::{
@@ -308,8 +292,6 @@ pub mod StructureState {
 
 #[starknet::interface]
 pub trait IStructures<T> {
-    fn hyperstructure_count(self: @T, game_id: u32) -> u32;
-    fn completed_hyperstructure_count(self: @T, game_id: u32) -> u32;
     fn create_discovery(
         ref self: T, game_id: u32, coord: Coord, discovery: crate::discovery::Discovery, seed: u256, timestamp: u64,
     ) -> u32;
@@ -317,7 +299,6 @@ pub trait IStructures<T> {
     fn structure_buildings(self: @T, key: ResourceKey) -> crate::buildings::StructureBuildings;
     fn structure(self: @T, key: ResourceKey) -> Option<Structure>;
     fn structure_owner(self: @T, key: ResourceKey) -> ContractAddress;
-    fn hyperstructure(self: @T, key: ResourceKey) -> Option<Hyperstructure>;
     fn provision_spire(ref self: T, game_id: u32, coord: Coord) -> u32;
     fn provision_realm(
         ref self: T, game_id: u32, actor: ContractAddress, coord: Coord, grants: Span<(u8, u128)>,
@@ -380,13 +361,9 @@ pub mod StructuresDomain {
         structures: StructureState::Storage,
         #[substorage(v0)]
         buildings: BuildingState::Storage,
-        hyperstructure_counts: Map<u32, u32>,
-        hyperstructure_seeds: Map<(u32, u32), felt252>,
         #[substorage(v0)]
         faith: FaithOwnershipState::Storage,
         address_names: Map<ContractAddress, felt252>,
-        completed_hyperstructures: Map<(u32, u32), bool>,
-        hyperstructure_ids: Map<(u32, u32), u32>,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -467,27 +444,6 @@ pub mod StructuresDomain {
     }
     #[abi(embed_v0)]
     impl Structures of super::IStructures<ContractState> {
-        fn hyperstructure(self: @ContractState, key: ResourceKey) -> Option<super::Hyperstructure> {
-            let structure = self.structures.structure(key);
-            match structure {
-                Some(value) => {
-                    if value.base.category == 2 {
-                        Some(
-                            super::Hyperstructure {
-                                initialized: self.completed_hyperstructures.read((key.game_id, key.entity_id)),
-                                completed: self.completed_hyperstructures.read((key.game_id, key.entity_id)),
-                                access: super::ConstructionAccess::Private,
-                                randomness: self.hyperstructure_seeds.read((key.game_id, key.entity_id)),
-                                points_multiplier: 0,
-                            },
-                        )
-                    } else {
-                        None
-                    }
-                },
-                _ => None,
-            }
-        }
         fn provision_spire(ref self: ContractState, game_id: u32, coord: Coord) -> u32 {
             self.assert_authority();
             assert!(self.game_dispatcher().game(game_id).dev_mode_on, "fixture provisioning requires development game");
@@ -505,19 +461,6 @@ pub mod StructuresDomain {
                 }
             }
             id
-        }
-        fn completed_hyperstructure_count(self: @ContractState, game_id: u32) -> u32 {
-            let mut completed = 0;
-            for index in 0..self.hyperstructure_counts.read(game_id) {
-                let id = self.hyperstructure_ids.read((game_id, index));
-                if self.completed_hyperstructures.read((game_id, id)) {
-                    completed += 1;
-                }
-            }
-            completed
-        }
-        fn hyperstructure_count(self: @ContractState, game_id: u32) -> u32 {
-            self.hyperstructure_counts.read(game_id)
         }
         fn building(self: @ContractState, key: BuildingKey) -> Option<Building> {
             self.buildings.building(key)
@@ -1021,11 +964,7 @@ pub mod StructuresDomain {
                 seed,
                 timestamp,
             );
-            self.map_dispatcher().occupy(tile_key(game_id, coord), id, if completed {
-                11
-            } else {
-                occupier
-            }, true);
+            self.map_dispatcher().occupy(tile_key(game_id, coord), id, occupier, true);
             id
         }
 
@@ -1445,32 +1384,14 @@ pub mod StructuresDomain {
             self.game_dispatcher().allocate_entity(key.game_id);
         }
         fn create_hyperstructure(ref self: ContractState, key: ResourceKey, seed: u256, completed: bool) {
-            if completed {
-                self.completed_hyperstructures.write((key.game_id, key.entity_id), true);
-            }
-            let randomness: felt252 = seed.try_into().unwrap();
-            self.hyperstructure_seeds.write((key.game_id, key.entity_id), randomness);
-            self
-                .emit(
-                    RowSet {
-                        version: 1,
-                        model: 'Hyperstructure',
-                        keys: array![key.game_id.into(), key.entity_id.into()].span(),
-                        values: array![completed.into(), completed.into(), 1, randomness, 0].span(),
-                    },
-                );
-            let count = self.hyperstructure_counts.read(key.game_id) + 1;
-            self.hyperstructure_ids.write((key.game_id, count - 1), key.entity_id);
-            self.hyperstructure_counts.write(key.game_id, count);
-            self
-                .emit(
-                    RowSet {
-                        version: 1,
-                        model: 'HyperstructureGlobals',
-                        keys: array![key.game_id.into()].span(),
-                        values: array![count.into()].span(),
-                    },
-                );
+            crate::hyperstructures::IHyperstructuresDispatcherTrait::record_hyperstructure(
+                crate::hyperstructures::IHyperstructuresDispatcher {
+                    contract_address: self.lifecycle.require_active().economy,
+                },
+                key,
+                seed.try_into().unwrap(),
+                completed,
+            );
         }
         fn assert_authority(self: @ContractState) {
             assert!(get_caller_address() == self.lifecycle.domain_state().authority, "only domain authority");

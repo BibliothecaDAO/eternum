@@ -529,7 +529,15 @@ pub mod TroopsDomain {
                 discovery = self
                     .map_dispatcher()
                     .discovery(
-                        tile, seed, self.structures_dispatcher().hyperstructure_count(game_id), context.timestamp,
+                        tile,
+                        seed,
+                        crate::hyperstructures::IHyperstructuresDispatcherTrait::hyperstructure_count(
+                            crate::hyperstructures::IHyperstructuresDispatcher {
+                                contract_address: self.lifecycle.require_active().economy,
+                            },
+                            game_id,
+                        ),
+                        context.timestamp,
                     );
                 if discovery != crate::discovery::Discovery::None {
                     self

@@ -82,6 +82,11 @@ pub enum Command {
     SellToBank: crate::market::Swap,
     AddBankLiquidity: crate::market::AddLiquidity,
     RemoveBankLiquidity: crate::market::RemoveLiquidity,
+    InitializeHyperstructure: u32,
+    ContributeHyperstructure: crate::hyperstructures::Contribution,
+    AllocateHyperstructureShares: crate::hyperstructures::AllocateShares,
+    SetConstructionAccess: crate::hyperstructures::SetConstructionAccess,
+    CheckpointHyperstructures: Span<u32>,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]

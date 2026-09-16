@@ -544,6 +544,46 @@
         },
         {
           "type": "function",
+          "name": "guild_id",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::integer::u32"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "register_hyperstructure_points",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "amount",
+              "type": "core::integer::u128"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
           "name": "player_points",
           "inputs": [
             {
@@ -2095,38 +2135,6 @@
         },
         {
           "type": "function",
-          "name": "hyperstructure_count",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::integer::u32"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "completed_hyperstructure_count",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::integer::u32"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
           "name": "create_discovery",
           "inputs": [
             {
@@ -2217,22 +2225,6 @@
           "outputs": [
             {
               "type": "core::starknet::contract_address::ContractAddress"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "hyperstructure",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::resources::ResourceKey"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::option::Option::<world_native::structures::Hyperstructure>"
             }
           ],
           "state_mutability": "view"
@@ -4645,6 +4637,118 @@
         {
           "name": "RowSet",
           "prefix": [
+            "0x61d4b9617fb1ccccaeb638efd7a0e8ff6e8828044372a3067db727c753c2da",
+            "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "model",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "keys",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            },
+            {
+              "name": "values",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            }
+          ]
+        },
+        {
+          "name": "RowMemberSet",
+          "prefix": [
+            "0x61d4b9617fb1ccccaeb638efd7a0e8ff6e8828044372a3067db727c753c2da",
+            "0x2016d01ac221539fcc960c46b5ba2df505fc9c7032934961e1eeaec5f23b587"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "model",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "member",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "keys",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            },
+            {
+              "name": "values",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            }
+          ]
+        },
+        {
+          "name": "StoryEvent",
+          "prefix": [
+            "0x61d4b9617fb1ccccaeb638efd7a0e8ff6e8828044372a3067db727c753c2da",
+            "0x33b7d96bc1ff34b0a89214516b6ef5d2b8bdd9c301222eda2a1e96f78b84b96"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "game_id",
+              "type": "core::integer::u32",
+              "kind": "key"
+            },
+            {
+              "name": "id",
+              "type": "core::integer::u32",
+              "kind": "key"
+            },
+            {
+              "name": "owner",
+              "type": "core::option::Option::<core::starknet::contract_address::ContractAddress>",
+              "kind": "key"
+            },
+            {
+              "name": "entity_id",
+              "type": "core::option::Option::<core::integer::u32>",
+              "kind": "key"
+            },
+            {
+              "name": "tx_hash",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "story",
+              "type": "world_native::ownership::Story",
+              "kind": "data"
+            },
+            {
+              "name": "timestamp",
+              "type": "core::integer::u64",
+              "kind": "data"
+            }
+          ]
+        },
+        {
+          "name": "RowSet",
+          "prefix": [
             "0x1517f684ec2bc21ca20251bbef26b7ad0434759388fc50e84858abf49e4024b",
             "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
           ],
@@ -5253,6 +5357,274 @@
             {
               "name": "command",
               "type": "world_native::market::RemoveLiquidity"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "configure_hyperstructures",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "rules",
+              "type": "world_native::hyperstructures::HyperstructureRules"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "hyperstructure_rules",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "world_native::hyperstructures::HyperstructureRules"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "hyperstructure",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::resources::ResourceKey"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::option::Option::<world_native::hyperstructures::Hyperstructure>"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "hyperstructure_progress",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::resources::ResourceSlot"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::integer::u128"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "hyperstructure_requirement",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::resources::ResourceSlot"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::integer::u128"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "hyperstructure_shares",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::resources::ResourceKey"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "world_native::hyperstructures::ShareAllocation"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "hyperstructure_count",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::integer::u32"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "completed_hyperstructure_count",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::integer::u32"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "record_hyperstructure",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::resources::ResourceKey"
+            },
+            {
+              "name": "seed",
+              "type": "core::felt252"
+            },
+            {
+              "name": "completed",
+              "type": "core::bool"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "initialize_hyperstructure",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "contribute_hyperstructure",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "contribution",
+              "type": "world_native::hyperstructures::Contribution"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "allocate_hyperstructure_shares",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "command",
+              "type": "world_native::hyperstructures::AllocateShares"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "set_construction_access",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "command",
+              "type": "world_native::hyperstructures::SetConstructionAccess"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "checkpoint_hyperstructures",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "ids",
+              "type": "core::array::Span::<core::integer::u32>"
             },
             {
               "name": "context",
@@ -7403,7 +7775,7 @@
       "name": "Hyperstructure",
       "identity": "0x4879706572737472756374757265",
       "owners": [
-        "structures"
+        "economy"
       ],
       "scope": "game",
       "keys": [
@@ -7413,61 +7785,134 @@
           "feltLength": 1
         },
         {
-          "name": "hyperstructure_id",
+          "name": "entity_id",
           "type": "core::integer::u32",
           "feltLength": 1
         }
       ],
       "members": [
         {
-          "name": "initialized",
-          "type": "core::bool",
-          "id": "0x696e697469616c697a6564",
-          "feltLength": 1
-        },
-        {
-          "name": "completed",
-          "type": "core::bool",
-          "id": "0x636f6d706c65746564",
+          "name": "stage",
+          "type": "world_native::hyperstructures::Stage",
+          "id": "0x7374616765",
           "feltLength": 1
         },
         {
           "name": "access",
-          "type": "world_native::structures::ConstructionAccess",
+          "type": "world_native::hyperstructures::ConstructionAccess",
           "id": "0x616363657373",
           "feltLength": 1
         },
         {
-          "name": "randomness",
+          "name": "seed",
           "type": "core::felt252",
-          "id": "0x72616e646f6d6e657373",
-          "feltLength": 1
-        },
-        {
-          "name": "points_multiplier",
-          "type": "core::integer::u8",
-          "id": "0x706f696e74735f6d756c7469706c696572",
+          "id": "0x73656564",
           "feltLength": 1
         }
       ],
       "keyLength": 2,
-      "valueLength": 5,
+      "valueLength": 3,
       "observation": {
         "domain": "hyperstructures",
         "fields": {
-          "initialized": "initialized",
-          "completed": "completed",
+          "stage": "stage",
           "access": "access",
-          "constructionSeed": "randomness",
-          "pointsMultiplier": "points_multiplier"
+          "constructionSeed": "seed"
         }
       }
     },
     {
-      "name": "HyperstructureGlobals",
-      "identity": "0x4879706572737472756374757265476c6f62616c73",
+      "name": "HyperstructureProgress",
+      "identity": "0x487970657273747275637475726550726f6772657373",
       "owners": [
-        "structures"
+        "economy"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "entity_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "resource_type",
+          "type": "core::integer::u8",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "contributed",
+          "type": "core::integer::u128",
+          "id": "0x636f6e7472696275746564",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 3,
+      "valueLength": 1,
+      "absence": {
+        "parent": "Hyperstructure",
+        "value": "zero",
+        "meaning": "No resource contribution to this hyperstructure."
+      }
+    },
+    {
+      "name": "HyperstructureShares",
+      "identity": "0x4879706572737472756374757265536861726573",
+      "owners": [
+        "economy"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "entity_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "start_at",
+          "type": "core::integer::u64",
+          "id": "0x73746172745f6174",
+          "feltLength": 1
+        },
+        {
+          "name": "multiplier",
+          "type": "core::integer::u8",
+          "id": "0x6d756c7469706c696572",
+          "feltLength": 1
+        },
+        {
+          "name": "shareholders",
+          "type": "core::array::Span::<world_native::hyperstructures::Share>",
+          "id": "0x7368617265686f6c64657273",
+          "feltLength": null
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": null,
+      "absence": {
+        "parent": "Hyperstructure",
+        "value": "empty",
+        "meaning": "No shareholder allocation or accrued share points."
+      }
+    },
+    {
+      "name": "HyperstructureRules",
+      "identity": "0x487970657273747275637475726552756c6573",
+      "owners": [
+        "economy"
       ],
       "scope": "game",
       "keys": [
@@ -7479,20 +7924,20 @@
       ],
       "members": [
         {
-          "name": "created_count",
-          "type": "core::integer::u32",
-          "id": "0x637265617465645f636f756e74",
+          "name": "initialize_shards",
+          "type": "core::integer::u128",
+          "id": "0x696e697469616c697a655f736861726473",
           "feltLength": 1
+        },
+        {
+          "name": "resources",
+          "type": "core::array::Span::<world_native::hyperstructures::ConstructionResource>",
+          "id": "0x7265736f7572636573",
+          "feltLength": null
         }
       ],
       "keyLength": 1,
-      "valueLength": 1,
-      "observation": {
-        "domain": "hyperstructures",
-        "fields": {
-          "discovered": "created_count"
-        }
-      }
+      "valueLength": null
     },
     {
       "name": "AddressName",
@@ -8191,8 +8636,8 @@
       "valueLength": 1
     },
     {
-      "name": "PlayerRegisteredPoints",
-      "identity": "0x506c6179657252656769737465726564506f696e7473",
+      "name": "PlayerPoints",
+      "identity": "0x506c61796572506f696e7473",
       "owners": [
         "season"
       ],
@@ -8211,9 +8656,9 @@
       ],
       "members": [
         {
-          "name": "registered_points",
+          "name": "points",
           "type": "core::integer::u128",
-          "id": "0x726567697374657265645f706f696e7473",
+          "id": "0x706f696e7473",
           "feltLength": 1
         }
       ],
@@ -8222,13 +8667,13 @@
       "observation": {
         "domain": "points",
         "fields": {
-          "registered": "registered_points"
+          "registered": "points"
         }
       }
     },
     {
-      "name": "SeasonPrize",
-      "identity": "0x536561736f6e5072697a65",
+      "name": "PointsTotal",
+      "identity": "0x506f696e7473546f74616c",
       "owners": [
         "season"
       ],
@@ -8242,9 +8687,9 @@
       ],
       "members": [
         {
-          "name": "total_registered_points",
+          "name": "total",
           "type": "core::integer::u128",
-          "id": "0x746f74616c5f726567697374657265645f706f696e7473",
+          "id": "0x746f74616c",
           "feltLength": 1
         }
       ],
@@ -8253,7 +8698,7 @@
       "observation": {
         "domain": "points",
         "fields": {
-          "registered": "total_registered_points"
+          "registered": "total"
         }
       }
     },
@@ -8746,6 +9191,26 @@
         }
       ]
     },
+    "core::array::Span::<world_native::hyperstructures::ConstructionResource>": {
+      "type": "struct",
+      "name": "core::array::Span::<world_native::hyperstructures::ConstructionResource>",
+      "members": [
+        {
+          "name": "snapshot",
+          "type": "@core::array::Array::<world_native::hyperstructures::ConstructionResource>"
+        }
+      ]
+    },
+    "core::array::Span::<world_native::hyperstructures::Share>": {
+      "type": "struct",
+      "name": "core::array::Span::<world_native::hyperstructures::Share>",
+      "members": [
+        {
+          "name": "snapshot",
+          "type": "@core::array::Array::<world_native::hyperstructures::Share>"
+        }
+      ]
+    },
     "core::array::Span::<world_native::market::BankPlacement>": {
       "type": "struct",
       "name": "core::array::Span::<world_native::market::BankPlacement>",
@@ -8956,6 +9421,20 @@
         }
       ]
     },
+    "core::option::Option::<world_native::hyperstructures::Hyperstructure>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::hyperstructures::Hyperstructure>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::hyperstructures::Hyperstructure"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
     "core::option::Option::<world_native::map::TileOpt>": {
       "type": "enum",
       "name": "core::option::Option::<world_native::map::TileOpt>",
@@ -8991,20 +9470,6 @@
         {
           "name": "Some",
           "type": "world_native::settlement::PlayerEntry"
-        },
-        {
-          "name": "None",
-          "type": "()"
-        }
-      ]
-    },
-    "core::option::Option::<world_native::structures::Hyperstructure>": {
-      "type": "enum",
-      "name": "core::option::Option::<world_native::structures::Hyperstructure>",
-      "variants": [
-        {
-          "name": "Some",
-          "type": "world_native::structures::Hyperstructure"
         },
         {
           "name": "None",
@@ -9807,6 +10272,26 @@
         {
           "name": "RemoveBankLiquidity",
           "type": "world_native::market::RemoveLiquidity"
+        },
+        {
+          "name": "InitializeHyperstructure",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "ContributeHyperstructure",
+          "type": "world_native::hyperstructures::Contribution"
+        },
+        {
+          "name": "AllocateHyperstructureShares",
+          "type": "world_native::hyperstructures::AllocateShares"
+        },
+        {
+          "name": "SetConstructionAccess",
+          "type": "world_native::hyperstructures::SetConstructionAccess"
+        },
+        {
+          "name": "CheckpointHyperstructures",
+          "type": "core::array::Span::<core::integer::u32>"
         }
       ]
     },
@@ -10031,6 +10516,188 @@
         {
           "name": "slot",
           "type": "core::integer::u8"
+        }
+      ]
+    },
+    "world_native::hyperstructures::AllocateShares": {
+      "type": "struct",
+      "name": "world_native::hyperstructures::AllocateShares",
+      "members": [
+        {
+          "name": "hyperstructure_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "shareholders",
+          "type": "core::array::Span::<world_native::hyperstructures::Share>"
+        }
+      ]
+    },
+    "world_native::hyperstructures::ConstructionAccess": {
+      "type": "enum",
+      "name": "world_native::hyperstructures::ConstructionAccess",
+      "variants": [
+        {
+          "name": "Public",
+          "type": "()"
+        },
+        {
+          "name": "Private",
+          "type": "()"
+        },
+        {
+          "name": "GuildOnly",
+          "type": "()"
+        }
+      ]
+    },
+    "world_native::hyperstructures::ConstructionResource": {
+      "type": "struct",
+      "name": "world_native::hyperstructures::ConstructionResource",
+      "members": [
+        {
+          "name": "resource_type",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "minimum",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "maximum",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "points",
+          "type": "core::integer::u64"
+        }
+      ]
+    },
+    "world_native::hyperstructures::Contribution": {
+      "type": "struct",
+      "name": "world_native::hyperstructures::Contribution",
+      "members": [
+        {
+          "name": "hyperstructure_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "from_structure_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "resources",
+          "type": "core::array::Span::<world_native::resources::ResourceAmount>"
+        }
+      ]
+    },
+    "world_native::hyperstructures::Hyperstructure": {
+      "type": "struct",
+      "name": "world_native::hyperstructures::Hyperstructure",
+      "members": [
+        {
+          "name": "stage",
+          "type": "world_native::hyperstructures::Stage"
+        },
+        {
+          "name": "access",
+          "type": "world_native::hyperstructures::ConstructionAccess"
+        },
+        {
+          "name": "seed",
+          "type": "core::felt252"
+        }
+      ]
+    },
+    "world_native::hyperstructures::HyperstructureRules": {
+      "type": "struct",
+      "name": "world_native::hyperstructures::HyperstructureRules",
+      "members": [
+        {
+          "name": "initialize_shards",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "resources",
+          "type": "core::array::Span::<world_native::hyperstructures::ConstructionResource>"
+        }
+      ]
+    },
+    "world_native::hyperstructures::SetConstructionAccess": {
+      "type": "struct",
+      "name": "world_native::hyperstructures::SetConstructionAccess",
+      "members": [
+        {
+          "name": "hyperstructure_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "access",
+          "type": "world_native::hyperstructures::ConstructionAccess"
+        }
+      ]
+    },
+    "world_native::hyperstructures::Share": {
+      "type": "struct",
+      "name": "world_native::hyperstructures::Share",
+      "members": [
+        {
+          "name": "player",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "bps",
+          "type": "core::integer::u16"
+        }
+      ]
+    },
+    "world_native::hyperstructures::ShareAllocation": {
+      "type": "struct",
+      "name": "world_native::hyperstructures::ShareAllocation",
+      "members": [
+        {
+          "name": "start_at",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "multiplier",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "shareholders",
+          "type": "core::array::Span::<world_native::hyperstructures::Share>"
+        }
+      ]
+    },
+    "world_native::hyperstructures::SharePoints": {
+      "type": "struct",
+      "name": "world_native::hyperstructures::SharePoints",
+      "members": [
+        {
+          "name": "player",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "points",
+          "type": "core::integer::u128"
+        }
+      ]
+    },
+    "world_native::hyperstructures::Stage": {
+      "type": "enum",
+      "name": "world_native::hyperstructures::Stage",
+      "variants": [
+        {
+          "name": "Foundation",
+          "type": "()"
+        },
+        {
+          "name": "Construction",
+          "type": "()"
+        },
+        {
+          "name": "Complete",
+          "type": "()"
         }
       ]
     },
@@ -10775,6 +11442,10 @@
         {
           "name": "BankLiquidity",
           "type": "world_native::market::LiquidityStory"
+        },
+        {
+          "name": "HyperstructurePoints",
+          "type": "world_native::hyperstructures::SharePoints"
         }
       ]
     },
@@ -12096,50 +12767,6 @@
         }
       ]
     },
-    "world_native::structures::ConstructionAccess": {
-      "type": "enum",
-      "name": "world_native::structures::ConstructionAccess",
-      "variants": [
-        {
-          "name": "Public",
-          "type": "()"
-        },
-        {
-          "name": "Private",
-          "type": "()"
-        },
-        {
-          "name": "GuildOnly",
-          "type": "()"
-        }
-      ]
-    },
-    "world_native::structures::Hyperstructure": {
-      "type": "struct",
-      "name": "world_native::structures::Hyperstructure",
-      "members": [
-        {
-          "name": "initialized",
-          "type": "core::bool"
-        },
-        {
-          "name": "completed",
-          "type": "core::bool"
-        },
-        {
-          "name": "access",
-          "type": "world_native::structures::ConstructionAccess"
-        },
-        {
-          "name": "randomness",
-          "type": "core::felt252"
-        },
-        {
-          "name": "points_multiplier",
-          "type": "core::integer::u8"
-        }
-      ]
-    },
     "world_native::structures::Structure": {
       "type": "struct",
       "name": "world_native::structures::Structure",
@@ -12751,5 +13378,5 @@
       ]
     }
   },
-  "identity": "1fe8c40d5ff9230c227cb2fe466f57a1ba14a183ddc9d6543bd0a7889929c77b"
+  "identity": "e3702448ed95d767ca9311781ad0b81f9fefaa057dd0b9b0657865232bb364f6"
 }

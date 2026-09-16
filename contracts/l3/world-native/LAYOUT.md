@@ -376,3 +376,15 @@ count, and the resource-token whitelist. Its projected rules include the ladder;
 representation of that span. Token amounts retain the external token's decimals. The structure domain appends an id-only
 hyperstructure index, allowing completed count to be read from the existing completion facts without a second stored
 count. Regional bank ids retain the six reserved values below the maximum entity id.
+
+Hyperstructure construction is owned by Economy. `HyperstructureState` stores one stage instead of overlapping
+initialized/completed flags, sparse contributed amounts keyed by `(game_id, structure_id, resource_type)`, immutable
+construction ranges, and a shareholder allocation with its accrual cursor and multiplier. Requirements and completion
+counts are derived from the configured ranges and hyperstructure records; there is no total-progress or global-count
+row. The private discovery index supports the discovery lottery and completion enumeration. Tile occupancy identifies
+the structure and does not duplicate its construction stage. The former Structures hyperstructure storage is removed;
+this codec/layout change requires a fresh rehearsal deployment.
+
+Season owns player points and the aggregate used by prize settlement. `PlayerPoints` and `PointsTotal` replace the
+placeholder prize projection. Guild membership is read through Season for construction permissions; guild command
+ownership remains in the registry/guild domain work.

@@ -9,6 +9,18 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
         meaning:
           "Zero balance or inactive production while the resource owner exists; no resource owner after its weight row is deleted.",
       };
+    if (row.name === "HyperstructureProgress")
+      row.absence = {
+        parent: "Hyperstructure",
+        value: "zero",
+        meaning: "No resource contribution to this hyperstructure.",
+      };
+    if (row.name === "HyperstructureShares")
+      row.absence = {
+        parent: "Hyperstructure",
+        value: "empty",
+        meaning: "No shareholder allocation or accrued share points.",
+      };
     if (row.name === "Guard")
       row.absence = {
         parent: "Structure",
@@ -190,17 +202,28 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
     ),
     model(
       "Hyperstructure",
-      ["structures"],
+      ["economy"],
       "game",
-      [
-        struct("resources::ResourceKey")[0],
-        { name: "hyperstructure_id", type: struct("resources::ResourceKey")[1].type },
-      ],
-      struct("structures::Hyperstructure"),
+      struct("resources::ResourceKey"),
+      struct("hyperstructures::Hyperstructure"),
     ),
-    model("HyperstructureGlobals", ["structures"], "game", method("structures", "hyperstructure_count").inputs, [
-      { name: "created_count", type: method("structures", "hyperstructure_count").outputs[0].type },
+    model("HyperstructureProgress", ["economy"], "game", struct("resources::ResourceSlot"), [
+      { name: "contributed", type: "core::integer::u128" },
     ]),
+    model(
+      "HyperstructureShares",
+      ["economy"],
+      "game",
+      struct("resources::ResourceKey"),
+      struct("hyperstructures::ShareAllocation"),
+    ),
+    model(
+      "HyperstructureRules",
+      ["economy"],
+      "game",
+      method("economy", "hyperstructure_rules").inputs,
+      struct("hyperstructures::HyperstructureRules"),
+    ),
     model(
       "AddressName",
       ["structures"],
@@ -272,17 +295,17 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
       { name: "next_entity_id", type: method("season", "allocate_entity").outputs[0].type },
     ]),
     model(
-      "PlayerRegisteredPoints",
+      "PlayerPoints",
       ["season"],
       "game",
       method("season", "player_points").inputs.map((key) => ({
         ...key,
         name: key.name === "actor" ? "address" : key.name,
       })),
-      [{ name: "registered_points", type: method("season", "player_points").outputs[0].type }],
+      [{ name: "points", type: method("season", "player_points").outputs[0].type }],
     ),
-    model("SeasonPrize", ["season"], "game", method("season", "season_points").inputs, [
-      { name: "total_registered_points", type: method("season", "season_points").outputs[0].type },
+    model("PointsTotal", ["season"], "game", method("season", "season_points").inputs, [
+      { name: "total", type: method("season", "season_points").outputs[0].type },
     ]),
     model("DomainState", Object.keys(contracts), "deployment", domainKey, struct("lifecycle::DomainState"), "address"),
     model(
@@ -434,19 +457,9 @@ const behaviouralFacts = {
       counts3: "packed_counts_3",
     },
   },
-  Hyperstructure: {
-    domain: "hyperstructures",
-    fields: {
-      initialized: "initialized",
-      completed: "completed",
-      access: "access",
-      constructionSeed: "randomness",
-      pointsMultiplier: "points_multiplier",
-    },
-  },
-  HyperstructureGlobals: { domain: "hyperstructures", fields: { discovered: "created_count" } },
-  SeasonPrize: { domain: "points", fields: { registered: "total_registered_points" } },
-  PlayerRegisteredPoints: { domain: "points", fields: { registered: "registered_points" } },
+  Hyperstructure: { domain: "hyperstructures", fields: { stage: "stage", access: "access", constructionSeed: "seed" } },
+  PointsTotal: { domain: "points", fields: { registered: "total" } },
+  PlayerPoints: { domain: "points", fields: { registered: "points" } },
   MineKindConfig: {
     domain: "mines",
     fields: {

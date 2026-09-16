@@ -430,3 +430,11 @@ fn coordinate_bits(key: TileKey) -> u128 {
         0
     }) + key.col.into() * COL_SCALE + key.row.into() * ROW_SCALE
 }
+
+pub fn structure_occupant(tile: TileOpt) -> Option<u32> {
+    if tile.data % 2 == 1 {
+        Some(((tile.data / OCCUPIER_SCALE) % ENTITY_RANGE).try_into().unwrap())
+    } else {
+        None
+    }
+}

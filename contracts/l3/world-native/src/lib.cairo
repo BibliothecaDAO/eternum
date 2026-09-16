@@ -38,6 +38,8 @@ pub mod geometry;
 
 pub mod guards;
 
+pub mod hyperstructures;
+
 pub mod market;
 
 pub mod names;

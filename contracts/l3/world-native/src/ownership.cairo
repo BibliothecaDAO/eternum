@@ -315,6 +315,7 @@ pub enum Story {
     TradeCancelled: u32,
     BankSwap: crate::market::SwapStory,
     BankLiquidity: crate::market::LiquidityStory,
+    HyperstructurePoints: crate::hyperstructures::SharePoints,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]

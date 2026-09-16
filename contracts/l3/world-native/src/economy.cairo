@@ -4,6 +4,7 @@ pub mod EconomyDomain {
     use starknet::{ContractAddress, get_caller_address};
     use crate::commands::ExecutionContext;
     use crate::game::{IGameDispatcher, IGameDispatcherTrait, assert_main_with_grace, assert_playing};
+    use crate::hyperstructures::{HyperstructureState, IHyperstructures};
     use crate::lifecycle::Lifecycle;
     use crate::market::{
         AddLiquidity, BankPlacement, BankRules, IBankCreationDispatcher, IBankCreationDispatcherTrait, LiquidityKey,
@@ -17,6 +18,9 @@ pub mod EconomyDomain {
         TradeOrder, TradeRules, TradeState,
     };
     use crate::withdrawals::WithdrawalState;
+    component!(path: HyperstructureState, storage: hyperstructures, event: HyperstructureEvent);
+    #[abi(embed_v0)]
+    impl Hyperstructures = HyperstructureState::HyperstructuresImpl<ContractState>;
     component!(path: WithdrawalState, storage: withdrawals, event: WithdrawalEvent);
     component!(path: MarketState, storage: markets, event: MarketEvent);
     component!(path: Lifecycle, storage: lifecycle, event: LifecycleEvent);
@@ -30,6 +34,8 @@ pub mod EconomyDomain {
     #[storage]
     struct Storage {
         #[substorage(v0)]
+        hyperstructures: HyperstructureState::Storage,
+        #[substorage(v0)]
         lifecycle: Lifecycle::Storage,
         #[substorage(v0)]
         trades: TradeState::Storage,
@@ -41,6 +47,7 @@ pub mod EconomyDomain {
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
+        HyperstructureEvent: HyperstructureState::Event,
         LifecycleEvent: Lifecycle::Event,
         TradeEvent: TradeState::Event,
         MarketEvent: MarketState::Event,
@@ -374,8 +381,7 @@ pub mod EconomyDomain {
             let rules = self.withdrawals.rules(game_id);
             assert!(!rules.paused, "resource bridge withdrawal is paused");
             let token = self.withdrawals.token(MarketKey { game_id, resource_type });
-            let completed = IStructuresDispatcher { contract_address: self.lifecycle.require_active().structures }
-                .completed_hyperstructure_count(game_id);
+            let completed = self.hyperstructures.completed_hyperstructure_count(game_id);
             let amount = self.withdrawals.retained_amount(game_id, resource_type, amount, completed);
             let bank_fee = amount * rules.bank_fee_bps.into() / 10000;
             if rules.bank_fee_bps != 0 {

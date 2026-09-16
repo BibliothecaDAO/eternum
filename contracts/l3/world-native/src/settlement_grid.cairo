@@ -131,3 +131,11 @@ pub fn reservation_location(center: Coord, mode: SettlementMode, profile: u8, ca
 fn neighbor_at_distance(coord: Coord, direction: u8, distance: u32) -> Coord {
     checked_neighbor_at_distance(coord, direction, distance).expect('settlement geometry exhausted')
 }
+
+pub fn hyperstructure_scan_distance(profile: u8, mode: SettlementMode) -> u32 {
+    distances(profile).base + if mode == SettlementMode::Single {
+        2
+    } else {
+        0
+    }
+}

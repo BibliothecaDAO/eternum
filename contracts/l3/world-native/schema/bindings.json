@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "1fe8c40d5ff9230c227cb2fe466f57a1ba14a183ddc9d6543bd0a7889929c77b",
+  "schemaIdentity": "e3702448ed95d767ca9311781ad0b81f9fefaa057dd0b9b0657865232bb364f6",
   "commandAbi": [
     {
       "type": "impl",
@@ -773,6 +773,94 @@
       ]
     },
     {
+      "type": "struct",
+      "name": "world_native::hyperstructures::Contribution",
+      "members": [
+        {
+          "name": "hyperstructure_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "from_structure_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "resources",
+          "type": "core::array::Span::<world_native::resources::ResourceAmount>"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::hyperstructures::Share",
+      "members": [
+        {
+          "name": "player",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "bps",
+          "type": "core::integer::u16"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "core::array::Span::<world_native::hyperstructures::Share>",
+      "members": [
+        {
+          "name": "snapshot",
+          "type": "@core::array::Array::<world_native::hyperstructures::Share>"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::hyperstructures::AllocateShares",
+      "members": [
+        {
+          "name": "hyperstructure_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "shareholders",
+          "type": "core::array::Span::<world_native::hyperstructures::Share>"
+        }
+      ]
+    },
+    {
+      "type": "enum",
+      "name": "world_native::hyperstructures::ConstructionAccess",
+      "variants": [
+        {
+          "name": "Public",
+          "type": "()"
+        },
+        {
+          "name": "Private",
+          "type": "()"
+        },
+        {
+          "name": "GuildOnly",
+          "type": "()"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::hyperstructures::SetConstructionAccess",
+      "members": [
+        {
+          "name": "hyperstructure_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "access",
+          "type": "world_native::hyperstructures::ConstructionAccess"
+        }
+      ]
+    },
+    {
       "type": "enum",
       "name": "world_native::commands::Command",
       "variants": [
@@ -963,6 +1051,26 @@
         {
           "name": "RemoveBankLiquidity",
           "type": "world_native::market::RemoveLiquidity"
+        },
+        {
+          "name": "InitializeHyperstructure",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "ContributeHyperstructure",
+          "type": "world_native::hyperstructures::Contribution"
+        },
+        {
+          "name": "AllocateHyperstructureShares",
+          "type": "world_native::hyperstructures::AllocateShares"
+        },
+        {
+          "name": "SetConstructionAccess",
+          "type": "world_native::hyperstructures::SetConstructionAccess"
+        },
+        {
+          "name": "CheckpointHyperstructures",
+          "type": "core::array::Span::<core::integer::u32>"
         }
       ]
     },
@@ -2108,6 +2216,46 @@
         },
         {
           "type": "function",
+          "name": "guild_id",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::integer::u32"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "register_hyperstructure_points",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "amount",
+              "type": "core::integer::u128"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
           "name": "player_points",
           "inputs": [
             {
@@ -3015,20 +3163,52 @@
       "scope": "game",
       "schema": {
         "game_id": "Number",
-        "hyperstructure_id": "Number",
-        "initialized": "Boolean",
-        "completed": "Boolean",
+        "entity_id": "Number",
+        "stage": "String",
         "access": "String",
-        "randomness": "BigInt",
-        "points_multiplier": "Number"
+        "seed": "BigInt"
       }
     },
     {
-      "name": "HyperstructureGlobals",
+      "name": "HyperstructureProgress",
       "scope": "game",
       "schema": {
         "game_id": "Number",
-        "created_count": "Number"
+        "entity_id": "Number",
+        "resource_type": "Number",
+        "contributed": "BigInt"
+      }
+    },
+    {
+      "name": "HyperstructureShares",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "entity_id": "Number",
+        "start_at": "BigInt",
+        "multiplier": "Number",
+        "shareholders": [
+          {
+            "player": "BigInt",
+            "bps": "Number"
+          }
+        ]
+      }
+    },
+    {
+      "name": "HyperstructureRules",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "initialize_shards": "BigInt",
+        "resources": [
+          {
+            "resource_type": "Number",
+            "minimum": "Number",
+            "maximum": "Number",
+            "points": "BigInt"
+          }
+        ]
       }
     },
     {
@@ -3303,20 +3483,20 @@
       }
     },
     {
-      "name": "PlayerRegisteredPoints",
+      "name": "PlayerPoints",
       "scope": "game",
       "schema": {
         "game_id": "Number",
         "address": "BigInt",
-        "registered_points": "BigInt"
+        "points": "BigInt"
       }
     },
     {
-      "name": "SeasonPrize",
+      "name": "PointsTotal",
       "scope": "game",
       "schema": {
         "game_id": "Number",
-        "total_registered_points": "BigInt"
+        "total": "BigInt"
       }
     },
     {

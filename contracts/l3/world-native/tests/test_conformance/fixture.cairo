@@ -1,3 +1,4 @@
+use world_native::hyperstructures::{IHyperstructuresDispatcher, IHyperstructuresDispatcherTrait};
 use world_native::resources::{IResourcesDispatcher, IResourcesDispatcherTrait, ResourceRule};
 mod settlement;
 use eternum_randomness_protocol::authority::{
@@ -427,7 +428,7 @@ pub fn outcome(address: ContractAddress) -> Array<felt252> {
         if resource_store.has_resource(key) {
             resource_snapshot(resource_store, key).serialize(ref values);
         }
-        structures.hyperstructure(key).serialize(ref values);
+        IHyperstructuresDispatcher { contract_address: peers.economy }.hyperstructure(key).serialize(ref values);
     }
     let target = Coord { alt: false, x: 2147483628, y: 2147483626 };
     for coord in array![Coord { x: target.x - 1, ..target }, target] {
@@ -440,7 +441,7 @@ pub fn outcome(address: ContractAddress) -> Array<felt252> {
             let key = world_native::resources::ResourceKey { game_id: 7, entity_id };
             structures.structure(key).serialize(ref values);
             resource_snapshot(resource_store, key).serialize(ref values);
-            structures.hyperstructure(key).serialize(ref values);
+            IHyperstructuresDispatcher { contract_address: peers.economy }.hyperstructure(key).serialize(ref values);
         }
     }
     for direction in 0_u8..6 {
@@ -456,7 +457,7 @@ pub fn outcome(address: ContractAddress) -> Array<felt252> {
         .serialize(ref values);
     game.player_points(7, 456.try_into().unwrap()).serialize(ref values);
     game.season_points(7).serialize(ref values);
-    structures.hyperstructure_count(7).serialize(ref values);
+    IHyperstructuresDispatcher { contract_address: peers.economy }.hyperstructure_count(7).serialize(ref values);
     values
 }
 

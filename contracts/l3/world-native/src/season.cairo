@@ -219,6 +219,14 @@ pub mod SeasonDomain {
         fn agent_controller(self: @ContractState) -> ContractAddress {
             self.agent_controller.read()
         }
+        fn guild_id(self: @ContractState, game_id: u32, actor: ContractAddress) -> u32 {
+            self.games.guild_membership.read((game_id, actor))
+        }
+        fn register_hyperstructure_points(ref self: ContractState, game_id: u32, actor: ContractAddress, amount: u128) {
+            assert!(get_caller_address() == self.lifecycle.require_active().economy, "only economy domain");
+            self.games.game(game_id);
+            self.games.register_points(game_id, actor, amount);
+        }
         fn player_points(self: @ContractState, game_id: u32, actor: ContractAddress) -> u128 {
             self.games.player_points.read((game_id, actor))
         }
@@ -443,6 +451,26 @@ pub mod SeasonDomain {
             Command::RemoveBankLiquidity(value) => {
                 value.serialize(ref calldata);
                 (peers.economy, selector!("remove_bank_liquidity"))
+            },
+            Command::InitializeHyperstructure(value) => {
+                value.serialize(ref calldata);
+                (peers.economy, selector!("initialize_hyperstructure"))
+            },
+            Command::ContributeHyperstructure(value) => {
+                value.serialize(ref calldata);
+                (peers.economy, selector!("contribute_hyperstructure"))
+            },
+            Command::AllocateHyperstructureShares(value) => {
+                value.serialize(ref calldata);
+                (peers.economy, selector!("allocate_hyperstructure_shares"))
+            },
+            Command::SetConstructionAccess(value) => {
+                value.serialize(ref calldata);
+                (peers.economy, selector!("set_construction_access"))
+            },
+            Command::CheckpointHyperstructures(value) => {
+                value.serialize(ref calldata);
+                (peers.economy, selector!("checkpoint_hyperstructures"))
             },
             Command::CreateTradeOrder(value) => {
                 value.serialize(ref calldata);
