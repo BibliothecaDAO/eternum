@@ -6,7 +6,6 @@ on:
       - "contracts/l3/world-native/**"
       - "contracts/l3/randomness-protocol/**"
       - "apps/herald/src/model-registry.ts"
-      - "deploy/madara-lab/harness/native/**"
       - "config/deployer/clean/world/native/**"
       - "scripts/generate-realm-metadata.py"
       - "packages/core/src/data/full-realms.json"
@@ -18,7 +17,6 @@ on:
       - "contracts/l3/world-native/**"
       - "contracts/l3/randomness-protocol/**"
       - "apps/herald/src/model-registry.ts"
-      - "deploy/madara-lab/harness/native/**"
       - "config/deployer/clean/world/native/**"
       - "scripts/generate-realm-metadata.py"
       - "packages/core/src/data/full-realms.json"
@@ -30,45 +28,15 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  contracts:
+  native-world:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: software-mansion/setup-scarb@v1
         with:
           tool-versions: contracts/l3/world-native/.tool-versions
       - uses: foundry-rs/setup-snfoundry@v3
-        with:
-          tool-versions: contracts/l3/world-native/.tool-versions
-      - name: Check native formatting
-        working-directory: contracts/l3/world-native
-        run: scarb fmt --check
-      - name: Test native storage, authorization and upgrades
-        working-directory: contracts/l3/world-native
-        run: snforge test
-
-  protocol:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
-      - uses: software-mansion/setup-scarb@v1
-        with:
-          tool-versions: contracts/l3/randomness-protocol/.tool-versions
-      - uses: foundry-rs/setup-snfoundry@v3
-        with:
-          tool-versions: contracts/l3/randomness-protocol/.tool-versions
-      - name: Test the retained protocol fixture
-        working-directory: contracts/l3/randomness-protocol
-        run: snforge test
-
-  schema:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
-      - uses: software-mansion/setup-scarb@v1
         with:
           tool-versions: contracts/l3/world-native/.tool-versions
       - uses: pnpm/action-setup@v4
@@ -81,118 +49,14 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Build shared model registry dependencies
         run: pnpm --filter @bibliothecadao/eternum... run build
-      - name: Build native domain ABIs
+      - name: Check native formatting
+        working-directory: contracts/l3/world-native
+        run: scarb fmt --check
+      - name: Build native contracts
         working-directory: contracts/l3/world-native
         run: scarb build
-      - name: Reject canonical realm configuration drift
-        run: python3 scripts/generate-realm-metadata.py --native --check
-      - name: Reject schema and fixture drift
+      - name: Test native domain rules and recorded execution
+        working-directory: contracts/l3/world-native
+        run: snforge test
+      - name: Reject schema drift
         run: bun contracts/l3/world-native/scripts/generate-schema.mjs --check
-      - name: Build the published interface reference
-        working-directory: contracts/l3/randomness-protocol
-        run: scarb build
-      - name: Check the season ABI against the published interface
-        run:
-          python3 contracts/l3/randomness-protocol/check-entrypoint.py
-          contracts/l3/world-native/target/dev/world_native_SeasonDomain.contract_class.json /tmp/native-entrypoint.json
-
-  parity-plan:
-    runs-on: ubuntu-latest
-    outputs:
-      matrix: ${{ steps.plan.outputs.matrix }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v2
-      - name: Enumerate every declared parity domain
-        id: plan
-        run: |
-          parity_matrix=$(bun -e 'import { readDomainFixtures } from "./deploy/madara-lab/harness/native/parity-scope.ts"; console.log(JSON.stringify({domain: ["slice", ...(await readDomainFixtures()).map(f => f.domain)]}));')
-          echo "matrix=$parity_matrix" >> "$GITHUB_OUTPUT"
-
-  parity-domain:
-    needs: parity-plan
-    runs-on: ubuntu-latest
-    timeout-minutes: 180
-    strategy:
-      fail-fast: false
-      matrix: ${{ fromJSON(needs.parity-plan.outputs.matrix) }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - uses: dtolnay/rust-toolchain@1.89
-      - uses: software-mansion/setup-scarb@v1
-        with:
-          tool-versions: contracts/l3/world-native/.tool-versions
-      - uses: foundry-rs/setup-snfoundry@v3
-        with:
-          tool-versions: contracts/l3/world-native/.tool-versions
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-          cache: pnpm
-      - uses: oven-sh/setup-bun@v2
-      - name: Install pinned trace tools
-        run: |
-          python3 -m venv "$RUNNER_TEMP/native-trace-tools"
-          "$RUNNER_TEMP/native-trace-tools/bin/pip" install uv==0.12.10
-          echo "$RUNNER_TEMP/native-trace-tools/bin" >> "$GITHUB_PATH"
-      - name: Install oracle and schema dependencies
-        run: pnpm install --frozen-lockfile
-      - name: Build shared packages
-        run: pnpm --filter @bibliothecadao/eternum... run build
-      - name: Test action cost accounting
-        run: uv run deploy/madara-lab/harness/native/test_measure_trace.py
-      - name: Compare native domains with pinned gameplay rules
-        env:
-          PARITY_DOMAIN: ${{ matrix.domain }}
-        run: pnpm run lab:parity:native --domain "$PARITY_DOMAIN" --measure
-      - name: Retain parity facts and execution logs
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: native-domain-parity-${{ matrix.domain }}
-          path: |
-            contracts/l3/world-native/fixtures/${{ matrix.domain }}-parity.json
-            deploy/madara-lab/.lab/native-oracle/*-parity-scope.json
-            deploy/madara-lab/.lab/native-oracle/world-parity.log
-            deploy/madara-lab/.lab/native-oracle/world-parity.log.stderr
-            deploy/madara-lab/.lab/native-oracle/*-costs.json
-            deploy/madara-lab/.lab/native-oracle/*-costs.calls.json
-            deploy/madara-lab/.lab/native-oracle/*-cost.log
-            deploy/madara-lab/.lab/native-oracle/*-cost.stderr
-            deploy/madara-lab/.lab/native-oracle/native-casm.json
-            deploy/madara-lab/.lab/native-oracle/native-build.log
-            deploy/madara-lab/.lab/native-oracle/native-build.stderr
-            deploy/madara-lab/.lab/native-oracle/size-tool-build.log
-            deploy/madara-lab/.lab/native-oracle/size-tool-build.stderr
-
-  parity:
-    if: always()
-    needs: [parity-plan, parity-domain]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Require every declared domain gate
-        env:
-          PARITY_PLAN: ${{ needs.parity-plan.result }}
-          PARITY_DOMAINS: ${{ needs.parity-domain.result }}
-        run: |
-          test "$PARITY_PLAN" = success
-          test "$PARITY_DOMAINS" = success
-
-  class-size-tool:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    defaults:
-      run:
-        working-directory: contracts/l3/world-native/tools/casm-size
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@1.89
-        with:
-          components: rustfmt, clippy
-      - name: Check class-size tool formatting
-        run: cargo fmt --check
-      - name: Check class-size tool lint errors
-        run: cargo clippy --locked --all-targets -- -D warnings

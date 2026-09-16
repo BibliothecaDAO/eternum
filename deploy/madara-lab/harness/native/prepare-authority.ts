@@ -9,7 +9,7 @@ import {
   waitForSuccess,
 } from "../../../../config/deployer/clean/shared/declare";
 
-// Public local fixture credential; roots are supplied separately by the parity fixture.
+// Public local fixture credential; roots are supplied through the recorded envelope.
 const SIGNING_KEY = "0xd431";
 const STRK = "0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d";
 const root = resolve(import.meta.dir, "../../../..");
