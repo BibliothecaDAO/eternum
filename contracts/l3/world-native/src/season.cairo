@@ -256,7 +256,10 @@ pub mod SeasonDomain {
             let peers = self.lifecycle.require_active();
             let caller = get_caller_address();
             assert!(
-                caller == peers.troops || caller == peers.structures || caller == peers.resources,
+                caller == peers.troops
+                    || caller == peers.structures
+                    || caller == peers.resources
+                    || caller == peers.economy,
                 "only gameplay domain",
             );
             self.games.allocate(game_id)
@@ -420,6 +423,18 @@ pub mod SeasonDomain {
             Command::Explore(value) => {
                 value.serialize(ref calldata);
                 (peers.troops, selector!("explore"))
+            },
+            Command::CreateTradeOrder(value) => {
+                value.serialize(ref calldata);
+                (peers.economy, selector!("create_trade_order"))
+            },
+            Command::AcceptTradeOrder(value) => {
+                value.serialize(ref calldata);
+                (peers.economy, selector!("accept_trade_order"))
+            },
+            Command::CancelTradeOrder(value) => {
+                value.serialize(ref calldata);
+                (peers.economy, selector!("cancel_trade_order"))
             },
             Command::BattleGuard(value) => {
                 value.serialize(ref calldata);

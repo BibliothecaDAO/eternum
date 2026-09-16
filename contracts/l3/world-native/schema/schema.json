@@ -3864,6 +3864,30 @@
         },
         {
           "type": "function",
+          "name": "queue_economy_delivery",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::resources::ResourceKey"
+            },
+            {
+              "name": "resource",
+              "type": "world_native::resources::ResourceAmount"
+            },
+            {
+              "name": "travel_time",
+              "type": "core::integer::u64"
+            },
+            {
+              "name": "timestamp",
+              "type": "core::integer::u64"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
           "name": "bitcoin_mine",
           "inputs": [
             {
@@ -4577,9 +4601,440 @@
           "state_mutability": "external"
         }
       ]
+    },
+    "economy": {
+      "contract": "EconomyDomain",
+      "systems": [],
+      "events": [
+        {
+          "name": "RowSet",
+          "prefix": [
+            "0x1517f684ec2bc21ca20251bbef26b7ad0434759388fc50e84858abf49e4024b",
+            "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "model",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "keys",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            },
+            {
+              "name": "values",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            }
+          ]
+        },
+        {
+          "name": "RowSet",
+          "prefix": [
+            "0x2613781352d954bf1db81e45ed77d1767c5f3afbdb5935e4464ff31681004fd",
+            "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "model",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "keys",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            },
+            {
+              "name": "values",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            }
+          ]
+        },
+        {
+          "name": "RowDeleted",
+          "prefix": [
+            "0x2613781352d954bf1db81e45ed77d1767c5f3afbdb5935e4464ff31681004fd",
+            "0x34ee03e4825cf92d0335b5828e3389af6c145ecff05fce078c3753d871cc7f5"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "model",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "keys",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            }
+          ]
+        },
+        {
+          "name": "RowMemberSet",
+          "prefix": [
+            "0x2613781352d954bf1db81e45ed77d1767c5f3afbdb5935e4464ff31681004fd",
+            "0x2016d01ac221539fcc960c46b5ba2df505fc9c7032934961e1eeaec5f23b587"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "model",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "member",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "keys",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            },
+            {
+              "name": "values",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            }
+          ]
+        },
+        {
+          "name": "StoryEvent",
+          "prefix": [
+            "0x33b7d96bc1ff34b0a89214516b6ef5d2b8bdd9c301222eda2a1e96f78b84b96"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "game_id",
+              "type": "core::integer::u32",
+              "kind": "key"
+            },
+            {
+              "name": "id",
+              "type": "core::integer::u32",
+              "kind": "key"
+            },
+            {
+              "name": "owner",
+              "type": "core::option::Option::<core::starknet::contract_address::ContractAddress>",
+              "kind": "key"
+            },
+            {
+              "name": "entity_id",
+              "type": "core::option::Option::<core::integer::u32>",
+              "kind": "key"
+            },
+            {
+              "name": "tx_hash",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "story",
+              "type": "world_native::ownership::Story",
+              "kind": "data"
+            },
+            {
+              "name": "timestamp",
+              "type": "core::integer::u64",
+              "kind": "data"
+            }
+          ]
+        }
+      ],
+      "entrypoints": [
+        {
+          "type": "function",
+          "name": "configure_trade",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "rules",
+              "type": "world_native::trade::TradeRules"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "trade_rules",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "world_native::trade::TradeRules"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "trade_order",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::trade::TradeKey"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::option::Option::<world_native::trade::TradeOrder>"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "create_trade_order",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "command",
+              "type": "world_native::trade::CreateOrder"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "accept_trade_order",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "command",
+              "type": "world_native::trade::AcceptOrder"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "cancel_trade_order",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "trade_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "domain_state",
+          "inputs": [],
+          "outputs": [
+            {
+              "type": "world_native::lifecycle::DomainState"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "configure",
+          "inputs": [
+            {
+              "name": "peers",
+              "type": "world_native::lifecycle::Peers"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "activate",
+          "inputs": [],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "upgrade",
+          "inputs": [
+            {
+              "name": "class_hash",
+              "type": "core::starknet::class_hash::ClassHash"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        }
+      ]
     }
   },
   "models": [
+    {
+      "name": "TradeOrder",
+      "identity": "0x54726164654f72646572",
+      "owners": [
+        "economy"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "trade_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "maker_id",
+          "type": "core::integer::u32",
+          "id": "0x6d616b65725f6964",
+          "feltLength": 1
+        },
+        {
+          "name": "taker_id",
+          "type": "core::integer::u32",
+          "id": "0x74616b65725f6964",
+          "feltLength": 1
+        },
+        {
+          "name": "offered_resource",
+          "type": "core::integer::u8",
+          "id": "0x6f6666657265645f7265736f75726365",
+          "feltLength": 1
+        },
+        {
+          "name": "requested_resource",
+          "type": "core::integer::u8",
+          "id": "0x7265717565737465645f7265736f75726365",
+          "feltLength": 1
+        },
+        {
+          "name": "offered_per_lot",
+          "type": "core::integer::u64",
+          "id": "0x6f6666657265645f7065725f6c6f74",
+          "feltLength": 1
+        },
+        {
+          "name": "requested_per_lot",
+          "type": "core::integer::u64",
+          "id": "0x7265717565737465645f7065725f6c6f74",
+          "feltLength": 1
+        },
+        {
+          "name": "remaining_lots",
+          "type": "core::integer::u64",
+          "id": "0x72656d61696e696e675f6c6f7473",
+          "feltLength": 1
+        },
+        {
+          "name": "expires_at",
+          "type": "core::integer::u32",
+          "id": "0x657870697265735f6174",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 8
+    },
+    {
+      "name": "TradeRules",
+      "identity": "0x547261646552756c6573",
+      "owners": [
+        "economy"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "max_count",
+          "type": "core::integer::u8",
+          "id": "0x6d61785f636f756e74",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": 1
+    },
     {
       "name": "Guard",
       "identity": "0x4775617264",
@@ -7194,7 +7649,8 @@
         "troops",
         "structures",
         "settlement",
-        "resources"
+        "resources",
+        "economy"
       ],
       "scope": "deployment",
       "emitterKey": "address",
@@ -7216,7 +7672,7 @@
           "name": "peers",
           "type": "world_native::lifecycle::Peers",
           "id": "0x7065657273",
-          "feltLength": 6
+          "feltLength": 7
         },
         {
           "name": "active",
@@ -7226,7 +7682,7 @@
         }
       ],
       "keyLength": 1,
-      "valueLength": 8
+      "valueLength": 9
     },
     {
       "name": "DomainClass",
@@ -7237,7 +7693,8 @@
         "troops",
         "structures",
         "settlement",
-        "resources"
+        "resources",
+        "economy"
       ],
       "scope": "deployment",
       "emitterKey": "address",
@@ -7915,6 +8372,20 @@
         {
           "name": "Some",
           "type": "world_native::structures::Structure"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
+    "core::option::Option::<world_native::trade::TradeOrder>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::trade::TradeOrder>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::trade::TradeOrder"
         },
         {
           "name": "None",
@@ -8657,6 +9128,18 @@
         {
           "name": "BattleGuard",
           "type": "world_native::commands::Battle"
+        },
+        {
+          "name": "CreateTradeOrder",
+          "type": "world_native::trade::CreateOrder"
+        },
+        {
+          "name": "AcceptTradeOrder",
+          "type": "world_native::trade::AcceptOrder"
+        },
+        {
+          "name": "CancelTradeOrder",
+          "type": "core::integer::u32"
         }
       ]
     },
@@ -8928,6 +9411,10 @@
         },
         {
           "name": "resources",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "economy",
           "type": "core::starknet::contract_address::ContractAddress"
         }
       ]
@@ -9365,6 +9852,18 @@
         {
           "name": "StructureCapturedStory",
           "type": "world_native::ownership::StructureCapturedStory"
+        },
+        {
+          "name": "TradeCreated",
+          "type": "world_native::trade::TradeListing"
+        },
+        {
+          "name": "TradeAccepted",
+          "type": "world_native::trade::TradeFill"
+        },
+        {
+          "name": "TradeCancelled",
+          "type": "core::integer::u32"
         }
       ]
     },
@@ -10824,6 +11323,172 @@
         }
       ]
     },
+    "world_native::trade::AcceptOrder": {
+      "type": "struct",
+      "name": "world_native::trade::AcceptOrder",
+      "members": [
+        {
+          "name": "trade_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "taker_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "lots",
+          "type": "core::integer::u64"
+        }
+      ]
+    },
+    "world_native::trade::CreateOrder": {
+      "type": "struct",
+      "name": "world_native::trade::CreateOrder",
+      "members": [
+        {
+          "name": "maker_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "taker_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "offered_resource",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "requested_resource",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "offered_per_lot",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "requested_per_lot",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "lots",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "expires_at",
+          "type": "core::integer::u32"
+        }
+      ]
+    },
+    "world_native::trade::TradeFill": {
+      "type": "struct",
+      "name": "world_native::trade::TradeFill",
+      "members": [
+        {
+          "name": "trade_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "maker_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "taker_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "offered_resource",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "requested_resource",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "offered_amount",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "requested_amount",
+          "type": "core::integer::u128"
+        }
+      ]
+    },
+    "world_native::trade::TradeKey": {
+      "type": "struct",
+      "name": "world_native::trade::TradeKey",
+      "members": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "trade_id",
+          "type": "core::integer::u32"
+        }
+      ]
+    },
+    "world_native::trade::TradeListing": {
+      "type": "struct",
+      "name": "world_native::trade::TradeListing",
+      "members": [
+        {
+          "name": "trade_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "order",
+          "type": "world_native::trade::TradeOrder"
+        }
+      ]
+    },
+    "world_native::trade::TradeOrder": {
+      "type": "struct",
+      "name": "world_native::trade::TradeOrder",
+      "members": [
+        {
+          "name": "maker_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "taker_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "offered_resource",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "requested_resource",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "offered_per_lot",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "requested_per_lot",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "remaining_lots",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "expires_at",
+          "type": "core::integer::u32"
+        }
+      ]
+    },
+    "world_native::trade::TradeRules": {
+      "type": "struct",
+      "name": "world_native::trade::TradeRules",
+      "members": [
+        {
+          "name": "max_count",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
     "world_native::troops::AgentPopulation": {
       "type": "struct",
       "name": "world_native::troops::AgentPopulation",
@@ -11105,5 +11770,5 @@
       ]
     }
   },
-  "identity": "b517932d5d79b5a5b99c3b1860dc0517dafcfb3ef823570bd92ca7e775403298"
+  "identity": "77aba9cf6e4e9e06b463793da6df620a710bb046ee72695cadaa0bf2967d9e98"
 }

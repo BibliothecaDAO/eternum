@@ -26,6 +26,8 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
   };
   const domainKey = [{ name: "address", type: struct("lifecycle::Peers")[0].type }];
   return [
+    model("TradeOrder", ["economy"], "game", struct("trade::TradeKey"), struct("trade::TradeOrder")),
+    model("TradeRules", ["economy"], "game", method("economy", "trade_rules").inputs, struct("trade::TradeRules")),
     model("Guard", ["troops"], "game", struct("guards::GuardKey"), struct("guards::Guard")),
     model("BitcoinMine", ["resources"], "game", struct("resources::ResourceKey"), struct("bitcoin::MineFunding")),
     model("BitcoinClaim", ["resources"], "game", struct("bitcoin::ClaimKey"), [

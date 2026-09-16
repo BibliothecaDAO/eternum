@@ -168,12 +168,12 @@ pub mod ResourcesDomain {
         fn grant_resource(
             ref self: ContractState, key: ResourceKey, resource_type: u8, amount: u128, timestamp: u64,
         ) -> u128 {
-            self.assert_structures();
+            self.assert_resource_settlement_domain();
             let rule = self.rule(key.game_id, resource_type);
             self.resources.grant_resource(key, resource_type, amount, rule.unit_weight, timestamp.try_into().unwrap())
         }
         fn spend_resource(ref self: ContractState, key: ResourceKey, resource_type: u8, amount: u128, timestamp: u64) {
-            self.assert_structures();
+            self.assert_resource_settlement_domain();
             self.spend(key, resource_type, amount, timestamp);
         }
         fn stop_production(ref self: ContractState, key: ResourceKey, resource_type: u8, rate: u64, timestamp: u64) {
@@ -200,6 +200,25 @@ pub mod ResourcesDomain {
             self
                 .resources
                 .start_production(key, resource_type, rate, output, rule.unit_weight, timestamp.try_into().unwrap());
+        }
+    }
+    #[abi(embed_v0)]
+    impl EconomyDelivery of crate::trade::IEconomyDelivery<ContractState> {
+        fn queue_economy_delivery(
+            ref self: ContractState,
+            key: ResourceKey,
+            resource: crate::resources::ResourceAmount,
+            travel_time: u64,
+            timestamp: u64,
+        ) {
+            assert!(get_caller_address() == self.lifecycle.require_active().economy, "only economy domain");
+            crate::commands::assert_context_time(timestamp);
+            let _ = self.rule(key.game_id, resource.resource_type);
+            let rules = self.game_dispatcher().rules(key.game_id);
+            let arrival = crate::arrivals::arrival_key(
+                key.game_id, key.entity_id, rules.tick_config.delivery_tick_in_seconds, timestamp, travel_time,
+            );
+            self.arrivals.enqueue(arrival, array![resource].span());
         }
     }
     #[abi(embed_v0)]
@@ -857,6 +876,11 @@ pub mod ResourcesDomain {
                 end >= game.start_main_at && (game.end_at == 0 || end <= game.end_at), "Bitcoin phase outside game",
             );
             assert!(timestamp >= end, "Bitcoin phase is still open");
+        }
+        fn assert_resource_settlement_domain(self: @ContractState) {
+            let peers = self.lifecycle.require_active();
+            let caller = get_caller_address();
+            assert!(caller == peers.structures || caller == peers.economy, "only resource settlement domain");
         }
         fn assert_structures(self: @ContractState) {
             assert!(get_caller_address() == self.lifecycle.require_active().structures, "only structures domain");

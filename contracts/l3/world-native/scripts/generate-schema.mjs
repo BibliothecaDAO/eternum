@@ -17,6 +17,7 @@ const contracts = {
   structures: "StructuresDomain",
   settlement: "SettlementDomain",
   resources: "ResourcesDomain",
+  economy: "EconomyDomain",
 };
 const artifacts = Object.fromEntries(
   await Promise.all(

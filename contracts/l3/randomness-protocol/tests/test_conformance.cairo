@@ -362,62 +362,89 @@ fn outage_recovery_consumes_the_accepted_prefix_before_fresh_work() {
     assert!(views.get_admission(7, 456).nonce == 2, "fresh ticket did not consume its nonce");
 }
 
+fn invalid_action_keys_and_nonces_cannot_block_a_valid_successor(case: u32) {
+    let address = setup();
+    let mut rejected = intent(address);
+    let reason = match case {
+        0 => {
+            rejected.game_id = 0x100000000;
+            'INVALID_GAME'
+        },
+        1 => {
+            rejected.actor = 0x800000000000000000000000000000000000000000000000000000000000000;
+            'INVALID_ACTOR'
+        },
+        2 => {
+            rejected.game_id = 0;
+            'INVALID_GAME'
+        },
+        3 => {
+            rejected.actor = 0;
+            'INVALID_ACTOR'
+        },
+        4 => {
+            rejected.nonce = 1;
+            'STALE_NONCE'
+        },
+        _ => {
+            rejected.rules = 1;
+            'INVALID_RULES'
+        },
+    };
+    let recorded = envelope(@rejected);
+    let (r, s) = pair().sign(action_identity(@rejected)).unwrap();
+    IRecordedExecutionDispatcher { contract_address: address }.execute(rejected, context(@recorded), r, s);
+    let views = IRecordedExecutionViewsDispatcher { contract_address: address };
+    let result = views.get_result(1);
+    assert!(result.status == 2 && result.result == reason, "terminal reason mismatch");
+    assert!(result.binding == envelope_binding(@recorded), "terminal ticket changed");
+    let next = views.get_admission(7, 456);
+    assert!(next.order == 2, "rejection blocked stream");
+    assert!(next.nonce == if case == 5 {
+        1
+    } else {
+        0
+    }, "rejection changed unrelated nonce");
+    let mut successor = intent(address);
+    successor.nonce = next.nonce;
+    let mut following = envelope(@successor);
+    following.order = next.order;
+    following.predecessor = next.predecessor;
+    following.preceding_state = next.preceding_state;
+    let (r, s) = pair().sign(action_identity(@successor)).unwrap();
+    IRecordedExecutionDispatcher { contract_address: address }.execute(successor, context(@following), r, s);
+    assert!(views.get_result(2).status == 1, "valid successor failed");
+    assert!(views.get_admission(7, 456).nonce == next.nonce + 1, "successor nonce not consumed");
+}
+
 #[test]
-fn invalid_action_keys_and_nonces_cannot_block_a_valid_successor() {
-    for case in 0_u32..6 {
-        let address = setup();
-        let mut rejected = intent(address);
-        let reason = match case {
-            0 => {
-                rejected.game_id = 0x100000000;
-                'INVALID_GAME'
-            },
-            1 => {
-                rejected.actor = 0x800000000000000000000000000000000000000000000000000000000000000;
-                'INVALID_ACTOR'
-            },
-            2 => {
-                rejected.game_id = 0;
-                'INVALID_GAME'
-            },
-            3 => {
-                rejected.actor = 0;
-                'INVALID_ACTOR'
-            },
-            4 => {
-                rejected.nonce = 1;
-                'STALE_NONCE'
-            },
-            _ => {
-                rejected.rules = 1;
-                'INVALID_RULES'
-            },
-        };
-        let recorded = envelope(@rejected);
-        let (r, s) = pair().sign(action_identity(@rejected)).unwrap();
-        IRecordedExecutionDispatcher { contract_address: address }.execute(rejected, context(@recorded), r, s);
-        let views = IRecordedExecutionViewsDispatcher { contract_address: address };
-        let result = views.get_result(1);
-        assert!(result.status == 2 && result.result == reason, "terminal reason mismatch");
-        assert!(result.binding == envelope_binding(@recorded), "terminal ticket changed");
-        let next = views.get_admission(7, 456);
-        assert!(next.order == 2, "rejection blocked stream");
-        assert!(next.nonce == if case == 5 {
-            1
-        } else {
-            0
-        }, "rejection changed unrelated nonce");
-        let mut successor = intent(address);
-        successor.nonce = next.nonce;
-        let mut following = envelope(@successor);
-        following.order = next.order;
-        following.predecessor = next.predecessor;
-        following.preceding_state = next.preceding_state;
-        let (r, s) = pair().sign(action_identity(@successor)).unwrap();
-        IRecordedExecutionDispatcher { contract_address: address }.execute(successor, context(@following), r, s);
-        assert!(views.get_result(2).status == 1, "valid successor failed");
-        assert!(views.get_admission(7, 456).nonce == next.nonce + 1, "successor nonce not consumed");
-    }
+fn oversized_game_id_cannot_block_a_valid_successor() {
+    invalid_action_keys_and_nonces_cannot_block_a_valid_successor(0);
+}
+
+#[test]
+fn oversized_actor_cannot_block_a_valid_successor() {
+    invalid_action_keys_and_nonces_cannot_block_a_valid_successor(1);
+}
+
+#[test]
+fn zero_game_id_cannot_block_a_valid_successor() {
+    invalid_action_keys_and_nonces_cannot_block_a_valid_successor(2);
+}
+
+#[test]
+fn zero_actor_cannot_block_a_valid_successor() {
+    invalid_action_keys_and_nonces_cannot_block_a_valid_successor(3);
+}
+
+#[test]
+fn future_actor_nonce_cannot_block_a_valid_successor() {
+    invalid_action_keys_and_nonces_cannot_block_a_valid_successor(4);
+}
+
+#[test]
+fn invalid_rules_cannot_block_a_valid_successor() {
+    invalid_action_keys_and_nonces_cannot_block_a_valid_successor(5);
 }
 
 #[test]

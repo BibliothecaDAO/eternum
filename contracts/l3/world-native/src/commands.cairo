@@ -74,6 +74,9 @@ pub enum Command {
     BindBitcoinPhase: u64,
     ClaimBitcoinPhase: crate::bitcoin::ClaimPhase,
     BattleGuard: Battle,
+    CreateTradeOrder: crate::trade::CreateOrder,
+    AcceptTradeOrder: crate::trade::AcceptOrder,
+    CancelTradeOrder: u32,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]

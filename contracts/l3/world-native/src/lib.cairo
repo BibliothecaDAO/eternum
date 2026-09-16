@@ -31,6 +31,7 @@ pub mod parity_types {
 }
 pub mod buildings;
 pub mod discovery;
+pub mod economy;
 pub mod fixed_constants;
 pub mod game;
 pub mod geometry;
@@ -45,6 +46,8 @@ pub mod random;
 pub mod resources;
 pub mod resources_domain;
 pub mod structures;
+
+pub mod trade;
 
 pub mod transport;
 

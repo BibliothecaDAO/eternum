@@ -310,6 +310,9 @@ pub enum Story {
     BuildingPaymentStory: BuildingPaymentStory,
     BitcoinAwardStory: crate::bitcoin::BitcoinAwardStory,
     StructureCapturedStory: StructureCapturedStory,
+    TradeCreated: crate::trade::TradeListing,
+    TradeAccepted: crate::trade::TradeFill,
+    TradeCancelled: u32,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]

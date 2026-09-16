@@ -8,12 +8,14 @@ pub struct Peers {
     pub troops: ContractAddress,
     pub settlement: ContractAddress,
     pub resources: ContractAddress,
+    pub economy: ContractAddress,
 }
 
 #[generate_trait]
 pub impl PeersImpl of PeersTrait {
     fn addresses(self: Peers) -> Span<ContractAddress> {
-        array![self.season, self.map, self.structures, self.troops, self.settlement, self.resources].span()
+        array![self.season, self.map, self.structures, self.troops, self.settlement, self.resources, self.economy]
+            .span()
     }
 }
 
@@ -122,6 +124,7 @@ pub mod Lifecycle {
                             troops: 0.try_into().unwrap(),
                             settlement: 0.try_into().unwrap(),
                             resources: 0.try_into().unwrap(),
+                            economy: 0.try_into().unwrap(),
                         },
                         active: false,
                     },

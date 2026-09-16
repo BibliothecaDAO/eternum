@@ -356,3 +356,12 @@ read from StructuresDomain. Closing a phase prevents contributions. A later reco
 never use their own roots. Each mine processes phases in order so rollover cannot target an already paid phase. Unsplit
 prizes, forfeited winner shares and forfeited owner shares have separate balances; only unsplit prizes receive an owner
 cut. A missing destination for one recipient does not affect the other recipient's payment.
+
+`EconomyDomain` owns `TradeState`: orders keyed by `(game_id, trade_id)`, an internal open-order count keyed by
+`(game_id, maker_id)`, and immutable trade limits keyed by game. Maker id zero means an absent order. A partial fill
+writes only the remaining-lot field; cancellation and full fill clear the maker sentinel and emit a deletion. The
+open-order count is an index for enforcing the limit, not a second client fact. Escrow is represented by the order;
+resources are debited once at creation and arrivals remain owned by `ResourcesDomain`.
+
+The lifecycle peer set adds the economy address. This changes the nested peer layout and requires the same fresh
+rehearsal deployment as the row changes above; no compatibility with an existing live deployment is claimed.
