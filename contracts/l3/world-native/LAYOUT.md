@@ -272,8 +272,9 @@ Settlement; direct player commands still enter only through Season's recorded ex
 
 Structure existence is its nonzero base category. The separate existence map, duplicate category and village count are
 removed. `StructureBase` occupies one felt: counts, limits, creation time, level, category and the granted flag use bits
-0–96; coordinates use bits 128–191. Structure metadata occupies one u64: realm id at bits 0–15, Order at 16–23, wonder
-at 24 and connected realm at 32–63. The gaps are zero. These layouts retain the full ranges of their fields.
+0–96, and layer uses bit 97; coordinates use bits 128–191. Structure metadata occupies one u128: realm id at bits 0–15,
+Order at 16–23, wonder at 24, connected realm at 32–63 and mine kind at 64–71. The gaps are zero. These layouts retain
+the full ranges of their fields.
 
 `Troops` occupies four slots: u128 count, two u64 stamina fields in one u128, packed boosts and combat flags. Combat
 stores category at bits 0–1, tier at 2–3 and cooldown at 4–35. Boosts store damage, defense and stamina at bits 0–119,
@@ -324,3 +325,19 @@ consumes the requested prefix, as in the original game.
 SliceRules appends the immutable two-field SpeedConfig (normal and troop seconds per hex). Its values come from the
 pinned preset. Transport reads those values, the existing donkey capacity and delivery interval; village connections are
 never consulted for transfer eligibility. Duplicate resource ids are rejected before transfer mutations.
+
+## Mine configuration
+
+ResourcesDomain appends MineState substorage. Its immutable kind configuration is keyed by `(game_id, kind)` and stores
+resource, building, production rate, minimum cap and step count. The cap is minimum multiplied by a draw from 1 through
+step count, using the existing salt 124 and the same discovery root. Fragment mines retain minimum 300,000 and ten
+steps; a one-step kind has a fixed cap. Configuration rejects zero values and an overflowing maximum cap.
+
+The discovery pool uses `(game_id, layer)` with a count and ordered `(kind, weight)` entries. An empty Ethereal pool
+disables ordinary mines there; drawing from an empty pool rejects. Positive weights must refer to configured kinds.
+MineKindConfig and MinePool are the authoritative rows. The internal configured flag prevents a second initialization;
+it is not a separate player fact.
+
+Mine kind is stored in Structure metadata. The layer is stored explicitly because ordinary mines may inhabit either
+layer. Discovery guard preparation belongs to TroopsDomain; it preserves each guard's type, tier, seed and recorded
+time.

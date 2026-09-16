@@ -14,7 +14,7 @@ use super::resource_commands::{
     assert_terminal_rejection, execute, execute_recorded_at, resource_facts, set_fixture, setup,
 };
 
-fn rules() -> Span<BuildingRuleConfig> {
+pub fn rules() -> Span<BuildingRuleConfig> {
     let mut values = array![];
     for category in 1_u8..41 {
         values

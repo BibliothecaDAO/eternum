@@ -1330,6 +1330,34 @@
       "entrypoints": [
         {
           "type": "function",
+          "name": "discovery_guards",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "discovery",
+              "type": "world_native::discovery::Discovery"
+            },
+            {
+              "name": "seed",
+              "type": "core::integer::u256"
+            },
+            {
+              "name": "timestamp",
+              "type": "core::integer::u64"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "world_native::structures::GuardTroops"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
           "name": "explorer",
           "inputs": [
             {
@@ -3032,6 +3060,35 @@
         {
           "name": "RowSet",
           "prefix": [
+            "0x3f8d2b7184800a3615eb15bdc8b7e169c17d2f34db6312ff6ce82a5f7e435d9",
+            "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "model",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "keys",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            },
+            {
+              "name": "values",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            }
+          ]
+        },
+        {
+          "name": "RowSet",
+          "prefix": [
             "0x1517f684ec2bc21ca20251bbef26b7ad0434759388fc50e84858abf49e4024b",
             "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
           ],
@@ -3613,6 +3670,82 @@
         },
         {
           "type": "function",
+          "name": "configure_mines",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "kinds",
+              "type": "core::array::Span::<world_native::mines::MineKindEntry>"
+            },
+            {
+              "name": "surface",
+              "type": "core::array::Span::<world_native::mines::MineWeight>"
+            },
+            {
+              "name": "ethereal",
+              "type": "core::array::Span::<world_native::mines::MineWeight>"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "mine_kind",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::mines::MineKindKey"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "world_native::mines::MineKindConfig"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "mine_pool",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::mines::MinePoolKey"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::array::Span::<world_native::mines::MineWeight>"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "mine_draw",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::mines::MinePoolKey"
+            },
+            {
+              "name": "seed",
+              "type": "core::integer::u256"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "(core::integer::u8, world_native::mines::MineKindConfig, core::integer::u128)"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
           "name": "configure_production",
           "inputs": [
             {
@@ -4057,6 +4190,106 @@
     }
   },
   "models": [
+    {
+      "name": "MineKindConfig",
+      "identity": "0x4d696e654b696e64436f6e666967",
+      "owners": [
+        "resources"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "kind",
+          "type": "core::integer::u8",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "resource_type",
+          "type": "core::integer::u8",
+          "id": "0x7265736f757263655f74797065",
+          "feltLength": 1
+        },
+        {
+          "name": "building_category",
+          "type": "core::integer::u8",
+          "id": "0x6275696c64696e675f63617465676f7279",
+          "feltLength": 1
+        },
+        {
+          "name": "production_rate",
+          "type": "core::integer::u64",
+          "id": "0x70726f64756374696f6e5f72617465",
+          "feltLength": 1
+        },
+        {
+          "name": "cap_min",
+          "type": "core::integer::u128",
+          "id": "0x6361705f6d696e",
+          "feltLength": 1
+        },
+        {
+          "name": "cap_steps",
+          "type": "core::integer::u32",
+          "id": "0x6361705f7374657073",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 5,
+      "observation": {
+        "domain": "mines",
+        "fields": {
+          "resource": "resource_type",
+          "building": "building_category",
+          "rate": "production_rate",
+          "minimum": "cap_min",
+          "steps": "cap_steps"
+        }
+      }
+    },
+    {
+      "name": "MinePool",
+      "identity": "0x4d696e65506f6f6c",
+      "owners": [
+        "resources"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "alt",
+          "type": "core::bool",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "weights",
+          "type": "core::array::Span::<world_native::mines::MineWeight>",
+          "id": "0x77656967687473",
+          "feltLength": null
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": null,
+      "observation": {
+        "domain": "mines",
+        "fields": {
+          "kinds": "weights"
+        }
+      }
+    },
     {
       "name": "RealmTraits",
       "identity": "0x5265616c6d547261697473",
@@ -4787,7 +5020,7 @@
           "name": "base",
           "type": "world_native::structures::StructureBase",
           "id": "0x62617365",
-          "feltLength": 10
+          "feltLength": 11
         },
         {
           "name": "troop_guards",
@@ -4811,7 +5044,7 @@
           "name": "metadata",
           "type": "world_native::structures::StructureMetadata",
           "id": "0x6d65746164617461",
-          "feltLength": 4
+          "feltLength": 5
         }
       ],
       "keyLength": 2,
@@ -4822,6 +5055,8 @@
           "owner": "owner",
           "level": "base.level",
           "kind": "base.category",
+          "layer": "base.alt",
+          "mineKind": "metadata.mine_kind",
           "column": "base.coord_x",
           "row": "base.coord_y",
           "foundedAt": "base.created_at",
@@ -6798,6 +7033,26 @@
         }
       ]
     },
+    "core::array::Span::<world_native::mines::MineKindEntry>": {
+      "type": "struct",
+      "name": "core::array::Span::<world_native::mines::MineKindEntry>",
+      "members": [
+        {
+          "name": "snapshot",
+          "type": "@core::array::Array::<world_native::mines::MineKindEntry>"
+        }
+      ]
+    },
+    "core::array::Span::<world_native::mines::MineWeight>": {
+      "type": "struct",
+      "name": "core::array::Span::<world_native::mines::MineWeight>",
+      "members": [
+        {
+          "name": "snapshot",
+          "type": "@core::array::Array::<world_native::mines::MineWeight>"
+        }
+      ]
+    },
     "core::array::Span::<world_native::production::RecipeConfig>": {
       "type": "struct",
       "name": "core::array::Span::<world_native::production::RecipeConfig>",
@@ -7833,6 +8088,88 @@
         {
           "name": "data",
           "type": "core::integer::u128"
+        }
+      ]
+    },
+    "world_native::mines::MineKindConfig": {
+      "type": "struct",
+      "name": "world_native::mines::MineKindConfig",
+      "members": [
+        {
+          "name": "resource_type",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "building_category",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "production_rate",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "cap_min",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "cap_steps",
+          "type": "core::integer::u32"
+        }
+      ]
+    },
+    "world_native::mines::MineKindEntry": {
+      "type": "struct",
+      "name": "world_native::mines::MineKindEntry",
+      "members": [
+        {
+          "name": "kind",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "config",
+          "type": "world_native::mines::MineKindConfig"
+        }
+      ]
+    },
+    "world_native::mines::MineKindKey": {
+      "type": "struct",
+      "name": "world_native::mines::MineKindKey",
+      "members": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "kind",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
+    "world_native::mines::MinePoolKey": {
+      "type": "struct",
+      "name": "world_native::mines::MinePoolKey",
+      "members": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "alt",
+          "type": "core::bool"
+        }
+      ]
+    },
+    "world_native::mines::MineWeight": {
+      "type": "struct",
+      "name": "world_native::mines::MineWeight",
+      "members": [
+        {
+          "name": "kind",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "weight",
+          "type": "core::integer::u32"
         }
       ]
     },
@@ -9597,6 +9934,10 @@
         {
           "name": "starting_troops_granted",
           "type": "core::bool"
+        },
+        {
+          "name": "alt",
+          "type": "core::bool"
         }
       ]
     },
@@ -9619,6 +9960,10 @@
         {
           "name": "village_realm",
           "type": "core::integer::u32"
+        },
+        {
+          "name": "mine_kind",
+          "type": "core::integer::u8"
         }
       ]
     },
@@ -9903,5 +10248,5 @@
       ]
     }
   },
-  "identity": "3ff16ff6a8d5c7cf4f2841647e9f5c9dcd2a3543d484e620ffb7716cbbcea2f8"
+  "identity": "fc698edb6bfbea0f7db518efd6f5b82a1fde1f866393c3e326d63aeabf7a93a4"
 }

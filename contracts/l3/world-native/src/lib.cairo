@@ -7,6 +7,7 @@ pub mod events;
 pub mod lifecycle;
 pub mod map;
 pub mod math;
+pub mod mines;
 
 pub mod realms;
 pub mod recording;

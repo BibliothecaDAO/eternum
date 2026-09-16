@@ -16,12 +16,11 @@ pub struct StructureBase {
     pub level: u8,
     // This lets delayed provisioning know whether the one-time troop start was already applied.
     pub starting_troops_granted: bool,
+    pub alt: bool,
 }
 
-const BITCOIN_MINE_CATEGORY: u8 = 8;
-
 pub fn structure_coord(base: StructureBase) -> Coord {
-    Coord { alt: base.category == BITCOIN_MINE_CATEGORY, x: base.coord_x, y: base.coord_y }
+    Coord { alt: base.alt, x: base.coord_x, y: base.coord_y }
 }
 
 const EXPLORER_COUNT_SCALE: u128 = 0x10000;
@@ -30,10 +29,11 @@ const CREATED_AT_SCALE: u128 = 0x1000000000000;
 const LEVEL_SCALE: u128 = 0x100000000000000000000;
 const CATEGORY_SCALE: u128 = 0x10000000000000000000000;
 const TROOPS_GRANTED_SCALE: u128 = 0x1000000000000000000000000;
+const LAYER_SCALE: u128 = 0x2000000000000000000000000;
 const COORDINATE_SCALE: u128 = 0x100000000;
 
 // The low limb holds counts, limits, time and flags; the high limb holds the two coordinates.
-// All 161 field bits are retained. The unused gap keeps decoding within u128 arithmetic.
+// All 162 field bits are retained. The unused gap keeps decoding within u128 arithmetic.
 pub impl StructureBasePacking of starknet::storage_access::StorePacking<StructureBase, felt252> {
     fn pack(value: StructureBase) -> felt252 {
         let granted = if value.starting_troops_granted {
@@ -48,7 +48,12 @@ pub impl StructureBasePacking of starknet::storage_access::StorePacking<Structur
             + value.created_at.into() * CREATED_AT_SCALE
             + value.level.into() * LEVEL_SCALE
             + value.category.into() * CATEGORY_SCALE
-            + granted * TROOPS_GRANTED_SCALE;
+            + granted * TROOPS_GRANTED_SCALE
+            + (if value.alt {
+                1_u128
+            } else {
+                0
+            }) * LAYER_SCALE;
         let high = value.coord_x.into() + value.coord_y.into() * COORDINATE_SCALE;
         u256 { low, high }.try_into().unwrap()
     }
@@ -63,6 +68,7 @@ pub impl StructureBasePacking of starknet::storage_access::StorePacking<Structur
             level: (value.low / LEVEL_SCALE % 256).try_into().unwrap(),
             category: (value.low / CATEGORY_SCALE % 256).try_into().unwrap(),
             starting_troops_granted: value.low / TROOPS_GRANTED_SCALE % 2 != 0,
+            alt: value.low / LAYER_SCALE % 2 != 0,
             coord_x: (value.high % COORDINATE_SCALE).try_into().unwrap(),
             coord_y: (value.high / COORDINATE_SCALE).try_into().unwrap(),
         }
@@ -76,14 +82,16 @@ pub struct StructureMetadata {
     pub has_wonder: bool,
     // associated with village
     pub village_realm: u32,
+    pub mine_kind: u8,
 }
-const ORDER_SCALE: u64 = 0x10000;
-const WONDER_SCALE: u64 = 0x1000000;
-const CONNECTED_REALM_SCALE: u64 = 0x100000000;
-pub impl StructureMetadataPacking of starknet::storage_access::StorePacking<StructureMetadata, u64> {
-    fn pack(value: StructureMetadata) -> u64 {
+const ORDER_SCALE: u128 = 0x10000;
+const WONDER_SCALE: u128 = 0x1000000;
+const CONNECTED_REALM_SCALE: u128 = 0x100000000;
+const MINE_KIND_SCALE: u128 = 0x10000000000000000;
+pub impl StructureMetadataPacking of starknet::storage_access::StorePacking<StructureMetadata, u128> {
+    fn pack(value: StructureMetadata) -> u128 {
         let wonder = if value.has_wonder {
-            1_u64
+            1_u128
         } else {
             0
         };
@@ -91,13 +99,15 @@ pub impl StructureMetadataPacking of starknet::storage_access::StorePacking<Stru
             + value.order.into() * ORDER_SCALE
             + wonder * WONDER_SCALE
             + value.village_realm.into() * CONNECTED_REALM_SCALE
+            + value.mine_kind.into() * MINE_KIND_SCALE
     }
-    fn unpack(value: u64) -> StructureMetadata {
+    fn unpack(value: u128) -> StructureMetadata {
         StructureMetadata {
             realm_id: (value % ORDER_SCALE).try_into().unwrap(),
             order: (value / ORDER_SCALE % 256).try_into().unwrap(),
             has_wonder: value / WONDER_SCALE % 2 != 0,
-            village_realm: (value / CONNECTED_REALM_SCALE).try_into().unwrap(),
+            village_realm: (value / CONNECTED_REALM_SCALE % COORDINATE_SCALE).try_into().unwrap(),
+            mine_kind: (value / MINE_KIND_SCALE).try_into().unwrap(),
         }
     }
 }
@@ -421,17 +431,18 @@ pub mod StructuresDomain {
     use crate::geometry::{neighbor, tile_key};
     use crate::lifecycle::Lifecycle;
     use crate::map::{IMapDispatcher, IMapDispatcherTrait};
+    use crate::mines::{IMineRulesDispatcher, IMineRulesDispatcherTrait, MinePoolKey};
     use crate::ownership::{
         FaithOwnershipState, FaithPointsClaimedStory, FaithfulStructure, PlayerFaithKey, PlayerFaithPoints, Story,
         StoryEvent, TransferOwnership, WonderFaith, WonderFaithWinners,
     };
     use crate::resources::{IResourcesDispatcher, IResourcesDispatcherTrait, ResourceKey};
-    use crate::rules::{RESOURCE_PRECISION, SliceRules};
+    use crate::rules::RESOURCE_PRECISION;
     use crate::settlement::{
         ISettlementDisplacementDispatcher, ISettlementDisplacementDispatcherTrait, ISettlementViewsDispatcher,
         ISettlementViewsDispatcherTrait,
     };
-    use crate::troops::Coord;
+    use crate::troops::{Coord, IDiscoveryGuardsDispatcherTrait};
     use crate::upgrades::IUpgradeRulesDispatcherTrait;
     use super::{Structure, StructureBase, StructureRecord, StructureState};
     component!(path: FaithOwnershipState, storage: faith, event: FaithEvent);
@@ -515,10 +526,9 @@ pub mod StructuresDomain {
             self.assert_authority();
             assert!(self.game_dispatcher().game(game_id).dev_mode_on, "fixture provisioning requires development game");
             let id = self.game_dispatcher().allocate_entity(game_id);
-            let rules = self.game_dispatcher().rules(game_id);
             for alt in array![false, true] {
                 let layer_coord = Coord { alt, ..coord };
-                self.reveal_structure_tile(game_id, layer_coord, rules);
+                self.reveal_structure_tile(game_id, layer_coord);
                 self.map_dispatcher().occupy(tile_key(game_id, layer_coord), id, 35, true);
                 for direction in 0_u8..6 {
                     let key = tile_key(game_id, crate::geometry::spire_neighbor(layer_coord, direction));
@@ -560,7 +570,17 @@ pub mod StructuresDomain {
             assert!(structure.base.category == 1, "producer fixture requires realm");
             let coord = Coord { alt: false, x: structure.base.coord_x, y: structure.base.coord_y };
             let rules = self.game_dispatcher().rules(key.game_id);
-            self.create_producer(key, coord, output, true, 24, 26, rules, get_block_timestamp());
+            self
+                .create_producer(
+                    key,
+                    coord,
+                    output,
+                    self.resources_dispatcher().resource_rule(key.game_id, 24).realm_rate,
+                    24,
+                    26,
+                    rules.building_config.base_population,
+                    get_block_timestamp(),
+                );
         }
         fn provision_realm(
             ref self: ContractState, game_id: u32, actor: ContractAddress, coord: Coord, grants: Span<(u8, u128)>,
@@ -675,7 +695,17 @@ pub mod StructuresDomain {
                 crate::settlement::SettlementCreation::Village(_) => {
                     self.grant_non_troop_resources(key, self.village_rules(game_id).resources, context.timestamp);
                     let rules = self.game_dispatcher().rules(game_id);
-                    self.create_producer(key, coord, 0, false, 23, 25, rules, context.timestamp);
+                    self
+                        .create_producer(
+                            key,
+                            coord,
+                            0,
+                            self.resources_dispatcher().resource_rule(key.game_id, 23).village_rate,
+                            23,
+                            25,
+                            rules.building_config.base_population,
+                            context.timestamp,
+                        );
                 },
             }
             key.entity_id
@@ -947,6 +977,7 @@ pub mod StructuresDomain {
                 coord_y: coord.y,
                 level: 0,
                 starting_troops_granted: false,
+                alt: coord.alt,
             },
             troop_guards: Default::default(),
             resources_packed: 0,
@@ -967,10 +998,41 @@ pub mod StructuresDomain {
             let rules = self.game_dispatcher().rules(game_id);
             let id = self.game_dispatcher().allocate_entity(game_id);
             let key = ResourceKey { game_id, entity_id: id };
-            let (record, occupier, capacity) = super::discovered_structure(coord, discovery, seed, rules, timestamp);
-            self.reveal_structure_tile(game_id, coord, rules);
+            let (mut record, occupier, capacity) = super::discovered_structure(
+                coord,
+                discovery,
+                rules.structure_capacity_config,
+                timestamp,
+                crate::troops::IDiscoveryGuardsDispatcher { contract_address: self.lifecycle.require_active().troops }
+                    .discovery_guards(game_id, discovery, seed, timestamp),
+            );
+            self.reveal_structure_tile(game_id, coord);
             if discovery != Discovery::Mine {
                 self.reveal_surroundings(game_id, coord);
+            }
+            self.resources_dispatcher().initialize_resources(key, capacity * RESOURCE_PRECISION);
+            match discovery {
+                Discovery::Mine => {
+                    let (kind, config, cap) = IMineRulesDispatcher {
+                        contract_address: self.lifecycle.require_active().resources,
+                    }
+                        .mine_draw(MinePoolKey { game_id, alt: coord.alt }, seed);
+                    record.metadata.mine_kind = kind;
+                    self
+                        .create_producer(
+                            key,
+                            coord,
+                            cap,
+                            config.production_rate,
+                            config.resource_type,
+                            config.building_category,
+                            rules.building_config.base_population,
+                            timestamp,
+                        );
+                },
+                Discovery::Hyperstructure => self.create_hyperstructure(key, seed, completed),
+                Discovery::BitcoinMine => {},
+                Discovery::None => panic!("cannot create empty discovery"),
             }
             self.structures.create(key, record);
             self.map_dispatcher().occupy(tile_key(game_id, coord), id, if completed {
@@ -978,13 +1040,6 @@ pub mod StructuresDomain {
             } else {
                 occupier
             }, true);
-            self.resources_dispatcher().initialize_resources(key, capacity * RESOURCE_PRECISION);
-            match discovery {
-                Discovery::Mine => self.create_mine_production(key, coord, seed, rules, timestamp),
-                Discovery::Hyperstructure => self.create_hyperstructure(key, seed, completed),
-                Discovery::BitcoinMine => {},
-                Discovery::None => panic!("cannot create empty discovery"),
-            }
             id
         }
 
@@ -1004,7 +1059,7 @@ pub mod StructuresDomain {
                     .displace_explorer(game_id, explorer_id);
             }
             let rules = self.game_dispatcher().rules(game_id);
-            self.reveal_structure_tile(game_id, coord, rules);
+            self.reveal_structure_tile(game_id, coord);
             self.structures.create(key, record);
             let village = record.base.category == crate::ownership::VILLAGE_CATEGORY;
             let occupier = if village {
@@ -1050,7 +1105,17 @@ pub mod StructuresDomain {
             let grants = self.settlement_rules().realm_grants(key.game_id);
             self.grant_non_troop_resources(key, grants.resources, timestamp);
             let rules = self.game_dispatcher().rules(key.game_id);
-            self.create_producer(key, coord, 0xffffffffffffffffffffffffffffffff, true, 23, 25, rules, timestamp);
+            self
+                .create_producer(
+                    key,
+                    coord,
+                    0xffffffffffffffffffffffffffffffff,
+                    self.resources_dispatcher().resource_rule(key.game_id, 23).realm_rate,
+                    23,
+                    25,
+                    rules.building_config.base_population,
+                    timestamp,
+                );
         }
         fn village_rules(self: @ContractState, game_id: u32) -> crate::village::VillageRules {
             crate::village::IVillagesDispatcherTrait::village_rules(
@@ -1167,12 +1232,6 @@ pub mod StructuresDomain {
                     self.map_dispatcher().reveal(key, self.map_dispatcher().biome(key));
                 }
             }
-        }
-        fn create_mine_production(
-            ref self: ContractState, key: ResourceKey, coord: Coord, seed: u256, rules: SliceRules, timestamp: u64,
-        ) {
-            let cap = 300000 * RESOURCE_PRECISION * (1 + crate::random::range(seed, 124, 10));
-            self.create_producer(key, coord, cap, false, 24, 26, rules, timestamp);
         }
         fn erect_building(
             ref self: ContractState,
@@ -1358,22 +1417,16 @@ pub mod StructuresDomain {
             key: ResourceKey,
             coord: Coord,
             cap: u128,
-            realm: bool,
+            rate: u64,
             resource_type: u8,
             building_category: u8,
-            rules: SliceRules,
+            base_population: u32,
             timestamp: u64,
         ) {
-            let rule = self.resources_dispatcher().resource_rule(key.game_id, resource_type);
             self.game_dispatcher().allocate_entity(key.game_id);
             let building_rule = self
                 .buildings
                 .rule(crate::buildings::BuildingRuleKey { game_id: key.game_id, category: building_category });
-            let rate = if realm {
-                rule.realm_rate
-            } else {
-                rule.village_rate
-            };
             assert!(rate != 0, "resource cannot be produced");
             self.resources_dispatcher().start_production(key, resource_type, rate, cap, timestamp);
             self
@@ -1390,7 +1443,7 @@ pub mod StructuresDomain {
                     Building { category: building_category, outer_entity_id: key.entity_id, paused: false },
                     building_rule.population_cost,
                     building_rule.capacity_grant,
-                    rules.building_config.base_population,
+                    base_population,
                 );
             self.game_dispatcher().allocate_entity(key.game_id);
         }
@@ -1440,7 +1493,7 @@ pub mod StructuresDomain {
         fn spend(ref self: ContractState, key: ResourceKey, resource_type: u8, amount: u128, timestamp: u64) {
             self.resources_dispatcher().spend_resource(key, resource_type, amount, timestamp);
         }
-        fn reveal_structure_tile(ref self: ContractState, game_id: u32, coord: Coord, rules: SliceRules) {
+        fn reveal_structure_tile(ref self: ContractState, game_id: u32, coord: Coord) {
             let key = tile_key(game_id, coord);
             let tile = self.map_dispatcher().tile(key);
             let data = tile.map(|tile| tile.data).unwrap_or(0);
@@ -1453,15 +1506,21 @@ pub mod StructuresDomain {
 }
 
 fn discovered_structure(
-    coord: Coord, discovery: crate::discovery::Discovery, seed: u256, rules: crate::rules::SliceRules, timestamp: u64,
+    coord: Coord,
+    discovery: crate::discovery::Discovery,
+    capacities: crate::rules::StructureCapacityConfig,
+    timestamp: u64,
+    guards: GuardTroops,
 ) -> (StructureRecord, u8, u128) {
     let (category, occupier, level, count, capacity) = match discovery {
-        Discovery::Mine => (4_u8, 12_u8, 0_u8, 1_u8, rules.structure_capacity_config.fragment_mine_capacity),
-        Discovery::Hyperstructure => (2, 9, 3, 3, rules.structure_capacity_config.hyperstructure_capacity),
-        Discovery::BitcoinMine => (8, 38, 3, 4, rules.structure_capacity_config.bitcoin_mine_capacity),
+        Discovery::Mine => (4_u8, 12_u8, 0_u8, 1_u8, capacities.fragment_mine_capacity),
+        Discovery::Hyperstructure => (2, 9, 3, 3, capacities.hyperstructure_capacity),
+        Discovery::BitcoinMine => (8, 38, 3, 4, capacities.bitcoin_mine_capacity),
         Discovery::None => panic!("cannot create empty discovery"),
     };
-    assert!(coord.alt == (discovery == Discovery::BitcoinMine), "invalid discovery layer");
+    assert!(
+        discovery == Discovery::Mine || coord.alt == (discovery == Discovery::BitcoinMine), "invalid discovery layer",
+    );
     let max_guards = if discovery == Discovery::Mine {
         1
     } else {
@@ -1478,91 +1537,13 @@ fn discovered_structure(
         coord_y: coord.y,
         level,
         starting_troops_granted: false,
+        alt: coord.alt,
     };
     (
         StructureRecord {
-            owner: 0.try_into().unwrap(),
-            base,
-            troop_guards: discovery_guards(discovery, seed, rules, timestamp),
-            resources_packed: 0,
-            metadata: Default::default(),
+            owner: 0.try_into().unwrap(), base, troop_guards: guards, resources_packed: 0, metadata: Default::default(),
         },
         occupier,
         capacity.into(),
     )
-}
-
-fn discovery_guards(
-    discovery: crate::discovery::Discovery, seed: u256, rules: crate::rules::SliceRules, timestamp: u64,
-) -> GuardTroops {
-    let mut guards: GuardTroops = Default::default();
-    if discovery == crate::discovery::Discovery::Mine {
-        guards
-            .delta =
-                discovery_guard(
-                    crate::troops::TroopType::Crossbowman, crate::troops::TroopTier::T1, seed, rules, timestamp,
-                );
-    } else {
-        let hyper = discovery == crate::discovery::Discovery::Hyperstructure;
-        guards
-            .delta =
-                discovery_guard(
-                    crate::troops::TroopType::Paladin, crate::troops::TroopTier::T2, seed, rules, timestamp,
-                );
-        guards
-            .charlie =
-                discovery_guard(
-                    crate::troops::TroopType::Knight,
-                    crate::troops::TroopTier::T2,
-                    seed + if hyper {
-                        1
-                    } else {
-                        0
-                    },
-                    rules,
-                    timestamp,
-                );
-        guards
-            .bravo =
-                discovery_guard(
-                    crate::troops::TroopType::Crossbowman,
-                    crate::troops::TroopTier::T2,
-                    seed + if hyper {
-                        2
-                    } else {
-                        0
-                    },
-                    rules,
-                    timestamp,
-                );
-        if !hyper {
-            guards
-                .alpha =
-                    discovery_guard(
-                        crate::troops::TroopType::Paladin, crate::troops::TroopTier::T2, seed, rules, timestamp,
-                    );
-        }
-    }
-    guards
-}
-
-fn discovery_guard(
-    category: crate::troops::TroopType,
-    tier: crate::troops::TroopTier,
-    seed: u256,
-    rules: crate::rules::SliceRules,
-    timestamp: u64,
-) -> Troops {
-    let lower: u128 = rules.troop_limit_config.mercenaries_troop_lower_bound.into();
-    let upper: u128 = rules.troop_limit_config.mercenaries_troop_upper_bound.into();
-    Troops {
-        category,
-        tier,
-        count: (lower + crate::random::range(seed, 1, upper - lower)) * crate::rules::RESOURCE_PRECISION,
-        stamina: crate::troops::Stamina {
-            amount: 0, updated_tick: timestamp / rules.tick_config.armies_tick_in_seconds,
-        },
-        boosts: Default::default(),
-        battle_cooldown_end: 0,
-    }
 }

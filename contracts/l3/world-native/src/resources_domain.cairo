@@ -14,6 +14,8 @@ pub mod ResourcesDomain {
     use crate::resources::{Production, ResourceKey, ResourceRule, ResourceSlot, ResourceState, Weight};
     use crate::structures::{IStructuresDispatcher, IStructuresDispatcherTrait};
     use crate::troops::{ExplorerKey, ITroopsDispatcher, ITroopsDispatcherTrait};
+    component!(path: crate::mines::MineState, storage: mines, event: MineEvent);
+    impl MineInternal = crate::mines::MineState::InternalImpl<ContractState>;
     component!(path: Lifecycle, storage: lifecycle, event: LifecycleEvent);
     component!(path: ResourceState, storage: resources, event: ResourceEvent);
     component!(path: ArrivalState, storage: arrivals, event: ArrivalEvent);
@@ -38,10 +40,13 @@ pub mod ResourcesDomain {
         resources_configured: Map<u32, bool>,
         #[substorage(v0)]
         production: ProductionState::Storage,
+        #[substorage(v0)]
+        mines: crate::mines::MineState::Storage,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
+        MineEvent: crate::mines::MineState::Event,
         LifecycleEvent: Lifecycle::Event,
         ResourceEvent: ResourceState::Event,
         ArrivalEvent: ArrivalState::Event,
@@ -181,6 +186,34 @@ pub mod ResourcesDomain {
             self
                 .resources
                 .start_production(key, resource_type, rate, output, rule.unit_weight, timestamp.try_into().unwrap());
+        }
+    }
+    #[abi(embed_v0)]
+    impl MineRules of crate::mines::IMineRules<ContractState> {
+        fn configure_mines(
+            ref self: ContractState,
+            game_id: u32,
+            kinds: Span<crate::mines::MineKindEntry>,
+            surface: Span<crate::mines::MineWeight>,
+            ethereal: Span<crate::mines::MineWeight>,
+        ) {
+            self.lifecycle.assert_authority();
+            self.lifecycle.require_active();
+            let _ = self.game_dispatcher().game(game_id);
+            self.mines.configure(game_id, kinds, surface, ethereal);
+        }
+        fn mine_kind(self: @ContractState, key: crate::mines::MineKindKey) -> crate::mines::MineKindConfig {
+            self.mines.kind(key)
+        }
+        fn mine_pool(self: @ContractState, key: crate::mines::MinePoolKey) -> Span<crate::mines::MineWeight> {
+            self.mines.pool(key)
+        }
+        fn mine_draw(
+            self: @ContractState, key: crate::mines::MinePoolKey, seed: u256,
+        ) -> (u8, crate::mines::MineKindConfig, u128) {
+            let kind = crate::mines::select_kind(self.mines.pool(key), seed);
+            let config = self.mines.kind(crate::mines::MineKindKey { game_id: key.game_id, kind });
+            (kind, config, crate::mines::cap(config, seed))
         }
     }
     #[abi(embed_v0)]

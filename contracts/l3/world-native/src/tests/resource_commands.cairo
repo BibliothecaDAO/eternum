@@ -711,7 +711,7 @@ fn troop_deposit_ownership(blitz_mode_on: bool) {
                 array![3, target.entity_id.into()].span(),
                 StructureRecord {
                     owner,
-                    base: crate::structures::StructureBase { category, ..structure.base },
+                    base: crate::structures::StructureBase { category, alt: coord.alt, ..structure.base },
                     metadata: crate::structures::StructureMetadata {
                         village_realm: home.entity_id, ..structure.metadata,
                     },

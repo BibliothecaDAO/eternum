@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "3ff16ff6a8d5c7cf4f2841647e9f5c9dcd2a3543d484e620ffb7716cbbcea2f8",
+  "schemaIdentity": "fc698edb6bfbea0f7db518efd6f5b82a1fde1f866393c3e326d63aeabf7a93a4",
   "commandAbi": [
     {
       "type": "impl",
@@ -2131,6 +2131,33 @@
   ],
   "models": [
     {
+      "name": "MineKindConfig",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "kind": "Number",
+        "resource_type": "Number",
+        "building_category": "Number",
+        "production_rate": "BigInt",
+        "cap_min": "BigInt",
+        "cap_steps": "Number"
+      }
+    },
+    {
+      "name": "MinePool",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "alt": "Boolean",
+        "weights": [
+          {
+            "kind": "Number",
+            "weight": "Number"
+          }
+        ]
+      }
+    },
+    {
       "name": "RealmTraits",
       "scope": "deployment",
       "schema": {
@@ -2373,7 +2400,8 @@
           "coord_x": "Number",
           "coord_y": "Number",
           "level": "Number",
-          "starting_troops_granted": "Boolean"
+          "starting_troops_granted": "Boolean",
+          "alt": "Boolean"
         },
         "troop_guards": {
           "delta": {
@@ -2469,7 +2497,8 @@
           "realm_id": "Number",
           "order": "Number",
           "has_wonder": "Boolean",
-          "village_realm": "Number"
+          "village_realm": "Number",
+          "mine_kind": "Number"
         }
       }
     },

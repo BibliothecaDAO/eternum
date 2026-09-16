@@ -277,6 +277,13 @@ pub trait ITroops<T> {
     fn authorized_explorer(self: @T, key: ExplorerKey, actor: starknet::ContractAddress) -> ExplorerTroops;
 }
 
+#[starknet::interface]
+pub trait IDiscoveryGuards<T> {
+    fn discovery_guards(
+        self: @T, game_id: u32, discovery: crate::discovery::Discovery, seed: u256, timestamp: u64,
+    ) -> crate::structures::GuardTroops;
+}
+
 #[starknet::contract]
 pub mod TroopsDomain {
     use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
@@ -318,6 +325,15 @@ pub mod TroopsDomain {
     #[constructor]
     fn constructor(ref self: ContractState, authority: ContractAddress) {
         self.lifecycle.initialize(authority);
+    }
+    #[abi(embed_v0)]
+    impl DiscoveryGuards of super::IDiscoveryGuards<ContractState> {
+        fn discovery_guards(
+            self: @ContractState, game_id: u32, discovery: crate::discovery::Discovery, seed: u256, timestamp: u64,
+        ) -> crate::structures::GuardTroops {
+            assert!(discovery != crate::discovery::Discovery::None, "cannot guard empty discovery");
+            super::discovery_guards(discovery, seed, self.game_dispatcher().rules(game_id), timestamp)
+        }
     }
     #[abi(embed_v0)]
     impl TroopViews of super::ITroops<ContractState> {
@@ -902,4 +918,70 @@ fn spend_stamina(
             timestamp / rules.tick_config.armies_tick_in_seconds,
             true,
         );
+}
+
+fn discovery_guards(
+    discovery: crate::discovery::Discovery, seed: u256, rules: crate::rules::SliceRules, timestamp: u64,
+) -> crate::structures::GuardTroops {
+    use crate::troops::{TroopTier, TroopType};
+    let mine = discovery == crate::discovery::Discovery::Mine;
+    let hyperstructure = discovery == crate::discovery::Discovery::Hyperstructure;
+    let count = if mine {
+        1_u8
+    } else if hyperstructure {
+        3
+    } else {
+        4
+    };
+    let tier = if mine {
+        TroopTier::T1
+    } else {
+        TroopTier::T2
+    };
+    let mut guards: crate::structures::GuardTroops = Default::default();
+    for slot in 0_u8..count {
+        let category = if mine {
+            TroopType::Crossbowman
+        } else {
+            match slot {
+                1 => TroopType::Knight,
+                2 => TroopType::Crossbowman,
+                _ => TroopType::Paladin,
+            }
+        };
+        let guard_seed = seed + if hyperstructure {
+            Into::<u8, u256>::into(slot)
+        } else {
+            0
+        };
+        let troops = discovery_guard(category, tier, guard_seed, rules, timestamp);
+        match slot {
+            0 => guards.delta = troops,
+            1 => guards.charlie = troops,
+            2 => guards.bravo = troops,
+            _ => guards.alpha = troops,
+        };
+    }
+    guards
+}
+
+fn discovery_guard(
+    category: crate::troops::TroopType,
+    tier: crate::troops::TroopTier,
+    seed: u256,
+    rules: crate::rules::SliceRules,
+    timestamp: u64,
+) -> Troops {
+    let lower: u128 = rules.troop_limit_config.mercenaries_troop_lower_bound.into();
+    let upper: u128 = rules.troop_limit_config.mercenaries_troop_upper_bound.into();
+    Troops {
+        category,
+        tier,
+        count: (lower + crate::random::range(seed, 1, upper - lower)) * crate::rules::RESOURCE_PRECISION,
+        stamina: crate::troops::Stamina {
+            amount: 0, updated_tick: timestamp / rules.tick_config.armies_tick_in_seconds,
+        },
+        boosts: Default::default(),
+        battle_cooldown_end: 0,
+    }
 }

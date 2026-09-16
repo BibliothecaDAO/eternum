@@ -338,9 +338,28 @@ pub mod MapDomain {
                         adjacent = true;
                     }
                 }
-                crate::discovery::ethereal(
+                let discovery = crate::discovery::ethereal(
                     rules.map_config, rules.bitcoin_mine_config.enabled, adjacent, seed, timestamp,
-                )
+                );
+                if discovery != crate::discovery::Discovery::None {
+                    return discovery;
+                }
+                let pool = crate::mines::IMineRulesDispatcherTrait::mine_pool(
+                    crate::mines::IMineRulesDispatcher { contract_address: self.lifecycle.require_active().resources },
+                    crate::mines::MinePoolKey { game_id: key.game_id, alt: true },
+                );
+                if !pool.is_empty()
+                    && crate::random::lottery(
+                        seed,
+                        2,
+                        rules.map_config.shards_mines_win_probability.into(),
+                        rules.map_config.shards_mines_fail_probability.into(),
+                        timestamp,
+                    ) {
+                    crate::discovery::Discovery::Mine
+                } else {
+                    crate::discovery::Discovery::None
+                }
             } else {
                 let center = Coord {
                     alt: false, x: 2147483646 - rules.map_center_offset, y: 2147483646 - rules.map_center_offset,

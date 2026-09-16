@@ -20,6 +20,10 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
   };
   const domainKey = [{ name: "address", type: struct("lifecycle::Peers")[0].type }];
   return [
+    model("MineKindConfig", ["resources"], "game", struct("mines::MineKindKey"), struct("mines::MineKindConfig")),
+    model("MinePool", ["resources"], "game", struct("mines::MinePoolKey"), [
+      { name: "weights", type: "core::array::Span::<world_native::mines::MineWeight>" },
+    ]),
     model(
       "RealmTraits",
       ["settlement"],
@@ -393,12 +397,25 @@ const behaviouralFacts = {
   HyperstructureGlobals: { domain: "hyperstructures", fields: { discovered: "created_count" } },
   SeasonPrize: { domain: "points", fields: { registered: "total_registered_points" } },
   PlayerRegisteredPoints: { domain: "points", fields: { registered: "registered_points" } },
+  MineKindConfig: {
+    domain: "mines",
+    fields: {
+      resource: "resource_type",
+      building: "building_category",
+      rate: "production_rate",
+      minimum: "cap_min",
+      steps: "cap_steps",
+    },
+  },
+  MinePool: { domain: "mines", fields: { kinds: "weights" } },
   Structure: {
     domain: "structures",
     fields: {
       owner: "owner",
       level: "base.level",
       kind: "base.category",
+      layer: "base.alt",
+      mineKind: "metadata.mine_kind",
       column: "base.coord_x",
       row: "base.coord_y",
       foundedAt: "base.created_at",

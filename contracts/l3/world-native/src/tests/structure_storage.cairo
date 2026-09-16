@@ -17,8 +17,9 @@ fn structure_base_storage_has_one_slot_and_preserves_boundaries() {
         coord_y: 0xffffffff,
         level: 0xff,
         starting_troops_granted: true,
+        alt: true,
     };
-    let packed = 0xffffffffffffffff00000001ffffffffffffffffffffffff;
+    let packed = 0xffffffffffffffff00000003ffffffffffffffffffffffff;
     assert!(StructureBasePacking::pack(maximum) == packed);
     assert!(StructureBasePacking::unpack(packed) == maximum);
 }
@@ -36,6 +37,7 @@ fn structure_base_storage_keeps_fields_independent(
     y: u32,
     level: u8,
     granted: bool,
+    alt: bool,
 ) {
     let original = StructureBase {
         troop_guard_count: guards,
@@ -48,6 +50,7 @@ fn structure_base_storage_keeps_fields_independent(
         coord_y: y,
         level,
         starting_troops_granted: granted,
+        alt,
     };
     assert!(StructureBasePacking::unpack(StructureBasePacking::pack(original)) == original);
     let updated = StructureBase { starting_troops_granted: !granted, ..original };
@@ -102,9 +105,9 @@ fn troop_boost_storage_keeps_fields_independent(
 #[test]
 #[fuzzer(runs: 256)]
 fn structure_metadata_storage_preserves_realm_and_village_identities(
-    realm_id: u16, order: u8, has_wonder: bool, village_realm: u32,
+    realm_id: u16, order: u8, has_wonder: bool, village_realm: u32, mine_kind: u8,
 ) {
-    let value = StructureMetadata { realm_id, order, has_wonder, village_realm };
+    let value = StructureMetadata { realm_id, order, has_wonder, village_realm, mine_kind };
     assert!(Store::<StructureMetadata>::size() == 1);
     assert!(StructureMetadataPacking::unpack(StructureMetadataPacking::pack(value)) == value);
 }

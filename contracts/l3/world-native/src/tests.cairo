@@ -1,4 +1,5 @@
 mod fixtures;
+mod mines;
 mod production;
 mod realms;
 mod recorded;

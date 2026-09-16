@@ -193,6 +193,39 @@ fn provision_game(peers: Peers, actor: ContractAddress, administrator: ContractA
     let resource_store = IResourcesDispatcher { contract_address: peers.resources };
     start_cheat_caller_address(peers.resources, administrator);
     resource_store.configure_resources(7, resources);
+    world_native::mines::IMineRulesDispatcherTrait::configure_mines(
+        world_native::mines::IMineRulesDispatcher { contract_address: peers.resources },
+        7,
+        array![
+            world_native::mines::MineKindEntry {
+                kind: 1,
+                config: world_native::mines::MineKindConfig {
+                    resource_type: 38,
+                    building_category: 39,
+                    production_rate: 2500000000,
+                    cap_min: 36000000000000,
+                    cap_steps: 1,
+                },
+            },
+            world_native::mines::MineKindEntry {
+                kind: 2,
+                config: world_native::mines::MineKindConfig {
+                    resource_type: 24,
+                    building_category: 26,
+                    production_rate: 1500000000,
+                    cap_min: 300000000000000,
+                    cap_steps: 10,
+                },
+            },
+        ]
+            .span(),
+        array![
+            world_native::mines::MineWeight { kind: 1, weight: 1 },
+            world_native::mines::MineWeight { kind: 2, weight: 1 },
+        ]
+            .span(),
+        array![].span(),
+    );
     world_native::buildings::IBuildingRulesDispatcherTrait::configure_buildings(
         world_native::buildings::IBuildingRulesDispatcher { contract_address: peers.structures }, 7, buildings,
     );
