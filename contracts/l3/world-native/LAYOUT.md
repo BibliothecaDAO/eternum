@@ -365,3 +365,14 @@ resources are debited once at creation and arrivals remain owned by `ResourcesDo
 
 The lifecycle peer set adds the economy address. This changes the nested peer layout and requires the same fresh
 rehearsal deployment as the row changes above; no compatibility with an existing live deployment is claimed.
+
+`MarketState` appends to the economy domain with globally pooled reserves per `(game_id, resource_type)` and liquidity
+shares per `(game_id, player, resource_type)`. Bank names use `(game_id, bank_id)`; owner, position and guards remain in
+their owning domains. Market terms use `bank_rules` and `bank_rules_configured` so component storage cannot alias trade
+rules. A zero-share position emits a deletion. Empty markets retain their explicit zero reserves.
+
+`WithdrawalState` owns game-scoped withdrawal terms, an immutable retention ladder indexed by completed hyperstructure
+count, and the resource-token whitelist. Its projected rules include the ladder; the internal length is only the storage
+representation of that span. Token amounts retain the external token's decimals. The structure domain appends an id-only
+hyperstructure index, allowing completed count to be read from the existing completion facts without a second stored
+count. Regional bank ids retain the six reserved values below the maximum entity id.

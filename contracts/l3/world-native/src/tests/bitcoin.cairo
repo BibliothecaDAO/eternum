@@ -583,12 +583,7 @@ fn guard_and_funding_mutations_reject_foreign_domains() {
     let (deployment, home, _) = setup();
     let mine = mine(deployment, 2000100);
     let guards = crate::guards::IGuardsSafeDispatcher { contract_address: deployment.peers.troops };
-    assert!(
-        crate::guards::IGuardsSafeDispatcherTrait::initialize_discovery_guards(
-            guards, mine, crate::discovery::Discovery::BitcoinMine, 99, 30,
-        )
-            .is_err(),
-    );
+    assert!(crate::guards::IGuardsSafeDispatcherTrait::initialize_structure_guards(guards, mine, 99, 30).is_err());
     assert!(
         crate::guards::IGuardsSafeDispatcherTrait::add_starting_guard(
             guards, home, crate::troops::TroopType::Knight, 1, 30,

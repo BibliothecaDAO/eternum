@@ -329,16 +329,18 @@ pub mod TroopsDomain {
         fn guard(self: @ContractState, key: crate::guards::GuardKey) -> crate::guards::Guard {
             self.guards.guard(key)
         }
-        fn initialize_discovery_guards(
-            ref self: ContractState,
-            key: ResourceKey,
-            discovery: crate::discovery::Discovery,
-            seed: u256,
-            timestamp: u64,
-        ) {
+        fn initialize_structure_guards(ref self: ContractState, key: ResourceKey, seed: u256, timestamp: u64) {
             assert!(get_caller_address() == self.lifecycle.require_active().structures, "only structures domain");
-            assert!(discovery != crate::discovery::Discovery::None, "cannot guard empty discovery");
-            let guards = super::discovery_guards(discovery, seed, self.game_dispatcher().rules(key.game_id), timestamp);
+            let category = self
+                .structures_dispatcher()
+                .structure(key)
+                .expect('missing guarded structure')
+                .base
+                .category;
+            assert!(
+                category == 2 || category == 3 || category == 4 || category == 8, "invalid guarded structure category",
+            );
+            let guards = super::discovery_guards(category, seed, self.game_dispatcher().rules(key.game_id), timestamp);
             for slot in 0..guards.len() {
                 let troops = *guards.at(slot);
                 let slot: u8 = slot.try_into().unwrap();
@@ -1091,15 +1093,13 @@ fn spend_stamina(
         );
 }
 
-fn discovery_guards(
-    discovery: crate::discovery::Discovery, seed: u256, rules: crate::rules::SliceRules, timestamp: u64,
-) -> Span<Troops> {
+fn discovery_guards(category: u8, seed: u256, rules: crate::rules::SliceRules, timestamp: u64) -> Span<Troops> {
     use crate::troops::{TroopTier, TroopType};
-    let mine = discovery == crate::discovery::Discovery::Mine;
-    let hyperstructure = discovery == crate::discovery::Discovery::Hyperstructure;
+    let mine = category == 4;
+    let three_guards = category == 2 || category == 3;
     let count = if mine {
         1_u8
-    } else if hyperstructure {
+    } else if three_guards {
         3
     } else {
         4
@@ -1120,7 +1120,7 @@ fn discovery_guards(
                 _ => TroopType::Paladin,
             }
         };
-        let guard_seed = seed + if hyperstructure {
+        let guard_seed = seed + if three_guards {
             Into::<u8, u256>::into(slot)
         } else {
             0

@@ -424,6 +424,26 @@ pub mod SeasonDomain {
                 value.serialize(ref calldata);
                 (peers.troops, selector!("explore"))
             },
+            Command::CreateBanks(value) => {
+                value.serialize(ref calldata);
+                (peers.economy, selector!("create_banks"))
+            },
+            Command::BuyFromBank(value) => {
+                value.serialize(ref calldata);
+                (peers.economy, selector!("buy_from_bank"))
+            },
+            Command::SellToBank(value) => {
+                value.serialize(ref calldata);
+                (peers.economy, selector!("sell_to_bank"))
+            },
+            Command::AddBankLiquidity(value) => {
+                value.serialize(ref calldata);
+                (peers.economy, selector!("add_bank_liquidity"))
+            },
+            Command::RemoveBankLiquidity(value) => {
+                value.serialize(ref calldata);
+                (peers.economy, selector!("remove_bank_liquidity"))
+            },
             Command::CreateTradeOrder(value) => {
                 value.serialize(ref calldata);
                 (peers.economy, selector!("create_trade_order"))

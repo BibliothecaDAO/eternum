@@ -5,6 +5,10 @@ pub mod EconomyDomain {
     use crate::commands::ExecutionContext;
     use crate::game::{IGameDispatcher, IGameDispatcherTrait, assert_main_with_grace, assert_playing};
     use crate::lifecycle::Lifecycle;
+    use crate::market::{
+        AddLiquidity, BankPlacement, BankRules, IBankCreationDispatcher, IBankCreationDispatcherTrait, LiquidityKey,
+        Market, MarketKey, MarketState, RemoveLiquidity, Swap,
+    };
     use crate::ownership::{Story, StoryEvent};
     use crate::resources::{IResourcesDispatcher, IResourcesDispatcherTrait, ResourceAmount, ResourceKey};
     use crate::structures::{IStructuresDispatcher, IStructuresDispatcherTrait, Structure, structure_coord};
@@ -12,11 +16,16 @@ pub mod EconomyDomain {
         AcceptOrder, CreateOrder, IEconomyDeliveryDispatcher, IEconomyDeliveryDispatcherTrait, TradeFill, TradeKey,
         TradeOrder, TradeRules, TradeState,
     };
+    use crate::withdrawals::WithdrawalState;
+    component!(path: WithdrawalState, storage: withdrawals, event: WithdrawalEvent);
+    component!(path: MarketState, storage: markets, event: MarketEvent);
     component!(path: Lifecycle, storage: lifecycle, event: LifecycleEvent);
     component!(path: TradeState, storage: trades, event: TradeEvent);
     #[abi(embed_v0)]
     impl Domain = Lifecycle::DomainImpl<ContractState>;
     impl LifecycleInternal = Lifecycle::InternalImpl<ContractState>;
+    impl WithdrawalInternal = WithdrawalState::InternalImpl<ContractState>;
+    impl MarketInternal = MarketState::InternalImpl<ContractState>;
     impl TradeInternal = TradeState::InternalImpl<ContractState>;
     #[storage]
     struct Storage {
@@ -24,12 +33,18 @@ pub mod EconomyDomain {
         lifecycle: Lifecycle::Storage,
         #[substorage(v0)]
         trades: TradeState::Storage,
+        #[substorage(v0)]
+        markets: MarketState::Storage,
+        #[substorage(v0)]
+        withdrawals: WithdrawalState::Storage,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
         LifecycleEvent: Lifecycle::Event,
         TradeEvent: TradeState::Event,
+        MarketEvent: MarketState::Event,
+        WithdrawalEvent: WithdrawalState::Event,
         StoryEvent: StoryEvent,
     }
     #[constructor]
@@ -110,8 +125,439 @@ pub mod EconomyDomain {
                 );
         }
     }
+    #[abi(embed_v0)]
+    impl Withdrawals of crate::withdrawals::IWithdrawals<ContractState> {
+        fn configure_withdrawals(
+            ref self: ContractState,
+            game_id: u32,
+            rules: crate::withdrawals::WithdrawalRules,
+            tokens: Span<crate::withdrawals::ResourceToken>,
+        ) {
+            self.lifecycle.assert_authority();
+            let _ = self.games().game(game_id);
+            self.withdrawals.configure(game_id, rules, tokens);
+        }
+        fn withdrawal_rules(self: @ContractState, game_id: u32) -> crate::withdrawals::WithdrawalRules {
+            self.withdrawals.rules(game_id)
+        }
+        fn resource_token(self: @ContractState, key: MarketKey) -> ContractAddress {
+            self.withdrawals.token(key)
+        }
+    }
+    #[abi(embed_v0)]
+    impl Bank of crate::market::IBank<ContractState> {
+        fn configure_banks(ref self: ContractState, game_id: u32, rules: BankRules) {
+            self.lifecycle.assert_authority();
+            let _ = self.games().game(game_id);
+            self.markets.configure(game_id, rules);
+        }
+        fn bank_rules(self: @ContractState, game_id: u32) -> BankRules {
+            self.markets.rules(game_id)
+        }
+        fn bank_name(self: @ContractState, key: ResourceKey) -> felt252 {
+            self.markets.bank_names.read((key.game_id, key.entity_id))
+        }
+        fn market(self: @ContractState, key: MarketKey) -> Market {
+            self.markets.market(key)
+        }
+        fn liquidity(self: @ContractState, key: LiquidityKey) -> u128 {
+            self.markets.shares(key)
+        }
+        fn create_banks(
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            banks: Span<BankPlacement>,
+            context: ExecutionContext,
+        ) {
+            self.assert_economy_submission(game_id, context.timestamp);
+            assert!(actor == self.lifecycle.domain_state().authority, "only domain authority");
+            assert!(banks.len() == 6, "six regional banks required");
+            for index in 0..6_u32 {
+                let bank = *banks.at(index);
+                let key = ResourceKey { game_id, entity_id: 0xfffffffe - index };
+                IBankCreationDispatcher { contract_address: self.lifecycle.require_active().structures }
+                    .create_bank(key, actor, bank.coord, context.timestamp);
+                self.markets.name_bank(key, bank.name);
+            }
+        }
+        fn buy_from_bank(
+            ref self: ContractState, game_id: u32, actor: ContractAddress, command: Swap, context: ExecutionContext,
+        ) {
+            self.execute_swap(game_id, actor, command, context, true);
+        }
+        fn sell_to_bank(
+            ref self: ContractState, game_id: u32, actor: ContractAddress, command: Swap, context: ExecutionContext,
+        ) {
+            self.execute_swap(game_id, actor, command, context, false);
+        }
+        fn add_bank_liquidity(
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            command: AddLiquidity,
+            context: ExecutionContext,
+        ) {
+            self.assert_economy_submission(game_id, context.timestamp);
+            if actor != self.lifecycle.domain_state().authority {
+                assert_playing(self.games().game(game_id), context.timestamp);
+            }
+            let player = self.owned_structure(game_id, command.structure_id, actor);
+            self.bank_structure(game_id, command.bank_id);
+            self.assert_liquidity_resource(player, command.resource_type);
+            let key = MarketKey { game_id, resource_type: command.resource_type };
+            let mut market = self.markets.market(key);
+            let (lords, resource, shares) = crate::market::liquidity_cost(
+                market, command.lords_amount, command.resource_amount,
+            );
+            let source = ResourceKey { game_id, entity_id: command.structure_id };
+            self.resources().spend_resource(source, command.resource_type, resource, context.timestamp);
+            self.resources().spend_resource(source, crate::resources::LORDS, lords, context.timestamp);
+            market.lords += lords;
+            market.resource += resource;
+            market.shares += shares;
+            self.markets.write_market(key, market);
+            let liquidity = LiquidityKey { game_id, owner: actor, resource_type: command.resource_type };
+            self.markets.write_shares(liquidity, self.markets.shares(liquidity) + shares);
+            self
+                .emit_liquidity(
+                    game_id,
+                    actor,
+                    command.bank_id,
+                    command.structure_id,
+                    command.resource_type,
+                    market,
+                    lords,
+                    resource,
+                    shares,
+                    true,
+                    context.timestamp,
+                );
+        }
+        fn remove_bank_liquidity(
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            command: RemoveLiquidity,
+            context: ExecutionContext,
+        ) {
+            self.assert_command(game_id, context.timestamp, true);
+            let bank = self.bank_structure(game_id, command.bank_id);
+            assert!(command.resource_type != crate::resources::LORDS, "resource type cannot be lords");
+            let key = MarketKey { game_id, resource_type: command.resource_type };
+            let mut market = self.markets.market(key);
+            let (lords, resource) = crate::market::liquidity_payout(market, command.shares);
+            let liquidity = LiquidityKey { game_id, owner: actor, resource_type: command.resource_type };
+            let owned = self.markets.shares(liquidity);
+            assert!(owned >= command.shares, "insufficient player liquidity");
+            market.lords -= lords;
+            market.resource -= resource;
+            market.shares -= command.shares;
+            self.markets.write_market(key, market);
+            self.markets.write_shares(liquidity, owned - command.shares);
+            if command.structure_id == 0 {
+                self
+                    .withdraw_liquidity_token(
+                        game_id, actor, command.bank_id, command.resource_type, resource, context.timestamp,
+                    );
+                self
+                    .withdraw_liquidity_token(
+                        game_id, actor, command.bank_id, crate::resources::LORDS, lords, context.timestamp,
+                    );
+            } else {
+                let player = self.owned_structure(game_id, command.structure_id, actor);
+                self.assert_liquidity_resource(player, command.resource_type);
+                self
+                    .pickup_bank_resources(
+                        game_id,
+                        command.bank_id,
+                        command.structure_id,
+                        bank,
+                        player,
+                        array![
+                            ResourceAmount { resource_type: crate::resources::LORDS, amount: lords },
+                            ResourceAmount { resource_type: command.resource_type, amount: resource },
+                        ]
+                            .span(),
+                        context.timestamp,
+                    );
+            }
+            self
+                .emit_liquidity(
+                    game_id,
+                    actor,
+                    command.bank_id,
+                    command.structure_id,
+                    command.resource_type,
+                    market,
+                    lords,
+                    resource,
+                    command.shares,
+                    false,
+                    context.timestamp,
+                );
+        }
+    }
     #[generate_trait]
     impl Internal of InternalTrait {
+        fn execute_swap(
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            command: Swap,
+            context: ExecutionContext,
+            buy: bool,
+        ) {
+            self.assert_command(game_id, context.timestamp, false);
+            let player = self.owned_structure(game_id, command.structure_id, actor);
+            let bank = self.bank_structure(game_id, command.bank_id);
+            let key = MarketKey { game_id, resource_type: command.resource_type };
+            let quote = crate::market::quote_swap(
+                self.markets.market(key), self.markets.rules(game_id), command.amount, buy,
+            );
+            let input_resource = if buy {
+                crate::resources::LORDS
+            } else {
+                command.resource_type
+            };
+            let output_resource = if buy {
+                command.resource_type
+            } else {
+                crate::resources::LORDS
+            };
+            self
+                .resources()
+                .spend_resource(
+                    ResourceKey { game_id, entity_id: command.structure_id },
+                    input_resource,
+                    quote.input,
+                    context.timestamp,
+                );
+            self
+                .resources()
+                .grant_resource(
+                    ResourceKey { game_id, entity_id: command.bank_id },
+                    crate::resources::LORDS,
+                    quote.owner_fee,
+                    context.timestamp,
+                );
+            self.markets.write_market(key, quote.market);
+            self
+                .pickup_bank_resources(
+                    game_id,
+                    command.bank_id,
+                    command.structure_id,
+                    bank,
+                    player,
+                    array![ResourceAmount { resource_type: output_resource, amount: quote.output }].span(),
+                    context.timestamp,
+                );
+            let lords = if buy {
+                quote.input - quote.owner_fee
+            } else {
+                quote.output
+            };
+            self
+                .emit_swap(
+                    game_id, actor, command, quote.market, lords, quote.owner_fee, quote.lp_fee, buy, context.timestamp,
+                );
+        }
+        fn withdraw_liquidity_token(
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            bank_id: u32,
+            resource_type: u8,
+            amount: u128,
+            timestamp: u64,
+        ) {
+            let rules = self.withdrawals.rules(game_id);
+            assert!(!rules.paused, "resource bridge withdrawal is paused");
+            let token = self.withdrawals.token(MarketKey { game_id, resource_type });
+            let completed = IStructuresDispatcher { contract_address: self.lifecycle.require_active().structures }
+                .completed_hyperstructure_count(game_id);
+            let amount = self.withdrawals.retained_amount(game_id, resource_type, amount, completed);
+            let bank_fee = amount * rules.bank_fee_bps.into() / 10000;
+            if rules.bank_fee_bps != 0 {
+                assert!(bank_fee != 0, "amount too small to pay bank fees");
+                self.deliver_bank_withdrawal_fee(game_id, bank_id, resource_type, bank_fee, timestamp);
+            }
+            let converted = crate::withdrawals::token_amount(token, amount);
+            let velords_fee = converted * rules.velords_fee_bps.into() / 10000;
+            let season_fee = converted * rules.season_fee_bps.into() / 10000;
+            let client_fee = converted * rules.client_fee_bps.into() / 10000;
+            assert!(velords_fee != 0 && season_fee != 0 && client_fee != 0, "amount too small to pay platform fees");
+            crate::withdrawals::transfer_or_mint(token, rules.velords_recipient, velords_fee);
+            crate::withdrawals::transfer_or_mint(token, rules.season_recipient, season_fee);
+            crate::withdrawals::transfer_or_mint(token, rules.velords_recipient, client_fee);
+            let bank_tokens = crate::withdrawals::token_amount(token, bank_fee);
+            crate::withdrawals::transfer_or_mint(
+                token, actor, converted - bank_tokens - velords_fee - season_fee - client_fee,
+            );
+        }
+        fn deliver_bank_withdrawal_fee(
+            ref self: ContractState, game_id: u32, bank_id: u32, resource_type: u8, amount: u128, timestamp: u64,
+        ) {
+            let key = ResourceKey { game_id, entity_id: bank_id };
+            let resource = ResourceAmount { resource_type, amount };
+            IEconomyDeliveryDispatcher { contract_address: self.lifecycle.require_active().resources }
+                .queue_economy_delivery(key, resource, 0, timestamp);
+            let bank = self.bank_structure(game_id, bank_id);
+            let story = Story::ResourceTransferStory(
+                crate::ownership::ResourceTransferStory {
+                    transfer_type: crate::ownership::TransferType::InstantArrivals,
+                    from_entity_id: 0,
+                    from_entity_owner_address: 0.try_into().unwrap(),
+                    to_entity_id: bank_id,
+                    to_entity_owner_address: bank.owner,
+                    resources: array![resource].span(),
+                    is_mint: true,
+                    travel_time: 0,
+                },
+            );
+            let id = self.games().allocate_entity(game_id);
+            self.emit_story(game_id, id, bank_id, bank.owner, story, timestamp);
+        }
+        fn assert_economy_submission(self: @ContractState, game_id: u32, timestamp: u64) {
+            assert!(
+                get_caller_address() == self.lifecycle.require_active().season, "only authenticated command domain",
+            );
+            crate::commands::assert_context_time(timestamp);
+            assert!(!self.games().rules(game_id).blitz_mode_on, "economy requires Eternum mode");
+        }
+        fn bank_structure(self: @ContractState, game_id: u32, bank_id: u32) -> Structure {
+            let bank = self.structure(game_id, bank_id);
+            assert!(bank.base.category == 3, "structure is not a bank");
+            bank
+        }
+        fn assert_liquidity_resource(self: @ContractState, player: Structure, resource_type: u8) {
+            assert!(resource_type != crate::resources::LORDS, "resource type cannot be lords");
+            assert!(
+                player.base.category != 5 || !crate::resources::is_troop_resource(resource_type),
+                "villages cannot use troop liquidity",
+            );
+        }
+        fn pickup_bank_resources(
+            ref self: ContractState,
+            game_id: u32,
+            bank_id: u32,
+            structure_id: u32,
+            bank: Structure,
+            player: Structure,
+            resources: Span<ResourceAmount>,
+            timestamp: u64,
+        ) {
+            let rules = self.games().rules(game_id);
+            let travel_time = crate::transport::travel_time(
+                structure_coord(bank.base), structure_coord(player.base), resources, rules.speed_config, true,
+            );
+            let mut weight = 0;
+            for resource in resources {
+                weight += *resource.amount
+                    * self.resources().resource_rule(game_id, *resource.resource_type).unit_weight;
+            }
+            let key = ResourceKey { game_id, entity_id: structure_id };
+            self
+                .resources()
+                .spend_resource(
+                    key,
+                    crate::transport::DONKEY,
+                    crate::transport::donkeys_needed(weight, rules.capacity_config.donkey_capacity.into()),
+                    timestamp,
+                );
+            let delivery = IEconomyDeliveryDispatcher { contract_address: self.lifecycle.require_active().resources };
+            for resource in resources {
+                delivery.queue_economy_delivery(key, *resource, travel_time, timestamp);
+            }
+            let story = Story::ResourceTransferStory(
+                crate::ownership::ResourceTransferStory {
+                    transfer_type: crate::ownership::TransferType::Delayed,
+                    from_entity_id: bank_id,
+                    from_entity_owner_address: bank.owner,
+                    to_entity_id: structure_id,
+                    to_entity_owner_address: player.owner,
+                    resources,
+                    is_mint: true,
+                    travel_time,
+                },
+            );
+            let id = self.games().allocate_entity(game_id);
+            self.emit_story(game_id, id, bank_id, bank.owner, story, timestamp);
+            let id = self.games().allocate_entity(game_id);
+            self.emit_story(game_id, id, structure_id, player.owner, story, timestamp);
+        }
+        fn emit_swap(
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            command: Swap,
+            market: Market,
+            lords: u128,
+            owner_fee: u128,
+            lp_fee: u128,
+            buy: bool,
+            timestamp: u64,
+        ) {
+            // Preserve the pinned quote validation even though history uses the reserve ratio.
+            crate::market::output_price(market.lords, market.resource, crate::rules::RESOURCE_PRECISION, 0, 1);
+            let id = self.games().allocate_entity(game_id);
+            self
+                .emit_story(
+                    game_id,
+                    id,
+                    command.structure_id,
+                    actor,
+                    Story::BankSwap(
+                        crate::market::SwapStory {
+                            bank_id: command.bank_id,
+                            structure_id: command.structure_id,
+                            resource_type: command.resource_type,
+                            lords_amount: lords,
+                            resource_amount: command.amount,
+                            owner_fee,
+                            lp_fee,
+                            resource_price: crate::market::resource_price(market),
+                            buy,
+                        },
+                    ),
+                    timestamp,
+                );
+        }
+        fn emit_liquidity(
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            bank_id: u32,
+            structure_id: u32,
+            resource_type: u8,
+            market: Market,
+            lords: u128,
+            resource: u128,
+            shares: u128,
+            add: bool,
+            timestamp: u64,
+        ) {
+            self
+                .emit_story(
+                    game_id,
+                    bank_id,
+                    structure_id,
+                    actor,
+                    Story::BankLiquidity(
+                        crate::market::LiquidityStory {
+                            bank_id,
+                            structure_id,
+                            resource_type,
+                            lords_amount: lords,
+                            resource_amount: resource,
+                            shares,
+                            resource_price: crate::market::resource_price(market),
+                            add,
+                        },
+                    ),
+                    timestamp,
+                );
+        }
         fn reserve_offer(self: @ContractState, game_id: u32, order: TradeOrder, timestamp: u64) {
             let key = ResourceKey { game_id, entity_id: order.maker_id };
             let resources = self.resources();
@@ -206,12 +652,8 @@ pub mod EconomyDomain {
             structure
         }
         fn assert_command(self: @ContractState, game_id: u32, timestamp: u64, grace: bool) {
-            assert!(
-                get_caller_address() == self.lifecycle.require_active().season, "only authenticated command domain",
-            );
-            crate::commands::assert_context_time(timestamp);
+            self.assert_economy_submission(game_id, timestamp);
             let games = self.games();
-            assert!(!games.rules(game_id).blitz_mode_on, "trading requires Eternum mode");
             if grace {
                 assert_main_with_grace(games.game(game_id), timestamp);
             } else {

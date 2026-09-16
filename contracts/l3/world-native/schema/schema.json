@@ -1439,15 +1439,11 @@
         },
         {
           "type": "function",
-          "name": "initialize_discovery_guards",
+          "name": "initialize_structure_guards",
           "inputs": [
             {
               "name": "key",
               "type": "world_native::resources::ResourceKey"
-            },
-            {
-              "name": "discovery",
-              "type": "world_native::discovery::Discovery"
             },
             {
               "name": "seed",
@@ -2043,6 +2039,30 @@
       "entrypoints": [
         {
           "type": "function",
+          "name": "create_bank",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::resources::ResourceKey"
+            },
+            {
+              "name": "owner",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "coord",
+              "type": "world_native::troops::Coord"
+            },
+            {
+              "name": "timestamp",
+              "type": "core::integer::u64"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
           "name": "configure_buildings",
           "inputs": [
             {
@@ -2076,6 +2096,22 @@
         {
           "type": "function",
           "name": "hyperstructure_count",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::integer::u32"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "completed_hyperstructure_count",
           "inputs": [
             {
               "name": "game_id",
@@ -4723,6 +4759,88 @@
           ]
         },
         {
+          "name": "RowSet",
+          "prefix": [
+            "0x255825b8769ab99d6c1bd893b440a284a39d8db18c76b91e8e6a70ef5c7a8e0",
+            "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "model",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "keys",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            },
+            {
+              "name": "values",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            }
+          ]
+        },
+        {
+          "name": "RowDeleted",
+          "prefix": [
+            "0x255825b8769ab99d6c1bd893b440a284a39d8db18c76b91e8e6a70ef5c7a8e0",
+            "0x34ee03e4825cf92d0335b5828e3389af6c145ecff05fce078c3753d871cc7f5"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "model",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "keys",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            }
+          ]
+        },
+        {
+          "name": "RowSet",
+          "prefix": [
+            "0x3e0fff9a6a438c00f3149e5b4346c8677fcf93ff5a01eedb48b5d0d95eecd75",
+            "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "model",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "keys",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            },
+            {
+              "name": "values",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            }
+          ]
+        },
+        {
           "name": "StoryEvent",
           "prefix": [
             "0x33b7d96bc1ff34b0a89214516b6ef5d2b8bdd9c301222eda2a1e96f78b84b96"
@@ -4894,6 +5012,258 @@
         },
         {
           "type": "function",
+          "name": "configure_withdrawals",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "rules",
+              "type": "world_native::withdrawals::WithdrawalRules"
+            },
+            {
+              "name": "tokens",
+              "type": "core::array::Span::<world_native::withdrawals::ResourceToken>"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "withdrawal_rules",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "world_native::withdrawals::WithdrawalRules"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "resource_token",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::market::MarketKey"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::starknet::contract_address::ContractAddress"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "configure_banks",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "rules",
+              "type": "world_native::market::BankRules"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "bank_rules",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "world_native::market::BankRules"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "bank_name",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::resources::ResourceKey"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::felt252"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "market",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::market::MarketKey"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "world_native::market::Market"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "liquidity",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::market::LiquidityKey"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::integer::u128"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "create_banks",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "banks",
+              "type": "core::array::Span::<world_native::market::BankPlacement>"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "buy_from_bank",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "command",
+              "type": "world_native::market::Swap"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "sell_to_bank",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "command",
+              "type": "world_native::market::Swap"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "add_bank_liquidity",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "command",
+              "type": "world_native::market::AddLiquidity"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "remove_bank_liquidity",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "command",
+              "type": "world_native::market::RemoveLiquidity"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
           "name": "domain_state",
           "inputs": [],
           "outputs": [
@@ -4938,6 +5308,253 @@
     }
   },
   "models": [
+    {
+      "name": "WithdrawalRules",
+      "identity": "0x5769746864726177616c52756c6573",
+      "owners": [
+        "economy"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "paused",
+          "type": "core::bool",
+          "id": "0x706175736564",
+          "feltLength": 1
+        },
+        {
+          "name": "bank_fee_bps",
+          "type": "core::integer::u16",
+          "id": "0x62616e6b5f6665655f627073",
+          "feltLength": 1
+        },
+        {
+          "name": "velords_fee_bps",
+          "type": "core::integer::u16",
+          "id": "0x76656c6f7264735f6665655f627073",
+          "feltLength": 1
+        },
+        {
+          "name": "season_fee_bps",
+          "type": "core::integer::u16",
+          "id": "0x736561736f6e5f6665655f627073",
+          "feltLength": 1
+        },
+        {
+          "name": "client_fee_bps",
+          "type": "core::integer::u16",
+          "id": "0x636c69656e745f6665655f627073",
+          "feltLength": 1
+        },
+        {
+          "name": "velords_recipient",
+          "type": "core::starknet::contract_address::ContractAddress",
+          "id": "0x76656c6f7264735f726563697069656e74",
+          "feltLength": 1
+        },
+        {
+          "name": "season_recipient",
+          "type": "core::starknet::contract_address::ContractAddress",
+          "id": "0x736561736f6e5f726563697069656e74",
+          "feltLength": 1
+        },
+        {
+          "name": "retention",
+          "type": "core::array::Span::<world_native::withdrawals::Retention>",
+          "id": "0x726574656e74696f6e",
+          "feltLength": null
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": null
+    },
+    {
+      "name": "ResourceToken",
+      "identity": "0x5265736f75726365546f6b656e",
+      "owners": [
+        "economy"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "resource_type",
+          "type": "core::integer::u8",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "token",
+          "type": "core::starknet::contract_address::ContractAddress",
+          "id": "0x746f6b656e",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 1
+    },
+    {
+      "name": "BankRules",
+      "identity": "0x42616e6b52756c6573",
+      "owners": [
+        "economy"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "lp_fee_num",
+          "type": "core::integer::u32",
+          "id": "0x6c705f6665655f6e756d",
+          "feltLength": 1
+        },
+        {
+          "name": "lp_fee_denom",
+          "type": "core::integer::u32",
+          "id": "0x6c705f6665655f64656e6f6d",
+          "feltLength": 1
+        },
+        {
+          "name": "owner_fee_num",
+          "type": "core::integer::u32",
+          "id": "0x6f776e65725f6665655f6e756d",
+          "feltLength": 1
+        },
+        {
+          "name": "owner_fee_denom",
+          "type": "core::integer::u32",
+          "id": "0x6f776e65725f6665655f64656e6f6d",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": 4
+    },
+    {
+      "name": "BankName",
+      "identity": "0x42616e6b4e616d65",
+      "owners": [
+        "economy"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "entity_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "name",
+          "type": "core::felt252",
+          "id": "0x6e616d65",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 1
+    },
+    {
+      "name": "Market",
+      "identity": "0x4d61726b6574",
+      "owners": [
+        "economy"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "resource_type",
+          "type": "core::integer::u8",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "lords",
+          "type": "core::integer::u128",
+          "id": "0x6c6f726473",
+          "feltLength": 1
+        },
+        {
+          "name": "resource",
+          "type": "core::integer::u128",
+          "id": "0x7265736f75726365",
+          "feltLength": 1
+        },
+        {
+          "name": "shares",
+          "type": "core::integer::u128",
+          "id": "0x736861726573",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 3
+    },
+    {
+      "name": "Liquidity",
+      "identity": "0x4c6971756964697479",
+      "owners": [
+        "economy"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "owner",
+          "type": "core::starknet::contract_address::ContractAddress",
+          "feltLength": 1
+        },
+        {
+          "name": "resource_type",
+          "type": "core::integer::u8",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "shares",
+          "type": "core::integer::u128",
+          "id": "0x736861726573",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 3,
+      "valueLength": 1
+    },
     {
       "name": "TradeOrder",
       "identity": "0x54726164654f72646572",
@@ -8129,6 +8746,16 @@
         }
       ]
     },
+    "core::array::Span::<world_native::market::BankPlacement>": {
+      "type": "struct",
+      "name": "core::array::Span::<world_native::market::BankPlacement>",
+      "members": [
+        {
+          "name": "snapshot",
+          "type": "@core::array::Array::<world_native::market::BankPlacement>"
+        }
+      ]
+    },
     "core::array::Span::<world_native::mines::MineKindEntry>": {
       "type": "struct",
       "name": "core::array::Span::<world_native::mines::MineKindEntry>",
@@ -8236,6 +8863,26 @@
         {
           "name": "snapshot",
           "type": "@core::array::Array::<world_native::village::VillageResource>"
+        }
+      ]
+    },
+    "core::array::Span::<world_native::withdrawals::ResourceToken>": {
+      "type": "struct",
+      "name": "core::array::Span::<world_native::withdrawals::ResourceToken>",
+      "members": [
+        {
+          "name": "snapshot",
+          "type": "@core::array::Array::<world_native::withdrawals::ResourceToken>"
+        }
+      ]
+    },
+    "core::array::Span::<world_native::withdrawals::Retention>": {
+      "type": "struct",
+      "name": "core::array::Span::<world_native::withdrawals::Retention>",
+      "members": [
+        {
+          "name": "snapshot",
+          "type": "@core::array::Array::<world_native::withdrawals::Retention>"
         }
       ]
     },
@@ -9140,6 +9787,26 @@
         {
           "name": "CancelTradeOrder",
           "type": "core::integer::u32"
+        },
+        {
+          "name": "CreateBanks",
+          "type": "core::array::Span::<world_native::market::BankPlacement>"
+        },
+        {
+          "name": "BuyFromBank",
+          "type": "world_native::market::Swap"
+        },
+        {
+          "name": "SellToBank",
+          "type": "world_native::market::Swap"
+        },
+        {
+          "name": "AddBankLiquidity",
+          "type": "world_native::market::AddLiquidity"
+        },
+        {
+          "name": "RemoveBankLiquidity",
+          "type": "world_native::market::RemoveLiquidity"
         }
       ]
     },
@@ -9448,6 +10115,242 @@
         {
           "name": "data",
           "type": "core::integer::u128"
+        }
+      ]
+    },
+    "world_native::market::AddLiquidity": {
+      "type": "struct",
+      "name": "world_native::market::AddLiquidity",
+      "members": [
+        {
+          "name": "bank_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "structure_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "resource_type",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "resource_amount",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "lords_amount",
+          "type": "core::integer::u128"
+        }
+      ]
+    },
+    "world_native::market::BankPlacement": {
+      "type": "struct",
+      "name": "world_native::market::BankPlacement",
+      "members": [
+        {
+          "name": "name",
+          "type": "core::felt252"
+        },
+        {
+          "name": "coord",
+          "type": "world_native::troops::Coord"
+        }
+      ]
+    },
+    "world_native::market::BankRules": {
+      "type": "struct",
+      "name": "world_native::market::BankRules",
+      "members": [
+        {
+          "name": "lp_fee_num",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "lp_fee_denom",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "owner_fee_num",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "owner_fee_denom",
+          "type": "core::integer::u32"
+        }
+      ]
+    },
+    "world_native::market::LiquidityKey": {
+      "type": "struct",
+      "name": "world_native::market::LiquidityKey",
+      "members": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "owner",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "resource_type",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
+    "world_native::market::LiquidityStory": {
+      "type": "struct",
+      "name": "world_native::market::LiquidityStory",
+      "members": [
+        {
+          "name": "bank_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "structure_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "resource_type",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "lords_amount",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "resource_amount",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "shares",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "resource_price",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "add",
+          "type": "core::bool"
+        }
+      ]
+    },
+    "world_native::market::Market": {
+      "type": "struct",
+      "name": "world_native::market::Market",
+      "members": [
+        {
+          "name": "lords",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "resource",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "shares",
+          "type": "core::integer::u128"
+        }
+      ]
+    },
+    "world_native::market::MarketKey": {
+      "type": "struct",
+      "name": "world_native::market::MarketKey",
+      "members": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "resource_type",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
+    "world_native::market::RemoveLiquidity": {
+      "type": "struct",
+      "name": "world_native::market::RemoveLiquidity",
+      "members": [
+        {
+          "name": "bank_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "structure_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "resource_type",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "shares",
+          "type": "core::integer::u128"
+        }
+      ]
+    },
+    "world_native::market::Swap": {
+      "type": "struct",
+      "name": "world_native::market::Swap",
+      "members": [
+        {
+          "name": "bank_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "structure_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "resource_type",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "amount",
+          "type": "core::integer::u128"
+        }
+      ]
+    },
+    "world_native::market::SwapStory": {
+      "type": "struct",
+      "name": "world_native::market::SwapStory",
+      "members": [
+        {
+          "name": "bank_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "structure_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "resource_type",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "lords_amount",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "resource_amount",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "owner_fee",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "lp_fee",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "resource_price",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "buy",
+          "type": "core::bool"
         }
       ]
     },
@@ -9864,6 +10767,14 @@
         {
           "name": "TradeCancelled",
           "type": "core::integer::u32"
+        },
+        {
+          "name": "BankSwap",
+          "type": "world_native::market::SwapStory"
+        },
+        {
+          "name": "BankLiquidity",
+          "type": "world_native::market::LiquidityStory"
         }
       ]
     },
@@ -9923,6 +10834,10 @@
         },
         {
           "name": "Delayed",
+          "type": "()"
+        },
+        {
+          "name": "InstantArrivals",
           "type": "()"
         }
       ]
@@ -11768,7 +12683,73 @@
           "type": "core::array::Span::<world_native::village::VillageResource>"
         }
       ]
+    },
+    "world_native::withdrawals::ResourceToken": {
+      "type": "struct",
+      "name": "world_native::withdrawals::ResourceToken",
+      "members": [
+        {
+          "name": "resource_type",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "token",
+          "type": "core::starknet::contract_address::ContractAddress"
+        }
+      ]
+    },
+    "world_native::withdrawals::Retention": {
+      "type": "struct",
+      "name": "world_native::withdrawals::Retention",
+      "members": [
+        {
+          "name": "troop_percent",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "resource_percent",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
+    "world_native::withdrawals::WithdrawalRules": {
+      "type": "struct",
+      "name": "world_native::withdrawals::WithdrawalRules",
+      "members": [
+        {
+          "name": "paused",
+          "type": "core::bool"
+        },
+        {
+          "name": "bank_fee_bps",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "velords_fee_bps",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "season_fee_bps",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "client_fee_bps",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "velords_recipient",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "season_recipient",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "retention",
+          "type": "core::array::Span::<world_native::withdrawals::Retention>"
+        }
+      ]
     }
   },
-  "identity": "77aba9cf6e4e9e06b463793da6df620a710bb046ee72695cadaa0bf2967d9e98"
+  "identity": "1fe8c40d5ff9230c227cb2fe466f57a1ba14a183ddc9d6543bd0a7889929c77b"
 }

@@ -77,6 +77,11 @@ pub enum Command {
     CreateTradeOrder: crate::trade::CreateOrder,
     AcceptTradeOrder: crate::trade::AcceptOrder,
     CancelTradeOrder: u32,
+    CreateBanks: Span<crate::market::BankPlacement>,
+    BuyFromBank: crate::market::Swap,
+    SellToBank: crate::market::Swap,
+    AddBankLiquidity: crate::market::AddLiquidity,
+    RemoveBankLiquidity: crate::market::RemoveLiquidity,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]

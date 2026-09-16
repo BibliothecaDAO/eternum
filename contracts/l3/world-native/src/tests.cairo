@@ -1,5 +1,6 @@
 mod bitcoin;
 mod fixtures;
+mod market;
 mod mines;
 mod production;
 mod realms;

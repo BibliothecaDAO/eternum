@@ -28,13 +28,7 @@ pub trait IStructureCapture<T> {
 #[starknet::interface]
 pub trait IGuards<T> {
     fn guard(self: @T, key: GuardKey) -> Guard;
-    fn initialize_discovery_guards(
-        ref self: T,
-        key: crate::resources::ResourceKey,
-        discovery: crate::discovery::Discovery,
-        seed: u256,
-        timestamp: u64,
-    );
+    fn initialize_structure_guards(ref self: T, key: crate::resources::ResourceKey, seed: u256, timestamp: u64);
     fn add_starting_guard(
         ref self: T,
         key: crate::resources::ResourceKey,

@@ -313,6 +313,8 @@ pub enum Story {
     TradeCreated: crate::trade::TradeListing,
     TradeAccepted: crate::trade::TradeFill,
     TradeCancelled: u32,
+    BankSwap: crate::market::SwapStory,
+    BankLiquidity: crate::market::LiquidityStory,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
@@ -325,6 +327,7 @@ pub enum TransferType {
     Instant,
     InstantStorable,
     Delayed,
+    InstantArrivals,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]

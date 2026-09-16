@@ -309,6 +309,7 @@ pub mod StructureState {
 #[starknet::interface]
 pub trait IStructures<T> {
     fn hyperstructure_count(self: @T, game_id: u32) -> u32;
+    fn completed_hyperstructure_count(self: @T, game_id: u32) -> u32;
     fn create_discovery(
         ref self: T, game_id: u32, coord: Coord, discovery: crate::discovery::Discovery, seed: u256, timestamp: u64,
     ) -> u32;
@@ -385,6 +386,7 @@ pub mod StructuresDomain {
         faith: FaithOwnershipState::Storage,
         address_names: Map<ContractAddress, felt252>,
         completed_hyperstructures: Map<(u32, u32), bool>,
+        hyperstructure_ids: Map<(u32, u32), u32>,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -399,6 +401,54 @@ pub mod StructuresDomain {
     #[constructor]
     fn constructor(ref self: ContractState, authority: ContractAddress) {
         self.lifecycle.initialize(authority);
+    }
+    #[abi(embed_v0)]
+    impl BankCreation of crate::market::IBankCreation<ContractState> {
+        fn create_bank(
+            ref self: ContractState, key: ResourceKey, owner: ContractAddress, coord: Coord, timestamp: u64,
+        ) {
+            assert!(get_caller_address() == self.lifecycle.require_active().economy, "only economy domain");
+            crate::commands::assert_context_time(timestamp);
+            assert!(key.entity_id >= 0xfffffff9 && key.entity_id <= 0xfffffffe, "invalid regional bank id");
+            assert!(!coord.alt && owner != 0.try_into().unwrap(), "invalid bank placement");
+            let rules = self.game_dispatcher().rules(key.game_id);
+            assert!(!rules.blitz_mode_on, "banks require Eternum mode");
+            assert!(!self.structures.exists(key), "bank already exists");
+            self.reveal_structure_tile(key.game_id, coord);
+            self.map_dispatcher().reveal_structure_surroundings(key.game_id, coord);
+            let record = StructureRecord {
+                owner,
+                base: StructureBase {
+                    category: 3,
+                    level: 3,
+                    troop_max_guard_count: 4,
+                    troop_max_explorer_count: 0,
+                    created_at: timestamp.try_into().unwrap(),
+                    coord_x: coord.x,
+                    coord_y: coord.y,
+                    ..Default::default(),
+                },
+                resources_packed: 0,
+                metadata: Default::default(),
+            };
+            self.structures.create(key, record);
+            self.map_dispatcher().occupy(tile_key(key.game_id, coord), key.entity_id, 14, true);
+            self
+                .resources_dispatcher()
+                .initialize_resources(
+                    key,
+                    rules.structure_capacity_config.bank_structure_capacity.into() * RESOURCE_PRECISION,
+                    3,
+                    timestamp,
+                );
+            let seed: u256 = Into::<felt252, u256>::into('what could possibly go wrong') - key.entity_id.into();
+            crate::guards::IGuardsDispatcherTrait::initialize_structure_guards(
+                crate::guards::IGuardsDispatcher { contract_address: self.lifecycle.require_active().troops },
+                key,
+                seed,
+                timestamp,
+            );
+        }
     }
     #[abi(embed_v0)]
     impl BuildingRules of crate::buildings::IBuildingRules<ContractState> {
@@ -455,6 +505,16 @@ pub mod StructuresDomain {
                 }
             }
             id
+        }
+        fn completed_hyperstructure_count(self: @ContractState, game_id: u32) -> u32 {
+            let mut completed = 0;
+            for index in 0..self.hyperstructure_counts.read(game_id) {
+                let id = self.hyperstructure_ids.read((game_id, index));
+                if self.completed_hyperstructures.read((game_id, id)) {
+                    completed += 1;
+                }
+            }
+            completed
         }
         fn hyperstructure_count(self: @ContractState, game_id: u32) -> u32 {
             self.hyperstructure_counts.read(game_id)
@@ -955,10 +1015,9 @@ pub mod StructuresDomain {
                 Discovery::None => panic!("cannot create empty discovery"),
             }
             self.structures.create(key, record);
-            crate::guards::IGuardsDispatcherTrait::initialize_discovery_guards(
+            crate::guards::IGuardsDispatcherTrait::initialize_structure_guards(
                 crate::guards::IGuardsDispatcher { contract_address: self.lifecycle.require_active().troops },
                 key,
-                discovery,
                 seed,
                 timestamp,
             );
@@ -1401,6 +1460,7 @@ pub mod StructuresDomain {
                     },
                 );
             let count = self.hyperstructure_counts.read(key.game_id) + 1;
+            self.hyperstructure_ids.write((key.game_id, count - 1), key.entity_id);
             self.hyperstructure_counts.write(key.game_id, count);
             self
                 .emit(

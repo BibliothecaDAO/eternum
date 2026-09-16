@@ -332,3 +332,58 @@ pub mod RegistryRoundTripFixture {
         }
     }
 }
+
+#[starknet::interface]
+pub trait ITokenFixture<T> {
+    fn seed(ref self: T, account: ContractAddress, amount: u256);
+    fn set_failure(ref self: T, fail: bool);
+}
+#[starknet::contract]
+pub mod BankTokenFixture {
+    use starknet::storage::{
+        Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess, StoragePointerWriteAccess,
+    };
+    use starknet::{ContractAddress, get_caller_address};
+    #[storage]
+    struct Storage {
+        balances: Map<ContractAddress, u256>,
+        minter: ContractAddress,
+        failing: bool,
+    }
+    #[constructor]
+    fn constructor(ref self: ContractState, minter: ContractAddress) {
+        self.minter.write(minter);
+    }
+    #[abi(embed_v0)]
+    impl Fixture of super::ITokenFixture<ContractState> {
+        fn seed(ref self: ContractState, account: ContractAddress, amount: u256) {
+            self.balances.write(account, amount);
+        }
+        fn set_failure(ref self: ContractState, fail: bool) {
+            self.failing.write(fail);
+        }
+    }
+    #[abi(embed_v0)]
+    impl Token of crate::withdrawals::IResourceToken<ContractState> {
+        fn decimals(self: @ContractState) -> u8 {
+            18
+        }
+        fn balance_of(self: @ContractState, account: ContractAddress) -> u256 {
+            self.balances.read(account)
+        }
+        fn transfer(ref self: ContractState, recipient: ContractAddress, amount: u256) -> bool {
+            let sender = get_caller_address();
+            let balance = self.balances.read(sender);
+            if self.failing.read() || balance < amount {
+                return false;
+            }
+            self.balances.write(sender, balance - amount);
+            self.balances.write(recipient, self.balances.read(recipient) + amount);
+            true
+        }
+        fn mint(ref self: ContractState, recipient: ContractAddress, amount: u256) {
+            assert!(get_caller_address() == self.minter.read() && !self.failing.read(), "token mint rejected");
+            self.balances.write(recipient, self.balances.read(recipient) + amount);
+        }
+    }
+}

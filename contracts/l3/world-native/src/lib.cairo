@@ -38,6 +38,8 @@ pub mod geometry;
 
 pub mod guards;
 
+pub mod market;
+
 pub mod names;
 pub mod ownership;
 
@@ -54,3 +56,5 @@ pub mod transport;
 pub mod upgrades;
 
 pub mod village;
+
+pub mod withdrawals;
