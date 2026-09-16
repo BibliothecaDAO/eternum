@@ -305,6 +305,9 @@ pub enum Story {
     ResourceBurnStory: ResourceAmountsStory,
     ResourceTransferStory: ResourceTransferStory,
     ResourceReceiveArrivalStory: ResourceAmountsStory,
+    ProductionStory: ProductionStory,
+    BuildingPlacementStory: BuildingPlacementStory,
+    BuildingPaymentStory: BuildingPaymentStory,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
@@ -360,4 +363,31 @@ pub struct GuardAddStory {
     pub category: u8,
     pub tier: u8,
     pub amount: u128,
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct ProductionStory {
+    pub received_resource_type: u8,
+    pub received_amount: u128,
+    pub cost: Span<crate::resources::ResourceAmount>,
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub enum BuildingChange {
+    Created,
+    Destroyed,
+    Paused,
+    Resumed,
+}
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct BuildingPlacementStory {
+    pub coord: crate::troops::Coord,
+    pub category: u8,
+    pub change: BuildingChange,
+}
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct BuildingPaymentStory {
+    pub coord: crate::troops::Coord,
+    pub category: u8,
+    pub cost: Span<crate::resources::ResourceAmount>,
 }

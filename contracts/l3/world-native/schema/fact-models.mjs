@@ -11,6 +11,8 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
       };
     if (row.name === "ResourceAllowance")
       row.absence = { value: "zero", meaning: "No approval for this owner, recipient and resource." };
+    if (row.name === "ProductionBonus")
+      row.absence = { value: "zero", meaning: "No production bonus has been granted to this structure." };
     if (row.name === "ResourceArrival")
       row.absence = { value: "empty", meaning: "No resources queued for this entity, day and slot." };
     const observation = behaviouralFacts[row.name];
@@ -101,11 +103,46 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
       struct("resources::ResourceSlot"),
       struct("resources::Production"),
     ),
+    model(
+      "ProductionBonus",
+      ["resources"],
+      "game",
+      struct("resources::ResourceKey"),
+      struct("production::ProductionBonus"),
+    ),
+    model(
+      "ProductionRecipe",
+      ["resources"],
+      "game",
+      struct("production::RecipeKey"),
+      struct("production::ProductionRecipe"),
+    ),
+    model(
+      "ProductionReady",
+      ["resources"],
+      "game",
+      [struct("resources::ResourceKey")[0]],
+      [{ name: "ready", type: "core::bool" }],
+    ),
     model("ResourceWeight", ["resources"], "game", struct("resources::ResourceKey"), struct("resources::Weight")),
     model("ResourceArrival", ["resources"], "game", struct("arrivals::ArrivalKey"), struct("arrivals::Arrival")),
     model("ResourceAllowance", ["resources"], "game", struct("resources::AllowanceKey"), [
       { name: "amount", type: method("resources", "resource_allowance").outputs[0].type },
     ]),
+    model(
+      "BuildingRule",
+      ["structures"],
+      "game",
+      struct("buildings::BuildingRuleKey"),
+      struct("buildings::BuildingRule"),
+    ),
+    model(
+      "BuildingRulesReady",
+      ["structures"],
+      "game",
+      [struct("resources::ResourceKey")[0]],
+      [{ name: "ready", type: "core::bool" }],
+    ),
     model("Building", ["structures"], "game", struct("buildings::BuildingKey"), struct("buildings::Building")),
     model(
       "StructureBuildings",
@@ -263,6 +300,26 @@ const behaviouralFacts = {
       updatedAt: "last_updated_at",
     },
   },
+  ProductionBonus: {
+    domain: "production",
+    fields: {
+      resourcePercent: "incr_resource_rate_percent_num",
+      laborPercent: "incr_labor_rate_percent_num",
+      troopPercent: "incr_troop_rate_percent_num",
+      resourceEndTick: "incr_resource_rate_end_tick",
+      laborEndTick: "incr_labor_rate_end_tick",
+      troopEndTick: "incr_troop_rate_end_tick",
+    },
+  },
+  ProductionRecipe: {
+    domain: "production",
+    fields: {
+      simpleOutput: "simple_output",
+      complexOutput: "complex_output",
+      simpleInputs: "simple_inputs",
+      complexInputs: "complex_inputs",
+    },
+  },
   ResourceWeight: { domain: "resources", fields: { capacity: "capacity", weight: "weight" } },
   ResourceAllowance: { domain: "resources", fields: { amount: "amount" } },
   ResourceArrival: { domain: "resources", fields: { resources: "resources" } },
@@ -312,7 +369,7 @@ const behaviouralFacts = {
   TileOpt: { domain: "map", fields: { tile: "data" }, transform: "tile" },
   Building: {
     domain: "production",
-    fields: { category: "category", bonus: "bonus_percent", structure: "outer_entity_id", paused: "paused" },
+    fields: { category: "category", structure: "outer_entity_id", paused: "paused" },
   },
   StructureBuildings: {
     domain: "production",

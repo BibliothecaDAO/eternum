@@ -140,6 +140,7 @@ const schema = {
                 "name_systems",
                 "structure_systems",
                 "resource_systems",
+                "production_systems",
               ]
             : [],
         events: eventLayouts(artifacts[domain]),

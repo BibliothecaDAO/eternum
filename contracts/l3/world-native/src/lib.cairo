@@ -35,8 +35,9 @@ pub mod geometry;
 
 pub mod names;
 pub mod ownership;
-pub mod random;
 
+pub mod production;
+pub mod random;
 pub mod resources;
 pub mod resources_domain;
 pub mod structures;

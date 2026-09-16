@@ -31,12 +31,27 @@ The behavioral slice adds these independent component stores:
 | `GameState`        | Games and immutable rules keyed by game; entity counters; points keyed by game and player                                                                                     | `GameRegistry` and `SliceRules` retain their field order. Changes to stored records need separate appended slots and an upgrade test.          |
 | `StructureState`   | Structure records keyed by game and entity; existence derives from nonzero category; explorer ids keyed by game, structure and index; ownership stored once in each structure | The variable explorer list has a fixed record count and indexed storage. Removal compacts that list and clears its tail.                       |
 | `ResourceState`    | Balances and production keyed by game, entity and resource; weight and `resource_exists` keyed by game and entity                                                             | Sparse `ResourceBalance`, `ResourceProduction` and `ResourceWeight` rows expose these stores. Destruction clears each existing row explicitly. |
-| `BuildingState`    | Buildings and existence keyed by game, layer, outer coordinates and inner coordinates; building counts keyed by game and structure                                            | Preserve the six-part building key and the three packed category counters.                                                                     |
+| `BuildingState`    | Buildings keyed by game, layer, outer coordinates and inner coordinates; building counts keyed by game and structure                                                          | Existence derives from nonzero category. Preserve the six-part key and three packed category counters.                                         |
+| `ProductionState`  | Recipe readiness by game; recipe terms by game and resource; ordered inputs by game, resource, recipe kind and index; bonuses by game and structure                           | Recipes are immutable. Bonus percentages and end ticks occupy one packed felt; zero means no bonus. Preserve field widths and packing order.   |
 | `StructuresDomain` | Hyperstructure counts, seeds and completion flags                                                                                                                             | Configuration is set once for each game. Hyperstructure rows derive from the stored seed, completion flag and structure category.              |
 
 Component storage uses `v0` embedding. Field names must be unique across components embedded in the same domain;
 component names do not isolate colliding field names. Resource existence therefore uses `resource_exists`, distinct from
 structure existence. The populated replacement test remains the compatibility gate for each supported upgrade.
+
+Resource rules store weight, the two 64-bit production rates packed together, and labor conversion in three slots. The
+resource id exists only in the map key and is reconstructed in the view. Building population and capacity terms now live
+only in per-category building configuration, rather than also in each resource rule.
+
+Production bonuses pack the resource, labor and troop percentages into three 16-bit fields, followed by their three
+32-bit end ticks, for 144 bits. Expiry is evaluated against the recorded action tick, with the end tick inclusive; it
+does not mutate the retained bonus definition. Building storage packs category (8 bits), structure id (32 bits) and
+paused (1 bit) into one 41-bit word. Coordinate keys identify buildings; unused building ids and the never-written bonus
+percentage are absent from storage and events. The allocator increment is retained for later gameplay identities. Its
+separate presence map is removed. Immutable per-category building terms and ordered erection costs use appended maps.
+Population uses one 64-bit word for current and maximum values. Structure building counts no longer repeat the structure
+coordinate. These packing and projection changes require a fresh rehearsal; no live upgrade from the previous building
+layout is claimed.
 
 The slice implements the pinned season rules. Development provisioning supplies the initial realms, productive building
 and portal fixtures; it requires domain authority and a development game. It does not expose a general storage writer.

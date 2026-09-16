@@ -454,6 +454,34 @@ pub mod SeasonDomain {
                 value.serialize(ref calldata);
                 (peers.resources, selector!("claim_production"))
             },
+            Command::BurnResourceForLaborProduction(value) => {
+                value.serialize(ref calldata);
+                (peers.resources, selector!("burn_resource_for_labor_production"))
+            },
+            Command::BurnLaborForResourceProduction(value) => {
+                value.serialize(ref calldata);
+                (peers.resources, selector!("burn_labor_for_resource_production"))
+            },
+            Command::BurnResourceForResourceProduction(value) => {
+                value.serialize(ref calldata);
+                (peers.resources, selector!("burn_resource_for_resource_production"))
+            },
+            Command::CreateBuilding(value) => {
+                value.serialize(ref calldata);
+                (peers.structures, selector!("create_building"))
+            },
+            Command::DestroyBuilding(value) => {
+                value.serialize(ref calldata);
+                (peers.structures, selector!("destroy_building"))
+            },
+            Command::PauseBuildingProduction(value) => {
+                value.serialize(ref calldata);
+                (peers.structures, selector!("pause_building_production"))
+            },
+            Command::ResumeBuildingProduction(value) => {
+                value.serialize(ref calldata);
+                (peers.structures, selector!("resume_building_production"))
+            },
             Command::ApproveResources(value) => {
                 value.serialize(ref calldata);
                 (peers.resources, selector!("approve_resources"))

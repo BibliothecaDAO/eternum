@@ -65,9 +65,14 @@ fn setup_config(dev: bool, mode: SettlementMode, game_rules: crate::rules::Slice
     let mut fields = data.span();
     let _: crate::rules::SliceRules = Serde::deserialize(ref fields).unwrap();
     let resources: Span<ResourceRule> = Serde::deserialize(ref fields).unwrap();
+    let buildings: Span<crate::buildings::BuildingRuleConfig> = Serde::deserialize(ref fields).unwrap();
     start_cheat_caller_address(deployment.peers.structures, authority());
     start_cheat_caller_address(deployment.peers.resources, authority());
     IResourcesDispatcher { contract_address: deployment.peers.resources }.configure_resources(3, resources);
+    crate::buildings::IBuildingRulesDispatcherTrait::configure_buildings(
+        crate::buildings::IBuildingRulesDispatcher { contract_address: deployment.peers.structures }, 3, buildings,
+    );
+
     stop_cheat_caller_address(deployment.peers.resources);
     start_cheat_caller_address(deployment.peers.structures, deployment.peers.settlement);
     let realm = ISettlementCreationDispatcher { contract_address: deployment.peers.structures }

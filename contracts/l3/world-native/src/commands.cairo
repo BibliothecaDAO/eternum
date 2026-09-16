@@ -62,6 +62,13 @@ pub enum Command {
     SendResources: crate::resources::ResourceTransfer,
     PickupResources: crate::resources::ResourceTransfer,
     TransferExplorerResourcesToStructure: crate::resources::ResourceTransfer,
+    BurnResourceForLaborProduction: crate::production::RefillProduction,
+    BurnLaborForResourceProduction: crate::production::RefillProduction,
+    BurnResourceForResourceProduction: crate::production::RefillProduction,
+    CreateBuilding: crate::buildings::CreateBuilding,
+    DestroyBuilding: crate::buildings::ChangeBuilding,
+    PauseBuildingProduction: crate::buildings::ChangeBuilding,
+    ResumeBuildingProduction: crate::buildings::ChangeBuilding,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]

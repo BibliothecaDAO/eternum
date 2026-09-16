@@ -474,6 +474,21 @@ pub mod StructuresDomain {
         self.lifecycle.initialize(authority);
     }
     #[abi(embed_v0)]
+    impl BuildingRules of crate::buildings::IBuildingRules<ContractState> {
+        fn configure_buildings(
+            ref self: ContractState, game_id: u32, rules: Span<crate::buildings::BuildingRuleConfig>,
+        ) {
+            self.assert_authority();
+            let _ = self.game_dispatcher().game(game_id);
+            self.buildings.configure(game_id, rules);
+        }
+        fn building_rule(
+            self: @ContractState, key: crate::buildings::BuildingRuleKey,
+        ) -> crate::buildings::BuildingRule {
+            self.buildings.rule(key)
+        }
+    }
+    #[abi(embed_v0)]
     impl Structures of super::IStructures<ContractState> {
         fn hyperstructure(self: @ContractState, key: ResourceKey) -> Option<super::Hyperstructure> {
             let structure = self.structures.structure(key);
@@ -697,6 +712,98 @@ pub mod StructuresDomain {
             assert!(record.owner == actor, "actor does not own structure");
             assert!(record.base.category == 1, "not a realm");
             self.provision_realm_economy(key, context.timestamp);
+        }
+    }
+    #[abi(embed_v0)]
+    impl BuildingCommands of crate::buildings::IBuildingCommands<ContractState> {
+        fn create_building(
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            command: crate::buildings::CreateBuilding,
+            context: ExecutionContext,
+        ) {
+            let key = ResourceKey { game_id, entity_id: command.structure_id };
+            let base = self.assert_building_command(key, actor, context.timestamp);
+            let coord = self.resolve_building_coord(game_id, base, command.directions);
+            let location = building_key(game_id, base, coord);
+            let rule = self.buildings.rule(crate::buildings::BuildingRuleKey { game_id, category: command.category });
+            self.erect_building(key, actor, base, location, coord, command.category, rule, context.timestamp);
+            let count = crate::buildings::category_count(
+                self.buildings.structure_buildings.read((game_id, command.structure_id)), command.category,
+            );
+            let costs = if command.use_simple {
+                rule.simple_cost
+            } else {
+                rule.complex_cost
+            };
+            self
+                .pay_building_costs(
+                    key,
+                    actor,
+                    coord,
+                    command.category,
+                    count,
+                    costs,
+                    self.game_dispatcher().rules(game_id).building_config.base_cost_percent_increase,
+                    context.timestamp,
+                );
+        }
+        fn destroy_building(
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            command: crate::buildings::ChangeBuilding,
+            context: ExecutionContext,
+        ) {
+            let key = ResourceKey { game_id, entity_id: command.structure_id };
+            let base = self.assert_building_command(key, actor, context.timestamp);
+            let location = building_key(game_id, base, command.coord);
+            let building = self.buildings.building(location).expect('missing building');
+            assert!(building.category != 25, "cannot destroy labor building");
+            if !building.paused {
+                self.change_building_production(key, building.category, base.category, false, context.timestamp);
+            }
+            self.change_building_capacity(key, building.category, false);
+            let rule = self.buildings.rule(crate::buildings::BuildingRuleKey { game_id, category: building.category });
+            self
+                .buildings
+                .remove(
+                    location, building, rule, self.game_dispatcher().rules(game_id).building_config.base_population,
+                );
+            self
+                .emit_building_change(
+                    key,
+                    actor,
+                    command.coord,
+                    building.category,
+                    crate::ownership::BuildingChange::Destroyed,
+                    context.timestamp,
+                );
+        }
+        fn pause_building_production(
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            command: crate::buildings::ChangeBuilding,
+            context: ExecutionContext,
+        ) {
+            self.set_building_paused(game_id, actor, command, true, context.timestamp);
+        }
+        fn resume_building_production(
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            command: crate::buildings::ChangeBuilding,
+            context: ExecutionContext,
+        ) {
+            self.set_building_paused(game_id, actor, command, false, context.timestamp);
+        }
+    }
+    fn building_key(game_id: u32, base: StructureBase, coord: Coord) -> BuildingKey {
+        let outer = super::structure_coord(base);
+        BuildingKey {
+            game_id, alt: outer.alt, outer_col: outer.x, outer_row: outer.y, inner_col: coord.x, inner_row: coord.y,
         }
     }
     #[abi(embed_v0)]
@@ -1067,6 +1174,185 @@ pub mod StructuresDomain {
             let cap = 300000 * RESOURCE_PRECISION * (1 + crate::random::range(seed, 124, 10));
             self.create_producer(key, coord, cap, false, 24, 26, rules, timestamp);
         }
+        fn erect_building(
+            ref self: ContractState,
+            key: ResourceKey,
+            actor: ContractAddress,
+            base: StructureBase,
+            location: BuildingKey,
+            coord: Coord,
+            category: u8,
+            rule: crate::buildings::BuildingRule,
+            timestamp: u64,
+        ) {
+            // Allocation order affects later gameplay identities even though buildings use coordinate keys.
+            self.game_dispatcher().allocate_entity(key.game_id);
+            let building = Building { category, outer_entity_id: key.entity_id, paused: false };
+            let rules = self.game_dispatcher().rules(key.game_id);
+            self
+                .buildings
+                .create(
+                    location,
+                    building,
+                    rule.population_cost,
+                    rule.capacity_grant,
+                    rules.building_config.base_population,
+                );
+            self.change_building_production(key, building.category, base.category, true, timestamp);
+            self.change_building_capacity(key, building.category, true);
+            self.assert_structure_produces(key, building.category);
+            self
+                .emit_building_change(
+                    key, actor, coord, building.category, crate::ownership::BuildingChange::Created, timestamp,
+                );
+        }
+        fn resolve_building_coord(
+            self: @ContractState, game_id: u32, base: StructureBase, directions: Span<u8>,
+        ) -> Coord {
+            let limits = crate::upgrades::IUpgradeRulesDispatcher {
+                contract_address: self.lifecycle.require_active().season,
+            }
+                .upgrade_limits(game_id);
+            let maximum = match base.category {
+                1 => limits.realm_max,
+                5 => limits.village_max,
+                _ => 0,
+            };
+            assert!(!directions.is_empty(), "building path is empty");
+            assert!(directions.len() <= Into::<u8, u32>::into(maximum) + 1, "building outside maximum level");
+            assert!(directions.len() <= Into::<u8, u32>::into(base.level) + 1, "building outside current level");
+            let mut coord = Coord { alt: false, x: 10, y: 10 };
+            for direction in directions {
+                coord = crate::geometry::neighbor(coord, *direction);
+            }
+            coord
+        }
+        fn assert_building_command(
+            self: @ContractState, key: ResourceKey, actor: ContractAddress, timestamp: u64,
+        ) -> StructureBase {
+            assert!(
+                get_caller_address() == self.lifecycle.require_active().season, "only authenticated command domain",
+            );
+            crate::commands::assert_context_time(timestamp);
+            assert_playing(self.game_dispatcher().game(key.game_id), timestamp);
+            assert!(self.structures.owner(key) == actor, "actor does not own structure");
+            let base = self.structures.structures.entry((key.game_id, key.entity_id)).base.read();
+            assert!(
+                base.category == 1 || base.category == 5 || base.category == 7, "structure does not support production",
+            );
+            base
+        }
+        fn assert_structure_produces(self: @ContractState, key: ResourceKey, category: u8) {
+            let resources = self.structures.structures.entry((key.game_id, key.entity_id)).resources_packed.read();
+            assert!(crate::buildings::can_produce(category, resources), "structure cannot produce building resource");
+        }
+        fn change_building_production(
+            ref self: ContractState,
+            key: ResourceKey,
+            category: u8,
+            structure_category: u8,
+            enabled: bool,
+            timestamp: u64,
+        ) {
+            let resource_type = crate::buildings::produced_resource(category);
+            if resource_type == 0 {
+                return;
+            }
+            let resources = self.resources_dispatcher();
+            let rule = resources.resource_rule(key.game_id, resource_type);
+            let rate = if structure_category == 1 {
+                rule.realm_rate
+            } else {
+                rule.village_rate
+            };
+            if enabled {
+                assert!(rate != 0, "resource cannot be produced");
+                resources.start_production(key, resource_type, rate, 0, timestamp);
+            } else {
+                resources.stop_production(key, resource_type, rate, timestamp);
+            }
+        }
+        fn change_building_capacity(ref self: ContractState, key: ResourceKey, category: u8, adding: bool) {
+            if category != 2 {
+                return;
+            }
+            let amount = Into::<
+                u32, u128,
+            >::into(self.game_dispatcher().rules(key.game_id).capacity_config.storehouse_boost_capacity)
+                * RESOURCE_PRECISION;
+            self.resources_dispatcher().change_structure_capacity(key, amount, adding);
+        }
+        fn set_building_paused(
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            command: crate::buildings::ChangeBuilding,
+            paused: bool,
+            timestamp: u64,
+        ) {
+            let key = ResourceKey { game_id, entity_id: command.structure_id };
+            let base = self.assert_building_command(key, actor, timestamp);
+            let location = building_key(game_id, base, command.coord);
+            let mut building = self.buildings.building(location).expect('missing building');
+            assert!(building.paused != paused, "building already in requested state");
+            self.change_building_production(key, building.category, base.category, !paused, timestamp);
+            building.paused = paused;
+            self.buildings.write_building(location, building);
+            let change = if paused {
+                crate::ownership::BuildingChange::Paused
+            } else {
+                crate::ownership::BuildingChange::Resumed
+            };
+            self.emit_building_change(key, actor, command.coord, building.category, change, timestamp);
+        }
+        fn emit_building_change(
+            ref self: ContractState,
+            key: ResourceKey,
+            actor: ContractAddress,
+            coord: Coord,
+            category: u8,
+            change: crate::ownership::BuildingChange,
+            timestamp: u64,
+        ) {
+            self
+                .emit_structure_story(
+                    key,
+                    actor,
+                    Story::BuildingPlacementStory(crate::ownership::BuildingPlacementStory { coord, category, change }),
+                    timestamp,
+                );
+        }
+        fn pay_building_costs(
+            ref self: ContractState,
+            key: ResourceKey,
+            actor: ContractAddress,
+            coord: Coord,
+            category: u8,
+            count: u8,
+            costs: Span<crate::resources::ResourceAmount>,
+            increase: u16,
+            timestamp: u64,
+        ) {
+            assert!(!costs.is_empty(), "missing building erection cost");
+            let scale: u128 = (count - 1).into();
+            let mut paid = array![];
+            for cost in costs {
+                let amount = *cost.amount
+                    + scale * scale * crate::math::PercentageImpl::get(*cost.amount, increase.into());
+                assert!(amount != 0, "zero building erection cost");
+                self.spend(key, *cost.resource_type, amount, timestamp);
+                paid.append(crate::resources::ResourceAmount { resource_type: *cost.resource_type, amount });
+            }
+            self
+                .emit_structure_story(
+                    key,
+                    actor,
+                    Story::BuildingPaymentStory(
+                        crate::ownership::BuildingPaymentStory { coord, category, cost: paid.span() },
+                    ),
+                    timestamp,
+                );
+        }
         fn create_producer(
             ref self: ContractState,
             key: ResourceKey,
@@ -1079,7 +1365,10 @@ pub mod StructuresDomain {
             timestamp: u64,
         ) {
             let rule = self.resources_dispatcher().resource_rule(key.game_id, resource_type);
-            let building_id = self.game_dispatcher().allocate_entity(key.game_id);
+            self.game_dispatcher().allocate_entity(key.game_id);
+            let building_rule = self
+                .buildings
+                .rule(crate::buildings::BuildingRuleKey { game_id: key.game_id, category: building_category });
             let rate = if realm {
                 rule.realm_rate
             } else {
@@ -1098,15 +1387,9 @@ pub mod StructuresDomain {
                         inner_col: 10,
                         inner_row: 10,
                     },
-                    Building {
-                        category: building_category,
-                        bonus_percent: 0,
-                        entity_id: building_id,
-                        outer_entity_id: key.entity_id,
-                        paused: false,
-                    },
-                    rule.building_population_cost,
-                    rule.building_capacity_grant,
+                    Building { category: building_category, outer_entity_id: key.entity_id, paused: false },
+                    building_rule.population_cost,
+                    building_rule.capacity_grant,
                     rules.building_config.base_population,
                 );
             self.game_dispatcher().allocate_entity(key.game_id);

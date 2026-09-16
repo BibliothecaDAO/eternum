@@ -8,17 +8,24 @@ pub mod ResourcesDomain {
     use crate::game::{IGameDispatcher, IGameDispatcherTrait, assert_playing};
     use crate::lifecycle::Lifecycle;
     use crate::ownership::{Story, StoryEvent};
+    use crate::production::{
+        ProductionBonus, ProductionRecipe, ProductionState, RecipeConfig, RecipeKey, RefillProduction,
+    };
     use crate::resources::{Production, ResourceKey, ResourceRule, ResourceSlot, ResourceState, Weight};
     use crate::structures::{IStructuresDispatcher, IStructuresDispatcherTrait};
     use crate::troops::{ExplorerKey, ITroopsDispatcher, ITroopsDispatcherTrait};
     component!(path: Lifecycle, storage: lifecycle, event: LifecycleEvent);
     component!(path: ResourceState, storage: resources, event: ResourceEvent);
     component!(path: ArrivalState, storage: arrivals, event: ArrivalEvent);
+    component!(path: ProductionState, storage: production, event: ProductionEvent);
     #[abi(embed_v0)]
     impl Domain = Lifecycle::DomainImpl<ContractState>;
     impl LifeInternal = Lifecycle::InternalImpl<ContractState>;
     impl ResourceInternal = ResourceState::InternalImpl<ContractState>;
     impl ArrivalInternal = ArrivalState::InternalImpl<ContractState>;
+    impl ProductionInternal = ProductionState::InternalImpl<ContractState>;
+    const RATE_WORD_SCALE: u128 = 0x10000000000000000;
+
     #[storage]
     struct Storage {
         #[substorage(v0)]
@@ -27,8 +34,10 @@ pub mod ResourcesDomain {
         resources: ResourceState::Storage,
         #[substorage(v0)]
         arrivals: ArrivalState::Storage,
-        resource_rules: Map<(u32, u8), ResourceRule>,
+        resource_rules: Map<(u32, u8), (u128, u128, u64)>,
         resources_configured: Map<u32, bool>,
+        #[substorage(v0)]
+        production: ProductionState::Storage,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -36,6 +45,7 @@ pub mod ResourcesDomain {
         LifecycleEvent: Lifecycle::Event,
         ResourceEvent: ResourceState::Event,
         ArrivalEvent: ArrivalState::Event,
+        ProductionEvent: ProductionState::Event,
         RowSet: RowSet,
         StoryEvent: StoryEvent,
     }
@@ -69,7 +79,17 @@ pub mod ResourcesDomain {
             for index in 0_u32..58 {
                 let rule = *rules.at(index);
                 assert!(rule.resource_type.into() == index + 1, "resource rules must be ordered");
-                self.resource_rules.write((game_id, rule.resource_type), rule);
+                self
+                    .resource_rules
+                    .write(
+                        (game_id, rule.resource_type),
+                        (
+                            rule.unit_weight,
+                            Into::<u64, u128>::into(rule.realm_rate)
+                                + Into::<u64, u128>::into(rule.village_rate) * RATE_WORD_SCALE,
+                            rule.labor_output_per_resource,
+                        ),
+                    );
                 let mut values = array![];
                 rule.serialize(ref values);
                 self
@@ -137,6 +157,22 @@ pub mod ResourcesDomain {
             self.assert_structures();
             self.spend(key, resource_type, amount, timestamp);
         }
+        fn stop_production(ref self: ContractState, key: ResourceKey, resource_type: u8, rate: u64, timestamp: u64) {
+            self.assert_structures();
+            self
+                .resources
+                .stop_production(
+                    key,
+                    resource_type,
+                    rate,
+                    self.rule(key.game_id, resource_type).unit_weight,
+                    timestamp.try_into().unwrap(),
+                );
+        }
+        fn change_structure_capacity(ref self: ContractState, key: ResourceKey, amount: u128, adding: bool) {
+            self.assert_structures();
+            self.resources.change_structure_capacity(key, amount, adding);
+        }
         fn start_production(
             ref self: ContractState, key: ResourceKey, resource_type: u8, rate: u64, output: u128, timestamp: u64,
         ) {
@@ -145,6 +181,71 @@ pub mod ResourcesDomain {
             self
                 .resources
                 .start_production(key, resource_type, rate, output, rule.unit_weight, timestamp.try_into().unwrap());
+        }
+    }
+    #[abi(embed_v0)]
+    impl ProductionRules of crate::production::IProductionRules<ContractState> {
+        fn configure_production(ref self: ContractState, game_id: u32, recipes: Span<RecipeConfig>) {
+            self.lifecycle.assert_authority();
+            self.lifecycle.require_active();
+            let _ = self.game_dispatcher().game(game_id);
+            self.production.configure(game_id, recipes);
+        }
+        fn production_recipe(self: @ContractState, key: RecipeKey) -> ProductionRecipe {
+            self.production.recipe(key)
+        }
+        fn production_bonus(self: @ContractState, key: ResourceKey) -> ProductionBonus {
+            self.production.bonus(key)
+        }
+    }
+    #[abi(embed_v0)]
+    impl ProductionCommands of crate::production::IProductionCommands<ContractState> {
+        fn burn_resource_for_labor_production(
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            command: RefillProduction,
+            context: ExecutionContext,
+        ) {
+            let key = self.assert_production_command(game_id, actor, command, context.timestamp);
+            for index in 0..command.resource_types.len() {
+                let resource_type = *command.resource_types.at(index);
+                let amount = *command.amounts.at(index);
+                assert!(amount != 0, "zero resource amount");
+                assert!(amount % crate::rules::RESOURCE_PRECISION == 0, "fractional labor input");
+                let rule = self.rule(game_id, resource_type);
+                let output = rule.labor_output_per_resource.into() * (amount / crate::rules::RESOURCE_PRECISION);
+                assert!(output != 0, "resource cannot produce labor");
+                self.spend(key, resource_type, amount, context.timestamp);
+                self
+                    .refill_output(
+                        key,
+                        23,
+                        output,
+                        array![crate::resources::ResourceAmount { resource_type, amount }].span(),
+                        context.timestamp,
+                    );
+            }
+        }
+        fn burn_labor_for_resource_production(
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            command: RefillProduction,
+            context: ExecutionContext,
+        ) {
+            let key = self.assert_production_command(game_id, actor, command, context.timestamp);
+            self.refill_from_recipes(key, command, false, context.timestamp);
+        }
+        fn burn_resource_for_resource_production(
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            command: RefillProduction,
+            context: ExecutionContext,
+        ) {
+            let key = self.assert_production_command(game_id, actor, command, context.timestamp);
+            self.refill_from_recipes(key, command, true, context.timestamp);
         }
     }
     #[abi(embed_v0)]
@@ -194,6 +295,16 @@ pub mod ResourcesDomain {
                 crate::geometry::adjacent(explorer.coord, crate::structures::structure_coord(structure.base)),
                 "explorer and structure are not adjacent",
             );
+            for resource in command.resources {
+                if crate::resources::is_troop_resource(*resource.resource_type) {
+                    let owner = self.structure_owner(ResourceKey { game_id, entity_id: explorer.owner });
+                    assert!(
+                        owner != 0.try_into().unwrap() && owner == structure.owner,
+                        "reinforcement requires target ownership",
+                    );
+                    break;
+                }
+            }
             self.transfer_instant(game_id, command, context.timestamp);
         }
         fn offload_arrival(
@@ -414,6 +525,83 @@ pub mod ResourcesDomain {
     }
     #[generate_trait]
     impl Internal of InternalTrait {
+        fn assert_production_command(
+            self: @ContractState, game_id: u32, actor: ContractAddress, command: RefillProduction, timestamp: u64,
+        ) -> ResourceKey {
+            let peers = self.lifecycle.require_active();
+            assert!(get_caller_address() == peers.season, "only authenticated command domain");
+            assert_playing(self.game_dispatcher().game(game_id), timestamp);
+            let key = ResourceKey { game_id, entity_id: command.structure_id };
+            let structure = IStructuresDispatcher { contract_address: peers.structures }
+                .structure(key)
+                .expect('missing producer structure');
+            assert!(structure.owner == actor, "actor does not own structure");
+            assert!(
+                structure.base.category == 1 || structure.base.category == 5 || structure.base.category == 7,
+                "structure cannot produce resources",
+            );
+            assert!(command.resource_types.len() == command.amounts.len(), "production input lengths differ");
+            key
+        }
+        fn refill_from_recipes(
+            ref self: ContractState, key: ResourceKey, command: RefillProduction, complex: bool, timestamp: u64,
+        ) {
+            for index in 0..command.resource_types.len() {
+                let resource_type = *command.resource_types.at(index);
+                let cycles = *command.amounts.at(index);
+                assert!(cycles != 0, "zero production cycles");
+                let recipe = self.production.recipe(RecipeKey { game_id: key.game_id, resource_type });
+                let (inputs, per_cycle) = if complex {
+                    (recipe.complex_inputs, recipe.complex_output)
+                } else {
+                    (recipe.simple_inputs, recipe.simple_output)
+                };
+                assert!(!inputs.is_empty(), "missing production input recipe");
+                let mut costs = array![];
+                for input in inputs {
+                    assert!(*input.amount != 0, "zero production input cost");
+                    let amount = *input.amount * cycles;
+                    self.spend(key, *input.resource_type, amount, timestamp);
+                    costs.append(crate::resources::ResourceAmount { resource_type: *input.resource_type, amount });
+                }
+                let output = Into::<u64, u128>::into(per_cycle) * cycles;
+                assert!(output != 0, "zero production output");
+                self.refill_output(key, resource_type, output, costs.span(), timestamp);
+            }
+        }
+        fn refill_output(
+            ref self: ContractState,
+            key: ResourceKey,
+            resource_type: u8,
+            output: u128,
+            costs: Span<crate::resources::ResourceAmount>,
+            timestamp: u64,
+        ) {
+            let tick: u32 = (timestamp / self.game_dispatcher().rules(key.game_id).tick_config.armies_tick_in_seconds)
+                .try_into()
+                .unwrap();
+            let output = crate::production::bonus_output(self.production.bonus(key), resource_type, output, tick);
+            self
+                .resources
+                .refill_production(
+                    key,
+                    resource_type,
+                    output,
+                    self.rule(key.game_id, resource_type).unit_weight,
+                    timestamp.try_into().unwrap(),
+                );
+            self
+                .emit_resource_story(
+                    key,
+                    self.structure_owner(key),
+                    Story::ProductionStory(
+                        crate::ownership::ProductionStory {
+                            received_resource_type: resource_type, received_amount: output, cost: costs,
+                        },
+                    ),
+                    timestamp,
+                );
+        }
         fn assert_structures(self: @ContractState) {
             assert!(get_caller_address() == self.lifecycle.require_active().structures, "only structures domain");
         }
@@ -435,7 +623,14 @@ pub mod ResourcesDomain {
         fn rule(self: @ContractState, game_id: u32, resource_type: u8) -> ResourceRule {
             assert!(self.resources_configured.read(game_id), "missing resource rules");
             assert!(resource_type > 0 && resource_type <= 58, "invalid resource type");
-            self.resource_rules.read((game_id, resource_type))
+            let (unit_weight, rates, labor_output_per_resource) = self.resource_rules.read((game_id, resource_type));
+            ResourceRule {
+                resource_type,
+                unit_weight,
+                labor_output_per_resource,
+                realm_rate: (rates % RATE_WORD_SCALE).try_into().unwrap(),
+                village_rate: (rates / RATE_WORD_SCALE).try_into().unwrap(),
+            }
         }
         fn assert_deposits_unlocked(self: @ContractState, key: ResourceKey, timestamp: u64) {
             let structure = IStructuresDispatcher { contract_address: self.lifecycle.require_active().structures }

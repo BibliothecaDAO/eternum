@@ -275,6 +275,19 @@ pub mod ResourceState {
             self.commit_resource(key, resource_type, resource);
             granted
         }
+        fn refill_production(
+            ref self: ComponentState<TContractState>,
+            key: ResourceKey,
+            resource_type: u8,
+            output: u128,
+            unit_weight: u128,
+            now: u32,
+        ) {
+            assert_production(resource_type);
+            let mut resource = self.load_settled(key, resource_type, unit_weight, now);
+            resource.production.output_amount_left += output;
+            self.commit_resource(key, resource_type, resource);
+        }
         fn start_production(
             ref self: ComponentState<TContractState>,
             key: ResourceKey,
@@ -290,6 +303,38 @@ pub mod ResourceState {
             resource.production.production_rate += rate;
             resource.production.output_amount_left += output;
             self.commit_resource(key, resource_type, resource);
+        }
+        fn stop_production(
+            ref self: ComponentState<TContractState>,
+            key: ResourceKey,
+            resource_type: u8,
+            rate: u64,
+            unit_weight: u128,
+            now: u32,
+        ) {
+            assert_production(resource_type);
+            let mut resource = self.load_settled(key, resource_type, unit_weight, now);
+            resource.production.building_count -= 1;
+            resource.production.production_rate -= rate;
+            self.commit_resource(key, resource_type, resource);
+        }
+        fn change_structure_capacity(
+            ref self: ComponentState<TContractState>, key: ResourceKey, amount: u128, adding: bool,
+        ) {
+            self.assert_exists(key);
+            let mut weight = self.weights.read((key.game_id, key.entity_id));
+            if weight.capacity == 0xffffffffffffffffffffffffffffffff {
+                return;
+            }
+            weight.capacity = if adding {
+                weight.capacity + amount
+            } else {
+                weight.capacity - amount
+            };
+            if !adding {
+                assert!(weight.weight <= weight.capacity, "structure exceeds reduced capacity");
+            }
+            self.write_weight(key, weight);
         }
         fn load_settled(
             self: @ComponentState<TContractState>, key: ResourceKey, resource_type: u8, unit_weight: u128, now: u32,
@@ -431,15 +476,13 @@ fn assert_relic_precision(resource_type: u8, balance: u128) {
     }
 }
 
-#[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct ResourceRule {
     pub resource_type: u8,
     pub unit_weight: u128,
     pub realm_rate: u64,
     pub village_rate: u64,
     pub labor_output_per_resource: u64,
-    pub building_population_cost: u8,
-    pub building_capacity_grant: u8,
 }
 
 #[starknet::interface]
@@ -458,6 +501,8 @@ pub trait IResources<T> {
     fn grant_resource(ref self: T, key: ResourceKey, resource_type: u8, amount: u128, timestamp: u64) -> u128;
     fn spend_resource(ref self: T, key: ResourceKey, resource_type: u8, amount: u128, timestamp: u64);
     fn start_production(ref self: T, key: ResourceKey, resource_type: u8, rate: u64, output: u128, timestamp: u64);
+    fn stop_production(ref self: T, key: ResourceKey, resource_type: u8, rate: u64, timestamp: u64);
+    fn change_structure_capacity(ref self: T, key: ResourceKey, amount: u128, adding: bool);
     fn spend_food(ref self: T, key: ResourceKey, wheat: u128, fish: u128, timestamp: u64);
     fn spend_spire_fee(ref self: T, key: ResourceKey, timestamp: u64);
 }

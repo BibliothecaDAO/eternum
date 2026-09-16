@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "192eab11b50c865bdb1d206ccfe8da0a434765e5453ee64eb25d1f26ea7c8956",
+  "schemaIdentity": "3ff16ff6a8d5c7cf4f2841647e9f5c9dcd2a3543d484e620ffb7716cbbcea2f8",
   "commandAbi": [
     {
       "type": "impl",
@@ -531,6 +531,70 @@
       ]
     },
     {
+      "type": "struct",
+      "name": "core::array::Span::<core::integer::u128>",
+      "members": [
+        {
+          "name": "snapshot",
+          "type": "@core::array::Array::<core::integer::u128>"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::production::RefillProduction",
+      "members": [
+        {
+          "name": "structure_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "resource_types",
+          "type": "core::array::Span::<core::integer::u8>"
+        },
+        {
+          "name": "amounts",
+          "type": "core::array::Span::<core::integer::u128>"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::buildings::CreateBuilding",
+      "members": [
+        {
+          "name": "structure_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "directions",
+          "type": "core::array::Span::<core::integer::u8>"
+        },
+        {
+          "name": "category",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "use_simple",
+          "type": "core::bool"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::buildings::ChangeBuilding",
+      "members": [
+        {
+          "name": "structure_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "coord",
+          "type": "world_native::troops::Coord"
+        }
+      ]
+    },
+    {
       "type": "enum",
       "name": "world_native::commands::Command",
       "variants": [
@@ -641,6 +705,34 @@
         {
           "name": "TransferExplorerResourcesToStructure",
           "type": "world_native::resources::ResourceTransfer"
+        },
+        {
+          "name": "BurnResourceForLaborProduction",
+          "type": "world_native::production::RefillProduction"
+        },
+        {
+          "name": "BurnLaborForResourceProduction",
+          "type": "world_native::production::RefillProduction"
+        },
+        {
+          "name": "BurnResourceForResourceProduction",
+          "type": "world_native::production::RefillProduction"
+        },
+        {
+          "name": "CreateBuilding",
+          "type": "world_native::buildings::CreateBuilding"
+        },
+        {
+          "name": "DestroyBuilding",
+          "type": "world_native::buildings::ChangeBuilding"
+        },
+        {
+          "name": "PauseBuildingProduction",
+          "type": "world_native::buildings::ChangeBuilding"
+        },
+        {
+          "name": "ResumeBuildingProduction",
+          "type": "world_native::buildings::ChangeBuilding"
         }
       ]
     },
@@ -2405,6 +2497,50 @@
       }
     },
     {
+      "name": "ProductionBonus",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "entity_id": "Number",
+        "incr_resource_rate_percent_num": "Number",
+        "incr_labor_rate_percent_num": "Number",
+        "incr_troop_rate_percent_num": "Number",
+        "incr_resource_rate_end_tick": "Number",
+        "incr_labor_rate_end_tick": "Number",
+        "incr_troop_rate_end_tick": "Number"
+      }
+    },
+    {
+      "name": "ProductionRecipe",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "resource_type": "Number",
+        "simple_output": "BigInt",
+        "complex_output": "BigInt",
+        "simple_inputs": [
+          {
+            "resource_type": "Number",
+            "amount": "BigInt"
+          }
+        ],
+        "complex_inputs": [
+          {
+            "resource_type": "Number",
+            "amount": "BigInt"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ProductionReady",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "ready": "Boolean"
+      }
+    },
+    {
       "name": "ResourceWeight",
       "scope": "game",
       "schema": {
@@ -2442,6 +2578,36 @@
       }
     },
     {
+      "name": "BuildingRule",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "category": "Number",
+        "population_cost": "Number",
+        "capacity_grant": "Number",
+        "simple_cost": [
+          {
+            "resource_type": "Number",
+            "amount": "BigInt"
+          }
+        ],
+        "complex_cost": [
+          {
+            "resource_type": "Number",
+            "amount": "BigInt"
+          }
+        ]
+      }
+    },
+    {
+      "name": "BuildingRulesReady",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "ready": "Boolean"
+      }
+    },
+    {
       "name": "Building",
       "scope": "game",
       "schema": {
@@ -2452,8 +2618,6 @@
         "inner_col": "Number",
         "inner_row": "Number",
         "category": "Number",
-        "bonus_percent": "Number",
-        "entity_id": "Number",
         "outer_entity_id": "Number",
         "paused": "Boolean"
       }
@@ -2470,11 +2634,6 @@
         "population": {
           "current": "Number",
           "max": "Number"
-        },
-        "coord": {
-          "alt": "Boolean",
-          "x": "Number",
-          "y": "Number"
         }
       }
     },
@@ -2576,9 +2735,7 @@
         "unit_weight": "BigInt",
         "realm_rate": "BigInt",
         "village_rate": "BigInt",
-        "labor_output_per_resource": "BigInt",
-        "building_population_cost": "Number",
-        "building_capacity_grant": "Number"
+        "labor_output_per_resource": "BigInt"
       }
     },
     {

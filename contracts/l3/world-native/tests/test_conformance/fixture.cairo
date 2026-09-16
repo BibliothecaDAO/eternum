@@ -163,6 +163,7 @@ fn provision_game(peers: Peers, actor: ContractAddress, administrator: ContractA
     let mut fields = data.span();
     let rules: world_native::rules::SliceRules = Serde::deserialize(ref fields).unwrap();
     let resources: Span<ResourceRule> = Serde::deserialize(ref fields).unwrap();
+    let buildings: Span<world_native::buildings::BuildingRuleConfig> = Serde::deserialize(ref fields).unwrap();
     assert!(fields.is_empty(), "trailing preset fixture");
     start_cheat_caller_address(peers.season, administrator);
     IGameDispatcher { contract_address: peers.season }
@@ -192,6 +193,10 @@ fn provision_game(peers: Peers, actor: ContractAddress, administrator: ContractA
     let resource_store = IResourcesDispatcher { contract_address: peers.resources };
     start_cheat_caller_address(peers.resources, administrator);
     resource_store.configure_resources(7, resources);
+    world_native::buildings::IBuildingRulesDispatcherTrait::configure_buildings(
+        world_native::buildings::IBuildingRulesDispatcher { contract_address: peers.structures }, 7, buildings,
+    );
+
     stop_cheat_caller_address(peers.resources);
     let realm = structures
         .provision_realm(

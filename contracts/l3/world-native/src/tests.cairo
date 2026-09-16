@@ -1,4 +1,5 @@
 mod fixtures;
+mod production;
 mod realms;
 mod recorded;
 mod resource_commands;
@@ -601,3 +602,5 @@ fn realm_upgrade_changes_only_its_display_and_rejects_foreign_occupants() {
     assert_eq!(map.tile(key).unwrap().data, before.data + 14);
     assert!(safe.vacate(key, 7).is_err());
 }
+
+mod building_commands;

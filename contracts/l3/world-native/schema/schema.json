@@ -15,7 +15,8 @@
         "ownership_systems",
         "name_systems",
         "structure_systems",
-        "resource_systems"
+        "resource_systems",
+        "production_systems"
       ],
       "events": [
         {
@@ -1729,6 +1730,30 @@
           ]
         },
         {
+          "name": "RowDeleted",
+          "prefix": [
+            "0xb320b5e6e914bcfb0f18a720f2bd58d60b8965aebf70a049034844d40ad710",
+            "0x34ee03e4825cf92d0335b5828e3389af6c145ecff05fce078c3753d871cc7f5"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "model",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "keys",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            }
+          ]
+        },
+        {
           "name": "RowSet",
           "prefix": [
             "0x25ae90a953996564a5d7abf58c4bf68d5e5219c38a2d22e8f351e922a143b40",
@@ -1835,6 +1860,38 @@
         }
       ],
       "entrypoints": [
+        {
+          "type": "function",
+          "name": "configure_buildings",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "rules",
+              "type": "core::array::Span::<world_native::buildings::BuildingRuleConfig>"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "building_rule",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::buildings::BuildingRuleKey"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "world_native::buildings::BuildingRule"
+            }
+          ],
+          "state_mutability": "view"
+        },
         {
           "type": "function",
           "name": "hyperstructure_count",
@@ -2170,6 +2227,102 @@
             {
               "name": "structure_id",
               "type": "core::integer::u32"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "create_building",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "command",
+              "type": "world_native::buildings::CreateBuilding"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "destroy_building",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "command",
+              "type": "world_native::buildings::ChangeBuilding"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "pause_building_production",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "command",
+              "type": "world_native::buildings::ChangeBuilding"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "resume_building_production",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "command",
+              "type": "world_native::buildings::ChangeBuilding"
             },
             {
               "name": "context",
@@ -3014,6 +3167,35 @@
         {
           "name": "RowSet",
           "prefix": [
+            "0x14666e818b30dfdb0a4c07ec84883d998d99b552b3828488ebfe65535070c39",
+            "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "model",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "keys",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            },
+            {
+              "name": "values",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            }
+          ]
+        },
+        {
+          "name": "RowSet",
+          "prefix": [
             "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
           ],
           "members": [
@@ -3347,6 +3529,50 @@
         },
         {
           "type": "function",
+          "name": "stop_production",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::resources::ResourceKey"
+            },
+            {
+              "name": "resource_type",
+              "type": "core::integer::u8"
+            },
+            {
+              "name": "rate",
+              "type": "core::integer::u64"
+            },
+            {
+              "name": "timestamp",
+              "type": "core::integer::u64"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "change_structure_capacity",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::resources::ResourceKey"
+            },
+            {
+              "name": "amount",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "adding",
+              "type": "core::bool"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
           "name": "spend_food",
           "inputs": [
             {
@@ -3380,6 +3606,126 @@
             {
               "name": "timestamp",
               "type": "core::integer::u64"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "configure_production",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "recipes",
+              "type": "core::array::Span::<world_native::production::RecipeConfig>"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "production_recipe",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::production::RecipeKey"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "world_native::production::ProductionRecipe"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "production_bonus",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::resources::ResourceKey"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "world_native::production::ProductionBonus"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "burn_resource_for_labor_production",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "command",
+              "type": "world_native::production::RefillProduction"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "burn_labor_for_resource_production",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "command",
+              "type": "world_native::production::RefillProduction"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "burn_resource_for_resource_production",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "command",
+              "type": "world_native::production::RefillProduction"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
             }
           ],
           "outputs": [],
@@ -4608,6 +4954,163 @@
       }
     },
     {
+      "name": "ProductionBonus",
+      "identity": "0x50726f64756374696f6e426f6e7573",
+      "owners": [
+        "resources"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "entity_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "incr_resource_rate_percent_num",
+          "type": "core::integer::u16",
+          "id": "0x696e63725f7265736f757263655f726174655f70657263656e745f6e756d",
+          "feltLength": 1
+        },
+        {
+          "name": "incr_labor_rate_percent_num",
+          "type": "core::integer::u16",
+          "id": "0x696e63725f6c61626f725f726174655f70657263656e745f6e756d",
+          "feltLength": 1
+        },
+        {
+          "name": "incr_troop_rate_percent_num",
+          "type": "core::integer::u16",
+          "id": "0x696e63725f74726f6f705f726174655f70657263656e745f6e756d",
+          "feltLength": 1
+        },
+        {
+          "name": "incr_resource_rate_end_tick",
+          "type": "core::integer::u32",
+          "id": "0x696e63725f7265736f757263655f726174655f656e645f7469636b",
+          "feltLength": 1
+        },
+        {
+          "name": "incr_labor_rate_end_tick",
+          "type": "core::integer::u32",
+          "id": "0x696e63725f6c61626f725f726174655f656e645f7469636b",
+          "feltLength": 1
+        },
+        {
+          "name": "incr_troop_rate_end_tick",
+          "type": "core::integer::u32",
+          "id": "0x696e63725f74726f6f705f726174655f656e645f7469636b",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 6,
+      "absence": {
+        "value": "zero",
+        "meaning": "No production bonus has been granted to this structure."
+      },
+      "observation": {
+        "domain": "production",
+        "fields": {
+          "resourcePercent": "incr_resource_rate_percent_num",
+          "laborPercent": "incr_labor_rate_percent_num",
+          "troopPercent": "incr_troop_rate_percent_num",
+          "resourceEndTick": "incr_resource_rate_end_tick",
+          "laborEndTick": "incr_labor_rate_end_tick",
+          "troopEndTick": "incr_troop_rate_end_tick"
+        }
+      }
+    },
+    {
+      "name": "ProductionRecipe",
+      "identity": "0x50726f64756374696f6e526563697065",
+      "owners": [
+        "resources"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "resource_type",
+          "type": "core::integer::u8",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "simple_output",
+          "type": "core::integer::u64",
+          "id": "0x73696d706c655f6f7574707574",
+          "feltLength": 1
+        },
+        {
+          "name": "complex_output",
+          "type": "core::integer::u64",
+          "id": "0x636f6d706c65785f6f7574707574",
+          "feltLength": 1
+        },
+        {
+          "name": "simple_inputs",
+          "type": "core::array::Span::<world_native::resources::ResourceAmount>",
+          "id": "0x73696d706c655f696e70757473",
+          "feltLength": null
+        },
+        {
+          "name": "complex_inputs",
+          "type": "core::array::Span::<world_native::resources::ResourceAmount>",
+          "id": "0x636f6d706c65785f696e70757473",
+          "feltLength": null
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": null,
+      "observation": {
+        "domain": "production",
+        "fields": {
+          "simpleOutput": "simple_output",
+          "complexOutput": "complex_output",
+          "simpleInputs": "simple_inputs",
+          "complexInputs": "complex_inputs"
+        }
+      }
+    },
+    {
+      "name": "ProductionReady",
+      "identity": "0x50726f64756374696f6e5265616479",
+      "owners": [
+        "resources"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "ready",
+          "type": "core::bool",
+          "id": "0x7265616479",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": 1
+    },
+    {
       "name": "ResourceWeight",
       "identity": "0x5265736f75726365576569676874",
       "owners": [
@@ -4751,6 +5254,79 @@
       }
     },
     {
+      "name": "BuildingRule",
+      "identity": "0x4275696c64696e6752756c65",
+      "owners": [
+        "structures"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "category",
+          "type": "core::integer::u8",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "population_cost",
+          "type": "core::integer::u8",
+          "id": "0x706f70756c6174696f6e5f636f7374",
+          "feltLength": 1
+        },
+        {
+          "name": "capacity_grant",
+          "type": "core::integer::u8",
+          "id": "0x63617061636974795f6772616e74",
+          "feltLength": 1
+        },
+        {
+          "name": "simple_cost",
+          "type": "core::array::Span::<world_native::resources::ResourceAmount>",
+          "id": "0x73696d706c655f636f7374",
+          "feltLength": null
+        },
+        {
+          "name": "complex_cost",
+          "type": "core::array::Span::<world_native::resources::ResourceAmount>",
+          "id": "0x636f6d706c65785f636f7374",
+          "feltLength": null
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": null
+    },
+    {
+      "name": "BuildingRulesReady",
+      "identity": "0x4275696c64696e6752756c65735265616479",
+      "owners": [
+        "structures"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "ready",
+          "type": "core::bool",
+          "id": "0x7265616479",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": 1
+    },
+    {
       "name": "Building",
       "identity": "0x4275696c64696e67",
       "owners": [
@@ -4797,18 +5373,6 @@
           "feltLength": 1
         },
         {
-          "name": "bonus_percent",
-          "type": "core::integer::u32",
-          "id": "0x626f6e75735f70657263656e74",
-          "feltLength": 1
-        },
-        {
-          "name": "entity_id",
-          "type": "core::integer::u32",
-          "id": "0x656e746974795f6964",
-          "feltLength": 1
-        },
-        {
           "name": "outer_entity_id",
           "type": "core::integer::u32",
           "id": "0x6f757465725f656e746974795f6964",
@@ -4822,12 +5386,11 @@
         }
       ],
       "keyLength": 6,
-      "valueLength": 5,
+      "valueLength": 3,
       "observation": {
         "domain": "production",
         "fields": {
           "category": "category",
-          "bonus": "bonus_percent",
           "structure": "outer_entity_id",
           "paused": "paused"
         }
@@ -4876,16 +5439,10 @@
           "type": "world_native::buildings::Population",
           "id": "0x706f70756c6174696f6e",
           "feltLength": 2
-        },
-        {
-          "name": "coord",
-          "type": "world_native::troops::Coord",
-          "id": "0x636f6f7264",
-          "feltLength": 3
         }
       ],
       "keyLength": 2,
-      "valueLength": 8,
+      "valueLength": 5,
       "observation": {
         "domain": "production",
         "fields": {
@@ -5334,22 +5891,10 @@
           "type": "core::integer::u64",
           "id": "0x6c61626f725f6f75747075745f7065725f7265736f75726365",
           "feltLength": 1
-        },
-        {
-          "name": "building_population_cost",
-          "type": "core::integer::u8",
-          "id": "0x6275696c64696e675f706f70756c6174696f6e5f636f7374",
-          "feltLength": 1
-        },
-        {
-          "name": "building_capacity_grant",
-          "type": "core::integer::u8",
-          "id": "0x6275696c64696e675f63617061636974795f6772616e74",
-          "feltLength": 1
         }
       ],
       "keyLength": 2,
-      "valueLength": 6
+      "valueLength": 4
     },
     {
       "name": "ResourceRulesReady",
@@ -6243,6 +6788,26 @@
         }
       ]
     },
+    "core::array::Span::<world_native::buildings::BuildingRuleConfig>": {
+      "type": "struct",
+      "name": "core::array::Span::<world_native::buildings::BuildingRuleConfig>",
+      "members": [
+        {
+          "name": "snapshot",
+          "type": "@core::array::Array::<world_native::buildings::BuildingRuleConfig>"
+        }
+      ]
+    },
+    "core::array::Span::<world_native::production::RecipeConfig>": {
+      "type": "struct",
+      "name": "core::array::Span::<world_native::production::RecipeConfig>",
+      "members": [
+        {
+          "name": "snapshot",
+          "type": "@core::array::Array::<world_native::production::RecipeConfig>"
+        }
+      ]
+    },
     "core::array::Span::<world_native::resources::ResourceAmount>": {
       "type": "struct",
       "name": "core::array::Span::<world_native::resources::ResourceAmount>",
@@ -6682,14 +7247,6 @@
           "type": "core::integer::u8"
         },
         {
-          "name": "bonus_percent",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "entity_id",
-          "type": "core::integer::u32"
-        },
-        {
           "name": "outer_entity_id",
           "type": "core::integer::u32"
         },
@@ -6729,6 +7286,92 @@
         }
       ]
     },
+    "world_native::buildings::BuildingRule": {
+      "type": "struct",
+      "name": "world_native::buildings::BuildingRule",
+      "members": [
+        {
+          "name": "population_cost",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "capacity_grant",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "simple_cost",
+          "type": "core::array::Span::<world_native::resources::ResourceAmount>"
+        },
+        {
+          "name": "complex_cost",
+          "type": "core::array::Span::<world_native::resources::ResourceAmount>"
+        }
+      ]
+    },
+    "world_native::buildings::BuildingRuleConfig": {
+      "type": "struct",
+      "name": "world_native::buildings::BuildingRuleConfig",
+      "members": [
+        {
+          "name": "category",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "rule",
+          "type": "world_native::buildings::BuildingRule"
+        }
+      ]
+    },
+    "world_native::buildings::BuildingRuleKey": {
+      "type": "struct",
+      "name": "world_native::buildings::BuildingRuleKey",
+      "members": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "category",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
+    "world_native::buildings::ChangeBuilding": {
+      "type": "struct",
+      "name": "world_native::buildings::ChangeBuilding",
+      "members": [
+        {
+          "name": "structure_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "coord",
+          "type": "world_native::troops::Coord"
+        }
+      ]
+    },
+    "world_native::buildings::CreateBuilding": {
+      "type": "struct",
+      "name": "world_native::buildings::CreateBuilding",
+      "members": [
+        {
+          "name": "structure_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "directions",
+          "type": "core::array::Span::<core::integer::u8>"
+        },
+        {
+          "name": "category",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "use_simple",
+          "type": "core::bool"
+        }
+      ]
+    },
     "world_native::buildings::Population": {
       "type": "struct",
       "name": "world_native::buildings::Population",
@@ -6762,10 +7405,6 @@
         {
           "name": "population",
           "type": "world_native::buildings::Population"
-        },
-        {
-          "name": "coord",
-          "type": "world_native::troops::Coord"
         }
       ]
     },
@@ -6894,6 +7533,34 @@
         {
           "name": "TransferExplorerResourcesToStructure",
           "type": "world_native::resources::ResourceTransfer"
+        },
+        {
+          "name": "BurnResourceForLaborProduction",
+          "type": "world_native::production::RefillProduction"
+        },
+        {
+          "name": "BurnLaborForResourceProduction",
+          "type": "world_native::production::RefillProduction"
+        },
+        {
+          "name": "BurnResourceForResourceProduction",
+          "type": "world_native::production::RefillProduction"
+        },
+        {
+          "name": "CreateBuilding",
+          "type": "world_native::buildings::CreateBuilding"
+        },
+        {
+          "name": "DestroyBuilding",
+          "type": "world_native::buildings::ChangeBuilding"
+        },
+        {
+          "name": "PauseBuildingProduction",
+          "type": "world_native::buildings::ChangeBuilding"
+        },
+        {
+          "name": "ResumeBuildingProduction",
+          "type": "world_native::buildings::ChangeBuilding"
         }
       ]
     },
@@ -7193,6 +7860,64 @@
         }
       ]
     },
+    "world_native::ownership::BuildingChange": {
+      "type": "enum",
+      "name": "world_native::ownership::BuildingChange",
+      "variants": [
+        {
+          "name": "Created",
+          "type": "()"
+        },
+        {
+          "name": "Destroyed",
+          "type": "()"
+        },
+        {
+          "name": "Paused",
+          "type": "()"
+        },
+        {
+          "name": "Resumed",
+          "type": "()"
+        }
+      ]
+    },
+    "world_native::ownership::BuildingPaymentStory": {
+      "type": "struct",
+      "name": "world_native::ownership::BuildingPaymentStory",
+      "members": [
+        {
+          "name": "coord",
+          "type": "world_native::troops::Coord"
+        },
+        {
+          "name": "category",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "cost",
+          "type": "core::array::Span::<world_native::resources::ResourceAmount>"
+        }
+      ]
+    },
+    "world_native::ownership::BuildingPlacementStory": {
+      "type": "struct",
+      "name": "world_native::ownership::BuildingPlacementStory",
+      "members": [
+        {
+          "name": "coord",
+          "type": "world_native::troops::Coord"
+        },
+        {
+          "name": "category",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "change",
+          "type": "world_native::ownership::BuildingChange"
+        }
+      ]
+    },
     "world_native::ownership::FaithfulStructure": {
       "type": "struct",
       "name": "world_native::ownership::FaithfulStructure",
@@ -7303,6 +8028,24 @@
         }
       ]
     },
+    "world_native::ownership::ProductionStory": {
+      "type": "struct",
+      "name": "world_native::ownership::ProductionStory",
+      "members": [
+        {
+          "name": "received_resource_type",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "received_amount",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "cost",
+          "type": "core::array::Span::<world_native::resources::ResourceAmount>"
+        }
+      ]
+    },
     "world_native::ownership::RealmCreatedStory": {
       "type": "struct",
       "name": "world_native::ownership::RealmCreatedStory",
@@ -7392,6 +8135,18 @@
         {
           "name": "ResourceReceiveArrivalStory",
           "type": "world_native::ownership::ResourceAmountsStory"
+        },
+        {
+          "name": "ProductionStory",
+          "type": "world_native::ownership::ProductionStory"
+        },
+        {
+          "name": "BuildingPlacementStory",
+          "type": "world_native::ownership::BuildingPlacementStory"
+        },
+        {
+          "name": "BuildingPaymentStory",
+          "type": "world_native::ownership::BuildingPaymentStory"
         }
       ]
     },
@@ -7478,6 +8233,104 @@
         {
           "name": "wonder_ids",
           "type": "core::array::Span::<core::integer::u32>"
+        }
+      ]
+    },
+    "world_native::production::ProductionBonus": {
+      "type": "struct",
+      "name": "world_native::production::ProductionBonus",
+      "members": [
+        {
+          "name": "incr_resource_rate_percent_num",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "incr_labor_rate_percent_num",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "incr_troop_rate_percent_num",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "incr_resource_rate_end_tick",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "incr_labor_rate_end_tick",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "incr_troop_rate_end_tick",
+          "type": "core::integer::u32"
+        }
+      ]
+    },
+    "world_native::production::ProductionRecipe": {
+      "type": "struct",
+      "name": "world_native::production::ProductionRecipe",
+      "members": [
+        {
+          "name": "simple_output",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "complex_output",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "simple_inputs",
+          "type": "core::array::Span::<world_native::resources::ResourceAmount>"
+        },
+        {
+          "name": "complex_inputs",
+          "type": "core::array::Span::<world_native::resources::ResourceAmount>"
+        }
+      ]
+    },
+    "world_native::production::RecipeConfig": {
+      "type": "struct",
+      "name": "world_native::production::RecipeConfig",
+      "members": [
+        {
+          "name": "resource_type",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "recipe",
+          "type": "world_native::production::ProductionRecipe"
+        }
+      ]
+    },
+    "world_native::production::RecipeKey": {
+      "type": "struct",
+      "name": "world_native::production::RecipeKey",
+      "members": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "resource_type",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
+    "world_native::production::RefillProduction": {
+      "type": "struct",
+      "name": "world_native::production::RefillProduction",
+      "members": [
+        {
+          "name": "structure_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "resource_types",
+          "type": "core::array::Span::<core::integer::u8>"
+        },
+        {
+          "name": "amounts",
+          "type": "core::array::Span::<core::integer::u128>"
         }
       ]
     },
@@ -7684,14 +8537,6 @@
         {
           "name": "labor_output_per_resource",
           "type": "core::integer::u64"
-        },
-        {
-          "name": "building_population_cost",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "building_capacity_grant",
-          "type": "core::integer::u8"
         }
       ]
     },
@@ -9058,5 +9903,5 @@
       ]
     }
   },
-  "identity": "192eab11b50c865bdb1d206ccfe8da0a434765e5453ee64eb25d1f26ea7c8956"
+  "identity": "3ff16ff6a8d5c7cf4f2841647e9f5c9dcd2a3543d484e620ffb7716cbbcea2f8"
 }

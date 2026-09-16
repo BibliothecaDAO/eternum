@@ -34,6 +34,7 @@ fn prepare_with_resources(grant_override: Option<Span<world_native::resources::R
     let mut fields = input.span();
     let mut rules: world_native::rules::SliceRules = Serde::deserialize(ref fields).unwrap();
     let resources: Span<ResourceRule> = Serde::deserialize(ref fields).unwrap();
+    let buildings: Span<world_native::buildings::BuildingRuleConfig> = Serde::deserialize(ref fields).unwrap();
     rules.blitz_mode_on = true;
     let games = IGameDispatcher { contract_address: season };
     let game = world_native::game::GameRegistry {
@@ -70,6 +71,10 @@ fn prepare_with_resources(grant_override: Option<Span<world_native::resources::R
     start_cheat_caller_address(peers.structures, 222.try_into().unwrap());
     start_cheat_caller_address(peers.resources, 222.try_into().unwrap());
     IResourcesDispatcher { contract_address: peers.resources }.configure_resources(8, resources);
+    world_native::buildings::IBuildingRulesDispatcherTrait::configure_buildings(
+        world_native::buildings::IBuildingRulesDispatcher { contract_address: peers.structures }, 8, buildings,
+    );
+
     stop_cheat_caller_address(peers.resources);
     stop_cheat_caller_address(peers.structures);
     execute(season, Command::ReserveHyperstructures(255), 1005);
