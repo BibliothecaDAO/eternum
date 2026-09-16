@@ -325,6 +325,29 @@ pub mod TroopsDomain {
         self.lifecycle.initialize(authority);
     }
     #[abi(embed_v0)]
+    impl RelicTroops of crate::relics::IRelicTroops<ContractState> {
+        fn apply_troop_relic(
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            command: crate::relics::ApplyRelic,
+            rule: crate::relics::RelicRule,
+            timestamp: u64,
+        ) {
+            assert!(get_caller_address() == self.lifecycle.require_active().economy, "only economy domain");
+            crate::commands::assert_context_time(timestamp);
+            assert_playing(self.game_dispatcher().game(game_id), timestamp);
+            let rules = self.game_dispatcher().rules(game_id);
+            let tick = timestamp / rules.tick_config.armies_tick_in_seconds;
+            match command.recipient {
+                crate::relics::Recipient::Explorer => self.boost_explorer(game_id, actor, command, rule, rules, tick),
+                crate::relics::Recipient::StructureGuard => self
+                    .boost_guards(game_id, actor, command, rule, rules, tick),
+                crate::relics::Recipient::StructureProduction => panic!("production relic requires resources domain"),
+            }
+        }
+    }
+    #[abi(embed_v0)]
     impl Guards of crate::guards::IGuards<ContractState> {
         fn guard(self: @ContractState, key: crate::guards::GuardKey) -> crate::guards::Guard {
             self.guards.guard(key)
@@ -526,6 +549,15 @@ pub mod TroopsDomain {
             if exploring {
                 self.map_dispatcher().reveal(tile, biome.into());
                 self.game_dispatcher().register_exploration(game_id, actor);
+                if !destination.alt {
+                    crate::relics::IRelicMapDispatcherTrait::discover_relic_chest(
+                        crate::relics::IRelicMapDispatcher { contract_address: self.lifecycle.require_active().map },
+                        game_id,
+                        destination,
+                        seed,
+                        context.timestamp,
+                    );
+                }
                 discovery = self
                     .map_dispatcher()
                     .discovery(
@@ -879,6 +911,69 @@ pub mod TroopsDomain {
                 self.owned_structure(key.game_id, explorer.owner, actor);
             }
             explorer
+        }
+        fn boost_explorer(
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            command: crate::relics::ApplyRelic,
+            rule: crate::relics::RelicRule,
+            rules: SliceRules,
+            tick: u64,
+        ) {
+            let key = ExplorerKey { game_id, explorer_id: command.entity_id };
+            let mut explorer = self.owned_explorer(key, actor);
+            assert!(!explorer.coord.alt, "relic explorer must be on surface");
+            explorer
+                .troops
+                .stamina
+                .refill(
+                    ref explorer.troops.boosts,
+                    explorer.troops.category,
+                    explorer.troops.tier,
+                    rules.troop_stamina_config,
+                    tick,
+                );
+            crate::relics::boost_explorer(ref explorer.troops.boosts, command.relic_id, rule, tick.try_into().unwrap());
+            if command.relic_id == 45 || command.relic_id == 46 {
+                crate::relics::IRelicMapDispatcherTrait::reveal_relic_ring(
+                    crate::relics::IRelicMapDispatcher { contract_address: self.lifecycle.require_active().map },
+                    game_id,
+                    explorer.coord,
+                    rule.uses,
+                );
+            }
+            self.troops.save(key, explorer);
+        }
+        fn boost_guards(
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            command: crate::relics::ApplyRelic,
+            rule: crate::relics::RelicRule,
+            rules: SliceRules,
+            tick: u64,
+        ) {
+            self.owned_structure(game_id, command.entity_id, actor);
+            assert!(command.relic_id == 49 || command.relic_id == 50, "invalid guard relic");
+            for slot in 0_u8..4 {
+                let key = crate::guards::GuardKey { game_id, structure_id: command.entity_id, slot };
+                let mut guard = self.guards.guard(key);
+                guard
+                    .troops
+                    .stamina
+                    .refill(
+                        ref guard.troops.boosts,
+                        guard.troops.category,
+                        guard.troops.tier,
+                        rules.troop_stamina_config,
+                        tick,
+                    );
+                guard.troops.boosts.decr_damage_gotten_percent_num = rule.rate_bps;
+                guard.troops.boosts.decr_damage_gotten_end_tick = TryInto::<u64, u32>::try_into(tick).unwrap()
+                    + rule.duration;
+                self.guards.save(key, guard);
+            }
         }
         fn pay_movement(
             ref self: ContractState,

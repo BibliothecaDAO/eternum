@@ -316,6 +316,8 @@ pub enum Story {
     BankSwap: crate::market::SwapStory,
     BankLiquidity: crate::market::LiquidityStory,
     HyperstructurePoints: crate::hyperstructures::SharePoints,
+    RelicChestOpened: crate::relics::ChestOpened,
+    ExplorationReward: crate::exploration_rewards::ExtractedReward,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]

@@ -338,6 +338,42 @@ pub mod ResourcesDomain {
         }
     }
     #[abi(embed_v0)]
+    impl ExplorationGrant of crate::exploration_rewards::IExplorationGrant<ContractState> {
+        fn grant_exploration_reward(
+            ref self: ContractState, key: ResourceKey, resource_type: u8, amount: u128, timestamp: u64,
+        ) {
+            assert!(get_caller_address() == self.lifecycle.require_active().map, "only map domain");
+            let rule = self.rule(key.game_id, resource_type);
+            self.resources.grant_resource(key, resource_type, amount, rule.unit_weight, timestamp.try_into().unwrap());
+        }
+    }
+    #[abi(embed_v0)]
+    impl RelicProduction of crate::relics::IRelicProduction<ContractState> {
+        fn apply_production_relic(
+            ref self: ContractState, key: ResourceKey, relic_id: u8, rule: crate::relics::RelicRule, timestamp: u64,
+        ) {
+            assert!(get_caller_address() == self.lifecycle.require_active().economy, "only economy domain");
+            crate::commands::assert_context_time(timestamp);
+            let rules = IGameDispatcher { contract_address: self.lifecycle.require_active().season }.rules(key.game_id);
+            let mut bonus = self.production.bonus(key);
+            crate::relics::boost_production(
+                ref bonus, relic_id, rule, (timestamp / rules.tick_config.armies_tick_in_seconds).try_into().unwrap(),
+            );
+            self.production.bonuses.write((key.game_id, key.entity_id), bonus);
+            let mut values = array![];
+            bonus.serialize(ref values);
+            self
+                .emit(
+                    RowSet {
+                        version: 1,
+                        model: 'ProductionBonus',
+                        keys: array![key.game_id.into(), key.entity_id.into()].span(),
+                        values: values.span(),
+                    },
+                );
+        }
+    }
+    #[abi(embed_v0)]
     impl ProductionRules of crate::production::IProductionRules<ContractState> {
         fn configure_production(ref self: ContractState, game_id: u32, recipes: Span<RecipeConfig>) {
             self.lifecycle.assert_authority();

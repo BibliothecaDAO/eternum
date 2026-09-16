@@ -373,9 +373,8 @@ rules. A zero-share position emits a deletion. Empty markets retain their explic
 
 `WithdrawalState` owns game-scoped withdrawal terms, an immutable retention ladder indexed by completed hyperstructure
 count, and the resource-token whitelist. Its projected rules include the ladder; the internal length is only the storage
-representation of that span. Token amounts retain the external token's decimals. The structure domain appends an id-only
-hyperstructure index, allowing completed count to be read from the existing completion facts without a second stored
-count. Regional bank ids retain the six reserved values below the maximum entity id.
+representation of that span. Token amounts retain the external token's decimals. Completed counts are read from the
+hyperstructure component below. Regional bank ids retain the six reserved values below the maximum entity id.
 
 Hyperstructure construction is owned by Economy. `HyperstructureState` stores one stage instead of overlapping
 initialized/completed flags, sparse contributed amounts keyed by `(game_id, structure_id, resource_type)`, immutable
@@ -388,3 +387,9 @@ this codec/layout change requires a fresh rehearsal deployment.
 Season owns player points and the aggregate used by prize settlement. `PlayerPoints` and `PointsTotal` replace the
 placeholder prize projection. Guild membership is read through Season for construction permissions; guild command
 ownership remains in the registry/guild domain work.
+
+Economy appends immutable `RelicState` rules keyed by `(game_id, relic_id)`. Map appends the game's last chest-discovery
+time and immutable exploration-reward entries. Relic effects reuse the existing troop boosts and production bonus;
+chests use tile occupancy and extraction uses the existing packed tile bit 113. Neither has a duplicate status row.
+Relic rules retain all eighteen entries, including zero discovery weights. Exploration pools are ordered immutable
+configuration; their weights and whole-unit rewards are supplied by the preset, with no tables embedded in bytecode.

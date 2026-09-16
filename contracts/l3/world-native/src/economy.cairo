@@ -4,6 +4,10 @@ pub mod EconomyDomain {
     use starknet::{ContractAddress, get_caller_address};
     use crate::commands::ExecutionContext;
     use crate::game::{IGameDispatcher, IGameDispatcherTrait, assert_main_with_grace, assert_playing};
+    use crate::relics::RelicState;
+    component!(path: RelicState, storage: relics, event: RelicEvent);
+    #[abi(embed_v0)]
+    impl Relics = RelicState::RelicsImpl<ContractState>;
     use crate::hyperstructures::{HyperstructureState, IHyperstructures};
     use crate::lifecycle::Lifecycle;
     use crate::market::{
@@ -34,6 +38,8 @@ pub mod EconomyDomain {
     #[storage]
     struct Storage {
         #[substorage(v0)]
+        relics: RelicState::Storage,
+        #[substorage(v0)]
         hyperstructures: HyperstructureState::Storage,
         #[substorage(v0)]
         lifecycle: Lifecycle::Storage,
@@ -47,6 +53,7 @@ pub mod EconomyDomain {
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
+        RelicEvent: RelicState::Event,
         HyperstructureEvent: HyperstructureState::Event,
         LifecycleEvent: Lifecycle::Event,
         TradeEvent: TradeState::Event,

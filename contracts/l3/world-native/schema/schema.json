@@ -564,6 +564,22 @@
         },
         {
           "type": "function",
+          "name": "register_relic_points",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
           "name": "register_hyperstructure_points",
           "inputs": [
             {
@@ -811,6 +827,54 @@
             {
               "name": "values",
               "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            }
+          ]
+        },
+        {
+          "name": "StoryEvent",
+          "prefix": [
+            "0x33b7d96bc1ff34b0a89214516b6ef5d2b8bdd9c301222eda2a1e96f78b84b96"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "game_id",
+              "type": "core::integer::u32",
+              "kind": "key"
+            },
+            {
+              "name": "id",
+              "type": "core::integer::u32",
+              "kind": "key"
+            },
+            {
+              "name": "owner",
+              "type": "core::option::Option::<core::starknet::contract_address::ContractAddress>",
+              "kind": "key"
+            },
+            {
+              "name": "entity_id",
+              "type": "core::option::Option::<core::integer::u32>",
+              "kind": "key"
+            },
+            {
+              "name": "tx_hash",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "story",
+              "type": "world_native::ownership::Story",
+              "kind": "data"
+            },
+            {
+              "name": "timestamp",
+              "type": "core::integer::u64",
               "kind": "data"
             }
           ]
@@ -1128,6 +1192,138 @@
             {
               "name": "entity_id",
               "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "configure_extraction",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "rewards",
+              "type": "core::array::Span::<world_native::exploration_rewards::ExplorationReward>"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "extraction_rewards",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::array::Span::<world_native::exploration_rewards::ExplorationReward>"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "extract_exploration_reward",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "explorer_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "relic_discovery_time",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::integer::u64"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "discover_relic_chest",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "coord",
+              "type": "world_native::troops::Coord"
+            },
+            {
+              "name": "seed",
+              "type": "core::integer::u256"
+            },
+            {
+              "name": "timestamp",
+              "type": "core::integer::u64"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "consume_relic_chest",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "coord",
+              "type": "world_native::troops::Coord"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "reveal_relic_ring",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "coord",
+              "type": "world_native::troops::Coord"
+            },
+            {
+              "name": "radius",
+              "type": "core::integer::u8"
             }
           ],
           "outputs": [],
@@ -1461,6 +1657,34 @@
         }
       ],
       "entrypoints": [
+        {
+          "type": "function",
+          "name": "apply_troop_relic",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "command",
+              "type": "world_native::relics::ApplyRelic"
+            },
+            {
+              "name": "rule",
+              "type": "world_native::relics::RelicRule"
+            },
+            {
+              "name": "timestamp",
+              "type": "core::integer::u64"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
         {
           "type": "function",
           "name": "guard",
@@ -4188,6 +4412,54 @@
         },
         {
           "type": "function",
+          "name": "grant_exploration_reward",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::resources::ResourceKey"
+            },
+            {
+              "name": "resource_type",
+              "type": "core::integer::u8"
+            },
+            {
+              "name": "amount",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "timestamp",
+              "type": "core::integer::u64"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "apply_production_relic",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::resources::ResourceKey"
+            },
+            {
+              "name": "relic_id",
+              "type": "core::integer::u8"
+            },
+            {
+              "name": "rule",
+              "type": "world_native::relics::RelicRule"
+            },
+            {
+              "name": "timestamp",
+              "type": "core::integer::u64"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
           "name": "configure_production",
           "inputs": [
             {
@@ -4634,6 +4906,84 @@
       "contract": "EconomyDomain",
       "systems": [],
       "events": [
+        {
+          "name": "RowSet",
+          "prefix": [
+            "0x290a08c6ab68498a377b8f273bd5f696816ceb60f3cf345badb48f949797e6c",
+            "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "model",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "keys",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            },
+            {
+              "name": "values",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            }
+          ]
+        },
+        {
+          "name": "StoryEvent",
+          "prefix": [
+            "0x290a08c6ab68498a377b8f273bd5f696816ceb60f3cf345badb48f949797e6c",
+            "0x33b7d96bc1ff34b0a89214516b6ef5d2b8bdd9c301222eda2a1e96f78b84b96"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "game_id",
+              "type": "core::integer::u32",
+              "kind": "key"
+            },
+            {
+              "name": "id",
+              "type": "core::integer::u32",
+              "kind": "key"
+            },
+            {
+              "name": "owner",
+              "type": "core::option::Option::<core::starknet::contract_address::ContractAddress>",
+              "kind": "key"
+            },
+            {
+              "name": "entity_id",
+              "type": "core::option::Option::<core::integer::u32>",
+              "kind": "key"
+            },
+            {
+              "name": "tx_hash",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "story",
+              "type": "world_native::ownership::Story",
+              "kind": "data"
+            },
+            {
+              "name": "timestamp",
+              "type": "core::integer::u64",
+              "kind": "data"
+            }
+          ]
+        },
         {
           "name": "RowSet",
           "prefix": [
@@ -5368,6 +5718,86 @@
         },
         {
           "type": "function",
+          "name": "configure_relics",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "rules",
+              "type": "core::array::Span::<world_native::relics::RelicRule>"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "relic_rules",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::array::Span::<world_native::relics::RelicRule>"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "open_relic_chest",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "command",
+              "type": "world_native::relics::OpenChest"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "apply_relic",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "command",
+              "type": "world_native::relics::ApplyRelic"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
           "name": "configure_hyperstructures",
           "inputs": [
             {
@@ -5680,6 +6110,81 @@
     }
   },
   "models": [
+    {
+      "name": "ExtractionRewards",
+      "identity": "0x45787472616374696f6e52657761726473",
+      "owners": [
+        "map"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "rewards",
+          "type": "core::array::Span::<world_native::exploration_rewards::ExplorationReward>",
+          "id": "0x72657761726473",
+          "feltLength": null
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": null
+    },
+    {
+      "name": "RelicRules",
+      "identity": "0x52656c696352756c6573",
+      "owners": [
+        "economy"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "rules",
+          "type": "core::array::Span::<world_native::relics::RelicRule>",
+          "id": "0x72756c6573",
+          "feltLength": null
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": null
+    },
+    {
+      "name": "RelicDiscovery",
+      "identity": "0x52656c6963446973636f76657279",
+      "owners": [
+        "map"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "last_at",
+          "type": "core::integer::u64",
+          "id": "0x6c6173745f6174",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": 1
+    },
     {
       "name": "WithdrawalRules",
       "identity": "0x5769746864726177616c52756c6573",
@@ -9191,6 +9696,16 @@
         }
       ]
     },
+    "core::array::Span::<world_native::exploration_rewards::ExplorationReward>": {
+      "type": "struct",
+      "name": "core::array::Span::<world_native::exploration_rewards::ExplorationReward>",
+      "members": [
+        {
+          "name": "snapshot",
+          "type": "@core::array::Array::<world_native::exploration_rewards::ExplorationReward>"
+        }
+      ]
+    },
     "core::array::Span::<world_native::hyperstructures::ConstructionResource>": {
       "type": "struct",
       "name": "core::array::Span::<world_native::hyperstructures::ConstructionResource>",
@@ -9248,6 +9763,16 @@
         {
           "name": "snapshot",
           "type": "@core::array::Array::<world_native::production::RecipeConfig>"
+        }
+      ]
+    },
+    "core::array::Span::<world_native::relics::RelicRule>": {
+      "type": "struct",
+      "name": "core::array::Span::<world_native::relics::RelicRule>",
+      "members": [
+        {
+          "name": "snapshot",
+          "type": "@core::array::Array::<world_native::relics::RelicRule>"
         }
       ]
     },
@@ -10292,6 +10817,18 @@
         {
           "name": "CheckpointHyperstructures",
           "type": "core::array::Span::<core::integer::u32>"
+        },
+        {
+          "name": "OpenRelicChest",
+          "type": "world_native::relics::OpenChest"
+        },
+        {
+          "name": "ApplyRelic",
+          "type": "world_native::relics::ApplyRelic"
+        },
+        {
+          "name": "ExtractExplorationReward",
+          "type": "core::integer::u32"
         }
       ]
     },
@@ -10396,6 +10933,50 @@
         {
           "name": "BitcoinMine",
           "type": "()"
+        }
+      ]
+    },
+    "world_native::exploration_rewards::ExplorationReward": {
+      "type": "struct",
+      "name": "world_native::exploration_rewards::ExplorationReward",
+      "members": [
+        {
+          "name": "resource_type",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "amount",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "weight",
+          "type": "core::integer::u128"
+        }
+      ]
+    },
+    "world_native::exploration_rewards::ExtractedReward": {
+      "type": "struct",
+      "name": "world_native::exploration_rewards::ExtractedReward",
+      "members": [
+        {
+          "name": "explorer_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "receiver",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "coord",
+          "type": "world_native::troops::Coord"
+        },
+        {
+          "name": "resource_type",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "amount",
+          "type": "core::integer::u128"
         }
       ]
     },
@@ -11446,6 +12027,14 @@
         {
           "name": "HyperstructurePoints",
           "type": "world_native::hyperstructures::SharePoints"
+        },
+        {
+          "name": "RelicChestOpened",
+          "type": "world_native::relics::ChestOpened"
+        },
+        {
+          "name": "ExplorationReward",
+          "type": "world_native::exploration_rewards::ExtractedReward"
         }
       ]
     },
@@ -11728,6 +12317,104 @@
         {
           "name": "root",
           "type": "core::integer::u256"
+        }
+      ]
+    },
+    "world_native::relics::ApplyRelic": {
+      "type": "struct",
+      "name": "world_native::relics::ApplyRelic",
+      "members": [
+        {
+          "name": "entity_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "relic_id",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "recipient",
+          "type": "world_native::relics::Recipient"
+        }
+      ]
+    },
+    "world_native::relics::ChestOpened": {
+      "type": "struct",
+      "name": "world_native::relics::ChestOpened",
+      "members": [
+        {
+          "name": "explorer_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "coord",
+          "type": "world_native::troops::Coord"
+        },
+        {
+          "name": "relics",
+          "type": "core::array::Span::<core::integer::u8>"
+        },
+        {
+          "name": "points",
+          "type": "core::integer::u128"
+        }
+      ]
+    },
+    "world_native::relics::OpenChest": {
+      "type": "struct",
+      "name": "world_native::relics::OpenChest",
+      "members": [
+        {
+          "name": "explorer_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "coord",
+          "type": "world_native::troops::Coord"
+        }
+      ]
+    },
+    "world_native::relics::Recipient": {
+      "type": "enum",
+      "name": "world_native::relics::Recipient",
+      "variants": [
+        {
+          "name": "Explorer",
+          "type": "()"
+        },
+        {
+          "name": "StructureProduction",
+          "type": "()"
+        },
+        {
+          "name": "StructureGuard",
+          "type": "()"
+        }
+      ]
+    },
+    "world_native::relics::RelicRule": {
+      "type": "struct",
+      "name": "world_native::relics::RelicRule",
+      "members": [
+        {
+          "name": "rate_bps",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "duration",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "uses",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "essence_cost",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "draw_weight",
+          "type": "core::integer::u128"
         }
       ]
     },
@@ -13378,5 +14065,5 @@
       ]
     }
   },
-  "identity": "e3702448ed95d767ca9311781ad0b81f9fefaa057dd0b9b0657865232bb364f6"
+  "identity": "878415696c577ed55168e9e6c243c7e79d14ec6e7c0eb5345e42e697b8281cda"
 }

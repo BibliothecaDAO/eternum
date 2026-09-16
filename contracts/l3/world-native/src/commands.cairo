@@ -87,6 +87,9 @@ pub enum Command {
     AllocateHyperstructureShares: crate::hyperstructures::AllocateShares,
     SetConstructionAccess: crate::hyperstructures::SetConstructionAccess,
     CheckpointHyperstructures: Span<u32>,
+    OpenRelicChest: crate::relics::OpenChest,
+    ApplyRelic: crate::relics::ApplyRelic,
+    ExtractExplorationReward: u32,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]

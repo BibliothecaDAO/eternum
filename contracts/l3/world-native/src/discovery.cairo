@@ -13,7 +13,6 @@ pub enum Discovery {
 pub fn surface(
     config: MapConfig, seed: u256, timestamp: u64, distance: u128, hyperstructures: u32, reserved: bool,
 ) -> Discovery {
-    assert!(config.relic_discovery_interval_sec == 0, "unsupported relic discovery");
     if reserved {
         return Discovery::None;
     }

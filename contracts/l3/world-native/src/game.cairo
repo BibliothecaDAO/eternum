@@ -39,6 +39,7 @@ pub trait IGame<T> {
     fn register_exploration(ref self: T, game_id: u32, actor: ContractAddress);
     fn register_capture(ref self: T, game_id: u32, actor: ContractAddress, category: u8) -> u128;
     fn guild_id(self: @T, game_id: u32, actor: ContractAddress) -> u32;
+    fn register_relic_points(ref self: T, game_id: u32, actor: ContractAddress);
     fn register_hyperstructure_points(ref self: T, game_id: u32, actor: ContractAddress, amount: u128);
     fn player_points(self: @T, game_id: u32, actor: ContractAddress) -> u128;
     fn season_points(self: @T, game_id: u32) -> u128;
@@ -143,10 +144,7 @@ pub mod GameState {
                 assert!(rules.bitcoin_mine_config.prize_per_phase != 0, "zero Bitcoin prize");
             }
             assert!(rules.bitcoin_mine_config.owner_cut_bps <= 10000, "invalid Bitcoin owner cut");
-            assert!(
-                rules.map_config.relic_discovery_interval_sec == 0 && rules.map_config.agent_discovery_prob == 0,
-                "unsupported discovery rules",
-            );
+            assert!(rules.map_config.agent_discovery_prob == 0, "unsupported discovery rules");
             self.games.write(game_id, game);
             self.rules.write(game_id, rules);
             self.ownership_rules_ready.write(game_id, true);

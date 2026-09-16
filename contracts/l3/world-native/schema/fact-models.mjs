@@ -38,6 +38,15 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
   };
   const domainKey = [{ name: "address", type: struct("lifecycle::Peers")[0].type }];
   return [
+    model("ExtractionRewards", ["map"], "game", method("map", "extraction_rewards").inputs, [
+      { name: "rewards", type: method("map", "extraction_rewards").outputs[0].type },
+    ]),
+    model("RelicRules", ["economy"], "game", method("economy", "relic_rules").inputs, [
+      { name: "rules", type: method("economy", "relic_rules").outputs[0].type },
+    ]),
+    model("RelicDiscovery", ["map"], "game", method("map", "relic_discovery_time").inputs, [
+      { name: "last_at", type: "core::integer::u64" },
+    ]),
     model(
       "WithdrawalRules",
       ["economy"],

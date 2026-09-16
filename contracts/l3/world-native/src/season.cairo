@@ -222,6 +222,11 @@ pub mod SeasonDomain {
         fn guild_id(self: @ContractState, game_id: u32, actor: ContractAddress) -> u32 {
             self.games.guild_membership.read((game_id, actor))
         }
+        fn register_relic_points(ref self: ContractState, game_id: u32, actor: ContractAddress) {
+            assert!(get_caller_address() == self.lifecycle.require_active().economy, "only economy domain");
+            let points = self.games.rules(game_id).victory_points_grant_config.relic_open_points;
+            self.games.register_points(game_id, actor, points.into());
+        }
         fn register_hyperstructure_points(ref self: ContractState, game_id: u32, actor: ContractAddress, amount: u128) {
             assert!(get_caller_address() == self.lifecycle.require_active().economy, "only economy domain");
             self.games.game(game_id);
@@ -265,6 +270,7 @@ pub mod SeasonDomain {
             let caller = get_caller_address();
             assert!(
                 caller == peers.troops
+                    || caller == peers.map
                     || caller == peers.structures
                     || caller == peers.resources
                     || caller == peers.economy,
@@ -471,6 +477,18 @@ pub mod SeasonDomain {
             Command::CheckpointHyperstructures(value) => {
                 value.serialize(ref calldata);
                 (peers.economy, selector!("checkpoint_hyperstructures"))
+            },
+            Command::ExtractExplorationReward(value) => {
+                value.serialize(ref calldata);
+                (peers.map, selector!("extract_exploration_reward"))
+            },
+            Command::OpenRelicChest(value) => {
+                value.serialize(ref calldata);
+                (peers.economy, selector!("open_relic_chest"))
+            },
+            Command::ApplyRelic(value) => {
+                value.serialize(ref calldata);
+                (peers.economy, selector!("apply_relic"))
             },
             Command::CreateTradeOrder(value) => {
                 value.serialize(ref calldata);
