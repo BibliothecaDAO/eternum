@@ -302,6 +302,33 @@ pub enum Story {
     StructureLevelUpStory: StructureLevelUpStory,
     RealmCreatedStory: RealmCreatedStory,
     GuardAddStory: GuardAddStory,
+    ResourceBurnStory: ResourceAmountsStory,
+    ResourceTransferStory: ResourceTransferStory,
+    ResourceReceiveArrivalStory: ResourceAmountsStory,
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct ResourceAmountsStory {
+    pub resources: Span<crate::resources::ResourceAmount>,
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub enum TransferType {
+    Instant,
+    InstantStorable,
+    Delayed,
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct ResourceTransferStory {
+    pub transfer_type: TransferType,
+    pub from_entity_id: u32,
+    pub from_entity_owner_address: ContractAddress,
+    pub to_entity_id: u32,
+    pub to_entity_owner_address: ContractAddress,
+    pub resources: Span<crate::resources::ResourceAmount>,
+    pub is_mint: bool,
+    pub travel_time: u64,
 }
 
 #[derive(Drop, starknet::Event)]

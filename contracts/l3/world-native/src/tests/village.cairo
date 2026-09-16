@@ -6,14 +6,14 @@ use snforge_std::{start_cheat_block_timestamp_global, start_cheat_caller_address
 use crate::commands::{Command, ExecutionContext};
 use crate::game::{IGameDispatcher, IGameDispatcherTrait};
 use crate::map::{IMapDispatcher, IMapDispatcherTrait};
-use crate::resources::{ResourceKey, ResourceSlot};
+use crate::resources::{IResourcesDispatcher, IResourcesDispatcherTrait, ResourceKey, ResourceRule, ResourceSlot};
 use crate::season::{ISeasonDispatcher, ISeasonDispatcherTrait};
 use crate::settlement::{
     ISettlementConfigurationDispatcher, ISettlementConfigurationDispatcherTrait, ISettlementCreationDispatcher,
     ISettlementCreationDispatcherTrait, ISettlementPoolDispatcher, ISettlementPoolDispatcherTrait, RealmGrants,
     SettlementMode, SettlementRules,
 };
-use crate::structures::{IStructuresDispatcher, IStructuresDispatcherTrait, ResourceRule};
+use crate::structures::{IStructuresDispatcher, IStructuresDispatcherTrait};
 use crate::troops::Coord;
 use crate::village::{
     IVillagesDispatcher, IVillagesDispatcherTrait, IVillagesSafeDispatcher, IVillagesSafeDispatcherTrait, SettleVillage,
@@ -66,7 +66,9 @@ fn setup_config(dev: bool, mode: SettlementMode, game_rules: crate::rules::Slice
     let _: crate::rules::SliceRules = Serde::deserialize(ref fields).unwrap();
     let resources: Span<ResourceRule> = Serde::deserialize(ref fields).unwrap();
     start_cheat_caller_address(deployment.peers.structures, authority());
-    IStructuresDispatcher { contract_address: deployment.peers.structures }.configure_resources(3, resources);
+    start_cheat_caller_address(deployment.peers.resources, authority());
+    IResourcesDispatcher { contract_address: deployment.peers.resources }.configure_resources(3, resources);
+    stop_cheat_caller_address(deployment.peers.resources);
     start_cheat_caller_address(deployment.peers.structures, deployment.peers.settlement);
     let realm = ISettlementCreationDispatcher { contract_address: deployment.peers.structures }
         .create_settlement(
@@ -148,13 +150,14 @@ fn production_pass_is_atomic_single_use_and_army_grant_uses_recorded_time() {
     assert!(run(deployment, settle(realm, 7), 100));
     let village_id = ledger.village_pass(pass).unwrap().unwrap().village_id;
     let structures = IStructuresDispatcher { contract_address: deployment.peers.structures };
+    let resource_store = IResourcesDispatcher { contract_address: deployment.peers.resources };
     let key = ResourceKey { game_id: 3, entity_id: village_id };
     let village = structures.structure(key).unwrap();
     assert!(village.base.category == 5 && village.metadata.village_realm == realm);
     assert!(village.owner == deployment.actor && !village.base.starting_troops_granted);
     assert!(village.base.coord_x != 2000000 || village.base.coord_y != 2000000);
     assert!(
-        structures
+        resource_store
             .resource_production(ResourceSlot { game_id: 3, entity_id: village_id, resource_type: 23 })
             .production_rate > 0,
     );

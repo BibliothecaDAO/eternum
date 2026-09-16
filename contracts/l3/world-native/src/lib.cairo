@@ -1,3 +1,4 @@
+pub mod arrivals;
 pub mod biome;
 
 pub mod combat;
@@ -39,7 +40,10 @@ pub mod ownership;
 pub mod random;
 
 pub mod resources;
+pub mod resources_domain;
 pub mod structures;
+
+pub mod transport;
 
 pub mod upgrades;
 

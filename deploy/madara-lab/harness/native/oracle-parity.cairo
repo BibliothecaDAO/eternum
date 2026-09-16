@@ -1,12 +1,16 @@
 use dojo::model::{Model, ModelStorage, ModelStorageTest};
 use dojo::world::{IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
-use dojo_snf_test::{ContractDefTrait, NamespaceDef, TestResource, WorldStorageTestTrait, spawn_test_world};
+use dojo_snf_test::{
+    ContractDefTrait, NamespaceDef, TestResource, WorldStorageTestTrait, spawn_test_world,
+};
 use eternum_randomness_protocol::entrypoint::{
     ExecutionContext, IRecordedExecutionDispatcher, IRecordedExecutionDispatcherTrait,
     IRecordedExecutionViewsDispatcher, IRecordedExecutionViewsDispatcherTrait,
 };
 use eternum_randomness_protocol::{Intent, action_identity};
-use snforge_std::signature::stark_curve::{StarkCurveKeyPair, StarkCurveKeyPairImpl, StarkCurveSignerImpl};
+use snforge_std::signature::stark_curve::{
+    StarkCurveKeyPair, StarkCurveKeyPairImpl, StarkCurveSignerImpl,
+};
 use snforge_std::signature::{KeyPairTrait, SignerTrait};
 use snforge_std::{
     CheatSpan, ContractClassTrait, DeclareResultTrait, cheat_caller_address, declare,
@@ -18,18 +22,22 @@ use world_native::commands::{Battle, Command, CreateExplorer, Explore, Move, Tog
 use world_native::game::{IGameDispatcher, IGameDispatcherTrait};
 use world_native::lifecycle::{IDomainDispatcher, IDomainDispatcherTrait, Peers};
 use world_native::map::{IMapDispatcher, IMapDispatcherTrait};
-use world_native::names::{INamesDispatcher, INamesDispatcherTrait, INamesSafeDispatcher, INamesSafeDispatcherTrait};
-use world_native::ownership::{
-    FaithfulStructure, IAgentOwnershipDispatcherTrait, IFaithOwnershipViewsDispatcherTrait, PlayerFaithPoints,
-    WonderFaith,
+use world_native::names::{
+    INamesDispatcher, INamesDispatcherTrait, INamesSafeDispatcher, INamesSafeDispatcherTrait,
 };
-use world_native::resources::{ResourceKey, ResourceSlot};
+use world_native::ownership::{
+    FaithfulStructure, IAgentOwnershipDispatcherTrait, IFaithOwnershipViewsDispatcherTrait,
+    PlayerFaithPoints, WonderFaith,
+};
+use world_native::resources::{
+    IResourcesDispatcher, IResourcesDispatcherTrait, ResourceKey, ResourceSlot,
+};
 use world_native::season::{ISeasonDispatcher, ISeasonDispatcherTrait};
 use world_native::structures::{IStructuresDispatcher, IStructuresDispatcherTrait};
 use world_native::troops::{ExplorerKey, ITroopsDispatcher, ITroopsDispatcherTrait};
 use world_native::upgrades::{
-    IStructureUpgradesSafeDispatcher, IStructureUpgradesSafeDispatcherTrait, IUpgradeRulesDispatcher,
-    IUpgradeRulesDispatcherTrait, UpgradeLimits,
+    IStructureUpgradesSafeDispatcher, IStructureUpgradesSafeDispatcherTrait,
+    IUpgradeRulesDispatcher, IUpgradeRulesDispatcherTrait, UpgradeLimits,
 };
 use crate::constants::{DEFAULT_NS, DEFAULT_NS_STR, RESOURCE_PRECISION};
 use crate::models::config::{GameMapConfig, PresetConfig, WorldConfig};
@@ -42,7 +50,9 @@ use crate::models::structure::Structure;
 use crate::models::troop::{ExplorerTroops, TroopTier, TroopType};
 use crate::native_facts::*;
 use crate::native_protocol;
-use crate::systems::alt_movement::contracts::{IAltMovementSystemsDispatcher, IAltMovementSystemsDispatcherTrait};
+use crate::systems::alt_movement::contracts::{
+    IAltMovementSystemsDispatcher, IAltMovementSystemsDispatcherTrait,
+};
 use crate::systems::combat::contracts::troop_battle::{
     ITroopBattleSystemsDispatcher, ITroopBattleSystemsDispatcherTrait,
 };
@@ -87,38 +97,53 @@ fn namespace() -> NamespaceDef {
         resources: [
             TestResource::Model("WorldConfig"), TestResource::Model("GameRegistry"),
             TestResource::Model("PresetConfig"), TestResource::Model("GameMapConfig"),
-            TestResource::Model("ChainConfig"), TestResource::Model("RNG"), TestResource::Model("Structure"),
-            TestResource::Model("StructureOwnerStats"), TestResource::Model("StructureReservation"),
-            TestResource::Model("StructureBuildings"), TestResource::Model("StructureVillageSlots"),
-            TestResource::Model("Building"), TestResource::Model("Resource"),
+            TestResource::Model("ChainConfig"), TestResource::Model("RNG"),
+            TestResource::Model("Structure"), TestResource::Model("StructureOwnerStats"),
+            TestResource::Model("StructureReservation"), TestResource::Model("StructureBuildings"),
+            TestResource::Model("StructureVillageSlots"), TestResource::Model("Building"),
+            TestResource::Model("Resource"), TestResource::Model("ResourceAllowance"),
+            TestResource::Model("ResourceArrival"), TestResource::Contract("resource_systems"),
+            TestResource::Event("ExplicitResourceBurn"), TestResource::Event("BurnDonkey"),
             TestResource::Model("ResourceFactoryConfig"), TestResource::Model("WeightConfig"),
-            TestResource::Model("BuildingCategoryConfig"), TestResource::Model("ProductionBoostBonus"),
-            TestResource::Model("ResourceList"), TestResource::Model("ExplorerTroops"), TestResource::Model("TileOpt"),
+            TestResource::Model("BuildingCategoryConfig"),
+            TestResource::Model("ProductionBoostBonus"), TestResource::Model("ResourceList"),
+            TestResource::Model("ExplorerTroops"), TestResource::Model("TileOpt"),
             TestResource::Model("PlayerRegisteredPoints"), TestResource::Model("SeasonPrize"),
             TestResource::Model("Hyperstructure"), TestResource::Model("HyperstructureGlobals"),
-            TestResource::Model("CompletedHyperstructure"), TestResource::Model("HyperstructureIndex"),
-            TestResource::Model("StructureLevelConfig"), TestResource::Contract("structure_systems"),
-            TestResource::Model("AddressName"), TestResource::Contract("name_systems"),
-            TestResource::Model("RealmAllocation"), TestResource::Model("RealmAllocationSlot"),
-            TestResource::Model("RealmAllocationPool"), TestResource::Model("Wonder"),
-            TestResource::Model("BlitzSettlement"), TestResource::Model("BlitzSettlementPosition"),
-            TestResource::Model("PlayerSettlement"), TestResource::Model("LedgerRegistration"),
-            TestResource::Model("BlitzCosmeticAttrsRegister"), TestResource::Event("BlitzSettlementEvent"),
-            TestResource::Contract("blitz_realm_systems"), TestResource::Contract("realm_internal_systems"),
-            TestResource::Contract("realm_systems"), TestResource::Contract("hyperstructure_create_systems"),
+            TestResource::Model("CompletedHyperstructure"),
+            TestResource::Model("HyperstructureIndex"), TestResource::Model("StructureLevelConfig"),
+            TestResource::Contract("structure_systems"), TestResource::Model("AddressName"),
+            TestResource::Contract("name_systems"), TestResource::Model("RealmAllocation"),
+            TestResource::Model("RealmAllocationSlot"), TestResource::Model("RealmAllocationPool"),
+            TestResource::Model("Wonder"), TestResource::Model("BlitzSettlement"),
+            TestResource::Model("BlitzSettlementPosition"), TestResource::Model("PlayerSettlement"),
+            TestResource::Model("LedgerRegistration"),
+            TestResource::Model("BlitzCosmeticAttrsRegister"),
+            TestResource::Event("BlitzSettlementEvent"),
+            TestResource::Contract("blitz_realm_systems"),
+            TestResource::Contract("realm_internal_systems"),
+            TestResource::Contract("realm_systems"),
+            TestResource::Contract("hyperstructure_create_systems"),
             TestResource::Contract("village_systems"), TestResource::Model("VillageTroop"),
-            TestResource::Model("AgentConfig"), TestResource::Model("AgentCount"), TestResource::Model("AgentOwner"),
-            TestResource::Model("WonderFaith"), TestResource::Model("FaithfulStructure"),
-            TestResource::Model("PlayerFaithPoints"), TestResource::Model("WonderFaithWinners"),
-            TestResource::Contract("ownership_systems"), TestResource::Contract("alt_movement_systems"),
-            TestResource::Contract("parity_bootstrap_systems"), TestResource::Contract("troop_management_systems"),
-            TestResource::Contract("troop_movement_systems"), TestResource::Contract("troop_movement_util_systems"),
-            TestResource::Contract("troop_battle_systems"), TestResource::Contract("hyperstructure_discovery_systems"),
-            TestResource::Contract("mine_discovery_systems"), TestResource::Contract("camp_discovery_systems"),
-            TestResource::Contract("agent_discovery_systems"), TestResource::Contract("relic_chest_discovery_systems"),
+            TestResource::Model("AgentConfig"), TestResource::Model("AgentCount"),
+            TestResource::Model("AgentOwner"), TestResource::Model("WonderFaith"),
+            TestResource::Model("FaithfulStructure"), TestResource::Model("PlayerFaithPoints"),
+            TestResource::Model("WonderFaithWinners"), TestResource::Contract("ownership_systems"),
+            TestResource::Contract("alt_movement_systems"),
+            TestResource::Contract("parity_bootstrap_systems"),
+            TestResource::Contract("troop_management_systems"),
+            TestResource::Contract("troop_movement_systems"),
+            TestResource::Contract("troop_movement_util_systems"),
+            TestResource::Contract("troop_battle_systems"),
+            TestResource::Contract("hyperstructure_discovery_systems"),
+            TestResource::Contract("mine_discovery_systems"),
+            TestResource::Contract("camp_discovery_systems"),
+            TestResource::Contract("agent_discovery_systems"),
+            TestResource::Contract("relic_chest_discovery_systems"),
             TestResource::Contract("bitcoin_mine_discovery_systems"),
             TestResource::Library(("structure_creation_library", "0_1_18")),
-            TestResource::Library(("biome_library", "0_1_13")), TestResource::Library(("rng_library", "0_1_16")),
+            TestResource::Library(("biome_library", "0_1_13")),
+            TestResource::Library(("rng_library", "0_1_16")),
             TestResource::Library(("combat_library", "0_1_14")), TestResource::Event("StoryEvent"),
             TestResource::Event("ExplorerMoveEvent"), TestResource::Event("BattleEvent"),
         ]
@@ -142,7 +167,12 @@ fn setup_world(case: felt252, blitz: bool, development: bool) -> PairedWorld {
     }, 999999)
 }
 fn setup_timed_world(
-    case: felt252, blitz: bool, development: bool, start_settling_at: u64, start_main_at: u64, end_at: u64,
+    case: felt252,
+    blitz: bool,
+    development: bool,
+    start_settling_at: u64,
+    start_main_at: u64,
+    end_at: u64,
 ) -> PairedWorld {
     start_cheat_block_timestamp_global(1800);
     start_cheat_chain_id_global('SN_TEST');
@@ -152,7 +182,10 @@ fn setup_timed_world(
     let (opponent, _) = account.deploy(@array![opponent_pair().public_key]).unwrap();
     let registry = deploy("ParityRegistry", @array![actor.into(), opponent.into()]);
     let season = deploy(
-        "SeasonDomain", @array![authority().into(), submitter().into(), registry.into(), (*account.class_hash).into()],
+        "SeasonDomain",
+        @array![
+            authority().into(), submitter().into(), registry.into(), (*account.class_hash).into(),
+        ],
     );
     let peers = Peers {
         season,
@@ -160,12 +193,17 @@ fn setup_timed_world(
         structures: deploy("StructuresDomain", @array![authority().into()]),
         troops: deploy("TroopsDomain", @array![authority().into()]),
         settlement: deploy("SettlementDomain", @array![authority().into()]),
+        resources: deploy("ResourcesDomain", @array![authority().into()]),
     };
-    for address in array![peers.season, peers.map, peers.structures, peers.troops, peers.settlement] {
+    for address in array![
+        peers.season, peers.map, peers.structures, peers.troops, peers.settlement, peers.resources,
+    ] {
         start_cheat_caller_address(address, authority());
         IDomainDispatcher { contract_address: address }.configure(peers);
     }
-    for address in array![peers.season, peers.map, peers.structures, peers.troops, peers.settlement] {
+    for address in array![
+        peers.season, peers.map, peers.structures, peers.troops, peers.settlement, peers.resources,
+    ] {
         IDomainDispatcher { contract_address: address }.activate();
         stop_cheat_caller_address(address);
     }
@@ -191,19 +229,22 @@ fn setup_timed_world(
     IGameDispatcher { contract_address: peers.season }.create_game(1, game, rules);
     stop_cheat_caller_address(peers.season);
     start_cheat_caller_address(peers.structures, authority());
-    IStructuresDispatcher { contract_address: peers.structures }
+    start_cheat_caller_address(peers.resources, authority());
+    IResourcesDispatcher { contract_address: peers.resources }
         .configure_resources(1, crate::native_inputs::resource_rules());
+    stop_cheat_caller_address(peers.resources);
     stop_cheat_caller_address(peers.structures);
     let roots = deploy("ParityRoots", @array![]);
     let mut oracle = spawn_test_world([namespace()].span());
     let mut defs = array![];
     for name in array![
-        "alt_movement_systems", "parity_bootstrap_systems", "troop_management_systems", "troop_movement_systems",
-        "troop_movement_util_systems", "troop_battle_systems", "hyperstructure_discovery_systems",
-        "mine_discovery_systems", "camp_discovery_systems", "agent_discovery_systems", "relic_chest_discovery_systems",
+        "alt_movement_systems", "parity_bootstrap_systems", "troop_management_systems",
+        "troop_movement_systems", "troop_movement_util_systems", "troop_battle_systems",
+        "hyperstructure_discovery_systems", "mine_discovery_systems", "camp_discovery_systems",
+        "agent_discovery_systems", "relic_chest_discovery_systems",
         "bitcoin_mine_discovery_systems", "ownership_systems", "name_systems", "structure_systems",
-        "blitz_realm_systems", "realm_internal_systems", "realm_systems", "hyperstructure_create_systems",
-        "village_systems",
+        "blitz_realm_systems", "realm_internal_systems", "realm_systems",
+        "hyperstructure_create_systems", "village_systems", "resource_systems",
     ] {
         defs
             .append(
@@ -214,7 +255,9 @@ fn setup_timed_world(
     oracle.sync_perms_and_inits(defs.span());
     oracle
         .write_member(
-            Model::<crate::models::config::ChainConfig>::ptr_from_keys(crate::constants::WORLD_CONFIG_ID),
+            Model::<
+                crate::models::config::ChainConfig,
+            >::ptr_from_keys(crate::constants::WORLD_CONFIG_ID),
             selector!("vrf_provider_address"),
             roots,
         );
@@ -230,12 +273,20 @@ fn setup_timed_world(
     assert!(preset_data.is_empty());
     oracle.write_model_test(@preset);
     oracle.write_model_test(@GameMapConfig { game_id: 1, map_config: preset.map_config });
-    oracle.write_member(Model::<WorldConfig>::ptr_from_keys(1_u32), selector!("map_center_offset"), 20_u32);
-    oracle.write_member(Model::<WorldConfig>::ptr_from_keys(1_u32), selector!("blitz_mode_on"), blitz);
+    oracle
+        .write_member(
+            Model::<WorldConfig>::ptr_from_keys(1_u32), selector!("map_center_offset"), 20_u32,
+        );
+    oracle
+        .write_member(
+            Model::<WorldConfig>::ptr_from_keys(1_u32), selector!("blitz_mode_on"), blitz,
+        );
     if blitz {
         oracle
             .write_member(
-                Model::<crate::models::config::ChainConfig>::ptr_from_keys(crate::constants::WORLD_CONFIG_ID),
+                Model::<
+                    crate::models::config::ChainConfig,
+                >::ptr_from_keys(crate::constants::WORLD_CONFIG_ID),
                 selector!("player_registry_address"),
                 registry,
             );
@@ -264,17 +315,20 @@ fn convert<A, B, +Serde<A>, +Drop<A>, +Serde<B>, +Drop<B>>(value: A) -> B {
 
 fn grants() -> Span<(u8, u128)> {
     array![
-        (26, 1000 * RESOURCE_PRECISION), (35, 50000 * RESOURCE_PRECISION), (36, 50000 * RESOURCE_PRECISION),
-        (38, 100 * RESOURCE_PRECISION),
+        (26, 1000 * RESOURCE_PRECISION), (35, 50000 * RESOURCE_PRECISION),
+        (36, 50000 * RESOURCE_PRECISION), (38, 100 * RESOURCE_PRECISION),
     ]
         .span()
 }
 fn provision(ref worlds: PairedWorld, coord: Coord) -> u32 {
     provision_with_resources(ref worlds, coord, grants())
 }
-fn provision_with_resources(ref worlds: PairedWorld, coord: Coord, initial_resources: Span<(u8, u128)>) -> u32 {
+fn provision_with_resources(
+    ref worlds: PairedWorld, coord: Coord, initial_resources: Span<(u8, u128)>,
+) -> u32 {
     let (address, _) = worlds.oracle.dns(@"parity_bootstrap_systems").unwrap();
-    let id = IParityBootstrapDispatcher { contract_address: address }.bootstrap(worlds.actor, coord, initial_resources);
+    let id = IParityBootstrapDispatcher { contract_address: address }
+        .bootstrap(worlds.actor, coord, initial_resources);
     start_cheat_caller_address(worlds.peers.structures, authority());
     let native_id = IStructuresDispatcher { contract_address: worlds.peers.structures }
         .provision_realm(1, worlds.actor, convert(coord), initial_resources);
@@ -286,7 +340,9 @@ fn execute(worlds: PairedWorld, command: Command, timestamp: u64, root: u256) {
     let (_, succeeded) = execute_outcome(worlds, command, timestamp, root);
     assert!(succeeded, "native gameplay rejected");
 }
-fn execute_outcome(worlds: PairedWorld, command: Command, timestamp: u64, root: u256) -> (u64, bool) {
+fn execute_outcome(
+    worlds: PairedWorld, command: Command, timestamp: u64, root: u256,
+) -> (u64, bool) {
     start_cheat_block_timestamp_global(timestamp);
     let intent = native_protocol::action(worlds.peers.season, worlds.actor, command, timestamp);
     let public_key = world_native::season::IGameplayKeyDispatcherTrait::get_public_key(
@@ -301,7 +357,8 @@ fn execute_outcome(worlds: PairedWorld, command: Command, timestamp: u64, root: 
     let context = native_protocol::context(@intent, timestamp, root);
     let order = intent.last_order;
     native_protocol::authenticate(worlds.peers.season, submitter());
-    IRecordedExecutionDispatcher { contract_address: worlds.peers.season }.execute(intent, context, r, s);
+    IRecordedExecutionDispatcher { contract_address: worlds.peers.season }
+        .execute(intent, context, r, s);
     let succeeded = IRecordedExecutionViewsDispatcher { contract_address: worlds.peers.season }
         .get_result(order)
         .status == 1;
@@ -316,7 +373,15 @@ fn compare_facts<A, +Observable<A>, +Drop<A>, B, +Observable<B>, +Drop<B>>(
     let mut oracle_facts = keys.into();
     oracle_facts.append_span(oracle.observe().span());
     let identity = core::poseidon::poseidon_hash_span(keys);
-    println!("FACT_SNAPSHOT {} {} {} {} {} {}", case, step, model, identity, keys.len(), native_facts.len());
+    println!(
+        "FACT_SNAPSHOT {} {} {} {} {} {}",
+        case,
+        step,
+        model,
+        identity,
+        keys.len(),
+        native_facts.len(),
+    );
     assert_eq!(native_facts.len(), oracle_facts.len(), "observable fact count differs");
     for index in 0..native_facts.len() {
         println!(
@@ -338,11 +403,18 @@ fn compare_home(worlds: PairedWorld, step: u32, id: u32) {
     let key = ResourceKey { game_id: 1, entity_id: id };
     let mut original: Structure = ModelStorage::read_model(@worlds.oracle, (1, id));
     if original.base.category == 5 {
-        let grant: crate::models::structure::VillageTroop = ModelStorage::read_model(@worlds.oracle, (1, id));
+        let grant: crate::models::structure::VillageTroop = ModelStorage::read_model(
+            @worlds.oracle, (1, id),
+        );
         original.base.starting_troops_granted = grant.claimed;
     }
     compare_facts(
-        worlds.case, step, 'Structure', array![1, id.into()].span(), structures.structure(key).unwrap(), original,
+        worlds.case,
+        step,
+        'Structure',
+        array![1, id.into()].span(),
+        structures.structure(key).unwrap(),
+        original,
     );
     compare_resources(worlds, step, id);
 }
@@ -367,7 +439,13 @@ fn world_parity_explorer_creation() {
     execute(
         worlds,
         Command::CreateExplorer(
-            CreateExplorer { structure_id: home, category: 0, tier: 0, amount: 100 * RESOURCE_PRECISION, direction: 0 },
+            CreateExplorer {
+                structure_id: home,
+                category: 0,
+                tier: 0,
+                amount: 100 * RESOURCE_PRECISION,
+                direction: 0,
+            },
         ),
         1800,
         101,
@@ -394,7 +472,9 @@ fn world_parity_explorer_creation() {
         'TileOpt',
         array![1, 0, key.col.into(), key.row.into()].span(),
         actual,
-        ModelStorage::<WorldStorage, TileOpt>::read_model(@worlds.oracle, (1, false, key.col, key.row)),
+        ModelStorage::<
+            WorldStorage, TileOpt,
+        >::read_model(@worlds.oracle, (1, false, key.col, key.row)),
     );
 }
 
@@ -410,10 +490,14 @@ fn compare_tile(worlds: PairedWorld, step: u32, coord: world_native::troops::Coo
         'TileOpt',
         array![1, coord.alt.into(), coord.x.into(), coord.y.into()].span(),
         actual,
-        ModelStorage::<WorldStorage, TileOpt>::read_model(@worlds.oracle, (1, coord.alt, coord.x, coord.y)),
+        ModelStorage::<
+            WorldStorage, TileOpt,
+        >::read_model(@worlds.oracle, (1, coord.alt, coord.x, coord.y)),
     );
 }
-fn compare_explorer(worlds: PairedWorld, step: u32, id: u32) -> world_native::troops::ExplorerTroops {
+fn compare_explorer(
+    worlds: PairedWorld, step: u32, id: u32,
+) -> world_native::troops::ExplorerTroops {
     let explorer = ITroopsDispatcher { contract_address: worlds.peers.troops }
         .explorer(ExplorerKey { game_id: 1, explorer_id: id })
         .unwrap();
@@ -430,7 +514,13 @@ fn compare_explorer(worlds: PairedWorld, step: u32, id: u32) -> world_native::tr
     explorer
 }
 fn explore_pair(
-    worlds: PairedWorld, id: u32, direction: u8, timestamp: u64, root: felt252, step: u32, expected_occupier: u8,
+    worlds: PairedWorld,
+    id: u32,
+    direction: u8,
+    timestamp: u64,
+    root: felt252,
+    step: u32,
+    expected_occupier: u8,
 ) -> world_native::troops::Coord {
     let explorer = ITroopsDispatcher { contract_address: worlds.peers.troops }
         .explorer(ExplorerKey { game_id: 1, explorer_id: id })
@@ -444,7 +534,9 @@ fn explore_pair(
         .explorer_move(1, id, array![convert(direction)].span(), true);
     stop_cheat_caller_address(address);
     assert_root_consumed(worlds, tx_hash, root, step);
-    execute(worlds, Command::Explore(Explore { explorer_id: id, direction }), timestamp, root.into());
+    execute(
+        worlds, Command::Explore(Explore { explorer_id: id, direction }), timestamp, root.into(),
+    );
     compare_home(worlds, step, explorer.owner);
     compare_explorer(worlds, step, id);
     compare_tile(worlds, step, explorer.coord);
@@ -460,7 +552,9 @@ fn explore_pair(
         'SeasonPrize',
         array![1].span(),
         game.season_points(1),
-        ModelStorage::<WorldStorage, crate::models::season::SeasonPrize>::read_model(@worlds.oracle, 1_u32),
+        ModelStorage::<
+            WorldStorage, crate::models::season::SeasonPrize,
+        >::read_model(@worlds.oracle, 1_u32),
     );
     compare_facts(
         worlds.case,
@@ -468,7 +562,9 @@ fn explore_pair(
         'PlayerRegisteredPoints',
         array![1, worlds.actor.into()].span(),
         game.player_points(1, worlds.actor),
-        ModelStorage::<WorldStorage, PlayerRegisteredPoints>::read_model(@worlds.oracle, (1, worlds.actor)),
+        ModelStorage::<
+            WorldStorage, PlayerRegisteredPoints,
+        >::read_model(@worlds.oracle, (1, worlds.actor)),
     );
     target
 }
@@ -488,7 +584,13 @@ fn create_explorer_pair(worlds: PairedWorld, home: u32) -> u32 {
     execute(
         worlds,
         Command::CreateExplorer(
-            CreateExplorer { structure_id: home, category: 0, tier: 0, amount: 100 * RESOURCE_PRECISION, direction: 0 },
+            CreateExplorer {
+                structure_id: home,
+                category: 0,
+                tier: 0,
+                amount: 100 * RESOURCE_PRECISION,
+                direction: 0,
+            },
         ),
         1800,
         101,
@@ -497,7 +599,9 @@ fn create_explorer_pair(worlds: PairedWorld, home: u32) -> u32 {
     compare_explorer(worlds, 1, id);
     id
 }
-fn compare_discovery(worlds: PairedWorld, step: u32, coord: world_native::troops::Coord, mine: bool) {
+fn compare_discovery(
+    worlds: PairedWorld, step: u32, coord: world_native::troops::Coord, mine: bool,
+) {
     let structures = IStructuresDispatcher { contract_address: worlds.peers.structures };
     let tile = IMapDispatcher { contract_address: worlds.peers.map }
         .tile(world_native::geometry::tile_key(1, coord))
@@ -528,7 +632,12 @@ fn compare_discovery(worlds: PairedWorld, step: u32, coord: world_native::troops
     }
     if mine {
         let key = world_native::buildings::BuildingKey {
-            game_id: 1, alt: coord.alt, outer_col: coord.x, outer_row: coord.y, inner_col: 10, inner_row: 10,
+            game_id: 1,
+            alt: coord.alt,
+            outer_col: coord.x,
+            outer_row: coord.y,
+            inner_col: 10,
+            inner_row: 10,
         };
         compare_facts(
             worlds.case,
@@ -567,7 +676,8 @@ fn provision_spire_pair(worlds: PairedWorld, spire: Coord) {
     let (bootstrap, _) = worlds.oracle.dns(@"parity_bootstrap_systems").unwrap();
     let expected = IParityBootstrapDispatcher { contract_address: bootstrap }.spire(spire);
     start_cheat_caller_address(worlds.peers.structures, authority());
-    let actual = IStructuresDispatcher { contract_address: worlds.peers.structures }.provision_spire(1, convert(spire));
+    let actual = IStructuresDispatcher { contract_address: worlds.peers.structures }
+        .provision_spire(1, convert(spire));
     stop_cheat_caller_address(worlds.peers.structures);
     assert_eq!(actual, expected);
     for alt in array![false, true] {
@@ -582,7 +692,8 @@ fn toggle_pair(worlds: PairedWorld, id: u32, direction: u8, timestamp: u64) {
     start_cheat_block_timestamp_global(timestamp);
     let (address, _) = worlds.oracle.dns(@"alt_movement_systems").unwrap();
     start_cheat_caller_address(address, worlds.actor);
-    IAltMovementSystemsDispatcher { contract_address: address }.toggle_alternate(1, id, convert(direction));
+    IAltMovementSystemsDispatcher { contract_address: address }
+        .toggle_alternate(1, id, convert(direction));
     stop_cheat_caller_address(address);
     execute(
         worlds,
@@ -612,17 +723,23 @@ fn world_parity_ethereal_entry_and_discovery() {
 
 #[test]
 fn world_parity_production_settlement() {
-    production_settlement_case('production', 1860, 180, false);
+    production_settlement_case('production', 1860, 180, false, 1800);
 }
 #[test]
 fn world_parity_production_cap() {
-    production_settlement_case('production_cap', 2100, 300, false);
+    production_settlement_case('production_cap', 2100, 300, false, 1800);
 }
 #[test]
 fn world_parity_production_capacity() {
-    production_settlement_case('production_capacity', 1860, 180, true);
+    production_settlement_case('production_capacity', 1860, 180, true, 1800);
 }
-fn production_settlement_case(case: felt252, claim_at: u64, expected_balance: u128, limited: bool) {
+#[test]
+fn world_parity_production_activation() {
+    production_settlement_case('production_activation', 1860, 60, false, 1840);
+}
+fn production_settlement_case(
+    case: felt252, claim_at: u64, expected_balance: u128, limited: bool, activate_at: u64,
+) {
     let mut worlds = setup(case);
     let initial = if limited {
         let capacity = crate::native_inputs::rules().structure_capacity_config.realm_capacity.into()
@@ -631,20 +748,28 @@ fn production_settlement_case(case: felt252, claim_at: u64, expected_balance: u1
     } else {
         grants()
     };
-    let home = provision_with_resources(ref worlds, Coord { alt: false, x: 2147483626, y: 2147483626 }, initial);
+    let home = provision_with_resources(
+        ref worlds, Coord { alt: false, x: 2147483626, y: 2147483626 }, initial,
+    );
     let (bootstrap, _) = worlds.oracle.dns(@"parity_bootstrap_systems").unwrap();
     let dispatcher = IParityBootstrapDispatcher { contract_address: bootstrap };
+    start_cheat_block_timestamp_global(activate_at);
     dispatcher.producer(home, 300 * RESOURCE_PRECISION);
     start_cheat_caller_address(worlds.peers.structures, authority());
     let structures = IStructuresDispatcher { contract_address: worlds.peers.structures };
+    let resource_store = IResourcesDispatcher { contract_address: worlds.peers.resources };
     let key = ResourceKey { game_id: 1, entity_id: home };
     structures.provision_producer(key, 300 * RESOURCE_PRECISION);
     stop_cheat_caller_address(worlds.peers.structures);
     compare_home(worlds, 0, home);
     start_cheat_block_timestamp_global(1860);
-    let before = resource_snapshot(structures, key);
-    assert_eq!(before, resource_snapshot(structures, key));
-    assert_eq!(structures.resource_balance(ResourceSlot { game_id: 1, entity_id: home, resource_type: 24 }), 0);
+    let before = resource_snapshot(resource_store, key);
+    assert_eq!(before, resource_snapshot(resource_store, key));
+    assert_eq!(
+        resource_store
+            .resource_balance(ResourceSlot { game_id: 1, entity_id: home, resource_type: 24 }),
+        0,
+    );
     for (step, timestamp) in array![(1_u32, claim_at), (2, claim_at)] {
         start_cheat_block_timestamp_global(timestamp);
         start_cheat_caller_address(bootstrap, worlds.actor);
@@ -654,12 +779,18 @@ fn production_settlement_case(case: felt252, claim_at: u64, expected_balance: u1
         compare_home(worlds, step, home);
     }
     let slot = ResourceSlot { game_id: 1, entity_id: home, resource_type: 24 };
-    assert_eq!(structures.resource_balance(slot), (if limited {
-        50
-    } else {
-        expected_balance
-    }) * RESOURCE_PRECISION);
-    assert_eq!(structures.resource_production(slot).output_amount_left, (300 - expected_balance) * RESOURCE_PRECISION);
+    assert_eq!(
+        resource_store.resource_balance(slot),
+        (if limited {
+            50
+        } else {
+            expected_balance
+        }) * RESOURCE_PRECISION,
+    );
+    assert_eq!(
+        resource_store.resource_production(slot).output_amount_left,
+        (300 - expected_balance) * RESOURCE_PRECISION,
+    );
 }
 
 
@@ -701,7 +832,13 @@ fn battle_case(case: felt252, alt: bool) {
     execute(
         opponent,
         Command::CreateExplorer(
-            CreateExplorer { structure_id: enemy_home, category: 0, tier: 0, amount: RESOURCE_PRECISION, direction: 3 },
+            CreateExplorer {
+                structure_id: enemy_home,
+                category: 0,
+                tier: 0,
+                amount: RESOURCE_PRECISION,
+                direction: 3,
+            },
         ),
         1800,
         201,
@@ -734,7 +871,9 @@ fn battle_case(case: felt252, alt: bool) {
     } else {
         assert_eq!(IParityRootsDispatcher { contract_address: worlds.roots }.consumed(), 0);
     }
-    execute(worlds, Command::Battle(Battle { attacker_id: attacker, defender_id: defender }), 1920, 501);
+    execute(
+        worlds, Command::Battle(Battle { attacker_id: attacker, defender_id: defender }), 1920, 501,
+    );
     compare_home(worlds, step, home);
     compare_home(worlds, step, enemy_home);
     compare_explorer(worlds, step, attacker);
@@ -744,7 +883,7 @@ fn battle_case(case: felt252, alt: bool) {
             .is_none(),
     );
     assert!(
-        !IStructuresDispatcher { contract_address: worlds.peers.structures }
+        !IResourcesDispatcher { contract_address: worlds.peers.resources }
             .has_resource(ResourceKey { game_id: 1, entity_id: defender }),
     );
     let deleted: ExplorerTroops = ModelStorage::<
@@ -760,17 +899,22 @@ fn battle_case(case: felt252, alt: bool) {
 
 
 fn rejected_explore_pair(worlds: PairedWorld, id: u32, direction: u8, timestamp: u64, step: u32) {
-    let attempts = IParityAttemptsDispatcher { contract_address: deploy("ParityAttempts", @array![]) };
+    let attempts = IParityAttemptsDispatcher {
+        contract_address: deploy("ParityAttempts", @array![]),
+    };
     let season = ISeasonDispatcher { contract_address: worlds.peers.season };
     let troops = ITroopsDispatcher { contract_address: worlds.peers.troops };
     let structures = IStructuresDispatcher { contract_address: worlds.peers.structures };
+    let resource_store = IResourcesDispatcher { contract_address: worlds.peers.resources };
     let map = IMapDispatcher { contract_address: worlds.peers.map };
     let key = ExplorerKey { game_id: 1, explorer_id: id };
     let before = troops.explorer(key).unwrap();
     let home_key = ResourceKey { game_id: 1, entity_id: before.owner };
-    let resource_before = resource_snapshot(structures, home_key);
+    let resource_before = resource_snapshot(resource_store, home_key);
     let home_before = structures.structure(home_key).unwrap();
-    let target = world_native::geometry::tile_key(1, world_native::geometry::neighbor(before.coord, direction));
+    let target = world_native::geometry::tile_key(
+        1, world_native::geometry::neighbor(before.coord, direction),
+    );
     let target_before = map.tile(target);
     let nonce = season.next_nonce(1, worlds.actor);
     start_cheat_block_timestamp_global(timestamp);
@@ -779,7 +923,10 @@ fn rejected_explore_pair(worlds: PairedWorld, id: u32, direction: u8, timestamp:
     cheat_caller_address(movement, worlds.actor, CheatSpan::TargetCalls(1));
     assert!(!attempts.explore(movement, id, convert(direction)));
     let intent = native_protocol::action(
-        worlds.peers.season, worlds.actor, Command::Explore(Explore { explorer_id: id, direction }), timestamp,
+        worlds.peers.season,
+        worlds.actor,
+        Command::Explore(Explore { explorer_id: id, direction }),
+        timestamp,
     );
     let public_key = world_native::season::IGameplayKeyDispatcherTrait::get_public_key(
         world_native::season::IGameplayKeyDispatcher { contract_address: worlds.actor },
@@ -795,21 +942,29 @@ fn rejected_explore_pair(worlds: PairedWorld, id: u32, direction: u8, timestamp:
     assert!(!attempts.native(worlds.peers.season, intent, context, r, s));
     assert_eq!(season.next_nonce(1, worlds.actor), nonce + 1);
     assert_eq!(IParityRootsDispatcher { contract_address: worlds.roots }.consumed(), 0);
-    assert_eq!(ModelStorage::<WorldStorage, crate::models::rng::RNG>::read_model(@worlds.oracle, tx_hash).seed, 0);
+    assert_eq!(
+        ModelStorage::<WorldStorage, crate::models::rng::RNG>::read_model(@worlds.oracle, tx_hash)
+            .seed,
+        0,
+    );
     assert_eq!(troops.explorer(key).unwrap(), before);
-    assert_eq!(resource_snapshot(structures, home_key), resource_before);
+    assert_eq!(resource_snapshot(resource_store, home_key), resource_before);
     assert_eq!(structures.structure(home_key).unwrap(), home_before);
     assert_eq!(map.tile(target), target_before);
     compare_home(worlds, step, before.owner);
     compare_explorer(worlds, step, id);
-    compare_tile(worlds, step, world_native::troops::Coord { alt: target.alt, x: target.col, y: target.row });
+    compare_tile(
+        worlds, step, world_native::troops::Coord { alt: target.alt, x: target.col, y: target.row },
+    );
     println!("PARITY_REJECTION {} {} {} {}", worlds.case, step, id, timestamp);
 }
 #[test]
 fn world_parity_rejected_actions_preserve_rows() {
     let mut worlds = setup('rejections');
     let home = provision_with_resources(
-        ref worlds, Coord { alt: false, x: 2147483626, y: 2147483626 }, array![(26, 1000 * RESOURCE_PRECISION)].span(),
+        ref worlds,
+        Coord { alt: false, x: 2147483626, y: 2147483626 },
+        array![(26, 1000 * RESOURCE_PRECISION)].span(),
     );
     let id = create_explorer_pair(worlds, home);
     rejected_explore_pair(worlds, id, 0, 1920, 2);
@@ -819,16 +974,32 @@ fn world_parity_rejected_actions_preserve_rows() {
 }
 #[starknet::interface]
 pub trait IParityAttempts<T> {
-    fn settle_season(ref self: T, target: ContractAddress, name: felt252, selected: Option<u32>) -> bool;
-    fn settle(ref self: T, target: ContractAddress, name: felt252, tokens: Span<u128>, grant: bool) -> bool;
+    fn settle_season(
+        ref self: T, target: ContractAddress, name: felt252, selected: Option<u32>,
+    ) -> bool;
+    fn settle(
+        ref self: T, target: ContractAddress, name: felt252, tokens: Span<u128>, grant: bool,
+    ) -> bool;
     fn provision(ref self: T, target: ContractAddress, id: u32) -> bool;
     fn level_up(ref self: T, target: ContractAddress, id: u32) -> bool;
     fn name(ref self: T, target: ContractAddress, name: felt252) -> bool;
-    fn ownership(ref self: T, target: ContractAddress, selector: felt252, id: u32, owner: ContractAddress) -> bool;
-    fn native(
-        ref self: T, season: ContractAddress, intent: Intent, context: ExecutionContext, r: felt252, s: felt252,
+    fn ownership(
+        ref self: T, target: ContractAddress, selector: felt252, id: u32, owner: ContractAddress,
     ) -> bool;
-    fn explore(ref self: T, movement: ContractAddress, id: u32, direction: crate::models::position::Direction) -> bool;
+    fn native(
+        ref self: T,
+        season: ContractAddress,
+        intent: Intent,
+        context: ExecutionContext,
+        r: felt252,
+        s: felt252,
+    ) -> bool;
+    fn explore(
+        ref self: T,
+        movement: ContractAddress,
+        id: u32,
+        direction: crate::models::position::Direction,
+    ) -> bool;
 }
 #[starknet::contract]
 mod ParityAttempts {
@@ -860,29 +1031,46 @@ mod ParityAttempts {
             starknet::syscalls::call_contract_syscall(target, entrypoint, args.span()).is_ok()
         }
         fn settle(
-            ref self: ContractState, target: ContractAddress, name: felt252, tokens: Span<u128>, grant: bool,
+            ref self: ContractState,
+            target: ContractAddress,
+            name: felt252,
+            tokens: Span<u128>,
+            grant: bool,
         ) -> bool {
             let mut args = array![1, name];
             tokens.serialize(ref args);
             grant.serialize(ref args);
-            starknet::syscalls::call_contract_syscall(target, selector!("settle"), args.span()).is_ok()
+            starknet::syscalls::call_contract_syscall(target, selector!("settle"), args.span())
+                .is_ok()
         }
         fn provision(ref self: ContractState, target: ContractAddress, id: u32) -> bool {
-            starknet::syscalls::call_contract_syscall(target, selector!("provision_realm"), array![1, id.into()].span())
+            starknet::syscalls::call_contract_syscall(
+                target, selector!("provision_realm"), array![1, id.into()].span(),
+            )
                 .is_ok()
         }
         fn level_up(ref self: ContractState, target: ContractAddress, id: u32) -> bool {
-            starknet::syscalls::call_contract_syscall(target, selector!("level_up"), array![1, id.into()].span())
+            starknet::syscalls::call_contract_syscall(
+                target, selector!("level_up"), array![1, id.into()].span(),
+            )
                 .is_ok()
         }
         fn name(ref self: ContractState, target: ContractAddress, name: felt252) -> bool {
-            starknet::syscalls::call_contract_syscall(target, selector!("set_address_name"), array![1, name].span())
+            starknet::syscalls::call_contract_syscall(
+                target, selector!("set_address_name"), array![1, name].span(),
+            )
                 .is_ok()
         }
         fn ownership(
-            ref self: ContractState, target: ContractAddress, selector: felt252, id: u32, owner: ContractAddress,
+            ref self: ContractState,
+            target: ContractAddress,
+            selector: felt252,
+            id: u32,
+            owner: ContractAddress,
         ) -> bool {
-            starknet::syscalls::call_contract_syscall(target, selector, array![1, id.into(), owner.into()].span())
+            starknet::syscalls::call_contract_syscall(
+                target, selector, array![1, id.into(), owner.into()].span(),
+            )
                 .is_ok()
         }
         #[feature("safe_dispatcher")]
@@ -895,11 +1083,17 @@ mod ParityAttempts {
             s: felt252,
         ) -> bool {
             let order = decode_envelope(context.envelope.span()).unwrap().order;
-            IRecordedExecutionSafeDispatcher { contract_address: season }.execute(intent, context, r, s).is_ok()
-                && IRecordedExecutionViewsDispatcher { contract_address: season }.get_result(order).status == 1
+            IRecordedExecutionSafeDispatcher { contract_address: season }
+                .execute(intent, context, r, s)
+                .is_ok()
+                && IRecordedExecutionViewsDispatcher { contract_address: season }
+                    .get_result(order)
+                    .status == 1
         }
         #[feature("safe_dispatcher")]
-        fn explore(ref self: ContractState, movement: ContractAddress, id: u32, direction: Direction) -> bool {
+        fn explore(
+            ref self: ContractState, movement: ContractAddress, id: u32, direction: Direction,
+        ) -> bool {
             ITroopMovementSystemsSafeDispatcher { contract_address: movement }
                 .explorer_move(1, id, array![direction].span(), true)
                 .is_ok()
@@ -925,7 +1119,9 @@ fn world_parity_travel_and_known_exploration() {
     ITroopMovementSystemsDispatcher { contract_address: address }
         .explorer_move(1, id, array![crate::models::position::Direction::West].span(), false);
     stop_cheat_caller_address(address);
-    execute(worlds, Command::Move(Move { explorer_id: id, directions: array![3].span() }), 2280, 301);
+    execute(
+        worlds, Command::Move(Move { explorer_id: id, directions: array![3].span() }), 2280, 301,
+    );
     compare_home(worlds, 5, home);
     compare_explorer(worlds, 5, id);
     compare_tile(worlds, 5, before.coord);
@@ -1042,7 +1238,9 @@ pub trait IParityBootstrap<T> {
     fn producer(ref self: T, id: u32, output: u128);
     fn claim(ref self: T, id: u32);
     fn spire(ref self: T, coord: Coord) -> u32;
-    fn bootstrap(ref self: T, actor: ContractAddress, coord: Coord, grants: Span<(u8, u128)>) -> u32;
+    fn bootstrap(
+        ref self: T, actor: ContractAddress, coord: Coord, grants: Span<(u8, u128)>,
+    ) -> u32;
 }
 #[dojo::contract]
 pub mod parity_bootstrap_systems {
@@ -1054,7 +1252,9 @@ pub mod parity_bootstrap_systems {
     use crate::models::map2::TileOpt;
     use crate::models::position::{Coord, CoordTrait};
     use crate::models::resource::production::building::{BuildingCategory, BuildingImpl};
-    use crate::models::resource::resource::{ResourceWeightImpl, SingleResourceStoreImpl, WeightStoreImpl};
+    use crate::models::resource::resource::{
+        ResourceWeightImpl, SingleResourceStoreImpl, WeightStoreImpl,
+    };
     use crate::models::structure::{Structure, StructureCategory, StructureOwnerStoreImpl};
     use crate::system_libraries::biome_library::{IBiomeLibraryDispatcherTrait, biome_library};
     use crate::system_libraries::structure_libraries::structure_creation_library::{
@@ -1068,7 +1268,9 @@ pub mod parity_bootstrap_systems {
             let structure: Structure = world.read_model((1_u32, id));
             let mut weight = WeightStoreImpl::retrieve(ref world, 1, id);
             let unit_weight = ResourceWeightImpl::grams(ref world, 1, 24);
-            let mut resource = SingleResourceStoreImpl::retrieve(ref world, 1, id, 24, ref weight, unit_weight, true);
+            let mut resource = SingleResourceStoreImpl::retrieve(
+                ref world, 1, id, 24, ref weight, unit_weight, true,
+            );
             resource.production.output_amount_left += output;
             resource.store(ref world);
             weight.store(ref world, 1, id);
@@ -1086,14 +1288,18 @@ pub mod parity_bootstrap_systems {
         fn claim(ref self: ContractState, id: u32) {
             let mut world = self.world(DEFAULT_NS());
             assert!(
-                starknet::get_caller_address() == StructureOwnerStoreImpl::retrieve(ref world, 1, id),
+                starknet::get_caller_address() == StructureOwnerStoreImpl::retrieve(
+                    ref world, 1, id,
+                ),
                 "actor does not own structure",
             );
             let mut weight = WeightStoreImpl::retrieve(ref world, 1, id);
             for resource_type in 1_u8..59 {
                 if resource_type < 39 || resource_type > 56 {
                     let unit_weight = ResourceWeightImpl::grams(ref world, 1, resource_type);
-                    SingleResourceStoreImpl::retrieve(ref world, 1, id, resource_type, ref weight, unit_weight, true);
+                    SingleResourceStoreImpl::retrieve(
+                        ref world, 1, id, resource_type, ref weight, unit_weight, true,
+                    );
                 }
             }
         }
@@ -1109,7 +1315,9 @@ pub mod parity_bootstrap_systems {
             }
             id
         }
-        fn bootstrap(ref self: ContractState, actor: ContractAddress, coord: Coord, grants: Span<(u8, u128)>) -> u32 {
+        fn bootstrap(
+            ref self: ContractState, actor: ContractAddress, coord: Coord, grants: Span<(u8, u128)>,
+        ) -> u32 {
             let mut world = self.world(DEFAULT_NS());
             let id = world.dispatcher.uuid();
             structure_creation_library::get_dispatcher(@world)
@@ -1144,9 +1352,13 @@ pub mod parity_bootstrap_systems {
 fn set_native_fixture<T, +starknet::storage_access::Store<T>, +Drop<T>>(
     address: ContractAddress, name: felt252, keys: Span<felt252>, value: T,
 ) {
-    let base = starknet::storage_access::storage_base_address_from_felt252(snforge_std::map_entry_address(name, keys));
+    let base = starknet::storage_access::storage_base_address_from_felt252(
+        snforge_std::map_entry_address(name, keys),
+    );
     // ABI serialization does not describe packed persistent storage.
-    snforge_std::interact_with_state(address, || starknet::storage_access::Store::<T>::write(0, base, value).unwrap());
+    snforge_std::interact_with_state(
+        address, || starknet::storage_access::Store::<T>::write(0, base, value).unwrap(),
+    );
 }
 
 fn ownership_rules(ref worlds: PairedWorld, blitz: bool, faith: bool, controller: ContractAddress) {
@@ -1160,17 +1372,25 @@ fn ownership_rules(ref worlds: PairedWorld, blitz: bool, faith: bool, controller
     let mut preset: PresetConfig = worlds.oracle.read_model(1_u32);
     preset.faith_config.enabled = faith;
     worlds.oracle.write_model_test(@preset);
-    worlds.oracle.write_member(Model::<WorldConfig>::ptr_from_keys(1_u32), selector!("blitz_mode_on"), blitz);
     worlds
         .oracle
         .write_member(
-            Model::<crate::models::config::ChainConfig>::ptr_from_keys(crate::constants::WORLD_CONFIG_ID),
+            Model::<WorldConfig>::ptr_from_keys(1_u32), selector!("blitz_mode_on"), blitz,
+        );
+    worlds
+        .oracle
+        .write_member(
+            Model::<
+                crate::models::config::ChainConfig,
+            >::ptr_from_keys(crate::constants::WORLD_CONFIG_ID),
             selector!("agent_controller_config"),
             crate::models::config::AgentControllerConfig { address: controller },
         );
 }
 
-fn transfer(ref worlds: PairedWorld, id: u32, owner: ContractAddress, agent: bool, now: u64, succeeds: bool) {
+fn transfer(
+    ref worlds: PairedWorld, id: u32, owner: ContractAddress, agent: bool, now: u64, succeeds: bool,
+) {
     start_cheat_block_timestamp_global(now);
     let (address, _) = worlds.oracle.dns(@"ownership_systems").unwrap();
     start_cheat_caller_address(address, worlds.actor);
@@ -1179,8 +1399,12 @@ fn transfer(ref worlds: PairedWorld, id: u32, owner: ContractAddress, agent: boo
     } else {
         selector!("transfer_structure_ownership")
     };
-    let attempts = IParityAttemptsDispatcher { contract_address: deploy("ParityAttempts", @array![]) };
-    assert_eq!(attempts.ownership(address, selector, id, owner), succeeds, "oracle ownership outcome");
+    let attempts = IParityAttemptsDispatcher {
+        contract_address: deploy("ParityAttempts", @array![]),
+    };
+    assert_eq!(
+        attempts.ownership(address, selector, id, owner), succeeds, "oracle ownership outcome",
+    );
     stop_cheat_caller_address(address);
     let value = world_native::ownership::TransferOwnership { entity_id: id, new_owner: owner };
     let command = if agent {
@@ -1200,7 +1424,9 @@ fn transfer(ref worlds: PairedWorld, id: u32, owner: ContractAddress, agent: boo
 
 fn compare_ownership(worlds: PairedWorld, step: u32, id: u32) {
     compare_home(worlds, step, id);
-    let faith = world_native::ownership::IFaithOwnershipViewsDispatcher { contract_address: worlds.peers.structures };
+    let faith = world_native::ownership::IFaithOwnershipViewsDispatcher {
+        contract_address: worlds.peers.structures,
+    };
     let key = ResourceKey { game_id: 1, entity_id: id };
     compare_facts(
         worlds.case,
@@ -1208,7 +1434,9 @@ fn compare_ownership(worlds: PairedWorld, step: u32, id: u32) {
         'WonderFaith',
         array![1, id.into()].span(),
         faith.wonder_faith(key),
-        ModelStorage::<WorldStorage, crate::models::faith::WonderFaith>::read_model(@worlds.oracle, (1, id)),
+        ModelStorage::<
+            WorldStorage, crate::models::faith::WonderFaith,
+        >::read_model(@worlds.oracle, (1, id)),
     );
     compare_facts(
         worlds.case,
@@ -1216,7 +1444,9 @@ fn compare_ownership(worlds: PairedWorld, step: u32, id: u32) {
         'FaithfulStructure',
         array![1, id.into()].span(),
         faith.faithful_structure(key),
-        ModelStorage::<WorldStorage, crate::models::faith::FaithfulStructure>::read_model(@worlds.oracle, (1, id)),
+        ModelStorage::<
+            WorldStorage, crate::models::faith::FaithfulStructure,
+        >::read_model(@worlds.oracle, (1, id)),
     );
     compare_facts(
         worlds.case,
@@ -1224,7 +1454,9 @@ fn compare_ownership(worlds: PairedWorld, step: u32, id: u32) {
         'WonderFaithWinners',
         array![1].span(),
         faith.wonder_faith_winners(1),
-        ModelStorage::<WorldStorage, crate::models::faith::WonderFaithWinners>::read_model(@worlds.oracle, 1_u32),
+        ModelStorage::<
+            WorldStorage, crate::models::faith::WonderFaithWinners,
+        >::read_model(@worlds.oracle, 1_u32),
     );
     for owner in array![worlds.actor, worlds.opponent] {
         for wonder in array![id, 999] {
@@ -1235,7 +1467,9 @@ fn compare_ownership(worlds: PairedWorld, step: u32, id: u32) {
                 array![1, owner.into(), wonder.into()].span(),
                 faith
                     .player_faith_points(
-                        world_native::ownership::PlayerFaithKey { game_id: 1, player: owner, wonder_id: wonder },
+                        world_native::ownership::PlayerFaithKey {
+                            game_id: 1, player: owner, wonder_id: wonder,
+                        },
                     ),
                 ModelStorage::<
                     WorldStorage, crate::models::faith::PlayerFaithPoints,
@@ -1261,8 +1495,12 @@ fn prepare_faith(ref worlds: PairedWorld, id: u32) {
         fp_to_struct_owner_per_sec: 30,
         last_recorded_owner: worlds.actor,
     };
-    set_native_fixture(worlds.peers.structures, selector!("faith_wonders"), array![1, id.into()].span(), wonder);
-    set_native_fixture(worlds.peers.structures, selector!("faith_pledges"), array![1, id.into()].span(), pledge);
+    set_native_fixture(
+        worlds.peers.structures, selector!("faith_wonders"), array![1, id.into()].span(), wonder,
+    );
+    set_native_fixture(
+        worlds.peers.structures, selector!("faith_pledges"), array![1, id.into()].span(), pledge,
+    );
     worlds
         .oracle
         .write_model_test(
@@ -1349,14 +1587,18 @@ fn world_parity_ownership() {
         ownership_rules(ref worlds, false, true, worlds.actor);
         transfer(ref worlds, 54321, recipient, true, 1920, true);
         compare_ownership(worlds, step, home);
-        let agents = world_native::ownership::IAgentOwnershipDispatcher { contract_address: worlds.peers.troops };
+        let agents = world_native::ownership::IAgentOwnershipDispatcher {
+            contract_address: worlds.peers.troops,
+        };
         compare_facts(
             worlds.case,
             step,
             'AgentOwner',
             array![1, 54321].span(),
             agents.agent_owner(1, 54321),
-            ModelStorage::<WorldStorage, crate::models::agent::AgentOwner>::read_model(@worlds.oracle, (1, 54321)),
+            ModelStorage::<
+                WorldStorage, crate::models::agent::AgentOwner,
+            >::read_model(@worlds.oracle, (1, 54321)),
         );
         assert_eq!(agents.agent_owner(2, 54321), 0.try_into().unwrap());
     }
@@ -1455,11 +1697,19 @@ fn world_parity_ownership_faith() {
     worlds
         .oracle
         .write_model_test(
-            @crate::models::faith::WonderFaithWinners { game_id: 1, high_score: 30000, wonder_ids: array![999] },
+            @crate::models::faith::WonderFaithWinners {
+                game_id: 1, high_score: 30000, wonder_ids: array![999],
+            },
         );
-    set_native_fixture(worlds.peers.structures, selector!("faith_high_scores"), array![1].span(), 30000_u128);
-    set_native_fixture(worlds.peers.structures, selector!("faith_winner_counts"), array![1].span(), 1_u32);
-    set_native_fixture(worlds.peers.structures, selector!("faith_winner_ids"), array![1, 0].span(), 999_u32);
+    set_native_fixture(
+        worlds.peers.structures, selector!("faith_high_scores"), array![1].span(), 30000_u128,
+    );
+    set_native_fixture(
+        worlds.peers.structures, selector!("faith_winner_counts"), array![1].span(), 1_u32,
+    );
+    set_native_fixture(
+        worlds.peers.structures, selector!("faith_winner_ids"), array![1, 0].span(), 999_u32,
+    );
     transfer(ref worlds, home, worlds.opponent, false, 1860, true);
     compare_ownership(worlds, 1, home);
     let mut wonder: crate::models::faith::WonderFaith = worlds.oracle.read_model((1, home));
@@ -1494,7 +1744,9 @@ fn world_parity_ownership_faith() {
     worlds.opponent = owner;
     ownership_rules(ref worlds, false, true, worlds.actor);
     prepare_faith(ref worlds, home);
-    let mut points: crate::models::faith::PlayerFaithPoints = worlds.oracle.read_model((1, worlds.actor, 999));
+    let mut points: crate::models::faith::PlayerFaithPoints = worlds
+        .oracle
+        .read_model((1, worlds.actor, 999));
     points.points_per_sec_as_pledger = 0;
     worlds.oracle.write_model_test(@points);
     set_native_fixture(
@@ -1534,7 +1786,10 @@ fn world_parity_projection_ignores_storage_bookkeeping() {
     };
     assert_eq!(native.observe(), oracle.observe());
     let changed = WonderFaith { claimed_points: 101, ..native };
-    assert!(changed.observe() != oracle.observe(), "changed player points must change the fact projection");
+    assert!(
+        changed.observe() != oracle.observe(),
+        "changed player points must change the fact projection",
+    );
 }
 
 
@@ -1556,10 +1811,14 @@ fn rename(ref worlds: PairedWorld, step: u32, home: u32, name: felt252, now: u64
     start_cheat_block_timestamp_global(now);
     let (address, _) = worlds.oracle.dns(@"name_systems").unwrap();
     start_cheat_caller_address(address, worlds.actor);
-    let attempts = IParityAttemptsDispatcher { contract_address: deploy("ParityAttempts", @array![]) };
+    let attempts = IParityAttemptsDispatcher {
+        contract_address: deploy("ParityAttempts", @array![]),
+    };
     assert_eq!(attempts.name(address, name), succeeds, "oracle name outcome");
     stop_cheat_caller_address(address);
-    let command = Command::SetAddressName(world_native::names::SetAddressName { owned_structure_id: home, name });
+    let command = Command::SetAddressName(
+        world_native::names::SetAddressName { owned_structure_id: home, name },
+    );
     let (order, outcome) = execute_outcome(worlds, command, now, 1234);
     assert_eq!(outcome, succeeds, "native name outcome");
     println!("FACT_ACTION {} {} {} {} {}", worlds.case, order, 'set_address_name', now, outcome);
@@ -1577,9 +1836,15 @@ fn world_parity_name() {
     let name = world_native::names::SetAddressName { owned_structure_id: home, name: 'forged' };
     let context = world_native::commands::ExecutionContext { raw_root: 1234, timestamp: 1800 };
     start_cheat_caller_address(worlds.peers.structures, worlds.actor);
-    assert!(commands.set_address_name(1, worlds.actor, name, context).is_err(), "direct player call accepted");
+    assert!(
+        commands.set_address_name(1, worlds.actor, name, context).is_err(),
+        "direct player call accepted",
+    );
     start_cheat_caller_address(worlds.peers.structures, worlds.peers.season);
-    assert!(commands.set_address_name(2, worlds.actor, name, context).is_err(), "foreign-game ownership accepted");
+    assert!(
+        commands.set_address_name(2, worlds.actor, name, context).is_err(),
+        "foreign-game ownership accepted",
+    );
     stop_cheat_caller_address(worlds.peers.structures);
     compare_name(worlds, 0, worlds.actor);
     rename(ref worlds, 1, home, 'Explorer', 1800, true);
@@ -1598,7 +1863,9 @@ fn upgrade_pair(ref worlds: PairedWorld, step: u32, home: u32, now: u64, succeed
     start_cheat_block_timestamp_global(now);
     let (target, _) = worlds.oracle.dns(@"structure_systems").unwrap();
     start_cheat_caller_address(target, worlds.actor);
-    let attempts = IParityAttemptsDispatcher { contract_address: deploy("ParityAttempts", @array![]) };
+    let attempts = IParityAttemptsDispatcher {
+        contract_address: deploy("ParityAttempts", @array![]),
+    };
     assert_eq!(attempts.level_up(target, home), succeeds, "oracle upgrade outcome");
     stop_cheat_caller_address(target);
     let (order, outcome) = execute_outcome(worlds, Command::LevelUp(home), now, 1234);
@@ -1629,7 +1896,11 @@ fn upgrade_pair(ref worlds: PairedWorld, step: u32, home: u32, now: u64, succeed
         .structure(ResourceKey { game_id: 1, entity_id: home })
         .unwrap();
     compare_tile(
-        worlds, step, world_native::troops::Coord { alt: false, x: structure.base.coord_x, y: structure.base.coord_y },
+        worlds,
+        step,
+        world_native::troops::Coord {
+            alt: false, x: structure.base.coord_x, y: structure.base.coord_y,
+        },
     );
 }
 
@@ -1640,15 +1911,19 @@ fn world_parity_structure() {
     let poor = provision_with_resources(
         ref worlds,
         Coord { alt: false, x: 2147483626, y: 2147483626 },
-        array![(23, 100000 * RESOURCE_PRECISION), (35, 100000 * RESOURCE_PRECISION), (36, 100000 * RESOURCE_PRECISION)]
+        array![
+            (23, 100000 * RESOURCE_PRECISION), (35, 100000 * RESOURCE_PRECISION),
+            (36, 100000 * RESOURCE_PRECISION),
+        ]
             .span(),
     );
     let home = provision_with_resources(
         ref worlds,
         Coord { alt: false, x: 2147483628, y: 2147483626 },
         array![
-            (23, 100000 * RESOURCE_PRECISION), (35, 100000 * RESOURCE_PRECISION), (36, 100000 * RESOURCE_PRECISION),
-            (38, 100000 * RESOURCE_PRECISION), (2, 100000 * RESOURCE_PRECISION), (3, 100000 * RESOURCE_PRECISION),
+            (23, 100000 * RESOURCE_PRECISION), (35, 100000 * RESOURCE_PRECISION),
+            (36, 100000 * RESOURCE_PRECISION), (38, 100000 * RESOURCE_PRECISION),
+            (2, 100000 * RESOURCE_PRECISION), (3, 100000 * RESOURCE_PRECISION),
             (4, 100000 * RESOURCE_PRECISION),
         ]
             .span(),
@@ -1688,17 +1963,22 @@ fn world_parity_structure_rejections() {
         ref worlds,
         Coord { alt: false, x: 2147483626, y: 2147483626 },
         array![
-            (23, 100000 * RESOURCE_PRECISION), (35, 100000 * RESOURCE_PRECISION), (36, 100000 * RESOURCE_PRECISION),
-            (38, 100000 * RESOURCE_PRECISION),
+            (23, 100000 * RESOURCE_PRECISION), (35, 100000 * RESOURCE_PRECISION),
+            (36, 100000 * RESOURCE_PRECISION), (38, 100000 * RESOURCE_PRECISION),
         ]
             .span(),
     );
     let commands = IStructureUpgradesSafeDispatcher { contract_address: worlds.peers.structures };
     let context = world_native::commands::ExecutionContext { raw_root: 1, timestamp: 1800 };
     start_cheat_caller_address(worlds.peers.structures, worlds.actor);
-    assert!(commands.level_up(1, worlds.actor, home, context).is_err(), "direct player upgrade accepted");
+    assert!(
+        commands.level_up(1, worlds.actor, home, context).is_err(),
+        "direct player upgrade accepted",
+    );
     start_cheat_caller_address(worlds.peers.structures, worlds.peers.season);
-    assert!(commands.level_up(2, worlds.actor, home, context).is_err(), "foreign-game upgrade accepted");
+    assert!(
+        commands.level_up(2, worlds.actor, home, context).is_err(), "foreign-game upgrade accepted",
+    );
     stop_cheat_caller_address(worlds.peers.structures);
     ownership_category(ref worlds, home, 2);
     upgrade_pair(ref worlds, 1, home, 1800, false);
@@ -1753,26 +2033,26 @@ fn world_parity_structure_rejections() {
     upgrade_pair(ref worlds, 4, home, 2000, true);
 }
 
-fn resource_snapshot(structures: IStructuresDispatcher, key: ResourceKey) -> Array<felt252> {
+fn resource_snapshot(resource_store: IResourcesDispatcher, key: ResourceKey) -> Array<felt252> {
     let mut values = array![];
-    structures.resource_weight(key).serialize(ref values);
+    resource_store.resource_weight(key).serialize(ref values);
     for resource_type in 1_u8..59 {
         let slot = ResourceSlot { game_id: key.game_id, entity_id: key.entity_id, resource_type };
-        structures.resource_balance(slot).serialize(ref values);
+        resource_store.resource_balance(slot).serialize(ref values);
         if resource_type < 39 || resource_type > 56 {
-            structures.resource_production(slot).serialize(ref values);
+            resource_store.resource_production(slot).serialize(ref values);
         }
     }
     values
 }
 
 fn compare_resources(worlds: PairedWorld, step: u32, id: u32) {
-    let structures = IStructuresDispatcher { contract_address: worlds.peers.structures };
+    let resource_store = IResourcesDispatcher { contract_address: worlds.peers.resources };
     let key = ResourceKey { game_id: 1, entity_id: id };
-    let present = structures.has_resource(key);
+    let present = resource_store.has_resource(key);
     let mut oracle = worlds.oracle;
     let weight = if present {
-        structures.resource_weight(key)
+        resource_store.resource_weight(key)
     } else {
         Default::default()
     };
@@ -1788,7 +2068,7 @@ fn compare_resources(worlds: PairedWorld, step: u32, id: u32) {
         let slot = ResourceSlot { game_id: 1, entity_id: id, resource_type };
         let keys = array![1, id.into(), resource_type.into()].span();
         let balance = if present {
-            structures.resource_balance(slot)
+            resource_store.resource_balance(slot)
         } else {
             0
         };
@@ -1798,11 +2078,13 @@ fn compare_resources(worlds: PairedWorld, step: u32, id: u32) {
             'ResourceBalance',
             keys,
             balance,
-            crate::models::resource::resource::ResourceImpl::read_balance(ref oracle, 1, id, resource_type),
+            crate::models::resource::resource::ResourceImpl::read_balance(
+                ref oracle, 1, id, resource_type,
+            ),
         );
         if (resource_type < 39 || resource_type > 56) && resource_type != 37 {
             let production = if present {
-                structures.resource_production(slot)
+                resource_store.resource_production(slot)
             } else {
                 Default::default()
             };
@@ -1812,7 +2094,9 @@ fn compare_resources(worlds: PairedWorld, step: u32, id: u32) {
                 'ResourceProduction',
                 keys,
                 production,
-                crate::models::resource::resource::ResourceImpl::read_production(ref oracle, 1, id, resource_type),
+                crate::models::resource::resource::ResourceImpl::read_production(
+                    ref oracle, 1, id, resource_type,
+                ),
             );
         }
     }
@@ -1848,7 +2132,9 @@ fn world_parity_blitz_cosmetics() {
 #[test]
 #[feature("safe_dispatcher")]
 fn world_parity_blitz_settlement_modes() {
-    settlement::settlement_modes(world_native::settlement::SettlementMode::Triple, 'blitz_settlement_modes');
+    settlement::settlement_modes(
+        world_native::settlement::SettlementMode::Triple, 'blitz_settlement_modes',
+    );
 }
 
 #[test]
@@ -1866,7 +2152,9 @@ fn world_parity_blitz_cosmetics_disabled() {
 #[test]
 #[feature("safe_dispatcher")]
 fn world_parity_blitz_settlement_duel() {
-    settlement::settlement_modes(world_native::settlement::SettlementMode::Duel, 'blitz_settlement_duel');
+    settlement::settlement_modes(
+        world_native::settlement::SettlementMode::Duel, 'blitz_settlement_duel',
+    );
 }
 
 #[test]
@@ -1963,7 +2251,9 @@ fn world_parity_season_wrong_mode() {
 #[test]
 #[feature("safe_dispatcher")]
 fn world_parity_season_triple() {
-    season_settlement::wrong_planner('season_triple', world_native::settlement::SettlementMode::Triple);
+    season_settlement::wrong_planner(
+        'season_triple', world_native::settlement::SettlementMode::Triple,
+    );
 }
 
 #[test]
@@ -1999,4 +2289,95 @@ fn world_parity_village() {
 #[test]
 fn world_parity_village_resource_draws() {
     village::resource_draws();
+}
+
+mod resources;
+#[test]
+#[feature("safe_dispatcher")]
+fn world_parity_resources_approvals() {
+    resources::approvals();
+}
+#[test]
+#[feature("safe_dispatcher")]
+fn world_parity_resources_burns() {
+    resources::burns();
+}
+#[test]
+#[feature("safe_dispatcher")]
+fn world_parity_resources_regularize() {
+    resources::regularize();
+}
+#[test]
+#[feature("safe_dispatcher")]
+fn world_parity_resources_transfers() {
+    resources::transfers();
+}
+#[test]
+#[feature("safe_dispatcher")]
+fn world_parity_resources_knight() {
+    resources::troop_exclusion('resources_knight', 26);
+}
+#[test]
+#[feature("safe_dispatcher")]
+fn world_parity_resources_crossbow() {
+    resources::troop_exclusion('resources_crossbow', 29);
+}
+#[test]
+#[feature("safe_dispatcher")]
+fn world_parity_resources_paladin() {
+    resources::troop_exclusion('resources_paladin', 32);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn world_parity_resources_offload() {
+    resources::offload();
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn world_parity_resources_offload_rejections() {
+    resources::offload_rejections();
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn world_parity_resources_offload_capacity() {
+    resources::offload_capacity();
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn world_parity_resources_send() {
+    resources::sending();
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn world_parity_resources_pickup() {
+    resources::pickup(false);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn world_parity_resources_pickup_unlimited() {
+    resources::pickup(true);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn world_parity_resources_duplicates() {
+    resources::duplicate_rejection();
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn world_parity_resources_village_blitz() {
+    resources::village_reinforcement(true);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn world_parity_resources_village_eternum() {
+    resources::village_reinforcement(false);
 }

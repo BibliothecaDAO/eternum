@@ -4,7 +4,7 @@ Cairo 2.13.1 owns persistent storage. The row protocol is a projection for Heral
 game-scoped storage key starts with `game_id`. Presets remain immutable per game.
 
 The settlement split and packed storage below require a fresh rehearsal deployment. No upgrade compatibility from the
-earlier four-domain slice is claimed. The populated replacement test covers append-only upgrades within this layout.
+earlier slice is claimed. The populated replacement test covers append-only upgrades within this layout.
 
 ## Component layouts
 
@@ -32,7 +32,7 @@ The behavioral slice adds these independent component stores:
 | `StructureState`   | Structure records keyed by game and entity; existence derives from nonzero category; explorer ids keyed by game, structure and index; ownership stored once in each structure | The variable explorer list has a fixed record count and indexed storage. Removal compacts that list and clears its tail.                       |
 | `ResourceState`    | Balances and production keyed by game, entity and resource; weight and `resource_exists` keyed by game and entity                                                             | Sparse `ResourceBalance`, `ResourceProduction` and `ResourceWeight` rows expose these stores. Destruction clears each existing row explicitly. |
 | `BuildingState`    | Buildings and existence keyed by game, layer, outer coordinates and inner coordinates; building counts keyed by game and structure                                            | Preserve the six-part building key and the three packed category counters.                                                                     |
-| `StructuresDomain` | Hyperstructure counts, seeds and completion flags; immutable resource rules and their initialization flag                                                                     | Configuration is set once for each game. Hyperstructure rows derive from the stored seed, completion flag and structure category.              |
+| `StructuresDomain` | Hyperstructure counts, seeds and completion flags                                                                                                                             | Configuration is set once for each game. Hyperstructure rows derive from the stored seed, completion flag and structure category.              |
 
 Component storage uses `v0` embedding. Field names must be unique across components embedded in the same domain;
 component names do not isolate colliding field names. Resource existence therefore uses `resource_exists`, distinct from
@@ -276,3 +276,36 @@ Village rules, indexed grants and all 22 ordered resource/weight pairs are immut
 `(game_id, pass_id)` and store owner plus the consuming village id; zero means unused. A pass is consumed only after
 successful creation in the same call, so rejected placement rolls back both reservation and consumption. The existing
 structure troop-grant flag records village army claims; there is no separate claimed row or per-realm village counter.
+
+## Resource rehearsal layout
+
+Resource state and its immutable rules now belong to ResourcesDomain. Structures owns buildings and settlement
+provisioning; Troops owns armies and combat. Both call Resources through authenticated internal commands. Direct
+resource actions require Season, and the internal grant/spend and explorer-capacity commands accept only their owning
+domain. Peers appends the Resources address; this six-domain topology requires a fresh rehearsal deployment.
+
+Production packs its existing 232 bits into one felt: output cap at bits 0–127, rate at 128–191, settlement timestamp at
+192–223 and building count at 224–231. Serialization and observable values retain their full ranges. Balances and
+production are settled in memory before a mutation writes their final values; failed actions retain neither intermediate
+state nor events. Explicit burns and weight regularization read stored balances without harvesting production. LORDS and
+relics have no production state.
+
+ResourceAllowance uses `(game_id, owner_entity_id, approved_entity_id, resource_type)` and stores one u128. Absence
+means zero approval; unchanged approvals write nothing, and revocation emits RowDeleted. Resource rules are written once
+per game, in resource-id order. No gameplay mutation can change those rules.
+
+An inactive production slot has no accrual timestamp. The fact declaration projects that timestamp to zero in both
+worlds. Activation first settles at the recorded command time, then enables the new production rate; it cannot accrue
+for the inactive interval. Native storage omits that inactive clock, so untouched zero production no longer gains a row
+when balances are granted, spent or claimed.
+
+ArrivalState stores one ordered list per `(game_id, entity_id, day, slot)`, with a packed u64 head/count and indexed
+ResourceAmount entries. Slots retain the original range 1–48 and delivery-tick timing. Offloading advances the head;
+consumed backing entries are outside the live range and have no row. Empty slots have no ResourceArrival row and emit
+RowDeleted when consumed. There is no initialized-day flag, repeated 48-member record or stored day total. Positive
+queued amounts make the total a read-time sum of the live slots. Partial offloads preserve order; capacity truncation
+consumes the requested prefix, as in the original game.
+
+SliceRules appends the immutable two-field SpeedConfig (normal and troop seconds per hex). Its values come from the
+pinned preset. Transport reads those values, the existing donkey capacity and delivery interval; village connections are
+never consulted for transfer eligibility. Duplicate resource ids are rejected before transfer mutations.

@@ -13,6 +13,7 @@ const recordTypes: Record<string, [string, string]> = {
   AddressName: ["names::AddressName", "name::AddressName"],
   Structure: ["structures::Structure", "structure::Structure"],
   ResourceProduction: ["resources::Production", "resource::production::production::Production"],
+  ResourceArrival: ["arrivals::Arrival", "OracleResourceArrival"],
   ResourceWeight: ["resources::Weight", "weight::Weight"],
   ExplorerTroops: ["troops::ExplorerTroops", "troop::ExplorerTroops"],
   TileOpt: ["map::TileOpt", "map2::TileOpt"],
@@ -39,6 +40,8 @@ export function factProjectors(schema: NativeSchema): string {
             ? `Oracle${model.name}`
             : `crate::models::${pair[1]}`;
       const fields = Object.values(model.observation.fields).flatMap((path) => {
+        if (model.observation.transform === "production" && path === "last_updated_at")
+          return ["facts.append(if self.building_count == 0 { 0 } else { self.last_updated_at.into() });"];
         const type = memberType(model.members, path.split("."));
         return emitValue(
           `self.${world === "oracle" && model.name === "PlayerCosmetics" ? "attrs" : path}`,
@@ -75,6 +78,8 @@ export function factProjectors(schema: NativeSchema): string {
   return `// Generated from native schema fact declarations; regenerate with the behavioural parity command.
     use dojo::model::ModelStorage;
     use crate::models::resource::resource::ResourceImpl;
+    #[derive(Copy, Drop)]
+    pub struct OracleResourceArrival { pub resources: Span<(u8, u128)> }
     #[derive(Copy, Drop)]
     pub struct OracleRealmTraits { pub wonder: u8, pub order: u8, pub resources: Span<u8> }
     #[derive(Copy, Drop)]

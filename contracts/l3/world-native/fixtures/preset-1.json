@@ -122,7 +122,11 @@
     "map_center_offset": 20,
     "spire_travel_essence_cost": "10000000000",
     "blitz_mode_on": false,
-    "faith_enabled": true
+    "faith_enabled": true,
+    "speed_config": {
+      "donkey_sec_per_km": 9,
+      "donkey_sec_per_km_troops": 27
+    }
   },
   "resources": [
     {

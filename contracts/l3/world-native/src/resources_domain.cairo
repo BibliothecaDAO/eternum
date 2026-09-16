@@ -1,0 +1,621 @@
+#[starknet::contract]
+pub mod ResourcesDomain {
+    use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
+    use starknet::{ContractAddress, get_caller_address};
+    use crate::arrivals::{Arrival, ArrivalKey, ArrivalState, OffloadArrival, has_arrived};
+    use crate::commands::ExecutionContext;
+    use crate::events::RowSet;
+    use crate::game::{IGameDispatcher, IGameDispatcherTrait, assert_playing};
+    use crate::lifecycle::Lifecycle;
+    use crate::ownership::{Story, StoryEvent};
+    use crate::resources::{Production, ResourceKey, ResourceRule, ResourceSlot, ResourceState, Weight};
+    use crate::structures::{IStructuresDispatcher, IStructuresDispatcherTrait};
+    use crate::troops::{ExplorerKey, ITroopsDispatcher, ITroopsDispatcherTrait};
+    component!(path: Lifecycle, storage: lifecycle, event: LifecycleEvent);
+    component!(path: ResourceState, storage: resources, event: ResourceEvent);
+    component!(path: ArrivalState, storage: arrivals, event: ArrivalEvent);
+    #[abi(embed_v0)]
+    impl Domain = Lifecycle::DomainImpl<ContractState>;
+    impl LifeInternal = Lifecycle::InternalImpl<ContractState>;
+    impl ResourceInternal = ResourceState::InternalImpl<ContractState>;
+    impl ArrivalInternal = ArrivalState::InternalImpl<ContractState>;
+    #[storage]
+    struct Storage {
+        #[substorage(v0)]
+        lifecycle: Lifecycle::Storage,
+        #[substorage(v0)]
+        resources: ResourceState::Storage,
+        #[substorage(v0)]
+        arrivals: ArrivalState::Storage,
+        resource_rules: Map<(u32, u8), ResourceRule>,
+        resources_configured: Map<u32, bool>,
+    }
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    enum Event {
+        LifecycleEvent: Lifecycle::Event,
+        ResourceEvent: ResourceState::Event,
+        ArrivalEvent: ArrivalState::Event,
+        RowSet: RowSet,
+        StoryEvent: StoryEvent,
+    }
+    #[constructor]
+    fn constructor(ref self: ContractState, authority: ContractAddress) {
+        self.lifecycle.initialize(authority);
+    }
+    #[abi(embed_v0)]
+    impl Resources of crate::resources::IResources<ContractState> {
+        fn resource_arrival(self: @ContractState, key: ArrivalKey) -> Arrival {
+            self.arrivals.read(key)
+        }
+        fn has_resource(self: @ContractState, key: ResourceKey) -> bool {
+            self.resources.resource_exists.read((key.game_id, key.entity_id))
+        }
+        fn resource_balance(self: @ContractState, key: ResourceSlot) -> u128 {
+            self.resources.balance(ResourceKey { game_id: key.game_id, entity_id: key.entity_id }, key.resource_type)
+        }
+        fn resource_production(self: @ContractState, key: ResourceSlot) -> Production {
+            self.resources.production(ResourceKey { game_id: key.game_id, entity_id: key.entity_id }, key.resource_type)
+        }
+        fn resource_weight(self: @ContractState, key: ResourceKey) -> Weight {
+            self.resources.weight(key)
+        }
+        fn configure_resources(ref self: ContractState, game_id: u32, rules: Span<ResourceRule>) {
+            self.lifecycle.assert_authority();
+            self.lifecycle.require_active();
+            let _ = self.game_dispatcher().game(game_id);
+            assert!(!self.resources_configured.read(game_id), "resource rules already configured");
+            assert!(rules.len() == 58, "incomplete resource rules");
+            for index in 0_u32..58 {
+                let rule = *rules.at(index);
+                assert!(rule.resource_type.into() == index + 1, "resource rules must be ordered");
+                self.resource_rules.write((game_id, rule.resource_type), rule);
+                let mut values = array![];
+                rule.serialize(ref values);
+                self
+                    .emit(
+                        RowSet {
+                            version: 1,
+                            model: 'ResourceRule',
+                            keys: array![game_id.into(), rule.resource_type.into()].span(),
+                            values: values.span().slice(1, values.len() - 1),
+                        },
+                    );
+            }
+            self.resources_configured.write(game_id, true);
+            self
+                .emit(
+                    RowSet {
+                        version: 1,
+                        model: 'ResourceRulesReady',
+                        keys: array![game_id.into()].span(),
+                        values: array![1].span(),
+                    },
+                );
+        }
+        fn initialize_explorer_resources(ref self: ContractState, key: ResourceKey, amount: u128) {
+            self.assert_troops();
+            let rules = self.game_dispatcher().rules(key.game_id);
+            self.resources.initialize(key, rules.capacity_config.troop_capacity.into() * amount);
+        }
+        fn reduce_explorer_capacity(ref self: ContractState, key: ResourceKey, lost: u128) {
+            self.assert_troops();
+            let rules = self.game_dispatcher().rules(key.game_id);
+            self.resources.decrease_capacity(key, rules.capacity_config.troop_capacity.into() * lost);
+        }
+        fn spend_food(ref self: ContractState, key: ResourceKey, wheat: u128, fish: u128, timestamp: u64) {
+            self.assert_troops();
+            self.spend(key, 35, wheat, timestamp);
+            self.spend(key, 36, fish, timestamp);
+        }
+        fn spend_spire_fee(ref self: ContractState, key: ResourceKey, timestamp: u64) {
+            self.assert_troops();
+            let rules = self.game_dispatcher().rules(key.game_id);
+            if rules.spire_travel_essence_cost != 0 {
+                self.spend(key, 38, rules.spire_travel_essence_cost, timestamp);
+            }
+        }
+        fn resource_rule(self: @ContractState, game_id: u32, resource_type: u8) -> ResourceRule {
+            self.rule(game_id, resource_type)
+        }
+        fn initialize_resources(ref self: ContractState, key: ResourceKey, capacity: u128) {
+            self.assert_structures();
+            self.resources.initialize(key, capacity);
+        }
+        fn destroy_resources(ref self: ContractState, key: ResourceKey) {
+            self.assert_structures();
+            self.resources.destroy(key);
+        }
+        fn grant_resource(
+            ref self: ContractState, key: ResourceKey, resource_type: u8, amount: u128, timestamp: u64,
+        ) -> u128 {
+            self.assert_structures();
+            let rule = self.rule(key.game_id, resource_type);
+            self.resources.grant_resource(key, resource_type, amount, rule.unit_weight, timestamp.try_into().unwrap())
+        }
+        fn spend_resource(ref self: ContractState, key: ResourceKey, resource_type: u8, amount: u128, timestamp: u64) {
+            self.assert_structures();
+            self.spend(key, resource_type, amount, timestamp);
+        }
+        fn start_production(
+            ref self: ContractState, key: ResourceKey, resource_type: u8, rate: u64, output: u128, timestamp: u64,
+        ) {
+            self.assert_structures();
+            let rule = self.rule(key.game_id, resource_type);
+            self
+                .resources
+                .start_production(key, resource_type, rate, output, rule.unit_weight, timestamp.try_into().unwrap());
+        }
+    }
+    #[abi(embed_v0)]
+    impl ResourceCommands of crate::commands::IResourceCommands<ContractState> {
+        fn send_resources(
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            command: crate::resources::ResourceTransfer,
+            context: ExecutionContext,
+        ) {
+            self.assert_resource_command(game_id, context.timestamp);
+            crate::resources::assert_unique_transfer_resources(command.resources);
+            let from = ResourceKey { game_id, entity_id: command.from_entity_id };
+            assert!(self.structure_owner(from) == actor, "actor does not own sender");
+            self.transfer_delayed(game_id, command, false, context.timestamp);
+        }
+        fn pickup_resources(
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            command: crate::resources::ResourceTransfer,
+            context: ExecutionContext,
+        ) {
+            self.assert_resource_command(game_id, context.timestamp);
+            crate::resources::assert_unique_transfer_resources(command.resources);
+            let to = ResourceKey { game_id, entity_id: command.to_entity_id };
+            assert!(self.structure_owner(to) == actor, "actor does not own recipient");
+            self.consume_allowances(game_id, command);
+            self.transfer_delayed(game_id, command, true, context.timestamp);
+        }
+        fn transfer_explorer_resources_to_structure(
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            command: crate::resources::ResourceTransfer,
+            context: ExecutionContext,
+        ) {
+            self.assert_resource_command(game_id, context.timestamp);
+            let explorer = self
+                .troops_dispatcher()
+                .authorized_explorer(ExplorerKey { game_id, explorer_id: command.from_entity_id }, actor);
+            let structure = IStructuresDispatcher { contract_address: self.lifecycle.require_active().structures }
+                .structure(ResourceKey { game_id, entity_id: command.to_entity_id })
+                .expect('missing recipient structure');
+            assert!(
+                crate::geometry::adjacent(explorer.coord, crate::structures::structure_coord(structure.base)),
+                "explorer and structure are not adjacent",
+            );
+            self.transfer_instant(game_id, command, context.timestamp);
+        }
+        fn offload_arrival(
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            command: OffloadArrival,
+            context: ExecutionContext,
+        ) {
+            self.assert_resource_command(game_id, context.timestamp);
+            let entity = ResourceKey { game_id, entity_id: command.entity_id };
+            assert!(command.entity_id != 0, "missing destination structure");
+            assert!(self.structure_owner(entity) == actor, "actor does not own structure");
+            self.assert_deposits_unlocked(entity, context.timestamp);
+            assert!(command.resource_count != 0, "resource count is zero");
+            let key = ArrivalKey { game_id, entity_id: command.entity_id, day: command.day, slot: command.slot };
+            let rules = self.game_dispatcher().rules(game_id);
+            assert!(
+                has_arrived(key, rules.tick_config.delivery_tick_in_seconds, context.timestamp),
+                "resources have not arrived",
+            );
+            let arrival = self.arrivals.read(key);
+            let count = core::cmp::min(command.resource_count.into(), arrival.resources.len());
+            let delivered = arrival.resources.slice(0, count);
+            for resource in delivered {
+                let rule = self.rule(game_id, *resource.resource_type);
+                self
+                    .resources
+                    .grant_resource(
+                        entity,
+                        *resource.resource_type,
+                        *resource.amount,
+                        rule.unit_weight,
+                        context.timestamp.try_into().unwrap(),
+                    );
+            }
+            self.arrivals.remove_prefix(key, count);
+            if count != 0 {
+                self
+                    .emit_resource_story(
+                        entity,
+                        actor,
+                        Story::ResourceReceiveArrivalStory(
+                            crate::ownership::ResourceAmountsStory { resources: delivered },
+                        ),
+                        context.timestamp,
+                    );
+            }
+        }
+        fn approve_resources(
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            command: crate::resources::ResourceApproval,
+            context: ExecutionContext,
+        ) {
+            self.assert_resource_command(game_id, context.timestamp);
+            assert!(command.owner_entity_id != command.approved_entity_id, "self approval");
+            assert!(!command.resources.is_empty(), "no resource to approve");
+            let owner = ResourceKey { game_id, entity_id: command.owner_entity_id };
+            let recipient = ResourceKey { game_id, entity_id: command.approved_entity_id };
+            assert!(self.structure_owner(owner) == actor, "actor does not own structure");
+            assert!(self.structure_owner(recipient) != 0.try_into().unwrap(), "recipient has no owner");
+            for resource in command.resources {
+                self
+                    .resources
+                    .approve(
+                        crate::resources::AllowanceKey {
+                            game_id,
+                            owner_entity_id: command.owner_entity_id,
+                            approved_entity_id: command.approved_entity_id,
+                            resource_type: *resource.resource_type,
+                        },
+                        *resource.amount,
+                    );
+            }
+        }
+        fn burn_structure_resources(
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            command: crate::resources::ResourceBurn,
+            context: ExecutionContext,
+        ) {
+            self.assert_resource_command(game_id, context.timestamp);
+            let key = ResourceKey { game_id, entity_id: command.entity_id };
+            assert!(self.structure_owner(key) == actor, "actor does not own structure");
+            self.burn(key, command.resources);
+            self
+                .emit_resource_story(
+                    key,
+                    actor,
+                    Story::ResourceBurnStory(crate::ownership::ResourceAmountsStory { resources: command.resources }),
+                    context.timestamp,
+                );
+        }
+        fn burn_explorer_resources(
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            command: crate::resources::ResourceBurn,
+            context: ExecutionContext,
+        ) {
+            self.assert_resource_command(game_id, context.timestamp);
+            self
+                .troops_dispatcher()
+                .authorized_explorer(ExplorerKey { game_id, explorer_id: command.entity_id }, actor);
+            let key = ResourceKey { game_id, entity_id: command.entity_id };
+            self.burn(key, command.resources);
+            self
+                .emit_resource_story(
+                    key,
+                    self.structure_owner(key),
+                    Story::ResourceBurnStory(crate::ownership::ResourceAmountsStory { resources: command.resources }),
+                    context.timestamp,
+                );
+        }
+        fn transfer_explorer_resources(
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            command: crate::resources::ResourceTransfer,
+            context: ExecutionContext,
+        ) {
+            self.assert_resource_command(game_id, context.timestamp);
+            assert!(command.from_entity_id != 0 && command.to_entity_id != 0, "missing explorer id");
+            let from = self
+                .troops_dispatcher()
+                .authorized_explorer(ExplorerKey { game_id, explorer_id: command.from_entity_id }, actor);
+            let to = self
+                .troops_dispatcher()
+                .explorer(ExplorerKey { game_id, explorer_id: command.to_entity_id })
+                .expect('missing recipient explorer');
+            assert!(to.owner != 0, "recipient explorer has no owner");
+            assert!(crate::geometry::adjacent(from.coord, to.coord), "explorers are not adjacent");
+            self.transfer_instant(game_id, command, context.timestamp);
+        }
+        fn transfer_structure_resources_to_explorer(
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            command: crate::resources::ResourceTransfer,
+            context: ExecutionContext,
+        ) {
+            self.assert_resource_command(game_id, context.timestamp);
+            assert!(command.from_entity_id != 0 && command.to_entity_id != 0, "missing transfer entity");
+            let from_key = ResourceKey { game_id, entity_id: command.from_entity_id };
+            assert!(self.structure_owner(from_key) == actor, "actor does not own structure");
+            let from = IStructuresDispatcher { contract_address: self.lifecycle.require_active().structures }
+                .structure(from_key)
+                .expect('missing sending structure');
+            let to = self
+                .troops_dispatcher()
+                .explorer(ExplorerKey { game_id, explorer_id: command.to_entity_id })
+                .expect('missing recipient explorer');
+            assert!(
+                crate::geometry::adjacent(crate::structures::structure_coord(from.base), to.coord),
+                "structure and explorer are not adjacent",
+            );
+            assert!(!self.game_dispatcher().rules(game_id).blitz_mode_on, "no structure to explorer transfer in blitz");
+            for resource in command.resources {
+                assert!(
+                    !crate::resources::is_troop_resource(*resource.resource_type), "cannot transfer troop resource",
+                );
+            }
+            self.transfer_instant(game_id, command, context.timestamp);
+        }
+        fn regularize_resource_weights(
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            structure_ids: Span<u32>,
+            context: ExecutionContext,
+        ) {
+            assert!(
+                get_caller_address() == self.lifecycle.require_active().season, "only authenticated command domain",
+            );
+            crate::game::assert_settling_with_grace(self.game_dispatcher().game(game_id), context.timestamp);
+            assert!(!structure_ids.is_empty(), "structure ids are empty");
+            for id in structure_ids {
+                let key = ResourceKey { game_id, entity_id: *id };
+                assert!(self.structure_owner(key) != 0.try_into().unwrap(), "structure has no owner");
+                let mut weight = self.resources.weight(key);
+                assert!(weight.capacity != 0, "structure weight capacity is zero");
+                let mut total = 0_u128;
+                for resource_type in 1_u8..59 {
+                    total += self.resources.balance(key, resource_type) * self.rule(game_id, resource_type).unit_weight;
+                }
+                if total <= weight.capacity {
+                    weight.weight = total;
+                    self.resources.write_weight(key, weight);
+                }
+            }
+        }
+        fn claim_production(
+            ref self: ContractState, game_id: u32, actor: ContractAddress, structure_id: u32, context: ExecutionContext,
+        ) {
+            let peers = self.lifecycle.require_active();
+            assert!(get_caller_address() == peers.season, "only authenticated command domain");
+            assert_playing(self.game_dispatcher().game(game_id), context.timestamp);
+            let key = ResourceKey { game_id, entity_id: structure_id };
+            assert!(self.structure_owner(key) == actor, "actor does not own structure");
+            for resource_type in 1_u8..59 {
+                if resource_type < 39 || resource_type > 56 {
+                    let rule = self.rule(game_id, resource_type);
+                    self
+                        .resources
+                        .settle_resource(key, resource_type, rule.unit_weight, context.timestamp.try_into().unwrap());
+                }
+            }
+        }
+    }
+    #[abi(embed_v0)]
+    impl ResourceAllowance of crate::resources::IResourceAllowance<ContractState> {
+        fn resource_allowance(self: @ContractState, key: crate::resources::AllowanceKey) -> u128 {
+            self.resources.allowance(key)
+        }
+    }
+    #[generate_trait]
+    impl Internal of InternalTrait {
+        fn assert_structures(self: @ContractState) {
+            assert!(get_caller_address() == self.lifecycle.require_active().structures, "only structures domain");
+        }
+        fn assert_troops(self: @ContractState) {
+            assert!(get_caller_address() == self.lifecycle.require_active().troops, "only troops domain");
+        }
+        fn assert_resource_command(self: @ContractState, game_id: u32, timestamp: u64) {
+            assert!(
+                get_caller_address() == self.lifecycle.require_active().season, "only authenticated command domain",
+            );
+            crate::game::assert_main_with_grace(self.game_dispatcher().game(game_id), timestamp);
+        }
+        fn game_dispatcher(self: @ContractState) -> IGameDispatcher {
+            IGameDispatcher { contract_address: self.lifecycle.require_active().season }
+        }
+        fn structure_owner(self: @ContractState, key: ResourceKey) -> ContractAddress {
+            IStructuresDispatcher { contract_address: self.lifecycle.require_active().structures }.structure_owner(key)
+        }
+        fn rule(self: @ContractState, game_id: u32, resource_type: u8) -> ResourceRule {
+            assert!(self.resources_configured.read(game_id), "missing resource rules");
+            assert!(resource_type > 0 && resource_type <= 58, "invalid resource type");
+            self.resource_rules.read((game_id, resource_type))
+        }
+        fn assert_deposits_unlocked(self: @ContractState, key: ResourceKey, timestamp: u64) {
+            let structure = IStructuresDispatcher { contract_address: self.lifecycle.require_active().structures }
+                .structure(key)
+                .expect('missing destination structure');
+            if structure.base.category != crate::ownership::VILLAGE_CATEGORY {
+                return;
+            }
+            let rules = self.game_dispatcher().rules(key.game_id);
+            let game = self.game_dispatcher().game(key.game_id);
+            let interval = rules.tick_config.armies_tick_in_seconds;
+            let now = timestamp / interval;
+            let season_end = game.start_main_at / interval + rules.battle_config.regular_immunity_ticks.into();
+            let village_end = structure.base.created_at.into() / interval
+                + rules.battle_config.village_immunity_ticks.into();
+            assert!(now >= season_end && now >= village_end, "village cannot claim deposits during spawn immunity");
+        }
+        fn troops_dispatcher(self: @ContractState) -> ITroopsDispatcher {
+            ITroopsDispatcher { contract_address: self.lifecycle.require_active().troops }
+        }
+        fn burn(ref self: ContractState, key: ResourceKey, resources: Span<crate::resources::ResourceAmount>) {
+            for resource in resources {
+                let rule = self.rule(key.game_id, *resource.resource_type);
+                self.resources.burn_resource(key, *resource.resource_type, *resource.amount, rule.unit_weight);
+            }
+        }
+        fn consume_allowances(ref self: ContractState, game_id: u32, command: crate::resources::ResourceTransfer) {
+            for resource in command.resources {
+                let key = crate::resources::AllowanceKey {
+                    game_id,
+                    owner_entity_id: command.from_entity_id,
+                    approved_entity_id: command.to_entity_id,
+                    resource_type: *resource.resource_type,
+                };
+                let allowance = self.resources.allowance(key);
+                assert!(allowance >= *resource.amount, "insufficient approval");
+                if allowance != 0xffffffffffffffffffffffffffffffff {
+                    self.resources.approve(key, allowance - *resource.amount);
+                }
+            }
+        }
+        fn transfer_delayed(
+            ref self: ContractState,
+            game_id: u32,
+            command: crate::resources::ResourceTransfer,
+            pickup: bool,
+            timestamp: u64,
+        ) {
+            assert!(command.from_entity_id != 0 && command.to_entity_id != 0, "missing transfer structure");
+            assert!(command.from_entity_id != command.to_entity_id, "self transfer");
+            assert!(!command.resources.is_empty(), "no resource to transfer");
+            let structures = IStructuresDispatcher { contract_address: self.lifecycle.require_active().structures };
+            let from = ResourceKey { game_id, entity_id: command.from_entity_id };
+            let to = ResourceKey { game_id, entity_id: command.to_entity_id };
+            let source = structures.structure(from).expect('missing sending structure');
+            let destination = structures.structure(to).expect('missing recipient structure');
+            let rules = self.game_dispatcher().rules(game_id);
+            assert!(
+                !rules.blitz_mode_on || source.owner == destination.owner,
+                "blitz delayed transfers require the same owner",
+            );
+            let travel_time = crate::transport::travel_time(
+                crate::structures::structure_coord(source.base),
+                crate::structures::structure_coord(destination.base),
+                command.resources,
+                rules.speed_config,
+                pickup,
+            );
+            let weight = self.spend_shipment(from, command.resources, timestamp);
+            let donkey_provider = if pickup {
+                to
+            } else {
+                from
+            };
+            let donkeys = crate::transport::donkeys_needed(weight, rules.capacity_config.donkey_capacity.into());
+            self.spend(donkey_provider, crate::transport::DONKEY, donkeys, timestamp);
+            let arrival = crate::arrivals::arrival_key(
+                game_id, to.entity_id, rules.tick_config.delivery_tick_in_seconds, timestamp, travel_time,
+            );
+            self.arrivals.enqueue(arrival, command.resources);
+            let story = Story::ResourceTransferStory(
+                crate::ownership::ResourceTransferStory {
+                    transfer_type: crate::ownership::TransferType::Delayed,
+                    from_entity_id: from.entity_id,
+                    from_entity_owner_address: source.owner,
+                    to_entity_id: to.entity_id,
+                    to_entity_owner_address: destination.owner,
+                    resources: command.resources,
+                    is_mint: false,
+                    travel_time,
+                },
+            );
+            self.emit_resource_story(from, source.owner, story, timestamp);
+            self.emit_resource_story(to, destination.owner, story, timestamp);
+        }
+        fn spend_shipment(
+            ref self: ContractState,
+            from: ResourceKey,
+            resources: Span<crate::resources::ResourceAmount>,
+            timestamp: u64,
+        ) -> u128 {
+            let mut weight = 0;
+            for resource in resources {
+                let rule = self.rule(from.game_id, *resource.resource_type);
+                weight += *resource.amount * rule.unit_weight;
+                self
+                    .resources
+                    .spend_resource(
+                        from,
+                        *resource.resource_type,
+                        *resource.amount,
+                        rule.unit_weight,
+                        timestamp.try_into().unwrap(),
+                    );
+            }
+            weight
+        }
+        fn transfer_instant(
+            ref self: ContractState, game_id: u32, command: crate::resources::ResourceTransfer, timestamp: u64,
+        ) {
+            crate::resources::assert_unique_transfer_resources(command.resources);
+            let from = ResourceKey { game_id, entity_id: command.from_entity_id };
+            let to = ResourceKey { game_id, entity_id: command.to_entity_id };
+            for resource in command.resources {
+                let rule = self.rule(game_id, *resource.resource_type);
+                self
+                    .resources
+                    .spend_resource(
+                        from,
+                        *resource.resource_type,
+                        *resource.amount,
+                        rule.unit_weight,
+                        timestamp.try_into().unwrap(),
+                    );
+                self
+                    .resources
+                    .grant_resource(
+                        to, *resource.resource_type, *resource.amount, rule.unit_weight, timestamp.try_into().unwrap(),
+                    );
+            }
+            let recipient = self.structure_owner(to);
+            self
+                .emit_resource_story(
+                    to,
+                    recipient,
+                    Story::ResourceTransferStory(
+                        crate::ownership::ResourceTransferStory {
+                            transfer_type: crate::ownership::TransferType::Instant,
+                            from_entity_id: from.entity_id,
+                            from_entity_owner_address: self.structure_owner(from),
+                            to_entity_id: to.entity_id,
+                            to_entity_owner_address: recipient,
+                            resources: command.resources,
+                            is_mint: false,
+                            travel_time: 0,
+                        },
+                    ),
+                    timestamp,
+                );
+        }
+        fn spend(ref self: ContractState, key: ResourceKey, resource_type: u8, amount: u128, timestamp: u64) {
+            let rule = self.rule(key.game_id, resource_type);
+            self.resources.spend_resource(key, resource_type, amount, rule.unit_weight, timestamp.try_into().unwrap());
+        }
+        fn emit_resource_story(
+            ref self: ContractState, key: ResourceKey, actor: ContractAddress, story: Story, timestamp: u64,
+        ) {
+            self
+                .emit(
+                    StoryEvent {
+                        version: 1,
+                        game_id: key.game_id,
+                        id: self.game_dispatcher().allocate_entity(key.game_id),
+                        owner: Some(actor),
+                        entity_id: Some(key.entity_id),
+                        tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                        story,
+                        timestamp,
+                    },
+                );
+        }
+    }
+}

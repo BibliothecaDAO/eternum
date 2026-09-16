@@ -49,6 +49,7 @@ function fixture() {
             state.peers.structures,
             state.peers.troops,
             state.peers.settlement,
+            state.peers.resources,
             state.active ? "1" : "0",
           ]
         : entrypoint === "realm_catalogue"

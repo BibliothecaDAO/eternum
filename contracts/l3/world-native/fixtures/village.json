@@ -206,5 +206,8 @@
     "rule": "The signed owner must match PlayerRegistry at acceptance; the retained owner is used unchanged at execution.",
     "test": "mc-sequencer-randomness::settlement::tests::village_admission_binds_the_pass_owner_and_rejects_malformed_claims",
     "deployment": "The patched node must be rebuilt with the matching native schema before the fresh rehearsal."
-  }
+  },
+  "supplementalTests": [
+    "eternum::native_parity::world_parity_village_resource_draws"
+  ]
 }

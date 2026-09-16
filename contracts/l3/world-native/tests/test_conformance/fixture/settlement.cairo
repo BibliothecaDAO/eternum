@@ -10,7 +10,7 @@ use starknet::ContractAddress;
 use world_native::commands::{Command, command_commitment};
 use world_native::game::{IGameDispatcher, IGameDispatcherTrait};
 use world_native::lifecycle::{IDomainDispatcher, IDomainDispatcherTrait};
-use world_native::resources::ResourceKey;
+use world_native::resources::{IResourcesDispatcher, IResourcesDispatcherTrait, ResourceKey, ResourceRule};
 use world_native::season::{ISeasonDispatcher, ISeasonDispatcherTrait};
 use world_native::settlement::{
     AcceptedCosmetic, CosmeticsKey, EntryKey, IBlitzHyperstructuresSafeDispatcher,
@@ -20,7 +20,7 @@ use world_native::settlement::{
     ISettlementCreationSafeDispatcher, ISettlementCreationSafeDispatcherTrait, ISettlementViewsDispatcher,
     ISettlementViewsDispatcherTrait, RealmGrants, SettleBlitz, SettlementMode, SettlementRules,
 };
-use world_native::structures::{IStructuresDispatcher, IStructuresDispatcherTrait, ResourceRule};
+use world_native::structures::{IStructuresDispatcher, IStructuresDispatcherTrait};
 use super::{IRecordedExecutionDispatcher, IRecordedExecutionDispatcherTrait, context, pair, setup};
 
 fn prepare() -> ContractAddress {
@@ -68,7 +68,9 @@ fn prepare_with_resources(grant_override: Option<Span<world_native::resources::R
     stop_cheat_caller_address(season);
     stop_cheat_caller_address(peers.settlement);
     start_cheat_caller_address(peers.structures, 222.try_into().unwrap());
-    IStructuresDispatcher { contract_address: peers.structures }.configure_resources(8, resources);
+    start_cheat_caller_address(peers.resources, 222.try_into().unwrap());
+    IResourcesDispatcher { contract_address: peers.resources }.configure_resources(8, resources);
+    stop_cheat_caller_address(peers.resources);
     stop_cheat_caller_address(peers.structures);
     execute(season, Command::ReserveHyperstructures(255), 1005);
     season
@@ -260,6 +262,7 @@ fn delayed_provisioning_starts_labor_once_without_regranting_starting_troops() {
     );
     let peers = IDomainDispatcher { contract_address: season }.domain_state().peers;
     let structures = IStructuresDispatcher { contract_address: peers.structures };
+    let resource_store = IResourcesDispatcher { contract_address: peers.resources };
     let key = ResourceKey { game_id: 8, entity_id: 1 };
     let before = structures.structure(key).unwrap();
     assert!(before.base.starting_troops_granted);
@@ -267,22 +270,22 @@ fn delayed_provisioning_starts_labor_once_without_regranting_starting_troops() {
     assert!(before.troop_guards.delta.count == 1500 * world_native::rules::RESOURCE_PRECISION);
     let troop_type = world_native::troops::troop_resource(before.troop_guards.delta.category, 0);
     let slot = world_native::resources::ResourceSlot { game_id: 8, entity_id: 1, resource_type: troop_type };
-    let troop_balance = structures.resource_balance(slot);
+    let troop_balance = resource_store.resource_balance(slot);
     let (action, envelope) = accepted(season, Command::ProvisionRealm(1), 1201);
     start_cheat_block_timestamp_global(100000);
     submit(season, action, envelope);
     let results = IRecordedExecutionViewsDispatcher { contract_address: season };
     assert!(results.get_result(3).status == 1, "recorded provisioning rejected after outage");
     assert!(structures.structure(key).unwrap().troop_guards == before.troop_guards);
-    assert!(structures.resource_balance(slot) == troop_balance);
+    assert!(resource_store.resource_balance(slot) == troop_balance);
     let labor = world_native::resources::ResourceSlot { resource_type: 23, ..slot };
-    let production = structures.resource_production(labor);
+    let production = resource_store.resource_production(labor);
     assert!(production.building_count == 1);
     assert!(production.production_rate > 0);
     execute(season, Command::ProvisionRealm(1), 1201);
     assert!(results.get_result(4).status == 2);
-    assert!(structures.resource_production(labor) == production);
-    assert!(structures.resource_balance(slot) == troop_balance);
+    assert!(resource_store.resource_production(labor) == production);
+    assert!(resource_store.resource_balance(slot) == troop_balance);
 }
 
 #[test]
@@ -297,27 +300,28 @@ fn provisioning_accepts_stone_and_rejects_lords_without_partial_grants() {
         execute(season, command(123.try_into().unwrap()), 1005);
         let peers = IDomainDispatcher { contract_address: season }.domain_state().peers;
         let structures = IStructuresDispatcher { contract_address: peers.structures };
+        let resource_store = IResourcesDispatcher { contract_address: peers.resources };
         let key = ResourceKey { game_id: 8, entity_id: 1 };
         let before = structures.structure(key).unwrap();
         let slot = world_native::resources::ResourceSlot { game_id: 8, entity_id: 1, resource_type: *resource_type };
-        let balance = structures.resource_balance(slot);
+        let balance = resource_store.resource_balance(slot);
         start_cheat_block_timestamp_global(1300);
         execute(season, Command::ProvisionRealm(1), 1201);
         let result = IRecordedExecutionViewsDispatcher { contract_address: season }.get_result(3);
         if *resource_type == world_native::resources::LORDS {
             assert!(result.status == 2, "LORDS grant accepted");
-            assert!(structures.resource_balance(slot) == balance);
+            assert!(resource_store.resource_balance(slot) == balance);
             assert!(structures.structure(key).unwrap() == before, "rejection partially provisioned realm");
             assert!(
-                structures
+                resource_store
                     .resource_production(world_native::resources::ResourceSlot { resource_type: 23, ..slot })
                     .building_count == 0,
             );
         } else {
             assert!(result.status == 1, "Stone grant rejected");
-            assert!(structures.resource_balance(slot) == balance + 100 * world_native::rules::RESOURCE_PRECISION);
+            assert!(resource_store.resource_balance(slot) == balance + 100 * world_native::rules::RESOURCE_PRECISION);
             assert!(
-                structures
+                resource_store
                     .resource_production(world_native::resources::ResourceSlot { resource_type: 23, ..slot })
                     .building_count == 1,
             );
@@ -435,7 +439,7 @@ fn settlement_commands_reject_forged_domain_callers_before_mutating() {
     );
     stop_cheat_caller_address(peers.structures);
     assert!(
-        IStructuresDispatcher { contract_address: peers.structures }
+        IResourcesDispatcher { contract_address: peers.resources }
             .resource_production(world_native::resources::ResourceSlot { game_id: 8, entity_id: 1, resource_type: 23 })
             .building_count == 0,
     );

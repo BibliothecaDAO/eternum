@@ -1,10 +1,12 @@
 use world_native::settlement::{
-    CosmeticsKey, EntryKey, ISettlementConfigurationDispatcher, ISettlementConfigurationDispatcherTrait,
-    ISettlementPoolDispatcher, ISettlementPoolDispatcherTrait, ISettlementViewsDispatcher,
-    ISettlementViewsDispatcherTrait, SettleBlitz, SettlementMode, SettlementRules,
+    CosmeticsKey, EntryKey, ISettlementConfigurationDispatcher,
+    ISettlementConfigurationDispatcherTrait, ISettlementPoolDispatcher,
+    ISettlementPoolDispatcherTrait, ISettlementViewsDispatcher, ISettlementViewsDispatcherTrait,
+    SettleBlitz, SettlementMode, SettlementRules,
 };
 use crate::models::config::{
-    BlitzHypersSettlementConfigImpl, BlitzRegistrationGameConfig, BlitzSettlementConfigImpl, WorldConfigUtilImpl,
+    BlitzHypersSettlementConfigImpl, BlitzRegistrationGameConfig, BlitzSettlementConfigImpl,
+    WorldConfigUtilImpl,
 };
 use crate::systems::realm::blitz::hyperstructure_create::contracts::{
     IBlitzHyperstructureCreateSystemsDispatcher, IBlitzHyperstructureCreateSystemsDispatcherTrait,
@@ -15,11 +17,15 @@ fn setup_blitz(case: felt252, mode: world_native::settlement::SettlementMode) ->
     setup_blitz_entry(case, mode, false, false)
 }
 
-fn setup_blitz_entry(case: felt252, mode: SettlementMode, cosmetics: bool, ledger: bool) -> PairedWorld {
+fn setup_blitz_entry(
+    case: felt252, mode: SettlementMode, cosmetics: bool, ledger: bool,
+) -> PairedWorld {
     configure_entry(setup_game(case, true), mode, cosmetics, ledger)
 }
 
-pub fn configure_entry(mut worlds: PairedWorld, mode: SettlementMode, cosmetics: bool, ledger: bool) -> PairedWorld {
+pub fn configure_entry(
+    mut worlds: PairedWorld, mode: SettlementMode, cosmetics: bool, ledger: bool,
+) -> PairedWorld {
     let collection = if cosmetics {
         deploy("ParityCosmetics", @array![worlds.actor.into(), worlds.opponent.into()])
     } else {
@@ -62,21 +68,31 @@ pub fn configure_entry(mut worlds: PairedWorld, mode: SettlementMode, cosmetics:
         .write_member(
             ptr,
             selector!("blitz_settlement_config"),
-            BlitzSettlementConfigImpl::new(6, mode == SettlementMode::Single, mode == SettlementMode::Duel),
+            BlitzSettlementConfigImpl::new(
+                6, mode == SettlementMode::Single, mode == SettlementMode::Duel,
+            ),
         );
     worlds
         .oracle
-        .write_member(ptr, selector!("blitz_hypers_settlement_config"), BlitzHypersSettlementConfigImpl::new());
+        .write_member(
+            ptr,
+            selector!("blitz_hypers_settlement_config"),
+            BlitzHypersSettlementConfigImpl::new(),
+        );
     let mut preset: PresetConfig = worlds.oracle.read_model(1_u32);
     preset.blitz_exploration_config.reward_profile_id = 1;
     preset.blitz_registration_rules_config.collectibles_cosmetics_max = 3;
     worlds.oracle.write_model_test(@preset);
-    let chain = Model::<crate::models::config::ChainConfig>::ptr_from_keys(crate::constants::WORLD_CONFIG_ID);
+    let chain = Model::<
+        crate::models::config::ChainConfig,
+    >::ptr_from_keys(crate::constants::WORLD_CONFIG_ID);
     worlds.oracle.write_member(chain, selector!("collectibles_cosmetics_address"), collection);
     worlds.oracle.write_member(chain, selector!("collectibles_timelock_address"), collection);
     worlds.oracle.write_member(chain, selector!("ledger_operator_address"), operator);
     if ledger {
-        let registry = deploy("ParityRegistry", @array![worlds.actor.into(), worlds.opponent.into()]);
+        let registry = deploy(
+            "ParityRegistry", @array![worlds.actor.into(), worlds.opponent.into()],
+        );
         worlds.oracle.write_member(chain, selector!("player_registry_address"), registry);
     }
     worlds
@@ -86,26 +102,35 @@ fn reserve_pair(worlds: PairedWorld, count: u8, step: u32) {
     let (address, _) = worlds.oracle.dns(@"hyperstructure_create_systems").unwrap();
     start_cheat_block_timestamp_global(1800);
     start_cheat_caller_address(address, worlds.actor);
-    IBlitzHyperstructureCreateSystemsDispatcher { contract_address: address }.reserve_hyperstructures(1, count);
+    IBlitzHyperstructureCreateSystemsDispatcher { contract_address: address }
+        .reserve_hyperstructures(1, count);
     stop_cheat_caller_address(address);
     let (order, outcome) = execute_outcome(worlds, Command::ReserveHyperstructures(count), 1800, 0);
     assert!(outcome);
-    println!("FACT_ACTION {} {} {} {} {}", worlds.case, order, 'reserve_hyperstructures', 1800, outcome);
-    let rules = ISettlementViewsDispatcher { contract_address: worlds.peers.settlement }.settlement_rules(1);
-    let placed = ISettlementPoolDispatcher { contract_address: worlds.peers.map }.reserved_hyperstructures(1);
+    println!(
+        "FACT_ACTION {} {} {} {} {}", worlds.case, order, 'reserve_hyperstructures', 1800, outcome,
+    );
+    let rules = ISettlementViewsDispatcher { contract_address: worlds.peers.settlement }
+        .settlement_rules(1);
+    let placed = ISettlementPoolDispatcher { contract_address: worlds.peers.map }
+        .reserved_hyperstructures(1);
     let center = world_native::troops::Coord { alt: false, x: 2147483626, y: 2147483626 };
     for index in 0..placed {
         compare_tile(
             worlds,
             step,
-            world_native::settlement_grid::reservation_location(center, rules.mode, rules.reward_profile, index),
+            world_native::settlement_grid::reservation_location(
+                center, rules.mode, rules.reward_profile, index,
+            ),
         );
     }
 }
 
 pub fn entry_owner(worlds: PairedWorld) -> ContractAddress {
     world_native::settlement::ISettlementAdmissionDispatcherTrait::settlement_admission(
-        world_native::settlement::ISettlementAdmissionDispatcher { contract_address: worlds.peers.season },
+        world_native::settlement::ISettlementAdmissionDispatcher {
+            contract_address: worlds.peers.season,
+        },
         1,
         worlds.actor,
     )
@@ -132,7 +157,12 @@ fn settle_pair(worlds: PairedWorld, grant: bool, root: felt252, step: u32) -> Sp
 
 #[feature("safe_dispatcher")]
 fn settle_outcome_pair(
-    worlds: PairedWorld, command: SettleBlitz, timestamp: u64, root: felt252, step: u32, expected: bool,
+    worlds: PairedWorld,
+    command: SettleBlitz,
+    timestamp: u64,
+    root: felt252,
+    step: u32,
+    expected: bool,
 ) -> Span<u32> {
     let (address, _) = worlds.oracle.dns(@"blitz_realm_systems").unwrap();
     let mut ids = array![];
@@ -142,18 +172,25 @@ fn settle_outcome_pair(
     start_cheat_block_timestamp_global(timestamp);
     let tx_hash = inject_root(worlds, root);
     start_cheat_caller_address(address, worlds.actor);
-    let attempts = IParityAttemptsDispatcher { contract_address: deploy("ParityAttempts", @array![]) };
-    let original = attempts.settle(address, command.name, ids.span(), command.grant_starting_troops);
+    let attempts = IParityAttemptsDispatcher {
+        contract_address: deploy("ParityAttempts", @array![]),
+    };
+    let original = attempts
+        .settle(address, command.name, ids.span(), command.grant_starting_troops);
     stop_cheat_caller_address(address);
     if original {
         assert_root_consumed(worlds, tx_hash, root, step);
     } else {
         assert!(IParityRootsDispatcher { contract_address: worlds.roots }.consumed() == 0);
     }
-    let (order, outcome) = execute_outcome(worlds, Command::SettleBlitz(command), timestamp, root.into());
+    let (order, outcome) = execute_outcome(
+        worlds, Command::SettleBlitz(command), timestamp, root.into(),
+    );
     assert!(outcome == original && outcome == expected, "settlement outcome differs");
     println!("FACT_ACTION {} {} {} {} {}", worlds.case, order, 'settle', timestamp, outcome);
-    let settled: crate::models::config::BlitzSettlement = ModelStorage::read_model(@worlds.oracle, (1, worlds.actor));
+    let settled: crate::models::config::BlitzSettlement = ModelStorage::read_model(
+        @worlds.oracle, (1, worlds.actor),
+    );
     for id in settled.structure_ids {
         compare_home(worlds, step, *id);
     }
@@ -172,7 +209,8 @@ pub fn compare_blitz_entry(worlds: PairedWorld, step: u32) {
         ISettlementPoolDispatcher { contract_address: worlds.peers.map }.settlement_pool(1),
         OracleSettlementPool { world: worlds.oracle, game_id: 1 },
     );
-    let registration: crate::models::config::BlitzRegistrationGameConfig = WorldConfigUtilImpl::get_member(
+    let registration: crate::models::config::BlitzRegistrationGameConfig =
+        WorldConfigUtilImpl::get_member(
         worlds.oracle, 1, selector!("blitz_registration_config"),
     );
     let realms: crate::models::config::RealmCountConfig = WorldConfigUtilImpl::get_member(
@@ -184,7 +222,9 @@ pub fn compare_blitz_entry(worlds: PairedWorld, step: u32) {
         'SettlementProgress',
         array![1].span(),
         views.settlement_progress(1),
-        OracleSettlementProgress { registered: registration.registration_count, realm_count: realms.count },
+        OracleSettlementProgress {
+            registered: registration.registration_count, realm_count: realms.count,
+        },
     );
     compare_facts(
         worlds.case,
@@ -218,7 +258,9 @@ pub fn settlement() {
     let second_worlds = PairedWorld { actor: worlds.opponent, opponent: worlds.actor, ..worlds };
     let second = *settle_pair(second_worlds, true, 5678, 2).at(0);
     let (address, _) = worlds.oracle.dns(@"blitz_realm_systems").unwrap();
-    let attempts = IParityAttemptsDispatcher { contract_address: deploy("ParityAttempts", @array![]) };
+    let attempts = IParityAttemptsDispatcher {
+        contract_address: deploy("ParityAttempts", @array![]),
+    };
     let mut step = 3;
     for (player, id) in array![(worlds.actor, first), (worlds.opponent, second)].span() {
         let player_worlds = PairedWorld { actor: *player, ..worlds };
@@ -237,15 +279,21 @@ pub fn settlement() {
                 },
                 1,
             );
-            let (order, native) = execute_outcome(player_worlds, Command::ProvisionRealm(*id), 2040, 0);
+            let (order, native) = execute_outcome(
+                player_worlds, Command::ProvisionRealm(*id), 2040, 0,
+            );
             assert_surroundings_unchanged(worlds, previous_tiles);
-            println!("FACT_ACTION {} {} {} {} {}", worlds.case, order, 'provision_realm', 2040, native);
+            println!(
+                "FACT_ACTION {} {} {} {} {}", worlds.case, order, 'provision_realm', 2040, native,
+            );
             assert!(original == *expected && native == original, "provisioning rejection differs");
             compare_home(worlds, step, *id);
             let home = IStructuresDispatcher { contract_address: worlds.peers.structures }
                 .structure(ResourceKey { game_id: 1, entity_id: *id })
                 .unwrap();
-            let coord = world_native::troops::Coord { alt: false, x: home.base.coord_x, y: home.base.coord_y };
+            let coord = world_native::troops::Coord {
+                alt: false, x: home.base.coord_x, y: home.base.coord_y,
+            };
             compare_realm_buildings(worlds, step, *id, coord);
             compare_tile(worlds, step, coord);
             step += 1;
@@ -254,10 +302,17 @@ pub fn settlement() {
 }
 
 
-pub fn compare_realm_buildings(worlds: PairedWorld, step: u32, id: u32, coord: world_native::troops::Coord) {
+pub fn compare_realm_buildings(
+    worlds: PairedWorld, step: u32, id: u32, coord: world_native::troops::Coord,
+) {
     let structures = IStructuresDispatcher { contract_address: worlds.peers.structures };
     let key = world_native::buildings::BuildingKey {
-        game_id: 1, alt: false, outer_col: coord.x, outer_row: coord.y, inner_col: 10, inner_row: 10,
+        game_id: 1,
+        alt: false,
+        outer_col: coord.x,
+        outer_row: coord.y,
+        inner_col: 10,
+        inner_row: 10,
     };
     compare_facts(
         worlds.case,
@@ -302,9 +357,13 @@ pub fn reservations() {
         )
             .is_ok();
         stop_cheat_caller_address(address);
-        let (order, native) = execute_outcome(worlds, Command::CreateReservedHyperstructure(coord), 1800, 98765);
+        let (order, native) = execute_outcome(
+            worlds, Command::CreateReservedHyperstructure(coord), 1800, 98765,
+        );
         assert!(native == oracle && native == *expected, "reserved hyperstructure outcome differs");
-        println!("FACT_ACTION {} {} {} {} {}", worlds.case, order, 'create_hyperstructure', 1800, native);
+        println!(
+            "FACT_ACTION {} {} {} {} {}", worlds.case, order, 'create_hyperstructure', 1800, native,
+        );
         compare_tile(worlds, step, coord);
         let tile = IMapDispatcher { contract_address: worlds.peers.map }
             .tile(world_native::geometry::tile_key(1, coord))
@@ -378,7 +437,9 @@ pub fn entry_ledger() {
         );
     start_cheat_caller_address(worlds.peers.settlement, authority());
     world_native::settlement::ISettlementEntryDispatcherTrait::register_entitlement(
-        world_native::settlement::ISettlementEntryDispatcher { contract_address: worlds.peers.settlement },
+        world_native::settlement::ISettlementEntryDispatcher {
+            contract_address: worlds.peers.settlement,
+        },
         EntryKey { game_id: 1, owner: entry_owner(worlds) },
         world_native::settlement::EntryEntitlement {
             realm_id: 7, metadata_1: 8, metadata_2: 9, metadata_3: 10, pass_kind: 0,
@@ -392,7 +453,9 @@ pub fn entry_ledger() {
 pub fn cosmetics() {
     let worlds = setup_blitz_entry('blitz_cosmetics', SettlementMode::Single, true, false);
     reserve_pair(worlds, 255, 0);
-    let valid = world_native::settlement::AcceptedCosmetic { token_id: 1, owner: entry_owner(worlds), attributes: 321 };
+    let valid = world_native::settlement::AcceptedCosmetic {
+        token_id: 1, owner: entry_owner(worlds), attributes: 321,
+    };
     let command = SettleBlitz {
         cosmetics_block_hash: 0xabc,
         cosmetics_block_number: 2,
@@ -402,13 +465,20 @@ pub fn cosmetics() {
         grant_starting_troops: false,
     };
     settle_outcome_pair(
-        worlds, SettleBlitz { cosmetics: array![valid, valid, valid, valid].span(), ..command }, 1800, 7, 1, false,
+        worlds,
+        SettleBlitz { cosmetics: array![valid, valid, valid, valid].span(), ..command },
+        1800,
+        7,
+        1,
+        false,
     );
     settle_outcome_pair(
         worlds,
         SettleBlitz {
             cosmetics: array![
-                world_native::settlement::AcceptedCosmetic { token_id: 2, owner: worlds.opponent, ..valid },
+                world_native::settlement::AcceptedCosmetic {
+                    token_id: 2, owner: worlds.opponent, ..valid,
+                },
             ]
                 .span(),
             ..command,
@@ -421,7 +491,9 @@ pub fn cosmetics() {
     settle_outcome_pair(
         worlds,
         SettleBlitz {
-            cosmetics: array![world_native::settlement::AcceptedCosmetic { token_id: 3, attributes: 0, ..valid }]
+            cosmetics: array![
+                world_native::settlement::AcceptedCosmetic { token_id: 3, attributes: 0, ..valid },
+            ]
                 .span(),
             ..command,
         },
@@ -430,7 +502,9 @@ pub fn cosmetics() {
         3,
         false,
     );
-    settle_outcome_pair(worlds, SettleBlitz { cosmetics: array![valid, valid].span(), ..command }, 1800, 7, 4, true);
+    settle_outcome_pair(
+        worlds, SettleBlitz { cosmetics: array![valid, valid].span(), ..command }, 1800, 7, 4, true,
+    );
 }
 
 #[feature("safe_dispatcher")]
@@ -445,11 +519,15 @@ pub fn cosmetics_disabled() {
         grant_starting_troops: false,
     };
     reserve_pair(worlds, 255, 5);
-    let invalid = world_native::settlement::AcceptedCosmetic { token_id: 2, owner: worlds.opponent, attributes: 0 };
+    let invalid = world_native::settlement::AcceptedCosmetic {
+        token_id: 2, owner: worlds.opponent, attributes: 0,
+    };
     settle_outcome_pair(
         worlds,
         SettleBlitz {
-            owner: entry_owner(worlds), cosmetics: array![invalid, invalid, invalid, invalid].span(), ..command,
+            owner: entry_owner(worlds),
+            cosmetics: array![invalid, invalid, invalid, invalid].span(),
+            ..command,
         },
         1800,
         7,
@@ -518,14 +596,19 @@ pub fn settlement_modes(mode: SettlementMode, case: felt252) {
 
 #[feature("safe_dispatcher")]
 pub fn displacement(blocked: bool, agent: bool, case: felt252) {
-    let mut worlds = configure_entry(setup_world(case, true, true), SettlementMode::Single, false, false);
+    let mut worlds = configure_entry(
+        setup_world(case, true, true), SettlementMode::Single, false, false,
+    );
     reserve_pair(worlds, 255, 0);
     let mut root = 19_u256;
     let seed = world_native::random::game_root(ref root, 1, 1);
     let count = world_native::settlement_grid::target_pool_size(0, 2, SettlementMode::Single);
     let candidate: u32 = world_native::random::range(seed, 98139, count.into()).try_into().unwrap();
     let center = world_native::troops::Coord { alt: false, x: 2147483626, y: 2147483626 };
-    let coord = *world_native::settlement_grid::settlement_location(center, SettlementMode::Single, 1, candidate).at(0);
+    let coord = *world_native::settlement_grid::settlement_location(
+        center, SettlementMode::Single, 1, candidate,
+    )
+        .at(0);
     let home = provision(ref worlds, convert(world_native::geometry::neighbor(coord, 3)));
     let explorer_id = create_explorer_pair(worlds, home);
     let troops = ITroopsDispatcher { contract_address: worlds.peers.troops };
@@ -539,7 +622,9 @@ pub fn displacement(blocked: bool, agent: bool, case: felt252) {
         for direction in 0_u8..6 {
             if direction != 3 {
                 provision_with_resources(
-                    ref worlds, convert(world_native::geometry::neighbor(coord, direction)), array![].span(),
+                    ref worlds,
+                    convert(world_native::geometry::neighbor(coord, direction)),
+                    array![].span(),
                 );
             }
         }
@@ -556,7 +641,7 @@ pub fn displacement(blocked: bool, agent: bool, case: felt252) {
         let original: ExplorerTroops = ModelStorage::read_model(@worlds.oracle, (1, explorer_id));
         assert!(original.owner == 0 && original.troops.count == 0);
         assert!(
-            !IStructuresDispatcher { contract_address: worlds.peers.structures }
+            !IResourcesDispatcher { contract_address: worlds.peers.resources }
                 .has_resource(ResourceKey { game_id: 1, entity_id: explorer_id }),
         );
         compare_resources(worlds, 3, explorer_id);
@@ -591,9 +676,15 @@ fn promote_fixture_agent(ref worlds: PairedWorld, home: u32, id: u32) {
     worlds.oracle.write_model_test(@crate::models::agent::AgentCount { game_id: 1, count: 1 });
     worlds
         .oracle
-        .write_model_test(@crate::models::agent::AgentOwner { game_id: 1, explorer_id: id, address: worlds.actor });
+        .write_model_test(
+            @crate::models::agent::AgentOwner {
+                game_id: 1, explorer_id: id, address: worlds.actor,
+            },
+        );
     set_native_fixture(worlds.peers.troops, selector!("agent_count"), array![1].span(), 1_u16);
-    set_native_fixture(worlds.peers.troops, selector!("agent_owners"), array![1, id.into()].span(), worlds.actor);
+    set_native_fixture(
+        worlds.peers.troops, selector!("agent_owners"), array![1, id.into()].span(), worlds.actor,
+    );
     let mut original_home: Structure = worlds.oracle.read_model((1, home));
     original_home.base.troop_explorer_count = 0;
     original_home.troop_explorers = array![].span();
@@ -614,12 +705,16 @@ fn promote_fixture_agent(ref worlds: PairedWorld, home: u32, id: u32) {
             metadata: native.metadata,
         },
     );
-    set_native_fixture(worlds.peers.structures, selector!("explorers"), array![1, home.into(), 0].span(), 0_u32);
+    set_native_fixture(
+        worlds.peers.structures, selector!("explorers"), array![1, home.into(), 0].span(), 0_u32,
+    );
     assert!(
         ITroopsDispatcher { contract_address: worlds.peers.troops }
             .explorer(ExplorerKey { game_id: 1, explorer_id: id })
             .unwrap() == world_native::troops::ExplorerTroops {
-                owner: original.owner, troops: convert(original.troops), coord: convert(original.coord),
+                owner: original.owner,
+                troops: convert(original.troops),
+                coord: convert(original.coord),
             },
         "agent fixture changed explorer facts",
     );
@@ -634,7 +729,11 @@ fn promote_fixture_agent(ref worlds: PairedWorld, home: u32, id: u32) {
     let coord = original.coord;
     let mut tile: TileOpt = worlds.oracle.read_model((1, coord.alt, coord.x, coord.y));
     const AGENT_KNIGHT_T1: u8 = 24;
-    tile.data = crate::models::map2::TileOptDataWriteImpl::with_occupier_type(tile.data, AGENT_KNIGHT_T1);
+    tile
+        .data =
+            crate::models::map2::TileOptDataWriteImpl::with_occupier_type(
+                tile.data, AGENT_KNIGHT_T1,
+            );
     worlds.oracle.write_model_test(@tile);
     let map = IMapDispatcher { contract_address: worlds.peers.map };
     let key = world_native::geometry::tile_key(1, convert(coord));
@@ -650,9 +749,13 @@ fn compare_agent(worlds: PairedWorld, step: u32, id: u32) {
         'AgentPopulation',
         array![1].span(),
         ITroopsDispatcher { contract_address: worlds.peers.troops }.agent_population(1),
-        ModelStorage::<WorldStorage, crate::models::agent::AgentCount>::read_model(@worlds.oracle, 1_u32),
+        ModelStorage::<
+            WorldStorage, crate::models::agent::AgentCount,
+        >::read_model(@worlds.oracle, 1_u32),
     );
-    let owner = world_native::ownership::IAgentOwnershipDispatcher { contract_address: worlds.peers.troops }
+    let owner = world_native::ownership::IAgentOwnershipDispatcher {
+        contract_address: worlds.peers.troops,
+    }
         .agent_owner(1, id);
     compare_facts(
         worlds.case,
@@ -660,7 +763,9 @@ fn compare_agent(worlds: PairedWorld, step: u32, id: u32) {
         'AgentOwner',
         array![1, id.into()].span(),
         owner,
-        ModelStorage::<WorldStorage, crate::models::agent::AgentOwner>::read_model(@worlds.oracle, (1, id)),
+        ModelStorage::<
+            WorldStorage, crate::models::agent::AgentOwner,
+        >::read_model(@worlds.oracle, (1, id)),
     );
 }
 
@@ -675,7 +780,10 @@ pub fn occupied() {
     let count = world_native::settlement_grid::target_pool_size(0, 2, SettlementMode::Single);
     let candidate: u32 = world_native::random::range(seed, 98139, count.into()).try_into().unwrap();
     let center = world_native::troops::Coord { alt: false, x: 2147483626, y: 2147483626 };
-    let coord = *world_native::settlement_grid::settlement_location(center, SettlementMode::Single, 1, candidate).at(0);
+    let coord = *world_native::settlement_grid::settlement_location(
+        center, SettlementMode::Single, 1, candidate,
+    )
+        .at(0);
     let home = provision(ref worlds, convert(coord));
     let command = SettleBlitz {
         cosmetics_block_hash: 0xabc,
@@ -709,7 +817,8 @@ pub fn surrounding_tiles(
 }
 
 pub fn assert_surroundings_unchanged(
-    worlds: PairedWorld, before: Span<(world_native::map::TileKey, Option<world_native::map::TileOpt>)>,
+    worlds: PairedWorld,
+    before: Span<(world_native::map::TileKey, Option<world_native::map::TileOpt>)>,
 ) {
     let map = IMapDispatcher { contract_address: worlds.peers.map };
     for previous in before {

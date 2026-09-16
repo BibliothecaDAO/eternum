@@ -2,11 +2,18 @@ import { describe, expect, test } from "bun:test";
 import { parseActionOutcomes, parseWorldParity, requiredParityCases } from "./parity-report";
 
 const felt = (value: string) => BigInt(`0x${Buffer.from(value).toString("hex")}`).toString();
-function trace(): string {
-  return Object.entries(requiredParityCases)
+function trace(cases: Record<string, string> = requiredParityCases): string {
+  return Object.entries(cases)
     .map(([name, method]) => {
       const id = `${felt(name)} 1 ${felt("Resource")} 123`;
+      const ruling =
+        name === "resources_duplicates"
+          ? `RULED_OUTCOME ${felt(name)} 1 ${felt("duplicate-transfer-resources")} true false`
+          : name === "resources_village_eternum"
+            ? `RULED_OUTCOME ${felt(name)} 1 ${felt("village-reinforcement")} false true`
+            : "";
       return [
+        ruling,
         `FACT_SNAPSHOT ${id} 1 2`,
         `FACT_VALUE ${id} 0 1 1`,
         `FACT_VALUE ${id} 1 99 99`,
@@ -66,4 +73,31 @@ describe("measured action outcomes", () => {
 test("repeated results cannot mix an old run with the current evidence", () => {
   const result = `[PASS] eternum::native_parity::${Object.values(requiredParityCases)[0]} (l2_gas: ~12)`;
   expect(() => parseWorldParity(`${trace()}\n${result}`)).toThrow("Repeated parity result");
+});
+
+test("ruled divergences require the declared direction and an observed outcome", () => {
+  const report = parseWorldParity(trace());
+  expect(report.find((item) => item.name === "resources_duplicates")?.ruledOutcomes[0]).toMatchObject({
+    oracle: true,
+    native: false,
+  });
+  expect(() => parseWorldParity(trace().replace(/RULED_OUTCOME[^\n]*\n/, ""))).toThrow("Missing ruled outcome");
+  expect(() => parseWorldParity(trace().replace("true false", "true true"))).toThrow("Undeclared ruled outcome");
+});
+
+test("a scoped report requires all selected cases and rejects foreign observations", () => {
+  const selected = { creation: requiredParityCases.creation };
+  expect(parseWorldParity(trace(selected), selected).map((item) => item.name)).toEqual(["creation"]);
+  expect(() => parseWorldParity(trace({}), selected)).toThrow("Missing passing parity case");
+  expect(() => parseWorldParity(trace({ ...selected, travel: requiredParityCases.travel }), selected)).toThrow(
+    "Unexpected parity case",
+  );
+});
+
+test("a scoped ruled case still requires its explicit outcome", () => {
+  const selected = { resources_duplicates: requiredParityCases.resources_duplicates };
+  expect(parseWorldParity(trace(selected), selected)[0].ruledOutcomes).toHaveLength(1);
+  expect(() => parseWorldParity(trace(selected).replace(/RULED_OUTCOME[^\n]*\n/, ""), selected)).toThrow(
+    "Missing ruled outcome",
+  );
 });

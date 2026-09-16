@@ -57,6 +57,14 @@ pub fn checked_neighbor_at_distance(coord: Coord, direction: u8, distance: u32) 
     Some(Coord { alt: coord.alt, x: (column + (row + row % 2) / 2).try_into()?, y: row.try_into()? })
 }
 
+pub fn adjacent(left: Coord, right: Coord) -> bool {
+    left.alt == right.alt && distance(left, right) == if left.alt {
+        15
+    } else {
+        1
+    }
+}
+
 pub fn distance(left: Coord, right: Coord) -> u128 {
     let left_row: i128 = left.y.into();
     let right_row: i128 = right.y.into();

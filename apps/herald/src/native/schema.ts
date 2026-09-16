@@ -17,7 +17,7 @@ export interface NativeModel {
   members: NativeMember[];
   keyLength: number;
   valueLength: number | null;
-  observation?: { domain: string; fields: Record<string, string>; transform?: "tile" };
+  observation?: { domain: string; fields: Record<string, string>; transform?: "tile" | "production" };
 }
 export interface NativeEventLayout {
   name: string;

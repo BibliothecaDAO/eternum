@@ -96,6 +96,7 @@ def pair_actions(tree, fixture, schema):
             raise ValueError("Measured action order differs from the declared workload")
         action["case"] = expected["case"]
         action["expectedSuccess"] = expected["succeeded"]
+        action["oracleExpectedSuccess"] = expected.get("oracleSucceeded", expected["succeeded"])
     return actions
 
 
@@ -110,8 +111,12 @@ def main():
     actions = pair_actions(tree, json.loads(args.fixture.read_text()), json.loads(args.schema.read_text()))
     with args.trace.open("rb") as source:
         digest = hashlib.file_digest(source, "sha256").hexdigest()
+    call_tree = json.dumps(tree, separators=(",", ":")).encode()
+    call_tree_path = args.output.with_suffix(".calls.json")
+    call_tree_path.write_bytes(call_tree)
     result = {
         "version": 1,
+        "callTree": {"file": call_tree_path.name, "sha256": hashlib.sha256(call_tree).hexdigest()},
         "traceSha256": digest,
         "accounting": "Inclusive execution counters at each action entrypoint, including attempted operations before rollback. Event counts sum local emissions across descendants; syscall and gas counters are already inclusive. Account validation and fees are outside this fixture.",
         "actions": actions,

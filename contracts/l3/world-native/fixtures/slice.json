@@ -202,7 +202,24 @@
     "season_pre_main": "Settlement succeeds at the settling boundary before main-game start, with immediate provisioning.",
     "season_explorer_occupied": "Season placement skips an occupied explorer tile and leaves the explorer unchanged.",
     "season_search_limit": "Sixty-four occupied candidate draws reject without committing allocation or planner changes.",
-    "village": "Village production and army grants use the same resources and recorded time; planner placement and pass consumption are the frozen new behaviour."
+    "village": "Village production and army grants use the same resources and recorded time; planner placement and pass consumption are the frozen new behaviour.",
+    "production_activation": "A production building activated after an inactive interval starts accrual at activation time, with identical balance, rate and cap after claims.",
+    "resources_approvals": "Resource approvals preserves facts and rejection outcomes after each action.",
+    "resources_burns": "Resource burns preserves facts and rejection outcomes after each action.",
+    "resources_regularize": "Resource regularize preserves facts and rejection outcomes after each action.",
+    "resources_transfers": "Resource transfers preserves facts and rejection outcomes after each action.",
+    "resources_knight": "Resource knight preserves facts and rejection outcomes after each action.",
+    "resources_crossbow": "Resource crossbow preserves facts and rejection outcomes after each action.",
+    "resources_paladin": "Resource paladin preserves facts and rejection outcomes after each action.",
+    "resources_offload": "Arrival prefix, timing, authority and capacity outcomes against the pinned resource system.",
+    "resources_offload_rejections": "Arrival prefix, timing, authority and capacity outcomes against the pinned resource system.",
+    "resources_offload_capacity": "Arrival prefix, timing, authority and capacity outcomes against the pinned resource system.",
+    "resources_send": "Send, merge, zero amount and rejected overdraw retain balances, donkey costs and arrival timing.",
+    "resources_pickup": "Finite pickup allowances, round trip and rejection.",
+    "resources_pickup_unlimited": "Unlimited pickup allowances survive repeated pickups.",
+    "resources_duplicates": "Ruled defect fix: original duplicate send queues excess; native rejects with unchanged facts and consumes nonce/order.",
+    "resources_village_blitz": "Allied village reinforcement matches the original Blitz outcome.",
+    "resources_village_eternum": "Ruled divergence: original Eternum rejection becomes reinforcement; every resource fact is checked against the declared transfer."
   },
   "randomness": {
     "rawRootSource": "injected identical root per action",
@@ -239,5 +256,14 @@
   },
   "derivedGameplayModels": {
     "LastBattle": "Herald projects the matching BattleEvent for both participants, including deleted explorers."
-  }
+  },
+  "sliceCases": [
+    "creation",
+    "travel",
+    "surface",
+    "ethereal",
+    "battle",
+    "ethereal_battle",
+    "rejections"
+  ]
 }

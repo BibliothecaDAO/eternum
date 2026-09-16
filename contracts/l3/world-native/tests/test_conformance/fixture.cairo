@@ -1,3 +1,4 @@
+use world_native::resources::{IResourcesDispatcher, IResourcesDispatcherTrait, ResourceRule};
 mod settlement;
 use eternum_randomness_protocol::authority::{
     ISequencingAccountSafeDispatcher, ISequencingAccountSafeDispatcherTrait, ISequencingAuthorityDispatcher,
@@ -26,7 +27,7 @@ use world_native::game::{GameRegistry, GameStatus, IGameDispatcher, IGameDispatc
 use world_native::lifecycle::{IDomainDispatcher, IDomainDispatcherTrait, Peers};
 use world_native::map::IMapDispatcherTrait;
 use world_native::season::{ISeasonDispatcher, ISeasonDispatcherTrait};
-use world_native::structures::{IStructuresDispatcher, IStructuresDispatcherTrait, ResourceRule};
+use world_native::structures::{IStructuresDispatcher, IStructuresDispatcherTrait};
 use world_native::troops::{Coord, ITroopsDispatcherTrait};
 
 #[derive(Copy, Drop)]
@@ -124,12 +125,13 @@ pub fn setup() -> ContractAddress {
         structures: deploy("StructuresDomain", @array![administrator.into()]),
         troops: deploy("TroopsDomain", @array![administrator.into()]),
         settlement: deploy("SettlementDomain", @array![administrator.into()]),
+        resources: deploy("ResourcesDomain", @array![administrator.into()]),
     };
-    for address in array![peers.season, peers.map, peers.structures, peers.troops, peers.settlement] {
+    for address in array![peers.season, peers.map, peers.structures, peers.troops, peers.settlement, peers.resources] {
         start_cheat_caller_address(address, administrator);
         IDomainDispatcher { contract_address: address }.configure(peers);
     }
-    for address in array![peers.season, peers.map, peers.structures, peers.troops, peers.settlement] {
+    for address in array![peers.season, peers.map, peers.structures, peers.troops, peers.settlement, peers.resources] {
         IDomainDispatcher { contract_address: address }.activate();
         stop_cheat_caller_address(address);
     }
@@ -187,7 +189,10 @@ fn provision_game(peers: Peers, actor: ContractAddress, administrator: ContractA
     stop_cheat_caller_address(peers.season);
     start_cheat_caller_address(peers.structures, administrator);
     let structures = IStructuresDispatcher { contract_address: peers.structures };
-    structures.configure_resources(7, resources);
+    let resource_store = IResourcesDispatcher { contract_address: peers.resources };
+    start_cheat_caller_address(peers.resources, administrator);
+    resource_store.configure_resources(7, resources);
+    stop_cheat_caller_address(peers.resources);
     let realm = structures
         .provision_realm(
             7,
@@ -366,6 +371,7 @@ fn accepted_malformed_commands_are_terminal_and_cannot_stall_the_stream() {
 pub fn outcome(address: ContractAddress) -> Array<felt252> {
     let peers = IDomainDispatcher { contract_address: address }.domain_state().peers;
     let structures = IStructuresDispatcher { contract_address: peers.structures };
+    let resource_store = IResourcesDispatcher { contract_address: peers.resources };
     let map = world_native::map::IMapDispatcher { contract_address: peers.map };
     let troops = world_native::troops::ITroopsDispatcher { contract_address: peers.troops };
     let game = IGameDispatcher { contract_address: address };
@@ -375,8 +381,8 @@ pub fn outcome(address: ContractAddress) -> Array<felt252> {
     for entity_id in array![1_u32, 2] {
         let key = world_native::resources::ResourceKey { game_id: 7, entity_id };
         structures.structure(key).serialize(ref values);
-        if structures.has_resource(key) {
-            resource_snapshot(structures, key).serialize(ref values);
+        if resource_store.has_resource(key) {
+            resource_snapshot(resource_store, key).serialize(ref values);
         }
         structures.hyperstructure(key).serialize(ref values);
     }
@@ -390,7 +396,7 @@ pub fn outcome(address: ContractAddress) -> Array<felt252> {
             let entity_id: u32 = (tile.data / 512 % 0x100000000).try_into().unwrap();
             let key = world_native::resources::ResourceKey { game_id: 7, entity_id };
             structures.structure(key).serialize(ref values);
-            resource_snapshot(structures, key).serialize(ref values);
+            resource_snapshot(resource_store, key).serialize(ref values);
             structures.hyperstructure(key).serialize(ref values);
         }
     }
@@ -411,16 +417,18 @@ pub fn outcome(address: ContractAddress) -> Array<felt252> {
     values
 }
 
-fn resource_snapshot(structures: IStructuresDispatcher, key: world_native::resources::ResourceKey) -> Array<felt252> {
+fn resource_snapshot(
+    resource_store: IResourcesDispatcher, key: world_native::resources::ResourceKey,
+) -> Array<felt252> {
     let mut values = array![];
-    structures.resource_weight(key).serialize(ref values);
+    resource_store.resource_weight(key).serialize(ref values);
     for resource_type in 1_u8..59 {
         let slot = world_native::resources::ResourceSlot {
             game_id: key.game_id, entity_id: key.entity_id, resource_type,
         };
-        structures.resource_balance(slot).serialize(ref values);
+        resource_store.resource_balance(slot).serialize(ref values);
         if resource_type < 39 || resource_type > 56 {
-            structures.resource_production(slot).serialize(ref values);
+            resource_store.resource_production(slot).serialize(ref values);
         }
     }
     values

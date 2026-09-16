@@ -9,6 +9,10 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
         meaning:
           "Zero balance or inactive production while the resource owner exists; no resource owner after its weight row is deleted.",
       };
+    if (row.name === "ResourceAllowance")
+      row.absence = { value: "zero", meaning: "No approval for this owner, recipient and resource." };
+    if (row.name === "ResourceArrival")
+      row.absence = { value: "empty", meaning: "No resources queued for this entity, day and slot." };
     const observation = behaviouralFacts[row.name];
     return observation ? { ...row, observation } : row;
   };
@@ -87,17 +91,21 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
     model("TileOpt", ["map"], "game", struct("map::TileKey"), struct("map::TileOpt")),
     model("ExplorerTroops", ["troops"], "game", struct("troops::ExplorerKey"), struct("troops::ExplorerTroops")),
     model("Structure", ["structures"], "game", struct("resources::ResourceKey"), struct("structures::Structure")),
-    model("ResourceBalance", ["structures"], "game", struct("resources::ResourceSlot"), [
-      { name: "balance", type: method("structures", "resource_balance").outputs[0].type },
+    model("ResourceBalance", ["resources"], "game", struct("resources::ResourceSlot"), [
+      { name: "balance", type: method("resources", "resource_balance").outputs[0].type },
     ]),
     model(
       "ResourceProduction",
-      ["structures"],
+      ["resources"],
       "game",
       struct("resources::ResourceSlot"),
       struct("resources::Production"),
     ),
-    model("ResourceWeight", ["structures"], "game", struct("resources::ResourceKey"), struct("resources::Weight")),
+    model("ResourceWeight", ["resources"], "game", struct("resources::ResourceKey"), struct("resources::Weight")),
+    model("ResourceArrival", ["resources"], "game", struct("arrivals::ArrivalKey"), struct("arrivals::Arrival")),
+    model("ResourceAllowance", ["resources"], "game", struct("resources::AllowanceKey"), [
+      { name: "amount", type: method("resources", "resource_allowance").outputs[0].type },
+    ]),
     model("Building", ["structures"], "game", struct("buildings::BuildingKey"), struct("buildings::Building")),
     model(
       "StructureBuildings",
@@ -158,14 +166,14 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
 
     model(
       "ResourceRule",
-      ["structures"],
+      ["resources"],
       "game",
-      [struct("resources::ResourceKey")[0], struct("structures::ResourceRule")[0]],
-      struct("structures::ResourceRule").slice(1),
+      [struct("resources::ResourceKey")[0], struct("resources::ResourceRule")[0]],
+      struct("resources::ResourceRule").slice(1),
     ),
     model(
       "ResourceRulesReady",
-      ["structures"],
+      ["resources"],
       "game",
       [struct("resources::ResourceKey")[0]],
       [{ name: "ready", type: "core::bool" }],
@@ -245,6 +253,9 @@ const behaviouralFacts = {
   ResourceBalance: { domain: "resources", fields: { balance: "balance" } },
   ResourceProduction: {
     domain: "resources",
+    transform: "production",
+    meaning:
+      "Settlement time is meaningful only while at least one production building exists; inactive time projects to zero.",
     fields: {
       buildingCount: "building_count",
       rate: "production_rate",
@@ -253,6 +264,8 @@ const behaviouralFacts = {
     },
   },
   ResourceWeight: { domain: "resources", fields: { capacity: "capacity", weight: "weight" } },
+  ResourceAllowance: { domain: "resources", fields: { amount: "amount" } },
+  ResourceArrival: { domain: "resources", fields: { resources: "resources" } },
   AgentPopulation: { domain: "troops", fields: { active: "count" } },
   EntryEntitlement: {
     domain: "blitz-settlement",

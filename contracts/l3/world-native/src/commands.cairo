@@ -52,6 +52,16 @@ pub enum Command {
     SettleSeason: crate::realms::SettleSeason,
     SettleVillage: crate::village::SettleVillage,
     ReceiveVillageArmy: u32,
+    ApproveResources: crate::resources::ResourceApproval,
+    BurnStructureResources: crate::resources::ResourceBurn,
+    RegularizeResourceWeights: Span<u32>,
+    BurnExplorerResources: crate::resources::ResourceBurn,
+    TransferExplorerResources: crate::resources::ResourceTransfer,
+    TransferStructureResourcesToExplorer: crate::resources::ResourceTransfer,
+    OffloadArrival: crate::arrivals::OffloadArrival,
+    SendResources: crate::resources::ResourceTransfer,
+    PickupResources: crate::resources::ResourceTransfer,
+    TransferExplorerResourcesToStructure: crate::resources::ResourceTransfer,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
@@ -90,8 +100,74 @@ pub trait ITroopCommands<T> {
 
 #[starknet::interface]
 pub trait IResourceCommands<T> {
+    fn send_resources(
+        ref self: T,
+        game_id: u32,
+        actor: ContractAddress,
+        command: crate::resources::ResourceTransfer,
+        context: ExecutionContext,
+    );
+    fn pickup_resources(
+        ref self: T,
+        game_id: u32,
+        actor: ContractAddress,
+        command: crate::resources::ResourceTransfer,
+        context: ExecutionContext,
+    );
+    fn transfer_explorer_resources_to_structure(
+        ref self: T,
+        game_id: u32,
+        actor: ContractAddress,
+        command: crate::resources::ResourceTransfer,
+        context: ExecutionContext,
+    );
+    fn offload_arrival(
+        ref self: T,
+        game_id: u32,
+        actor: ContractAddress,
+        command: crate::arrivals::OffloadArrival,
+        context: ExecutionContext,
+    );
     fn claim_production(
         ref self: T, game_id: u32, actor: ContractAddress, structure_id: u32, context: ExecutionContext,
+    );
+    fn approve_resources(
+        ref self: T,
+        game_id: u32,
+        actor: ContractAddress,
+        command: crate::resources::ResourceApproval,
+        context: ExecutionContext,
+    );
+    fn burn_structure_resources(
+        ref self: T,
+        game_id: u32,
+        actor: ContractAddress,
+        command: crate::resources::ResourceBurn,
+        context: ExecutionContext,
+    );
+    fn burn_explorer_resources(
+        ref self: T,
+        game_id: u32,
+        actor: ContractAddress,
+        command: crate::resources::ResourceBurn,
+        context: ExecutionContext,
+    );
+    fn transfer_explorer_resources(
+        ref self: T,
+        game_id: u32,
+        actor: ContractAddress,
+        command: crate::resources::ResourceTransfer,
+        context: ExecutionContext,
+    );
+    fn transfer_structure_resources_to_explorer(
+        ref self: T,
+        game_id: u32,
+        actor: ContractAddress,
+        command: crate::resources::ResourceTransfer,
+        context: ExecutionContext,
+    );
+    fn regularize_resource_weights(
+        ref self: T, game_id: u32, actor: ContractAddress, structure_ids: Span<u32>, context: ExecutionContext,
     );
 }
 

@@ -1,0 +1,3475 @@
+{
+  "version": 1,
+  "domain": "resources",
+  "factModel": {
+    "source": "schema/fact-models.mjs",
+    "schema": "192eab11b50c865bdb1d206ccfe8da0a434765e5453ee64eb25d1f26ea7c8956",
+    "declarations": [
+      {
+        "model": "RealmTraits",
+        "observation": {
+          "domain": "realm/season",
+          "fields": {
+            "wonder": "wonder",
+            "order": "order",
+            "resources": "resources"
+          }
+        }
+      },
+      {
+        "model": "RealmCatalogue",
+        "observation": {
+          "domain": "realm/season",
+          "fields": {
+            "initialized": "initialized"
+          }
+        }
+      },
+      {
+        "model": "AgentPopulation",
+        "observation": {
+          "domain": "troops",
+          "fields": {
+            "active": "count"
+          }
+        }
+      },
+      {
+        "model": "RealmGrants",
+        "observation": {
+          "domain": "blitz-settlement",
+          "fields": {
+            "resources": "resources",
+            "startingTroops": "starting_troops",
+            "realmResources": "realm_resources"
+          }
+        }
+      },
+      {
+        "model": "HyperstructureReservations",
+        "observation": {
+          "domain": "blitz-settlement",
+          "fields": {
+            "placed": "placed"
+          }
+        }
+      },
+      {
+        "model": "SettlementRules",
+        "observation": {
+          "domain": "realm/blitz",
+          "fields": {
+            "registrationOpens": "registration_start",
+            "capacity": "registration_limit",
+            "mode": "mode",
+            "profile": "reward_profile",
+            "cosmeticLimit": "cosmetic_limit"
+          }
+        }
+      },
+      {
+        "model": "SettlementProgress",
+        "observation": {
+          "domain": "realm/blitz",
+          "fields": {
+            "players": "registered",
+            "realms": "realm_count"
+          }
+        }
+      },
+      {
+        "model": "SettlementPool",
+        "observation": {
+          "domain": "realm/blitz",
+          "fields": {
+            "availableLocations": "available"
+          }
+        }
+      },
+      {
+        "model": "VillageRules",
+        "observation": {
+          "domain": "village",
+          "fields": {
+            "armyDelay": "troop_delay_ticks",
+            "grants": "resources",
+            "resourcePool": "resource_pool"
+          }
+        }
+      },
+      {
+        "model": "VillagePass",
+        "observation": {
+          "domain": "village",
+          "fields": {
+            "owner": "owner",
+            "consumedBy": "village_id"
+          }
+        }
+      },
+      {
+        "model": "VillagePool",
+        "observation": {
+          "domain": "village",
+          "fields": {
+            "availableLocations": "available"
+          }
+        }
+      },
+      {
+        "model": "EntryEntitlement",
+        "observation": {
+          "domain": "blitz-settlement",
+          "fields": {
+            "realmId": "realm_id",
+            "metadata1": "metadata_1",
+            "metadata2": "metadata_2",
+            "metadata3": "metadata_3",
+            "passKind": "pass_kind"
+          }
+        }
+      },
+      {
+        "model": "PlayerEntry",
+        "observation": {
+          "domain": "realm/blitz",
+          "fields": {
+            "player": "player"
+          }
+        }
+      },
+      {
+        "model": "PlayerCosmetics",
+        "observation": {
+          "domain": "realm/blitz",
+          "fields": {
+            "attributes": "attributes"
+          }
+        }
+      },
+      {
+        "model": "TileOpt",
+        "observation": {
+          "domain": "map",
+          "fields": {
+            "tile": "data"
+          },
+          "transform": "tile"
+        }
+      },
+      {
+        "model": "ExplorerTroops",
+        "observation": {
+          "domain": "troops",
+          "fields": {
+            "home": "owner",
+            "position": "coord",
+            "troops": "troops"
+          }
+        }
+      },
+      {
+        "model": "Structure",
+        "observation": {
+          "domain": "structures",
+          "fields": {
+            "owner": "owner",
+            "level": "base.level",
+            "kind": "base.category",
+            "column": "base.coord_x",
+            "row": "base.coord_y",
+            "foundedAt": "base.created_at",
+            "guards": "troop_guards",
+            "explorers": "troop_explorers",
+            "explorerLimit": "base.troop_max_explorer_count",
+            "guardLimit": "base.troop_max_guard_count",
+            "startingTroopsGranted": "base.starting_troops_granted",
+            "realm": "metadata.realm_id",
+            "order": "metadata.order",
+            "wonder": "metadata.has_wonder",
+            "connectedRealm": "metadata.village_realm",
+            "resourceTraits": "resources_packed"
+          }
+        }
+      },
+      {
+        "model": "ResourceBalance",
+        "observation": {
+          "domain": "resources",
+          "fields": {
+            "balance": "balance"
+          }
+        }
+      },
+      {
+        "model": "ResourceProduction",
+        "observation": {
+          "domain": "resources",
+          "transform": "production",
+          "meaning": "Settlement time is meaningful only while at least one production building exists; inactive time projects to zero.",
+          "fields": {
+            "buildingCount": "building_count",
+            "rate": "production_rate",
+            "outputRemaining": "output_amount_left",
+            "updatedAt": "last_updated_at"
+          }
+        }
+      },
+      {
+        "model": "ResourceWeight",
+        "observation": {
+          "domain": "resources",
+          "fields": {
+            "capacity": "capacity",
+            "weight": "weight"
+          }
+        }
+      },
+      {
+        "model": "ResourceArrival",
+        "observation": {
+          "domain": "resources",
+          "fields": {
+            "resources": "resources"
+          }
+        }
+      },
+      {
+        "model": "ResourceAllowance",
+        "observation": {
+          "domain": "resources",
+          "fields": {
+            "amount": "amount"
+          }
+        }
+      },
+      {
+        "model": "Building",
+        "observation": {
+          "domain": "production",
+          "fields": {
+            "category": "category",
+            "bonus": "bonus_percent",
+            "structure": "outer_entity_id",
+            "paused": "paused"
+          }
+        }
+      },
+      {
+        "model": "StructureBuildings",
+        "observation": {
+          "domain": "production",
+          "fields": {
+            "population": "population",
+            "counts1": "packed_counts_1",
+            "counts2": "packed_counts_2",
+            "counts3": "packed_counts_3"
+          }
+        }
+      },
+      {
+        "model": "Hyperstructure",
+        "observation": {
+          "domain": "hyperstructures",
+          "fields": {
+            "initialized": "initialized",
+            "completed": "completed",
+            "access": "access",
+            "constructionSeed": "randomness",
+            "pointsMultiplier": "points_multiplier"
+          }
+        }
+      },
+      {
+        "model": "HyperstructureGlobals",
+        "observation": {
+          "domain": "hyperstructures",
+          "fields": {
+            "discovered": "created_count"
+          }
+        }
+      },
+      {
+        "model": "AddressName",
+        "observation": {
+          "domain": "name",
+          "fields": {
+            "name": "name"
+          }
+        }
+      },
+      {
+        "model": "AgentOwner",
+        "observation": {
+          "domain": "ownership",
+          "fields": {
+            "owner": "address"
+          }
+        }
+      },
+      {
+        "model": "WonderFaith",
+        "observation": {
+          "domain": "faith",
+          "fields": {
+            "points": "claimed_points",
+            "pointsPerSecond": "claim_per_sec",
+            "settledAt": "claim_last_at",
+            "ownerPointsPerSecond": "owner_claim_per_sec",
+            "pledgedStructures": "num_structures_pledged"
+          }
+        }
+      },
+      {
+        "model": "FaithfulStructure",
+        "observation": {
+          "domain": "faith",
+          "fields": {
+            "wonder": "wonder_id",
+            "pledgedAt": "faithful_since",
+            "wonderOwnerPointsPerSecond": "fp_to_wonder_owner_per_sec",
+            "structureOwnerPointsPerSecond": "fp_to_struct_owner_per_sec"
+          }
+        }
+      },
+      {
+        "model": "PlayerFaithPoints",
+        "observation": {
+          "domain": "faith",
+          "fields": {
+            "points": "points_claimed",
+            "ownershipPointsPerSecond": "points_per_sec_as_owner",
+            "pledgePointsPerSecond": "points_per_sec_as_pledger",
+            "settledAt": "last_updated_at"
+          }
+        }
+      },
+      {
+        "model": "WonderFaithWinners",
+        "observation": {
+          "domain": "faith",
+          "fields": {
+            "score": "high_score",
+            "wonders": "wonder_ids"
+          }
+        }
+      },
+      {
+        "model": "UpgradeLimits",
+        "observation": {
+          "domain": "structure",
+          "fields": {
+            "realmMaximum": "realm_max",
+            "villageMaximum": "village_max"
+          }
+        }
+      },
+      {
+        "model": "UpgradeRecipe",
+        "observation": {
+          "domain": "structure",
+          "fields": {
+            "costs": "costs"
+          }
+        }
+      },
+      {
+        "model": "PlayerRegisteredPoints",
+        "observation": {
+          "domain": "points",
+          "fields": {
+            "registered": "registered_points"
+          }
+        }
+      },
+      {
+        "model": "SeasonPrize",
+        "observation": {
+          "domain": "points",
+          "fields": {
+            "registered": "total_registered_points"
+          }
+        }
+      }
+    ]
+  },
+  "costs": {
+    "version": 1,
+    "accounting": "Inclusive execution counters at each action entrypoint, including attempted operations before rollback. Event counts sum local emissions across descendants; syscall and gas counters are already inclusive. Account validation and fees are outside this fixture.",
+    "traces": [
+      {
+        "name": "resources_approvals",
+        "sha256": "590843242c5779de342d883dadf242167970e842c718a0282a09983629e62c43",
+        "callTree": {
+          "file": "resources_approvals-costs.calls.json",
+          "sha256": "7e51b065db88f70d818a09672a7adb814d8b6fd8638a41179aedfa0941926335"
+        }
+      },
+      {
+        "name": "resources_burns",
+        "sha256": "6344c8a66b80521a42f1f45622952b762b1bb51c870d166f1b18383671427860",
+        "callTree": {
+          "file": "resources_burns-costs.calls.json",
+          "sha256": "c809e7141d4c80f6ded5c58ecd33f817aefef6bd3e9d883e05195cbf350dd9a2"
+        }
+      },
+      {
+        "name": "resources_regularize",
+        "sha256": "6d756a997ffef9faa1e8400dbd7167fcd43db51e94b12fe4f5b4470c11275098",
+        "callTree": {
+          "file": "resources_regularize-costs.calls.json",
+          "sha256": "910f87e3e916a1d2255f4b2f954206b2961d3925895494c30408001a7ae65d0c"
+        }
+      },
+      {
+        "name": "resources_transfers",
+        "sha256": "794be302710efd6636703ff6c3e7d6686023428aba7294a0c16c4da5e8c4671d",
+        "callTree": {
+          "file": "resources_transfers-costs.calls.json",
+          "sha256": "5b95e37173ff960723fddb78dab231b14f7ca5d8ca864e908277e9ed3813ab73"
+        }
+      },
+      {
+        "name": "resources_knight",
+        "sha256": "afb42e7b11a2a2cb00430f4f7d89b487a6a8af2ea2408107e1c0a655b068f615",
+        "callTree": {
+          "file": "resources_knight-costs.calls.json",
+          "sha256": "a77d1c789f6f196f5bbe2f9ede70e7a826c61f7043c9470f7005f87ef83c4b08"
+        }
+      },
+      {
+        "name": "resources_crossbow",
+        "sha256": "f46fcbf69c1adb3ec8220dd17c46251584a7a123ba38ea1648f78ccb355063c4",
+        "callTree": {
+          "file": "resources_crossbow-costs.calls.json",
+          "sha256": "b6b569bb3faaa9b8b035e2b22a160471887608c20e4a74afb7982eddc1639e1f"
+        }
+      },
+      {
+        "name": "resources_paladin",
+        "sha256": "eecd23a3b5eea37afaba58f2ba5abf4bba103b89545c922f93fc0dbd0ced9def",
+        "callTree": {
+          "file": "resources_paladin-costs.calls.json",
+          "sha256": "bdcff2647e298a809b08a74c5e0a9e84c748a2125240084dc2dee95740106c49"
+        }
+      },
+      {
+        "name": "resources_offload",
+        "sha256": "c069939e7a66565146f7e8c36d60c4aadd78ec9b192408d385eb1aaf4621c05d",
+        "callTree": {
+          "file": "resources_offload-costs.calls.json",
+          "sha256": "c5e18ba69e2d2d811b3ef323b46838f4f4f4e7b5369deef3bd6cba874fd5e4a6"
+        }
+      },
+      {
+        "name": "resources_offload_rejections",
+        "sha256": "82482bcd900ecbd440e9a01f82cd8b49e6c481f0b07093d78654afed377c8932",
+        "callTree": {
+          "file": "resources_offload_rejections-costs.calls.json",
+          "sha256": "5fc73514fe687aa602a9003355fa2bc823b6f4b569c71ced7006da3962df85c0"
+        }
+      },
+      {
+        "name": "resources_offload_capacity",
+        "sha256": "1d3eedfe93efd1068773d20f580318a568461572b0421cd04e9e02c8cb075a74",
+        "callTree": {
+          "file": "resources_offload_capacity-costs.calls.json",
+          "sha256": "5b515d011763ecfc39543679b4c9361585cc951dc2d0f4c6a66f6659ee53c67c"
+        }
+      },
+      {
+        "name": "resources_send",
+        "sha256": "7af930c792dd7c0f7b17d91d5f8db806fb98f82b6811105df8a2a0c90c5f123e",
+        "callTree": {
+          "file": "resources_send-costs.calls.json",
+          "sha256": "3815cb4e21d390069e1ecfcbe63ef8875de17fcbb2b69275c2f43a2145355d29"
+        }
+      },
+      {
+        "name": "resources_pickup",
+        "sha256": "39151b699b8ab31e1290aae409c457a54ae1dfa940ced2439f4fa415a881389e",
+        "callTree": {
+          "file": "resources_pickup-costs.calls.json",
+          "sha256": "c7ee785cc465e7514a0dafb0d2756fc8b959410efa12e956d1a765e60d683dd1"
+        }
+      },
+      {
+        "name": "resources_pickup_unlimited",
+        "sha256": "bb9db5ba31bfefc3144b6cdc61c855ceb9106e7486636032ed5d68648f1b23c6",
+        "callTree": {
+          "file": "resources_pickup_unlimited-costs.calls.json",
+          "sha256": "9b79df149e9c727a4dc1d115c5e0f1fdb669e96294790ff3b4e0077ae4215199"
+        }
+      },
+      {
+        "name": "resources_village_blitz",
+        "sha256": "b71314e76b510e433ad8caf79f8b3b257a5b5b0d5c2189222fef378e2a55df46",
+        "callTree": {
+          "file": "resources_village_blitz-costs.calls.json",
+          "sha256": "d01461be28e944ca6a73a275b7b31de86994075a0179d2d33dd7cf36e140c77d"
+        }
+      },
+      {
+        "name": "resources_duplicates",
+        "sha256": "817295245dea767d02f3e58e276635da5b9bbbb597c51433d159d4e2d313cf8a",
+        "callTree": {
+          "file": "resources_duplicates-costs.calls.json",
+          "sha256": "add89949b28f06db502c94bfc4fd3b0d6ae19c0d7215f0a4bf04e87d4d556268"
+        }
+      },
+      {
+        "name": "resources_village_eternum",
+        "sha256": "613b45557994999e0755646b845eb825ed28c0b19c3afed725641c67778678e4",
+        "callTree": {
+          "file": "resources_village_eternum-costs.calls.json",
+          "sha256": "66c2c40f5849f5e178507749660a6dc18fc18c5728a6dcbbaa70ed9f9e36e986"
+        }
+      }
+    ],
+    "actions": [
+      {
+        "fixture": "resources_approvals",
+        "command": "approve",
+        "dojo": {
+          "storageWrites": 1,
+          "events": 1,
+          "eventFelts": 10,
+          "l2Gas": 2468132,
+          "classHash": "0x65811d4d10181ad5b5e2ff0e70f51097c08868c76a15c6eb317dc3e6497af14"
+        },
+        "nativeExecution": {
+          "storageWrites": 12,
+          "events": 4,
+          "eventFelts": 44,
+          "l2Gas": 1468562,
+          "classHash": "0x49ca345ef77a6b5050661919ebdedc0d7e36f0a50a442ff2ab804f546786185"
+        },
+        "nativeGameplay": {
+          "storageWrites": 1,
+          "events": 1,
+          "eventFelts": 11,
+          "l2Gas": 294370,
+          "classHash": "0x7ba30de7f0296de3ce75d01635db4287732f0428a2b50012774692f74f59cec"
+        },
+        "case": "approve",
+        "expectedSuccess": true,
+        "oracleExpectedSuccess": true
+      },
+      {
+        "fixture": "resources_approvals",
+        "command": "approve",
+        "dojo": {
+          "storageWrites": 1,
+          "events": 1,
+          "eventFelts": 10,
+          "l2Gas": 2468132,
+          "classHash": "0x65811d4d10181ad5b5e2ff0e70f51097c08868c76a15c6eb317dc3e6497af14"
+        },
+        "nativeExecution": {
+          "storageWrites": 12,
+          "events": 4,
+          "eventFelts": 44,
+          "l2Gas": 1468562,
+          "classHash": "0x49ca345ef77a6b5050661919ebdedc0d7e36f0a50a442ff2ab804f546786185"
+        },
+        "nativeGameplay": {
+          "storageWrites": 1,
+          "events": 1,
+          "eventFelts": 11,
+          "l2Gas": 294370,
+          "classHash": "0x7ba30de7f0296de3ce75d01635db4287732f0428a2b50012774692f74f59cec"
+        },
+        "case": "overwrite",
+        "expectedSuccess": true,
+        "oracleExpectedSuccess": true
+      },
+      {
+        "fixture": "resources_approvals",
+        "command": "approve",
+        "dojo": {
+          "storageWrites": 1,
+          "events": 1,
+          "eventFelts": 10,
+          "l2Gas": 2468132,
+          "classHash": "0x65811d4d10181ad5b5e2ff0e70f51097c08868c76a15c6eb317dc3e6497af14"
+        },
+        "nativeExecution": {
+          "storageWrites": 12,
+          "events": 4,
+          "eventFelts": 42,
+          "l2Gas": 1464522,
+          "classHash": "0x49ca345ef77a6b5050661919ebdedc0d7e36f0a50a442ff2ab804f546786185"
+        },
+        "nativeGameplay": {
+          "storageWrites": 1,
+          "events": 1,
+          "eventFelts": 9,
+          "l2Gas": 290330,
+          "classHash": "0x7ba30de7f0296de3ce75d01635db4287732f0428a2b50012774692f74f59cec"
+        },
+        "case": "revoke",
+        "expectedSuccess": true,
+        "oracleExpectedSuccess": true
+      },
+      {
+        "fixture": "resources_approvals",
+        "command": "approve",
+        "dojo": {
+          "storageWrites": 0,
+          "events": 0,
+          "eventFelts": 0,
+          "l2Gas": 2069151,
+          "classHash": "0x65811d4d10181ad5b5e2ff0e70f51097c08868c76a15c6eb317dc3e6497af14"
+        },
+        "nativeExecution": {
+          "storageWrites": 11,
+          "events": 3,
+          "eventFelts": 33,
+          "l2Gas": 1345419,
+          "classHash": "0x49ca345ef77a6b5050661919ebdedc0d7e36f0a50a442ff2ab804f546786185"
+        },
+        "nativeGameplay": {
+          "storageWrites": 0,
+          "events": 0,
+          "eventFelts": 0,
+          "l2Gas": 185480,
+          "classHash": "0x7ba30de7f0296de3ce75d01635db4287732f0428a2b50012774692f74f59cec"
+        },
+        "case": "foreign_owner",
+        "expectedSuccess": false,
+        "oracleExpectedSuccess": false
+      },
+      {
+        "fixture": "resources_approvals",
+        "command": "approve",
+        "dojo": {
+          "storageWrites": 0,
+          "events": 0,
+          "eventFelts": 0,
+          "l2Gas": 1934515,
+          "classHash": "0x65811d4d10181ad5b5e2ff0e70f51097c08868c76a15c6eb317dc3e6497af14"
+        },
+        "nativeExecution": {
+          "storageWrites": 11,
+          "events": 3,
+          "eventFelts": 33,
+          "l2Gas": 1302379,
+          "classHash": "0x49ca345ef77a6b5050661919ebdedc0d7e36f0a50a442ff2ab804f546786185"
+        },
+        "nativeGameplay": {
+          "storageWrites": 0,
+          "events": 0,
+          "eventFelts": 0,
+          "l2Gas": 142440,
+          "classHash": "0x7ba30de7f0296de3ce75d01635db4287732f0428a2b50012774692f74f59cec"
+        },
+        "case": "self_approval",
+        "expectedSuccess": false,
+        "oracleExpectedSuccess": false
+      },
+      {
+        "fixture": "resources_approvals",
+        "command": "approve",
+        "dojo": {
+          "storageWrites": 0,
+          "events": 0,
+          "eventFelts": 0,
+          "l2Gas": 1931135,
+          "classHash": "0x65811d4d10181ad5b5e2ff0e70f51097c08868c76a15c6eb317dc3e6497af14"
+        },
+        "nativeExecution": {
+          "storageWrites": 11,
+          "events": 3,
+          "eventFelts": 33,
+          "l2Gas": 1277737,
+          "classHash": "0x49ca345ef77a6b5050661919ebdedc0d7e36f0a50a442ff2ab804f546786185"
+        },
+        "nativeGameplay": {
+          "storageWrites": 0,
+          "events": 0,
+          "eventFelts": 0,
+          "l2Gas": 139860,
+          "classHash": "0x7ba30de7f0296de3ce75d01635db4287732f0428a2b50012774692f74f59cec"
+        },
+        "case": "empty_approval",
+        "expectedSuccess": false,
+        "oracleExpectedSuccess": false
+      },
+      {
+        "fixture": "resources_burns",
+        "command": "structure_burn",
+        "dojo": {
+          "storageWrites": 4,
+          "events": 4,
+          "eventFelts": 42,
+          "l2Gas": 6535460,
+          "classHash": "0x65811d4d10181ad5b5e2ff0e70f51097c08868c76a15c6eb317dc3e6497af14"
+        },
+        "nativeExecution": {
+          "storageWrites": 15,
+          "events": 7,
+          "eventFelts": 75,
+          "l2Gas": 1688661,
+          "classHash": "0x49ca345ef77a6b5050661919ebdedc0d7e36f0a50a442ff2ab804f546786185"
+        },
+        "nativeGameplay": {
+          "storageWrites": 4,
+          "events": 4,
+          "eventFelts": 42,
+          "l2Gas": 523380,
+          "classHash": "0x7ba30de7f0296de3ce75d01635db4287732f0428a2b50012774692f74f59cec"
+        },
+        "case": "burn",
+        "expectedSuccess": true,
+        "oracleExpectedSuccess": true
+      },
+      {
+        "fixture": "resources_burns",
+        "command": "structure_burn",
+        "dojo": {
+          "storageWrites": 0,
+          "events": 0,
+          "eventFelts": 0,
+          "l2Gas": 6178032,
+          "classHash": "0x65811d4d10181ad5b5e2ff0e70f51097c08868c76a15c6eb317dc3e6497af14"
+        },
+        "nativeExecution": {
+          "storageWrites": 11,
+          "events": 3,
+          "eventFelts": 33,
+          "l2Gas": 1769248,
+          "classHash": "0x49ca345ef77a6b5050661919ebdedc0d7e36f0a50a442ff2ab804f546786185"
+        },
+        "nativeGameplay": {
+          "storageWrites": 0,
+          "events": 0,
+          "eventFelts": 0,
+          "l2Gas": 618220,
+          "classHash": "0x7ba30de7f0296de3ce75d01635db4287732f0428a2b50012774692f74f59cec"
+        },
+        "case": "insufficient",
+        "expectedSuccess": false,
+        "oracleExpectedSuccess": false
+      },
+      {
+        "fixture": "resources_burns",
+        "command": "structure_burn",
+        "dojo": {
+          "storageWrites": 0,
+          "events": 0,
+          "eventFelts": 0,
+          "l2Gas": 2859921,
+          "classHash": "0x65811d4d10181ad5b5e2ff0e70f51097c08868c76a15c6eb317dc3e6497af14"
+        },
+        "nativeExecution": {
+          "storageWrites": 11,
+          "events": 3,
+          "eventFelts": 33,
+          "l2Gas": 1484728,
+          "classHash": "0x49ca345ef77a6b5050661919ebdedc0d7e36f0a50a442ff2ab804f546786185"
+        },
+        "nativeGameplay": {
+          "storageWrites": 0,
+          "events": 0,
+          "eventFelts": 0,
+          "l2Gas": 333700,
+          "classHash": "0x7ba30de7f0296de3ce75d01635db4287732f0428a2b50012774692f74f59cec"
+        },
+        "case": "foreign_owner",
+        "expectedSuccess": false,
+        "oracleExpectedSuccess": false
+      },
+      {
+        "fixture": "resources_burns",
+        "command": "structure_burn",
+        "dojo": {
+          "storageWrites": 3,
+          "events": 3,
+          "eventFelts": 32,
+          "l2Gas": 3918921,
+          "classHash": "0x65811d4d10181ad5b5e2ff0e70f51097c08868c76a15c6eb317dc3e6497af14"
+        },
+        "nativeExecution": {
+          "storageWrites": 12,
+          "events": 5,
+          "eventFelts": 53,
+          "l2Gas": 1456459,
+          "classHash": "0x49ca345ef77a6b5050661919ebdedc0d7e36f0a50a442ff2ab804f546786185"
+        },
+        "nativeGameplay": {
+          "storageWrites": 1,
+          "events": 2,
+          "eventFelts": 20,
+          "l2Gas": 313240,
+          "classHash": "0x7ba30de7f0296de3ce75d01635db4287732f0428a2b50012774692f74f59cec"
+        },
+        "case": "empty_burn",
+        "expectedSuccess": true,
+        "oracleExpectedSuccess": true
+      },
+      {
+        "fixture": "resources_regularize",
+        "command": "structure_regularize_weight",
+        "dojo": {
+          "storageWrites": 4,
+          "events": 2,
+          "eventFelts": 14,
+          "l2Gas": 250872657,
+          "classHash": "0x65811d4d10181ad5b5e2ff0e70f51097c08868c76a15c6eb317dc3e6497af14"
+        },
+        "nativeExecution": {
+          "storageWrites": 11,
+          "events": 3,
+          "eventFelts": 33,
+          "l2Gas": 9870400,
+          "classHash": "0x49ca345ef77a6b5050661919ebdedc0d7e36f0a50a442ff2ab804f546786185"
+        },
+        "nativeGameplay": {
+          "storageWrites": 0,
+          "events": 0,
+          "eventFelts": 0,
+          "l2Gas": 8711950,
+          "classHash": "0x7ba30de7f0296de3ce75d01635db4287732f0428a2b50012774692f74f59cec"
+        },
+        "case": "regularize",
+        "expectedSuccess": true,
+        "oracleExpectedSuccess": true
+      },
+      {
+        "fixture": "resources_regularize",
+        "command": "structure_regularize_weight",
+        "dojo": {
+          "storageWrites": 2,
+          "events": 1,
+          "eventFelts": 7,
+          "l2Gas": 126211381,
+          "classHash": "0x65811d4d10181ad5b5e2ff0e70f51097c08868c76a15c6eb317dc3e6497af14"
+        },
+        "nativeExecution": {
+          "storageWrites": 11,
+          "events": 3,
+          "eventFelts": 33,
+          "l2Gas": 5567189,
+          "classHash": "0x49ca345ef77a6b5050661919ebdedc0d7e36f0a50a442ff2ab804f546786185"
+        },
+        "nativeGameplay": {
+          "storageWrites": 0,
+          "events": 0,
+          "eventFelts": 0,
+          "l2Gas": 4421760,
+          "classHash": "0x7ba30de7f0296de3ce75d01635db4287732f0428a2b50012774692f74f59cec"
+        },
+        "case": "permissionless",
+        "expectedSuccess": true,
+        "oracleExpectedSuccess": true
+      },
+      {
+        "fixture": "resources_regularize",
+        "command": "structure_regularize_weight",
+        "dojo": {
+          "storageWrites": 0,
+          "events": 0,
+          "eventFelts": 0,
+          "l2Gas": 1550205,
+          "classHash": "0x65811d4d10181ad5b5e2ff0e70f51097c08868c76a15c6eb317dc3e6497af14"
+        },
+        "nativeExecution": {
+          "storageWrites": 11,
+          "events": 3,
+          "eventFelts": 33,
+          "l2Gas": 1251835,
+          "classHash": "0x49ca345ef77a6b5050661919ebdedc0d7e36f0a50a442ff2ab804f546786185"
+        },
+        "nativeGameplay": {
+          "storageWrites": 0,
+          "events": 0,
+          "eventFelts": 0,
+          "l2Gas": 133680,
+          "classHash": "0x7ba30de7f0296de3ce75d01635db4287732f0428a2b50012774692f74f59cec"
+        },
+        "case": "empty_regularization",
+        "expectedSuccess": false,
+        "oracleExpectedSuccess": false
+      },
+      {
+        "fixture": "resources_transfers",
+        "command": "structure_troop_adjacent_transfer",
+        "dojo": {
+          "storageWrites": 29,
+          "events": 13,
+          "eventFelts": 112,
+          "l2Gas": 21366614,
+          "classHash": "0x65811d4d10181ad5b5e2ff0e70f51097c08868c76a15c6eb317dc3e6497af14"
+        },
+        "nativeExecution": {
+          "storageWrites": 18,
+          "events": 9,
+          "eventFelts": 102,
+          "l2Gas": 3488452,
+          "classHash": "0x49ca345ef77a6b5050661919ebdedc0d7e36f0a50a442ff2ab804f546786185"
+        },
+        "nativeGameplay": {
+          "storageWrites": 7,
+          "events": 6,
+          "eventFelts": 69,
+          "l2Gas": 2314260,
+          "classHash": "0x7ba30de7f0296de3ce75d01635db4287732f0428a2b50012774692f74f59cec"
+        },
+        "case": "structure_transfer_capacity",
+        "expectedSuccess": true,
+        "oracleExpectedSuccess": true
+      },
+      {
+        "fixture": "resources_transfers",
+        "command": "troop_troop_adjacent_transfer",
+        "dojo": {
+          "storageWrites": 29,
+          "events": 13,
+          "eventFelts": 112,
+          "l2Gas": 20831346,
+          "classHash": "0x65811d4d10181ad5b5e2ff0e70f51097c08868c76a15c6eb317dc3e6497af14"
+        },
+        "nativeExecution": {
+          "storageWrites": 18,
+          "events": 9,
+          "eventFelts": 102,
+          "l2Gas": 3040932,
+          "classHash": "0x49ca345ef77a6b5050661919ebdedc0d7e36f0a50a442ff2ab804f546786185"
+        },
+        "nativeGameplay": {
+          "storageWrites": 7,
+          "events": 6,
+          "eventFelts": 69,
+          "l2Gas": 1866740,
+          "classHash": "0x7ba30de7f0296de3ce75d01635db4287732f0428a2b50012774692f74f59cec"
+        },
+        "case": "explorer_transfer_capacity",
+        "expectedSuccess": true,
+        "oracleExpectedSuccess": true
+      },
+      {
+        "fixture": "resources_transfers",
+        "command": "troop_burn",
+        "dojo": {
+          "storageWrites": 0,
+          "events": 0,
+          "eventFelts": 0,
+          "l2Gas": 4763631,
+          "classHash": "0x65811d4d10181ad5b5e2ff0e70f51097c08868c76a15c6eb317dc3e6497af14"
+        },
+        "nativeExecution": {
+          "storageWrites": 11,
+          "events": 3,
+          "eventFelts": 33,
+          "l2Gas": 1994068,
+          "classHash": "0x49ca345ef77a6b5050661919ebdedc0d7e36f0a50a442ff2ab804f546786185"
+        },
+        "nativeGameplay": {
+          "storageWrites": 0,
+          "events": 0,
+          "eventFelts": 0,
+          "l2Gas": 843040,
+          "classHash": "0x7ba30de7f0296de3ce75d01635db4287732f0428a2b50012774692f74f59cec"
+        },
+        "case": "foreign_agent_owner",
+        "expectedSuccess": false,
+        "oracleExpectedSuccess": false
+      },
+      {
+        "fixture": "resources_transfers",
+        "command": "troop_burn",
+        "dojo": {
+          "storageWrites": 4,
+          "events": 4,
+          "eventFelts": 42,
+          "l2Gas": 8313470,
+          "classHash": "0x65811d4d10181ad5b5e2ff0e70f51097c08868c76a15c6eb317dc3e6497af14"
+        },
+        "nativeExecution": {
+          "storageWrites": 15,
+          "events": 7,
+          "eventFelts": 73,
+          "l2Gas": 1851541,
+          "classHash": "0x49ca345ef77a6b5050661919ebdedc0d7e36f0a50a442ff2ab804f546786185"
+        },
+        "nativeGameplay": {
+          "storageWrites": 4,
+          "events": 4,
+          "eventFelts": 40,
+          "l2Gas": 686260,
+          "classHash": "0x7ba30de7f0296de3ce75d01635db4287732f0428a2b50012774692f74f59cec"
+        },
+        "case": "agent_owner_burn",
+        "expectedSuccess": true,
+        "oracleExpectedSuccess": true
+      },
+      {
+        "fixture": "resources_transfers",
+        "command": "troop_troop_adjacent_transfer",
+        "dojo": {
+          "storageWrites": 0,
+          "events": 0,
+          "eventFelts": 0,
+          "l2Gas": 5808631,
+          "classHash": "0x65811d4d10181ad5b5e2ff0e70f51097c08868c76a15c6eb317dc3e6497af14"
+        },
+        "nativeExecution": {
+          "storageWrites": 11,
+          "events": 3,
+          "eventFelts": 33,
+          "l2Gas": 2261849,
+          "classHash": "0x49ca345ef77a6b5050661919ebdedc0d7e36f0a50a442ff2ab804f546786185"
+        },
+        "nativeGameplay": {
+          "storageWrites": 0,
+          "events": 0,
+          "eventFelts": 0,
+          "l2Gas": 1101910,
+          "classHash": "0x7ba30de7f0296de3ce75d01635db4287732f0428a2b50012774692f74f59cec"
+        },
+        "case": "self_transfer",
+        "expectedSuccess": false,
+        "oracleExpectedSuccess": false
+      },
+      {
+        "fixture": "resources_knight",
+        "command": "structure_troop_adjacent_transfer",
+        "dojo": {
+          "storageWrites": 0,
+          "events": 0,
+          "eventFelts": 0,
+          "l2Gas": 8719305,
+          "classHash": "0x65811d4d10181ad5b5e2ff0e70f51097c08868c76a15c6eb317dc3e6497af14"
+        },
+        "nativeExecution": {
+          "storageWrites": 11,
+          "events": 3,
+          "eventFelts": 33,
+          "l2Gas": 3122439,
+          "classHash": "0x49ca345ef77a6b5050661919ebdedc0d7e36f0a50a442ff2ab804f546786185"
+        },
+        "nativeGameplay": {
+          "storageWrites": 0,
+          "events": 0,
+          "eventFelts": 0,
+          "l2Gas": 1962500,
+          "classHash": "0x7ba30de7f0296de3ce75d01635db4287732f0428a2b50012774692f74f59cec"
+        },
+        "case": "troop_resource_26",
+        "expectedSuccess": false,
+        "oracleExpectedSuccess": false
+      },
+      {
+        "fixture": "resources_knight",
+        "command": "structure_troop_adjacent_transfer",
+        "dojo": {
+          "storageWrites": 0,
+          "events": 0,
+          "eventFelts": 0,
+          "l2Gas": 8719595,
+          "classHash": "0x65811d4d10181ad5b5e2ff0e70f51097c08868c76a15c6eb317dc3e6497af14"
+        },
+        "nativeExecution": {
+          "storageWrites": 11,
+          "events": 3,
+          "eventFelts": 33,
+          "l2Gas": 3122439,
+          "classHash": "0x49ca345ef77a6b5050661919ebdedc0d7e36f0a50a442ff2ab804f546786185"
+        },
+        "nativeGameplay": {
+          "storageWrites": 0,
+          "events": 0,
+          "eventFelts": 0,
+          "l2Gas": 1962500,
+          "classHash": "0x7ba30de7f0296de3ce75d01635db4287732f0428a2b50012774692f74f59cec"
+        },
+        "case": "troop_resource_27",
+        "expectedSuccess": false,
+        "oracleExpectedSuccess": false
+      },
+      {
+        "fixture": "resources_knight",
+        "command": "structure_troop_adjacent_transfer",
+        "dojo": {
+          "storageWrites": 0,
+          "events": 0,
+          "eventFelts": 0,
+          "l2Gas": 8719785,
+          "classHash": "0x65811d4d10181ad5b5e2ff0e70f51097c08868c76a15c6eb317dc3e6497af14"
+        },
+        "nativeExecution": {
+          "storageWrites": 11,
+          "events": 3,
+          "eventFelts": 33,
+          "l2Gas": 3122439,
+          "classHash": "0x49ca345ef77a6b5050661919ebdedc0d7e36f0a50a442ff2ab804f546786185"
+        },
+        "nativeGameplay": {
+          "storageWrites": 0,
+          "events": 0,
+          "eventFelts": 0,
+          "l2Gas": 1962500,
+          "classHash": "0x7ba30de7f0296de3ce75d01635db4287732f0428a2b50012774692f74f59cec"
+        },
+        "case": "troop_resource_28",
+        "expectedSuccess": false,
+        "oracleExpectedSuccess": false
+      },
+      {
+        "fixture": "resources_crossbow",
+        "command": "structure_troop_adjacent_transfer",
+        "dojo": {
+          "storageWrites": 0,
+          "events": 0,
+          "eventFelts": 0,
+          "l2Gas": 8719975,
+          "classHash": "0x65811d4d10181ad5b5e2ff0e70f51097c08868c76a15c6eb317dc3e6497af14"
+        },
+        "nativeExecution": {
+          "storageWrites": 11,
+          "events": 3,
+          "eventFelts": 33,
+          "l2Gas": 3122439,
+          "classHash": "0x49ca345ef77a6b5050661919ebdedc0d7e36f0a50a442ff2ab804f546786185"
+        },
+        "nativeGameplay": {
+          "storageWrites": 0,
+          "events": 0,
+          "eventFelts": 0,
+          "l2Gas": 1962500,
+          "classHash": "0x7ba30de7f0296de3ce75d01635db4287732f0428a2b50012774692f74f59cec"
+        },
+        "case": "troop_resource_29",
+        "expectedSuccess": false,
+        "oracleExpectedSuccess": false
+      },
+      {
+        "fixture": "resources_crossbow",
+        "command": "structure_troop_adjacent_transfer",
+        "dojo": {
+          "storageWrites": 0,
+          "events": 0,
+          "eventFelts": 0,
+          "l2Gas": 8720165,
+          "classHash": "0x65811d4d10181ad5b5e2ff0e70f51097c08868c76a15c6eb317dc3e6497af14"
+        },
+        "nativeExecution": {
+          "storageWrites": 11,
+          "events": 3,
+          "eventFelts": 33,
+          "l2Gas": 3122439,
+          "classHash": "0x49ca345ef77a6b5050661919ebdedc0d7e36f0a50a442ff2ab804f546786185"
+        },
+        "nativeGameplay": {
+          "storageWrites": 0,
+          "events": 0,
+          "eventFelts": 0,
+          "l2Gas": 1962500,
+          "classHash": "0x7ba30de7f0296de3ce75d01635db4287732f0428a2b50012774692f74f59cec"
+        },
+        "case": "troop_resource_30",
+        "expectedSuccess": false,
+        "oracleExpectedSuccess": false
+      },
+      {
+        "fixture": "resources_crossbow",
+        "command": "structure_troop_adjacent_transfer",
+        "dojo": {
+          "storageWrites": 0,
+          "events": 0,
+          "eventFelts": 0,
+          "l2Gas": 8720355,
+          "classHash": "0x65811d4d10181ad5b5e2ff0e70f51097c08868c76a15c6eb317dc3e6497af14"
+        },
+        "nativeExecution": {
+          "storageWrites": 11,
+          "events": 3,
+          "eventFelts": 33,
+          "l2Gas": 3122439,
+          "classHash": "0x49ca345ef77a6b5050661919ebdedc0d7e36f0a50a442ff2ab804f546786185"
+        },
+        "nativeGameplay": {
+          "storageWrites": 0,
+          "events": 0,
+          "eventFelts": 0,
+          "l2Gas": 1962500,
+          "classHash": "0x7ba30de7f0296de3ce75d01635db4287732f0428a2b50012774692f74f59cec"
+        },
+        "case": "troop_resource_31",
+        "expectedSuccess": false,
+        "oracleExpectedSuccess": false
+      },
+      {
+        "fixture": "resources_paladin",
+        "command": "structure_troop_adjacent_transfer",
+        "dojo": {
+          "storageWrites": 0,
+          "events": 0,
+          "eventFelts": 0,
+          "l2Gas": 8720545,
+          "classHash": "0x65811d4d10181ad5b5e2ff0e70f51097c08868c76a15c6eb317dc3e6497af14"
+        },
+        "nativeExecution": {
+          "storageWrites": 11,
+          "events": 3,
+          "eventFelts": 33,
+          "l2Gas": 3122439,
+          "classHash": "0x49ca345ef77a6b5050661919ebdedc0d7e36f0a50a442ff2ab804f546786185"
+        },
+        "nativeGameplay": {
+          "storageWrites": 0,
+          "events": 0,
+          "eventFelts": 0,
+          "l2Gas": 1962500,
+          "classHash": "0x7ba30de7f0296de3ce75d01635db4287732f0428a2b50012774692f74f59cec"
+        },
+        "case": "troop_resource_32",
+        "expectedSuccess": false,
+        "oracleExpectedSuccess": false
+      },
+      {
+        "fixture": "resources_paladin",
+        "command": "structure_troop_adjacent_transfer",
+        "dojo": {
+          "storageWrites": 0,
+          "events": 0,
+          "eventFelts": 0,
+          "l2Gas": 8720735,
+          "classHash": "0x65811d4d10181ad5b5e2ff0e70f51097c08868c76a15c6eb317dc3e6497af14"
+        },
+        "nativeExecution": {
+          "storageWrites": 11,
+          "events": 3,
+          "eventFelts": 33,
+          "l2Gas": 3122439,
+          "classHash": "0x49ca345ef77a6b5050661919ebdedc0d7e36f0a50a442ff2ab804f546786185"
+        },
+        "nativeGameplay": {
+          "storageWrites": 0,
+          "events": 0,
+          "eventFelts": 0,
+          "l2Gas": 1962500,
+          "classHash": "0x7ba30de7f0296de3ce75d01635db4287732f0428a2b50012774692f74f59cec"
+        },
+        "case": "troop_resource_33",
+        "expectedSuccess": false,
+        "oracleExpectedSuccess": false
+      },
+      {
+        "fixture": "resources_paladin",
+        "command": "structure_troop_adjacent_transfer",
+        "dojo": {
+          "storageWrites": 0,
+          "events": 0,
+          "eventFelts": 0,
+          "l2Gas": 8720825,
+          "classHash": "0x65811d4d10181ad5b5e2ff0e70f51097c08868c76a15c6eb317dc3e6497af14"
+        },
+        "nativeExecution": {
+          "storageWrites": 11,
+          "events": 3,
+          "eventFelts": 33,
+          "l2Gas": 3122439,
+          "classHash": "0x49ca345ef77a6b5050661919ebdedc0d7e36f0a50a442ff2ab804f546786185"
+        },
+        "nativeGameplay": {
+          "storageWrites": 0,
+          "events": 0,
+          "eventFelts": 0,
+          "l2Gas": 1962500,
+          "classHash": "0x7ba30de7f0296de3ce75d01635db4287732f0428a2b50012774692f74f59cec"
+        },
+        "case": "troop_resource_34",
+        "expectedSuccess": false,
+        "oracleExpectedSuccess": false
+      },
+      {
+        "fixture": "resources_offload",
+        "command": "arrivals_offload",
+        "dojo": {
+          "storageWrites": 19,
+          "events": 9,
+          "eventFelts": 75,
+          "l2Gas": 15758228,
+          "classHash": "0x65811d4d10181ad5b5e2ff0e70f51097c08868c76a15c6eb317dc3e6497af14"
+        },
+        "nativeExecution": {
+          "storageWrites": 16,
+          "events": 8,
+          "eventFelts": 88,
+          "l2Gas": 3185221,
+          "classHash": "0x49ca345ef77a6b5050661919ebdedc0d7e36f0a50a442ff2ab804f546786185"
+        },
+        "nativeGameplay": {
+          "storageWrites": 5,
+          "events": 5,
+          "eventFelts": 55,
+          "l2Gas": 2029480,
+          "classHash": "0x7ba30de7f0296de3ce75d01635db4287732f0428a2b50012774692f74f59cec"
+        },
+        "case": "prefix",
+        "expectedSuccess": true,
+        "oracleExpectedSuccess": true
+      },
+      {
+        "fixture": "resources_offload",
+        "command": "arrivals_offload",
+        "dojo": {
+          "storageWrites": 65,
+          "events": 8,
+          "eventFelts": 64,
+          "l2Gas": 19058990,
+          "classHash": "0x65811d4d10181ad5b5e2ff0e70f51097c08868c76a15c6eb317dc3e6497af14"
+        },
+        "nativeExecution": {
+          "storageWrites": 16,
+          "events": 8,
+          "eventFelts": 84,
+          "l2Gas": 3080601,
+          "classHash": "0x49ca345ef77a6b5050661919ebdedc0d7e36f0a50a442ff2ab804f546786185"
+        },
+        "nativeGameplay": {
+          "storageWrites": 5,
+          "events": 5,
+          "eventFelts": 51,
+          "l2Gas": 1924860,
+          "classHash": "0x7ba30de7f0296de3ce75d01635db4287732f0428a2b50012774692f74f59cec"
+        },
+        "case": "remaining",
+        "expectedSuccess": true,
+        "oracleExpectedSuccess": true
+      },
+      {
+        "fixture": "resources_offload",
+        "command": "arrivals_offload",
+        "dojo": {
+          "storageWrites": 52,
+          "events": 2,
+          "eventFelts": 10,
+          "l2Gas": 11802471,
+          "classHash": "0x65811d4d10181ad5b5e2ff0e70f51097c08868c76a15c6eb317dc3e6497af14"
+        },
+        "nativeExecution": {
+          "storageWrites": 11,
+          "events": 3,
+          "eventFelts": 33,
+          "l2Gas": 2570431,
+          "classHash": "0x49ca345ef77a6b5050661919ebdedc0d7e36f0a50a442ff2ab804f546786185"
+        },
+        "nativeGameplay": {
+          "storageWrites": 0,
+          "events": 0,
+          "eventFelts": 0,
+          "l2Gas": 1414690,
+          "classHash": "0x7ba30de7f0296de3ce75d01635db4287732f0428a2b50012774692f74f59cec"
+        },
+        "case": "empty",
+        "expectedSuccess": true,
+        "oracleExpectedSuccess": true
+      },
+      {
+        "fixture": "resources_offload_rejections",
+        "command": "arrivals_offload",
+        "dojo": {
+          "storageWrites": 0,
+          "events": 0,
+          "eventFelts": 0,
+          "l2Gas": 5823371,
+          "classHash": "0x65811d4d10181ad5b5e2ff0e70f51097c08868c76a15c6eb317dc3e6497af14"
+        },
+        "nativeExecution": {
+          "storageWrites": 11,
+          "events": 3,
+          "eventFelts": 33,
+          "l2Gas": 1323268,
+          "classHash": "0x49ca345ef77a6b5050661919ebdedc0d7e36f0a50a442ff2ab804f546786185"
+        },
+        "nativeGameplay": {
+          "storageWrites": 0,
+          "events": 0,
+          "eventFelts": 0,
+          "l2Gas": 181780,
+          "classHash": "0x7ba30de7f0296de3ce75d01635db4287732f0428a2b50012774692f74f59cec"
+        },
+        "case": "foreign_owner",
+        "expectedSuccess": false,
+        "oracleExpectedSuccess": false
+      },
+      {
+        "fixture": "resources_offload_rejections",
+        "command": "arrivals_offload",
+        "dojo": {
+          "storageWrites": 0,
+          "events": 0,
+          "eventFelts": 0,
+          "l2Gas": 3141579,
+          "classHash": "0x65811d4d10181ad5b5e2ff0e70f51097c08868c76a15c6eb317dc3e6497af14"
+        },
+        "nativeExecution": {
+          "storageWrites": 11,
+          "events": 3,
+          "eventFelts": 33,
+          "l2Gas": 1948098,
+          "classHash": "0x49ca345ef77a6b5050661919ebdedc0d7e36f0a50a442ff2ab804f546786185"
+        },
+        "nativeGameplay": {
+          "storageWrites": 0,
+          "events": 0,
+          "eventFelts": 0,
+          "l2Gas": 806610,
+          "classHash": "0x7ba30de7f0296de3ce75d01635db4287732f0428a2b50012774692f74f59cec"
+        },
+        "case": "zero_count",
+        "expectedSuccess": false,
+        "oracleExpectedSuccess": false
+      },
+      {
+        "fixture": "resources_offload_rejections",
+        "command": "arrivals_offload",
+        "dojo": {
+          "storageWrites": 0,
+          "events": 0,
+          "eventFelts": 0,
+          "l2Gas": 6336897,
+          "classHash": "0x65811d4d10181ad5b5e2ff0e70f51097c08868c76a15c6eb317dc3e6497af14"
+        },
+        "nativeExecution": {
+          "storageWrites": 11,
+          "events": 3,
+          "eventFelts": 33,
+          "l2Gas": 2521578,
+          "classHash": "0x49ca345ef77a6b5050661919ebdedc0d7e36f0a50a442ff2ab804f546786185"
+        },
+        "nativeGameplay": {
+          "storageWrites": 0,
+          "events": 0,
+          "eventFelts": 0,
+          "l2Gas": 1380090,
+          "classHash": "0x7ba30de7f0296de3ce75d01635db4287732f0428a2b50012774692f74f59cec"
+        },
+        "case": "not_arrived",
+        "expectedSuccess": false,
+        "oracleExpectedSuccess": false
+      },
+      {
+        "fixture": "resources_offload_capacity",
+        "command": "arrivals_offload",
+        "dojo": {
+          "storageWrites": 77,
+          "events": 13,
+          "eventFelts": 103,
+          "l2Gas": 25783619,
+          "classHash": "0x65811d4d10181ad5b5e2ff0e70f51097c08868c76a15c6eb317dc3e6497af14"
+        },
+        "nativeExecution": {
+          "storageWrites": 13,
+          "events": 6,
+          "eventFelts": 66,
+          "l2Gas": 3271171,
+          "classHash": "0x49ca345ef77a6b5050661919ebdedc0d7e36f0a50a442ff2ab804f546786185"
+        },
+        "nativeGameplay": {
+          "storageWrites": 2,
+          "events": 3,
+          "eventFelts": 33,
+          "l2Gas": 2115430,
+          "classHash": "0x7ba30de7f0296de3ce75d01635db4287732f0428a2b50012774692f74f59cec"
+        },
+        "case": "full_capacity",
+        "expectedSuccess": true,
+        "oracleExpectedSuccess": true
+      },
+      {
+        "fixture": "resources_send",
+        "command": "send",
+        "dojo": {
+          "storageWrites": 83,
+          "events": 17,
+          "eventFelts": 212,
+          "l2Gas": 36567731,
+          "classHash": "0x65811d4d10181ad5b5e2ff0e70f51097c08868c76a15c6eb317dc3e6497af14"
+        },
+        "nativeExecution": {
+          "storageWrites": 20,
+          "events": 11,
+          "eventFelts": 134,
+          "l2Gas": 4208832,
+          "classHash": "0x49ca345ef77a6b5050661919ebdedc0d7e36f0a50a442ff2ab804f546786185"
+        },
+        "nativeGameplay": {
+          "storageWrites": 9,
+          "events": 8,
+          "eventFelts": 101,
+          "l2Gas": 3034640,
+          "classHash": "0x7ba30de7f0296de3ce75d01635db4287732f0428a2b50012774692f74f59cec"
+        },
+        "case": "send",
+        "expectedSuccess": true,
+        "oracleExpectedSuccess": true
+      },
+      {
+        "fixture": "resources_send",
+        "command": "send",
+        "dojo": {
+          "storageWrites": 20,
+          "events": 11,
+          "eventFelts": 116,
+          "l2Gas": 26865411,
+          "classHash": "0x65811d4d10181ad5b5e2ff0e70f51097c08868c76a15c6eb317dc3e6497af14"
+        },
+        "nativeExecution": {
+          "storageWrites": 19,
+          "events": 11,
+          "eventFelts": 134,
+          "l2Gas": 4243722,
+          "classHash": "0x49ca345ef77a6b5050661919ebdedc0d7e36f0a50a442ff2ab804f546786185"
+        },
+        "nativeGameplay": {
+          "storageWrites": 8,
+          "events": 8,
+          "eventFelts": 101,
+          "l2Gas": 3069530,
+          "classHash": "0x7ba30de7f0296de3ce75d01635db4287732f0428a2b50012774692f74f59cec"
+        },
+        "case": "merge",
+        "expectedSuccess": true,
+        "oracleExpectedSuccess": true
+      },
+      {
+        "fixture": "resources_send",
+        "command": "send",
+        "dojo": {
+          "storageWrites": 32,
+          "events": 16,
+          "eventFelts": 148,
+          "l2Gas": 30785117,
+          "classHash": "0x65811d4d10181ad5b5e2ff0e70f51097c08868c76a15c6eb317dc3e6497af14"
+        },
+        "nativeExecution": {
+          "storageWrites": 13,
+          "events": 7,
+          "eventFelts": 91,
+          "l2Gas": 3970322,
+          "classHash": "0x49ca345ef77a6b5050661919ebdedc0d7e36f0a50a442ff2ab804f546786185"
+        },
+        "nativeGameplay": {
+          "storageWrites": 2,
+          "events": 4,
+          "eventFelts": 58,
+          "l2Gas": 2796130,
+          "classHash": "0x7ba30de7f0296de3ce75d01635db4287732f0428a2b50012774692f74f59cec"
+        },
+        "case": "zero",
+        "expectedSuccess": true,
+        "oracleExpectedSuccess": true
+      },
+      {
+        "fixture": "resources_send",
+        "command": "send",
+        "dojo": {
+          "storageWrites": 7,
+          "events": 3,
+          "eventFelts": 22,
+          "l2Gas": 23206940,
+          "classHash": "0x65811d4d10181ad5b5e2ff0e70f51097c08868c76a15c6eb317dc3e6497af14"
+        },
+        "nativeExecution": {
+          "storageWrites": 11,
+          "events": 3,
+          "eventFelts": 33,
+          "l2Gas": 4702329,
+          "classHash": "0x49ca345ef77a6b5050661919ebdedc0d7e36f0a50a442ff2ab804f546786185"
+        },
+        "nativeGameplay": {
+          "storageWrites": 0,
+          "events": 0,
+          "eventFelts": 0,
+          "l2Gas": 3542390,
+          "classHash": "0x7ba30de7f0296de3ce75d01635db4287732f0428a2b50012774692f74f59cec"
+        },
+        "case": "insufficient",
+        "expectedSuccess": false,
+        "oracleExpectedSuccess": false
+      },
+      {
+        "fixture": "resources_pickup",
+        "command": "approve",
+        "dojo": {
+          "storageWrites": 1,
+          "events": 1,
+          "eventFelts": 10,
+          "l2Gas": 2468132,
+          "classHash": "0x65811d4d10181ad5b5e2ff0e70f51097c08868c76a15c6eb317dc3e6497af14"
+        },
+        "nativeExecution": {
+          "storageWrites": 12,
+          "events": 4,
+          "eventFelts": 44,
+          "l2Gas": 1468562,
+          "classHash": "0x49ca345ef77a6b5050661919ebdedc0d7e36f0a50a442ff2ab804f546786185"
+        },
+        "nativeGameplay": {
+          "storageWrites": 1,
+          "events": 1,
+          "eventFelts": 11,
+          "l2Gas": 294370,
+          "classHash": "0x7ba30de7f0296de3ce75d01635db4287732f0428a2b50012774692f74f59cec"
+        },
+        "case": "approve",
+        "expectedSuccess": true,
+        "oracleExpectedSuccess": true
+      },
+      {
+        "fixture": "resources_pickup",
+        "command": "pickup",
+        "dojo": {
+          "storageWrites": 84,
+          "events": 18,
+          "eventFelts": 222,
+          "l2Gas": 36993071,
+          "classHash": "0x65811d4d10181ad5b5e2ff0e70f51097c08868c76a15c6eb317dc3e6497af14"
+        },
+        "nativeExecution": {
+          "storageWrites": 21,
+          "events": 12,
+          "eventFelts": 145,
+          "l2Gas": 4303662,
+          "classHash": "0x49ca345ef77a6b5050661919ebdedc0d7e36f0a50a442ff2ab804f546786185"
+        },
+        "nativeGameplay": {
+          "storageWrites": 10,
+          "events": 9,
+          "eventFelts": 112,
+          "l2Gas": 3129470,
+          "classHash": "0x7ba30de7f0296de3ce75d01635db4287732f0428a2b50012774692f74f59cec"
+        },
+        "case": "pickup",
+        "expectedSuccess": true,
+        "oracleExpectedSuccess": true
+      },
+      {
+        "fixture": "resources_pickup",
+        "command": "pickup",
+        "dojo": {
+          "storageWrites": 0,
+          "events": 0,
+          "eventFelts": 0,
+          "l2Gas": 10761696,
+          "classHash": "0x65811d4d10181ad5b5e2ff0e70f51097c08868c76a15c6eb317dc3e6497af14"
+        },
+        "nativeExecution": {
+          "storageWrites": 11,
+          "events": 3,
+          "eventFelts": 33,
+          "l2Gas": 3294329,
+          "classHash": "0x49ca345ef77a6b5050661919ebdedc0d7e36f0a50a442ff2ab804f546786185"
+        },
+        "nativeGameplay": {
+          "storageWrites": 0,
+          "events": 0,
+          "eventFelts": 0,
+          "l2Gas": 2134390,
+          "classHash": "0x7ba30de7f0296de3ce75d01635db4287732f0428a2b50012774692f74f59cec"
+        },
+        "case": "insufficient_approval",
+        "expectedSuccess": false,
+        "oracleExpectedSuccess": false
+      },
+      {
+        "fixture": "resources_pickup_unlimited",
+        "command": "approve",
+        "dojo": {
+          "storageWrites": 1,
+          "events": 1,
+          "eventFelts": 10,
+          "l2Gas": 2468132,
+          "classHash": "0x65811d4d10181ad5b5e2ff0e70f51097c08868c76a15c6eb317dc3e6497af14"
+        },
+        "nativeExecution": {
+          "storageWrites": 12,
+          "events": 4,
+          "eventFelts": 44,
+          "l2Gas": 1468562,
+          "classHash": "0x49ca345ef77a6b5050661919ebdedc0d7e36f0a50a442ff2ab804f546786185"
+        },
+        "nativeGameplay": {
+          "storageWrites": 1,
+          "events": 1,
+          "eventFelts": 11,
+          "l2Gas": 294370,
+          "classHash": "0x7ba30de7f0296de3ce75d01635db4287732f0428a2b50012774692f74f59cec"
+        },
+        "case": "approve",
+        "expectedSuccess": true,
+        "oracleExpectedSuccess": true
+      },
+      {
+        "fixture": "resources_pickup_unlimited",
+        "command": "pickup",
+        "dojo": {
+          "storageWrites": 83,
+          "events": 17,
+          "eventFelts": 212,
+          "l2Gas": 36738546,
+          "classHash": "0x65811d4d10181ad5b5e2ff0e70f51097c08868c76a15c6eb317dc3e6497af14"
+        },
+        "nativeExecution": {
+          "storageWrites": 20,
+          "events": 11,
+          "eventFelts": 134,
+          "l2Gas": 4239752,
+          "classHash": "0x49ca345ef77a6b5050661919ebdedc0d7e36f0a50a442ff2ab804f546786185"
+        },
+        "nativeGameplay": {
+          "storageWrites": 9,
+          "events": 8,
+          "eventFelts": 101,
+          "l2Gas": 3065560,
+          "classHash": "0x7ba30de7f0296de3ce75d01635db4287732f0428a2b50012774692f74f59cec"
+        },
+        "case": "pickup",
+        "expectedSuccess": true,
+        "oracleExpectedSuccess": true
+      },
+      {
+        "fixture": "resources_pickup_unlimited",
+        "command": "pickup",
+        "dojo": {
+          "storageWrites": 34,
+          "events": 17,
+          "eventFelts": 160,
+          "l2Gas": 31275018,
+          "classHash": "0x65811d4d10181ad5b5e2ff0e70f51097c08868c76a15c6eb317dc3e6497af14"
+        },
+        "nativeExecution": {
+          "storageWrites": 20,
+          "events": 11,
+          "eventFelts": 134,
+          "l2Gas": 4239752,
+          "classHash": "0x49ca345ef77a6b5050661919ebdedc0d7e36f0a50a442ff2ab804f546786185"
+        },
+        "nativeGameplay": {
+          "storageWrites": 9,
+          "events": 8,
+          "eventFelts": 101,
+          "l2Gas": 3065560,
+          "classHash": "0x7ba30de7f0296de3ce75d01635db4287732f0428a2b50012774692f74f59cec"
+        },
+        "case": "repeat",
+        "expectedSuccess": true,
+        "oracleExpectedSuccess": true
+      },
+      {
+        "fixture": "resources_village_blitz",
+        "command": "troop_structure_adjacent_transfer",
+        "dojo": {
+          "storageWrites": 29,
+          "events": 13,
+          "eventFelts": 112,
+          "l2Gas": 22596952,
+          "classHash": "0x65811d4d10181ad5b5e2ff0e70f51097c08868c76a15c6eb317dc3e6497af14"
+        },
+        "nativeExecution": {
+          "storageWrites": 18,
+          "events": 9,
+          "eventFelts": 102,
+          "l2Gas": 3510732,
+          "classHash": "0x49ca345ef77a6b5050661919ebdedc0d7e36f0a50a442ff2ab804f546786185"
+        },
+        "nativeGameplay": {
+          "storageWrites": 7,
+          "events": 6,
+          "eventFelts": 69,
+          "l2Gas": 2336740,
+          "classHash": "0x7ba30de7f0296de3ce75d01635db4287732f0428a2b50012774692f74f59cec"
+        },
+        "case": "allied_reinforcement",
+        "expectedSuccess": true,
+        "oracleExpectedSuccess": true
+      },
+      {
+        "fixture": "resources_duplicates",
+        "command": "send",
+        "dojo": {
+          "storageWrites": 90,
+          "events": 19,
+          "eventFelts": 233,
+          "l2Gas": 41137728,
+          "classHash": "0x65811d4d10181ad5b5e2ff0e70f51097c08868c76a15c6eb317dc3e6497af14"
+        },
+        "nativeExecution": {
+          "storageWrites": 11,
+          "events": 3,
+          "eventFelts": 33,
+          "l2Gas": 3289731,
+          "classHash": "0x49ca345ef77a6b5050661919ebdedc0d7e36f0a50a442ff2ab804f546786185"
+        },
+        "nativeGameplay": {
+          "storageWrites": 0,
+          "events": 0,
+          "eventFelts": 0,
+          "l2Gas": 2107730,
+          "classHash": "0x7ba30de7f0296de3ce75d01635db4287732f0428a2b50012774692f74f59cec"
+        },
+        "case": "duplicate_input",
+        "expectedSuccess": false,
+        "oracleExpectedSuccess": true
+      },
+      {
+        "fixture": "resources_village_eternum",
+        "command": "troop_structure_adjacent_transfer",
+        "dojo": {
+          "storageWrites": 0,
+          "events": 0,
+          "eventFelts": 0,
+          "l2Gas": 9575739,
+          "classHash": "0x65811d4d10181ad5b5e2ff0e70f51097c08868c76a15c6eb317dc3e6497af14"
+        },
+        "nativeExecution": {
+          "storageWrites": 18,
+          "events": 9,
+          "eventFelts": 102,
+          "l2Gas": 3510832,
+          "classHash": "0x49ca345ef77a6b5050661919ebdedc0d7e36f0a50a442ff2ab804f546786185"
+        },
+        "nativeGameplay": {
+          "storageWrites": 7,
+          "events": 6,
+          "eventFelts": 69,
+          "l2Gas": 2336740,
+          "classHash": "0x7ba30de7f0296de3ce75d01635db4287732f0428a2b50012774692f74f59cec"
+        },
+        "case": "allied_reinforcement",
+        "expectedSuccess": true,
+        "oracleExpectedSuccess": false
+      }
+    ]
+  },
+  "passed": true,
+  "factParityPassed": true,
+  "rulesRevision": "55dc510f5e7af119d1efac9a60426e81fee8e408",
+  "oracleSourceSha256": "99034c1e0f31719df3d1ae0cf343a2e9b53fae2da8f972bb38c78b1fa7d73bce",
+  "provenance": {
+    "revision": "195a740ed8e3cbbecd96b0c5d9dd97ee2e699fde",
+    "dirty": false,
+    "sourceSha256": "f824620f5377e826ff28a6124666186ce8a7517795938026ecf9a750afd57e0b",
+    "scope": [
+      "apps/herald",
+      "contracts/l3/world-native",
+      "contracts/l3/randomness-protocol",
+      "packages",
+      "config",
+      "deploy/madara-lab/harness",
+      "scripts/generate-realm-metadata.py",
+      "package.json",
+      "pnpm-lock.yaml",
+      ".github/workflows/native-world.yml"
+    ],
+    "excludedReports": [
+      "contracts/l3/world-native/fixtures/blitz-settlement-parity.json",
+      "contracts/l3/world-native/fixtures/combat-parity.json",
+      "contracts/l3/world-native/fixtures/deploy-upgrade.json",
+      "contracts/l3/world-native/fixtures/harness.json",
+      "contracts/l3/world-native/fixtures/herald-replay.json",
+      "contracts/l3/world-native/fixtures/name-parity.json",
+      "contracts/l3/world-native/fixtures/ownership-parity.json",
+      "contracts/l3/world-native/fixtures/resources-parity.json",
+      "contracts/l3/world-native/fixtures/season-settlement-parity.json",
+      "contracts/l3/world-native/fixtures/structure-parity.json",
+      "contracts/l3/world-native/fixtures/village-parity.json",
+      "contracts/l3/world-native/fixtures/world-parity.json"
+    ]
+  },
+  "cases": [
+    {
+      "name": "resources_duplicates",
+      "test": "world_parity_resources_duplicates",
+      "fixtureL2Gas": "3794732875",
+      "ruledOutcomes": [
+        {
+          "case": "resources_duplicates",
+          "order": 1,
+          "ruling": "duplicate-transfer-resources",
+          "oracle": true,
+          "native": false
+        }
+      ],
+      "actions": [
+        {
+          "case": "resources_duplicates",
+          "order": 1,
+          "action": "send",
+          "timestamp": "1860",
+          "succeeded": false
+        }
+      ],
+      "roots": [],
+      "deletes": [],
+      "rejections": [],
+      "factSnapshots": 198,
+      "checkpoints": [
+        {
+          "step": 0,
+          "factSnapshots": 198,
+          "models": [
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure"
+          ],
+          "sha256": "4e175583909693db39fdad46e265156edb1ad9fe6dfa05cb72900d55f880bba0"
+        }
+      ]
+    },
+    {
+      "name": "resources_village_blitz",
+      "test": "world_parity_resources_village_blitz",
+      "fixtureL2Gas": "8481435393",
+      "ruledOutcomes": [],
+      "actions": [
+        {
+          "case": "resources_village_blitz",
+          "order": 1,
+          "action": "troop_to_structure",
+          "timestamp": "1860",
+          "succeeded": true
+        }
+      ],
+      "roots": [],
+      "deletes": [],
+      "rejections": [],
+      "factSnapshots": 499,
+      "checkpoints": [
+        {
+          "step": 0,
+          "factSnapshots": 298,
+          "models": [
+            "ExplorerTroops",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "TileOpt"
+          ],
+          "sha256": "f9fe0a17e43e26be761b861ff473f9a28a9d56ee80973cc1d0fa23b5bee9b4d6"
+        },
+        {
+          "step": 1,
+          "factSnapshots": 201,
+          "models": [
+            "AgentOwner",
+            "ExplorerTroops",
+            "ResourceAllowance",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "TileOpt"
+          ],
+          "sha256": "6b589e140a664047f05ccb3df7ea2e26512630850e6bbcf10ffa7866ce3d7f44"
+        }
+      ]
+    },
+    {
+      "name": "resources_village_eternum",
+      "test": "world_parity_resources_village_eternum",
+      "fixtureL2Gas": "5504023613",
+      "ruledOutcomes": [
+        {
+          "case": "resources_village_eternum",
+          "order": 1,
+          "ruling": "village-reinforcement",
+          "oracle": false,
+          "native": true
+        }
+      ],
+      "actions": [
+        {
+          "case": "resources_village_eternum",
+          "order": 1,
+          "action": "troop_to_structure",
+          "timestamp": "1860",
+          "succeeded": true
+        }
+      ],
+      "roots": [],
+      "deletes": [],
+      "rejections": [],
+      "factSnapshots": 298,
+      "checkpoints": [
+        {
+          "step": 0,
+          "factSnapshots": 298,
+          "models": [
+            "ExplorerTroops",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "TileOpt"
+          ],
+          "sha256": "f9fe0a17e43e26be761b861ff473f9a28a9d56ee80973cc1d0fa23b5bee9b4d6"
+        }
+      ]
+    },
+    {
+      "name": "resources_send",
+      "test": "world_parity_resources_send",
+      "fixtureL2Gas": "12464534521",
+      "ruledOutcomes": [],
+      "actions": [
+        {
+          "case": "resources_send",
+          "order": 1,
+          "action": "send",
+          "timestamp": "1860",
+          "succeeded": true
+        },
+        {
+          "case": "resources_send",
+          "order": 2,
+          "action": "send",
+          "timestamp": "1860",
+          "succeeded": true
+        },
+        {
+          "case": "resources_send",
+          "order": 3,
+          "action": "send",
+          "timestamp": "1980",
+          "succeeded": true
+        },
+        {
+          "case": "resources_send",
+          "order": 4,
+          "action": "send",
+          "timestamp": "2040",
+          "succeeded": false
+        }
+      ],
+      "roots": [],
+      "deletes": [],
+      "rejections": [],
+      "factSnapshots": 816,
+      "checkpoints": [
+        {
+          "step": 1,
+          "factSnapshots": 204,
+          "models": [
+            "AgentOwner",
+            "ResourceAllowance",
+            "ResourceArrival",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure"
+          ],
+          "sha256": "d5d41df2f018f4c92f9208e54f7d8db18055a93557c756ca9984eee7bba10eee"
+        },
+        {
+          "step": 2,
+          "factSnapshots": 204,
+          "models": [
+            "AgentOwner",
+            "ResourceAllowance",
+            "ResourceArrival",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure"
+          ],
+          "sha256": "a4f1e4298a58e8a9f351fbb8e3f636d6ded75a89ba9e7f3dd76f86124902e12a"
+        },
+        {
+          "step": 3,
+          "factSnapshots": 204,
+          "models": [
+            "AgentOwner",
+            "ResourceAllowance",
+            "ResourceArrival",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure"
+          ],
+          "sha256": "a140b4e82a1b7854031a9e6882c0269db8bb58d42a7a8efdcb555a1e183ca67c"
+        },
+        {
+          "step": 4,
+          "factSnapshots": 204,
+          "models": [
+            "AgentOwner",
+            "ResourceAllowance",
+            "ResourceArrival",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure"
+          ],
+          "sha256": "b97e0a4a128502dd8f98e82acb9558a0ec3d5d5bd2bbba90ebf01f8547bd8b9d"
+        }
+      ]
+    },
+    {
+      "name": "resources_pickup",
+      "test": "world_parity_resources_pickup",
+      "fixtureL2Gas": "6709769853",
+      "ruledOutcomes": [],
+      "actions": [
+        {
+          "case": "resources_pickup",
+          "order": 1,
+          "action": "approve",
+          "timestamp": "1860",
+          "succeeded": true
+        },
+        {
+          "case": "resources_pickup",
+          "order": 2,
+          "action": "pickup",
+          "timestamp": "1920",
+          "succeeded": true
+        },
+        {
+          "case": "resources_pickup",
+          "order": 3,
+          "action": "pickup",
+          "timestamp": "1980",
+          "succeeded": false
+        }
+      ],
+      "roots": [],
+      "deletes": [],
+      "rejections": [],
+      "factSnapshots": 410,
+      "checkpoints": [
+        {
+          "step": 1,
+          "factSnapshots": 2,
+          "models": [
+            "AgentOwner",
+            "ResourceAllowance"
+          ],
+          "sha256": "7c451c36430514fe5d8d9ecce5d0bbd60b02bf6f2c5ac6866b65c1e4113accd3"
+        },
+        {
+          "step": 2,
+          "factSnapshots": 204,
+          "models": [
+            "AgentOwner",
+            "ResourceAllowance",
+            "ResourceArrival",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure"
+          ],
+          "sha256": "a36da13a6edcc04a96cb5f8a7a420e4156d89ce85a93643fef70fb08c7d01928"
+        },
+        {
+          "step": 3,
+          "factSnapshots": 204,
+          "models": [
+            "AgentOwner",
+            "ResourceAllowance",
+            "ResourceArrival",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure"
+          ],
+          "sha256": "7b79565c61955bcd986431ca20b1d70b6961212c8da018a73cead98383b8b5ec"
+        }
+      ]
+    },
+    {
+      "name": "resources_pickup_unlimited",
+      "test": "world_parity_resources_pickup_unlimited",
+      "fixtureL2Gas": "7548861415",
+      "ruledOutcomes": [],
+      "actions": [
+        {
+          "case": "resources_pickup_unlimited",
+          "order": 1,
+          "action": "approve",
+          "timestamp": "1860",
+          "succeeded": true
+        },
+        {
+          "case": "resources_pickup_unlimited",
+          "order": 2,
+          "action": "pickup",
+          "timestamp": "1920",
+          "succeeded": true
+        },
+        {
+          "case": "resources_pickup_unlimited",
+          "order": 3,
+          "action": "pickup",
+          "timestamp": "1980",
+          "succeeded": true
+        }
+      ],
+      "roots": [],
+      "deletes": [],
+      "rejections": [],
+      "factSnapshots": 410,
+      "checkpoints": [
+        {
+          "step": 1,
+          "factSnapshots": 2,
+          "models": [
+            "AgentOwner",
+            "ResourceAllowance"
+          ],
+          "sha256": "44ad2e3043e222168ca21835c16078744ec1da0536fc74eb446a2ab7c14ef18d"
+        },
+        {
+          "step": 2,
+          "factSnapshots": 204,
+          "models": [
+            "AgentOwner",
+            "ResourceAllowance",
+            "ResourceArrival",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure"
+          ],
+          "sha256": "f3024b05d518dcc72375903bbfea3d7e195b7ca0528072669ec503d936675c9e"
+        },
+        {
+          "step": 3,
+          "factSnapshots": 204,
+          "models": [
+            "AgentOwner",
+            "ResourceAllowance",
+            "ResourceArrival",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure"
+          ],
+          "sha256": "3268c7aaac140668ebdc8bb287775aebc55d38f89403252093e0f9e824a96a61"
+        }
+      ]
+    },
+    {
+      "name": "resources_offload",
+      "test": "world_parity_resources_offload",
+      "fixtureL2Gas": "5259396186",
+      "ruledOutcomes": [],
+      "actions": [
+        {
+          "case": "resources_offload",
+          "order": 1,
+          "action": "arrivals_offload",
+          "timestamp": "1860",
+          "succeeded": true
+        },
+        {
+          "case": "resources_offload",
+          "order": 2,
+          "action": "arrivals_offload",
+          "timestamp": "1920",
+          "succeeded": true
+        },
+        {
+          "case": "resources_offload",
+          "order": 3,
+          "action": "arrivals_offload",
+          "timestamp": "1980",
+          "succeeded": true
+        }
+      ],
+      "roots": [],
+      "deletes": [],
+      "rejections": [],
+      "factSnapshots": 309,
+      "checkpoints": [
+        {
+          "step": 1,
+          "factSnapshots": 103,
+          "models": [
+            "AgentOwner",
+            "ResourceAllowance",
+            "ResourceArrival",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure"
+          ],
+          "sha256": "6f263ae39436e62165a2db51c8dc5419f5b6949554f1b726191f35688a4fec92"
+        },
+        {
+          "step": 2,
+          "factSnapshots": 103,
+          "models": [
+            "AgentOwner",
+            "ResourceAllowance",
+            "ResourceArrival",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure"
+          ],
+          "sha256": "445658a16c6213d40d9d7dd6fef09a97f0fcc7ade770799dae0ad784bb08a94d"
+        },
+        {
+          "step": 3,
+          "factSnapshots": 103,
+          "models": [
+            "AgentOwner",
+            "ResourceAllowance",
+            "ResourceArrival",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure"
+          ],
+          "sha256": "c3290802cd495980b7de5e6ddca2cd4255653554b24869f881c9f8841da92d05"
+        }
+      ]
+    },
+    {
+      "name": "resources_offload_rejections",
+      "test": "world_parity_resources_offload_rejections",
+      "fixtureL2Gas": "5926500021",
+      "ruledOutcomes": [],
+      "actions": [
+        {
+          "case": "resources_offload_rejections",
+          "order": 1,
+          "action": "arrivals_offload",
+          "timestamp": "1860",
+          "succeeded": false
+        },
+        {
+          "case": "resources_offload_rejections",
+          "order": 2,
+          "action": "arrivals_offload",
+          "timestamp": "1920",
+          "succeeded": false
+        },
+        {
+          "case": "resources_offload_rejections",
+          "order": 3,
+          "action": "arrivals_offload",
+          "timestamp": "1980",
+          "succeeded": false
+        }
+      ],
+      "roots": [],
+      "deletes": [],
+      "rejections": [],
+      "factSnapshots": 309,
+      "checkpoints": [
+        {
+          "step": 1,
+          "factSnapshots": 103,
+          "models": [
+            "AgentOwner",
+            "ResourceAllowance",
+            "ResourceArrival",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure"
+          ],
+          "sha256": "3ccba6a67f991324f6476a1c70b0660b4ce8bd523529db8ab8add796075f45f7"
+        },
+        {
+          "step": 2,
+          "factSnapshots": 103,
+          "models": [
+            "AgentOwner",
+            "ResourceAllowance",
+            "ResourceArrival",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure"
+          ],
+          "sha256": "6d688dda84dd99a4dea0ac23debe4a60b63efef4daae4cafdf5fc1fe5791086a"
+        },
+        {
+          "step": 3,
+          "factSnapshots": 103,
+          "models": [
+            "AgentOwner",
+            "ResourceAllowance",
+            "ResourceArrival",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure"
+          ],
+          "sha256": "46dd22588fed4324f6d06e60ae44405a34c28a2762af611e5ed345fa4c88cbc5"
+        }
+      ]
+    },
+    {
+      "name": "resources_offload_capacity",
+      "test": "world_parity_resources_offload_capacity",
+      "fixtureL2Gas": "2337927726",
+      "ruledOutcomes": [],
+      "actions": [
+        {
+          "case": "resources_offload_capacity",
+          "order": 1,
+          "action": "arrivals_offload",
+          "timestamp": "1860",
+          "succeeded": true
+        }
+      ],
+      "roots": [],
+      "deletes": [],
+      "rejections": [],
+      "factSnapshots": 103,
+      "checkpoints": [
+        {
+          "step": 1,
+          "factSnapshots": 103,
+          "models": [
+            "AgentOwner",
+            "ResourceAllowance",
+            "ResourceArrival",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure"
+          ],
+          "sha256": "f76e22ede5fb0d7e7305a60fea81e5e21da27ded19ce64af5da5a727de2c101d"
+        }
+      ]
+    },
+    {
+      "name": "resources_approvals",
+      "test": "world_parity_resources_approvals",
+      "fixtureL2Gas": "782430576",
+      "ruledOutcomes": [],
+      "actions": [
+        {
+          "case": "resources_approvals",
+          "order": 1,
+          "action": "approve",
+          "timestamp": "1860",
+          "succeeded": true
+        },
+        {
+          "case": "resources_approvals",
+          "order": 2,
+          "action": "approve",
+          "timestamp": "1920",
+          "succeeded": true
+        },
+        {
+          "case": "resources_approvals",
+          "order": 3,
+          "action": "approve",
+          "timestamp": "1980",
+          "succeeded": true
+        },
+        {
+          "case": "resources_approvals",
+          "order": 4,
+          "action": "approve",
+          "timestamp": "2040",
+          "succeeded": false
+        },
+        {
+          "case": "resources_approvals",
+          "order": 5,
+          "action": "approve",
+          "timestamp": "2100",
+          "succeeded": false
+        },
+        {
+          "case": "resources_approvals",
+          "order": 6,
+          "action": "approve",
+          "timestamp": "2160",
+          "succeeded": false
+        }
+      ],
+      "roots": [],
+      "deletes": [],
+      "rejections": [],
+      "factSnapshots": 12,
+      "checkpoints": [
+        {
+          "step": 1,
+          "factSnapshots": 2,
+          "models": [
+            "AgentOwner",
+            "ResourceAllowance"
+          ],
+          "sha256": "f3bad075ea514ceee7f4ac6e592fa6409cf3a1ac9e95efdc91feff00622782a7"
+        },
+        {
+          "step": 2,
+          "factSnapshots": 2,
+          "models": [
+            "AgentOwner",
+            "ResourceAllowance"
+          ],
+          "sha256": "83415d3c442f28e0b9eda8ef94d5cf8aae0c3dc088bdffdd1da4d7b4cd3ae057"
+        },
+        {
+          "step": 3,
+          "factSnapshots": 2,
+          "models": [
+            "AgentOwner",
+            "ResourceAllowance"
+          ],
+          "sha256": "d8cd206881a70e8667f65c6494dd33d9f28cb2150227fdc633acaf8af8f35546"
+        },
+        {
+          "step": 4,
+          "factSnapshots": 2,
+          "models": [
+            "AgentOwner",
+            "ResourceAllowance"
+          ],
+          "sha256": "2a73b2f12c34d6cfbdef57d2420794003eb05f0430c618e1c464763bd124607d"
+        },
+        {
+          "step": 5,
+          "factSnapshots": 2,
+          "models": [
+            "AgentOwner",
+            "ResourceAllowance"
+          ],
+          "sha256": "56452165df788989469a83eb9fc56d8256c3af9e25e99df5aed9a18c6bd72f21"
+        },
+        {
+          "step": 6,
+          "factSnapshots": 2,
+          "models": [
+            "AgentOwner",
+            "ResourceAllowance"
+          ],
+          "sha256": "3e9d120df54592ecb2f1ca811155e8ced1478735cf6d9b7acfb3dc26ca99dc76"
+        }
+      ]
+    },
+    {
+      "name": "resources_burns",
+      "test": "world_parity_resources_burns",
+      "fixtureL2Gas": "6471294772",
+      "ruledOutcomes": [],
+      "actions": [
+        {
+          "case": "resources_burns",
+          "order": 1,
+          "action": "structure_burn",
+          "timestamp": "1860",
+          "succeeded": true
+        },
+        {
+          "case": "resources_burns",
+          "order": 2,
+          "action": "structure_burn",
+          "timestamp": "1920",
+          "succeeded": false
+        },
+        {
+          "case": "resources_burns",
+          "order": 3,
+          "action": "structure_burn",
+          "timestamp": "1980",
+          "succeeded": false
+        },
+        {
+          "case": "resources_burns",
+          "order": 4,
+          "action": "structure_burn",
+          "timestamp": "2040",
+          "succeeded": true
+        }
+      ],
+      "roots": [],
+      "deletes": [],
+      "rejections": [],
+      "factSnapshots": 404,
+      "checkpoints": [
+        {
+          "step": 1,
+          "factSnapshots": 101,
+          "models": [
+            "AgentOwner",
+            "ResourceAllowance",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure"
+          ],
+          "sha256": "2ec47e6d8ff88b24759024944e3635831fbd4bd203c57be9e51473104f315e1d"
+        },
+        {
+          "step": 2,
+          "factSnapshots": 101,
+          "models": [
+            "AgentOwner",
+            "ResourceAllowance",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure"
+          ],
+          "sha256": "770774cdabf28e54f6a7caa190fed080dabbc26fbde3ea0f658cd561bc1a98d7"
+        },
+        {
+          "step": 3,
+          "factSnapshots": 101,
+          "models": [
+            "AgentOwner",
+            "ResourceAllowance",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure"
+          ],
+          "sha256": "2218a46f9ae847fd677b0e00b1569bfb7b81cc7df0e00e6eca963136bf7f9861"
+        },
+        {
+          "step": 4,
+          "factSnapshots": 101,
+          "models": [
+            "AgentOwner",
+            "ResourceAllowance",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure"
+          ],
+          "sha256": "b8c7ecd722fcb84589069d37c4ff124badcb7960b6ac32e1fd5313328c474a9e"
+        }
+      ]
+    },
+    {
+      "name": "resources_regularize",
+      "test": "world_parity_resources_regularize",
+      "fixtureL2Gas": "10357767217",
+      "ruledOutcomes": [],
+      "actions": [
+        {
+          "case": "resources_regularize",
+          "order": 1,
+          "action": "structure_regularize_weight",
+          "timestamp": "1860",
+          "succeeded": true
+        },
+        {
+          "case": "resources_regularize",
+          "order": 2,
+          "action": "structure_regularize_weight",
+          "timestamp": "1920",
+          "succeeded": true
+        },
+        {
+          "case": "resources_regularize",
+          "order": 3,
+          "action": "structure_regularize_weight",
+          "timestamp": "1980",
+          "succeeded": false
+        }
+      ],
+      "roots": [],
+      "deletes": [],
+      "rejections": [],
+      "factSnapshots": 600,
+      "checkpoints": [
+        {
+          "step": 1,
+          "factSnapshots": 200,
+          "models": [
+            "AgentOwner",
+            "ResourceAllowance",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure"
+          ],
+          "sha256": "b512b8f0102b3da6501f7f94016454e96993387364810228da8fa63277e04eea"
+        },
+        {
+          "step": 2,
+          "factSnapshots": 200,
+          "models": [
+            "AgentOwner",
+            "ResourceAllowance",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure"
+          ],
+          "sha256": "68f2e79acbceb6d501e320e0b69942ae998f6393c0828e82bf8259711bb86019"
+        },
+        {
+          "step": 3,
+          "factSnapshots": 200,
+          "models": [
+            "AgentOwner",
+            "ResourceAllowance",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure"
+          ],
+          "sha256": "cfd627c0422aaad8c3292d1068bf2071a9d208b72b7945786f7cbf4b0a5aea61"
+        }
+      ]
+    },
+    {
+      "name": "resources_transfers",
+      "test": "world_parity_resources_transfers",
+      "fixtureL2Gas": "12388345849",
+      "ruledOutcomes": [],
+      "actions": [
+        {
+          "case": "resources_transfers",
+          "order": 1,
+          "action": "structure_to_explorer",
+          "timestamp": "1860",
+          "succeeded": true
+        },
+        {
+          "case": "resources_transfers",
+          "order": 2,
+          "action": "troop_troop_adjacent_transfer",
+          "timestamp": "1920",
+          "succeeded": true
+        },
+        {
+          "case": "resources_transfers",
+          "order": 3,
+          "action": "troop_burn",
+          "timestamp": "1980",
+          "succeeded": false
+        },
+        {
+          "case": "resources_transfers",
+          "order": 4,
+          "action": "troop_burn",
+          "timestamp": "2040",
+          "succeeded": true
+        },
+        {
+          "case": "resources_transfers",
+          "order": 5,
+          "action": "troop_troop_adjacent_transfer",
+          "timestamp": "2100",
+          "succeeded": false
+        }
+      ],
+      "roots": [],
+      "deletes": [],
+      "rejections": [],
+      "factSnapshots": 809,
+      "checkpoints": [
+        {
+          "step": 1,
+          "factSnapshots": 201,
+          "models": [
+            "AgentOwner",
+            "ExplorerTroops",
+            "ResourceAllowance",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "TileOpt"
+          ],
+          "sha256": "914837e1cb928f0e49cb5cf21f35862dd97e8b4fee324fff55837a76931da39e"
+        },
+        {
+          "step": 2,
+          "factSnapshots": 202,
+          "models": [
+            "AgentOwner",
+            "ExplorerTroops",
+            "ResourceAllowance",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "TileOpt"
+          ],
+          "sha256": "d5131c8e03c7bc32ebf39fb4293cc6c2ae39b44a2c402cbfd539c71d14cb6a6d"
+        },
+        {
+          "step": 3,
+          "factSnapshots": 102,
+          "models": [
+            "AgentOwner",
+            "ExplorerTroops",
+            "ResourceAllowance",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "TileOpt"
+          ],
+          "sha256": "39446cde168ec6ac6a46ccb6a8b5fa3a3d75e88eda07162e2373fa0bd3ae5ae6"
+        },
+        {
+          "step": 4,
+          "factSnapshots": 102,
+          "models": [
+            "AgentOwner",
+            "ExplorerTroops",
+            "ResourceAllowance",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "TileOpt"
+          ],
+          "sha256": "f3edafa54b697076014a05f7c36d2cf71daf7b3b479953caa0d369fe21634a31"
+        },
+        {
+          "step": 5,
+          "factSnapshots": 202,
+          "models": [
+            "AgentOwner",
+            "ExplorerTroops",
+            "ResourceAllowance",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "TileOpt"
+          ],
+          "sha256": "63830dc045a77898bf21918f6970d0caa7ff00a131df37da3c9cddc6213fad5a"
+        }
+      ]
+    },
+    {
+      "name": "resources_knight",
+      "test": "world_parity_resources_knight",
+      "fixtureL2Gas": "9268900291",
+      "ruledOutcomes": [],
+      "actions": [
+        {
+          "case": "resources_knight",
+          "order": 1,
+          "action": "structure_to_explorer",
+          "timestamp": "1860",
+          "succeeded": false
+        },
+        {
+          "case": "resources_knight",
+          "order": 2,
+          "action": "structure_to_explorer",
+          "timestamp": "1920",
+          "succeeded": false
+        },
+        {
+          "case": "resources_knight",
+          "order": 3,
+          "action": "structure_to_explorer",
+          "timestamp": "1980",
+          "succeeded": false
+        }
+      ],
+      "roots": [],
+      "deletes": [],
+      "rejections": [],
+      "factSnapshots": 603,
+      "checkpoints": [
+        {
+          "step": 1,
+          "factSnapshots": 201,
+          "models": [
+            "AgentOwner",
+            "ExplorerTroops",
+            "ResourceAllowance",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "TileOpt"
+          ],
+          "sha256": "b9a330bf9157cff2eb48f95ec2f3468f05189d01068bc9438d0d2ca9028dbd4f"
+        },
+        {
+          "step": 2,
+          "factSnapshots": 201,
+          "models": [
+            "AgentOwner",
+            "ExplorerTroops",
+            "ResourceAllowance",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "TileOpt"
+          ],
+          "sha256": "b9826983a4df92644f39f2ac4b65ca387be6093df02d567a027f49286d2e3936"
+        },
+        {
+          "step": 3,
+          "factSnapshots": 201,
+          "models": [
+            "AgentOwner",
+            "ExplorerTroops",
+            "ResourceAllowance",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "TileOpt"
+          ],
+          "sha256": "4360ebade464402808c1d5fb3b2b2498101c1b9a2983235843773a1c69ba1895"
+        }
+      ]
+    },
+    {
+      "name": "resources_crossbow",
+      "test": "world_parity_resources_crossbow",
+      "fixtureL2Gas": "9460187111",
+      "ruledOutcomes": [],
+      "actions": [
+        {
+          "case": "resources_crossbow",
+          "order": 1,
+          "action": "structure_to_explorer",
+          "timestamp": "1860",
+          "succeeded": false
+        },
+        {
+          "case": "resources_crossbow",
+          "order": 2,
+          "action": "structure_to_explorer",
+          "timestamp": "1920",
+          "succeeded": false
+        },
+        {
+          "case": "resources_crossbow",
+          "order": 3,
+          "action": "structure_to_explorer",
+          "timestamp": "1980",
+          "succeeded": false
+        }
+      ],
+      "roots": [],
+      "deletes": [],
+      "rejections": [],
+      "factSnapshots": 603,
+      "checkpoints": [
+        {
+          "step": 1,
+          "factSnapshots": 201,
+          "models": [
+            "AgentOwner",
+            "ExplorerTroops",
+            "ResourceAllowance",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "TileOpt"
+          ],
+          "sha256": "b9a330bf9157cff2eb48f95ec2f3468f05189d01068bc9438d0d2ca9028dbd4f"
+        },
+        {
+          "step": 2,
+          "factSnapshots": 201,
+          "models": [
+            "AgentOwner",
+            "ExplorerTroops",
+            "ResourceAllowance",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "TileOpt"
+          ],
+          "sha256": "b9826983a4df92644f39f2ac4b65ca387be6093df02d567a027f49286d2e3936"
+        },
+        {
+          "step": 3,
+          "factSnapshots": 201,
+          "models": [
+            "AgentOwner",
+            "ExplorerTroops",
+            "ResourceAllowance",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "TileOpt"
+          ],
+          "sha256": "4360ebade464402808c1d5fb3b2b2498101c1b9a2983235843773a1c69ba1895"
+        }
+      ]
+    },
+    {
+      "name": "resources_paladin",
+      "test": "world_parity_resources_paladin",
+      "fixtureL2Gas": "9366013531",
+      "ruledOutcomes": [],
+      "actions": [
+        {
+          "case": "resources_paladin",
+          "order": 1,
+          "action": "structure_to_explorer",
+          "timestamp": "1860",
+          "succeeded": false
+        },
+        {
+          "case": "resources_paladin",
+          "order": 2,
+          "action": "structure_to_explorer",
+          "timestamp": "1920",
+          "succeeded": false
+        },
+        {
+          "case": "resources_paladin",
+          "order": 3,
+          "action": "structure_to_explorer",
+          "timestamp": "1980",
+          "succeeded": false
+        }
+      ],
+      "roots": [],
+      "deletes": [],
+      "rejections": [],
+      "factSnapshots": 603,
+      "checkpoints": [
+        {
+          "step": 1,
+          "factSnapshots": 201,
+          "models": [
+            "AgentOwner",
+            "ExplorerTroops",
+            "ResourceAllowance",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "TileOpt"
+          ],
+          "sha256": "b9a330bf9157cff2eb48f95ec2f3468f05189d01068bc9438d0d2ca9028dbd4f"
+        },
+        {
+          "step": 2,
+          "factSnapshots": 201,
+          "models": [
+            "AgentOwner",
+            "ExplorerTroops",
+            "ResourceAllowance",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "TileOpt"
+          ],
+          "sha256": "b9826983a4df92644f39f2ac4b65ca387be6093df02d567a027f49286d2e3936"
+        },
+        {
+          "step": 3,
+          "factSnapshots": 201,
+          "models": [
+            "AgentOwner",
+            "ExplorerTroops",
+            "ResourceAllowance",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "TileOpt"
+          ],
+          "sha256": "4360ebade464402808c1d5fb3b2b2498101c1b9a2983235843773a1c69ba1895"
+        }
+      ]
+    },
+    {
+      "name": "production",
+      "test": "world_parity_production_settlement",
+      "fixtureL2Gas": "5093291057",
+      "ruledOutcomes": [],
+      "actions": [],
+      "roots": [],
+      "deletes": [],
+      "rejections": [],
+      "factSnapshots": 297,
+      "checkpoints": [
+        {
+          "step": 0,
+          "factSnapshots": 99,
+          "models": [
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure"
+          ],
+          "sha256": "f15085993da93771457c1b827e41f35d3400b837afadaeb04f9ab027c92aed1c"
+        },
+        {
+          "step": 1,
+          "factSnapshots": 99,
+          "models": [
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure"
+          ],
+          "sha256": "9abb1e9b0c041befb282649af5b4f586573427e15873861a0fc785ea9a8fd6f7"
+        },
+        {
+          "step": 2,
+          "factSnapshots": 99,
+          "models": [
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure"
+          ],
+          "sha256": "4886015736b5bb717d3d89df934274c15ed8c6c002ab57628db8e25284976147"
+        }
+      ]
+    },
+    {
+      "name": "production_activation",
+      "test": "world_parity_production_activation",
+      "fixtureL2Gas": "5744328347",
+      "ruledOutcomes": [],
+      "actions": [],
+      "roots": [],
+      "deletes": [],
+      "rejections": [],
+      "factSnapshots": 297,
+      "checkpoints": [
+        {
+          "step": 0,
+          "factSnapshots": 99,
+          "models": [
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure"
+          ],
+          "sha256": "eed87fd8a1e0f6a0b62723595561bcc898ea8bd7353375d72782ebb695111e68"
+        },
+        {
+          "step": 1,
+          "factSnapshots": 99,
+          "models": [
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure"
+          ],
+          "sha256": "71dca61d12b85494aa5be2cd31290f124ed2cd8d1865e216c63a69d73a0ab08e"
+        },
+        {
+          "step": 2,
+          "factSnapshots": 99,
+          "models": [
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure"
+          ],
+          "sha256": "4fc4386b9988f9adbfaaafa92f2f171d7aef15f4774e9b12c0c664390281a3ec"
+        }
+      ]
+    },
+    {
+      "name": "production_cap",
+      "test": "world_parity_production_cap",
+      "fixtureL2Gas": "5332502627",
+      "ruledOutcomes": [],
+      "actions": [],
+      "roots": [],
+      "deletes": [],
+      "rejections": [],
+      "factSnapshots": 297,
+      "checkpoints": [
+        {
+          "step": 0,
+          "factSnapshots": 99,
+          "models": [
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure"
+          ],
+          "sha256": "f15085993da93771457c1b827e41f35d3400b837afadaeb04f9ab027c92aed1c"
+        },
+        {
+          "step": 1,
+          "factSnapshots": 99,
+          "models": [
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure"
+          ],
+          "sha256": "ac9c0fe8577073353d78a5e371dc26506396cf70a717e33841f895df2e0c1b46"
+        },
+        {
+          "step": 2,
+          "factSnapshots": 99,
+          "models": [
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure"
+          ],
+          "sha256": "9550149ce3c637fd3ceb2f94b2154d774af3cbe8e463389b4a8597095a3a4f6b"
+        }
+      ]
+    },
+    {
+      "name": "production_capacity",
+      "test": "world_parity_production_capacity",
+      "fixtureL2Gas": "5593326436",
+      "ruledOutcomes": [],
+      "actions": [],
+      "roots": [],
+      "deletes": [],
+      "rejections": [],
+      "factSnapshots": 297,
+      "checkpoints": [
+        {
+          "step": 0,
+          "factSnapshots": 99,
+          "models": [
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure"
+          ],
+          "sha256": "9cc6ef6fc396ae5db049876bd99e294399f5498043412f08167cbeea1a9e7bc2"
+        },
+        {
+          "step": 1,
+          "factSnapshots": 99,
+          "models": [
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure"
+          ],
+          "sha256": "7754f65bbe720aba0b540c1b5f130d64ff1f79584b3ebee08ad99d4fc3e0e922"
+        },
+        {
+          "step": 2,
+          "factSnapshots": 99,
+          "models": [
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure"
+          ],
+          "sha256": "259a58b5e1285a46711ced5ac68e0a8a1adceae1fc731bdf0c0cd8340aa3ec0c"
+        }
+      ]
+    }
+  ],
+  "harnessCoverage": {
+    "liveRun": "pending full-game acceptance",
+    "required": [
+      "Send, approve and pick up resources, offload arrivals, transfer to and from explorers and burn resources through the shared client and Herald."
+    ],
+    "added": [
+      "Explicit structure burn through the shared client; live run pending."
+    ]
+  },
+  "casm": {
+    "native": {
+      "SeasonDomain": {
+        "bytecodeFelts": 59848,
+        "jsonBytes": 1366434,
+        "sha256": "91c28535f75df2975092708b6b9939a81eb2487f6c75bac63f4cd6f4edf1db56",
+        "limitFelts": 81920,
+        "withinLimit": true,
+        "attribution": "CASM segments in decoded Sierra function-entry order; generics attributed to their defining module",
+        "moduleFelts": {
+          "arrivals": 209,
+          "commands": 3292,
+          "core": 5166,
+          "eternum_randomness_protocol": 2116,
+          "game": 5148,
+          "lifecycle": 3604,
+          "realms": 175,
+          "recording": 1103,
+          "resources": 672,
+          "rules": 24154,
+          "season": 11425,
+          "settlement": 848,
+          "troops": 136,
+          "upgrades": 1642,
+          "village": 158
+        }
+      },
+      "SettlementDomain": {
+        "bytecodeFelts": 43347,
+        "jsonBytes": 1031772,
+        "sha256": "ff44c8b88cebe7e1fd8490f7041612c019cd56f04bb37dc7d0541fb752d26081",
+        "limitFelts": 81920,
+        "withinLimit": true,
+        "attribution": "CASM segments in decoded Sierra function-entry order; generics attributed to their defining module",
+        "moduleFelts": {
+          "commands": 160,
+          "core": 6925,
+          "game": 1280,
+          "lifecycle": 3604,
+          "random": 330,
+          "realms": 3715,
+          "resources": 145,
+          "rules": 5567,
+          "settlement": 7568,
+          "settlement_domain": 9980,
+          "settlement_grid": 246,
+          "troops": 136,
+          "village": 3691
+        }
+      },
+      "ResourcesDomain": {
+        "bytecodeFelts": 50753,
+        "jsonBytes": 1178723,
+        "sha256": "b6f9c5226d5825b9e84891b6a4e693df1c252143b3ea8db1843d34752698ab88",
+        "limitFelts": 81920,
+        "withinLimit": true,
+        "attribution": "CASM segments in decoded Sierra function-entry order; generics attributed to their defining module",
+        "moduleFelts": {
+          "arrivals": 3044,
+          "commands": 160,
+          "core": 4512,
+          "game": 1713,
+          "geometry": 672,
+          "lifecycle": 3652,
+          "ownership": 199,
+          "resources": 7706,
+          "resources_domain": 18683,
+          "rules": 5567,
+          "structures": 2828,
+          "transport": 631,
+          "troops": 1386
+        }
+      },
+      "StructuresDomain": {
+        "bytecodeFelts": 71181,
+        "jsonBytes": 1610506,
+        "sha256": "22d401935ee24f391ef271cdab1d2293ca50ee63806ca0e119a9faedf58becd8",
+        "limitFelts": 81920,
+        "withinLimit": true,
+        "attribution": "CASM segments in decoded Sierra function-entry order; generics attributed to their defining module",
+        "moduleFelts": {
+          "buildings": 3028,
+          "commands": 160,
+          "core": 4767,
+          "game": 1411,
+          "geometry": 327,
+          "lifecycle": 3652,
+          "map": 159,
+          "ownership": 4871,
+          "random": 196,
+          "realms": 194,
+          "resources": 363,
+          "rules": 5567,
+          "settlement": 692,
+          "stamina": 435,
+          "structures": 42706,
+          "troops": 2281,
+          "upgrades": 146,
+          "village": 226
+        }
+      },
+      "TroopsDomain": {
+        "bytecodeFelts": 70240,
+        "jsonBytes": 1512863,
+        "sha256": "a7d6b1eab5f9633f4610bcaea4fd44f3026f8a80c468beefa9e3ada450648776",
+        "limitFelts": 81920,
+        "withinLimit": true,
+        "attribution": "CASM segments in decoded Sierra function-entry order; generics attributed to their defining module",
+        "moduleFelts": {
+          "biome": 235,
+          "combat": 12814,
+          "commands": 560,
+          "core": 5433,
+          "eternum_cubit": 6222,
+          "game": 1411,
+          "geometry": 999,
+          "lifecycle": 3628,
+          "map": 303,
+          "random": 330,
+          "rules": 5567,
+          "stamina": 773,
+          "structures": 2986,
+          "troops": 28979
+        }
+      },
+      "MapDomain": {
+        "bytecodeFelts": 54828,
+        "jsonBytes": 1290302,
+        "sha256": "bdbe9dd7d66da50a35e126ea4518d30928afc0330b7beb9171eb093f842d06f7",
+        "limitFelts": 81920,
+        "withinLimit": true,
+        "attribution": "CASM segments in decoded Sierra function-entry order; generics attributed to their defining module",
+        "moduleFelts": {
+          "biome": 3466,
+          "commands": 160,
+          "core": 2521,
+          "discovery": 430,
+          "eternum_cubit": 16530,
+          "game": 1280,
+          "geometry": 2790,
+          "lifecycle": 3608,
+          "map": 12062,
+          "random": 1052,
+          "rules": 5567,
+          "settlement": 3080,
+          "settlement_grid": 2146,
+          "troops": 136
+        }
+      }
+    },
+    "dojo": {
+      "resource_systems": {
+        "bytecodeFelts": 78014,
+        "jsonBytes": 1662915,
+        "sha256": "e422859ce12d7a0ad2b57306792c62a22a1037b5b992ca622ae5b002f11560d6"
+      }
+    }
+  },
+  "reductions": [
+    "Pack the existing 232 production bits into one storage felt instead of four slots.",
+    "Settle and apply each resource mutation in memory, then persist the final facts once.",
+    "Eliminate the 48-field arrival selector table; represent only populated slots with their original ordered list.",
+    "Remove inactive production timestamps and their rows; the activation command establishes the clock before enabling accrual."
+  ],
+  "ruledDivergences": [
+    {
+      "id": "duplicate-transfer-resources",
+      "cause": "The pinned arrival accumulator can spend 10 + 20 but queue 20 + 20 for a newly arriving resource; malformed duplicate input creates resources.",
+      "rule": "Reject duplicate resource ids in every transfer before gameplay mutation. An authenticated current-nonce ticket records rejection and consumes its nonce and order.",
+      "oracle": "Retain the pinned defect in the oracle; compare native facts with the unchanged pre-action facts for this rejected input.",
+      "cases": [
+        {
+          "name": "resources_duplicates",
+          "oracle": true,
+          "native": false
+        }
+      ]
+    },
+    {
+      "id": "village-reinforcement",
+      "cause": "Village placement is independent of its connected realm; that connection does not define troop-transfer eligibility.",
+      "rule": "Remove connected-realm ownership checks for incoming village troops. Adjacent reinforcement has the same eligibility in both modes; Eternum accepts allied reinforcement previously rejected.",
+      "oracle": "Keep the pinned Eternum rejection and assert the native transfer against the declared reinforcement facts. Generic transport mode rules remain separate.",
+      "cases": [
+        {
+          "name": "resources_village_eternum",
+          "oracle": false,
+          "native": true
+        }
+      ]
+    }
+  ],
+  "normalization": [
+    "Entity/account identities map bijectively; recorded execution time is oracle block time.",
+    "Inactive production has no accrual timestamp: both projections return zero when building_count is zero. Activation settles at the recorded command time before enabling production; an oracle fixture covers delayed activation."
+  ],
+  "divergence": null
+}

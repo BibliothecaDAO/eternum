@@ -28,6 +28,7 @@ export async function playSlice(input: SliceWorkload) {
   await transferRealmAndReturn(input);
   await namePlayer(input);
   await upgradeRealm(input);
+  await burnResource(input);
   await verifyReconnect(input);
   return { defeatedExplorer, surfaceMine, bitcoinMine, ownershipTransferred: true, reconnected: true };
 }
@@ -122,6 +123,20 @@ async function claimProduction(input: SliceWorkload) {
   const before = BigInt(balance());
   await input.act("claim_production", "surface", input.claim);
   if (BigInt(balance()) <= before) throw new Error("Production claim did not increase Earthen Shard balance");
+}
+
+async function burnResource(input: SliceWorkload) {
+  const balance = () => input.client.views.resources(input.homes[0]).balance(38);
+  const before = balance();
+  if (before < 1n) throw new Error("Resource burn requires funded Essence");
+  await input.act("structure_burn", "surface", () =>
+    input.client.setup.systemCalls.structure_burn({
+      signer: input.players[0],
+      structure_id: input.homes[0],
+      resources: [{ resourceId: 38, amount: 1 }],
+    }),
+  );
+  if (balance() !== before - 1n) throw new Error("Resource burn did not reach the shared store");
 }
 
 async function verifyReconnect(input: SliceWorkload) {

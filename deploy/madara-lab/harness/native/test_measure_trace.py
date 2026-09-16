@@ -4,6 +4,9 @@
 # ///
 """Behavioural checks for streamed action accounting."""
 import json
+import hashlib
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -49,6 +52,29 @@ class TraceAccountingTest(unittest.TestCase):
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0]["case"], "transfer")
         self.assertEqual(result[0]["nativeGameplay"], execution_cost(native["nested_calls"][0]["EntryPointCall"]))
+
+    def test_ruled_rejections_keep_both_outcomes_in_the_cost_report(self):
+        oracle, native, fixture, schema = self.pair_fixture()
+        fixture["measuredSequence"][0].update(succeeded=False, oracleSucceeded=True)
+        result = pair_actions(call(children=[oracle, native]), fixture, schema)
+        self.assertFalse(result[0]["expectedSuccess"])
+        self.assertTrue(result[0]["oracleExpectedSuccess"])
+
+    def test_retained_call_tree_reproduces_the_report_without_vm_steps(self):
+        oracle, native, fixture, schema = self.pair_fixture()
+        tree = call(children=[oracle, native])
+        tree["cairo_execution_info"] = {"steps": [{"pc": 1}, {"pc": 2}]}
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for name, value in (("trace", tree), ("fixture", fixture), ("schema", schema)):
+                (root / f"{name}.json").write_text(json.dumps(value))
+            output = root / "costs.json"
+            subprocess.run([sys.executable, str(Path(__file__).with_name("measure_trace.py")), str(root / "trace.json"), str(root / "fixture.json"), str(root / "schema.json"), str(output)], check=True, capture_output=True)
+            report = json.loads(output.read_text())
+            retained = root / report["callTree"]["file"]
+            self.assertEqual(hashlib.sha256(retained.read_bytes()).hexdigest(), report["callTree"]["sha256"])
+            self.assertEqual(pair_actions(read_call_tree(retained), fixture, schema), report["actions"])
+            self.assertNotIn("cairo_execution_info", json.loads(retained.read_text()))
 
     def test_missing_or_duplicate_native_execution_rejected(self):
         oracle, native, fixture, schema = self.pair_fixture()

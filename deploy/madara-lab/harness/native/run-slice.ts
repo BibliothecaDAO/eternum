@@ -131,7 +131,7 @@ async function prepareGame() {
     rules: preset.rules,
   });
   await provision("season", "configure_upgrades", { game_id: gameId, limits: preset.oraclePreset.presetConfig.structure_max_level_config, recipes: upgradeRecipes(preset.oraclePreset.sideTables) });
-  await provision("structures", "configure_resources", { game_id: gameId, rules: preset.resources });
+  await provision("resources", "configure_resources", { game_id: gameId, rules: preset.resources });
   for (let bot = 0; bot < 2; bot++)
     await provision("structures", "provision_realm", {
       game_id: gameId,

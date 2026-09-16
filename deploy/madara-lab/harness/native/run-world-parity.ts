@@ -1,9 +1,10 @@
+import { readDomainFixtures, selectParityScope } from "./parity-scope";
 import { executionLog } from "./execution-log";
 import { upgradeRecipes } from "./upgrade-recipes";
 import { factProjectors } from "./fact-projections";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { appendFile, mkdir, readFile, writeFile } from "node:fs/promises";
+import { appendFile, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { CallData } from "starknet";
@@ -18,11 +19,11 @@ const workspace = join(root, "deploy/madara-lab/.lab/native-oracle");
 const sizeTool = join(native, "tools/casm-size");
 const oracle = join(workspace, "contracts/l3/game");
 const spec = JSON.parse(await readFile(join(native, "fixtures/slice.json"), "utf8"));
-const domainFixtures = await Promise.all(
-  ["ownership", "name", "structure", "blitz-settlement", "season-settlement", "village"].map(async (domain) =>
-    JSON.parse(await readFile(join(native, `fixtures/${domain}.json`), "utf8")),
-  ),
-);
+const domainFixtures = await readDomainFixtures();
+const domainArgument = process.argv.indexOf("--domain");
+if (domainArgument >= 0 && (!process.argv[domainArgument + 1] || process.argv[domainArgument + 1].startsWith("--")))
+  throw new Error("--domain requires a domain name");
+const scope = selectParityScope(domainFixtures, domainArgument < 0 ? undefined : process.argv[domainArgument + 1]);
 const oracleModules = {
   native_parity: "oracle-parity",
   native_protocol: "oracle-protocol",
@@ -30,12 +31,6 @@ const oracleModules = {
   native_side_tables: "oracle-side-tables",
   native_settlement_grid: "oracle-settlement-grid",
 };
-const settlementTests = [
-  "world_parity_settlement_geometry",
-  "world_parity_settlement_pool_windows",
-  "world_parity_starting_troop_table",
-];
-const realmTests = ["world_parity_canonical_realm_traits", "world_parity_realm_allocation", "world_parity_village_resource_draws"];
 const fixture = JSON.parse(await readFile(join(native, "fixtures/preset-1.json"), "utf8"));
 
 if (JSON.stringify(Object.keys(spec.fixtureCases).sort()) !== JSON.stringify(Object.keys(requiredParityCases).sort()))
@@ -46,6 +41,7 @@ await buildNative();
 const nativeCasm = await classSizes(native, "world_native", [
   "SeasonDomain",
   "SettlementDomain",
+  "ResourcesDomain",
   "StructuresDomain",
   "TroopsDomain",
   "MapDomain",
@@ -60,14 +56,19 @@ const sourceDigest = await oracleSourceDigest();
 const evidence = await collectEvidence();
 const factModel = describeFacts(JSON.parse(await readFile(join(native, "schema/schema.json"), "utf8")));
 const report = buildParityReport(evidence);
-await writeFile(join(native, "fixtures/world-parity.json"), `${JSON.stringify(report, null, 2)}\n`);
-for (const domain of domainFixtures) {
+const reportPath =
+  scope.name === "all"
+    ? join(native, "fixtures/world-parity.json")
+    : join(workspace, `${scope.name}-parity-scope.json`);
+await writeFile(reportPath, `${JSON.stringify(report, null, 2)}\n`);
+for (const domain of scope.fixtures) {
   const report = await buildDomainReport(domain, evidence);
   await writeFile(join(native, `fixtures/${domain.domain}-parity.json`), `${JSON.stringify(report, null, 2)}\n`);
 }
 console.log(
   JSON.stringify({
     gate: report.gate,
+    scope: scope.name,
     passed: report.passed,
     cases: evidence.cases.length,
     ...(evidence.failure ? { failure: evidence.failure } : {}),
@@ -82,14 +83,9 @@ async function collectEvidence() {
   let failure: string | undefined;
   try {
     if (execution.exitCode !== 0) throw new Error(`Parity execution exited ${execution.exitCode}`);
-    cases = parseWorldParity(execution.output);
-    for (const test of settlementTests) {
-      if (!execution.output.includes(`[PASS] eternum::native_settlement_grid::${test} (`))
-        throw new Error(`Missing settlement comparison: ${test}`);
-    }
-    for (const test of realmTests)
-      if (!execution.output.includes(`[PASS] eternum::native_parity::${test} (`))
-        throw new Error(`Missing canonical realm comparison: ${test}`);
+    cases = parseWorldParity(execution.output, scope.cases);
+    for (const test of scope.supplementalTests)
+      if (!execution.output.includes(`[PASS] ${test} (`)) throw new Error(`Missing supplemental comparison: ${test}`);
     await verifySourceUnchanged();
     if (process.argv.includes("--measure")) costs = await measureActions();
     await verifySourceUnchanged();
@@ -119,7 +115,8 @@ function buildParityReport({ execution, cases, failure }: Awaited<ReturnType<typ
     compiler: "2.13.1",
     foundry: "0.52.0",
     poolOverrides: false,
-    settlementTests,
+    scope: scope.name,
+    supplementalTests: scope.supplementalTests,
     normalization: spec.comparison.metadataNormalization,
     execution: {
       exitCode: execution.exitCode,
@@ -162,6 +159,7 @@ async function buildDomainReport(
     reductions: string[];
     harnessCoverage: unknown;
     ruledDivergences?: unknown[];
+    normalization?: unknown[];
   },
   { cases, costs, failure }: Awaited<ReturnType<typeof collectEvidence>>,
 ) {
@@ -177,12 +175,12 @@ async function buildDomainReport(
     rulesRevision: spec.rulesRevision,
     oracleSourceSha256: sourceDigest,
     provenance,
-    parityReport: "world-parity.json",
-    cases: compared.map(({ name, test, facts }) => ({ name, test, comparedFactSnapshots: facts.length })),
+    cases: compared.map(summarizeFactChecks),
     harnessCoverage: domain.harnessCoverage,
     casm: await domainSizes(measured ? domain.systems : []),
     reductions: domain.reductions,
     ruledDivergences: domain.ruledDivergences ?? [],
+    normalization: domain.normalization ?? [],
     divergence: failure ?? null,
   };
 }
@@ -212,7 +210,14 @@ async function prepareOracle(): Promise<void> {
     join(oracle, "src/native_parity/season_settlement.cairo"),
     await readFile(join(root, "deploy/madara-lab/harness/native/oracle-season-settlement.cairo")),
   );
-  await writeFile(join(oracle, "src/native_parity/village.cairo"), await readFile(join(root, "deploy/madara-lab/harness/native/oracle-village.cairo")));
+  await writeFile(
+    join(oracle, "src/native_parity/village.cairo"),
+    await readFile(join(root, "deploy/madara-lab/harness/native/oracle-village.cairo")),
+  );
+  await writeFile(
+    join(oracle, "src/native_parity/resources.cairo"),
+    await readFile(join(root, "deploy/madara-lab/harness/native/oracle-resources.cairo")),
+  );
   await writeNativeInputs();
   const schema = JSON.parse(await readFile(join(native, "schema/schema.json"), "utf8"));
   await writeFile(join(oracle, "src/native_facts.cairo"), factProjectors(schema));
@@ -223,7 +228,14 @@ async function configureTestPackage(): Promise<void> {
   const manifest = await readFile(manifestPath, "utf8");
   if (!manifest.includes("[dev-dependencies]") || !manifest.includes("build-external-contracts = ["))
     throw new Error("Oracle test manifest shape changed");
-  const external = ["map::MapDomain", "season::SeasonDomain", "troops::TroopsDomain", "structures::StructuresDomain", "settlement_domain::SettlementDomain"]
+  const external = [
+    "map::MapDomain",
+    "season::SeasonDomain",
+    "troops::TroopsDomain",
+    "structures::StructuresDomain",
+    "settlement_domain::SettlementDomain",
+    "resources_domain::ResourcesDomain",
+  ]
     .map((name) => `    "world_native::${name}",`)
     .concat(['    "eternum_randomness_protocol::authority::SequencingAccount",'])
     .join("\n");
@@ -273,10 +285,8 @@ async function runParity() {
   await writeFile(log, "");
   await writeFile(`${log}.stderr`, "");
   const tests = [
-    ...Object.values(requiredParityCases).map((test) => `eternum::native_parity::${test}`),
-    "eternum::native_parity::world_parity_projection_ignores_storage_bookkeeping",
-    ...settlementTests.map((test) => `eternum::native_settlement_grid::${test}`),
-    ...realmTests.map((test) => `eternum::native_parity::${test}`),
+    ...Object.values(scope.cases).map((test) => `eternum::native_parity::${test}`),
+    ...scope.supplementalTests,
   ];
   let exitCode = 0;
   // Each oracle retains two worlds and their execution traces. Run cases separately to bound resident memory.
@@ -338,7 +348,7 @@ async function writeNativeInputs(): Promise<void> {
     {
       type: "function",
       name: "resources",
-      inputs: [{ name: "rules", type: "core::array::Span::<world_native::structures::ResourceRule>" }],
+      inputs: [{ name: "rules", type: "core::array::Span::<world_native::resources::ResourceRule>" }],
       outputs: [],
       state_mutability: "view",
     },
@@ -373,7 +383,7 @@ pub fn canonical_realm_traits() -> Span<u32> { CANONICAL_REALM_TRAITS.span() }`;
     `pub fn ${name}() -> ${type} { let mut raw=array![${data.join(",")}].span(); let result=Serde::deserialize(ref raw).unwrap(); assert!(raw.is_empty()); result }`;
   await writeFile(
     join(oracle, "src/native_inputs.cairo"),
-    `${catalogue}\n${oracleUpgrades}\n${decode("village_rules", "world_native::village::VillageRules", village)}\n${decode("realm_grants", "world_native::settlement::RealmGrants", grants)}\n${decode("upgrade_recipes", "Span<world_native::upgrades::UpgradeRecipe>", upgrades)}\n${decode("rules", "world_native::rules::SliceRules", rules)}\n${decode("resource_rules", "Span<world_native::structures::ResourceRule>", resources)}\n`,
+    `${catalogue}\n${oracleUpgrades}\n${decode("village_rules", "world_native::village::VillageRules", village)}\n${decode("realm_grants", "world_native::settlement::RealmGrants", grants)}\n${decode("upgrade_recipes", "Span<world_native::upgrades::UpgradeRecipe>", upgrades)}\n${decode("rules", "world_native::rules::SliceRules", rules)}\n${decode("resource_rules", "Span<world_native::resources::ResourceRule>", resources)}\n`,
   );
 }
 
@@ -500,18 +510,37 @@ async function measureActions(): Promise<Record<string, unknown>> {
   });
   await requireCompletion(build, "Oracle production build (see oracle-build.log)", 10 * 60_000);
   const costs: Record<string, unknown> = {};
-  for (const fixture of domainFixtures) costs[fixture.domain] = await measureDomain(fixture.domain);
+  for (const fixture of scope.fixtures) costs[fixture.domain] = await measureDomain(fixture);
   return costs;
 }
 
-async function measureDomain(domain: string) {
-  const trace = join(oracle, `snfoundry_trace/eternum_native_parity_world_parity_${domain.replaceAll("-", "_")}.json`);
-  const output = join(workspace, `${domain}-costs.json`);
+async function measureDomain(fixture: (typeof domainFixtures)[number]) {
+  if (!fixture.measuredCases)
+    return measureCase(fixture, fixture.domain.replaceAll("-", "_"), fixture.measuredSequence);
+  const cases = [];
+  for (const entry of fixture.measuredCases) {
+    cases.push({ name: entry.name, report: await measureCase(fixture, entry.name, entry.sequence) });
+  }
+  return {
+    version: 1,
+    accounting: cases[0].report.accounting,
+    traces: cases.map(({ name, report }) => ({ name, sha256: report.traceSha256, callTree: report.callTree })),
+    actions: cases.flatMap(({ name, report }) =>
+      report.actions.map((action: object) => ({ fixture: name, ...action })),
+    ),
+  };
+}
+
+async function measureCase(fixture: (typeof domainFixtures)[number], name: string, sequence: { succeeded: boolean }[]) {
+  const trace = join(oracle, `snfoundry_trace/eternum_native_parity_world_parity_${name}.json`);
+  const output = join(workspace, `${name}-costs.json`);
+  const caseFixture = join(workspace, `${name}-measurement.json`);
+  await writeFile(caseFixture, JSON.stringify({ ...fixture, measuredSequence: sequence }));
   const test = Bun.spawn(
     [
       "snforge",
       "test",
-      `eternum::native_parity::world_parity_${domain.replaceAll("-", "_")}`,
+      `eternum::native_parity::world_parity_${name}`,
       "--exact",
       "--save-trace-data",
       "--max-n-steps",
@@ -520,35 +549,34 @@ async function measureDomain(domain: string) {
     {
       cwd: oracle,
       env: { ...process.env, ASDF_STARKNET_FOUNDRY_VERSION: "0.52.0" },
-      stdout: await executionLog(join(workspace, `${domain}-cost.log`)),
-      stderr: await executionLog(join(workspace, `${domain}-cost.stderr`)),
+      stdout: await executionLog(join(workspace, `${name}-cost.log`)),
+      stderr: await executionLog(join(workspace, `${name}-cost.stderr`)),
     },
   );
-  await requireCompletion(test, `${domain} cost fixture (see ${domain}-cost.log)`, 15 * 60_000);
-  const actual = parseActionOutcomes(await readFile(join(workspace, `${domain}-cost.log`), "utf8"));
-  const expected = domainFixtures.find((fixture) => fixture.domain === domain).measuredSequence;
+  await requireCompletion(test, `${name} cost fixture (see ${name}-cost.log)`, 15 * 60_000);
+  const actual = parseActionOutcomes(await readFile(join(workspace, `${name}-cost.log`), "utf8"));
   if (
-    actual.length !== expected.length ||
+    actual.length !== sequence.length ||
     actual.some(
       (action, index) =>
-        action.case !== domain.replaceAll("-", "_") ||
-        action.order !== index + 1 ||
-        action.succeeded !== expected[index].succeeded,
+        action.case !== name || action.order !== index + 1 || action.succeeded !== sequence[index].succeeded,
     )
   )
-    throw new Error(`${domain} measured outcomes differ from the declared workload`);
+    throw new Error(`${name} measured outcomes differ from the declared workload`);
   const measure = Bun.spawn(
     [
       "uv",
       "run",
       join(root, "deploy/madara-lab/harness/native/measure_trace.py"),
       trace,
-      join(native, `fixtures/${domain}.json`),
+      caseFixture,
       join(native, "schema/schema.json"),
       output,
     ],
     { stdout: "inherit", stderr: "inherit" },
   );
-  await requireCompletion(measure, `${domain} cost extraction`, 5 * 60_000);
-  return JSON.parse(await readFile(output, "utf8"));
+  await requireCompletion(measure, `${name} cost extraction`, 5 * 60_000);
+  const result = JSON.parse(await readFile(output, "utf8"));
+  await rm(trace);
+  return result;
 }

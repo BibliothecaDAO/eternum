@@ -1,0 +1,463 @@
+{
+  "version": 1,
+  "domain": "resources",
+  "rulesRevision": "55dc510f5e7af119d1efac9a60426e81fee8e408",
+  "factModel": "contracts/l3/world-native/schema/fact-models.mjs",
+  "projectionGenerator": "deploy/madara-lab/harness/native/fact-projections.ts",
+  "systems": [
+    "resource_systems"
+  ],
+  "ownedFacts": [
+    "Per-entity resource balances and carrying capacity/weight.",
+    "Production building count, rate, remaining prepaid output and settlement time.",
+    "Per-resource approvals between structures.",
+    "Ordered resources awaiting a destination arrival slot."
+  ],
+  "requiredConfig": [
+    "Game settling, main and grace boundaries and recorded execution time.",
+    "Immutable unit weights, donkey capacity, donkey speed, troop speed and tick lengths.",
+    "Structure ownership, location and category; explorer home, location, layer, stamina and combat cooldown.",
+    "Village immunity; incoming troops have no connected-realm eligibility predicate."
+  ],
+  "parityRequirements": [
+    "All 58 resource types retain their balance ranges and relic precision.",
+    "LORDS and relics have zero production without rejecting valid balance mutations.",
+    "Production uses recorded elapsed seconds, current rate and prepaid cap; food remains uncapped.",
+    "Capacity truncation and overflow/underflow rejections match the oracle.",
+    "Production is settled before spending or granting; failed spending changes no gameplay fact.",
+    "Views do not settle or write production.",
+    "Approval requires source ownership, a distinct owned destination and a nonempty list.",
+    "Pickup consumes finite allowances and preserves unlimited approvals.",
+    "Delayed transfers retain travel timing, donkey costs, mode restrictions and arrival order.",
+    "Offloading retains slot availability, partial-prefix limits and capacity behavior.",
+    "Adjacent transfers retain layer, adjacency, ownership and troop restrictions.",
+    "Burning and regularization retain season, ownership and weight rules.",
+    "Explicit burns and weight regularization do not settle production; resource actions retain the inclusive grace deadline.",
+    "Explorer actions authorize the agent owner only for the reserved agent home; other explorers use their structure owner.",
+    "Adjacent transfers spend the requested amount even when recipient capacity stores only part of it.",
+    "Every transfer rejects duplicate resource ids atomically, including nonadjacent duplicates and zero amounts; ticket order and current actor nonce advance on rejection.",
+    "Village reinforcement never consults connected-realm ownership; source authorization, adjacency, layers and resource limits still apply."
+  ],
+  "normalization": [
+    "Entity/account identities map bijectively; recorded execution time is oracle block time.",
+    "Inactive production has no accrual timestamp: both projections return zero when building_count is zero. Activation settles at the recorded command time before enabling production; an oracle fixture covers delayed activation."
+  ],
+  "reductions": [
+    "Pack the existing 232 production bits into one storage felt instead of four slots.",
+    "Settle and apply each resource mutation in memory, then persist the final facts once.",
+    "Eliminate the 48-field arrival selector table; represent only populated slots with their original ordered list.",
+    "Remove inactive production timestamps and their rows; the activation command establishes the clock before enabling accrual."
+  ],
+  "behaviourQuestions": [],
+  "harnessCoverage": {
+    "liveRun": "pending full-game acceptance",
+    "required": [
+      "Send, approve and pick up resources, offload arrivals, transfer to and from explorers and burn resources through the shared client and Herald."
+    ],
+    "added": [
+      "Explicit structure burn through the shared client; live run pending."
+    ]
+  },
+  "developmentSizeEvidence": {
+    "unit": "CASM felts",
+    "limit": 81920,
+    "settlementBaseline": 81589,
+    "packedProductionAndFinalWrites": 80794,
+    "firstThreeResourceCommands": 85404,
+    "attribution": "deploy/madara-lab/.lab/resource-development-sizes/expanded-structures.json",
+    "scope": "Development measurements; final clean per-domain evidence remains required."
+  },
+  "parityCases": [
+    "resources_approvals",
+    "resources_burns",
+    "resources_regularize",
+    "resources_transfers",
+    "resources_knight",
+    "resources_crossbow",
+    "resources_paladin",
+    "production",
+    "production_cap",
+    "production_capacity",
+    "production_activation",
+    "resources_offload",
+    "resources_offload_rejections",
+    "resources_offload_capacity",
+    "resources_send",
+    "resources_pickup",
+    "resources_pickup_unlimited",
+    "resources_duplicates",
+    "resources_village_blitz",
+    "resources_village_eternum"
+  ],
+  "commands": [
+    "approve",
+    "structure_burn",
+    "structure_regularize_weight",
+    "troop_burn",
+    "troop_troop_adjacent_transfer",
+    "structure_troop_adjacent_transfer",
+    "arrivals_offload",
+    "send",
+    "pickup",
+    "troop_structure_adjacent_transfer"
+  ],
+  "nativeCommands": {
+    "approve": "approve_resources",
+    "structure_burn": "burn_structure_resources",
+    "structure_regularize_weight": "regularize_resource_weights",
+    "troop_burn": "burn_explorer_resources",
+    "troop_troop_adjacent_transfer": "transfer_explorer_resources",
+    "structure_troop_adjacent_transfer": "transfer_structure_resources_to_explorer",
+    "arrivals_offload": "offload_arrival",
+    "send": "send_resources",
+    "pickup": "pickup_resources",
+    "troop_structure_adjacent_transfer": "transfer_explorer_resources_to_structure"
+  },
+  "measuredCases": [
+    {
+      "name": "resources_approvals",
+      "sequence": [
+        {
+          "case": "approve",
+          "command": "approve",
+          "succeeded": true
+        },
+        {
+          "case": "overwrite",
+          "command": "approve",
+          "succeeded": true
+        },
+        {
+          "case": "revoke",
+          "command": "approve",
+          "succeeded": true
+        },
+        {
+          "case": "foreign_owner",
+          "command": "approve",
+          "succeeded": false
+        },
+        {
+          "case": "self_approval",
+          "command": "approve",
+          "succeeded": false
+        },
+        {
+          "case": "empty_approval",
+          "command": "approve",
+          "succeeded": false
+        }
+      ]
+    },
+    {
+      "name": "resources_burns",
+      "sequence": [
+        {
+          "case": "burn",
+          "command": "structure_burn",
+          "succeeded": true
+        },
+        {
+          "case": "insufficient",
+          "command": "structure_burn",
+          "succeeded": false
+        },
+        {
+          "case": "foreign_owner",
+          "command": "structure_burn",
+          "succeeded": false
+        },
+        {
+          "case": "empty_burn",
+          "command": "structure_burn",
+          "succeeded": true
+        }
+      ]
+    },
+    {
+      "name": "resources_regularize",
+      "sequence": [
+        {
+          "case": "regularize",
+          "command": "structure_regularize_weight",
+          "succeeded": true
+        },
+        {
+          "case": "permissionless",
+          "command": "structure_regularize_weight",
+          "succeeded": true
+        },
+        {
+          "case": "empty_regularization",
+          "command": "structure_regularize_weight",
+          "succeeded": false
+        }
+      ]
+    },
+    {
+      "name": "resources_transfers",
+      "sequence": [
+        {
+          "case": "structure_transfer_capacity",
+          "command": "structure_troop_adjacent_transfer",
+          "succeeded": true
+        },
+        {
+          "case": "explorer_transfer_capacity",
+          "command": "troop_troop_adjacent_transfer",
+          "succeeded": true
+        },
+        {
+          "case": "foreign_agent_owner",
+          "command": "troop_burn",
+          "succeeded": false
+        },
+        {
+          "case": "agent_owner_burn",
+          "command": "troop_burn",
+          "succeeded": true
+        },
+        {
+          "case": "self_transfer",
+          "command": "troop_troop_adjacent_transfer",
+          "succeeded": false
+        }
+      ]
+    },
+    {
+      "name": "resources_knight",
+      "sequence": [
+        {
+          "case": "troop_resource_26",
+          "command": "structure_troop_adjacent_transfer",
+          "succeeded": false
+        },
+        {
+          "case": "troop_resource_27",
+          "command": "structure_troop_adjacent_transfer",
+          "succeeded": false
+        },
+        {
+          "case": "troop_resource_28",
+          "command": "structure_troop_adjacent_transfer",
+          "succeeded": false
+        }
+      ]
+    },
+    {
+      "name": "resources_crossbow",
+      "sequence": [
+        {
+          "case": "troop_resource_29",
+          "command": "structure_troop_adjacent_transfer",
+          "succeeded": false
+        },
+        {
+          "case": "troop_resource_30",
+          "command": "structure_troop_adjacent_transfer",
+          "succeeded": false
+        },
+        {
+          "case": "troop_resource_31",
+          "command": "structure_troop_adjacent_transfer",
+          "succeeded": false
+        }
+      ]
+    },
+    {
+      "name": "resources_paladin",
+      "sequence": [
+        {
+          "case": "troop_resource_32",
+          "command": "structure_troop_adjacent_transfer",
+          "succeeded": false
+        },
+        {
+          "case": "troop_resource_33",
+          "command": "structure_troop_adjacent_transfer",
+          "succeeded": false
+        },
+        {
+          "case": "troop_resource_34",
+          "command": "structure_troop_adjacent_transfer",
+          "succeeded": false
+        }
+      ]
+    },
+    {
+      "name": "resources_offload",
+      "sequence": [
+        {
+          "case": "prefix",
+          "command": "arrivals_offload",
+          "succeeded": true
+        },
+        {
+          "case": "remaining",
+          "command": "arrivals_offload",
+          "succeeded": true
+        },
+        {
+          "case": "empty",
+          "command": "arrivals_offload",
+          "succeeded": true
+        }
+      ]
+    },
+    {
+      "name": "resources_offload_rejections",
+      "sequence": [
+        {
+          "case": "foreign_owner",
+          "command": "arrivals_offload",
+          "succeeded": false
+        },
+        {
+          "case": "zero_count",
+          "command": "arrivals_offload",
+          "succeeded": false
+        },
+        {
+          "case": "not_arrived",
+          "command": "arrivals_offload",
+          "succeeded": false
+        }
+      ]
+    },
+    {
+      "name": "resources_offload_capacity",
+      "sequence": [
+        {
+          "case": "full_capacity",
+          "command": "arrivals_offload",
+          "succeeded": true
+        }
+      ]
+    },
+    {
+      "name": "resources_send",
+      "sequence": [
+        {
+          "case": "send",
+          "command": "send",
+          "succeeded": true
+        },
+        {
+          "case": "merge",
+          "command": "send",
+          "succeeded": true
+        },
+        {
+          "case": "zero",
+          "command": "send",
+          "succeeded": true
+        },
+        {
+          "case": "insufficient",
+          "command": "send",
+          "succeeded": false
+        }
+      ]
+    },
+    {
+      "name": "resources_pickup",
+      "sequence": [
+        {
+          "case": "approve",
+          "command": "approve",
+          "succeeded": true
+        },
+        {
+          "case": "pickup",
+          "command": "pickup",
+          "succeeded": true
+        },
+        {
+          "case": "insufficient_approval",
+          "command": "pickup",
+          "succeeded": false
+        }
+      ]
+    },
+    {
+      "name": "resources_pickup_unlimited",
+      "sequence": [
+        {
+          "case": "approve",
+          "command": "approve",
+          "succeeded": true
+        },
+        {
+          "case": "pickup",
+          "command": "pickup",
+          "succeeded": true
+        },
+        {
+          "case": "repeat",
+          "command": "pickup",
+          "succeeded": true
+        }
+      ]
+    },
+    {
+      "name": "resources_village_blitz",
+      "sequence": [
+        {
+          "case": "allied_reinforcement",
+          "command": "troop_structure_adjacent_transfer",
+          "succeeded": true
+        }
+      ]
+    },
+    {
+      "name": "resources_duplicates",
+      "sequence": [
+        {
+          "case": "duplicate_input",
+          "command": "send",
+          "succeeded": false,
+          "oracleSucceeded": true
+        }
+      ]
+    },
+    {
+      "name": "resources_village_eternum",
+      "sequence": [
+        {
+          "case": "allied_reinforcement",
+          "command": "troop_structure_adjacent_transfer",
+          "succeeded": true,
+          "oracleSucceeded": false
+        }
+      ]
+    }
+  ],
+  "ruledDivergences": [
+    {
+      "id": "duplicate-transfer-resources",
+      "cause": "The pinned arrival accumulator can spend 10 + 20 but queue 20 + 20 for a newly arriving resource; malformed duplicate input creates resources.",
+      "rule": "Reject duplicate resource ids in every transfer before gameplay mutation. An authenticated current-nonce ticket records rejection and consumes its nonce and order.",
+      "oracle": "Retain the pinned defect in the oracle; compare native facts with the unchanged pre-action facts for this rejected input.",
+      "cases": [
+        {
+          "name": "resources_duplicates",
+          "oracle": true,
+          "native": false
+        }
+      ]
+    },
+    {
+      "id": "village-reinforcement",
+      "cause": "Village placement is independent of its connected realm; that connection does not define troop-transfer eligibility.",
+      "rule": "Remove connected-realm ownership checks for incoming village troops. Adjacent reinforcement has the same eligibility in both modes; Eternum accepts allied reinforcement previously rejected.",
+      "oracle": "Keep the pinned Eternum rejection and assert the native transfer against the declared reinforcement facts. Generic transport mode rules remain separate.",
+      "cases": [
+        {
+          "name": "resources_village_eternum",
+          "oracle": false,
+          "native": true
+        }
+      ]
+    }
+  ]
+}

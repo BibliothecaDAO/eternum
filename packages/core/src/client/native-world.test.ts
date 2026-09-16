@@ -73,7 +73,14 @@ describe("native bindings in the shared game client", () => {
     write("DomainState", [0x101n], {
       address: "0x101",
       authority: "0x999",
-      peers: { season: "0x101", map: "0x102", structures: "0x103", troops: "0x104", settlement: "0x105" },
+      peers: {
+        season: "0x101",
+        map: "0x102",
+        structures: "0x103",
+        troops: "0x104",
+        settlement: "0x105",
+        resources: "0x106",
+      },
       active: true,
     });
     write("ExecutionHead", [0x101n], {
@@ -167,6 +174,62 @@ describe("native bindings in the shared game client", () => {
     ).rejects.toThrow("owned structure");
     await send(actor, { contractAddress: "0x101", entrypoint: "level_up", calldata: [1, 9] });
     expect((submit.mock.calls.at(-1)![0].calldata as string[]).slice(10, 13)).toEqual(["2", "9", "9"]);
+    for (const [entrypoint, variant, fields] of [
+      ["approve", "17", [9, 12]],
+      ["structure_burn", "18", [9]],
+      ["troop_burn", "20", [7]],
+      ["troop_troop_adjacent_transfer", "21", [7, 8]],
+      ["structure_troop_adjacent_transfer", "22", [9, 7]],
+      ["send", "24", [9, 12]],
+      ["pickup", "25", [12, 9]],
+      ["troop_structure_adjacent_transfer", "26", [7, 9]],
+    ] as const) {
+      await send(actor, {
+        contractAddress: "0x101",
+        entrypoint,
+        calldata: [1, ...fields, 2, 1, "340282366920938463463374607431768211455", 38, 0],
+      });
+      const encoded = submit.mock.calls.at(-1)![0].calldata as string[];
+      const endpoints = entrypoint === "pickup" ? [...fields].reverse() : fields;
+      const expected = [
+        variant,
+        ...endpoints.map(String),
+        "2",
+        "1",
+        "340282366920938463463374607431768211455",
+        "38",
+        "0",
+      ];
+      expect(encoded.slice(10, 11 + expected.length)).toEqual([String(expected.length), ...expected]);
+      expect(encoded[5]).toBe(
+        BigInt(
+          hash.computePoseidonHashOnElements([shortString.encodeShortString("ETERNUM_COMMAND"), 1, ...expected]),
+        ).toString(),
+      );
+    }
+    await send(actor, { contractAddress: "0x101", entrypoint: "arrivals_offload", calldata: [1, 9, 4, 48, 255] });
+    expect((submit.mock.calls.at(-1)![0].calldata as string[]).slice(10, 16)).toEqual([
+      "5",
+      "23",
+      "9",
+      "4",
+      "48",
+      "255",
+    ]);
+    await send(actor, { contractAddress: "0x101", entrypoint: "structure_regularize_weight", calldata: [1, 2, 9, 12] });
+    expect((submit.mock.calls.at(-1)![0].calldata as string[]).slice(10, 15)).toEqual(["4", "19", "2", "9", "12"]);
+    const submitted = submit.mock.calls.length;
+    for (const malformed of [
+      [1, 9],
+      [1, 9, -1],
+      [1, 9, 1, 1],
+      [1, 9, 0, 1, 2],
+    ]) {
+      await expect(
+        send(actor, { contractAddress: "0x101", entrypoint: "structure_burn", calldata: malformed }),
+      ).rejects.toThrow("resource list length");
+    }
+    expect(submit).toHaveBeenCalledTimes(submitted);
     for (const [entrypoint, variant] of [
       ["transfer_structure_ownership", "6"],
       ["transfer_agent_ownership", "7"],

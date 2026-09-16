@@ -174,6 +174,7 @@ pub struct SliceRules {
     pub spire_travel_essence_cost: u128,
     pub blitz_mode_on: bool,
     pub faith_enabled: bool,
+    pub speed_config: SpeedConfig,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
@@ -315,4 +316,10 @@ pub impl MapConfigPacking of starknet::storage_access::StorePacking<MapConfig, P
             relic_chest_relics_per_chest: (value.third / 0x10000000000 % 0x100).try_into().unwrap(),
         }
     }
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
+pub struct SpeedConfig {
+    pub donkey_sec_per_km: u16,
+    pub donkey_sec_per_km_troops: u16,
 }

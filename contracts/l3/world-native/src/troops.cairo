@@ -274,6 +274,7 @@ pub mod TroopState {
 pub trait ITroops<T> {
     fn explorer(self: @T, key: ExplorerKey) -> Option<ExplorerTroops>;
     fn agent_population(self: @T, game_id: u32) -> AgentPopulation;
+    fn authorized_explorer(self: @T, key: ExplorerKey, actor: starknet::ContractAddress) -> ExplorerTroops;
 }
 
 #[starknet::contract]
@@ -286,7 +287,7 @@ pub mod TroopsDomain {
     use crate::geometry::{distance, neighbor, spire_neighbor, tile_key};
     use crate::lifecycle::Lifecycle;
     use crate::map::{IMapDispatcher, IMapDispatcherTrait};
-    use crate::resources::ResourceKey;
+    use crate::resources::{IResourcesDispatcher, IResourcesDispatcherTrait, ResourceKey};
     use crate::rules::{RESOURCE_PRECISION, SliceRules};
     use crate::stamina::StaminaTrait;
     use crate::structures::{IStructuresDispatcher, IStructuresDispatcherTrait, Structure};
@@ -322,6 +323,9 @@ pub mod TroopsDomain {
     impl TroopViews of super::ITroops<ContractState> {
         fn explorer(self: @ContractState, key: ExplorerKey) -> Option<ExplorerTroops> {
             self.troops.explorer(key)
+        }
+        fn authorized_explorer(self: @ContractState, key: ExplorerKey, actor: ContractAddress) -> ExplorerTroops {
+            self.owned_explorer(key, actor)
         }
         fn agent_population(self: @ContractState, game_id: u32) -> super::AgentPopulation {
             super::AgentPopulation { count: self.troops.agent_count.read(game_id) }
@@ -411,9 +415,7 @@ pub mod TroopsDomain {
                     id,
                     context.timestamp,
                 );
-            let coord = neighbor(
-                Coord { alt: home.base.category == 8, x: home.base.coord_x, y: home.base.coord_y }, command.direction,
-            );
+            let coord = neighbor(crate::structures::structure_coord(home.base), command.direction);
             assert!(
                 command.amount <= super::max_army_size(rules.troop_limit_config, home.base.level, tier).into()
                     * RESOURCE_PRECISION,
@@ -428,7 +430,7 @@ pub mod TroopsDomain {
                     ExplorerTroops { owner: command.structure_id, troops, coord },
                 );
             self
-                .structures_dispatcher()
+                .resources_dispatcher()
                 .initialize_explorer_resources(ResourceKey { game_id, entity_id: id }, command.amount);
             self.game_dispatcher().allocate_entity(game_id);
         }
@@ -591,7 +593,7 @@ pub mod TroopsDomain {
             let data = self.map_dispatcher().tile(destination_key).map(|tile| tile.data).unwrap_or(0);
             assert!(data % 0x20000000000 == 0, "portal landing occupied");
             self
-                .structures_dispatcher()
+                .resources_dispatcher()
                 .spend_spire_fee(ResourceKey { game_id, entity_id: explorer.owner }, context.timestamp);
             if (data / 0x20000000000) % 256 == 0 {
                 self.map_dispatcher().reveal(destination_key, self.map_dispatcher().biome(destination_key));
@@ -655,6 +657,9 @@ pub mod TroopsDomain {
         fn game_dispatcher(self: @ContractState) -> IGameDispatcher {
             IGameDispatcher { contract_address: self.lifecycle.require_active().season }
         }
+        fn resources_dispatcher(self: @ContractState) -> IResourcesDispatcher {
+            IResourcesDispatcher { contract_address: self.lifecycle.require_active().resources }
+        }
         fn structures_dispatcher(self: @ContractState) -> IStructuresDispatcher {
             IStructuresDispatcher { contract_address: self.lifecycle.require_active().structures }
         }
@@ -671,7 +676,11 @@ pub mod TroopsDomain {
         }
         fn owned_explorer(self: @ContractState, key: ExplorerKey, actor: ContractAddress) -> ExplorerTroops {
             let explorer = self.troops.explorer(key).expect('missing explorer');
-            self.owned_structure(key.game_id, explorer.owner, actor);
+            if explorer.owner == super::AGENT_HOME {
+                assert!(self.agent_owners.read((key.game_id, key.explorer_id)) == actor, "actor does not own agent");
+            } else {
+                self.owned_structure(key.game_id, explorer.owner, actor);
+            }
             explorer
         }
         fn pay_movement(
@@ -702,7 +711,7 @@ pub mod TroopsDomain {
             };
             let units = explorer.troops.count / RESOURCE_PRECISION;
             self
-                .structures_dispatcher()
+                .resources_dispatcher()
                 .spend_food(
                     ResourceKey { game_id, entity_id: explorer.owner },
                     wheat.into() * units,
@@ -795,7 +804,7 @@ pub mod TroopsDomain {
         }
         fn finish_battle(ref self: ContractState, key: ExplorerKey, explorer: ExplorerTroops, before: u128) {
             self
-                .structures_dispatcher()
+                .resources_dispatcher()
                 .reduce_explorer_capacity(
                     ResourceKey { game_id: key.game_id, entity_id: key.explorer_id }, before - explorer.troops.count,
                 );

@@ -1,6 +1,12 @@
 use crate::rules::RESOURCE_PRECISION;
 
 pub const LORDS: u8 = 37;
+const FIRST_TROOP_RESOURCE: u8 = 26;
+const LAST_TROOP_RESOURCE: u8 = 34;
+
+pub fn is_troop_resource(resource_type: u8) -> bool {
+    resource_type >= FIRST_TROOP_RESOURCE && resource_type <= LAST_TROOP_RESOURCE
+}
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct ResourceAmount {
@@ -8,12 +14,76 @@ pub struct ResourceAmount {
     pub amount: u128,
 }
 
-#[derive(Copy, Drop, Serde, Default, PartialEq, Debug, starknet::Store)]
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct ResourceApproval {
+    pub owner_entity_id: u32,
+    pub approved_entity_id: u32,
+    pub resources: Span<ResourceAmount>,
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct ResourceBurn {
+    pub entity_id: u32,
+    pub resources: Span<ResourceAmount>,
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct ResourceTransfer {
+    pub from_entity_id: u32,
+    pub to_entity_id: u32,
+    pub resources: Span<ResourceAmount>,
+}
+
+pub fn assert_unique_transfer_resources(resources: Span<ResourceAmount>) {
+    let mut seen: core::dict::Felt252Dict<u128> = Default::default();
+    for resource in resources {
+        let id = (*resource.resource_type).into();
+        assert!(seen.get(id) == 0, "duplicate transfer resource");
+        seen.insert(id, 1);
+    }
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct AllowanceKey {
+    pub game_id: u32,
+    pub owner_entity_id: u32,
+    pub approved_entity_id: u32,
+    pub resource_type: u8,
+}
+
+#[starknet::interface]
+pub trait IResourceAllowance<T> {
+    fn resource_allowance(self: @T, key: AllowanceKey) -> u128;
+}
+
+#[derive(Copy, Drop, Serde, Default, PartialEq, Debug)]
 pub struct Production {
     pub building_count: u8,
     pub production_rate: u64,
     pub output_amount_left: u128,
     pub last_updated_at: u32,
+}
+
+const PRODUCTION_TIME_SCALE: u128 = 0x10000000000000000;
+const PRODUCTION_COUNT_SCALE: u128 = 0x1000000000000000000000000;
+
+// The cap occupies the low limb; rate, settlement time and building count use 104 high bits.
+pub impl ProductionPacking of starknet::storage_access::StorePacking<Production, felt252> {
+    fn pack(value: Production) -> felt252 {
+        let high = value.production_rate.into()
+            + value.last_updated_at.into() * PRODUCTION_TIME_SCALE
+            + value.building_count.into() * PRODUCTION_COUNT_SCALE;
+        u256 { low: value.output_amount_left, high }.try_into().unwrap()
+    }
+    fn unpack(value: felt252) -> Production {
+        let value: u256 = value.into();
+        Production {
+            building_count: (value.high / PRODUCTION_COUNT_SCALE).try_into().unwrap(),
+            production_rate: (value.high % PRODUCTION_TIME_SCALE).try_into().unwrap(),
+            output_amount_left: value.low,
+            last_updated_at: (value.high / PRODUCTION_TIME_SCALE % 0x100000000).try_into().unwrap(),
+        }
+    }
 }
 #[derive(Copy, Drop, Serde, Default, PartialEq, Debug, starknet::Store)]
 pub struct Weight {
@@ -32,6 +102,13 @@ pub struct ResourceSlot {
     pub resource_type: u8,
 }
 
+#[derive(Copy, Drop)]
+struct SettledResource {
+    balance: u128,
+    production: Production,
+    weight: Weight,
+}
+
 fn assert_resource(resource_type: u8) {
     assert!(resource_type > 0 && resource_type <= 58, "invalid resource type");
 }
@@ -41,17 +118,25 @@ fn assert_production(resource_type: u8) {
     assert!(resource_type < 39 || resource_type > 56, "resource has no production");
 }
 
+fn has_production(resource_type: u8) -> bool {
+    resource_type != LORDS && (resource_type < 39 || resource_type > 56)
+}
+
 #[starknet::component]
 pub mod ResourceState {
     use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
     use crate::events::{RowDeleted, RowSet};
-    use super::{LORDS, Production, ResourceKey, Weight, add, assert_production, assert_resource, settle, spend};
+    use super::{
+        AllowanceKey, Production, ResourceKey, SettledResource, Weight, add, assert_production, assert_resource,
+        has_production, settle, spend,
+    };
     #[storage]
     pub struct Storage {
         pub balances: Map<(u32, u32, u8), u128>,
         pub productions: Map<(u32, u32, u8), Production>,
         pub weights: Map<(u32, u32), Weight>,
         pub resource_exists: Map<(u32, u32), bool>,
+        pub allowances: Map<(u32, u32, u32, u8), u128>,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -61,13 +146,51 @@ pub mod ResourceState {
     }
     #[generate_trait]
     pub impl InternalImpl<TContractState, +HasComponent<TContractState>> of InternalTrait<TContractState> {
+        fn allowance(self: @ComponentState<TContractState>, key: AllowanceKey) -> u128 {
+            self.allowances.read((key.game_id, key.owner_entity_id, key.approved_entity_id, key.resource_type))
+        }
+        fn approve(ref self: ComponentState<TContractState>, key: AllowanceKey, amount: u128) {
+            if self.allowance(key) == amount {
+                return;
+            }
+            self
+                .allowances
+                .write((key.game_id, key.owner_entity_id, key.approved_entity_id, key.resource_type), amount);
+            let mut keys = array![];
+            key.serialize(ref keys);
+            if amount == 0 {
+                self.emit(RowDeleted { version: 1, model: 'ResourceAllowance', keys: keys.span() });
+            } else {
+                self
+                    .emit(
+                        RowSet {
+                            version: 1,
+                            model: 'ResourceAllowance',
+                            keys: keys.span(),
+                            values: array![amount.into()].span(),
+                        },
+                    );
+            }
+        }
+        fn burn_resource(
+            ref self: ComponentState<TContractState>,
+            key: ResourceKey,
+            resource_type: u8,
+            amount: u128,
+            unit_weight: u128,
+        ) {
+            // Explicit burns spend the stored balance; they never harvest pending production.
+            let mut balance = self.balance(key, resource_type);
+            let mut weight = self.weight(key);
+            spend(resource_type, ref balance, ref weight, amount, unit_weight);
+            self.write_balance(key, resource_type, balance);
+            self.write_weight(key, weight);
+        }
         fn destroy(ref self: ComponentState<TContractState>, key: ResourceKey) {
             self.assert_exists(key);
             for resource_type in 1_u8..59 {
                 self.write_balance(key, resource_type, 0);
-                if resource_type < 39 || resource_type > 56 {
-                    self.write_production(key, resource_type, Default::default());
-                }
+                self.write_production(key, resource_type, Default::default());
             }
             self.weights.write((key.game_id, key.entity_id), Default::default());
             self.resource_exists.write((key.game_id, key.entity_id), false);
@@ -109,7 +232,10 @@ pub mod ResourceState {
         #[inline(never)]
         fn production(self: @ComponentState<TContractState>, key: ResourceKey, resource_type: u8) -> Production {
             self.assert_exists(key);
-            assert_production(resource_type);
+            assert_resource(resource_type);
+            if !has_production(resource_type) {
+                return Default::default();
+            }
             self.productions.read((key.game_id, key.entity_id, resource_type))
         }
         fn weight(self: @ComponentState<TContractState>, key: ResourceKey) -> Weight {
@@ -120,17 +246,9 @@ pub mod ResourceState {
         fn settle_resource(
             ref self: ComponentState<TContractState>, key: ResourceKey, resource_type: u8, unit_weight: u128, now: u32,
         ) -> u128 {
-            let mut balance = self.balance(key, resource_type);
-            let mut production = self.production(key, resource_type);
-            if production.last_updated_at == now {
-                return balance;
-            }
-            let mut weight = self.weights.read((key.game_id, key.entity_id));
-            settle(resource_type, ref balance, ref production, ref weight, unit_weight, now);
-            self.write_balance(key, resource_type, balance);
-            self.write_production(key, resource_type, production);
-            self.write_weight(key, weight);
-            balance
+            let resource = self.load_settled(key, resource_type, unit_weight, now);
+            self.commit_resource(key, resource_type, resource);
+            resource.balance
         }
         fn spend_resource(
             ref self: ComponentState<TContractState>,
@@ -140,11 +258,9 @@ pub mod ResourceState {
             unit_weight: u128,
             now: u32,
         ) {
-            let mut balance = self.settle_resource(key, resource_type, unit_weight, now);
-            let mut weight = self.weights.read((key.game_id, key.entity_id));
-            spend(resource_type, ref balance, ref weight, amount, unit_weight);
-            self.write_balance(key, resource_type, balance);
-            self.write_weight(key, weight);
+            let mut resource = self.load_settled(key, resource_type, unit_weight, now);
+            spend(resource_type, ref resource.balance, ref resource.weight, amount, unit_weight);
+            self.commit_resource(key, resource_type, resource);
         }
         fn grant_resource(
             ref self: ComponentState<TContractState>,
@@ -154,11 +270,9 @@ pub mod ResourceState {
             unit_weight: u128,
             now: u32,
         ) -> u128 {
-            let mut balance = self.settle_resource(key, resource_type, unit_weight, now);
-            let mut weight = self.weights.read((key.game_id, key.entity_id));
-            let granted = add(resource_type, ref balance, ref weight, amount, unit_weight);
-            self.write_balance(key, resource_type, balance);
-            self.write_weight(key, weight);
+            let mut resource = self.load_settled(key, resource_type, unit_weight, now);
+            let granted = add(resource_type, ref resource.balance, ref resource.weight, amount, unit_weight);
+            self.commit_resource(key, resource_type, resource);
             granted
         }
         fn start_production(
@@ -170,12 +284,34 @@ pub mod ResourceState {
             unit_weight: u128,
             now: u32,
         ) {
-            self.settle_resource(key, resource_type, unit_weight, now);
-            let mut production = self.production(key, resource_type);
-            production.building_count += 1;
-            production.production_rate += rate;
-            production.output_amount_left += output;
-            self.write_production(key, resource_type, production);
+            assert_production(resource_type);
+            let mut resource = self.load_settled(key, resource_type, unit_weight, now);
+            resource.production.building_count += 1;
+            resource.production.production_rate += rate;
+            resource.production.output_amount_left += output;
+            self.commit_resource(key, resource_type, resource);
+        }
+        fn load_settled(
+            self: @ComponentState<TContractState>, key: ResourceKey, resource_type: u8, unit_weight: u128, now: u32,
+        ) -> SettledResource {
+            let mut resource = SettledResource {
+                balance: self.balance(key, resource_type),
+                production: self.production(key, resource_type),
+                weight: self.weights.read((key.game_id, key.entity_id)),
+            };
+            if resource.production.last_updated_at != now {
+                settle(
+                    resource_type, ref resource.balance, ref resource.production, ref resource.weight, unit_weight, now,
+                );
+            }
+            resource
+        }
+        fn commit_resource(
+            ref self: ComponentState<TContractState>, key: ResourceKey, resource_type: u8, resource: SettledResource,
+        ) {
+            self.write_balance(key, resource_type, resource.balance);
+            self.write_production(key, resource_type, resource.production);
+            self.write_weight(key, resource.weight);
         }
         #[inline(never)]
         fn write_balance(ref self: ComponentState<TContractState>, key: ResourceKey, resource_type: u8, balance: u128) {
@@ -195,10 +331,14 @@ pub mod ResourceState {
         fn write_production(
             ref self: ComponentState<TContractState>, key: ResourceKey, resource_type: u8, production: Production,
         ) {
-            // The pinned resource store never persists a LORDS production record.
-            if resource_type == LORDS {
+            if !has_production(resource_type) {
                 return;
             }
+            let production = if production.building_count == 0 {
+                Production { last_updated_at: 0, ..production }
+            } else {
+                production
+            };
             let storage_key = (key.game_id, key.entity_id, resource_type);
             if self.productions.read(storage_key) == production {
                 return;
@@ -289,4 +429,35 @@ fn assert_relic_precision(resource_type: u8, balance: u128) {
     if resource_type >= 39 && resource_type <= 56 {
         assert!(balance % RESOURCE_PRECISION == 0, "fractional relic balance");
     }
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
+pub struct ResourceRule {
+    pub resource_type: u8,
+    pub unit_weight: u128,
+    pub realm_rate: u64,
+    pub village_rate: u64,
+    pub labor_output_per_resource: u64,
+    pub building_population_cost: u8,
+    pub building_capacity_grant: u8,
+}
+
+#[starknet::interface]
+pub trait IResources<T> {
+    fn resource_arrival(self: @T, key: crate::arrivals::ArrivalKey) -> crate::arrivals::Arrival;
+    fn has_resource(self: @T, key: ResourceKey) -> bool;
+    fn resource_balance(self: @T, key: ResourceSlot) -> u128;
+    fn resource_production(self: @T, key: ResourceSlot) -> Production;
+    fn resource_weight(self: @T, key: ResourceKey) -> Weight;
+    fn resource_rule(self: @T, game_id: u32, resource_type: u8) -> ResourceRule;
+    fn configure_resources(ref self: T, game_id: u32, rules: Span<ResourceRule>);
+    fn initialize_resources(ref self: T, key: ResourceKey, capacity: u128);
+    fn initialize_explorer_resources(ref self: T, key: ResourceKey, amount: u128);
+    fn destroy_resources(ref self: T, key: ResourceKey);
+    fn reduce_explorer_capacity(ref self: T, key: ResourceKey, lost: u128);
+    fn grant_resource(ref self: T, key: ResourceKey, resource_type: u8, amount: u128, timestamp: u64) -> u128;
+    fn spend_resource(ref self: T, key: ResourceKey, resource_type: u8, amount: u128, timestamp: u64);
+    fn start_production(ref self: T, key: ResourceKey, resource_type: u8, rate: u64, output: u128, timestamp: u64);
+    fn spend_food(ref self: T, key: ResourceKey, wheat: u128, fish: u128, timestamp: u64);
+    fn spend_spire_fee(ref self: T, key: ResourceKey, timestamp: u64);
 }

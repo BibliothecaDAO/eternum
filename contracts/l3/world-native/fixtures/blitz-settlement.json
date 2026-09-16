@@ -182,5 +182,10 @@
       "cause": "Frozen village and reveal ruling.",
       "projection": "The paired action snapshots native neighbours before execution and asserts their complete state is unchanged afterwards. Own-tile facts and every other gameplay fact remain paired."
     }
+  ],
+  "supplementalTests": [
+    "eternum::native_settlement_grid::world_parity_settlement_geometry",
+    "eternum::native_settlement_grid::world_parity_settlement_pool_windows",
+    "eternum::native_settlement_grid::world_parity_starting_troop_table"
   ]
 }

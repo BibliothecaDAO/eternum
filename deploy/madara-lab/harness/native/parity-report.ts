@@ -1,6 +1,23 @@
 import { createHash } from "node:crypto";
+import resourceFixture from "../../../../contracts/l3/world-native/fixtures/resources.json";
 
 export const requiredParityCases = {
+  resources_duplicates: "world_parity_resources_duplicates",
+  resources_village_blitz: "world_parity_resources_village_blitz",
+  resources_village_eternum: "world_parity_resources_village_eternum",
+  resources_send: "world_parity_resources_send",
+  resources_pickup: "world_parity_resources_pickup",
+  resources_pickup_unlimited: "world_parity_resources_pickup_unlimited",
+  resources_offload: "world_parity_resources_offload",
+  resources_offload_rejections: "world_parity_resources_offload_rejections",
+  resources_offload_capacity: "world_parity_resources_offload_capacity",
+  resources_approvals: "world_parity_resources_approvals",
+  resources_burns: "world_parity_resources_burns",
+  resources_regularize: "world_parity_resources_regularize",
+  resources_transfers: "world_parity_resources_transfers",
+  resources_knight: "world_parity_resources_knight",
+  resources_crossbow: "world_parity_resources_crossbow",
+  resources_paladin: "world_parity_resources_paladin",
   village: "world_parity_village",
   season_ledger_pass: "world_parity_season_ledger_pass",
   season_ledger_order: "world_parity_season_ledger_order",
@@ -41,6 +58,7 @@ export const requiredParityCases = {
   surface: "world_parity_surface_discoveries",
   ethereal: "world_parity_ethereal_entry_and_discovery",
   production: "world_parity_production_settlement",
+  production_activation: "world_parity_production_activation",
   production_cap: "world_parity_production_cap",
   production_capacity: "world_parity_production_capacity",
   battle: "world_parity_battle_deletes_explorer",
@@ -58,9 +76,10 @@ type Observation = {
   dojo: string[];
 };
 
-export function parseWorldParity(output: string) {
+export function parseWorldParity(output: string, required: Record<string, string> = requiredParityCases) {
   const observations = new Map<string, Observation>();
   const actions = parseActionOutcomes(output);
+  const rulings = parseRuledOutcomes(output, new Set(Object.keys(required)));
   const roots: { case: string; step: number; rawRoot: string; incrementedRoot: string }[] = [];
   const deletes: { case: string; step: number; model: string; keys: string[] }[] = [];
   const rejections: { case: string; step: number; explorerId: string; timestamp: string }[] = [];
@@ -97,9 +116,9 @@ export function parseWorldParity(output: string) {
     }
   }
   for (const observation of observations.values()) {
-    if (!(observation.case in requiredParityCases)) throw new Error(`Unexpected parity case: ${observation.case}`);
+    if (!(observation.case in required)) throw new Error(`Unexpected parity case: ${observation.case}`);
   }
-  const cases = Object.entries(requiredParityCases).map(([caseName, test]) => {
+  const cases = Object.entries(required).map(([caseName, test]) => {
     const caseFacts = [...observations.values()]
       .filter((observation) => observation.case === caseName)
       .map(verifyObservation);
@@ -108,6 +127,7 @@ export function parseWorldParity(output: string) {
       name: caseName,
       test,
       fixtureL2Gas: passed.get(test)!,
+      ruledOutcomes: rulings.filter((item) => item.case === caseName),
       actions: actions.filter((item) => item.case === caseName),
       roots: roots.filter((item) => item.case === caseName),
       facts: caseFacts,
@@ -202,4 +222,29 @@ export function parseActionOutcomes(output: string) {
         succeeded: parts[5] === "true",
       };
     });
+}
+
+function parseRuledOutcomes(output: string, selected: Set<string>) {
+  const expected = new Map(
+    resourceFixture.ruledDivergences.flatMap((rule) =>
+      rule.cases
+        .filter(({ name }) => selected.has(name))
+        .map(({ name, oracle, native }) => [name, { ruling: rule.id, oracle, native }] as const),
+    ),
+  );
+  const outcomes = [];
+  for (const line of output.split("\n")) {
+    const parts = line.trim().split(/\s+/);
+    if (parts[0] !== "RULED_OUTCOME") continue;
+    if (parts.length !== 6) throw new Error("Malformed ruled outcome");
+    const rule = expected.get(name(parts[1]));
+    if (!rule || name(parts[3]) !== rule.ruling || parts[4] !== String(rule.oracle) || parts[5] !== String(rule.native))
+      throw new Error("Undeclared ruled outcome");
+    const order = Number(parts[2]);
+    if (!Number.isSafeInteger(order) || order < 1) throw new Error("Malformed ruled order");
+    outcomes.push({ case: name(parts[1]), order, ...rule });
+    expected.delete(name(parts[1]));
+  }
+  if (expected.size !== 0) throw new Error("Missing ruled outcome");
+  return outcomes;
 }

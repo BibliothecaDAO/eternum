@@ -244,7 +244,10 @@ pub mod SeasonDomain {
         fn allocate_entity(ref self: ContractState, game_id: u32) -> u32 {
             let peers = self.lifecycle.require_active();
             let caller = get_caller_address();
-            assert!(caller == peers.troops || caller == peers.structures, "only gameplay domain");
+            assert!(
+                caller == peers.troops || caller == peers.structures || caller == peers.resources,
+                "only gameplay domain",
+            );
             self.games.allocate(game_id)
         }
     }
@@ -449,7 +452,47 @@ pub mod SeasonDomain {
             },
             Command::ClaimProduction(value) => {
                 value.serialize(ref calldata);
-                (peers.structures, selector!("claim_production"))
+                (peers.resources, selector!("claim_production"))
+            },
+            Command::ApproveResources(value) => {
+                value.serialize(ref calldata);
+                (peers.resources, selector!("approve_resources"))
+            },
+            Command::BurnStructureResources(value) => {
+                value.serialize(ref calldata);
+                (peers.resources, selector!("burn_structure_resources"))
+            },
+            Command::BurnExplorerResources(value) => {
+                value.serialize(ref calldata);
+                (peers.resources, selector!("burn_explorer_resources"))
+            },
+            Command::TransferExplorerResources(value) => {
+                value.serialize(ref calldata);
+                (peers.resources, selector!("transfer_explorer_resources"))
+            },
+            Command::TransferStructureResourcesToExplorer(value) => {
+                value.serialize(ref calldata);
+                (peers.resources, selector!("transfer_structure_resources_to_explorer"))
+            },
+            Command::SendResources(value) => {
+                value.serialize(ref calldata);
+                (peers.resources, selector!("send_resources"))
+            },
+            Command::PickupResources(value) => {
+                value.serialize(ref calldata);
+                (peers.resources, selector!("pickup_resources"))
+            },
+            Command::TransferExplorerResourcesToStructure(value) => {
+                value.serialize(ref calldata);
+                (peers.resources, selector!("transfer_explorer_resources_to_structure"))
+            },
+            Command::OffloadArrival(value) => {
+                value.serialize(ref calldata);
+                (peers.resources, selector!("offload_arrival"))
+            },
+            Command::RegularizeResourceWeights(value) => {
+                value.serialize(ref calldata);
+                (peers.resources, selector!("regularize_resource_weights"))
             },
         };
         context.serialize(ref calldata);

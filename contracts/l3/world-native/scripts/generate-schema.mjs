@@ -16,6 +16,7 @@ const contracts = {
   troops: "TroopsDomain",
   structures: "StructuresDomain",
   settlement: "SettlementDomain",
+  resources: "ResourcesDomain",
 };
 const artifacts = Object.fromEntries(
   await Promise.all(
@@ -138,6 +139,7 @@ const schema = {
                 "ownership_systems",
                 "name_systems",
                 "structure_systems",
+                "resource_systems",
               ]
             : [],
         events: eventLayouts(artifacts[domain]),
@@ -150,7 +152,7 @@ const schema = {
   projections: [
     {
       name: "StoryEvent",
-      owners: ["structures"],
+      owners: ["structures", "resources"],
       scope: "game",
       version: 1,
       derivedRows: [],
@@ -191,7 +193,14 @@ async function writeJson(path, value) {
 
 async function writeFixtures(schema) {
   const emitter = "0x100";
-  const deployment = { season: "0x101", map: "0x102", structures: "0x103", troops: emitter, settlement: "0x105" };
+  const deployment = {
+    season: "0x101",
+    map: "0x102",
+    structures: "0x103",
+    troops: emitter,
+    settlement: "0x105",
+    resources: "0x106",
+  };
   const model = schema.models.find((model) => model.name === "ExplorerTroops");
   function raw(name, values = []) {
     const layout = schema.domains.troops.events.find(
@@ -299,7 +308,7 @@ async function writePresetFixture() {
   const preset = JSON.parse(await readFile(new URL("fixtures/preset-1.json", root), "utf8"));
   const members = [
     { name: "rules", type: "world_native::rules::SliceRules" },
-    { name: "resources", type: "core::array::Span::<world_native::structures::ResourceRule>" },
+    { name: "resources", type: "core::array::Span::<world_native::resources::ResourceRule>" },
   ];
   const codec = new CallData([
     ...types.values(),

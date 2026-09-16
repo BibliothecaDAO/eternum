@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "74c51a71b08c301347556d0fcd90bf49464fbc4208d0d2459126a36b73238e5a",
+  "schemaIdentity": "192eab11b50c865bdb1d206ccfe8da0a434765e5453ee64eb25d1f26ea7c8956",
   "commandAbi": [
     {
       "type": "impl",
@@ -449,6 +449,88 @@
       ]
     },
     {
+      "type": "struct",
+      "name": "world_native::resources::ResourceApproval",
+      "members": [
+        {
+          "name": "owner_entity_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "approved_entity_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "resources",
+          "type": "core::array::Span::<world_native::resources::ResourceAmount>"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::resources::ResourceBurn",
+      "members": [
+        {
+          "name": "entity_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "resources",
+          "type": "core::array::Span::<world_native::resources::ResourceAmount>"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "core::array::Span::<core::integer::u32>",
+      "members": [
+        {
+          "name": "snapshot",
+          "type": "@core::array::Array::<core::integer::u32>"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::resources::ResourceTransfer",
+      "members": [
+        {
+          "name": "from_entity_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "to_entity_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "resources",
+          "type": "core::array::Span::<world_native::resources::ResourceAmount>"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::arrivals::OffloadArrival",
+      "members": [
+        {
+          "name": "entity_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "day",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "slot",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "resource_count",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
+    {
       "type": "enum",
       "name": "world_native::commands::Command",
       "variants": [
@@ -519,6 +601,46 @@
         {
           "name": "ReceiveVillageArmy",
           "type": "core::integer::u32"
+        },
+        {
+          "name": "ApproveResources",
+          "type": "world_native::resources::ResourceApproval"
+        },
+        {
+          "name": "BurnStructureResources",
+          "type": "world_native::resources::ResourceBurn"
+        },
+        {
+          "name": "RegularizeResourceWeights",
+          "type": "core::array::Span::<core::integer::u32>"
+        },
+        {
+          "name": "BurnExplorerResources",
+          "type": "world_native::resources::ResourceBurn"
+        },
+        {
+          "name": "TransferExplorerResources",
+          "type": "world_native::resources::ResourceTransfer"
+        },
+        {
+          "name": "TransferStructureResourcesToExplorer",
+          "type": "world_native::resources::ResourceTransfer"
+        },
+        {
+          "name": "OffloadArrival",
+          "type": "world_native::arrivals::OffloadArrival"
+        },
+        {
+          "name": "SendResources",
+          "type": "world_native::resources::ResourceTransfer"
+        },
+        {
+          "name": "PickupResources",
+          "type": "world_native::resources::ResourceTransfer"
+        },
+        {
+          "name": "TransferExplorerResourcesToStructure",
+          "type": "world_native::resources::ResourceTransfer"
         }
       ]
     },
@@ -960,6 +1082,20 @@
     },
     {
       "type": "struct",
+      "name": "world_native::rules::SpeedConfig",
+      "members": [
+        {
+          "name": "donkey_sec_per_km",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "donkey_sec_per_km_troops",
+          "type": "core::integer::u16"
+        }
+      ]
+    },
+    {
+      "type": "struct",
       "name": "world_native::rules::SliceRules",
       "members": [
         {
@@ -1025,6 +1161,10 @@
         {
           "name": "faith_enabled",
           "type": "core::bool"
+        },
+        {
+          "name": "speed_config",
+          "type": "world_native::rules::SpeedConfig"
         }
       ]
     },
@@ -1682,6 +1822,10 @@
         {
           "name": "settlement",
           "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "resources",
+          "type": "core::starknet::contract_address::ContractAddress"
         }
       ]
     },
@@ -2271,6 +2415,33 @@
       }
     },
     {
+      "name": "ResourceArrival",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "entity_id": "Number",
+        "day": "BigInt",
+        "slot": "Number",
+        "resources": [
+          {
+            "resource_type": "Number",
+            "amount": "BigInt"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ResourceAllowance",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "owner_entity_id": "Number",
+        "approved_entity_id": "Number",
+        "resource_type": "Number",
+        "amount": "BigInt"
+      }
+    },
+    {
       "name": "Building",
       "scope": "game",
       "schema": {
@@ -2585,7 +2756,11 @@
         "map_center_offset": "Number",
         "spire_travel_essence_cost": "BigInt",
         "blitz_mode_on": "Boolean",
-        "faith_enabled": "Boolean"
+        "faith_enabled": "Boolean",
+        "speed_config": {
+          "donkey_sec_per_km": "Number",
+          "donkey_sec_per_km_troops": "Number"
+        }
       }
     },
     {
@@ -2624,7 +2799,8 @@
           "map": "BigInt",
           "structures": "BigInt",
           "troops": "BigInt",
-          "settlement": "BigInt"
+          "settlement": "BigInt",
+          "resources": "BigInt"
         },
         "active": "Boolean"
       }

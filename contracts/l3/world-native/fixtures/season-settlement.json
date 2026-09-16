@@ -107,5 +107,9 @@
     "The allocation exhaustion fixture starts with three remaining ids in both worlds; gameplay uses the unchanged 8,000-realm pool.",
     "Stationary obstacle realms have no starting resource grants; their ownership, tiles and resource existence remain paired facts.",
     "The 64-draw exhaustion case seeds occupied tiles as planner inputs without constructing 70 unrelated economies. Every seeded tile is compared after rejection; full-structure collisions are exercised separately. The original candidate pool and search limit are unchanged."
+  ],
+  "supplementalTests": [
+    "eternum::native_parity::world_parity_canonical_realm_traits",
+    "eternum::native_parity::world_parity_realm_allocation"
   ]
 }

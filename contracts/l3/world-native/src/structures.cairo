@@ -1,6 +1,6 @@
 use starknet::ContractAddress;
 use crate::discovery::Discovery;
-use crate::resources::{Production, ResourceKey, ResourceSlot, Weight};
+use crate::resources::ResourceKey;
 use crate::troops::{Coord, Troops};
 
 #[derive(Copy, Drop, Serde, Default, Debug, PartialEq)]
@@ -16,6 +16,12 @@ pub struct StructureBase {
     pub level: u8,
     // This lets delayed provisioning know whether the one-time troop start was already applied.
     pub starting_troops_granted: bool,
+}
+
+const BITCOIN_MINE_CATEGORY: u8 = 8;
+
+pub fn structure_coord(base: StructureBase) -> Coord {
+    Coord { alt: base.category == BITCOIN_MINE_CATEGORY, x: base.coord_x, y: base.coord_y }
 }
 
 const EXPLORER_COUNT_SCALE: u128 = 0x10000;
@@ -144,16 +150,6 @@ pub struct Hyperstructure {
     pub points_multiplier: u8,
 }
 
-#[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
-pub struct ResourceRule {
-    pub resource_type: u8,
-    pub unit_weight: u128,
-    pub realm_rate: u64,
-    pub village_rate: u64,
-    pub labor_output_per_resource: u64,
-    pub building_population_cost: u8,
-    pub building_capacity_grant: u8,
-}
 
 #[starknet::component]
 pub mod StructureState {
@@ -163,7 +159,7 @@ pub mod StructureState {
     };
     use crate::events::{RowMemberSet, RowSet};
     use crate::stamina::StaminaTrait;
-    use super::{ResourceKey, Structure, StructureRecord};
+    use super::{ContractAddress, ResourceKey, Structure, StructureRecord};
     #[storage]
     pub struct Storage {
         pub structures: Map<(u32, u32), StructureRecord>,
@@ -177,6 +173,9 @@ pub mod StructureState {
     }
     #[generate_trait]
     pub impl InternalImpl<TContractState, +HasComponent<TContractState>> of InternalTrait<TContractState> {
+        fn owner(self: @ComponentState<TContractState>, key: ResourceKey) -> ContractAddress {
+            self.structures.entry((key.game_id, key.entity_id)).owner.read()
+        }
         fn mark_starting_troops(ref self: ComponentState<TContractState>, key: ResourceKey) {
             let mut base = self.record(key).base;
             base.starting_troops_granted = true;
@@ -389,13 +388,9 @@ pub trait IStructures<T> {
     fn building(self: @T, key: crate::buildings::BuildingKey) -> Option<crate::buildings::Building>;
     fn structure_buildings(self: @T, key: ResourceKey) -> crate::buildings::StructureBuildings;
     fn structure(self: @T, key: ResourceKey) -> Option<Structure>;
-    fn has_resource(self: @T, key: ResourceKey) -> bool;
+    fn structure_owner(self: @T, key: ResourceKey) -> ContractAddress;
     fn hyperstructure(self: @T, key: ResourceKey) -> Option<Hyperstructure>;
     fn provision_spire(ref self: T, game_id: u32, coord: Coord) -> u32;
-    fn resource_balance(self: @T, key: ResourceSlot) -> u128;
-    fn resource_production(self: @T, key: ResourceSlot) -> Production;
-    fn resource_weight(self: @T, key: ResourceKey) -> Weight;
-    fn configure_resources(ref self: T, game_id: u32, rules: Span<ResourceRule>);
     fn provision_producer(ref self: T, key: ResourceKey, output: u128);
     fn provision_realm(
         ref self: T, game_id: u32, actor: ContractAddress, coord: Coord, grants: Span<(u8, u128)>,
@@ -409,11 +404,7 @@ pub trait IStructures<T> {
         explorer_id: u32,
         timestamp: u64,
     );
-    fn initialize_explorer_resources(ref self: T, key: ResourceKey, amount: u128);
     fn remove_explorer(ref self: T, key: ResourceKey, explorer_id: u32);
-    fn reduce_explorer_capacity(ref self: T, key: ResourceKey, lost: u128);
-    fn spend_food(ref self: T, key: ResourceKey, wheat: u128, fish: u128, timestamp: u64);
-    fn spend_spire_fee(ref self: T, key: ResourceKey, timestamp: u64);
 }
 
 #[starknet::contract]
@@ -434,7 +425,7 @@ pub mod StructuresDomain {
         FaithOwnershipState, FaithPointsClaimedStory, FaithfulStructure, PlayerFaithKey, PlayerFaithPoints, Story,
         StoryEvent, TransferOwnership, WonderFaith, WonderFaithWinners,
     };
-    use crate::resources::{Production, ResourceKey, ResourceSlot, ResourceState, Weight};
+    use crate::resources::{IResourcesDispatcher, IResourcesDispatcherTrait, ResourceKey};
     use crate::rules::{RESOURCE_PRECISION, SliceRules};
     use crate::settlement::{
         ISettlementDisplacementDispatcher, ISettlementDisplacementDispatcherTrait, ISettlementViewsDispatcher,
@@ -442,19 +433,17 @@ pub mod StructuresDomain {
     };
     use crate::troops::Coord;
     use crate::upgrades::IUpgradeRulesDispatcherTrait;
-    use super::{ResourceRule, Structure, StructureBase, StructureRecord, StructureState};
+    use super::{Structure, StructureBase, StructureRecord, StructureState};
     component!(path: FaithOwnershipState, storage: faith, event: FaithEvent);
     impl FaithInternal = FaithOwnershipState::InternalImpl<ContractState>;
     component!(path: BuildingState, storage: buildings, event: BuildingEvent);
     impl BuildingInternal = BuildingState::InternalImpl<ContractState>;
     component!(path: Lifecycle, storage: lifecycle, event: LifecycleEvent);
     component!(path: StructureState, storage: structures, event: StructureEvent);
-    component!(path: ResourceState, storage: resources, event: ResourceEvent);
     #[abi(embed_v0)]
     impl Domain = Lifecycle::DomainImpl<ContractState>;
     impl LifeInternal = Lifecycle::InternalImpl<ContractState>;
     impl StructureInternal = StructureState::InternalImpl<ContractState>;
-    impl ResourceInternal = ResourceState::InternalImpl<ContractState>;
     #[storage]
     struct Storage {
         #[substorage(v0)]
@@ -462,13 +451,9 @@ pub mod StructuresDomain {
         #[substorage(v0)]
         structures: StructureState::Storage,
         #[substorage(v0)]
-        resources: ResourceState::Storage,
-        #[substorage(v0)]
         buildings: BuildingState::Storage,
         hyperstructure_counts: Map<u32, u32>,
         hyperstructure_seeds: Map<(u32, u32), felt252>,
-        resource_rules: Map<(u32, u8), ResourceRule>,
-        resources_configured: Map<u32, bool>,
         #[substorage(v0)]
         faith: FaithOwnershipState::Storage,
         address_names: Map<ContractAddress, felt252>,
@@ -479,7 +464,6 @@ pub mod StructuresDomain {
     enum Event {
         LifecycleEvent: Lifecycle::Event,
         StructureEvent: StructureState::Event,
-        ResourceEvent: ResourceState::Event,
         BuildingEvent: BuildingState::Event,
         FaithEvent: FaithOwnershipState::Event,
         StoryEvent: StoryEvent,
@@ -491,9 +475,6 @@ pub mod StructuresDomain {
     }
     #[abi(embed_v0)]
     impl Structures of super::IStructures<ContractState> {
-        fn has_resource(self: @ContractState, key: ResourceKey) -> bool {
-            self.resources.resource_exists.read((key.game_id, key.entity_id))
-        }
         fn hyperstructure(self: @ContractState, key: ResourceKey) -> Option<super::Hyperstructure> {
             let structure = self.structures.structure(key);
             match structure {
@@ -549,49 +530,11 @@ pub mod StructuresDomain {
             self.assert_troops();
             self.place_discovery(game_id, coord, discovery, seed, timestamp, false)
         }
+        fn structure_owner(self: @ContractState, key: ResourceKey) -> ContractAddress {
+            self.structures.owner(key)
+        }
         fn structure(self: @ContractState, key: ResourceKey) -> Option<Structure> {
             self.structures.structure(key)
-        }
-        fn resource_balance(self: @ContractState, key: ResourceSlot) -> u128 {
-            self.resources.balance(ResourceKey { game_id: key.game_id, entity_id: key.entity_id }, key.resource_type)
-        }
-        fn resource_production(self: @ContractState, key: ResourceSlot) -> Production {
-            self.resources.production(ResourceKey { game_id: key.game_id, entity_id: key.entity_id }, key.resource_type)
-        }
-        fn resource_weight(self: @ContractState, key: ResourceKey) -> Weight {
-            self.resources.weight(key)
-        }
-        fn configure_resources(ref self: ContractState, game_id: u32, rules: Span<ResourceRule>) {
-            self.assert_authority();
-            let _ = self.game_dispatcher().game(game_id);
-            assert!(!self.resources_configured.read(game_id), "resource rules already configured");
-            assert!(rules.len() == 58, "incomplete resource rules");
-            for index in 0_u32..58 {
-                let rule = *rules.at(index);
-                assert!(rule.resource_type.into() == index + 1, "resource rules must be ordered");
-                self.resource_rules.write((game_id, rule.resource_type), rule);
-                let mut values = array![];
-                rule.serialize(ref values);
-                self
-                    .emit(
-                        RowSet {
-                            version: 1,
-                            model: 'ResourceRule',
-                            keys: array![game_id.into(), rule.resource_type.into()].span(),
-                            values: values.span().slice(1, values.len() - 1),
-                        },
-                    );
-            }
-            self.resources_configured.write(game_id, true);
-            self
-                .emit(
-                    RowSet {
-                        version: 1,
-                        model: 'ResourceRulesReady',
-                        keys: array![game_id.into()].span(),
-                        values: array![1].span(),
-                    },
-                );
         }
         fn provision_producer(ref self: ContractState, key: ResourceKey, output: u128) {
             self.assert_authority();
@@ -615,12 +558,7 @@ pub mod StructuresDomain {
             let key = self.place_settlement(game_id, coord, record);
             for grant in grants {
                 let (resource_type, amount) = *grant;
-                let rule = self.resource_rule(game_id, resource_type);
-                self
-                    .resources
-                    .grant_resource(
-                        key, resource_type, amount, rule.unit_weight, get_block_timestamp().try_into().unwrap(),
-                    );
+                self.resources_dispatcher().grant_resource(key, resource_type, amount, get_block_timestamp());
             }
             key.entity_id
         }
@@ -641,34 +579,12 @@ pub mod StructuresDomain {
             self.spend(key, resource_type, amount, timestamp);
             self.structures.append_explorer(key, explorer_id);
         }
-        fn initialize_explorer_resources(ref self: ContractState, key: ResourceKey, amount: u128) {
-            self.assert_troops();
-            let rules = self.game_dispatcher().rules(key.game_id);
-            self.resources.initialize(key, rules.capacity_config.troop_capacity.into() * amount);
-        }
         fn remove_explorer(ref self: ContractState, key: ResourceKey, explorer_id: u32) {
             self.assert_troops();
             if key.entity_id != crate::troops::AGENT_HOME {
                 self.structures.remove_explorer(key, explorer_id);
             }
-            self.resources.destroy(ResourceKey { game_id: key.game_id, entity_id: explorer_id });
-        }
-        fn reduce_explorer_capacity(ref self: ContractState, key: ResourceKey, lost: u128) {
-            self.assert_troops();
-            let rules = self.game_dispatcher().rules(key.game_id);
-            self.resources.decrease_capacity(key, rules.capacity_config.troop_capacity.into() * lost);
-        }
-        fn spend_food(ref self: ContractState, key: ResourceKey, wheat: u128, fish: u128, timestamp: u64) {
-            self.assert_troops();
-            self.spend(key, 35, wheat, timestamp);
-            self.spend(key, 36, fish, timestamp);
-        }
-        fn spend_spire_fee(ref self: ContractState, key: ResourceKey, timestamp: u64) {
-            self.assert_troops();
-            let rules = self.game_dispatcher().rules(key.game_id);
-            if rules.spire_travel_essence_cost != 0 {
-                self.spend(key, 38, rules.spire_travel_essence_cost, timestamp);
-            }
+            self.resources_dispatcher().destroy_resources(ResourceKey { game_id: key.game_id, entity_id: explorer_id });
         }
     }
     #[abi(embed_v0)]
@@ -734,7 +650,7 @@ pub mod StructuresDomain {
                         self.grant_realm_troops(key, context.timestamp);
                     }
                     self
-                        .emit_realm_story(
+                        .emit_structure_story(
                             key,
                             actor,
                             Story::RealmCreatedStory(crate::ownership::RealmCreatedStory { coord }),
@@ -902,26 +818,6 @@ pub mod StructuresDomain {
             self.faith.winners(game_id)
         }
     }
-    #[abi(embed_v0)]
-    impl ResourceCommands of crate::commands::IResourceCommands<ContractState> {
-        fn claim_production(
-            ref self: ContractState, game_id: u32, actor: ContractAddress, structure_id: u32, context: ExecutionContext,
-        ) {
-            let peers = self.lifecycle.require_active();
-            assert!(get_caller_address() == peers.season, "only authenticated command domain");
-            assert_playing(self.game_dispatcher().game(game_id), context.timestamp);
-            let key = ResourceKey { game_id, entity_id: structure_id };
-            assert!(self.structures.record(key).owner == actor, "actor does not own structure");
-            for resource_type in 1_u8..59 {
-                if resource_type < 39 || resource_type > 56 {
-                    let rule = self.resource_rule(game_id, resource_type);
-                    self
-                        .resources
-                        .settle_resource(key, resource_type, rule.unit_weight, context.timestamp.try_into().unwrap());
-                }
-            }
-        }
-    }
     #[inline(never)]
     fn pack_realm_resources(resources: Span<u8>) -> u128 {
         let mut packed = 0;
@@ -975,7 +871,7 @@ pub mod StructuresDomain {
             } else {
                 occupier
             }, true);
-            self.resources.initialize(key, capacity * RESOURCE_PRECISION);
+            self.resources_dispatcher().initialize_resources(key, capacity * RESOURCE_PRECISION);
             match discovery {
                 Discovery::Mine => self.create_mine_production(key, coord, seed, rules, timestamp),
                 Discovery::Hyperstructure => self.create_hyperstructure(key, seed, completed),
@@ -1017,10 +913,10 @@ pub mod StructuresDomain {
             } else {
                 rules.structure_capacity_config.realm_capacity
             };
-            self.resources.initialize(key, capacity.into() * RESOURCE_PRECISION);
+            self.resources_dispatcher().initialize_resources(key, capacity.into() * RESOURCE_PRECISION);
             key
         }
-        fn emit_realm_story(
+        fn emit_structure_story(
             ref self: ContractState, key: ResourceKey, actor: ContractAddress, story: Story, timestamp: u64,
         ) {
             self
@@ -1062,10 +958,7 @@ pub mod StructuresDomain {
                 let resource_type = *grant.resource_type;
                 assert!(resource_type != crate::resources::LORDS, "invalid start resource");
                 if resource_type < 26 || resource_type > 34 {
-                    let weight = self.resource_rule(key.game_id, resource_type).unit_weight;
-                    self
-                        .resources
-                        .grant_resource(key, resource_type, *grant.amount, weight, timestamp.try_into().unwrap());
+                    self.resources_dispatcher().grant_resource(key, resource_type, *grant.amount, timestamp);
                 }
             }
         }
@@ -1096,12 +989,11 @@ pub mod StructuresDomain {
                 let kind = *grant.resource_type;
                 let amount = *grant.amount;
                 if kind == resource_type {
-                    let weight = self.resource_rule(key.game_id, kind).unit_weight;
-                    self.resources.grant_resource(key, kind, amount + guards, weight, timestamp.try_into().unwrap());
+                    self.resources_dispatcher().grant_resource(key, kind, amount + guards, timestamp);
                     self.spend(key, kind, guards, timestamp);
                     self.structures.add_starting_guard(key, category, guards, rules, timestamp);
                     self
-                        .emit_realm_story(
+                        .emit_structure_story(
                             key,
                             record.owner,
                             Story::GuardAddStory(
@@ -1186,7 +1078,7 @@ pub mod StructuresDomain {
             rules: SliceRules,
             timestamp: u64,
         ) {
-            let rule = self.resource_rule(key.game_id, resource_type);
+            let rule = self.resources_dispatcher().resource_rule(key.game_id, resource_type);
             let building_id = self.game_dispatcher().allocate_entity(key.game_id);
             let rate = if realm {
                 rule.realm_rate
@@ -1194,9 +1086,7 @@ pub mod StructuresDomain {
                 rule.village_rate
             };
             assert!(rate != 0, "resource cannot be produced");
-            self
-                .resources
-                .start_production(key, resource_type, rate, cap, rule.unit_weight, timestamp.try_into().unwrap());
+            self.resources_dispatcher().start_production(key, resource_type, rate, cap, timestamp);
             self
                 .buildings
                 .create(
@@ -1261,14 +1151,11 @@ pub mod StructuresDomain {
         fn map_dispatcher(self: @ContractState) -> IMapDispatcher {
             IMapDispatcher { contract_address: self.lifecycle.require_active().map }
         }
-        fn resource_rule(self: @ContractState, game_id: u32, resource_type: u8) -> ResourceRule {
-            assert!(self.resources_configured.read(game_id), "missing resource rules");
-            assert!(resource_type > 0 && resource_type <= 58, "invalid resource type");
-            self.resource_rules.read((game_id, resource_type))
+        fn resources_dispatcher(self: @ContractState) -> IResourcesDispatcher {
+            IResourcesDispatcher { contract_address: self.lifecycle.require_active().resources }
         }
         fn spend(ref self: ContractState, key: ResourceKey, resource_type: u8, amount: u128, timestamp: u64) {
-            let rule = self.resource_rule(key.game_id, resource_type);
-            self.resources.spend_resource(key, resource_type, amount, rule.unit_weight, timestamp.try_into().unwrap());
+            self.resources_dispatcher().spend_resource(key, resource_type, amount, timestamp);
         }
         fn reveal_structure_tile(ref self: ContractState, game_id: u32, coord: Coord, rules: SliceRules) {
             let key = tile_key(game_id, coord);

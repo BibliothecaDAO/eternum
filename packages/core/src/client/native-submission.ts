@@ -197,11 +197,55 @@ function translateCommand(call: Call, gameId: number, season: string, components
     case "level_up":
       if (args.length !== 1) break;
       return build("LevelUp", args[0]);
+    case "structure_burn":
+    case "troop_burn":
+      return build(call.entrypoint === "structure_burn" ? "BurnStructureResources" : "BurnExplorerResources", {
+        entity_id: args[0],
+        resources: resourceAmounts(args, 1),
+      });
+    case "approve":
+      return build("ApproveResources", {
+        owner_entity_id: args[0],
+        approved_entity_id: args[1],
+        resources: resourceAmounts(args, 2),
+      });
+    case "send":
+      return build("SendResources", transferResources(args));
+    case "pickup":
+      return build("PickupResources", transferResources([args[1], args[0], ...args.slice(2)]));
+    case "troop_troop_adjacent_transfer":
+      return build("TransferExplorerResources", transferResources(args));
+    case "structure_troop_adjacent_transfer":
+      return build("TransferStructureResourcesToExplorer", transferResources(args));
+    case "troop_structure_adjacent_transfer":
+      return build("TransferExplorerResourcesToStructure", transferResources(args));
+    case "arrivals_offload":
+      if (args.length !== 4) break;
+      return build("OffloadArrival", { entity_id: args[0], day: args[1], slot: args[2], resource_count: args[3] });
+    case "structure_regularize_weight":
+      if (args.length !== Number(args[0]) + 1) break;
+      return build("RegularizeResourceWeights", args.slice(1));
     case "claim_production":
       if (args.length !== 1) break;
       return build("ClaimProduction", args[0]);
   }
   throw new Error(`Unsupported native slice action ${call.entrypoint}`);
+}
+
+function transferResources(args: unknown[]) {
+  return { from_entity_id: args[0], to_entity_id: args[1], resources: resourceAmounts(args, 2) };
+}
+
+function resourceAmounts(args: unknown[], offset: number) {
+  const size = args[offset];
+  if (!["string", "number", "bigint"].includes(typeof size)) throw new Error("Invalid native resource list length");
+  const count = Number(size);
+  if (!Number.isSafeInteger(count) || count < 0 || args.length !== offset + 1 + count * 2)
+    throw new Error("Invalid native resource list length");
+  return Array.from({ length: count }, (_, index) => ({
+    resource_type: args[offset + 1 + index * 2],
+    amount: args[offset + 2 + index * 2],
+  }));
 }
 
 function ownedStructureWitness(components: ContractComponents, gameId: number, actor: bigint): number {
