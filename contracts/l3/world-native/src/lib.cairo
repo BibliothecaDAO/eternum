@@ -14,6 +14,7 @@ pub mod recording;
 pub mod rules;
 pub mod season;
 pub mod settlement;
+pub mod settlement_domain;
 pub mod settlement_grid;
 pub mod stamina;
 
@@ -41,3 +42,5 @@ pub mod resources;
 pub mod structures;
 
 pub mod upgrades;
+
+pub mod village;

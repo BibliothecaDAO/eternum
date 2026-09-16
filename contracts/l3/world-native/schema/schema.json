@@ -160,286 +160,9 @@
               "kind": "data"
             }
           ]
-        },
-        {
-          "name": "RowSet",
-          "prefix": [
-            "0x214106fd6d6670de9f5a11bc8d5c063e557cc450c49e25913b5047546822bc9",
-            "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
-          ],
-          "members": [
-            {
-              "name": "version",
-              "type": "core::integer::u8",
-              "kind": "key"
-            },
-            {
-              "name": "model",
-              "type": "core::felt252",
-              "kind": "key"
-            },
-            {
-              "name": "keys",
-              "type": "core::array::Span::<core::felt252>",
-              "kind": "data"
-            },
-            {
-              "name": "values",
-              "type": "core::array::Span::<core::felt252>",
-              "kind": "data"
-            }
-          ]
-        },
-        {
-          "name": "RowSet",
-          "prefix": [
-            "0x226dcd383f367cb01aff84f158ff21525009015e05d21053c2800b647b91d93",
-            "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
-          ],
-          "members": [
-            {
-              "name": "version",
-              "type": "core::integer::u8",
-              "kind": "key"
-            },
-            {
-              "name": "model",
-              "type": "core::felt252",
-              "kind": "key"
-            },
-            {
-              "name": "keys",
-              "type": "core::array::Span::<core::felt252>",
-              "kind": "data"
-            },
-            {
-              "name": "values",
-              "type": "core::array::Span::<core::felt252>",
-              "kind": "data"
-            }
-          ]
         }
       ],
       "entrypoints": [
-        {
-          "type": "function",
-          "name": "initialize_realm_traits",
-          "inputs": [
-            {
-              "name": "first_realm",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "packed_traits",
-              "type": "core::array::Span::<core::integer::u32>"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "realm_catalogue",
-          "inputs": [],
-          "outputs": [
-            {
-              "type": "world_native::realms::RealmCatalogue"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "realm_traits",
-          "inputs": [
-            {
-              "name": "realm_id",
-              "type": "core::integer::u32"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "world_native::realms::RealmTraits"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "available_realm",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "index",
-              "type": "core::integer::u32"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::integer::u32"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "settle_season",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "actor",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "command",
-              "type": "world_native::realms::SettleSeason"
-            },
-            {
-              "name": "context",
-              "type": "world_native::commands::ExecutionContext"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "configure_settlement",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "rules",
-              "type": "world_native::settlement::SettlementRules"
-            },
-            {
-              "name": "grants",
-              "type": "world_native::settlement::RealmGrants"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "settlement_rules",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "world_native::settlement::SettlementRules"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "realm_grants",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "world_native::settlement::RealmGrants"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "settlement_progress",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "world_native::settlement::SettlementProgress"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "player_entry",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::settlement::EntryKey"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::option::Option::<world_native::settlement::PlayerEntry>"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "player_cosmetics",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::settlement::CosmeticsKey"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "world_native::settlement::PlayerCosmetics"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "register_entitlement",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::settlement::EntryKey"
-            },
-            {
-              "name": "entitlement",
-              "type": "world_native::settlement::EntryEntitlement"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "entry_entitlement",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::settlement::EntryKey"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::option::Option::<world_native::settlement::EntryEntitlement>"
-            }
-          ],
-          "state_mutability": "view"
-        },
         {
           "type": "function",
           "name": "settlement_admission",
@@ -459,30 +182,6 @@
             }
           ],
           "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "settle_blitz",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "actor",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "command",
-              "type": "world_native::settlement::SettleBlitz"
-            },
-            {
-              "name": "context",
-              "type": "world_native::commands::ExecutionContext"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
         },
         {
           "type": "function",
@@ -1091,6 +790,46 @@
             }
           ],
           "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "village_pool",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "world_native::settlement::SettlementPool"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "claim_village",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "registered",
+              "type": "core::integer::u16"
+            },
+            {
+              "name": "seed",
+              "type": "core::integer::u256"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "world_native::troops::Coord"
+            }
+          ],
+          "state_mutability": "external"
         },
         {
           "type": "function",
@@ -2530,7 +2269,7 @@
         },
         {
           "type": "function",
-          "name": "create_season_realm",
+          "name": "create_settlement",
           "inputs": [
             {
               "name": "game_id",
@@ -2541,16 +2280,12 @@
               "type": "core::starknet::contract_address::ContractAddress"
             },
             {
-              "name": "realm_id",
-              "type": "core::integer::u16"
-            },
-            {
-              "name": "traits",
-              "type": "world_native::realms::RealmTraits"
-            },
-            {
               "name": "coord",
               "type": "world_native::troops::Coord"
+            },
+            {
+              "name": "creation",
+              "type": "world_native::settlement::SettlementCreation"
             },
             {
               "name": "context",
@@ -2566,7 +2301,7 @@
         },
         {
           "type": "function",
-          "name": "create_blitz_realm",
+          "name": "receive_village_army",
           "inputs": [
             {
               "name": "game_id",
@@ -2577,27 +2312,15 @@
               "type": "core::starknet::contract_address::ContractAddress"
             },
             {
-              "name": "realm_id",
-              "type": "core::integer::u16"
-            },
-            {
-              "name": "coord",
-              "type": "world_native::troops::Coord"
-            },
-            {
-              "name": "grant_troops",
-              "type": "core::bool"
+              "name": "village_id",
+              "type": "core::integer::u32"
             },
             {
               "name": "context",
               "type": "world_native::commands::ExecutionContext"
             }
           ],
-          "outputs": [
-            {
-              "type": "core::integer::u32"
-            }
-          ],
+          "outputs": [],
           "state_mutability": "external"
         },
         {
@@ -2843,6 +2566,503 @@
           "state_mutability": "external"
         }
       ]
+    },
+    "settlement": {
+      "contract": "SettlementDomain",
+      "systems": [],
+      "events": [
+        {
+          "name": "RowSet",
+          "prefix": [
+            "0x1517f684ec2bc21ca20251bbef26b7ad0434759388fc50e84858abf49e4024b",
+            "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "model",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "keys",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            },
+            {
+              "name": "values",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            }
+          ]
+        },
+        {
+          "name": "RowSet",
+          "prefix": [
+            "0x226dcd383f367cb01aff84f158ff21525009015e05d21053c2800b647b91d93",
+            "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "model",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "keys",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            },
+            {
+              "name": "values",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            }
+          ]
+        },
+        {
+          "name": "RowSet",
+          "prefix": [
+            "0x214106fd6d6670de9f5a11bc8d5c063e557cc450c49e25913b5047546822bc9",
+            "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "model",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "keys",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            },
+            {
+              "name": "values",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            }
+          ]
+        },
+        {
+          "name": "RowSet",
+          "prefix": [
+            "0xc5800c0b240141d801ffbecb5e992406945bbd5e2aa6dc4774fa4c066cf519",
+            "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "model",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "keys",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            },
+            {
+              "name": "values",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            }
+          ]
+        }
+      ],
+      "entrypoints": [
+        {
+          "type": "function",
+          "name": "initialize_realm_traits",
+          "inputs": [
+            {
+              "name": "first_realm",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "packed_traits",
+              "type": "core::array::Span::<core::integer::u32>"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "realm_catalogue",
+          "inputs": [],
+          "outputs": [
+            {
+              "type": "world_native::realms::RealmCatalogue"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "realm_traits",
+          "inputs": [
+            {
+              "name": "realm_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "world_native::realms::RealmTraits"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "available_realm",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "index",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::integer::u32"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "settle_season",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "command",
+              "type": "world_native::realms::SettleSeason"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "configure_villages",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "rules",
+              "type": "world_native::village::VillageRules"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "village_rules",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "world_native::village::VillageRules"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "register_village_pass",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::village::VillagePassKey"
+            },
+            {
+              "name": "owner",
+              "type": "core::starknet::contract_address::ContractAddress"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "village_pass",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::village::VillagePassKey"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::option::Option::<world_native::village::VillagePass>"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "settle_village",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "command",
+              "type": "world_native::village::SettleVillage"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "configure_settlement",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "rules",
+              "type": "world_native::settlement::SettlementRules"
+            },
+            {
+              "name": "grants",
+              "type": "world_native::settlement::RealmGrants"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "settlement_rules",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "world_native::settlement::SettlementRules"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "realm_grants",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "world_native::settlement::RealmGrants"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "settlement_progress",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "world_native::settlement::SettlementProgress"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "player_entry",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::settlement::EntryKey"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::option::Option::<world_native::settlement::PlayerEntry>"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "player_cosmetics",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::settlement::CosmeticsKey"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "world_native::settlement::PlayerCosmetics"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "register_entitlement",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::settlement::EntryKey"
+            },
+            {
+              "name": "entitlement",
+              "type": "world_native::settlement::EntryEntitlement"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "entry_entitlement",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::settlement::EntryKey"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::option::Option::<world_native::settlement::EntryEntitlement>"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "settle_blitz",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "command",
+              "type": "world_native::settlement::SettleBlitz"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "domain_state",
+          "inputs": [],
+          "outputs": [
+            {
+              "type": "world_native::lifecycle::DomainState"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "configure",
+          "inputs": [
+            {
+              "name": "peers",
+              "type": "world_native::lifecycle::Peers"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "activate",
+          "inputs": [],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "upgrade",
+          "inputs": [
+            {
+              "name": "class_hash",
+              "type": "core::starknet::class_hash::ClassHash"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        }
+      ]
     }
   },
   "models": [
@@ -2850,7 +3070,7 @@
       "name": "RealmTraits",
       "identity": "0x5265616c6d547261697473",
       "owners": [
-        "season"
+        "settlement"
       ],
       "scope": "deployment",
       "keys": [
@@ -2895,7 +3115,7 @@
       "name": "RealmCatalogue",
       "identity": "0x5265616c6d436174616c6f677565",
       "owners": [
-        "season"
+        "settlement"
       ],
       "scope": "deployment",
       "emitterKey": "address",
@@ -2964,7 +3184,7 @@
       "name": "RealmGrants",
       "identity": "0x5265616c6d4772616e7473",
       "owners": [
-        "season"
+        "settlement"
       ],
       "scope": "game",
       "keys": [
@@ -3040,7 +3260,7 @@
       "name": "SettlementRules",
       "identity": "0x536574746c656d656e7452756c6573",
       "owners": [
-        "season"
+        "settlement"
       ],
       "scope": "game",
       "keys": [
@@ -3117,7 +3337,7 @@
       "name": "SettlementProgress",
       "identity": "0x536574746c656d656e7450726f6772657373",
       "owners": [
-        "season"
+        "settlement"
       ],
       "scope": "game",
       "keys": [
@@ -3189,10 +3409,135 @@
       }
     },
     {
+      "name": "VillageRules",
+      "identity": "0x56696c6c61676552756c6573",
+      "owners": [
+        "settlement"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "troop_delay_ticks",
+          "type": "core::integer::u16",
+          "id": "0x74726f6f705f64656c61795f7469636b73",
+          "feltLength": 1
+        },
+        {
+          "name": "resources",
+          "type": "core::array::Span::<world_native::resources::ResourceAmount>",
+          "id": "0x7265736f7572636573",
+          "feltLength": null
+        },
+        {
+          "name": "resource_pool",
+          "type": "core::array::Span::<world_native::village::VillageResource>",
+          "id": "0x7265736f757263655f706f6f6c",
+          "feltLength": null
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": null,
+      "observation": {
+        "domain": "village",
+        "fields": {
+          "armyDelay": "troop_delay_ticks",
+          "grants": "resources",
+          "resourcePool": "resource_pool"
+        }
+      }
+    },
+    {
+      "name": "VillagePass",
+      "identity": "0x56696c6c61676550617373",
+      "owners": [
+        "settlement"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "pass_id",
+          "type": "core::integer::u16",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "owner",
+          "type": "core::starknet::contract_address::ContractAddress",
+          "id": "0x6f776e6572",
+          "feltLength": 1
+        },
+        {
+          "name": "village_id",
+          "type": "core::integer::u32",
+          "id": "0x76696c6c6167655f6964",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 2,
+      "observation": {
+        "domain": "village",
+        "fields": {
+          "owner": "owner",
+          "consumedBy": "village_id"
+        }
+      }
+    },
+    {
+      "name": "VillagePool",
+      "identity": "0x56696c6c616765506f6f6c",
+      "owners": [
+        "map"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "opened",
+          "type": "core::integer::u32",
+          "id": "0x6f70656e6564",
+          "feltLength": 1
+        },
+        {
+          "name": "available",
+          "type": "core::array::Span::<world_native::settlement::SettlementLocation>",
+          "id": "0x617661696c61626c65",
+          "feltLength": null
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": null,
+      "observation": {
+        "domain": "village",
+        "fields": {
+          "availableLocations": "available"
+        }
+      }
+    },
+    {
       "name": "EntryEntitlement",
       "identity": "0x456e747279456e7469746c656d656e74",
       "owners": [
-        "season"
+        "settlement"
       ],
       "scope": "game",
       "keys": [
@@ -3256,7 +3601,7 @@
       "name": "PlayerEntry",
       "identity": "0x506c61796572456e747279",
       "owners": [
-        "season"
+        "settlement"
       ],
       "scope": "game",
       "keys": [
@@ -3292,7 +3637,7 @@
       "name": "PlayerCosmetics",
       "identity": "0x506c61796572436f736d6574696373",
       "owners": [
-        "season"
+        "settlement"
       ],
       "scope": "game",
       "keys": [
@@ -3475,13 +3820,7 @@
           "name": "metadata",
           "type": "world_native::structures::StructureMetadata",
           "id": "0x6d65746164617461",
-          "feltLength": 5
-        },
-        {
-          "name": "category",
-          "type": "core::integer::u8",
-          "id": "0x63617465676f7279",
-          "feltLength": 1
+          "feltLength": 4
         }
       ],
       "keyLength": 2,
@@ -4681,7 +5020,8 @@
         "season",
         "map",
         "troops",
-        "structures"
+        "structures",
+        "settlement"
       ],
       "scope": "deployment",
       "emitterKey": "address",
@@ -4703,7 +5043,7 @@
           "name": "peers",
           "type": "world_native::lifecycle::Peers",
           "id": "0x7065657273",
-          "feltLength": 4
+          "feltLength": 5
         },
         {
           "name": "active",
@@ -4713,7 +5053,7 @@
         }
       ],
       "keyLength": 1,
-      "valueLength": 6
+      "valueLength": 7
     },
     {
       "name": "DomainClass",
@@ -4722,7 +5062,8 @@
         "season",
         "map",
         "troops",
-        "structures"
+        "structures",
+        "settlement"
       ],
       "scope": "deployment",
       "emitterKey": "address",
@@ -5216,6 +5557,16 @@
         }
       ]
     },
+    "core::array::Span::<world_native::village::VillageResource>": {
+      "type": "struct",
+      "name": "core::array::Span::<world_native::village::VillageResource>",
+      "members": [
+        {
+          "name": "snapshot",
+          "type": "@core::array::Array::<world_native::village::VillageResource>"
+        }
+      ]
+    },
     "core::bool": {
       "type": "enum",
       "name": "core::bool",
@@ -5363,6 +5714,20 @@
         {
           "name": "Some",
           "type": "world_native::troops::ExplorerTroops"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
+    "core::option::Option::<world_native::village::VillagePass>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::village::VillagePass>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::village::VillagePass"
         },
         {
           "name": "None",
@@ -5671,6 +6036,14 @@
         {
           "name": "SettleSeason",
           "type": "world_native::realms::SettleSeason"
+        },
+        {
+          "name": "SettleVillage",
+          "type": "world_native::village::SettleVillage"
+        },
+        {
+          "name": "ReceiveVillageArmy",
+          "type": "core::integer::u32"
         }
       ]
     },
@@ -5902,6 +6275,10 @@
         },
         {
           "name": "troops",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "settlement",
           "type": "core::starknet::contract_address::ContractAddress"
         }
       ]
@@ -6946,6 +7323,28 @@
         }
       ]
     },
+    "world_native::settlement::RealmCreation": {
+      "type": "struct",
+      "name": "world_native::settlement::RealmCreation",
+      "members": [
+        {
+          "name": "realm_id",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "traits",
+          "type": "world_native::realms::RealmTraits"
+        },
+        {
+          "name": "grant_troops",
+          "type": "core::bool"
+        },
+        {
+          "name": "activate_economy",
+          "type": "core::bool"
+        }
+      ]
+    },
     "world_native::settlement::RealmGrants": {
       "type": "struct",
       "name": "world_native::settlement::RealmGrants",
@@ -7017,6 +7416,20 @@
         {
           "name": "game_end",
           "type": "core::integer::u64"
+        }
+      ]
+    },
+    "world_native::settlement::SettlementCreation": {
+      "type": "enum",
+      "name": "world_native::settlement::SettlementCreation",
+      "variants": [
+        {
+          "name": "Realm",
+          "type": "world_native::settlement::RealmCreation"
+        },
+        {
+          "name": "Village",
+          "type": "world_native::settlement::VillageCreation"
         }
       ]
     },
@@ -7111,6 +7524,20 @@
         {
           "name": "ledger_operator",
           "type": "core::starknet::contract_address::ContractAddress"
+        }
+      ]
+    },
+    "world_native::settlement::VillageCreation": {
+      "type": "struct",
+      "name": "world_native::settlement::VillageCreation",
+      "members": [
+        {
+          "name": "connected_realm",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "resource",
+          "type": "core::integer::u8"
         }
       ]
     },
@@ -7257,10 +7684,6 @@
         {
           "name": "metadata",
           "type": "world_native::structures::StructureMetadata"
-        },
-        {
-          "name": "category",
-          "type": "core::integer::u8"
         }
       ]
     },
@@ -7325,10 +7748,6 @@
         {
           "name": "has_wonder",
           "type": "core::bool"
-        },
-        {
-          "name": "villages_count",
-          "type": "core::integer::u8"
         },
         {
           "name": "village_realm",
@@ -7537,7 +7956,85 @@
           "type": "core::array::Span::<world_native::resources::ResourceAmount>"
         }
       ]
+    },
+    "world_native::village::SettleVillage": {
+      "type": "struct",
+      "name": "world_native::village::SettleVillage",
+      "members": [
+        {
+          "name": "owner",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "pass_id",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "connected_realm_entity_id",
+          "type": "core::integer::u32"
+        }
+      ]
+    },
+    "world_native::village::VillagePass": {
+      "type": "struct",
+      "name": "world_native::village::VillagePass",
+      "members": [
+        {
+          "name": "owner",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "village_id",
+          "type": "core::integer::u32"
+        }
+      ]
+    },
+    "world_native::village::VillagePassKey": {
+      "type": "struct",
+      "name": "world_native::village::VillagePassKey",
+      "members": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "pass_id",
+          "type": "core::integer::u16"
+        }
+      ]
+    },
+    "world_native::village::VillageResource": {
+      "type": "struct",
+      "name": "world_native::village::VillageResource",
+      "members": [
+        {
+          "name": "resource_type",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "weight",
+          "type": "core::integer::u128"
+        }
+      ]
+    },
+    "world_native::village::VillageRules": {
+      "type": "struct",
+      "name": "world_native::village::VillageRules",
+      "members": [
+        {
+          "name": "troop_delay_ticks",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "resources",
+          "type": "core::array::Span::<world_native::resources::ResourceAmount>"
+        },
+        {
+          "name": "resource_pool",
+          "type": "core::array::Span::<world_native::village::VillageResource>"
+        }
+      ]
     }
   },
-  "identity": "4b208f5758cfb5903eac03cac2dc58c1bf2d70300db495ec16240760cf14e11a"
+  "identity": "74c51a71b08c301347556d0fcd90bf49464fbc4208d0d2459126a36b73238e5a"
 }

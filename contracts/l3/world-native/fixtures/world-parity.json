@@ -5,7 +5,7 @@
   "rulesRevision": "55dc510f5e7af119d1efac9a60426e81fee8e408",
   "factModel": {
     "source": "schema/fact-models.mjs",
-    "schema": "4b208f5758cfb5903eac03cac2dc58c1bf2d70300db495ec16240760cf14e11a",
+    "schema": "74c51a71b08c301347556d0fcd90bf49464fbc4208d0d2459126a36b73238e5a",
     "declarations": [
       {
         "model": "RealmTraits",
@@ -83,6 +83,36 @@
         "model": "SettlementPool",
         "observation": {
           "domain": "realm/blitz",
+          "fields": {
+            "availableLocations": "available"
+          }
+        }
+      },
+      {
+        "model": "VillageRules",
+        "observation": {
+          "domain": "village",
+          "fields": {
+            "armyDelay": "troop_delay_ticks",
+            "grants": "resources",
+            "resourcePool": "resource_pool"
+          }
+        }
+      },
+      {
+        "model": "VillagePass",
+        "observation": {
+          "domain": "village",
+          "fields": {
+            "owner": "owner",
+            "consumedBy": "village_id"
+          }
+        }
+      },
+      {
+        "model": "VillagePool",
+        "observation": {
+          "domain": "village",
           "fields": {
             "availableLocations": "available"
           }
@@ -346,9 +376,9 @@
     ]
   },
   "provenance": {
-    "revision": "e8a967f9ebddfc2384a7b375a4607c9ec35d38bf",
+    "revision": "0a6bdbbd1511921d9aefe3d44072e406c15823c2",
     "dirty": false,
-    "sourceSha256": "ab0515b01e23b7ece9b6e69e6756d9d51e0fe9f6c4555a9b6fb95d147b7c17f5",
+    "sourceSha256": "7c31bac5fe021e0262db5b728c6eecf52ea536e9ae7e36aca9bf4137be0248d0",
     "scope": [
       "apps/herald",
       "contracts/l3/world-native",
@@ -371,6 +401,7 @@
       "contracts/l3/world-native/fixtures/ownership-parity.json",
       "contracts/l3/world-native/fixtures/season-settlement-parity.json",
       "contracts/l3/world-native/fixtures/structure-parity.json",
+      "contracts/l3/world-native/fixtures/village-parity.json",
       "contracts/l3/world-native/fixtures/world-parity.json"
     ]
   },
@@ -391,17 +422,121 @@
   ],
   "execution": {
     "exitCode": 0,
-    "elapsedMs": 3894823,
+    "elapsedMs": 3525121,
     "log": "deploy/madara-lab/.lab/native-oracle/world-parity.log",
-    "combinedLogSha256": "230e325d06bfab6018d757faad66cb678b412a6eedc9c66705e45d558ae7a0ef",
+    "combinedLogSha256": "e9f6c2d7f93c241a919e1bb6c3c509867264e0766ae9e334e7c825a263c567a3",
     "logEncoding": "stdout + newline + stderr; both logs are retained in the parity artifact",
     "resourcesScope": "Fixture totals include both world deployments, configuration, actions, assertions and trace serialization. Per-action resources are measured by the lab harness."
   },
   "cases": [
     {
+      "name": "village",
+      "test": "world_parity_village",
+      "fixtureL2Gas": "7524648342",
+      "actions": [
+        {
+          "case": "village",
+          "order": 1,
+          "action": "create",
+          "timestamp": "1800",
+          "succeeded": true
+        },
+        {
+          "case": "village",
+          "order": 2,
+          "action": "receive_army_grant",
+          "timestamp": "1860",
+          "succeeded": true
+        },
+        {
+          "case": "village",
+          "order": 3,
+          "action": "receive_army_grant",
+          "timestamp": "1920",
+          "succeeded": false
+        },
+        {
+          "case": "village",
+          "order": 4,
+          "action": "receive_army_grant",
+          "timestamp": "1980",
+          "succeeded": false
+        }
+      ],
+      "roots": [
+        {
+          "case": "village",
+          "step": 1,
+          "rawRoot": "0x13",
+          "incrementedRoot": "0x5ab"
+        }
+      ],
+      "deletes": [],
+      "rejections": [],
+      "factSnapshots": 507,
+      "checkpoints": [
+        {
+          "step": 1,
+          "factSnapshots": 201,
+          "models": [
+            "Building",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "StructureBuildings",
+            "TileOpt"
+          ],
+          "sha256": "18804d08a2ed6b7fe18fae4e6e9c8a15b2df01b453856879e554b4da1e0d785c"
+        },
+        {
+          "step": 2,
+          "factSnapshots": 102,
+          "models": [
+            "Building",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "StructureBuildings",
+            "TileOpt"
+          ],
+          "sha256": "76a6c09040fcabbfe497c001423e8e05285fd38a230cdccef87b7c2f11edd0f7"
+        },
+        {
+          "step": 3,
+          "factSnapshots": 102,
+          "models": [
+            "Building",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "StructureBuildings",
+            "TileOpt"
+          ],
+          "sha256": "b48abb767a7ede97d004e323d2b2fc34f3d10f5526bc5586ec28b9c794b5999d"
+        },
+        {
+          "step": 4,
+          "factSnapshots": 102,
+          "models": [
+            "Building",
+            "ResourceBalance",
+            "ResourceProduction",
+            "ResourceWeight",
+            "Structure",
+            "StructureBuildings",
+            "TileOpt"
+          ],
+          "sha256": "80e6081c283bf3582d0c4dba1422453578ec30e281251bcb991b5499a56fbc05"
+        }
+      ]
+    },
+    {
       "name": "season_ledger_pass",
       "test": "world_parity_season_ledger_pass",
-      "fixtureL2Gas": "668390707",
+      "fixtureL2Gas": "1707215518",
       "actions": [
         {
           "case": "season_ledger_pass",
@@ -433,7 +568,7 @@
     {
       "name": "season_ledger_order",
       "test": "world_parity_season_ledger_order",
-      "fixtureL2Gas": "670225633",
+      "fixtureL2Gas": "1709050444",
       "actions": [
         {
           "case": "season_ledger_order",
@@ -465,7 +600,7 @@
     {
       "name": "season_ledger_empty",
       "test": "world_parity_season_ledger_empty",
-      "fixtureL2Gas": "670039087",
+      "fixtureL2Gas": "1708863898",
       "actions": [
         {
           "case": "season_ledger_empty",
@@ -497,7 +632,7 @@
     {
       "name": "season_wrong_mode",
       "test": "world_parity_season_wrong_mode",
-      "fixtureL2Gas": "648104439",
+      "fixtureL2Gas": "1686716440",
       "actions": [
         {
           "case": "season_wrong_mode",
@@ -529,7 +664,7 @@
     {
       "name": "season_triple",
       "test": "world_parity_season_triple",
-      "fixtureL2Gas": "667956039",
+      "fixtureL2Gas": "1706583330",
       "actions": [
         {
           "case": "season_triple",
@@ -561,7 +696,7 @@
     {
       "name": "season_duel",
       "test": "world_parity_season_duel",
-      "fixtureL2Gas": "667060429",
+      "fixtureL2Gas": "1705687320",
       "actions": [
         {
           "case": "season_duel",
@@ -593,7 +728,7 @@
     {
       "name": "season_pre_main",
       "test": "world_parity_season_pre_main",
-      "fixtureL2Gas": "3143314671",
+      "fixtureL2Gas": "3805499254",
       "actions": [
         {
           "case": "season_pre_main",
@@ -613,11 +748,11 @@
       ],
       "deletes": [],
       "rejections": [],
-      "factSnapshots": 119,
+      "factSnapshots": 107,
       "checkpoints": [
         {
           "step": 1,
-          "factSnapshots": 119,
+          "factSnapshots": 107,
           "models": [
             "AddressName",
             "Building",
@@ -632,14 +767,14 @@
             "StructureBuildings",
             "TileOpt"
           ],
-          "sha256": "b9d7935cf22711d5179db27a901d6bf56742166e6ec66ef55b504c42f5874b05"
+          "sha256": "007619143a0f1e62dd35fe2945db070385fae8c5e2d36f2da34b6d07d0b3c639"
         }
       ]
     },
     {
       "name": "season_explorer_occupied",
       "test": "world_parity_season_explorer_occupied",
-      "fixtureL2Gas": "9900326849",
+      "fixtureL2Gas": "10525236382",
       "actions": [
         {
           "case": "season_explorer_occupied",
@@ -659,7 +794,7 @@
       ],
       "deletes": [],
       "rejections": [],
-      "factSnapshots": 517,
+      "factSnapshots": 505,
       "checkpoints": [
         {
           "step": 1,
@@ -676,7 +811,7 @@
         },
         {
           "step": 200,
-          "factSnapshots": 318,
+          "factSnapshots": 306,
           "models": [
             "AddressName",
             "Building",
@@ -692,14 +827,14 @@
             "StructureBuildings",
             "TileOpt"
           ],
-          "sha256": "4d74ee9c77087cc01474c19a973acaea2086c2c4260cb363d0f04ec2607b58ce"
+          "sha256": "302f9e8f568cebeca9053ef90fc7bd0e48ddb1cf39dff7ca7bd4a55bc62c5b3c"
         }
       ]
     },
     {
       "name": "season_search_limit",
       "test": "world_parity_season_search_limit",
-      "fixtureL2Gas": "3546287183",
+      "fixtureL2Gas": "4636556174",
       "actions": [
         {
           "case": "season_search_limit",
@@ -732,7 +867,7 @@
     {
       "name": "season_settlement",
       "test": "world_parity_season_settlement",
-      "fixtureL2Gas": "7720986010",
+      "fixtureL2Gas": "7778977977",
       "actions": [
         {
           "case": "season_settlement",
@@ -772,11 +907,11 @@
       ],
       "deletes": [],
       "rejections": [],
-      "factSnapshots": 357,
+      "factSnapshots": 321,
       "checkpoints": [
         {
           "step": 1,
-          "factSnapshots": 119,
+          "factSnapshots": 107,
           "models": [
             "AddressName",
             "Building",
@@ -791,11 +926,11 @@
             "StructureBuildings",
             "TileOpt"
           ],
-          "sha256": "e143c0bef4503837703ee735dfb280ddfc310cb636f8a0e9b8a8781fe16f64c9"
+          "sha256": "894b6b58e56e3e2201d1b410d8ac979097ddea0dec92b30be01e6435243a4f0f"
         },
         {
           "step": 2,
-          "factSnapshots": 119,
+          "factSnapshots": 107,
           "models": [
             "AddressName",
             "Building",
@@ -810,11 +945,11 @@
             "StructureBuildings",
             "TileOpt"
           ],
-          "sha256": "53d7998a1bba37e507ba72370a8e696e0867069356579869eddae64bc83f084f"
+          "sha256": "c2fe10291694e76645ac1826adc8ae425795a3f897ab9796a4ea2d0787d9fbee"
         },
         {
           "step": 3,
-          "factSnapshots": 119,
+          "factSnapshots": 107,
           "models": [
             "AddressName",
             "Building",
@@ -829,14 +964,14 @@
             "StructureBuildings",
             "TileOpt"
           ],
-          "sha256": "f29a5998bc75d9ff787f7b82aa92003f4a4454bc95b3f6f2ef4cbd86cdb2c125"
+          "sha256": "a05ec02620c12b51014b51050e9d9ee7eff699ec1a5914deacd580362b805f9b"
         }
       ]
     },
     {
       "name": "season_settlement_dev",
       "test": "world_parity_season_settlement_dev",
-      "fixtureL2Gas": "23431659570",
+      "fixtureL2Gas": "21640283743",
       "actions": [
         {
           "case": "season_settlement_dev",
@@ -897,11 +1032,11 @@
       ],
       "deletes": [],
       "rejections": [],
-      "factSnapshots": 1284,
+      "factSnapshots": 1152,
       "checkpoints": [
         {
           "step": 1,
-          "factSnapshots": 119,
+          "factSnapshots": 107,
           "models": [
             "AddressName",
             "Building",
@@ -916,11 +1051,11 @@
             "StructureBuildings",
             "TileOpt"
           ],
-          "sha256": "c462a09b9bc117ee8ed5c9bd3fc6950626209e05c1fc59105664ac64640e2fe8"
+          "sha256": "85cb0b2fd0646a1b2fdecd50d45e32f4402760ce952c32d37abac9351decc9cf"
         },
         {
           "step": 2,
-          "factSnapshots": 233,
+          "factSnapshots": 209,
           "models": [
             "AddressName",
             "Building",
@@ -935,11 +1070,11 @@
             "StructureBuildings",
             "TileOpt"
           ],
-          "sha256": "1fc013a229af6dc1be2801e6db46cc79e214265c13152e9057465c3a91b3092e"
+          "sha256": "feeccc77eac7e64e581871b3a4303e45a048185583c8e559a3bc3880ff8d4dbf"
         },
         {
           "step": 3,
-          "factSnapshots": 233,
+          "factSnapshots": 209,
           "models": [
             "AddressName",
             "Building",
@@ -954,11 +1089,11 @@
             "StructureBuildings",
             "TileOpt"
           ],
-          "sha256": "5a8183ee75add551c45c2623a0255f7ef0339c4161eb942342238bcadd7237b3"
+          "sha256": "9a6ba1aa23892069d5524f1949db2dd6851af612f8cecd46832e442e2c8e497b"
         },
         {
           "step": 4,
-          "factSnapshots": 233,
+          "factSnapshots": 209,
           "models": [
             "AddressName",
             "Building",
@@ -973,11 +1108,11 @@
             "StructureBuildings",
             "TileOpt"
           ],
-          "sha256": "e1014027433ce390a72d1a05ee067d8c2acd411ea30767900d2736ece9d51cdc"
+          "sha256": "2225d5d460e538c9b25d89cfbf5168d52d3512aa8685520e1413f7315c191c5d"
         },
         {
           "step": 5,
-          "factSnapshots": 233,
+          "factSnapshots": 209,
           "models": [
             "AddressName",
             "Building",
@@ -992,11 +1127,11 @@
             "StructureBuildings",
             "TileOpt"
           ],
-          "sha256": "dcb0629548e527831eee63218e952bdc8b90f75c243b7c439c7d8532989505ab"
+          "sha256": "8489313d5a2207c0d0b757d3d72933a478dea3b81a82b06a62f934d26ca46736"
         },
         {
           "step": 6,
-          "factSnapshots": 233,
+          "factSnapshots": 209,
           "models": [
             "AddressName",
             "Building",
@@ -1011,14 +1146,14 @@
             "StructureBuildings",
             "TileOpt"
           ],
-          "sha256": "2d9a840c8232db1db0e467209418f2f028ec27b7251484733978ddee9e651cc4"
+          "sha256": "7419974872ec270a3808c41e88cd68201ea3b0fb7ad3486265a10e9adec775b2"
         }
       ]
     },
     {
       "name": "season_settlement_ledger",
       "test": "world_parity_season_settlement_ledger",
-      "fixtureL2Gas": "3622061193",
+      "fixtureL2Gas": "4253922926",
       "actions": [
         {
           "case": "season_settlement_ledger",
@@ -1052,7 +1187,7 @@
       ],
       "deletes": [],
       "rejections": [],
-      "factSnapshots": 129,
+      "factSnapshots": 117,
       "checkpoints": [
         {
           "step": 1,
@@ -1068,7 +1203,7 @@
         },
         {
           "step": 2,
-          "factSnapshots": 119,
+          "factSnapshots": 107,
           "models": [
             "AddressName",
             "Building",
@@ -1083,7 +1218,7 @@
             "StructureBuildings",
             "TileOpt"
           ],
-          "sha256": "c328aa1be2272ac03cfa66218752c60021e76d77798c0a1c3fe2847d4f1326a0"
+          "sha256": "10753fef372197b8272bd8893ce914184def191e7cc6ef8067d49eb9763aa293"
         },
         {
           "step": 3,
@@ -1102,7 +1237,7 @@
     {
       "name": "season_settlement_rejections",
       "test": "world_parity_season_settlement_rejections",
-      "fixtureL2Gas": "902029655",
+      "fixtureL2Gas": "1940939566",
       "actions": [
         {
           "case": "season_settlement_rejections",
@@ -1191,7 +1326,7 @@
     {
       "name": "season_settlement_occupied",
       "test": "world_parity_season_settlement_occupied",
-      "fixtureL2Gas": "14008967047",
+      "fixtureL2Gas": "14625128910",
       "actions": [
         {
           "case": "season_settlement_occupied",
@@ -1211,11 +1346,11 @@
       ],
       "deletes": [],
       "rejections": [],
-      "factSnapshots": 719,
+      "factSnapshots": 707,
       "checkpoints": [
         {
           "step": 1,
-          "factSnapshots": 719,
+          "factSnapshots": 707,
           "models": [
             "AddressName",
             "Building",
@@ -1230,14 +1365,14 @@
             "StructureBuildings",
             "TileOpt"
           ],
-          "sha256": "b69b89bdec73adeb1c9d20fda16a4f4a5d14a2ae90b574846d932665e2717a76"
+          "sha256": "3b418bfb34dcdf5c483c24fd826b82bd5d9d027094531c3252ccb3893b93eafc"
         }
       ]
     },
     {
       "name": "blitz_settlement",
       "test": "world_parity_blitz_settlement",
-      "fixtureL2Gas": "11617420750",
+      "fixtureL2Gas": "10997431853",
       "actions": [
         {
           "case": "blitz_settlement",
@@ -1305,7 +1440,7 @@
       ],
       "deletes": [],
       "rejections": [],
-      "factSnapshots": 647,
+      "factSnapshots": 623,
       "checkpoints": [
         {
           "step": 0,
@@ -1349,7 +1484,7 @@
         },
         {
           "step": 3,
-          "factSnapshots": 108,
+          "factSnapshots": 102,
           "models": [
             "Building",
             "ResourceBalance",
@@ -1359,11 +1494,11 @@
             "StructureBuildings",
             "TileOpt"
           ],
-          "sha256": "0dc4d172fe8eeb1ae149e5c8e8c797b8c7edcb2eebaa19101b0af30181075804"
+          "sha256": "bddc864cedd84376f349364c92f0dc1bf3512a25e4e20b9164df93daa1f55889"
         },
         {
           "step": 4,
-          "factSnapshots": 108,
+          "factSnapshots": 102,
           "models": [
             "Building",
             "ResourceBalance",
@@ -1373,11 +1508,11 @@
             "StructureBuildings",
             "TileOpt"
           ],
-          "sha256": "d4bf2a794a9308278cadb99305b90da68ff2017b83a7096922a4dac96e152d3b"
+          "sha256": "506852f3c12f015f9f9a1d9da9d422c0acd431194ce28085218e94bca3a96932"
         },
         {
           "step": 5,
-          "factSnapshots": 108,
+          "factSnapshots": 102,
           "models": [
             "Building",
             "ResourceBalance",
@@ -1387,11 +1522,11 @@
             "StructureBuildings",
             "TileOpt"
           ],
-          "sha256": "14c86081b769f81495a9b4a39997ded1f9b81643d99a8afe32d8fe3be708aa84"
+          "sha256": "8c7ccd8cca17d00051b3c8e7b0976109a915471a25e41ee6a0c6ef40285cc66e"
         },
         {
           "step": 6,
-          "factSnapshots": 108,
+          "factSnapshots": 102,
           "models": [
             "Building",
             "ResourceBalance",
@@ -1401,14 +1536,14 @@
             "StructureBuildings",
             "TileOpt"
           ],
-          "sha256": "946899b132f73fb188c8bfee7076b211450cb6c792267b858b039dc6c457d87d"
+          "sha256": "594530840275b9b7c1a91f311be11887169dbe7c6d820b5810705b8c28e2d05b"
         }
       ]
     },
     {
       "name": "blitz_entry_rejections",
       "test": "world_parity_blitz_entry_rejections",
-      "fixtureL2Gas": "8110481119",
+      "fixtureL2Gas": "8108489120",
       "actions": [
         {
           "case": "blitz_entry_rejections",
@@ -1617,7 +1752,7 @@
     {
       "name": "blitz_entry_ledger",
       "test": "world_parity_blitz_entry_ledger",
-      "fixtureL2Gas": "2638737495",
+      "fixtureL2Gas": "2641509416",
       "actions": [
         {
           "case": "blitz_entry_ledger",
@@ -1694,7 +1829,7 @@
     {
       "name": "blitz_cosmetics",
       "test": "world_parity_blitz_cosmetics",
-      "fixtureL2Gas": "2791223682",
+      "fixtureL2Gas": "2793131913",
       "actions": [
         {
           "case": "blitz_cosmetics",
@@ -1809,7 +1944,7 @@
     {
       "name": "blitz_cosmetics_disabled",
       "test": "world_parity_blitz_cosmetics_disabled",
-      "fixtureL2Gas": "2673529813",
+      "fixtureL2Gas": "2676405514",
       "actions": [
         {
           "case": "blitz_cosmetics_disabled",
@@ -1867,7 +2002,7 @@
     {
       "name": "blitz_settlement_displacement",
       "test": "world_parity_blitz_settlement_displacement",
-      "fixtureL2Gas": "9822882699",
+      "fixtureL2Gas": "9819251300",
       "actions": [
         {
           "case": "blitz_settlement_displacement",
@@ -1951,7 +2086,7 @@
     {
       "name": "blitz_settlement_blocked",
       "test": "world_parity_blitz_settlement_blocked",
-      "fixtureL2Gas": "9680570973",
+      "fixtureL2Gas": "9670129824",
       "actions": [
         {
           "case": "blitz_settlement_blocked",
@@ -2053,7 +2188,7 @@
     {
       "name": "blitz_settlement_agent_blocked",
       "test": "world_parity_blitz_settlement_agent_blocked",
-      "fixtureL2Gas": "10306010203",
+      "fixtureL2Gas": "10297888364",
       "actions": [
         {
           "case": "blitz_settlement_agent_blocked",
@@ -2159,7 +2294,7 @@
     {
       "name": "blitz_settlement_occupied",
       "test": "world_parity_blitz_settlement_occupied",
-      "fixtureL2Gas": "2741794810",
+      "fixtureL2Gas": "2746449301",
       "actions": [
         {
           "case": "blitz_settlement_occupied",
@@ -2211,7 +2346,7 @@
     {
       "name": "blitz_settlement_modes",
       "test": "world_parity_blitz_settlement_modes",
-      "fixtureL2Gas": "11086062272",
+      "fixtureL2Gas": "11078947553",
       "actions": [
         {
           "case": "blitz_settlement_modes",
@@ -2298,7 +2433,7 @@
     {
       "name": "blitz_settlement_duel",
       "test": "world_parity_blitz_settlement_duel",
-      "fixtureL2Gas": "10773810844",
+      "fixtureL2Gas": "10767435465",
       "actions": [
         {
           "case": "blitz_settlement_duel",
@@ -2385,7 +2520,7 @@
     {
       "name": "blitz_reservations",
       "test": "world_parity_blitz_reservations",
-      "fixtureL2Gas": "4759375426",
+      "fixtureL2Gas": "4752087057",
       "actions": [
         {
           "case": "blitz_reservations",
@@ -2498,7 +2633,7 @@
     {
       "name": "structure",
       "test": "world_parity_structure",
-      "fixtureL2Gas": "11192670960",
+      "fixtureL2Gas": "11182251571",
       "actions": [
         {
           "case": "structure",
@@ -2658,7 +2793,7 @@
     {
       "name": "structure_rejections",
       "test": "world_parity_structure_rejections",
-      "fixtureL2Gas": "7474867129",
+      "fixtureL2Gas": "7470539186",
       "actions": [
         {
           "case": "structure_rejections",
@@ -2755,7 +2890,7 @@
     {
       "name": "name",
       "test": "world_parity_name",
-      "fixtureL2Gas": "6786296716",
+      "fixtureL2Gas": "6785875597",
       "actions": [
         {
           "case": "name",
@@ -2871,7 +3006,7 @@
     {
       "name": "ownership",
       "test": "world_parity_ownership",
-      "fixtureL2Gas": "16672051992",
+      "fixtureL2Gas": "16662532923",
       "actions": [
         {
           "case": "ownership",
@@ -3114,7 +3249,7 @@
     {
       "name": "ownership_rejections",
       "test": "world_parity_ownership_rejections",
-      "fixtureL2Gas": "12302434630",
+      "fixtureL2Gas": "12296866757",
       "actions": [
         {
           "case": "ownership_rejections",
@@ -3274,7 +3409,7 @@
     {
       "name": "ownership_faith",
       "test": "world_parity_ownership_faith",
-      "fixtureL2Gas": "6990501174",
+      "fixtureL2Gas": "6991046595",
       "actions": [
         {
           "case": "ownership_faith",
@@ -3375,7 +3510,7 @@
     {
       "name": "creation",
       "test": "world_parity_explorer_creation",
-      "fixtureL2Gas": "4411826412",
+      "fixtureL2Gas": "4413492303",
       "actions": [],
       "roots": [],
       "deletes": [],
@@ -3411,7 +3546,7 @@
     {
       "name": "travel",
       "test": "world_parity_travel_and_known_exploration",
-      "fixtureL2Gas": "13521476994",
+      "fixtureL2Gas": "13512303835",
       "actions": [],
       "roots": [
         {
@@ -3513,7 +3648,7 @@
     {
       "name": "surface",
       "test": "world_parity_surface_discoveries",
-      "fixtureL2Gas": "14237409473",
+      "fixtureL2Gas": "14226000904",
       "actions": [],
       "roots": [
         {
@@ -3606,7 +3741,7 @@
     {
       "name": "ethereal",
       "test": "world_parity_ethereal_entry_and_discovery",
-      "fixtureL2Gas": "13050614218",
+      "fixtureL2Gas": "13037738679",
       "actions": [],
       "roots": [
         {
@@ -3695,7 +3830,7 @@
     {
       "name": "production",
       "test": "world_parity_production_settlement",
-      "fixtureL2Gas": "5094058982",
+      "fixtureL2Gas": "5095247023",
       "actions": [],
       "roots": [],
       "deletes": [],
@@ -3740,7 +3875,7 @@
     {
       "name": "production_cap",
       "test": "world_parity_production_cap",
-      "fixtureL2Gas": "5333270552",
+      "fixtureL2Gas": "5334458593",
       "actions": [],
       "roots": [],
       "deletes": [],
@@ -3785,7 +3920,7 @@
     {
       "name": "production_capacity",
       "test": "world_parity_production_capacity",
-      "fixtureL2Gas": "5593865651",
+      "fixtureL2Gas": "5595053692",
       "actions": [],
       "roots": [],
       "deletes": [],
@@ -3830,7 +3965,7 @@
     {
       "name": "battle",
       "test": "world_parity_battle_deletes_explorer",
-      "fixtureL2Gas": "11930307604",
+      "fixtureL2Gas": "11921696095",
       "actions": [],
       "roots": [],
       "deletes": [
@@ -3887,7 +4022,7 @@
     {
       "name": "ethereal_battle",
       "test": "world_parity_ethereal_battle",
-      "fixtureL2Gas": "14526869676",
+      "fixtureL2Gas": "14507046317",
       "actions": [],
       "roots": [
         {
@@ -3971,7 +4106,7 @@
     {
       "name": "rejections",
       "test": "world_parity_rejected_actions_preserve_rows",
-      "fixtureL2Gas": "14010531336",
+      "fixtureL2Gas": "13999789357",
       "actions": [],
       "roots": [],
       "deletes": [],

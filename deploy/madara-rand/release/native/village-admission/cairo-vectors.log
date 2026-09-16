@@ -1,0 +1,29 @@
+   Compiling snforge_scarb_plugin v0.52.0
+    Finished `release` profile [optimized] target(s) in 0.08s
+   Compiling test(eternum_randomness_protocol_unittest) eternum_randomness_protocol v0.1.0 (/home/djizus/projects/eternum-native-world/contracts/l3/randomness-protocol/Scarb.toml)
+   Compiling test(eternum_randomness_protocol_integrationtest) eternum_randomness_protocol_integrationtest v0.1.0 (/home/djizus/projects/eternum-native-world/contracts/l3/randomness-protocol/Scarb.toml)
+    Finished `dev` profile target(s) in 3 seconds
+
+
+Collected 17 test(s) from eternum_randomness_protocol package
+Running 17 test(s) from tests/
+[PASS] eternum_randomness_protocol_integrationtest::test_conformance::cross_language_context_boundaries (l1_gas: ~0, l1_data_gas: ~0, l2_gas: ~1004196)
+[PASS] eternum_randomness_protocol_integrationtest::test_protocol::rejects_noncanonical_bytes (l1_gas: ~0, l1_data_gas: ~0, l2_gas: ~1422130)
+[PASS] eternum_randomness_protocol_integrationtest::test_conformance::pending_binding_survives_authority_credential_rotation (l1_gas: ~0, l1_data_gas: ~1920, l2_gas: ~3606896)
+[PASS] eternum_randomness_protocol_integrationtest::test_conformance::stale_nonce_after_consumption_does_not_invalidate_the_next_action (l1_gas: ~0, l1_data_gas: ~2688, l2_gas: ~5010471)
+[PASS] eternum_randomness_protocol_integrationtest::test_conformance::delayed_execution_uses_recorded_time_after_intent_expiry_and_rejects_duplicate (l1_gas: ~0, l1_data_gas: ~1920, l2_gas: ~3036549)
+[PASS] eternum_randomness_protocol_integrationtest::test_conformance::losses_and_terminal_rejections_consume_the_original_nonce (l1_gas: ~0, l1_data_gas: ~3648, l2_gas: ~6403894)
+[PASS] eternum_randomness_protocol_integrationtest::test_conformance::outage_recovery_consumes_the_accepted_prefix_before_fresh_work (l1_gas: ~0, l1_data_gas: ~2304, l2_gas: ~4349494)
+[PASS] eternum_randomness_protocol_integrationtest::test_conformance::accepted_execution_after_a_day_matches_immediate_execution (l1_gas: ~0, l1_data_gas: ~5760, l2_gas: ~8792443)
+[PASS] eternum_randomness_protocol_integrationtest::test_conformance::authority_rejects_multicalls_callbacks_and_foreign_targets (l1_gas: ~0, l1_data_gas: ~3456, l2_gas: ~7977070)
+[PASS] eternum_randomness_protocol_integrationtest::test_protocol::rejects_malformed_envelopes (l1_gas: ~0, l1_data_gas: ~0, l2_gas: ~21103450)
+[PASS] eternum_randomness_protocol_integrationtest::test_conformance::simulation_context_cannot_bypass_transaction_authorization (l1_gas: ~0, l1_data_gas: ~5184, l2_gas: ~13687026)
+[PASS] eternum_randomness_protocol_integrationtest::test_conformance::rejects_changed_signed_fields_and_foreign_identities (l1_gas: ~0, l1_data_gas: ~6048, l2_gas: ~12828493)
+[PASS] eternum_randomness_protocol_integrationtest::test_protocol::rejects_malformed_intents (l1_gas: ~0, l1_data_gas: ~0, l2_gas: ~21240320)
+[PASS] eternum_randomness_protocol_integrationtest::test_conformance::malformed_transport_consumes_nothing_and_invalid_action_signature_is_terminal (l1_gas: ~0, l1_data_gas: ~7296, l2_gas: ~13794527)
+[PASS] eternum_randomness_protocol_integrationtest::test_conformance::invalid_transport_is_non_consuming_and_invalid_acceptance_is_terminal (l1_gas: ~0, l1_data_gas: ~9888, l2_gas: ~19593193)
+[PASS] eternum_randomness_protocol_integrationtest::test_conformance::invalid_action_keys_and_nonces_cannot_block_a_valid_successor (l1_gas: ~0, l1_data_gas: ~13824, l2_gas: ~23734256)
+[PASS] eternum_randomness_protocol_integrationtest::test_protocol::canonical_cross_language_vectors (l1_gas: ~0, l1_data_gas: ~0, l2_gas: ~130697643)
+Running 0 test(s) from src/
+Tests: 17 passed, 0 failed, 0 ignored, 0 filtered out
+

@@ -48,6 +48,7 @@ function fixture() {
             state.peers.map,
             state.peers.structures,
             state.peers.troops,
+            state.peers.settlement,
             state.active ? "1" : "0",
           ]
         : entrypoint === "realm_catalogue"
@@ -87,7 +88,7 @@ describe("native deployment planning", () => {
     const plan = await inspectNativeWorld(local, rpc as unknown as RpcProvider);
     expect(plan.synced).toBe(false);
     expect(plan.blockers).toEqual([]);
-    expect(plan.domains.find((domain) => domain.name === "season")?.realmCatalogue).toEqual(catalogue);
+    expect(plan.domains.find((domain) => domain.name === "settlement")?.realmCatalogue).toEqual(catalogue);
   });
   test("a resumed deployment writes only the missing immutable suffix", async () => {
     const { local, rpc, catalogue } = fixture();
@@ -110,7 +111,7 @@ describe("native deployment planning", () => {
     );
     expect(submitted).toEqual(["0xabc"]);
     expect(report.after.synced).toBe(true);
-    expect(report.transactions).toEqual([{ action: "initialize_realm_traits", domain: "season", hash: "0xabc" }]);
+    expect(report.transactions).toEqual([{ action: "initialize_realm_traits", domain: "settlement", hash: "0xabc" }]);
   });
   test("a changed catalogue prefix blocks before transactions", async () => {
     const { local, rpc, catalogue } = fixture();
@@ -143,7 +144,7 @@ describe("native deployment planning", () => {
     const plan = await inspectNativeWorld(local, rpc as unknown as RpcProvider);
     const first = buildNativeManifest(local, plan);
     local.previous = first;
-    local.domains[0].classHash = "0x456";
+    local.domains.find((domain) => domain.name === "season")!.classHash = "0x456";
     const second = buildNativeManifest(local, { ...plan, blockNumber: 100 });
     expect(second.native.deploymentBlock).toBe(10);
     expect(second.native.domains.season.initialClassHash).toBe("0x123");

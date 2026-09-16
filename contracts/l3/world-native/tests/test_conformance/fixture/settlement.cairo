@@ -17,8 +17,8 @@ use world_native::settlement::{
     IBlitzHyperstructuresSafeDispatcherTrait, IBlitzReservationsSafeDispatcher, IBlitzReservationsSafeDispatcherTrait,
     IRealmCreationSafeDispatcher, IRealmCreationSafeDispatcherTrait, ISettlementCommandsSafeDispatcher,
     ISettlementCommandsSafeDispatcherTrait, ISettlementConfigurationDispatcher, ISettlementConfigurationDispatcherTrait,
-    ISettlementViewsDispatcher, ISettlementViewsDispatcherTrait, RealmGrants, SettleBlitz, SettlementMode,
-    SettlementRules,
+    ISettlementCreationSafeDispatcher, ISettlementCreationSafeDispatcherTrait, ISettlementViewsDispatcher,
+    ISettlementViewsDispatcherTrait, RealmGrants, SettleBlitz, SettlementMode, SettlementRules,
 };
 use world_native::structures::{IStructuresDispatcher, IStructuresDispatcherTrait, ResourceRule};
 use super::{IRecordedExecutionDispatcher, IRecordedExecutionDispatcherTrait, context, pair, setup};
@@ -47,7 +47,10 @@ fn prepare_with_resources(grant_override: Option<Span<world_native::resources::R
     if let Some(resources) = grant_override {
         grants.resources = resources;
     }
-    ISettlementConfigurationDispatcher { contract_address: season }
+    start_cheat_caller_address(peers.settlement, 222.try_into().unwrap());
+    ISettlementConfigurationDispatcher {
+        contract_address: IDomainDispatcher { contract_address: season }.domain_state().peers.settlement,
+    }
         .configure_settlement(
             8,
             SettlementRules {
@@ -63,6 +66,7 @@ fn prepare_with_resources(grant_override: Option<Span<world_native::resources::R
             grants,
         );
     stop_cheat_caller_address(season);
+    stop_cheat_caller_address(peers.settlement);
     start_cheat_caller_address(peers.structures, 222.try_into().unwrap());
     IStructuresDispatcher { contract_address: peers.structures }.configure_resources(8, resources);
     stop_cheat_caller_address(peers.structures);
@@ -121,7 +125,9 @@ fn command(owner: ContractAddress) -> Command {
 }
 fn settled_facts(season: ContractAddress) -> Array<felt252> {
     let peers = IDomainDispatcher { contract_address: season }.domain_state().peers;
-    let views = ISettlementViewsDispatcher { contract_address: season };
+    let views = ISettlementViewsDispatcher {
+        contract_address: IDomainDispatcher { contract_address: season }.domain_state().peers.settlement,
+    };
     let mut facts = array![];
     views.settlement_progress(8).serialize(ref facts);
     views.player_entry(EntryKey { game_id: 8, owner: 123.try_into().unwrap() }).serialize(ref facts);
@@ -142,7 +148,9 @@ fn accepted_settlement_keeps_recorded_cosmetics_and_time_after_game_end() {
         submit(season, action, envelope);
         let result = IRecordedExecutionViewsDispatcher { contract_address: season }.get_result(2);
         assert!(result.status == 1, "accepted settlement failed");
-        let views = ISettlementViewsDispatcher { contract_address: season };
+        let views = ISettlementViewsDispatcher {
+            contract_address: IDomainDispatcher { contract_address: season }.domain_state().peers.settlement,
+        };
         assert!(views.settlement_progress(8).registered == 1);
         assert!(
             views
@@ -169,7 +177,9 @@ fn accepted_settlement_keeps_the_admitted_wallet_after_registry_rebinding() {
     start_cheat_block_timestamp_global(100000);
     submit(season, action, envelope);
     assert!(IRecordedExecutionViewsDispatcher { contract_address: season }.get_result(2).status == 1);
-    let views = ISettlementViewsDispatcher { contract_address: season };
+    let views = ISettlementViewsDispatcher {
+        contract_address: IDomainDispatcher { contract_address: season }.domain_state().peers.settlement,
+    };
     assert!(views.player_entry(EntryKey { game_id: 8, owner: 123.try_into().unwrap() }).is_some());
     assert!(views.player_entry(EntryKey { game_id: 8, owner: 789.try_into().unwrap() }).is_none());
     assert!(
@@ -192,7 +202,13 @@ fn cosmetic_snapshot_identity_is_bound_to_the_signed_command() {
     assert!(command_commitment(altered) != command_commitment(altered_height));
     execute(season, Command::SettleBlitz(SettleBlitz { cosmetics_block_hash: 0, ..original }), 1005);
     assert!(IRecordedExecutionViewsDispatcher { contract_address: season }.get_result(2).status == 2);
-    assert!(ISettlementViewsDispatcher { contract_address: season }.settlement_progress(8).registered == 0);
+    assert!(
+        ISettlementViewsDispatcher {
+            contract_address: IDomainDispatcher { contract_address: season }.domain_state().peers.settlement,
+        }
+            .settlement_progress(8)
+            .registered == 0,
+    );
 }
 
 #[test]
@@ -212,7 +228,9 @@ fn rejected_settlement_rolls_back_entry_and_leaves_later_ticket_executable() {
     execute(season, invalid, 1005);
     let results = IRecordedExecutionViewsDispatcher { contract_address: season };
     assert!(results.get_result(2).status == 2);
-    let views = ISettlementViewsDispatcher { contract_address: season };
+    let views = ISettlementViewsDispatcher {
+        contract_address: IDomainDispatcher { contract_address: season }.domain_state().peers.settlement,
+    };
     assert!(views.player_entry(EntryKey { game_id: 8, owner: 123.try_into().unwrap() }).is_none());
     assert!(views.settlement_progress(8).registered == 0);
     execute(season, command(123.try_into().unwrap()), 1005);
@@ -349,9 +367,11 @@ fn settlement_commands_reject_forged_domain_callers_before_mutating() {
     let coord = world_native::troops::Coord { alt: false, x: center, y: center };
     let actor = 456.try_into().unwrap();
     let context = world_native::commands::ExecutionContext { raw_root: 19, timestamp: 1005 };
-    start_cheat_caller_address(season, actor);
+    start_cheat_caller_address(peers.settlement, actor);
     assert!(
-        ISettlementCommandsSafeDispatcher { contract_address: season }
+        ISettlementCommandsSafeDispatcher {
+            contract_address: IDomainDispatcher { contract_address: season }.domain_state().peers.settlement,
+        }
             .settle_blitz(
                 8,
                 actor,
@@ -367,13 +387,30 @@ fn settlement_commands_reject_forged_domain_callers_before_mutating() {
             )
             .is_err(),
     );
-    stop_cheat_caller_address(season);
-    assert!(ISettlementViewsDispatcher { contract_address: season }.settlement_progress(8).registered == 0);
+    stop_cheat_caller_address(peers.settlement);
+    assert!(
+        ISettlementViewsDispatcher {
+            contract_address: IDomainDispatcher { contract_address: season }.domain_state().peers.settlement,
+        }
+            .settlement_progress(8)
+            .registered == 0,
+    );
     start_cheat_caller_address(peers.structures, peers.map);
     assert!(
-        IRealmCreationSafeDispatcher { contract_address: peers.structures }
-            .create_blitz_realm(
-                8, actor, 1, world_native::troops::Coord { x: center + 50, y: center + 50, ..coord }, false, context,
+        ISettlementCreationSafeDispatcher { contract_address: peers.structures }
+            .create_settlement(
+                8,
+                actor,
+                world_native::troops::Coord { x: center + 50, y: center + 50, ..coord },
+                world_native::settlement::SettlementCreation::Realm(
+                    world_native::settlement::RealmCreation {
+                        realm_id: 1,
+                        traits: world_native::realms::RealmTraits { wonder: 1, order: 0, resources: array![].span() },
+                        grant_troops: false,
+                        activate_economy: false,
+                    },
+                ),
+                context,
             )
             .is_err(),
     );

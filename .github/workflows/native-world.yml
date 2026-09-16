@@ -135,24 +135,12 @@ jobs:
         with:
           name: native-domain-parity
           path: |
-            contracts/l3/world-native/fixtures/world-parity.json
-            contracts/l3/world-native/fixtures/ownership-parity.json
-            contracts/l3/world-native/fixtures/name-parity.json
-            contracts/l3/world-native/fixtures/structure-parity.json
-            contracts/l3/world-native/fixtures/blitz-settlement-parity.json
-            contracts/l3/world-native/fixtures/season-settlement-parity.json
+            contracts/l3/world-native/fixtures/*-parity.json
             deploy/madara-lab/.lab/native-oracle/world-parity.log
             deploy/madara-lab/.lab/native-oracle/world-parity.log.stderr
-            deploy/madara-lab/.lab/native-oracle/ownership-costs.json
-            deploy/madara-lab/.lab/native-oracle/ownership-cost.log
-            deploy/madara-lab/.lab/native-oracle/name-costs.json
-            deploy/madara-lab/.lab/native-oracle/name-cost.log
-            deploy/madara-lab/.lab/native-oracle/structure-costs.json
-            deploy/madara-lab/.lab/native-oracle/structure-cost.log
-            deploy/madara-lab/.lab/native-oracle/blitz-settlement-costs.json
-            deploy/madara-lab/.lab/native-oracle/blitz-settlement-cost.log
-            deploy/madara-lab/.lab/native-oracle/season-settlement-costs.json
-            deploy/madara-lab/.lab/native-oracle/season-settlement-cost.log
+            deploy/madara-lab/.lab/native-oracle/*-costs.json
+            deploy/madara-lab/.lab/native-oracle/*-cost.log
+            deploy/madara-lab/.lab/native-oracle/*-cost.stderr
             deploy/madara-lab/.lab/native-oracle/native-casm.json
             deploy/madara-lab/.lab/native-oracle/native-build.log
             deploy/madara-lab/.lab/native-oracle/native-build.stderr

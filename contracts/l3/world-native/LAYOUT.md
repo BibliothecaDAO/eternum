@@ -1,7 +1,10 @@
-# Native storage and row protocol, revision 1
+# Native storage and row protocol
 
 Cairo 2.13.1 owns persistent storage. The row protocol is a projection for Herald; there is no public row writer. Each
 game-scoped storage key starts with `game_id`. Presets remain immutable per game.
+
+The settlement split and packed storage below require a fresh rehearsal deployment. No upgrade compatibility from the
+earlier four-domain slice is claimed. The populated replacement test covers append-only upgrades within this layout.
 
 ## Component layouts
 
@@ -18,18 +21,18 @@ nested offsets. This revision appends independent fields only.
 
 `TileOpt.data` retains the existing 128-bit encoding: structure bit 0, occupier category bits 1–8, occupier id bits
 9–40, biome bits 41–48, row bits 49–80, column bits 81–112, reward-extracted bit 113, layer bit 127. Occupancy updates
-preserve the remaining bits. Troop category and tier serialization retain the existing zero-based variant order; storage
-uses Cairo's native enum encoding. Herald consumes serialization, not storage slots.
+preserve the remaining bits. Troop category and tier serialization retain the existing zero-based variant order. Their
+packed storage is described below. Herald consumes serialization, not storage slots.
 
 The behavioral slice adds these independent component stores:
 
-| Component          | Storage                                                                                                                                            | Layout rule                                                                                                                                    |
-| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GameState`        | Games and immutable rules keyed by game; entity counters; points keyed by game and player                                                          | `GameRegistry` and `SliceRules` retain their field order. Changes to stored records need separate appended slots and an upgrade test.          |
-| `StructureState`   | Structure records and existence keyed by game and entity; explorer ids keyed by game, structure and index; ownership stored once in each structure | The variable explorer list has a fixed record count and indexed storage. Removal compacts that list and clears its tail.                       |
-| `ResourceState`    | Balances and production keyed by game, entity and resource; weight and `resource_exists` keyed by game and entity                                  | Sparse `ResourceBalance`, `ResourceProduction` and `ResourceWeight` rows expose these stores. Destruction clears each existing row explicitly. |
-| `BuildingState`    | Buildings and existence keyed by game, layer, outer coordinates and inner coordinates; building counts keyed by game and structure                 | Preserve the six-part building key and the three packed category counters.                                                                     |
-| `StructuresDomain` | Hyperstructure counts, seeds and completion flags; immutable resource rules and their initialization flag                                          | Configuration is set once for each game. Hyperstructure rows derive from the stored seed, completion flag and structure category.              |
+| Component          | Storage                                                                                                                                                                       | Layout rule                                                                                                                                    |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GameState`        | Games and immutable rules keyed by game; entity counters; points keyed by game and player                                                                                     | `GameRegistry` and `SliceRules` retain their field order. Changes to stored records need separate appended slots and an upgrade test.          |
+| `StructureState`   | Structure records keyed by game and entity; existence derives from nonzero category; explorer ids keyed by game, structure and index; ownership stored once in each structure | The variable explorer list has a fixed record count and indexed storage. Removal compacts that list and clears its tail.                       |
+| `ResourceState`    | Balances and production keyed by game, entity and resource; weight and `resource_exists` keyed by game and entity                                                             | Sparse `ResourceBalance`, `ResourceProduction` and `ResourceWeight` rows expose these stores. Destruction clears each existing row explicitly. |
+| `BuildingState`    | Buildings and existence keyed by game, layer, outer coordinates and inner coordinates; building counts keyed by game and structure                                            | Preserve the six-part building key and the three packed category counters.                                                                     |
+| `StructuresDomain` | Hyperstructure counts, seeds and completion flags; immutable resource rules and their initialization flag                                                                     | Configuration is set once for each game. Hyperstructure rows derive from the stored seed, completion flag and structure category.              |
 
 Component storage uses `v0` embedding. Field names must be unique across components embedded in the same domain;
 component names do not isolate colliding field names. Resource existence therefore uses `resource_exists`, distinct from
@@ -44,15 +47,15 @@ resource store.
 `StructuresDomain` appends `completed_hyperstructures`, keyed by game and entity. A true flag identifies an initialized,
 completed Blitz hyperstructure; existing discovered foundations retain the false default.
 
-Blitz settlement adds `SettlementState` to season and `SettlementPoolState` to map as independent component stores.
-`settlement_rules` and realm grant entries are immutable once configured; their absence is not a default preset. The
-pool stores candidate ordinals under `(game_id, index)` and a live count; coordinates are projected from the immutable
-grid rules. Removed tail entries are inaccessible past that count. Biome starting troops and realm resource traits are
-immutable grant tables initialized per game; neither table is compiled into settlement rules. `SettlementState` appends
-entry entitlements keyed by game and bound owner, and a player membership index for the existing duplicate-player guard.
-Only `PlayerEntry` projects entitlement consumption; the index is not another client fact. Realm grants and upgrade
-costs share the `ResourceAmount` value type; its `(resource_type: u8, amount: u128)` layout is unchanged from the former
-upgrade value.
+Settlement uses `SettlementState` in the settlement domain and `SettlementPoolState` to map as independent component
+stores. `settlement_rules` and realm grant entries are immutable once configured; their absence is not a default preset.
+The pool stores candidate ordinals under `(game_id, village, index)` and a live count; coordinates are projected from
+the immutable grid rules. Removed tail entries are inaccessible past that count. Biome starting troops and realm
+resource traits are immutable grant tables initialized per game; neither table is compiled into settlement rules.
+`SettlementState` appends entry entitlements keyed by game and bound owner, and a player membership index for the
+existing duplicate-player guard. Only `PlayerEntry` projects entitlement consumption; the index is not another client
+fact. Realm grants and upgrade costs share the `ResourceAmount` value type; its `(resource_type: u8, amount: u128)`
+layout is unchanged from the former upgrade value.
 
 `TroopState` appends `agent_count: Map<u32,u16>`. Explorer creation and destruction maintain it only for the reserved
 agent home id. Settlement displacement preserves this population through `AgentPopulation` events. No existing explorer
@@ -244,3 +247,32 @@ index outside the active prefix, which rejects duplicates without a separate all
 ownership, wonder identity and location remain in Structure; there is no duplicate Wonder row. SettleSeason appends
 command variant 14. Its owner is the retained admission wallet; execution does not re-resolve a binding that might have
 changed during recovery.
+
+## Village rehearsal layout
+
+This revision requires a fresh native rehearsal deployment. No live upgrade compatibility with the earlier slice is
+claimed. Settlement allocation, immutable grants and pass entitlements move from Season to Settlement; Season retains
+recorded execution and authentication. `Peers` gains the Settlement address. Cross-domain creation authenticates
+Settlement; direct player commands still enter only through Season's recorded execution interface.
+
+Structure existence is its nonzero base category. The separate existence map, duplicate category and village count are
+removed. `StructureBase` occupies one felt: counts, limits, creation time, level, category and the granted flag use bits
+0–96; coordinates use bits 128–191. Structure metadata occupies one u64: realm id at bits 0–15, Order at 16–23, wonder
+at 24 and connected realm at 32–63. The gaps are zero. These layouts retain the full ranges of their fields.
+
+`Troops` occupies four slots: u128 count, two u64 stamina fields in one u128, packed boosts and combat flags. Combat
+stores category at bits 0–1, tier at 2–3 and cooldown at 4–35. Boosts store damage, defense and stamina at bits 0–119,
+then exploration at 128–175. The struct's public serialization is unchanged. Immutable stamina, troop-limit and map
+rules each occupy three u128 words, packing consecutive fields without crossing a word boundary.
+
+The settlement planner keeps two candidate pools under `(game_id, village)` and one coordinate reservation map under
+`(game_id, x, y)`. Both use the existing grid. Pending realm candidates are reserved before village candidates,
+including Duel's two fixed entry bundles. A village candidate always contains one coordinate; its pool has no entry
+quota. Reservations survive candidate consumption, so neither pool can reuse a claimed location. Pool events project the
+available candidates; placed settlements project through Structure and TileOpt. The reservation map is internal planner
+state, not a second client occupancy fact.
+
+Village rules, indexed grants and all 22 ordered resource/weight pairs are immutable per game. Passes use
+`(game_id, pass_id)` and store owner plus the consuming village id; zero means unused. A pass is consumed only after
+successful creation in the same call, so rejected placement rolls back both reservation and consumption. The existing
+structure troop-grant flag records village army claims; there is no separate claimed row or per-realm village counter.

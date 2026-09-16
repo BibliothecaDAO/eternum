@@ -1,10 +1,11 @@
 {
-  "schemaIdentity": "4b208f5758cfb5903eac03cac2dc58c1bf2d70300db495ec16240760cf14e11a",
+  "schemaIdentity": "74c51a71b08c301347556d0fcd90bf49464fbc4208d0d2459126a36b73238e5a",
   "deployment": {
     "season": "0x101",
     "map": "0x102",
     "structures": "0x103",
-    "troops": "0x100"
+    "troops": "0x100",
+    "settlement": "0x105"
   },
   "raw": {
     "from_address": "0x102",

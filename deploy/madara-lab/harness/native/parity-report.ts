@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 
 export const requiredParityCases = {
+  village: "world_parity_village",
   season_ledger_pass: "world_parity_season_ledger_pass",
   season_ledger_order: "world_parity_season_ledger_order",
   season_ledger_empty: "world_parity_season_ledger_empty",
@@ -90,7 +91,10 @@ export function parseWorldParity(output: string) {
       rejections.push({ case: name(parts[1]), step: Number(parts[2]), explorerId: hex(parts[3]), timestamp: parts[4] });
     }
     const test = line.match(/^\[PASS\] eternum::native_parity::(\w+) .*l2_gas: ~(\d+)/);
-    if (test) passed.set(test[1], test[2]);
+    if (test) {
+      if (passed.has(test[1])) throw new Error(`Repeated parity result: ${test[1]}`);
+      passed.set(test[1], test[2]);
+    }
   }
   for (const observation of observations.values()) {
     if (!(observation.case in requiredParityCases)) throw new Error(`Unexpected parity case: ${observation.case}`);

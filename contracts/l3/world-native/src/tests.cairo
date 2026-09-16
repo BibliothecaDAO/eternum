@@ -2,7 +2,10 @@ mod fixtures;
 mod realms;
 mod recorded;
 mod resources;
+mod rule_storage;
 mod settlement;
+mod structure_storage;
+mod village;
 use eternum_randomness_protocol::entrypoint::{
     IRecordedExecutionViewsDispatcher, IRecordedExecutionViewsDispatcherTrait,
 };
@@ -56,6 +59,9 @@ fn deploy(name: ByteArray, calldata: @Array<felt252>) -> (ContractAddress, Class
     (address, *class.class_hash)
 }
 fn setup(activate: bool) -> Deployment {
+    setup_with_structures(activate, "MapDomain")
+}
+fn setup_with_structures(activate: bool, structures_class: ByteArray) -> Deployment {
     let pair = keypair(12345);
     recorded::deploy_submitter(submitter());
     let (actor, account_class) = deploy("AccountFixture", @array![pair.public_key]);
@@ -64,19 +70,20 @@ fn setup(activate: bool) -> Deployment {
         "SeasonDomain", @array![authority().into(), submitter().into(), registry.into(), account_class.into()],
     );
     let (map, _) = deploy("MapDomain", @array![authority().into()]);
-    let (structures, _) = deploy("MapDomain", @array![authority().into()]);
+    let (structures, _) = deploy(structures_class, @array![authority().into()]);
     let (troops, _) = deploy("TroopFixture", @array![authority().into()]);
-    let peers = Peers { season, map, structures, troops };
-    for address in array![season, map, structures, troops] {
+    let (settlement, _) = deploy("SettlementDomain", @array![authority().into()]);
+    let peers = Peers { season, map, structures, troops, settlement };
+    for address in array![season, map, structures, troops, settlement] {
         start_cheat_caller_address(address, authority());
         IDomainDispatcher { contract_address: address }.configure(peers);
     }
     if activate {
-        for address in array![season, map, structures, troops] {
+        for address in array![season, map, structures, troops, settlement] {
             IDomainDispatcher { contract_address: address }.activate();
         }
     }
-    for address in array![season, map, structures, troops] {
+    for address in array![season, map, structures, troops, settlement] {
         stop_cheat_caller_address(address);
     }
     if activate {
@@ -343,8 +350,9 @@ fn registered_account_with_unapproved_class_is_rejected_before_key_read() {
     let (map, _) = deploy("MapDomain", @array![authority().into()]);
     let (structures, _) = deploy("MapDomain", @array![authority().into()]);
     let (troops, _) = deploy("TroopFixture", @array![authority().into()]);
-    let peers = Peers { season, map, structures, troops };
-    for address in array![season, map, structures, troops] {
+    let (settlement, _) = deploy("SettlementDomain", @array![authority().into()]);
+    let peers = Peers { season, map, structures, troops, settlement };
+    for address in array![season, map, structures, troops, settlement] {
         start_cheat_caller_address(address, authority());
         IDomainDispatcher { contract_address: address }.configure(peers);
     }
@@ -508,8 +516,9 @@ fn activation_rejects_peer_mismatch_authority_mismatch_and_double_activation() {
         let (map, _) = deploy("MapDomain", @array![other_authority.into()]);
         let (structures, _) = deploy("MapDomain", @array![authority().into()]);
         let (troops, _) = deploy("MapDomain", @array![authority().into()]);
-        let peers = Peers { season, map, structures, troops };
-        for address in array![season, structures, troops] {
+        let (settlement, _) = deploy("SettlementDomain", @array![authority().into()]);
+        let peers = Peers { season, map, structures, troops, settlement };
+        for address in array![season, structures, troops, settlement] {
             start_cheat_caller_address(address, authority());
             IDomainDispatcher { contract_address: address }.configure(peers);
         }

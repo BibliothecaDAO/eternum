@@ -6,6 +6,7 @@ pub struct Peers {
     pub map: ContractAddress,
     pub structures: ContractAddress,
     pub troops: ContractAddress,
+    pub settlement: ContractAddress,
 }
 
 #[derive(Copy, Drop, Serde, starknet::Store)]
@@ -56,7 +57,8 @@ pub mod Lifecycle {
                 peers.season.is_non_zero()
                     && peers.map.is_non_zero()
                     && peers.structures.is_non_zero()
-                    && peers.troops.is_non_zero(),
+                    && peers.troops.is_non_zero()
+                    && peers.settlement.is_non_zero(),
                 "zero peer",
             );
             assert!(
@@ -65,7 +67,11 @@ pub mod Lifecycle {
                     && peers.season != peers.troops
                     && peers.map != peers.structures
                     && peers.map != peers.troops
-                    && peers.structures != peers.troops,
+                    && peers.structures != peers.troops
+                    && peers.settlement != peers.season
+                    && peers.settlement != peers.map
+                    && peers.settlement != peers.structures
+                    && peers.settlement != peers.troops,
                 "duplicate peer",
             );
             let address = get_contract_address();
@@ -73,7 +79,8 @@ pub mod Lifecycle {
                 address == peers.season
                     || address == peers.map
                     || address == peers.structures
-                    || address == peers.troops,
+                    || address == peers.troops
+                    || address == peers.settlement,
                 "missing self peer",
             );
             state.peers = peers;
@@ -86,7 +93,7 @@ pub mod Lifecycle {
             assert!(!state.active, "already active");
             let peers = state.peers;
             assert!(peers.season.is_non_zero(), "not configured");
-            for address in array![peers.season, peers.map, peers.structures, peers.troops] {
+            for address in array![peers.season, peers.map, peers.structures, peers.troops, peers.settlement] {
                 let peer = IDomainDispatcher { contract_address: address }.domain_state();
                 assert!(peer.peers == peers, "peer mismatch");
                 assert!(peer.authority == state.authority, "authority mismatch");
@@ -124,6 +131,7 @@ pub mod Lifecycle {
                             map: 0.try_into().unwrap(),
                             structures: 0.try_into().unwrap(),
                             troops: 0.try_into().unwrap(),
+                            settlement: 0.try_into().unwrap(),
                         },
                         active: false,
                     },

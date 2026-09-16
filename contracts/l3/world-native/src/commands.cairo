@@ -50,6 +50,8 @@ pub enum Command {
     ProvisionRealm: u32,
     CreateReservedHyperstructure: crate::troops::Coord,
     SettleSeason: crate::realms::SettleSeason,
+    SettleVillage: crate::village::SettleVillage,
+    ReceiveVillageArmy: u32,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]

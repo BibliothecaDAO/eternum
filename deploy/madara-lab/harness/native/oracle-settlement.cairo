@@ -30,8 +30,8 @@ pub fn configure_entry(mut worlds: PairedWorld, mode: SettlementMode, cosmetics:
     } else {
         0.try_into().unwrap()
     };
-    start_cheat_caller_address(worlds.peers.season, authority());
-    ISettlementConfigurationDispatcher { contract_address: worlds.peers.season }
+    start_cheat_caller_address(worlds.peers.settlement, authority());
+    ISettlementConfigurationDispatcher { contract_address: worlds.peers.settlement }
         .configure_settlement(
             1,
             SettlementRules {
@@ -46,7 +46,7 @@ pub fn configure_entry(mut worlds: PairedWorld, mode: SettlementMode, cosmetics:
             },
             crate::native_inputs::realm_grants(),
         );
-    stop_cheat_caller_address(worlds.peers.season);
+    stop_cheat_caller_address(worlds.peers.settlement);
     let ptr = Model::<WorldConfig>::ptr_from_keys(1_u32);
     worlds
         .oracle
@@ -91,7 +91,7 @@ fn reserve_pair(worlds: PairedWorld, count: u8, step: u32) {
     let (order, outcome) = execute_outcome(worlds, Command::ReserveHyperstructures(count), 1800, 0);
     assert!(outcome);
     println!("FACT_ACTION {} {} {} {} {}", worlds.case, order, 'reserve_hyperstructures', 1800, outcome);
-    let rules = ISettlementViewsDispatcher { contract_address: worlds.peers.season }.settlement_rules(1);
+    let rules = ISettlementViewsDispatcher { contract_address: worlds.peers.settlement }.settlement_rules(1);
     let placed = ISettlementPoolDispatcher { contract_address: worlds.peers.map }.reserved_hyperstructures(1);
     let center = world_native::troops::Coord { alt: false, x: 2147483626, y: 2147483626 };
     for index in 0..placed {
@@ -103,9 +103,11 @@ fn reserve_pair(worlds: PairedWorld, count: u8, step: u32) {
     }
 }
 
-fn entry_owner(worlds: PairedWorld) -> ContractAddress {
-    world_native::settlement::ISettlementEntryDispatcherTrait::settlement_admission(
-        world_native::settlement::ISettlementEntryDispatcher { contract_address: worlds.peers.season }, 1, worlds.actor,
+pub fn entry_owner(worlds: PairedWorld) -> ContractAddress {
+    world_native::settlement::ISettlementAdmissionDispatcherTrait::settlement_admission(
+        world_native::settlement::ISettlementAdmissionDispatcher { contract_address: worlds.peers.season },
+        1,
+        worlds.actor,
     )
         .owner
 }
@@ -161,7 +163,7 @@ fn settle_outcome_pair(
 }
 
 pub fn compare_blitz_entry(worlds: PairedWorld, step: u32) {
-    let views = ISettlementViewsDispatcher { contract_address: worlds.peers.season };
+    let views = ISettlementViewsDispatcher { contract_address: worlds.peers.settlement };
     compare_facts(
         worlds.case,
         step,
@@ -225,7 +227,18 @@ pub fn settlement() {
             start_cheat_caller_address(address, *player);
             let original = attempts.provision(address, *id);
             stop_cheat_caller_address(address);
+            let previous_home = IStructuresDispatcher { contract_address: worlds.peers.structures }
+                .structure(ResourceKey { game_id: 1, entity_id: *id })
+                .unwrap();
+            let previous_tiles = surrounding_tiles(
+                worlds,
+                world_native::troops::Coord {
+                    alt: false, x: previous_home.base.coord_x, y: previous_home.base.coord_y,
+                },
+                1,
+            );
             let (order, native) = execute_outcome(player_worlds, Command::ProvisionRealm(*id), 2040, 0);
+            assert_surroundings_unchanged(worlds, previous_tiles);
             println!("FACT_ACTION {} {} {} {} {}", worlds.case, order, 'provision_realm', 2040, native);
             assert!(original == *expected && native == original, "provisioning rejection differs");
             compare_home(worlds, step, *id);
@@ -235,9 +248,6 @@ pub fn settlement() {
             let coord = world_native::troops::Coord { alt: false, x: home.base.coord_x, y: home.base.coord_y };
             compare_realm_buildings(worlds, step, *id, coord);
             compare_tile(worlds, step, coord);
-            for direction in 0_u8..6 {
-                compare_tile(worlds, step, world_native::geometry::neighbor(coord, direction));
-            }
             step += 1;
         }
     }
@@ -366,15 +376,15 @@ pub fn entry_ledger() {
                 registered: true,
             },
         );
-    start_cheat_caller_address(worlds.peers.season, authority());
+    start_cheat_caller_address(worlds.peers.settlement, authority());
     world_native::settlement::ISettlementEntryDispatcherTrait::register_entitlement(
-        world_native::settlement::ISettlementEntryDispatcher { contract_address: worlds.peers.season },
+        world_native::settlement::ISettlementEntryDispatcher { contract_address: worlds.peers.settlement },
         EntryKey { game_id: 1, owner: entry_owner(worlds) },
         world_native::settlement::EntryEntitlement {
             realm_id: 7, metadata_1: 8, metadata_2: 9, metadata_3: 10, pass_kind: 0,
         },
     );
-    stop_cheat_caller_address(worlds.peers.season);
+    stop_cheat_caller_address(worlds.peers.settlement);
     settle_outcome_pair(worlds, command, 1800, 50, 11, true);
 }
 
@@ -602,10 +612,25 @@ fn promote_fixture_agent(ref worlds: PairedWorld, home: u32, id: u32) {
             troop_guards: native.troop_guards,
             resources_packed: native.resources_packed,
             metadata: native.metadata,
-            category: native.category,
         },
     );
     set_native_fixture(worlds.peers.structures, selector!("explorers"), array![1, home.into(), 0].span(), 0_u32);
+    assert!(
+        ITroopsDispatcher { contract_address: worlds.peers.troops }
+            .explorer(ExplorerKey { game_id: 1, explorer_id: id })
+            .unwrap() == world_native::troops::ExplorerTroops {
+                owner: original.owner, troops: convert(original.troops), coord: convert(original.coord),
+            },
+        "agent fixture changed explorer facts",
+    );
+    assert!(
+        IStructuresDispatcher { contract_address: worlds.peers.structures }
+            .structure(ResourceKey { game_id: 1, entity_id: home })
+            .unwrap()
+            .base == native
+            .base,
+        "agent fixture changed home facts",
+    );
     let coord = original.coord;
     let mut tile: TileOpt = worlds.oracle.read_model((1, coord.alt, coord.x, coord.y));
     const AGENT_KNIGHT_T1: u8 = 24;
@@ -663,4 +688,32 @@ pub fn occupied() {
     settle_outcome_pair(worlds, command, 1800, 19, 1, false);
     compare_home(worlds, 1, home);
     compare_tile(worlds, 1, coord);
+}
+
+
+// Frozen reveal rule: settlement preserves every neighbouring tile, including pre-existing reveals.
+pub fn surrounding_tiles(
+    worlds: PairedWorld, coord: world_native::troops::Coord, distance: u32,
+) -> Span<(world_native::map::TileKey, Option<world_native::map::TileOpt>)> {
+    let map = IMapDispatcher { contract_address: worlds.peers.map };
+    let mut tiles = array![];
+    for radius in 1..distance + 1 {
+        for direction in 0_u8..6 {
+            let key = world_native::geometry::tile_key(
+                1, world_native::geometry::neighbor_at_distance(coord, direction, radius),
+            );
+            tiles.append((key, map.tile(key)));
+        }
+    }
+    tiles.span()
+}
+
+pub fn assert_surroundings_unchanged(
+    worlds: PairedWorld, before: Span<(world_native::map::TileKey, Option<world_native::map::TileOpt>)>,
+) {
+    let map = IMapDispatcher { contract_address: worlds.peers.map };
+    for previous in before {
+        let (key, value) = *previous;
+        assert!(map.tile(key) == value, "settlement changed a neighbouring tile");
+    }
 }

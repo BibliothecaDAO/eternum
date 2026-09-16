@@ -23,8 +23,7 @@
     "Recorded execution time is supplied as the oracle block time.",
     "Pool ordinals and sparse allocation indices are internal storage; compare available coordinates, remaining count, duplicate rejections and the next selected canonical realm. Structure owns realm identity and current ownership.",
     "Canonical trait data is shared immutable deployment configuration rather than compiled code; every entry is compared with the pinned catalogue.",
-    "Wonder identity, position and realm id are projected from the canonical structure instead of duplicated in a Wonder row.",
-    "The original reveal behaviour remains until the village commit applies the frozen reveal rule."
+    "Wonder identity, position and realm id are projected from the canonical structure instead of duplicated in a Wonder row."
   ],
   "parityCases": [
     "season_settlement",
@@ -73,7 +72,15 @@
     "Reuse the existing settlement planner and sparse resource facts instead of a second realm state representation.",
     "Remove the allocation-player map and row: no gameplay or client reader used it, and a consumed reverse index enforces the same reservation guard without a second ownership fact."
   ],
-  "ruledDivergences": [],
+  "ruledDivergences": [
+    {
+      "fact": "Settlement neighbour visibility",
+      "oracle": "Realm provisioning reveals neighbouring biomes; Eternum settlement also reveals village-slot tiles.",
+      "native": "Realm and village settlement reveal only their own tile. All neighbouring native tiles must equal their pre-action state.",
+      "cause": "Frozen village and reveal ruling.",
+      "projection": "The paired action snapshots native neighbours before execution and asserts their complete state is unchanged afterwards. Own-tile facts and every other gameplay fact remain paired."
+    }
+  ],
   "nativeCommands": {
     "settle": "settle_season",
     "settle_dev": "settle_season"

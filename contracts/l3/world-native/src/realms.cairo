@@ -40,18 +40,6 @@ pub trait ISeasonPlacement<T> {
     fn claim_season_settlement(ref self: T, game_id: u32, settled_count: u16, seed: u256) -> Coord;
 }
 
-#[starknet::interface]
-pub trait ISeasonRealmCreation<T> {
-    fn create_season_realm(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        realm_id: u16,
-        traits: RealmTraits,
-        coord: Coord,
-        context: ExecutionContext,
-    ) -> u32;
-}
 
 pub fn decode_traits(packed: u32) -> RealmTraits {
     let wonder = (packed / 0x4000000).try_into().unwrap();

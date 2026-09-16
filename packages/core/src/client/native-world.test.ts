@@ -73,7 +73,7 @@ describe("native bindings in the shared game client", () => {
     write("DomainState", [0x101n], {
       address: "0x101",
       authority: "0x999",
-      peers: { season: "0x101", map: "0x102", structures: "0x103", troops: "0x104" },
+      peers: { season: "0x101", map: "0x102", structures: "0x103", troops: "0x104", settlement: "0x105" },
       active: true,
     });
     write("ExecutionHead", [0x101n], {
@@ -150,8 +150,7 @@ describe("native bindings in the shared game client", () => {
       },
       troop_explorers: [],
       resources_packed: "0",
-      category: 1,
-      metadata: { realm_id: 0, order: 0, has_wonder: false, villages_count: 0, village_realm: 0 },
+      metadata: { realm_id: 0, order: 0, has_wonder: false, village_realm: 0 },
     };
     write("Structure", [1n, 12n], { ...structure, game_id: 1, entity_id: 12, owner: "0x111" });
     write("Structure", [1n, 9n], { ...structure, game_id: 1, entity_id: 9, owner: "0x111" });

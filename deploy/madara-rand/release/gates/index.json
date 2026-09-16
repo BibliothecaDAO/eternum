@@ -120,6 +120,16 @@
         "../native/season-admission/madara-checks.json"
       ],
       "note": "Normal and selected realm payloads bind the retained wallet and command commitment. Native and protocol assertions and the original random derivation pass. No rebuilt image or deployed Eternum settlement is claimed."
+    },
+    {
+      "gate": "Village admission retains the bound pass owner; shared placement and native protocol conformance",
+      "status": "passed_source_conformance",
+      "evidence": [
+        "../native/village-admission/report.json",
+        "../native/village-admission/native-abi.json",
+        "../native/village-admission/madara-checks.json"
+      ],
+      "note": "The five-domain layout and event codec require a fresh rehearsal deployment. No rebuilt image or deployed village run is claimed."
     }
   ],
   "historicalRehearsals": "historical-index.json",
@@ -244,7 +254,24 @@
     "../native/season-admission/rust-clippy.log": "a5887e1c4948c7b416c989ef310d2120aff52ab7094dcb1cb9b829543d9a1b3b",
     "../native/season-admission/rust-fmt.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "../native/season-admission/rust-vectors.log": "e70a971bd03281d47e5218cb78904abedc217bb513fcd458b1af78221a4fb0b3",
-    "../native/season-admission/schema-dependencies.log": "8d363312cfa907f1a898d5d3513f65044a39b482b8e08767faa066e6108c7c0d"
+    "../native/season-admission/schema-dependencies.log": "8d363312cfa907f1a898d5d3513f65044a39b482b8e08767faa066e6108c7c0d",
+    "../native/village-admission/cairo-vectors.log": "6bf96bf20bee3bbc5d2521fd24a925ddbad0a3c2095fadca0089f6350a26ed07",
+    "../native/village-admission/current-game.log": "c79af80b46f05b4de0f4a8381ad46f419f3c221455e9538a9d60481a5a3956bf",
+    "../native/village-admission/madara-checks.json": "20c355750876d18b7b27fd3b421a1af9d77b55b6795078abbc1070a430cef549",
+    "../native/village-admission/madara-pnpm-run-format.log": "60829aa45abc0a9f68606e39d10b09487c5dc081c9a265e6323bd81dc956af99",
+    "../native/village-admission/madara-pnpm-run-knip.log": "fc3f99140419c705dab067a1e5c3e6c55b0847110d08b8642957b109d8c24236",
+    "../native/village-admission/madara-scarb-fmt.log": "dcb30ebfab365955648ddc18b7ab7e32232cd78055054e1f93c86e87f4a97984",
+    "../native/village-admission/native-abi.json": "7ee4e6183cc86c772921dd892864ece06926c86a8dbb94f8e849061a22bafea9",
+    "../native/village-admission/native-abi.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "../native/village-admission/native-build.log": "369a238363530e5d4f97bbf142ab9a621b338ca39e29d96aa50939a5f1ee89ec",
+    "../native/village-admission/native-conformance.log": "5679b1f83218073208829f92511a4b0ef10938366a330b14f7cbcc89f6732d71",
+    "../native/village-admission/native-schema.log": "e380981578d8708fdcb1e1159590ec956559f4ce0959813db15b343bfd2553f8",
+    "../native/village-admission/protocol-build.log": "c1d8f08b5097fe3b722d6b23b701ba5a54be4769247b1d7212a9cbb191c084f7",
+    "../native/village-admission/report.json": "3608668a8bac5069d179652b859473766efc946561d6524d54df99c742a7ff52",
+    "../native/village-admission/rust-clippy.log": "cbffff3a7b52bfade3b1a821146fdc1b2aeb64fb5c1b4af79fdddeb6677cbf63",
+    "../native/village-admission/rust-fmt.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "../native/village-admission/rust-vectors.log": "2e40952b4ac82db8f7e80bd6220c7bcf0bd9b575905b8487be875f5750019d46",
+    "../native/village-admission/schema-dependencies.log": "b4bb44f3b7e49ad51b7dd62b343afd90fc043a6fefb120bac676047b0268eeb9"
   },
   "drills": [
     {

@@ -16,7 +16,7 @@ pub struct TroopDamageConfig {
     pub t3_damage_multiplier: u128,
 }
 
-#[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct TroopStaminaConfig {
     // Base stamina settings
     pub stamina_gain_per_tick: u16, // Stamina gained per tick
@@ -40,7 +40,7 @@ pub struct TroopStaminaConfig {
     pub stamina_travel_fish_cost: u32,
 }
 
-#[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct TroopLimitConfig {
     // Guard specific settings
     pub guard_resurrection_delay: u16,
@@ -79,7 +79,7 @@ pub struct BiomeClimateConfig {
     pub moisture_seed: u32,
 }
 
-#[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct MapConfig {
     pub reward_resource_amount: u16,
     pub shards_mines_win_probability: u16,
@@ -181,4 +181,138 @@ pub struct BattleConfig {
     pub regular_immunity_ticks: u8,
     pub village_immunity_ticks: u8,
     pub village_raid_immunity_ticks: u8,
+}
+
+// Each word holds consecutive fields without crossing a 128-bit boundary.
+#[derive(Copy, Drop, starknet::Store)]
+pub struct PackedRuleWords {
+    pub first: u128,
+    pub second: u128,
+    pub third: u128,
+}
+
+pub impl TroopStaminaConfigPacking of starknet::storage_access::StorePacking<TroopStaminaConfig, PackedRuleWords> {
+    fn pack(value: TroopStaminaConfig) -> PackedRuleWords {
+        PackedRuleWords {
+            first: value.stamina_gain_per_tick.into()
+                + value.stamina_initial.into() * 0x10000
+                + value.stamina_bonus_value.into() * 0x100000000
+                + value.stamina_knight_max.into() * 0x1000000000000
+                + value.stamina_paladin_max.into() * 0x10000000000000000
+                + value.stamina_crossbowman_max.into() * 0x100000000000000000000
+                + value.stamina_attack_req.into() * 0x1000000000000000000000000
+                + value.stamina_defense_req.into() * 0x10000000000000000000000000000,
+            second: value.stamina_explore_stamina_cost.into()
+                + value.stamina_travel_stamina_cost.into() * 0x10000
+                + value.stamina_explore_wheat_cost.into() * 0x100000000
+                + value.stamina_explore_fish_cost.into() * 0x10000000000000000
+                + value.stamina_travel_wheat_cost.into() * 0x1000000000000000000000000,
+            third: value.stamina_travel_fish_cost.into(),
+        }
+    }
+    fn unpack(value: PackedRuleWords) -> TroopStaminaConfig {
+        TroopStaminaConfig {
+            stamina_gain_per_tick: (value.first % 0x10000).try_into().unwrap(),
+            stamina_initial: (value.first / 0x10000 % 0x10000).try_into().unwrap(),
+            stamina_bonus_value: (value.first / 0x100000000 % 0x10000).try_into().unwrap(),
+            stamina_knight_max: (value.first / 0x1000000000000 % 0x10000).try_into().unwrap(),
+            stamina_paladin_max: (value.first / 0x10000000000000000 % 0x10000).try_into().unwrap(),
+            stamina_crossbowman_max: (value.first / 0x100000000000000000000 % 0x10000).try_into().unwrap(),
+            stamina_attack_req: (value.first / 0x1000000000000000000000000 % 0x10000).try_into().unwrap(),
+            stamina_defense_req: (value.first / 0x10000000000000000000000000000).try_into().unwrap(),
+            stamina_explore_stamina_cost: (value.second % 0x10000).try_into().unwrap(),
+            stamina_travel_stamina_cost: (value.second / 0x10000 % 0x10000).try_into().unwrap(),
+            stamina_explore_wheat_cost: (value.second / 0x100000000 % 0x100000000).try_into().unwrap(),
+            stamina_explore_fish_cost: (value.second / 0x10000000000000000 % 0x100000000).try_into().unwrap(),
+            stamina_travel_wheat_cost: (value.second / 0x1000000000000000000000000).try_into().unwrap(),
+            stamina_travel_fish_cost: (value.third % 0x100000000).try_into().unwrap(),
+        }
+    }
+}
+
+pub impl TroopLimitConfigPacking of starknet::storage_access::StorePacking<TroopLimitConfig, PackedRuleWords> {
+    fn pack(value: TroopLimitConfig) -> PackedRuleWords {
+        PackedRuleWords {
+            first: value.guard_resurrection_delay.into()
+                + value.mercenaries_troop_lower_bound.into() * 0x10000
+                + value.mercenaries_troop_upper_bound.into() * 0x100000000
+                + value.agents_troop_lower_bound.into() * 0x1000000000000
+                + value.agents_troop_upper_bound.into() * 0x10000000000000000
+                + value.settlement_deployment_cap.into() * 0x100000000000000000000,
+            second: value.city_deployment_cap.into()
+                + value.kingdom_deployment_cap.into() * 0x100000000
+                + value.empire_deployment_cap.into() * 0x10000000000000000
+                + value.t1_tier_strength.into() * 0x1000000000000000000000000
+                + value.t2_tier_strength.into() * 0x100000000000000000000000000
+                + value.t3_tier_strength.into() * 0x10000000000000000000000000000
+                + value.t1_tier_modifier.into() * 0x1000000000000000000000000000000,
+            third: value.t2_tier_modifier.into() + value.t3_tier_modifier.into() * 0x100,
+        }
+    }
+    fn unpack(value: PackedRuleWords) -> TroopLimitConfig {
+        TroopLimitConfig {
+            guard_resurrection_delay: (value.first % 0x10000).try_into().unwrap(),
+            mercenaries_troop_lower_bound: (value.first / 0x10000 % 0x10000).try_into().unwrap(),
+            mercenaries_troop_upper_bound: (value.first / 0x100000000 % 0x10000).try_into().unwrap(),
+            agents_troop_lower_bound: (value.first / 0x1000000000000 % 0x10000).try_into().unwrap(),
+            agents_troop_upper_bound: (value.first / 0x10000000000000000 % 0x10000).try_into().unwrap(),
+            settlement_deployment_cap: (value.first / 0x100000000000000000000 % 0x100000000).try_into().unwrap(),
+            city_deployment_cap: (value.second % 0x100000000).try_into().unwrap(),
+            kingdom_deployment_cap: (value.second / 0x100000000 % 0x100000000).try_into().unwrap(),
+            empire_deployment_cap: (value.second / 0x10000000000000000 % 0x100000000).try_into().unwrap(),
+            t1_tier_strength: (value.second / 0x1000000000000000000000000 % 0x100).try_into().unwrap(),
+            t2_tier_strength: (value.second / 0x100000000000000000000000000 % 0x100).try_into().unwrap(),
+            t3_tier_strength: (value.second / 0x10000000000000000000000000000 % 0x100).try_into().unwrap(),
+            t1_tier_modifier: (value.second / 0x1000000000000000000000000000000).try_into().unwrap(),
+            t2_tier_modifier: (value.third % 0x100).try_into().unwrap(),
+            t3_tier_modifier: (value.third / 0x100 % 0x100).try_into().unwrap(),
+        }
+    }
+}
+
+pub impl MapConfigPacking of starknet::storage_access::StorePacking<MapConfig, PackedRuleWords> {
+    fn pack(value: MapConfig) -> PackedRuleWords {
+        PackedRuleWords {
+            first: value.reward_resource_amount.into()
+                + value.shards_mines_win_probability.into() * 0x10000
+                + value.shards_mines_fail_probability.into() * 0x100000000
+                + value.agent_discovery_prob.into() * 0x1000000000000
+                + value.agent_discovery_fail_prob.into() * 0x10000000000000000
+                + value.camp_win_probability.into() * 0x100000000000000000000
+                + value.camp_fail_probability.into() * 0x1000000000000000000000000
+                + value.holysite_win_probability.into() * 0x10000000000000000000000000000,
+            second: value.holysite_fail_probability.into()
+                + value.bitcoin_mine_win_probability.into() * 0x10000
+                + value.bitcoin_mine_fail_probability.into() * 0x100000000
+                + value.hyps_win_prob.into() * 0x1000000000000
+                + value.hyps_fail_prob.into() * 0x100000000000000000000
+                + value.hyps_fail_prob_increase_p_hex.into() * 0x10000000000000000000000000000,
+            third: value.hyps_fail_prob_increase_p_fnd.into()
+                + value.relic_discovery_interval_sec.into() * 0x10000
+                + value.relic_hex_dist_from_center.into() * 0x100000000
+                + value.relic_chest_relics_per_chest.into() * 0x10000000000,
+        }
+    }
+    fn unpack(value: PackedRuleWords) -> MapConfig {
+        MapConfig {
+            reward_resource_amount: (value.first % 0x10000).try_into().unwrap(),
+            shards_mines_win_probability: (value.first / 0x10000 % 0x10000).try_into().unwrap(),
+            shards_mines_fail_probability: (value.first / 0x100000000 % 0x10000).try_into().unwrap(),
+            agent_discovery_prob: (value.first / 0x1000000000000 % 0x10000).try_into().unwrap(),
+            agent_discovery_fail_prob: (value.first / 0x10000000000000000 % 0x10000).try_into().unwrap(),
+            camp_win_probability: (value.first / 0x100000000000000000000 % 0x10000).try_into().unwrap(),
+            camp_fail_probability: (value.first / 0x1000000000000000000000000 % 0x10000).try_into().unwrap(),
+            holysite_win_probability: (value.first / 0x10000000000000000000000000000).try_into().unwrap(),
+            holysite_fail_probability: (value.second % 0x10000).try_into().unwrap(),
+            bitcoin_mine_win_probability: (value.second / 0x10000 % 0x10000).try_into().unwrap(),
+            bitcoin_mine_fail_probability: (value.second / 0x100000000 % 0x10000).try_into().unwrap(),
+            hyps_win_prob: (value.second / 0x1000000000000 % 0x100000000).try_into().unwrap(),
+            hyps_fail_prob: (value.second / 0x100000000000000000000 % 0x100000000).try_into().unwrap(),
+            hyps_fail_prob_increase_p_hex: (value.second / 0x10000000000000000000000000000).try_into().unwrap(),
+            hyps_fail_prob_increase_p_fnd: (value.third % 0x10000).try_into().unwrap(),
+            relic_discovery_interval_sec: (value.third / 0x10000 % 0x10000).try_into().unwrap(),
+            relic_hex_dist_from_center: (value.third / 0x100000000 % 0x100).try_into().unwrap(),
+            relic_chest_relics_per_chest: (value.third / 0x10000000000 % 0x100).try_into().unwrap(),
+        }
+    }
 }

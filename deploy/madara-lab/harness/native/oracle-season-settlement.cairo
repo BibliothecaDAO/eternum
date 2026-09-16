@@ -1,6 +1,6 @@
 use world_native::realms::{ISeasonRealmsDispatcher, ISeasonRealmsDispatcherTrait, SettleSeason};
 use world_native::settlement::{
-    EntryEntitlement, EntryKey, ISettlementEntryDispatcher, ISettlementEntryDispatcherTrait, ISettlementViewsDispatcher,
+    ISettlementAdmissionDispatcher, ISettlementAdmissionDispatcherTrait, EntryEntitlement, EntryKey, ISettlementEntryDispatcher, ISettlementEntryDispatcherTrait, ISettlementViewsDispatcher,
     ISettlementViewsDispatcherTrait, SettlementMode,
 };
 use crate::models::realm_allocation::{RealmAllocationImpl, RealmAllocationPool};
@@ -24,15 +24,15 @@ fn configure_season(worlds: PairedWorld, ledger: bool, mode: SettlementMode) -> 
     let records = crate::native_inputs::canonical_realm_traits();
     for index in 0..records.len() {
         set_native_fixture(
-            worlds.peers.season, selector!("traits"), array![(index + 1).into()].span(), *records.at(index),
+            worlds.peers.settlement, selector!("traits"), array![(index + 1).into()].span(), *records.at(index),
         );
     }
-    set_native_fixture(worlds.peers.season, selector!("catalogue_count"), array![].span(), 8000_u32);
+    set_native_fixture(worlds.peers.settlement, selector!("catalogue_count"), array![].span(), 8000_u32);
     worlds
 }
 
 fn command(worlds: PairedWorld, selected_realm: Option<u32>) -> SettleSeason {
-    let admission = ISettlementEntryDispatcher { contract_address: worlds.peers.season }
+    let admission = ISettlementAdmissionDispatcher { contract_address: worlds.peers.season }
         .settlement_admission(1, worlds.actor);
     SettleSeason { name: 'season settler', owner: admission.owner, selected_realm }
 }
@@ -45,7 +45,15 @@ fn settle_pair(worlds: PairedWorld, command: SettleSeason, timestamp: u64, root:
     start_cheat_caller_address(address, worlds.actor);
     let original = attempts.settle_season(address, command.name, command.selected_realm);
     stop_cheat_caller_address(address);
+    let settled: crate::models::config::BlitzSettlement = ModelStorage::read_model(@worlds.oracle, (1, worlds.actor));
+    let mut previous_tiles = array![];
+    for id in settled.structure_ids {
+        let structure: Structure = ModelStorage::read_model(@worlds.oracle, (1, *id));
+        let coord = world_native::troops::Coord { alt: false, x: structure.base.coord_x, y: structure.base.coord_y };
+        for tile in super::settlement::surrounding_tiles(worlds, coord, 2) { previous_tiles.append(*tile); }
+    }
     let (order, native) = execute_outcome(worlds, Command::SettleSeason(command), timestamp, root.into());
+    super::settlement::assert_surroundings_unchanged(worlds, previous_tiles.span());
     assert!(native == original && native == expected, "season settlement outcome differs at {}", step);
     if original {
         assert_root_consumed(worlds, tx_hash, root, step);
@@ -65,21 +73,16 @@ fn compare_settlement(worlds: PairedWorld, step: u32) {
     super::settlement::compare_blitz_entry(worlds, step);
     compare_name(worlds, step, worlds.actor);
     let settled: crate::models::config::BlitzSettlement = ModelStorage::read_model(@worlds.oracle, (1, worlds.actor));
-    let realms = ISeasonRealmsDispatcher { contract_address: worlds.peers.season };
+    let realms = ISeasonRealmsDispatcher { contract_address: worlds.peers.settlement };
     for id in settled.structure_ids {
         compare_home(worlds, step, *id);
         let structure: Structure = ModelStorage::read_model(@worlds.oracle, (1, *id));
         let coord = world_native::troops::Coord { alt: false, x: structure.base.coord_x, y: structure.base.coord_y };
         super::settlement::compare_realm_buildings(worlds, step, *id, coord);
         compare_tile(worlds, step, coord);
-        for direction in 0_u8..6 {
-            let adjacent = world_native::geometry::neighbor(coord, direction);
-            compare_tile(worlds, step, adjacent);
-            compare_tile(worlds, step, world_native::geometry::neighbor(adjacent, direction));
-        }
     }
     let original_remaining = crate::models::realm_allocation::RealmAllocationImpl::remaining(worlds.oracle, 1);
-    let progress = ISettlementViewsDispatcher { contract_address: worlds.peers.season }.settlement_progress(1);
+    let progress = ISettlementViewsDispatcher { contract_address: worlds.peers.settlement }.settlement_progress(1);
     assert!(8000 - progress.realm_count.into() == original_remaining);
     // Compare subsequent draw outcomes over the full pool; internal permutation slots are not player facts.
     for seed in array![0_u256, 1, 2, 3, 71419, 1234, 5678, 0xffffffffffffffffffffffffffffffff] {
@@ -120,13 +123,13 @@ fn register(ref worlds: PairedWorld, realm_id: u256, pass_kind: u8, metadata: fe
                 game_id: 1, owner, realm_id, metadata: (metadata, 0, 0), pass_kind, registered: true,
             },
         );
-    start_cheat_caller_address(worlds.peers.season, authority());
-    ISettlementEntryDispatcher { contract_address: worlds.peers.season }
+    start_cheat_caller_address(worlds.peers.settlement, authority());
+    ISettlementEntryDispatcher { contract_address: worlds.peers.settlement }
         .register_entitlement(
             EntryKey { game_id: 1, owner },
             EntryEntitlement { realm_id, metadata_1: metadata, metadata_2: 0, metadata_3: 0, pass_kind },
         );
-    stop_cheat_caller_address(worlds.peers.season);
+    stop_cheat_caller_address(worlds.peers.settlement);
 }
 
 fn metadata(order: u8, resources: Span<u8>) -> felt252 {

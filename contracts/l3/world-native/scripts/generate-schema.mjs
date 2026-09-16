@@ -10,7 +10,13 @@ const root = new URL("../", import.meta.url);
 const { CallData } = await import(
   Bun.resolveSync("starknet", fileURLToPath(new URL("../../../../apps/herald/src/", import.meta.url)))
 );
-const contracts = { season: "SeasonDomain", map: "MapDomain", troops: "TroopsDomain", structures: "StructuresDomain" };
+const contracts = {
+  season: "SeasonDomain",
+  map: "MapDomain",
+  troops: "TroopsDomain",
+  structures: "StructuresDomain",
+  settlement: "SettlementDomain",
+};
 const artifacts = Object.fromEntries(
   await Promise.all(
     Object.entries(contracts).map(async ([domain, name]) => {
@@ -170,6 +176,7 @@ await writeJson("schema/schema.json", schema);
 await writeFixtures(schema);
 await writePresetFixture();
 await writeSettlementFixture();
+await writeVillageFixture();
 
 async function writeJson(path, value) {
   const url = new URL(path, root);
@@ -184,7 +191,7 @@ async function writeJson(path, value) {
 
 async function writeFixtures(schema) {
   const emitter = "0x100";
-  const deployment = { season: "0x101", map: "0x102", structures: "0x103", troops: emitter };
+  const deployment = { season: "0x101", map: "0x102", structures: "0x103", troops: emitter, settlement: "0x105" };
   const model = schema.models.find((model) => model.name === "ExplorerTroops");
   function raw(name, values = []) {
     const layout = schema.domains.troops.events.find(
@@ -320,6 +327,41 @@ async function writeSettlementFixture() {
   await writeText(
     "tests/fixtures/settlement.txt",
     `${[grants.length, ...grants.flatMap(({ resource_type, amount }) => [resource_type, amount]), troops.length, ...troops, resources.length, ...resources].join("\n")}\n`,
+  );
+}
+
+async function writeVillageFixture() {
+  const fixture = JSON.parse(await readFile(new URL("fixtures/village.json", root), "utf8"));
+  const { oraclePreset } = JSON.parse(await readFile(new URL("fixtures/preset-1.json", root), "utf8"));
+  const reference = oraclePreset.presetConfig.village_start_resources_config;
+  const grants = oraclePreset.sideTables.resource_lists
+    .filter((row) => row.entity_id === reference.resources_list_id)
+    .sort((a, b) => a.index - b.index);
+  if (grants.length !== reference.resources_list_count || grants.some((row, index) => row.index !== index))
+    throw new Error("Incomplete village grant table");
+  const pool = fixture.initialization.resourcePool;
+  if (
+    pool.length !== 22 ||
+    pool.some(
+      ({ resource_type, weight }) =>
+        !Number.isInteger(resource_type) ||
+        resource_type < 1 ||
+        resource_type > 22 ||
+        !Number.isSafeInteger(weight) ||
+        weight <= 0,
+    ) ||
+    new Set(pool.map(({ resource_type }) => resource_type)).size !== 22
+  )
+    throw new Error("Incomplete village resource pool");
+  await writeText(
+    "tests/fixtures/village.txt",
+    `${[
+      oraclePreset.presetConfig.village_troop_config.troop_delay_ticks,
+      grants.length,
+      ...grants.flatMap(({ resource_type, amount }) => [resource_type, amount]),
+      pool.length,
+      ...pool.flatMap(({ resource_type, weight }) => [resource_type, weight]),
+    ].join("\n")}\n`,
   );
 }
 

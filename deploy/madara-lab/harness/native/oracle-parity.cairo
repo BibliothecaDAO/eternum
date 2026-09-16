@@ -106,6 +106,7 @@ fn namespace() -> NamespaceDef {
             TestResource::Model("BlitzCosmeticAttrsRegister"), TestResource::Event("BlitzSettlementEvent"),
             TestResource::Contract("blitz_realm_systems"), TestResource::Contract("realm_internal_systems"),
             TestResource::Contract("realm_systems"), TestResource::Contract("hyperstructure_create_systems"),
+            TestResource::Contract("village_systems"), TestResource::Model("VillageTroop"),
             TestResource::Model("AgentConfig"), TestResource::Model("AgentCount"), TestResource::Model("AgentOwner"),
             TestResource::Model("WonderFaith"), TestResource::Model("FaithfulStructure"),
             TestResource::Model("PlayerFaithPoints"), TestResource::Model("WonderFaithWinners"),
@@ -134,9 +135,15 @@ fn setup_game(case: felt252, blitz: bool) -> PairedWorld {
 }
 
 fn setup_world(case: felt252, blitz: bool, development: bool) -> PairedWorld {
-    setup_timed_world(case, blitz, development, 0, if blitz { 2000 } else { 0 }, 999999)
+    setup_timed_world(case, blitz, development, 0, if blitz {
+        2000
+    } else {
+        0
+    }, 999999)
 }
-fn setup_timed_world(case: felt252, blitz: bool, development: bool, start_settling_at: u64, start_main_at: u64, end_at: u64) -> PairedWorld {
+fn setup_timed_world(
+    case: felt252, blitz: bool, development: bool, start_settling_at: u64, start_main_at: u64, end_at: u64,
+) -> PairedWorld {
     start_cheat_block_timestamp_global(1800);
     start_cheat_chain_id_global('SN_TEST');
     native_protocol::deploy_submitter(submitter(), authority());
@@ -152,12 +159,13 @@ fn setup_timed_world(case: felt252, blitz: bool, development: bool, start_settli
         map: deploy("MapDomain", @array![authority().into()]),
         structures: deploy("StructuresDomain", @array![authority().into()]),
         troops: deploy("TroopsDomain", @array![authority().into()]),
+        settlement: deploy("SettlementDomain", @array![authority().into()]),
     };
-    for address in array![peers.season, peers.map, peers.structures, peers.troops] {
+    for address in array![peers.season, peers.map, peers.structures, peers.troops, peers.settlement] {
         start_cheat_caller_address(address, authority());
         IDomainDispatcher { contract_address: address }.configure(peers);
     }
-    for address in array![peers.season, peers.map, peers.structures, peers.troops] {
+    for address in array![peers.season, peers.map, peers.structures, peers.troops, peers.settlement] {
         IDomainDispatcher { contract_address: address }.activate();
         stop_cheat_caller_address(address);
     }
@@ -195,6 +203,7 @@ fn setup_timed_world(case: felt252, blitz: bool, development: bool, start_settli
         "mine_discovery_systems", "camp_discovery_systems", "agent_discovery_systems", "relic_chest_discovery_systems",
         "bitcoin_mine_discovery_systems", "ownership_systems", "name_systems", "structure_systems",
         "blitz_realm_systems", "realm_internal_systems", "realm_systems", "hyperstructure_create_systems",
+        "village_systems",
     ] {
         defs
             .append(
@@ -327,13 +336,13 @@ fn compare_facts<A, +Observable<A>, +Drop<A>, B, +Observable<B>, +Drop<B>>(
 fn compare_home(worlds: PairedWorld, step: u32, id: u32) {
     let structures = IStructuresDispatcher { contract_address: worlds.peers.structures };
     let key = ResourceKey { game_id: 1, entity_id: id };
+    let mut original: Structure = ModelStorage::read_model(@worlds.oracle, (1, id));
+    if original.base.category == 5 {
+        let grant: crate::models::structure::VillageTroop = ModelStorage::read_model(@worlds.oracle, (1, id));
+        original.base.starting_troops_granted = grant.claimed;
+    }
     compare_facts(
-        worlds.case,
-        step,
-        'Structure',
-        array![1, id.into()].span(),
-        structures.structure(key).unwrap(),
-        ModelStorage::<WorldStorage, Structure>::read_model(@worlds.oracle, (1, id)),
+        worlds.case, step, 'Structure', array![1, id.into()].span(), structures.structure(key).unwrap(), original,
     );
     compare_resources(worlds, step, id);
 }
@@ -837,10 +846,15 @@ mod ParityAttempts {
     struct Storage {}
     #[abi(embed_v0)]
     impl Attempts of super::IParityAttempts<ContractState> {
-        fn settle_season(ref self: ContractState, target: ContractAddress, name: felt252, selected: Option<u32>) -> bool {
+        fn settle_season(
+            ref self: ContractState, target: ContractAddress, name: felt252, selected: Option<u32>,
+        ) -> bool {
             let mut args = array![1, name];
             let entrypoint = match selected {
-                Some(realm_id) => { args.append(realm_id.into()); selector!("settle_dev") },
+                Some(realm_id) => {
+                    args.append(realm_id.into());
+                    selector!("settle_dev")
+                },
                 None => selector!("settle"),
             };
             starknet::syscalls::call_contract_syscall(target, entrypoint, args.span()).is_ok()
@@ -1127,10 +1141,12 @@ pub mod parity_bootstrap_systems {
     }
 }
 
-fn set_native_fixture<T, +Serde<T>, +Drop<T>>(address: ContractAddress, name: felt252, keys: Span<felt252>, value: T) {
-    let mut values = array![];
-    value.serialize(ref values);
-    snforge_std::store(address, snforge_std::map_entry_address(name, keys), values.span());
+fn set_native_fixture<T, +starknet::storage_access::Store<T>, +Drop<T>>(
+    address: ContractAddress, name: felt252, keys: Span<felt252>, value: T,
+) {
+    let base = starknet::storage_access::storage_base_address_from_felt252(snforge_std::map_entry_address(name, keys));
+    // ABI serialization does not describe packed persistent storage.
+    snforge_std::interact_with_state(address, || starknet::storage_access::Store::<T>::write(0, base, value).unwrap());
 }
 
 fn ownership_rules(ref worlds: PairedWorld, blitz: bool, faith: bool, controller: ContractAddress) {
@@ -1367,7 +1383,6 @@ fn ownership_category(ref worlds: PairedWorld, id: u32, category: u8) {
             troop_guards: native.troop_guards,
             resources_packed: native.resources_packed,
             metadata: native.metadata,
-            category,
         },
     );
 }
@@ -1733,7 +1748,6 @@ fn world_parity_structure_rejections() {
             troop_guards: native.troop_guards,
             resources_packed: native.resources_packed,
             metadata: native.metadata,
-            category: native.category,
         },
     );
     upgrade_pair(ref worlds, 4, home, 2000, true);
@@ -1883,63 +1897,106 @@ mod season_settlement;
 
 #[test]
 #[feature("safe_dispatcher")]
-fn world_parity_season_settlement() { season_settlement::settlement(); }
+fn world_parity_season_settlement() {
+    season_settlement::settlement();
+}
 
 #[test]
 #[feature("safe_dispatcher")]
-fn world_parity_season_settlement_dev() { season_settlement::development(); }
+fn world_parity_season_settlement_dev() {
+    season_settlement::development();
+}
 
 #[test]
 #[feature("safe_dispatcher")]
-fn world_parity_season_settlement_ledger() { season_settlement::ledger(); }
+fn world_parity_season_settlement_ledger() {
+    season_settlement::ledger();
+}
 
 #[test]
 #[feature("safe_dispatcher")]
-fn world_parity_season_settlement_rejections() { season_settlement::rejections(); }
+fn world_parity_season_settlement_rejections() {
+    season_settlement::rejections();
+}
 
 #[test]
 #[feature("safe_dispatcher")]
-fn world_parity_season_settlement_occupied() { season_settlement::occupied_candidates('season_settlement_occupied', 6, true); }
+fn world_parity_season_settlement_occupied() {
+    season_settlement::occupied_candidates('season_settlement_occupied', 6, true);
+}
 
 #[test]
-fn world_parity_canonical_realm_traits() { season_settlement::canonical_traits(); }
-
-#[test]
-#[feature("safe_dispatcher")]
-fn world_parity_realm_allocation() { season_settlement::allocation(); }
-
-#[test]
-#[feature("safe_dispatcher")]
-fn world_parity_season_ledger_pass() { season_settlement::invalid_ledger('season_ledger_pass', 0, 3, false); }
+fn world_parity_canonical_realm_traits() {
+    season_settlement::canonical_traits();
+}
 
 #[test]
 #[feature("safe_dispatcher")]
-fn world_parity_season_ledger_order() { season_settlement::invalid_ledger('season_ledger_order', 1, 17, false); }
+fn world_parity_realm_allocation() {
+    season_settlement::allocation();
+}
 
 #[test]
 #[feature("safe_dispatcher")]
-fn world_parity_season_ledger_empty() { season_settlement::invalid_ledger('season_ledger_empty', 1, 3, true); }
+fn world_parity_season_ledger_pass() {
+    season_settlement::invalid_ledger('season_ledger_pass', 0, 3, false);
+}
 
 #[test]
 #[feature("safe_dispatcher")]
-fn world_parity_season_wrong_mode() { season_settlement::wrong_mode(); }
+fn world_parity_season_ledger_order() {
+    season_settlement::invalid_ledger('season_ledger_order', 1, 17, false);
+}
 
 #[test]
 #[feature("safe_dispatcher")]
-fn world_parity_season_triple() { season_settlement::wrong_planner('season_triple', world_native::settlement::SettlementMode::Triple); }
+fn world_parity_season_ledger_empty() {
+    season_settlement::invalid_ledger('season_ledger_empty', 1, 3, true);
+}
 
 #[test]
 #[feature("safe_dispatcher")]
-fn world_parity_season_duel() { season_settlement::wrong_planner('season_duel', world_native::settlement::SettlementMode::Duel); }
+fn world_parity_season_wrong_mode() {
+    season_settlement::wrong_mode();
+}
 
 #[test]
 #[feature("safe_dispatcher")]
-fn world_parity_season_pre_main() { season_settlement::before_main(); }
+fn world_parity_season_triple() {
+    season_settlement::wrong_planner('season_triple', world_native::settlement::SettlementMode::Triple);
+}
 
 #[test]
 #[feature("safe_dispatcher")]
-fn world_parity_season_explorer_occupied() { season_settlement::explorer_occupied(); }
+fn world_parity_season_duel() {
+    season_settlement::wrong_planner('season_duel', world_native::settlement::SettlementMode::Duel);
+}
 
 #[test]
 #[feature("safe_dispatcher")]
-fn world_parity_season_search_limit() { season_settlement::search_limit(); }
+fn world_parity_season_pre_main() {
+    season_settlement::before_main();
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn world_parity_season_explorer_occupied() {
+    season_settlement::explorer_occupied();
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn world_parity_season_search_limit() {
+    season_settlement::search_limit();
+}
+
+mod village;
+#[test]
+#[feature("safe_dispatcher")]
+fn world_parity_village() {
+    village::village();
+}
+#[test]
+fn world_parity_village_resource_draws() {
+    village::resource_draws();
+}

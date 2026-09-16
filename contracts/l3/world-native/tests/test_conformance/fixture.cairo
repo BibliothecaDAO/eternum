@@ -123,12 +123,13 @@ pub fn setup() -> ContractAddress {
         map: deploy("MapDomain", @array![administrator.into()]),
         structures: deploy("StructuresDomain", @array![administrator.into()]),
         troops: deploy("TroopsDomain", @array![administrator.into()]),
+        settlement: deploy("SettlementDomain", @array![administrator.into()]),
     };
-    for address in array![peers.season, peers.map, peers.structures, peers.troops] {
+    for address in array![peers.season, peers.map, peers.structures, peers.troops, peers.settlement] {
         start_cheat_caller_address(address, administrator);
         IDomainDispatcher { contract_address: address }.configure(peers);
     }
-    for address in array![peers.season, peers.map, peers.structures, peers.troops] {
+    for address in array![peers.season, peers.map, peers.structures, peers.troops, peers.settlement] {
         IDomainDispatcher { contract_address: address }.activate();
         stop_cheat_caller_address(address);
     }

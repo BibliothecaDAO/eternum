@@ -21,7 +21,7 @@ export async function inspectNativeWorld(local: NativeWorld, provider: RpcProvid
           domain.active &&
           domain.configured &&
           domain.chainClassHash === domain.localClassHash &&
-          (domain.name !== "season" || domain.realmCatalogue?.initialized === canonicalRealmTraits.length),
+          (domain.name !== "settlement" || domain.realmCatalogue?.initialized === canonicalRealmTraits.length),
       ),
   };
 }
@@ -74,9 +74,9 @@ async function inspectDomain(
       ),
     ) as Record<string, bigint>;
     if (!sameAddresses(actual, { ...local.authentication })) blockers.push("season: authentication mismatch");
-    if (BigInt(chainClassHash) === BigInt(domain.classHash)) {
-      plan.realmCatalogue = await inspectRealmCatalogue(domain, provider, block, blockers);
-    }
+  }
+  if (domain.name === "settlement" && BigInt(chainClassHash) === BigInt(domain.classHash)) {
+    plan.realmCatalogue = await inspectRealmCatalogue(domain, provider, block, blockers);
   }
   return plan;
 }
@@ -90,9 +90,9 @@ async function inspectRealmCatalogue(domain: NativeDomain, provider: RpcProvider
     digest: bigint;
   };
   if (catalogue.initialized > BigInt(canonicalRealmTraits.length))
-    blockers.push("season: realm catalogue exceeds canonical count");
+    blockers.push("settlement: realm catalogue exceeds canonical count");
   else if (BigInt(realmCatalogueDigest(Number(catalogue.initialized))) !== catalogue.digest)
-    blockers.push("season: realm catalogue content mismatch");
+    blockers.push("settlement: realm catalogue content mismatch");
   return { initialized: Number(catalogue.initialized), digest: `0x${catalogue.digest.toString(16)}` };
 }
 

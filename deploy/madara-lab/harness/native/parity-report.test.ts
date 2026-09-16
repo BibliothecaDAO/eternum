@@ -62,3 +62,8 @@ describe("measured action outcomes", () => {
     expect(() => parseActionOutcomes("FACT_ACTION 1 0 1 1800 true")).toThrow("Malformed action order");
   });
 });
+
+test("repeated results cannot mix an old run with the current evidence", () => {
+  const result = `[PASS] eternum::native_parity::${Object.values(requiredParityCases)[0]} (l2_gas: ~12)`;
+  expect(() => parseWorldParity(`${trace()}\n${result}`)).toThrow("Repeated parity result");
+});

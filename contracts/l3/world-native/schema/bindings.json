@@ -1,594 +1,10 @@
 {
-  "schemaIdentity": "4b208f5758cfb5903eac03cac2dc58c1bf2d70300db495ec16240760cf14e11a",
+  "schemaIdentity": "74c51a71b08c301347556d0fcd90bf49464fbc4208d0d2459126a36b73238e5a",
   "commandAbi": [
     {
       "type": "impl",
-      "name": "SeasonRealms",
-      "interface_name": "world_native::realms::ISeasonRealms"
-    },
-    {
-      "type": "struct",
-      "name": "core::array::Span::<core::integer::u32>",
-      "members": [
-        {
-          "name": "snapshot",
-          "type": "@core::array::Array::<core::integer::u32>"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "world_native::realms::RealmCatalogue",
-      "members": [
-        {
-          "name": "initialized",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "digest",
-          "type": "core::felt252"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "core::array::Span::<core::integer::u8>",
-      "members": [
-        {
-          "name": "snapshot",
-          "type": "@core::array::Array::<core::integer::u8>"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "world_native::realms::RealmTraits",
-      "members": [
-        {
-          "name": "wonder",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "order",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "resources",
-          "type": "core::array::Span::<core::integer::u8>"
-        }
-      ]
-    },
-    {
-      "type": "enum",
-      "name": "core::option::Option::<core::integer::u32>",
-      "variants": [
-        {
-          "name": "Some",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "None",
-          "type": "()"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "world_native::realms::SettleSeason",
-      "members": [
-        {
-          "name": "name",
-          "type": "core::felt252"
-        },
-        {
-          "name": "owner",
-          "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
-          "name": "selected_realm",
-          "type": "core::option::Option::<core::integer::u32>"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "core::integer::u256",
-      "members": [
-        {
-          "name": "low",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "high",
-          "type": "core::integer::u128"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "world_native::commands::ExecutionContext",
-      "members": [
-        {
-          "name": "raw_root",
-          "type": "core::integer::u256"
-        },
-        {
-          "name": "timestamp",
-          "type": "core::integer::u64"
-        }
-      ]
-    },
-    {
-      "type": "interface",
-      "name": "world_native::realms::ISeasonRealms",
-      "items": [
-        {
-          "type": "function",
-          "name": "initialize_realm_traits",
-          "inputs": [
-            {
-              "name": "first_realm",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "packed_traits",
-              "type": "core::array::Span::<core::integer::u32>"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "realm_catalogue",
-          "inputs": [],
-          "outputs": [
-            {
-              "type": "world_native::realms::RealmCatalogue"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "realm_traits",
-          "inputs": [
-            {
-              "name": "realm_id",
-              "type": "core::integer::u32"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "world_native::realms::RealmTraits"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "available_realm",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "index",
-              "type": "core::integer::u32"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::integer::u32"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "settle_season",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "actor",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "command",
-              "type": "world_native::realms::SettleSeason"
-            },
-            {
-              "name": "context",
-              "type": "world_native::commands::ExecutionContext"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        }
-      ]
-    },
-    {
-      "type": "impl",
-      "name": "SettlementConfiguration",
-      "interface_name": "world_native::settlement::ISettlementConfiguration"
-    },
-    {
-      "type": "enum",
-      "name": "world_native::settlement::SettlementMode",
-      "variants": [
-        {
-          "name": "Single",
-          "type": "()"
-        },
-        {
-          "name": "Triple",
-          "type": "()"
-        },
-        {
-          "name": "Duel",
-          "type": "()"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "world_native::settlement::SettlementRules",
-      "members": [
-        {
-          "name": "registration_start",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "registration_limit",
-          "type": "core::integer::u16"
-        },
-        {
-          "name": "mode",
-          "type": "world_native::settlement::SettlementMode"
-        },
-        {
-          "name": "reward_profile",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "cosmetic_limit",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "cosmetic_collection",
-          "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
-          "name": "cosmetic_timelock",
-          "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
-          "name": "ledger_operator",
-          "type": "core::starknet::contract_address::ContractAddress"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "world_native::resources::ResourceAmount",
-      "members": [
-        {
-          "name": "resource_type",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "amount",
-          "type": "core::integer::u128"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "core::array::Span::<world_native::resources::ResourceAmount>",
-      "members": [
-        {
-          "name": "snapshot",
-          "type": "@core::array::Array::<world_native::resources::ResourceAmount>"
-        }
-      ]
-    },
-    {
-      "type": "enum",
-      "name": "world_native::troops::TroopType",
-      "variants": [
-        {
-          "name": "Knight",
-          "type": "()"
-        },
-        {
-          "name": "Paladin",
-          "type": "()"
-        },
-        {
-          "name": "Crossbowman",
-          "type": "()"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "core::array::Span::<world_native::troops::TroopType>",
-      "members": [
-        {
-          "name": "snapshot",
-          "type": "@core::array::Array::<world_native::troops::TroopType>"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "world_native::settlement::RealmGrants",
-      "members": [
-        {
-          "name": "resources",
-          "type": "core::array::Span::<world_native::resources::ResourceAmount>"
-        },
-        {
-          "name": "starting_troops",
-          "type": "core::array::Span::<world_native::troops::TroopType>"
-        },
-        {
-          "name": "realm_resources",
-          "type": "core::array::Span::<core::integer::u8>"
-        }
-      ]
-    },
-    {
-      "type": "interface",
-      "name": "world_native::settlement::ISettlementConfiguration",
-      "items": [
-        {
-          "type": "function",
-          "name": "configure_settlement",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "rules",
-              "type": "world_native::settlement::SettlementRules"
-            },
-            {
-              "name": "grants",
-              "type": "world_native::settlement::RealmGrants"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        }
-      ]
-    },
-    {
-      "type": "impl",
-      "name": "SettlementViews",
-      "interface_name": "world_native::settlement::ISettlementViews"
-    },
-    {
-      "type": "struct",
-      "name": "world_native::settlement::SettlementProgress",
-      "members": [
-        {
-          "name": "registered",
-          "type": "core::integer::u16"
-        },
-        {
-          "name": "realm_count",
-          "type": "core::integer::u16"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "world_native::settlement::EntryKey",
-      "members": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "owner",
-          "type": "core::starknet::contract_address::ContractAddress"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "world_native::settlement::PlayerEntry",
-      "members": [
-        {
-          "name": "player",
-          "type": "core::starknet::contract_address::ContractAddress"
-        }
-      ]
-    },
-    {
-      "type": "enum",
-      "name": "core::option::Option::<world_native::settlement::PlayerEntry>",
-      "variants": [
-        {
-          "name": "Some",
-          "type": "world_native::settlement::PlayerEntry"
-        },
-        {
-          "name": "None",
-          "type": "()"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "world_native::settlement::CosmeticsKey",
-      "members": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "player",
-          "type": "core::starknet::contract_address::ContractAddress"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "core::array::Span::<core::integer::u128>",
-      "members": [
-        {
-          "name": "snapshot",
-          "type": "@core::array::Array::<core::integer::u128>"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "world_native::settlement::PlayerCosmetics",
-      "members": [
-        {
-          "name": "attributes",
-          "type": "core::array::Span::<core::integer::u128>"
-        }
-      ]
-    },
-    {
-      "type": "interface",
-      "name": "world_native::settlement::ISettlementViews",
-      "items": [
-        {
-          "type": "function",
-          "name": "settlement_rules",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "world_native::settlement::SettlementRules"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "realm_grants",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "world_native::settlement::RealmGrants"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "settlement_progress",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "world_native::settlement::SettlementProgress"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "player_entry",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::settlement::EntryKey"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::option::Option::<world_native::settlement::PlayerEntry>"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "player_cosmetics",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::settlement::CosmeticsKey"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "world_native::settlement::PlayerCosmetics"
-            }
-          ],
-          "state_mutability": "view"
-        }
-      ]
-    },
-    {
-      "type": "impl",
-      "name": "SettlementEntry",
-      "interface_name": "world_native::settlement::ISettlementEntry"
-    },
-    {
-      "type": "struct",
-      "name": "world_native::settlement::EntryEntitlement",
-      "members": [
-        {
-          "name": "realm_id",
-          "type": "core::integer::u256"
-        },
-        {
-          "name": "metadata_1",
-          "type": "core::felt252"
-        },
-        {
-          "name": "metadata_2",
-          "type": "core::felt252"
-        },
-        {
-          "name": "metadata_3",
-          "type": "core::felt252"
-        },
-        {
-          "name": "pass_kind",
-          "type": "core::integer::u8"
-        }
-      ]
-    },
-    {
-      "type": "enum",
-      "name": "core::option::Option::<world_native::settlement::EntryEntitlement>",
-      "variants": [
-        {
-          "name": "Some",
-          "type": "world_native::settlement::EntryEntitlement"
-        },
-        {
-          "name": "None",
-          "type": "()"
-        }
-      ]
+      "name": "SettlementAdmission",
+      "interface_name": "world_native::settlement::ISettlementAdmission"
     },
     {
       "type": "struct",
@@ -618,40 +34,8 @@
     },
     {
       "type": "interface",
-      "name": "world_native::settlement::ISettlementEntry",
+      "name": "world_native::settlement::ISettlementAdmission",
       "items": [
-        {
-          "type": "function",
-          "name": "register_entitlement",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::settlement::EntryKey"
-            },
-            {
-              "name": "entitlement",
-              "type": "world_native::settlement::EntryEntitlement"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "entry_entitlement",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::settlement::EntryKey"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::option::Option::<world_native::settlement::EntryEntitlement>"
-            }
-          ],
-          "state_mutability": "view"
-        },
         {
           "type": "function",
           "name": "settlement_admission",
@@ -676,113 +60,6 @@
     },
     {
       "type": "impl",
-      "name": "SettlementCommands",
-      "interface_name": "world_native::settlement::ISettlementCommands"
-    },
-    {
-      "type": "struct",
-      "name": "world_native::settlement::AcceptedCosmetic",
-      "members": [
-        {
-          "name": "token_id",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "owner",
-          "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
-          "name": "attributes",
-          "type": "core::integer::u128"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "core::array::Span::<world_native::settlement::AcceptedCosmetic>",
-      "members": [
-        {
-          "name": "snapshot",
-          "type": "@core::array::Array::<world_native::settlement::AcceptedCosmetic>"
-        }
-      ]
-    },
-    {
-      "type": "enum",
-      "name": "core::bool",
-      "variants": [
-        {
-          "name": "False",
-          "type": "()"
-        },
-        {
-          "name": "True",
-          "type": "()"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "world_native::settlement::SettleBlitz",
-      "members": [
-        {
-          "name": "name",
-          "type": "core::felt252"
-        },
-        {
-          "name": "owner",
-          "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
-          "name": "cosmetics_block_hash",
-          "type": "core::felt252"
-        },
-        {
-          "name": "cosmetics_block_number",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "cosmetics",
-          "type": "core::array::Span::<world_native::settlement::AcceptedCosmetic>"
-        },
-        {
-          "name": "grant_starting_troops",
-          "type": "core::bool"
-        }
-      ]
-    },
-    {
-      "type": "interface",
-      "name": "world_native::settlement::ISettlementCommands",
-      "items": [
-        {
-          "type": "function",
-          "name": "settle_blitz",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "actor",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "command",
-              "type": "world_native::settlement::SettleBlitz"
-            },
-            {
-              "name": "context",
-              "type": "world_native::commands::ExecutionContext"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        }
-      ]
-    },
-    {
-      "type": "impl",
       "name": "UpgradeRules",
       "interface_name": "world_native::upgrades::IUpgradeRules"
     },
@@ -797,6 +74,30 @@
         {
           "name": "village_max",
           "type": "core::integer::u8"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::resources::ResourceAmount",
+      "members": [
+        {
+          "name": "resource_type",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "amount",
+          "type": "core::integer::u128"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "core::array::Span::<world_native::resources::ResourceAmount>",
+      "members": [
+        {
+          "name": "snapshot",
+          "type": "@core::array::Array::<world_native::resources::ResourceAmount>"
         }
       ]
     },
@@ -943,6 +244,16 @@
     },
     {
       "type": "struct",
+      "name": "core::array::Span::<core::integer::u8>",
+      "members": [
+        {
+          "name": "snapshot",
+          "type": "@core::array::Array::<core::integer::u8>"
+        }
+      ]
+    },
+    {
+      "type": "struct",
       "name": "world_native::commands::Move",
       "members": [
         {
@@ -999,6 +310,78 @@
     },
     {
       "type": "struct",
+      "name": "world_native::settlement::AcceptedCosmetic",
+      "members": [
+        {
+          "name": "token_id",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "owner",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "attributes",
+          "type": "core::integer::u128"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "core::array::Span::<world_native::settlement::AcceptedCosmetic>",
+      "members": [
+        {
+          "name": "snapshot",
+          "type": "@core::array::Array::<world_native::settlement::AcceptedCosmetic>"
+        }
+      ]
+    },
+    {
+      "type": "enum",
+      "name": "core::bool",
+      "variants": [
+        {
+          "name": "False",
+          "type": "()"
+        },
+        {
+          "name": "True",
+          "type": "()"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::settlement::SettleBlitz",
+      "members": [
+        {
+          "name": "name",
+          "type": "core::felt252"
+        },
+        {
+          "name": "owner",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "cosmetics_block_hash",
+          "type": "core::felt252"
+        },
+        {
+          "name": "cosmetics_block_number",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "cosmetics",
+          "type": "core::array::Span::<world_native::settlement::AcceptedCosmetic>"
+        },
+        {
+          "name": "grant_starting_troops",
+          "type": "core::bool"
+        }
+      ]
+    },
+    {
+      "type": "struct",
       "name": "world_native::troops::Coord",
       "members": [
         {
@@ -1011,6 +394,56 @@
         },
         {
           "name": "y",
+          "type": "core::integer::u32"
+        }
+      ]
+    },
+    {
+      "type": "enum",
+      "name": "core::option::Option::<core::integer::u32>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::realms::SettleSeason",
+      "members": [
+        {
+          "name": "name",
+          "type": "core::felt252"
+        },
+        {
+          "name": "owner",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "selected_realm",
+          "type": "core::option::Option::<core::integer::u32>"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::village::SettleVillage",
+      "members": [
+        {
+          "name": "owner",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "pass_id",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "connected_realm_entity_id",
           "type": "core::integer::u32"
         }
       ]
@@ -1078,6 +511,14 @@
         {
           "name": "SettleSeason",
           "type": "world_native::realms::SettleSeason"
+        },
+        {
+          "name": "SettleVillage",
+          "type": "world_native::village::SettleVillage"
+        },
+        {
+          "name": "ReceiveVillageArmy",
+          "type": "core::integer::u32"
         }
       ]
     },
@@ -1602,6 +1043,20 @@
         {
           "name": "account_class",
           "type": "core::starknet::class_hash::ClassHash"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "core::integer::u256",
+      "members": [
+        {
+          "name": "low",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "high",
+          "type": "core::integer::u128"
         }
       ]
     },
@@ -2223,6 +1678,10 @@
         {
           "name": "troops",
           "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "settlement",
+          "type": "core::starknet::contract_address::ContractAddress"
         }
       ]
     },
@@ -2393,30 +1852,6 @@
     },
     {
       "type": "event",
-      "name": "world_native::settlement::SettlementState::Event",
-      "kind": "enum",
-      "variants": [
-        {
-          "name": "RowSet",
-          "type": "world_native::events::RowSet",
-          "kind": "nested"
-        }
-      ]
-    },
-    {
-      "type": "event",
-      "name": "world_native::realms::RealmState::Event",
-      "kind": "enum",
-      "variants": [
-        {
-          "name": "RowSet",
-          "type": "world_native::events::RowSet",
-          "kind": "nested"
-        }
-      ]
-    },
-    {
-      "type": "event",
       "name": "world_native::season::SeasonDomain::Event",
       "kind": "enum",
       "variants": [
@@ -2443,16 +1878,6 @@
         {
           "name": "UpgradeEvent",
           "type": "world_native::upgrades::UpgradeState::Event",
-          "kind": "nested"
-        },
-        {
-          "name": "SettlementEvent",
-          "type": "world_native::settlement::SettlementState::Event",
-          "kind": "nested"
-        },
-        {
-          "name": "RealmEvent",
-          "type": "world_native::realms::RealmState::Event",
           "kind": "nested"
         }
       ]
@@ -2551,6 +1976,55 @@
     },
     {
       "name": "SettlementPool",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "opened": "Number",
+        "available": [
+          {
+            "coords": [
+              {
+                "alt": "Boolean",
+                "x": "Number",
+                "y": "Number"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "VillageRules",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "troop_delay_ticks": "Number",
+        "resources": [
+          {
+            "resource_type": "Number",
+            "amount": "BigInt"
+          }
+        ],
+        "resource_pool": [
+          {
+            "resource_type": "Number",
+            "weight": "BigInt"
+          }
+        ]
+      }
+    },
+    {
+      "name": "VillagePass",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "pass_id": "Number",
+        "owner": "BigInt",
+        "village_id": "Number"
+      }
+    },
+    {
+      "name": "VillagePool",
       "scope": "game",
       "schema": {
         "game_id": "Number",
@@ -2759,10 +2233,8 @@
           "realm_id": "Number",
           "order": "Number",
           "has_wonder": "Boolean",
-          "villages_count": "Number",
           "village_realm": "Number"
-        },
-        "category": "Number"
+        }
       }
     },
     {
@@ -3151,7 +2623,8 @@
           "season": "BigInt",
           "map": "BigInt",
           "structures": "BigInt",
-          "troops": "BigInt"
+          "troops": "BigInt",
+          "settlement": "BigInt"
         },
         "active": "Boolean"
       }

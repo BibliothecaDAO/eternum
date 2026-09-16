@@ -1,3 +1,4 @@
+import { executionLog } from "./execution-log";
 import { upgradeRecipes } from "./upgrade-recipes";
 import { factProjectors } from "./fact-projections";
 import { execFileSync } from "node:child_process";
@@ -18,7 +19,7 @@ const sizeTool = join(native, "tools/casm-size");
 const oracle = join(workspace, "contracts/l3/game");
 const spec = JSON.parse(await readFile(join(native, "fixtures/slice.json"), "utf8"));
 const domainFixtures = await Promise.all(
-  ["ownership", "name", "structure", "blitz-settlement", "season-settlement"].map(async (domain) =>
+  ["ownership", "name", "structure", "blitz-settlement", "season-settlement", "village"].map(async (domain) =>
     JSON.parse(await readFile(join(native, `fixtures/${domain}.json`), "utf8")),
   ),
 );
@@ -34,7 +35,7 @@ const settlementTests = [
   "world_parity_settlement_pool_windows",
   "world_parity_starting_troop_table",
 ];
-const realmTests = ["world_parity_canonical_realm_traits", "world_parity_realm_allocation"];
+const realmTests = ["world_parity_canonical_realm_traits", "world_parity_realm_allocation", "world_parity_village_resource_draws"];
 const fixture = JSON.parse(await readFile(join(native, "fixtures/preset-1.json"), "utf8"));
 
 if (JSON.stringify(Object.keys(spec.fixtureCases).sort()) !== JSON.stringify(Object.keys(requiredParityCases).sort()))
@@ -44,6 +45,7 @@ await validatePreset();
 await buildNative();
 const nativeCasm = await classSizes(native, "world_native", [
   "SeasonDomain",
+  "SettlementDomain",
   "StructuresDomain",
   "TroopsDomain",
   "MapDomain",
@@ -210,6 +212,7 @@ async function prepareOracle(): Promise<void> {
     join(oracle, "src/native_parity/season_settlement.cairo"),
     await readFile(join(root, "deploy/madara-lab/harness/native/oracle-season-settlement.cairo")),
   );
+  await writeFile(join(oracle, "src/native_parity/village.cairo"), await readFile(join(root, "deploy/madara-lab/harness/native/oracle-village.cairo")));
   await writeNativeInputs();
   const schema = JSON.parse(await readFile(join(native, "schema/schema.json"), "utf8"));
   await writeFile(join(oracle, "src/native_facts.cairo"), factProjectors(schema));
@@ -220,7 +223,7 @@ async function configureTestPackage(): Promise<void> {
   const manifest = await readFile(manifestPath, "utf8");
   if (!manifest.includes("[dev-dependencies]") || !manifest.includes("build-external-contracts = ["))
     throw new Error("Oracle test manifest shape changed");
-  const external = ["map::MapDomain", "season::SeasonDomain", "troops::TroopsDomain", "structures::StructuresDomain"]
+  const external = ["map::MapDomain", "season::SeasonDomain", "troops::TroopsDomain", "structures::StructuresDomain", "settlement_domain::SettlementDomain"]
     .map((name) => `    "world_native::${name}",`)
     .concat(['    "eternum_randomness_protocol::authority::SequencingAccount",'])
     .join("\n");
@@ -282,8 +285,8 @@ async function runParity() {
     const child = Bun.spawn(["snforge", "test", name, "--exact", "--max-n-steps", "200000000"], {
       cwd: oracle,
       env: { ...process.env, ASDF_STARKNET_FOUNDRY_VERSION: "0.52.0" },
-      stdout: Bun.file(caseLog),
-      stderr: Bun.file(`${caseLog}.stderr`),
+      stdout: await executionLog(caseLog),
+      stderr: await executionLog(`${caseLog}.stderr`),
     });
     const timeout = setTimeout(() => child.kill(), 15 * 60_000);
     try {
@@ -353,6 +356,7 @@ async function writeNativeInputs(): Promise<void> {
   const upgrades = calldata.compile("upgrade_recipes", { recipes });
   const resources = calldata.compile("resources", { rules: fixture.resources });
   const grants = (await readFile(join(native, "tests/fixtures/settlement.txt"), "utf8")).trim().split(/\s+/);
+  const village = (await readFile(join(native, "tests/fixtures/village.txt"), "utf8")).trim().split(/\s+/);
   const upgradeRows = fixture.oraclePreset.sideTables.structure_levels
     .map(
       (row) =>
@@ -369,7 +373,7 @@ pub fn canonical_realm_traits() -> Span<u32> { CANONICAL_REALM_TRAITS.span() }`;
     `pub fn ${name}() -> ${type} { let mut raw=array![${data.join(",")}].span(); let result=Serde::deserialize(ref raw).unwrap(); assert!(raw.is_empty()); result }`;
   await writeFile(
     join(oracle, "src/native_inputs.cairo"),
-    `${catalogue}\n${oracleUpgrades}\n${decode("realm_grants", "world_native::settlement::RealmGrants", grants)}\n${decode("upgrade_recipes", "Span<world_native::upgrades::UpgradeRecipe>", upgrades)}\n${decode("rules", "world_native::rules::SliceRules", rules)}\n${decode("resource_rules", "Span<world_native::structures::ResourceRule>", resources)}\n`,
+    `${catalogue}\n${oracleUpgrades}\n${decode("village_rules", "world_native::village::VillageRules", village)}\n${decode("realm_grants", "world_native::settlement::RealmGrants", grants)}\n${decode("upgrade_recipes", "Span<world_native::upgrades::UpgradeRecipe>", upgrades)}\n${decode("rules", "world_native::rules::SliceRules", rules)}\n${decode("resource_rules", "Span<world_native::structures::ResourceRule>", resources)}\n`,
   );
 }
 
@@ -465,8 +469,8 @@ async function buildNative() {
   await mkdir(workspace, { recursive: true });
   const build = Bun.spawn(["scarb", "build"], {
     cwd: native,
-    stdout: Bun.file(join(workspace, "native-build.log")),
-    stderr: Bun.file(join(workspace, "native-build.stderr")),
+    stdout: await executionLog(join(workspace, "native-build.log")),
+    stderr: await executionLog(join(workspace, "native-build.stderr")),
   });
   await requireCompletion(build, "Native domain build (see native-build.log)", 10 * 60_000);
   const sizeBuild = Bun.spawn(
@@ -481,8 +485,8 @@ async function buildNative() {
     ],
     {
       cwd: root,
-      stdout: Bun.file(join(workspace, "size-tool-build.log")),
-      stderr: Bun.file(join(workspace, "size-tool-build.stderr")),
+      stdout: await executionLog(join(workspace, "size-tool-build.log")),
+      stderr: await executionLog(join(workspace, "size-tool-build.stderr")),
     },
   );
   await requireCompletion(sizeBuild, "CASM attribution tool build (see size-tool-build.stderr)", 10 * 60_000);
@@ -491,8 +495,8 @@ async function buildNative() {
 async function measureActions(): Promise<Record<string, unknown>> {
   const build = Bun.spawn(["scarb", "build"], {
     cwd: oracle,
-    stdout: Bun.file(join(workspace, "oracle-build.log")),
-    stderr: Bun.file(join(workspace, "oracle-build.stderr")),
+    stdout: await executionLog(join(workspace, "oracle-build.log")),
+    stderr: await executionLog(join(workspace, "oracle-build.stderr")),
   });
   await requireCompletion(build, "Oracle production build (see oracle-build.log)", 10 * 60_000);
   const costs: Record<string, unknown> = {};
@@ -516,8 +520,8 @@ async function measureDomain(domain: string) {
     {
       cwd: oracle,
       env: { ...process.env, ASDF_STARKNET_FOUNDRY_VERSION: "0.52.0" },
-      stdout: Bun.file(join(workspace, `${domain}-cost.log`)),
-      stderr: Bun.file(join(workspace, `${domain}-cost.stderr`)),
+      stdout: await executionLog(join(workspace, `${domain}-cost.log`)),
+      stderr: await executionLog(join(workspace, `${domain}-cost.stderr`)),
     },
   );
   await requireCompletion(test, `${domain} cost fixture (see ${domain}-cost.log)`, 15 * 60_000);

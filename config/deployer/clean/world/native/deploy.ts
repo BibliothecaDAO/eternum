@@ -45,13 +45,13 @@ async function initializeRealmCatalogue(
   configured: NativePlan,
   record: (action: NativeTransaction["action"], domain: string, hash: string) => void,
 ) {
-  const season = local.domains.find((domain) => domain.name === "season")!;
-  const catalogue = configured.domains.find((domain) => domain.name === "season")!.realmCatalogue;
-  if (!catalogue) throw new Error("Season catalogue inspection missing after declaration");
+  const settlement = local.domains.find((domain) => domain.name === "settlement")!;
+  const catalogue = configured.domains.find((domain) => domain.name === "settlement")!.realmCatalogue;
+  if (!catalogue) throw new Error("Settlement catalogue inspection missing after declaration");
   for (let offset = catalogue.initialized; offset < canonicalRealmTraits.length; offset += 128)
     await command(
       account,
-      season,
+      settlement,
       "initialize_realm_traits",
       {
         first_realm: offset + 1,

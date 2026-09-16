@@ -1,3 +1,4 @@
+import { executionLog } from "./execution-log";
 import { execFileSync } from "node:child_process";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
@@ -73,13 +74,11 @@ async function prepareOracle(): Promise<void> {
 async function runVectors(name: string, cwd: string): Promise<{ output: string; exitCode: number; elapsedMs: number }> {
   const started = performance.now();
   const log = join(workspace, `${name}-combat.log`);
-  await writeFile(log, "");
-  await writeFile(`${log}.stderr`, "");
   const child = Bun.spawn(["snforge", "test", "combat_parity_vectors"], {
     cwd,
     env: { ...process.env, ASDF_STARKNET_FOUNDRY_VERSION: "0.52.0" },
-    stdout: Bun.file(log),
-    stderr: Bun.file(`${log}.stderr`),
+    stdout: await executionLog(log),
+    stderr: await executionLog(`${log}.stderr`),
   });
   const exitCode = await child.exited;
   return {

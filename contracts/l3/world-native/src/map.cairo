@@ -213,9 +213,9 @@ pub mod MapDomain {
     #[abi(embed_v0)]
     impl SeasonPlacement of crate::realms::ISeasonPlacement<ContractState> {
         fn claim_season_settlement(ref self: ContractState, game_id: u32, settled_count: u16, seed: u256) -> Coord {
-            let season = self.lifecycle.require_active().season;
-            assert!(get_caller_address() == season, "only season domain");
-            let mut rules = ISettlementViewsDispatcher { contract_address: season }.settlement_rules(game_id);
+            let settlement = self.lifecycle.require_active().settlement;
+            assert!(get_caller_address() == settlement, "only settlement domain");
+            let mut rules = ISettlementViewsDispatcher { contract_address: settlement }.settlement_rules(game_id);
             assert!(rules.mode == crate::settlement::SettlementMode::Single, "season settlement requires one realm");
             rules.registration_limit = 0xffff;
             let center = self.map_center(game_id);
@@ -228,7 +228,6 @@ pub mod MapDomain {
                     .map(|tile| (tile.data / 2) % BYTE_RANGE != 0)
                     .unwrap_or(false);
                 if !occupied {
-                    self.reveal_season_surroundings(game_id, coord);
                     return coord;
                 }
             }
@@ -241,15 +240,26 @@ pub mod MapDomain {
             self.settlements.reserved_hyperstructures.read(game_id)
         }
         fn settlement_pool(self: @ContractState, game_id: u32) -> SettlementPool {
-            let season = self.lifecycle.require_active().season;
-            let rules = ISettlementViewsDispatcher { contract_address: season }.settlement_rules(game_id);
+            let settlement = self.lifecycle.require_active().settlement;
+            let rules = ISettlementViewsDispatcher { contract_address: settlement }.settlement_rules(game_id);
             let center = self.map_center(game_id);
             self.settlements.pool(game_id, center, rules)
         }
+        fn village_pool(self: @ContractState, game_id: u32) -> SettlementPool {
+            let settlement = self.lifecycle.require_active().settlement;
+            let rules = ISettlementViewsDispatcher { contract_address: settlement }.settlement_rules(game_id);
+            self.settlements.village_pool(game_id, self.map_center(game_id), rules)
+        }
+        fn claim_village(ref self: ContractState, game_id: u32, registered: u16, seed: u256) -> Coord {
+            let settlement = self.lifecycle.require_active().settlement;
+            assert!(get_caller_address() == settlement, "only settlement domain");
+            let rules = ISettlementViewsDispatcher { contract_address: settlement }.settlement_rules(game_id);
+            self.settlements.claim_village(game_id, self.map_center(game_id), rules, registered, seed)
+        }
         fn claim_settlement(ref self: ContractState, game_id: u32, registered: u16, seed: u256) -> Span<Coord> {
-            let season = self.lifecycle.require_active().season;
-            assert!(get_caller_address() == season, "only season domain");
-            let rules = ISettlementViewsDispatcher { contract_address: season }.settlement_rules(game_id);
+            let settlement = self.lifecycle.require_active().settlement;
+            assert!(get_caller_address() == settlement, "only settlement domain");
+            let rules = ISettlementViewsDispatcher { contract_address: settlement }.settlement_rules(game_id);
             let center = self.map_center(game_id);
             self.settlements.claim(game_id, center, rules, registered, seed)
         }
@@ -269,7 +279,8 @@ pub mod MapDomain {
             let game_rules = IGameDispatcher { contract_address: season }.rules(game_id);
             assert!(game_rules.blitz_mode_on, "not a Blitz game");
             assert!(game.end_at == 0 || context.timestamp < game.end_at, "game ended");
-            let rules = ISettlementViewsDispatcher { contract_address: season }.settlement_rules(game_id);
+            let rules = ISettlementViewsDispatcher { contract_address: self.lifecycle.require_active().settlement }
+                .settlement_rules(game_id);
             let required = crate::settlement_grid::reservation_count(rules.registration_limit, rules.mode);
             let center = self.map_center(game_id);
             let mut placed = self.settlements.reserved_hyperstructures.read(game_id);
@@ -368,21 +379,6 @@ pub mod MapDomain {
     }
     #[generate_trait]
     impl Internal of InternalTrait {
-        fn reveal_season_surroundings(ref self: ContractState, game_id: u32, coord: Coord) {
-            for distance in array![1_u32, 2] {
-                for direction in 0_u8..6 {
-                    let key = tile_key(game_id, crate::geometry::neighbor_at_distance(coord, direction, distance));
-                    let revealed = self
-                        .map
-                        .tile(key)
-                        .map(|tile| (tile.data / BIOME_SCALE) % BYTE_RANGE != 0)
-                        .unwrap_or(false);
-                    if !revealed {
-                        self.map.reveal(key, self.biome(key));
-                    }
-                }
-            }
-        }
         fn map_center(self: @ContractState, game_id: u32) -> Coord {
             let rules = IGameDispatcher { contract_address: self.lifecycle.require_active().season }.rules(game_id);
             let center = 2147483646 - rules.map_center_offset;

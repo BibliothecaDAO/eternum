@@ -3,7 +3,7 @@
   "domain": "season-settlement",
   "factModel": {
     "source": "schema/fact-models.mjs",
-    "schema": "4b208f5758cfb5903eac03cac2dc58c1bf2d70300db495ec16240760cf14e11a",
+    "schema": "74c51a71b08c301347556d0fcd90bf49464fbc4208d0d2459126a36b73238e5a",
     "declarations": [
       {
         "model": "RealmTraits",
@@ -81,6 +81,36 @@
         "model": "SettlementPool",
         "observation": {
           "domain": "realm/blitz",
+          "fields": {
+            "availableLocations": "available"
+          }
+        }
+      },
+      {
+        "model": "VillageRules",
+        "observation": {
+          "domain": "village",
+          "fields": {
+            "armyDelay": "troop_delay_ticks",
+            "grants": "resources",
+            "resourcePool": "resource_pool"
+          }
+        }
+      },
+      {
+        "model": "VillagePass",
+        "observation": {
+          "domain": "village",
+          "fields": {
+            "owner": "owner",
+            "consumedBy": "village_id"
+          }
+        }
+      },
+      {
+        "model": "VillagePool",
+        "observation": {
+          "domain": "village",
           "fields": {
             "availableLocations": "available"
           }
@@ -345,7 +375,7 @@
   },
   "costs": {
     "version": 1,
-    "traceSha256": "eb8e8e9a8a56fcdcbe373fd4b00db92cbc287e892af91acaa8f5ec5458adfaf8",
+    "traceSha256": "7b67acf7126a6a1852159506ae7ef186cbaa8fc67092cdda47005a9528d6a0d2",
     "accounting": "Inclusive execution counters at each action entrypoint, including attempted operations before rollback. Event counts sum local emissions across descendants; syscall and gas counters are already inclusive. Account validation and fees are outside this fixture.",
     "actions": [
       {
@@ -358,18 +388,18 @@
           "classHash": "0xed56968bb8675042c84ebb60c5160d8bd7d84890559ff47ca9aba48b49d7d0"
         },
         "nativeExecution": {
-          "storageWrites": 234,
-          "events": 61,
-          "eventFelts": 836,
-          "l2Gas": 193720405,
-          "classHash": "0x1f6fb7cca674c70fa561980a9ba4c62d67c7ee13ba543f367e917d954d57aeb"
+          "storageWrites": 152,
+          "events": 49,
+          "eventFelts": 702,
+          "l2Gas": 43969355,
+          "classHash": "0x4bec3c70a7fb16e8c4fc28df9f12719d4337fbabbaa88d9cad66b8db07f028c"
         },
         "nativeGameplay": {
-          "storageWrites": 223,
-          "events": 58,
-          "eventFelts": 803,
-          "l2Gas": 192668827,
-          "classHash": "0x1f6fb7cca674c70fa561980a9ba4c62d67c7ee13ba543f367e917d954d57aeb"
+          "storageWrites": 141,
+          "events": 46,
+          "eventFelts": 669,
+          "l2Gas": 42841117,
+          "classHash": "0x44be36368f9ad669f4b73ec6af6e3e6005f0d996c254b199899f40ade89e3a8"
         },
         "case": "first_open_entry",
         "expectedSuccess": true
@@ -384,18 +414,18 @@
           "classHash": "0xed56968bb8675042c84ebb60c5160d8bd7d84890559ff47ca9aba48b49d7d0"
         },
         "nativeExecution": {
-          "storageWrites": 229,
-          "events": 61,
-          "eventFelts": 836,
-          "l2Gas": 193664415,
-          "classHash": "0x1f6fb7cca674c70fa561980a9ba4c62d67c7ee13ba543f367e917d954d57aeb"
+          "storageWrites": 142,
+          "events": 49,
+          "eventFelts": 702,
+          "l2Gas": 42665975,
+          "classHash": "0x4bec3c70a7fb16e8c4fc28df9f12719d4337fbabbaa88d9cad66b8db07f028c"
         },
         "nativeGameplay": {
-          "storageWrites": 218,
-          "events": 58,
-          "eventFelts": 803,
-          "l2Gas": 192612837,
-          "classHash": "0x1f6fb7cca674c70fa561980a9ba4c62d67c7ee13ba543f367e917d954d57aeb"
+          "storageWrites": 131,
+          "events": 46,
+          "eventFelts": 669,
+          "l2Gas": 41537737,
+          "classHash": "0x44be36368f9ad669f4b73ec6af6e3e6005f0d996c254b199899f40ade89e3a8"
         },
         "case": "second_open_entry",
         "expectedSuccess": true
@@ -413,15 +443,15 @@
           "storageWrites": 11,
           "events": 3,
           "eventFelts": 33,
-          "l2Gas": 1963935,
-          "classHash": "0x1f6fb7cca674c70fa561980a9ba4c62d67c7ee13ba543f367e917d954d57aeb"
+          "l2Gas": 2346595,
+          "classHash": "0x4bec3c70a7fb16e8c4fc28df9f12719d4337fbabbaa88d9cad66b8db07f028c"
         },
         "nativeGameplay": {
           "storageWrites": 0,
           "events": 0,
           "eventFelts": 0,
-          "l2Gas": 926610,
-          "classHash": "0x1f6fb7cca674c70fa561980a9ba4c62d67c7ee13ba543f367e917d954d57aeb"
+          "l2Gas": 1232610,
+          "classHash": "0x44be36368f9ad669f4b73ec6af6e3e6005f0d996c254b199899f40ade89e3a8"
         },
         "case": "repeat_entry",
         "expectedSuccess": false
@@ -433,9 +463,9 @@
   "rulesRevision": "55dc510f5e7af119d1efac9a60426e81fee8e408",
   "oracleSourceSha256": "99034c1e0f31719df3d1ae0cf343a2e9b53fae2da8f972bb38c78b1fa7d73bce",
   "provenance": {
-    "revision": "e8a967f9ebddfc2384a7b375a4607c9ec35d38bf",
+    "revision": "0a6bdbbd1511921d9aefe3d44072e406c15823c2",
     "dirty": false,
-    "sourceSha256": "ab0515b01e23b7ece9b6e69e6756d9d51e0fe9f6c4555a9b6fb95d147b7c17f5",
+    "sourceSha256": "7c31bac5fe021e0262db5b728c6eecf52ea536e9ae7e36aca9bf4137be0248d0",
     "scope": [
       "apps/herald",
       "contracts/l3/world-native",
@@ -458,6 +488,7 @@
       "contracts/l3/world-native/fixtures/ownership-parity.json",
       "contracts/l3/world-native/fixtures/season-settlement-parity.json",
       "contracts/l3/world-native/fixtures/structure-parity.json",
+      "contracts/l3/world-native/fixtures/village-parity.json",
       "contracts/l3/world-native/fixtures/world-parity.json"
     ]
   },
@@ -496,12 +527,12 @@
     {
       "name": "season_pre_main",
       "test": "world_parity_season_pre_main",
-      "comparedFactSnapshots": 119
+      "comparedFactSnapshots": 107
     },
     {
       "name": "season_explorer_occupied",
       "test": "world_parity_season_explorer_occupied",
-      "comparedFactSnapshots": 517
+      "comparedFactSnapshots": 505
     },
     {
       "name": "season_search_limit",
@@ -511,17 +542,17 @@
     {
       "name": "season_settlement",
       "test": "world_parity_season_settlement",
-      "comparedFactSnapshots": 357
+      "comparedFactSnapshots": 321
     },
     {
       "name": "season_settlement_dev",
       "test": "world_parity_season_settlement_dev",
-      "comparedFactSnapshots": 1284
+      "comparedFactSnapshots": 1152
     },
     {
       "name": "season_settlement_ledger",
       "test": "world_parity_season_settlement_ledger",
-      "comparedFactSnapshots": 129
+      "comparedFactSnapshots": 117
     },
     {
       "name": "season_settlement_rejections",
@@ -531,7 +562,7 @@
     {
       "name": "season_settlement_occupied",
       "test": "world_parity_season_settlement_occupied",
-      "comparedFactSnapshots": 719
+      "comparedFactSnapshots": 707
     }
   ],
   "harnessCoverage": {
@@ -542,61 +573,84 @@
   "casm": {
     "native": {
       "SeasonDomain": {
-        "bytecodeFelts": 78224,
-        "jsonBytes": 1762345,
-        "sha256": "deb540f7a4dd60d011793eb612874e990fe4197055f821c8413fb969d37c0bab",
+        "bytecodeFelts": 56549,
+        "jsonBytes": 1298044,
+        "sha256": "75786ac6f13c784f41ff472bbb451aa7e1b01b14e30551bb989a4a65d25735d9",
         "limitFelts": 81920,
         "withinLimit": true,
         "attribution": "CASM segments in decoded Sierra function-entry order; generics attributed to their defining module",
         "moduleFelts": {
-          "commands": 2437,
-          "core": 8594,
+          "commands": 2419,
+          "core": 4986,
           "eternum_randomness_protocol": 2116,
           "game": 5140,
-          "lifecycle": 3004,
-          "random": 330,
-          "realms": 3851,
+          "lifecycle": 3372,
+          "realms": 175,
           "recording": 1103,
           "resources": 145,
-          "rules": 23993,
-          "season": 17973,
-          "settlement": 7514,
+          "rules": 23273,
+          "season": 11036,
+          "settlement": 848,
+          "troops": 136,
+          "upgrades": 1642,
+          "village": 158
+        }
+      },
+      "SettlementDomain": {
+        "bytecodeFelts": 42998,
+        "jsonBytes": 1020116,
+        "sha256": "95bc0dfcf671a643307096b2ecbffcfde5f8e922112d214b7a1687028837137f",
+        "limitFelts": 81920,
+        "withinLimit": true,
+        "attribution": "CASM segments in decoded Sierra function-entry order; generics attributed to their defining module",
+        "moduleFelts": {
+          "commands": 160,
+          "core": 6925,
+          "game": 1270,
+          "lifecycle": 3372,
+          "random": 330,
+          "realms": 3715,
+          "resources": 145,
+          "rules": 5461,
+          "settlement": 7568,
+          "settlement_domain": 9979,
           "settlement_grid": 246,
           "troops": 136,
-          "upgrades": 1642
+          "village": 3691
         }
       },
       "StructuresDomain": {
-        "bytecodeFelts": 81866,
-        "jsonBytes": 1840461,
-        "sha256": "6dbca4f616a706036130f2ef1f889e07570f920ec7b58565f5d5083fc0db7b7b",
+        "bytecodeFelts": 81589,
+        "jsonBytes": 1860702,
+        "sha256": "c552c64369c235ff84f0f48af8f1c8fcb688ba9c27bfd3419787f669c9aa7726",
         "limitFelts": 81920,
         "withinLimit": true,
         "attribution": "CASM segments in decoded Sierra function-entry order; generics attributed to their defining module",
         "moduleFelts": {
           "buildings": 3012,
           "commands": 160,
-          "core": 5466,
+          "core": 5148,
           "game": 1401,
           "geometry": 327,
-          "lifecycle": 3036,
+          "lifecycle": 3404,
           "map": 159,
           "ownership": 4640,
           "random": 196,
           "realms": 194,
           "resources": 4836,
           "rules": 5461,
-          "settlement": 227,
+          "settlement": 692,
           "stamina": 435,
-          "structures": 49663,
-          "troops": 2507,
-          "upgrades": 146
+          "structures": 48871,
+          "troops": 2281,
+          "upgrades": 146,
+          "village": 226
         }
       },
       "TroopsDomain": {
-        "bytecodeFelts": 69512,
-        "jsonBytes": 1477879,
-        "sha256": "ad86e10f33571f74a55b98f4ec9666153c376572a8867b4faf9374a2159be7e4",
+        "bytecodeFelts": 69129,
+        "jsonBytes": 1484186,
+        "sha256": "cfcaebd93021128f1b0a1c93eef242312db7fa43d7f16a4056eca75a7b1e1435",
         "limitFelts": 81920,
         "withinLimit": true,
         "attribution": "CASM segments in decoded Sierra function-entry order; generics attributed to their defining module",
@@ -604,40 +658,40 @@
           "biome": 235,
           "combat": 12814,
           "commands": 560,
-          "core": 5439,
+          "core": 5412,
           "eternum_cubit": 6222,
           "game": 1401,
           "geometry": 999,
-          "lifecycle": 3028,
+          "lifecycle": 3396,
           "map": 303,
           "random": 330,
           "rules": 5461,
           "stamina": 773,
-          "structures": 3115,
-          "troops": 28832
+          "structures": 2986,
+          "troops": 28237
         }
       },
       "MapDomain": {
-        "bytecodeFelts": 51096,
-        "jsonBytes": 1198077,
-        "sha256": "fe8f8420ae97f6310aff1ca15e793084a5602463ea68c50fcc925d0f96cd4803",
+        "bytecodeFelts": 54478,
+        "jsonBytes": 1278568,
+        "sha256": "56e19f8dbde7aa4319d72237838a7fb39eb3f0614a12ad0335cf4784e29e26c9",
         "limitFelts": 81920,
         "withinLimit": true,
         "attribution": "CASM segments in decoded Sierra function-entry order; generics attributed to their defining module",
         "moduleFelts": {
           "biome": 3466,
           "commands": 160,
-          "core": 2357,
+          "core": 2521,
           "discovery": 430,
           "eternum_cubit": 16530,
           "game": 1270,
-          "geometry": 1951,
-          "lifecycle": 3008,
-          "map": 11280,
+          "geometry": 2790,
+          "lifecycle": 3376,
+          "map": 12060,
           "random": 1052,
           "rules": 5461,
-          "settlement": 2127,
-          "settlement_grid": 1868,
+          "settlement": 3080,
+          "settlement_grid": 2146,
           "troops": 136
         }
       }
@@ -656,6 +710,14 @@
     "Reuse the existing settlement planner and sparse resource facts instead of a second realm state representation.",
     "Remove the allocation-player map and row: no gameplay or client reader used it, and a consumed reverse index enforces the same reservation guard without a second ownership fact."
   ],
-  "ruledDivergences": [],
+  "ruledDivergences": [
+    {
+      "fact": "Settlement neighbour visibility",
+      "oracle": "Realm provisioning reveals neighbouring biomes; Eternum settlement also reveals village-slot tiles.",
+      "native": "Realm and village settlement reveal only their own tile. All neighbouring native tiles must equal their pre-action state.",
+      "cause": "Frozen village and reveal ruling.",
+      "projection": "The paired action snapshots native neighbours before execution and asserts their complete state is unchanged afterwards. Own-tile facts and every other gameplay fact remain paired."
+    }
+  ],
   "divergence": null
 }

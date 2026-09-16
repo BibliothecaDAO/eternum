@@ -1,4 +1,4 @@
-use crate::geometry::neighbor_at_distance;
+use crate::geometry::checked_neighbor_at_distance;
 use crate::settlement::SettlementMode;
 use crate::troops::Coord;
 
@@ -126,4 +126,8 @@ pub fn reservation_location(center: Coord, mode: SettlementMode, profile: u8, ca
     }
     let (outward, tangent) = *array![(0_u8, 2_u8), (5, 1), (4, 0), (3, 5), (2, 4), (1, 3)].at(point / ring);
     neighbor_at_distance(neighbor_at_distance(center, outward, step * ring), tangent, step * (point % ring))
+}
+
+fn neighbor_at_distance(coord: Coord, direction: u8, distance: u32) -> Coord {
+    checked_neighbor_at_distance(coord, direction, distance).expect('settlement geometry exhausted')
 }

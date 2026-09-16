@@ -110,6 +110,10 @@ pub trait ISettlementCommands<T> {
 pub trait ISettlementEntry<T> {
     fn register_entitlement(ref self: T, key: EntryKey, entitlement: EntryEntitlement);
     fn entry_entitlement(self: @T, key: EntryKey) -> Option<EntryEntitlement>;
+}
+
+#[starknet::interface]
+pub trait ISettlementAdmission<T> {
     fn settlement_admission(self: @T, game_id: u32, actor: ContractAddress) -> SettlementAdmission;
 }
 
@@ -125,24 +129,28 @@ pub trait ISettlementViews<T> {
 #[starknet::interface]
 pub trait ISettlementPool<T> {
     fn settlement_pool(self: @T, game_id: u32) -> SettlementPool;
+    fn village_pool(self: @T, game_id: u32) -> SettlementPool;
+    fn claim_village(ref self: T, game_id: u32, registered: u16, seed: u256) -> Coord;
     fn reserved_hyperstructures(self: @T, game_id: u32) -> u32;
     fn claim_settlement(ref self: T, game_id: u32, registered: u16, seed: u256) -> Span<Coord>;
 }
 
 #[starknet::component]
 pub mod SettlementPoolState {
+    use core::num::traits::CheckedAdd;
     use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
     use crate::events::RowSet;
     use crate::settlement_grid::{settlement_location, target_pool_size};
     use crate::troops::Coord;
-    use super::{SettlementLocation, SettlementPool, SettlementRules};
+    use super::{SettlementLocation, SettlementMode, SettlementPool, SettlementRules};
 
     #[storage]
     pub struct Storage {
         pub reserved_hyperstructures: Map<u32, u32>,
-        pub opened: Map<u32, u32>,
-        pub available_count: Map<u32, u16>,
-        pub candidates: Map<(u32, u16), u32>,
+        pub opened: Map<(u32, bool), u32>,
+        pub available_count: Map<(u32, bool), u16>,
+        pub candidates: Map<(u32, bool, u16), u32>,
+        pub reserved: Map<(u32, u32, u32), bool>,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -154,18 +162,31 @@ pub mod SettlementPoolState {
         fn pool(
             self: @ComponentState<TContractState>, game_id: u32, center: Coord, rules: SettlementRules,
         ) -> SettlementPool {
+            self.project_pool(game_id, false, center, rules)
+        }
+        fn village_pool(
+            self: @ComponentState<TContractState>, game_id: u32, center: Coord, rules: SettlementRules,
+        ) -> SettlementPool {
+            self.project_pool(game_id, true, center, SettlementRules { mode: SettlementMode::Single, ..rules })
+        }
+        fn project_pool(
+            self: @ComponentState<TContractState>, game_id: u32, village: bool, center: Coord, rules: SettlementRules,
+        ) -> SettlementPool {
             let mut available = array![];
-            for index in 0..self.available_count.read(game_id) {
+            for index in 0..self.available_count.read((game_id, village)) {
                 available
                     .append(
                         SettlementLocation {
                             coords: settlement_location(
-                                center, rules.mode, rules.reward_profile, self.candidates.read((game_id, index)),
+                                center,
+                                rules.mode,
+                                rules.reward_profile,
+                                self.candidates.read((game_id, village, index)),
                             ),
                         },
                     );
             }
-            SettlementPool { opened: self.opened.read(game_id), available: available.span() }
+            SettlementPool { opened: self.opened.read((game_id, village)), available: available.span() }
         }
         fn claim(
             ref self: ComponentState<TContractState>,
@@ -176,33 +197,111 @@ pub mod SettlementPoolState {
             seed: u256,
         ) -> Span<Coord> {
             let target = target_pool_size(registered, rules.registration_limit, rules.mode);
-            let mut count = self.available_count.read(game_id);
-            let mut opened = self.opened.read(game_id);
-            while count < target {
-                self.candidates.write((game_id, count), opened);
-                count += 1;
-                opened += 1;
+            assert!(target != 0, "no open settlements");
+            self.prepare_pool(game_id, false, center, rules, target);
+            self.take_candidate(game_id, false, center, rules, seed)
+        }
+        fn claim_village(
+            ref self: ComponentState<TContractState>,
+            game_id: u32,
+            center: Coord,
+            rules: SettlementRules,
+            registered: u16,
+            seed: u256,
+        ) -> Coord {
+            // Reserve pending entries first, including every fixed Duel location.
+            let target = target_pool_size(registered, rules.registration_limit, rules.mode);
+            if self.prepare_pool(game_id, false, center, rules, target) {
+                self.emit_pool(game_id, false, center, rules);
             }
+            let single = SettlementRules { mode: SettlementMode::Single, ..rules };
+            // Village passes have no registration quota. Six candidates is the planner's initial window.
+            self.prepare_pool(game_id, true, center, single, 6);
+            *self.take_candidate(game_id, true, center, single, seed).at(0)
+        }
+        fn prepare_pool(
+            ref self: ComponentState<TContractState>,
+            game_id: u32,
+            village: bool,
+            center: Coord,
+            rules: SettlementRules,
+            target: u16,
+        ) -> bool {
+            let key = (game_id, village);
+            let mut count = self.available_count.read(key);
+            let previous = count;
+            let mut opened = self.opened.read(key);
+            while count < target {
+                let coords = settlement_location(center, rules.mode, rules.reward_profile, opened);
+                opened = opened.checked_add(1).expect('settlement geometry exhausted');
+                if !self.reserve_location(game_id, coords) {
+                    continue;
+                }
+                self.candidates.write((game_id, village, count), opened - 1);
+                count += 1;
+            }
+            if count == previous {
+                return false;
+            }
+            self.available_count.write(key, count);
+            self.opened.write(key, opened);
+            true
+        }
+        fn reserve_location(ref self: ComponentState<TContractState>, game_id: u32, coords: Span<Coord>) -> bool {
+            for coord in coords {
+                if self.reserved.read((game_id, *coord.x, *coord.y)) {
+                    return false;
+                }
+            }
+            for coord in coords {
+                self.reserved.write((game_id, *coord.x, *coord.y), true);
+            }
+            true
+        }
+        fn take_candidate(
+            ref self: ComponentState<TContractState>,
+            game_id: u32,
+            village: bool,
+            center: Coord,
+            rules: SettlementRules,
+            seed: u256,
+        ) -> Span<Coord> {
+            let count = self.available_count.read((game_id, village));
             assert!(count != 0, "no open settlements");
             let selected: u16 = crate::random::range(seed, 98139, count.into()).try_into().unwrap();
-            let candidate = self.candidates.read((game_id, selected));
+            let candidate = self.candidates.read((game_id, village, selected));
             let remaining = count - 1;
             if selected != remaining {
-                self.candidates.write((game_id, selected), self.candidates.read((game_id, remaining)));
+                self
+                    .candidates
+                    .write((game_id, village, selected), self.candidates.read((game_id, village, remaining)));
             }
-            self.available_count.write(game_id, remaining);
-            if opened != self.opened.read(game_id) {
-                self.opened.write(game_id, opened);
-            }
+            self.available_count.write((game_id, village), remaining);
+            self.emit_pool(game_id, village, center, rules);
+            settlement_location(center, rules.mode, rules.reward_profile, candidate)
+        }
+        fn emit_pool(
+            ref self: ComponentState<TContractState>,
+            game_id: u32,
+            village: bool,
+            center: Coord,
+            rules: SettlementRules,
+        ) {
             let mut values = array![];
-            self.pool(game_id, center, rules).serialize(ref values);
+            self.project_pool(game_id, village, center, rules).serialize(ref values);
             self
                 .emit(
                     RowSet {
-                        version: 1, model: 'SettlementPool', keys: array![game_id.into()].span(), values: values.span(),
+                        version: 1,
+                        model: if village {
+                            'VillagePool'
+                        } else {
+                            'SettlementPool'
+                        },
+                        keys: array![game_id.into()].span(),
+                        values: values.span(),
                     },
                 );
-            settlement_location(center, rules.mode, rules.reward_profile, candidate)
         }
     }
 }
@@ -431,15 +530,6 @@ pub struct RealmGrants {
 
 #[starknet::interface]
 pub trait IRealmCreation<T> {
-    fn create_blitz_realm(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        realm_id: u16,
-        coord: Coord,
-        grant_troops: bool,
-        context: crate::commands::ExecutionContext,
-    ) -> u32;
     fn activate_realm_economy(
         ref self: T,
         game_id: u32,
@@ -459,4 +549,33 @@ pub trait IBlitzHyperstructures<T> {
     fn create_reserved_hyperstructure(
         ref self: T, game_id: u32, actor: ContractAddress, coord: Coord, context: crate::commands::ExecutionContext,
     );
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct RealmCreation {
+    pub realm_id: u16,
+    pub traits: crate::realms::RealmTraits,
+    pub grant_troops: bool,
+    pub activate_economy: bool,
+}
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct VillageCreation {
+    pub connected_realm: u32,
+    pub resource: u8,
+}
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub enum SettlementCreation {
+    Realm: RealmCreation,
+    Village: VillageCreation,
+}
+#[starknet::interface]
+pub trait ISettlementCreation<T> {
+    fn create_settlement(
+        ref self: T,
+        game_id: u32,
+        actor: ContractAddress,
+        coord: Coord,
+        creation: SettlementCreation,
+        context: crate::commands::ExecutionContext,
+    ) -> u32;
 }

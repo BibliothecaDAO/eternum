@@ -201,7 +201,8 @@
     "season_duel": "Season settlement rejects the duel planner mode.",
     "season_pre_main": "Settlement succeeds at the settling boundary before main-game start, with immediate provisioning.",
     "season_explorer_occupied": "Season placement skips an occupied explorer tile and leaves the explorer unchanged.",
-    "season_search_limit": "Sixty-four occupied candidate draws reject without committing allocation or planner changes."
+    "season_search_limit": "Sixty-four occupied candidate draws reject without committing allocation or planner changes.",
+    "village": "Village production and army grants use the same resources and recorded time; planner placement and pass consumption are the frozen new behaviour."
   },
   "randomness": {
     "rawRootSource": "injected identical root per action",

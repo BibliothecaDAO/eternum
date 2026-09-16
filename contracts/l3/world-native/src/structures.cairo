@@ -3,7 +3,7 @@ use crate::discovery::Discovery;
 use crate::resources::{Production, ResourceKey, ResourceSlot, Weight};
 use crate::troops::{Coord, Troops};
 
-#[derive(Copy, Drop, Serde, Default, Debug, PartialEq, starknet::Store)]
+#[derive(Copy, Drop, Serde, Default, Debug, PartialEq)]
 pub struct StructureBase {
     pub troop_guard_count: u8,
     pub troop_explorer_count: u16,
@@ -17,15 +17,83 @@ pub struct StructureBase {
     // This lets delayed provisioning know whether the one-time troop start was already applied.
     pub starting_troops_granted: bool,
 }
-#[derive(Copy, Drop, Serde, Default, Debug, PartialEq, starknet::Store)]
+
+const EXPLORER_COUNT_SCALE: u128 = 0x10000;
+const EXPLORER_LIMIT_SCALE: u128 = 0x100000000;
+const CREATED_AT_SCALE: u128 = 0x1000000000000;
+const LEVEL_SCALE: u128 = 0x100000000000000000000;
+const CATEGORY_SCALE: u128 = 0x10000000000000000000000;
+const TROOPS_GRANTED_SCALE: u128 = 0x1000000000000000000000000;
+const COORDINATE_SCALE: u128 = 0x100000000;
+
+// The low limb holds counts, limits, time and flags; the high limb holds the two coordinates.
+// All 161 field bits are retained. The unused gap keeps decoding within u128 arithmetic.
+pub impl StructureBasePacking of starknet::storage_access::StorePacking<StructureBase, felt252> {
+    fn pack(value: StructureBase) -> felt252 {
+        let granted = if value.starting_troops_granted {
+            1_u128
+        } else {
+            0
+        };
+        let low = value.troop_guard_count.into()
+            + value.troop_max_guard_count.into() * 256
+            + value.troop_explorer_count.into() * EXPLORER_COUNT_SCALE
+            + value.troop_max_explorer_count.into() * EXPLORER_LIMIT_SCALE
+            + value.created_at.into() * CREATED_AT_SCALE
+            + value.level.into() * LEVEL_SCALE
+            + value.category.into() * CATEGORY_SCALE
+            + granted * TROOPS_GRANTED_SCALE;
+        let high = value.coord_x.into() + value.coord_y.into() * COORDINATE_SCALE;
+        u256 { low, high }.try_into().unwrap()
+    }
+    fn unpack(value: felt252) -> StructureBase {
+        let value: u256 = value.into();
+        StructureBase {
+            troop_guard_count: (value.low % 256).try_into().unwrap(),
+            troop_max_guard_count: (value.low / 256 % 256).try_into().unwrap(),
+            troop_explorer_count: (value.low / EXPLORER_COUNT_SCALE % 0x10000).try_into().unwrap(),
+            troop_max_explorer_count: (value.low / EXPLORER_LIMIT_SCALE % 0x10000).try_into().unwrap(),
+            created_at: (value.low / CREATED_AT_SCALE % COORDINATE_SCALE).try_into().unwrap(),
+            level: (value.low / LEVEL_SCALE % 256).try_into().unwrap(),
+            category: (value.low / CATEGORY_SCALE % 256).try_into().unwrap(),
+            starting_troops_granted: value.low / TROOPS_GRANTED_SCALE % 2 != 0,
+            coord_x: (value.high % COORDINATE_SCALE).try_into().unwrap(),
+            coord_y: (value.high / COORDINATE_SCALE).try_into().unwrap(),
+        }
+    }
+}
+#[derive(Copy, Drop, Serde, Default, Debug, PartialEq)]
 pub struct StructureMetadata {
     // associated with realm
     pub realm_id: u16,
     pub order: u8,
     pub has_wonder: bool,
-    pub villages_count: u8,
     // associated with village
     pub village_realm: u32,
+}
+const ORDER_SCALE: u64 = 0x10000;
+const WONDER_SCALE: u64 = 0x1000000;
+const CONNECTED_REALM_SCALE: u64 = 0x100000000;
+pub impl StructureMetadataPacking of starknet::storage_access::StorePacking<StructureMetadata, u64> {
+    fn pack(value: StructureMetadata) -> u64 {
+        let wonder = if value.has_wonder {
+            1_u64
+        } else {
+            0
+        };
+        value.realm_id.into()
+            + value.order.into() * ORDER_SCALE
+            + wonder * WONDER_SCALE
+            + value.village_realm.into() * CONNECTED_REALM_SCALE
+    }
+    fn unpack(value: u64) -> StructureMetadata {
+        StructureMetadata {
+            realm_id: (value % ORDER_SCALE).try_into().unwrap(),
+            order: (value / ORDER_SCALE % 256).try_into().unwrap(),
+            has_wonder: value / WONDER_SCALE % 2 != 0,
+            village_realm: (value / CONNECTED_REALM_SCALE).try_into().unwrap(),
+        }
+    }
 }
 #[derive(Copy, Drop, Serde, Default, Debug, PartialEq, starknet::Store)]
 pub struct GuardTroops {
@@ -51,7 +119,6 @@ pub struct Structure {
     pub troop_explorers: Span<u32>,
     pub resources_packed: u128,
     pub metadata: StructureMetadata,
-    pub category: u8,
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct StructureRecord {
@@ -60,7 +127,6 @@ pub struct StructureRecord {
     pub troop_guards: GuardTroops,
     pub resources_packed: u128,
     pub metadata: StructureMetadata,
-    pub category: u8,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
@@ -101,7 +167,6 @@ pub mod StructureState {
     #[storage]
     pub struct Storage {
         pub structures: Map<(u32, u32), StructureRecord>,
-        pub exists: Map<(u32, u32), bool>,
         pub explorers: Map<(u32, u32, u16), u32>,
     }
     #[event]
@@ -115,7 +180,7 @@ pub mod StructureState {
         fn mark_starting_troops(ref self: ComponentState<TContractState>, key: ResourceKey) {
             let mut base = self.record(key).base;
             base.starting_troops_granted = true;
-            self.structures.entry((key.game_id, key.entity_id)).base.starting_troops_granted.write(true);
+            self.structures.entry((key.game_id, key.entity_id)).base.write(base);
             self.emit_base(key, base);
         }
         fn add_starting_guard(
@@ -145,12 +210,7 @@ pub mod StructureState {
                 record.base.troop_guard_count += 1;
                 troops.category = category;
                 troops.tier = crate::troops::TroopTier::T1;
-                self
-                    .structures
-                    .entry((key.game_id, key.entity_id))
-                    .base
-                    .troop_guard_count
-                    .write(record.base.troop_guard_count);
+                self.structures.entry((key.game_id, key.entity_id)).base.write(record.base);
                 self.emit_base(key, record.base);
             } else {
                 assert!(
@@ -198,12 +258,15 @@ pub mod StructureState {
                     },
                 );
         }
+        fn exists(self: @ComponentState<TContractState>, key: ResourceKey) -> bool {
+            self.structures.entry((key.game_id, key.entity_id)).base.read().category != 0
+        }
         fn record(self: @ComponentState<TContractState>, key: ResourceKey) -> StructureRecord {
-            assert!(self.exists.read((key.game_id, key.entity_id)), "missing structure");
+            assert!(self.exists(key), "missing structure");
             self.structures.read((key.game_id, key.entity_id))
         }
         fn structure(self: @ComponentState<TContractState>, key: ResourceKey) -> Option<Structure> {
-            if !self.exists.read((key.game_id, key.entity_id)) {
+            if !self.exists(key) {
                 return None;
             }
             let record = self.record(key);
@@ -219,17 +282,15 @@ pub mod StructureState {
                     troop_explorers: explorers.span(),
                     resources_packed: record.resources_packed,
                     metadata: record.metadata,
-                    category: record.category,
                 },
             )
         }
         fn create(ref self: ComponentState<TContractState>, key: ResourceKey, record: StructureRecord) {
             assert!(
-                key.game_id != 0 && key.entity_id != 0 && !self.exists.read((key.game_id, key.entity_id)),
+                key.game_id != 0 && key.entity_id != 0 && record.base.category != 0 && !self.exists(key),
                 "invalid new structure",
             );
             self.structures.write((key.game_id, key.entity_id), record);
-            self.exists.write((key.game_id, key.entity_id), true);
             let mut keys = array![];
             key.serialize(ref keys);
             let mut values = array![];
@@ -239,7 +300,7 @@ pub mod StructureState {
         fn transfer_owner(
             ref self: ComponentState<TContractState>, key: ResourceKey, owner: starknet::ContractAddress,
         ) {
-            assert!(self.exists.read((key.game_id, key.entity_id)), "missing structure");
+            assert!(self.exists(key), "missing structure");
             if self.structures.entry((key.game_id, key.entity_id)).owner.read() == owner {
                 return;
             }
@@ -260,10 +321,7 @@ pub mod StructureState {
             let (explorers, guards) = crate::upgrades::troop_limits(base.level);
             base.troop_max_explorer_count = explorers;
             base.troop_max_guard_count = guards;
-            let path = self.structures.entry((key.game_id, key.entity_id)).base;
-            path.level.write(base.level);
-            path.troop_max_explorer_count.write(explorers);
-            path.troop_max_guard_count.write(guards);
+            self.structures.entry((key.game_id, key.entity_id)).base.write(base);
             self.emit_base(key, base);
         }
         fn append_explorer(ref self: ComponentState<TContractState>, key: ResourceKey, explorer_id: u32) {
@@ -273,12 +331,7 @@ pub mod StructureState {
             );
             self.explorers.write((key.game_id, key.entity_id, record.base.troop_explorer_count), explorer_id);
             record.base.troop_explorer_count += 1;
-            self
-                .structures
-                .entry((key.game_id, key.entity_id))
-                .base
-                .troop_explorer_count
-                .write(record.base.troop_explorer_count);
+            self.structures.entry((key.game_id, key.entity_id)).base.write(record.base);
             self.emit_explorers(key);
         }
         fn remove_explorer(ref self: ComponentState<TContractState>, key: ResourceKey, explorer_id: u32) {
@@ -296,12 +349,7 @@ pub mod StructureState {
             }
             assert!(found, "explorer absent from structure");
             record.base.troop_explorer_count = next;
-            self
-                .structures
-                .entry((key.game_id, key.entity_id))
-                .base
-                .troop_explorer_count
-                .write(record.base.troop_explorer_count);
+            self.structures.entry((key.game_id, key.entity_id)).base.write(record.base);
             self.emit_explorers(key);
         }
         fn emit_explorers(ref self: ComponentState<TContractState>, key: ResourceKey) {
@@ -450,7 +498,7 @@ pub mod StructuresDomain {
             let structure = self.structures.structure(key);
             match structure {
                 Some(value) => {
-                    if value.category == 2 {
+                    if value.base.category == 2 {
                         Some(
                             super::Hyperstructure {
                                 initialized: self.completed_hyperstructures.read((key.game_id, key.entity_id)),
@@ -551,7 +599,7 @@ pub mod StructuresDomain {
                 self.game_dispatcher().game(key.game_id).dev_mode_on, "fixture provisioning requires development game",
             );
             let structure = self.structures.record(key);
-            assert!(structure.category == 1, "producer fixture requires realm");
+            assert!(structure.base.category == 1, "producer fixture requires realm");
             let coord = Coord { alt: false, x: structure.base.coord_x, y: structure.base.coord_y };
             let rules = self.game_dispatcher().rules(key.game_id);
             self.create_producer(key, coord, output, true, 24, 26, rules, get_block_timestamp());
@@ -564,7 +612,7 @@ pub mod StructuresDomain {
             assert!(game.dev_mode_on, "fixture provisioning requires development game");
             assert!(!coord.alt && actor != 0.try_into().unwrap(), "invalid realm owner or layer");
             let record = realm_record(actor, coord, get_block_timestamp());
-            let key = self.place_realm(game_id, coord, record);
+            let key = self.place_settlement(game_id, coord, record);
             for grant in grants {
                 let (resource_type, amount) = *grant;
                 let rule = self.resource_rule(game_id, resource_type);
@@ -650,63 +698,79 @@ pub mod StructuresDomain {
         }
     }
     #[abi(embed_v0)]
-    impl SeasonRealmCreation of crate::realms::ISeasonRealmCreation<ContractState> {
-        fn create_season_realm(
+    impl SettlementCreation of crate::settlement::ISettlementCreation<ContractState> {
+        fn create_settlement(
             ref self: ContractState,
             game_id: u32,
             actor: ContractAddress,
-            realm_id: u16,
-            traits: crate::realms::RealmTraits,
             coord: Coord,
+            creation: crate::settlement::SettlementCreation,
             context: ExecutionContext,
         ) -> u32 {
-            assert!(get_caller_address() == self.lifecycle.require_active().season, "only season domain");
+            assert!(get_caller_address() == self.lifecycle.require_active().settlement, "only settlement domain");
             let mut record = realm_record(actor, coord, context.timestamp);
-            record.metadata.realm_id = realm_id;
-            record.metadata.order = traits.order;
-            record.metadata.has_wonder = traits.wonder != 1;
-            record.resources_packed = pack_realm_resources(traits.resources);
-            let key = self.place_realm(game_id, coord, record);
-            self.provision_realm_economy(key, context.timestamp);
-            self
-                .emit_realm_story(
-                    key,
-                    actor,
-                    Story::RealmCreatedStory(crate::ownership::RealmCreatedStory { coord }),
-                    context.timestamp,
-                );
+            match creation {
+                crate::settlement::SettlementCreation::Realm(realm) => {
+                    record.metadata.realm_id = realm.realm_id;
+                    record.metadata.order = realm.traits.order;
+                    record.metadata.has_wonder = realm.traits.wonder != 1;
+                    record.resources_packed = pack_realm_resources(realm.traits.resources);
+                },
+                crate::settlement::SettlementCreation::Village(village) => {
+                    let connected = self.structures.record(ResourceKey { game_id, entity_id: village.connected_realm });
+                    assert!(connected.base.category == 1, "connected entity is not a realm");
+                    assert!(village.resource >= 1 && village.resource <= 22, "invalid village resource");
+                    record.base.category = crate::ownership::VILLAGE_CATEGORY;
+                    record.metadata.village_realm = village.connected_realm;
+                    record.resources_packed = pack_realm_resources(array![village.resource].span());
+                },
+            }
+            let key = self.place_settlement(game_id, coord, record);
+            match creation {
+                crate::settlement::SettlementCreation::Realm(realm) => {
+                    if realm.activate_economy {
+                        self.provision_realm_economy(key, context.timestamp);
+                    } else if realm.grant_troops {
+                        self.grant_realm_troops(key, context.timestamp);
+                    }
+                    self
+                        .emit_realm_story(
+                            key,
+                            actor,
+                            Story::RealmCreatedStory(crate::ownership::RealmCreatedStory { coord }),
+                            context.timestamp,
+                        );
+                },
+                crate::settlement::SettlementCreation::Village(_) => {
+                    self.grant_non_troop_resources(key, self.village_rules(game_id).resources, context.timestamp);
+                    let rules = self.game_dispatcher().rules(game_id);
+                    self.create_producer(key, coord, 0, false, 23, 25, rules, context.timestamp);
+                },
+            }
             key.entity_id
         }
     }
     #[abi(embed_v0)]
-    impl RealmCreation of crate::settlement::IRealmCreation<ContractState> {
-        fn create_blitz_realm(
-            ref self: ContractState,
-            game_id: u32,
-            actor: ContractAddress,
-            realm_id: u16,
-            coord: Coord,
-            grant_troops: bool,
-            context: ExecutionContext,
-        ) -> u32 {
+    impl Villages of crate::village::IVillageArmy<ContractState> {
+        fn receive_village_army(
+            ref self: ContractState, game_id: u32, actor: ContractAddress, village_id: u32, context: ExecutionContext,
+        ) {
             assert!(get_caller_address() == self.lifecycle.require_active().season, "only season domain");
-            let mut record = realm_record(actor, coord, context.timestamp);
-            record.metadata.realm_id = realm_id;
-            record
-                .resources_packed = pack_realm_resources(self.settlement_rules().realm_grants(game_id).realm_resources);
-            let key = self.place_realm(game_id, coord, record);
-            if grant_troops {
-                self.grant_realm_troops(key, context.timestamp);
-            }
-            self
-                .emit_realm_story(
-                    key,
-                    actor,
-                    Story::RealmCreatedStory(crate::ownership::RealmCreatedStory { coord }),
-                    context.timestamp,
-                );
-            key.entity_id
+            assert_playing(self.game_dispatcher().game(game_id), context.timestamp);
+            let key = ResourceKey { game_id, entity_id: village_id };
+            let record = self.structures.record(key);
+            assert!(record.owner == actor, "actor does not own village");
+            assert!(record.base.category == crate::ownership::VILLAGE_CATEGORY, "structure is not a village");
+            assert!(!record.base.starting_troops_granted, "army grant already claimed");
+            let grants = self.village_rules(game_id);
+            let interval = self.game_dispatcher().rules(game_id).tick_config.armies_tick_in_seconds;
+            let claimable_at: u64 = record.base.created_at.into() / interval + grants.troop_delay_ticks.into();
+            assert!(context.timestamp / interval >= claimable_at, "army grant cannot be claimed yet");
+            self.grant_starting_troops(key, grants.resources, 10 * RESOURCE_PRECISION, context.timestamp);
         }
+    }
+    #[abi(embed_v0)]
+    impl RealmCreation of crate::settlement::IRealmCreation<ContractState> {
         fn activate_realm_economy(
             ref self: ContractState, game_id: u32, actor: ContractAddress, structure_id: u32, context: ExecutionContext,
         ) {
@@ -715,7 +779,7 @@ pub mod StructuresDomain {
             let key = ResourceKey { game_id, entity_id: structure_id };
             let record = self.structures.record(key);
             assert!(record.owner == actor, "actor does not own structure");
-            assert!(record.category == 1, "not a realm");
+            assert!(record.base.category == 1, "not a realm");
             self.provision_realm_economy(key, context.timestamp);
         }
     }
@@ -766,12 +830,15 @@ pub mod StructuresDomain {
             command: crate::names::SetAddressName,
             context: ExecutionContext,
         ) {
-            assert!(
-                get_caller_address() == self.lifecycle.require_active().season, "only authenticated command domain",
-            );
+            let peers = self.lifecycle.require_active();
+            let caller = get_caller_address();
+            assert!(caller == peers.season || caller == peers.settlement, "only authenticated command domain");
             crate::commands::assert_context_time(context.timestamp);
             let key = (game_id, command.owned_structure_id);
-            assert!(self.structures.exists.read(key), "actor does not own structure");
+            assert!(
+                self.structures.exists(ResourceKey { game_id, entity_id: command.owned_structure_id }),
+                "actor does not own structure",
+            );
             assert!(self.structures.structures.entry(key).owner.read() == actor, "actor does not own structure");
             self.address_names.write(actor, command.name);
             self
@@ -881,7 +948,6 @@ pub mod StructuresDomain {
             troop_guards: Default::default(),
             resources_packed: 0,
             metadata: Default::default(),
-            category: 1,
         }
     }
     #[generate_trait]
@@ -920,9 +986,11 @@ pub mod StructuresDomain {
         }
 
         fn settlement_rules(self: @ContractState) -> ISettlementViewsDispatcher {
-            ISettlementViewsDispatcher { contract_address: self.lifecycle.require_active().season }
+            ISettlementViewsDispatcher { contract_address: self.lifecycle.require_active().settlement }
         }
-        fn place_realm(ref self: ContractState, game_id: u32, coord: Coord, record: StructureRecord) -> ResourceKey {
+        fn place_settlement(
+            ref self: ContractState, game_id: u32, coord: Coord, record: StructureRecord,
+        ) -> ResourceKey {
             assert!(!coord.alt && record.owner != 0.try_into().unwrap(), "invalid realm owner or layer");
             let key = ResourceKey { game_id, entity_id: self.game_dispatcher().allocate_entity(game_id) };
             let tile = self.map_dispatcher().tile(tile_key(game_id, coord)).map(|tile| tile.data).unwrap_or(0);
@@ -935,13 +1003,21 @@ pub mod StructuresDomain {
             let rules = self.game_dispatcher().rules(game_id);
             self.reveal_structure_tile(game_id, coord, rules);
             self.structures.create(key, record);
-            let occupier = if record.metadata.has_wonder {
+            let village = record.base.category == crate::ownership::VILLAGE_CATEGORY;
+            let occupier = if village {
+                13
+            } else if record.metadata.has_wonder {
                 5
             } else {
                 1
             };
             self.map_dispatcher().occupy(tile_key(game_id, coord), key.entity_id, occupier, true);
-            self.resources.initialize(key, rules.structure_capacity_config.realm_capacity.into() * RESOURCE_PRECISION);
+            let capacity = if village {
+                rules.structure_capacity_config.village_capacity
+            } else {
+                rules.structure_capacity_config.realm_capacity
+            };
+            self.resources.initialize(key, capacity.into() * RESOURCE_PRECISION);
             key
         }
         fn emit_realm_story(
@@ -967,22 +1043,43 @@ pub mod StructuresDomain {
             const LABOR_COUNT_SCALE: u128 = 0x10000000000000000;
             assert!(counts.packed_counts_2 / LABOR_COUNT_SCALE % 256 == 0, "realm already provisioned");
             let coord = Coord { alt: false, x: record.base.coord_x, y: record.base.coord_y };
-            self.reveal_surroundings(key.game_id, coord);
             self.grant_realm_troops(key, timestamp);
             let grants = self.settlement_rules().realm_grants(key.game_id);
-            for grant in grants.resources {
-                let resource_type = *grant.resource_type;
-                let amount = *grant.amount;
-                assert!(resource_type != crate::resources::LORDS, "invalid start resource");
-                if resource_type < 26 || resource_type > 34 {
-                    let weight = self.resource_rule(key.game_id, resource_type).unit_weight;
-                    self.resources.grant_resource(key, resource_type, amount, weight, timestamp.try_into().unwrap());
-                }
-            }
+            self.grant_non_troop_resources(key, grants.resources, timestamp);
             let rules = self.game_dispatcher().rules(key.game_id);
             self.create_producer(key, coord, 0xffffffffffffffffffffffffffffffff, true, 23, 25, rules, timestamp);
         }
+        fn village_rules(self: @ContractState, game_id: u32) -> crate::village::VillageRules {
+            crate::village::IVillagesDispatcherTrait::village_rules(
+                crate::village::IVillagesDispatcher { contract_address: self.lifecycle.require_active().settlement },
+                game_id,
+            )
+        }
+        fn grant_non_troop_resources(
+            ref self: ContractState, key: ResourceKey, grants: Span<crate::resources::ResourceAmount>, timestamp: u64,
+        ) {
+            for grant in grants {
+                let resource_type = *grant.resource_type;
+                assert!(resource_type != crate::resources::LORDS, "invalid start resource");
+                if resource_type < 26 || resource_type > 34 {
+                    let weight = self.resource_rule(key.game_id, resource_type).unit_weight;
+                    self
+                        .resources
+                        .grant_resource(key, resource_type, *grant.amount, weight, timestamp.try_into().unwrap());
+                }
+            }
+        }
         fn grant_realm_troops(ref self: ContractState, key: ResourceKey, timestamp: u64) {
+            let grants = self.settlement_rules().realm_grants(key.game_id);
+            self.grant_starting_troops(key, grants.resources, 1500 * RESOURCE_PRECISION, timestamp);
+        }
+        fn grant_starting_troops(
+            ref self: ContractState,
+            key: ResourceKey,
+            resources: Span<crate::resources::ResourceAmount>,
+            guards: u128,
+            timestamp: u64,
+        ) {
             let record = self.structures.record(key);
             if record.base.starting_troops_granted {
                 return;
@@ -995,11 +1092,10 @@ pub mod StructuresDomain {
             let category = *grants.starting_troops.at((biome - 1).into());
             let resource_type = crate::troops::troop_resource(category, 0);
             let rules = self.game_dispatcher().rules(key.game_id);
-            for grant in grants.resources {
+            for grant in resources {
                 let kind = *grant.resource_type;
                 let amount = *grant.amount;
                 if kind == resource_type {
-                    let guards = 1500 * RESOURCE_PRECISION;
                     let weight = self.resource_rule(key.game_id, kind).unit_weight;
                     self.resources.grant_resource(key, kind, amount + guards, weight, timestamp.try_into().unwrap());
                     self.spend(key, kind, guards, timestamp);
@@ -1220,7 +1316,6 @@ fn discovered_structure(
             troop_guards: discovery_guards(discovery, seed, rules, timestamp),
             resources_packed: 0,
             metadata: Default::default(),
-            category,
         },
         occupier,
         capacity.into(),

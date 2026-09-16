@@ -174,6 +174,13 @@
       "cause": "Collectible custody moves to L2; the L3 gameplay account does not hold L2 tokens.",
       "projection": "The paired fixture supplies equivalent eligible or ineligible owners on the two chains and compares granted attributes and rejection outcomes. Admission finality, wallet ownership and retained snapshot checks run in the sequencing service tests.",
       "recovery": "Later rebinding or token transfer cannot change accepted settlement. Gameplay authentication still requires a PlayerRegistry binding; guests bind to themselves. Locks remain best effort on real L2 time."
+    },
+    {
+      "fact": "Settlement neighbour visibility",
+      "oracle": "Realm provisioning reveals neighbouring biomes; Eternum settlement also reveals village-slot tiles.",
+      "native": "Realm and village settlement reveal only their own tile. All neighbouring native tiles must equal their pre-action state.",
+      "cause": "Frozen village and reveal ruling.",
+      "projection": "The paired action snapshots native neighbours before execution and asserts their complete state is unchanged afterwards. Own-tile facts and every other gameplay fact remain paired."
     }
   ]
 }

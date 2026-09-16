@@ -101,13 +101,13 @@ fn packed_traits_and_entitlement_keep_ordered_resources() {
 #[feature("safe_dispatcher")]
 fn only_deployment_authority_can_append_canonical_traits() {
     let deployment = super::setup(true);
-    let safe = crate::realms::ISeasonRealmsSafeDispatcher { contract_address: deployment.peers.season };
-    snforge_std::start_cheat_caller_address(deployment.peers.season, deployment.actor);
+    let safe = crate::realms::ISeasonRealmsSafeDispatcher { contract_address: deployment.peers.settlement };
+    snforge_std::start_cheat_caller_address(deployment.peers.settlement, deployment.actor);
     assert!(
         crate::realms::ISeasonRealmsSafeDispatcherTrait::initialize_realm_traits(safe, 1, array![0x4000003].span())
             .is_err(),
     );
-    snforge_std::start_cheat_caller_address(deployment.peers.season, super::authority());
+    snforge_std::start_cheat_caller_address(deployment.peers.settlement, super::authority());
     crate::realms::ISeasonRealmsSafeDispatcherTrait::initialize_realm_traits(safe, 1, array![0x4000003].span())
         .unwrap();
     let result = crate::realms::ISeasonRealmsSafeDispatcherTrait::realm_catalogue(safe).unwrap();
@@ -118,8 +118,8 @@ fn only_deployment_authority_can_append_canonical_traits() {
 #[feature("safe_dispatcher")]
 fn forged_season_commands_cannot_allocate_or_place_realms() {
     let deployment = super::setup(true);
-    let season = crate::realms::ISeasonRealmsSafeDispatcher { contract_address: deployment.peers.season };
-    snforge_std::start_cheat_caller_address(deployment.peers.season, deployment.actor);
+    let season = crate::realms::ISeasonRealmsSafeDispatcher { contract_address: deployment.peers.settlement };
+    snforge_std::start_cheat_caller_address(deployment.peers.settlement, deployment.actor);
     assert!(
         crate::realms::ISeasonRealmsSafeDispatcherTrait::settle_season(
             season,

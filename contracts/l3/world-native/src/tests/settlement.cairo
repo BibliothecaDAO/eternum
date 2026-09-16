@@ -9,7 +9,7 @@ use crate::settlement::{
     ISettlementPoolDispatcherTrait, ISettlementPoolSafeDispatcher, ISettlementPoolSafeDispatcherTrait,
     ISettlementViewsDispatcher, ISettlementViewsDispatcherTrait, SettlementMode, SettlementRules,
 };
-use super::{Deployment, authority, context, execute, intent, recorded, setup};
+use super::{Deployment, authority, context, execute, intent, recorded, setup, submitter};
 
 fn grants() -> crate::settlement::RealmGrants {
     let data = read_txt(@FileTrait::new("tests/fixtures/settlement.txt"));
@@ -33,27 +33,27 @@ fn rules() -> SettlementRules {
 }
 
 fn configure(deployment: Deployment, game_id: u32, rules: SettlementRules) {
-    start_cheat_caller_address(deployment.peers.season, authority());
-    ISettlementConfigurationDispatcher { contract_address: deployment.peers.season }
+    start_cheat_caller_address(deployment.peers.settlement, authority());
+    ISettlementConfigurationDispatcher { contract_address: deployment.peers.settlement }
         .configure_settlement(game_id, rules, grants());
-    start_cheat_caller_address(deployment.peers.season, super::submitter());
+    stop_cheat_caller_address(deployment.peers.settlement);
 }
 
 #[test]
 #[feature("safe_dispatcher")]
 fn settlement_configuration_is_immutable_and_game_scoped() {
     let deployment = setup(true);
-    let safe = ISettlementConfigurationSafeDispatcher { contract_address: deployment.peers.season };
-    start_cheat_caller_address(deployment.peers.season, deployment.actor);
+    let safe = ISettlementConfigurationSafeDispatcher { contract_address: deployment.peers.settlement };
+    start_cheat_caller_address(deployment.peers.settlement, deployment.actor);
     assert!(safe.configure_settlement(1, rules(), grants()).is_err());
     configure(deployment, 1, rules());
     configure(deployment, 2, SettlementRules { mode: SettlementMode::Triple, ..rules() });
-    let views = ISettlementViewsDispatcher { contract_address: deployment.peers.season };
+    let views = ISettlementViewsDispatcher { contract_address: deployment.peers.settlement };
     assert!(views.settlement_rules(1).mode == SettlementMode::Single);
     assert_eq!(views.realm_grants(1), grants());
     assert_eq!(views.realm_grants(2), grants());
     assert!(views.settlement_rules(2).mode == SettlementMode::Triple);
-    start_cheat_caller_address(deployment.peers.season, authority());
+    start_cheat_caller_address(deployment.peers.settlement, authority());
     assert!(safe.configure_settlement(1, SettlementRules { registration_limit: 2, ..rules() }, grants()).is_err());
     assert!(safe.configure_settlement(3, rules(), grants()).is_err());
 }
@@ -68,7 +68,7 @@ fn settlement_pool_claim_requires_season_and_keeps_games_separate() {
     let safe = ISettlementPoolSafeDispatcher { contract_address: map };
     start_cheat_caller_address(map, deployment.actor);
     assert!(safe.claim_settlement(1, 0, 17).is_err());
-    start_cheat_caller_address(map, deployment.peers.season);
+    start_cheat_caller_address(map, deployment.peers.settlement);
     let pool = ISettlementPoolDispatcher { contract_address: map };
     let mut seen = array![];
     for registered in 0_u16..96 {
@@ -93,6 +93,7 @@ fn reservations_use_recorded_actions_and_stop_at_completion() {
     let games = IGameDispatcher { contract_address: deployment.peers.season };
     let mut game_rules = recorded::rules();
     game_rules.blitz_mode_on = true;
+    start_cheat_caller_address(deployment.peers.settlement, authority());
     start_cheat_caller_address(deployment.peers.season, authority());
     games.create_game(3, games.game(1), game_rules);
     configure(deployment, 3, SettlementRules { mode: SettlementMode::Duel, registration_limit: 2, ..rules() });
@@ -101,6 +102,7 @@ fn reservations_use_recorded_actions_and_stop_at_completion() {
     start_cheat_caller_address(map, deployment.actor);
     assert!(safe.reserve_hyperstructures(3, deployment.actor, 3, context()).is_err());
     stop_cheat_caller_address(map);
+    start_cheat_caller_address(deployment.peers.season, submitter());
     let command = crate::commands::Command::ReserveHyperstructures(255);
     execute(deployment, recorded::FixtureAction { command, rules: game_rules, ..intent(deployment, 3) });
     let pool = ISettlementPoolDispatcher { contract_address: map };
@@ -122,13 +124,13 @@ fn reservations_use_recorded_actions_and_stop_at_completion() {
 #[feature("safe_dispatcher")]
 fn starting_troop_table_must_be_complete_before_configuration_commits() {
     let deployment = setup(true);
-    let safe = ISettlementConfigurationSafeDispatcher { contract_address: deployment.peers.season };
+    let safe = ISettlementConfigurationSafeDispatcher { contract_address: deployment.peers.settlement };
     let mut incomplete = grants();
     incomplete.starting_troops = incomplete.starting_troops.slice(0, 16);
-    start_cheat_caller_address(deployment.peers.season, authority());
+    start_cheat_caller_address(deployment.peers.settlement, authority());
     assert!(safe.configure_settlement(1, rules(), incomplete).is_err());
     safe.configure_settlement(1, rules(), grants()).unwrap();
-    let views = ISettlementViewsDispatcher { contract_address: deployment.peers.season };
+    let views = ISettlementViewsDispatcher { contract_address: deployment.peers.settlement };
     assert_eq!(views.realm_grants(1), grants());
 }
 
@@ -136,8 +138,8 @@ fn starting_troop_table_must_be_complete_before_configuration_commits() {
 #[feature("safe_dispatcher")]
 fn realm_resource_table_rejects_invalid_ids_and_packing_overflow() {
     let deployment = setup(true);
-    let safe = ISettlementConfigurationSafeDispatcher { contract_address: deployment.peers.season };
-    start_cheat_caller_address(deployment.peers.season, authority());
+    let safe = ISettlementConfigurationSafeDispatcher { contract_address: deployment.peers.settlement };
+    start_cheat_caller_address(deployment.peers.settlement, authority());
     for resource in array![0_u8, 59, 255].span() {
         let invalid = crate::settlement::RealmGrants { realm_resources: array![*resource].span(), ..grants() };
         assert!(safe.configure_settlement(1, rules(), invalid).is_err());
@@ -149,7 +151,7 @@ fn realm_resource_table_rejects_invalid_ids_and_packing_overflow() {
     let invalid = crate::settlement::RealmGrants { realm_resources: too_many.span(), ..grants() };
     assert!(safe.configure_settlement(1, rules(), invalid).is_err());
     safe.configure_settlement(1, rules(), grants()).unwrap();
-    let views = ISettlementViewsDispatcher { contract_address: deployment.peers.season };
+    let views = ISettlementViewsDispatcher { contract_address: deployment.peers.settlement };
     assert_eq!(views.realm_grants(1), grants());
 }
 
@@ -163,9 +165,9 @@ fn entry_entitlements_require_operator_and_compare_every_registration_field() {
         realm_id: 1, metadata_1: 2, metadata_2: 3, metadata_3: 4, pass_kind: 0,
     };
     let key = crate::settlement::EntryKey { game_id: 1, owner: 0x333.try_into().unwrap() };
-    let ledger = crate::settlement::ISettlementEntrySafeDispatcher { contract_address: deployment.peers.season };
+    let ledger = crate::settlement::ISettlementEntrySafeDispatcher { contract_address: deployment.peers.settlement };
     assert!(ledger.register_entitlement(key, entry).is_err());
-    start_cheat_caller_address(deployment.peers.season, operator);
+    start_cheat_caller_address(deployment.peers.settlement, operator);
     ledger.register_entitlement(key, entry).unwrap();
     ledger.register_entitlement(key, entry).unwrap();
     assert!(ledger.register_entitlement(key, crate::settlement::EntryEntitlement { metadata_3: 5, ..entry }).is_err());
@@ -175,4 +177,63 @@ fn entry_entitlements_require_operator_and_compare_every_registration_field() {
     assert!(ledger.register_entitlement(key, crate::settlement::EntryEntitlement { pass_kind: 1, ..entry }).is_err());
     assert!(ledger.entry_entitlement(key).unwrap() == Some(entry));
     assert!(ledger.entry_entitlement(crate::settlement::EntryKey { game_id: 2, ..key }).unwrap().is_none());
+}
+
+
+#[test]
+#[feature("safe_dispatcher")]
+fn village_placement_keeps_every_mode_entry_capacity_and_shares_reservations() {
+    let deployment = setup(true);
+    configure(deployment, 1, SettlementRules { registration_limit: 2, ..rules() });
+    configure(deployment, 2, SettlementRules { mode: SettlementMode::Triple, registration_limit: 2, ..rules() });
+    let games = IGameDispatcher { contract_address: deployment.peers.season };
+    start_cheat_caller_address(deployment.peers.settlement, authority());
+    start_cheat_caller_address(deployment.peers.season, authority());
+    games.create_game(3, games.game(1), recorded::rules());
+    configure(deployment, 3, SettlementRules { mode: SettlementMode::Duel, registration_limit: 2, ..rules() });
+    let map = deployment.peers.map;
+    let pool = ISettlementPoolDispatcher { contract_address: map };
+    let safe = ISettlementPoolSafeDispatcher { contract_address: map };
+    start_cheat_caller_address(map, deployment.actor);
+    assert!(safe.claim_village(1, 0, 17).is_err());
+    start_cheat_caller_address(map, deployment.peers.settlement);
+    for game_id in 1_u32..4 {
+        let mut seen = array![];
+        // More than the removed six-villages-per-realm limit before either player enters.
+        for village in 0_u32..8 {
+            let coord = pool.claim_village(game_id, 0, village.into() + 100);
+            remember_distinct(ref seen, array![coord].span());
+        }
+        for registered in 0_u16..2 {
+            let realms = pool.claim_settlement(game_id, registered, registered.into() + 17);
+            assert!(realms.len() == if game_id == 1 {
+                1
+            } else {
+                3
+            });
+            remember_distinct(ref seen, realms);
+            let coord = pool.claim_village(game_id, registered + 1, registered.into() + 200);
+            remember_distinct(ref seen, array![coord].span());
+        }
+        assert!(safe.claim_settlement(game_id, 2, 17).is_err());
+        // Passes remain usable after realm entry capacity is full.
+        for village in 0_u32..8 {
+            let coord = pool.claim_village(game_id, 2, village.into() + 300);
+            remember_distinct(ref seen, array![coord].span());
+        }
+        assert!(pool.settlement_pool(game_id).available.is_empty());
+        assert!(pool.village_pool(game_id).available.len() == 5);
+        let progress = ISettlementViewsDispatcher { contract_address: deployment.peers.settlement }
+            .settlement_progress(game_id);
+        assert!(progress.registered == 0 && progress.realm_count == 0, "planner changed entry counters");
+    }
+}
+
+fn remember_distinct(ref seen: Array<crate::troops::Coord>, added: Span<crate::troops::Coord>) {
+    for coord in added {
+        for previous in seen.span() {
+            assert!(*previous != *coord, "realm and village reservation overlap");
+        }
+        seen.append(*coord);
+    }
 }

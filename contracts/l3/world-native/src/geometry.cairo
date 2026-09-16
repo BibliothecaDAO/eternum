@@ -34,11 +34,15 @@ pub fn spire_neighbor(coord: Coord, direction: u8) -> Coord {
 }
 
 pub fn neighbor_at_distance(coord: Coord, direction: u8, distance: u32) -> Coord {
-    let distance: i128 = (distance * if coord.alt {
+    checked_neighbor_at_distance(coord, direction, distance).expect('coordinate outside map')
+}
+
+pub fn checked_neighbor_at_distance(coord: Coord, direction: u8, distance: u32) -> Option<Coord> {
+    let distance: i128 = distance.into() * if coord.alt {
         15
     } else {
         1
-    }).into();
+    };
     let row: i128 = coord.y.into();
     let column: i128 = coord.x.into() - (row + row % 2) / 2;
     let (column, row) = match direction {
@@ -50,7 +54,7 @@ pub fn neighbor_at_distance(coord: Coord, direction: u8, distance: u32) -> Coord
         5 => (column + distance, row - distance),
         _ => panic!("invalid direction"),
     };
-    Coord { alt: coord.alt, x: (column + (row + row % 2) / 2).try_into().unwrap(), y: row.try_into().unwrap() }
+    Some(Coord { alt: coord.alt, x: (column + (row + row % 2) / 2).try_into()?, y: row.try_into()? })
 }
 
 pub fn distance(left: Coord, right: Coord) -> u128 {

@@ -41,7 +41,7 @@ pub struct Stamina {
     pub amount: u64,
     pub updated_tick: u64,
 }
-#[derive(Copy, Drop, Serde, Default, Debug, PartialEq, starknet::Store)]
+#[derive(Copy, Drop, Serde, Default, Debug, PartialEq)]
 pub struct TroopBoosts {
     pub incr_damage_dealt_percent_num: u16,
     pub incr_damage_dealt_end_tick: u32,
@@ -52,7 +52,41 @@ pub struct TroopBoosts {
     pub incr_explore_reward_percent_num: u16,
     pub incr_explore_reward_end_tick: u32,
 }
-#[derive(Copy, Drop, Serde, Default, Debug, PartialEq, starknet::Store)]
+
+const DAMAGE_END_SCALE: u128 = 0x10000;
+const DEFENSE_PERCENT_SCALE: u128 = 0x1000000000000;
+const DEFENSE_END_SCALE: u128 = 0x10000000000000000;
+const STAMINA_PERCENT_SCALE: u128 = 0x1000000000000000000000000;
+const STAMINA_TICKS_SCALE: u128 = 0x10000000000000000000000000000;
+
+// Damage, defense and stamina use 120 low-limb bits; exploration uses 48 high-limb bits.
+pub impl TroopBoostsPacking of starknet::storage_access::StorePacking<TroopBoosts, felt252> {
+    fn pack(value: TroopBoosts) -> felt252 {
+        let low = value.incr_damage_dealt_percent_num.into()
+            + value.incr_damage_dealt_end_tick.into() * DAMAGE_END_SCALE
+            + value.decr_damage_gotten_percent_num.into() * DEFENSE_PERCENT_SCALE
+            + value.decr_damage_gotten_end_tick.into() * DEFENSE_END_SCALE
+            + value.incr_stamina_regen_percent_num.into() * STAMINA_PERCENT_SCALE
+            + value.incr_stamina_regen_tick_count.into() * STAMINA_TICKS_SCALE;
+        let high = value.incr_explore_reward_percent_num.into()
+            + value.incr_explore_reward_end_tick.into() * DAMAGE_END_SCALE;
+        u256 { low, high }.try_into().unwrap()
+    }
+    fn unpack(value: felt252) -> TroopBoosts {
+        let value: u256 = value.into();
+        TroopBoosts {
+            incr_damage_dealt_percent_num: (value.low % 0x10000).try_into().unwrap(),
+            incr_damage_dealt_end_tick: (value.low / DAMAGE_END_SCALE % 0x100000000).try_into().unwrap(),
+            decr_damage_gotten_percent_num: (value.low / DEFENSE_PERCENT_SCALE % 0x10000).try_into().unwrap(),
+            decr_damage_gotten_end_tick: (value.low / DEFENSE_END_SCALE % 0x100000000).try_into().unwrap(),
+            incr_stamina_regen_percent_num: (value.low / STAMINA_PERCENT_SCALE % 0x10000).try_into().unwrap(),
+            incr_stamina_regen_tick_count: (value.low / STAMINA_TICKS_SCALE).try_into().unwrap(),
+            incr_explore_reward_percent_num: (value.high % 0x10000).try_into().unwrap(),
+            incr_explore_reward_end_tick: (value.high / DAMAGE_END_SCALE).try_into().unwrap(),
+        }
+    }
+}
+#[derive(Copy, Drop, Serde, Default, Debug, PartialEq)]
 pub struct Troops {
     pub category: TroopType,
     pub tier: TroopTier,
@@ -60,6 +94,58 @@ pub struct Troops {
     pub stamina: Stamina,
     pub boosts: TroopBoosts,
     pub battle_cooldown_end: u32,
+}
+// Counts retain their full u128 range; stamina and combat flags each use one word.
+#[derive(Copy, Drop, starknet::Store)]
+pub struct PackedTroops {
+    pub count: u128,
+    pub stamina: u128,
+    pub boosts: felt252,
+    pub combat: u64,
+}
+const STAMINA_TICK_SCALE: u128 = 0x10000000000000000;
+const TIER_SCALE: u64 = 4;
+const COOLDOWN_SCALE: u64 = 16;
+pub impl TroopsPacking of starknet::storage_access::StorePacking<Troops, PackedTroops> {
+    fn pack(value: Troops) -> PackedTroops {
+        let category: u8 = value.category.into();
+        let tier: u64 = match value.tier {
+            TroopTier::T1 => 0,
+            TroopTier::T2 => 1,
+            TroopTier::T3 => 2,
+        };
+        PackedTroops {
+            count: value.count,
+            stamina: value.stamina.amount.into() + value.stamina.updated_tick.into() * STAMINA_TICK_SCALE,
+            boosts: TroopBoostsPacking::pack(value.boosts),
+            combat: category.into() + tier * TIER_SCALE + value.battle_cooldown_end.into() * COOLDOWN_SCALE,
+        }
+    }
+    fn unpack(value: PackedTroops) -> Troops {
+        let category = match value.combat % TIER_SCALE {
+            0 => TroopType::Knight,
+            1 => TroopType::Paladin,
+            2 => TroopType::Crossbowman,
+            _ => panic!("invalid stored troop type"),
+        };
+        let tier = match value.combat / TIER_SCALE % TIER_SCALE {
+            0 => TroopTier::T1,
+            1 => TroopTier::T2,
+            2 => TroopTier::T3,
+            _ => panic!("invalid stored troop tier"),
+        };
+        Troops {
+            category,
+            tier,
+            count: value.count,
+            stamina: Stamina {
+                amount: (value.stamina % STAMINA_TICK_SCALE).try_into().unwrap(),
+                updated_tick: (value.stamina / STAMINA_TICK_SCALE).try_into().unwrap(),
+            },
+            boosts: TroopBoostsPacking::unpack(value.boosts),
+            battle_cooldown_end: (value.combat / COOLDOWN_SCALE).try_into().unwrap(),
+        }
+    }
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct ExplorerKey {
@@ -326,7 +412,7 @@ pub mod TroopsDomain {
                     context.timestamp,
                 );
             let coord = neighbor(
-                Coord { alt: home.category == 8, x: home.base.coord_x, y: home.base.coord_y }, command.direction,
+                Coord { alt: home.base.category == 8, x: home.base.coord_x, y: home.base.coord_y }, command.direction,
             );
             assert!(
                 command.amount <= super::max_army_size(rules.troop_limit_config, home.base.level, tier).into()
@@ -633,7 +719,7 @@ pub mod TroopsDomain {
                     + rules.battle_config.regular_immunity_ticks.into(),
                 "season immunity",
             );
-            if home.category == 5 {
+            if home.base.category == 5 {
                 assert!(
                     tick >= home.base.created_at.into() / rules.tick_config.armies_tick_in_seconds
                         + rules.battle_config.village_immunity_ticks.into(),
