@@ -112,12 +112,30 @@ main
             "TEST_PNPM_CALLS": str(self.pnpm_calls),
             **settings,
         }
+        checker = SCRIPT.with_name("validate-native-target.mjs")
+        shutil.copy2(checker, self.root / checker.name)
+        manifest = self.root / "native.json"
+        manifest.write_text(json.dumps({"world": {"address": "0x1"}, "native": {
+            "version": 1, "activeSchema": "test", "schemas": {"test": {"identity": "test", "domains": {"season": {}, "registry": {}}}},
+            "domains": {"season": {"address": "0x1"}, "registry": {"address": "0x2"}}}}))
+        env.setdefault("NATIVE_WORLD_MANIFEST", str(manifest))
+        env.setdefault("ADMISSION_URL", "http://127.0.0.1:15081")
+        script = self.root / "recipe.sh"
+        script.write_text(harness)
         result = subprocess.run(
-            ["bash", "-c", harness], cwd=self.caller, env=env, capture_output=True, text=True
+            ["bash", str(script)], cwd=self.caller, env=env, capture_output=True, text=True
         )
         self.assertTrue(result.stdout.strip(), result.stderr)
         payload = json.loads(result.stdout.strip().splitlines()[-1])
         return result, payload
+
+    def test_missing_native_target_stops_before_fetch_or_checkout(self):
+        result, payload = self.deploy(NATIVE_WORLD_MANIFEST="")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(payload["step"], "require_native_target")
+        self.assertEqual(self.git("rev-parse", "HEAD"), self.base)
+        self.assertFalse(self.events.exists())
+        self.assertFalse(self.restarts.exists())
 
     def test_failed_install_retries_from_last_success_even_after_checkout_advanced(self):
         result, payload = self.deploy(TEST_INSTALL_FAIL="1")

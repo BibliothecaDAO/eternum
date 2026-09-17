@@ -24,6 +24,7 @@ declare -A SERVICE_PORT=([herald]=3003 [realms-identity]=3000 [realms-launch]=30
 main() {
   trap report_failure EXIT
   require_root
+  run_step require_native_target
   run_step fetch_deploy_branch
   local from to
   from=$(repo rev-parse --verify "$DEPLOYED_REF" 2>/dev/null || true)
@@ -59,6 +60,16 @@ main() {
   if [ "$status" = ok ]; then run_step repo update-ref "$DEPLOYED_REF" "$to"; fi
   emit_result "$status" "$from" "$to" "$changed" "$services" "$health"
   [ "$status" = ok ]
+}
+
+require_native_target() {
+  (
+    set -a
+    [ ! -f "$REPO_DIR/.env" ] || source "$REPO_DIR/.env"
+    set +a
+    cd "$REPO_DIR"
+    node "${BASH_SOURCE[0]%/*}/validate-native-target.mjs"
+  )
 }
 
 require_root() {

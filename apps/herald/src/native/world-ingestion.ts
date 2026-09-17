@@ -1,20 +1,17 @@
 import { createNativeHistoryCodec } from "./history";
 import { buildNativeDirectory, buildNativeLeaderboard } from "./read-models";
-import type { WorldIngestion } from "../world-ingestion";
 import type { NativeIngestion } from "./ingestion";
-import { NativeLiveWorld } from "./live-world";
+import { LiveWorld, type LiveWorldInput } from "../live-world";
 import { loadNativeWorld } from "./load";
-import { nativeCheckpointCodec } from "./world-fold";
 
-export function createNativeWorldIngestion(native: NativeIngestion): WorldIngestion {
+export function createNativeWorldIngestion(native: NativeIngestion) {
   return {
     registry: native.decoder.registry,
     historyCodec: createNativeHistoryCodec(
       native.decoder.manifest.native.schemas[native.decoder.manifest.native.activeSchema],
     ),
     readModels: { directory: buildNativeDirectory, leaderboard: buildNativeLeaderboard },
-    checkpointCodec: nativeCheckpointCodec,
-    load: (input) => loadNativeWorld({ ...input, native }),
-    createLive: (input) => new NativeLiveWorld({ ...input, native }),
+    load: (input: Omit<Parameters<typeof loadNativeWorld>[0], "native">) => loadNativeWorld({ ...input, native }),
+    createLive: (input: LiveWorldInput) => new LiveWorld({ ...input, native }),
   };
 }

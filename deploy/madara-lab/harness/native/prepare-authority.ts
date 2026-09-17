@@ -15,10 +15,10 @@ const STRK = "0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d
 const root = resolve(import.meta.dir, "../../../..");
 const output = resolve(root, "deploy/madara-lab/.lab/native-sequencer.json");
 const provider = new RpcProvider({ nodeUrl: "http://127.0.0.1:5050/rpc/v0_10_2" });
-const profile = Bun.TOML.parse(await readFile(resolve(root, "contracts/l3/game/dojo_madara.toml"), "utf8")) as {
-  env: { account_address: string; private_key: string };
-};
-const admin = createMadaraAccount(provider, profile.env.account_address, profile.env.private_key);
+const adminAddress = process.env.NATIVE_ACCOUNT_ADDRESS;
+const adminKey = process.env.NATIVE_PRIVATE_KEY;
+if (!adminAddress || !adminKey) throw new Error("NATIVE_ACCOUNT_ADDRESS and NATIVE_PRIVATE_KEY are required");
+const admin = createMadaraAccount(provider, adminAddress, adminKey);
 const transactions: string[] = [];
 const seed = process.argv[2];
 if (!seed) throw new Error("Usage: bun prepare-authority.ts SEED [NATIVE_MANIFEST]");

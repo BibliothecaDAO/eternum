@@ -31,7 +31,6 @@ const waitForGameRegistryByIdMock = mock(async ({ gameId }: { gameId: number }) 
 const writeLaunchSummaryMock = mock(() => ".context/game-launch/madara-blitz-bltz-test.json");
 const buildCreateGameParamsMock = mock((_: unknown, params: unknown) => params);
 const originalGetChainId = RpcProvider.prototype.getChainId;
-const actualPreset = await import("../registrar/preset");
 
 mock.module("../config/config-loader", () => ({
   loadEnvironmentConfiguration: () => buildLaunchConfig(),
@@ -40,7 +39,6 @@ mock.module("../config/config-loader", () => ({
 
 mock.module("../registrar/calls", () => ({
   assertRegistrarAvailable: assertRegistrarAvailableMock,
-  isNativeRegistrar: () => false,
   createRegistrarGame: createRegistrarGameMock,
   resolveRegistrarEnvironmentId: (environmentId: string) => environmentId,
   resolveRegistrarWorldAddress: () => "0xworld",
@@ -58,10 +56,11 @@ mock.module("../registrar/game-registry", () => ({
   waitForGameRegistryById: waitForGameRegistryByIdMock,
 }));
 
-mock.module("../registrar/preset", () => ({
-  ...actualPreset,
-  buildCreateGameParams: buildCreateGameParamsMock,
+mock.module("../registrar/native-preset", () => ({
+  buildNativeGameParams: buildCreateGameParamsMock,
+  loadNativePresetConfiguration: () => buildLaunchConfig(),
 }));
+mock.module("../config/native-preset", () => ({ buildNativePreset: (config: unknown) => config }));
 
 mock.module("../launch/io", () => ({
   loadLaunchSummaryIfPresent: () => loadedSummary,
@@ -150,7 +149,7 @@ describe("registrar game launch", () => {
       expect.anything(),
       "madara.blitz",
       undefined,
-      undefined,
+      expect.objectContaining({ season: { durationSeconds: 3600 } }),
     );
     expect(createLedgerOperatorAccountMock).not.toHaveBeenCalled();
     expect(openLedgerGameMock).not.toHaveBeenCalled();

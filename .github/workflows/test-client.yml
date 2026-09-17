@@ -3,6 +3,7 @@ name: client
 on:
   pull_request:
     paths:
+      - "contracts/l3/world-native/schema/**"
       - ".github/workflows/test-client.yml"
       - "apps/game/**"
       - "package.json"
@@ -38,7 +39,7 @@ jobs:
             [ -z "$file" ] && continue
 
             case "$file" in
-              .github/workflows/test-client.yml|apps/game/*|apps/game/**|packages/*|packages/**|package.json|pnpm-lock.yaml|pnpm-workspace.yaml)
+              contracts/l3/world-native/schema/*|.github/workflows/test-client.yml|apps/game/*|apps/game/**|packages/*|packages/**|package.json|pnpm-lock.yaml|pnpm-workspace.yaml)
                 has_client_runtime_changes=true
                 ;;
             esac

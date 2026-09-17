@@ -6,7 +6,7 @@ import { Account, CallData, type Call, type RawArgs } from "starknet";
 import { resolveDeploymentEnvironment } from "../environment";
 import { openLedgerGame, type LedgerTarget } from "../ledger/calls";
 import { loadRepoJsonFile } from "../shared/repo";
-import type { DeploymentEnvironmentId, WorldDeployment } from "../types";
+import type { DeploymentEnvironmentId } from "../types";
 
 type RegistrarEntrypoint =
   | "bootstrap_chain_config"
@@ -28,20 +28,7 @@ interface ManifestContract {
   systems?: string[];
 }
 
-interface ManifestEvent {
-  tag?: string;
-  selector?: string;
-}
-
-export interface RegistrarManifest {
-  native?: NativeWorldManifest["native"];
-  world?: {
-    address?: string;
-    seed?: string;
-  };
-  contracts?: ManifestContract[];
-  events?: ManifestEvent[];
-}
+export type RegistrarManifest = NativeWorldManifest;
 
 export interface RegistrarTransactionResult {
   transactionHash: string;
@@ -67,37 +54,27 @@ type RegistrarTarget = RegistrarEnvironmentId | RegistrarManifest;
 interface RegistrarContext {
   environmentId?: RegistrarEnvironmentId;
   manifest: RegistrarManifest;
-  registrarAddress?: string;
 }
 
 const DEFAULT_ENVIRONMENT_ID: RegistrarEnvironmentId = "madara.blitz";
-const APPCHAIN_NAMESPACE = "s2";
-
-function resolveEnvironmentManifest(deployment: WorldDeployment): RegistrarManifest {
-  const manifestPath = process.env.GAME_MANIFEST_PATH || deployment.manifestPath;
-  return loadRepoJsonFile<RegistrarManifest>(manifestPath);
-}
 
 function resolveRegistrarContext(target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID): RegistrarContext {
   if (typeof target !== "string") {
+    nativeDomainAbi(target, "registry");
     return { manifest: target };
   }
-
-  const environment = resolveDeploymentEnvironment(target);
-  return {
-    environmentId: target,
-    manifest: resolveEnvironmentManifest(environment.world),
-    registrarAddress: process.env.GAME_MANIFEST_PATH ? undefined : environment.world.registrarAddress,
-  };
+  const path = process.env.NATIVE_WORLD_MANIFEST;
+  if (!path) throw new Error("NATIVE_WORLD_MANIFEST is required");
+  const manifest = loadRepoJsonFile<RegistrarManifest>(path);
+  nativeDomainAbi(manifest, "registry");
+  return { environmentId: target, manifest };
 }
 
-function findContract(context: RegistrarContext, contractName: string): ManifestContract | undefined {
-  if (context.manifest.native && contractName === "registrar_systems") {
-    const manifest = context.manifest as NativeWorldManifest;
-    const address = manifest.native.domains.registry.address;
-    return { address, tag: "native-registry", abi: nativeDomainAbi(manifest, "registry") as ManifestAbiEntry[] };
-  }
-  return context.manifest.contracts?.find((contract) => contract.tag === `${APPCHAIN_NAMESPACE}-${contractName}`);
+function registrarContract(context: RegistrarContext): ManifestContract {
+  return {
+    address: context.manifest.native.domains.registry.address,
+    abi: nativeDomainAbi(context.manifest, "registry") as ManifestAbiEntry[],
+  };
 }
 
 function hasDeployedAddress(address: string | undefined): address is string {
@@ -114,20 +91,18 @@ function abiIncludesEntrypoint(entries: ManifestAbiEntry[] | undefined, entrypoi
 }
 
 function requireRegistrarContract(context: RegistrarContext, entrypoint: RegistrarEntrypoint): ManifestContract {
-  const registrar = findContract(context, "registrar_systems");
-  const registrarAddress = context.registrarAddress ?? registrar?.address;
+  const registrar = registrarContract(context);
+  const registrarAddress = registrar.address;
   if (!registrar || !hasDeployedAddress(registrarAddress)) {
     if (context.environmentId) {
       throw new Error(
         `${context.environmentId} world not deployed yet; set its registrar address after migrating ${context.manifest.world?.seed ?? "the configured profile"}`,
       );
     }
-    throw new Error(
-      `${APPCHAIN_NAMESPACE}-registrar_systems is missing from the appchain manifest; migrate the s2 world first`,
-    );
+    throw new Error(`Native registry is missing from the manifest`);
   }
   if (!registrar.systems?.includes(entrypoint) && !abiIncludesEntrypoint(registrar.abi, entrypoint)) {
-    throw new Error(`registrar_systems manifest is missing ${entrypoint}`);
+    throw new Error(`Native registry ABI is missing ${entrypoint}`);
   }
   return { ...registrar, address: registrarAddress };
 }
@@ -187,17 +162,6 @@ async function executeRegistrarCall(
   return { transactionHash: transaction.transaction_hash, receipt };
 }
 
-function normalizeFelt(value: string): string {
-  return `0x${BigInt(value).toString(16)}`;
-}
-
-function resolveGameCreatedSelector(context: RegistrarContext): string | undefined {
-  const selector = context.manifest.events?.find(
-    (event) => event.tag === `${APPCHAIN_NAMESPACE}-GameCreated`,
-  )?.selector;
-  return selector ? normalizeFelt(selector) : undefined;
-}
-
 function readReceiptEvents(receipt: unknown): Array<{ from_address?: string; keys?: string[]; data?: string[] }> {
   const events = (receipt as { events?: unknown }).events;
   return Array.isArray(events) ? (events as Array<{ from_address?: string; keys?: string[]; data?: string[] }>) : [];
@@ -216,24 +180,7 @@ export function resolveCreatedGameId(
   target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID,
 ): number | undefined {
   const context = resolveRegistrarContext(target);
-  if (context.manifest.native) return resolveNativeCreatedGameId(receipt, context.manifest as NativeWorldManifest);
-  const gameCreatedSelector = resolveGameCreatedSelector(context);
-  if (!gameCreatedSelector) {
-    return undefined;
-  }
-
-  for (const event of readReceiptEvents(receipt)) {
-    const keys = event.keys?.map(normalizeFelt) ?? [];
-    const selectorIndex = keys.indexOf(gameCreatedSelector);
-    if (selectorIndex === 0) {
-      return parseGameId(event.keys?.[1]);
-    }
-    if (selectorIndex > 0 && Number(BigInt(event.data?.[0] ?? "0")) > 0) {
-      return parseGameId(event.data?.[1]);
-    }
-  }
-
-  return undefined;
+  return resolveNativeCreatedGameId(receipt, context.manifest);
 }
 
 function resolveNativeCreatedGameId(receipt: unknown, manifest: NativeWorldManifest): number | undefined {
@@ -259,10 +206,6 @@ function resolveNativeCreatedGameId(receipt: unknown, manifest: NativeWorldManif
   }
 }
 
-export function isNativeRegistrar(target: RegistrarTarget): boolean {
-  return Boolean(resolveRegistrarContext(target).manifest.native);
-}
-
 export function resolveRegistrarWorldAddress(target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID): string {
   const context = resolveRegistrarContext(target);
   requireRegistrarContract(context, "create_game");
@@ -271,18 +214,6 @@ export function resolveRegistrarWorldAddress(target: RegistrarTarget = DEFAULT_E
     throw new Error("World address is missing from the selected manifest");
   }
   return worldAddress;
-}
-
-export function resolveRegistrarContractAddress(
-  contractName: string,
-  target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID,
-): string {
-  const contract = findContract(resolveRegistrarContext(target), contractName);
-  const contractAddress = contract?.address;
-  if (!hasDeployedAddress(contractAddress)) {
-    throw new Error(`${APPCHAIN_NAMESPACE}-${contractName} is missing from the appchain manifest`);
-  }
-  return contractAddress;
 }
 
 export function resolveRegistrarEnvironmentId(environmentId: DeploymentEnvironmentId): RegistrarEnvironmentId {
@@ -303,9 +234,7 @@ export function buildCreateGameCalldata(params: unknown): string[] {
 
 export function assertRegistrarAvailable(target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID): void {
   const context = resolveRegistrarContext(target);
-  const requiredEntrypoints: RegistrarEntrypoint[] = context.manifest.native
-    ? ["register_preset", "register_series", "create_game"]
-    : ["bootstrap_chain_config", "register_preset", "register_series", "create_game"];
+  const requiredEntrypoints: RegistrarEntrypoint[] = ["register_preset", "register_series", "create_game"];
   requiredEntrypoints.forEach((entrypoint) => requireRegistrarContract(context, entrypoint));
 }
 
@@ -369,14 +298,11 @@ export async function createRegistrarGame(
   nativeDefinition?: ReturnType<typeof buildNativePreset>,
 ): Promise<CreateRegistrarGameResult> {
   const context = resolveRegistrarContext(target);
-  let calldata: string[];
-  if (context.manifest.native) {
-    if (!nativeDefinition) throw new Error("Native game creation requires its immutable preset definition");
-    calldata = new CallData(nativeDomainAbi(context.manifest as NativeWorldManifest, "registry")).compile(
-      "create_game",
-      { params: params as RawArgs, definition: nativeDefinition },
-    );
-  } else calldata = buildCreateGameCalldata(params);
+  if (!nativeDefinition) throw new Error("Native game creation requires its immutable preset definition");
+  const calldata = new CallData(nativeDomainAbi(context.manifest, "registry")).compile("create_game", {
+    params: params as RawArgs,
+    definition: nativeDefinition,
+  });
   const result = await executeRegistrarCall(account, buildRegistrarCall("create_game", calldata, target), target);
   const gameId = resolveCreatedGameId(result.receipt, target);
   const ledgerResult =

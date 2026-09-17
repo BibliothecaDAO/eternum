@@ -50,10 +50,32 @@ jobs:
           src/three/frame-budget-work-queue.test.ts src/three/utils/chunk-geometry.test.ts src/three/perf/worldmap
 
       - name: Start auth-free terrain host
+        env:
+          VITE_PUBLIC_PLAYER_ACCOUNT_CLASS_HASH: "0x1"
+          VITE_PUBLIC_PLAYER_REGISTRY_ADDRESS: "0x2"
+          VITE_PUBLIC_BINDING_AUTHORITY_ADDRESS: "0x3"
+          VITE_PUBLIC_FEE_TOKEN_ADDRESS: "0x4"
+          VITE_PUBLIC_HERALD_URL: http://127.0.0.1:1
+          VITE_PUBLIC_ADMISSION_URL: http://127.0.0.1:1
+          VITE_PUBLIC_IDENTITY_ORIGIN: http://127.0.0.1:1
+          VITE_PUBLIC_IDENTITY_RPC_URL: http://127.0.0.1:1
         run: |
+          export NATIVE_WORLD_MANIFEST="$RUNNER_TEMP/terrain-native-manifest.json"
+          node --input-type=module <<'JS'
+          import { readFileSync, writeFileSync } from "node:fs";
+          const schema = JSON.parse(readFileSync("contracts/l3/world-native/schema/schema.json", "utf8"));
+          const domains = Object.fromEntries(Object.keys(schema.domains).map((name, index) => [
+            name, { address: `0x${(index + 1).toString(16)}`, initialClassHash: "0x1", classes: { "0x1": schema.identity } },
+          ]));
+          writeFileSync(process.env.NATIVE_WORLD_MANIFEST, JSON.stringify({
+            world: { address: domains.season.address, abi: [] },
+            contracts: [], models: [], events: [],
+            native: { version: 1, deploymentBlock: 0, activeSchema: schema.identity, schemas: { [schema.identity]: schema }, domains },
+          }));
+          JS
           pnpm --dir apps/game dev --host 127.0.0.1 --port 4173 > terrain-vite.log 2>&1 &
           for attempt in $(seq 1 60); do
-            curl --fail --silent http://127.0.0.1:4173/debug/procedural-terrain && exit 0
+            curl --fail --silent http://127.0.0.1:4173/lab && exit 0
             sleep 1
           done
           cat terrain-vite.log

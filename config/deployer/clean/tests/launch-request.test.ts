@@ -94,7 +94,7 @@ describe("launch request helpers", () => {
     });
 
     expect(madaraRequest).toMatchObject({
-      version: "8",
+      version: "2",
       waitForFactoryIndexTimeoutMs: 120_000,
       waitForFactoryIndexPollMs: 2_000,
     });
@@ -194,7 +194,7 @@ games:
       evaluationIntervalMinutes: 30,
       durationSeconds: 3_600,
       devModeOn: false,
-      version: "8",
+      version: "2",
     });
   });
 
@@ -254,6 +254,37 @@ games:
       durationSeconds: 3600,
       twoPlayerMode: true,
     });
+  });
+
+  test("uses native writer credentials and explicit overrides, never browser credentials", () => {
+    const keys = [
+      "NATIVE_ACCOUNT_ADDRESS",
+      "NATIVE_PRIVATE_KEY",
+      "VITE_PUBLIC_MASTER_ADDRESS",
+      "VITE_PUBLIC_MASTER_PRIVATE_KEY",
+    ];
+    const original = keys.map((key) => process.env[key]);
+    const args = { environment: "madara.blitz", game: "credential-test", "start-time": "1787666400" };
+    try {
+      delete process.env.NATIVE_ACCOUNT_ADDRESS;
+      delete process.env.NATIVE_PRIVATE_KEY;
+      process.env.VITE_PUBLIC_MASTER_ADDRESS = "0x11";
+      process.env.VITE_PUBLIC_MASTER_PRIVATE_KEY = "0x12";
+      expect(buildLaunchGameRequest(args)).toMatchObject({ accountAddress: undefined, privateKey: undefined });
+
+      process.env.NATIVE_ACCOUNT_ADDRESS = "0x21";
+      process.env.NATIVE_PRIVATE_KEY = "0x22";
+      expect(buildLaunchGameRequest(args)).toMatchObject({ accountAddress: "0x21", privateKey: "0x22" });
+      expect(buildLaunchGameRequest({ ...args, "account-address": "0x31", "private-key": "0x32" })).toMatchObject({
+        accountAddress: "0x31",
+        privateKey: "0x32",
+      });
+    } finally {
+      keys.forEach((key, index) => {
+        if (original[index] === undefined) delete process.env[key];
+        else process.env[key] = original[index];
+      });
+    }
   });
 
   test("requires an explicit L3 RPC", () => {

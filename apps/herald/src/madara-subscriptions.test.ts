@@ -1,10 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { MadaraSubscriptions } from "./madara-subscriptions";
-import type { ModelRegistry } from "./model-registry";
-import { setup as nativeSetup } from "./native/fixtures";
-import { createNativeWorldIngestion } from "./native/world-ingestion";
-import { WORLD_EVENT_SELECTORS } from "./world-event-decoder";
 
 class FakeWebSocket {
   public static instances: FakeWebSocket[] = [];
@@ -29,55 +25,16 @@ class FakeWebSocket {
   }
 }
 
-const registry = {
-  bySelector: new Map(),
-  events: [],
-  persistent: [],
-  worldAddress: "0x123",
-} as unknown as ModelRegistry;
-
-const eventSubscription = {
-  from_address: registry.worldAddress,
-  keys: [Object.values(WORLD_EVENT_SELECTORS), [...registry.bySelector.keys()]],
-};
-
 afterEach(() => {
   FakeWebSocket.instances = [];
   vi.unstubAllGlobals();
 });
 
 describe("MadaraSubscriptions", () => {
-  it("filters event subscriptions to the selected World using the RPC from_address field", () => {
-    vi.stubGlobal("WebSocket", FakeWebSocket);
-    const subscriptions = new MadaraSubscriptions("ws://rpc.test", eventSubscription, {
-      onEvent: vi.fn(),
-      onFatal: vi.fn(),
-      onHead: vi.fn(),
-      onReady: vi.fn(),
-      onReceipt: vi.fn(),
-      onTransaction: vi.fn(),
-    });
-    void subscriptions.start();
-    const socket = FakeWebSocket.instances[0]!;
-    socket.onopen?.();
-    expect(socket.sent).toContainEqual({
-      id: 2,
-      jsonrpc: "2.0",
-      method: "starknet_subscribeEvents",
-      params: {
-        from_address: registry.worldAddress,
-        finality_status: "PRE_CONFIRMED",
-        keys: [Object.values(WORLD_EVENT_SELECTORS), [...registry.bySelector.keys()]],
-      },
-    });
-    subscriptions.stop();
-  });
-
   it("reconciles before accepting heads delivered during subscription setup", async () => {
     vi.stubGlobal("WebSocket", FakeWebSocket);
     const accepted: string[] = [];
-    const subscriptions = new MadaraSubscriptions("ws://rpc.test", eventSubscription, {
-      onEvent: () => undefined,
+    const subscriptions = new MadaraSubscriptions("ws://rpc.test", {
       onFatal: (error) => {
         throw error;
       },
@@ -96,7 +53,6 @@ describe("MadaraSubscriptions", () => {
     socket.onopen?.();
     socket.receive({ id: 1, result: "heads" });
     socket.receive({ method: "starknet_subscriptionNewHeads", params: { result: { block_number: 12, timestamp: 1 } } });
-    socket.receive({ id: 2, result: "events" });
     socket.receive({ id: 3, result: "receipts" });
     socket.receive({ id: 4, result: "transactions" });
 
@@ -112,12 +68,8 @@ describe("MadaraSubscriptions", () => {
   });
   it("starts native ingestion from complete receipts without a model-selector subscription", async () => {
     vi.stubGlobal("WebSocket", FakeWebSocket);
-    const ingestion = createNativeWorldIngestion(nativeSetup().native);
     const accepted: unknown[] = [];
-    const subscriptions = new MadaraSubscriptions("ws://rpc.test", ingestion.eventSubscription, {
-      onEvent: () => {
-        throw new Error("Native ingestion must use receipts");
-      },
+    const subscriptions = new MadaraSubscriptions("ws://rpc.test", {
       onFatal: (error) => {
         throw error;
       },

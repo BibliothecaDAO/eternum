@@ -6,7 +6,11 @@ on:
       - "contracts/l3/world-native/**"
       - "contracts/l3/randomness-protocol/**"
       - "apps/herald/src/model-registry.ts"
-      - "config/deployer/clean/world/native/**"
+      - "config/deployer/clean/**"
+      - "config/source/**"
+      - "deploy/madara-lab/scripts/validate-native-target*"
+      - "deploy/madara-lab/scripts/deploy-box*"
+      - "deploy/madara-rand/native-intent*.ts"
       - "scripts/generate-realm-metadata.py"
       - "packages/core/src/data/full-realms.json"
       - ".github/workflows/native-world.yml"
@@ -17,7 +21,11 @@ on:
       - "contracts/l3/world-native/**"
       - "contracts/l3/randomness-protocol/**"
       - "apps/herald/src/model-registry.ts"
-      - "config/deployer/clean/world/native/**"
+      - "config/deployer/clean/**"
+      - "config/source/**"
+      - "deploy/madara-lab/scripts/validate-native-target*"
+      - "deploy/madara-lab/scripts/deploy-box*"
+      - "deploy/madara-rand/native-intent*.ts"
       - "scripts/generate-realm-metadata.py"
       - "packages/core/src/data/full-realms.json"
       - ".github/workflows/native-world.yml"
@@ -30,12 +38,13 @@ concurrency:
 jobs:
   native-world:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
       - uses: software-mansion/setup-scarb@v1
         with:
           tool-versions: contracts/l3/world-native/.tool-versions
+          scarb-lock: contracts/l3/world-native/Scarb.lock
       - uses: foundry-rs/setup-snfoundry@v3
         with:
           tool-versions: contracts/l3/world-native/.tool-versions
@@ -55,8 +64,65 @@ jobs:
       - name: Build native contracts
         working-directory: contracts/l3/world-native
         run: scarb build
-      - name: Test native domain rules and recorded execution
+      - name: Check recorded entrypoint ABI
+        run: |
+          (cd contracts/l3/randomness-protocol && scarb build)
+          python3 contracts/l3/randomness-protocol/check-entrypoint.py \
+            contracts/l3/world-native/target/dev/world_native_SeasonDomain.contract_class.json \
+            "$RUNNER_TEMP/recorded-entrypoint.json"
+      - name: Test native domain rules
         working-directory: contracts/l3/world-native
-        run: snforge test
+        run: |
+          /usr/bin/time -v taskset -c 0-1 snforge test world_native::
+      - name: Test native recorded execution
+        working-directory: contracts/l3/world-native
+        run: |
+          /usr/bin/time -v taskset -c 0-1 snforge test world_native_tests::
       - name: Reject schema drift
         run: bun contracts/l3/world-native/scripts/generate-schema.mjs --check
+
+  randomness-protocol:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: software-mansion/setup-scarb@v1
+        with:
+          tool-versions: contracts/l3/world-native/.tool-versions
+          scarb-lock: contracts/l3/randomness-protocol/Scarb.lock
+      - uses: foundry-rs/setup-snfoundry@v3
+        with:
+          tool-versions: contracts/l3/world-native/.tool-versions
+      - name: Build and test recorded execution protocol
+        working-directory: contracts/l3/randomness-protocol
+        run: |
+          scarb fmt --check
+          scarb build
+          snforge test
+
+  native-deployer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+      - uses: oven-sh/setup-bun@v2
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build shared packages
+        run: pnpm run build:packages
+      - name: Test native deployment and registrar
+        run: |
+          for file in config/deployer/clean/world/native/*.test.ts config/deployer/clean/tests/*.test.ts; do
+            bun test "$file"
+          done
+      - name: Test retained receipt recovery
+        run: bun test deploy/madara-rand/native-intent.test.ts
+      - name: Test fail-closed deployment paths
+        run: |
+          node --test deploy/madara-lab/scripts/validate-native-target.test.mjs
+          python3 -m unittest discover -s deploy/madara-lab/scripts -p test_deploy_box.py -v

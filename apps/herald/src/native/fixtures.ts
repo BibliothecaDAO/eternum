@@ -1,6 +1,6 @@
 import schemaJson from "../../../../contracts/l3/world-native/schema/schema.json";
 import setFixture from "../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
-import { NativeWorldFold as WorldFold } from "./world-fold";
+import { WorldFold } from "../world-fold";
 import type { RpcEvent, RpcReceipt } from "../types";
 import { NativeDecoder } from "./decoder";
 import { NativeIngestion } from "./ingestion";

@@ -1,6 +1,6 @@
 import { parseStoryHistoryCursor } from "@bibliothecadao/eternum/game-sync";
-import { buildLiveLeaderboard } from "./live-leaderboard";
-import { buildGameDirectory, type DirectoryInput } from "./game-directory";
+import { buildNativeDirectory, buildNativeLeaderboard } from "./native/read-models";
+import type { DirectoryInput } from "./game-directory";
 import type { FoldRow, GameSnapshot, ReplayMetrics } from "./types";
 import type { HistoryQuery, HistoryStore } from "./history-store";
 
@@ -9,9 +9,9 @@ interface SnapshotSource {
   snapshot: (gameId: string, confirmedBlock: number, models?: readonly string[]) => GameSnapshot;
 }
 
-export interface WorldReadModels {
-  directory: (input: DirectoryInput) => ReturnType<typeof buildGameDirectory>;
-  leaderboard: typeof buildLiveLeaderboard;
+interface WorldReadModels {
+  directory: (input: DirectoryInput) => ReturnType<typeof buildNativeDirectory>;
+  leaderboard: typeof buildNativeLeaderboard;
 }
 
 interface HeraldHttpState {
@@ -92,7 +92,7 @@ const historyQuery = (url: URL, gameId: string): HistoryQuery => ({
 });
 
 export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: Request) => Promise<Response>) => {
-  const readModels = state.readModels ?? { directory: buildGameDirectory, leaderboard: buildLiveLeaderboard };
+  const readModels = state.readModels ?? { directory: buildNativeDirectory, leaderboard: buildNativeLeaderboard };
   const escapedChain = state.chain.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const directoryPath = `/${state.chain}/games`;
   const snapshotPath = new RegExp(`^/${escapedChain}/games/([0-9]+)/snapshot$`);

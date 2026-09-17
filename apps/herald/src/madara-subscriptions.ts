@@ -1,12 +1,6 @@
-import type { RpcHead, RpcReceipt, RpcSubscribedEvent, RpcSubscribedTransaction } from "./types";
-
-export interface WorldEventSubscription {
-  from_address: string;
-  keys: string[][];
-}
+import type { RpcHead, RpcReceipt, RpcSubscribedTransaction } from "./types";
 
 interface SubscriptionHandlers {
-  onEvent: (event: RpcSubscribedEvent) => Promise<void> | void;
   onFatal: (error: Error) => void;
   onHead: (head: RpcHead) => Promise<void> | void;
   onReady: () => Promise<void> | void;
@@ -36,7 +30,6 @@ export class MadaraSubscriptions {
 
   constructor(
     private readonly url: string,
-    private readonly eventSubscription: WorldEventSubscription | undefined,
     private readonly handlers: SubscriptionHandlers,
   ) {}
 
@@ -68,7 +61,7 @@ export class MadaraSubscriptions {
         const payload = JSON.parse(String(message.data)) as JsonRpcMessage;
         if (payload.id !== undefined) {
           this.acceptSubscription(payload, ready);
-          if (ready.size === (this.eventSubscription ? 4 : 3) && !subscriptionsReady) {
+          if (ready.size === 3 && !subscriptionsReady) {
             subscriptionsReady = true;
             this.enqueue(async () => {
               await this.handlers.onReady();
@@ -100,12 +93,6 @@ export class MadaraSubscriptions {
 
   private subscribe(socket: WebSocket): void {
     this.send(socket, 1, "starknet_subscribeNewHeads", {});
-    if (this.eventSubscription) {
-      this.send(socket, 2, "starknet_subscribeEvents", {
-        ...this.eventSubscription,
-        finality_status: "PRE_CONFIRMED",
-      });
-    }
     this.send(socket, 3, "starknet_subscribeNewTransactionReceipts", {
       finality_status: ["PRE_CONFIRMED", "ACCEPTED_ON_L2"],
     });
@@ -130,10 +117,6 @@ export class MadaraSubscriptions {
     if (!result) throw new Error(`Madara sent ${payload.method ?? "an unnamed notification"} without a result`);
     if (payload.method === "starknet_subscriptionNewHeads") {
       this.enqueue(() => this.handlers.onHead(result as RpcHead));
-      return;
-    }
-    if (payload.method === "starknet_subscriptionEvents") {
-      this.enqueue(() => this.handlers.onEvent(result as RpcSubscribedEvent));
       return;
     }
     if (payload.method === "starknet_subscriptionNewTransactionReceipts") {

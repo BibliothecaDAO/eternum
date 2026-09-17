@@ -1,10 +1,10 @@
 # Game launch
 
-The launcher registers games in a persistent Dojo world. A game is a `GameRegistry` row keyed by `game_id`; launching
+The launcher registers games in a persistent native world. A game is a `GameRegistry` row keyed by `game_id`; launching
 one does not deploy or configure another world.
 
-The one launchable environment is `madara.blitz`: the self-hosted Madara appchain, its committed world manifest and the
-generated Blitz balance sheet. The registrar consumes an immutable preset when it creates a game.
+The one launchable environment is `madara.blitz`: the self-hosted Madara appchain, its configured native world manifest
+and the generated Blitz balance sheet. The registrar consumes an immutable preset when it creates a game.
 
 ## Launch one game
 
@@ -20,9 +20,10 @@ or ISO 8601.
 
 Useful options:
 
+- `NATIVE_WORLD_MANIFEST` and `ADMISSION_URL`
 - `RPC_URL` or `--rpc-url`
-- `DOJO_ACCOUNT_ADDRESS` or `--account-address`
-- `DOJO_PRIVATE_KEY` or `--private-key`
+- `NATIVE_ACCOUNT_ADDRESS` or `--account-address`
+- `NATIVE_PRIVATE_KEY` or `--private-key`
 - `DEV_MODE_ON=true|false` or `--dev-mode-on true|false`
 - `SINGLE_REALM_MODE=true|false` or `--single-realm-mode true|false`
 - `TWO_PLAYER_MODE=true|false` or `--two-player-mode true|false`

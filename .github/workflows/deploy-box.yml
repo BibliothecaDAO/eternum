@@ -30,8 +30,6 @@ permissions:
 concurrency:
   group: deploy-box
   cancel-in-progress: false
-  # Keep the active deployment and replace an older pending run with the latest push.
-  queue: single
 
 jobs:
   deploy:
@@ -39,6 +37,9 @@ jobs:
     timeout-minutes: 30
     env:
       BOX_SSH_HOST: ${{ vars.BOX_SSH_HOST }}
+      NATIVE_WORLD_MANIFEST: /tmp/native-world.json
+      NATIVE_WORLD_MANIFEST_URL: ${{ vars.NATIVE_WORLD_MANIFEST_URL }}
+      ADMISSION_URL: ${{ vars.ADMISSION_URL }}
     steps:
       - name: Validate box access configuration
         env:
@@ -62,6 +63,12 @@ jobs:
       - name: Check deployment recipe
         run: python3 -m unittest discover -s deploy/madara-lab/scripts -p test_deploy_box.py -v
 
+      - name: Validate native deployment target
+        run: |
+          test -n "$NATIVE_WORLD_MANIFEST_URL" && test -n "$ADMISSION_URL"
+          curl --fail --silent --show-error --location "$NATIVE_WORLD_MANIFEST_URL" -o "$NATIVE_WORLD_MANIFEST"
+          node deploy/madara-lab/scripts/validate-native-target.mjs
+
       - name: Prepare SSH
         env:
           BOX_SSH_PRIVATE_KEY: ${{ secrets.BOX_SSH_PRIVATE_KEY }}
@@ -76,6 +83,7 @@ jobs:
       - name: Redeploy host services from next
         run: |
           set -o pipefail
+          scp -i ~/.ssh/box -o BatchMode=yes deploy/madara-lab/scripts/validate-native-target.mjs "ubuntu@$BOX_SSH_HOST:/tmp/validate-native-target.mjs"
           scp -i ~/.ssh/box -o BatchMode=yes deploy/madara-lab/scripts/deploy-box.sh "ubuntu@$BOX_SSH_HOST:/tmp/deploy-box.sh"
           ssh -i ~/.ssh/box -o BatchMode=yes "ubuntu@$BOX_SSH_HOST" "sudo DEPLOY_BRANCH=next bash /tmp/deploy-box.sh" 2>&1 | tee deploy-box.log
 
