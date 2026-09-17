@@ -10,6 +10,7 @@ import type { RealmAutomationConfig, ResourceAutomationPercentages } from "@/hoo
 
 const { configManagerMock } = vi.hoisted(() => ({
   configManagerMock: {
+    getBlitzConfig: vi.fn(() => ({ blitz_mode_on: false })),
     complexSystemResourceInputs: {} as Record<number, Array<{ resource: number; amount: number }>>,
     complexSystemResourceOutput: {} as Record<number, { resource: number; amount: number }>,
     simpleSystemResourceInputs: {} as Record<number, Array<{ resource: number; amount: number }>>,
@@ -117,6 +118,7 @@ beforeEach(() => {
     inputResources: configManagerMock.simpleSystemResourceInputs[resourceId] ?? [],
     resourceOutputPerInputResources: configManagerMock.simpleSystemResourceOutput[resourceId]?.amount ?? 0,
   }));
+  configManagerMock.getBlitzConfig.mockReturnValue({ blitz_mode_on: false });
   configureTroopRecipes();
 });
 
@@ -568,4 +570,20 @@ describe("buildAutomationSkipMessage", () => {
       }),
     ).toBe("KnightT2 waiting for recipe inputs");
   });
+});
+
+it("never plans a Labor burn in Blitz or converts its discarded allocation", () => {
+  configManagerMock.getBlitzConfig.mockReturnValue({ blitz_mode_on: true });
+  configureComplexRecipe(ResourcesIds.Wood, [{ resource: ResourcesIds.Wheat, amount: 1 }]);
+  const plan = buildRealmProductionPlan({
+    realmConfig: makeRealmConfig(
+      { presetId: "custom" },
+      {
+        [ResourcesIds.Wood]: { resourceToResource: 0, laborToResource: 50 },
+      },
+    ),
+    snapshot: makeSnapshot([ResourcesIds.Wood], { [ResourcesIds.Wheat]: 100, [ResourcesIds.Labor]: 100 }),
+  });
+  expect(plan.callset.resourceToResource).toEqual([]);
+  expect(plan.callset.laborToResource).toEqual([]);
 });

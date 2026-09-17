@@ -410,7 +410,7 @@ pub mod ResourcesDomain {
                 assert!(amount % crate::rules::RESOURCE_PRECISION == 0, "fractional labor input");
                 let rule = self.rule(game_id, resource_type);
                 let output = rule.labor_output_per_resource.into() * (amount / crate::rules::RESOURCE_PRECISION);
-                assert!(output != 0, "resource cannot produce labor");
+                assert(output != 0, 'resource cannot produce labor');
                 self.spend(key, resource_type, amount, context.timestamp);
                 self
                     .refill_output(
@@ -430,6 +430,7 @@ pub mod ResourcesDomain {
             context: ExecutionContext,
         ) {
             let key = self.assert_production_command(game_id, actor, command, context.timestamp);
+            assert(!self.game_dispatcher().rules(game_id).blitz_mode_on, 'Blitz requires resources');
             self.refill_from_recipes(key, command, false, context.timestamp);
         }
         fn burn_resource_for_resource_production(

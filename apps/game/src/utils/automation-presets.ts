@@ -23,9 +23,9 @@ export const REALM_PRESETS: { id: RealmPresetId; label: string; description?: st
   {
     id: "smart",
     label: "Smart",
-    description: "Auto-allocate production; uses labor only when tier-1 is incomplete.",
+    description: "Auto-allocate production across available buildings.",
   },
-  { id: "custom", label: "Custom", description: "Manually tuned mix of labor/resource." },
+  { id: "custom", label: "Custom", description: "Manually tuned production allocations." },
   { id: "idle", label: "Idle", description: "Pause automation (0%)." },
 ];
 
@@ -34,6 +34,22 @@ const clampPercent = (value: number): number => {
   if (value < 0) return 0;
   if (value > MAX_RESOURCE_ALLOCATION_PERCENT) return MAX_RESOURCE_ALLOCATION_PERCENT;
   return Math.round(value);
+};
+
+export const resolveProductionPercentages = (
+  percentages: ResourceAutomationPercentages,
+  resourceId: ResourcesIds,
+): ResourceAutomationPercentages => {
+  if (configManager.getBlitzConfig().blitz_mode_on) {
+    return {
+      resourceToResource: clampPercent(percentages.resourceToResource),
+      laborToResource: 0,
+    };
+  }
+  return {
+    resourceToResource: clampPercent(percentages.resourceToResource),
+    laborToResource: resourceId === ResourcesIds.Donkey ? 0 : clampPercent(percentages.laborToResource),
+  };
 };
 
 type SplitMode = "resource" | "labor";
@@ -95,12 +111,12 @@ const buildSmartPresetAllocations = (
 
   if (presentT1.length > 0) {
     if (!t1Complete) {
-      // Incomplete tier-1 set: 5% on each available T1 (labor slider only).
+      // Start each available tier-1 building at 5%. Blitz uses resource recipes only.
       assignTierSplit(
         allocations,
         presentT1,
         presentT1.map(() => 5),
-        "labor",
+        configManager.getBlitzConfig().blitz_mode_on ? "resource" : "labor",
       );
     } else if (!hasHigherResources) {
       // Complete T1 only: 30% each on resource slider.
@@ -198,10 +214,7 @@ export const calculatePresetAllocations = (
     const smartAllocations = buildSmartPresetAllocations(scopedIds);
     scopedIds.forEach((resourceId) => {
       const next = smartAllocations.get(resourceId) ?? { resourceToResource: 0, laborToResource: 0 };
-      allocations.set(resourceId, {
-        resourceToResource: next.resourceToResource,
-        laborToResource: resourceId === ResourcesIds.Donkey ? 0 : next.laborToResource,
-      });
+      allocations.set(resourceId, resolveProductionPercentages(next, resourceId));
     });
     return allocations;
   }
@@ -221,11 +234,12 @@ export const getAutomationOverallocation = (
   const resourceTotals = new Map<number, number>();
   const laborTotals = new Map<number, number>();
 
-  Object.entries(percentagesByResource).forEach(([key, percentages]) => {
+  Object.entries(percentagesByResource).forEach(([key, stored]) => {
     const resourceId = Number(key) as ResourcesIds;
     if (isAutomationResourceBlocked(resourceId, entityType)) {
       return;
     }
+    const percentages = configManager.getBlitzConfig().blitz_mode_on ? { ...stored, laborToResource: 0 } : stored;
     const rawComplexInputs = configManager.complexSystemResourceInputs[resourceId] ?? [];
     const complexInputs = rawComplexInputs.filter(
       (input: { resource: ResourcesIds }) =>

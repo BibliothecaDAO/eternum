@@ -7,7 +7,13 @@ import {
   getAutomationOverallocation,
   inferRealmPreset,
   REALM_PRESETS,
+  resolveProductionPercentages,
 } from "./automation-presets";
+
+beforeEach(() => {
+  vi.spyOn(configManager, "getBlitzConfig").mockReturnValue({ blitz_mode_on: false } as any);
+});
+afterEach(() => vi.restoreAllMocks());
 
 describe("calculatePresetAllocations", () => {
   it("returns an empty map when no resources are provided", () => {
@@ -194,5 +200,17 @@ describe("REALM_PRESETS", () => {
     const ids = REALM_PRESETS.map((p) => p.id);
     expect(ids).toEqual(["smart", "custom", "idle"]);
     REALM_PRESETS.forEach((p) => expect(p.label.length).toBeGreaterThan(0));
+  });
+});
+
+it("uses resource-only Blitz defaults without converting custom Labor allocations", () => {
+  vi.mocked(configManager.getBlitzConfig).mockReturnValue({ blitz_mode_on: true } as any);
+  expect(calculatePresetAllocations([ResourcesIds.Wood], "smart").get(ResourcesIds.Wood)).toEqual({
+    resourceToResource: 5,
+    laborToResource: 0,
+  });
+  expect(resolveProductionPercentages({ resourceToResource: 10, laborToResource: 45 }, ResourcesIds.Wood)).toEqual({
+    resourceToResource: 10,
+    laborToResource: 0,
   });
 });

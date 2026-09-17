@@ -25,7 +25,8 @@ export function usePlotConstruction(target: PlotConstructionTarget) {
   } = useGame();
   const mode = useGameModeConfig();
   const ordersAllowed = useUIStore(canIssueOrders);
-  const useSimpleCost = useUIStore((state) => state.useSimpleCost);
+  const requestedSimpleCost = useUIStore((state) => state.useSimpleCost);
+  const useSimpleCost = mode.id !== "blitz" && requestedSimpleCost;
   const setUseSimpleCost = useUIStore((state) => state.setUseSimpleCost);
   const currentDefaultTick = useCurrentDefaultTick();
   useNativeRevision([
@@ -92,5 +93,13 @@ export function usePlotConstruction(target: PlotConstructionTarget) {
       setPending(false);
     }
   };
-  return { groups, build, error, useSimpleCost, setUseSimpleCost, visible: ordersAllowed && isOwner };
+  return {
+    groups,
+    build,
+    error,
+    allowSimpleCost: mode.id !== "blitz",
+    useSimpleCost,
+    setUseSimpleCost,
+    visible: ordersAllowed && isOwner,
+  };
 }

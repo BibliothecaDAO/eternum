@@ -57,7 +57,6 @@ function AttentionCycle() {
     const target = structures.find((structure) => structure.entityId === next.realmId);
     if (!target) return;
     const { coord_x, coord_y } = target.structure.base;
-    void goToStructure(target.entityId, new Position({ x: coord_x, y: coord_y }), true);
     if (next.suggestionId) {
       usePopoverStore.getState().openSurface({
         id: "suggestions",
@@ -66,6 +65,7 @@ function AttentionCycle() {
         mapClick: "dismiss",
       });
     } else {
+      void goToStructure(target.entityId, new Position({ x: coord_x, y: coord_y }), true);
       usePopoverStore.getState().close("suggestions");
     }
   };

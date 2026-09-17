@@ -67,7 +67,8 @@ export const MergedResourcePanel = memo(
     const store = dojo.setup.store;
     const mode = useGameModeConfig();
     const currentDefaultTick = useCurrentDefaultTick();
-    const useSimpleCost = useUIStore((state) => state.useSimpleCost);
+    const requestedSimpleCost = useUIStore((state) => state.useSimpleCost);
+    const useSimpleCost = mode.id !== "blitz" && requestedSimpleCost;
 
     const entityId = Number(structureEntityId);
     const realm = useMemo(

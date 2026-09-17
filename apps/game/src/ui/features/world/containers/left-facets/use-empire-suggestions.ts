@@ -242,7 +242,8 @@ export const useEmpireSuggestions = (): EmpireSuggestion[] => {
   const currentBlockTimestamp = useCurrentBlockTimestamp();
   const playerStructures = useUIStore((state) => state.playerStructures);
   const structureNameVersion = useUIStore((state) => state.structureNameVersion);
-  const useSimpleCost = useUIStore((state) => state.useSimpleCost);
+  const requestedSimpleCost = useUIStore((state) => state.useSimpleCost);
+  const useSimpleCost = mode.id !== "blitz" && requestedSimpleCost;
   const gameStartMainAt = useUIStore((state) => state.gameStartMainAt);
   const gameEndAt = useUIStore((state) => state.gameEndAt);
   const devModeOn = useUIStore((state) => state.devModeOn);

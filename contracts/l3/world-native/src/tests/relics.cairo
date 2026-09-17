@@ -404,7 +404,7 @@ fn pinned_draw_vectors_keep_weights_timestamp_salts_and_direction_retry_order() 
     }
     assert!(repeated);
 }
-fn configure_extraction(deployment: super::Deployment, id: u8, amount: u128) {
+pub fn configure_extraction(deployment: super::Deployment, id: u8, amount: u128) {
     start_cheat_caller_address(deployment.peers.map, super::authority());
     crate::exploration_rewards::IExtractionDispatcherTrait::configure_extraction(
         crate::exploration_rewards::IExtractionDispatcher { contract_address: deployment.peers.map },
@@ -497,6 +497,7 @@ fn owned_agents_pay_their_own_essence_and_receive_their_chest_points() {
 #[test]
 fn an_explore_action_discovers_a_chest_while_eternum_does_not() {
     let (deployment, home, explorer) = setup(true);
+    configure_extraction(deployment, 2, 10);
     grant(deployment, home, 35, 1000 * RESOURCE_PRECISION);
     grant(deployment, home, 36, 1000 * RESOURCE_PRECISION);
     assert!(
@@ -553,4 +554,31 @@ fn extraction_requires_configuration_and_rejects_foreign_grants() {
             .is_err(),
     );
     assert!(execute(deployment, Command::ExtractExplorationReward(explorer.entity_id), 40));
+}
+
+#[test]
+fn exploration_grants_a_surface_reward_atomically_and_extraction_cannot_pay_twice() {
+    for blitz in array![true, false] {
+        let (deployment, home, explorer) = setup(blitz);
+        configure_extraction(deployment, 2, 10);
+        grant(deployment, home, 35, 1000 * RESOURCE_PRECISION);
+        grant(deployment, home, 36, 1000 * RESOURCE_PRECISION);
+        let recipient = if blitz {
+            home
+        } else {
+            explorer
+        };
+        let before = balance(deployment, recipient, 2);
+        assert!(
+            execute_recorded_at(
+                deployment,
+                Command::Explore(crate::commands::Explore { explorer_id: explorer.entity_id, direction: 0 }),
+                40,
+                5000,
+            ),
+        );
+        assert_eq!(balance(deployment, recipient, 2), before + 10 * RESOURCE_PRECISION);
+        assert!(execute_recorded_at(deployment, Command::ExtractExplorationReward(explorer.entity_id), 41, 5001));
+        assert_eq!(balance(deployment, recipient, 2), before + 10 * RESOURCE_PRECISION);
+    }
 }

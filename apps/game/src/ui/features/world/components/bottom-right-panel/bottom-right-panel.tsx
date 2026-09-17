@@ -193,12 +193,13 @@ const LocalTilePanel = () => {
   const setSelectedBuildingHex = useUIStore((state) => state.setSelectedBuildingHex);
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const playerStructures = useUIStore((state) => state.playerStructures);
-  const useSimpleCost = useUIStore((state) => state.useSimpleCost);
+  const requestedSimpleCost = useUIStore((state) => state.useSimpleCost);
   const setTooltip = useTooltipStore((state) => state.setTooltip);
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const previewBuilding = useUIStore((state) => state.previewBuilding);
   const currentDefaultTick = useCurrentDefaultTick();
   const mode = useGameModeConfig();
+  const useSimpleCost = mode.id !== "blitz" && requestedSimpleCost;
 
   const liveStructure = useNativeRow("Structure", {
     game_id: configManager.getActiveGameId(),
@@ -805,15 +806,12 @@ export const MinimapPanel = ({ compact = false }: { compact?: boolean }) => {
   );
 };
 
-/**
- * The tile details follow the selection facts, not the route: a selected building hex (the local scene owns it and
- * clears it on exit) shows the local panel, otherwise a selected world hex shows the map panel. A local click on a
- * neighbouring world hex sets the world hex and clears the building hex, so the map panel answers it in place.
- */
+/** Local building selection never takes precedence over the world view. */
 export const useSelectedTileDetails = (): ReactNode => {
+  const { isMapView } = useQuery();
   const selectedHex = useUIStore((state) => state.selectedHex);
   const selectedBuildingHex = useUIStore((state) => state.selectedBuildingHex);
-  if (selectedBuildingHex) return <LocalTilePanel />;
+  if (!isMapView && selectedBuildingHex) return <LocalTilePanel />;
   if (selectedHex) return <MapTilePanel />;
   return null;
 };

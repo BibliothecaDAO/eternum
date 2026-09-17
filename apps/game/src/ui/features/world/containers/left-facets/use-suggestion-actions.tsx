@@ -13,7 +13,7 @@ import { type BuildingType, type ID, type ResourcesIds } from "@bibliothecadao/t
 import { useCallback, useRef, useState } from "react";
 import type { EmpireSuggestion } from "./use-empire-suggestions";
 
-/** Explicit suggestion actions focus their realm and use the existing order flows. */
+/** Build orders submit against their realm without changing the current selection. */
 export const useSuggestionActions = () => {
   const { setup } = useGame();
   const { isMapView } = useQuery();
@@ -24,11 +24,11 @@ export const useSuggestionActions = () => {
 
   const setStructureEntityId = useUIStore((state) => state.setStructureEntityId);
   const setSelectedHex = useUIStore((state) => state.setSelectedHex);
-  const setSelectedBuildingHex = useUIStore((state) => state.setSelectedBuildingHex);
   const playerStructures = useUIStore((state) => state.playerStructures);
   const setLeftNavigationView = useUIStore((state) => state.setLeftNavigationView);
   const openSurface = usePopoverStore((state) => state.openSurface);
-  const useSimpleCost = useUIStore((state) => state.useSimpleCost);
+  const requestedSimpleCost = useUIStore((state) => state.useSimpleCost);
+  const useSimpleCost = mode.id !== "blitz" && requestedSimpleCost;
 
   const { fireUpgrade, pendingRealmId } = useRealmActions();
 
@@ -69,16 +69,13 @@ export const useSuggestionActions = () => {
         mode,
         target,
         useSimpleCost,
-        onBuildSuccess: setSelectedBuildingHex,
       });
     },
-    [mode, setLeftNavigationView, setSelectedBuildingHex, setup.store, useSimpleCost],
+    [mode, setLeftNavigationView, setup.store, useSimpleCost],
   );
 
   const runSuggestionClick = useCallback(
     async (suggestion: EmpireSuggestion) => {
-      if (!canIssueOrders()) return;
-      await focusRealm(suggestion.realmId, suggestion.action === "deploy-explorer");
       if (!canIssueOrders()) return;
 
       switch (suggestion.action) {
@@ -86,10 +83,14 @@ export const useSuggestionActions = () => {
           await fireUpgrade(suggestion.realmId);
           return;
         case "deploy-explorer":
+          await focusRealm(suggestion.realmId, true);
+          if (!canIssueOrders()) return;
           usePopoverStore.getState().close();
           useUIStore.getState().setSuggestedArmyDeploymentStructureId(Number(suggestion.realmId));
           return;
         case "garrison":
+          await focusRealm(suggestion.realmId);
+          if (!canIssueOrders()) return;
           setLeftNavigationView(LeftView.MilitaryView);
           return;
         case "build-wheat":
@@ -103,6 +104,8 @@ export const useSuggestionActions = () => {
           return;
         case "build-first":
         case "expand-population":
+          await focusRealm(suggestion.realmId);
+          if (!canIssueOrders()) return;
           setLeftNavigationView(LeftView.ConstructionView);
           return;
         default:

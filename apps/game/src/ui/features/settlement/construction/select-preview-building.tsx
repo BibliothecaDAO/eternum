@@ -158,10 +158,11 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const setLeftNavigationView = useUIStore((state) => state.setLeftNavigationView);
   const previewBuilding = useUIStore((state) => state.previewBuilding);
-  const useSimpleCost = useUIStore((state) => state.useSimpleCost);
+  const requestedSimpleCost = useUIStore((state) => state.useSimpleCost);
   const setUseSimpleCost = useUIStore((state) => state.setUseSimpleCost);
   const setSelectedBuildingHex = useUIStore((state) => state.setSelectedBuildingHex);
   const mode = useGameModeConfig();
+  const useSimpleCost = mode.id !== "blitz" && requestedSimpleCost;
   const { isMapView } = useQuery();
 
   const structure = useNativeRow("Structure", { game_id: configManager.getActiveGameId(), entity_id: entityId });
@@ -1067,19 +1068,21 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
       <div className="flex flex-wrap justify-between items-center px-3 py-2 gap-3 border-b border-gold/20">
         <h6>Building Costs</h6>
         <div className="flex items-center gap-2">
-          <label className="inline-flex min-h-11 items-center cursor-pointer">
-            <span className={`mr-2 text-xs ${useSimpleCost ? "text-gold/50" : ""}`}>Resource</span>
-            <div className="relative">
-              <input
-                type="checkbox"
-                className="sr-only peer"
-                checked={useSimpleCost}
-                onChange={() => setUseSimpleCost(!useSimpleCost)}
-              />
-              <div className="w-9 h-5 bg-brown/50 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gold after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-gold/30"></div>
-            </div>
-            <span className={`ml-2 text-xs ${useSimpleCost ? "" : "text-gold/50"}`}>Labor</span>
-          </label>
+          {mode.id !== "blitz" && (
+            <label className="inline-flex min-h-11 items-center cursor-pointer">
+              <span className={`mr-2 text-xs ${useSimpleCost ? "text-gold/50" : ""}`}>Resource</span>
+              <div className="relative">
+                <input
+                  type="checkbox"
+                  className="sr-only peer"
+                  checked={useSimpleCost}
+                  onChange={() => setUseSimpleCost(!useSimpleCost)}
+                />
+                <div className="w-9 h-5 bg-brown/50 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gold after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-gold/30"></div>
+              </div>
+              <span className={`ml-2 text-xs ${useSimpleCost ? "" : "text-gold/50"}`}>Labor</span>
+            </label>
+          )}
         </div>
       </div>
 

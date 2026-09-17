@@ -93,13 +93,14 @@ const createTierIconComponent = (tierLabel: string): ReactNode => (
 export const createConstructionMenu = ({
   structure,
   store,
-  simpleCostEnabled,
+  simpleCostEnabled: requestedSimpleCost,
   selectConstructionBuilding,
 }: CreateConstructionMenuParams): ContextMenuAction => {
   const structureId = BigInt(structure.id);
   const idString = structureId.toString();
   const structureEntityId = Number(structureId);
   const mode = getGameModeConfig();
+  const simpleCostEnabled = mode.id !== "blitz" && requestedSimpleCost;
 
   const realmInfo = getRealmInfo(structureEntityId, store);
 

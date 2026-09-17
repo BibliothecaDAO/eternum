@@ -160,6 +160,7 @@ fn camp_creation_rejects_foreign_callers_eternum_and_the_ethereal_layer() {
 #[test]
 fn recorded_exploration_discovers_a_camp_without_moving_the_explorer_into_it() {
     let (d, home) = setup(true);
+    super::relics::configure_extraction(d, 2, 10);
     for resource in array![26_u8, 35, 36] {
         grant(d, home, resource, 100 * RESOURCE_PRECISION);
     }
