@@ -239,14 +239,17 @@ export function resolveCreatedGameId(
 function resolveNativeCreatedGameId(receipt: unknown, manifest: NativeWorldManifest): number | undefined {
   const schema = manifest.native.schemas[manifest.native.activeSchema];
   const model = schema.models.find((model) => model.name === "GameRegistry");
-  const layout = schema.domains.season.events.find((event) => event.name === "RowSet");
-  if (!model || !layout) throw new Error("Native manifest has no game registry event");
+  const layouts = schema.domains.season.events.filter((event) => event.name === "RowSet");
+  if (!model || !layouts.length) throw new Error("Native manifest has no game registry event");
   for (const event of readReceiptEvents(receipt)) {
     if (!event.from_address || BigInt(event.from_address) !== BigInt(manifest.native.domains.season.address)) continue;
     const keys = event.keys ?? [];
     if (
-      keys.length !== layout.prefix.length + 2 ||
-      !layout.prefix.every((key, index) => BigInt(key) === BigInt(keys[index]))
+      !layouts.some(
+        (layout) =>
+          keys.length === layout.prefix.length + 2 &&
+          layout.prefix.every((key, index) => BigInt(key) === BigInt(keys[index])),
+      )
     )
       continue;
     if (BigInt(keys.at(-2)!) !== 1n || BigInt(keys.at(-1)!) !== BigInt(model.identity)) continue;

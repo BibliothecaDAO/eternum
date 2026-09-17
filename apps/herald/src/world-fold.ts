@@ -205,6 +205,7 @@ export class WorldFold {
     gameIdInput: string | number | bigint,
     confirmedBlock: number,
     requestedModels?: readonly string[],
+    _actor?: string,
   ): GameSnapshot {
     const gameId = BigInt(gameIdInput);
     const definitions = this.snapshotDefinitions(requestedModels);

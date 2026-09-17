@@ -81,7 +81,9 @@ const createSnapshotProgressObserver = (
   };
 };
 
-export function createHeraldGameSyncSession(input: CreateHeraldGameSyncSessionInput): GameSyncSessionStart {
+export function createHeraldGameSyncSession(
+  input: CreateHeraldGameSyncSessionInput,
+): GameSyncSessionStart & { transport: HeraldGameSyncTransport } {
   const observer = input.observer ?? {};
   const scope: StoryEventScope = { chain: input.chain, worldAddress: input.worldAddress, gameId: input.gameId };
   observer.onStoryEventsReset?.();

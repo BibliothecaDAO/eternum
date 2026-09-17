@@ -115,6 +115,23 @@ describe("native transaction receipt routing", () => {
     expect(native.actionReceipt(fold, succeeded)).toBe(succeeded);
   });
 
+  it("supplies an explicit initial nonce from complete history without replacing an executed nonce", () => {
+    const { native, fold } = setup();
+    const nonceRows = (actor: string) =>
+      fold.snapshot(1, 10, undefined, actor).models.find(({ model }) => model === "ActionNonce")!.rows;
+    expect(nonceRows("0x111")).toHaveLength(1);
+    expect(nonceRows("0x111")[0].value.next_nonce).toBe("0");
+    expect(fold.modelRows("ActionNonce")).toHaveLength(0);
+    native.applyReceipt(fold, receipt([executionEvent(1)]), 10, 0);
+    expect(nonceRows("0x111")).toHaveLength(1);
+    expect(BigInt(String(nonceRows("0x111")[0].value.next_nonce))).toBe(1n);
+    expect(nonceRows("0x222")).toHaveLength(2);
+    expect(() => nonceRows("0x0")).toThrow("Invalid gameplay account");
+    expect(() => nonceRows("0x800000000000000000000000000000000000000000000000000000000000000")).toThrow(
+      "Invalid gameplay account",
+    );
+  });
+
   it("leaves the nonce row unchanged for a stale-nonce rejection and restores it from a checkpoint", () => {
     const { native, decoder, fold } = setup();
     native.applyReceipt(fold, receipt([executionEvent(1)]), 10, 0);

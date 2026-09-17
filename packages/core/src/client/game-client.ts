@@ -1,3 +1,4 @@
+import { waitForWorldState } from "./wait-for-world-state";
 import { nativeModelDefinition } from "./native-models";
 import { nativeSubmission, type NativeClientConnection } from "./native-submission";
 import { EternumProvider } from "@bibliothecadao/provider";
@@ -79,9 +80,6 @@ export interface GameClient {
 export async function createGameClient(input: CreateGameClientInput): Promise<GameClient> {
   selectGame(input);
   const setupResult = await bootstrapWorld(input);
-  setupResult.network.provider.setNativeSubmission(
-    nativeSubmission(input.native, setupResult.store, input.gameId, input.world.worldAddress),
-  );
   input.observer?.onSetupCompleted?.(setupResult);
   const runtime = installFreshGameSyncRuntime();
   try {
@@ -122,19 +120,29 @@ const startSync = async (
   setupResult: GameClientSetup,
   input: CreateGameClientInput,
 ): Promise<WorldSpatialProjection> => {
-  await runtime.startSession(
-    createHeraldGameSyncSession({
-      baseUrl: input.world.heraldBaseUrl,
-      chain: input.world.chain,
-      entityModels: input.native.bindings.models.map((model) => model.name),
-      eventModels: input.native.bindings.events.map((event) => event.name),
-      modelDefinition: nativeModelDefinition(input.native.bindings),
-      gameId: input.gameId,
-      worldAddress: input.world.worldAddress,
-      observer: input.observer,
-      scheduler: input.scheduler,
-      store: setupResult.store,
-      socketFactory: input.socketFactory,
+  const session = createHeraldGameSyncSession({
+    baseUrl: input.world.heraldBaseUrl,
+    chain: input.world.chain,
+    entityModels: input.native.bindings.models.map((model) => model.name),
+    eventModels: input.native.bindings.events.map((event) => event.name),
+    modelDefinition: nativeModelDefinition(input.native.bindings),
+    gameId: input.gameId,
+    worldAddress: input.world.worldAddress,
+    observer: input.observer,
+    scheduler: input.scheduler,
+    store: setupResult.store,
+    socketFactory: input.socketFactory,
+  });
+  await runtime.startSession(session);
+  setupResult.network.provider.setNativeSubmission(
+    nativeSubmission(input.native, setupResult.store, input.gameId, input.world.worldAddress, async (actor) => {
+      session.transport.selectActor(actor);
+      await waitForWorldState(
+        { runtime },
+        () => setupResult.store.get("ActionNonce", { game_id: input.gameId, actor: BigInt(actor) }),
+        10_000,
+        () => "Gameplay nonce from Herald",
+      );
     }),
   );
   routeTransactionWaitsThroughStream(setupResult, runtime);

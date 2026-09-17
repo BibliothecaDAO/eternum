@@ -1,3 +1,4 @@
+import { nativePresets } from "../../../source/native";
 import { applyBlitzBalanceProfile } from "../../../source/blitz";
 import { loadEnvironmentConfiguration } from "../config/config-loader";
 import type { DeploymentEnvironmentId } from "../types";
@@ -82,8 +83,8 @@ export function buildNativeGameParams(config: Config, input: CreateGamePayloadIn
 
 export function loadNativePresetConfiguration(environment: DeploymentEnvironmentId, presetId: number): Config {
   const config = loadEnvironmentConfiguration(environment);
-  if (presetId === 1 && !config.blitz.mode.on) return config;
-  if ((presetId === 2 || presetId === 3) && config.blitz.mode.on)
-    return applyBlitzBalanceProfile(config, presetId === 2 ? "official-60" : "official-90");
-  throw new Error(`No native preset definition for ${environment} preset ${presetId}`);
+  const preset = nativePresets[presetId];
+  if (!preset || preset.gameType !== (config.blitz.mode.on ? "blitz" : "eternum"))
+    throw new Error(`No native preset definition for ${environment} preset ${presetId}`);
+  return preset.profile ? applyBlitzBalanceProfile(config, preset.profile) : config;
 }

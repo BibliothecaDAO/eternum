@@ -12,11 +12,11 @@ const setNestedValue = <T>(map: Map<number, Map<number, T>>, col: number, row: n
 };
 
 const getStructureOwnerAddress = (store: NativeFactStore, structureId: number): bigint =>
-  store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: structureId })?.owner ?? 0n;
+  store.require("Structure", { game_id: configManager.getActiveGameId(), entity_id: structureId }).owner;
 
 const getArmyOwnerAddress = (store: NativeFactStore, armyId: number): bigint => {
-  const explorer = store.get("ExplorerTroops", { game_id: configManager.getActiveGameId(), explorer_id: armyId });
-  return explorer ? getExplorerOwner(store, explorer) : 0n;
+  const explorer = store.require("ExplorerTroops", { game_id: configManager.getActiveGameId(), explorer_id: armyId });
+  return getExplorerOwner(store, explorer);
 };
 
 const buildHexInfo = (id: number, owner: bigint): HexEntityInfo => ({ id, owner });

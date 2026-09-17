@@ -71,7 +71,7 @@ export const getEntityInfo = (
         ? { x: structure.base.coord_x, y: structure.base.coord_y }
         : undefined,
     owner,
-    isMine: ContractAddress(owner || 0n) === playerAccount,
+    isMine: owner !== undefined && ContractAddress(owner) === playerAccount,
     structureCategory: structure?.base.category,
     structure,
     explorer,
@@ -164,7 +164,7 @@ export const getAddressNameFromEntity = (entityId: ID, store: NativeFactStore): 
 };
 
 export const getAddressFromStructureEntity = (entityId: ID, store: NativeFactStore): ContractAddress | undefined => {
-  return store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: entityId })?.owner || undefined;
+  return store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: entityId })?.owner;
 };
 
 export const getInternalAddressName = (address: string): string | undefined => {

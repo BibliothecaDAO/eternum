@@ -53,6 +53,10 @@ async function deploy(account: Account, compiled: ReturnType<typeof readClassArt
 
 async function createGame(manifestPath: string, manifest: NativeWorldManifest, admin: Account, count: number) {
   const config = loadEnvironmentConfiguration("madara.eternum");
+  // The local fixture uses its funded token for bridge and faith exercises.
+  config.faith!.reward_token = STRK;
+  config.setup!.addresses.resources = { Stone: [2, STRK] };
+  config.setup!.addresses.lords = STRK;
   const definition = buildNativePreset(config);
   const registration = buildNativePresetRegistration(config, 1, manifestPath);
   const registered = await registerNativePreset(admin, 1, registration);

@@ -33,12 +33,15 @@ export function nativeSubmission(
   store: NativeFactStore,
   gameId: number,
   season: string,
+  prepareNonce?: (actor: string) => Promise<void>,
 ): NativeSubmission {
   const codec = new CallData(input.bindings.commandAbi);
   return async (actor, calls) => {
     const batch = Array.isArray(calls) ? calls : [calls];
     if (batch.length !== 1) throw new Error("Native execution accepts one command per action");
     const { command } = translateCommand(batch[0], gameId, season, store, BigInt(actor.address));
+    if (!store.get("ActionNonce", { game_id: gameId, actor: BigInt(actor.address) }))
+      await prepareNonce?.(actor.address);
     const timestamp = Math.floor(Date.now() / 1_000);
     const arguments_ = codec.compile("command_commitment", { command });
     const intent = {
@@ -92,9 +95,7 @@ function taggedHash(tag: string, fields: string[]): string {
 }
 
 function nextNonce(store: NativeFactStore, gameId: number, actor: string): bigint {
-  const row = store.get("ActionNonce", { game_id: gameId, actor: BigInt(actor) });
-  // Absence is the wire contract's initial nonce, after the confirmed snapshot has loaded.
-  return row ? BigInt(row.next_nonce as bigint) : 0n;
+  return store.require("ActionNonce", { game_id: gameId, actor: BigInt(actor) }).next_nonce;
 }
 
 function translateCommand(call: Call, gameId: number, season: string, store: NativeFactStore, actor: bigint) {

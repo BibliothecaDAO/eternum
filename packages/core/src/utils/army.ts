@@ -14,7 +14,9 @@ import type { NativeRows } from "../../../../contracts/l3/world-native/schema/cl
 import { configManager, divideByPrecision, getAddressName, getArmyName, gramToKg, nanogramToKg, getTileAt } from "..";
 
 export const getExplorerOwner = (store: NativeFactStore, explorer: NativeRows["ExplorerTroops"]): bigint =>
-  store.get("Structure", { game_id: explorer.game_id, entity_id: explorer.owner })?.owner ?? 0n;
+  explorer.owner === 0
+    ? 0n
+    : store.require("Structure", { game_id: explorer.game_id, entity_id: explorer.owner }).owner;
 
 export const formatArmies = (
   armies: Iterable<NativeRows["ExplorerTroops"]>,

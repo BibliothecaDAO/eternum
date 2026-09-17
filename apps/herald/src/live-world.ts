@@ -121,8 +121,8 @@ export class LiveWorld {
     return this.preconfirmedBlockValue;
   }
 
-  public snapshot(gameId: string, models?: readonly string[]): GameSnapshot {
-    return this.confirmedFold.snapshot(gameId, this.confirmedBlockValue, models);
+  public snapshot(gameId: string, models?: readonly string[], actor?: string): GameSnapshot {
+    return this.confirmedFold.snapshot(gameId, this.confirmedBlockValue, models, actor);
   }
 
   public modelRows(model: string) {
@@ -142,14 +142,14 @@ export class LiveWorld {
     );
   }
 
-  public attach(gameId: string, socket: StreamSocket): GameStreamSession {
+  public attach(gameId: string, socket: StreamSocket, actor?: string): GameStreamSession {
     this.knownGames.add(gameId);
     return this.hub.attach({
       confirmedBlock: this.confirmedBlockValue,
       gameId,
       overlay: () => this.snapshotOverlay(gameId),
       preconfirmedBlock: this.preconfirmedBlockValue,
-      snapshot: () => this.snapshot(gameId),
+      snapshot: () => this.snapshot(gameId, undefined, actor),
       socket,
     });
   }

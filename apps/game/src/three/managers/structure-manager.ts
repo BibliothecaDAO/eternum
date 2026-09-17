@@ -571,9 +571,9 @@ export class StructureManager {
       game_id: configManager.getActiveGameId(),
       entity_id: renderable.entityId,
     });
-    if (renderInfo.type === StructureType.Mine && !structureComponent) return undefined;
+    if (!structureComponent) return undefined;
     const guards = this.readGuards(renderable.entityId);
-    const ownerAddress = structureComponent?.owner ?? 0n;
+    const ownerAddress = structureComponent.owner;
     const ownerName = this.resolveLiveStructureOwnerName(ownerAddress, "");
     const cosmetic = this.resolveStructureCosmeticSelection({
       owner: ownerAddress,

@@ -28,6 +28,7 @@ class FakeSocket implements HeraldSocket {
 
 const streamHarness = () => {
   const sockets: FakeSocket[] = [];
+  const urls: string[] = [];
   const entities: GameSyncEntity[] = [];
   const events: GameSyncEntity[] = [];
   const heads: Array<{ block: number; timestamp: number }> = [];
@@ -48,14 +49,15 @@ const streamHarness = () => {
   };
   const transport = new HeraldGameSyncTransport({
     reconnectMs: 200,
-    socketFactory: () => {
+    socketFactory: (url) => {
+      urls.push(url);
       const socket = new FakeSocket();
       sockets.push(socket);
       return socket;
     },
     url: "wss://herald.test/madara/games/54",
   });
-  return { entities, events, handlers, heads, snapshotProgress, sockets, transactions, transport };
+  return { entities, events, handlers, heads, snapshotProgress, sockets, transactions, transport, urls };
 };
 
 const hello = (epoch: string, seq: number) => ({
@@ -86,6 +88,27 @@ afterEach(() => {
 });
 
 describe("HeraldGameSyncTransport", () => {
+  it("requests a fresh actor snapshot once and keeps that actor on reconnect", async () => {
+    vi.useFakeTimers();
+    const harness = streamHarness();
+    const subscribed = harness.transport.subscribe(harness.handlers);
+    harness.sockets[0].receive(hello("epoch-a", 0));
+    const writer = await subscribed;
+    snapshot("epoch-a", 0, "0x1", 1).forEach((message) => harness.sockets[0].receive(message));
+    await harness.transport.fetchSnapshotPage();
+    harness.transport.selectActor("0x000111");
+    expect(harness.sockets[0].closed).toBe(true);
+    await vi.advanceTimersByTimeAsync(200);
+    expect(new URL(harness.urls[1]).searchParams.get("actor")).toBe("0x111");
+    harness.sockets[1].receive(hello("epoch-a", 5));
+    expect(harness.sockets[1].sent).toContainEqual({ type: "resume", epoch: "", seq: 0 });
+    harness.transport.selectActor("0x111");
+    expect(harness.sockets[1].closed).toBe(false);
+    harness.sockets[1].close();
+    await vi.advanceTimersByTimeAsync(200);
+    expect(harness.urls[2]).toBe(harness.urls[1]);
+    writer.cancel();
+  });
   it("preserves each story event's provisional or confirmed block metadata", async () => {
     const harness = streamHarness();
     harness.handlers.onEvent = vi.fn();
