@@ -143,6 +143,7 @@ pub mod RegistrarState {
                 crate::spires::validate(definition.settlement.spires.expect('missing season spires'));
                 assert!(definition.economy.withdrawals.is_some(), "missing Eternum withdrawal configuration");
             }
+            crate::presets::validate(definition);
             let commitment = crate::presets::commitment(definition);
             assert!(commitment != 0, "empty preset commitment");
             self.presets.write(preset_id, commitment);

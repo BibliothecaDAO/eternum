@@ -336,12 +336,8 @@ pub mod TroopsDomain {
         }
         fn initialize_structure_guards(ref self: ContractState, key: ResourceKey, seed: u256, timestamp: u64) {
             assert!(get_caller_address() == self.lifecycle.require_active().structures, "only structures domain");
-            let category = self
-                .structures_dispatcher()
-                .structure(key)
-                .expect('missing guarded structure')
-                .base
-                .category;
+            let base = self.structures_dispatcher().structure(key).expect('missing guarded structure').base;
+            let category = base.category;
             assert!(
                 category == 2
                     || category == 3
@@ -351,6 +347,8 @@ pub mod TroopsDomain {
                 "invalid guarded structure category",
             );
             let guards = super::discovery_guards(category, seed, self.game_dispatcher().rules(key.game_id), timestamp);
+            assert!(base.troop_max_guard_count <= 4, "invalid guard slot limit");
+            assert!(guards.len() <= base.troop_max_guard_count.into(), "guards exceed structure limit");
             for slot in 0..guards.len() {
                 let troops = *guards.at(slot);
                 let slot: u8 = slot.try_into().unwrap();
@@ -773,6 +771,7 @@ pub mod TroopsDomain {
                         crate::relics::IRelicMapDispatcher { contract_address: self.lifecycle.require_active().map },
                         game_id,
                         destination,
+                        explorer.coord,
                         seed,
                         context.timestamp,
                     );
@@ -1085,11 +1084,12 @@ pub mod TroopsDomain {
             assert!(crate::geometry::adjacent(explorer.coord, destination), "raid requires adjacency");
             self.assert_battle_immunity(game_id, explorer.owner, rules, context.timestamp);
             self.assert_battle_immunity(game_id, command.structure_id, rules, context.timestamp);
-            let result = self.resolve_raid(game_id, explorer, target_key, destination, context);
+            let result = self
+                .resolve_raid(game_id, explorer, target_key, target.base.troop_max_guard_count, destination, context);
             let troops_before = explorer.troops.count;
             self.apply_raid_losses(key, explorer, target_key, result);
             let success = self.raid_success(game_id, result, context);
-            if success {
+            if success && result.explorer.count != 0 {
                 self.collect_raid_loot(game_id, command, target, rules, context.timestamp);
             }
             self
@@ -1123,12 +1123,14 @@ pub mod TroopsDomain {
                 return;
             }
             self.finish_battle(key, ExplorerTroops { troops: result.explorer, ..explorer }, explorer.troops.count);
-            for index in 0_usize..4 {
+            for index in 0..result.guards.len() {
                 self
                     .guards
                     .save(
                         crate::guards::GuardKey {
-                            game_id: key.game_id, structure_id: target.entity_id, slot: 3 - index.try_into().unwrap(),
+                            game_id: key.game_id,
+                            structure_id: target.entity_id,
+                            slot: (result.guards.len() - 1 - index).try_into().unwrap(),
                         },
                         *result.guards.at(index),
                     );
@@ -1145,12 +1147,14 @@ pub mod TroopsDomain {
             game_id: u32,
             explorer: ExplorerTroops,
             target: ResourceKey,
+            maximum: u8,
             destination: Coord,
             context: ExecutionContext,
         ) -> crate::raid::RaidResolution {
             let mut guards = array![];
             // Resolve outer guards first, preserving damage and cooldown evaluation order.
-            let mut slot = 4_u8;
+            assert!(maximum <= 4, "invalid guard slot limit");
+            let mut slot = maximum;
             while slot != 0 {
                 slot -= 1;
                 guards

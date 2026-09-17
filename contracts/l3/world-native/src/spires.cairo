@@ -38,9 +38,10 @@ pub fn location(center: Coord, layout: SpireLayout, ordinal: u32) -> Coord {
         remaining -= 6 * layer;
         layer += 1;
     }
-    let side: u8 = (remaining % 6).try_into().unwrap();
+    // The pinned planner orders sides E, SE, SW, W, NW, NE.
+    let direction: u8 = ((6 - remaining % 6) % 6).try_into().unwrap();
     let point = remaining / 6;
     let spacing: u32 = Into::<u8, u32>::into(layout.base_distance) * layout.layer_distance.into();
-    let start = crate::geometry::neighbor_at_distance(center, side, spacing * layer);
-    crate::geometry::neighbor_at_distance(start, (side + 2) % 6, spacing * point)
+    let start = crate::geometry::neighbor_at_distance(center, direction, spacing * layer);
+    crate::geometry::neighbor_at_distance(start, (direction + 4) % 6, spacing * point)
 }

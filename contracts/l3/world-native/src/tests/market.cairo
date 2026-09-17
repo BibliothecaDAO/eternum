@@ -436,3 +436,9 @@ fn market_price_and_share_vectors_preserve_integer_rounding() {
     assert_eq!(crate::market::liquidity_cost(market, 500, 100), (50, 100, 50));
     assert_eq!(crate::market::liquidity_payout(market, 333), (333, 666));
 }
+
+#[test]
+#[should_panic(expected: "liquidity mints zero shares")]
+fn liquidity_rejects_a_deposit_that_rounds_to_zero_shares() {
+    crate::market::liquidity_cost(Market { lords: 1000, resource: 1000, shares: 1 }, 1, 1);
+}

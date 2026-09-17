@@ -505,7 +505,9 @@ pub mod MapDomain {
         fn relic_discovery_time(self: @ContractState, game_id: u32) -> u64 {
             self.last_relic_discovery.read(game_id)
         }
-        fn discover_relic_chest(ref self: ContractState, game_id: u32, coord: Coord, seed: u256, timestamp: u64) {
+        fn discover_relic_chest(
+            ref self: ContractState, game_id: u32, coord: Coord, excluded: Coord, seed: u256, timestamp: u64,
+        ) {
             let peers = self.lifecycle.require_active();
             assert!(get_caller_address() == peers.troops, "only troops domain");
             crate::commands::assert_context_time(timestamp);
@@ -524,7 +526,10 @@ pub mod MapDomain {
             loop {
                 let key = tile_key(game_id, destination);
                 let data = self.map.tile(key).map(|tile| tile.data).unwrap_or(0);
-                if data % BIOME_SCALE == 0 && !self.settlements.reserved.read((game_id, destination.x, destination.y)) {
+                if destination != excluded
+                    && destination != coord
+                    && data % BIOME_SCALE == 0
+                    && !self.settlements.reserved.read((game_id, destination.x, destination.y)) {
                     if data / BIOME_SCALE % BYTE_RANGE == 0 {
                         self.map.reveal(key, self.biome(key));
                     }
