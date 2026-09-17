@@ -1874,6 +1874,54 @@
           ]
         },
         {
+          "name": "StoryEvent",
+          "prefix": [
+            "0x33b7d96bc1ff34b0a89214516b6ef5d2b8bdd9c301222eda2a1e96f78b84b96"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "game_id",
+              "type": "core::integer::u32",
+              "kind": "key"
+            },
+            {
+              "name": "id",
+              "type": "core::integer::u32",
+              "kind": "key"
+            },
+            {
+              "name": "owner",
+              "type": "core::option::Option::<core::starknet::contract_address::ContractAddress>",
+              "kind": "key"
+            },
+            {
+              "name": "entity_id",
+              "type": "core::option::Option::<core::integer::u32>",
+              "kind": "key"
+            },
+            {
+              "name": "tx_hash",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "story",
+              "type": "world_native::ownership::Story",
+              "kind": "data"
+            },
+            {
+              "name": "timestamp",
+              "type": "core::integer::u64",
+              "kind": "data"
+            }
+          ]
+        },
+        {
           "name": "RowSet",
           "prefix": [
             "0x39d31a8346a7df98372837a3b1003b72bd3eb7da809fff89a68dbcf5ed30d0c"
@@ -12585,6 +12633,7 @@
       "owners": [
         "season",
         "map",
+        "troops",
         "structures",
         "resources",
         "economy",
@@ -16089,6 +16138,26 @@
         {
           "name": "RelicCrafted",
           "type": "core::integer::u8"
+        },
+        {
+          "name": "ExplorerCreateStory",
+          "type": "world_native::troop_management::ExplorerCreated"
+        },
+        {
+          "name": "ExplorerAddStory",
+          "type": "world_native::troop_management::RecruitExplorer"
+        },
+        {
+          "name": "ExplorerDeleteStory",
+          "type": "world_native::troop_management::ExplorerRemoved"
+        },
+        {
+          "name": "GuardDeleteStory",
+          "type": "world_native::troop_management::GuardSlot"
+        },
+        {
+          "name": "TroopsTransferred",
+          "type": "world_native::troop_management::TransferTroops"
         }
       ]
     },
@@ -18032,6 +18101,46 @@
         }
       ]
     },
+    "world_native::troop_management::ExplorerCreated": {
+      "type": "struct",
+      "name": "world_native::troop_management::ExplorerCreated",
+      "members": [
+        {
+          "name": "explorer_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "structure_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "category",
+          "type": "world_native::troops::TroopType"
+        },
+        {
+          "name": "tier",
+          "type": "world_native::troops::TroopTier"
+        },
+        {
+          "name": "amount",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "spawn_direction",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
+    "world_native::troop_management::ExplorerRemoved": {
+      "type": "struct",
+      "name": "world_native::troop_management::ExplorerRemoved",
+      "members": [
+        {
+          "name": "explorer_id",
+          "type": "core::integer::u32"
+        }
+      ]
+    },
     "world_native::troop_management::GuardSlot": {
       "type": "struct",
       "name": "world_native::troop_management::GuardSlot",
@@ -18459,5 +18568,5 @@
       ]
     }
   },
-  "identity": "0894c830298da14b84984e73e7fe19e021919ac42879b4680f79237a57866ace"
+  "identity": "a82b6f9149c9bba7f476cd8542d46c0cee826cffb9a58d50665447cd8482ffd9"
 }

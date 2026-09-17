@@ -91,7 +91,6 @@ pub mod EconomyDomain {
             self
                 .emit_story(
                     game_id,
-                    trade_id,
                     order.maker_id,
                     actor,
                     Story::TradeCreated(crate::trade::TradeListing { trade_id, order }),
@@ -117,8 +116,7 @@ pub mod EconomyDomain {
             assert!(!maker.base.alt && !taker.base.alt, "transportation only allowed on surface");
             let fill = self.settle_fill(game_id, order, command, maker, taker, context.timestamp);
             self.trades.fill(key, order, command.lots);
-            let event_id = self.games().allocate_entity(game_id);
-            self.emit_story(game_id, event_id, command.taker_id, actor, Story::TradeAccepted(fill), context.timestamp);
+            self.emit_story(game_id, command.taker_id, actor, Story::TradeAccepted(fill), context.timestamp);
         }
 
         fn cancel_trade_order(
@@ -130,10 +128,7 @@ pub mod EconomyDomain {
             self.owned_structure(game_id, order.maker_id, actor);
             self.refund_offer(game_id, order, context.timestamp);
             self.trades.remove(key, order);
-            self
-                .emit_story(
-                    game_id, trade_id, order.maker_id, actor, Story::TradeCancelled(trade_id), context.timestamp,
-                );
+            self.emit_story(game_id, order.maker_id, actor, Story::TradeCancelled(trade_id), context.timestamp);
         }
     }
     #[abi(embed_v0)]
@@ -417,10 +412,8 @@ pub mod EconomyDomain {
                     travel_time,
                 },
             );
-            let id = self.games().allocate_entity(game_id);
-            self.emit_story(game_id, id, bank_id, bank.owner, story, timestamp);
-            let id = self.games().allocate_entity(game_id);
-            self.emit_story(game_id, id, structure_id, player.owner, story, timestamp);
+            self.emit_story(game_id, bank_id, bank.owner, story, timestamp);
+            self.emit_story(game_id, structure_id, player.owner, story, timestamp);
         }
         fn emit_swap(
             ref self: ContractState,
@@ -436,11 +429,9 @@ pub mod EconomyDomain {
         ) {
             // Preserve the pinned quote validation even though history uses the reserve ratio.
             crate::market::output_price(market.lords, market.resource, crate::rules::RESOURCE_PRECISION, 0, 1);
-            let id = self.games().allocate_entity(game_id);
             self
                 .emit_story(
                     game_id,
-                    id,
                     command.structure_id,
                     actor,
                     Story::BankSwap(
@@ -476,7 +467,6 @@ pub mod EconomyDomain {
             self
                 .emit_story(
                     game_id,
-                    bank_id,
                     structure_id,
                     actor,
                     Story::BankLiquidity(
@@ -644,20 +634,14 @@ pub mod EconomyDomain {
                 );
         }
         fn emit_story(
-            ref self: ContractState,
-            game_id: u32,
-            id: u32,
-            entity_id: u32,
-            actor: ContractAddress,
-            story: Story,
-            timestamp: u64,
+            ref self: ContractState, game_id: u32, entity_id: u32, actor: ContractAddress, story: Story, timestamp: u64,
         ) {
             self
                 .emit(
                     StoryEvent {
                         version: 1,
                         game_id,
-                        id,
+                        id: self.games().allocate_entity(game_id),
                         owner: Some(actor),
                         entity_id: Some(entity_id),
                         tx_hash: starknet::get_tx_info().unbox().transaction_hash,

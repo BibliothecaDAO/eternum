@@ -57,6 +57,11 @@ pub enum Story {
     PrizeDistributionFinal: u128,
     PrizeResult: crate::blitz_prizes::PrizeResult,
     RelicCrafted: u8,
+    ExplorerCreateStory: crate::troop_management::ExplorerCreated,
+    ExplorerAddStory: crate::troop_management::RecruitExplorer,
+    ExplorerDeleteStory: crate::troop_management::ExplorerRemoved,
+    GuardDeleteStory: crate::troop_management::GuardSlot,
+    TroopsTransferred: crate::troop_management::TransferTroops,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]

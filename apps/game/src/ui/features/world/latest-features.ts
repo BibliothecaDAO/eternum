@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-17",
+    title: "Complete Troop History",
+    description:
+      "Recruitment, disbanding and troop transfers appear in your game history, with the correct guard slot.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-17",
     title: "Mining Claims Catch Up",
     description:
       "Claim ready mining phases together. Winner rewards return to the first contributing structure; the owner's share stays in the mine.",

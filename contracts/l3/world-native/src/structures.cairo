@@ -1158,7 +1158,7 @@ pub mod StructuresDomain {
                             Story::GuardAddStory(
                                 crate::ownership::GuardAddStory {
                                     structure_id: key.entity_id,
-                                    slot: 3,
+                                    slot: 0,
                                     category: category.into(),
                                     tier: 0,
                                     amount: guards,

@@ -1,7 +1,9 @@
 use eternum_cubit::f128::types::fixed::FixedTrait;
+use snforge_std::{EventSpyTrait, EventsFilterTrait, spy_events};
 use crate::combat::TroopsTrait;
 use crate::commands::{Command, CreateExplorer};
 use crate::guards::{GuardKey, IGuardsDispatcher, IGuardsDispatcherTrait};
+use crate::ownership::{GuardAddStory, Story};
 use crate::resources::{IResourcesDispatcher, IResourcesDispatcherTrait, ResourceKey, ResourceSlot};
 use crate::rules::RESOURCE_PRECISION;
 use crate::structures::{IStructuresDispatcher, IStructuresDispatcherTrait};
@@ -376,4 +378,70 @@ fn recruitment_and_transfers_enforce_army_size_before_any_balance_or_capacity_ch
     );
     assert_eq!(guard(d, home, 0), before);
     assert_eq!(troop(d, first).unwrap().troops.count, 10 * RESOURCE_PRECISION);
+}
+
+#[test]
+fn troop_actions_emit_one_unique_story_each_and_rejections_emit_none() {
+    let (d, home, first, second) = setup();
+    let mut spy = spy_events();
+    let created = CreateExplorer {
+        structure_id: home.entity_id, category: 0, tier: 0, amount: RESOURCE_PRECISION, direction: 2,
+    };
+    assert!(execute(d, Command::CreateExplorer(created), 140));
+    let third = *IStructuresDispatcher { contract_address: d.peers.structures }
+        .structure(home)
+        .unwrap()
+        .troop_explorers
+        .at(2);
+    assert!(execute(d, recruit(home, 0, 3), 140));
+    let recruitment = RecruitExplorer { explorer_id: first, amount: 2 * RESOURCE_PRECISION };
+    assert!(execute(d, manage(ManageTroops::RecruitExplorer(recruitment)), 140));
+    let slot = GuardSlot { structure_id: home.entity_id, slot: 0 };
+    let mut expected = array![
+        Story::ExplorerCreateStory(
+            crate::troop_management::ExplorerCreated {
+                explorer_id: third,
+                structure_id: home.entity_id,
+                category: TroopType::Knight,
+                tier: TroopTier::T1,
+                amount: RESOURCE_PRECISION,
+                spawn_direction: 2,
+            },
+        ),
+        Story::GuardAddStory(
+            GuardAddStory {
+                structure_id: home.entity_id, slot: 0, category: 0, tier: 0, amount: 3 * RESOURCE_PRECISION,
+            },
+        ),
+        Story::ExplorerAddStory(recruitment),
+    ];
+    for (source, target) in array![
+        (Army::Explorer(first), Army::Explorer(second)), (Army::Explorer(first), Army::Guard(slot)),
+        (Army::Guard(slot), Army::Explorer(first)),
+    ] {
+        let transfer = TransferTroops { source, target, amount: RESOURCE_PRECISION };
+        assert!(execute(d, manage(ManageTroops::Transfer(transfer)), 140));
+        expected.append(Story::TroopsTransferred(transfer));
+    }
+    assert!(execute(d, manage(ManageTroops::RemoveGuard(slot)), 140));
+    expected.append(Story::GuardDeleteStory(slot));
+    assert!(execute(d, manage(ManageTroops::RemoveExplorer(third)), 140));
+    expected.append(Story::ExplorerDeleteStory(crate::troop_management::ExplorerRemoved { explorer_id: third }));
+    assert_terminal_rejection(d, manage(ManageTroops::RemoveGuard(slot)), 140);
+    let mut ids: core::dict::Felt252Dict<u128> = Default::default();
+    let mut index = 0;
+    for (_, event) in spy.get_events().emitted_by(d.peers.troops).events.span() {
+        if *event.keys.at(0) != selector!("StoryEvent") {
+            continue;
+        }
+        let id = *event.keys.at(3);
+        assert!(id != 0 && ids.get(id) == 0, "duplicate story identity");
+        ids.insert(id, 1);
+        let mut data = event.data.span();
+        let story: Story = Serde::deserialize(ref data).unwrap();
+        assert_eq!(story, *expected.at(index));
+        assert_eq!(*data.at(0), 140);
+        index += 1;
+    }
+    assert_eq!(index, expected.len());
 }

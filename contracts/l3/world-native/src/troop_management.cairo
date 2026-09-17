@@ -38,6 +38,52 @@ pub enum ManageTroops {
     RemoveExplorer: u32,
     Transfer: TransferTroops,
 }
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct ExplorerCreated {
+    pub explorer_id: u32,
+    pub structure_id: u32,
+    pub category: TroopType,
+    pub tier: TroopTier,
+    pub amount: u128,
+    pub spawn_direction: u8,
+}
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct ExplorerRemoved {
+    pub explorer_id: u32,
+}
+
+pub fn management_story(command: ManageTroops) -> (u32, crate::ownership::Story) {
+    use crate::ownership::{GuardAddStory, Story};
+    match command {
+        ManageTroops::RecruitGuard(value) => (
+            value.guard.structure_id,
+            Story::GuardAddStory(
+                GuardAddStory {
+                    structure_id: value.guard.structure_id,
+                    slot: value.guard.slot,
+                    category: value.category.into(),
+                    tier: match value.tier {
+                        TroopTier::T1 => 0,
+                        TroopTier::T2 => 1,
+                        TroopTier::T3 => 2,
+                    },
+                    amount: value.amount,
+                },
+            ),
+        ),
+        ManageTroops::RemoveGuard(value) => (value.structure_id, Story::GuardDeleteStory(value)),
+        ManageTroops::RecruitExplorer(value) => (value.explorer_id, Story::ExplorerAddStory(value)),
+        ManageTroops::RemoveExplorer(id) => (id, Story::ExplorerDeleteStory(ExplorerRemoved { explorer_id: id })),
+        ManageTroops::Transfer(value) => (
+            match value.source {
+                Army::Explorer(id) => id,
+                Army::Guard(slot) => slot.structure_id,
+            },
+            Story::TroopsTransferred(value),
+        ),
+    }
+}
+
 #[starknet::interface]
 pub trait ITroopManagement<T> {
     fn manage_troops(

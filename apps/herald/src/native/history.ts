@@ -33,10 +33,7 @@ function readPointAward(value: Record<string, unknown>) {
 }
 
 function historyParticipants(value: Record<string, unknown>) {
-  const side = (name: string): Record<string, unknown> => {
-    const candidate = value[name];
-    return candidate && typeof candidate === "object" ? (candidate as Record<string, unknown>) : {};
-  };
+  const payload = historyRecord(Object.values(historyRecord(value.story))[0]);
   const scalars = (values: unknown[], hex: boolean) => [
     ...new Set(
       values
@@ -48,12 +45,47 @@ function historyParticipants(value: Record<string, unknown>) {
   ];
   return {
     owners: scalars(
-      [value.owner, value.player, value.target_owner, side("attacker").player, side("defender").player],
+      [
+        value.owner,
+        value.player,
+        value.target_owner,
+        historyRecord(value.attacker).player,
+        historyRecord(value.defender).player,
+        payload.owner,
+        payload.winner,
+        payload.previous_owner,
+        payload.new_owner,
+        payload.from_entity_owner_address,
+        payload.to_entity_owner_address,
+      ],
       true,
     ),
     entities: scalars(
-      [value.entity_id, value.explorer_id, value.structure_id, value.attacker_id, value.defender_id],
+      [
+        value.entity_id,
+        value.explorer_id,
+        value.structure_id,
+        value.attacker_id,
+        value.defender_id,
+        payload.explorer_id,
+        payload.structure_id,
+        payload.from_entity_id,
+        payload.to_entity_id,
+        payload.bank_id,
+        payload.mine_id,
+        armyEntity(payload.source),
+        armyEntity(payload.target),
+      ],
       false,
     ),
   };
+}
+
+function historyRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" ? (value as Record<string, unknown>) : {};
+}
+
+function armyEntity(value: unknown): unknown {
+  const army = historyRecord(value);
+  return army.Explorer ?? historyRecord(army.Guard).structure_id;
 }

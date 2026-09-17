@@ -223,3 +223,24 @@ it("formats native battle sides and positive Ethereal rolls without a Dojo-shape
   expect(presentation.description).toContain("Attacker d20: 20 (+20% damage)");
   expect(presentation.description).toContain("Defender d20: 1 (+1% damage)");
 });
+
+it("renders native troop transfer participants after the source explorer has disappeared", () => {
+  const { store, setStructure } = buildStore();
+  setStructure(12, 1, 0);
+  const result = buildStoryEventPresentation(
+    story(
+      "TroopsTransferred",
+      {
+        source: { Explorer: "0x9" },
+        target: { Guard: { structure_id: "0xc", slot: "0x0" } },
+        amount: "0x77359400",
+      },
+      9,
+    ),
+    store,
+  );
+  expect(result.title).toBe("Troops reassigned");
+  expect(result.description).toContain("Route: Army");
+  expect(result.description).toContain("Slot");
+  expect(result.description).toContain("Transferred: 2");
+});

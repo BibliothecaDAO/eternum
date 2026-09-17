@@ -298,6 +298,7 @@ pub mod TroopsDomain {
         TroopEvent: TroopState::Event,
         BattleEvent: super::BattleEvent,
         RaidEvent: crate::combat_actions::RaidEvent,
+        StoryEvent: crate::ownership::StoryEvent,
         OwnershipRow: crate::events::RowSet,
         OwnershipDeleted: crate::events::RowDeleted,
     }
@@ -439,6 +440,8 @@ pub mod TroopsDomain {
                 crate::troop_management::ManageTroops::Transfer(value) => self
                     .transfer_troops(game_id, actor, value, rules, context.timestamp),
             }
+            let (entity_id, story) = crate::troop_management::management_story(command);
+            self.emit_troop_story(game_id, actor, entity_id, story, context.timestamp);
         }
     }
 
@@ -451,6 +454,29 @@ pub mod TroopsDomain {
     }
     #[generate_trait]
     impl ManagementInternal of ManagementInternalTrait {
+        fn emit_troop_story(
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            entity_id: u32,
+            story: crate::ownership::Story,
+            timestamp: u64,
+        ) {
+            self
+                .emit(
+                    crate::ownership::StoryEvent {
+                        version: 1,
+                        game_id,
+                        id: self.game_dispatcher().allocate_entity(game_id),
+                        owner: Some(actor),
+                        entity_id: Some(entity_id),
+                        tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                        story,
+                        timestamp,
+                    },
+                );
+        }
+
         fn remove_managed_guard(
             ref self: ContractState, game_id: u32, actor: ContractAddress, slot: crate::troop_management::GuardSlot,
         ) {
@@ -743,7 +769,23 @@ pub mod TroopsDomain {
             self
                 .resources_dispatcher()
                 .initialize_explorer_resources(ResourceKey { game_id, entity_id: id }, command.amount);
-            self.game_dispatcher().allocate_entity(game_id);
+            self
+                .emit_troop_story(
+                    game_id,
+                    actor,
+                    id,
+                    crate::ownership::Story::ExplorerCreateStory(
+                        crate::troop_management::ExplorerCreated {
+                            explorer_id: id,
+                            structure_id: command.structure_id,
+                            category,
+                            tier,
+                            amount: command.amount,
+                            spawn_direction: command.direction,
+                        },
+                    ),
+                    context.timestamp,
+                );
         }
         fn explore(
             ref self: ContractState, game_id: u32, actor: ContractAddress, command: Explore, context: ExecutionContext,

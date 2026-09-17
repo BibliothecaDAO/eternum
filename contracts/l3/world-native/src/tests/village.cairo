@@ -1,6 +1,9 @@
 use eternum_randomness_protocol::entrypoint::IRecordedExecutionViewsDispatcher;
 use snforge_std::fs::{FileTrait, read_txt};
-use snforge_std::{start_cheat_block_timestamp_global, start_cheat_caller_address, stop_cheat_caller_address};
+use snforge_std::{
+    EventSpyTrait, EventsFilterTrait, spy_events, start_cheat_block_timestamp_global, start_cheat_caller_address,
+    stop_cheat_caller_address,
+};
 use crate::commands::{Command, ExecutionContext};
 use crate::game::{IGameDispatcher, IGameDispatcherTrait};
 use crate::map::{IMapDispatcher, IMapDispatcherTrait};
@@ -183,7 +186,22 @@ fn production_pass_is_atomic_single_use_and_army_grant_uses_recorded_time() {
     assert!(!run(deployment, Command::ReceiveVillageArmy(village_id), 100));
     let interval = recorded::rules().tick_config.armies_tick_in_seconds;
     let claimable_at = (100 / interval + 2) * interval;
+    let mut spy = spy_events();
     assert!(run(deployment, Command::ReceiveVillageArmy(village_id), claimable_at));
+    let mut guard_stories = 0;
+    for (_, event) in spy.get_events().emitted_by(deployment.peers.structures).events.span() {
+        if *event.keys.at(0) == selector!("StoryEvent") {
+            let mut data = event.data.span();
+            let story: crate::ownership::Story = Serde::deserialize(ref data).unwrap();
+            if let crate::ownership::Story::GuardAddStory(guard) = story {
+                assert_eq!(guard.structure_id, village_id);
+                assert_eq!(guard.slot, 0);
+                assert_eq!(guard.amount, 10 * crate::rules::RESOURCE_PRECISION);
+                guard_stories += 1;
+            }
+        }
+    }
+    assert_eq!(guard_stories, 1);
     let granted = structures.structure(key).unwrap();
     assert!(granted.base.starting_troops_granted);
     assert!(
