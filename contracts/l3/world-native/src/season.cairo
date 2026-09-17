@@ -522,6 +522,10 @@ pub mod SeasonDomain {
                 value.serialize(ref calldata);
                 (peers.prizes, selector!("fund_faith_prizes"))
             },
+            Command::CraftRelic(value) => {
+                value.serialize(ref calldata);
+                (peers.economy, selector!("craft_relic"))
+            },
             Command::AllocateGameChests => (peers.prizes, selector!("allocate_game_chests")),
             Command::ResetRanking => (peers.prizes, selector!("reset_ranking")),
             Command::RankPlayers(value) => {

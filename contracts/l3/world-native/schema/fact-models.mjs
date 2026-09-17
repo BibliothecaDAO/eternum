@@ -43,6 +43,9 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
   };
   const domainKey = [{ name: "address", type: struct("lifecycle::Peers")[0].type }];
   return [
+    model("ArtificerCost", ["economy"], "game", method("economy", "artificer_cost").inputs, [
+      { name: "research", type: "core::integer::u128" },
+    ]),
     model(
       "SeriesChestRules",
       ["prizes"],

@@ -17,7 +17,7 @@ use super::resource_commands::{
     assert_terminal_rejection, execute, execute_recorded_at, grant, set_fixture, setup_with_rules,
 };
 
-fn rules() -> Span<RelicRule> {
+pub fn rules() -> Span<RelicRule> {
     let rates = array![
         5000_u16, 10000, 2000, 4000, 2000, 4000, 0, 0, 10000, 20000, 1500, 3000, 2000, 4000, 2000, 2000, 1500, 3000,
     ];

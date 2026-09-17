@@ -64,6 +64,7 @@ pub enum Story {
     FaithRemoved: crate::faith::Pledge,
     PrizeDistributionFinal: u128,
     PrizeResult: crate::blitz_prizes::PrizeResult,
+    RelicCrafted: u8,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]

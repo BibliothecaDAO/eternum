@@ -182,6 +182,7 @@ pub mod RelicState {
     pub struct Storage {
         pub relic_rules: Map<(u32, u8), RelicRule>,
         pub relic_configured: Map<u32, bool>,
+        pub artificer_costs: Map<u32, Option<u128>>,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -287,6 +288,57 @@ pub mod RelicState {
                 );
         }
     }
+    #[embeddable_as(ArtificerImpl)]
+    pub impl Artificer<
+        TContractState,
+        +HasComponent<TContractState>,
+        impl Life: Lifecycle::HasComponent<TContractState>,
+        +Drop<TContractState>,
+    > of crate::artificer::IArtificer<ComponentState<TContractState>> {
+        fn configure_artificer(ref self: ComponentState<TContractState>, game_id: u32, research_cost: u128) {
+            get_dep_component!(@self, Life).assert_authority();
+            self.games().game(game_id);
+            assert!(self.artificer_costs.read(game_id).is_none(), "artificer already configured");
+            self.artificer_costs.write(game_id, Some(research_cost));
+            self
+                .emit(
+                    crate::events::RowSet {
+                        version: 1,
+                        model: 'ArtificerCost',
+                        keys: array![game_id.into()].span(),
+                        values: array![research_cost.into()].span(),
+                    },
+                );
+        }
+        fn artificer_cost(self: @ComponentState<TContractState>, game_id: u32) -> u128 {
+            self.artificer_costs.read(game_id).expect('missing artificer cost')
+        }
+        fn craft_relic(
+            ref self: ComponentState<TContractState>,
+            game_id: u32,
+            actor: ContractAddress,
+            structure_id: u32,
+            context: ExecutionContext,
+        ) {
+            self.assert_command(game_id, context.timestamp);
+            let key = ResourceKey { game_id, entity_id: structure_id };
+            let structure = IStructuresDispatcher { contract_address: self.peers().structures }
+                .structure(key)
+                .expect('missing structure');
+            assert!(
+                structure.base.category == 1 || structure.base.category == 5, "structure is not a realm or village",
+            );
+            assert!(structure.owner == actor, "actor does not own structure");
+            self
+                .resources()
+                .spend_resource(key, crate::artificer::RESEARCH, self.artificer_cost(game_id), context.timestamp);
+            let mut root = context.raw_root;
+            let seed = crate::random::game_root(ref root, game_id, self.games().game(game_id).seed);
+            let relic = *super::draw_relics(self.relic_rules(game_id), seed, context.timestamp, 1).at(0);
+            self.resources().grant_resource(key, relic, crate::rules::RESOURCE_PRECISION, context.timestamp);
+            self.record_crafted_relic(game_id, actor, structure_id, relic, context.timestamp);
+        }
+    }
     #[generate_trait]
     pub impl InternalImpl<
         TContractState,
@@ -294,6 +346,28 @@ pub mod RelicState {
         impl Life: Lifecycle::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of InternalTrait<TContractState> {
+        fn record_crafted_relic(
+            ref self: ComponentState<TContractState>,
+            game_id: u32,
+            actor: ContractAddress,
+            structure_id: u32,
+            relic: u8,
+            timestamp: u64,
+        ) {
+            self
+                .emit(
+                    crate::ownership::StoryEvent {
+                        version: 1,
+                        game_id,
+                        id: self.games().allocate_entity(game_id),
+                        entity_id: Some(structure_id),
+                        owner: Some(actor),
+                        timestamp,
+                        tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                        story: crate::ownership::Story::RelicCrafted(relic),
+                    },
+                );
+        }
         fn record_chest_opened(
             ref self: ComponentState<TContractState>,
             game_id: u32,

@@ -8,6 +8,8 @@ pub mod EconomyDomain {
     component!(path: RelicState, storage: relics, event: RelicEvent);
     #[abi(embed_v0)]
     impl Relics = RelicState::RelicsImpl<ContractState>;
+    #[abi(embed_v0)]
+    impl Artificer = RelicState::ArtificerImpl<ContractState>;
     use crate::hyperstructures::{HyperstructureState, IHyperstructures};
     use crate::lifecycle::Lifecycle;
     use crate::market::{

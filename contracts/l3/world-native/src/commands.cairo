@@ -104,6 +104,7 @@ pub enum Command {
     AllocateGameChests,
     RankPlayers: crate::blitz_prizes::RankPlayers,
     ResetRanking,
+    CraftRelic: u32,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]

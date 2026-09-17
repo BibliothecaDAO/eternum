@@ -30,6 +30,8 @@ pub mod parity_types {
     pub use crate::troops::{Stamina, TroopBoosts, TroopTier, TroopType, Troops};
 }
 
+pub mod artificer;
+
 pub mod blitz_prizes;
 pub mod buildings;
 pub mod discovery;

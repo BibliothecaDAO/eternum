@@ -419,3 +419,7 @@ chest allocation and ranking trial keyed by game; one rank/award row keyed by ga
 player index for batch continuation, tie allocation and reset. No per-rank counts, duplicate rank lists or cached ring
 sums are stored. Series records are shared deployment facts, while every game record begins with game id. Ranking resets
 emit deletions; finalized rankings and game chest allocations cannot be reset or allocated twice.
+
+RelicState appends an optional research cost keyed by game for artificer crafting. Missing configuration rejects;
+configured zero is distinct from absence. Crafting uses the same immutable relic weights, scoped root and resource
+settlement functions as chest rewards. It adds no craft counter or duplicate relic balance.

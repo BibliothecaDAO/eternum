@@ -6295,6 +6295,62 @@
         },
         {
           "type": "function",
+          "name": "configure_artificer",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "research_cost",
+              "type": "core::integer::u128"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "artificer_cost",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::integer::u128"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "craft_relic",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "structure_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
           "name": "configure_hyperstructures",
           "inputs": [
             {
@@ -7148,6 +7204,31 @@
     }
   },
   "models": [
+    {
+      "name": "ArtificerCost",
+      "identity": "0x417274696669636572436f7374",
+      "owners": [
+        "economy"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "research",
+          "type": "core::integer::u128",
+          "id": "0x7265736561726368",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": 1
+    },
     {
       "name": "SeriesChestRules",
       "identity": "0x536572696573436865737452756c6573",
@@ -12505,6 +12586,10 @@
         {
           "name": "ResetRanking",
           "type": "()"
+        },
+        {
+          "name": "CraftRelic",
+          "type": "core::integer::u32"
         }
       ]
     },
@@ -13901,6 +13986,10 @@
         {
           "name": "PrizeResult",
           "type": "world_native::blitz_prizes::PrizeResult"
+        },
+        {
+          "name": "RelicCrafted",
+          "type": "core::integer::u8"
         }
       ]
     },
@@ -15959,5 +16048,5 @@
       ]
     }
   },
-  "identity": "8e6d410343d9e45ce61ba001c5ef7ed1d3c16e8a6d2858a870a2ac7e16867d9e"
+  "identity": "39c559727b146556e1902433e8ab7eda719a3dfb0c7226b62365cecbd2bbcd5a"
 }
