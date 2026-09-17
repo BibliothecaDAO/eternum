@@ -41,7 +41,12 @@ pub struct MineFunding {
     pub next_phase: u64,
     pub unsplit_carry: u128,
     pub winner_carry: u128,
-    pub owner_carry: u128,
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq, Default, starknet::Store)]
+pub struct Contribution {
+    pub labor: u128,
+    pub structure_id: u32,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
@@ -68,7 +73,7 @@ pub trait IBitcoinViews<T> {
     fn bitcoin_mine(self: @T, key: crate::resources::ResourceKey) -> MineFunding;
     fn bitcoin_claimed(self: @T, key: ClaimKey) -> bool;
     fn bitcoin_phase(self: @T, key: PhaseKey) -> Phase;
-    fn bitcoin_contribution(self: @T, key: ContributionKey) -> u128;
+    fn bitcoin_contribution(self: @T, key: ContributionKey) -> Contribution;
     fn bitcoin_contributor(self: @T, key: PhaseKey, index: u32) -> ContractAddress;
 }
 
@@ -103,21 +108,22 @@ pub fn phase_end(phase: u64, interval: u64) -> u64 {
 
 #[starknet::component]
 pub mod BitcoinState {
+    const CONTRIBUTOR_INDEX_LIMIT: u64 = 0x100000000;
     use starknet::ContractAddress;
     use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
     use crate::events::RowSet;
     use crate::resources::ResourceKey;
-    use super::{ClaimKey, ContributionKey, MineFunding, Phase, PhaseKey, PhaseStatus};
+    use super::{ClaimKey, Contribution, ContributionKey, MineFunding, Phase, PhaseKey, PhaseStatus};
 
     #[storage]
     pub struct Storage {
         pub phases: Map<(u32, u64), Phase>,
-        pub contributions: Map<(u32, u64, ContractAddress), u128>,
+        pub contributions: Map<(u32, u64, ContractAddress), Contribution>,
+        pub contributor_indices: Map<(u32, u64, ContractAddress), u32>,
+        pub labor_prefixes: Map<(u32, u64, u64), u128>,
         pub contributors: Map<(u32, u64, u32), ContractAddress>,
         pub mines: Map<(u32, u32), MineFunding>,
         pub claimed: Map<(u32, u64, u32), bool>,
-        pub settlement_count: Map<u32, u32>,
-        pub settlement_ids: Map<(u32, u32), u32>,
     }
 
     #[event]
@@ -128,11 +134,6 @@ pub mod BitcoinState {
 
     #[generate_trait]
     pub impl InternalImpl<TContractState, +HasComponent<TContractState>> of InternalTrait<TContractState> {
-        fn index_settlement(ref self: ComponentState<TContractState>, key: ResourceKey) {
-            let count = self.settlement_count.read(key.game_id);
-            self.settlement_ids.write((key.game_id, count), key.entity_id);
-            self.settlement_count.write(key.game_id, count + 1);
-        }
         fn mine(self: @ComponentState<TContractState>, key: ResourceKey) -> MineFunding {
             let funding = self.mines.read((key.game_id, key.entity_id));
             assert!(funding.eligible_from != 0, "unknown Bitcoin mine");
@@ -149,6 +150,7 @@ pub mod BitcoinState {
             let mut funding = self.mine(key);
             assert!(eligible_from >= funding.eligible_from, "Bitcoin capture time decreased");
             funding.eligible_from = eligible_from;
+            funding.next_phase = core::cmp::max(funding.next_phase, eligible_from);
             self.write_mine(key, funding);
         }
         fn write_mine(ref self: ComponentState<TContractState>, key: ResourceKey, funding: MineFunding) {
@@ -197,49 +199,71 @@ pub mod BitcoinState {
             )
                 .into();
             let mut roll: u128 = (hash % phase.total_labor.into()).try_into().unwrap();
-            for index in 0..phase.contributors {
-                let player = self.contributor(phase_key, index);
-                let weight = self.labor(ContributionKey { game_id: key.game_id, phase: key.phase, player });
-                if roll < weight {
-                    return player;
+            // A fixed-height prefix tree keeps the original contributor-order lottery bounded.
+            let mut index = 0_u64;
+            let mut bit = CONTRIBUTOR_INDEX_LIMIT / 2;
+            while bit != 0 {
+                let next = index + bit;
+                if next <= phase.contributors.into() {
+                    let weight = self.labor_prefixes.read((key.game_id, key.phase, next));
+                    if roll >= weight {
+                        roll -= weight;
+                        index = next;
+                    }
                 }
-                roll -= weight;
+                bit /= 2;
             }
-            panic!("inconsistent Bitcoin contributor pool");
+            self.contributor(phase_key, index.try_into().unwrap())
         }
+
         fn phase(self: @ComponentState<TContractState>, key: PhaseKey) -> Phase {
             self.phases.read((key.game_id, key.phase))
         }
-        fn labor(self: @ComponentState<TContractState>, key: ContributionKey) -> u128 {
+        fn contribution(self: @ComponentState<TContractState>, key: ContributionKey) -> Contribution {
             self.contributions.read((key.game_id, key.phase, key.player))
         }
         fn contributor(self: @ComponentState<TContractState>, key: PhaseKey, index: u32) -> ContractAddress {
             assert!(index < self.phase(key).contributors, "unknown Bitcoin contributor");
             self.contributors.read((key.game_id, key.phase, index))
         }
-        fn contribute(ref self: ComponentState<TContractState>, key: ContributionKey, amount: u128) {
+        fn contribute(ref self: ComponentState<TContractState>, key: ContributionKey, structure_id: u32, amount: u128) {
             let phase_key = PhaseKey { game_id: key.game_id, phase: key.phase };
             let mut phase = self.phase(phase_key);
             assert!(phase.state == PhaseStatus::Open, "Bitcoin pool is closed");
             assert!(amount != 0, "zero Bitcoin contribution");
-            let before = self.labor(key);
-            if before == 0 {
+            let mut contribution = self.contribution(key);
+            if contribution.labor == 0 {
+                contribution.structure_id = structure_id;
+                self.contributor_indices.write((key.game_id, key.phase, key.player), phase.contributors);
                 self.contributors.write((key.game_id, key.phase, phase.contributors), key.player);
                 phase.contributors += 1;
             }
-            let labor = before + amount;
+            contribution.labor += amount;
             phase.total_labor += amount;
-            self.contributions.write((key.game_id, key.phase, key.player), labor);
+            self.contributions.write((key.game_id, key.phase, key.player), contribution);
+            self.add_labor_prefixes(key, amount);
+            let mut values = array![];
+            contribution.serialize(ref values);
             self
                 .emit(
                     RowSet {
                         version: 1,
                         model: 'BitcoinContribution',
                         keys: array![key.game_id.into(), key.phase.into(), key.player.into()].span(),
-                        values: array![labor.into()].span(),
+                        values: values.span(),
                     },
                 );
             self.write_phase(phase_key, phase);
+        }
+        fn add_labor_prefixes(ref self: ComponentState<TContractState>, key: ContributionKey, amount: u128) {
+            let mut index: u64 = self.contributor_indices.read((key.game_id, key.phase, key.player)).into();
+            index += 1;
+            // Update future prefixes too, so appending a contributor never rebuilds earlier sums.
+            while index < CONTRIBUTOR_INDEX_LIMIT {
+                let slot = (key.game_id, key.phase, index);
+                self.labor_prefixes.write(slot, self.labor_prefixes.read(slot) + amount);
+                index += index & (CONTRIBUTOR_INDEX_LIMIT - index);
+            }
         }
         fn close(ref self: ComponentState<TContractState>, key: PhaseKey) {
             let mut phase = self.phase(key);

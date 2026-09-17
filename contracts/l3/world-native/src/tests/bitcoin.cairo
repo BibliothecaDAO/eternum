@@ -41,7 +41,9 @@ fn any_owned_structure_funds_one_player_share_without_a_mine_or_distance_require
     assert_eq!(view.bitcoin_phase(key).total_labor, 350);
     assert_eq!(view.bitcoin_phase(key).contributors, 1);
     assert_eq!(view.bitcoin_contributor(key, 0), deployment.actor);
-    assert_eq!(view.bitcoin_contribution(ContributionKey { game_id: 3, phase: 3, player: deployment.actor }), 350);
+    assert_eq!(
+        view.bitcoin_contribution(ContributionKey { game_id: 3, phase: 3, player: deployment.actor }).labor, 350,
+    );
     assert_eq!(balance(deployment, first), 900);
     assert_eq!(balance(deployment, second), 750);
     assert_eq!(view.bitcoin_phase(PhaseKey { game_id: 2, phase: 3 }).total_labor, 0);
@@ -169,75 +171,28 @@ fn sat(deployment: super::Deployment, key: ResourceKey) -> u128 {
         .resource_balance(ResourceSlot { game_id: key.game_id, entity_id: key.entity_id, resource_type: 58 })
 }
 
-fn assert_independent_forfeiture(winner_has_destination: bool, owner_has_destination: bool) {
-    let (deployment, winner_home, owner_home) = setup();
+#[test]
+fn winner_share_carries_if_its_recorded_structure_changed_owner_while_owner_share_stays_in_mine() {
+    let (deployment, winner_home, other_home) = setup();
     let owner = 0x777.try_into().unwrap();
-    let other = 0x888.try_into().unwrap();
     let mine = mine(deployment, 2000100);
     capture(deployment, mine, owner, 30);
     assert!(execute(deployment, contribute(winner_home, 100), 40));
-    if !winner_has_destination {
-        set_owner(deployment, winner_home, other);
-    }
-    set_owner(deployment, owner_home, if owner_has_destination {
-        owner
-    } else {
-        other
-    });
+    set_owner(deployment, winner_home, owner);
     close_and_bind(deployment, 4);
     assert!(execute(deployment, claim(4, array![mine.entity_id].span()), 50));
-    assert_eq!(sat(deployment, winner_home), if winner_has_destination {
-        800
-    } else {
-        0
-    });
-    assert_eq!(sat(deployment, owner_home), if owner_has_destination {
-        200
-    } else {
-        0
-    });
+    assert_eq!(sat(deployment, winner_home), 0);
+    // The winner still owns another realm; it must never replace the recorded destination.
+    assert_eq!(sat(deployment, other_home), 0);
+    assert_eq!(sat(deployment, mine), 200);
     let view = IBitcoinViewsDispatcher { contract_address: deployment.peers.prizes };
-    let carry = view.bitcoin_mine(mine);
-    assert_eq!(carry.unsplit_carry, 0);
-    assert_eq!(carry.winner_carry, if winner_has_destination {
-        0
-    } else {
-        800
-    });
-    assert_eq!(carry.owner_carry, if owner_has_destination {
-        0
-    } else {
-        200
-    });
-    set_owner(deployment, winner_home, deployment.actor);
-    set_owner(deployment, owner_home, owner);
-    assert!(execute(deployment, contribute(winner_home, 100), 50));
+    assert_eq!(view.bitcoin_mine(mine).winner_carry, 800);
+    assert!(execute(deployment, contribute(other_home, 100), 50));
     close_and_bind(deployment, 5);
     assert!(execute(deployment, claim(5, array![mine.entity_id].span()), 60));
-    assert_eq!(sat(deployment, winner_home), 1600);
-    assert_eq!(sat(deployment, owner_home), 400);
+    assert_eq!(sat(deployment, other_home), 1600);
+    assert_eq!(sat(deployment, mine), 400);
     assert_eq!(view.bitcoin_mine(mine).winner_carry, 0);
-    assert_eq!(view.bitcoin_mine(mine).owner_carry, 0);
-}
-
-#[test]
-fn forfeiture_with_winner_false_owner_false() {
-    assert_independent_forfeiture(false, false);
-}
-
-#[test]
-fn forfeiture_with_winner_false_owner_true() {
-    assert_independent_forfeiture(false, true);
-}
-
-#[test]
-fn forfeiture_with_winner_true_owner_false() {
-    assert_independent_forfeiture(true, false);
-}
-
-#[test]
-fn forfeiture_with_winner_true_owner_true() {
-    assert_independent_forfeiture(true, true);
 }
 
 #[test]
@@ -252,20 +207,20 @@ fn zero_contributor_prize_rolls_unsplit_then_pays_once_and_retries_do_nothing() 
     assert!(execute(deployment, claim(4, array![mine.entity_id].span()), 50));
     let view = IBitcoinViewsDispatcher { contract_address: deployment.peers.prizes };
     assert_eq!(view.bitcoin_mine(mine).unsplit_carry, 1000);
-    assert_eq!(sat(deployment, owner_home), 0);
+    assert_eq!(sat(deployment, mine), 0);
     assert!(execute(deployment, contribute(winner_home, 100), 50));
     close_and_bind(deployment, 5);
     assert!(execute(deployment, claim(5, array![mine.entity_id].span()), 60));
     let after = view.bitcoin_mine(mine);
     assert_eq!(after.unsplit_carry, 0);
     assert_eq!(sat(deployment, winner_home), 1600);
-    assert_eq!(sat(deployment, owner_home), 400);
+    assert_eq!(sat(deployment, mine), 400);
     assert!(execute(deployment, claim(4, array![mine.entity_id].span()), 61));
     assert_terminal_rejection(deployment, claim(5, array![mine.entity_id, mine.entity_id].span()), 62);
     assert!(execute(deployment, claim(5, array![mine.entity_id].span()), 62));
     assert_eq!(view.bitcoin_mine(mine), after);
     assert_eq!(sat(deployment, winner_home), 1600);
-    assert_eq!(sat(deployment, owner_home), 400);
+    assert_eq!(sat(deployment, mine), 400);
 }
 
 #[test]
@@ -288,8 +243,9 @@ fn an_unowned_mine_never_funds_and_capture_begins_in_the_following_phase() {
     assert!(execute(deployment, contribute(home, 100), 60));
     close_and_bind(deployment, 6);
     assert!(execute(deployment, claim(6, array![mine.entity_id].span()), 70));
-    assert_eq!(sat(deployment, home), 0);
-    assert_eq!(sat(deployment, nearest_home), 1000);
+    assert_eq!(sat(deployment, home), 800);
+    assert_eq!(sat(deployment, mine), 200);
+    assert_eq!(sat(deployment, nearest_home), 0);
 }
 
 #[test]
@@ -327,19 +283,18 @@ fn a_forfeited_share_survives_an_empty_phase_without_another_owner_cut() {
     assert!(execute(deployment, claim(4, array![mine.entity_id].span()), 50));
     let view = IBitcoinViewsDispatcher { contract_address: deployment.peers.prizes };
     assert_eq!(view.bitcoin_mine(mine).winner_carry, 800);
-    assert_eq!(sat(deployment, owner_home), 200);
+    assert_eq!(sat(deployment, mine), 200);
     assert!(execute(deployment, Command::CloseBitcoinPhase(5), 59));
     assert!(execute(deployment, claim(5, array![mine.entity_id].span()), 60));
     let carried = view.bitcoin_mine(mine);
     assert_eq!(carried.winner_carry, 800);
-    assert_eq!(carried.owner_carry, 0);
     assert_eq!(carried.unsplit_carry, 1000);
     set_owner(deployment, winner_home, deployment.actor);
     assert!(execute(deployment, contribute(winner_home, 100), 60));
     close_and_bind(deployment, 6);
     assert!(execute(deployment, claim(6, array![mine.entity_id].span()), 70));
     assert_eq!(sat(deployment, winner_home), 2400);
-    assert_eq!(sat(deployment, owner_home), 600);
+    assert_eq!(sat(deployment, mine), 600);
 }
 
 #[test]
@@ -356,7 +311,9 @@ fn an_invalid_batch_rolls_back_all_awards_but_consumes_the_ticket() {
     assert_eq!(view.bitcoin_mine(mine), before);
     assert!(!view.bitcoin_claimed(crate::bitcoin::ClaimKey { game_id: 3, phase: 4, mine_id: mine.entity_id }));
     assert!(execute(deployment, claim(4, array![mine.entity_id].span()), 51));
-    assert_eq!(sat(deployment, nearest), 1000);
+    assert_eq!(sat(deployment, home), 800);
+    assert_eq!(sat(deployment, mine), 200);
+    assert_eq!(sat(deployment, nearest), 0);
 }
 
 #[test]
@@ -394,7 +351,7 @@ fn each_mine_draws_from_the_complete_player_pool_regardless_of_batch_claimant_or
         let key = PhaseKey { game_id: 3, phase };
         assert_eq!(view.bitcoin_phase(key).contributors, 2);
         assert_eq!(view.bitcoin_phase(key).total_labor, 40);
-        assert_eq!(view.bitcoin_contribution(ContributionKey { game_id: 3, phase, player: other }), 30);
+        assert_eq!(view.bitcoin_contribution(ContributionKey { game_id: 3, phase, player: other }).labor, 30);
         let context = ExecutionContext { timestamp: (phase + 1) * 10, ..context };
         start_cheat_block_timestamp_global(context.timestamp);
         calls.close_bitcoin_phase(3, deployment.actor, phase, context);
@@ -414,7 +371,6 @@ fn each_mine_draws_from_the_complete_player_pool_regardless_of_batch_claimant_or
                 expected_second += 800;
                 second_wins += 1;
             }
-            expected_second += 200;
         }
         repeated_winner = repeated_winner || winners.at(0) == winners.at(1);
         let unrelated_context = ExecutionContext { raw_root: 999999, ..context };
@@ -451,50 +407,27 @@ fn each_mine_draws_from_the_complete_player_pool_regardless_of_batch_claimant_or
         assert_eq!(sat(deployment, second), expected_second);
     }
     assert!(first_wins > 0 && second_wins > 0 && repeated_winner);
-    assert_eq!(expected_first + expected_second, 24000);
+    assert_eq!(expected_first + expected_second, 19200);
+    assert_eq!(sat(deployment, first_mine), 2400);
+    assert_eq!(sat(deployment, second_mine), 2400);
 }
 
 #[test]
-fn payouts_choose_nearest_owned_settlement_then_lowest_id_including_villages() {
+fn the_first_contributing_structure_receives_the_winner_share_even_after_another_contribution() {
     let (deployment, first, second) = setup();
     let mine = mine(deployment, 2000005);
     capture(deployment, mine, deployment.actor, 30);
     assert!(execute(deployment, contribute(second, 100), 40));
+    assert!(execute(deployment, contribute(first, 100), 41));
+    let view = IBitcoinViewsDispatcher { contract_address: deployment.peers.prizes };
+    let contribution = view.bitcoin_contribution(ContributionKey { game_id: 3, phase: 4, player: deployment.actor });
+    assert_eq!(contribution.structure_id, second.entity_id);
+    assert_eq!(contribution.labor, 200);
     close_and_bind(deployment, 4);
     assert!(execute(deployment, claim(4, array![mine.entity_id].span()), 50));
-    assert!(first.entity_id < second.entity_id);
-    assert_eq!(sat(deployment, first), 1000);
-    assert_eq!(sat(deployment, second), 0);
-    start_cheat_caller_address(deployment.peers.settlement, super::authority());
-    crate::village::IVillagesDispatcherTrait::configure_villages(
-        crate::village::IVillagesDispatcher { contract_address: deployment.peers.settlement },
-        3,
-        super::village::village_rules(),
-    );
-    stop_cheat_caller_address(deployment.peers.settlement);
-    start_cheat_caller_address(deployment.peers.structures, super::authority());
-    crate::buildings::IBuildingRulesDispatcherTrait::configure_buildings(
-        crate::buildings::IBuildingRulesDispatcher { contract_address: deployment.peers.structures },
-        3,
-        super::building_commands::rules(),
-    );
-    start_cheat_caller_address(deployment.peers.structures, deployment.peers.settlement);
-    let village_id = crate::settlement::ISettlementCreationDispatcherTrait::create_settlement(
-        crate::settlement::ISettlementCreationDispatcher { contract_address: deployment.peers.structures },
-        3,
-        deployment.actor,
-        crate::troops::Coord { alt: false, x: 2000004, y: 2000000 },
-        crate::settlement::SettlementCreation::Village(
-            crate::settlement::VillageCreation { connected_realm: first.entity_id, resource: 1 },
-        ),
-        ExecutionContext { raw_root: 1, timestamp: 50 },
-    );
-    stop_cheat_caller_address(deployment.peers.structures);
-    assert!(execute(deployment, contribute(second, 100), 50));
-    close_and_bind(deployment, 5);
-    assert!(execute(deployment, claim(5, array![mine.entity_id].span()), 60));
-    assert_eq!(sat(deployment, ResourceKey { game_id: 3, entity_id: village_id }), 1000);
-    assert_eq!(sat(deployment, first), 1000);
+    assert_eq!(sat(deployment, second), 800);
+    assert_eq!(sat(deployment, mine), 200);
+    assert_eq!(sat(deployment, first), 0);
 }
 
 #[test]
@@ -509,9 +442,10 @@ fn owner_cut_uses_current_owner_and_does_not_require_owner_labor() {
     set_owner(deployment, second, owner);
     assert!(execute(deployment, claim(4, array![mine.entity_id].span()), 50));
     assert_eq!(sat(deployment, first), 800);
-    assert_eq!(sat(deployment, second), 200);
+    assert_eq!(sat(deployment, second), 0);
+    assert_eq!(sat(deployment, mine), 200);
     let view = IBitcoinViewsDispatcher { contract_address: deployment.peers.prizes };
-    assert_eq!(view.bitcoin_contribution(ContributionKey { game_id: 3, phase: 4, player: owner }), 0);
+    assert_eq!(view.bitcoin_contribution(ContributionKey { game_id: 3, phase: 4, player: owner }).labor, 0);
 }
 
 fn attacking_explorer(deployment: super::Deployment, home: ResourceKey, x: u32) -> u32 {
@@ -637,7 +571,9 @@ fn defeating_the_last_guard_captures_the_mine_and_defers_funding_to_the_next_pha
     assert!(execute(deployment, contribute(home, 100), 50));
     close_and_bind(deployment, 5);
     assert!(execute(deployment, claim(5, array![mine.entity_id].span()), 60));
-    assert_eq!(sat(deployment, nearest), 1000);
+    assert_eq!(sat(deployment, home), 800);
+    assert_eq!(sat(deployment, mine), 200);
+    assert_eq!(sat(deployment, nearest), 0);
 }
 
 #[test]
@@ -753,4 +689,197 @@ fn discovery_guard_initialization_rejects_more_guards_than_the_structure_allows(
         ),
         Default::default(),
     );
+}
+
+#[test]
+fn capture_many_phases_after_discovery_starts_at_its_first_eligible_phase() {
+    let (d, home, _) = setup();
+    let mine = mine(d, 2000100);
+    capture(d, mine, d.actor, 170);
+    let view = IBitcoinViewsDispatcher { contract_address: d.peers.prizes };
+    assert_eq!(view.bitcoin_mine(mine).next_phase, 18);
+    assert!(execute(d, contribute(home, 100), 180));
+    close_and_bind(d, 18);
+    assert!(execute(d, claim(18, array![mine.entity_id].span()), 190));
+    assert_eq!(sat(d, home), 800);
+    assert_eq!(sat(d, mine), 200);
+    assert_eq!(view.bitcoin_mine(mine).next_phase, 19);
+}
+
+#[test]
+fn mixed_mine_cursors_settle_all_ready_phases_independently() {
+    let (d, home, _) = setup();
+    let first = mine(d, 2000100);
+    let second = mine(d, 2000130);
+    capture(d, first, d.actor, 30);
+    capture(d, second, d.actor, 30);
+    assert!(execute(d, contribute(home, 100), 40));
+    close_and_bind(d, 4);
+    assert!(execute(d, claim(4, array![first.entity_id].span()), 50));
+    for phase in 5_u64..7 {
+        assert!(execute(d, contribute(home, 100), phase * 10));
+        close_and_bind(d, phase);
+    }
+    assert!(execute(d, claim(6, array![first.entity_id, second.entity_id].span()), 70));
+    let view = IBitcoinViewsDispatcher { contract_address: d.peers.prizes };
+    assert_eq!(view.bitcoin_mine(first).next_phase, 7);
+    assert_eq!(view.bitcoin_mine(second).next_phase, 7);
+    assert_eq!(sat(d, first), 600);
+    assert_eq!(sat(d, second), 600);
+    assert_eq!(sat(d, home), 4800);
+    assert!(execute(d, claim(6, array![second.entity_id, first.entity_id].span()), 71));
+    assert_eq!(sat(d, home), 4800);
+}
+
+#[test]
+fn a_claim_stops_before_an_unbound_phase_and_resumes_without_rerolling() {
+    let (d, home, _) = setup();
+    let mine = mine(d, 2000100);
+    capture(d, mine, d.actor, 30);
+    assert!(execute(d, contribute(home, 100), 40));
+    close_and_bind(d, 4);
+    assert!(execute(d, contribute(home, 100), 50));
+    assert!(execute(d, Command::CloseBitcoinPhase(5), 59));
+    assert!(execute(d, contribute(home, 100), 60));
+    close_and_bind(d, 6);
+    assert!(execute(d, claim(6, array![mine.entity_id].span()), 70));
+    let view = IBitcoinViewsDispatcher { contract_address: d.peers.prizes };
+    assert_eq!(view.bitcoin_mine(mine).next_phase, 5);
+    assert_eq!(sat(d, home), 800);
+    assert!(execute(d, Command::BindBitcoinPhase(5), 71));
+    assert!(execute(d, claim(6, array![mine.entity_id].span()), 72));
+    assert_eq!(view.bitcoin_mine(mine).next_phase, 7);
+    assert_eq!(sat(d, home), 2400);
+    assert_eq!(sat(d, mine), 600);
+}
+
+#[test]
+fn a_large_backlog_advances_by_eight_phases_per_claim() {
+    let (d, _, _) = setup();
+    let mine = mine(d, 2000100);
+    capture(d, mine, d.actor, 30);
+    for phase in 4_u64..13 {
+        assert!(execute(d, Command::CloseBitcoinPhase(phase), (phase + 1) * 10));
+    }
+    assert!(execute(d, claim(12, array![mine.entity_id].span()), 130));
+    let view = IBitcoinViewsDispatcher { contract_address: d.peers.prizes };
+    assert_eq!(view.bitcoin_mine(mine).next_phase, 12);
+    assert_eq!(view.bitcoin_mine(mine).unsplit_carry, 8000);
+    assert!(execute(d, claim(12, array![mine.entity_id].span()), 131));
+    assert_eq!(view.bitcoin_mine(mine).next_phase, 13);
+    assert_eq!(view.bitcoin_mine(mine).unsplit_carry, 9000);
+}
+
+#[test]
+fn weighted_draws_include_appended_players_and_later_updates_to_earlier_contributors() {
+    let (d, first, second) = setup();
+    let mine = mine(d, 2000100);
+    let other = 0x777.try_into().unwrap();
+    let third = 0x888.try_into().unwrap();
+    set_owner(d, second, other);
+    capture(d, mine, third, 30);
+    grant(d, mine, 23, 1000);
+    let calls = IBitcoinCommandsDispatcher { contract_address: d.peers.prizes };
+    let mut expected_first = 0_u128;
+    let mut expected_second = 0_u128;
+    let mut expected_mine = 0_u128;
+    for phase in 4_u64..16 {
+        let context = ExecutionContext { timestamp: phase * 10, raw_root: phase.into() };
+        start_cheat_block_timestamp_global(context.timestamp);
+        start_cheat_caller_address(d.peers.prizes, d.peers.season);
+        for (actor, source, amount) in array![
+            (d.actor, first.entity_id, 10_u128), (other, second.entity_id, 30), (third, mine.entity_id, 20),
+            (d.actor, first.entity_id, 20),
+        ] {
+            calls.contribute_bitcoin_labor(3, actor, ContributeLabor { structure_id: source, amount }, context);
+        }
+        let context = ExecutionContext { timestamp: (phase + 1) * 10, ..context };
+        start_cheat_block_timestamp_global(context.timestamp);
+        calls.close_bitcoin_phase(3, d.actor, phase, context);
+        calls.bind_bitcoin_phase(3, d.actor, phase, context);
+        let roll: u256 = core::poseidon::poseidon_hash_span(
+            array!['BITCOIN_DRAW', 1, 3, phase.into(), mine.entity_id.into(), phase.into(), 0].span(),
+        )
+            .into();
+        // Original lottery intervals follow insertion order, with weights 30, 30, 20.
+        if roll % 80 < 30 {
+            expected_first += 800;
+        } else if roll % 80 < 60 {
+            expected_second += 800;
+        } else {
+            expected_mine += 800;
+        }
+        expected_mine += 200;
+        calls
+            .claim_bitcoin_phase(
+                3, d.actor, crate::bitcoin::ClaimPhase { phase, mine_ids: array![mine.entity_id].span() }, context,
+            );
+        stop_cheat_caller_address(d.peers.prizes);
+        assert_eq!(sat(d, first), expected_first);
+        assert_eq!(sat(d, second), expected_second);
+        assert_eq!(sat(d, mine), expected_mine);
+    }
+    assert!(expected_first > 0 && expected_second > 0 && expected_mine > 2400);
+    assert_eq!(expected_first + expected_second + expected_mine, 12000);
+}
+
+#[test]
+fn claim_execution_cost_does_not_grow_with_unrelated_settlements() {
+    let (d, home, _) = setup();
+    let first = mine(d, 2000100);
+    let second = mine(d, 2000130);
+    capture(d, first, d.actor, 30);
+    capture(d, second, d.actor, 30);
+    for key in array![home, first, second] {
+        grant(d, key, 58, 1);
+    }
+    assert!(execute(d, contribute(home, 100), 40));
+    close_and_bind(d, 4);
+    let calls = IBitcoinCommandsDispatcher { contract_address: d.peers.prizes };
+    let context = ExecutionContext { timestamp: 50, raw_root: 123 };
+    start_cheat_caller_address(d.peers.prizes, d.peers.season);
+    let initial_claim = crate::bitcoin::ClaimPhase { phase: 4, mine_ids: array![first.entity_id].span() };
+    let initial_cost = measured_claim(calls, d.actor, initial_claim, context);
+    stop_cheat_caller_address(d.peers.prizes);
+    let structures = crate::structures::IStructuresDispatcher { contract_address: d.peers.structures };
+    let home_row = crate::structures::IStructuresDispatcherTrait::structure(structures, home).unwrap();
+    start_cheat_caller_address(d.peers.resources, d.peers.structures);
+    for index in 0_u32..32 {
+        let id = 900000 + index;
+        super::resource_commands::set_fixture(
+            d.peers.structures,
+            selector!("structures"),
+            array![3, id.into()].span(),
+            crate::structures::StructureRecord {
+                owner: d.actor,
+                base: crate::structures::StructureBase { coord_x: 2000300 + 10 * index, ..home_row.base },
+                resources_packed: home_row.resources_packed,
+                metadata: home_row.metadata,
+            },
+        );
+        IResourcesDispatcher { contract_address: d.peers.resources }
+            .initialize_resources(ResourceKey { game_id: 3, entity_id: id }, 1000000, 1, 50);
+    }
+    stop_cheat_caller_address(d.peers.resources);
+    start_cheat_caller_address(d.peers.prizes, d.peers.season);
+    let later_claim = crate::bitcoin::ClaimPhase { phase: 4, mine_ids: array![second.entity_id].span() };
+    let later_cost = measured_claim(calls, d.actor, later_claim, context);
+    stop_cheat_caller_address(d.peers.prizes);
+    assert!(initial_cost > 0, "claim cost must be measured");
+    assert_eq!(later_cost, initial_cost);
+    assert_eq!(sat(d, first), 201);
+    assert_eq!(sat(d, second), 201);
+    assert_eq!(sat(d, home), 1601);
+}
+
+#[inline(never)]
+fn measured_claim(
+    calls: IBitcoinCommandsDispatcher,
+    actor: starknet::ContractAddress,
+    command: crate::bitcoin::ClaimPhase,
+    context: ExecutionContext,
+) -> u128 {
+    let before = core::testing::get_available_gas();
+    calls.claim_bitcoin_phase(3, actor, command, context);
+    before - core::testing::get_available_gas()
 }

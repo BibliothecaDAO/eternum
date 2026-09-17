@@ -73,8 +73,12 @@ export const BitcoinMiningActionPanel = ({ structureEntityId }: { structureEntit
       if (!claimPhase || claimPhase.state === "Open") await systemCalls.bitcoin_mine_close_phase(props);
       const closed = store.require("BitcoinPhase", { game_id, phase: mine.next_phase });
       if (closed.total_labor > 0n && closed.state === "Closed") await systemCalls.bitcoin_mine_bind_phase(props);
-      await systemCalls.bitcoin_mine_claim_phase_reward({ ...props, mine_ids: [structureEntityId] });
-      toast.success("Mining phase settled");
+      await systemCalls.bitcoin_mine_claim_phase_reward({
+        signer: account,
+        phase_id: phase - 1n,
+        mine_ids: [structureEntityId],
+      });
+      toast.success("Ready mining phases settled");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Mining phase settlement failed");
     } finally {
