@@ -168,8 +168,8 @@ fn shares_checkpoint_old_owners_before_reallocation_and_stop_at_game_end() {
     assert_eq!(points(deployment, deployment.actor) - old, 75000);
     assert_eq!(points(deployment, other), 75000);
     assert_eq!(view(deployment).hyperstructure_shares(hyper).start_at, 200);
-    assert!(
-        execute(deployment, Command::CheckpointHyperstructures(array![hyper.entity_id, hyper.entity_id].span()), 600),
+    assert_terminal_rejection(
+        deployment, Command::CheckpointHyperstructures(array![hyper.entity_id, hyper.entity_id].span()), 600,
     );
     assert_eq!(points(deployment, other), 75000);
 }
@@ -383,23 +383,23 @@ fn blitz_multiplier_counts_realms_in_the_configured_geometry_and_preserves_old_r
     assert_eq!(crate::settlement_grid::hyperstructure_scan_distance(1, crate::settlement::SettlementMode::Triple), 6);
 }
 #[test]
-fn duplicate_shareholders_keep_their_individual_rounding_and_total_entitlement() {
+fn duplicate_shareholders_reject_without_changing_allocation_or_accrued_points() {
     let (deployment, hyper, from, _) = setup();
     complete(deployment, hyper, from);
-    assert!(
-        execute(
-            deployment,
-            allocate(
-                hyper,
-                array![Share { player: deployment.actor, bps: 2500 }, Share { player: deployment.actor, bps: 7500 }]
-                    .span(),
-            ),
-            60,
-        ),
-    );
+    let initial = view(deployment).hyperstructure_shares(hyper);
     let before = points(deployment, deployment.actor);
+    assert_terminal_rejection(
+        deployment,
+        allocate(
+            hyper,
+            array![Share { player: deployment.actor, bps: 2500 }, Share { player: deployment.actor, bps: 7500 }].span(),
+        ),
+        60,
+    );
+    assert_eq!(view(deployment).hyperstructure_shares(hyper), initial);
+    assert_eq!(points(deployment, deployment.actor), before);
     assert!(execute(deployment, Command::CheckpointHyperstructures(array![hyper.entity_id].span()), 70));
-    assert_eq!(points(deployment, deployment.actor) - before, 10000);
+    assert_eq!(points(deployment, deployment.actor) - before, 20000);
 }
 
 #[test]

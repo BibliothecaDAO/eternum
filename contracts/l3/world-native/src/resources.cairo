@@ -34,7 +34,8 @@ pub struct ResourceTransfer {
     pub resources: Span<ResourceAmount>,
 }
 
-pub fn assert_unique_transfer_resources(resources: Span<ResourceAmount>) {
+#[inline(never)]
+pub fn assert_unique_resources(resources: Span<ResourceAmount>) {
     let mut seen: core::dict::Felt252Dict<u128> = Default::default();
     for resource in resources {
         let id = (*resource.resource_type).into();

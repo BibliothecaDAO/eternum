@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "731a6de5cb17509abe2382df77a28a3eb93b8aece1f07c7ebc7b9b32fc868139",
+  "schemaIdentity": "2f82abff5ca675b3b36708167d8cf3acab5dabc2f2539d6158963e2c28de883a",
   "commandAbi": [
     {
       "type": "impl",
@@ -129,6 +129,20 @@
       "interface_name": "world_native::blitz_prizes::IPrizeSeason"
     },
     {
+      "type": "enum",
+      "name": "core::bool",
+      "variants": [
+        {
+          "name": "False",
+          "type": "()"
+        },
+        {
+          "name": "True",
+          "type": "()"
+        }
+      ]
+    },
+    {
       "type": "interface",
       "name": "world_native::blitz_prizes::IPrizeSeason",
       "items": [
@@ -145,7 +159,11 @@
               "type": "core::integer::u64"
             }
           ],
-          "outputs": [],
+          "outputs": [
+            {
+              "type": "core::bool"
+            }
+          ],
           "state_mutability": "external"
         },
         {
@@ -518,20 +536,6 @@
         {
           "name": "snapshot",
           "type": "@core::array::Array::<world_native::settlement::AcceptedCosmetic>"
-        }
-      ]
-    },
-    {
-      "type": "enum",
-      "name": "core::bool",
-      "variants": [
-        {
-          "name": "False",
-          "type": "()"
-        },
-        {
-          "name": "True",
-          "type": "()"
         }
       ]
     },
@@ -2573,6 +2577,41 @@
         {
           "type": "function",
           "name": "execute",
+          "inputs": [
+            {
+              "name": "intent",
+              "type": "eternum_randomness_protocol::Intent"
+            },
+            {
+              "name": "context",
+              "type": "eternum_randomness_protocol::entrypoint::ExecutionContext"
+            },
+            {
+              "name": "r",
+              "type": "core::felt252"
+            },
+            {
+              "name": "s",
+              "type": "core::felt252"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        }
+      ]
+    },
+    {
+      "type": "impl",
+      "name": "ExecutionFailure",
+      "interface_name": "eternum_randomness_protocol::entrypoint::IRecordedExecutionFailure"
+    },
+    {
+      "type": "interface",
+      "name": "eternum_randomness_protocol::entrypoint::IRecordedExecutionFailure",
+      "items": [
+        {
+          "type": "function",
+          "name": "reject_execution",
           "inputs": [
             {
               "name": "intent",

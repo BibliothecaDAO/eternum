@@ -909,7 +909,7 @@ pub mod TroopsDomain {
             context: ExecutionContext,
         ) {
             let rules = self.authorize(game_id, context);
-            crate::resources::assert_unique_transfer_resources(command.steal_resources);
+            crate::resources::assert_unique_resources(command.steal_resources);
             let attacker_key = ExplorerKey { game_id, explorer_id: command.attacker_id };
             let defender_key = ExplorerKey { game_id, explorer_id: command.defender_id };
             let mut attacker = self.owned_explorer(attacker_key, actor);
@@ -1155,7 +1155,7 @@ pub mod TroopsDomain {
         ) {
             let rules = self.authorize(game_id, context);
             assert!(!rules.blitz_mode_on, "no raid in blitz mode");
-            crate::resources::assert_unique_transfer_resources(command.steal_resources);
+            crate::resources::assert_unique_resources(command.steal_resources);
             let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
             let explorer = self.owned_explorer(key, actor);
             let target_key = ResourceKey { game_id, entity_id: command.structure_id };

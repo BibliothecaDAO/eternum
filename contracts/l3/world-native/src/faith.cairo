@@ -129,7 +129,8 @@ pub struct PledgeStory {
 
 #[starknet::interface]
 pub trait IFaithSettlement<T> {
-    fn settle_faith_wonders(ref self: T, game_id: u32, timestamp: u64);
+    fn settle_faith_wonders(ref self: T, game_id: u32, timestamp: u64) -> bool;
+    fn faith_winner_count(self: @T, game_id: u32, wonder_id: u32) -> u32;
     fn settle_player_faith(ref self: T, game_id: u32, player: ContractAddress, wonder_id: u32, timestamp: u64);
 }
 #[starknet::component]
@@ -155,6 +156,7 @@ pub mod FaithState {
         pub faith_wonder_ids: Map<(u32, u32), u32>,
         pub faith_rules: Map<u32, Option<super::FaithRules>>,
         pub blacklist: Map<(u32, u32, felt252), bool>,
+        pub prize_checkpoint: Map<u32, (u32, u128, u32)>,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -319,13 +321,33 @@ pub mod FaithState {
         impl Structures: StructureState::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of super::IFaithSettlement<ComponentState<TContractState>> {
-        fn settle_faith_wonders(ref self: ComponentState<TContractState>, game_id: u32, timestamp: u64) {
+        fn settle_faith_wonders(ref self: ComponentState<TContractState>, game_id: u32, timestamp: u64) -> bool {
             let game = self.authorize_prizes(game_id, timestamp);
-            for index in 0..self.faith_wonder_count.read(game_id) {
+            let (start, mut high_score, mut winners) = self.prize_checkpoint.read(game_id);
+            let count = self.faith_wonder_count.read(game_id);
+            let end = start + core::cmp::min(8, count - start);
+            for index in start..end {
                 let id = self.faith_wonder_ids.read((game_id, index));
                 let mut wonder = self.faith_wonders.read((game_id, id));
                 self.settle_wonder(game_id, id, ref wonder, game.end_at, game.end_at);
                 self.write_wonder(game_id, id, wonder);
+                if wonder.claimed_points > high_score {
+                    high_score = wonder.claimed_points;
+                    winners = 1;
+                } else if wonder.claimed_points == high_score && high_score != 0 {
+                    winners += 1;
+                }
+            }
+            self.prize_checkpoint.write(game_id, (end, high_score, winners));
+            end == count
+        }
+        fn faith_winner_count(self: @ComponentState<TContractState>, game_id: u32, wonder_id: u32) -> u32 {
+            let (cursor, high_score, winners) = self.prize_checkpoint.read(game_id);
+            assert!(cursor == self.faith_wonder_count.read(game_id), "faith settlement incomplete");
+            if high_score != 0 && self.faith_wonders.read((game_id, wonder_id)).claimed_points == high_score {
+                winners
+            } else {
+                0
             }
         }
         fn settle_player_faith(

@@ -40,14 +40,14 @@ fn close_settles_all_completed_shares_before_testing_the_victory_threshold() {
 }
 
 #[test]
-fn an_insufficient_score_rolls_back_checkpoints_and_a_later_ticket_can_close() {
+fn an_insufficient_score_keeps_checkpoints_and_a_later_attempt_can_close() {
     let (deployment, hyper, home, _) = super::hyperstructures::setup();
     super::hyperstructures::complete(deployment, hyper, home);
     let before = games(deployment).player_points(3, deployment.actor);
     configure(deployment, before + 50000);
-    assert_terminal_rejection(deployment, Command::CloseSeason, 99);
-    assert_eq!(games(deployment).player_points(3, deployment.actor), before);
-    assert_eq!(hypers(deployment).hyperstructure_shares(hyper).start_at, 50);
+    assert!(execute(deployment, Command::CloseSeason, 99));
+    assert_eq!(games(deployment).player_points(3, deployment.actor), before + 49000);
+    assert_eq!(hypers(deployment).hyperstructure_shares(hyper).start_at, 99);
     assert_eq!(games(deployment).game(3).end_at, 200);
     assert!(execute(deployment, Command::CloseSeason, 100));
 }
@@ -183,4 +183,124 @@ fn point_history_keeps_each_awards_activity_and_amount_without_a_second_balance(
     assert_eq!(activities, 31);
     assert_eq!(awarded, games(deployment).player_points(3, deployment.actor));
     assert_eq!(awarded, games(deployment).season_points(3));
+}
+
+fn nine_completed_hyperstructures() -> (super::Deployment, Array<crate::resources::ResourceKey>) {
+    let (d, hyper, home, _) = super::hyperstructures::setup();
+    super::hyperstructures::complete(d, hyper, home);
+    let mut keys = array![hyper];
+    for offset in 1_u32..9 {
+        start_cheat_caller_address(d.peers.structures, d.peers.troops);
+        let id = crate::structures::IStructuresDispatcherTrait::create_discovery(
+            crate::structures::IStructuresDispatcher { contract_address: d.peers.structures },
+            3,
+            crate::troops::Coord { alt: false, x: 2000200 + offset * 10, y: 2000000 },
+            crate::discovery::Discovery::Hyperstructure,
+            101,
+            50,
+        );
+        stop_cheat_caller_address(d.peers.structures);
+        let key = crate::resources::ResourceKey { game_id: 3, entity_id: id };
+        super::hyperstructures::owner(d, key, d.actor);
+        let storage_key = array![3, id.into()].span();
+        super::resource_commands::set_fixture(
+            d.peers.economy,
+            selector!("hyper_states"),
+            storage_key,
+            crate::hyperstructures::Hyperstructure {
+                stage: crate::hyperstructures::Stage::Complete,
+                access: crate::hyperstructures::ConstructionAccess::Public,
+                seed: 101,
+            },
+        );
+        super::resource_commands::set_fixture(d.peers.economy, selector!("hyper_share_count"), storage_key, 1_u32);
+        super::resource_commands::set_fixture(d.peers.economy, selector!("hyper_share_start"), storage_key, 50_u64);
+        super::resource_commands::set_fixture(d.peers.economy, selector!("hyper_multiplier"), storage_key, 1_u8);
+        super::resource_commands::set_fixture(
+            d.peers.economy,
+            selector!("hyper_shares"),
+            array![3, id.into(), 0].span(),
+            crate::hyperstructures::Share { player: d.actor, bps: 10000 },
+        );
+        keys.append(key);
+    }
+    (d, keys)
+}
+
+#[test]
+fn close_batches_keep_one_cutoff_and_check_the_threshold_after_the_last_batch() {
+    let (d, keys) = nine_completed_hyperstructures();
+    let before = games(d).player_points(3, d.actor);
+    configure(d, before + 450000);
+    assert!(execute(d, Command::CloseSeason, 100));
+    assert_eq!(games(d).game(3).end_at, 200);
+    assert_eq!(games(d).player_points(3, d.actor), before + 400000);
+    assert_eq!(hypers(d).hyperstructure_shares(*keys.at(8)).start_at, 50);
+    assert!(execute(d, Command::CloseSeason, 110));
+    assert_eq!(games(d).game(3).end_at, 110);
+    assert_eq!(games(d).player_points(3, d.actor), before + 450000);
+    assert_eq!(hypers(d).hyperstructure_shares(*keys.at(8)).start_at, 100);
+}
+
+#[test]
+fn a_share_change_past_the_attempt_cutoff_is_not_checkpointed_backwards() {
+    let (d, keys) = nine_completed_hyperstructures();
+    let before = games(d).player_points(3, d.actor);
+    configure(d, before + 460000);
+    assert!(execute(d, Command::CloseSeason, 100));
+    assert!(
+        execute(
+            d,
+            Command::AllocateHyperstructureShares(
+                crate::hyperstructures::AllocateShares {
+                    hyperstructure_id: *keys.at(8).entity_id,
+                    shareholders: array![crate::hyperstructures::Share { player: d.actor, bps: 10000 }].span(),
+                },
+            ),
+            110,
+        ),
+    );
+    assert_eq!(hypers(d).hyperstructure_shares(*keys.at(8)).start_at, 110);
+    assert_eq!(games(d).player_points(3, d.actor), before + 460000);
+    assert!(execute(d, Command::CloseSeason, 120));
+    assert_eq!(games(d).game(3).end_at, 120);
+    assert_eq!(hypers(d).hyperstructure_shares(*keys.at(8)).start_at, 110);
+    assert_eq!(games(d).player_points(3, d.actor), before + 460000);
+}
+
+#[test]
+fn another_player_can_finish_an_attempt_and_is_checked_for_the_win() {
+    let (d, _) = nine_completed_hyperstructures();
+    let other = super::bind_authority(d);
+    configure(d, 1);
+    assert!(execute(d, Command::CloseSeason, 100));
+    assert!(execute(other, Command::CloseSeason, 110));
+    assert_eq!(games(d).game(3).end_at, 200);
+    assert_eq!(games(d).player_points(3, other.actor), 0);
+    // The unsuccessful attempt ended: this call starts a new cutoff at 120.
+    assert!(execute(d, Command::CloseSeason, 120));
+    assert!(execute(d, Command::CloseSeason, 130));
+    assert_eq!(games(d).game(3).end_at, 130);
+}
+
+#[test]
+fn ended_game_checkpoints_are_bounded_and_stop_at_the_game_end() {
+    let (d, keys) = nine_completed_hyperstructures();
+    let before = games(d).player_points(3, d.actor);
+    snforge_std::start_cheat_block_timestamp_global(1000);
+    assert!(!final_checkpoint(d));
+    assert_eq!(games(d).player_points(3, d.actor), before + 8 * 150000);
+    assert_eq!(hypers(d).hyperstructure_shares(*keys.at(8)).start_at, 50);
+    assert!(final_checkpoint(d));
+    assert_eq!(games(d).player_points(3, d.actor), before + 9 * 150000);
+    assert_eq!(hypers(d).hyperstructure_shares(*keys.at(8)).start_at, 200);
+    assert!(final_checkpoint(d));
+    assert_eq!(games(d).player_points(3, d.actor), before + 9 * 150000);
+}
+
+fn final_checkpoint(d: super::Deployment) -> bool {
+    snforge_std::cheat_caller_address(d.peers.season, d.peers.prizes, snforge_std::CheatSpan::TargetCalls(1));
+    crate::blitz_prizes::IPrizeSeasonDispatcherTrait::checkpoint_prize_points(
+        crate::blitz_prizes::IPrizeSeasonDispatcher { contract_address: d.peers.season }, 3, 1000,
+    )
 }

@@ -32,8 +32,8 @@ pub mod SeasonDomain {
     use core::num::traits::Zero;
     use core::poseidon::poseidon_hash_span;
     use eternum_randomness_protocol::entrypoint::{
-        Admission, ExecutionContext, ExecutionResult, IRecordedExecution, IRecordedExecutionViews,
-        accepted_context_matches, authenticate_submission, timestamp_in_bounds,
+        Admission, ExecutionContext, ExecutionResult, IRecordedExecution, IRecordedExecutionFailure,
+        IRecordedExecutionViews, accepted_context_matches, authenticate_submission, timestamp_in_bounds,
     };
     use eternum_randomness_protocol::{Envelope, Intent, action_identity, decode_envelope};
     use starknet::storage::{
@@ -121,14 +121,16 @@ pub mod SeasonDomain {
             let mut game = self.games.game(game_id);
             crate::game::assert_playing(game, context.timestamp);
             assert!(!self.games.rules(game_id).blitz_mode_on, "season closure requires Eternum");
-            crate::hyperstructures::IHyperstructuresDispatcherTrait::settle_completed_hyperstructures(
+            let threshold = self.season_win_threshold(game_id);
+            assert!(threshold != 0, "season win threshold is zero");
+            let complete = crate::hyperstructures::IHyperstructuresDispatcherTrait::settle_completed_hyperstructures(
                 crate::hyperstructures::IHyperstructuresDispatcher { contract_address: peers.economy },
                 game_id,
                 context.timestamp,
             );
-            let threshold = self.season_win_threshold(game_id);
-            assert!(threshold != 0, "season win threshold is zero");
-            assert!(self.games.player_points.read((game_id, actor)) >= threshold, "not enough points to end season");
+            if !complete || self.games.player_points.read((game_id, actor)) < threshold {
+                return;
+            }
             game.end_at = context.timestamp;
             self.games.write_game(game_id, game);
             self.record_season_end(game_id, actor, context.timestamp);
@@ -158,17 +160,17 @@ pub mod SeasonDomain {
 
     #[abi(embed_v0)]
     impl PrizeSeason of crate::blitz_prizes::IPrizeSeason<ContractState> {
-        fn checkpoint_prize_points(ref self: ContractState, game_id: u32, timestamp: u64) {
+        fn checkpoint_prize_points(ref self: ContractState, game_id: u32, timestamp: u64) -> bool {
             let peers = self.lifecycle.require_active();
             assert!(get_caller_address() == peers.prizes, "only prizes domain");
             crate::commands::assert_context_time(timestamp);
             let game = self.games.game(game_id);
             assert!(game.end_at != 0 && timestamp >= game.end_at, "game not ended");
-            crate::hyperstructures::IHyperstructuresDispatcherTrait::settle_completed_hyperstructures(
+            crate::hyperstructures::IHyperstructuresDispatcherTrait::settle_final_hyperstructures(
                 crate::hyperstructures::IHyperstructuresDispatcher { contract_address: peers.economy },
                 game_id,
                 timestamp,
-            );
+            )
         }
         fn finalize_ranking(ref self: ContractState, game_id: u32, trial_id: u128) {
             assert!(get_caller_address() == self.lifecycle.require_active().prizes, "only prizes domain");
@@ -281,9 +283,25 @@ pub mod SeasonDomain {
     }
 
     #[abi(embed_v0)]
+    impl ExecutionFailure of IRecordedExecutionFailure<ContractState> {
+        fn reject_execution(
+            ref self: ContractState, intent: Intent, context: ExecutionContext, r: felt252, s: felt252,
+        ) {
+            let envelope = decode_envelope(context.envelope.span()).expect('malformed envelope');
+            self.authenticate_ticket(@intent, @context, @envelope);
+            // A transport failure cannot authorize consumption of an unauthenticated action.
+            assert!(
+                check_ecdsa_signature(envelope.action, context.accepted_public_key, r, s), "invalid player signature",
+            );
+            assert!(accepted_context_matches(@intent, @envelope), "invalid acceptance");
+            let _ = self.consume_action_nonce(@intent);
+            self.recording.record(@envelope, Err('EXECUTION_FAILED'));
+        }
+    }
+
+    #[abi(embed_v0)]
     impl AdmissionViews of IRecordedExecutionViews<ContractState> {
         fn get_admission(self: @ContractState, game: felt252, actor: felt252) -> Admission {
-            self.lifecycle.require_active();
             let game_id: u32 = game.try_into().expect('invalid game id');
             let actor: ContractAddress = actor.try_into().expect('invalid actor');
             let head = self.recording.head.read();
@@ -419,6 +437,7 @@ pub mod SeasonDomain {
         fn rules_identity(self: @ContractState, game_id: u32) -> felt252 {
             self.rules_commitment(self.games.rules(game_id))
         }
+        #[inline(never)]
         fn execution_config(self: @ContractState) -> felt252 {
             let mut values = array!['ETERNUM_EXECUTION', 1];
             self.lifecycle.require_active().serialize(ref values);
@@ -452,6 +471,19 @@ pub mod SeasonDomain {
             r: felt252,
             s: felt252,
         ) -> Result<Span<felt252>, felt252> {
+            let (game_id, actor) = self.consume_action_nonce(intent)?;
+            self.validate_action(intent, context, envelope, game_id, r, s)?;
+            let command = decode_command(intent.arguments.span(), *intent.command).map_err(|_error| 'INVALID_COMMAND')?;
+            dispatch(
+                peers,
+                game_id,
+                actor,
+                command,
+                DomainContext { raw_root: *envelope.root, timestamp: *envelope.timestamp },
+            )
+                .map_err(|_error| 'GAMEPLAY_REJECTED')
+        }
+        fn consume_action_nonce(ref self: ContractState, intent: @Intent) -> Result<(u32, ContractAddress), felt252> {
             let game_id: u32 = (*intent.game_id).try_into().ok_or('INVALID_GAME')?;
             let actor: ContractAddress = (*intent.actor).try_into().ok_or('INVALID_ACTOR')?;
             if game_id == 0 {
@@ -468,16 +500,7 @@ pub mod SeasonDomain {
                 return Err('NONCE_EXHAUSTED');
             }
             self.consume_nonce(game_id, actor, *intent.nonce);
-            self.validate_action(intent, context, envelope, game_id, r, s)?;
-            let command = decode_command(intent.arguments.span(), *intent.command).map_err(|_error| 'INVALID_COMMAND')?;
-            dispatch(
-                peers,
-                game_id,
-                actor,
-                command,
-                DomainContext { raw_root: *envelope.root, timestamp: *envelope.timestamp },
-            )
-                .map_err(|_error| 'GAMEPLAY_REJECTED')
+            Ok((game_id, actor))
         }
         fn validate_action(
             self: @ContractState,
@@ -509,6 +532,7 @@ pub mod SeasonDomain {
             }
             Ok(())
         }
+        #[inline(never)]
         fn consume_nonce(ref self: ContractState, game_id: u32, actor: ContractAddress, nonce: u64) {
             let next_nonce = nonce + 1;
             self.nonces.write((game_id, actor), next_nonce);

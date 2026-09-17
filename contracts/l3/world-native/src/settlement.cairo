@@ -470,7 +470,11 @@ pub mod SettlementState {
             assert!(block_hash != 0, "missing cosmetic block identity");
             assert!(cosmetics.len() <= rules.cosmetic_limit.into(), "exceeded maximum cosmetics");
             let mut attributes = array![];
+            let mut seen: core::dict::Felt252Dict<u128> = Default::default();
             for cosmetic in cosmetics {
+                let token = (*cosmetic.token_id).into();
+                assert!(seen.get(token) == 0, "duplicate cosmetic");
+                seen.insert(token, 1);
                 assert!(*cosmetic.owner == owner, "wallet does not own cosmetic");
                 assert!(*cosmetic.attributes != 0, "cosmetic attributes cannot be zero");
                 self.cosmetics.write((key.game_id, key.player, attributes.len()), *cosmetic.attributes);
