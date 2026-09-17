@@ -57,7 +57,6 @@ describe("native structure upgrades", () => {
         keys: [...event.prefix, "1", "1", "7", "0", "0x111", "0", "3", "0x55"],
         data: ["1", "2", "1860"],
       }),
-      fold,
     );
     expect(decoded.kind).toBe("event");
     if (decoded.kind !== "event") throw new Error("Expected history event");

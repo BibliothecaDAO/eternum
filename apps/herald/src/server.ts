@@ -119,8 +119,7 @@ const main = async (): Promise<void> => {
     rpc,
   };
   const live = ingestion.createLive(liveInput);
-  const confirmedHead = await rpc.getBlockWithReceipts(loaded.confirmedBlock);
-  await live.freezeEndedReviewSnapshots(confirmedHead.timestamp);
+  await live.freezeFinalizedReviewSnapshots();
   let server: ReturnType<typeof Bun.serve<HeraldSocketData>> | undefined;
   let shuttingDown = false;
 

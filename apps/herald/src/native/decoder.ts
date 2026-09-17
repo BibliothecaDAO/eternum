@@ -2,7 +2,6 @@ import { type GameSyncModelDefinition } from "@bibliothecadao/eternum/game-sync-
 import { hash } from "starknet";
 import { normalizeFelt, type ModelCodec, type ModelRegistry } from "../model-registry";
 import type { DecodedWorldEvent, RawWorldEvent, RpcEvent } from "../types";
-import type { WorldFold } from "../world-fold";
 import { decodeMembers } from "./serde";
 import {
   schemaIdentity,
@@ -17,7 +16,7 @@ export type NativeRawEvent = RawWorldEvent & RpcEvent;
 export class NativeDecoder {
   readonly registry: ModelRegistry;
   private readonly emitters = new Map<string, string>();
-  private readonly schemas = new Map<string, NativeSchema>();
+  private readonly schema: NativeSchema;
   constructor(readonly manifest: NativeManifest) {
     const release = manifest.native;
     if (release.version !== 1 || !Number.isSafeInteger(release.deploymentBlock) || release.deploymentBlock < 0)
@@ -30,18 +29,16 @@ export class NativeDecoder {
         schemaIdentity(schema) !== identity
       )
         throw new Error("Native schema identity mismatch");
-      this.schemas.set(identity, schema);
     }
-    const active = this.requireSchema(release.activeSchema);
+    const active = release.schemas[release.activeSchema];
+    if (!active) throw new Error(`Missing native schema ${release.activeSchema}`);
+    this.schema = active;
     if (Object.keys(release.domains).sort().join() !== Object.keys(active.domains).sort().join())
       throw new Error("Native domain set mismatch");
     for (const [domain, deployment] of Object.entries(release.domains)) {
       const address = normalizeFelt(deployment.address);
       if (BigInt(address) === 0n || this.emitters.has(address)) throw new Error("Duplicate or zero native emitter");
       this.emitters.set(address, domain);
-      for (const identity of Object.values(deployment.classes)) this.requireSchema(identity);
-      if (!deployment.classes[normalizeFelt(deployment.initialClassHash)])
-        throw new Error("Missing initial native codec");
     }
     if (BigInt(manifest.world.address) !== BigInt(release.domains.season.address))
       throw new Error("Native deployment identity is not its season domain");
@@ -57,10 +54,10 @@ export class NativeDecoder {
   owns(address: string): boolean {
     return this.emitters.has(normalizeFelt(address));
   }
-  decode(event: NativeRawEvent, fold: WorldFold): DecodedWorldEvent {
+  decode(event: NativeRawEvent): DecodedWorldEvent {
     const domain = this.emitters.get(normalizeFelt(event.from_address));
     if (!domain) throw new Error(`Foreign native emitter ${event.from_address}`);
-    const schema = this.emitterSchema(domain, fold);
+    const schema = this.schema;
     const layout = schema.domains[domain].events.find((candidate) =>
       candidate.prefix.every((key, index) => BigInt(key) === BigInt(event.keys[index] ?? -1)),
     );
@@ -106,29 +103,7 @@ export class NativeDecoder {
       return { ...base, kind: "update-member", member: member.name, value: value[member.name] };
     }
     const value = decodeMembers(schema, model.members, frame.values);
-    if (model.name === "DomainClass") this.classSchema(domain, String(value.class_hash));
     return { ...base, kind: "set", key, value };
-  }
-
-  private emitterSchema(domain: string, fold: WorldFold): NativeSchema {
-    const address = this.manifest.native.domains[domain].address;
-    const current = fold
-      .modelRows("DomainClass")
-      .find((row) => BigInt(row.value.address as string) === BigInt(address));
-    return this.classSchema(
-      domain,
-      current ? String(current.value.class_hash) : this.manifest.native.domains[domain].initialClassHash,
-    );
-  }
-  private classSchema(domain: string, classHash: string): NativeSchema {
-    const identity = this.manifest.native.domains[domain].classes[normalizeFelt(classHash)];
-    if (!identity) throw new Error(`Unregistered native class ${classHash}`);
-    return this.requireSchema(identity);
-  }
-  private requireSchema(identity: string): NativeSchema {
-    const schema = this.schemas.get(identity);
-    if (!schema) throw new Error(`Missing native schema ${identity}`);
-    return schema;
   }
 }
 

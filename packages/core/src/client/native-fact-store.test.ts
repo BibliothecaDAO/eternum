@@ -37,18 +37,14 @@ const structure = (owner: string, game = 1) => ({
 });
 
 describe("native fact store", () => {
-  it("indexes structured native keys by game and rejects reserved games", () => {
+  it("indexes native keys by game and rejects reserved games", () => {
     const store = new NativeFactStore();
-    store.applyEntityOperations([
-      upsert("0x1", { VillageRaid: { key: { game_id: 2, entity_id: 4 }, last_tick: "300" } }),
-    ]);
-    expect(store.get("VillageRaid", { key: { game_id: 2, entity_id: 4 } })?.last_tick).toBe(300n);
+    store.applyEntityOperations([upsert("0x1", { VillageRaid: { game_id: 2, entity_id: 4, last_tick: "300" } })]);
+    expect(store.get("VillageRaid", { game_id: 2, entity_id: 4 })?.last_tick).toBe(300n);
     expect([...store.inGame("VillageRaid", 2)]).toHaveLength(1);
     expect([...store.inGame("VillageRaid", 1)]).toHaveLength(0);
     expect(() =>
-      store.applyEntityOperations([
-        upsert("0x2", { VillageRaid: { key: { game_id: 0, entity_id: 4 }, last_tick: "300" } }),
-      ]),
+      store.applyEntityOperations([upsert("0x2", { VillageRaid: { game_id: 0, entity_id: 4, last_tick: "300" } })]),
     ).toThrow("Reserved game id");
     store.applyEntityOperations([{ type: "delete-entity", entityId: "0x1" }]);
     expect([...store.inGame("VillageRaid", 2)]).toHaveLength(0);

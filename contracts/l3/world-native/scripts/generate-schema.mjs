@@ -80,6 +80,7 @@ function sumLengths(lengths) {
 }
 
 function model(name, owners, scope, keys, members, emitterKey) {
+  if (scope === "game" && keys[0]?.name !== "game_id") throw new Error(`Missing leading game key for ${name}`);
   return {
     name,
     identity: shortString.encodeShortString(name),

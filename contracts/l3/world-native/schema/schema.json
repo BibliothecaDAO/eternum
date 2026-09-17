@@ -9979,9 +9979,14 @@
       "scope": "game",
       "keys": [
         {
-          "name": "key",
-          "type": "world_native::resources::ResourceKey",
-          "feltLength": 2
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "entity_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
         }
       ],
       "members": [
@@ -18958,5 +18963,5 @@
       ]
     }
   },
-  "identity": "2f82abff5ca675b3b36708167d8cf3acab5dabc2f2539d6158963e2c28de883a"
+  "identity": "cb33163b1cd8c2be7f3b961a4f31c4394b83df12441304bef699ccafae4979fd"
 }

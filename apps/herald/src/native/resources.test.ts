@@ -140,7 +140,6 @@ describe("native production facts", () => {
         keys: [...event.prefix, "1", "1", "7", "0", "0x111", "0", "3", "0x55"],
         data: ["7", "26", "125", "2", "23", "10", "35", "20", "1920"],
       }),
-      fold,
     );
     expect(decoded.kind).toBe("event");
     if (decoded.kind !== "event") throw new Error("Expected production history event");
@@ -172,7 +171,6 @@ describe("native building facts", () => {
           keys: [...event.prefix, "1", "1", "7", "0", "0x111", "0", "3", "0x55"],
           data,
         }),
-        fold,
       );
       if (decoded.kind !== "event") throw new Error("Expected building history event");
       return toJsonValue(decoded.value);
