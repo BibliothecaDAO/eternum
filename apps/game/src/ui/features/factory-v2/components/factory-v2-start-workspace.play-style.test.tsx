@@ -86,7 +86,6 @@ const buildProps = (
   moreOptionErrors: {
     shards: null,
     camp: null,
-    agent: null,
     bitcoinMine: null,
     hyperstructureCenter: null,
     hyperstructureRadiusMultiplier: null,

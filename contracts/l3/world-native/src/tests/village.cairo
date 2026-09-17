@@ -283,3 +283,69 @@ fn exhausted_geometry_records_rejection_and_keeps_the_pass() {
     assert!(result.status == 2 && result.reason == 'GAMEPLAY_REJECTED');
     assert!(season.execution_head().order == 1 && season.next_nonce(3, deployment.actor) == 1);
 }
+
+#[test]
+fn season_settlement_random_draw_reserves_realm_and_provisions_its_economy() {
+    let (deployment, _) = setup(true);
+    super::entry::set_operator(deployment, 0.try_into().unwrap());
+    // Catalogue loading is covered separately; this draw uses the pinned salt 71419
+    // after scoping raw root 987654321 to game 3 with seed 1: realm 2239.
+    super::resource_commands::set_fixture(
+        deployment.peers.settlement, selector!("catalogue_count"), array![].span(), 8000_u32,
+    );
+    super::resource_commands::set_fixture(
+        deployment.peers.settlement, selector!("traits"), array![2239].span(), 0x9000002_u32,
+    );
+    let mut spy = spy_events();
+    assert!(
+        run(
+            deployment,
+            Command::SettleSeason(crate::realms::SettleSeason { name: 'Season player', selected_realm: Option::None }),
+            100,
+        ),
+    );
+    let mut created = Option::None;
+    for (_, event) in spy.get_events().emitted_by(deployment.peers.structures).events.span() {
+        if *event.keys.at(0) == selector!("StoryEvent") {
+            let mut keys = event.keys.span();
+            let _ = keys.pop_front(); // event selector
+            let _ = keys.pop_front(); // version
+            let _ = keys.pop_front(); // game
+            let _ = keys.pop_front(); // story id
+            let _: Option<starknet::ContractAddress> = Serde::deserialize(ref keys).unwrap();
+            let entity: Option<u32> = Serde::deserialize(ref keys).unwrap();
+            let mut values = event.data.span();
+            let story: crate::ownership::Story = Serde::deserialize(ref values).unwrap();
+            if let crate::ownership::Story::RealmCreatedStory(_) = story {
+                created = entity;
+            }
+        }
+    }
+    let id = created.expect('missing realm story');
+    let key = ResourceKey { game_id: 3, entity_id: id };
+    let row = IStructuresDispatcher { contract_address: deployment.peers.structures }.structure(key).unwrap();
+    assert_eq!(row.metadata.realm_id, 2239);
+    assert_eq!(row.metadata.order, 5);
+    assert!(row.metadata.has_wonder);
+    assert_eq!(row.owner, deployment.actor);
+    assert_eq!(row.base.level, 0);
+    assert!(row.base.starting_troops_granted);
+    assert!(
+        IResourcesDispatcher { contract_address: deployment.peers.resources }
+            .resource_production(ResourceSlot { game_id: 3, entity_id: id, resource_type: 23 })
+            .production_rate > 0,
+    );
+    assert_eq!(
+        crate::names::INamesDispatcherTrait::address_name(
+            crate::names::INamesDispatcher { contract_address: deployment.peers.structures }, deployment.actor,
+        )
+            .name,
+        'Season player',
+    );
+    assert_eq!(
+        crate::realms::ISeasonRealmsDispatcherTrait::available_realm(
+            crate::realms::ISeasonRealmsDispatcher { contract_address: deployment.peers.settlement }, 3, 2238,
+        ),
+        8000,
+    );
+}

@@ -18,11 +18,11 @@ def capture_pending_action(command, deployment, database, fixture, mode, before,
     if pending[:-1] != before or len(pending) != len(before) + 1 or pending[-1]['status'] != 'submitted':
         raise RuntimeError('fault did not retain exactly one accepted submission')
     order = pending[-1]['ticket_order']
-    observed = chain_result(fixture, order)
+    observed = chain_result(fixture, pending[-1])
     deadline = time.monotonic() + 10
     while mode == 'after-broadcast' and int(observed[0], 16) == 0 and time.monotonic() < deadline:
         time.sleep(0.01)
-        observed = chain_result(fixture, order)
+        observed = chain_result(fixture, pending[-1])
     if (int(observed[0], 16) != 0) != (mode == 'after-broadcast'):
         raise RuntimeError('chain progress does not match the selected broadcast boundary')
     (output / 'chain-before-crash.json').write_text(json.dumps(observed) + '\n')
@@ -41,7 +41,7 @@ def verify_recovered_action(command, deployment, database, fixture, before, pend
     for key in ('ticket_order', 'action', 'binding', 'envelope'):
         if after[-1][key] != pending[-1][key]:
             raise RuntimeError(f'recovery changed {key}')
-    result = chain_result(fixture, order)
+    result = chain_result(fixture, after[-1])
     if int(result[1], 16) != int(after[-1]['binding'], 16) or int(result[2], 16) != int(after[-1]['result'], 16):
         raise RuntimeError('recovered chain result differs from the retained journal')
     (output / 'chain-after-recovery.json').write_text(json.dumps(result) + '\n')

@@ -1,9 +1,0 @@
-{"chain":"madara","checkpointBlock":2315,"confirmedBlock":2333,"epoch":"b8c1c766-7935-4c23-b5f1-4a9101ec7610","event":"herald_ready","metrics":{"decoded_events":0,"event_messages":0,"store_events":0,"pages":18,"retained_rows":0},"port":3003,"startupMs":14,"worldAddress":"0x1db5f79a057ac9eeecd7306fa966ae9cd7c2fdc773f904dce20d8155eecb316","wsUrl":"ws://madara:9944/rpc/v0_10_2"}
-{"count":32,"event":"herald_diff_latency_digest","kind":"confirmed","maxMs":8,"p50Ms":5,"p95Ms":6,"windowMs":61247}
-{"error":"Fold has no row collection for DomainClass","event":"herald_fatal"}
-{"confirmedBlock":2368,"event":"herald_checkpoint_discarded","mismatch":"native schema identity differs"}
-{"chain":"madara","checkpointBlock":null,"confirmedBlock":2398,"epoch":"973006fc-5b6a-4d35-bd73-41e7da93f3db","event":"herald_ready","metrics":{"decoded_events":1,"event_messages":0,"store_events":1,"pages":104,"retained_rows":1},"port":3003,"startupMs":34,"worldAddress":"0x1db5f79a057ac9eeecd7306fa966ae9cd7c2fdc773f904dce20d8155eecb316","wsUrl":"ws://madara:9944/rpc/v0_10_2"}
-{"error":"Unable to connect. Is the computer able to access the url?","event":"herald_chain_clock_failed"}
-{"count":30,"event":"herald_diff_latency_digest","kind":"confirmed","maxMs":9,"p50Ms":5,"p95Ms":7,"windowMs":60409}
-{"count":30,"event":"herald_diff_latency_digest","kind":"confirmed","maxMs":6,"p50Ms":5,"p95Ms":6,"windowMs":60042}
-{"count":30,"event":"herald_diff_latency_digest","kind":"confirmed","maxMs":12,"p50Ms":4,"p95Ms":5,"windowMs":61109}

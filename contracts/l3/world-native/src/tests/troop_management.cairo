@@ -1,8 +1,9 @@
 use eternum_cubit::f128::types::fixed::FixedTrait;
-use snforge_std::{EventSpyTrait, EventsFilterTrait, spy_events};
+use snforge_std::{EventSpyTrait, EventsFilterTrait, spy_events, start_cheat_caller_address, stop_cheat_caller_address};
 use crate::combat::TroopsTrait;
-use crate::commands::{Command, CreateExplorer};
+use crate::commands::{Command, CreateExplorer, Move};
 use crate::guards::{GuardKey, IGuardsDispatcher, IGuardsDispatcherTrait};
+use crate::map::{IMapDispatcher, IMapDispatcherTrait};
 use crate::names::{INamesDispatcher, INamesDispatcherTrait, SetEntityName};
 use crate::ownership::{GuardAddStory, Story};
 use crate::resources::{IResourcesDispatcher, IResourcesDispatcherTrait, ResourceKey, ResourceSlot};
@@ -12,10 +13,10 @@ use crate::troop_management::{Army, GuardSlot, ManageTroops, RecruitExplorer, Re
 use crate::troops::{ExplorerKey, ExplorerTroops, ITroopsDispatcher, ITroopsDispatcherTrait, TroopTier, TroopType};
 use super::resource_commands::{assert_terminal_rejection, execute, execute_recorded_at, grant, set_fixture};
 
-fn setup() -> (super::Deployment, ResourceKey, u32, u32) {
+fn setup_homes() -> (super::Deployment, ResourceKey, ResourceKey, u32, u32) {
     let mut rules = super::recorded::rules();
     rules.troop_limit_config.guard_resurrection_delay = 60;
-    let (d, home, _) = super::resource_commands::setup_with_rules(rules);
+    let (d, home, other_home) = super::resource_commands::setup_with_rules(rules);
     grant(d, home, 26, 1000 * RESOURCE_PRECISION);
     grant(d, home, 32, 1000 * RESOURCE_PRECISION);
     let structures = IStructuresDispatcher { contract_address: d.peers.structures };
@@ -51,7 +52,11 @@ fn setup() -> (super::Deployment, ResourceKey, u32, u32) {
         );
     }
     let ids = structures.structure(home).unwrap().troop_explorers;
-    (d, home, *ids.at(0), *ids.at(1))
+    (d, home, other_home, *ids.at(0), *ids.at(1))
+}
+fn setup() -> (super::Deployment, ResourceKey, u32, u32) {
+    let (d, home, _, first, second) = setup_homes();
+    (d, home, first, second)
 }
 fn troop(d: super::Deployment, id: u32) -> Option<ExplorerTroops> {
     ITroopsDispatcher { contract_address: d.peers.troops }.explorer(ExplorerKey { game_id: 3, explorer_id: id })
@@ -140,7 +145,7 @@ fn explorer_transfer_preserves_the_worse_stamina_and_cooldown_and_deletes_an_emp
 
 #[test]
 fn transfers_to_guards_and_back_preserve_counts_and_reject_foreign_homes() {
-    let (d, home, first, second) = setup();
+    let (d, home, other_home, first, second) = setup_homes();
     let slot = GuardSlot { structure_id: home.entity_id, slot: 0 };
     assert!(execute(d, transfer(Army::Explorer(first), Army::Guard(slot), 3), 140));
     assert_eq!(guard(d, home, 0).troops.count, 3 * RESOURCE_PRECISION);
@@ -150,9 +155,14 @@ fn transfers_to_guards_and_back_preserve_counts_and_reject_foreign_homes() {
     assert_eq!(guard(d, home, 0).troops.stamina.amount, 0);
     assert_eq!(troop(d, second).unwrap().troops.count, 8 * RESOURCE_PRECISION);
     let mut row = troop(d, second).unwrap();
-    row.owner = 999;
+    assert_eq!(
+        IStructuresDispatcher { contract_address: d.peers.structures }.structure(other_home).unwrap().owner, d.actor,
+    );
+    row.owner = other_home.entity_id;
     set_fixture(d.peers.troops, selector!("explorers"), array![3, second.into()].span(), row);
     assert_terminal_rejection(d, transfer(Army::Explorer(first), Army::Explorer(second), 1), 140);
+    assert_eq!(troop(d, first).unwrap().troops.count, 7 * RESOURCE_PRECISION);
+    assert_eq!(troop(d, second).unwrap().troops.count, 8 * RESOURCE_PRECISION);
 }
 
 #[test]
@@ -472,4 +482,41 @@ fn entity_names_follow_owned_armies_and_reject_missing_or_foreign_entities() {
     );
     assert_terminal_rejection(d, Command::SetEntityName(SetEntityName { entity_id: explorer, name: 'Stolen' }), 80);
     assert_eq!(names.entity_name(key).name, 'Vanguard');
+}
+
+#[test]
+fn multi_tile_move_spends_each_steps_stamina_and_rejects_a_blocked_path_atomically() {
+    let (d, home, first, _) = setup();
+    grant(d, home, 35, 1000 * RESOURCE_PRECISION);
+    grant(d, home, 36, 1000 * RESOURCE_PRECISION);
+    let start = troop(d, first).unwrap().coord;
+    let map = IMapDispatcher { contract_address: d.peers.map };
+    start_cheat_caller_address(d.peers.map, d.peers.troops);
+    for offset in 1_u32..3 {
+        let coord = crate::troops::Coord { x: start.x + offset, ..start };
+        map.reveal(crate::geometry::tile_key(3, coord), 11); // Grassland: knight's neutral travel biome.
+    }
+    stop_cheat_caller_address(d.peers.map);
+    let mut before = troop(d, first).unwrap();
+    before.troops.stamina.amount = 120;
+    before.troops.stamina.updated_tick = 2;
+    set_fixture(d.peers.troops, selector!("explorers"), array![3, first.into()].span(), before);
+    assert!(execute(d, Command::Move(Move { explorer_id: first, directions: array![0, 0].span() }), 120));
+    let after = troop(d, first).unwrap();
+    assert_eq!(after.coord.x, start.x + 2);
+    assert_eq!(after.coord.y, start.y);
+    assert_eq!(after.troops.stamina.amount, 80); // Pinned travel cost: 20 per neutral tile.
+    assert_eq!(map.tile(crate::geometry::tile_key(3, start)).unwrap().data % 0x20000000000, 0);
+    assert_eq!(
+        map
+            .tile(crate::geometry::tile_key(3, crate::troops::Coord { x: start.x + 1, ..start }))
+            .unwrap()
+            .data % 0x20000000000,
+        0,
+    );
+    let occupied = map.tile(crate::geometry::tile_key(3, after.coord)).unwrap();
+    // Two steps can succeed, but the third enters the home realm. No partial movement survives.
+    assert_terminal_rejection(d, Command::Move(Move { explorer_id: first, directions: array![3, 3, 3].span() }), 120);
+    assert_eq!(troop(d, first).unwrap(), after);
+    assert_eq!(map.tile(crate::geometry::tile_key(3, after.coord)).unwrap(), occupied);
 }

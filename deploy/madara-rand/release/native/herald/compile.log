@@ -1,3 +1,0 @@
-  [35ms]  bundle  164 modules
-Internal error: directory mismatch for directory "/tmp/madara-rand-native-herald-5/source/herald-build-tsconfig.json", fd 3. You don't need to do anything, but this indicates a bug.
- [147ms] compile  /tmp/madara-rand-native-herald-5/herald

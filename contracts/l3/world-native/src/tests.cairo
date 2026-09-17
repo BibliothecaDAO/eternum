@@ -682,3 +682,5 @@ mod guilds;
 mod recorded_receipts;
 
 mod season_lifecycle;
+
+mod structure_rules;

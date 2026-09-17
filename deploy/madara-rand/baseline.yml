@@ -1,3 +1,0 @@
-services:
-  madara:
-    entrypoint: [tini, --, /bin/madara-baseline]
