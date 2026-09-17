@@ -617,9 +617,9 @@ fn activation_rejects_peer_mismatch_authority_mismatch_and_double_activation() {
 #[feature("safe_dispatcher")]
 fn upgrade_rules_are_immutable_complete_and_game_scoped() {
     let deployment = setup(true);
-    let season = deployment.peers.season;
-    let rules = IUpgradeRulesDispatcher { contract_address: season };
-    let safe = IUpgradeRulesSafeDispatcher { contract_address: season };
+    let registry = deployment.peers.registry;
+    let rules = IUpgradeRulesDispatcher { contract_address: registry };
+    let safe = IUpgradeRulesSafeDispatcher { contract_address: registry };
     let limits = UpgradeLimits { realm_max: 1, village_max: 0 };
     let recipes = array![
         UpgradeRecipe { costs: array![crate::resources::ResourceAmount { resource_type: 23, amount: 17 }].span() },
@@ -627,7 +627,7 @@ fn upgrade_rules_are_immutable_complete_and_game_scoped() {
         .span();
     assert!(safe.upgrade_limits(1).is_err());
     assert!(safe.configure_upgrades(1, limits, recipes).is_err());
-    start_cheat_caller_address(season, authority());
+    start_cheat_caller_address(registry, authority());
     assert!(safe.configure_upgrades(1, limits, array![].span()).is_err());
     assert!(safe.upgrade_limits(1).is_err());
     rules.configure_upgrades(1, limits, recipes);

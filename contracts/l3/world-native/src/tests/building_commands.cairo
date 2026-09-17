@@ -45,11 +45,11 @@ fn building_world() -> (super::Deployment, ResourceKey) {
     start_cheat_caller_address(deployment.peers.structures, super::authority());
     IBuildingRulesDispatcher { contract_address: deployment.peers.structures }.configure_buildings(3, rules());
     stop_cheat_caller_address(deployment.peers.structures);
-    start_cheat_caller_address(deployment.peers.season, super::authority());
+    start_cheat_caller_address(deployment.peers.registry, super::authority());
     let recipe = UpgradeRecipe { costs: array![].span() };
-    IUpgradeRulesDispatcher { contract_address: deployment.peers.season }
+    IUpgradeRulesDispatcher { contract_address: deployment.peers.registry }
         .configure_upgrades(3, UpgradeLimits { realm_max: 3, village_max: 2 }, array![recipe, recipe, recipe].span());
-    stop_cheat_caller_address(deployment.peers.season);
+    stop_cheat_caller_address(deployment.peers.registry);
     (deployment, home)
 }
 fn create(home: ResourceKey, category: u8) -> Command {

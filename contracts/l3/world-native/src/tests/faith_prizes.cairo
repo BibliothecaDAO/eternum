@@ -1,9 +1,7 @@
 use snforge_std::{start_cheat_block_timestamp_global, start_cheat_caller_address, stop_cheat_caller_address};
 use starknet::ContractAddress;
 use crate::commands::Command;
-use crate::faith::{
-    ClaimPlayer, IFaithSettlementSafeDispatcher, IFaithSettlementSafeDispatcherTrait, PlayerFaithKey, Pledge,
-};
+use crate::faith::{ClaimPlayer, PlayerFaithKey, Pledge};
 use crate::faith_prizes::{
     IFaithPrizesDispatcher, IFaithPrizesDispatcherTrait, IFaithPrizesSafeDispatcher, IFaithPrizesSafeDispatcherTrait,
     IPrizeTokenDispatcher, IPrizeTokenDispatcherTrait,
@@ -153,9 +151,13 @@ fn prize_configuration_and_settlement_reject_foreign_callers_and_keep_games_sepa
     let safe = IFaithPrizesSafeDispatcher { contract_address: deployment.peers.prizes };
     assert!(safe.configure_faith_reward_token(2, token).is_err());
     assert!(safe.fund_faith_prizes(3, deployment.actor, 1000, super::context()).is_err());
-    let settlement = IFaithSettlementSafeDispatcher { contract_address: deployment.peers.structures };
-    assert!(settlement.settle_faith_wonders(3, 200).is_err());
-    assert!(settlement.settle_player_faith(3, deployment.actor, wonder.entity_id, 200).is_err());
+    let ownership = crate::faith::IFaithOwnershipSafeDispatcher { contract_address: deployment.peers.prizes };
+    assert!(
+        crate::faith::IFaithOwnershipSafeDispatcherTrait::transfer_faith_ownership(
+            ownership, wonder, deployment.actor, 200,
+        )
+            .is_err(),
+    );
     start_cheat_caller_address(deployment.peers.prizes, super::authority());
     assert!(safe.configure_faith_reward_token(3, token).is_err());
     assert!(safe.configure_faith_reward_token(999, token).is_err());
@@ -248,7 +250,7 @@ fn faith_distribution_checkpoints_bounded_batches_before_any_claim() {
     assert!(execute(deployment, Command::DistributeFaithPrizes, 200));
     assert!(!view(deployment).faith_prize_pool(3).distributed);
     assert_terminal_rejection(deployment, claim(deployment.actor, *wonders.at(0)), 201);
-    let faith = crate::faith::IFaithOwnershipViewsDispatcher { contract_address: deployment.peers.structures };
+    let faith = crate::faith::IFaithOwnershipViewsDispatcher { contract_address: deployment.peers.prizes };
     assert_eq!(
         crate::faith::IFaithOwnershipViewsDispatcherTrait::wonder_faith(faith, *wonders.at(7)).claimed_points, 80000,
     );

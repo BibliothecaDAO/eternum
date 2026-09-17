@@ -45,13 +45,10 @@ pub mod SeasonDomain {
     use crate::lifecycle::{Lifecycle, Peers};
     use crate::recording::{ExecutionHead, HeadPacking, RecordedState};
     use crate::rules::SliceRules;
-    use crate::upgrades::{UpgradeLimits, UpgradeRecipe, UpgradeState};
     use super::{
         Authentication, IGameplayKeyDispatcher, IGameplayKeyDispatcherTrait, IPlayerRegistryDispatcher,
         IPlayerRegistryDispatcherTrait,
     };
-    component!(path: UpgradeState, storage: upgrades, event: UpgradeEvent);
-    impl UpgradeInternal = UpgradeState::InternalImpl<ContractState>;
     component!(path: RecordedState, storage: recording, event: RecordingEvent);
     impl RecordingInternal = RecordedState::InternalImpl<ContractState>;
     component!(path: GameState, storage: games, event: GameEvent);
@@ -71,8 +68,6 @@ pub mod SeasonDomain {
         games: GameState::Storage,
         #[substorage(v0)]
         recording: RecordedState::Storage,
-        #[substorage(v0)]
-        upgrades: UpgradeState::Storage,
     }
 
     #[event]
@@ -82,7 +77,6 @@ pub mod SeasonDomain {
         RowSet: RowSet,
         GameEvent: GameState::Event,
         RecordingEvent: RecordedState::Event,
-        UpgradeEvent: UpgradeState::Event,
         StoryEvent: crate::ownership::StoryEvent,
     }
 
@@ -205,23 +199,6 @@ pub mod SeasonDomain {
             }
         }
     }
-    #[abi(embed_v0)]
-    impl UpgradeRules of crate::upgrades::IUpgradeRules<ContractState> {
-        fn configure_upgrades(
-            ref self: ContractState, game_id: u32, limits: UpgradeLimits, recipes: Span<UpgradeRecipe>,
-        ) {
-            self.lifecycle.assert_configurator();
-            let _ = self.games.game(game_id);
-            self.upgrades.configure(game_id, limits, recipes);
-        }
-        fn upgrade_limits(self: @ContractState, game_id: u32) -> UpgradeLimits {
-            self.upgrades.limits(game_id)
-        }
-        fn upgrade_recipe(self: @ContractState, game_id: u32, level: u8) -> UpgradeRecipe {
-            self.upgrades.recipe(game_id, level)
-        }
-    }
-
     #[abi(embed_v0)]
     impl Season of super::ISeason<ContractState> {
         fn set_authentication(
@@ -559,19 +536,19 @@ pub mod SeasonDomain {
             },
             Command::ClaimBitcoinPhase(value) => {
                 value.serialize(ref calldata);
-                (peers.resources, selector!("claim_bitcoin_phase"))
+                (peers.prizes, selector!("claim_bitcoin_phase"))
             },
             Command::ContributeBitcoinLabor(value) => {
                 value.serialize(ref calldata);
-                (peers.resources, selector!("contribute_bitcoin_labor"))
+                (peers.prizes, selector!("contribute_bitcoin_labor"))
             },
             Command::CloseBitcoinPhase(value) => {
                 value.serialize(ref calldata);
-                (peers.resources, selector!("close_bitcoin_phase"))
+                (peers.prizes, selector!("close_bitcoin_phase"))
             },
             Command::BindBitcoinPhase(value) => {
                 value.serialize(ref calldata);
-                (peers.resources, selector!("bind_bitcoin_phase"))
+                (peers.prizes, selector!("bind_bitcoin_phase"))
             },
             Command::FundFaithPrizes(value) => {
                 value.serialize(ref calldata);
@@ -628,31 +605,31 @@ pub mod SeasonDomain {
             },
             Command::PledgeFaith(value) => {
                 value.serialize(ref calldata);
-                (peers.structures, selector!("pledge_faith"))
+                (peers.prizes, selector!("pledge_faith"))
             },
             Command::RemoveFaith(value) => {
                 value.serialize(ref calldata);
-                (peers.structures, selector!("remove_faith"))
+                (peers.prizes, selector!("remove_faith"))
             },
             Command::UpdateWonderOwnership(value) => {
                 value.serialize(ref calldata);
-                (peers.structures, selector!("update_wonder_ownership"))
+                (peers.prizes, selector!("update_wonder_ownership"))
             },
             Command::UpdateFaithfulOwnership(value) => {
                 value.serialize(ref calldata);
-                (peers.structures, selector!("update_faithful_ownership"))
+                (peers.prizes, selector!("update_faithful_ownership"))
             },
             Command::ClaimWonderPoints(value) => {
                 value.serialize(ref calldata);
-                (peers.structures, selector!("claim_wonder_points"))
+                (peers.prizes, selector!("claim_wonder_points"))
             },
             Command::ClaimPlayerFaithPoints(value) => {
                 value.serialize(ref calldata);
-                (peers.structures, selector!("claim_player_faith_points"))
+                (peers.prizes, selector!("claim_player_faith_points"))
             },
             Command::SetFaithBlacklist(value) => {
                 value.serialize(ref calldata);
-                (peers.structures, selector!("set_faith_blacklist"))
+                (peers.prizes, selector!("set_faith_blacklist"))
             },
             Command::CloseSeason => (get_contract_address(), selector!("close_season")),
             Command::CreateExplorer(value) => {

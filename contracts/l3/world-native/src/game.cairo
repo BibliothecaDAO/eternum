@@ -170,6 +170,7 @@ pub mod GameState {
             assert!(self.exists.read(game_id), "game does not exist");
             self.games.read(game_id)
         }
+        #[inline(never)]
         fn rules(self: @ComponentState<TContractState>, game_id: u32) -> SliceRules {
             let _ = self.game(game_id);
             self.rules.read(game_id)

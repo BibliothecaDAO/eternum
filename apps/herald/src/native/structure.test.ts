@@ -4,9 +4,9 @@ import { manifest, raw, receipt, schema, setup } from "./fixtures";
 
 function ruleEvent(name: string, keys: string[], values: string[]) {
   const model = schema.models.find((model) => model.name === name)!;
-  const event = schema.domains.season.events.find((event) => event.name === "RowSet")!;
+  const event = schema.domains.registry.events.find((event) => event.name === "RowSet")!;
   return {
-    from_address: manifest.native.domains.season.address,
+    from_address: manifest.native.domains.registry.address,
     keys: [...event.prefix, "1", model.identity],
     data: [String(keys.length), ...keys, String(values.length), ...values],
   };

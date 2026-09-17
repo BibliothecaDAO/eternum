@@ -16,8 +16,6 @@ pub mod ResourcesDomain {
     use crate::troops::{ExplorerKey, ITroopsDispatcher, ITroopsDispatcherTrait};
     component!(path: crate::mines::MineState, storage: mines, event: MineEvent);
     impl MineInternal = crate::mines::MineState::InternalImpl<ContractState>;
-    component!(path: crate::bitcoin::BitcoinState, storage: bitcoin, event: BitcoinEvent);
-    impl BitcoinInternal = crate::bitcoin::BitcoinState::InternalImpl<ContractState>;
     component!(path: Lifecycle, storage: lifecycle, event: LifecycleEvent);
     component!(path: ResourceState, storage: resources, event: ResourceEvent);
     component!(path: ArrivalState, storage: arrivals, event: ArrivalEvent);
@@ -44,14 +42,11 @@ pub mod ResourcesDomain {
         production: ProductionState::Storage,
         #[substorage(v0)]
         mines: crate::mines::MineState::Storage,
-        #[substorage(v0)]
-        bitcoin: crate::bitcoin::BitcoinState::Storage,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
         MineEvent: crate::mines::MineState::Event,
-        BitcoinEvent: crate::bitcoin::BitcoinState::Event,
         LifecycleEvent: Lifecycle::Event,
         ResourceEvent: ResourceState::Event,
         ArrivalEvent: ArrivalState::Event,
@@ -152,12 +147,15 @@ pub mod ResourcesDomain {
         ) {
             self.assert_structures();
             self.resources.initialize(key, capacity);
-            if category == 1 || category == 5 {
-                self.bitcoin.index_settlement(key);
-            } else if category == 8 {
-                let interval = self.game_dispatcher().rules(key.game_id).tick_config.bitcoin_phase_in_seconds;
-                assert!(interval != 0, "zero Bitcoin phase duration");
-                self.bitcoin.register_mine(key, timestamp / interval + 1);
+            if category == 1 || category == 5 || category == 8 {
+                crate::bitcoin::IBitcoinFundingDispatcherTrait::register_bitcoin_structure(
+                    crate::bitcoin::IBitcoinFundingDispatcher {
+                        contract_address: self.lifecycle.require_active().prizes,
+                    },
+                    key,
+                    category,
+                    timestamp,
+                );
             }
         }
         fn destroy_resources(ref self: ContractState, key: ResourceKey) {
@@ -222,95 +220,6 @@ pub mod ResourcesDomain {
                 key.game_id, key.entity_id, rules.tick_config.delivery_tick_in_seconds, timestamp, travel_time,
             );
             self.arrivals.enqueue(arrival, array![resource].span());
-        }
-    }
-    #[abi(embed_v0)]
-    impl BitcoinViews of crate::bitcoin::IBitcoinViews<ContractState> {
-        fn bitcoin_mine(self: @ContractState, key: ResourceKey) -> crate::bitcoin::MineFunding {
-            self.bitcoin.mine(key)
-        }
-        fn bitcoin_claimed(self: @ContractState, key: crate::bitcoin::ClaimKey) -> bool {
-            self.bitcoin.was_claimed(key)
-        }
-        fn bitcoin_phase(self: @ContractState, key: crate::bitcoin::PhaseKey) -> crate::bitcoin::Phase {
-            self.bitcoin.phase(key)
-        }
-        fn bitcoin_contribution(self: @ContractState, key: crate::bitcoin::ContributionKey) -> u128 {
-            self.bitcoin.labor(key)
-        }
-        fn bitcoin_contributor(self: @ContractState, key: crate::bitcoin::PhaseKey, index: u32) -> ContractAddress {
-            self.bitcoin.contributor(key, index)
-        }
-    }
-    #[abi(embed_v0)]
-    impl BitcoinFunding of crate::bitcoin::IBitcoinFunding<ContractState> {
-        fn bitcoin_mine_captured(ref self: ContractState, key: ResourceKey, timestamp: u64) {
-            self.assert_structures();
-            let interval = self.game_dispatcher().rules(key.game_id).tick_config.bitcoin_phase_in_seconds;
-            self.bitcoin.capture_mine(key, timestamp / interval + 1);
-        }
-    }
-    #[abi(embed_v0)]
-    impl BitcoinCommands of crate::bitcoin::IBitcoinCommands<ContractState> {
-        fn claim_bitcoin_phase(
-            ref self: ContractState,
-            game_id: u32,
-            actor: ContractAddress,
-            command: crate::bitcoin::ClaimPhase,
-            context: ExecutionContext,
-        ) {
-            self.assert_bitcoin_phase_closed(game_id, command.phase, context.timestamp);
-            let phase = self.bitcoin.phase(crate::bitcoin::PhaseKey { game_id, phase: command.phase });
-            assert!(phase.state != crate::bitcoin::PhaseStatus::Open, "Bitcoin pool is not closed");
-            if phase.total_labor != 0 {
-                assert!(phase.state == crate::bitcoin::PhaseStatus::Bound, "Bitcoin phase root is not bound");
-            }
-            assert!(!command.mine_ids.is_empty(), "empty Bitcoin claim batch");
-            crate::commands::assert_unique_entity_ids(command.mine_ids);
-            for mine_id in command.mine_ids {
-                self
-                    .claim_bitcoin_mine(
-                        crate::bitcoin::ClaimKey { game_id, phase: command.phase, mine_id: *mine_id },
-                        phase,
-                        context.timestamp,
-                    );
-            }
-        }
-        fn contribute_bitcoin_labor(
-            ref self: ContractState,
-            game_id: u32,
-            actor: ContractAddress,
-            command: crate::bitcoin::ContributeLabor,
-            context: ExecutionContext,
-        ) {
-            self.assert_bitcoin_command(game_id, context.timestamp);
-            let game = self.game_dispatcher().game(game_id);
-            assert_playing(game, context.timestamp);
-            let rules = self.game_dispatcher().rules(game_id);
-            let phase = context.timestamp / rules.tick_config.bitcoin_phase_in_seconds;
-            let end = crate::bitcoin::phase_end(phase, rules.tick_config.bitcoin_phase_in_seconds);
-            assert!(context.timestamp < end, "Bitcoin contribution window is closed");
-            assert!(game.end_at == 0 || end <= game.end_at, "Bitcoin phase ends after game");
-            assert!(
-                command.amount != 0 && command.amount >= rules.bitcoin_mine_config.min_labor_per_contribution,
-                "Bitcoin labor below minimum",
-            );
-            let key = ResourceKey { game_id, entity_id: command.structure_id };
-            assert!(self.structure_owner(key) == actor, "actor does not own labor source");
-            self.spend(key, 23, command.amount, context.timestamp);
-            self.bitcoin.contribute(crate::bitcoin::ContributionKey { game_id, phase, player: actor }, command.amount);
-        }
-        fn close_bitcoin_phase(
-            ref self: ContractState, game_id: u32, actor: ContractAddress, phase: u64, context: ExecutionContext,
-        ) {
-            self.assert_bitcoin_phase_closed(game_id, phase, context.timestamp);
-            self.bitcoin.close(crate::bitcoin::PhaseKey { game_id, phase });
-        }
-        fn bind_bitcoin_phase(
-            ref self: ContractState, game_id: u32, actor: ContractAddress, phase: u64, context: ExecutionContext,
-        ) {
-            self.assert_bitcoin_phase_closed(game_id, phase, context.timestamp);
-            self.bitcoin.bind(crate::bitcoin::PhaseKey { game_id, phase }, context.raw_root);
         }
     }
     #[abi(embed_v0)]
@@ -802,127 +711,6 @@ pub mod ResourcesDomain {
                     timestamp,
                 );
         }
-        fn claim_bitcoin_mine(
-            ref self: ContractState, key: crate::bitcoin::ClaimKey, phase: crate::bitcoin::Phase, timestamp: u64,
-        ) {
-            if self.bitcoin.was_claimed(key) {
-                return;
-            }
-            let resource_key = ResourceKey { game_id: key.game_id, entity_id: key.mine_id };
-            let mut funding = self.bitcoin.mine(resource_key);
-            assert!(funding.next_phase == key.phase, "claim earlier Bitcoin phase first");
-            let structures = IStructuresDispatcher { contract_address: self.lifecycle.require_active().structures };
-            let mine = structures.structure(resource_key).expect('missing Bitcoin mine');
-            assert!(mine.base.category == 8, "not a Bitcoin mine");
-            if mine.owner != 0.try_into().unwrap() && key.phase >= funding.eligible_from {
-                let config = self.game_dispatcher().rules(key.game_id).bitcoin_mine_config;
-                if phase.total_labor == 0 {
-                    funding.unsplit_carry += config.prize_per_phase;
-                } else {
-                    let winner = self.bitcoin.winner(key);
-                    let (winner_share, owner_share) = crate::bitcoin::split_prize(
-                        config.prize_per_phase + funding.unsplit_carry, config.owner_cut_bps,
-                    );
-                    let winner_share = winner_share + funding.winner_carry;
-                    let owner_share = owner_share + funding.owner_carry;
-                    let origin = crate::structures::structure_coord(mine.base);
-                    let (winner_destination, winner_paid) = self
-                        .pay_bitcoin_share(key.game_id, winner, origin, winner_share, timestamp);
-                    let (owner_destination, owner_paid) = self
-                        .pay_bitcoin_share(key.game_id, mine.owner, origin, owner_share, timestamp);
-                    funding.unsplit_carry = 0;
-                    funding.winner_carry = winner_share - winner_paid;
-                    funding.owner_carry = owner_share - owner_paid;
-                    self
-                        .emit_resource_story(
-                            resource_key,
-                            winner,
-                            Story::BitcoinAwardStory(
-                                crate::bitcoin::BitcoinAwardStory {
-                                    phase: key.phase,
-                                    mine_id: key.mine_id,
-                                    winner,
-                                    owner: mine.owner,
-                                    winner_destination,
-                                    owner_destination,
-                                    winner_paid,
-                                    owner_paid,
-                                },
-                            ),
-                            timestamp,
-                        );
-                }
-            }
-            self.bitcoin.complete_claim(key, funding);
-        }
-        fn bitcoin_destination(
-            self: @ContractState, game_id: u32, player: ContractAddress, origin: crate::troops::Coord,
-        ) -> u32 {
-            let structures = IStructuresDispatcher { contract_address: self.lifecycle.require_active().structures };
-            let mut nearest = 0_u32;
-            let mut shortest = 0xffffffffffffffffffffffffffffffff_u128;
-            for index in 0..self.bitcoin.settlement_count.read(game_id) {
-                let id = self.bitcoin.settlement_ids.read((game_id, index));
-                let key = ResourceKey { game_id, entity_id: id };
-                if structures.structure_owner(key) != player {
-                    continue;
-                }
-                let settlement = structures.structure(key).expect('missing indexed settlement');
-                let distance = crate::geometry::distance(origin, crate::structures::structure_coord(settlement.base));
-                if distance < shortest || (distance == shortest && (nearest == 0 || id < nearest)) {
-                    nearest = id;
-                    shortest = distance;
-                }
-            }
-            nearest
-        }
-        fn pay_bitcoin_share(
-            ref self: ContractState,
-            game_id: u32,
-            player: ContractAddress,
-            origin: crate::troops::Coord,
-            amount: u128,
-            timestamp: u64,
-        ) -> (u32, u128) {
-            if amount == 0 {
-                return (0, 0);
-            }
-            let destination = self.bitcoin_destination(game_id, player, origin);
-            if destination == 0 {
-                return (0, 0);
-            }
-            let rule = self.rule(game_id, 58);
-            assert!(rule.unit_weight == 0, "SAT must be weightless");
-            let paid = self
-                .resources
-                .grant_resource(
-                    ResourceKey { game_id, entity_id: destination },
-                    58,
-                    amount,
-                    rule.unit_weight,
-                    timestamp.try_into().unwrap(),
-                );
-            assert!(paid == amount, "incomplete Bitcoin award");
-            (destination, paid)
-        }
-        fn assert_bitcoin_command(self: @ContractState, game_id: u32, timestamp: u64) {
-            assert!(
-                get_caller_address() == self.lifecycle.require_active().season, "only authenticated command domain",
-            );
-            crate::commands::assert_context_time(timestamp);
-            assert!(self.game_dispatcher().rules(game_id).bitcoin_mine_config.enabled, "Bitcoin mining disabled");
-        }
-        fn assert_bitcoin_phase_closed(self: @ContractState, game_id: u32, phase: u64, timestamp: u64) {
-            self.assert_bitcoin_command(game_id, timestamp);
-            let end = crate::bitcoin::phase_end(
-                phase, self.game_dispatcher().rules(game_id).tick_config.bitcoin_phase_in_seconds,
-            );
-            let game = self.game_dispatcher().game(game_id);
-            assert!(
-                end >= game.start_main_at && (game.end_at == 0 || end <= game.end_at), "Bitcoin phase outside game",
-            );
-            assert!(timestamp >= end, "Bitcoin phase is still open");
-        }
         fn assert_resource_settlement_domain(self: @ContractState) {
             let peers = self.lifecycle.require_active();
             let caller = get_caller_address();
@@ -930,7 +718,8 @@ pub mod ResourcesDomain {
                 caller == peers.structures
                     || caller == peers.economy
                     || caller == peers.troops
-                    || caller == peers.bridge,
+                    || caller == peers.bridge
+                    || caller == peers.prizes,
                 "only resource settlement domain",
             );
         }

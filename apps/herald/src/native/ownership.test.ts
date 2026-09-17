@@ -4,10 +4,10 @@ import { describe, expect, it } from "vitest";
 import { raw, schema, setup, manifest } from "./fixtures";
 
 function faithStory() {
-  const layout = schema.domains.structures.events.find((event) => event.name === "StoryEvent")!;
+  const layout = schema.domains.prizes.events.find((event) => event.name === "StoryEvent")!;
   const keys = [...layout.prefix, "1", "1", "7", "1", "0", "3", "0x55"];
   const values = ["0", "3", "30000", "30000", "1860"];
-  return raw({ from_address: manifest.native.domains.structures.address, keys, data: values });
+  return raw({ from_address: manifest.native.domains.prizes.address, keys, data: values });
 }
 
 describe("native ownership projections", () => {
@@ -29,7 +29,7 @@ describe("native ownership projections", () => {
     const { decoder } = setup();
     const event = faithStory();
     expect(() => decoder.decode({ ...event, data: event.data.slice(0, -1) })).toThrow();
-    expect(() => decoder.decode({ ...event, from_address: manifest.native.domains.map.address })).toThrow();
+    expect(() => decoder.decode({ ...event, from_address: manifest.native.domains.combat.address })).toThrow();
   });
 
   it("exposes both ownership commands through the generated command ABI", () => {

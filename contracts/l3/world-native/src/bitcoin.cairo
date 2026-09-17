@@ -59,6 +59,7 @@ pub struct ClaimPhase {
 
 #[starknet::interface]
 pub trait IBitcoinFunding<T> {
+    fn register_bitcoin_structure(ref self: T, key: crate::resources::ResourceKey, category: u8, timestamp: u64);
     fn bitcoin_mine_captured(ref self: T, key: crate::resources::ResourceKey, timestamp: u64);
 }
 

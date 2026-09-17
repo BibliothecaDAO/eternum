@@ -38,7 +38,7 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
     if (row.name === "LedgerOperator")
       row.absence = {
         value: "zero",
-        meaning: "No ledger relay is configured; realm entry is open and prizes belong to gameplay accounts.",
+        meaning: "No ledger relay is configured; non-development entry still requires an entitlement.",
       };
     if (row.name === "Guild" || row.name === "GuildMember")
       row.absence = { value: "empty", meaning: "No guild or membership exists for this key." };
@@ -135,14 +135,8 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
     model("FaithPrizeClaimed", ["prizes"], "game", struct("faith::PlayerFaithKey"), [
       { name: "claimed", type: "core::bool" },
     ]),
-    model(
-      "FaithRules",
-      ["structures"],
-      "game",
-      method("structures", "faith_rules").inputs,
-      struct("faith::FaithRules"),
-    ),
-    model("FaithBlacklist", ["structures"], "game", struct("faith::BlacklistKey"), [
+    model("FaithRules", ["prizes"], "game", method("prizes", "faith_rules").inputs, struct("faith::FaithRules")),
+    model("FaithBlacklist", ["prizes"], "game", struct("faith::BlacklistKey"), [
       { name: "blocked", type: "core::bool" },
     ]),
     model("SeasonWinThreshold", ["season"], "game", method("season", "season_win_threshold").inputs, [
@@ -180,12 +174,10 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
     model("VillageRaid", ["troops"], "game", struct("resources::ResourceKey"), [
       { name: "last_tick", type: "core::integer::u64" },
     ]),
-    model("BitcoinMine", ["resources"], "game", struct("resources::ResourceKey"), struct("bitcoin::MineFunding")),
-    model("BitcoinClaim", ["resources"], "game", struct("bitcoin::ClaimKey"), [
-      { name: "claimed", type: "core::bool" },
-    ]),
-    model("BitcoinPhase", ["resources"], "game", struct("bitcoin::PhaseKey"), struct("bitcoin::Phase")),
-    model("BitcoinContribution", ["resources"], "game", struct("bitcoin::ContributionKey"), [
+    model("BitcoinMine", ["prizes"], "game", struct("resources::ResourceKey"), struct("bitcoin::MineFunding")),
+    model("BitcoinClaim", ["prizes"], "game", struct("bitcoin::ClaimKey"), [{ name: "claimed", type: "core::bool" }]),
+    model("BitcoinPhase", ["prizes"], "game", struct("bitcoin::PhaseKey"), struct("bitcoin::Phase")),
+    model("BitcoinContribution", ["prizes"], "game", struct("bitcoin::ContributionKey"), [
       { name: "labor", type: "core::integer::u128" },
     ]),
     model("MineKindConfig", ["resources"], "game", struct("mines::MineKindKey"), struct("mines::MineKindConfig")),
@@ -350,7 +342,7 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
     ...["WonderFaith", "FaithfulStructure"].map((name) =>
       model(
         name,
-        ["structures"],
+        ["prizes"],
         "game",
         [
           struct("resources::ResourceKey")[0],
@@ -359,13 +351,7 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
         struct(`faith::${name}`),
       ),
     ),
-    model(
-      "PlayerFaithPoints",
-      ["structures"],
-      "game",
-      struct("faith::PlayerFaithKey"),
-      struct("faith::PlayerFaithPoints"),
-    ),
+    model("PlayerFaithPoints", ["prizes"], "game", struct("faith::PlayerFaithKey"), struct("faith::PlayerFaithPoints")),
 
     model(
       "ResourceRule",
@@ -383,16 +369,16 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
     ),
     model(
       "UpgradeLimits",
-      ["season"],
+      ["registry"],
       "game",
-      method("season", "upgrade_limits").inputs,
+      method("registry", "upgrade_limits").inputs,
       struct("upgrades::UpgradeLimits"),
     ),
     model(
       "UpgradeRecipe",
-      ["season"],
+      ["registry"],
       "game",
-      method("season", "upgrade_recipe").inputs,
+      method("registry", "upgrade_recipe").inputs,
       struct("upgrades::UpgradeRecipe"),
     ),
     model("GameRegistry", ["season"], "game", method("season", "game").inputs, struct("game::GameRegistry")),
