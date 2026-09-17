@@ -114,14 +114,19 @@ export async function signRunnerIntent(
   gameId: number,
   actor: AccountInterface,
   digest: string,
-): Promise<{ r: bigint; s: bigint }> {
+): Promise<{ r: bigint; s: bigint; publicKey: bigint }> {
   if (config.signer.mode === "none") throw new Error("A spectator cannot sign an action");
   if (config.signer.mode === "key") {
     if (BigInt(actor.address) !== BigInt(config.signer.gameplayAccountAddress))
       throw new Error("Gameplay identity changed before signing");
-    return ec.starkCurve.sign(digest, config.signer.gameplayPrivateKey);
+    return signGameplayIntent(digest, gameplayKey(config.signer.gameplayPrivateKey));
   }
   const key = await readStoredKey(path.join(resolveDataDir(config, gameId), GUEST_KEY_FILE));
   if (!key) throw new Error("The guest gameplay key is missing");
-  return ec.starkCurve.sign(digest, key.privateKey);
+  return signGameplayIntent(digest, key);
+}
+
+function signGameplayIntent(digest: string, key: GameplayKey) {
+  const signature = ec.starkCurve.sign(digest, key.privateKey);
+  return { r: signature.r, s: signature.s, publicKey: BigInt(key.publicKey) };
 }

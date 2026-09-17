@@ -60,6 +60,13 @@ deployment, game, rules, PlayerRegistry binding, approved account class, registe
 validity window. Acceptance durably commits the signed intent, authorization witness, order, execution context and root
 before acknowledgement, execution or public disclosure. An ambiguous durability acknowledgement pauses admission.
 
+HTTP action requests carry the signed intent, signature and public-key witness. Signature verification against that
+witness happens before RPC; the registered key is then checked before queueing and again before accepting. One player
+can occupy one queue or execution slot. An identical pending action shares its existing admission; a conflicting action
+is refused. The server limits requests by transport-peer IP without trusting forwarded headers. Receipt status requests
+wait for execution notifications for up to 25 seconds. These transport rules never assign an envelope against guessed
+state.
+
 `IRecordedExecution.execute(intent, context, r, s)` is the only gameplay entrypoint. Context contains the canonical
 envelope, authority epoch and accepted-key witness. The sequencing account must be the caller and v3 transaction sender;
 the contract verifies its signature over the transaction hash, current epoch and recorded L2 gas bound. Query versions,

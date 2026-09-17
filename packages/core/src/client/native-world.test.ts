@@ -94,7 +94,7 @@ describe("native bindings in the shared game client", () => {
     const { store, write } = await fixture();
     write("SliceRules", [1n], { ...preset.rules, game_id: 1 });
     const submitIntent = vi.fn(async (_action: SignedNativeIntent) => ({ transaction_hash: "0x99" }));
-    const signIntent = vi.fn(async () => ({ r: 1n, s: 2n }));
+    const signIntent = vi.fn(async () => ({ r: 1n, s: 2n, publicKey: 3n }));
     const send = nativeSubmission({ bindings, chainId: "0x1", signIntent, submitIntent }, store, 1, "0x101");
     await send({ address: "0x111" } as AccountInterface, {
       contractAddress: "0x101",
@@ -155,7 +155,7 @@ describe("native bindings in the shared game client", () => {
       active: true,
     });
     const submit = vi.fn(async (_action: SignedNativeIntent) => ({ transaction_hash: "0x99" }));
-    const signIntent = vi.fn(async () => ({ r: 1n, s: 2n }));
+    const signIntent = vi.fn(async () => ({ r: 1n, s: 2n, publicKey: 3n }));
     const send = nativeSubmission(
       {
         bindings,
@@ -170,7 +170,7 @@ describe("native bindings in the shared game client", () => {
     const actor = { address: "0x111" } as AccountInterface;
     await send(actor, { contractAddress: "0x101", entrypoint: "explorer_create", calldata: [1, 9, 0, 0, 100, 0] });
     expect(submit).toHaveBeenCalledOnce();
-    expect(Object.keys(submit.mock.calls[0][0]).sort()).toEqual(["intent", "r", "s"]);
+    expect(Object.keys(submit.mock.calls[0][0]).sort()).toEqual(["intent", "public_key", "r", "s"]);
     expect(signIntent).toHaveBeenCalledWith(actor, hash.computePoseidonHashOnElements(submit.mock.calls[0][0].intent));
     const calldata = submit.mock.calls[0][0].intent.map((felt) => BigInt(felt).toString());
     expect(calldata.slice(2, 7)).toEqual(["1", "257", "1", "273", "3"]);

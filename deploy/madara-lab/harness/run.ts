@@ -189,7 +189,8 @@ async function main(): Promise<void> {
     signIntent: async (actor, digest) => {
       const key = signingKeys.get(BigInt(actor.address));
       if (!key) throw new Error(`No harness signing key for ${actor.address}`);
-      return ec.starkCurve.sign(digest, key);
+      const signature = ec.starkCurve.sign(digest, key);
+      return { r: signature.r, s: signature.s, publicKey: BigInt(ec.starkCurve.getStarkKey(key)) };
     },
     gameId: game.gameId,
     gameplayContracts,

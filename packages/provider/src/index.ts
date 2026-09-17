@@ -1030,10 +1030,17 @@ export class EternumProvider extends EventEmitter {
         transaction_hash: tx.transaction_hash,
       } as unknown as GetTransactionReceiptResponse;
     }
-    const waitPromiseWithoutLockRelease = this.waitForTransactionWithCheckInternal(
-      tx.transaction_hash,
-      transactionMetaWithHash,
-    );
+    const streamReceipt = this.waitForTransactionWithCheckInternal(tx.transaction_hash, transactionMetaWithHash);
+    const waitPromiseWithoutLockRelease = this.nativeSubmission
+      ? this.withTimeout(
+          streamReceipt,
+          this.TRANSACTION_CONFIRM_TIMEOUT_MS,
+          () =>
+            new Error(
+              `Herald did not apply transaction ${tx.transaction_hash} within ${formatTimeoutDuration(this.TRANSACTION_CONFIRM_TIMEOUT_MS)}; the command barrier was released. Check sync before retrying.`,
+            ),
+        )
+      : streamReceipt;
     const waitPromise = releaseVrfExecutionLock
       ? waitPromiseWithoutLockRelease.finally(() => {
           releaseVrfExecutionLock?.();
