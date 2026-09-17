@@ -32,6 +32,7 @@ interface HeraldConfig {
 
 interface HeraldSocketData {
   gameId: string;
+  actor?: string;
   session?: GameStreamSession;
 }
 
@@ -181,8 +182,15 @@ const main = async (): Promise<void> => {
     port: config.port,
     fetch: (request, bunServer) => {
       if (new URL(request.url).pathname === `/${config.chain}/games/updates`) bunServer.timeout(request, 0);
-      const gameId = streamGameId(new URL(request.url).pathname, config.chain);
-      if (gameId && bunServer.upgrade(request, { data: { gameId } })) return;
+      const url = new URL(request.url);
+      const gameId = streamGameId(url.pathname, config.chain);
+      const actor = url.searchParams.get("actor") ?? undefined;
+      if (
+        actor !== undefined &&
+        (!/^0x[0-9a-f]{1,64}$/i.test(actor) || BigInt(actor) === 0n || BigInt(actor) >= (1n << 251n) - 256n)
+      )
+        return new Response("Invalid gameplay account", { status: 400 });
+      if (gameId && bunServer.upgrade(request, { data: { gameId, actor } })) return;
       return http(request);
     },
     websocket: {
@@ -199,7 +207,7 @@ const main = async (): Promise<void> => {
         }
       },
       open: (socket) => {
-        socket.data.session = live.attach(socket.data.gameId, socket);
+        socket.data.session = live.attach(socket.data.gameId, socket, socket.data.actor);
       },
     },
   });

@@ -1496,7 +1496,7 @@ export default class WorldmapScene extends WarpTravel {
         if (this.isHexInRetainedRenderArea(currentHex.x, currentHex.y)) {
           gameWorkerManager.updateArmyHex(currentHex.x, currentHex.y, {
             id: current.entityId,
-            owner: this.getArmyOwnerAddress(current.entityId) ?? 0n,
+            owner: this.getArmyOwnerAddress(current.entityId),
           });
         }
       }
@@ -1515,7 +1515,7 @@ export default class WorldmapScene extends WarpTravel {
         this.disposePendingMovementVisualLifecycle(entityId);
       },
       refresh: () => this.updateVisibleChunks(true, { reason: "default", triggerReason: "spire_crossing" }),
-      select: (entityId) => this.onArmySelection(entityId, this.getArmyOwnerAddress(entityId) ?? 0n),
+      select: (entityId) => this.onArmySelection(entityId, this.getArmyOwnerAddress(entityId)),
     }).catch((error) => console.error("[WorldmapScene] Failed to follow army crossing", error));
   }
 
@@ -1563,7 +1563,7 @@ export default class WorldmapScene extends WarpTravel {
         if (this.isHexInRetainedRenderArea(currentHex.x, currentHex.y)) {
           gameWorkerManager.updateStructureHex(currentHex.x, currentHex.y, {
             id: current.entityId,
-            owner: this.getStructureOwnerAddress(current.entityId) ?? 0n,
+            owner: this.getStructureOwnerAddress(current.entityId),
           });
         }
       }
@@ -2027,15 +2027,15 @@ export default class WorldmapScene extends WarpTravel {
   private getEntityOwnerAddress(entityId: ID): ContractAddress | undefined {
     if (this.worldSpatialProjection.getArmy(entityId)) return this.getArmyOwnerAddress(entityId);
 
-    return this.getStructureOwnerAddress(entityId);
+    return this.dojo.store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: entityId })?.owner;
   }
 
-  private getArmyOwnerAddress(entityId: ID): ContractAddress | undefined {
-    const explorer = this.dojo.store.get("ExplorerTroops", {
+  private getArmyOwnerAddress(entityId: ID): ContractAddress {
+    const explorer = this.dojo.store.require("ExplorerTroops", {
       game_id: configManager.getActiveGameId(),
       explorer_id: entityId,
     });
-    if (!explorer || explorer.owner === 0) return undefined;
+    if (explorer.owner === 0) return ContractAddress(0n);
     return this.getStructureOwnerAddress(explorer.owner);
   }
 
@@ -2062,9 +2062,7 @@ export default class WorldmapScene extends WarpTravel {
         const pendingPosition = this.getArmyDisplayPosition(entityId);
         return pendingPosition?.col === hexCoords.col && pendingPosition.row === hexCoords.row;
       });
-    return renderable
-      ? { id: renderable.entityId, owner: this.getArmyOwnerAddress(renderable.entityId) ?? 0n }
-      : undefined;
+    return renderable ? { id: renderable.entityId, owner: this.getArmyOwnerAddress(renderable.entityId) } : undefined;
   }
 
   private resolveContractHexKey(hexCoords: HexPosition): string {
@@ -2072,12 +2070,13 @@ export default class WorldmapScene extends WarpTravel {
     return `${contract.x},${contract.y}`;
   }
 
-  private getStructureOwnerAddress(entityId: ID): ContractAddress | undefined {
-    const structure = this.dojo.store.get("Structure", {
-      game_id: configManager.getActiveGameId(),
-      entity_id: entityId,
-    });
-    return structure ? ContractAddress(structure.owner) : undefined;
+  private getStructureOwnerAddress(entityId: ID): ContractAddress {
+    return ContractAddress(
+      this.dojo.store.require("Structure", {
+        game_id: configManager.getActiveGameId(),
+        entity_id: entityId,
+      }).owner,
+    );
   }
 
   private handleExplorerRewardEvent(update: ExplorerRewardSystemUpdate): void {
@@ -2334,7 +2333,7 @@ export default class WorldmapScene extends WarpTravel {
       .getStructuresAtHex({ alt: activeMapLayer(), col: contractHex.x, row: contractHex.y })
       .find((candidate) => !candidate.reserved);
     const structure = projectedStructure
-      ? { id: projectedStructure.entityId, owner: this.getStructureOwnerAddress(projectedStructure.entityId) ?? 0n }
+      ? { id: projectedStructure.entityId, owner: this.getStructureOwnerAddress(projectedStructure.entityId) }
       : undefined;
     const projectedChest = this.worldSpatialProjection.getChestsAtHex({
       alt: activeMapLayer(),
@@ -3440,7 +3439,7 @@ export default class WorldmapScene extends WarpTravel {
       const position = this.getArmyDisplayPosition(entityId);
       if (!position) return;
       const row = index.get(position.col) ?? new Map<number, HexEntityInfo>();
-      row.set(position.row, { id: entityId, owner: this.getArmyOwnerAddress(entityId) ?? 0n });
+      row.set(position.row, { id: entityId, owner: this.getArmyOwnerAddress(entityId) });
       index.set(position.col, row);
     });
     return index;
@@ -3455,7 +3454,7 @@ export default class WorldmapScene extends WarpTravel {
       const row = index.get(normalized.x) ?? new Map<number, HexEntityInfo>();
       row.set(normalized.y, {
         id: structure.entityId,
-        owner: this.getStructureOwnerAddress(structure.entityId) ?? 0n,
+        owner: this.getStructureOwnerAddress(structure.entityId),
       });
       index.set(normalized.x, row);
     });
@@ -5962,7 +5961,7 @@ export default class WorldmapScene extends WarpTravel {
           col: normalized.x,
           info: {
             id: structure.entityId,
-            owner: this.getStructureOwnerAddress(structure.entityId) ?? 0n,
+            owner: this.getStructureOwnerAddress(structure.entityId),
           },
           row: normalized.y,
         });
@@ -5986,7 +5985,7 @@ export default class WorldmapScene extends WarpTravel {
           col: normalized.x,
           info: {
             id: army.entityId,
-            owner: this.getArmyOwnerAddress(army.entityId) ?? 0n,
+            owner: this.getArmyOwnerAddress(army.entityId),
           },
           row: normalized.y,
         });

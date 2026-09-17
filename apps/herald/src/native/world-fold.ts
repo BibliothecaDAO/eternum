@@ -2,7 +2,7 @@ import type { CheckpointCodec } from "../checkpoint-store";
 import { hash } from "starknet";
 import { normalizeFelt } from "../model-registry";
 import type { ModelRegistry } from "../model-registry";
-import type { DecodedWorldEvent, FoldChange, FoldCheckpoint } from "../types";
+import type { DecodedWorldEvent, FoldChange, FoldCheckpoint, GameSnapshot } from "../types";
 import { checkpointModelMismatch, WorldFold } from "../world-fold";
 
 const checkpointMismatch: CheckpointCodec["mismatch"] = (registry, checkpoint) => {
@@ -23,6 +23,26 @@ export class NativeWorldFold extends WorldFold {
 
   public override overlay(): NativeWorldFold {
     return new NativeWorldFold(this.registry, this);
+  }
+
+  public override snapshot(
+    gameId: string | number | bigint,
+    confirmedBlock: number,
+    models?: readonly string[],
+    actor?: string,
+  ): GameSnapshot {
+    const snapshot = super.snapshot(gameId, confirmedBlock, models);
+    if (actor === undefined) return snapshot;
+    const account = BigInt(actor);
+    if (account <= 0n || account >= (1n << 251n) - 256n) throw new Error("Invalid gameplay account");
+    const nonces = snapshot.models.find(({ model }) => model === "ActionNonce");
+    if (!nonces) throw new Error("Actor snapshot requires ActionNonce");
+    const key = normalizeFelt(hash.computePoseidonHashOnElements([gameId, account]));
+    if (!nonces.rows.some((row) => BigInt(row.key) === BigInt(key))) {
+      // Complete confirmed history establishes the initial nonce; the overlay follows this snapshot.
+      nonces.rows.push({ key, value: { game_id: BigInt(gameId).toString(), actor, next_nonce: "0" } });
+    }
+    return snapshot;
   }
 
   public override finalizedGameIds(): readonly string[] {

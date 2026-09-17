@@ -35,6 +35,8 @@ describe("game views", () => {
     seedExplorer(store, { explorerId: 101, owner: 12, x: homeHex.col, y: homeHex.row, stamina: 40n });
     seedExplorer(store, { explorerId: 102, owner: 12, x: 50, y: 50, stamina: 5n });
     seedExplorer(store, { explorerId: 103, owner: 99, x: 60, y: 60, stamina: 0n });
+    expect(() => views.explorers(99)).toThrow("not synchronized");
+    seedStructure(store, { entityId: 99, owner: RIVAL, category: StructureType.Realm, x: 59, y: 60 });
 
     const explorers = views.explorers(12);
 

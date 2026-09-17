@@ -35,12 +35,19 @@ writeFileSync(
 afterAll(() => rmSync(directory, { recursive: true }));
 
 function configuration(preset: number) {
-  return preset === 1
-    ? loadEnvironmentConfiguration("madara.eternum")
-    : applyBlitzBalanceProfile(
-        loadEnvironmentConfiguration("madara.blitz"),
-        preset === 2 ? "official-60" : "official-90",
-      );
+  const config =
+    preset === 1
+      ? loadEnvironmentConfiguration("madara.eternum")
+      : applyBlitzBalanceProfile(
+          loadEnvironmentConfiguration("madara.blitz"),
+          preset === 2 ? "official-60" : "official-90",
+        );
+  if (preset === 1) {
+    config.faith!.reward_token = "0xabc";
+    config.setup!.addresses.resources = { Stone: [2, "0xdef"] };
+    config.setup!.addresses.lords = "0xabc";
+  }
+  return config;
 }
 
 describe("native immutable balance presets", () => {
@@ -138,7 +145,7 @@ describe("native immutable balance presets", () => {
 test.each([1, 2, 3])(
   "native launch encodes preset %i and resolves its game from the season emitter",
   async (presetId) => {
-    const config = loadNativePresetConfiguration(presetId === 1 ? "madara.eternum" : "madara.blitz", presetId);
+    const config = configuration(presetId);
     const definition = buildNativePreset(config);
     const params = buildNativeGameParams(config, {
       gameName: "native-launch",
@@ -158,7 +165,7 @@ test.each([1, 2, 3])(
         schemas: { [schema.identity]: schema },
       },
     };
-    const layout = schema.domains.season.events.find((event) => event.name === "RowSet")!;
+    const layout = schema.domains.season.events.filter((event) => event.name === "RowSet").at(-1)!;
     const model = schema.models.find((model) => model.name === "GameRegistry")!;
     const event = { from_address: "0x456", keys: [...layout.prefix, "1", model.identity], data: ["1", "7", "1", "0"] };
     const receipt = { execution_status: "SUCCEEDED", events: [event] };
@@ -175,8 +182,52 @@ test.each([1, 2, 3])(
     });
     expect(params.registration_limit).toBe(presetId === 1 ? 0 : presetId === 3 ? 2 : 96);
     expect(resolveCreatedGameId({ events: [{ ...event, from_address: "0x999" }] }, manifest as never)).toBeUndefined();
+    for (const layout of schema.domains.season.events.filter((event) => event.name === "RowSet")) {
+      expect(
+        resolveCreatedGameId(
+          { events: [{ ...event, keys: [...layout.prefix, "1", model.identity] }] },
+          manifest as never,
+        ),
+      ).toBe(7);
+    }
     await expect(createRegistrarGame(account, params, manifest as never)).rejects.toThrow(
       "immutable preset definition",
     );
   },
 );
+
+test("every native preset selects its declared game and balance profile", () => {
+  expect(loadNativePresetConfiguration("madara.eternum", 1).blitz.mode.on).toBe(false);
+  expect(loadNativePresetConfiguration("madara.blitz", 2).blitz.exploration.rewardProfileId).toBe("official-60");
+  expect(loadNativePresetConfiguration("madara.blitz", 3).blitz.exploration.rewardProfileId).toBe("official-90");
+  expect(() => loadNativePresetConfiguration("madara.blitz", 999)).toThrow("No native preset");
+  expect(() => loadNativePresetConfiguration("madara.eternum", 2)).toThrow("No native preset");
+});
+
+test("Eternum registers its configured bridge tokens and Blitz has no bridge", () => {
+  const preset = buildNativePreset(configuration(1));
+  expect(preset.economy.withdrawals.unwrap().tokens).toEqual([
+    { resource_type: 2, token: "0xdef" },
+    { resource_type: 37, token: "0xabc" },
+  ]);
+  expect(buildNativePreset(configuration(2)).economy.withdrawals.isNone()).toBe(true);
+  for (const mutation of [
+    (config: ReturnType<typeof configuration>) => {
+      delete config.faith;
+    },
+    (config: ReturnType<typeof configuration>) => {
+      config.faith!.reward_token = "0x0";
+    },
+    (config: ReturnType<typeof configuration>) => {
+      delete config.artificer;
+    },
+    (config: ReturnType<typeof configuration>) => {
+      config.setup!.addresses.resources = {};
+      config.setup!.addresses.lords = "0x0";
+    },
+  ]) {
+    const config = configuration(1);
+    mutation(config);
+    expect(() => buildNativePreset(config)).toThrow();
+  }
+});

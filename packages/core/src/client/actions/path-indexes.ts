@@ -25,11 +25,14 @@ export const buildArmyPathIndexes = (client: PathIndexSource, alt = false): Army
   const projection = client.projection;
   const structureOwner = (structureId: ID): ContractAddress =>
     ContractAddress(
-      store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: structureId })?.owner ?? 0n,
+      store.require("Structure", { game_id: configManager.getActiveGameId(), entity_id: structureId }).owner,
     );
   const armyOwner = (explorerId: ID): ContractAddress => {
-    const explorer = store.get("ExplorerTroops", { game_id: configManager.getActiveGameId(), explorer_id: explorerId });
-    return explorer ? getExplorerOwner(store, explorer) : 0n;
+    const explorer = store.require("ExplorerTroops", {
+      game_id: configManager.getActiveGameId(),
+      explorer_id: explorerId,
+    });
+    return getExplorerOwner(store, explorer);
   };
 
   const structureHexes: HexIndex<HexEntityInfo> = new Map();

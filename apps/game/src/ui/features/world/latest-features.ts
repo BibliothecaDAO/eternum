@@ -34,6 +34,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-09-18",
+    title: "Synchronized Player Actions",
+    description:
+      "Actions wait for your player state to synchronize. Structures no longer appear unclaimed while their ownership is loading.",
+    type: "fix",
+  },
+  {
     date: "2026-09-17",
     title: "Complete Troop History",
     description:

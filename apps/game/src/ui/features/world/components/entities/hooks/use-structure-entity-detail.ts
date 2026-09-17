@@ -137,7 +137,7 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
     if (!structure) return undefined;
 
     const ownerValue = structure.owner;
-    const isUnclaimed = ownerValue === undefined || ownerValue === null || ownerValue === 0n;
+    const isUnclaimed = ownerValue === 0n;
 
     if (isMine) {
       return {

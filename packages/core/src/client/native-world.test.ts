@@ -23,6 +23,7 @@ async function fixture() {
         ],
       },
     ]);
+  write("ActionNonce", [1n, 0x111n], { game_id: 1, actor: "0x111", next_nonce: "0" });
   return { client, store, write };
 }
 
@@ -130,6 +131,23 @@ describe("native bindings in the shared game client", () => {
     }
     expect(signIntent).not.toHaveBeenCalled();
     expect(submitIntent).not.toHaveBeenCalled();
+  });
+  it("never signs with an unknown nonce and accepts an explicit initial row from Herald", async () => {
+    const { store, write } = await fixture();
+    write("SliceRules", [1n], { ...preset.rules, game_id: 1 });
+    const signIntent = vi.fn(async () => ({ r: 1n, s: 2n, publicKey: 3n }));
+    const submitIntent = vi.fn(async () => ({ transaction_hash: "0x99" }));
+    const actor = { address: "0x222" } as AccountInterface;
+    const call = { contractAddress: "0x101", entrypoint: "close_bitcoin_phase", calldata: [1, 42] };
+    const connection = { bindings, chainId: "0x1", signIntent, submitIntent };
+    await expect(nativeSubmission(connection, store, 1, "0x101")(actor, call)).rejects.toThrow("not synchronized");
+    expect(signIntent).not.toHaveBeenCalled();
+    const prepare = vi.fn(async () => {
+      write("ActionNonce", [1n, 0x222n], { game_id: 1, actor: "0x222", next_nonce: "0" });
+    });
+    await nativeSubmission(connection, store, 1, "0x101", prepare)(actor, call);
+    expect(prepare).toHaveBeenCalledWith("0x222");
+    expect(signIntent).toHaveBeenCalledOnce();
   });
   it("signs the native nonce and rejects unsupported actions before submission", async () => {
     const { client, write } = await fixture();

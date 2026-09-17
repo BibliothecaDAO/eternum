@@ -1,5 +1,6 @@
-import { RESOURCE_PRECISION, type Config } from "@bibliothecadao/types";
+import { RESOURCE_PRECISION, ResourcesIds, type Config } from "@bibliothecadao/types";
 import { CairoCustomEnum, CairoOption, CairoOptionVariant } from "starknet";
+import { nativeBalance } from "../../../source/native";
 import { applyBlitzBalanceProfile } from "../../../source/blitz";
 import {
   buildBiomeClimateConfig,
@@ -68,9 +69,9 @@ function buildRules(config: Config) {
     },
     bitcoin_mine_config: {
       enabled: bitcoinEnabled,
-      prize_per_phase: bitcoinEnabled ? scaled(1) : 0n,
-      min_labor_per_contribution: bitcoinEnabled ? scaled(100) : 1n,
-      owner_cut_bps: 2000,
+      prize_per_phase: bitcoinEnabled ? scaled(nativeBalance.bitcoin.prizePerPhase) : 0n,
+      min_labor_per_contribution: scaled(nativeBalance.bitcoin.minimumLabor),
+      owner_cut_bps: nativeBalance.bitcoin.ownerCutBps,
     },
     victory_points_grant_config: {
       hyp_points_per_second: config.victoryPoints.hyperstructurePointsPerCycle,
@@ -82,7 +83,7 @@ function buildRules(config: Config) {
     map_center_offset: config.settlement.center,
     spire_travel_essence_cost: scaled(config.spireTravelEssenceCost),
     blitz_mode_on: config.blitz.mode.on,
-    faith_enabled: config.faith?.enabled ?? false,
+    faith_enabled: config.faith!.enabled,
     speed_config: {
       donkey_sec_per_km: config.speed.donkey_for_resources,
       donkey_sec_per_km_troops: config.speed.donkey_for_troops,
@@ -168,12 +169,7 @@ function buildMines(config: Config) {
         },
       },
     ],
-    surface_mines: config.blitz.mode.on
-      ? [{ kind: 1, weight: 1 }]
-      : [
-          { kind: 1, weight: 1 },
-          { kind: 2, weight: 1 },
-        ],
+    surface_mines: nativeBalance.mineWeights[config.blitz.mode.on ? "blitz" : "eternum"].map((entry) => ({ ...entry })),
   };
 }
 
@@ -205,10 +201,10 @@ function buildStructures(config: Config) {
       return { resource_type: resource, amount: scaled(min_amount, precision) };
     }),
     faith: {
-      wonder_rate: config.faith?.wonder_base_fp_per_sec ?? 0,
-      realm_rate: config.faith?.realm_fp_per_sec ?? 0,
-      village_rate: config.faith?.village_fp_per_sec ?? 0,
-      owner_share_bps: (config.faith?.owner_share_percent ?? 0) * 100,
+      wonder_rate: config.faith!.wonder_base_fp_per_sec,
+      realm_rate: config.faith!.realm_fp_per_sec,
+      village_rate: config.faith!.village_fp_per_sec,
+      owner_share_bps: config.faith!.owner_share_percent * 100,
     },
     upgrade_limits: { realm_max: config.realmMaxLevel - 1, village_max: config.villageMaxLevel - 1 },
     upgrades: Array.from({ length: Math.max(config.realmMaxLevel, config.villageMaxLevel) - 1 }, (_, index) => ({
@@ -264,7 +260,7 @@ function buildEconomy(config: Config, tokens: Array<{ resource_type: number; tok
       })),
     },
     relics: relicRules.map((rule) => ({ ...rule })),
-    research_cost: config.artificer?.research_cost_for_relic ?? 0,
+    research_cost: config.artificer!.research_cost_for_relic,
     withdrawals: config.blitz.mode.on
       ? new CairoOption(CairoOptionVariant.None)
       : new CairoOption(CairoOptionVariant.Some, {
@@ -290,13 +286,15 @@ function buildEconomy(config: Config, tokens: Array<{ resource_type: number; tok
   };
 }
 
-export function buildNativePreset(config: Config, tokens: Array<{ resource_type: number; token: string }> = []) {
+export function buildNativePreset(config: Config, tokens?: Array<{ resource_type: number; token: string }>) {
+  validateRequiredNativeConfig(config);
+  const bridgeTokens = config.blitz.mode.on ? [] : resolveBridgeTokens(config, tokens);
   return {
     rules: buildRules(config),
     resources: buildResources(config),
     structures: buildStructures(config),
     settlement: buildSettlement(config),
-    economy: buildEconomy(config, tokens),
+    economy: buildEconomy(config, bridgeTokens),
 
     exploration: config.blitz.mode.on
       ? config.blitz.exploration.rewards.map(({ rewardId, amount, probabilityBps }) => ({
@@ -306,6 +304,47 @@ export function buildNativePreset(config: Config, tokens: Array<{ resource_type:
         }))
       : eternumExplorationRewards(config.exploration.reward),
     season_win_points: config.victoryPoints.pointsForWin,
-    faith_reward_token: config.faith?.reward_token ?? "0x0",
+    faith_reward_token: config.faith!.reward_token,
   };
+}
+
+function validateRequiredNativeConfig(config: Config): void {
+  if (!config.faith || typeof config.faith.enabled !== "boolean") throw new Error("Native faith config is required");
+  for (const field of [
+    "wonder_base_fp_per_sec",
+    "realm_fp_per_sec",
+    "village_fp_per_sec",
+    "owner_share_percent",
+  ] as const) {
+    if (!Number.isSafeInteger(config.faith[field]) || config.faith[field] < 0)
+      throw new Error(`Native faith ${field} is required and must be nonnegative`);
+  }
+  if (!config.faith.reward_token || (config.faith.enabled && BigInt(config.faith.reward_token) === 0n))
+    throw new Error("Native faith reward token is required");
+  if (!Number.isSafeInteger(config.artificer?.research_cost_for_relic) || config.artificer!.research_cost_for_relic < 0)
+    throw new Error("Native research cost is required and must be nonnegative");
+}
+
+function resolveBridgeTokens(config: Config, supplied?: Array<{ resource_type: number; token: string }>) {
+  const addresses = config.setup?.addresses;
+  const configured = addresses?.resources;
+  if (!supplied && (!configured || typeof configured !== "object" || Array.isArray(configured)))
+    throw new Error("Eternum bridge resource tokens are required");
+  const tokens = supplied ?? [
+    ...Object.values(configured!).map(([resource, token]) => ({
+      resource_type: Number(resource),
+      token: String(token),
+    })),
+    { resource_type: ResourcesIds.Lords, token: addresses!.lords },
+  ];
+  if (!tokens.length) throw new Error("Eternum bridge resource tokens are required");
+  const seen = new Set<number>();
+  for (const { resource_type, token } of tokens) {
+    if (!Number.isSafeInteger(resource_type) || resource_type < 1 || resource_type > 58 || seen.has(resource_type))
+      throw new Error(`Invalid or repeated bridge resource ${resource_type}`);
+    if (!token || !/^0x[0-9a-f]+$/i.test(token) || BigInt(token) === 0n)
+      throw new Error(`Missing bridge token for resource ${resource_type}`);
+    seen.add(resource_type);
+  }
+  return tokens.map((entry) => ({ ...entry })).sort((a, b) => a.resource_type - b.resource_type);
 }

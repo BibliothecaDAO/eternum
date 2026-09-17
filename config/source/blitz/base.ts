@@ -51,6 +51,15 @@ const blitzVillageConfig: ConfigPatch = {
 };
 
 const blitzTradeConfig: ConfigPatch = {
+  faith: {
+    enabled: false,
+    wonder_base_fp_per_sec: 0,
+    realm_fp_per_sec: 0,
+    village_fp_per_sec: 0,
+    owner_share_percent: 0,
+    reward_token: "0x0",
+  },
+  artificer: { research_cost_for_relic: 0 },
   trade: {
     maxCount: 0,
   },

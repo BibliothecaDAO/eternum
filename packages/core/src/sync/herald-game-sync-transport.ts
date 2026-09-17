@@ -179,6 +179,16 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
     this.socketFactory = options.socketFactory ?? ((url) => new WebSocket(url) as unknown as HeraldSocket);
   }
 
+  public selectActor(actor: string): void {
+    const url = new URL(this.options.url);
+    const address = `0x${BigInt(actor).toString(16)}`;
+    if (url.searchParams.get("actor") === address) return;
+    url.searchParams.set("actor", address);
+    this.options.url = url.toString();
+    this.forceFreshSnapshot = true;
+    if (this.socket) this.reconnectSocket(this.socket);
+  }
+
   public async subscribe(handlers: GameSyncSubscriptionHandlers): Promise<GameSyncWriter> {
     this.stop();
     this.resetSession(handlers);

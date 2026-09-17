@@ -66,7 +66,7 @@ const RealmVillageDetails = () => {
   }, [mode, structure]);
 
   const address = useMemo(() => {
-    return toHexString(structure?.owner || 0n);
+    return structure ? toHexString(structure.owner) : undefined;
   }, [structure]);
 
   const isImmune = useMemo(() => isStructureImmune(currentBlockTimestamp || 0), [structure, currentBlockTimestamp]);
@@ -111,7 +111,7 @@ const RealmVillageDetails = () => {
               className="uppercase hover:text-white cursor-pointer transition-colors"
               onClick={() => copyPlayerAddressToClipboard(structure.owner, structure.ownerName || "")}
             >
-              {displayAddress(address)}
+              {address ? displayAddress(address) : "Loading owner"}
             </span>
           </div>
         </div>
