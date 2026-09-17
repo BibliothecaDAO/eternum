@@ -38,7 +38,6 @@ export interface ChainConfigOverrides {
   ledgerOperatorAddress: string;
   playerRegistryAddress: string;
   vrfProviderAddress?: string;
-  agentControllerAddress?: string;
   cosmeticsAddress?: string;
   timelockAddress?: string;
   lootChestAddress?: string;
@@ -109,8 +108,6 @@ export function buildMapConfig(config: Config) {
     reward_resource_amount: config.exploration.reward,
     shards_mines_win_probability: config.exploration.shardsMinesWinProbability,
     shards_mines_fail_probability: config.exploration.shardsMinesFailProbability,
-    agent_discovery_prob: config.exploration.agentFindProbability,
-    agent_discovery_fail_prob: config.exploration.agentFindFailProbability,
     camp_win_probability: config.exploration.campFindProbability,
     camp_fail_probability: config.exploration.campFindFailProbability,
     // Reserved layout slots for existing games; standalone holy sites are retired.
@@ -132,11 +129,7 @@ export function buildTroopDamageConfig(config: Config) {
   return {
     damage_raid_percent_num: config.troop.damage.damageRaidPercentNum,
     damage_biome_bonus_num: config.troop.damage.damageBiomeBonusNum,
-    damage_beta_small: config.troop.damage.damageBetaSmall,
-    damage_beta_large: config.troop.damage.damageBetaLarge,
     damage_scaling_factor: config.troop.damage.damageScalingFactor,
-    damage_c0: config.troop.damage.damageC0,
-    damage_delta: config.troop.damage.damageDelta,
     t1_damage_value: config.troop.damage.t1DamageValue,
     t2_damage_multiplier: config.troop.damage.t2DamageMultiplier,
     t3_damage_multiplier: config.troop.damage.t3DamageMultiplier,
@@ -168,8 +161,6 @@ export function buildTroopLimitConfig(config: Config) {
     guard_resurrection_delay: config.troop.limit.guardResurrectionDelay,
     mercenaries_troop_lower_bound: config.troop.limit.mercenariesTroopLowerBound,
     mercenaries_troop_upper_bound: config.troop.limit.mercenariesTroopUpperBound,
-    agents_troop_lower_bound: config.troop.limit.agentTroopLowerBound,
-    agents_troop_upper_bound: config.troop.limit.agentTroopUpperBound,
     settlement_deployment_cap: config.troop.limit.settlementDeploymentCap,
     city_deployment_cap: config.troop.limit.cityDeploymentCap,
     kingdom_deployment_cap: config.troop.limit.kingdomDeploymentCap,
@@ -185,7 +176,6 @@ export function buildTroopLimitConfig(config: Config) {
 
 export function buildCapacityConfig(config: Config) {
   return {
-    structure_capacity: 0,
     troop_capacity: config.carryCapacityGram[CapacityConfig.Army],
     donkey_capacity: config.carryCapacityGram[CapacityConfig.Donkey],
     storehouse_boost_capacity: config.carryCapacityGram[CapacityConfig.Storehouse],
@@ -199,7 +189,6 @@ export function buildStructureCapacityConfig(config: Config) {
     hyperstructure_capacity: config.carryCapacityGram[CapacityConfig.HyperstructureStructure],
     fragment_mine_capacity: config.carryCapacityGram[CapacityConfig.FragmentMineStructure],
     bank_structure_capacity: config.carryCapacityGram[CapacityConfig.BankStructure],
-    holysite_capacity: 0, // Reserved serialized slot.
     camp_capacity: config.carryCapacityGram[CapacityConfig.CampStructure],
     bitcoin_mine_capacity: config.carryCapacityGram[CapacityConfig.BitcoinMineStructure],
   };
@@ -525,10 +514,6 @@ export function buildPresetRegistration(config: Config, presetId: number): Prese
         registration_count_max: config.blitz.registration.registration_count_max,
         registration_start_at: 0,
       },
-      agent_max_lifetime_count: config.agent.max_lifetime_count,
-      agent_max_current_count: config.agent.max_current_count,
-      agent_min_spawn_lords_amount: config.agent.min_spawn_lords_amount,
-      agent_max_spawn_lords_amount: config.agent.max_spawn_lords_amount,
     },
     sideTables,
   };
@@ -541,7 +526,6 @@ export function buildChainConfig(config: Config, overrides: ChainConfigOverrides
     ledger_operator_address: overrides.ledgerOperatorAddress,
     player_registry_address: overrides.playerRegistryAddress,
     vrf_provider_address: overrides.vrfProviderAddress ?? config.vrf.vrfProviderAddress,
-    agent_controller_config: { address: overrides.agentControllerAddress ?? config.agent.controller_address },
     collectibles_cosmetics_address:
       overrides.cosmeticsAddress ?? config.blitz.registration.collectible_cosmetics_address,
     collectibles_timelock_address: overrides.timelockAddress ?? config.blitz.registration.collectible_timelock_address,

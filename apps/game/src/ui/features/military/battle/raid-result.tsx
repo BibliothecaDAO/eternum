@@ -39,7 +39,7 @@ const getFormattedRaidTweet = ({
 
   return formatSocialText(twitterTemplates.raid, {
     attackerNameText: `${accountName || accountAddress.slice(0, 6) + "..." + accountAddress.slice(-4)} ${attackerGuild ? `from ${attackerGuild} tribe` : ""}`,
-    defenderNameText: `${targetAddress ? getAddressName(targetAddress, store) : "@daydreamsagents"} ${defenderGuild ? `from ${defenderGuild}` : ""}`,
+    defenderNameText: `${targetAddress ? getAddressName(targetAddress, store) : "Bandits"} ${defenderGuild ? `from ${defenderGuild}` : ""}`,
     raidResources: resourcesText,
     url: env.VITE_SOCIAL_LINK,
   });

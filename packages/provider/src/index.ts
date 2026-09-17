@@ -3553,15 +3553,6 @@ export class EternumProvider extends EventEmitter {
     });
   }
 
-  public async transfer_agent_ownership(props: SystemProps.TransferAgentOwnershipProps) {
-    const { signer, explorer_id, new_owner } = props;
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${this.namespace}-ownership_systems`),
-      entrypoint: "transfer_agent_ownership",
-      calldata: [explorer_id, new_owner],
-    });
-  }
-
   public async structure_burn(props: SystemProps.StructureBurnProps) {
     const { signer, structure_id, resources } = props;
     return await this.executeAndCheckTransaction(signer, {

@@ -569,9 +569,7 @@ pub mod StructuresDomain {
         }
         fn remove_explorer(ref self: ContractState, key: ResourceKey, explorer_id: u32) {
             self.assert_troops();
-            if key.entity_id != crate::troops::AGENT_HOME {
-                self.structures.remove_explorer(key, explorer_id);
-            }
+            self.structures.remove_explorer(key, explorer_id);
             self.resources_dispatcher().destroy_resources(ResourceKey { game_id: key.game_id, entity_id: explorer_id });
         }
     }
@@ -1001,7 +999,7 @@ pub mod StructuresDomain {
                     let (kind, config, cap) = IMineRulesDispatcher {
                         contract_address: self.lifecycle.require_active().resources,
                     }
-                        .mine_draw(MinePoolKey { game_id, alt: coord.alt }, seed);
+                        .mine_draw(MinePoolKey { game_id }, seed);
                     record.metadata.mine_kind = kind;
                     self
                         .create_producer(
@@ -1036,7 +1034,7 @@ pub mod StructuresDomain {
                             timestamp,
                         );
                 },
-                Discovery::None | Discovery::Agent => panic!("discovery is not a structure"),
+                Discovery::None => panic!("discovery is not a structure"),
             }
             self.structures.create(key, record);
             crate::guards::IGuardsDispatcherTrait::initialize_structure_guards(
@@ -1492,7 +1490,7 @@ fn discovered_structure(
         Discovery::Hyperstructure => (2, 9, 3, capacities.hyperstructure_capacity),
         Discovery::BitcoinMine => (8, 38, 3, capacities.bitcoin_mine_capacity),
         Discovery::Camp => (crate::camps::CAMP_CATEGORY, crate::camps::CAMP_OCCUPIER, 0, capacities.camp_capacity),
-        Discovery::None | Discovery::Agent => panic!("discovery is not a structure"),
+        Discovery::None => panic!("discovery is not a structure"),
     };
     assert!(
         discovery == Discovery::Mine || coord.alt == (discovery == Discovery::BitcoinMine), "invalid discovery layer",

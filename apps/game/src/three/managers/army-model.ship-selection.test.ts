@@ -14,7 +14,6 @@ vi.hoisted(() => {
 });
 
 vi.mock("@/ui/config", () => ({ FELT_CENTER: 0, IS_FLAT_MODE: false }));
-vi.mock("@/utils/agent", () => ({ getCharacterModel: vi.fn(() => null) }));
 vi.mock("@/three/utils/utils", () => ({ gltfLoader: { load: vi.fn() } }));
 vi.mock("../utils", () => ({ getHexForWorldPosition: vi.fn(() => ({ col: 0, row: 0 })) }));
 vi.mock("../utils/contact-shadow", () => ({

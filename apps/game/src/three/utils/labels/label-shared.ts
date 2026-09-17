@@ -5,7 +5,7 @@ import { resolveCameraView } from "./label-view";
 /**
  * Create base label element with common properties
  */
-export const createLabelBase = (isMine: boolean, inputView: CameraView, isDaydreamsAgent?: boolean): HTMLElement => {
+export const createLabelBase = (isMine: boolean, inputView: CameraView): HTMLElement => {
   const cameraView = resolveCameraView(inputView);
   const labelDiv = document.createElement("div");
 
@@ -35,7 +35,7 @@ export const createLabelBase = (isMine: boolean, inputView: CameraView, isDaydre
   }
 
   // Get appropriate style
-  const styles = getOwnershipStyle(isMine, isDaydreamsAgent);
+  const styles = getOwnershipStyle(isMine);
 
   // Apply styles directly
   labelDiv.style.setProperty("background-color", styles.default.backgroundColor!, "important");

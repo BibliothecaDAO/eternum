@@ -433,12 +433,6 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.transfer_structure_ownership(props);
   };
 
-  const transfer_agent_ownership = async (
-    props: SystemProps.TransferAgentOwnershipProps,
-  ): Promise<GetTransactionReceiptResponse> => {
-    return await provider.transfer_agent_ownership(props);
-  };
-
   const structure_burn = async (props: SystemProps.StructureBurnProps): Promise<GetTransactionReceiptResponse> => {
     return await provider.structure_burn(props);
   };
@@ -567,7 +561,6 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     leave_guild: withAuth(leave_guild),
 
     transfer_structure_ownership: withAuth(transfer_structure_ownership),
-    transfer_agent_ownership: withAuth(transfer_agent_ownership),
     structure_burn: withAuth(structure_burn),
     troop_burn: withAuth(troop_burn),
     open_chest: withAuth(open_chest),

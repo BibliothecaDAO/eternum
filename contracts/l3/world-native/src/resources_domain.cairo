@@ -320,11 +320,10 @@ pub mod ResourcesDomain {
             game_id: u32,
             kinds: Span<crate::mines::MineKindEntry>,
             surface: Span<crate::mines::MineWeight>,
-            ethereal: Span<crate::mines::MineWeight>,
         ) {
             self.lifecycle.assert_configurator();
             let _ = self.game_dispatcher().game(game_id);
-            self.mines.configure(game_id, kinds, surface, ethereal);
+            self.mines.configure(game_id, kinds, surface);
         }
         fn mine_kind(self: @ContractState, key: crate::mines::MineKindKey) -> crate::mines::MineKindConfig {
             self.mines.kind(key)

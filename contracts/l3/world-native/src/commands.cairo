@@ -42,7 +42,6 @@ pub enum Command {
     Move: Move,
     ToggleAlternate: ToggleAlternate,
     TransferStructureOwnership: crate::ownership::TransferOwnership,
-    TransferAgentOwnership: crate::ownership::TransferOwnership,
     SetAddressName: crate::names::SetAddressName,
     LevelUp: u32,
     ReserveHyperstructures: u8,
@@ -86,7 +85,6 @@ pub enum Command {
     ContributeHyperstructure: crate::hyperstructures::Contribution,
     AllocateHyperstructureShares: crate::hyperstructures::AllocateShares,
     SetConstructionAccess: crate::hyperstructures::SetConstructionAccess,
-    CheckpointHyperstructures: Span<u32>,
     OpenRelicChest: crate::relics::OpenChest,
     ApplyRelic: crate::relics::ApplyRelic,
     ExtractExplorationReward: u32,
@@ -171,7 +169,6 @@ fn command_items(command: Command) -> u32 {
         Command::RankPlayers(value) => value.players.len(),
         Command::MintDevelopmentResources(value) => value.resources.len(),
         Command::RegularizeResourceWeights(value) => value.len(),
-        Command::CheckpointHyperstructures(value) => value.len(),
         Command::CreateBanks(value) => value.len(),
         _ => 0,
     }

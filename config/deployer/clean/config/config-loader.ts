@@ -49,8 +49,6 @@ const BLITZ_MAX_PLAYERS_MIN = 1;
 const MAP_CONFIG_OVERRIDE_LIMITS = {
   shardsMinesWinProbability: U16_MAX,
   shardsMinesFailProbability: U16_MAX,
-  agentFindProbability: U16_MAX,
-  agentFindFailProbability: U16_MAX,
   campFindProbability: U16_MAX,
   campFindFailProbability: U16_MAX,
   bitcoinMineWinProbability: U16_MAX,
@@ -69,12 +67,6 @@ const MAP_CONFIG_OVERRIDE_PAIR_GROUPS = [
     label: "Shard Mine chance",
     winKey: "shardsMinesWinProbability",
     failKey: "shardsMinesFailProbability",
-    sum: U16_MAX,
-  },
-  {
-    label: "Agent chance",
-    winKey: "agentFindProbability",
-    failKey: "agentFindFailProbability",
     sum: U16_MAX,
   },
   {

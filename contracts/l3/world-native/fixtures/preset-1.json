@@ -10,8 +10,6 @@
       "reward_resource_amount": 750,
       "shards_mines_win_probability": 1000,
       "shards_mines_fail_probability": 49000,
-      "agent_discovery_prob": 0,
-      "agent_discovery_fail_prob": 100,
       "camp_win_probability": 1500,
       "camp_fail_probability": 48500,
       "holysite_win_probability": 0,
@@ -42,11 +40,7 @@
     "troop_damage_config": {
       "damage_raid_percent_num": 1000,
       "damage_biome_bonus_num": 3000,
-      "damage_beta_small": "4611686018427387904",
-      "damage_beta_large": "2213609288845146193",
       "damage_scaling_factor": "36893488147419103232",
-      "damage_c0": "1844674407370955161600000",
-      "damage_delta": "922337203685477580800000",
       "t1_damage_value": "1844674407370955161600",
       "t2_damage_multiplier": "55340232221128654848",
       "t3_damage_multiplier": "166020696663385964544"
@@ -71,8 +65,6 @@
       "guard_resurrection_delay": 600,
       "mercenaries_troop_lower_bound": 800,
       "mercenaries_troop_upper_bound": 1500,
-      "agents_troop_lower_bound": 500,
-      "agents_troop_upper_bound": 15000,
       "settlement_deployment_cap": 3000,
       "city_deployment_cap": 15000,
       "kingdom_deployment_cap": 45000,
@@ -85,7 +77,6 @@
       "t3_tier_modifier": 150
     },
     "capacity_config": {
-      "structure_capacity": 0,
       "troop_capacity": 10000,
       "donkey_capacity": 50000,
       "storehouse_boost_capacity": 0
@@ -96,7 +87,6 @@
       "hyperstructure_capacity": "18446744073709551615",
       "fragment_mine_capacity": "18446744073709551615",
       "bank_structure_capacity": "18446744073709551615",
-      "holysite_capacity": 0,
       "camp_capacity": "18446744073709551615",
       "bitcoin_mine_capacity": "18446744073709551615"
     },

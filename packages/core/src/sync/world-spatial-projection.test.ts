@@ -559,7 +559,7 @@ describe("WorldSpatialProjection", () => {
       col: 12,
       row: 13,
       occupierId: 77,
-      occupierType: TileOccupier.HyperstructureLevel1,
+      occupierType: TileOccupier.Hyperstructure,
     });
 
     expect(projection.getStructuresAtHex({ alt: false, col: 12, row: 13 })).toEqual([

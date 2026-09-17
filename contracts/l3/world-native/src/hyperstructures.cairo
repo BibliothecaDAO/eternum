@@ -85,9 +85,6 @@ pub trait IHyperstructures<T> {
     fn set_construction_access(
         ref self: T, game_id: u32, actor: ContractAddress, command: SetConstructionAccess, context: ExecutionContext,
     );
-    fn checkpoint_hyperstructures(
-        ref self: T, game_id: u32, actor: ContractAddress, ids: Span<u32>, context: ExecutionContext,
-    );
 }
 
 pub fn required_amount(seed: felt252, cost: ConstructionResource) -> u128 {
@@ -371,21 +368,6 @@ pub mod HyperstructureState {
             let end = self.checkpoint_batch(game_id, game.end_at, start, count);
             self.final_checkpoint_cursor.write(game_id, end);
             end == count
-        }
-        fn checkpoint_hyperstructures(
-            ref self: ComponentState<TContractState>,
-            game_id: u32,
-            actor: ContractAddress,
-            ids: Span<u32>,
-            context: ExecutionContext,
-        ) {
-            assert!(get_caller_address() == self.peers().season, "only authenticated command domain");
-            crate::commands::assert_context_time(context.timestamp);
-            self.games().game(game_id);
-            crate::commands::assert_unique_entity_ids(ids);
-            for id in ids {
-                self.checkpoint(ResourceKey { game_id, entity_id: *id }, context.timestamp);
-            }
         }
     }
     #[generate_trait]

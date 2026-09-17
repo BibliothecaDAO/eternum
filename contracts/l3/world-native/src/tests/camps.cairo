@@ -26,8 +26,6 @@ fn rules(blitz: bool) -> crate::rules::SliceRules {
     rules.map_config.shards_mines_fail_probability = 1;
     rules.map_config.camp_win_probability = 1;
     rules.map_config.camp_fail_probability = 0;
-    rules.map_config.agent_discovery_prob = 0;
-    rules.map_config.agent_discovery_fail_prob = 1;
     rules.map_config.relic_discovery_interval_sec = 60000;
     rules
 }
@@ -57,7 +55,7 @@ fn create(d: super::Deployment, coord: Coord) -> ResourceKey {
     ResourceKey { game_id: 3, entity_id: id }
 }
 #[test]
-fn camp_lottery_is_blitz_only_after_mines_and_before_agents() {
+fn camp_lottery_is_blitz_only_after_mines() {
     let mut config = rules(true).map_config;
     for seed in 0_u64..32 {
         assert_eq!(surface(config, seed.into(), 30, 1, 0, true), Discovery::Camp);

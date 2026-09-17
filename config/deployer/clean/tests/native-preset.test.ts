@@ -85,7 +85,6 @@ describe("native immutable balance presets", () => {
       { kind: 2, weight: 1 },
     ]);
     expect(fast.resources.surface_mines).toEqual([{ kind: 1, weight: 1 }]);
-    expect(eternum.resources.ethereal_mines).toEqual([]);
     expect(eternum.rules.bitcoin_mine_config.owner_cut_bps).toBe(2000);
   });
 

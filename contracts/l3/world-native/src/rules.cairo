@@ -6,11 +6,7 @@ pub struct TroopDamageConfig {
     // Combat modifiers. Used for biome damage calculations
     pub damage_biome_bonus_num: u16,
     // Used in damage calculations for troop scaling
-    pub damage_beta_small: u64, // Fixed
-    pub damage_beta_large: u64, // Fixed
     pub damage_scaling_factor: u128,
-    pub damage_c0: u128, // Fixed
-    pub damage_delta: u128, // Fixed
     pub t1_damage_value: u128,
     pub t2_damage_multiplier: u128, // Fixed
     pub t3_damage_multiplier: u128,
@@ -48,10 +44,6 @@ pub struct TroopLimitConfig {
     pub mercenaries_troop_lower_bound: u16,
     // without precision
     pub mercenaries_troop_upper_bound: u16,
-    // Agents bounds without precision
-    pub agents_troop_lower_bound: u16,
-    // without precision
-    pub agents_troop_upper_bound: u16,
     // Deployment caps per structure level (without precision)
     // Max_Army_Size = (Deployment_Cap / Tier_Strength) * Tier_Modifier / 100
     pub settlement_deployment_cap: u32,
@@ -68,7 +60,6 @@ pub struct TroopLimitConfig {
     pub t3_tier_modifier: u8,
 }
 
-
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct BiomeClimateConfig {
     pub elevation_scale_bps: u16,
@@ -84,8 +75,6 @@ pub struct MapConfig {
     pub reward_resource_amount: u16,
     pub shards_mines_win_probability: u16,
     pub shards_mines_fail_probability: u16,
-    pub agent_discovery_prob: u16,
-    pub agent_discovery_fail_prob: u16,
     pub camp_win_probability: u16,
     pub camp_fail_probability: u16,
     // Reserved: removing these shifts the packed map config of existing games.
@@ -114,7 +103,6 @@ pub struct TickConfig {
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct CapacityConfig {
-    pub structure_capacity: u128, // grams // deprecated
     pub troop_capacity: u32, // grams
     pub donkey_capacity: u32, // grams
     pub storehouse_boost_capacity: u32,
@@ -127,7 +115,6 @@ pub struct StructureCapacityConfig {
     pub hyperstructure_capacity: u64, // grams
     pub fragment_mine_capacity: u64, // grams
     pub bank_structure_capacity: u64,
-    pub holysite_capacity: u64, // Reserved for stored presets.
     pub camp_capacity: u64, // grams
     pub bitcoin_mine_capacity: u64 // grams
 }
@@ -238,8 +225,6 @@ pub impl TroopLimitConfigPacking of starknet::storage_access::StorePacking<Troop
             first: value.guard_resurrection_delay.into()
                 + value.mercenaries_troop_lower_bound.into() * 0x10000
                 + value.mercenaries_troop_upper_bound.into() * 0x100000000
-                + value.agents_troop_lower_bound.into() * 0x1000000000000
-                + value.agents_troop_upper_bound.into() * 0x10000000000000000
                 + value.settlement_deployment_cap.into() * 0x100000000000000000000,
             second: value.city_deployment_cap.into()
                 + value.kingdom_deployment_cap.into() * 0x100000000
@@ -256,8 +241,6 @@ pub impl TroopLimitConfigPacking of starknet::storage_access::StorePacking<Troop
             guard_resurrection_delay: (value.first % 0x10000).try_into().unwrap(),
             mercenaries_troop_lower_bound: (value.first / 0x10000 % 0x10000).try_into().unwrap(),
             mercenaries_troop_upper_bound: (value.first / 0x100000000 % 0x10000).try_into().unwrap(),
-            agents_troop_lower_bound: (value.first / 0x1000000000000 % 0x10000).try_into().unwrap(),
-            agents_troop_upper_bound: (value.first / 0x10000000000000000 % 0x10000).try_into().unwrap(),
             settlement_deployment_cap: (value.first / 0x100000000000000000000 % 0x100000000).try_into().unwrap(),
             city_deployment_cap: (value.second % 0x100000000).try_into().unwrap(),
             kingdom_deployment_cap: (value.second / 0x100000000 % 0x100000000).try_into().unwrap(),
@@ -278,8 +261,6 @@ pub impl MapConfigPacking of starknet::storage_access::StorePacking<MapConfig, P
             first: value.reward_resource_amount.into()
                 + value.shards_mines_win_probability.into() * 0x10000
                 + value.shards_mines_fail_probability.into() * 0x100000000
-                + value.agent_discovery_prob.into() * 0x1000000000000
-                + value.agent_discovery_fail_prob.into() * 0x10000000000000000
                 + value.camp_win_probability.into() * 0x100000000000000000000
                 + value.camp_fail_probability.into() * 0x1000000000000000000000000
                 + value.holysite_win_probability.into() * 0x10000000000000000000000000000,
@@ -300,8 +281,6 @@ pub impl MapConfigPacking of starknet::storage_access::StorePacking<MapConfig, P
             reward_resource_amount: (value.first % 0x10000).try_into().unwrap(),
             shards_mines_win_probability: (value.first / 0x10000 % 0x10000).try_into().unwrap(),
             shards_mines_fail_probability: (value.first / 0x100000000 % 0x10000).try_into().unwrap(),
-            agent_discovery_prob: (value.first / 0x1000000000000 % 0x10000).try_into().unwrap(),
-            agent_discovery_fail_prob: (value.first / 0x10000000000000000 % 0x10000).try_into().unwrap(),
             camp_win_probability: (value.first / 0x100000000000000000000 % 0x10000).try_into().unwrap(),
             camp_fail_probability: (value.first / 0x1000000000000000000000000 % 0x10000).try_into().unwrap(),
             holysite_win_probability: (value.first / 0x10000000000000000000000000000).try_into().unwrap(),

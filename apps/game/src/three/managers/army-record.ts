@@ -10,7 +10,6 @@ export function createArmyRecord(input: ArmyData): ArmyData {
     color: input.color,
     category: input.category,
     tier: input.tier,
-    isDaydreamsAgent: input.isDaydreamsAgent,
     cosmeticId: input.cosmeticId,
     cosmeticAssetPaths: input.cosmeticAssetPaths,
     usesFallbackCosmeticSkin: input.usesFallbackCosmeticSkin,

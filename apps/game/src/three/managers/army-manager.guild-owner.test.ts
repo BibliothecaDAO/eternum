@@ -10,8 +10,8 @@ it("recolours tracked ships immediately on a guild change without an army update
   vi.spyOn(configManager, "getActiveGameId").mockReturnValue(1);
   let emit!: (changes: unknown[]) => void;
   const unsubscribe = vi.fn();
-  const enemyHue = `#${playerColorManager.getProfileForUnit(false, false, false, 123n).primary.getHexString()}`;
-  const army = { isMine: false, isDaydreamsAgent: false, owner: { address: 123n }, color: enemyHue };
+  const enemyHue = `#${playerColorManager.getProfileForUnit(false, false, 123n).primary.getHexString()}`;
+  const army = { isMine: false, owner: { address: 123n }, color: enemyHue };
   const label = { color: army.color };
   const manager = Object.assign(Object.create(ArmyManager.prototype), {
     store: {

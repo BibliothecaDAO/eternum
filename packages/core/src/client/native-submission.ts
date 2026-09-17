@@ -220,9 +220,6 @@ function translateCommand(call: Call, gameId: number, season: string, store: Nat
     case "transfer_structure_ownership":
       if (args.length !== 2) break;
       return build("TransferStructureOwnership", { entity_id: args[0], new_owner: args[1] });
-    case "transfer_agent_ownership":
-      if (args.length !== 2) break;
-      return build("TransferAgentOwnership", { entity_id: args[0], new_owner: args[1] });
     case "set_address_name":
       if (args.length !== 1) break;
       return build("SetAddressName", {
@@ -312,9 +309,6 @@ function translateCommand(call: Call, gameId: number, season: string, store: Nat
         shareholders: Array.from({ length: count }, (_, i) => ({ player: args[2 + i * 2], bps: args[3 + i * 2] })),
       });
     }
-    case "checkpoint_hyperstructures":
-      if (args.length !== Number(args[0]) + 1) break;
-      return build("CheckpointHyperstructures", args.slice(1));
     case "rank_players": {
       const count = Number(args[2]);
       if (!Number.isSafeInteger(count) || count < 1 || args.length !== count + 3) break;

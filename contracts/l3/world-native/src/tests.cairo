@@ -485,26 +485,6 @@ fn authority_rotates_authentication_without_replacing_the_domain() {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn agent_controller_requires_authority_and_projects_the_new_address() {
-    let deployment = setup(true);
-    let gateway = ISeasonDispatcher { contract_address: deployment.peers.season };
-    let safe = ISeasonSafeDispatcher { contract_address: deployment.peers.season };
-    let game = crate::game::IGameDispatcher { contract_address: deployment.peers.season };
-    assert_eq!(crate::game::IGameDispatcherTrait::agent_controller(game), 0.try_into().unwrap());
-    assert!(safe.set_agent_controller(0x777.try_into().unwrap()).is_err());
-    start_cheat_caller_address(deployment.peers.season, authority());
-    let mut spy = spy_events();
-    gateway.set_agent_controller(0x777.try_into().unwrap());
-    let events = spy.get_events().emitted_by(deployment.peers.season);
-    assert_eq!(events.events.len(), 1);
-    let (_, event) = events.events.at(0);
-    assert_eq!(event.keys.span(), array![selector!("RowSet"), 1, 'AgentController'].span());
-    assert_eq!(event.data.span(), array![1, deployment.peers.season.into(), 1, 0x777].span());
-    assert_eq!(crate::game::IGameDispatcherTrait::agent_controller(game), 0x777.try_into().unwrap());
-}
-
-#[test]
-#[feature("safe_dispatcher")]
 fn approved_account_class_can_follow_a_player_account_upgrade() {
     let deployment = setup(true);
     let season = ISeasonDispatcher { contract_address: deployment.peers.season };
@@ -685,7 +665,6 @@ fn realm_upgrade_changes_only_its_display_and_rejects_foreign_occupants() {
     assert!(safe.vacate(key, 7).is_err());
 }
 
-mod agents;
 mod artificer;
 
 mod blitz_prizes;

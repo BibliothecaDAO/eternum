@@ -34,7 +34,7 @@ describe("native ownership projections", () => {
 
   it("exposes both ownership commands through the generated command ABI", () => {
     const codec = new CallData([...Object.values(schema.types), ...schema.domains.season.entrypoints]);
-    for (const kind of ["TransferStructureOwnership", "TransferAgentOwnership"]) {
+    for (const kind of ["TransferStructureOwnership"]) {
       const command = new CairoCustomEnum({ [kind]: { entity_id: 3, new_owner: "0x456" } });
       const values = codec.compile("command_commitment", { command });
       expect(values.slice(1)).toEqual(["3", "1110"]);

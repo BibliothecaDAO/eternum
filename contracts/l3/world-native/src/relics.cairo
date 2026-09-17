@@ -423,11 +423,7 @@ pub mod RelicState {
                     .authorized_explorer(ExplorerKey { game_id, explorer_id: command.entity_id }, actor);
                 IRelicTroopsDispatcher { contract_address: peers.troops }
                     .apply_troop_relic(game_id, actor, command, rule, timestamp);
-                if explorer.owner == crate::troops::AGENT_HOME {
-                    command.entity_id
-                } else {
-                    explorer.owner
-                }
+                explorer.owner
             } else {
                 let key = ResourceKey { game_id, entity_id: command.entity_id };
                 assert!(

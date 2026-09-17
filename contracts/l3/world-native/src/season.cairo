@@ -15,7 +15,6 @@ pub trait IGameplayKey<T> {
 
 #[starknet::interface]
 pub trait ISeason<T> {
-    fn set_agent_controller(ref self: T, address: ContractAddress);
     fn set_authentication(
         ref self: T, submitter: ContractAddress, registry: ContractAddress, approved_account_class: ClassHash,
     );
@@ -72,7 +71,6 @@ pub mod SeasonDomain {
         games: GameState::Storage,
         #[substorage(v0)]
         recording: RecordedState::Storage,
-        agent_controller: ContractAddress,
         #[substorage(v0)]
         upgrades: UpgradeState::Storage,
     }
@@ -226,19 +224,6 @@ pub mod SeasonDomain {
 
     #[abi(embed_v0)]
     impl Season of super::ISeason<ContractState> {
-        fn set_agent_controller(ref self: ContractState, address: ContractAddress) {
-            assert!(get_caller_address() == self.lifecycle.domain_state().authority, "only domain authority");
-            self.agent_controller.write(address);
-            self
-                .emit(
-                    RowSet {
-                        version: 1,
-                        model: 'AgentController',
-                        keys: array![get_contract_address().into()].span(),
-                        values: array![address.into()].span(),
-                    },
-                );
-        }
         fn set_authentication(
             ref self: ContractState,
             submitter: ContractAddress,
@@ -328,9 +313,7 @@ pub mod SeasonDomain {
         fn ownership_rules_ready(self: @ContractState, game_id: u32) -> bool {
             self.games.ownership_rules_ready.read(game_id)
         }
-        fn agent_controller(self: @ContractState) -> ContractAddress {
-            self.agent_controller.read()
-        }
+
         fn register_relic_points(ref self: ContractState, game_id: u32, actor: ContractAddress) {
             assert!(get_caller_address() == self.lifecycle.require_active().economy, "only economy domain");
             let points = self.games.rules(game_id).victory_points_grant_config.relic_open_points;
@@ -716,10 +699,6 @@ pub mod SeasonDomain {
                 value.serialize(ref calldata);
                 (peers.economy, selector!("set_construction_access"))
             },
-            Command::CheckpointHyperstructures(value) => {
-                value.serialize(ref calldata);
-                (peers.economy, selector!("checkpoint_hyperstructures"))
-            },
             Command::ExtractExplorationReward(value) => {
                 value.serialize(ref calldata);
                 (peers.map, selector!("extract_exploration_reward"))
@@ -763,10 +742,6 @@ pub mod SeasonDomain {
             Command::TransferStructureOwnership(value) => {
                 value.serialize(ref calldata);
                 (peers.structures, selector!("transfer_structure_ownership"))
-            },
-            Command::TransferAgentOwnership(value) => {
-                value.serialize(ref calldata);
-                (peers.troops, selector!("transfer_agent_ownership"))
             },
             Command::SetAddressName(value) => {
                 value.serialize(ref calldata);

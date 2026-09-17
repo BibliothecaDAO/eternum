@@ -47,49 +47,48 @@ describe("native bindings in the shared game client", () => {
     expect(() => store.require("ResourceRule", { game_id: 1, resource_type: 25 })).toThrow("not synchronized");
   });
   it.each([
-    ["contribute_labor", [9, 100], [34, 9, 100]],
-    ["close_bitcoin_phase", [42], [35, 42]],
-    ["bind_bitcoin_phase", [42], [36, 42]],
-    ["claim_phase_reward", [42, 2, 7, 8], [37, 42, 2, 7, 8]],
-    ["settle_season", [65, 1], [14, 65, 1]],
-    ["settle_season", [65, 0, 8000], [14, 65, 0, 8000]],
-    ["settle_village", [7, 9], [15, 7, 9]],
-    ["settle_blitz", [65, 0, 0, 0, 1], [11, 65, 0, 0, 0, 1]],
-    ["settle_blitz", [65, 777, 42, 1, 1, 273, 99, 0], [11, 65, 777, 42, 1, 1, 273, 99, 0]],
-    ["guard_add", [9, 2, 2, 1, 100], [77, 0, 9, 2, 2, 1, 100]],
-    ["guard_delete", [9, 2], [77, 1, 9, 2]],
-    ["explorer_add", [7, 100, 3], [77, 2, 7, 100]],
-    ["explorer_delete", [7], [77, 3, 7]],
-    ["explorer_explorer_swap", [7, 8, 3, 100], [77, 4, 0, 7, 0, 8, 100]],
-    ["explorer_guard_swap", [7, 9, 3, 2, 100], [77, 4, 0, 7, 1, 9, 2, 100]],
-    ["guard_explorer_swap", [9, 2, 7, 3, 100], [77, 4, 1, 9, 2, 0, 7, 100]],
+    ["contribute_labor", [9, 100], [33, 9, 100]],
+    ["close_bitcoin_phase", [42], [34, 42]],
+    ["bind_bitcoin_phase", [42], [35, 42]],
+    ["claim_phase_reward", [42, 2, 7, 8], [36, 42, 2, 7, 8]],
+    ["settle_season", [65, 1], [13, 65, 1]],
+    ["settle_season", [65, 0, 8000], [13, 65, 0, 8000]],
+    ["settle_village", [7, 9], [14, 7, 9]],
+    ["settle_blitz", [65, 0, 0, 0, 1], [10, 65, 0, 0, 0, 1]],
+    ["settle_blitz", [65, 777, 42, 1, 1, 273, 99, 0], [10, 65, 777, 42, 1, 1, 273, 99, 0]],
+    ["guard_add", [9, 2, 2, 1, 100], [75, 0, 9, 2, 2, 1, 100]],
+    ["guard_delete", [9, 2], [75, 1, 9, 2]],
+    ["explorer_add", [7, 100, 3], [75, 2, 7, 100]],
+    ["explorer_delete", [7], [75, 3, 7]],
+    ["explorer_explorer_swap", [7, 8, 3, 100], [75, 4, 0, 7, 0, 8, 100]],
+    ["explorer_guard_swap", [7, 9, 3, 2, 100], [75, 4, 0, 7, 1, 9, 2, 100]],
+    ["guard_explorer_swap", [9, 2, 7, 3, 100], [75, 4, 1, 9, 2, 0, 7, 100]],
     ["attack_explorer_vs_explorer", [7, 8, 2, 1, 100, 2, 200], [3, 7, 8, 2, 1, 100, 2, 200]],
-    ["attack_explorer_vs_guard", [7, 9], [38, 7, 9]],
-    ["attack_guard_vs_explorer", [9, 2, 7], [78, 9, 2, 7]],
-    ["raid_explorer_vs_guard", [7, 9, 3, 1, 1, 100], [79, 7, 9, 1, 1, 100]],
-    ["explorer_extract_reward", [7], [54, 7]],
-    ["create_order", [9, 0, 1, 2, 100, 5, 200, 999], [39, 9, 0, 1, 2, 100, 200, 5, 999]],
-    ["accept_order", [9, 10, 2], [40, 10, 9, 2]],
-    ["cancel_order", [10], [41, 10]],
-    ["buy", [11, 9, 2, 100], [43, 11, 9, 2, 100]],
-    ["sell", [11, 9, 2, 100], [44, 11, 9, 2, 100]],
-    ["add", [11, 9, 2, 100, 200], [45, 11, 9, 2, 100, 200]],
-    ["remove", [11, 9, 2, 100], [46, 11, 9, 2, 100]],
-    ["initialize", [12], [47, 12]],
-    ["allocate_shares", [12, 2, 273, 6000, 274, 4000], [49, 12, 2, 273, 6000, 274, 4000]],
-    ["update_construction_access", [12, 2], [50, 12, 2]],
-    ["open_chest", [7, 1, 10, 11], [52, 7, 1, 10, 11]],
-    ["apply_relic", [7, 39, 0], [53, 7, 39, 0]],
-    ["checkpoint_hyperstructures", [2, 7, 8], [51, 2, 7, 8]],
-    ["rank_players", [123, 2, 2, 273, 274], [67, 123, 2, 2, 273, 274]],
-    ["season_close", [], [55]],
-    ["pledge_faith", [9, 12], [56, 9, 12]],
-    ["remove_faith", [9], [57, 9]],
-    ["update_wonder_ownership", [12], [58, 12]],
-    ["update_structure_ownership", [9], [59, 9]],
-    ["burn_research_for_relic", [9], [69, 9]],
-    ["leave_guild", [], [72]],
-    ["remove_member", [273], [74, 273]],
+    ["attack_explorer_vs_guard", [7, 9], [37, 7, 9]],
+    ["attack_guard_vs_explorer", [9, 2, 7], [76, 9, 2, 7]],
+    ["raid_explorer_vs_guard", [7, 9, 3, 1, 1, 100], [77, 7, 9, 1, 1, 100]],
+    ["explorer_extract_reward", [7], [52, 7]],
+    ["create_order", [9, 0, 1, 2, 100, 5, 200, 999], [38, 9, 0, 1, 2, 100, 200, 5, 999]],
+    ["accept_order", [9, 10, 2], [39, 10, 9, 2]],
+    ["cancel_order", [10], [40, 10]],
+    ["buy", [11, 9, 2, 100], [42, 11, 9, 2, 100]],
+    ["sell", [11, 9, 2, 100], [43, 11, 9, 2, 100]],
+    ["add", [11, 9, 2, 100, 200], [44, 11, 9, 2, 100, 200]],
+    ["remove", [11, 9, 2, 100], [45, 11, 9, 2, 100]],
+    ["initialize", [12], [46, 12]],
+    ["allocate_shares", [12, 2, 273, 6000, 274, 4000], [48, 12, 2, 273, 6000, 274, 4000]],
+    ["update_construction_access", [12, 2], [49, 12, 2]],
+    ["open_chest", [7, 1, 10, 11], [50, 7, 1, 10, 11]],
+    ["apply_relic", [7, 39, 0], [51, 7, 39, 0]],
+    ["rank_players", [123, 2, 2, 273, 274], [65, 123, 2, 2, 273, 274]],
+    ["season_close", [], [53]],
+    ["pledge_faith", [9, 12], [54, 9, 12]],
+    ["remove_faith", [9], [55, 9]],
+    ["update_wonder_ownership", [12], [56, 12]],
+    ["update_structure_ownership", [9], [57, 9]],
+    ["burn_research_for_relic", [9], [67, 9]],
+    ["leave_guild", [], [70]],
+    ["remove_member", [273], [72, 273]],
   ])("encodes %s as a single signed native command", async (entrypoint, fields, expected) => {
     const { store, write } = await fixture();
     write("SliceRules", [1n], { ...preset.rules, game_id: 1 });
@@ -219,7 +218,7 @@ describe("native bindings in the shared game client", () => {
         .at(-1)![0]
         .intent.map((felt) => BigInt(felt).toString())
         .slice(12, 16),
-    ).toEqual(["3", "8", "9", "2748"]);
+    ).toEqual(["3", "7", "9", "2748"]);
     await expect(
       send({ address: "0x789" } as AccountInterface, {
         contractAddress: "0x101",
@@ -233,16 +232,16 @@ describe("native bindings in the shared game client", () => {
         .at(-1)![0]
         .intent.map((felt) => BigInt(felt).toString())
         .slice(12, 15),
-    ).toEqual(["2", "9", "9"]);
+    ).toEqual(["2", "8", "9"]);
     for (const [entrypoint, variant, fields] of [
-      ["approve", "17", [9, 12]],
-      ["structure_burn", "18", [9]],
-      ["troop_burn", "20", [7]],
-      ["troop_troop_adjacent_transfer", "21", [7, 8]],
-      ["structure_troop_adjacent_transfer", "22", [9, 7]],
-      ["send", "24", [9, 12]],
-      ["pickup", "25", [12, 9]],
-      ["troop_structure_adjacent_transfer", "26", [7, 9]],
+      ["approve", "16", [9, 12]],
+      ["structure_burn", "17", [9]],
+      ["troop_burn", "19", [7]],
+      ["troop_troop_adjacent_transfer", "20", [7, 8]],
+      ["structure_troop_adjacent_transfer", "21", [9, 7]],
+      ["send", "23", [9, 12]],
+      ["pickup", "24", [12, 9]],
+      ["troop_structure_adjacent_transfer", "25", [7, 9]],
     ] as const) {
       await send(actor, {
         contractAddress: "0x101",
@@ -273,18 +272,18 @@ describe("native bindings in the shared game client", () => {
         .at(-1)![0]
         .intent.map((felt) => BigInt(felt).toString())
         .slice(12, 18),
-    ).toEqual(["5", "23", "9", "4", "48", "255"]);
+    ).toEqual(["5", "22", "9", "4", "48", "255"]);
     await send(actor, { contractAddress: "0x101", entrypoint: "structure_regularize_weight", calldata: [1, 2, 9, 12] });
     expect(
       submit.mock.calls
         .at(-1)![0]
         .intent.map((felt) => BigInt(felt).toString())
         .slice(12, 17),
-    ).toEqual(["4", "19", "2", "9", "12"]);
+    ).toEqual(["4", "18", "2", "9", "12"]);
     for (const [entrypoint, variant, amountsFirst] of [
-      ["burn_resource_for_labor_production", "27", false],
-      ["burn_labor_for_resource_production", "28", true],
-      ["burn_resource_for_resource_production", "29", false],
+      ["burn_resource_for_labor_production", "26", false],
+      ["burn_labor_for_resource_production", "27", true],
+      ["burn_resource_for_resource_production", "28", false],
     ] as const) {
       const types = [26, 34];
       const amounts = [1, "340282366920938463463374607431768211455"];
@@ -320,12 +319,12 @@ describe("native bindings in the shared game client", () => {
           .at(-1)![0]
           .intent.map((felt) => BigInt(felt).toString())
           .slice(12, 20),
-      ).toEqual(["7", "30", "9", "2", "0", "1", "37", simple ? "1" : "0"]);
+      ).toEqual(["7", "29", "9", "2", "0", "1", "37", simple ? "1" : "0"]);
     }
     for (const [entrypoint, variant] of [
-      ["destroy_building", "31"],
-      ["pause_building_production", "32"],
-      ["resume_building_production", "33"],
+      ["destroy_building", "30"],
+      ["pause_building_production", "31"],
+      ["resume_building_production", "32"],
     ] as const) {
       await send(actor, { contractAddress: "0x101", entrypoint, calldata: [1, 9, "0x0", 11, 10] });
       expect(
@@ -358,10 +357,7 @@ describe("native bindings in the shared game client", () => {
       ).rejects.toThrow("resource list length");
     }
     expect(submit).toHaveBeenCalledTimes(submitted);
-    for (const [entrypoint, variant] of [
-      ["transfer_structure_ownership", "6"],
-      ["transfer_agent_ownership", "7"],
-    ]) {
+    for (const [entrypoint, variant] of [["transfer_structure_ownership", "6"]]) {
       await send(actor, { contractAddress: "0x101", entrypoint, calldata: [1, 9, "0x456"] });
       const encoded = submit.mock.calls.at(-1)![0].intent.map((felt) => BigInt(felt).toString());
       expect(encoded.slice(12, 16)).toEqual(["3", variant, "9", "1110"]);

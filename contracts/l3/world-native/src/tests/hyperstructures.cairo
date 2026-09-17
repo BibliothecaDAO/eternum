@@ -164,13 +164,10 @@ fn shares_checkpoint_old_owners_before_reallocation_and_stop_at_game_end() {
         ),
     );
     assert_eq!(points(deployment, deployment.actor) - old, 50000);
-    assert!(execute(deployment, Command::CheckpointHyperstructures(array![hyper.entity_id].span()), 500));
+    checkpoint(deployment, 500);
     assert_eq!(points(deployment, deployment.actor) - old, 75000);
     assert_eq!(points(deployment, other), 75000);
     assert_eq!(view(deployment).hyperstructure_shares(hyper).start_at, 200);
-    assert_terminal_rejection(
-        deployment, Command::CheckpointHyperstructures(array![hyper.entity_id, hyper.entity_id].span()), 600,
-    );
     assert_eq!(points(deployment, other), 75000);
 }
 #[test]
@@ -274,9 +271,7 @@ fn only_authority_configures_and_only_domains_create_or_mutate_hyperstructures()
     assert!(safe.configure_hyperstructures(1, rules()).is_err());
     assert!(safe.record_hyperstructure(ResourceKey { game_id: 3, entity_id: 999 }, 1, false).is_err());
     assert!(safe.initialize_hyperstructure(3, deployment.actor, hyper.entity_id, super::context()).is_err());
-    assert!(
-        safe.checkpoint_hyperstructures(3, deployment.actor, array![hyper.entity_id].span(), super::context()).is_err(),
-    );
+    assert!(safe.settle_completed_hyperstructures(3, super::context().timestamp).is_err());
     start_cheat_caller_address(deployment.peers.economy, super::authority());
     assert!(safe.configure_hyperstructures(3, rules()).is_err());
     assert!(safe.configure_hyperstructures(1, HyperstructureRules { resources: array![].span(), ..rules() }).is_err());
@@ -377,7 +372,7 @@ fn blitz_multiplier_counts_realms_in_the_configured_geometry_and_preserves_old_r
     assert!(execute(deployment, allocate(hyper, array![Share { player: deployment.actor, bps: 10000 }].span()), 60));
     assert_eq!(points(deployment, deployment.actor), before);
     assert_eq!(view(deployment).hyperstructure_shares(hyper).multiplier, 1);
-    assert!(execute(deployment, Command::CheckpointHyperstructures(array![hyper.entity_id].span()), 70));
+    checkpoint(deployment, 70);
     assert_eq!(points(deployment, deployment.actor) - before, 10000);
     assert_eq!(crate::settlement_grid::hyperstructure_scan_distance(2, crate::settlement::SettlementMode::Single), 10);
     assert_eq!(crate::settlement_grid::hyperstructure_scan_distance(1, crate::settlement::SettlementMode::Triple), 6);
@@ -398,7 +393,7 @@ fn duplicate_shareholders_reject_without_changing_allocation_or_accrued_points()
     );
     assert_eq!(view(deployment).hyperstructure_shares(hyper), initial);
     assert_eq!(points(deployment, deployment.actor), before);
-    assert!(execute(deployment, Command::CheckpointHyperstructures(array![hyper.entity_id].span()), 70));
+    checkpoint(deployment, 70);
     assert_eq!(points(deployment, deployment.actor) - before, 20000);
 }
 
@@ -435,4 +430,11 @@ fn insufficient_shards_or_a_later_resource_leave_construction_unchanged() {
         0,
     );
     assert_eq!(view(deployment).hyperstructure(hyper).unwrap().stage, Stage::Construction);
+}
+
+pub fn checkpoint(deployment: super::Deployment, timestamp: u64) {
+    snforge_std::start_cheat_block_timestamp(deployment.peers.economy, timestamp);
+    start_cheat_caller_address(deployment.peers.economy, deployment.peers.season);
+    assert!(view(deployment).settle_completed_hyperstructures(3, timestamp));
+    stop_cheat_caller_address(deployment.peers.economy);
 }

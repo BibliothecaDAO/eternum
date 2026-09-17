@@ -53,7 +53,6 @@ export interface ArmyData {
   color: string;
   category: TroopType;
   tier: TroopTier;
-  isDaydreamsAgent: boolean;
   cosmeticId?: string;
   cosmeticAssetPaths?: string[];
   usesFallbackCosmeticSkin?: boolean;

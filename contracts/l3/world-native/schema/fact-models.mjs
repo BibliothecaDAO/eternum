@@ -80,14 +80,6 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
       [{ name: "operator", type: method("registry", "ledger_operator").outputs[0].type }],
       "address",
     ),
-    model("AgentRules", ["troops"], "game", method("troops", "agent_rules").inputs, struct("agents::AgentRules")),
-    model(
-      "AgentDiscoveryStats",
-      ["troops"],
-      "game",
-      method("troops", "agent_discovery_stats").inputs,
-      struct("agents::AgentDiscoveryStats"),
-    ),
     model("CampResources", ["structures"], "game", method("structures", "camp_resources").inputs, [
       { name: "resources", type: "core::array::Span::<world_native::resources::ResourceAmount>" },
     ]),
@@ -208,13 +200,6 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
       struct("realms::RealmTraits"),
     ),
     model("RealmCatalogue", ["settlement"], "deployment", domainKey, struct("realms::RealmCatalogue"), "address"),
-    model(
-      "AgentPopulation",
-      ["troops"],
-      "game",
-      method("troops", "agent_population").inputs,
-      struct("troops::AgentPopulation"),
-    ),
     model(
       "RealmGrants",
       ["settlement"],
@@ -362,9 +347,6 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
       method("structures", "address_name").inputs,
       struct("names::AddressName"),
     ),
-    model("AgentOwner", ["troops"], "game", method("troops", "agent_owner").inputs, [
-      { name: "address", type: method("troops", "agent_owner").outputs[0].type },
-    ]),
     ...["WonderFaith", "FaithfulStructure"].map((name) =>
       model(
         name,
@@ -444,14 +426,6 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
     model("OwnershipRulesReady", ["season"], "game", method("season", "ownership_rules_ready").inputs, [
       { name: "ready", type: "core::bool" },
     ]),
-    model(
-      "AgentController",
-      ["season"],
-      "deployment",
-      domainKey,
-      [{ name: "controller", type: method("season", "set_agent_controller").inputs[0].type }],
-      "address",
-    ),
     model("ActionNonce", ["season"], "game", method("season", "next_nonce").inputs, [
       { name: "next_nonce", type: method("season", "next_nonce").outputs[0].type },
     ]),
@@ -516,7 +490,6 @@ const behaviouralFacts = {
   ResourceWeight: { domain: "resources", fields: { capacity: "capacity", weight: "weight" } },
   ResourceAllowance: { domain: "resources", fields: { amount: "amount" } },
   ResourceArrival: { domain: "resources", fields: { resources: "resources" } },
-  AgentPopulation: { domain: "troops", fields: { active: "count" } },
   EntryEntitlement: {
     domain: "blitz-settlement",
     fields: {
@@ -609,7 +582,6 @@ const behaviouralFacts = {
       resourceTraits: "resources_packed",
     },
   },
-  AgentOwner: { domain: "ownership", fields: { owner: "address" } },
   WonderFaith: {
     domain: "faith",
     fields: {

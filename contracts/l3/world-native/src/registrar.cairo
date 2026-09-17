@@ -181,7 +181,7 @@ pub mod RegistrarState {
             let peers = get_dep_component!(@self, Life).require_active();
             self.validate_game(params, definition);
             let game_id = self.next_game.read();
-            assert!(game_id != 0 && game_id < crate::troops::AGENT_HOME, "game identity space exhausted");
+            assert!(game_id != 0 && game_id < 0xffffffff, "game identity space exhausted");
             self.reserve_series(params);
             let game = build_game(params, get_caller_address());
             let rules = game_rules(game_id, params, definition.rules);

@@ -49,10 +49,6 @@ vi.mock("../../../env", () => ({
   },
 }));
 
-vi.mock("@/utils/agent", () => ({
-  getCharacterModel: vi.fn(() => null),
-}));
-
 vi.mock("@/three/utils/utils", () => ({
   gltfLoader: {
     load: vi.fn(),

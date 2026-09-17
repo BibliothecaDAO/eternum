@@ -25,7 +25,6 @@ const baseArmy = {
   color: "#ffffff",
   category: TroopType.Knight,
   tier: TroopTier.T1,
-  isDaydreamsAgent: false,
   troopCount: 12,
   currentStamina: 8,
   maxStamina: 10,
@@ -73,6 +72,5 @@ describe("compact entity label policy", () => {
     expect(resolveCompactEntityLabelVariant({ isMine: true, isAlly: false })).toBe("mine");
     expect(resolveCompactEntityLabelVariant({ isMine: false, isAlly: true })).toBe("ally");
     expect(resolveCompactEntityLabelVariant({ isMine: false, isAlly: false })).toBe("enemy");
-    expect(resolveCompactEntityLabelVariant({ isMine: false, isAlly: false, isDaydreamsAgent: true })).toBe("agent");
   });
 });

@@ -37,6 +37,24 @@ fn prepare() -> ContractAddress {
 }
 
 fn prepare_with_resources(grant_override: Option<Span<world_native::resources::ResourceAmount>>) -> ContractAddress {
+    let season = prepare_without_entitlement(grant_override);
+    let peers = IDomainDispatcher { contract_address: season }.domain_state().peers;
+    start_cheat_caller_address(peers.registry, 222.try_into().unwrap());
+    ILedgerOperatorDispatcher { contract_address: peers.registry }.set_ledger_operator(222.try_into().unwrap());
+    stop_cheat_caller_address(peers.registry);
+    start_cheat_caller_address(peers.settlement, 222.try_into().unwrap());
+    ISettlementEntryDispatcher { contract_address: peers.settlement }
+        .register_entitlement(
+            EntryKey { game_id: 8, owner: 123.try_into().unwrap() },
+            EntryEntitlement { realm_id: 1, metadata_1: 0, metadata_2: 0, metadata_3: 0, pass_kind: 1 },
+        );
+    stop_cheat_caller_address(peers.settlement);
+    season
+}
+
+fn prepare_without_entitlement(
+    grant_override: Option<Span<world_native::resources::ResourceAmount>>,
+) -> ContractAddress {
     let season = setup();
     let peers = IDomainDispatcher { contract_address: season }.domain_state().peers;
     let input = read_txt(@FileTrait::new("tests/fixtures/preset-1.txt"));
@@ -182,7 +200,7 @@ fn accepted_settlement_keeps_recorded_cosmetics_and_time_after_game_end() {
 
 #[test]
 fn settlement_uses_the_bound_wallet_and_cannot_spend_another_owners_entitlement() {
-    let season = prepare();
+    let season = prepare_without_entitlement(None);
     let peers = IDomainDispatcher { contract_address: season }.domain_state().peers;
     start_cheat_caller_address(peers.registry, 222.try_into().unwrap());
     ILedgerOperatorDispatcher { contract_address: peers.registry }.set_ledger_operator(222.try_into().unwrap());

@@ -34,7 +34,6 @@ export type ExplorerTroopsTileSystemUpdate = {
   hexCoords: HexPosition;
   troopType: TroopType;
   troopTier: TroopTier;
-  isDaydreamsAgent: boolean;
   removed?: boolean;
   // Live presentation facts derived from RECS
   ownerName: string;

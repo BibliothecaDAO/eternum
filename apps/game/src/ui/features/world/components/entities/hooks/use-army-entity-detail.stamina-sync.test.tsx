@@ -23,7 +23,6 @@ vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
 vi.mock("@/config/game-modes/use-game-mode-config", () => ({
   useGameModeConfig: () => ({ structure: { getName: () => ({ name: "Field Deployment" }) } }),
 }));
-vi.mock("@/utils/agent", () => ({ getCharacterName: () => "Knight" }));
 vi.mock("@bibliothecadao/eternum", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@bibliothecadao/eternum")>()),
   configManager: { getTick: () => 10, getActiveGameId: () => 1 },

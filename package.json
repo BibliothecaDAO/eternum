@@ -109,13 +109,6 @@
   },
   "dependencies": {
     "@bibliothecadao/types": "workspace:*",
-    "@dojoengine/react": "catalog:game",
-    "@dojoengine/recs": "catalog:game",
-    "@dojoengine/sdk": "catalog:game",
-    "@dojoengine/state": "catalog:game",
-    "@dojoengine/torii-client": "catalog:game",
-    "@dojoengine/torii-wasm": "catalog:game",
-    "@dojoengine/utils": "catalog:game",
     "colors": "^1.4.0",
     "dotenv": "^16.4.7",
     "eventemitter3": "^5.0.1",

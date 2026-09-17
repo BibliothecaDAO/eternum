@@ -28,10 +28,6 @@ fn damage_config() -> TroopDamageConfig {
         t3_damage_multiplier: 129127208515966861312, // 7
         damage_biome_bonus_num: 3_000, // 30%
         damage_scaling_factor: 55340232221128654848, // 3
-        damage_beta_small: 4611686018427387904, // 0.25
-        damage_beta_large: 2213609288845146193, // 0.12
-        damage_c0: 100_000 * FixedTrait::ONE().mag,
-        damage_delta: 50_000 * FixedTrait::ONE().mag,
         damage_raid_percent_num: 5,
     }
 }

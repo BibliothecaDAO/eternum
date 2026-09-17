@@ -85,8 +85,8 @@ pub mod SettlementDomain {
                 assert!(game.dev_mode_on, "development mode required");
                 self.settlements.record_entry(key, actor);
             } else {
-                let requires_ledger = self.ledger_operator().is_non_zero();
-                self.settlements.reserve_entry(key, actor, requires_ledger);
+                let requires_entitlement = !self.games().game(game_id).dev_mode_on;
+                self.settlements.reserve_entry(key, actor, requires_entitlement);
             }
             let mut root = context.raw_root;
             let seed = crate::random::game_root(ref root, game_id, game.seed);
@@ -234,8 +234,8 @@ pub mod SettlementDomain {
             let owner = self.bound_owner(actor);
             self.validate_registration(game_id, command.name, context.timestamp);
             assert!(!self.settlements.entered_players.read((game_id, actor)), "player already settled");
-            let requires_ledger = self.ledger_operator().is_non_zero();
-            self.settlements.reserve_entry(EntryKey { game_id, owner: owner }, actor, requires_ledger);
+            let requires_entitlement = !self.games().game(game_id).dev_mode_on;
+            self.settlements.reserve_entry(EntryKey { game_id, owner: owner }, actor, requires_entitlement);
             self
                 .settlements
                 .store_cosmetics(

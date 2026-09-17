@@ -174,7 +174,6 @@ function buildMines(config: Config) {
           { kind: 1, weight: 1 },
           { kind: 2, weight: 1 },
         ],
-    ethereal_mines: [],
   };
 }
 
@@ -298,12 +297,7 @@ export function buildNativePreset(config: Config, tokens: Array<{ resource_type:
     structures: buildStructures(config),
     settlement: buildSettlement(config),
     economy: buildEconomy(config, tokens),
-    agents: {
-      max_lifetime_count: config.agent.max_lifetime_count,
-      max_current_count: config.agent.max_current_count,
-      min_spawn_lords: config.agent.min_spawn_lords_amount,
-      max_spawn_lords: config.agent.max_spawn_lords_amount,
-    },
+
     exploration: config.blitz.mode.on
       ? config.blitz.exploration.rewards.map(({ rewardId, amount, probabilityBps }) => ({
           resource_type: rewardId,

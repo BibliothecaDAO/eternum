@@ -8,7 +8,6 @@ pub struct ResourcePreset {
     pub production: Span<crate::production::RecipeConfig>,
     pub mine_kinds: Span<crate::mines::MineKindEntry>,
     pub surface_mines: Span<crate::mines::MineWeight>,
-    pub ethereal_mines: Span<crate::mines::MineWeight>,
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct StructurePreset {
@@ -50,7 +49,6 @@ pub struct PresetDefinition {
     pub structures: StructurePreset,
     pub settlement: SettlementPreset,
     pub economy: EconomyPreset,
-    pub agents: crate::agents::AgentRules,
     pub exploration: Span<crate::exploration_rewards::ExplorationReward>,
     pub season_win_points: u128,
     pub faith_reward_token: ContractAddress,
@@ -83,7 +81,6 @@ fn configure_resources(address: ContractAddress, game_id: u32, preset: ResourceP
         game_id,
         preset.mine_kinds,
         preset.surface_mines,
-        preset.ethereal_mines,
     );
 }
 fn configure_structures(peers: Peers, game_id: u32, preset: StructurePreset) {
@@ -162,9 +159,6 @@ fn configure_economy(peers: Peers, game_id: u32, preset: EconomyPreset) {
     }
 }
 fn configure_season(peers: Peers, game_id: u32, preset: PresetDefinition) {
-    crate::agents::IAgentsDispatcherTrait::configure_agents(
-        crate::agents::IAgentsDispatcher { contract_address: peers.troops }, game_id, preset.agents,
-    );
     crate::game::ISeasonLifecycleDispatcherTrait::configure_season_win(
         crate::game::ISeasonLifecycleDispatcher { contract_address: peers.season }, game_id, preset.season_win_points,
     );
