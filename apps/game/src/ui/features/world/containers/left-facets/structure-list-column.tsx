@@ -13,7 +13,7 @@ import {
 } from "@/ui/features/world/containers/left-facets/structure-category-filter";
 import { filterStructures, sortStructures } from "@/ui/features/world/containers/structure-list-utils";
 import { Position } from "@bibliothecadao/eternum";
-import { useDojo, useQuery } from "@bibliothecadao/react";
+import { useGame, useQuery } from "@bibliothecadao/react";
 import { type ID } from "@bibliothecadao/types";
 import { memo, useCallback, useMemo } from "react";
 
@@ -28,8 +28,8 @@ import { memo, useCallback, useMemo } from "react";
  * full realm rows before scrolling for larger empires.
  */
 export const StructureListColumn = memo(() => {
-  const { setup } = useDojo();
-  const components = setup.components;
+  const { setup } = useGame();
+  const store = setup.store;
   const { isMapView } = useQuery();
 
   const structureEntityId = useUIStore((state) => state.structureEntityId);
@@ -44,7 +44,7 @@ export const StructureListColumn = memo(() => {
 
   const allStructures = useStructuresWithMetadata({
     structures: playerStructures,
-    components,
+    store,
     nameUpdateVersion: structureNameVersion,
   });
 

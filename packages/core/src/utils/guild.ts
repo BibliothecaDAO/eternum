@@ -1,88 +1,74 @@
-import type { ClientComponents, ContractAddress, GuildInfo, GuildMemberInfo } from "@bibliothecadao/types";
-
-import { type Entity, getComponentValue } from "@dojoengine/recs";
+import type { ContractAddress, GuildInfo, GuildMemberInfo } from "@bibliothecadao/types";
 import { shortString } from "starknet";
-import { getAddressName } from "./entities";
-import { gameEntityKey } from "../managers/config-manager";
+import type { NativeFactStore } from "../client/native-fact-store";
+import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { configManager } from "../managers/config-manager";
+import { displayPlayerName, getAddressName } from "./entities";
 
 export const formatGuilds = (
-  guilds: Entity[],
+  guilds: Iterable<NativeRows["Guild"]>,
   playerAddress: ContractAddress,
-  components: ClientComponents,
+  store: NativeFactStore,
 ): GuildInfo[] => {
-  const guildMember = getComponentValue(components.GuildMember, gameEntityKey([playerAddress]));
-
-  return guilds
-    .map((guild_entity_id) => {
-      const guild = getComponentValue(components.Guild, guild_entity_id);
-      if (!guild) {
-        return;
-      }
-
-      return {
-        // guild id is address of the owner
-        entityId: guild.guild_id,
-        name: shortString.decodeShortString(guild.name.toString()),
-        isOwner: guild.guild_id === playerAddress,
-        memberCount: guild.member_count,
-        isPublic: guild.public,
-        isMember: guild.guild_id === guildMember?.guild_id,
-      };
-    })
-    .filter((guild): guild is NonNullable<typeof guild> => guild !== undefined);
+  const game = configManager.getActiveGameId();
+  const member = store.get("GuildMember", { game_id: game, actor: playerAddress });
+  const members = [...store.inGame("GuildMember", game)];
+  return [...guilds].map((guild) => ({
+    entityId: guild.guild_id,
+    name: shortString.decodeShortString(guild.name.toString()),
+    isOwner: guild.guild_id === playerAddress,
+    isPublic: guild.public,
+    isMember: guild.guild_id === member?.guild_id,
+    memberCount: members.filter((row) => row.guild_id === guild.guild_id).length,
+  }));
 };
 
 export const getGuild = (
   guildEntityId: ContractAddress,
   playerAddress: ContractAddress,
-  components: ClientComponents,
+  store: NativeFactStore,
 ): GuildInfo | undefined => {
-  return formatGuilds([gameEntityKey([BigInt(guildEntityId)])], playerAddress, components)[0];
+  const guild = store.get("Guild", { game_id: configManager.getActiveGameId(), guild_id: guildEntityId });
+  return guild ? formatGuilds([guild], playerAddress, store)[0] : undefined;
 };
 
 export const formatGuildMembers = (
-  guildMembers: Entity[],
+  members: Iterable<NativeRows["GuildMember"]>,
   playerAddress: ContractAddress,
-  components: ClientComponents,
-): GuildMemberInfo[] => {
-  return guildMembers
-    .map((entity) => {
-      const guildMember = getComponentValue(components.GuildMember, entity);
-      if (!guildMember) return;
+  store: NativeFactStore,
+): GuildMemberInfo[] =>
+  [...members].map((member) => ({
+    address: member.actor,
+    guildEntityId: member.guild_id,
+    name: displayPlayerName(member.actor, getAddressName(member.actor, store)),
+    isUser: member.actor === playerAddress,
+    isGuildMaster: member.actor === member.guild_id,
+  }));
 
-      const addressName = getAddressName(guildMember.member, components);
-
-      return {
-        address: guildMember.member,
-        guildEntityId: Number(guildMember.guild_id),
-        name: addressName ? addressName : "Unknown",
-        isUser: guildMember.member === playerAddress,
-        isGuildMaster: BigInt(guildMember.member) === BigInt(guildMember.guild_id),
-      };
-    })
-    .filter((guildMember): guildMember is NonNullable<typeof guildMember> => guildMember !== undefined);
-};
-
-export const getGuildMember = (
-  playerAddress: ContractAddress,
-  components: ClientComponents,
-): GuildMemberInfo | undefined => {
-  return formatGuildMembers([gameEntityKey([playerAddress])], playerAddress, components)[0];
+export const getGuildMember = (playerAddress: ContractAddress, store: NativeFactStore): GuildMemberInfo | undefined => {
+  const member = store.get("GuildMember", { game_id: configManager.getActiveGameId(), actor: playerAddress });
+  return member ? formatGuildMembers([member], playerAddress, store)[0] : undefined;
 };
 
 export const getGuildFromPlayerAddress = (
   playerAddress: ContractAddress,
-  components: ClientComponents,
+  store: NativeFactStore,
 ): GuildInfo | undefined => {
-  const guildMember = getComponentValue(components.GuildMember, gameEntityKey([playerAddress]));
-  if (!guildMember) return;
-
-  return getGuild(guildMember.guild_id, playerAddress, components);
+  const member = store.get("GuildMember", { game_id: configManager.getActiveGameId(), actor: playerAddress });
+  return member ? getGuild(member.guild_id, playerAddress, store) : undefined;
 };
 
-export const getGuildMembersFromPlayerAddress = (playerAddress: ContractAddress, components: ClientComponents) => {
-  const guildMember = getComponentValue(components.GuildMember, gameEntityKey([playerAddress]));
-  if (!guildMember) return;
-
-  return formatGuildMembers([gameEntityKey([BigInt(guildMember.guild_id)])], playerAddress, components);
+export const getGuildMembersFromPlayerAddress = (
+  playerAddress: ContractAddress,
+  store: NativeFactStore,
+): GuildMemberInfo[] => {
+  const game = configManager.getActiveGameId();
+  const member = store.get("GuildMember", { game_id: game, actor: playerAddress });
+  return member
+    ? formatGuildMembers(
+        [...store.inGame("GuildMember", game)].filter((row) => row.guild_id === member.guild_id),
+        playerAddress,
+        store,
+      )
+    : [];
 };

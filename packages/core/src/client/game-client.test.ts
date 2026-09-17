@@ -1,6 +1,9 @@
 // @vitest-environment node
 
-import type { Config } from "@bibliothecadao/types";
+import type { NativeWorldBindings } from "@bibliothecadao/types";
+import bindings from "../../../../contracts/l3/world-native/schema/bindings.json";
+import preset from "../../../../contracts/l3/world-native/fixtures/preset-1.json";
+import { hash } from "starknet";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { configManager } from "../managers/config-manager";
@@ -29,13 +32,21 @@ class FakeSocket implements HeraldSocket {
   }
 }
 
-// setup() builds the world contract from the manifest ABI; a Cairo 1 interface marker is all starknet needs offline.
+// Offline deployment identity is checked against the same generated schema as a live deployment.
 const offlineManifest = {
   world: { address: "0x1", abi: [{ type: "interface", name: "IWorld", items: [] }] },
   contracts: [],
+  native: { activeSchema: bindings.schemaIdentity },
 };
 
 const hello = { confirmed_block: 12, epoch: "epoch-a", preconfirmed_block: null, seq: 0, type: "hello" };
+const rulesSnapshot = {
+  type: "snapshot",
+  epoch: "epoch-a",
+  seq: 0,
+  model: "SliceRules",
+  rows: [{ key: hash.computePoseidonHashOnElements([54]), value: { ...preset.rules, game_id: 54 } }],
+};
 const snapshotEnd = { epoch: "epoch-a", seq: 0, type: "snapshot_end" };
 
 const flushMicrotasks = async (count = 8): Promise<void> => {
@@ -51,6 +62,7 @@ const createHarness = (overrides: Partial<CreateGameClientInput> = {}) => {
       chain: "madara",
       rpcUrl: "http://127.0.0.1:1",
       heraldBaseUrl: "http://herald.test",
+      admissionUrl: "http://admission.test",
       namespace: "s2",
       worldAddress: "0x1",
       contractsBySelector: {},
@@ -60,15 +72,20 @@ const createHarness = (overrides: Partial<CreateGameClientInput> = {}) => {
     },
     gameId: 54,
     presetId: 2,
-    dojoConfig: { rpcUrl: "http://127.0.0.1:1", manifest: offlineManifest as never },
-    setupEnvironment: { vrfProviderAddress: "0x0" },
+    networkConfig: { rpcUrl: "http://127.0.0.1:1", manifest: offlineManifest as never },
+    setupEnvironment: {},
+    native: {
+      bindings: bindings as unknown as NativeWorldBindings,
+      chainId: "0x1",
+      signIntent: vi.fn(),
+      submitIntent: vi.fn(),
+    },
     scheduler,
     socketFactory: () => {
       const socket = new FakeSocket();
       sockets.push(socket);
       return socket;
     },
-    resolveGameConfig: () => ({}) as Config,
     ...overrides,
   };
 
@@ -96,14 +113,14 @@ afterEach(() => {
 describe("createGameClient", () => {
   it("selects the game before the session starts and applies config after the snapshot", async () => {
     const order: string[] = [];
-    const original = { setActiveGame: configManager.setActiveGame, setDojo: configManager.setDojo };
+    const original = { setActiveGame: configManager.setActiveGame, setStore: configManager.setStore };
     vi.spyOn(configManager, "setActiveGame").mockImplementation((gameId, presetId) => {
       order.push(`set-active-game:${gameId}:${presetId}`);
       original.setActiveGame.call(configManager, gameId, presetId);
     });
-    vi.spyOn(configManager, "setDojo").mockImplementation((components, config) => {
-      order.push("set-dojo");
-      original.setDojo.call(configManager, components, config);
+    vi.spyOn(configManager, "setStore").mockImplementation((store) => {
+      order.push("set-store");
+      original.setStore.call(configManager, store);
     });
     const harness = createHarness({
       socketFactory: () => {
@@ -120,10 +137,11 @@ describe("createGameClient", () => {
     socket.receive(hello);
     await flushMicrotasks();
     order.push("snapshot-end");
+    socket.receive(rulesSnapshot);
     socket.receive(snapshotEnd);
     const client = await harness.settle(creation);
 
-    expect(order).toEqual(["set-active-game:54:2", "subscribe", "snapshot-end", "set-dojo"]);
+    expect(order).toEqual(["set-active-game:54:2", "subscribe", "snapshot-end", "set-store"]);
     expect(client.runtime.getStatus()).toBe("running");
     expect(getActiveGameSyncRuntime()).toBe(client.runtime);
     expect(client.runtime.getWorldSpatialProjection()).toBe(client.projection);
@@ -140,6 +158,7 @@ describe("createGameClient", () => {
     await vi.waitFor(() => expect(harness.sockets).toHaveLength(1));
     harness.sockets[0]!.receive(hello);
     await flushMicrotasks();
+    harness.sockets[0]!.receive(rulesSnapshot);
     harness.sockets[0]!.receive(snapshotEnd);
     const client = await harness.settle(creation);
 

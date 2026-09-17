@@ -425,6 +425,16 @@ export const resources: Array<Resources> = [
     ticker: "$RCH",
   },
 
+  {
+    trait: "SAT",
+    value: 58,
+    colour: "#f7931a",
+    id: ResourcesIds.SAT,
+    description: "Mining rewards delivered to your nearest owned realm or village.",
+    img: "",
+    ticker: "$SAT",
+  },
+
   // Relics - Army Enhancement Items
   {
     trait: "Stamina Relic 1",
@@ -646,7 +656,7 @@ export const getResourceTiers = (isBlitz: boolean) => {
 };
 
 export const BLITZ_RESOURCE_TIERS = {
-  lords: [ResourcesIds.Lords],
+  lords: [ResourcesIds.Lords, ResourcesIds.SAT],
   relics: [
     // Army Enhancement Relics
     ResourcesIds.StaminaRelic1,
@@ -698,7 +708,7 @@ export const BLITZ_RESOURCE_TIERS = {
 };
 
 export const ETERNUM_RESOURCE_TIERS = {
-  lords: [ResourcesIds.Lords, ResourcesIds.AncientFragment],
+  lords: [ResourcesIds.Lords, ResourcesIds.SAT, ResourcesIds.AncientFragment],
   relics: [
     // Army Enhancement Relics
     ResourcesIds.StaminaRelic1,

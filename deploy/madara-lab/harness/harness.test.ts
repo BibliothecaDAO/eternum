@@ -1,5 +1,5 @@
-import { describe, expect, it } from "bun:test";
-import { ActionPaths, ActionType, type GameActions } from "@bibliothecadao/eternum";
+import { afterEach, describe, expect, it, mock, spyOn } from "bun:test";
+import { ActionPaths, ActionType, configManager, type GameActions } from "@bibliothecadao/eternum";
 import type { Account, RpcProvider } from "starknet";
 import { mapWithConcurrency } from "./account-factory";
 import {
@@ -28,7 +28,6 @@ import {
 import { createHarnessProvider, parseHarnessArgs } from "./run";
 import { parseLedgerBotIdentities, rankPlayersByRegisteredPoints, toHarnessGameplayIdentities } from "./ledger-mode";
 import { BlockTag } from "starknet";
-import { HeraldObserver, parseStructureIds } from "./herald-observer";
 
 describe("Madara harness workload", () => {
   it("selects Eternum and rejects incompatible ledger registration", () => {
@@ -67,11 +66,6 @@ describe("Madara harness workload", () => {
 
   it("reads implicit account nonces from the pre-confirmed block", () => {
     expect(createHarnessProvider("http://rpc.test").channel.blockIdentifier).toBe(BlockTag.PRE_CONFIRMED);
-  });
-
-  it("parses historical settlement encodings", () => {
-    expect(parseStructureIds("[2,5,8]")).toEqual(["2", "5", "8"]);
-    expect(parseStructureIds("0x2, 0x5, 8")).toEqual(["2", "5", "8"]);
   });
 
   it("keeps the first route step pointed away from map center", () => {
@@ -115,6 +109,7 @@ describe("Madara harness workload", () => {
         throw new Error("The socket connection was closed unexpectedly");
       },
     } as unknown as RpcProvider;
+    spyOn(configManager, "getMapCenter").mockReturnValue(0);
     const world = fakeWorld();
     const workload = await runWorkload({
       bots: [readyHarnessBot(world)],
@@ -132,7 +127,8 @@ describe("Madara harness workload", () => {
     });
   });
 
-  it("plays every explorer step through the bot's client actions and reads the result from RECS", async () => {
+  it("plays every explorer step through the bot's client actions and reads the result from the shared store", async () => {
+    spyOn(configManager, "getMapCenter").mockReturnValue(0);
     const world = fakeWorld();
     const bot = readyHarnessBot(world);
     const workload = await runWorkload({
@@ -143,6 +139,7 @@ describe("Madara harness workload", () => {
       provider: confirmingProvider(),
     });
 
+    expect(workload.actions.map(({ error }) => error)).toEqual(Array(6).fill(undefined));
     expect(workload.actions.map(({ kind, outcome }) => `${kind}:${outcome}`)).toEqual([
       "explore:completed",
       "explore:completed",
@@ -239,87 +236,6 @@ describe("Madara harness reporting", () => {
   });
 });
 
-describe("Madara harness Herald observer", () => {
-  it("waits for the confirmed fold to contain every setup row", async () => {
-    let reads = 0;
-    const server = Bun.serve({
-      port: 0,
-      fetch() {
-        reads += 1;
-        return heraldSnapshot("Structure", reads === 1 ? [] : [{ entity_id: "11" }]);
-      },
-    });
-
-    try {
-      const observer = new HeraldObserver(`http://127.0.0.1:${server.port}`, "madara", 5);
-      const rows = await observer.waitForModelRows(
-        7,
-        ["Structure"],
-        (models) => models.get("Structure")?.length === 1,
-        1_000,
-      );
-
-      expect(rows.get("Structure")).toEqual([{ entity_id: "11" }]);
-      expect(reads).toBe(2);
-    } finally {
-      server.stop(true);
-    }
-  });
-
-  it("coalesces concurrent explorer snapshot reads", async () => {
-    let requests = 0;
-    const server = Bun.serve({
-      port: 0,
-      fetch() {
-        requests += 1;
-        return heraldSnapshot("ExplorerTroops", [explorerRow("11", 1), explorerRow("12", 1)]);
-      },
-    });
-
-    try {
-      const observer = new HeraldObserver(`http://127.0.0.1:${server.port}`, "madara", 5);
-      const observations = await Promise.all([
-        observer.waitForExplorer(7, "11", { alt: false, x: 0, y: 2, stamina: 120, staminaUpdatedTick: 1 }, 12, 1_000),
-        observer.waitForExplorer(7, "12", { alt: false, x: 0, y: 2, stamina: 120, staminaUpdatedTick: 1 }, 12, 1_000),
-      ]);
-
-      expect(observations[0]).toMatchObject({ explorerId: "11", x: 1 });
-      expect(observations[1]).toMatchObject({ explorerId: "12", x: 1 });
-      expect(requests).toBe(1);
-    } finally {
-      server.stop(true);
-    }
-  });
-
-  it("waits for Herald to fold the transaction's accepted block", async () => {
-    let requests = 0;
-    const server = Bun.serve({
-      port: 0,
-      fetch() {
-        requests += 1;
-        return heraldSnapshot("ExplorerTroops", [explorerRow("11", requests)], requests === 1 ? 11 : 12);
-      },
-    });
-
-    try {
-      const observer = new HeraldObserver(`http://127.0.0.1:${server.port}`, "madara", 5);
-      const explorer = await observer.waitForExplorer(
-        7,
-        "11",
-        { alt: false, x: 0, y: 2, stamina: 120, staminaUpdatedTick: 1 },
-        12,
-        1_000,
-      );
-
-      expect(explorer.x).toBe(2);
-      expect(requests).toBe(2);
-    } finally {
-      server.stop(true);
-    }
-  });
-
-});
-
 describe("Madara harness CLI and concurrency", () => {
   it("parses an explicit smoke-run configuration", () => {
     expect(
@@ -393,9 +309,9 @@ describe("Madara harness CLI and concurrency", () => {
     const players = rankPlayersByRegisteredPoints(
       [{ player: "0x3" }, { player: "0x1" }, { player: "0x2" }, { player: "0x1" }],
       [
-        { address: "0x1", registered_points: "50" },
-        { address: "0x2", registered_points: "100" },
-        { address: "0x3", registered_points: "100" },
+        { address: "0x1", points: "50" },
+        { address: "0x2", points: "100" },
+        { address: "0x3", points: "100" },
       ],
     );
 
@@ -416,31 +332,6 @@ describe("Madara harness CLI and concurrency", () => {
     expect(maximumActive).toBe(2);
   });
 });
-
-function heraldSnapshot(model: string, values: Array<Record<string, unknown>>, confirmedBlock = 12) {
-  return Response.json({
-    confirmed_block: confirmedBlock,
-    game_id: "7",
-    models: [{ model, rows: values.map((value, index) => ({ key: `0x${index + 1}`, value })) }],
-  });
-}
-
-function explorerRow(explorerId: string, x: number) {
-  return {
-    explorer_id: explorerId,
-    owner: explorerId,
-    troops: { stamina: { amount: "120", updated_tick: "1" } },
-    coord: { alt: false, x, y: 2 },
-  };
-}
-
-function resourceRow(structureId: string, laborBalance: string, woodOutput: string) {
-  return {
-    entity_id: structureId,
-    LABOR_BALANCE: laborBalance,
-    WOOD_PRODUCTION: { output_amount_left: woodOutput },
-  };
-}
 
 function readyHarnessBot(world: FakeWorld): HarnessBot {
   return {
@@ -471,7 +362,7 @@ interface FakeWorld {
   moves: Array<{ explorerId: number; path: Array<{ hex: { col: number; row: number }; actionType: ActionType }> }>;
 }
 
-/** One explorer at (1, 1) with full stamina on an unexplored map; every action lands in "RECS" as it is submitted. */
+/** One explorer at (1, 1) with full stamina on an unexplored map; every action lands in the shared store as it is submitted. */
 function fakeWorld(): FakeWorld {
   const explorers = new Map<number, ExplorerRow>([
     [1, { coord: { x: 1, y: 1 }, staminaAmount: 120n, staminaUpdatedTick: 1n }],
@@ -524,6 +415,8 @@ function fakeWorld(): FakeWorld {
     minimumStaminaFor: (kind) => (kind === "explore" ? 30 : 10),
     production: (structureId) => production.get(structureId),
     armyPathIndexes: () => ({ structureHexes: new Map(), armyHexes: new Map(), exploredHexes: new Map(), chestHexes: new Map() }),
+    settle: async () => {},
+    provision: async () => {},
     produceWood: async (_signer, structureId) => {
       const current = production.get(structureId)!;
       production.set(structureId, { laborBalance: current.laborBalance - 1n, woodOutput: current.woodOutput + 1n });
@@ -584,3 +477,5 @@ function mempoolRow(transactions: number, ready: number) {
     message: `Inserted 1 transaction to the mempool [${transactions}/10000 transaction(s), ${transactions} account(s), ${ready} ready]`,
   };
 }
+
+afterEach(() => mock.restore());

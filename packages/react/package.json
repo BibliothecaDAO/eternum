@@ -1,42 +1,39 @@
 {
-	"name": "@bibliothecadao/react",
-	"version": "0.1.0",
-	"type": "module",
-	"main": "./dist/index.js",
-	"exports": {
-		".": {
-			"import": "./dist/index.js",
-			"types": "./dist/index.d.ts"
-		}
-	},
-	"scripts": {
-		"build": "tsup",
-		"dev": "tsup --watch"
-	},
-	"peerDependencies": {
-		"@bibliothecadao/dojo": "workspace:*",
-		"@bibliothecadao/eternum": "workspace:*",
-		"@bibliothecadao/types": "workspace:*",
-		"@dojoengine/react": "catalog:game",
-		"@starknet-react/core": "catalog:game",
-		"react": "catalog:game",
-		"starknet": "catalog:game",
-		"viem": "catalog:game",
-		"wouter": "^2.12.1"
-	},
-	"devDependencies": {
-		"@bibliothecadao/dojo": "workspace:*",
-		"@bibliothecadao/types": "workspace:*",
-		"@starknet-react/core": "catalog:game",
-		"@types/react": "^18",
-		"react": "catalog:game",
-		"react-dom": "catalog:game",
-		"tsup": "^8",
-		"type-fest": "catalog:game",
-		"typescript": "^5",
-		"viem": "catalog:game",
-		"vite-plugin-top-level-await": "^1.4.1",
-		"vite-plugin-wasm": "^3.3.0",
-		"wouter": "^2.12.1"
-	}
+  "name": "@bibliothecadao/react",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch"
+  },
+  "peerDependencies": {
+    "@bibliothecadao/eternum": "workspace:*",
+    "@bibliothecadao/types": "workspace:*",
+    "@starknet-react/core": "catalog:game",
+    "react": "catalog:game",
+    "starknet": "catalog:game",
+    "viem": "catalog:game",
+    "wouter": "^2.12.1"
+  },
+  "devDependencies": {
+    "@bibliothecadao/types": "workspace:*",
+    "@starknet-react/core": "catalog:game",
+    "@types/react": "^18",
+    "react": "catalog:game",
+    "react-dom": "catalog:game",
+    "tsup": "^8",
+    "type-fest": "catalog:game",
+    "typescript": "^5",
+    "viem": "catalog:game",
+    "vite-plugin-top-level-await": "^1.4.1",
+    "vite-plugin-wasm": "^3.3.0",
+    "wouter": "^2.12.1"
+  }
 }

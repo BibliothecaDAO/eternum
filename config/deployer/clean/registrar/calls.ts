@@ -1,5 +1,8 @@
+import { nativeDomainAbi } from "../world/native/manifest";
+import type { NativeWorldManifest } from "../world/native/types";
+import type { buildNativePreset } from "../config/native-preset";
 import { resolveGameTransactionResourceBounds } from "@bibliothecadao/eternum";
-import { Account, CallData, type Call } from "starknet";
+import { Account, CallData, type Call, type RawArgs } from "starknet";
 import { resolveDeploymentEnvironment } from "../environment";
 import { openLedgerGame, type LedgerTarget } from "../ledger/calls";
 import { loadRepoJsonFile } from "../shared/repo";
@@ -31,6 +34,7 @@ interface ManifestEvent {
 }
 
 export interface RegistrarManifest {
+  native?: NativeWorldManifest["native"];
   world?: {
     address?: string;
     seed?: string;
@@ -88,6 +92,11 @@ function resolveRegistrarContext(target: RegistrarTarget = DEFAULT_ENVIRONMENT_I
 }
 
 function findContract(context: RegistrarContext, contractName: string): ManifestContract | undefined {
+  if (context.manifest.native && contractName === "registrar_systems") {
+    const manifest = context.manifest as NativeWorldManifest;
+    const address = manifest.native.domains.registry.address;
+    return { address, tag: "native-registry", abi: nativeDomainAbi(manifest, "registry") as ManifestAbiEntry[] };
+  }
   return context.manifest.contracts?.find((contract) => contract.tag === `${APPCHAIN_NAMESPACE}-${contractName}`);
 }
 
@@ -189,9 +198,9 @@ function resolveGameCreatedSelector(context: RegistrarContext): string | undefin
   return selector ? normalizeFelt(selector) : undefined;
 }
 
-function readReceiptEvents(receipt: unknown): Array<{ keys?: string[]; data?: string[] }> {
+function readReceiptEvents(receipt: unknown): Array<{ from_address?: string; keys?: string[]; data?: string[] }> {
   const events = (receipt as { events?: unknown }).events;
-  return Array.isArray(events) ? (events as Array<{ keys?: string[]; data?: string[] }>) : [];
+  return Array.isArray(events) ? (events as Array<{ from_address?: string; keys?: string[]; data?: string[] }>) : [];
 }
 
 function parseGameId(value: string | undefined): number | undefined {
@@ -206,7 +215,9 @@ export function resolveCreatedGameId(
   receipt: unknown,
   target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID,
 ): number | undefined {
-  const gameCreatedSelector = resolveGameCreatedSelector(resolveRegistrarContext(target));
+  const context = resolveRegistrarContext(target);
+  if (context.manifest.native) return resolveNativeCreatedGameId(receipt, context.manifest as NativeWorldManifest);
+  const gameCreatedSelector = resolveGameCreatedSelector(context);
   if (!gameCreatedSelector) {
     return undefined;
   }
@@ -223,6 +234,30 @@ export function resolveCreatedGameId(
   }
 
   return undefined;
+}
+
+function resolveNativeCreatedGameId(receipt: unknown, manifest: NativeWorldManifest): number | undefined {
+  const schema = manifest.native.schemas[manifest.native.activeSchema];
+  const model = schema.models.find((model) => model.name === "GameRegistry");
+  const layout = schema.domains.season.events.find((event) => event.name === "RowSet");
+  if (!model || !layout) throw new Error("Native manifest has no game registry event");
+  for (const event of readReceiptEvents(receipt)) {
+    if (!event.from_address || BigInt(event.from_address) !== BigInt(manifest.native.domains.season.address)) continue;
+    const keys = event.keys ?? [];
+    if (
+      keys.length !== layout.prefix.length + 2 ||
+      !layout.prefix.every((key, index) => BigInt(key) === BigInt(keys[index]))
+    )
+      continue;
+    if (BigInt(keys.at(-2)!) !== 1n || BigInt(keys.at(-1)!) !== BigInt(model.identity)) continue;
+    const data = event.data ?? [];
+    if (BigInt(data[0] ?? 0) !== 1n || Number(BigInt(data[2] ?? -1)) !== data.length - 3) continue;
+    return parseGameId(data[1]);
+  }
+}
+
+export function isNativeRegistrar(target: RegistrarTarget): boolean {
+  return Boolean(resolveRegistrarContext(target).manifest.native);
 }
 
 export function resolveRegistrarWorldAddress(target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID): string {
@@ -265,12 +300,9 @@ export function buildCreateGameCalldata(params: unknown): string[] {
 
 export function assertRegistrarAvailable(target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID): void {
   const context = resolveRegistrarContext(target);
-  const requiredEntrypoints: RegistrarEntrypoint[] = [
-    "bootstrap_chain_config",
-    "register_preset",
-    "register_series",
-    "create_game",
-  ];
+  const requiredEntrypoints: RegistrarEntrypoint[] = context.manifest.native
+    ? ["register_preset", "register_series", "create_game"]
+    : ["bootstrap_chain_config", "register_preset", "register_series", "create_game"];
   requiredEntrypoints.forEach((entrypoint) => requireRegistrarContract(context, entrypoint));
 }
 
@@ -331,12 +363,18 @@ export async function createRegistrarGame(
   params: unknown,
   target: RegistrarTarget,
   ledger?: RegistrarLedgerGameTarget,
+  nativeDefinition?: ReturnType<typeof buildNativePreset>,
 ): Promise<CreateRegistrarGameResult> {
-  const result = await executeRegistrarCall(
-    account,
-    buildRegistrarCall("create_game", buildCreateGameCalldata(params), target),
-    target,
-  );
+  const context = resolveRegistrarContext(target);
+  let calldata: string[];
+  if (context.manifest.native) {
+    if (!nativeDefinition) throw new Error("Native game creation requires its immutable preset definition");
+    calldata = new CallData(nativeDomainAbi(context.manifest as NativeWorldManifest, "registry")).compile(
+      "create_game",
+      { params: params as RawArgs, definition: nativeDefinition },
+    );
+  } else calldata = buildCreateGameCalldata(params);
+  const result = await executeRegistrarCall(account, buildRegistrarCall("create_game", calldata, target), target);
   const gameId = resolveCreatedGameId(result.receipt, target);
   const ledgerResult =
     gameId && ledger

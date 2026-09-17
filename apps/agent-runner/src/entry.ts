@@ -1,15 +1,22 @@
 import {
   FELT_CENTER,
-  gameEntityKey,
   getBuildingCount,
   multiplyByPrecision,
+  ResourceManager,
   waitForWorldState,
   type GameClient,
 } from "@bibliothecadao/eternum";
-import { buildBlitzSettleCalls } from "@bibliothecadao/eternum/game-client";
-import { BuildingType, getNeighborHexes, TroopTier, TroopType, type Direction, type ID } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
-import { shortString, type AccountInterface, type Call } from "starknet";
+import {
+  BuildingType,
+  ResourcesIds,
+  StructureType,
+  getNeighborHexes,
+  TroopTier,
+  TroopType,
+  type Direction,
+  type ID,
+} from "@bibliothecadao/types";
+import { shortString, type AccountInterface } from "starknet";
 
 import type { RunnerGame } from "./game";
 
@@ -33,7 +40,7 @@ const T1_TROOP_TYPES: readonly TroopType[] = [TroopType.Knight, TroopType.Paladi
 const MODEL_UPDATE_TIMEOUT_MS = 30_000;
 
 /**
- * Settles, provisions, and fields one explorer per structure, doing only what RECS shows is still missing: a runner
+ * Settles, provisions, and fields one explorer per structure, doing only what Herald shows is still missing: a runner
  * that restarts mid-way resumes from the rows, not from a local checkpoint.
  */
 export async function ensureSettled(
@@ -54,7 +61,21 @@ export async function ensureSettled(
 const ensureSettlement = async (game: RunnerGame, signer: AccountInterface, username: string): Promise<ID[]> => {
   const settled = settledStructureIds(game.client, signer.address);
   if (settled) return settled;
-  await submitAndConfirm(game.client, signer, buildSettleCalls(game, signer, username));
+  const [owner] = await signer.callContract({
+    contractAddress: game.client.world.playerRegistryAddress,
+    entrypoint: "owner_of",
+    calldata: [signer.address],
+  });
+  if (!owner || BigInt(owner) === 0n) throw new Error("Gameplay account is not bound");
+  await game.client.setup.systemCalls.settle_blitz({
+    signer,
+    name: shortString.encodeShortString(username),
+    owner,
+    cosmeticsBlockHash: "0x0",
+    cosmeticsBlockNumber: 0,
+    cosmetics: [],
+    grantStartingTroops: true,
+  });
   return waitForWorldState(
     game.client,
     () => settledStructureIds(game.client, signer.address),
@@ -63,21 +84,10 @@ const ensureSettlement = async (game: RunnerGame, signer: AccountInterface, user
   );
 };
 
-const buildSettleCalls = (game: RunnerGame, signer: AccountInterface, username: string): Call[] =>
-  buildBlitzSettleCalls({
-    blitzSystemsAddress: game.systems.blitzRealm,
-    signerAddress: signer.address,
-    usernameFelt: shortString.encodeShortString(username),
-    gameId: game.client.gameId,
-    // The lab world has no VRF provider; settle draws its position without a request_random call.
-    vrfProviderAddress: null,
-    grantStartingTroops: true,
-  });
-
 /** The contract permits provisioning exactly until the realm has its first Labor building. */
 const ensureProvisioned = async (game: RunnerGame, signer: AccountInterface, structures: ID[]): Promise<void> => {
   const unprovisioned = structures.filter((id) => {
-    const row = getComponentValue(game.client.setup.components.StructureBuildings, gameEntityKey([BigInt(id)]));
+    const row = game.client.setup.store.get("StructureBuildings", { game_id: game.client.gameId, entity_id: id });
     // Settlement creates no building-count row. The contract reads zero counts until the first building is placed.
     if (!row) return true;
     return (
@@ -86,19 +96,10 @@ const ensureProvisioned = async (game: RunnerGame, signer: AccountInterface, str
     );
   });
   if (unprovisioned.length === 0) return;
-  await submitAndConfirm(
-    game.client,
-    signer,
-    unprovisioned.map((structureId) => buildProvisionCall(game, structureId)),
-  );
+  for (const realm_entity_id of unprovisioned) {
+    await game.client.setup.systemCalls.provision_realm({ signer, realm_entity_id });
+  }
 };
-
-/** Provisioning has no client action, so the call is raw; the provider's game_id prefix does not apply to it. */
-const buildProvisionCall = (game: RunnerGame, structureId: ID): Call => ({
-  contractAddress: game.systems.blitzRealm,
-  entrypoint: "provision_realm",
-  calldata: [game.client.gameId.toString(), structureId.toString()],
-});
 
 const ensureExplorers = async (
   client: GameClient,
@@ -117,33 +118,35 @@ const ensureExplorers = async (
   }
 };
 
-/** Raw sends confirm through the same Herald transaction channel the client's own actions wait on. */
-const submitAndConfirm = async (client: GameClient, signer: AccountInterface, calls: Call[]): Promise<void> => {
-  const { transaction_hash } = await signer.execute(calls);
-  await client.runtime.waitForTransaction(transaction_hash);
+// Native facts
+
+const settledStructureIds = (client: GameClient, player: string): ID[] | undefined => {
+  const entered = [...client.setup.store.inGame("PlayerEntry", client.gameId)].some(
+    (entry) => entry.player === BigInt(player),
+  );
+  if (!entered) return undefined;
+  return [...client.setup.store.structuresOwnedBy(client.gameId, BigInt(player))]
+    .filter((row) => row.base.category === StructureType.Realm)
+    .map((row) => row.entity_id);
 };
 
-// RECS reads
-
-const settledStructureIds = (client: GameClient, player: string): ID[] | undefined =>
-  getComponentValue(client.setup.components.BlitzSettlement, gameEntityKey([BigInt(player)]))?.structure_ids;
-
 const structureCoord = (client: GameClient, structureId: ID): Coord | undefined => {
-  const structure = getComponentValue(client.setup.components.Structure, gameEntityKey([BigInt(structureId)]));
+  const structure = client.setup.store.get("Structure", { game_id: client.gameId, entity_id: structureId });
   return structure ? { x: structure.base.coord_x, y: structure.base.coord_y } : undefined;
 };
 
 /** The T1 troop type the structure holds enough of to field one explorer. */
 const startingTroopType = (client: GameClient, structureId: ID): TroopType | undefined => {
-  const resource = getComponentValue(client.setup.components.Resource, gameEntityKey([BigInt(structureId)]));
-  if (!resource) return undefined;
+  const resource = new ResourceManager(client.setup.store, structureId);
   const required = BigInt(multiplyByPrecision(EXPLORER_TROOP_COUNT));
-  const balances = [resource.KNIGHT_T1_BALANCE, resource.PALADIN_T1_BALANCE, resource.CROSSBOWMAN_T1_BALANCE];
+  const balances = [ResourcesIds.Knight, ResourcesIds.Paladin, ResourcesIds.Crossbowman].map((id) =>
+    resource.balance(id),
+  );
   const funded = balances.findIndex((balance) => BigInt(balance) >= required);
   return funded < 0 ? undefined : T1_TROOP_TYPES[funded];
 };
 
-// RECS waits
+// Stream barriers
 
 const waitForStructureSpawns = (client: GameClient, structures: ID[]): Promise<StructureSpawn[]> =>
   waitForWorldState(
@@ -175,7 +178,7 @@ const waitForExplorers = (client: GameClient, structures: ID[]): Promise<ID[]> =
     () => `Explorers of structures ${structures.join(", ")}`,
   );
 
-/** Every item resolved, or nothing yet: the shape a RECS wait needs for rows that land independently. */
+/** Every item resolved, or nothing yet: the shape a stream barrier needs for rows that land independently. */
 const collectAll = <T, R>(items: readonly T[], read: (item: T) => R | undefined): R[] | undefined => {
   const collected: R[] = [];
   for (const item of items) {

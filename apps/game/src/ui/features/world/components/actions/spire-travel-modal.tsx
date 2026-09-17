@@ -1,11 +1,9 @@
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 import Button from "@/ui/design-system/atoms/button";
 import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
-import { getTileAt } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
+import { getTileAt, configManager } from "@bibliothecadao/eternum";
+import { useGame, useNativeRow, useNativeRevision } from "@bibliothecadao/react";
 import type { ID } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
 import ArrowRightLeft from "lucide-react/dist/esm/icons/arrow-right-left";
 import ShieldAlert from "lucide-react/dist/esm/icons/shield-alert";
 import Sparkles from "lucide-react/dist/esm/icons/sparkles";
@@ -21,13 +19,17 @@ export const SpireTravelModal = ({
   essenceCost: number;
 }) => {
   const {
-    setup: { components },
-  } = useDojo();
+    setup: { store },
+  } = useGame();
   const closeSurface = usePopoverStore((state) => state.closeSurface);
-  const explorer = getComponentValue(components.ExplorerTroops, gameEntityKey([BigInt(explorerId)]));
+  const explorer = useNativeRow("ExplorerTroops", {
+    game_id: configManager.getActiveGameId(),
+    explorer_id: explorerId,
+  });
   const explorerLayer = explorer?.coord.alt ?? false;
+  useNativeRevision(["TileOpt"]);
   const destination = explorer
-    ? getTileAt(components, !explorerLayer, Number(explorer.coord.x), Number(explorer.coord.y))
+    ? getTileAt(store, !explorerLayer, Number(explorer.coord.x), Number(explorer.coord.y))
     : undefined;
   const crossing = resolveSpireCrossing(explorerLayer, destination);
   const sideName = crossing.toEthereal ? "the Ethereal Layer" : "the surface";

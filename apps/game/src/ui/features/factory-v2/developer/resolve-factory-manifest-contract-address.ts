@@ -1,7 +1,6 @@
 import { resolveWorldIdForGame } from "@bibliothecadao/eternum/game-client";
 import { getWorldById } from "@/runtime/world/world-directory";
-import { getGameManifest } from "@contracts";
-import { DEFAULT_FACTORY_NAMESPACE } from "@/ui/features/factory/shared/factory-metadata";
+import { getNativeManifest } from "@/runtime/world/native-manifest";
 import type {
   FactoryManifestContractLookupFailure,
   FactoryManifestContractLookupRequest,
@@ -40,7 +39,7 @@ function normalizeFactoryManifestContractName(value: string): string {
     return "";
   }
 
-  return normalizedValue.includes("-") ? normalizedValue : `${DEFAULT_FACTORY_NAMESPACE}-${normalizedValue}`;
+  return normalizedValue.includes("-") ? normalizedValue : `native-${normalizedValue}`;
 }
 
 function normalizeLookupRequest(request: FactoryManifestContractLookupRequest): NormalizedLookupRequest | null {
@@ -130,9 +129,6 @@ function buildFactoryUnavailableFailure(message: string): FactoryManifestContrac
   };
 }
 
-const isManifestWorldId = (worldId: string): worldId is "blitz" | "eternum" =>
-  worldId === "blitz" || worldId === "eternum";
-
 export async function resolveFactoryManifestContractAddress(
   request: FactoryManifestContractLookupRequest,
 ): Promise<FactoryManifestContractLookupResult> {
@@ -144,13 +140,15 @@ export async function resolveFactoryManifestContractAddress(
   try {
     const worldId = await resolveWorldIdForGame(normalizedRequest.worldName);
     const world = getWorldById(worldId);
-    if (!world || !isManifestWorldId(world.id)) {
+    if (!world || world.chain !== request.chain) {
       return buildFactoryUnavailableFailure(
         `Game "${normalizedRequest.worldName}" was not found in any deployed world's registry.`,
       );
     }
 
-    const manifest = getGameManifest(request.chain, world.id) as ManifestLike;
+    const manifest = getNativeManifest();
+    if (BigInt(manifest.world.address) !== BigInt(world.worldAddress))
+      return buildFactoryUnavailableFailure("The client release does not match this world's deployment.");
     const manifestContract = findManifestContractEntry(manifest, normalizedRequest.manifestTag);
     if (!manifestContract?.address) {
       return buildContractNotFoundFailure(

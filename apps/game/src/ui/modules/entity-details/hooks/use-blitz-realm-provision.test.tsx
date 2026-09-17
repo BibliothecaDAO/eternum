@@ -10,18 +10,13 @@ const mocks = vi.hoisted(() => ({
   worldMode: "blitz" as "blitz" | "eternum" | "unknown",
   buildings: [] as Array<{ category: number }>,
   structureBuildings: null as Record<string, unknown> | null,
-  executeObservedClientTransaction: vi.fn(),
+  provisionRealm: vi.fn(),
   toastError: vi.fn(),
-  getContractByName: vi.fn(() => ({ address: "0xblitz" })),
   getBuildingCount: vi.fn(() => 0),
 }));
 
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
   useCurrentBlockTimestamp: () => mocks.currentBlockTimestamp,
-}));
-
-vi.mock("@/observability/observed-client-transaction", () => ({
-  executeObservedClientTransaction: mocks.executeObservedClientTransaction,
 }));
 
 vi.mock("@/config/game-modes/use-game-mode-config", () => ({
@@ -34,50 +29,20 @@ vi.mock("@/ui/features/event-feed/notify", () => ({
   },
 }));
 
-vi.mock("@dojoengine/core", () => ({
-  getContractByName: mocks.getContractByName,
-}));
-
-vi.mock("../../../../../dojo-config", () => ({
-  dojoConfig: {
-    manifest: {},
-  },
-}));
-
 vi.mock("@bibliothecadao/react", () => ({
-  useDojo: () => ({
-    setup: {
-      components: {
-        Structure: { key: "Structure" },
-        StructureBuildings: { key: "StructureBuildings" },
-        Resource: { key: "Resource" },
-      },
-    },
-    account: {
-      account: {
-        address: "0xowner",
-      },
-    },
+  useGame: () => ({
+    setup: { store: {}, systemCalls: { provision_realm: mocks.provisionRealm } },
+    account: { account: { address: "0xowner" } },
   }),
   useBuildings: () => mocks.buildings,
-}));
-
-vi.mock("@dojoengine/react", () => ({
-  useComponentValue: (component: { key?: string } | undefined, realmEntity: unknown) => {
-    if (!realmEntity) {
-      return null;
-    }
-
-    if (component?.key === "StructureBuildings") {
-      return mocks.structureBuildings;
-    }
-
-    return { version: String(realmEntity) };
-  },
+  useNativeRevision: () => 0,
+  useNativeRow: (model: string, keys: unknown) =>
+    !keys ? undefined : model === "StructureBuildings" ? mocks.structureBuildings : { entity_id: 101 },
 }));
 
 vi.mock("@bibliothecadao/eternum", () => ({
   getBuildingCount: mocks.getBuildingCount,
+  configManager: { getActiveGameId: () => 1 },
   getRealmInfo: () => ({
     entityId: 101,
     level: 1,
@@ -174,11 +139,9 @@ describe("useBlitzRealmProvision", () => {
     mocks.worldMode = "blitz";
     mocks.buildings = [];
     mocks.structureBuildings = null;
-    mocks.executeObservedClientTransaction.mockReset();
-    mocks.executeObservedClientTransaction.mockResolvedValue({ transaction_hash: "0xtx" });
+    mocks.provisionRealm.mockReset();
+    mocks.provisionRealm.mockResolvedValue({ transaction_hash: "0xtx" });
     mocks.toastError.mockReset();
-    mocks.getContractByName.mockReset();
-    mocks.getContractByName.mockReturnValue({ address: "0xblitz" });
     mocks.getBuildingCount.mockReset();
     mocks.getBuildingCount.mockReturnValue(0);
 
@@ -263,17 +226,7 @@ describe("useBlitzRealmProvision", () => {
     await renderProbe();
     await clickProvision();
 
-    expect(mocks.executeObservedClientTransaction).toHaveBeenCalledWith(
-      expect.objectContaining({
-        surface: "settlement",
-        operation: "blitz_realm_systems.provision_realm",
-        waitForConfirmation: false,
-        calls: expect.objectContaining({
-          contractAddress: "0xblitz",
-          entrypoint: "provision_realm",
-        }),
-      }),
-    );
+    expect(mocks.provisionRealm).toHaveBeenCalledWith({ signer: { address: "0xowner" }, realm_entity_id: 101 });
     expect(readProbeValue("status")).toBe("syncing");
 
     mocks.buildings = [{ category: 28 }];
@@ -295,7 +248,7 @@ describe("useBlitzRealmProvision", () => {
   });
 
   it("releases the spinner when submission never returns a transaction hash", async () => {
-    mocks.executeObservedClientTransaction.mockReturnValueOnce(new Promise(() => undefined));
+    mocks.provisionRealm.mockReturnValueOnce(new Promise(() => undefined));
 
     await renderProbe();
     await clickProvision();
@@ -341,7 +294,7 @@ describe("useBlitzRealmProvision", () => {
   });
 
   it("waits for the authoritative stream after an already-provisioned response", async () => {
-    mocks.executeObservedClientTransaction.mockRejectedValueOnce(new Error("realm is already provisioned"));
+    mocks.provisionRealm.mockRejectedValueOnce(new Error("realm is already provisioned"));
 
     await renderProbe();
     await clickProvision();

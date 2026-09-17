@@ -27,11 +27,12 @@ interface ResolveGameEntryModalPhaseInput {
   isCheckingWorldAvailability: boolean;
   hasWorldMeta: boolean;
   isEternumMode: boolean;
-  isLoadingEternumPrereqs: boolean;
+  isLoadingVillagePrereqs: boolean;
   hasVillageRevealResult: boolean;
-  eternumSettlementMode: "realm" | "village";
+  settlementMode: "realm" | "village";
   hasVillagePass: boolean;
   isEternumDevMode?: boolean;
+  isDevMode?: boolean;
   isSettlingAdditionalRealm?: boolean;
   checksComplete: boolean;
   needsSettlement: boolean;
@@ -104,11 +105,12 @@ export const resolveGameEntryModalPhase = ({
   isCheckingWorldAvailability,
   hasWorldMeta,
   isEternumMode,
-  isLoadingEternumPrereqs,
+  isLoadingVillagePrereqs,
   hasVillageRevealResult,
-  eternumSettlementMode,
+  settlementMode,
   hasVillagePass,
   isEternumDevMode = false,
+  isDevMode = false,
   isSettlingAdditionalRealm = false,
   checksComplete,
   needsSettlement,
@@ -131,23 +133,18 @@ export const resolveGameEntryModalPhase = ({
     return "loading";
   }
 
+  if (settlementMode === "village") {
+    if (isLoadingVillagePrereqs) return "loading";
+    if (hasVillageRevealResult) return "village-reveal";
+    return hasVillagePass || isDevMode ? "village-placement" : "village-pass-required";
+  }
+
   if (isEternumMode) {
-    if (eternumSettlementMode === "realm") {
-      if (!checksComplete) return "loading";
-      return resolveBlitzSettlementPhase({
-        canPlay: canPlay && !(isEternumDevMode && isSettlingAdditionalRealm),
-        isSettlementUnlocked: isBlitzSettlementUnlocked,
-      });
-    }
-    if (isLoadingEternumPrereqs) {
-      return "loading";
-    }
-
-    if (hasVillageRevealResult) {
-      return "village-reveal";
-    }
-
-    return hasVillagePass || isEternumDevMode ? "village-placement" : "village-pass-required";
+    if (!checksComplete) return "loading";
+    return resolveBlitzSettlementPhase({
+      canPlay: canPlay && !(isEternumDevMode && isSettlingAdditionalRealm),
+      isSettlementUnlocked: isBlitzSettlementUnlocked,
+    });
   }
 
   if (!checksComplete) {

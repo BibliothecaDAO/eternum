@@ -136,8 +136,7 @@ export const getGameSyncModelsForChannel = (
 
 const GAME_SYNC_MODELS_BY_NAME = new Map(GAME_SYNC_MODEL_MANIFEST.map((model) => [model.name, model]));
 
-export const findGameSyncModel = (name: string): GameSyncModelDefinition | undefined =>
-  GAME_SYNC_MODELS_BY_NAME.get(name);
+const findGameSyncModel = (name: string): GameSyncModelDefinition | undefined => GAME_SYNC_MODELS_BY_NAME.get(name);
 
 export const getGameSyncModel = (name: string): GameSyncModelDefinition => {
   const model = findGameSyncModel(name);

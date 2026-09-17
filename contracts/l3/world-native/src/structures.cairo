@@ -684,6 +684,13 @@ pub mod StructuresDomain {
     }
     #[abi(embed_v0)]
     impl RealmCreation of crate::settlement::IRealmCreation<ContractState> {
+        fn provision_and_upgrade_realm(
+            ref self: ContractState, game_id: u32, actor: ContractAddress, structure_id: u32, context: ExecutionContext,
+        ) {
+            Self::activate_realm_economy(ref self, game_id, actor, structure_id, context);
+            Upgrades::level_up(ref self, game_id, actor, structure_id, context);
+        }
+
         fn activate_realm_economy(
             ref self: ContractState, game_id: u32, actor: ContractAddress, structure_id: u32, context: ExecutionContext,
         ) {

@@ -1,6 +1,5 @@
-import { gameEntityKey, getBlockTimestamp, type GameClient } from "@bibliothecadao/eternum";
+import { getBlockTimestamp, type GameClient } from "@bibliothecadao/eternum";
 import type { ArmyInfo, ID, Structure } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
 
 import type { RunnerGame } from "./game";
 import { readGamePhase, type GamePhase } from "./game-phase";
@@ -86,14 +85,22 @@ const hasMaterialChange = (delta: WorldDelta): boolean =>
 
 const fingerprintStructure = (client: GameClient, structure: Structure): string => {
   const base = structure.structure.base;
-  const resource = getComponentValue(client.setup.components.Resource, gameEntityKey([BigInt(structure.entityId)]));
+  const resources = [...client.setup.store.inGame("ResourceBalance", client.gameId)].filter(
+    (row) => row.entity_id === structure.entityId,
+  );
+  const production = [...client.setup.store.inGame("ResourceProduction", client.gameId)].filter(
+    (row) => row.entity_id === structure.entityId,
+  );
   const buildings = client.views.buildingTiles(structure.entityId).existingBuildings().length;
   return [
     base.level,
-    base.troop_guard_count,
+    JSON.stringify(
+      [...client.setup.store.inGame("Guard", client.gameId)].filter((row) => row.structure_id === structure.entityId),
+      bigintAsString,
+    ),
     base.troop_explorer_count,
     buildings,
-    JSON.stringify(resource, bigintAsString),
+    JSON.stringify([resources, production], bigintAsString),
   ].join("|");
 };
 
@@ -129,10 +136,10 @@ const hostileArmiesWithin = (game: RunnerGame, reach: HexBounds[], ownArmies: Se
 
 /** An army with no resolvable owner counts as hostile: the gate prefers a spare model call to a missed attack. */
 const isOwnedByViewer = (game: RunnerGame, armyId: ID): boolean => {
-  const { components } = game.client.setup;
-  const explorer = getComponentValue(components.ExplorerTroops, gameEntityKey([BigInt(armyId)]));
+  const { store } = game.client.setup;
+  const explorer = store.get("ExplorerTroops", { game_id: game.client.gameId, explorer_id: armyId });
   if (!explorer) return false;
-  const home = getComponentValue(components.Structure, gameEntityKey([BigInt(explorer.owner)]));
+  const home = store.get("Structure", { game_id: game.client.gameId, entity_id: explorer.owner });
   return home !== undefined && home.owner === game.viewer();
 };
 

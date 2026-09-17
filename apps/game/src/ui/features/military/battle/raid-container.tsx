@@ -22,7 +22,7 @@ import {
   RaidSimulator,
   StaminaManager,
 } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
+import { useGame, useNativeRow, useNativeRevision } from "@bibliothecadao/react";
 import {
   CapacityConfig,
   ContractAddress,
@@ -35,13 +35,11 @@ import {
   TroopTier,
   TroopType,
 } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
 import { useMemo, useState } from "react";
 import { ActiveRelicEffects } from "../../world/components/entities/active-relic-effects";
 import { AttackTarget, TargetType } from "./types";
 import { formatTypeAndBonuses } from "./combat-utils";
 import { RaidResult } from "./raid-result";
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 
 enum RaidOutcome {
   Success = "Success",
@@ -66,12 +64,18 @@ export const RaidContainer = ({
     account: { account },
     setup: {
       systemCalls: { raid_explorer_vs_guard },
-      components,
+      store,
     },
-  } = useDojo();
+  } = useGame();
+  const revision = useNativeRevision(["ExplorerTroops", "Structure", "AgentOwner"]);
+  const resourceWeight = useNativeRow("ResourceWeight", {
+    game_id: configManager.getActiveGameId(),
+    entity_id: attackerEntityId,
+  });
 
   const [loading, setLoading] = useState(false);
   const [showRaidResult, setShowRaidResult] = useState(false);
+  const [raidTransactionHash, setRaidTransactionHash] = useState<string | null>(null);
 
   const updateSelectedEntityId = useUIStore((state) => state.updateEntityActionSelectedEntityId);
   const selectedHex = useUIStore((state) => state.selectedHex);
@@ -87,7 +91,7 @@ export const RaidContainer = ({
 
   // Get the current army states for display
   const attackerArmyData = useMemo(() => {
-    const army = getArmy(attackerEntityId, ContractAddress(account.address), components);
+    const army = getArmy(attackerEntityId, ContractAddress(account.address), store);
     const projectedStamina = army
       ? StaminaManager.getStamina(army.troops, currentArmiesTick)
       : { amount: 0n, updated_tick: 0n };
@@ -102,7 +106,7 @@ export const RaidContainer = ({
         battle_cooldown_end: army?.troops.battle_cooldown_end || 0,
       },
     };
-  }, [account.address, attackerEntityId, components, currentArmiesTick]);
+  }, [account.address, attackerEntityId, store, currentArmiesTick, revision]);
   const attackerCurrentStaminaValue = Number(attackerArmyData?.troops.stamina.amount ?? 0n);
   const attackerRecharging = isStaminaRecharging(attackerCurrentStaminaValue, combatConfig.stamina_attack_req);
 
@@ -175,14 +179,12 @@ export const RaidContainer = ({
   ]);
 
   const remainingCapacity = useMemo(() => {
-    // you can use getcomponentvalue because it's your own entity so synced
-    const resource = getComponentValue(components.Resource, gameEntityKey([BigInt(attackerEntityId)]));
-    const remainingCapacity = resource ? getRemainingCapacityInKg(resource) : 0;
+    const remainingCapacity = resourceWeight ? getRemainingCapacityInKg(resourceWeight) : 0;
     const remainingCapacityAfterRaid =
       remainingCapacity -
       (raidSimulation?.raiderDamageTaken || 0) * configManager.getCapacityConfigKg(CapacityConfig.Army);
     return { beforeRaid: remainingCapacity, afterRaid: remainingCapacityAfterRaid };
-  }, [attackerEntityId, components.Resource, raidSimulation]);
+  }, [resourceWeight, raidSimulation]);
 
   const stealableResources = useMemo(() => {
     let capacityAfterRaid = remainingCapacity.afterRaid;
@@ -219,8 +221,6 @@ export const RaidContainer = ({
     if (!selectedHex) return;
     setShowRaidResult(true);
     await onExplorerVsStructureRaid();
-    // Close modal after raid
-    updateSelectedEntityId(null);
   };
 
   const onExplorerVsStructureRaid = async () => {
@@ -242,12 +242,15 @@ export const RaidContainer = ({
     try {
       setLoading(true);
       // Using the general provider approach since raid_explorer_vs_guard is not defined in systemCalls
-      await raid_explorer_vs_guard({
+      const result = await raid_explorer_vs_guard({
         signer: account,
         ...calldata,
       });
+      if (!("transaction_hash" in result)) throw new Error("Raid receipt has no transaction hash");
+      setRaidTransactionHash(result.transaction_hash);
     } catch (error) {
       console.error(error);
+      setShowRaidResult(false);
     } finally {
       setLoading(false);
     }
@@ -296,6 +299,7 @@ export const RaidContainer = ({
                 <span className="mr-2">⚔️</span> Raid in Progress
               </h3>
               <RaidResult
+                transactionHash={raidTransactionHash}
                 raiderId={attackerEntityId}
                 target={target}
                 successRate={raidSimulation?.successChance || 50}

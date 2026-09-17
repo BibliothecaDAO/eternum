@@ -751,6 +751,10 @@ pub mod SeasonDomain {
                 value.serialize(ref calldata);
                 (peers.settlement, selector!("settle_blitz"))
             },
+            Command::ProvisionAndUpgradeRealm(value) => {
+                value.serialize(ref calldata);
+                (peers.structures, selector!("provision_and_upgrade_realm"))
+            },
             Command::ProvisionRealm(value) => {
                 value.serialize(ref calldata);
                 (peers.structures, selector!("activate_realm_economy"))

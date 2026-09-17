@@ -1,5 +1,4 @@
 import { FactoryV2DeveloperContractLookup } from "./factory-v2-developer-contract-lookup";
-import { FactoryV2DeveloperConfig } from "./factory-v2-developer-config";
 import { useFactoryV2DeveloperPanelVisibility } from "../hooks/use-factory-v2-developer-panel-visibility";
 import type { FactoryGameMode, FactoryLaunchChain } from "../types";
 
@@ -43,8 +42,6 @@ export const FactoryV2DeveloperTools = ({
             draftGameName={draftGameName}
             selectedRunName={selectedRunName}
           />
-
-          <FactoryV2DeveloperConfig mode={mode} chain={chain} environmentLabel={environmentLabel} />
         </div>
       ) : null}
     </div>

@@ -1,3 +1,5 @@
+import { buildNativeGameParams, loadNativePresetConfiguration } from "../registrar/native-preset";
+import { buildNativePreset } from "../config/native-preset";
 import { setTimeout as sleep } from "node:timers/promises";
 import { Account, RpcProvider, shortString } from "starknet";
 import { assertProviderChain } from "@realms-world/chain";
@@ -17,6 +19,7 @@ import {
 } from "../ledger/calls";
 import {
   assertRegistrarAvailable,
+  isNativeRegistrar,
   createRegistrarGame,
   resolveRegistrarEnvironmentId,
   resolveRegistrarWorldAddress,
@@ -241,7 +244,8 @@ async function ensureSponsoredLedgerPool(launch: PreparedLaunch, gameId: number)
 }
 
 function buildRegistrarGameParams(launch: PreparedLaunch) {
-  return buildCreateGameParams(launch.config, {
+  const buildParams = isNativeRegistrar(launch.runtime.environment.id) ? buildNativeGameParams : buildCreateGameParams;
+  return buildParams(launch.config, {
     gameName: launch.request.gameName,
     presetId: launch.runtime.presetId,
     seriesName: launch.request.seriesName,
@@ -309,7 +313,16 @@ async function createGame(launch: PreparedLaunch): Promise<void> {
   const ledger = createLedgerGameTarget(launch);
   const result = await launch.runtime.progress.run(
     "create_game",
-    () => createRegistrarGame(createLaunchAccount(launch), buildRegistrarGameParams(launch), environmentId, ledger),
+    () =>
+      createRegistrarGame(
+        createLaunchAccount(launch),
+        buildRegistrarGameParams(launch),
+        environmentId,
+        ledger,
+        isNativeRegistrar(environmentId)
+          ? buildNativePreset(loadNativePresetConfiguration(environmentId, launch.runtime.presetId))
+          : undefined,
+      ),
     {
       start: `Creating "${launch.request.gameName}" through the persistent registrar`,
       success: (created, elapsedMs) =>

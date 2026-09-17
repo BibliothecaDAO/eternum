@@ -1,14 +1,13 @@
-import { buildingsAtQuery, readBuildings } from "@bibliothecadao/eternum";
-import { useEntityQuery } from "@dojoengine/react";
+import { readBuildings } from "@bibliothecadao/eternum";
+
 import { useMemo } from "react";
-import { useDojo } from "../";
+import { useGame } from "../context";
+import { useNativeRevision } from "./use-native-facts";
 
-export const useBuildings = (outerCol: number, outerRow: number) => {
+export const useBuildings = (col: number, row: number, alt = false) => {
   const {
-    setup: { components },
-  } = useDojo();
-
-  const buildingEntities = useEntityQuery(buildingsAtQuery(components, outerCol, outerRow));
-
-  return useMemo(() => readBuildings(components, buildingEntities), [buildingEntities]);
+    setup: { store },
+  } = useGame();
+  const revision = useNativeRevision(["Building", "ProductionRecipe"]);
+  return useMemo(() => readBuildings(store, col, row, alt), [store, col, row, alt, revision]);
 };

@@ -22,41 +22,41 @@ describe("bitcoin mine calls", () => {
   it("routes authenticated labor through the queue with lossless u128 calldata and one game id", async () => {
     const { provider, enqueue, calls } = setup();
     const labor = (1n << 100n) + 17n;
-    await calls.bitcoin_mine_contribute_labor({ signer, mine_id: 9, target_phase_id: 2n, labor_amount: labor });
+    await calls.bitcoin_mine_contribute_labor({ signer, structure_id: 9, labor_amount: labor });
     const queued = enqueue.mock.calls[0][0];
     expect(queued.transactionType).toBe(TransactionType.BITCOIN_MINE_CONTRIBUTE_LABOR);
     expect(scoped(provider, queued.calls)).toEqual({
       contractAddress: MINE,
       entrypoint: "contribute_labor",
-      calldata: ["7", 9, 2n, labor],
+      calldata: ["7", 9, labor],
     });
   });
 
-  it.each(["0x0", "0x99"])("claims a phase with the configured VRF (%s)", async (vrf) => {
-    const { provider, enqueue, calls } = setup(vrf);
+  it("claims from the bound phase without requesting a new draw", async () => {
+    const { provider, enqueue, calls } = setup();
     await calls.bitcoin_mine_claim_phase_reward({ signer, phase_id: 2n, mine_ids: [9, 10] });
-    const queued = enqueue.mock.calls[0][0];
-    const actual = scoped(provider, queued.calls) as Call[];
-    expect(queued.transactionType).toBe(TransactionType.BITCOIN_MINE_CLAIM_PHASE_REWARD);
-    expect(actual.at(-1)).toEqual({
+    expect(scoped(provider, enqueue.mock.calls[0][0].calls)).toEqual({
       contractAddress: MINE,
       entrypoint: "claim_phase_reward",
       calldata: ["7", 2n, 2, 9, 10],
     });
-    expect(actual).toHaveLength(vrf === "0x0" ? 1 : 2);
-    if (vrf !== "0x0")
-      expect(actual[0]).toEqual({
-        contractAddress: vrf,
-        entrypoint: "request_random",
-        calldata: [MINE, 0, signer.address],
-      });
+  });
+
+  it("closes the pool before binding the recorded phase root", async () => {
+    const { provider, enqueue, calls } = setup();
+    await calls.bitcoin_mine_close_phase({ signer, phase_id: 2n });
+    await calls.bitcoin_mine_bind_phase({ signer, phase_id: 2n });
+    expect(enqueue.mock.calls.map(([queued]) => scoped(provider, queued.calls))).toEqual([
+      { contractAddress: MINE, entrypoint: "close_bitcoin_phase", calldata: ["7", 2n] },
+      { contractAddress: MINE, entrypoint: "bind_bitcoin_phase", calldata: ["7", 2n] },
+    ]);
   });
 
   it("rejects unsigned mine actions before enqueueing", async () => {
     const { enqueue, calls } = setup();
     const unsigned = { address: "0x0" } as AccountInterface;
     await expect(
-      calls.bitcoin_mine_contribute_labor({ signer: unsigned, mine_id: 9, target_phase_id: 2, labor_amount: 100 }),
+      calls.bitcoin_mine_contribute_labor({ signer: unsigned, structure_id: 9, labor_amount: 100 }),
     ).rejects.toThrow("No account connected");
     await expect(
       calls.bitcoin_mine_claim_phase_reward({ signer: unsigned, phase_id: 2, mine_ids: [9] }),

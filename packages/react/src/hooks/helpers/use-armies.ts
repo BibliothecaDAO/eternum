@@ -1,19 +1,24 @@
-import { explorersByStructureQuery, readExplorers } from "@bibliothecadao/eternum";
-import { ContractAddress, ID } from "@bibliothecadao/types";
-import { useEntityQuery } from "@dojoengine/react";
+import { readExplorers } from "@bibliothecadao/eternum";
+import type { ID } from "@bibliothecadao/types";
 import { useMemo } from "react";
-import { useDojo } from "../";
+import { useGame } from "../context";
+import { useNativeRevision } from "./use-native-facts";
 
 export const useExplorersByStructure = ({ structureEntityId }: { structureEntityId: ID }) => {
   const {
-    setup: { components },
+    setup: { store },
     account: { account },
-  } = useDojo();
-
-  const explorerEntities = useEntityQuery(explorersByStructureQuery(components, structureEntityId));
-
+  } = useGame();
+  const revision = useNativeRevision([
+    "ExplorerTroops",
+    "Structure",
+    "AgentOwner",
+    "ResourceWeight",
+    "AddressName",
+    "TileOpt",
+  ]);
   return useMemo(
-    () => readExplorers(components, explorerEntities, ContractAddress(account.address)),
-    [explorerEntities],
+    () => readExplorers(store, structureEntityId, BigInt(account.address)),
+    [store, structureEntityId, account.address, revision],
   );
 };

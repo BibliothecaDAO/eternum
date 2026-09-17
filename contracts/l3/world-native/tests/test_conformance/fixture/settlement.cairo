@@ -12,7 +12,10 @@ use world_native::game::{IGameDispatcher, IGameDispatcherTrait};
 use world_native::guards::{GuardKey, IGuardsDispatcher, IGuardsDispatcherTrait};
 use world_native::hyperstructures::{IHyperstructuresDispatcher, IHyperstructuresDispatcherTrait};
 use world_native::lifecycle::{IDomainDispatcher, IDomainDispatcherTrait};
-use world_native::resources::{IResourcesDispatcher, IResourcesDispatcherTrait, ResourceKey, ResourceRule};
+use world_native::resources::{
+    IResourcesDispatcher, IResourcesDispatcherTrait, ResourceAmount, ResourceKey, ResourceRule, ResourceSlot,
+};
+use world_native::rules::RESOURCE_PRECISION;
 use world_native::season::{ISeasonDispatcher, ISeasonDispatcherTrait};
 use world_native::settlement::{
     AcceptedCosmetic, CosmeticsKey, EntryKey, IBlitzHyperstructuresSafeDispatcher,
@@ -23,6 +26,7 @@ use world_native::settlement::{
     ISettlementViewsDispatcherTrait, RealmGrants, SettleBlitz, SettlementMode, SettlementRules,
 };
 use world_native::structures::{IStructuresDispatcher, IStructuresDispatcherTrait};
+use world_native::upgrades::{IUpgradeRulesDispatcher, IUpgradeRulesDispatcherTrait, UpgradeLimits, UpgradeRecipe};
 use super::{IRecordedExecutionDispatcher, IRecordedExecutionDispatcherTrait, context, pair, setup};
 
 fn prepare() -> ContractAddress {
@@ -454,4 +458,51 @@ fn settlement_commands_reject_forged_domain_callers_before_mutating() {
             .resource_production(world_native::resources::ResourceSlot { game_id: 8, entity_id: 1, resource_type: 23 })
             .building_count == 0,
     );
+}
+
+#[test]
+fn provision_and_upgrade_is_one_atomic_recorded_action() {
+    for cost in array![100_u128, 101].span() {
+        let season = prepare_with_resources(
+            Some(array![ResourceAmount { resource_type: 1, amount: 100 * RESOURCE_PRECISION }].span()),
+        );
+        start_cheat_caller_address(season, 222.try_into().unwrap());
+        IUpgradeRulesDispatcher { contract_address: season }
+            .configure_upgrades(
+                8,
+                UpgradeLimits { realm_max: 1, village_max: 1 },
+                array![
+                    UpgradeRecipe {
+                        costs: array![ResourceAmount { resource_type: 1, amount: *cost * RESOURCE_PRECISION }].span(),
+                    },
+                ]
+                    .span(),
+            );
+        stop_cheat_caller_address(season);
+        execute(season, command(123.try_into().unwrap()), 1005);
+        let peers = IDomainDispatcher { contract_address: season }.domain_state().peers;
+        let structures = IStructuresDispatcher { contract_address: peers.structures };
+        let resources = IResourcesDispatcher { contract_address: peers.resources };
+        let key = ResourceKey { game_id: 8, entity_id: 1 };
+        let stone = ResourceSlot { game_id: 8, entity_id: 1, resource_type: 1 };
+        let labor = ResourceSlot { resource_type: 23, ..stone };
+        let before = structures.structure(key).unwrap();
+        let stone_before = resources.resource_balance(stone);
+        let production_before = resources.resource_production(labor);
+        start_cheat_block_timestamp_global(100000);
+        execute(season, Command::ProvisionAndUpgradeRealm(1), 1201);
+        let result = IRecordedExecutionViewsDispatcher { contract_address: season }.get_result(3);
+        if *cost == 100 {
+            assert!(result.status == 1);
+            assert!(structures.structure(key).unwrap().base.level == 1);
+            assert!(resources.resource_production(labor).building_count == 1);
+            assert!(resources.resource_balance(stone) == stone_before);
+        } else {
+            assert!(result.status == 2);
+            assert!(structures.structure(key).unwrap() == before);
+            assert!(resources.resource_balance(stone) == stone_before);
+            assert!(resources.resource_production(labor) == production_before);
+        }
+        assert!(ISeasonDispatcher { contract_address: season }.next_nonce(8, 456.try_into().unwrap()) == 3);
+    }
 }

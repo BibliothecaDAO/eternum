@@ -19,7 +19,7 @@ import {
   isStructureImmune,
   toHexString,
 } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
+import { useGame, useNativeRevision } from "@bibliothecadao/react";
 import { ContractAddress, RealmLevels, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { useMemo } from "react";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
@@ -41,15 +41,16 @@ const SectionRow = ({ label, children }: { label: string; children: React.ReactN
 );
 
 const RealmVillageDetails = () => {
-  const dojo = useDojo();
+  const dojo = useGame();
   const currentBlockTimestamp = useCurrentBlockTimestamp();
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const setTooltip = useTooltipStore((state) => state.setTooltip);
   const mode = useGameModeConfig();
+  const revision = useNativeRevision(["Structure", "Guard", "GuildMember"]);
 
   const structure = useMemo(
-    () => getStructure(structureEntityId, ContractAddress(dojo.account.account.address), dojo.setup.components),
-    [structureEntityId, dojo.account.account.address, dojo.setup.components],
+    () => getStructure(structureEntityId, ContractAddress(dojo.account.account.address), dojo.setup.store),
+    [structureEntityId, dojo.account.account.address, dojo.setup.store, revision],
   );
 
   const isRealm = useMemo(() => {

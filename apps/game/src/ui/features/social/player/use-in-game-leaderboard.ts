@@ -1,11 +1,11 @@
+import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
 import { useCoarseCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
-import { activeGameRows } from "@/sync/recs-rows";
 import { LEADERBOARD_UPDATE_INTERVAL } from "@/ui/constants";
-import { LeaderboardManager } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
-import { type ClientComponents, ContractAddress } from "@bibliothecadao/types";
+import { configManager, LeaderboardManager } from "@bibliothecadao/eternum";
+import { useGame } from "@bibliothecadao/react";
+import { ContractAddress } from "@bibliothecadao/types";
 import { useMemo } from "react";
 import {
   buildFinalizedBlitzStandingLookup,
@@ -25,9 +25,8 @@ interface InGameLeaderboard {
   standingsByAddress: ReadonlyMap<string, InGameLeaderboardStanding>;
 }
 
-const buildLiveLeaderboard = (components: ClientComponents): InGameLeaderboard => {
-  const manager = LeaderboardManager.instance(components);
-  manager.updatePoints();
+const buildLiveLeaderboard = (store: NativeFactStore): InGameLeaderboard => {
+  const manager = LeaderboardManager.instance(store);
 
   const standingsByAddress = new Map<string, InGameLeaderboardStanding>();
   let rank = 0;
@@ -44,18 +43,18 @@ const buildLiveLeaderboard = (components: ClientComponents): InGameLeaderboard =
   return { isFinalized: false, standingsByAddress };
 };
 
-const buildFinalizedBlitzLeaderboard = (components: ClientComponents): InGameLeaderboard | null => {
-  const finalizedGame = activeGameRows(components.GameRegistry).at(0);
+const buildFinalizedBlitzLeaderboard = (store: NativeFactStore): InGameLeaderboard | null => {
+  const finalizedGame = store.get("GameRegistry", { game_id: configManager.getActiveGameId() });
   if (!finalizedGame || BigInt(finalizedGame.final_trial_id) === 0n) return null;
 
   const registeredPointsLookup = buildRegisteredPointsLookup(
-    activeGameRows(components.PlayerRegisteredPoints).map((row) => ({
+    [...store.inGame("PlayerPoints", configManager.getActiveGameId())].map((row) => ({
       address: row.address as unknown as bigint,
-      registeredPoints: row.registered_points as bigint,
+      registeredPoints: row.points as bigint,
     })),
   );
   const finalizedStandings = buildFinalizedBlitzStandingLookup(
-    activeGameRows(components.PlayerRank).map((row) => ({
+    [...store.inGame("PlayerRank", configManager.getActiveGameId())].map((row) => ({
       playerAddress: row.player as unknown as bigint,
       rank: row.rank as bigint | number,
     })),
@@ -81,23 +80,23 @@ const buildFinalizedBlitzLeaderboard = (components: ClientComponents): InGameLea
 
 export const useInGameLeaderboard = (): InGameLeaderboard => {
   const {
-    setup: { components },
-  } = useDojo();
+    setup: { store },
+  } = useGame();
   const isBlitz = useResolvedWorldGameMode() === "blitz";
   const leaderboardTick = useCoarseCurrentDefaultTick(LEADERBOARD_UPDATE_INTERVAL / 1_000);
   const leaderboardRevision = useWorldSlicesStore((state) => state.leaderboardRevision);
 
   return useMemo(() => {
-    // Both are recompute signals, not inputs: the revision for leaderboard writes reaching RECS, the tick for
-    // shareholder points accruing over time. The standings themselves are read from RECS here.
+    // Both are recompute signals, not inputs: the revision for leaderboard writes reaching the native store, the tick for
+    // shareholder points accruing over time. The standings themselves are read from the native store here.
     void leaderboardRevision;
     void leaderboardTick;
 
     if (isBlitz) {
-      const finalizedLeaderboard = buildFinalizedBlitzLeaderboard(components);
+      const finalizedLeaderboard = buildFinalizedBlitzLeaderboard(store);
       if (finalizedLeaderboard) return finalizedLeaderboard;
     }
 
-    return buildLiveLeaderboard(components);
-  }, [components, isBlitz, leaderboardRevision, leaderboardTick]);
+    return buildLiveLeaderboard(store);
+  }, [store, isBlitz, leaderboardRevision, leaderboardTick]);
 };

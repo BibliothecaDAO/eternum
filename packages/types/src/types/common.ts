@@ -1,4 +1,4 @@
-import { ComponentValue, Entity } from "@dojoengine/recs";
+import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { Account, AccountInterface } from "starknet";
 import {
   BiomeType,
@@ -9,7 +9,6 @@ import {
   ResourceTier,
   StructureType,
 } from "../constants";
-import { ClientComponents } from "../dojo/create-client-components";
 import type { Manifest } from "./manifest";
 
 export interface RelicEffect {
@@ -44,7 +43,7 @@ export enum TileOccupier {
   HyperstructureLevel2 = 10,
   HyperstructureLevel3 = 11,
   //
-  FragmentMine = 12,
+  Mine = 12,
   Village = 13,
   Bank = 14,
   //
@@ -103,8 +102,8 @@ export type ResourceArrivalInfo = {
 
 export type HyperstructureInfo = {
   entity_id: ID;
-  hyperstructure: ComponentValue<ClientComponents["Hyperstructure"]["schema"]>;
-  structure: ComponentValue<ClientComponents["Structure"]["schema"]>;
+  hyperstructure: NativeRows["Hyperstructure"];
+  structure: NativeRows["Structure"];
   position: Position;
   owner: bigint;
   ownerName: string;
@@ -130,15 +129,14 @@ export type ArmyInfo = {
   totalCapacity: number;
   // without precision and in kg
   weight: number;
-  explorer: ComponentValue<ClientComponents["ExplorerTroops"]["schema"]>;
-  structure: ComponentValue<ClientComponents["Structure"]["schema"]> | undefined;
+  explorer: NativeRows["ExplorerTroops"];
+  structure: NativeRows["Structure"] | undefined;
   hasAdjacentStructure: boolean;
-  relicEffects: ResourcesIds[];
 };
 
 export type Structure = {
   entityId: ID;
-  structure: ComponentValue<ClientComponents["Structure"]["schema"]>;
+  structure: NativeRows["Structure"];
   isMine: boolean;
   isMercenary: boolean;
   category: StructureType;
@@ -174,13 +172,13 @@ export type TroopFoodConsumption = {
 
 export type PlayerStructure = {
   entityId: ID;
-  structure: ComponentValue<ClientComponents["Structure"]["schema"]>;
+  structure: NativeRows["Structure"];
   position: Position;
   category: StructureType;
   owner: ContractAddress;
 };
 
-export type RealmWithPosition = ComponentValue<ClientComponents["Structure"]["schema"]> & {
+export type RealmWithPosition = NativeRows["Structure"] & {
   entityId: ID;
   position: Position;
   name: string;
@@ -193,7 +191,6 @@ export interface Building {
   paused: boolean;
   produced: ResourceCost;
   consumed: ResourceCost[];
-  bonusPercent: number;
   innerCol: number;
   innerRow: number;
 }
@@ -237,40 +234,12 @@ export enum TravelTypes {
 
 export type RelicEffectWithEndTick = { id: ResourcesIds; endTick: number };
 
-export interface TroopBoosts {
-  incr_damage_dealt_percent_num: number;
-  incr_damage_dealt_end_tick: number;
-  decr_damage_gotten_percent_num: number;
-  decr_damage_gotten_end_tick: number;
-  incr_stamina_regen_percent_num: number;
-  incr_stamina_regen_tick_count: number;
-  incr_explore_reward_percent_num: number;
-  incr_explore_reward_end_tick: number;
-}
-
-export interface Troops {
-  category: string;
-  tier: string;
-  count: bigint;
-  stamina: {
-    amount: bigint;
-    updated_tick: bigint;
-  };
-  boosts: TroopBoosts;
-  battle_cooldown_end: number;
-}
-
-export enum TroopTier {
-  T1 = "T1",
-  T2 = "T2",
-  T3 = "T3",
-}
-
-export enum TroopType {
-  Knight = "Knight",
-  Paladin = "Paladin",
-  Crossbowman = "Crossbowman",
-}
+export type Troops = NativeRows["ExplorerTroops"]["troops"];
+export type TroopBoosts = Troops["boosts"];
+export type TroopTier = Troops["tier"];
+export const TroopTier = { T1: "T1", T2: "T2", T3: "T3" } as const;
+export type TroopType = Troops["category"];
+export const TroopType = { Knight: "Knight", Paladin: "Paladin", Crossbowman: "Crossbowman" } as const;
 
 /// TRADING
 export interface MarketInterface {
@@ -685,11 +654,11 @@ export interface RealmInfo {
   ownerName: string;
   hasWonder: boolean;
   level: number;
-  structure: ComponentValue<ClientComponents["Structure"]["schema"]>;
+  structure: NativeRows["Structure"];
 }
 
 export interface PlayerInfo {
-  entity: Entity;
+  entity: string;
   rank: number;
   address: bigint;
   name: string;
@@ -705,7 +674,7 @@ export interface PlayerInfo {
 
 /** A registered player: the identity username (else the chosen chain name), or null when neither was chosen. */
 export interface Player {
-  entity: Entity;
+  entity: string;
   address: ContractAddress;
   name: string | null;
   /** The identity portrait id ("01".."12") when the player picked one. */
@@ -722,7 +691,7 @@ export type GuildInfo = {
 };
 
 export type GuildMemberInfo = {
-  guildEntityId: ID;
+  guildEntityId: ContractAddress;
   name: string;
   address: ContractAddress;
   isUser: boolean;

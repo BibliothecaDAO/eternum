@@ -1,3 +1,4 @@
+import { configManager } from "@bibliothecadao/eternum";
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { SceneName } from "./types";
@@ -9,6 +10,8 @@ vi.stubGlobal(
     json: async () => [],
   })),
 );
+
+vi.spyOn(configManager, "getMapCenter").mockReturnValue(2010831280);
 
 const { createRendererRouteRuntime } = await import("./renderer-route-runtime");
 

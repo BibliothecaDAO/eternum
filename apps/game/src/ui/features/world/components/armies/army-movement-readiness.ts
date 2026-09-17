@@ -9,12 +9,12 @@ import {
   ResourceManager,
   StaminaManager,
 } from "@bibliothecadao/eternum";
-import { ClientComponents, getNeighborHexes, ResourcesIds, TroopType } from "@bibliothecadao/types";
-import { ComponentValue } from "@dojoengine/recs";
+import { getNeighborHexes, ResourcesIds, TroopType } from "@bibliothecadao/types";
+import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { getArmyMovementFoodRequirementWarnings, getArmyStaminaRequirementWarnings } from "./army-warning-copy";
 
-type ExplorerTroopsValue = ComponentValue<ClientComponents["ExplorerTroops"]["schema"]>;
-type ResourceValue = ComponentValue<ClientComponents["Resource"]["schema"]>;
+type ExplorerTroopsValue = NativeRows["ExplorerTroops"];
+type ResourceValue = ResourceManager;
 
 interface ArmyFoodCosts {
   wheatPayAmount: number;
@@ -97,27 +97,16 @@ export const useArmyMovementReadiness = (
   }, [army, structureResources, currentArmiesTick, currentDefaultTick]);
 };
 
-// Cannot use an instantiated resource manager here: it reads RECS, which is
-// only synced for the local player's armies. An absent balance is treated as
-// unbounded — an unknown balance must never paint the army blocked.
 const resolveStructureFoodBalance = (
   structureResources: ResourceValue | null | undefined,
   currentDefaultTick: number,
 ): { wheat: number; fish: number } => {
-  if (!structureResources) {
+  if (!structureResources?.hasResources()) {
     return { wheat: Number.POSITIVE_INFINITY, fish: Number.POSITIVE_INFINITY };
   }
 
-  const { balance: wheat } = ResourceManager.balanceWithProduction(
-    structureResources,
-    currentDefaultTick,
-    ResourcesIds.Wheat,
-  );
-  const { balance: fish } = ResourceManager.balanceWithProduction(
-    structureResources,
-    currentDefaultTick,
-    ResourcesIds.Fish,
-  );
+  const { balance: wheat } = structureResources.balanceWithProduction(currentDefaultTick, ResourcesIds.Wheat);
+  const { balance: fish } = structureResources.balanceWithProduction(currentDefaultTick, ResourcesIds.Fish);
 
   return { wheat: divideByPrecision(wheat), fish: divideByPrecision(fish) };
 };

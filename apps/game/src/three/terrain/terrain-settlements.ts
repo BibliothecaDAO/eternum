@@ -30,7 +30,7 @@ function resolveStructureInfluence(structureType: StructureType): TerrainSettlem
       return { disturbanceStrength: 1, levelDisturbance: 0, levelRadius: 0.08, radiusScale: 1.4 };
     case StructureType.Bank:
       return { disturbanceStrength: 0.72, levelDisturbance: 0.08, levelRadius: 0.08, radiusScale: 0.86 };
-    case StructureType.FragmentMine:
+    case StructureType.Mine:
     case StructureType.BitcoinMine:
       return { disturbanceStrength: 0.92, levelDisturbance: 0.06, levelRadius: 0.12, radiusScale: 1.04 };
     case StructureType.Village:

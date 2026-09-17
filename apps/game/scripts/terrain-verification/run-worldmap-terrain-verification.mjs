@@ -35,7 +35,7 @@ const CONSOLE_FAILURE_PATTERNS = [
 const GAME_CLIENT_MODULE_URL = `/@fs${fileURLToPath(new URL("../../../../packages/core/dist/client/index.js", import.meta.url))}`;
 
 const captureScript = `(async () => {
-  const [{ getGameNamespace, getScopedGameId }, { getActiveWorld }, { useWorldSlicesStore }] =
+  const [{ getScopedGameId }, { getActiveWorld }, { useWorldSlicesStore }] =
     await Promise.all([
       import('${GAME_CLIENT_MODULE_URL}'),
       import('/src/runtime/world/store.ts'),
@@ -58,7 +58,7 @@ const captureScript = `(async () => {
     gameIdentity: {
       pathname: location.pathname,
       gameId: provider?.gameId ?? getScopedGameId(),
-      namespace: provider?.namespace ?? getGameNamespace(),
+      namespace: provider?.namespace ?? getActiveWorld()?.namespace,
       worldAddress: provider?.getWorldAddress?.() ?? activeWorld?.worldAddress ?? null,
       worldName: activeWorld?.name ?? null,
       tileRows: contractComponents?.TileOpt

@@ -1,7 +1,6 @@
 import { setTimeout as sleep } from "node:timers/promises";
-import { shortString, type Account, type Call, type RpcProvider } from "starknet";
+import { type Account, type RpcProvider } from "starknet";
 import { type ActionPath, ActionPaths, ActionType, type GameActions } from "@bibliothecadao/eternum";
-import { buildBlitzSettleCalls, buildEternumSettleCalls } from "@bibliothecadao/eternum/game-client";
 import { ContractAddress, TroopTier, type ID, type TroopType } from "@bibliothecadao/types";
 import { mapWithConcurrency, type HarnessAccount } from "./account-factory";
 import {
@@ -69,16 +68,6 @@ export interface TrackedTransaction {
   transactionHash?: string;
 }
 
-export interface HarnessSystemAddresses {
-  realm: string;
-  registrar: string;
-  blitzRealm: string;
-  prizeDistribution: string;
-  production: string;
-  troopManagement: string;
-  troopMovement: string;
-}
-
 export interface HarnessBot {
   account: Account;
   /** This bot's facade over the shared client: every submit signs with `account`. */
@@ -101,7 +90,7 @@ export interface WorkloadResult {
   ticks: number;
 }
 
-/** The harness's own route memory for an explorer; its position and stamina are read from RECS when needed. */
+/** The harness's own route memory for an explorer; its position and stamina are read from the shared store when needed. */
 interface ExplorerState {
   atFrontier: boolean;
   blockedDirections: Map<string, Set<number>>;
@@ -131,7 +120,6 @@ interface PrepareHarnessBotsOptions {
   provider: RpcProvider;
   setupConcurrency?: number;
   setupTransactions: TrackedTransaction[];
-  systems: HarnessSystemAddresses;
 }
 
 interface RunWorkloadOptions {
@@ -193,7 +181,7 @@ const DEFAULT_SETUP_CONCURRENCY = 6;
 class GameRuleLimitError extends Error {}
 class HarnessPathingError extends Error {}
 
-/** Where bots intend to be: RECS knows where they are, this knows which tiles are spoken for by an in-flight move. */
+/** Where bots intend to be: the shared store knows where they are, this knows which tiles are spoken for by an in-flight move. */
 class PathReservations {
   private readonly occupiedByExplorer = new Map<string, ID>();
   private readonly reservedByExplorer = new Map<string, ID>();
@@ -306,10 +294,9 @@ export async function prepareHarnessBots({
   provider,
   setupConcurrency = DEFAULT_SETUP_CONCURRENCY,
   setupTransactions,
-  systems,
 }: PrepareHarnessBotsOptions): Promise<HarnessBot[]> {
   await mapWithConcurrency(accounts, setupConcurrency, async (harnessAccount) => {
-    const settle = await settleBot({ harnessAccount, game, gameType, provider, systems });
+    const settle = await settleBot({ harnessAccount, game, gameType, provider });
     setupTransactions.push(settle);
     assertCompleted(settle);
   });
@@ -321,9 +308,11 @@ export async function prepareHarnessBots({
     const structures = await waitForStructures(game, structureIds);
 
     if (gameType === "blitz") {
-      const provision = await provisionBot({ harnessAccount, game, provider, structureIds, systems });
-      setupTransactions.push(provision);
-      assertCompleted(provision);
+      for (const structureId of structureIds) {
+        const provision = await provisionBot({ harnessAccount, game, provider, structureId });
+        setupTransactions.push(provision);
+        assertCompleted(provision);
+      }
     }
 
     const troopTypes = await waitForStartingTroopTypes(game, structureIds);
@@ -472,77 +461,40 @@ export function prioritizeExplorer<T extends ExplorerPriority>(
   })[0];
 }
 
-/** Raw calls a bot signs itself: settlement and provisioning have no client action, so they go straight to the account. */
-export async function submitCalls(account: Account, calls: Call | Call[]): Promise<HarnessSubmission> {
-  const { transaction_hash } = await account.execute(calls);
-  return { transactionHash: transaction_hash };
-}
-
 async function settleBot({
-  gameType,
-  harnessAccount,
-  game,
-  provider,
-  systems,
+  gameType, harnessAccount, game, provider,
 }: {
   gameType: HarnessGameType;
   harnessAccount: HarnessAccount;
   game: HarnessGame;
   provider: RpcProvider;
-  systems: HarnessSystemAddresses;
 }): Promise<TrackedTransaction> {
-  const usernameFelt = shortString.encodeShortString(`bot-${harnessAccount.botId.toString().padStart(3, "0")}`);
-  const calls =
-    gameType === "eternum"
-      ? buildEternumSettleCalls({
-          realmSystemsAddress: systems.realm,
-          signerAddress: harnessAccount.address,
-          usernameFelt,
-          gameId: game.gameId,
-        })
-      : buildBlitzSettleCalls({
-          blitzSystemsAddress: systems.blitzRealm,
-          signerAddress: harnessAccount.address,
-          usernameFelt,
-          gameId: game.gameId,
-          cosmeticTokenIds: [],
-          grantStartingTroops: true,
-        });
-
+  const name = `bot-${harnessAccount.botId.toString().padStart(3, "0")}`;
   return trackTransaction({
     botId: harnessAccount.botId,
     gameId: game.gameId,
     kind: "settle",
     provider,
-    send: () => submitCalls(harnessAccount.account, calls),
+    send: () => game.submit(harnessAccount.account,
+      () => game.settle(harnessAccount.account, harnessAccount.owner, name, gameType)),
     stage: "setup",
   });
 }
 
 async function provisionBot({
-  harnessAccount,
-  game,
-  provider,
-  structureIds,
-  systems,
+  harnessAccount, game, provider, structureId,
 }: {
   harnessAccount: HarnessAccount;
   game: HarnessGame;
   provider: RpcProvider;
-  structureIds: ID[];
-  systems: HarnessSystemAddresses;
+  structureId: ID;
 }): Promise<TrackedTransaction> {
-  const calls = structureIds.map((structureId) => ({
-    contractAddress: systems.blitzRealm,
-    entrypoint: "provision_realm",
-    calldata: [game.gameId.toString(), structureId.toString()],
-  }));
   return trackTransaction({
     botId: harnessAccount.botId,
     gameId: game.gameId,
     kind: "provision",
     provider,
-    send: () => submitCalls(harnessAccount.account, calls),
+    send: () => game.submit(harnessAccount.account, () => game.provision(harnessAccount.account, structureId)),
     stage: "setup",
   });
 }
@@ -724,7 +676,7 @@ async function runExplorerAction({
 }
 
 /**
- * The client plans every legal step from the explorer's RECS position (occupancy, biome stamina, food); the harness
+ * The client plans every legal step from the explorer's synchronized position (occupancy, biome stamina, food); the harness
  * only chooses which of those steps keeps its route outward and clear of the other bots' reservations.
  */
 function planExplorerAction(
@@ -1107,13 +1059,13 @@ function buildExplorerState(structure: StructureState, explorerId: ID): Explorer
 
 function requireExplorer(game: HarnessGame, explorerId: ID): ExplorerRow {
   const explorer = game.explorer(explorerId);
-  if (!explorer) throw new Error(`Explorer ${explorerId} is not in RECS`);
+  if (!explorer) throw new Error(`Explorer ${explorerId} is not synchronized`);
   return explorer;
 }
 
 function requireProduction(game: HarnessGame, structureId: ID): ProductionState {
   const production = game.production(structureId);
-  if (!production) throw new Error(`Resource ${structureId} is not in RECS`);
+  if (!production) throw new Error(`Resource ${structureId} is not synchronized`);
   return production;
 }
 

@@ -1,9 +1,8 @@
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
-import { Position } from "@bibliothecadao/eternum";
+import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { configManager, getExplorerOwner, Position } from "@bibliothecadao/eternum";
 import type { WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
-import type { ClientComponents, HexEntityInfo } from "@bibliothecadao/types";
+import type { HexEntityInfo } from "@bibliothecadao/types";
 import { BiomeType, ETHEREAL_STRIDE, TileOccupier } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
 import type { ExplorationMapSnapshot } from "./types";
 
 const setNestedValue = <T>(map: Map<number, Map<number, T>>, col: number, row: number, value: T) => {
@@ -12,47 +11,30 @@ const setNestedValue = <T>(map: Map<number, Map<number, T>>, col: number, row: n
   map.set(col, column);
 };
 
-const normalizeOwnerAddress = (value: unknown): bigint => {
-  if (typeof value === "bigint") return value;
-  if (typeof value === "number" && Number.isFinite(value) && value !== 0) return BigInt(value);
-  if (typeof value !== "string" || value.length === 0) return 0n;
+const getStructureOwnerAddress = (store: NativeFactStore, structureId: number): bigint =>
+  store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: structureId })?.owner ?? 0n;
 
-  try {
-    return BigInt(value);
-  } catch {
-    return 0n;
-  }
-};
-
-const getStructureOwnerAddress = (components: ClientComponents, structureId: number): bigint => {
-  const structure = getComponentValue(components.Structure, gameEntityKey([BigInt(structureId)]));
-  return normalizeOwnerAddress(structure?.owner);
-};
-
-const getArmyOwnerAddress = (components: ClientComponents, armyId: number): bigint => {
-  const explorer = getComponentValue(components.ExplorerTroops, gameEntityKey([BigInt(armyId)]));
-  const ownerStructureId = Number(explorer?.owner ?? 0);
-  return Number.isFinite(ownerStructureId) && ownerStructureId !== 0
-    ? getStructureOwnerAddress(components, ownerStructureId)
-    : 0n;
+const getArmyOwnerAddress = (store: NativeFactStore, armyId: number): bigint => {
+  const explorer = store.get("ExplorerTroops", { game_id: configManager.getActiveGameId(), explorer_id: armyId });
+  return explorer ? getExplorerOwner(store, explorer) : 0n;
 };
 
 const buildHexInfo = (id: number, owner: bigint): HexEntityInfo => ({ id, owner });
 
 type SnapshotParams = {
-  components: ClientComponents;
+  store: NativeFactStore;
   explorerId: number;
   scopeRadius: number;
   worldSpatialProjection: WorldSpatialProjection;
 };
 
 export const buildExplorationSnapshot = async ({
-  components,
+  store,
   explorerId,
   scopeRadius,
   worldSpatialProjection,
 }: SnapshotParams): Promise<ExplorationMapSnapshot | null> => {
-  const explorer = getComponentValue(components.ExplorerTroops, gameEntityKey([BigInt(explorerId)]));
+  const explorer = store.get("ExplorerTroops", { game_id: configManager.getActiveGameId(), explorer_id: explorerId });
   if (!explorer?.coord) return null;
 
   const centerCol = Number(explorer.coord.x);
@@ -92,7 +74,7 @@ export const buildExplorationSnapshot = async ({
       structureHexes,
       normalized.x,
       normalized.y,
-      buildHexInfo(Number(structure.entityId), getStructureOwnerAddress(components, Number(structure.entityId))),
+      buildHexInfo(Number(structure.entityId), getStructureOwnerAddress(store, Number(structure.entityId))),
     );
   });
 
@@ -102,7 +84,7 @@ export const buildExplorationSnapshot = async ({
       armyHexes,
       normalized.x,
       normalized.y,
-      buildHexInfo(Number(army.entityId), getArmyOwnerAddress(components, Number(army.entityId))),
+      buildHexInfo(Number(army.entityId), getArmyOwnerAddress(store, Number(army.entityId))),
     );
   });
 

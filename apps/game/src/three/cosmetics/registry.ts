@@ -109,7 +109,7 @@ function buildDefaultArmyEntries(): CosmeticRegistryEntry[] {
 }
 
 function buildDefaultStructureEntries(): CosmeticRegistryEntry[] {
-  const structurePaths = getStructureModelPaths(true);
+  const structurePaths = getStructureModelPaths();
 
   return STRUCTURE_TYPES.map((structureType) => {
     const paths = structurePaths[structureType] ?? [];

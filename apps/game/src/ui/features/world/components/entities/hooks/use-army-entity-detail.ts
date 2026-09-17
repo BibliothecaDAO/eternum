@@ -1,11 +1,15 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { useGameEntityComponentValue } from "@/hooks/helpers/use-game-entity-component-value";
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { getCharacterName } from "@/utils/agent";
 import { getExplorerStaminaSnapshot } from "@/utils/explorer-stamina";
 import { usePlayerProfile } from "@/hooks/use-player-profile";
-import { getArmyRelicEffects, getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
+import {
+  configManager,
+  getExplorerOwner,
+  getArmyRelicEffects,
+  getGuildFromPlayerAddress,
+} from "@bibliothecadao/eternum";
+import { useGame, useNativeRow, useResourceManager, useNativeRevision } from "@bibliothecadao/react";
 import { ContractAddress, ID, TroopTier, TroopType } from "@bibliothecadao/types";
 import { useCallback, useMemo, useState } from "react";
 
@@ -38,19 +42,27 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
   const {
     account: { account },
     setup: {
-      components,
+      store,
       systemCalls: { explorer_delete },
     },
-  } = useDojo();
+  } = useGame();
   const mode = useGameModeConfig();
 
   const { currentArmiesTick } = useBlockTimestamp();
   const userAddress = ContractAddress(account.address);
   const [isLoadingDelete, setIsLoadingDelete] = useState(false);
-  const explorer = useGameEntityComponentValue(components.ExplorerTroops, armyEntityId);
-  const explorerResources = useGameEntityComponentValue(components.Resource, armyEntityId);
-  const structure = useGameEntityComponentValue(components.Structure, explorer?.owner);
-  const structureResources = useGameEntityComponentValue(components.Resource, explorer?.owner);
+  const explorer = useNativeRow("ExplorerTroops", {
+    game_id: configManager.getActiveGameId(),
+    explorer_id: armyEntityId,
+  });
+  const explorerResources = useResourceManager(armyEntityId);
+  const structure = useNativeRow(
+    "Structure",
+    explorer ? { game_id: configManager.getActiveGameId(), entity_id: explorer.owner } : undefined,
+  );
+  const structureResources = useResourceManager(explorer?.owner ?? 0);
+  const ownershipRevision = useNativeRevision(["AgentOwner", "GuildMember", "Guild"]);
+  const owner = explorer ? getExplorerOwner(store, explorer) : 0n;
 
   const staminaSnapshot = useMemo(() => {
     return getExplorerStaminaSnapshot({
@@ -66,7 +78,7 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
     [currentArmiesTick, currentTroops],
   );
 
-  const ownerProfile = usePlayerProfile(structure?.owner);
+  const ownerProfile = usePlayerProfile(owner);
   const derivedData: DerivedArmyData | undefined = useMemo(() => {
     if (!explorer) return undefined;
 
@@ -83,10 +95,10 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
         }
       : null;
 
-    const guild = structure ? getGuildFromPlayerAddress(ContractAddress(structure.owner), components) : undefined;
-    const isMine = structure?.owner === userAddress;
+    const guild = owner ? getGuildFromPlayerAddress(owner, store) : undefined;
+    const isMine = owner === userAddress;
 
-    const addressName = structure?.owner
+    const addressName = owner
       ? (ownerProfile.name ?? undefined)
       : getCharacterName(explorer.troops.tier as TroopTier, explorer.troops.category as TroopType, armyEntityId);
 
@@ -103,7 +115,9 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
     };
   }, [
     armyEntityId,
-    components,
+    store,
+    owner,
+    ownershipRevision,
     currentArmiesTick,
     explorer,
     mode,

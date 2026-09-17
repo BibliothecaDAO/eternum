@@ -14,9 +14,7 @@ import {
   ResourcesIds,
   StructureType,
 } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
+import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 
 type ConstructionSpot = {
   col: number;
@@ -64,7 +62,7 @@ export type ConstructionBuildabilityInput = {
   entityId: number;
   buildingType: BuildingType;
   useSimpleCost: boolean;
-  components: any;
+  store: NativeFactStore;
   realm?: ConstructionRealm | null;
   mode?: ConstructionMode | null;
   targetSpot?: ConstructionSpot | null;
@@ -256,7 +254,7 @@ const validateTargetSpot = (input: ConstructionBuildabilityInput) => {
 
 const validateCosts = (input: ConstructionBuildabilityInput): ConstructionBuildabilityResult => {
   const buildingCosts = normalizeResourceCosts(
-    getBuildingCosts(input.entityId, input.components, input.buildingType, input.useSimpleCost),
+    getBuildingCosts(input.entityId, input.store, input.buildingType, input.useSimpleCost),
   );
   if (buildingCosts.length === 0) {
     return fail("missing_cost", "No construction cost is configured for this building.");
@@ -264,7 +262,7 @@ const validateCosts = (input: ConstructionBuildabilityInput): ConstructionBuilda
 
   const { currentDefaultTick } = getBlockTimestamp();
   const hasResources = buildingCosts.every((resourceCost) => {
-    const balance = getBalance(input.entityId, resourceCost.resource, currentDefaultTick, input.components);
+    const balance = getBalance(input.entityId, resourceCost.resource, currentDefaultTick, input.store);
     return divideByPrecision(balance.balance) >= resourceCost.amount;
   });
 
@@ -283,42 +281,16 @@ const resolveBuildingPopulationImpact = (buildingType: BuildingType): BuildingPo
   };
 };
 
-const resolveRecsPopulationState = (
-  input: ConstructionBuildabilityInput,
-  basePopulationCapacity: number,
-): PopulationState | null => {
-  const structureBuildingsComponent = input.components?.StructureBuildings;
-  if (!structureBuildingsComponent) return null;
-
-  const structureBuildings = getComponentValue(structureBuildingsComponent, gameEntityKey([BigInt(input.entityId)]));
-  const population = structureBuildings?.population;
-  if (!population) return null;
-
-  const current = toNumber(population.current);
-  const max = toNumber(population.max);
-
-  return {
-    current,
-    max,
-    hasCapacity: max + basePopulationCapacity > current,
-  };
-};
-
 const resolvePopulationState = (
   input: ConstructionBuildabilityInput,
   basePopulationCapacity: number,
 ): PopulationState => {
-  const recsPopulationState = resolveRecsPopulationState(input, basePopulationCapacity);
-  if (recsPopulationState) return recsPopulationState;
-
-  const current = toNumber(input.realm?.population);
-  const max = toNumber(input.realm?.capacity);
-
-  return {
-    current,
-    max,
-    hasCapacity: input.realm?.hasCapacity ?? (max + basePopulationCapacity > current ? true : null),
-  };
+  const buildings = input.store.require("StructureBuildings", {
+    game_id: configManager.getActiveGameId(),
+    entity_id: input.entityId,
+  });
+  const { current, max } = buildings.population;
+  return { current, max, hasCapacity: max + basePopulationCapacity > current };
 };
 
 const lacksAvailablePopulationCapacity = (population: PopulationState, impact: BuildingPopulationImpact): boolean =>

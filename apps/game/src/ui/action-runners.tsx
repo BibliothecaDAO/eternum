@@ -6,8 +6,6 @@ import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
-import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
-import { gameCallArgs, gameEntityKey, getGameNamespace } from "@bibliothecadao/eternum/game-client";
 import { toast } from "@/ui/features/event-feed/notify";
 import {
   createRealmProvisionRunner,
@@ -18,15 +16,16 @@ import { canIssueOrders } from "@/utils/can-issue-orders";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 import { RESOURCE_ARRIVAL_AUTO_CLAIM_RETRY_DELAY_SECONDS, RESOURCE_ARRIVAL_READY_BUFFER_SECONDS } from "@/ui/constants";
 
-import { getBuildingCount, getIsBlitz, getStructureName, ResourceArrivalManager } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
+import {
+  configManager,
+  getBuildingCount,
+  getIsBlitz,
+  getStructureName,
+  ResourceArrivalManager,
+} from "@bibliothecadao/eternum";
+import { useGame } from "@bibliothecadao/react";
 import { BuildingType, StructureType, type ResourceArrivalInfo } from "@bibliothecadao/types";
-import { getContractByName } from "@dojoengine/core";
-import { getComponentValue } from "@dojoengine/recs";
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import { CallData } from "starknet";
-import { dojoConfig } from "../../dojo-config";
-import { env } from "../../env";
 
 const getArrivalKey = (arrival: ResourceArrivalInfo) =>
   `${arrival.structureEntityId}-${arrival.day}-${arrival.slot.toString()}`;
@@ -45,8 +44,8 @@ const ResourceArrivalAutoClaim = () => {
   const resourceArrivals = useWorldSlicesStore((state) => state.resourceArrivals);
   const {
     account: { account },
-    setup: { components, systemCalls },
-  } = useDojo();
+    setup: { store, systemCalls },
+  } = useGame();
   const autoClaimedArrivals = useRef<Set<string>>(new Set());
   const lastFailureRef = useRef<Map<string, number>>(new Map());
   const isAutoClaimingRef = useRef(false);
@@ -166,7 +165,7 @@ const ResourceArrivalAutoClaim = () => {
           if (lastFailure && now - lastFailure < retryDelaySeconds) continue;
 
           try {
-            const resourceArrivalManager = new ResourceArrivalManager(components, systemCalls, arrival);
+            const resourceArrivalManager = new ResourceArrivalManager(systemCalls, arrival);
             await resourceArrivalManager.offload(account, arrival.resources.length);
             autoClaimedArrivals.current.add(arrivalKey);
             lastFailureRef.current.delete(arrivalKey);
@@ -192,7 +191,7 @@ const ResourceArrivalAutoClaim = () => {
     };
   }, [
     account,
-    components,
+    store,
     getChainNowSeconds,
     isSeasonOver,
     playerResourceArrivals,
@@ -211,8 +210,8 @@ type ProvisionableRealm = RealmProvisionCandidate & { location: { x: number; y: 
 const AutoProvisionRealms = () => {
   const {
     account: { account },
-    setup: { components },
-  } = useDojo();
+    setup: { store, systemCalls },
+  } = useGame();
   const isBlitzWorld = useResolvedWorldGameMode() === "blitz";
 
   useEffect(() => {
@@ -223,10 +222,10 @@ const AutoProvisionRealms = () => {
         .getState()
         .playerStructures.filter((structure) => structure.category === StructureType.Realm)
         .flatMap((structure) => {
-          const buildings = getComponentValue(
-            components.StructureBuildings,
-            gameEntityKey([BigInt(structure.entityId)]),
-          );
+          const buildings = store.get("StructureBuildings", {
+            game_id: configManager.getActiveGameId(),
+            entity_id: structure.entityId,
+          });
           if (!buildings) return [];
           const packedCounts = [buildings.packed_counts_1, buildings.packed_counts_2, buildings.packed_counts_3].map(
             (count) => BigInt(count ?? 0),
@@ -249,7 +248,9 @@ const AutoProvisionRealms = () => {
       },
       nowSeconds: () => useChainTimeStore.getState().getNowSeconds(),
       hasSigner: () => Boolean(useAccountStore.getState().account) && canIssueOrders(),
-      submit: (realmIds) => submitRealmProvisions(account, realmIds),
+      submit: async (realmIds) => {
+        for (const realm_entity_id of realmIds) await systemCalls.provision_realm({ signer: account, realm_entity_id });
+      },
       report: {
         provisioned: (realms) => {
           toast.dismiss(provisionBatchNoticeId(realms));
@@ -267,7 +268,7 @@ const AutoProvisionRealms = () => {
     return useConnectionStore.subscribe((state, previous) => {
       if (state.lastConfirmedBlock !== previous.lastConfirmedBlock) void runner.onConfirmedHead();
     });
-  }, [account, components.StructureBuildings, isBlitzWorld]);
+  }, [account, store, systemCalls, isBlitzWorld]);
 
   return null;
 };
@@ -287,26 +288,6 @@ const describeProvisionFailure = (
       ? "giving up until reload"
       : `retry in ${retry.nextAttemptInHeads} ${retry.nextAttemptInHeads === 1 ? "block" : "blocks"}`;
   return `Provisioning ${names} failed (attempt ${retry.attempt}): ${reason} · ${next}`;
-};
-
-const submitRealmProvisions = async (
-  account: NonNullable<ReturnType<typeof useDojo>["account"]["account"]>,
-  realmIds: number[],
-): Promise<void> => {
-  const contract = getContractByName(dojoConfig.manifest, getGameNamespace(), "blitz_realm_systems");
-  if (!contract?.address) throw new Error("blitz_realm_systems is missing from the active manifest");
-  await executeObservedClientTransaction({
-    account,
-    calls: realmIds.map((realmId) => ({
-      contractAddress: contract.address,
-      entrypoint: "provision_realm",
-      calldata: CallData.compile([...gameCallArgs(), realmId]),
-    })),
-    surface: "settlement",
-    operation: "blitz_realm_systems.provision_realm",
-    chain: env.VITE_PUBLIC_CHAIN,
-    waitForConfirmation: true,
-  });
 };
 
 /** The background actors that submit transactions on their own; every other former store manager is the bridge. */

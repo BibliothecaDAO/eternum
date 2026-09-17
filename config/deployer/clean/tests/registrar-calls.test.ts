@@ -74,9 +74,11 @@ describe("registrar receipt parsing", () => {
     );
   });
 
-  test("resolves the Madara registrar from the deployed manifest", () => {
-    expect(resolveRegistrarContractAddress("registrar_systems", "madara.blitz")).toBe(
-      "0x765e9ea6caf96b51e28c22337869615e101db8f61665750830c2bf51eb6a553",
-    );
+  test("resolves the registrar from the selected deployment manifest", () => {
+    expect(
+      resolveRegistrarContractAddress("registrar_systems", {
+        contracts: [{ tag: "s2-registrar_systems", address: "0x456" }],
+      }),
+    ).toBe("0x456");
   });
 });

@@ -1,16 +1,9 @@
 import type { Abi } from "starknet";
-/** Generated from the native domain ABIs; the shared bootstrap installs these into its existing RECS world. */
+
+/** Generated protocol metadata; typed rows come from the native fact declarations. */
 export interface NativeWorldBindings {
   schemaIdentity: string;
   commandAbi: Abi;
   events: { name: string; scope: "game" | "deployment" }[];
-  models: { name: string; scope: "game" | "deployment"; schema: Record<string, NativeRecsType> }[];
+  models: { name: string; scope: "game" | "deployment" }[];
 }
-export type NativeRecsType =
-  | "OptionalNumber"
-  | "Boolean"
-  | "Number"
-  | "BigInt"
-  | "String"
-  | [NativeRecsType]
-  | { [key: string]: NativeRecsType };

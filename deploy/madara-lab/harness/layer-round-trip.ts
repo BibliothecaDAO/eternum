@@ -1,17 +1,18 @@
 import { ETHEREAL_STRIDE, tileDataToTile } from "@bibliothecadao/types";
 import { setTimeout as sleep } from "node:timers/promises";
-import { CallData, type Call, type RpcProvider } from "starknet";
+import type { RpcProvider } from "starknet";
+import type { GameClient } from "@bibliothecadao/eternum";
 import {
   cubeDistance,
   neighbor,
-  submitCalls,
   trackTransaction,
   type HarnessBot,
   type TrackedTransaction,
 } from "./driver";
-import { HeraldObserver, type HeraldExplorer } from "./herald-observer";
+import type { HarnessGame } from "./harness-game";
 
 type Coord = { alt: boolean; x: number; y: number };
+type Explorer = Coord & { explorerId: string; owner: string; stamina: number; staminaUpdatedTick: number };
 type Tile = ReturnType<typeof tileDataToTile>;
 type StepKind = "approach" | "enter" | "explore" | "return" | "exit";
 
@@ -30,15 +31,13 @@ interface RoundTripOptions {
   bots: HarnessBot[];
   gameId: number;
   provider: RpcProvider;
-  heraldUrl: string;
-  troopMovementAddress: string;
-  altMovementAddress: string;
+  client: GameClient;
+  game: HarnessGame;
 }
 
 interface RoundTripContext extends RoundTripOptions {
   bot: HarnessBot;
-  explorer: HeraldExplorer;
-  observer: HeraldObserver;
+  explorer: Explorer;
   evidence: LayerRoundTripEvidence;
   stamina: { gain: number; tickSeconds: number; required: number };
 }
@@ -67,17 +66,11 @@ async function prepareRoundTrip(
   options: RoundTripOptions,
   evidence: LayerRoundTripEvidence,
 ): Promise<RoundTripContext> {
-  const observer = new HeraldObserver(options.heraldUrl, "madara");
-  const models = await observer.readModelRows(options.gameId, ["GameRegistry", "WorldConfig", "PresetConfig"]);
-  const game = models.get("GameRegistry")![0];
-  const world = models.get("WorldConfig")![0];
-  if (!game || world?.blitz_mode_on !== false) throw new Error("Layer round trip requires an Eternum game");
-  const preset = models
-    .get("PresetConfig")!
-    .find((row) => BigInt(row.preset_id as string) === BigInt(game.preset_id as string));
-  if (!preset) throw new Error("Layer round trip has no matching preset");
-  const explorers = await observer.readExplorers(options.gameId);
-  const tiles = await readTiles(observer, options.gameId);
+  const { store } = options.client.setup;
+  const preset = store.get("SliceRules", { game_id: options.gameId });
+  if (!preset || preset.blitz_mode_on) throw new Error("Layer round trip requires an Eternum game");
+  const explorers = [...store.inGame("ExplorerTroops", options.gameId)].map(readExplorer);
+  const tiles = readTiles(options.client);
   const spires = tiles.filter((tile) => !tile.alt && tile.occupier_type === SPIRE_OCCUPIER);
   if (!spires.length) throw new Error("Eternum game has no spires");
   const candidates = options.bots
@@ -93,11 +86,11 @@ async function prepareRoundTrip(
   if (preset.spire_travel_essence_cost === undefined) throw new Error("Portal fee is missing from the preset snapshot");
   evidence.portalFee = {
     homeStructureId: candidate.explorer.owner,
-    essencePerCrossing: BigInt(preset.spire_travel_essence_cost as string).toString(),
+    essencePerCrossing: preset.spire_travel_essence_cost.toString(),
   };
   evidence.botId = candidate.bot.botId;
   evidence.explorerId = candidate.explorer.explorerId;
-  return { ...options, ...candidate, evidence, observer, stamina: resolveMovementStamina(preset) };
+  return { ...options, ...candidate, evidence, stamina: resolveMovementStamina(preset) };
 }
 
 function resolveMovementStamina(preset: Record<string, unknown>): RoundTripContext["stamina"] {
@@ -116,7 +109,7 @@ function resolveMovementStamina(preset: Record<string, unknown>): RoundTripConte
 
 async function approachSpire(context: RoundTripContext): Promise<{ direction: number }> {
   for (let attempt = 0; attempt <= MAX_APPROACH_TRANSACTIONS; attempt++) {
-    const tiles = await readTiles(context.observer, context.gameId);
+    const tiles = readTiles(context.client);
     const access = chooseSpireAccess(context.explorer, tiles);
     if (!access) throw new Error("No spire has a free landing tile and an unexplored ethereal neighbor");
     context.evidence.spire = { id: access.spire.occupier_id, x: access.spire.col, y: access.spire.row };
@@ -130,7 +123,7 @@ async function approachSpire(context: RoundTripContext): Promise<{ direction: nu
   throw new Error(`Spire approach exceeded ${MAX_APPROACH_TRANSACTIONS} transactions`);
 }
 
-function chooseSpireAccess(explorer: HeraldExplorer, tiles: readonly Tile[]) {
+function chooseSpireAccess(explorer: Explorer, tiles: readonly Tile[]) {
   const candidates = tiles
     .filter((tile) => !tile.alt && tile.occupier_type === SPIRE_OCCUPIER)
     .flatMap((spire) => {
@@ -194,7 +187,7 @@ function routeToSpire(start: Coord, goal: Coord, tiles: readonly Tile[]): number
 
 async function exploreAndReturn(context: RoundTripContext): Promise<void> {
   const arrival = positionOf(context.explorer);
-  const tiles = await readTiles(context.observer, context.gameId);
+  const tiles = readTiles(context.client);
   const explore = chooseEtherealExplore(arrival, tiles);
   if (!explore) throw new Error("Spire arrival has no unexplored ethereal neighbor");
   await moveExplorer(context, "explore", explore.direction, true, explore.target);
@@ -217,11 +210,9 @@ function chooseEtherealExplore(arrival: Coord, tiles: readonly Tile[]) {
 
 async function toggleLayer(context: RoundTripContext, kind: "enter" | "exit", direction: number) {
   const expected = { ...positionOf(context.explorer), alt: kind === "enter" };
-  await submitStep(context, kind, {
-    contractAddress: context.altMovementAddress,
-    entrypoint: "toggle_alternate",
-    calldata: CallData.compile([context.gameId, context.explorer.explorerId, direction]),
-  });
+  await submitStep(context, kind, () => context.client.setup.systemCalls.toggle_alternate({
+    signer: context.bot.account, explorer_id: Number(context.explorer.explorerId), spire_direction: direction,
+  }));
   if (!samePosition(context.explorer, expected))
     throw new Error(`${kind} changed the landing coordinates or used the wrong layer`);
 }
@@ -234,30 +225,26 @@ async function moveExplorer(
   target: Coord,
 ) {
   await waitForStamina(context);
-  await submitStep(context, kind, {
-    contractAddress: context.troopMovementAddress,
-    entrypoint: "explorer_move",
-    calldata: CallData.compile([context.gameId, context.explorer.explorerId, [direction], explore]),
-  });
+  await submitStep(context, kind, () => context.client.setup.systemCalls.explorer_move({
+    signer: context.bot.account, explorer_id: Number(context.explorer.explorerId), directions: [direction], explore,
+  }));
   if (context.explorer.alt !== target.alt) throw new Error("Movement crossed layers without spire travel");
   if (explore) {
-    await context.observer.waitForModelRows(
-      context.gameId,
-      ["TileOpt"],
-      (models) => decodeTiles(models.get("TileOpt")!).some((tile) => sameTile(tile, target) && tile.biome !== 0),
-      OBSERVATION_TIMEOUT_MS,
+    await context.game.waitFor(
+      () => readTiles(context.client).some((tile) => sameTile(tile, target) && tile.biome !== 0) ? true : undefined,
+      OBSERVATION_TIMEOUT_MS, () => `Revealed tile ${target.x},${target.y}`,
     );
     context.evidence.steps.at(-1)!.exploredTile = target;
   } else if (!samePosition(context.explorer, target)) throw new Error("Explorer movement did not reach its target");
 }
 
-async function submitStep(context: RoundTripContext, kind: StepKind, call: Call) {
+async function submitStep(context: RoundTripContext, kind: StepKind, act: () => Promise<unknown>) {
   const before = context.explorer;
   const transaction = await trackTransaction({
     botId: context.bot.botId,
     gameId: context.gameId,
     provider: context.provider,
-    send: () => submitCalls(context.bot.account, call),
+    send: () => context.game.submit(context.bot.account, act),
     kind: `layer_${kind}`,
     stage: "setup",
   });
@@ -266,13 +253,11 @@ async function submitStep(context: RoundTripContext, kind: StepKind, call: Call)
   if (transaction.outcome !== "completed" || transaction.acceptedOnL2Block === undefined) {
     throw new Error(`${kind} failed: ${transaction.error ?? transaction.outcome}`);
   }
-  context.explorer = await context.observer.waitForExplorer(
-    context.gameId,
-    before.explorerId,
-    before,
-    transaction.acceptedOnL2Block,
-    OBSERVATION_TIMEOUT_MS,
-  );
+  const row = context.client.setup.store.get("ExplorerTroops", {
+    game_id: context.gameId, explorer_id: Number(before.explorerId),
+  });
+  if (!row) throw new Error(`Explorer ${before.explorerId} disappeared`);
+  context.explorer = readExplorer(row);
   step.explorer = positionOf(context.explorer);
 }
 
@@ -294,9 +279,12 @@ const nearestSpireDistance = (coord: Coord, spires: readonly Tile[]) =>
 const positionOf = ({ alt, x, y }: Coord): Coord => ({ alt, x, y });
 const samePosition = (a: Coord, b: Coord) => a.alt === b.alt && a.x === b.x && a.y === b.y;
 const sameTile = (tile: Tile, coord: Coord) => tile.alt === coord.alt && tile.col === coord.x && tile.row === coord.y;
-const decodeTiles = (rows: Record<string, unknown>[]) => rows.map((row) => tileDataToTile(row.data as string));
-async function readTiles(observer: HeraldObserver, gameId: number) {
-  return decodeTiles((await observer.readModelRows(gameId, ["TileOpt"])).get("TileOpt")!);
+function readTiles(client: GameClient) {
+  return [...client.setup.store.inGame("TileOpt", client.gameId)].map((row) => tileDataToTile(row.data));
+}
+function readExplorer(row: import("../../../contracts/l3/world-native/schema/client.gen").NativeRows["ExplorerTroops"]): Explorer {
+  return { explorerId: String(row.explorer_id), owner: String(row.owner), ...row.coord,
+    stamina: Number(row.troops.stamina.amount), staminaUpdatedTick: Number(row.troops.stamina.updated_tick) };
 }
 function requireRecord(value: unknown, name: string): Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error(`Missing ${name}`);

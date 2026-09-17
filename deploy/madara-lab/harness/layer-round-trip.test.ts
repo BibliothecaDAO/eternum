@@ -1,4 +1,3 @@
-import { readFileSync } from "node:fs";
 import { ETHEREAL_STRIDE, getLayeredAttackDistance } from "@bibliothecadao/types";
 import { describe, expect, it } from "bun:test";
 import type { Account, Call, RpcProvider } from "starknet";
@@ -45,13 +44,12 @@ function fixture(
     switch (model) {
       case "GameRegistry":
         return [{ game_id: 7, preset_id: 1 }];
-      case "WorldConfig":
-        return [{ game_id: 7, blitz_mode_on: false }];
-      case "PresetConfig":
+      case "SliceRules":
         return [
           {
-            preset_id: 1,
-            spire_travel_essence_cost: "10000000000",
+            game_id: 7,
+            blitz_mode_on: false,
+            spire_travel_essence_cost: 10000000000n,
             tick_config: { armies_tick_in_seconds: 60 },
             troop_stamina_config: {
               stamina_gain_per_tick: 30,
@@ -77,19 +75,6 @@ function fixture(
         throw new Error(`Unexpected model ${model}`);
     }
   };
-  const server = Bun.serve({
-    port: 0,
-    fetch(request) {
-      const models = new URL(request.url).searchParams.get("models")!.split(",");
-      return Response.json({
-        confirmed_block: block,
-        models: models.map((model) => ({
-          model,
-          rows: rows(model).map((value, index) => ({ key: String(index), value })),
-        })),
-      });
-    },
-  });
   const account = {
     address: "0x123",
     async execute(input: Call) {
@@ -142,16 +127,34 @@ function fixture(
     explorers: [{ explorerId: 9 }],
   } as unknown as HarnessBot;
   return {
-    server,
+    server: { stop: (_force: boolean) => {} },
     calls,
     run: () =>
       runLayerRoundTrip({
         bots: [bot],
         gameId: 7,
         provider,
-        heraldUrl: `http://127.0.0.1:${server.port}`,
-        troopMovementAddress: "0xa1",
-        altMovementAddress: "0xa2",
+        client: {
+          gameId: 7,
+          setup: {
+            store: {
+              get: (model: string) => rows(model)[0],
+              inGame: (model: string) => rows(model),
+            },
+            systemCalls: {
+              toggle_alternate: ({ explorer_id, spire_direction }: { explorer_id: number; spire_direction: number }) => account.execute({
+                contractAddress: "0xa2", entrypoint: "toggle_alternate", calldata: ["7", String(explorer_id), String(spire_direction)],
+              }),
+              explorer_move: ({ explorer_id, directions, explore }: { explorer_id: number; directions: number[]; explore: boolean }) => account.execute({
+                contractAddress: "0xa1", entrypoint: "explorer_move", calldata: ["7", String(explorer_id), "1", String(directions[0]), explore ? "1" : "0"],
+              }),
+            },
+          },
+        } as never,
+        game: {
+          submit: async (_signer: unknown, act: () => Promise<{ transaction_hash: string }>) => ({ transactionHash: (await act()).transaction_hash, confirmed: Promise.resolve() }),
+          waitFor: async (read: () => unknown) => { const result = read(); if (result === undefined) throw new Error("Expected folded tile"); return result; },
+        } as never,
       }),
   };
 }
@@ -211,12 +214,7 @@ describe("Eternum layer round trip", () => {
   });
 });
 
-it("uses the contract movement stride for harness and client travel", () => {
-  const source = readFileSync(new URL("../../../contracts/l3/game/src/models/position.cairo", import.meta.url), "utf8");
-  const stride = source.match(/pub const REGULAR_TO_ALTERNATE_MAP_SCALE: u128 = (\d+);/);
-  expect(stride).not.toBeNull();
-  expect(ETHEREAL_STRIDE).toBe(Number(stride![1]));
-});
+it("uses a fifteen-coordinate Ethereal movement stride", () => { expect(ETHEREAL_STRIDE).toBe(15); });
 
 it("measures ethereal combat range in movement steps and rejects remote cross-layer attacks", () => {
   const origin = { col: 100, row: 100, alt: true };

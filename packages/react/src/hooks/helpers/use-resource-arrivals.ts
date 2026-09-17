@@ -1,14 +1,13 @@
-import { arrivalsByStructureQuery, readResourceArrivals } from "@bibliothecadao/eternum";
-import { ID } from "@bibliothecadao/types";
-import { useEntityQuery } from "@dojoengine/react";
-import { useDojo } from "../";
+import { readResourceArrivals } from "@bibliothecadao/eternum";
+import type { ID } from "@bibliothecadao/types";
+import { useMemo } from "react";
+import { useGame } from "../context";
+import { useNativeRevision } from "./use-native-facts";
 
-export const useArrivalsByStructure = (structureEntityId: ID) => {
+export const useArrivalsByStructure = (entityId: ID) => {
   const {
-    setup: { components },
-  } = useDojo();
-
-  const arrivalEntities = useEntityQuery(arrivalsByStructureQuery(components, structureEntityId));
-
-  return readResourceArrivals(components, arrivalEntities);
+    setup: { store },
+  } = useGame();
+  const revision = useNativeRevision(["ResourceArrival"]);
+  return useMemo(() => readResourceArrivals(store, entityId), [store, entityId, revision]);
 };

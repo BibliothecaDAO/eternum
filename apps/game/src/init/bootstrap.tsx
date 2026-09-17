@@ -1,34 +1,30 @@
 import * as Sentry from "@sentry/react";
 import { DEV_MODE_ENABLED, verboseLog } from "@/utils/dev-mode";
 import { formatReadableErrorForConsole } from "@/utils/error-message";
-import type { DojoSetupConfig, SetupResult } from "@bibliothecadao/dojo";
-import { createGameClient, resolveGameTransactionResourceBounds, type GameClient } from "@bibliothecadao/eternum";
+import type { GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
+import { createBrowserGameClient } from "@/services/game-client";
+import type { GameClient } from "@bibliothecadao/eternum";
 import { SupersededGameSyncStartError } from "@bibliothecadao/eternum/game-sync";
-import { world, type SystemCallAuthHandler } from "@bibliothecadao/types";
+import { type SystemCallAuthHandler } from "@bibliothecadao/types";
 
 import { resolveEntryContextCacheKey, type ResolvedEntryContext } from "@/game-entry/context";
-import { applyWorldSelection, patchManifestWithFactory, type WorldProfile } from "@/runtime/world";
+import { applyWorldSelection, type WorldProfile } from "@/runtime/world";
 import { requireWorldById } from "@/runtime/world/world-directory";
-import { getGameManifest } from "@contracts";
 import type { GameChain as Chain } from "@realms-world/chain";
-import { dojoConfig } from "../../dojo-config";
-import { env } from "../../env";
 import useSettlementStore from "../hooks/store/use-settlement-store";
 import { useSyncStore } from "../hooks/store/use-sync-store";
 import { useTransactionStore } from "../hooks/store/use-transaction-store";
 import { useUIStore } from "../hooks/store/use-ui-store";
 import { disposeGameSyncSession, installActiveGameClient } from "../sync/active-game-client";
-import { createBrowserScheduler } from "../sync/browser-scheduler";
 import { createGameSyncObserver } from "../sync/game-sync-observer";
 import { markGameEntryMilestone, recordGameEntryDuration } from "../ui/layouts/game-entry-timeline";
-import { ETERNUM_CONFIG } from "../utils/config";
 import { createBootstrapSession, type BootstrapSelection } from "./bootstrap-session";
 import { resolveCachedEntrySessionForContext } from "./bootstrap-session-context";
 import { prepareGameRenderer } from "./game-renderer";
 import type { GameRendererSession } from "./game-renderer-session";
 import { selectInitialStructure } from "./initial-structure";
 
-export type { SetupResult } from "@bibliothecadao/dojo";
+export type { GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
 
 export interface BootstrappedEntrySession {
   context: ResolvedEntryContext;
@@ -44,11 +40,6 @@ type BootstrapLifecycle = {
   onBootstrapStarted?: () => void;
   onWorldSelectionCompleted?: () => void;
   onWorldSelectionStarted?: () => void;
-};
-
-type MutableDojoConfig = typeof dojoConfig & {
-  rpcUrl?: string;
-  manifest?: unknown;
 };
 
 export const getCachedBootstrappedEntrySession = (context?: ResolvedEntryContext): BootstrappedEntrySession | null => {
@@ -155,8 +146,8 @@ export const bootstrapGameForEntryContext = async (
 
     bootstrapSession.clearFailure();
     Sentry.captureException(error, {
-      tags: { feature: "bootstrap", error_type: "dojo_setup", setup_phase: "bootstrap" },
-      extra: { context: "Unhandled error during Dojo bootstrap" },
+      tags: { feature: "bootstrap", error_type: "game_setup", setup_phase: "bootstrap" },
+      extra: { context: "Unhandled error during game bootstrap" },
     });
     throw error;
   }
@@ -233,46 +224,27 @@ interface EntryGameClientInput {
 
 const createEntryGameClient = async (input: EntryGameClientInput): Promise<GameClient> => {
   const timing = { syncStartedAt: performance.now() };
-  verboseLog("[STARTING DOJO SETUP]");
+  verboseLog("[STARTING GAME SETUP]");
   markGameEntryMilestone("setup-started");
-  const client = await createGameClient({
-    world: requireWorldById(input.profile.worldId),
+  const world = requireWorldById(input.profile.worldId);
+  const client = await createBrowserGameClient({
+    world,
     gameId: input.profile.gameId ?? 0,
     presetId: input.profile.presetId ?? 0,
-    dojoConfig: configureDojoRuntime(input.chain, input.profile),
-    setupEnvironment: {
-      executionResourceBounds: resolveGameTransactionResourceBounds(input.chain),
-      vrfProviderAddress: env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS,
-    },
     authHandler: bootstrapAuthHandler,
-    scheduler: createBrowserScheduler(),
     observer: createGameSyncObserver({
       reportProgress: input.reportProgress,
       onSetupCompleted: (setup) => {
-        verboseLog("[DOJO SETUP COMPLETED]");
+        verboseLog("[GAME SETUP COMPLETED]");
         input.onSetupCompleted(setup);
         timing.syncStartedAt = performance.now();
       },
     }),
-    resolveGameConfig: (setup) => ETERNUM_CONFIG({ chain: input.chain, components: setup.components }),
   });
   markGameEntryMilestone("initial-sync-completed");
   recordGameEntryDuration("initial-sync", performance.now() - timing.syncStartedAt);
   verboseLog("[INITIAL SYNC COMPLETED]");
   return client;
-};
-
-/** Other surfaces read the shared dojoConfig, so the world's RPC and manifest are patched in place and handed on. */
-const configureDojoRuntime = (chain: Chain, profile: WorldProfile): DojoSetupConfig => {
-  const mutableDojoConfig = dojoConfig as MutableDojoConfig;
-
-  mutableDojoConfig.rpcUrl = profile.rpcUrl ?? env.VITE_PUBLIC_NODE_URL;
-  mutableDojoConfig.manifest = patchManifestWithFactory(
-    getGameManifest(chain),
-    profile.worldAddress,
-    profile.contractsBySelector,
-  );
-  return { ...dojoConfig };
 };
 
 const bootstrapAuthHandler: SystemCallAuthHandler = {
@@ -282,7 +254,7 @@ const bootstrapAuthHandler: SystemCallAuthHandler = {
     console.error(`System call error: ${formatReadableErrorForConsole(error)}`);
 
     Sentry.captureException(error, {
-      tags: { feature: "bootstrap", error_type: "dojo_system_call", setup_phase: "post-setup" },
+      tags: { feature: "bootstrap", error_type: "game_system_call", setup_phase: "post-setup" },
       extra: { context: "System call error during post-setup phase" },
     });
   },
@@ -306,16 +278,6 @@ const cancelActiveBootstrapSubscriptions = () => {
 };
 
 const clearBootstrapWorldData = () => {
-  const entities = [...world.getEntities()];
-  for (const entity of entities) {
-    world.deleteEntity(entity);
-  }
-
-  // `world.components` is append-only across contract redefinition, so a re-bootstrap
-  // must clear it or new writes can target orphaned component instances.
-  world.components.length = 0;
-  verboseLog(`[BOOTSTRAP] Cleared ${entities.length} entities and component registry from RECS world`);
-
   useSyncStore.getState().resetSubscriptions();
 };
 

@@ -103,7 +103,7 @@ export const FactoryV2DeveloperContractLookup = ({
             />
             <p className="mt-2 text-[12px] leading-5 text-gold/42">
               Accepts raw names like <code>prize_distribution_systems</code>, wrapped values like{" "}
-              <code>{"{prize_distribution_systems}"}</code>, or full manifest tags.
+              <code>{"{prizes}"}</code>, or full manifest tags.
             </p>
           </label>
         ) : null}

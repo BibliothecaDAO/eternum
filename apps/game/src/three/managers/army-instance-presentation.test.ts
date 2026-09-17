@@ -57,6 +57,7 @@ describe("army instance presentation", () => {
 
   it("re-resolves army cosmetics and produces a cosmetic assignment when a custom skin exists", () => {
     const result = resolveArmyCosmeticPresentation({
+      attributes: [123n],
       army: {
         owner: { address: 123n },
         category: "Knight",
@@ -70,7 +71,7 @@ describe("army instance presentation", () => {
       reResolveCosmetics: true,
     });
 
-    expect(resolveArmyCosmetic).toHaveBeenCalled();
+    expect(resolveArmyCosmetic).toHaveBeenCalledWith(expect.objectContaining({ attributes: [123n] }));
     expect(result.cosmeticId).toBe("army:Knight:T1:custom");
     expect(result.clearCosmeticAssignment).toBe(false);
     expect(result.cosmeticAssignment).toEqual({
@@ -83,6 +84,7 @@ describe("army instance presentation", () => {
 
   it("clears cosmetic assignment when only fallback data is available", () => {
     const result = resolveArmyCosmeticPresentation({
+      attributes: [123n],
       army: {
         owner: { address: 123n },
         category: "Knight",

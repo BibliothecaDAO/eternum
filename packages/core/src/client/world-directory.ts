@@ -21,6 +21,7 @@ export interface WorldDeployment {
   chain: Chain;
   rpcUrl: string;
   heraldBaseUrl: string;
+  admissionUrl: string;
   namespace: GameNamespace;
   worldAddress: string;
   /** Normalized selector -> address from the world's committed manifest. */
@@ -41,6 +42,7 @@ interface WorldDeploymentInput {
   chain: Chain;
   manifest: CommittedManifest;
   heraldBaseUrl: string;
+  admissionUrl: string;
   rpcUrl: string;
   /** Whether the endpoints must be reachable from a browser page (mixed-content rules apply). */
   browserFacing: boolean;
@@ -58,6 +60,10 @@ export const buildWorldDeployment = (input: WorldDeploymentInput): WorldDeployme
   }),
   rpcUrl: resolveEndpoint(input.rpcUrl, {
     name: `RPC URL for world "${input.id}"`,
+    browserFacing: input.browserFacing,
+  }),
+  admissionUrl: resolveEndpoint(input.admissionUrl, {
+    name: `Admission URL for world "${input.id}"`,
     browserFacing: input.browserFacing,
   }),
   namespace: namespaceForChain(input.chain),

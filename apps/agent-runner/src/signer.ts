@@ -9,7 +9,7 @@ import {
 import { configureGameplayAccountSubmits } from "@bibliothecadao/eternum/game-client";
 import { Account, BlockTag, ec, RpcProvider, stark, type AccountInterface } from "starknet";
 
-import type { RunnerConfig, RunnerSigner } from "./config";
+import { resolveDataDir, type RunnerConfig, type RunnerSigner } from "./config";
 
 interface GameplayKey {
   privateKey: string;
@@ -107,3 +107,21 @@ const gameplayKey = (privateKey: string): GameplayKey => ({
   privateKey,
   publicKey: ec.starkCurve.getStarkKey(privateKey),
 });
+
+/** The same persisted gameplay key signs action commitments; no separate action key is created. */
+export async function signRunnerIntent(
+  config: RunnerConfig,
+  gameId: number,
+  actor: AccountInterface,
+  digest: string,
+): Promise<{ r: bigint; s: bigint }> {
+  if (config.signer.mode === "none") throw new Error("A spectator cannot sign an action");
+  if (config.signer.mode === "key") {
+    if (BigInt(actor.address) !== BigInt(config.signer.gameplayAccountAddress))
+      throw new Error("Gameplay identity changed before signing");
+    return ec.starkCurve.sign(digest, config.signer.gameplayPrivateKey);
+  }
+  const key = await readStoredKey(path.join(resolveDataDir(config, gameId), GUEST_KEY_FILE));
+  if (!key) throw new Error("The guest gameplay key is missing");
+  return ec.starkCurve.sign(digest, key.privateKey);
+}

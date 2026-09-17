@@ -1,27 +1,22 @@
+import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import type { GameModeConfig } from "@/config/game-modes";
 import type { ResourceRequirement } from "@/ui/design-system/molecules/requirement-chips";
 import { divideByPrecision, getBalance, getBuildingCosts } from "@bibliothecadao/eternum";
-import {
-  BuildingType,
-  type ClientComponents,
-  getBuildingFromResource,
-  isEconomyBuilding,
-  type ResourcesIds,
-} from "@bibliothecadao/types";
+import { BuildingType, getBuildingFromResource, isEconomyBuilding, type ResourcesIds } from "@bibliothecadao/types";
 import { getMilitaryBuildingInfo, MILITARY_BUILDING_GROUP_ORDER } from "./realm-building-summary";
 
 /** The catalogue and plot picker share allowed buildings and their group order. */
 export function resolveBuildingRequirements(
   entityId: number,
-  components: ClientComponents,
+  store: NativeFactStore,
   type: BuildingType,
   useSimpleCost: boolean,
   currentDefaultTick: number,
 ): ResourceRequirement[] {
-  return (getBuildingCosts(entityId, components, type, useSimpleCost) ?? []).map((cost) => ({
+  return (getBuildingCosts(entityId, store, type, useSimpleCost) ?? []).map((cost) => ({
     resource: cost.resource,
     amount: cost.amount,
-    current: divideByPrecision(getBalance(entityId, cost.resource, currentDefaultTick, components).balance),
+    current: divideByPrecision(getBalance(entityId, cost.resource, currentDefaultTick, store).balance),
   }));
 }
 

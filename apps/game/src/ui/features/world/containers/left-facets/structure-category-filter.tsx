@@ -12,7 +12,7 @@ const CATEGORY_ORDER: StructureType[] = [
   StructureType.Realm,
   StructureType.Village,
   StructureType.Camp,
-  StructureType.FragmentMine,
+  StructureType.Mine,
   StructureType.Hyperstructure,
 ];
 

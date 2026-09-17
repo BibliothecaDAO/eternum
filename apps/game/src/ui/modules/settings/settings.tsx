@@ -24,7 +24,7 @@ import { CHAT_SHORTCUT } from "@/ui/features/world/containers/chat-shortcut";
 import { getShortcutManager } from "@/utils/shortcuts/centralized-shortcut-manager";
 import { isExplicitSpectateSession } from "@/utils/spectator-session";
 import { getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
+import { useGame, useNativeRevision } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
 import { useDisconnect } from "@starknet-react/core";
 import Pencil from "lucide-react/dist/esm/icons/pencil";
@@ -55,14 +55,15 @@ function ProfileHeader() {
   const profile = usePlayerProfile(address);
   const { standingsByAddress } = useInGameLeaderboard();
   const {
-    setup: { components },
-  } = useDojo();
+    setup: { store },
+  } = useGame();
+  useNativeRevision(["Guild", "GuildMember"]);
   const [error, setError] = useState<string | null>(null);
   const owner = address ? ContractAddress(address) : null;
   // The players slice already prefers the session username for the signed-in user.
   const name = profile.name;
   const standing = owner === null ? null : (standingsByAddress.get(normalizeLeaderboardAddress(owner)) ?? null);
-  const guild = owner === null ? null : (getGuildFromPlayerAddress(owner, components)?.name ?? null);
+  const guild = owner === null ? null : (getGuildFromPlayerAddress(owner, store)?.name ?? null);
   const spectating = isExplicitSpectateSession();
   const facts = [
     standing && `#${standing.rank} · ${Math.round(standing.points).toLocaleString()} VP`,

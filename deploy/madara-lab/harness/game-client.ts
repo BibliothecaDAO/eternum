@@ -1,6 +1,8 @@
 import { setTimeout as sleep } from "node:timers/promises";
 import {
   createGameClient,
+  createNativeTicketSubmission,
+  setChainProvenTimestampSource,
   resolveGameTransactionResourceBounds,
   type CreateGameClientInput,
   type GameClient,
@@ -8,14 +10,13 @@ import {
 import {
   buildWorldDeployment,
   fetchHeraldGameDirectory,
-  worldConfigKey,
   type CommittedManifest,
   type GameClientObserver,
   type WorldDeployment,
 } from "@bibliothecadao/eternum/game-client";
 import { createMicrotaskGameSyncScheduler } from "@bibliothecadao/eternum/game-sync";
-import { getComponentValue } from "@dojoengine/recs";
-import { getConfigFromNetwork } from "../../../config/utils/utils";
+import type { Manifest, NativeWorldBindings } from "@bibliothecadao/types";
+import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
 
 export interface HarnessGameplayContracts {
   bindingAuthorityAddress: string;
@@ -25,6 +26,9 @@ export interface HarnessGameplayContracts {
 
 interface ConnectHarnessGameClientOptions {
   gameId: number;
+  admissionUrl: string;
+  chainId: string;
+  signIntent: NonNullable<CreateGameClientInput["native"]>["signIntent"];
   gameplayContracts: HarnessGameplayContracts;
   heraldUrl: string;
   manifest: CommittedManifest;
@@ -36,7 +40,7 @@ const WORLD_ID = "blitz";
 const GAME_LISTING_TIMEOUT_MS = 120_000;
 const GAME_LISTING_POLL_MS = 2_000;
 
-/** One client per run: the game lives in RECS once, and every bot reads and acts through it. */
+/** One client per run: the game lives in the native store once, and every bot reads and acts through it. */
 export async function connectHarnessGameClient(options: ConnectHarnessGameClientOptions): Promise<GameClient> {
   const world = buildHarnessWorld(options);
   const presetId = await waitForHeraldToListGame(world, options.gameId);
@@ -44,14 +48,18 @@ export async function connectHarnessGameClient(options: ConnectHarnessGameClient
     world,
     gameId: options.gameId,
     presetId,
-    dojoConfig: { rpcUrl: options.rpcUrl, manifest: options.manifest },
+    networkConfig: { rpcUrl: options.rpcUrl, manifest: options.manifest as unknown as Manifest },
+    native: {
+      bindings: bindings as unknown as NativeWorldBindings,
+      chainId: options.chainId,
+      signIntent: options.signIntent,
+      submitIntent: createNativeTicketSubmission(options.admissionUrl),
+    },
     setupEnvironment: {
-      vrfProviderAddress: "0x0",
       executionResourceBounds: resolveGameTransactionResourceBounds("madara"),
     },
     scheduler: createMicrotaskGameSyncScheduler(),
     observer: createLoggingObserver(options.gameId),
-    resolveGameConfig,
   });
 }
 
@@ -61,6 +69,7 @@ const buildHarnessWorld = (options: ConnectHarnessGameClientOptions): WorldDeplo
     chain: "madara",
     manifest: options.manifest,
     heraldBaseUrl: options.heraldUrl,
+    admissionUrl: options.admissionUrl,
     rpcUrl: options.rpcUrl,
     browserFacing: false,
     playerAccountClassHash: options.gameplayContracts.playerAccountClassHash,
@@ -80,15 +89,14 @@ async function waitForHeraldToListGame(world: WorldDeployment, gameId: number): 
   throw new Error(`Herald did not list game ${gameId} within ${GAME_LISTING_TIMEOUT_MS / 1_000} seconds`);
 }
 
-/** The balance config the client's managers read; the mode flag is on WorldConfig once the snapshot landed. */
-const resolveGameConfig: CreateGameClientInput["resolveGameConfig"] = (setup) => {
-  const worldConfig = getComponentValue(setup.components.WorldConfig, worldConfigKey());
-  return getConfigFromNetwork("madara", worldConfig?.blitz_mode_on ? "blitz" : "eternum");
-};
-
-const createLoggingObserver = (gameId: number): GameClientObserver => ({
+const createLoggingObserver = (gameId: number): GameClientObserver => {
+  let confirmedTimestamp: number | null = null;
+  setChainProvenTimestampSource(() => confirmedTimestamp);
+  return {
+  onHead: (head) => { if (!head.preconfirmed) confirmedTimestamp = head.timestamp; },
   onSubscriptionActive: () => console.log(`Game client subscribed to game ${gameId}`),
   onSnapshotPhaseCompleted: (phase, durationMs) =>
     console.log(`Game client snapshot ${phase} completed in ${Math.round(durationMs)} ms`),
   onLiveApplyFailed: (error) => console.error(`Game client live apply failed: ${error.message}`),
-});
+  };
+};

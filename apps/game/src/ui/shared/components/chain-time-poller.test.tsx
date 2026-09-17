@@ -2,12 +2,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
-vi.mock("@bibliothecadao/eternum", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@bibliothecadao/eternum")>();
-  return { ...actual, configManager: { ...actual.configManager, getTick: () => 1 } };
-});
-
-import { getBlockTimestamp } from "@bibliothecadao/eternum";
+import { getBlockTimestamp, configManager } from "@bibliothecadao/eternum";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { ChainTimePoller } from "./chain-time-poller";
 
@@ -16,6 +11,7 @@ let root: Root;
 let container: HTMLDivElement;
 
 beforeEach(() => {
+  vi.spyOn(configManager, "getTick").mockReturnValue(1);
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   container = document.createElement("div");
   root = createRoot(container);

@@ -1,7 +1,7 @@
+import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { configManager, getEntityInfo, getStructureName, getStructureTypeName } from "@bibliothecadao/eternum";
 import {
   BuildingType,
-  type ClientComponents,
   type ContractAddress,
   type ID,
   ResourcesIds,
@@ -25,8 +25,6 @@ export interface GameModeConfig {
     realms: string;
     village: string;
     villages: string;
-    fragmentMine: string;
-    fragmentMines: string;
     timelineSubject: string;
     shareEventLabel: string;
     endgameCardTitle: string;
@@ -66,20 +64,14 @@ export interface GameModeConfig {
       structure: StructureNameInput,
       parentRealmContractPosition?: { col: number; row: number },
     ) => ReturnType<typeof getStructureName>;
-    getTypeName: (structureType: StructureType) => string | undefined;
+    getTypeName: (structureType: StructureType, mineKind?: number) => string | undefined;
     getEntityInfo: (
       entityId: ID,
       playerAccount: ContractAddress,
-      components: ClientComponents,
+      store: NativeFactStore,
     ) => ReturnType<typeof getEntityInfo>;
   };
   assets: {
-    minimap: {
-      fragmentMine: string;
-    };
-    labels: {
-      fragmentMine: string;
-    };
     structureModelPaths: ReturnType<typeof getStructureModelPaths>;
     buildingModelPaths: ReturnType<typeof resolveBuildingModelPaths>;
   };
@@ -112,9 +104,9 @@ function resolveBuildingModelPaths(isBlitz: boolean) {
 const buildStructureHelpers = (isBlitz: boolean) => ({
   getName: (structure: StructureNameInput, parentRealmContractPosition?: { col: number; row: number }) =>
     getStructureName(structure, isBlitz, parentRealmContractPosition),
-  getTypeName: (structureType: StructureType) => getStructureTypeName(structureType, isBlitz),
-  getEntityInfo: (entityId: ID, playerAccount: ContractAddress, components: ClientComponents) =>
-    getEntityInfo(entityId, playerAccount, components, isBlitz),
+  getTypeName: getStructureTypeName,
+  getEntityInfo: (entityId: ID, playerAccount: ContractAddress, store: NativeFactStore) =>
+    getEntityInfo(entityId, playerAccount, store, isBlitz),
 });
 
 const buildBuildingRule = (extraExclusions: Set<string>) => (key: string) => {
@@ -132,8 +124,6 @@ const blitzConfig: GameModeConfig = {
     realms: "Realms",
     village: "Camp",
     villages: "Camps",
-    fragmentMine: "Essence Rift",
-    fragmentMines: "Essence Rifts",
     timelineSubject: "Game",
     shareEventLabel: "Realms Blitz",
     endgameCardTitle: "Realms Blitz",
@@ -170,13 +160,7 @@ const blitzConfig: GameModeConfig = {
   },
   structure: buildStructureHelpers(true),
   assets: {
-    minimap: {
-      fragmentMine: "/images/labels/essence_rift.png",
-    },
-    labels: {
-      fragmentMine: "/images/labels/essence_rift.png",
-    },
-    structureModelPaths: getStructureModelPaths(true),
+    structureModelPaths: getStructureModelPaths(),
     buildingModelPaths: resolveBuildingModelPaths(true),
   },
 };
@@ -189,8 +173,6 @@ const eternumConfig: GameModeConfig = {
     realms: "Realms",
     village: "Village",
     villages: "Villages",
-    fragmentMine: "Fragment Mine",
-    fragmentMines: "Fragment Mines",
     timelineSubject: "Season",
     shareEventLabel: "the Realms leaderboard",
     endgameCardTitle: "Realms",
@@ -227,13 +209,7 @@ const eternumConfig: GameModeConfig = {
   },
   structure: buildStructureHelpers(false),
   assets: {
-    minimap: {
-      fragmentMine: "/images/labels/fragment_mine.png",
-    },
-    labels: {
-      fragmentMine: "/images/labels/fragment_mine.png",
-    },
-    structureModelPaths: getStructureModelPaths(false),
+    structureModelPaths: getStructureModelPaths(),
     buildingModelPaths: resolveBuildingModelPaths(false),
   },
 };

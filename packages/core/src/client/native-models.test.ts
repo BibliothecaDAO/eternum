@@ -5,7 +5,7 @@ import { HeraldGameSyncTransport, type HeraldSocket } from "../sync/herald-game-
 import { nativeModelDefinition } from "./native-models";
 
 describe("native event routing", () => {
-  it("delivers battle ephemera, persistent participants and the following transaction without reconnecting", async () => {
+  it("delivers battle ephemera, persistent tiles and the following transaction without reconnecting", async () => {
     const socket: HeraldSocket = {
       onopen: null,
       onmessage: null,
@@ -41,9 +41,9 @@ describe("native event routing", () => {
           value: { game_id: "7", attacker_id: "10", defender_id: "11", timestamp: "100" },
         },
         {
-          model: "LastBattle",
+          model: "TileOpt",
           key: "0x92",
-          value: { game_id: "7", entity_id: "10", latest_defender_id: "11", latest_defense_timestamp: "100" },
+          value: { game_id: "7", alt: false, col: 10, row: 11, data: "0" },
         },
       ],
       del: [{ model: "ExplorerTroops", key: "0x93" }],
@@ -53,7 +53,7 @@ describe("native event routing", () => {
     expect(onEntityBatch).toHaveBeenCalledOnce();
     expect(
       onEntityBatch.mock.calls[0][0].entities.map((entity: { models: object }) => Object.keys(entity.models)),
-    ).toEqual([["LastBattle"], ["ExplorerTroops"]]);
+    ).toEqual([["TileOpt"], ["ExplorerTroops"]]);
     expect(onTransaction).toHaveBeenCalledWith({ block: 2, hash: "0x123", status: "PRE_CONFIRMED" });
     expect(socket.close).not.toHaveBeenCalled();
     writer.cancel();

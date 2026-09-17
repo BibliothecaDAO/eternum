@@ -6,40 +6,15 @@ import { REALM_ACTION_SUBMIT_TIMEOUT_MESSAGE } from "./realm-action-submit-timeo
 import { useRealmActions } from "./use-realm-actions";
 
 const mocks = vi.hoisted(() => ({
-  executeObservedClientTransaction: vi.fn(),
+  upgradeRealm: vi.fn(),
   toastError: vi.fn(),
-  getContractByName: vi.fn((_manifest: unknown, _namespace: string, contractName: string) => ({
-    address: contractName === "blitz_realm_systems" ? "0xblitz" : "0xstructure",
-  })),
 }));
 
-vi.mock("@/observability/observed-client-transaction", () => ({
-  executeObservedClientTransaction: mocks.executeObservedClientTransaction,
-}));
-
-vi.mock("@/ui/features/event-feed/notify", () => ({
-  toast: {
-    error: mocks.toastError,
-  },
-}));
-
-vi.mock("@dojoengine/core", () => ({
-  getContractByName: mocks.getContractByName,
-}));
-
-vi.mock("../../../../../dojo-config", () => ({
-  dojoConfig: {
-    manifest: {},
-  },
-}));
-
+vi.mock("@/ui/features/event-feed/notify", () => ({ toast: { error: mocks.toastError } }));
 vi.mock("@bibliothecadao/react", () => ({
-  useDojo: () => ({
-    account: {
-      account: {
-        address: "0xowner",
-      },
-    },
+  useGame: () => ({
+    account: { account: { address: "0xowner" } },
+    setup: { systemCalls: { upgrade_realm: mocks.upgradeRealm } },
   }),
 }));
 
@@ -96,10 +71,9 @@ describe("useRealmActions", () => {
   beforeEach(() => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-    mocks.executeObservedClientTransaction.mockReset();
-    mocks.executeObservedClientTransaction.mockResolvedValue({ transaction_hash: "0xtx" });
+    mocks.upgradeRealm.mockReset();
+    mocks.upgradeRealm.mockResolvedValue({ transaction_hash: "0xtx" });
     mocks.toastError.mockReset();
-    mocks.getContractByName.mockClear();
 
     vi.useFakeTimers();
 
@@ -124,17 +98,17 @@ describe("useRealmActions", () => {
     await renderProbe();
     await clickUpgrade();
 
-    expect(mocks.executeObservedClientTransaction).toHaveBeenCalledWith(
+    expect(mocks.upgradeRealm).toHaveBeenCalledWith(
       expect.objectContaining({
-        operation: "realm_systems.upgrade",
-        waitForConfirmation: false,
+        realm_entity_id: 101,
+        signer: { address: "0xowner" },
       }),
     );
     expect(readPending()).toBe("none");
   });
 
   it("clears pending state when submission does not return a transaction hash", async () => {
-    mocks.executeObservedClientTransaction.mockReturnValueOnce(new Promise(() => undefined));
+    mocks.upgradeRealm.mockReturnValueOnce(new Promise(() => undefined));
 
     await renderProbe();
     await clickUpgrade();

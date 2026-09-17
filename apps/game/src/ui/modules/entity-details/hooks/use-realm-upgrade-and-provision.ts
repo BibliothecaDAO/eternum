@@ -1,13 +1,7 @@
-import { useCallback, useMemo, useState } from "react";
-import { CallData, type Call } from "starknet";
+import { useCallback, useState } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
-import { getContractByName } from "@dojoengine/core";
 
-import { dojoConfig } from "../../../../../dojo-config";
-import { env } from "../../../../../env";
-import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
-import { gameCallArgs, getGameNamespace } from "@bibliothecadao/eternum/game-client";
-import { useDojo } from "@bibliothecadao/react";
+import { useGame } from "@bibliothecadao/react";
 
 import { useStructureUpgrade } from "./use-structure-upgrade";
 import { useBlitzRealmProvision } from "./use-blitz-realm-provision";
@@ -22,25 +16,12 @@ interface RealmUpgradeAndProvisionResult {
   handleUpgradeAndProvision: () => Promise<void>;
 }
 
-/**
- * Drives the "bootstrap" pickaxe. provision_realm is the floor — it grants the
- * realm's starting resources and turns on its economy — so a freshly settled
- * realm can always provision even when it cannot yet afford a level-up. When
- * the realm CAN already afford the upgrade, `structure_systems.level_up` is
- * bundled into the same `account.execute` multicall so it's one signature.
- *
- * Order matters: provision_realm runs FIRST, then level_up. level_up spends the
- * resources that provision_realm grants, so the reverse order would revert on a
- * fresh realm. When the realm can't be upgraded yet, this provisions alone and
- * the plain Level Up button takes over once provisioning seeds the economy.
- *
- * The hook composes the two existing per-action hooks so we keep their derived
- * gates (`canUpgrade`, `canProvision`) and reactive `useComponentValue`
- * subscriptions; the merged path fires the Calls in one shot and the chain
- * applies provision then upgrade atomically.
- */
+/** Provisioning and an affordable upgrade share one recorded command and roll back together. */
 export const useRealmUpgradeAndProvision = (structureEntityId: number | null): RealmUpgradeAndProvisionResult => {
-  const { account } = useDojo();
+  const {
+    account,
+    setup: { systemCalls },
+  } = useGame();
   const upgrade = useStructureUpgrade(structureEntityId);
   const provision = useBlitzRealmProvision(structureEntityId);
   const [isPending, setIsPending] = useState(false);
@@ -48,16 +29,6 @@ export const useRealmUpgradeAndProvision = (structureEntityId: number | null): R
   const canUpgrade = Boolean(upgrade?.canUpgrade && !upgrade.isUpgradeLocked);
   const canProvision = Boolean(provision?.canProvision && !provision.isProvisionLocked);
   const canUpgradeAndProvision = canUpgrade && canProvision;
-
-  const structureSystemsAddress = useMemo(() => {
-    const contract = getContractByName(dojoConfig.manifest, getGameNamespace(), "structure_systems");
-    return contract?.address ?? null;
-  }, []);
-
-  const blitzRealmSystemsAddress = useMemo(() => {
-    const contract = getContractByName(dojoConfig.manifest, getGameNamespace(), "blitz_realm_systems");
-    return contract?.address ?? null;
-  }, []);
 
   const handleUpgradeAndProvision = useCallback(async () => {
     // Provision is the floor; the level-up is opt-in (only when affordable).
@@ -72,37 +43,10 @@ export const useRealmUpgradeAndProvision = (structureEntityId: number | null): R
       return;
     }
 
-    // Affordable: bundle provision + upgrade in one signature. provision_realm
-    // FIRST — it grants the starting resources level_up spends.
-    if (!structureSystemsAddress || !blitzRealmSystemsAddress) {
-      toast.error("Unable to resolve realm system contracts.");
-      return;
-    }
-
-    const calls: Call[] = [
-      {
-        contractAddress: blitzRealmSystemsAddress,
-        entrypoint: "provision_realm",
-        calldata: CallData.compile([...gameCallArgs(), structureEntityId]),
-      },
-      {
-        contractAddress: structureSystemsAddress,
-        entrypoint: "level_up",
-        calldata: CallData.compile([...gameCallArgs(), structureEntityId]),
-      },
-    ];
-
     setIsPending(true);
     try {
       await withRealmActionSubmitTimeout(
-        executeObservedClientTransaction({
-          account: account.account,
-          calls,
-          surface: "settlement",
-          operation: "realm_systems.provision_and_upgrade",
-          chain: env.VITE_PUBLIC_CHAIN,
-          waitForConfirmation: false,
-        }),
+        systemCalls.provision_realm({ signer: account.account, realm_entity_id: structureEntityId, upgrade: true }),
       );
     } catch (error) {
       console.warn("realm_bootstrap_failed", { message: resolveRealmBootstrapErrorMessage(error) });
@@ -111,17 +55,9 @@ export const useRealmUpgradeAndProvision = (structureEntityId: number | null): R
     } finally {
       setIsPending(false);
     }
-  }, [
-    account.account,
-    blitzRealmSystemsAddress,
-    canProvision,
-    canUpgrade,
-    provision,
-    structureEntityId,
-    structureSystemsAddress,
-  ]);
+  }, [account.account, canProvision, canUpgrade, provision, structureEntityId, systemCalls]);
 
-  // Surface both paths' loading: the bundled multicall (local isPending) and
+  // Surface both paths' loading: the compound command (local isPending) and
   // the delegated provision-only flow (provision.isProvisionLoading).
   const isBusy = isPending || Boolean(provision?.isProvisionLoading);
 

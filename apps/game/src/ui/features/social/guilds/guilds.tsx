@@ -11,7 +11,7 @@ import {
   LeaderboardManager,
   toHexString,
 } from "@bibliothecadao/eternum";
-import { useDojo, usePlayerWhitelist } from "@bibliothecadao/react";
+import { useGame, usePlayerWhitelist } from "@bibliothecadao/react";
 import { ContractAddress, PlayerInfo } from "@bibliothecadao/types";
 import ChevronRight from "lucide-react/dist/esm/icons/chevron-right";
 import Download from "lucide-react/dist/esm/icons/download";
@@ -26,11 +26,11 @@ export const Guilds = ({
 }) => {
   const {
     setup: {
-      components,
+      store,
       systemCalls: { create_guild },
     },
     account: { account },
-  } = useDojo();
+  } = useGame();
 
   const guildsViewGuildInvites = useSocialStore((state) => state.guildsViewGuildInvites);
   const guildsGuildSearchTerm = useSocialStore((state) => state.guildsGuildSearchTerm);
@@ -48,14 +48,13 @@ export const Guilds = ({
   const guilds = useWorldSlicesStore((state) => state.guilds);
   const guildInvites = usePlayerWhitelist(ContractAddress(account.address));
   const playerGuild = useMemo(
-    () => getGuildFromPlayerAddress(ContractAddress(account.address), components),
-    [account.address, components, isLoading],
+    () => getGuildFromPlayerAddress(ContractAddress(account.address), store),
+    [account.address, store, isLoading],
   );
 
   // Aggregate player data per guild
   const guildsWithStats = useMemo(() => {
-    const leaderboardManager = LeaderboardManager.instance(components);
-    leaderboardManager.updatePoints();
+    const leaderboardManager = LeaderboardManager.instance(store);
 
     const guildStats = new Map<
       string,
@@ -69,7 +68,7 @@ export const Guilds = ({
     >();
 
     players.forEach((player) => {
-      const guild = getGuildFromPlayerAddress(player.address, components);
+      const guild = getGuildFromPlayerAddress(player.address, store);
       if (guild) {
         const stats = guildStats.get(guild.entityId.toString()) || {
           totalPoints: 0,
@@ -124,7 +123,7 @@ export const Guilds = ({
           prize: calculateGuildLordsPrize(rank, LORDS_PRIZE_POOL, STRK_PRIZE_POOL),
         };
       });
-  }, [guilds, players, components]);
+  }, [guilds, players, store]);
 
   const filteredGuilds = useMemo(
     () =>
@@ -135,7 +134,7 @@ export const Guilds = ({
             return (
               nameMatch &&
               guildInvites.some((invite) => {
-                return invite.guildEntityId === Number(guild.entityId);
+                return invite.guildEntityId === guild.entityId;
               })
             );
           }
@@ -148,8 +147,7 @@ export const Guilds = ({
   );
 
   const generateSocialData = () => {
-    const leaderboardManager = LeaderboardManager.instance(components);
-    leaderboardManager.updatePoints();
+    const leaderboardManager = LeaderboardManager.instance(store);
 
     const socialData = {
       timestamp: new Date().toISOString(),
@@ -161,7 +159,7 @@ export const Guilds = ({
         // For each guild, we need to get the members from the existing player data
         // since we can't call hooks inside this function
         const guildPlayers = players.filter((player) => {
-          const playerGuild = getGuildFromPlayerAddress(player.address, components);
+          const playerGuild = getGuildFromPlayerAddress(player.address, store);
           return playerGuild?.entityId === guild.entityId;
         });
 
@@ -241,7 +239,7 @@ export const Guilds = ({
         };
       }),
       players: players.map((player) => {
-        const guild = getGuildFromPlayerAddress(player.address, components);
+        const guild = getGuildFromPlayerAddress(player.address, store);
         const registeredPoints = leaderboardManager.getPlayerRegisteredPoints(player.address);
         const unregisteredShareholderPoints = leaderboardManager.getPlayerHyperstructureUnregisteredShareholderPoints(
           player.address,

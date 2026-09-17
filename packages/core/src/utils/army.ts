@@ -1,85 +1,62 @@
 import {
   type ArmyInfo,
-  type ClientComponents,
   type ContractAddress,
   type Direction,
-  getNeighborHexes,
-  GuardSlot,
+  getLayerNeighborHexes,
   type ID,
   ResourcesIds,
   TickIds,
   TroopTier,
   TroopType,
 } from "@bibliothecadao/types";
-import { type ComponentValue, type Entity, getComponentValue } from "@dojoengine/recs";
-import {
-  configManager,
-  divideByPrecision,
-  getAddressNameFromEntity,
-  getArmyName,
-  gramToKg,
-  nanogramToKg,
-  getTileAt,
-  DEFAULT_COORD_ALT,
-} from "..";
-import { gameEntityKey } from "../managers/config-manager";
+import type { NativeFactStore } from "../client/native-fact-store";
+import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { configManager, divideByPrecision, getAddressName, getArmyName, gramToKg, nanogramToKg, getTileAt } from "..";
+
+export const getExplorerOwner = (store: NativeFactStore, explorer: NativeRows["ExplorerTroops"]): bigint =>
+  store.get("AgentOwner", { game_id: explorer.game_id, explorer_id: explorer.explorer_id })?.address ??
+  store.get("Structure", { game_id: explorer.game_id, entity_id: explorer.owner })?.owner ??
+  0n;
 
 export const formatArmies = (
-  armies: Entity[],
+  armies: Iterable<NativeRows["ExplorerTroops"]>,
   playerAddress: ContractAddress,
-  components: ClientComponents,
-): ArmyInfo[] => {
-  return armies
-    .map((armyEntity) => {
-      const explorerTroops = getComponentValue(components.ExplorerTroops, armyEntity);
-      if (!explorerTroops) return undefined;
-
-      const position = explorerTroops.coord;
-
-      const resource = getComponentValue(components.Resource, armyEntity);
-      const totalCapacityKg = resource ? getArmyTotalCapacityInKg(resource) : 0;
-      const weightKg = resource ? gramToKg(divideByPrecision(Number(resource.weight.weight))) : 0;
-
-      const stamina = explorerTroops.troops.stamina.amount;
-      const structure = getComponentValue(components.Structure, gameEntityKey([BigInt(explorerTroops.owner)]));
-
-      const isMine = (structure?.owner || 0n) === playerAddress;
-
-      const isMercenary = structure?.owner === 0n;
-
-      const isHome = structure && isArmyAdjacentToStructure(position, structure.base.coord_x, structure.base.coord_y);
-
-      const hasAdjacentStructure = hasAdjacentOwnedStructure(position, playerAddress, components);
-
-      return {
-        entityId: explorerTroops.explorer_id,
-        troops: explorerTroops.troops,
-        totalCapacity: totalCapacityKg,
-        weight: weightKg,
-        position,
-        entity_owner_id: explorerTroops.owner,
-        stamina,
-        owner: structure?.owner,
-        ownerName: getAddressNameFromEntity(explorerTroops.owner, components) || "",
-        structure,
-        explorer: explorerTroops,
-        isMine,
-        isMercenary,
-        isHome,
-        name: getArmyName(explorerTroops.explorer_id),
-        hasAdjacentStructure,
-      };
-    })
-    .filter((army): army is ArmyInfo => army !== undefined);
-};
+  store: NativeFactStore,
+): ArmyInfo[] =>
+  [...armies].map((explorer) => {
+    const keys = { game_id: explorer.game_id, entity_id: explorer.explorer_id };
+    const weight = store.get("ResourceWeight", keys);
+    const structure = store.get("Structure", { ...keys, entity_id: explorer.owner });
+    const owner = getExplorerOwner(store, explorer);
+    return {
+      entityId: explorer.explorer_id,
+      troops: explorer.troops,
+      totalCapacity: weight ? getArmyTotalCapacityInKg(weight) : 0,
+      weight: weight ? gramToKg(divideByPrecision(Number(weight.weight))) : 0,
+      position: explorer.coord,
+      entity_owner_id: explorer.owner,
+      stamina: explorer.troops.stamina.amount,
+      owner,
+      ownerName: getAddressName(owner, store) ?? "",
+      structure,
+      explorer,
+      isMine: owner === playerAddress,
+      isMercenary: owner === 0n,
+      isHome:
+        structure !== undefined &&
+        isArmyAdjacentToStructure(explorer.coord, structure.base.coord_x, structure.base.coord_y, structure.base.alt),
+      name: getArmyName(explorer.explorer_id),
+      hasAdjacentStructure: hasAdjacentOwnedStructure(explorer.coord, playerAddress, store),
+    };
+  });
 
 export const getArmy = (
-  armyEntityId: ID | Entity,
+  armyEntityId: ID,
   playerAddress: ContractAddress,
-  components: ClientComponents,
+  store: NativeFactStore,
 ): ArmyInfo | undefined => {
-  const entityId = typeof armyEntityId === "string" ? armyEntityId : gameEntityKey([BigInt(armyEntityId)]);
-  return formatArmies([entityId], playerAddress, components)[0];
+  const explorer = store.get("ExplorerTroops", { game_id: configManager.getActiveGameId(), explorer_id: armyEntityId });
+  return explorer ? formatArmies([explorer], playerAddress, store)[0] : undefined;
 };
 
 export const armyHasTroops = (entityArmies: (ArmyInfo | undefined)[]) => {
@@ -156,42 +133,23 @@ export const getTroopResourceId = (troopType: TroopType, troopTier: TroopTier): 
   }
 };
 
-export const getGuardsByStructure = (structure: ComponentValue<ClientComponents["Structure"]["schema"]>) => {
-  if (!structure?.troop_guards) return [];
-
-  const guardResurrectionDelay = configManager.getTroopConfig().troop_limit_config.guard_resurrection_delay;
-
-  const armiesTickInSeconds = configManager.getTick(TickIds.Armies);
-
-  // Extract guard troops from the structure
-  const guards = [
-    {
-      slot: GuardSlot.Delta,
-      troops: structure.troop_guards.delta,
-      destroyedTick: structure.troop_guards.delta_destroyed_tick,
-      cooldownEnd: structure.troop_guards.delta_destroyed_tick * armiesTickInSeconds + guardResurrectionDelay,
-    },
-    {
-      slot: GuardSlot.Charlie,
-      troops: structure.troop_guards.charlie,
-      destroyedTick: structure.troop_guards.charlie_destroyed_tick,
-      cooldownEnd: structure.troop_guards.charlie_destroyed_tick * armiesTickInSeconds + guardResurrectionDelay,
-    },
-    {
-      slot: GuardSlot.Bravo,
-      troops: structure.troop_guards.bravo,
-      destroyedTick: structure.troop_guards.bravo_destroyed_tick,
-      cooldownEnd: structure.troop_guards.bravo_destroyed_tick * armiesTickInSeconds + guardResurrectionDelay,
-    },
-    {
-      slot: GuardSlot.Alpha,
-      troops: structure.troop_guards.alpha,
-      destroyedTick: structure.troop_guards.alpha_destroyed_tick,
-      cooldownEnd: structure.troop_guards.alpha_destroyed_tick * armiesTickInSeconds + guardResurrectionDelay,
-    },
-  ];
-
-  return guards;
+export const getGuardsByStructure = (structure: NativeRows["Structure"], store: NativeFactStore) => {
+  const delay = configManager.getTroopConfig().troop_limit_config.guard_resurrection_delay;
+  const tickSeconds = configManager.getTick(TickIds.Armies);
+  return Array.from({ length: structure.base.troop_max_guard_count }, (_, slot) =>
+    store.get("Guard", { game_id: structure.game_id, structure_id: structure.entity_id, slot }),
+  ).flatMap((guard) =>
+    guard
+      ? [
+          {
+            slot: guard.slot,
+            troops: guard.troops,
+            destroyedTick: guard.destroyed_tick,
+            cooldownEnd: guard.destroyed_tick === 0 ? 0 : guard.destroyed_tick * tickSeconds + delay,
+          },
+        ]
+      : [],
+  );
 };
 
 /** Seconds before a wiped guard slot accepts troops again; 0 when it is open. The contract only enforces the
@@ -202,64 +160,38 @@ export const getGuardSlotCooldownRemaining = (
 ): number => (Number(guard.troops.count) > 0 ? 0 : Math.max(0, guard.cooldownEnd - currentBlockTimestamp));
 
 export const hasAdjacentOwnedStructure = (
-  position: { x: number; y: number },
+  position: { x: number; y: number; alt: boolean },
   playerAddress: ContractAddress,
-  components: ClientComponents,
-) => {
-  const neighborHexes = getNeighborHexes(position.x, position.y);
-  for (const hex of neighborHexes) {
-    const tile = getTileAt(components, DEFAULT_COORD_ALT, hex.col, hex.row);
-    if (!tile?.occupier_is_structure) continue;
-    const structure = getComponentValue(components.Structure, gameEntityKey([BigInt(tile.occupier_id)]));
-    if (!structure) continue;
-    if (structure.owner === playerAddress) {
-      return true;
-    }
-  }
-  return false;
-};
-
-export const isArmyAdjacentToStructure = (
-  armyPosition: { x: number; y: number },
-  structureX: number,
-  structureY: number,
-): boolean => {
-  const adjacentHexes = getNeighborHexes(structureX, structureY);
-  return adjacentHexes.some((hex) => hex.col === armyPosition.x && hex.row === armyPosition.y);
-};
-
-export const getFreeDirectionsAroundStructure = (structureEntityId: ID, components: ClientComponents) => {
-  const structure = getComponentValue(components.Structure, gameEntityKey([BigInt(structureEntityId)]));
-
-  const freeDirections: Direction[] = [];
-
-  if (!structure) return freeDirections;
-
-  const adjacentHexes = getNeighborHexes(structure.base.coord_x, structure.base.coord_y);
-
-  adjacentHexes.forEach((hex) => {
-    const tile = getTileAt(components, DEFAULT_COORD_ALT, hex.col, hex.row);
-
-    if (tile?.occupier_id === 0) {
-      freeDirections.push(hex.direction);
-    }
+  store: NativeFactStore,
+) =>
+  getLayerNeighborHexes(position.x, position.y, position.alt).some((hex) => {
+    const tile = getTileAt(store, position.alt, hex.col, hex.row);
+    if (!tile?.occupier_is_structure) return false;
+    return (
+      store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: tile.occupier_id })?.owner ===
+      playerAddress
+    );
   });
 
-  return freeDirections;
+export const isArmyAdjacentToStructure = (
+  armyPosition: { x: number; y: number; alt?: boolean },
+  structureX: number,
+  structureY: number,
+  structureAlt = false,
+): boolean =>
+  (armyPosition.alt ?? false) === structureAlt &&
+  getLayerNeighborHexes(structureX, structureY, structureAlt).some(
+    (hex) => hex.col === armyPosition.x && hex.row === armyPosition.y,
+  );
+
+export const getFreeDirectionsAroundStructure = (structureEntityId: ID, store: NativeFactStore): Direction[] => {
+  const structure = store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: structureEntityId });
+  if (!structure) return [];
+  return getLayerNeighborHexes(structure.base.coord_x, structure.base.coord_y, structure.base.alt)
+    .filter((hex) => getTileAt(store, structure.base.alt, hex.col, hex.row)?.occupier_id === 0)
+    .map((hex) => hex.direction);
 };
 
-// troop count without precision
-export const getRemainingCapacityInKg = (resource: ComponentValue<ClientComponents["Resource"]["schema"]>) => {
-  const weight = resource?.weight;
-
-  if (!weight) return 0;
-
-  return nanogramToKg(Number(weight.capacity - weight.weight)) || 0;
-};
-
-// number of troops needs to be divided by precision
-export const getArmyTotalCapacityInKg = (resource: ComponentValue<ClientComponents["Resource"]["schema"]>) => {
-  const totalCapacity = resource?.weight.capacity;
-
-  return nanogramToKg(Number(totalCapacity)) || 0;
-};
+export const getRemainingCapacityInKg = (weight: NativeRows["ResourceWeight"]) =>
+  nanogramToKg(Number(weight.capacity - weight.weight));
+export const getArmyTotalCapacityInKg = (weight: NativeRows["ResourceWeight"]) => nanogramToKg(Number(weight.capacity));

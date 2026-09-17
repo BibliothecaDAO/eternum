@@ -4,22 +4,19 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useArmyEntityDetail } from "./use-army-entity-detail";
 
-const { useDojoMock, useComponentValueMock, getStaminaMock, getMaxStaminaMock } = vi.hoisted(() => ({
-  useDojoMock: vi.fn(),
-  useComponentValueMock: vi.fn(),
+const { useGameMock, useNativeRowMock, getStaminaMock, getMaxStaminaMock } = vi.hoisted(() => ({
+  useGameMock: vi.fn(),
+  useNativeRowMock: vi.fn(),
   getStaminaMock: vi.fn(),
   getMaxStaminaMock: vi.fn(),
 }));
 
-const components = {
-  ExplorerTroops: Symbol("ExplorerTroops"),
-  Resource: Symbol("Resource"),
-  Structure: Symbol("Structure"),
-};
-
-vi.mock("@bibliothecadao/react", () => ({ useDojo: useDojoMock }));
-vi.mock("@dojoengine/react", () => ({ useComponentValue: useComponentValueMock }));
-vi.mock("@bibliothecadao/eternum/game-client", () => ({ gameEntityKey: ([id]: [bigint]) => `entity:${id}` }));
+vi.mock("@bibliothecadao/react", () => ({
+  useGame: useGameMock,
+  useNativeRow: useNativeRowMock,
+  useNativeRevision: () => 0,
+  useResourceManager: () => ({ current: () => ({ weight: 0n }) }),
+}));
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
   useBlockTimestamp: () => ({ currentArmiesTick: 5 }),
 }));
@@ -29,7 +26,8 @@ vi.mock("@/config/game-modes/use-game-mode-config", () => ({
 vi.mock("@/utils/agent", () => ({ getCharacterName: () => "Knight" }));
 vi.mock("@bibliothecadao/eternum", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@bibliothecadao/eternum")>()),
-  configManager: { getTick: () => 10 },
+  configManager: { getTick: () => 10, getActiveGameId: () => 1 },
+  getExplorerOwner: () => "0x123",
   ContractAddress: (value: string | bigint) => value,
   getAddressName: () => "Alice",
   getArmyRelicEffects: () => [],
@@ -66,7 +64,7 @@ const Capture = () => {
   return null;
 };
 
-describe("useArmyEntityDetail live RECS state", () => {
+describe("useArmyEntityDetail live native state", () => {
   let container: HTMLDivElement;
   let root: Root;
 
@@ -77,17 +75,17 @@ describe("useArmyEntityDetail live RECS state", () => {
     root = createRoot(container);
     captured = undefined;
     liveExplorer = { troops: baseTroops, owner: 9 };
-    useDojoMock.mockReturnValue({
+    useGameMock.mockReturnValue({
       account: { account: { address: "0x123" } },
       setup: {
-        components,
+        store: {},
         systemCalls: { explorer_delete: vi.fn() },
       },
     });
-    useComponentValueMock.mockImplementation((component) => {
-      if (component === components.ExplorerTroops) return liveExplorer;
-      if (component === components.Structure) return { owner: "0x123" };
-      if (component === components.Resource) return { weight: { weight: 0n } };
+    useNativeRowMock.mockImplementation((component) => {
+      if (component === "ExplorerTroops") return liveExplorer;
+      if (component === "Structure") return { owner: "0x123" };
+      if (component === "ResourceWeight") return { weight: 0n };
       return undefined;
     });
     getStaminaMock.mockImplementation((troops: typeof baseTroops) => troops.stamina);
@@ -109,7 +107,7 @@ describe("useArmyEntityDetail live RECS state", () => {
     expect(captured?.maxStamina).toBe(120);
   });
 
-  it("follows a same-tick spend in place without a Torii snapshot or remount", async () => {
+  it("follows a same-tick spend in place without a new snapshot or remount", async () => {
     await act(async () => root.render(<Capture />));
     expect(captured?.staminaDisplay?.displayCurrent).toBe(30);
 

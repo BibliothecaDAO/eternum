@@ -18,7 +18,20 @@ export class NativeLiveWorld extends LiveWorld {
   public override acceptReceipt(receipt: RpcReceipt): void {
     if (this.native.halted) return;
     if (receipt.finality_status === "PRE_CONFIRMED" && !this.applyOverlayReceipt(receipt, null, 0)) return;
-    super.acceptReceipt(receipt);
+    let actionReceipt: RpcReceipt;
+    try {
+      actionReceipt = this.native.actionReceipt(this.overlayFold, receipt);
+    } catch (error) {
+      const confirmed = receipt.finality_status !== "PRE_CONFIRMED";
+      this.native.rejectReceipt(receipt, receipt.block_number ?? null, error, confirmed);
+      if (confirmed) {
+        this.resetOverlay();
+        this.publishOverlayReverts();
+      }
+      return;
+    }
+    // A terminal rejection consumes its ticket rows; only the action status is reverted.
+    super.acceptReceipt(actionReceipt);
   }
 
   protected override acceptPreconfirmedReceipt(_hash: string, _receipt: RpcReceipt): void {}

@@ -4,6 +4,7 @@ import { BuildingType, ResourcesIds } from "@bibliothecadao/types";
 const DEFAULT_RESOURCE_SOUND_ID = "ui.click";
 
 const RESOURCE_SOUND_MAP: Record<ResourcesIds, string> = {
+  [ResourcesIds.SAT]: "ui.levelup",
   [ResourcesIds.Stone]: "resource.collect.stone",
   [ResourcesIds.Coal]: "resource.collect.coal",
   [ResourcesIds.Wood]: "resource.collect.wood",

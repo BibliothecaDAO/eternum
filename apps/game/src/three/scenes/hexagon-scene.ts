@@ -23,7 +23,7 @@ import { ShadowRefreshPolicy } from "@/three/shadow-refresh-policy";
 import { FLAT_TERRAIN_SURFACE, type TerrainSurface } from "@/three/terrain/terrain-surface";
 import { LeftView } from "@/types";
 import { IS_FLAT_MODE } from "@/ui/config";
-import { type SetupResult } from "@bibliothecadao/dojo";
+import type { GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
 import { WorldUpdateListener } from "@bibliothecadao/eternum";
 import { type HexPosition } from "@bibliothecadao/types";
 import gsap from "gsap";

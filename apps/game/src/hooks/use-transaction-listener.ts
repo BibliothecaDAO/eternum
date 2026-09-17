@@ -5,7 +5,7 @@ import {
   TransactionLifecycleMeta,
   TransactionType,
 } from "@bibliothecadao/provider";
-import { useDojo } from "@bibliothecadao/react";
+import { useGame } from "@bibliothecadao/react";
 import {
   addClientTransactionBreadcrumb,
   reportClientTransactionFailure,
@@ -37,7 +37,7 @@ export const useTransactionListener = () => {
     setup: {
       network: { provider },
     },
-  } = useDojo();
+  } = useGame();
 
   const addTransaction = useTransactionStore((state) => state.addTransaction);
   const updateTransaction = useTransactionStore((state) => state.updateTransaction);

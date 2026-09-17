@@ -11,10 +11,9 @@ import CircleButton from "@/ui/design-system/molecules/circle-button";
 import { StaminaResource } from "@/ui/design-system/molecules/stamina-resource";
 import { ViewOnMapIcon } from "@/ui/design-system/molecules/view-on-map-icon";
 import { InventoryResources } from "@/ui/features/economy/resources";
-import { armyHasTroops, getArmyRelicEffects, getEntityIdFromKeys, StaminaManager } from "@bibliothecadao/eternum";
-import { useDojo, useQuery } from "@bibliothecadao/react";
+import { armyHasTroops, getArmyRelicEffects, configManager, StaminaManager } from "@bibliothecadao/eternum";
+import { useNativeRow, useResourceManager, useQuery } from "@bibliothecadao/react";
 import { ActorType, ArmyInfo, RelicRecipientType, TroopTier, TroopType } from "@bibliothecadao/types";
-import { useComponentValue } from "@dojoengine/react";
 import ArrowLeftRight from "lucide-react/dist/esm/icons/arrow-left-right";
 import ArrowRight from "lucide-react/dist/esm/icons/arrow-right";
 import CirclePlus from "lucide-react/dist/esm/icons/circle-plus";
@@ -23,7 +22,6 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { ArmyManagementCard } from "./army-management-card";
 import { HelpModal } from "./help-modal";
 import { TroopChip } from "./troop-chip";
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 
 export const NavigateToPositionIcon = ({
   position,
@@ -76,9 +74,6 @@ const ArmyChip = ({
   showButtons?: boolean;
   currentArmiesTick?: number;
 }) => {
-  const {
-    setup: { components },
-  } = useDojo();
   const setTooltip = useTooltipStore((state) => state.setTooltip);
   const openSurface = usePopoverStore((state) => state.openSurface);
 
@@ -93,7 +88,11 @@ const ArmyChip = ({
 
   const isOnMap = useMemo(() => location.pathname.includes("/play"), [location.pathname]);
 
-  const resources = useComponentValue(components.Resource, gameEntityKey([BigInt(army.entityId)]));
+  const inventory = useResourceManager(army.entityId);
+  const resources = useNativeRow("ResourceWeight", {
+    game_id: configManager.getActiveGameId(),
+    entity_id: army.entityId,
+  });
 
   const storeArmiesTick = useBlockTimestampStore((state) => state.currentArmiesTick);
   const currentArmiesTick = currentArmiesTickProp ?? storeArmiesTick;
@@ -285,7 +284,7 @@ const ArmyChip = ({
               <TroopChip troops={army.troops} className="h-auto" size="lg" />
               {army.troops.count > 0n && resources && (
                 <InventoryResources
-                  resources={resources}
+                  resources={inventory}
                   relicEffects={relicEffects}
                   className="flex gap-1 h-14 overflow-x-auto no-scrollbar"
                   resourcesIconSize="xs"

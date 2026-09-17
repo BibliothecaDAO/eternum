@@ -4,34 +4,31 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useAttackTargetData } from "./use-attack-target";
 
-const { useComponentValueMock, getResourceBalancesMock } = vi.hoisted(() => ({
-  useComponentValueMock: vi.fn(),
+const { useNativeRowMock, getResourceBalancesMock } = vi.hoisted(() => ({
+  useNativeRowMock: vi.fn(),
   getResourceBalancesMock: vi.fn(),
 }));
-
-const components = {
-  Structure: Symbol("Structure"),
-  ExplorerTroops: Symbol("ExplorerTroops"),
-  ProductionBoostBonus: Symbol("ProductionBoostBonus"),
-  Resource: Symbol("Resource"),
-  TileOpt: Symbol("TileOpt"),
-};
 
 let targetExplorer = createExplorer(1_000n);
 let targetResource = { version: 1 };
 
 vi.mock("@bibliothecadao/react", () => ({
-  useDojo: () => ({ setup: { components } }),
-}));
-vi.mock("@dojoengine/react", () => ({ useComponentValue: useComponentValueMock }));
-vi.mock("@bibliothecadao/eternum/game-client", () => ({
-  gameEntityKey: (keys: bigint[]) => `entity:${keys.join(":")}`,
+  useGame: () => ({ setup: { store: {} } }),
+  useNativeRow: useNativeRowMock,
+  useNativeRevision: () => targetResource.version,
+  useResourceManager: () => ({
+    hasResources: () => true,
+    balances: getResourceBalancesMock,
+    balancesWithProduction: getResourceBalancesMock,
+  }),
 }));
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
   useBlockTimestamp: () => ({ currentBlockTimestamp: 60, currentArmiesTick: 2 }),
 }));
 vi.mock("@bibliothecadao/eternum", () => ({
   DEFAULT_COORD_ALT: false,
+  configManager: { getActiveGameId: () => 1 },
+  getExplorerOwner: () => 123n,
   getArmyRelicEffects: vi.fn(() => []),
   getGuardsByStructure: vi.fn(() => []),
   getStructureArmyRelicEffects: vi.fn(() => []),
@@ -42,10 +39,6 @@ vi.mock("@bibliothecadao/eternum", () => ({
     col: 10,
     row: 12,
   })),
-  ResourceManager: {
-    getResourceBalances: getResourceBalancesMock,
-    getResourceBalancesWithProduction: vi.fn(() => []),
-  },
   StaminaManager: {
     getStamina: vi.fn((troops) => troops.stamina),
   },
@@ -77,7 +70,7 @@ function HookHarness() {
   return null;
 }
 
-describe("useAttackTargetData live RECS target", () => {
+describe("useAttackTargetData live native target", () => {
   let container: HTMLDivElement;
   let root: Root;
 
@@ -89,14 +82,12 @@ describe("useAttackTargetData live RECS target", () => {
     latestResult = null;
     targetExplorer = createExplorer(1_000n);
     targetResource = { version: 1 };
-    useComponentValueMock.mockImplementation((component, entity) => {
-      if (component === components.TileOpt) return {};
-      if (component === components.ExplorerTroops && entity === "entity:321") return targetExplorer;
-      if (component === components.Structure && entity === "entity:99") return { owner: 123n };
-      if (component === components.Resource && entity === "entity:321") return targetResource;
+    useNativeRowMock.mockImplementation((model, keys) => {
+      if (model === "TileOpt") return {};
+      if (model === "ExplorerTroops" && keys?.explorer_id === 321) return targetExplorer;
       return undefined;
     });
-    getResourceBalancesMock.mockImplementation((resource) => [{ resourceId: 1, amount: resource.version * 10 }]);
+    getResourceBalancesMock.mockImplementation(() => [{ resourceId: 1, amount: targetResource.version * 10 }]);
   });
 
   afterEach(async () => {

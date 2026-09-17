@@ -1,9 +1,9 @@
 import { useMemo, useCallback, useState } from "react";
 import { useTransferAutomationStore, type TransferAutomationEntry } from "@/hooks/store/use-transfer-automation-store";
 import Button from "@/ui/design-system/atoms/button";
-import { ClientComponents, ResourcesIds, RESOURCE_PRECISION } from "@bibliothecadao/types";
+import { ResourcesIds, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { ResourceManager, getTotalResourceWeightKg, calculateDonkeysNeeded } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
+import { useGame } from "@bibliothecadao/react";
 import { toast } from "@/ui/features/event-feed/notify";
 const formatResourceSummary = (entry: TransferAutomationEntry): string => {
   if (Array.isArray(entry.resourceConfigs) && entry.resourceConfigs.length > 0) {
@@ -41,17 +41,17 @@ export const TransferAutomationAdvancedModal = () => {
   );
 
   const {
-    setup: { components, systemCalls },
+    setup: { store, systemCalls },
     account: { account },
-  } = useDojo();
+  } = useGame();
 
   const runNow = useCallback(
     async (entry: TransferAutomationEntry) => {
-      if (!components) return;
+      if (!store) return;
       try {
         const sourceId = Number(entry.sourceEntityId);
         const destId = Number(entry.destinationEntityId);
-        const rm = new ResourceManager(components as ClientComponents, sourceId);
+        const rm = new ResourceManager(store, sourceId);
 
         const configMap = new Map<number, number>();
         if (Array.isArray(entry.resourceConfigs)) {
@@ -103,7 +103,7 @@ export const TransferAutomationAdvancedModal = () => {
         toast.error("Execution failed.");
       }
     },
-    [components, systemCalls, account, update],
+    [store, systemCalls, account, update],
   );
 
   const [filter, setFilter] = useState("");

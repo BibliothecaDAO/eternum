@@ -1,6 +1,7 @@
 // @vitest-environment node
 
 import { describe, expect, it, vi } from "vitest";
+import { NativeFactStore } from "./native-fact-store";
 
 import { createManualGameSyncScheduler } from "../sync/scheduler";
 import {
@@ -18,7 +19,7 @@ const createSession = (overrides: Partial<CreateHeraldGameSyncSessionInput> = {}
     gameId: 54,
     worldAddress: "0x1",
     scheduler: createManualGameSyncScheduler(),
-    setup: { network: { contractComponents: {} } } as never,
+    store: new NativeFactStore(),
     ...overrides,
   });
 
@@ -59,7 +60,7 @@ describe("createHeraldGameSyncSession", () => {
       onDiffReceived: vi.fn(),
       onHead: vi.fn(),
       onLiveApplyFailed: vi.fn(),
-      onRecsApplied: vi.fn(),
+      onEntitiesApplied: vi.fn(),
       onStoryEvent: vi.fn(),
       onStoryEventsReset: vi.fn(),
     };
@@ -83,7 +84,7 @@ describe("createHeraldGameSyncSession", () => {
       confirmation,
     );
     expect(observer.onDiffReceived).toHaveBeenCalledWith("0xabc");
-    expect(observer.onRecsApplied).toHaveBeenCalledWith("0xabc");
+    expect(observer.onEntitiesApplied).toHaveBeenCalledWith("0xabc");
     expect(observer.onLiveApplyFailed).toHaveBeenCalledWith(expect.objectContaining({ message: "boom" }));
     expect(consoleError).toHaveBeenCalledWith("[GameSync] live entity apply failed: boom");
     consoleError.mockRestore();

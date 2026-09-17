@@ -1,6 +1,6 @@
 // @vitest-environment node
 
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   getAutomationProjectionTick,
   getBlockTimestamp,
@@ -8,11 +8,17 @@ import {
   setChainProvenTimestampSource,
 } from "./timestamp";
 
+import { configManager } from "../managers/config-manager";
+beforeEach(() => {
+  vi.spyOn(configManager, "getTick").mockReturnValue(1);
+});
+
 // getTick(Default) is a fixed 1s, so ticks equal source seconds and the
 // buffers are directly observable as tick differences.
 const SOURCE_SECONDS = 1_787_000_000;
 
 afterEach(() => {
+  vi.restoreAllMocks();
   setBlockTimestampSource(null);
   setChainProvenTimestampSource(null);
 });

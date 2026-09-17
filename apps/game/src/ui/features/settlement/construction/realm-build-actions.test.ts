@@ -9,14 +9,13 @@ const mocks = vi.hoisted(() => ({
   isHexOccupied: vi.fn(),
   getBalance: vi.fn(),
   getBuildingCosts: vi.fn(),
-  getComponentValue: vi.fn(),
   toastError: vi.fn(),
 }));
 
 vi.mock("@/ui/features/event-feed/notify", () => ({ toast: { error: mocks.toastError } }));
 vi.mock("@/sync/active-game-client", () => ({
   requireActiveGameClient: () => ({
-    setup: { components: {} },
+    setup: { store: { require: () => ({ population: { current: 1, max: 10 } }) } },
     views: {
       buildingTiles: () => ({
         getHexCoords: () => ({ col: 20, row: 30 }),
@@ -33,16 +32,11 @@ vi.mock("@bibliothecadao/eternum", () => ({
   getBalance: mocks.getBalance,
   getBuildingCosts: mocks.getBuildingCosts,
   configManager: {
+    getActiveGameId: () => 1,
     getBuildingCategoryConfig: () => ({ population_cost: 1, capacity_grant: 0 }),
     getBasePopulationCapacity: () => 0,
   },
 }));
-vi.mock("@dojoengine/recs", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@dojoengine/recs")>()),
-  getComponentValue: mocks.getComponentValue,
-}));
-vi.mock("@dojoengine/utils", () => ({ getEntityIdFromKeys: (keys: bigint[]) => keys.join(":") }));
-
 const buildableRealm = {
   category: StructureType.Realm,
   level: 1,
@@ -76,7 +70,6 @@ describe("buildRealmBuilding", () => {
     mocks.placeBuilding.mockResolvedValue({ transaction_hash: "0x1" });
     mocks.getBuildingCosts.mockReturnValue([{ resource: 1, amount: 10 }]);
     mocks.getBalance.mockReturnValue({ balance: 20n, resourceId: 1 });
-    mocks.getComponentValue.mockReturnValue(undefined);
   });
 
   it("re-checks affordability before submitting", async () => {

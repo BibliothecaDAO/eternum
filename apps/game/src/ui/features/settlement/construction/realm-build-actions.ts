@@ -164,7 +164,7 @@ const submitRealmBuilding = async ({
     entityId,
     buildingType: target.type,
     useSimpleCost,
-    components: setup.components,
+    store: setup.store,
     realm,
     mode,
   });
@@ -192,7 +192,7 @@ const submitRealmBuilding = async ({
         entityId,
         buildingType: target.type,
         useSimpleCost,
-        components: setup.components,
+        store: setup.store,
         realm,
         mode,
         targetSpot: availableSpot,

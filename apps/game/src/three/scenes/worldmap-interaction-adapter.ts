@@ -24,13 +24,13 @@ interface SelectedHexManagerLike {
 interface CreateWorldmapInteractionAdapterInput {
   state: WorldmapInteractionState;
   selectedHexManager?: SelectedHexManagerLike;
-  dojoComponents?: OpenStructureContextMenuInput["components"];
+  store?: OpenStructureContextMenuInput["store"];
 }
 
 export function createWorldmapInteractionAdapter({
   state,
   selectedHexManager,
-  dojoComponents,
+  store,
 }: CreateWorldmapInteractionAdapterInput) {
   return {
     enterStructure(input: {
@@ -72,14 +72,14 @@ export function createWorldmapInteractionAdapter({
     },
 
     openOwnedStructureContextMenu(input: { event: MouseEvent; hexCoords: HexPosition; structure: HexEntityInfo }) {
-      if (!dojoComponents) {
+      if (!store) {
         return;
       }
       openStructureContextMenu({
         event: input.event,
         structure: input.structure,
         hexCoords: input.hexCoords,
-        components: dojoComponents,
+        store,
       });
     },
   };

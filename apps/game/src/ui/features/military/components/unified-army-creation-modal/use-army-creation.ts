@@ -14,7 +14,7 @@ import {
   getGuardsByStructure,
   getTroopResourceId,
 } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
+import { useGame, useNativeRow, useNativeRevision } from "@bibliothecadao/react";
 import {
   Direction,
   DISPLAYED_SLOT_NUMBER_MAP,
@@ -28,7 +28,6 @@ import {
   TroopTier,
   TroopType,
 } from "@bibliothecadao/types";
-import { useComponentValue } from "@dojoengine/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
@@ -38,7 +37,6 @@ import {
 } from "../../utils/defense-slot-utils";
 import { getGuardStaminaSnapshot } from "../../utils/guard-stamina";
 import type { GuardSummary, SelectedTroopCombo, TroopSelectionOption } from "./types";
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 import { requireActiveGameClient } from "@/sync/active-game-client";
 
 import { useBlitzRealmProvision } from "@/ui/modules/entity-details/hooks/use-blitz-realm-provision";
@@ -73,8 +71,8 @@ export const useArmyCreation = ({
   onSubmit,
 }: ArmyCreationOptions) => {
   const {
-    setup: { components },
-  } = useDojo();
+    setup: { store },
+  } = useGame();
   const submittingRef = useRef(false);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedDirection, setSelectedDirection] = useState<Direction | null>(
@@ -97,8 +95,11 @@ export const useArmyCreation = ({
     }
   }, [initialGuardSlot]);
 
-  const structureComponent = useComponentValue(components.Structure, gameEntityKey([BigInt(activeStructureId || 0)]));
-  const resourceComponent = useComponentValue(components.Resource, gameEntityKey([BigInt(activeStructureId)]));
+  const structureComponent = useNativeRow("Structure", {
+    game_id: configManager.getActiveGameId(),
+    entity_id: activeStructureId,
+  });
+  const revision = useNativeRevision(["ResourceBalance", "ResourceProduction", "ResourceWeight", "Guard"]);
   const provision = useBlitzRealmProvision(activeStructureId);
 
   const troopOptions = useMemo<TroopSelectionOption[]>(() => {
@@ -115,7 +116,7 @@ export const useArmyCreation = ({
       label: formatTroopTypeLabel(type),
       tiers: TROOP_TIERS.map((tier) => {
         const resourceId = getTroopResourceId(type, tier);
-        const balance = getBalance(activeStructureId, resourceId, currentDefaultTick, components).balance;
+        const balance = getBalance(activeStructureId, resourceId, currentDefaultTick, store).balance;
         const available = Number(divideByPrecision(balance));
         const resource = resources.find((item) => item.id === resourceId);
         if (!resource) throw new Error(`Missing troop resource ${resourceId}`);
@@ -127,7 +128,7 @@ export const useArmyCreation = ({
         };
       }),
     }));
-  }, [activeStructureId, currentDefaultTick, components, resourceComponent]);
+  }, [activeStructureId, currentDefaultTick, store, revision]);
 
   const structureBase = structureComponent?.base;
   const structureCategory = structureBase?.category as StructureType | undefined;
@@ -165,8 +166,8 @@ export const useArmyCreation = ({
   const availableGuardSlotSet = useMemo(() => new Set(availableGuardSlots), [availableGuardSlots]);
 
   const guardsData = useMemo(
-    () => (structureComponent ? getGuardsByStructure(structureComponent) : []),
-    [structureComponent],
+    () => (structureComponent ? getGuardsByStructure(structureComponent, store) : []),
+    [structureComponent, store, revision],
   );
 
   const currentExplorersCount = Number(structureBase?.troop_explorer_count ?? 0);

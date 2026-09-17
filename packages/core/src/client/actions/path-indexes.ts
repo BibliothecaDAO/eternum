@@ -1,7 +1,7 @@
+import { getExplorerOwner } from "../../utils/army";
 import { BiomeIdToType, type BiomeType, ContractAddress, type HexEntityInfo, type ID } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
 
-import { gameEntityKey } from "../../managers/game-entity-keys";
+import { configManager } from "../../managers/config-manager";
 import { FELT_CENTER } from "../../utils/utils";
 import type { GameClient } from "../game-client";
 import type { HexIndex } from "./armies";
@@ -17,17 +17,19 @@ export interface ArmyPathIndexes {
 type PathIndexSource = Pick<GameClient, "setup" | "projection">;
 
 /**
- * One layer of the world spatial projection as path-planning input. Owners come from RECS so the planner can tell
+ * One layer of the world spatial projection as path-planning input. Owners come from the fact store so the planner can tell
  * the viewer's own units from targets; a headless caller has no chunking, so the whole layer is indexed.
  */
 export const buildArmyPathIndexes = (client: PathIndexSource, alt = false): ArmyPathIndexes => {
-  const { components } = client.setup;
+  const { store } = client.setup;
   const projection = client.projection;
   const structureOwner = (structureId: ID): ContractAddress =>
-    ContractAddress(getComponentValue(components.Structure, gameEntityKey([BigInt(structureId)]))?.owner ?? 0n);
+    ContractAddress(
+      store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: structureId })?.owner ?? 0n,
+    );
   const armyOwner = (explorerId: ID): ContractAddress => {
-    const home = getComponentValue(components.ExplorerTroops, gameEntityKey([BigInt(explorerId)]))?.owner;
-    return home === undefined ? ContractAddress(0n) : structureOwner(home);
+    const explorer = store.get("ExplorerTroops", { game_id: configManager.getActiveGameId(), explorer_id: explorerId });
+    return explorer ? getExplorerOwner(store, explorer) : 0n;
   };
 
   const structureHexes: HexIndex<HexEntityInfo> = new Map();

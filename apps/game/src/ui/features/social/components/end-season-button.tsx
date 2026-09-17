@@ -6,7 +6,7 @@ import { PopoverPanel, SurfaceFrame } from "@/ui/design-system/molecules/popover
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 
 import { configManager, LeaderboardManager } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
+import { useGame, useNativeRevision } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
 import { useCallback, useMemo, useState } from "react";
 
@@ -15,7 +15,8 @@ interface EndSeasonButtonProps {
 }
 
 export const EndSeasonButton = ({ className }: EndSeasonButtonProps) => {
-  const dojo = useDojo();
+  const dojo = useGame();
+  const revision = useNativeRevision(["PlayerPoints"]);
   const {
     setup,
     account: { account },
@@ -35,11 +36,11 @@ export const EndSeasonButton = ({ className }: EndSeasonButtonProps) => {
   const pointsForWin = configManager.getHyperstructureConfig().pointsForWin;
 
   const { registeredPoints, percentageOfPoints } = useMemo(() => {
-    const leaderboardManager = LeaderboardManager.instance(setup.components);
+    const leaderboardManager = LeaderboardManager.instance(setup.store);
     const registeredPoints = leaderboardManager.getPlayerRegisteredPoints(ContractAddress(account.address));
 
     return { registeredPoints, percentageOfPoints: Math.min((registeredPoints / pointsForWin) * 100, 100) };
-  }, [structureEntityId, currentBlockTimestamp]);
+  }, [structureEntityId, currentBlockTimestamp, revision, setup.store, account.address, pointsForWin]);
 
   const hasReachedFinalPoints = useMemo(() => {
     return percentageOfPoints >= 100;

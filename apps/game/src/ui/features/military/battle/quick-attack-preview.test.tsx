@@ -16,10 +16,6 @@ const mocks = vi.hoisted(() => ({
   openSurface: vi.fn(),
   closeSurface: vi.fn(),
   updateSelectedEntityId: vi.fn(),
-  components: {
-    Structure: Symbol("Structure"),
-    ExplorerTroops: Symbol("ExplorerTroops"),
-  },
   attackerTroops: {
     count: 1000n,
     category: 1,
@@ -116,7 +112,8 @@ vi.mock("@/ui/design-system/molecules/resource-icon", () => ({
 }));
 
 vi.mock("@bibliothecadao/react", () => ({
-  useDojo: () => ({
+  useNativeRevision: () => 0,
+  useGame: () => ({
     account: {
       account: mocks.account,
     },
@@ -126,26 +123,9 @@ vi.mock("@bibliothecadao/react", () => ({
         attack_explorer_vs_guard: mocks.attackExplorerVsGuard,
         attack_guard_vs_explorer: mocks.attackGuardVsExplorer,
       },
-      components: mocks.components,
+      store: { get: (model: string) => (model === "ExplorerTroops" ? { troops: mocks.attackerTroops } : undefined) },
     },
   }),
-}));
-
-vi.mock("@dojoengine/recs", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@dojoengine/recs")>()),
-  getComponentValue: (component: symbol) => {
-    if (component === mocks.components.Structure) {
-      return undefined;
-    }
-
-    if (component === mocks.components.ExplorerTroops) {
-      return {
-        troops: mocks.attackerTroops,
-      };
-    }
-
-    return undefined;
-  },
 }));
 
 vi.mock("@bibliothecadao/eternum", () => ({
@@ -162,6 +142,7 @@ vi.mock("@bibliothecadao/eternum", () => ({
     }
   },
   configManager: {
+    getActiveGameId: () => 1,
     getBiome: () => "forest",
     getCombatConfig: () => ({
       stamina_attack_req: 50,

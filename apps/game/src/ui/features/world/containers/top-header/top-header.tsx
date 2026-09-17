@@ -5,7 +5,7 @@ import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { Position } from "@bibliothecadao/eternum";
+import { Position, configManager } from "@bibliothecadao/eternum";
 
 import { useUISound } from "@/audio/hooks/useUISound";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -14,21 +14,19 @@ import { GameClock } from "./game-clock";
 import { AttentionPill } from "./attention-pill";
 import { IdentityChip } from "./identity-chip";
 import { TOP_PILL } from "./top-pill";
-import { useDojo } from "@bibliothecadao/react";
+import { useGame, useNativeRow } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
-import { useComponentValue } from "@dojoengine/react";
 import EyeIcon from "lucide-react/dist/esm/icons/eye";
 import Mountain from "lucide-react/dist/esm/icons/mountain";
 import Sparkles from "lucide-react/dist/esm/icons/sparkles";
 import Swords from "lucide-react/dist/esm/icons/swords";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 export const TopHeader = memo(() => {
   const lane = useCompactLane();
   const {
     setup,
     account: { account },
-  } = useDojo();
+  } = useGame();
 
   const playClick = useUISound("ui.click");
 
@@ -41,10 +39,13 @@ export const TopHeader = memo(() => {
   const currentDefaultTick = useCurrentDefaultTick();
 
   // force a refresh of getEntityInfo when the structure data arrives
-  const structure = useComponentValue(setup.components.Structure, gameEntityKey([BigInt(structureEntityId)]));
+  const structure = useNativeRow("Structure", {
+    game_id: configManager.getActiveGameId(),
+    entity_id: structureEntityId,
+  });
   const entityInfo = useMemo(
-    () => mode.structure.getEntityInfo(structureEntityId, ContractAddress(account.address), setup.components),
-    [structureEntityId, currentDefaultTick, account.address, structure, mode],
+    () => mode.structure.getEntityInfo(structureEntityId, ContractAddress(account.address), setup.store),
+    [structureEntityId, currentDefaultTick, account.address, structure, mode, setup.store],
   );
 
   const selectedStructure = useMemo(() => {

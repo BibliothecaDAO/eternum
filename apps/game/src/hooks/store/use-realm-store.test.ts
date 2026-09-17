@@ -13,7 +13,7 @@ vi.mock("@bibliothecadao/types", async (importOriginal) => {
       Realm: 1,
       Village: 2,
       Bank: 3,
-      FragmentMine: 4,
+      Mine: 4,
     },
     RelicRecipientType: {
       Structure: "Structure",
@@ -26,12 +26,12 @@ const StructureType = {
   Realm: 1,
   Village: 2,
   Bank: 3,
-  FragmentMine: 4,
+  Mine: 4,
 } as const;
 
 const { createRealmStoreSlice } = await import("./use-realm-store");
 
-configManager.mapCenter = 2010831280;
+vi.spyOn(configManager, "getMapCenter").mockReturnValue(2010831280);
 
 type RealmStoreState = RealmStore;
 type PlayerStructure = RealmStoreState["playerStructures"][number];

@@ -1,9 +1,6 @@
 import { feltEquals, fetchHeraldGameSnapshot, snapshotModelRows } from "@bibliothecadao/eternum/game-client";
 import type { WorldDeployment } from "./world-directory";
 
-type DirectionString = "East" | "NorthEast" | "NorthWest" | "West" | "SouthWest" | "SouthEast";
-export type DirectionSlots = Array<Partial<Record<DirectionString, []>>>;
-
 export interface PlayerStructure {
   category: number;
   coord_x: number;
@@ -13,13 +10,6 @@ export interface PlayerStructure {
   level: number;
   realm_id: number | null;
   resources_packed: string;
-}
-
-export interface RealmVillageSlot {
-  connected_realm_coord: { col: number; row: number };
-  connected_realm_entity_id: number;
-  connected_realm_id: number;
-  directions_left: DirectionSlots;
 }
 
 interface StructureLocation {
@@ -39,7 +29,6 @@ interface HeraldPreSessionReader {
   fetchAddressName: (address: string) => Promise<unknown | null>;
   fetchPlayerStructures: (owner: string) => Promise<PlayerStructure[]>;
   fetchRealmSettlements: () => Promise<StructureLocation[]>;
-  fetchRealmVillageSlots: () => Promise<RealmVillageSlot[]>;
   fetchSettlementSnapshot: (player: string) => Promise<SettlementSnapshot>;
 }
 
@@ -61,15 +50,6 @@ const toRecord = (value: unknown, field: string): Record<string, unknown> => {
 };
 
 const toAddress = (value: unknown): string => `0x${BigInt(value as string | number | bigint).toString(16)}`;
-
-const toDirectionSlots = (value: unknown): DirectionSlots => {
-  if (!Array.isArray(value)) return [];
-  return value.flatMap((entry) => {
-    if (typeof entry === "string") return [{ [entry]: [] } as Partial<Record<DirectionString, []>>];
-    if (typeof entry === "object" && entry !== null) return [entry as Partial<Record<DirectionString, []>>];
-    return [];
-  });
-};
 
 const structureDetails = (row: Record<string, unknown>) => {
   const base = toRecord(row.base, "Structure.base");
@@ -106,22 +86,6 @@ const toStructureLocation = (row: Record<string, unknown>): StructureLocation =>
   };
 };
 
-const toVillageSlot = (row: Record<string, unknown>): RealmVillageSlot => {
-  const coord = toRecord(row.connected_realm_coord, "StructureVillageSlots.connected_realm_coord");
-  return {
-    connected_realm_coord: {
-      col: toNumber(coord.x, "StructureVillageSlots.connected_realm_coord.x"),
-      row: toNumber(coord.y, "StructureVillageSlots.connected_realm_coord.y"),
-    },
-    connected_realm_entity_id: toNumber(
-      row.connected_realm_entity_id,
-      "StructureVillageSlots.connected_realm_entity_id",
-    ),
-    connected_realm_id: toNumber(row.connected_realm_id, "StructureVillageSlots.connected_realm_id"),
-    directions_left: toDirectionSlots(row.directions_left),
-  };
-};
-
 export const createHeraldPreSessionReader = (world: WorldDeployment, gameId: number): HeraldPreSessionReader => ({
   fetchAddressName: async (address) => {
     const snapshot = await fetchHeraldGameSnapshot(world, gameId, ["AddressName"]);
@@ -143,23 +107,16 @@ export const createHeraldPreSessionReader = (world: WorldDeployment, gameId: num
       .map(toStructureLocation);
   },
 
-  fetchRealmVillageSlots: async () => {
-    const snapshot = await fetchHeraldGameSnapshot(world, gameId, ["StructureVillageSlots"]);
-    return snapshotModelRows(snapshot, "StructureVillageSlots").map(toVillageSlot);
-  },
-
   fetchSettlementSnapshot: async (player) => {
-    const snapshot = await fetchHeraldGameSnapshot(world, gameId, ["BlitzSettlement", "Structure"]);
-    const settlement = snapshotModelRows(snapshot, "BlitzSettlement").find((row) => feltEquals(row.player, player));
+    const snapshot = await fetchHeraldGameSnapshot(world, gameId, ["PlayerEntry", "Structure"]);
+    const settlement = snapshotModelRows(snapshot, "PlayerEntry").find((row) => feltEquals(row.player, player));
     const ownedStructureCount = snapshotModelRows(snapshot, "Structure").filter((row) =>
       feltEquals(row.owner, player),
     ).length;
-    const structureIds = settlement?.structure_ids;
-    const settledCount = Array.isArray(structureIds) ? structureIds.length : ownedStructureCount;
     return {
       hasSettlementRecord: settlement !== undefined,
       hasSettledStructure: ownedStructureCount > 0,
-      settledCount: Math.max(settledCount, ownedStructureCount),
+      settledCount: ownedStructureCount,
     };
   },
 });

@@ -4,9 +4,10 @@ import TwitterShareButton from "@/ui/design-system/molecules/twitter-share-butto
 import { formatSocialText, twitterTemplates } from "@/ui/socials";
 import { getAddressName, getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
 import { usePlayerDisplayName } from "@/hooks/use-player-profile";
-import { useComponentSystem, useDojo } from "@bibliothecadao/react";
-import { ClientComponents, ContractAddress, ID, resources } from "@bibliothecadao/types";
-import { ComponentValue, isComponentUpdate } from "@dojoengine/recs";
+import { useGame } from "@bibliothecadao/react";
+import { ContractAddress, ID, RESOURCE_PRECISION, resources } from "@bibliothecadao/types";
+import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { useStoryEvents } from "@/hooks/store/use-story-events-store";
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AttackTarget } from "./types";
@@ -17,18 +18,16 @@ const getFormattedRaidTweet = ({
   accountAddress,
   targetAddress,
   stolenResources,
-  components,
+  store,
 }: {
   accountName: string | null;
   accountAddress: string;
   targetAddress: ContractAddress | null;
   stolenResources: Array<{ resourceId: number; amount: number }>;
-  components: ClientComponents;
+  store: NativeFactStore;
 }) => {
-  const attackerGuild = getGuildFromPlayerAddress(ContractAddress(accountAddress), components)?.name;
-  const defenderGuild = targetAddress
-    ? getGuildFromPlayerAddress(ContractAddress(targetAddress), components)?.name
-    : "";
+  const attackerGuild = getGuildFromPlayerAddress(ContractAddress(accountAddress), store)?.name;
+  const defenderGuild = targetAddress ? getGuildFromPlayerAddress(ContractAddress(targetAddress), store)?.name : "";
 
   // Format the resources text
   const resourcesText = stolenResources
@@ -40,7 +39,7 @@ const getFormattedRaidTweet = ({
 
   return formatSocialText(twitterTemplates.raid, {
     attackerNameText: `${accountName || accountAddress.slice(0, 6) + "..." + accountAddress.slice(-4)} ${attackerGuild ? `from ${attackerGuild} tribe` : ""}`,
-    defenderNameText: `${targetAddress ? getAddressName(targetAddress, components) : "@daydreamsagents"} ${defenderGuild ? `from ${defenderGuild}` : ""}`,
+    defenderNameText: `${targetAddress ? getAddressName(targetAddress, store) : "@daydreamsagents"} ${defenderGuild ? `from ${defenderGuild}` : ""}`,
     raidResources: resourcesText,
     url: env.VITE_SOCIAL_LINK,
   });
@@ -51,7 +50,9 @@ export const RaidResult = ({
   target,
   successRate = 50,
   stolenResources,
+  transactionHash,
 }: {
+  transactionHash: string | null;
   raiderId: ID;
   target: AttackTarget;
   successRate?: number;
@@ -62,13 +63,8 @@ export const RaidResult = ({
 }) => {
   const {
     account: { account },
-    setup: {
-      network: { contractComponents },
-      components,
-    },
-  } = useDojo();
-
-  const [initialStolenResources] = useState(stolenResources);
+    setup: { store },
+  } = useGame();
 
   const [spinComplete, setSpinComplete] = useState(false);
   const [isSlowingDown, setIsSlowingDown] = useState(false);
@@ -78,9 +74,25 @@ export const RaidResult = ({
   const spinTimeout = useRef<NodeJS.Timeout | null>(null);
   const confettiTimeout = useRef<NodeJS.Timeout | null>(null);
 
-  const [raidResult, setRaidResult] = useState<ComponentValue<
-    ClientComponents["events"]["ExplorerRaidEvent"]["schema"]
-  > | null>(null);
+  const { data: raids } = useStoryEvents(30, "RaidEvent");
+  const raidResult = transactionHash
+    ? raids.find(
+        (event) =>
+          BigInt(event.tx_hash) === BigInt(transactionHash) &&
+          Number(event.storyPayload.explorer_id) === raiderId &&
+          Number(event.storyPayload.structure_id) === target.id,
+      )?.storyPayload
+    : undefined;
+  const initialStolenResources =
+    raidResult?.success === true
+      ? (raidResult.requested_loot as Array<{ resource_type: string; amount: string }>).map((resource) => ({
+          resourceId: Number(resource.resource_type),
+          amount: Number(resource.amount) / RESOURCE_PRECISION,
+        }))
+      : stolenResources;
+  useEffect(() => {
+    if (raidResult) setIsSlowingDown(true);
+  }, [raidResult]);
 
   const accountName = usePlayerDisplayName(account.address);
 
@@ -91,23 +103,9 @@ export const RaidResult = ({
       accountAddress: account.address,
       targetAddress: target.addressOwner,
       stolenResources: initialStolenResources,
-      components,
+      store,
     });
-  }, [raidResult, account.address, initialStolenResources, components]);
-
-  useComponentSystem(
-    contractComponents.events.ExplorerRaidEvent,
-    (update: any) => {
-      if (!isComponentUpdate(update, contractComponents.events.ExplorerRaidEvent)) return;
-
-      const [currentState] = update.value;
-      if (currentState?.explorer_id === raiderId && currentState?.structure_id === target.id) {
-        setRaidResult(currentState);
-        setIsSlowingDown(true);
-      }
-    },
-    [raiderId, target.id],
-  );
+  }, [raidResult, account.address, initialStolenResources, store, accountName]);
 
   // Generate random outcome items for the roulette animation
   const generateOutcomeItems = useCallback(
@@ -169,11 +167,11 @@ export const RaidResult = ({
   }, [raidResult, isSlowingDown]);
 
   // Determine outcome text and styles
-  const outcomeText = raidResult?.success ? "Raid Successful!" : "Raid Failed!";
-  const outcomeColor = raidResult?.success ? "text-order-brilliance" : "text-order-giants";
-  const outcomeBgColor = raidResult?.success ? "bg-order-brilliance/20" : "bg-order-giants/20";
-  const outcomeBorderColor = raidResult?.success ? "border-order-brilliance/30" : "border-order-giants/30";
-  const outcomeEmoji = raidResult?.success ? "💰" : "💀";
+  const outcomeText = raidResult?.success === true ? "Raid Successful!" : "Raid Failed!";
+  const outcomeColor = raidResult?.success === true ? "text-order-brilliance" : "text-order-giants";
+  const outcomeBgColor = raidResult?.success === true ? "bg-order-brilliance/20" : "bg-order-giants/20";
+  const outcomeBorderColor = raidResult?.success === true ? "border-order-brilliance/30" : "border-order-giants/30";
+  const outcomeEmoji = raidResult?.success === true ? "💰" : "💀";
 
   return (
     <div className="flex flex-col items-center justify-center p-4">
@@ -254,7 +252,7 @@ export const RaidResult = ({
         )}
 
         {/* Celebration effects (only on success) */}
-        {showCelebration && raidResult?.success && (
+        {showCelebration && raidResult?.success === true && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -345,7 +343,7 @@ export const RaidResult = ({
         )}
 
         {/* Failure effects (only on failure) */}
-        {showCelebration && raidResult && !raidResult.success && (
+        {showCelebration && raidResult && !raidResult.success === true && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -413,7 +411,7 @@ export const RaidResult = ({
             </h4>
 
             {/* Show stolen resources only if raid was successful */}
-            {raidResult.success && initialStolenResources.length > 0 ? (
+            {raidResult.success === true && initialStolenResources.length > 0 ? (
               <div className="mt-3 pt-3 border-t border-gold/10">
                 <h5 className="text-md font-semibold text-gold mb-2">Stolen Resources:</h5>
                 {initialStolenResources.map((resource, index) => (
@@ -431,7 +429,7 @@ export const RaidResult = ({
                 ))}
               </div>
             ) : (
-              !raidResult.success && (
+              !raidResult.success === true && (
                 <div className="mt-3 pt-3 border-t border-gold/10">
                   <div className="flex flex-col items-center text-red-400">
                     <p>Your raid was unsuccessful. No resources were stolen.</p>
@@ -441,7 +439,7 @@ export const RaidResult = ({
             )}
 
             {/* Add Twitter Share Button */}
-            {formattedTweet && raidResult.success && (
+            {formattedTweet && raidResult.success === true && (
               <div className="mt-4 pt-4 border-t border-gold/10">
                 <TwitterShareButton text={formattedTweet} callToActionText="Share your Raid" variant="outline" />
               </div>

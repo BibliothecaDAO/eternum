@@ -1,6 +1,8 @@
-import { FELT_CENTER } from "@bibliothecadao/eternum";
-import { expect, it } from "vitest";
+import { FELT_CENTER, configManager } from "@bibliothecadao/eternum";
+import { expect, it, vi } from "vitest";
 import { formatTilePanelTitle } from "./tile-panel-title";
+
+vi.spyOn(configManager, "getMapCenter").mockReturnValue(2010831280);
 
 it.each(["Structure Tile", "Army Tile", "Biome"])("normalizes %s coordinates exactly once", (label) => {
   const normalized = { col: 5, row: -3 };

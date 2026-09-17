@@ -27,7 +27,7 @@ const provider = vi.hoisted(() => {
 const playMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@bibliothecadao/react", () => ({
-  useDojo: () => ({
+  useGame: () => ({
     setup: {
       network: {
         provider,

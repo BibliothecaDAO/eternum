@@ -1,3 +1,4 @@
+import { shortString } from "starknet";
 import { transactionGameIds } from "./transactions";
 import type { MadaraRpc } from "../madara-rpc";
 import { normalizeFelt } from "../model-registry";
@@ -57,6 +58,21 @@ export class NativeIngestion {
     const preview = fold.overlay();
     const events = this.validateReceipt(preview, receipt, blockNumber, transactionIndex);
     return { events, changes: this.commit(fold, events) };
+  }
+
+  actionReceipt(fold: WorldFold, receipt: RpcReceipt): RpcReceipt {
+    const events = this.validateReceipt(fold.overlay(), receipt, receipt.block_number ?? null, 0);
+    const rejection = events.find(
+      (event) =>
+        event.kind === "set" && event.model.name === "ExecutionResult" && BigInt(String(event.value.status)) === 2n,
+    );
+    if (!rejection || rejection.kind !== "set") return receipt;
+    const code = normalizeFelt(String(rejection.value.result));
+    return {
+      ...receipt,
+      execution_status: "REVERTED",
+      revert_reason: `Native action rejected: ${shortString.decodeShortString(code)}`,
+    };
   }
 
   async replay(input: {

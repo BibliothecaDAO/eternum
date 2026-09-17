@@ -32,6 +32,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
+      NATIVE_WORLD_MANIFEST: ${{ runner.temp }}/native-world.json
+      NATIVE_WORLD_MANIFEST_URL: ${{ vars.NATIVE_WORLD_MANIFEST_URL }}
+      VITE_PUBLIC_ADMISSION_URL: ${{ vars.VITE_PUBLIC_ADMISSION_URL }}
       VITE_PUBLIC_IDENTITY_RPC_URL: ${{ secrets.CLIENT_IDENTITY_RPC_URL }}
       VITE_PUBLIC_CONTROLLER_RPC_URL: ${{ secrets.CLIENT_IDENTITY_RPC_URL }}
     steps:
@@ -66,6 +69,11 @@ jobs:
           node --test apps/game/scripts/verify-pwa-build.test.mjs
           pnpm --dir apps/game test src/utils/chunk-load-recovery.test.ts src/pwa
           pnpm --dir apps/game verify:assets
+
+      - name: Read native release manifest
+        run: |
+          test -n "$NATIVE_WORLD_MANIFEST_URL" && test -n "$VITE_PUBLIC_ADMISSION_URL"
+          curl --fail --silent --show-error --location "$NATIVE_WORLD_MANIFEST_URL" -o "$NATIVE_WORLD_MANIFEST"
 
       - name: Build client
         env:

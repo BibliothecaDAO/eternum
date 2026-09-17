@@ -31,7 +31,7 @@ const CATEGORY_ICONS: Partial<Record<StructureType, LucideIcon>> = {
   [StructureType.Realm]: Crown,
   [StructureType.Village]: Castle,
   [StructureType.Camp]: Tent,
-  [StructureType.FragmentMine]: Pickaxe,
+  [StructureType.Mine]: Pickaxe,
   [StructureType.Hyperstructure]: Sparkles,
 };
 
@@ -55,7 +55,7 @@ const resolveStatusTone = (
   if (!capabilities.hasPopulationDetails) return null;
 
   const base = structure.structure.base;
-  const occupied = Number(base?.troop_guard_count ?? 0);
+  const occupied = structure.guardCount;
   const max = Number(base?.troop_max_guard_count ?? 0);
 
   if (max > 0 && occupied === 0) {
@@ -144,9 +144,8 @@ export const StructureStatusRow = memo(
         : null;
 
     // Military stats: occupied/max guards and current/max explorer armies.
-    // Both numbers live on the structure base — no extra hooks needed.
     const base = structure.structure.base;
-    const guardOccupied = Number(base?.troop_guard_count ?? 0);
+    const guardOccupied = structure.guardCount;
     const guardMax = Number(base?.troop_max_guard_count ?? 0);
     const explorerOccupied = Number(base?.troop_explorer_count ?? 0);
     const explorerMax = Number(base?.troop_max_explorer_count ?? 0);

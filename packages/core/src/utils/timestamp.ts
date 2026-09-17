@@ -53,19 +53,20 @@ export const reportObservedChainTimestamp = (timestampSeconds: number) => {
 export const getBlockTimestamp = () => {
   const timestamp = timestampSource();
   const provenTimestamp = chainProvenTimestampSource?.() ?? timestamp;
-  const tickConfigArmies = configManager.getTick(TickIds.Armies);
-  const tickConfigDefault = configManager.getTick(TickIds.Default);
-
-  // Config not hydrated yet reads as interval 0; report tick 0 (not Infinity) until it lands.
-  const tickOrZero = (seconds: number, interval: number) =>
-    Number.isFinite(interval) && interval > 0 ? Math.floor(seconds / interval) : 0;
-  const currentDefaultTick = tickOrZero(provenTimestamp, Number(tickConfigDefault));
-  const currentArmiesTick = tickOrZero(timestamp, Number(tickConfigArmies));
+  const tickAt = (seconds: number, tick: TickIds) => {
+    const interval = Number(configManager.getTick(tick));
+    if (!Number.isFinite(interval) || interval <= 0) throw new Error(`Invalid tick interval for ${tick}`);
+    return Math.floor(seconds / interval);
+  };
 
   return {
     currentBlockTimestamp: timestamp,
-    currentDefaultTick,
-    currentArmiesTick,
+    get currentDefaultTick() {
+      return tickAt(provenTimestamp, TickIds.Default);
+    },
+    get currentArmiesTick() {
+      return tickAt(timestamp, TickIds.Armies);
+    },
   };
 };
 

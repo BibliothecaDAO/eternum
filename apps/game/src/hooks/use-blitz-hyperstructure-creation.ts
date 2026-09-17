@@ -3,7 +3,7 @@ import {
   subscribeBlitzHyperstructureCreationPending,
   submitActiveWorldBlitzHyperstructureCreation,
 } from "@/services/blitz/blitz-hyperstructure-creation";
-import { useAccountStore } from "@/hooks/store/use-account-store";
+import { useGame } from "@bibliothecadao/react";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { canIssueOrders } from "@/utils/can-issue-orders";
@@ -17,7 +17,10 @@ export const useBlitzHyperstructureCreation = ({
   hexCoords: HexPosition | null;
   enabled?: boolean;
 }) => {
-  const account = useAccountStore((state) => state.account);
+  const {
+    account: { account },
+    setup: { systemCalls },
+  } = useGame();
   useCurrentBlockTimestamp();
   const ordersAllowed = useUIStore(canIssueOrders);
   const [isCreating, setIsCreating] = useState(false);
@@ -49,11 +52,12 @@ export const useBlitzHyperstructureCreation = ({
       await submitActiveWorldBlitzHyperstructureCreation({
         account,
         hexCoords,
+        systemCalls,
       });
     } finally {
       setIsCreating(false);
     }
-  }, [account, enabled, hexCoords]);
+  }, [account, enabled, hexCoords, systemCalls]);
 
   return {
     canCreate,

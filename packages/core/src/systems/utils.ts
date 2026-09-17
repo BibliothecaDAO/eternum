@@ -1,5 +1,4 @@
 import {
-  ClientComponents,
   type ID,
   RealmLevels,
   StructureType,
@@ -7,13 +6,14 @@ import {
   type TroopTier,
   type TroopType,
 } from "@bibliothecadao/types";
+import type { NativeFactStore } from "../client/native-fact-store";
 import { getHyperstructureProgress } from "../utils";
 import { PROGRESS_FINAL_THRESHOLD, PROGRESS_HALF_THRESHOLD } from "../utils/constants";
 import { StructureProgress } from "./types";
 
-export const getStructureStage = (structureType: StructureType, entityId: ID, components: ClientComponents): number => {
+export const getStructureStage = (structureType: StructureType, entityId: ID, store: NativeFactStore): number => {
   if (structureType === StructureType.Hyperstructure) {
-    const { initialized, percentage } = getHyperstructureProgress(entityId, components);
+    const { initialized, percentage } = getHyperstructureProgress(entityId, store);
 
     if (!initialized) {
       return StructureProgress.STAGE_1;
@@ -153,8 +153,8 @@ export const getStructureInfoFromTileOccupier = (
         reserved: true,
       };
 
-    case TileOccupier.FragmentMine:
-      return { type: StructureType.FragmentMine, stage: StructureProgress.STAGE_1, level: 1, hasWonder: false };
+    case TileOccupier.Mine:
+      return { type: StructureType.Mine, stage: StructureProgress.STAGE_1, level: 1, hasWonder: false };
 
     case TileOccupier.Village:
       return {

@@ -1,9 +1,8 @@
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
-import { getIsBlitz, getStructureName } from "@bibliothecadao/eternum";
+import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { configManager, getExplorerOwner, getIsBlitz, getStructureName } from "@bibliothecadao/eternum";
 import { getPlayerDisplayName } from "@/hooks/use-player-profile";
 import type { WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
-import { type ClientComponents, ContractAddress, type ID, StructureType } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
+import { ContractAddress, type ID, StructureType } from "@bibliothecadao/types";
 
 interface WorldEventStructure {
   entityId: number;
@@ -38,7 +37,7 @@ interface WorldEventEntityReader {
 }
 
 export const createWorldEventEntityReader = (
-  components: ClientComponents,
+  store: NativeFactStore,
   projection: WorldSpatialProjection,
 ): WorldEventEntityReader => {
   // The one player resolver: identity profile over chain name, Player-xxxxxx for neither.
@@ -46,7 +45,7 @@ export const createWorldEventEntityReader = (
 
   const getStructure = (entityId: number): WorldEventStructure | null => {
     const spatial = projection.getStructure(entityId);
-    const structure = getComponentValue(components.Structure, gameEntityKey([BigInt(entityId)]));
+    const structure = store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: entityId });
     if (!spatial || !structure) return null;
 
     const ownerAddress = ContractAddress(structure.owner).toString();
@@ -57,17 +56,16 @@ export const createWorldEventEntityReader = (
       ownerAddress,
       ownerName: getPlayerName(ownerAddress),
       structureName: getStructureName(structure, getIsBlitz()).name,
-      structureType: structure.category as StructureType,
+      structureType: structure.base.category as StructureType,
     };
   };
 
   const getArmy = (entityId: number): WorldEventArmy | null => {
     const spatial = projection.getArmy(entityId);
-    const explorer = getComponentValue(components.ExplorerTroops, gameEntityKey([BigInt(entityId)]));
+    const explorer = store.get("ExplorerTroops", { game_id: configManager.getActiveGameId(), explorer_id: entityId });
     if (!spatial || !explorer) return null;
 
-    const ownerStructure = getComponentValue(components.Structure, gameEntityKey([BigInt(explorer.owner)]));
-    const ownerAddress = ownerStructure?.owner ? ContractAddress(ownerStructure.owner).toString() : "";
+    const ownerAddress = getExplorerOwner(store, explorer).toString();
     return {
       entityId,
       coordX: spatial.hexCoords.col,

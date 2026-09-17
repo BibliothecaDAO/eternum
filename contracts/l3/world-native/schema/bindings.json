@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "f3f125e5717106702cc7ff6f4b5db2c435cb10d1e474b7e6062f75e2f16cbc7d",
+  "schemaIdentity": "731a6de5cb17509abe2382df77a28a3eb93b8aece1f07c7ebc7b9b32fc868139",
   "commandAbi": [
     {
       "type": "impl",
@@ -1802,6 +1802,10 @@
         {
           "name": "WithdrawResource",
           "type": "world_native::bridge::Withdraw"
+        },
+        {
+          "name": "ProvisionAndUpgradeRealm",
+          "type": "core::integer::u32"
         }
       ]
     },
@@ -4034,1331 +4038,395 @@
   "models": [
     {
       "name": "Preset",
-      "scope": "deployment",
-      "schema": {
-        "preset_id": "Number",
-        "commitment": "BigInt"
-      }
+      "scope": "deployment"
     },
     {
       "name": "Series",
-      "scope": "deployment",
-      "schema": {
-        "series_id": "BigInt",
-        "owner": "BigInt",
-        "created_games": "Number"
-      }
+      "scope": "deployment"
     },
     {
       "name": "GameSequence",
-      "scope": "deployment",
-      "schema": {
-        "address": "BigInt",
-        "next_game_id": "Number"
-      }
+      "scope": "deployment"
     },
     {
       "name": "SpireLayout",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "count": "Number",
-        "base_distance": "Number",
-        "layer_distance": "Number",
-        "max_layer": "Number"
-      }
+      "scope": "game"
     },
     {
       "name": "LedgerOperator",
-      "scope": "deployment",
-      "schema": {
-        "address": "BigInt",
-        "operator": "BigInt"
-      }
+      "scope": "deployment"
     },
     {
       "name": "AgentRules",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "max_lifetime_count": "Number",
-        "max_current_count": "Number",
-        "min_spawn_lords": "Number",
-        "max_spawn_lords": "Number"
-      }
+      "scope": "game"
     },
     {
       "name": "AgentDiscoveryStats",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "spawned": "Number",
-        "lords_minted": "Number"
-      }
+      "scope": "game"
     },
     {
       "name": "CampResources",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "resources": [
-          {
-            "resource_type": "Number",
-            "amount": "BigInt"
-          }
-        ]
-      }
+      "scope": "game"
     },
     {
       "name": "Guild",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "guild_id": "BigInt",
-        "public": "Boolean",
-        "name": "BigInt"
-      }
+      "scope": "game"
     },
     {
       "name": "GuildMember",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "actor": "BigInt",
-        "guild_id": "BigInt"
-      }
+      "scope": "game"
     },
     {
       "name": "GuildWhitelist",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "guild_id": "BigInt",
-        "player": "BigInt",
-        "allowed": "Boolean"
-      }
+      "scope": "game"
     },
     {
       "name": "ArtificerCost",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "research": "BigInt"
-      }
+      "scope": "game"
     },
     {
       "name": "SeriesChestRules",
-      "scope": "deployment",
-      "schema": {
-        "series_id": "BigInt",
-        "num_games": "Number",
-        "total_chests": "BigInt",
-        "cap_ratio_bps": "BigInt"
-      }
+      "scope": "deployment"
     },
     {
       "name": "SeriesChestState",
-      "scope": "deployment",
-      "schema": {
-        "series_id": "BigInt",
-        "game_index": "Number",
-        "ema_players_scaled": "BigInt",
-        "recent_first": "BigInt",
-        "recent_second": "BigInt",
-        "recent_third": "BigInt",
-        "recent_count": "Number",
-        "anchor_first": "BigInt",
-        "anchor_second": "BigInt",
-        "anchor_count": "Number",
-        "last_rate_bps": "BigInt",
-        "soft_supply": "BigInt",
-        "overspend_remaining": "BigInt"
-      }
+      "scope": "deployment"
     },
     {
       "name": "GameChestReward",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "allocated": "Number",
-        "distributed": "Number"
-      }
+      "scope": "game"
     },
     {
       "name": "RankingTrial",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "trial_id": "BigInt",
-        "committed": "Number",
-        "processed": "Number",
-        "last_rank": "Number",
-        "last_points": "BigInt",
-        "total_points": "BigInt"
-      }
+      "scope": "game"
     },
     {
       "name": "PlayerRank",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "player": "BigInt",
-        "rank": "Number",
-        "chests": "Number",
-        "elite": "Boolean"
-      }
+      "scope": "game"
     },
     {
       "name": "FaithRewardToken",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "token": "BigInt"
-      }
+      "scope": "game"
     },
     {
       "name": "FaithPrizePool",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "funded": "BigInt",
-        "distributed": "Boolean"
-      }
+      "scope": "game"
     },
     {
       "name": "FaithPrizeClaimed",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "player": "BigInt",
-        "wonder_id": "Number",
-        "claimed": "Boolean"
-      }
+      "scope": "game"
     },
     {
       "name": "FaithRules",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "wonder_rate": "Number",
-        "realm_rate": "Number",
-        "village_rate": "Number",
-        "owner_share_bps": "Number"
-      }
+      "scope": "game"
     },
     {
       "name": "FaithBlacklist",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "wonder_id": "Number",
-        "blocked_id": "BigInt",
-        "blocked": "Boolean"
-      }
+      "scope": "game"
     },
     {
       "name": "SeasonWinThreshold",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "points": "BigInt"
-      }
+      "scope": "game"
     },
     {
       "name": "ExtractionRewards",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "rewards": [
-          {
-            "resource_type": "Number",
-            "amount": "BigInt",
-            "weight": "BigInt"
-          }
-        ]
-      }
+      "scope": "game"
     },
     {
       "name": "RelicRules",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "rules": [
-          {
-            "rate_bps": "Number",
-            "duration": "Number",
-            "uses": "Number",
-            "essence_cost": "BigInt",
-            "draw_weight": "BigInt"
-          }
-        ]
-      }
+      "scope": "game"
     },
     {
       "name": "RelicDiscovery",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "last_at": "BigInt"
-      }
+      "scope": "game"
     },
     {
       "name": "DepositRules",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "paused": "Boolean",
-        "realm_fee_bps": "Number",
-        "velords_fee_bps": "Number",
-        "season_fee_bps": "Number",
-        "client_fee_bps": "Number"
-      }
+      "scope": "game"
     },
     {
       "name": "WithdrawalRules",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "paused": "Boolean",
-        "bank_fee_bps": "Number",
-        "velords_fee_bps": "Number",
-        "season_fee_bps": "Number",
-        "client_fee_bps": "Number",
-        "velords_recipient": "BigInt",
-        "season_recipient": "BigInt",
-        "retention": [
-          {
-            "troop_percent": "Number",
-            "resource_percent": "Number"
-          }
-        ]
-      }
+      "scope": "game"
     },
     {
       "name": "ResourceToken",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "resource_type": "Number",
-        "token": "BigInt"
-      }
+      "scope": "game"
     },
     {
       "name": "BankRules",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "lp_fee_num": "Number",
-        "lp_fee_denom": "Number",
-        "owner_fee_num": "Number",
-        "owner_fee_denom": "Number"
-      }
+      "scope": "game"
     },
     {
       "name": "BankName",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "entity_id": "Number",
-        "name": "BigInt"
-      }
+      "scope": "game"
     },
     {
       "name": "Market",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "resource_type": "Number",
-        "lords": "BigInt",
-        "resource": "BigInt",
-        "shares": "BigInt"
-      }
+      "scope": "game"
     },
     {
       "name": "Liquidity",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "owner": "BigInt",
-        "resource_type": "Number",
-        "shares": "BigInt"
-      }
+      "scope": "game"
     },
     {
       "name": "TradeOrder",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "trade_id": "Number",
-        "maker_id": "Number",
-        "taker_id": "Number",
-        "offered_resource": "Number",
-        "requested_resource": "Number",
-        "offered_per_lot": "BigInt",
-        "requested_per_lot": "BigInt",
-        "remaining_lots": "BigInt",
-        "expires_at": "Number"
-      }
+      "scope": "game"
     },
     {
       "name": "TradeRules",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "max_count": "Number"
-      }
+      "scope": "game"
     },
     {
       "name": "Guard",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "structure_id": "Number",
-        "slot": "Number",
-        "troops": {
-          "category": "String",
-          "tier": "String",
-          "count": "BigInt",
-          "stamina": {
-            "amount": "BigInt",
-            "updated_tick": "BigInt"
-          },
-          "boosts": {
-            "incr_damage_dealt_percent_num": "Number",
-            "incr_damage_dealt_end_tick": "Number",
-            "decr_damage_gotten_percent_num": "Number",
-            "decr_damage_gotten_end_tick": "Number",
-            "incr_stamina_regen_percent_num": "Number",
-            "incr_stamina_regen_tick_count": "Number",
-            "incr_explore_reward_percent_num": "Number",
-            "incr_explore_reward_end_tick": "Number"
-          },
-          "battle_cooldown_end": "Number"
-        },
-        "destroyed_tick": "Number"
-      }
+      "scope": "game"
     },
     {
       "name": "VillageRaid",
-      "scope": "game",
-      "schema": {
-        "key": {
-          "game_id": "Number",
-          "entity_id": "Number"
-        },
-        "last_tick": "BigInt"
-      }
+      "scope": "game"
     },
     {
       "name": "BitcoinMine",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "entity_id": "Number",
-        "eligible_from": "BigInt",
-        "next_phase": "BigInt",
-        "unsplit_carry": "BigInt",
-        "winner_carry": "BigInt",
-        "owner_carry": "BigInt"
-      }
+      "scope": "game"
     },
     {
       "name": "BitcoinClaim",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "phase": "BigInt",
-        "mine_id": "Number",
-        "claimed": "Boolean"
-      }
+      "scope": "game"
     },
     {
       "name": "BitcoinPhase",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "phase": "BigInt",
-        "total_labor": "BigInt",
-        "contributors": "Number",
-        "state": "String",
-        "root": "BigInt"
-      }
+      "scope": "game"
     },
     {
       "name": "BitcoinContribution",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "phase": "BigInt",
-        "player": "BigInt",
-        "labor": "BigInt"
-      }
+      "scope": "game"
     },
     {
       "name": "MineKindConfig",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "kind": "Number",
-        "resource_type": "Number",
-        "building_category": "Number",
-        "production_rate": "BigInt",
-        "cap_min": "BigInt",
-        "cap_steps": "Number"
-      }
+      "scope": "game"
     },
     {
       "name": "MinePool",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "alt": "Boolean",
-        "weights": [
-          {
-            "kind": "Number",
-            "weight": "Number"
-          }
-        ]
-      }
+      "scope": "game"
     },
     {
       "name": "RealmTraits",
-      "scope": "deployment",
-      "schema": {
-        "realm_id": "Number",
-        "wonder": "Number",
-        "order": "Number",
-        "resources": [
-          "Number"
-        ]
-      }
+      "scope": "deployment"
     },
     {
       "name": "RealmCatalogue",
-      "scope": "deployment",
-      "schema": {
-        "address": "BigInt",
-        "initialized": "Number",
-        "digest": "BigInt"
-      }
+      "scope": "deployment"
     },
     {
       "name": "AgentPopulation",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "count": "Number"
-      }
+      "scope": "game"
     },
     {
       "name": "RealmGrants",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "resources": [
-          {
-            "resource_type": "Number",
-            "amount": "BigInt"
-          }
-        ],
-        "starting_troops": [
-          "String"
-        ],
-        "realm_resources": [
-          "Number"
-        ]
-      }
+      "scope": "game"
     },
     {
       "name": "HyperstructureReservations",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "placed": "Number"
-      }
+      "scope": "game"
     },
     {
       "name": "SettlementRules",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "registration_start": "Number",
-        "registration_limit": "Number",
-        "mode": "String",
-        "reward_profile": "Number",
-        "cosmetic_limit": "Number",
-        "cosmetic_collection": "BigInt",
-        "cosmetic_timelock": "BigInt"
-      }
+      "scope": "game"
     },
     {
       "name": "SettlementProgress",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "registered": "Number",
-        "realm_count": "Number"
-      }
+      "scope": "game"
     },
     {
       "name": "SettlementPool",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "opened": "Number",
-        "available": [
-          {
-            "coords": [
-              {
-                "alt": "Boolean",
-                "x": "Number",
-                "y": "Number"
-              }
-            ]
-          }
-        ]
-      }
+      "scope": "game"
     },
     {
       "name": "VillageRules",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "troop_delay_ticks": "Number",
-        "resources": [
-          {
-            "resource_type": "Number",
-            "amount": "BigInt"
-          }
-        ],
-        "resource_pool": [
-          {
-            "resource_type": "Number",
-            "weight": "BigInt"
-          }
-        ]
-      }
+      "scope": "game"
     },
     {
       "name": "VillagePass",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "pass_id": "Number",
-        "owner": "BigInt",
-        "village_id": "Number"
-      }
+      "scope": "game"
     },
     {
       "name": "VillagePool",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "opened": "Number",
-        "available": [
-          {
-            "coords": [
-              {
-                "alt": "Boolean",
-                "x": "Number",
-                "y": "Number"
-              }
-            ]
-          }
-        ]
-      }
+      "scope": "game"
     },
     {
       "name": "EntryEntitlement",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "owner": "BigInt",
-        "realm_id": "BigInt",
-        "metadata_1": "BigInt",
-        "metadata_2": "BigInt",
-        "metadata_3": "BigInt",
-        "pass_kind": "Number"
-      }
+      "scope": "game"
     },
     {
       "name": "PlayerEntry",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "owner": "BigInt",
-        "player": "BigInt"
-      }
+      "scope": "game"
     },
     {
       "name": "PlayerCosmetics",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "player": "BigInt",
-        "attributes": [
-          "BigInt"
-        ]
-      }
+      "scope": "game"
     },
     {
       "name": "TileOpt",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "alt": "Boolean",
-        "col": "Number",
-        "row": "Number",
-        "data": "BigInt"
-      }
+      "scope": "game"
     },
     {
       "name": "ExplorerTroops",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "explorer_id": "Number",
-        "owner": "Number",
-        "troops": {
-          "category": "String",
-          "tier": "String",
-          "count": "BigInt",
-          "stamina": {
-            "amount": "BigInt",
-            "updated_tick": "BigInt"
-          },
-          "boosts": {
-            "incr_damage_dealt_percent_num": "Number",
-            "incr_damage_dealt_end_tick": "Number",
-            "decr_damage_gotten_percent_num": "Number",
-            "decr_damage_gotten_end_tick": "Number",
-            "incr_stamina_regen_percent_num": "Number",
-            "incr_stamina_regen_tick_count": "Number",
-            "incr_explore_reward_percent_num": "Number",
-            "incr_explore_reward_end_tick": "Number"
-          },
-          "battle_cooldown_end": "Number"
-        },
-        "coord": {
-          "alt": "Boolean",
-          "x": "Number",
-          "y": "Number"
-        }
-      }
+      "scope": "game"
     },
     {
       "name": "Structure",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "entity_id": "Number",
-        "owner": "BigInt",
-        "base": {
-          "troop_explorer_count": "Number",
-          "troop_max_guard_count": "Number",
-          "troop_max_explorer_count": "Number",
-          "created_at": "Number",
-          "category": "Number",
-          "coord_x": "Number",
-          "coord_y": "Number",
-          "level": "Number",
-          "starting_troops_granted": "Boolean",
-          "alt": "Boolean"
-        },
-        "troop_explorers": [
-          "Number"
-        ],
-        "resources_packed": "BigInt",
-        "metadata": {
-          "realm_id": "Number",
-          "order": "Number",
-          "has_wonder": "Boolean",
-          "village_realm": "Number",
-          "mine_kind": "Number"
-        }
-      }
+      "scope": "game"
     },
     {
       "name": "ResourceBalance",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "entity_id": "Number",
-        "resource_type": "Number",
-        "balance": "BigInt"
-      }
+      "scope": "game"
     },
     {
       "name": "ResourceProduction",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "entity_id": "Number",
-        "resource_type": "Number",
-        "building_count": "Number",
-        "production_rate": "BigInt",
-        "output_amount_left": "BigInt",
-        "last_updated_at": "Number"
-      }
+      "scope": "game"
     },
     {
       "name": "ProductionBonus",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "entity_id": "Number",
-        "incr_resource_rate_percent_num": "Number",
-        "incr_labor_rate_percent_num": "Number",
-        "incr_troop_rate_percent_num": "Number",
-        "incr_resource_rate_end_tick": "Number",
-        "incr_labor_rate_end_tick": "Number",
-        "incr_troop_rate_end_tick": "Number"
-      }
+      "scope": "game"
     },
     {
       "name": "ProductionRecipe",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "resource_type": "Number",
-        "simple_output": "BigInt",
-        "complex_output": "BigInt",
-        "simple_inputs": [
-          {
-            "resource_type": "Number",
-            "amount": "BigInt"
-          }
-        ],
-        "complex_inputs": [
-          {
-            "resource_type": "Number",
-            "amount": "BigInt"
-          }
-        ]
-      }
+      "scope": "game"
     },
     {
       "name": "ProductionReady",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "ready": "Boolean"
-      }
+      "scope": "game"
     },
     {
       "name": "ResourceWeight",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "entity_id": "Number",
-        "capacity": "BigInt",
-        "weight": "BigInt"
-      }
+      "scope": "game"
     },
     {
       "name": "ResourceArrival",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "entity_id": "Number",
-        "day": "BigInt",
-        "slot": "Number",
-        "resources": [
-          {
-            "resource_type": "Number",
-            "amount": "BigInt"
-          }
-        ]
-      }
+      "scope": "game"
     },
     {
       "name": "ResourceAllowance",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "owner_entity_id": "Number",
-        "approved_entity_id": "Number",
-        "resource_type": "Number",
-        "amount": "BigInt"
-      }
+      "scope": "game"
     },
     {
       "name": "BuildingRule",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "category": "Number",
-        "population_cost": "Number",
-        "capacity_grant": "Number",
-        "simple_cost": [
-          {
-            "resource_type": "Number",
-            "amount": "BigInt"
-          }
-        ],
-        "complex_cost": [
-          {
-            "resource_type": "Number",
-            "amount": "BigInt"
-          }
-        ]
-      }
+      "scope": "game"
     },
     {
       "name": "BuildingRulesReady",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "ready": "Boolean"
-      }
+      "scope": "game"
     },
     {
       "name": "Building",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "alt": "Boolean",
-        "outer_col": "Number",
-        "outer_row": "Number",
-        "inner_col": "Number",
-        "inner_row": "Number",
-        "category": "Number",
-        "outer_entity_id": "Number",
-        "paused": "Boolean"
-      }
+      "scope": "game"
     },
     {
       "name": "StructureBuildings",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "entity_id": "Number",
-        "packed_counts_1": "BigInt",
-        "packed_counts_2": "BigInt",
-        "packed_counts_3": "BigInt",
-        "population": {
-          "current": "Number",
-          "max": "Number"
-        }
-      }
+      "scope": "game"
     },
     {
       "name": "Hyperstructure",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "entity_id": "Number",
-        "stage": "String",
-        "access": "String",
-        "seed": "BigInt"
-      }
+      "scope": "game"
     },
     {
       "name": "HyperstructureProgress",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "entity_id": "Number",
-        "resource_type": "Number",
-        "contributed": "BigInt"
-      }
+      "scope": "game"
     },
     {
       "name": "HyperstructureShares",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "entity_id": "Number",
-        "start_at": "BigInt",
-        "multiplier": "Number",
-        "shareholders": [
-          {
-            "player": "BigInt",
-            "bps": "Number"
-          }
-        ]
-      }
+      "scope": "game"
     },
     {
       "name": "HyperstructureRules",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "initialize_shards": "BigInt",
-        "resources": [
-          {
-            "resource_type": "Number",
-            "minimum": "Number",
-            "maximum": "Number",
-            "points": "BigInt"
-          }
-        ]
-      }
+      "scope": "game"
     },
     {
       "name": "AddressName",
-      "scope": "deployment",
-      "schema": {
-        "address": "BigInt",
-        "name": "BigInt"
-      }
+      "scope": "deployment"
     },
     {
       "name": "AgentOwner",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "explorer_id": "Number",
-        "address": "BigInt"
-      }
+      "scope": "game"
     },
     {
       "name": "WonderFaith",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "wonder_id": "Number",
-        "last_recorded_owner": "BigInt",
-        "claimed_points": "BigInt",
-        "claim_per_sec": "Number",
-        "claim_last_at": "BigInt",
-        "owner_claim_per_sec": "Number",
-        "num_structures_pledged": "Number"
-      }
+      "scope": "game"
     },
     {
       "name": "FaithfulStructure",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "structure_id": "Number",
-        "wonder_id": "Number",
-        "faithful_since": "BigInt",
-        "fp_to_wonder_owner_per_sec": "Number",
-        "fp_to_struct_owner_per_sec": "Number",
-        "last_recorded_owner": "BigInt"
-      }
+      "scope": "game"
     },
     {
       "name": "PlayerFaithPoints",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "player": "BigInt",
-        "wonder_id": "Number",
-        "points_claimed": "BigInt",
-        "points_per_sec_as_owner": "Number",
-        "points_per_sec_as_pledger": "Number",
-        "last_updated_at": "BigInt"
-      }
+      "scope": "game"
     },
     {
       "name": "ResourceRule",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "resource_type": "Number",
-        "unit_weight": "BigInt",
-        "realm_rate": "BigInt",
-        "village_rate": "BigInt",
-        "labor_output_per_resource": "BigInt"
-      }
+      "scope": "game"
     },
     {
       "name": "ResourceRulesReady",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "ready": "Boolean"
-      }
+      "scope": "game"
     },
     {
       "name": "UpgradeLimits",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "realm_max": "Number",
-        "village_max": "Number"
-      }
+      "scope": "game"
     },
     {
       "name": "UpgradeRecipe",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "level": "Number",
-        "costs": [
-          {
-            "resource_type": "Number",
-            "amount": "BigInt"
-          }
-        ]
-      }
+      "scope": "game"
     },
     {
       "name": "GameRegistry",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "name": "BigInt",
-        "series_id": "BigInt",
-        "game_number_in_series": "Number",
-        "preset_id": "Number",
-        "creator": "BigInt",
-        "settled": "Boolean",
-        "dev_mode_on": "Boolean",
-        "start_settling_at": "BigInt",
-        "start_main_at": "BigInt",
-        "end_at": "BigInt",
-        "end_grace_seconds": "Number",
-        "final_trial_id": "BigInt",
-        "seed": "BigInt"
-      }
+      "scope": "game"
     },
     {
       "name": "SliceRules",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "battle_config": {
-          "regular_immunity_ticks": "Number",
-          "village_immunity_ticks": "Number",
-          "village_raid_immunity_ticks": "Number"
-        },
-        "map_config": {
-          "reward_resource_amount": "Number",
-          "shards_mines_win_probability": "Number",
-          "shards_mines_fail_probability": "Number",
-          "agent_discovery_prob": "Number",
-          "agent_discovery_fail_prob": "Number",
-          "camp_win_probability": "Number",
-          "camp_fail_probability": "Number",
-          "holysite_win_probability": "Number",
-          "holysite_fail_probability": "Number",
-          "bitcoin_mine_win_probability": "Number",
-          "bitcoin_mine_fail_probability": "Number",
-          "hyps_win_prob": "Number",
-          "hyps_fail_prob": "Number",
-          "hyps_fail_prob_increase_p_hex": "Number",
-          "hyps_fail_prob_increase_p_fnd": "Number",
-          "relic_discovery_interval_sec": "Number",
-          "relic_hex_dist_from_center": "Number",
-          "relic_chest_relics_per_chest": "Number"
-        },
-        "biome_climate_config": {
-          "elevation_scale_bps": "Number",
-          "moisture_scale_bps": "Number",
-          "elevation_bias_bps": "Number",
-          "moisture_bias_bps": "Number",
-          "elevation_seed": "Number",
-          "moisture_seed": "Number"
-        },
-        "tick_config": {
-          "armies_tick_in_seconds": "BigInt",
-          "delivery_tick_in_seconds": "BigInt",
-          "bitcoin_phase_in_seconds": "BigInt"
-        },
-        "troop_damage_config": {
-          "damage_raid_percent_num": "Number",
-          "damage_biome_bonus_num": "Number",
-          "damage_beta_small": "BigInt",
-          "damage_beta_large": "BigInt",
-          "damage_scaling_factor": "BigInt",
-          "damage_c0": "BigInt",
-          "damage_delta": "BigInt",
-          "t1_damage_value": "BigInt",
-          "t2_damage_multiplier": "BigInt",
-          "t3_damage_multiplier": "BigInt"
-        },
-        "troop_stamina_config": {
-          "stamina_gain_per_tick": "Number",
-          "stamina_initial": "Number",
-          "stamina_bonus_value": "Number",
-          "stamina_knight_max": "Number",
-          "stamina_paladin_max": "Number",
-          "stamina_crossbowman_max": "Number",
-          "stamina_attack_req": "Number",
-          "stamina_defense_req": "Number",
-          "stamina_explore_stamina_cost": "Number",
-          "stamina_travel_stamina_cost": "Number",
-          "stamina_explore_wheat_cost": "Number",
-          "stamina_explore_fish_cost": "Number",
-          "stamina_travel_wheat_cost": "Number",
-          "stamina_travel_fish_cost": "Number"
-        },
-        "troop_limit_config": {
-          "guard_resurrection_delay": "Number",
-          "mercenaries_troop_lower_bound": "Number",
-          "mercenaries_troop_upper_bound": "Number",
-          "agents_troop_lower_bound": "Number",
-          "agents_troop_upper_bound": "Number",
-          "settlement_deployment_cap": "Number",
-          "city_deployment_cap": "Number",
-          "kingdom_deployment_cap": "Number",
-          "empire_deployment_cap": "Number",
-          "t1_tier_strength": "Number",
-          "t2_tier_strength": "Number",
-          "t3_tier_strength": "Number",
-          "t1_tier_modifier": "Number",
-          "t2_tier_modifier": "Number",
-          "t3_tier_modifier": "Number"
-        },
-        "capacity_config": {
-          "structure_capacity": "BigInt",
-          "troop_capacity": "Number",
-          "donkey_capacity": "Number",
-          "storehouse_boost_capacity": "Number"
-        },
-        "structure_capacity_config": {
-          "realm_capacity": "BigInt",
-          "village_capacity": "BigInt",
-          "hyperstructure_capacity": "BigInt",
-          "fragment_mine_capacity": "BigInt",
-          "bank_structure_capacity": "BigInt",
-          "holysite_capacity": "BigInt",
-          "camp_capacity": "BigInt",
-          "bitcoin_mine_capacity": "BigInt"
-        },
-        "building_config": {
-          "base_population": "Number",
-          "base_cost_percent_increase": "Number"
-        },
-        "bitcoin_mine_config": {
-          "enabled": "Boolean",
-          "prize_per_phase": "BigInt",
-          "min_labor_per_contribution": "BigInt",
-          "owner_cut_bps": "Number"
-        },
-        "victory_points_grant_config": {
-          "hyp_points_per_second": "Number",
-          "claim_hyperstructure_points": "Number",
-          "claim_otherstructure_points": "Number",
-          "explore_tiles_points": "Number",
-          "relic_open_points": "Number"
-        },
-        "map_center_offset": "Number",
-        "spire_travel_essence_cost": "BigInt",
-        "blitz_mode_on": "Boolean",
-        "faith_enabled": "Boolean",
-        "speed_config": {
-          "donkey_sec_per_km": "Number",
-          "donkey_sec_per_km_troops": "Number"
-        }
-      }
+      "scope": "game"
     },
     {
       "name": "EntitySequence",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "next_entity_id": "Number"
-      }
+      "scope": "game"
     },
     {
       "name": "PlayerPoints",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "address": "BigInt",
-        "points": "BigInt"
-      }
+      "scope": "game"
     },
     {
       "name": "PointsTotal",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "total": "BigInt"
-      }
+      "scope": "game"
     },
     {
       "name": "DomainState",
-      "scope": "deployment",
-      "schema": {
-        "address": "BigInt",
-        "authority": "BigInt",
-        "peers": {
-          "season": "BigInt",
-          "map": "BigInt",
-          "structures": "BigInt",
-          "troops": "BigInt",
-          "settlement": "BigInt",
-          "resources": "BigInt",
-          "economy": "BigInt",
-          "prizes": "BigInt",
-          "registry": "BigInt",
-          "combat": "BigInt",
-          "bridge": "BigInt"
-        },
-        "active": "Boolean"
-      }
+      "scope": "deployment"
     },
     {
       "name": "DomainClass",
-      "scope": "deployment",
-      "schema": {
-        "address": "BigInt",
-        "class_hash": "BigInt"
-      }
+      "scope": "deployment"
     },
     {
       "name": "Authentication",
-      "scope": "deployment",
-      "schema": {
-        "address": "BigInt",
-        "submitter": "BigInt",
-        "registry": "BigInt",
-        "account_class": "BigInt"
-      }
+      "scope": "deployment"
     },
     {
       "name": "ExecutionHead",
-      "scope": "deployment",
-      "schema": {
-        "address": "BigInt",
-        "order": "BigInt",
-        "binding": "BigInt",
-        "state": "BigInt",
-        "timestamp": "BigInt",
-        "root": "BigInt"
-      }
+      "scope": "deployment"
     },
     {
       "name": "ExecutionResult",
-      "scope": "deployment",
-      "schema": {
-        "address": "BigInt",
-        "order": "BigInt",
-        "status": "Number",
-        "binding": "BigInt",
-        "result": "BigInt",
-        "state": "BigInt"
-      }
+      "scope": "deployment"
     },
     {
       "name": "OwnershipRulesReady",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "ready": "Boolean"
-      }
+      "scope": "game"
     },
     {
       "name": "AgentController",
-      "scope": "deployment",
-      "schema": {
-        "address": "BigInt",
-        "controller": "BigInt"
-      }
+      "scope": "deployment"
     },
     {
       "name": "ActionNonce",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "actor": "BigInt",
-        "next_nonce": "BigInt"
-      }
+      "scope": "game"
     }
   ]
 }

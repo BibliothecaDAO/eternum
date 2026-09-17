@@ -1,8 +1,5 @@
-import { belongsToActiveGame } from "@bibliothecadao/eternum";
-import type { ClientComponents } from "@bibliothecadao/types";
-import { type Entity, getComponentValue } from "@dojoengine/recs";
-
-type BlitzSettlementComponents = Pick<ClientComponents, "BlitzSettlement">;
+import { configManager } from "@bibliothecadao/eternum";
+import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 
 export const filterPlayersByBlitzSettlement = <Player extends { address: bigint }>(
   players: readonly Player[],
@@ -12,11 +9,5 @@ export const filterPlayersByBlitzSettlement = <Player extends { address: bigint 
   return players.filter((player) => settledPlayers.has(player.address));
 };
 
-export const readBlitzSettlementPlayerAddresses = (
-  components: BlitzSettlementComponents,
-  blitzSettlementEntities: Entity[],
-): bigint[] =>
-  blitzSettlementEntities
-    .map((entityId) => getComponentValue(components.BlitzSettlement, entityId))
-    .filter((settlement): settlement is NonNullable<typeof settlement> => belongsToActiveGame(settlement))
-    .map((settlement) => settlement.player as unknown as bigint);
+export const readBlitzSettlementPlayerAddresses = (store: NativeFactStore): bigint[] =>
+  [...store.inGame("PlayerEntry", configManager.getActiveGameId())].map((entry) => entry.player);

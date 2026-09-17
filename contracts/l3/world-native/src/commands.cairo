@@ -117,6 +117,7 @@ pub enum Command {
     Raid: crate::combat_actions::Raid,
     DepositResource: crate::bridge::Deposit,
     WithdrawResource: crate::bridge::Withdraw,
+    ProvisionAndUpgradeRealm: u32,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]

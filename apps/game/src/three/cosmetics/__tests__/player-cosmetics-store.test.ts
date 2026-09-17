@@ -24,52 +24,11 @@ vi.mock("@/three/constants/scene-constants", () => ({
 }));
 
 import { playerCosmeticsStore } from "../player-cosmetics-store";
-import type { ClientComponents } from "@bibliothecadao/types";
+describe("playerCosmeticsStore", () => {
+  beforeEach(() => playerCosmeticsStore.clear());
 
-vi.mock("@dojoengine/utils", () => ({
-  getEntityIdFromKeys: vi.fn(() => "entity"),
-}));
-
-const getComponentValueMock = vi.fn();
-
-vi.mock("@dojoengine/recs", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@dojoengine/recs")>()),
-  getComponentValue: (...args: unknown[]) => getComponentValueMock(...args),
-}));
-
-describe("playerCosmeticsStore.hydrateFromBlitzComponent", () => {
-  beforeEach(() => {
-    playerCosmeticsStore.clear();
-    getComponentValueMock.mockReset();
-  });
-
-  it("returns undefined when component value missing", () => {
-    getComponentValueMock.mockReturnValue(undefined);
-
-    const result = playerCosmeticsStore.hydrateFromBlitzComponent({} as ClientComponents, "0x1");
-
-    expect(result).toBeUndefined();
+  it("has no selection for an unknown player", () => {
     expect(playerCosmeticsStore.getSnapshot("0x1")).toBeUndefined();
-  });
-
-  it("stores snapshot with token ids", () => {
-    getComponentValueMock.mockReturnValue({
-      attrs: [1n, 2n, 3n],
-    });
-
-    const result = playerCosmeticsStore.hydrateFromBlitzComponent({} as ClientComponents, "0x123");
-
-    expect(result).toBeDefined();
-    expect(result?.ownership.ownedAttrs).toEqual(["0x1", "0x2", "0x3"]);
-    expect(result?.ownership.eligibleCosmeticIds).toEqual([]);
-    expect(result?.selection).toEqual({
-      armies: {},
-      structures: {},
-      globalAttachments: [],
-    });
-
-    const snapshot = playerCosmeticsStore.getSnapshot("0x123");
-    expect(snapshot?.ownership.ownedAttrs).toEqual(["0x1", "0x2", "0x3"]);
   });
 
   it("tracks pending blitz loadout drafts by world", () => {
@@ -81,16 +40,6 @@ describe("playerCosmeticsStore.hydrateFromBlitzComponent", () => {
       tokenIds: ["0xaaa", "0xbbb"],
       selectedBySlot: {},
     });
-  });
-
-  it("hydrates deterministic eligible cosmetics from owned attrs", () => {
-    getComponentValueMock.mockReturnValue({
-      attrs: [0x107050201n, 0x4050301n],
-    });
-
-    const result = playerCosmeticsStore.hydrateFromBlitzComponent({} as ClientComponents, "0x123");
-
-    expect(result?.ownership.eligibleCosmeticIds).toEqual(["attachment:army:aura-legacy", "army:Knight:T3:legacy"]);
   });
 
   it("applies army, structure, and global attachment selection without dropping prior state", () => {
@@ -126,26 +75,14 @@ describe("playerCosmeticsStore.hydrateFromBlitzComponent", () => {
     });
   });
 
-  it("preserves valid local selection when ownership hydration refreshes", () => {
-    playerCosmeticsStore.applySelection("0x123", {
-      armies: {
-        "army:Knight:T3": {
-          skin: "army:Knight:T3:legacy",
-        },
-      },
-    });
-
-    getComponentValueMock.mockReturnValue({
-      attrs: [0x107050201n],
-    });
-
-    const result = playerCosmeticsStore.hydrateFromBlitzComponent({} as ClientComponents, "0x123");
-
-    expect(result?.selection.armies).toEqual({
-      "army:Knight:T3": {
-        skin: "army:Knight:T3:legacy",
-      },
-    });
+  it("notifies selection subscribers and stops after disposal", () => {
+    const listener = vi.fn();
+    const dispose = playerCosmeticsStore.subscribe(listener);
+    playerCosmeticsStore.applySelection(0x123n, { globalAttachments: [] });
+    expect(listener).toHaveBeenCalledWith("0x123");
+    dispose();
+    playerCosmeticsStore.clear();
+    expect(listener).toHaveBeenCalledTimes(1);
   });
 
   it("marks a successful pending loadout as the applied world loadout", () => {

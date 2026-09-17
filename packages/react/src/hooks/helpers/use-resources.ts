@@ -1,14 +1,19 @@
 import { readResourceManager } from "@bibliothecadao/eternum";
-import { ID } from "@bibliothecadao/types";
-import { useEffect, useMemo, useReducer } from "react";
-import { useDojo } from "../context";
+import type { ID } from "@bibliothecadao/types";
+import { useMemo } from "react";
+import { useGame } from "../context";
+import { useNativeRevision } from "./use-native-facts";
 
 export const useResourceManager = (entityId: ID) => {
   const {
-    setup: { components },
-  } = useDojo();
-
-  const [revision, changed] = useReducer((value: number) => value + 1, 0);
-  useEffect(() => readResourceManager(components, entityId).subscribe(changed), [components, entityId]);
-  return useMemo(() => readResourceManager(components, entityId), [components, entityId, revision]);
+    setup: { store },
+  } = useGame();
+  const revision = useNativeRevision([
+    "ResourceBalance",
+    "ResourceProduction",
+    "ResourceWeight",
+    "StructureBuildings",
+    "ProductionBonus",
+  ]);
+  return useMemo(() => readResourceManager(store, entityId), [store, entityId, revision]);
 };

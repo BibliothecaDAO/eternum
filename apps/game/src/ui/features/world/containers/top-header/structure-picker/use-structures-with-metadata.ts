@@ -7,21 +7,19 @@ import {
   resolveAvailableBuildingTiles,
 } from "@/ui/features/world/containers/structure-status";
 import { resolveStructureUiCapabilities } from "@/ui/lib/structure-capabilities";
-import { configManager, getBuildingCount } from "@bibliothecadao/eternum";
+import { configManager, getBuildingCount, getGuardsByStructure } from "@bibliothecadao/eternum";
 import {
   BuildingType,
-  type ClientComponents,
   ContractAddress,
   getLevelName,
   RealmLevels,
   type Structure,
   StructureType,
 } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 import type { StructureWithMetadata } from "./chip";
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
+import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { useNativeRevision } from "@bibliothecadao/react";
 
 const readPackedCount = (value: bigint | number | string | undefined): bigint => {
   if (value === undefined || value === null) return 0n;
@@ -30,7 +28,7 @@ const readPackedCount = (value: bigint | number | string | undefined): bigint =>
 
 interface UseStructuresWithMetadataArgs {
   structures: Structure[];
-  components: ClientComponents;
+  store: NativeFactStore;
   /**
    * Local rename version counter. Bump to force re-derivation when a name
    * changes in localStorage without an underlying chain event.
@@ -45,10 +43,11 @@ interface UseStructuresWithMetadataArgs {
  */
 export const useStructuresWithMetadata = ({
   structures,
-  components,
+  store,
   nameUpdateVersion = 0,
 }: UseStructuresWithMetadataArgs): StructureWithMetadata[] => {
   const mode = useGameModeConfig();
+  const revision = useNativeRevision(["StructureBuildings", "Guard"]);
   const { favorites } = useFavoriteStructures();
   const { structureGroups } = useStructureGroups();
 
@@ -85,10 +84,10 @@ export const useStructuresWithMetadata = ({
       const realmLevelLabel = structureCapabilities.hasPopulationDetails
         ? getLevelName(Math.min(Math.max(normalizedLevel, RealmLevels.Settlement), RealmLevels.Empire) as RealmLevels)
         : null;
-      const structureEntity = gameEntityKey([BigInt(structure.entityId)]);
-      const structureBuildings = components.StructureBuildings
-        ? getComponentValue(components.StructureBuildings, structureEntity)
-        : null;
+      const structureBuildings = store.get("StructureBuildings", {
+        game_id: configManager.getActiveGameId(),
+        entity_id: structure.entityId,
+      });
       const population = Number(structureBuildings?.population.current ?? 0);
       const normalizedBasePopulationCapacity = structureCapabilities.hasPopulationDetails
         ? Math.max(Number(basePopulationCapacityValue ?? 0), 6)
@@ -130,6 +129,7 @@ export const useStructuresWithMetadata = ({
         realmLevel: normalizedLevel,
         realmLevelLabel,
         population,
+        guardCount: getGuardsByStructure(structure.structure, store).filter((guard) => guard.troops.count > 0n).length,
         populationCapacity,
         buildingTilesOccupied: buildingTileSummary?.occupied ?? null,
         buildingTilesTotal: buildingTileSummary?.total ?? null,
@@ -141,7 +141,8 @@ export const useStructuresWithMetadata = ({
     });
   }, [
     structures,
-    components.StructureBuildings,
+    store,
+    revision,
     structureGroups,
     nameUpdateVersion,
     favoritesSet,

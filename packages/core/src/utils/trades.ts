@@ -1,180 +1,77 @@
-import {
-  ClientComponents,
-  ContractComponents,
-  ID,
-  MarketInterface,
-  Resource,
-  ResourcesIds,
-} from "@bibliothecadao/types";
-import { Entity, getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "../managers/game-entity-keys";
-import { shortString } from "starknet";
-import { ResourceManager, getStructureName } from "..";
-import { gameEntityKey } from "../managers/config-manager";
+import { type ID, type MarketInterface, type Resource, ResourcesIds } from "@bibliothecadao/types";
+import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
+import type { NativeFactStore } from "../client/native-fact-store";
+import { configManager } from "../managers/config-manager";
+import { ResourceManager } from "../managers/resource-manager";
+import { getAddressName, getStructureName } from "./entities";
 
-export type TradeResourcesFromViewpoint = {
-  resourcesGet: Resource[];
-  resourcesGive: Resource[];
-};
+export type TradeResourcesFromViewpoint = { resourcesGet: Resource[]; resourcesGive: Resource[] };
+export type TradeResources = { takerGets: Resource[]; makerGets: Resource[] };
 
-export type TradeResources = {
-  takerGets: Resource[];
-  makerGets: Resource[];
-};
-
-export const getDetachedResources = (entityId: ID, components: ContractComponents): Resource[] => {
-  let resources = [];
-  let index = 0n;
-  let detachedResource = getComponentValue(components.ResourceList, getEntityIdFromKeys([BigInt(entityId), index]));
-  while (detachedResource) {
-    resources.push({
-      resourceId: detachedResource.resource_type,
-      amount: Number(detachedResource.amount),
-    });
-    index++;
-    detachedResource = getComponentValue(components.ResourceList, getEntityIdFromKeys([BigInt(entityId), index]));
-  }
-  return resources;
-};
-
-export const getTradeResources = (tradeId: ID, components: ContractComponents): TradeResources => {
-  let trade = getComponentValue(components.Trade, gameEntityKey([BigInt(tradeId)]));
-
-  if (!trade) return { takerGets: [], makerGets: [] };
-
-  let takerGets = [
-    {
-      resourceId: Number(trade.maker_gives_resource_type),
-      amount: Number(BigInt(trade.maker_gives_min_resource_amount) * trade.maker_gives_max_count),
-    },
-  ];
-  let makerGets = [
-    {
-      resourceId: Number(trade.taker_pays_resource_type),
-      amount: Number(BigInt(trade.taker_pays_min_resource_amount) * trade.maker_gives_max_count),
-    },
-  ];
-
-  return { takerGets, makerGets };
+export const getTradeResources = (tradeId: ID, store: NativeFactStore): TradeResources => {
+  const order = store.require("TradeOrder", { game_id: configManager.getActiveGameId(), trade_id: tradeId });
+  return {
+    takerGets: [{ resourceId: order.offered_resource, amount: Number(order.offered_per_lot * order.remaining_lots) }],
+    makerGets: [
+      { resourceId: order.requested_resource, amount: Number(order.requested_per_lot * order.remaining_lots) },
+    ],
+  };
 };
 
 export const getTradeResourcesFromEntityViewpoint = (
   entityId: ID,
   tradeId: ID,
-  components: ContractComponents,
+  store: NativeFactStore,
 ): TradeResourcesFromViewpoint => {
-  let trade = getComponentValue(components.Trade, gameEntityKey([BigInt(tradeId)]));
-
-  if (!trade) return { resourcesGet: [], resourcesGive: [] };
-
-  let resourcesGet =
-    trade.maker_id === entityId
-      ? [
-          {
-            resourceId: Number(trade.taker_pays_resource_type),
-            amount: Number(trade.taker_pays_min_resource_amount),
-          },
-        ]
-      : [
-          {
-            resourceId: Number(trade.maker_gives_resource_type),
-            amount: Number(trade.maker_gives_min_resource_amount),
-          },
-        ];
-
-  let resourcesGive =
-    trade.maker_id === entityId
-      ? [
-          {
-            resourceId: Number(trade.maker_gives_resource_type),
-            amount: Number(trade.maker_gives_min_resource_amount),
-          },
-        ]
-      : [
-          {
-            resourceId: Number(trade.taker_pays_resource_type),
-            amount: Number(trade.taker_pays_min_resource_amount),
-          },
-        ];
-
-  return { resourcesGet, resourcesGive };
+  const order = store.require("TradeOrder", { game_id: configManager.getActiveGameId(), trade_id: tradeId });
+  const offered = [{ resourceId: order.offered_resource, amount: Number(order.offered_per_lot) }];
+  const requested = [{ resourceId: order.requested_resource, amount: Number(order.requested_per_lot) }];
+  return order.maker_id === entityId
+    ? { resourcesGet: requested, resourcesGive: offered }
+    : { resourcesGet: offered, resourcesGive: requested };
 };
 
 export const computeTrades = (
-  entityIds: Entity[],
+  orders: Iterable<NativeRows["TradeOrder"]>,
   currentBlockTimestamp: number,
-  components: ContractComponents,
+  store: NativeFactStore,
   isBlitz: boolean,
-) => {
-  const trades = entityIds
-    .map((id) => {
-      let trade = getComponentValue(components.Trade, id);
-      if (trade) {
-        const { takerGets, makerGets } = getTradeResources(trade.trade_id, components);
-
-        const makerStructure = getComponentValue(components.Structure, gameEntityKey([BigInt(trade.maker_id)]));
-        const makerName = getComponentValue(
-          components.AddressName,
-          getEntityIdFromKeys([BigInt(trade.maker_id)]),
-        )?.name;
-
-        if (trade.expires_at > currentBlockTimestamp) {
-          return {
-            makerName: shortString.decodeShortString(makerName?.toString() || ""),
-            originName: makerStructure ? getStructureName(makerStructure, isBlitz).name : "",
-            tradeId: trade.trade_id,
-            makerId: trade.maker_id,
-            takerId: trade.taker_id,
-            makerGivesMinResourceAmount: Number(trade.maker_gives_min_resource_amount),
-            takerPaysMinResourceAmount: Number(trade.taker_pays_min_resource_amount),
-            makerGivesMaxResourceCount: Number(trade.maker_gives_max_count),
-            makerOrder: makerStructure?.metadata.order,
-            expiresAt: Number(trade.expires_at),
-            takerGets,
-            makerGets,
-            ratio: calculateRatio(makerGets, takerGets),
-            perLords:
-              takerGets[0]?.resourceId == ResourcesIds.Lords
-                ? calculateRatio(makerGets, takerGets)
-                : calculateRatio(takerGets, makerGets),
-          } as MarketInterface;
-        }
-      }
-    })
-    .filter(Boolean) as MarketInterface[];
-  return trades;
-};
+): MarketInterface[] =>
+  [...orders]
+    .filter((order) => order.remaining_lots > 0n && order.expires_at > currentBlockTimestamp)
+    .map((order) => {
+      const { takerGets, makerGets } = getTradeResources(order.trade_id, store);
+      const maker = store.require("Structure", { game_id: order.game_id, entity_id: order.maker_id });
+      return {
+        makerName: getAddressName(maker.owner, store) ?? "",
+        originName: getStructureName(maker, isBlitz).name,
+        tradeId: order.trade_id,
+        makerId: order.maker_id,
+        takerId: order.taker_id,
+        makerGivesMinResourceAmount: Number(order.offered_per_lot),
+        takerPaysMinResourceAmount: Number(order.requested_per_lot),
+        makerGivesMaxResourceCount: Number(order.remaining_lots),
+        makerOrder: maker.metadata.order,
+        expiresAt: order.expires_at,
+        takerGets,
+        makerGets,
+        ratio: calculateRatio(makerGets, takerGets),
+        perLords:
+          takerGets[0].resourceId === ResourcesIds.Lords
+            ? calculateRatio(makerGets, takerGets)
+            : calculateRatio(takerGets, makerGets),
+      };
+    });
 
 export const canAcceptOffer = (
-  {
-    realmEntityId,
-    resourcesGive,
-    currentTick,
-  }: {
-    realmEntityId: ID;
-    resourcesGive: Resource[];
-    currentTick: number;
-  },
-  components: ClientComponents,
+  { realmEntityId, resourcesGive, currentTick }: { realmEntityId: ID; resourcesGive: Resource[]; currentTick: number },
+  store: NativeFactStore,
 ): boolean => {
-  let canAccept = true;
-  Object.values(resourcesGive).forEach((resource) => {
-    const resourceManager = new ResourceManager(components, realmEntityId);
-    if (resourceManager.balanceWithProduction(currentTick, resource.resourceId).balance < resource.amount) {
-      canAccept = false;
-    }
-  });
-  return canAccept;
+  const manager = new ResourceManager(store, realmEntityId);
+  return resourcesGive.every(
+    (resource) => manager.balanceWithProduction(currentTick, resource.resourceId).balance >= resource.amount,
+  );
 };
 
-export const calculateRatio = (resourcesGive: Resource[], resourcesGet: Resource[]) => {
-  let quantityGive = 0;
-  for (let i = 0; i < resourcesGive.length; i++) {
-    quantityGive += resourcesGive[i].amount;
-  }
-  let quantityGet = 0;
-  for (let i = 0; i < resourcesGet.length; i++) {
-    quantityGet += resourcesGet[i].amount;
-  }
-  return quantityGet / quantityGive;
-};
+export const calculateRatio = (resourcesGive: Resource[], resourcesGet: Resource[]) =>
+  resourcesGet.reduce((sum, row) => sum + row.amount, 0) / resourcesGive.reduce((sum, row) => sum + row.amount, 0);

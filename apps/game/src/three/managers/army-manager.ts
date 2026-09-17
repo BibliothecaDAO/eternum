@@ -45,7 +45,7 @@ import { ModelType } from "@/three/types/army";
 import { GRAPHICS_DEV_GUI_ENABLED, createGuiFolder } from "@/three/utils/gui-manager";
 import { isAddressEqualToAccount } from "@/three/utils/utils";
 import { getExplorerStaminaSnapshot } from "@/utils/explorer-stamina";
-import type { SetupResult } from "@bibliothecadao/dojo";
+import type { GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
 import {
   FELT_CENTER,
   Position,
@@ -53,6 +53,7 @@ import {
   configManager,
   divideByPrecision,
   getBlockTimestamp,
+  getExplorerOwner,
   recordArmyMovementLatencyPhase,
 } from "@bibliothecadao/eternum";
 import type {
@@ -60,8 +61,7 @@ import type {
   ArmySpatialRenderable,
   WorldSpatialProjection,
 } from "@bibliothecadao/eternum/game-sync";
-import { ClientComponents, ContractAddress, HexPosition, ID, TroopTier, TroopType } from "@bibliothecadao/types";
-import { getComponentValue, type ComponentValue } from "@dojoengine/recs";
+import { ContractAddress, HexPosition, ID, TroopTier, TroopType } from "@bibliothecadao/types";
 import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { shortString } from "starknet";
 import * as THREE from "three";
@@ -72,7 +72,6 @@ import type { AttachmentTransform, CosmeticAttachmentTemplate } from "../cosmeti
 import {
   CosmeticAttachmentManager,
   findCosmeticById,
-  playerCosmeticsStore,
   resolveArmyCosmetic,
   resolveArmyMountTransforms,
 } from "../cosmetics";
@@ -151,7 +150,7 @@ import {
   scheduleFrameBudgetWork,
   type FrameBudgetWorkScheduler,
 } from "../frame-budget-work-queue";
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
+import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
 import type { PipelineCompiler } from "../pipeline-compiler";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
@@ -202,7 +201,7 @@ interface AddArmyParams {
   latestDefenderCoordY?: number;
 }
 
-type ExplorerTroopsComponentValue = ComponentValue<ClientComponents["ExplorerTroops"]["schema"]>;
+type ExplorerTroopsComponentValue = NativeRows["ExplorerTroops"];
 
 export class ArmyManager {
   private scene: Scene;
@@ -233,7 +232,7 @@ export class ArmyManager {
   private labelPriorityContext: WorldmapLabelPriorityContext = EMPTY_LABEL_PRIORITY_CONTEXT;
   private hexagonScene?: HexagonScene;
   private fxManager: FXManager;
-  private components?: ClientComponents;
+  private store?: NativeFactStore;
   private movementStartListeners: Map<number, Set<() => void>> = new Map();
   private movementCompleteListeners: Map<number, Set<() => void>> = new Map();
   private movementVisualCancelListeners: Map<number, Set<() => void>> = new Map();
@@ -339,7 +338,7 @@ export class ArmyManager {
     this.hexagonScene = hexagonScene;
     this.fxManager = new FXManager(scene, 1);
     this.attachmentManager = new CosmeticAttachmentManager(scene);
-    this.components = dojoContext?.components as ClientComponents | undefined;
+    this.store = dojoContext?.store as NativeFactStore | undefined;
     this.unsubscribeArmyProjection = worldSpatialProjection.subscribeArmies((changes) => {
       this.handleArmyProjectionChanges(projectionChangesForLayer(changes, activeMapLayer()));
     });
@@ -382,37 +381,57 @@ export class ArmyManager {
   }
 
   private subscribeToExplorerTroopsPresentation(): void {
-    if (!this.components) return;
-
-    const subscription = this.components.ExplorerTroops.update$.subscribe(({ value }) => {
-      const [current] = value as [ExplorerTroopsComponentValue | undefined, ExplorerTroopsComponentValue | undefined];
-      if (!current || current.troops.count <= 0n) return;
-      this.applyExplorerTroopsPresentationUpdate(current);
+    this.unsubscribeExplorerTroopsPresentation = this.store?.subscribe((changes) => {
+      for (const change of changes) {
+        if (
+          change.model !== "ExplorerTroops" ||
+          change.current?.game_id !== configManager.getActiveGameId() ||
+          change.current.troops.count <= 0n
+        )
+          continue;
+        this.applyExplorerTroopsPresentationUpdate(change.current);
+      }
     });
-    this.unsubscribeExplorerTroopsPresentation = () => subscription.unsubscribe();
   }
 
   private subscribeToGuildMembership(): void {
-    const subscription = this.components?.GuildMember?.update$.subscribe(() => this.recheckOwnership());
-    this.unsubscribeGuildMembership = () => subscription?.unsubscribe();
+    this.unsubscribeGuildMembership = this.store?.subscribe((changes) => {
+      for (const change of changes) {
+        if (change.model === "AgentOwner") {
+          const row = change.current ?? change.previous;
+          if (row?.game_id === configManager.getActiveGameId()) this.refreshExplorerOwner(row.explorer_id);
+        } else if (change.model === "PlayerCosmetics") {
+          const row = change.current ?? change.previous;
+          if (row?.game_id === configManager.getActiveGameId()) this.refreshCosmeticsForOwner(row.player);
+        }
+      }
+      if (
+        changes.some(
+          (change) =>
+            change.model === "GuildMember" &&
+            (change.current ?? change.previous)?.game_id === configManager.getActiveGameId(),
+        )
+      )
+        this.recheckOwnership();
+    });
   }
 
   private subscribeToStructureOwnership(): void {
-    if (!this.components) return;
-    const subscription = this.components.Structure.update$.subscribe(({ value: [current, previous] }) => {
-      if (!current || current.owner === previous?.owner) return;
-      this.armyPresentations.forEach((army, entityId) => {
-        if (army.owningStructureId !== current.entity_id) return;
-        this.syncTrackedArmyOwnerState({
-          entityId,
-          ownerAddress: current.owner,
-          ownerName: this.resolveArmyOwnerNameForAddress(current.owner),
-          guildName: "",
-          ownerStructureId: current.entity_id,
+    this.unsubscribeStructureOwnership = this.store?.subscribe((changes) => {
+      for (const change of changes) {
+        if (
+          change.model !== "Structure" ||
+          change.current?.game_id !== configManager.getActiveGameId() ||
+          change.current.owner === change.previous?.owner
+        )
+          continue;
+        const current = change.current;
+        this.armyPresentations.forEach((army, entityId) => {
+          if (army.owningStructureId !== current.entity_id) return;
+          this.refreshExplorerOwner(entityId);
         });
-      });
+      }
     });
-    this.unsubscribeStructureOwnership = () => subscription.unsubscribe();
   }
 
   private handleArmyProjectionChanges(changes: readonly ArmySpatialProjectionChange[]): void {
@@ -545,8 +564,8 @@ export class ArmyManager {
   }
 
   private resolveLiveExplorerTroopsComponent(entityId: ID): ExplorerTroopsComponentValue | undefined {
-    if (!this.components) return undefined;
-    return getComponentValue(this.components.ExplorerTroops, gameEntityKey([BigInt(entityId)]));
+    if (!this.store) return undefined;
+    return this.store.get("ExplorerTroops", { game_id: configManager.getActiveGameId(), explorer_id: entityId });
   }
 
   private isProjectedArmyInCurrentChunk(renderable: ArmySpatialRenderable): boolean {
@@ -935,11 +954,28 @@ export class ArmyManager {
       const { x, y } = army.hexCoords.getContract();
       const biome = configManager.getBiome(x, y);
       const modelType = this.armyModel.getModelTypeForEntity(numericId, army.category, army.tier, biome);
-      this.refreshArmyInstance(army, slot, modelType);
+      this.refreshArmyInstance(army, slot, modelType, ownerChanged);
       this.markVisibleArmyPresentationDirty();
     }
 
     return true;
+  }
+
+  private refreshExplorerOwner(entityId: ID): void {
+    if (!this.store) return;
+    const explorer = this.store.get("ExplorerTroops", {
+      game_id: configManager.getActiveGameId(),
+      explorer_id: entityId,
+    });
+    if (!explorer) return;
+    const ownerAddress = getExplorerOwner(this.store, explorer);
+    this.syncTrackedArmyOwnerState({
+      entityId,
+      ownerAddress,
+      ownerName: this.resolveArmyOwnerNameForAddress(ownerAddress),
+      guildName: "",
+      ownerStructureId: explorer.owner || null,
+    });
   }
 
   private resolveArmyOwnerFromStructure(params: {
@@ -949,39 +985,15 @@ export class ArmyManager {
     fallbackOwnerName: string;
     logContext: "spawn" | "explorer update" | "structure update";
   }): { ownerAddress: bigint; ownerName: string } {
-    if (params.ownerStructureId === null || params.ownerStructureId === undefined || !this.components?.Structure) {
-      return {
-        ownerAddress: params.fallbackOwnerAddress,
-        ownerName: params.fallbackOwnerName,
-      };
+    const explorer = this.store?.get("ExplorerTroops", {
+      game_id: configManager.getActiveGameId(),
+      explorer_id: params.armyEntityId,
+    });
+    if (!this.store || !explorer) {
+      return { ownerAddress: params.fallbackOwnerAddress, ownerName: params.fallbackOwnerName };
     }
-
-    try {
-      const structureEntityId = gameEntityKey([BigInt(params.ownerStructureId)]);
-      const liveStructure = getComponentValue(this.components.Structure, structureEntityId);
-      const liveOwnerRaw = liveStructure?.owner;
-      if (liveOwnerRaw === undefined || liveOwnerRaw === null) {
-        return {
-          ownerAddress: params.fallbackOwnerAddress,
-          ownerName: params.fallbackOwnerName,
-        };
-      }
-
-      const ownerAddress = typeof liveOwnerRaw === "bigint" ? liveOwnerRaw : BigInt(liveOwnerRaw ?? 0);
-      return {
-        ownerAddress,
-        ownerName: this.resolveArmyOwnerNameForAddress(ownerAddress),
-      };
-    } catch (error) {
-      console.warn(
-        `[ArmyManager] Failed to resolve owner from Structure component during ${params.logContext} for army ${params.armyEntityId}:`,
-        error,
-      );
-      return {
-        ownerAddress: params.fallbackOwnerAddress,
-        ownerName: params.fallbackOwnerName,
-      };
-    }
+    const ownerAddress = getExplorerOwner(this.store, explorer);
+    return { ownerAddress, ownerName: this.resolveArmyOwnerNameForAddress(ownerAddress) };
   }
 
   private resolveArmyOwnerNameForAddress(ownerAddress: bigint): string {
@@ -1233,6 +1245,11 @@ export class ArmyManager {
     }
 
     const cosmeticPresentation = resolveArmyCosmeticPresentation({
+      attributes:
+        this.store?.get("PlayerCosmetics", {
+          game_id: configManager.getActiveGameId(),
+          player: army.owner.address ?? 0n,
+        })?.attributes ?? [],
       army,
       modelType,
       reResolveCosmetics,
@@ -1831,11 +1848,10 @@ export class ArmyManager {
     const biome = configManager.getBiome(x, y);
     const baseModelType = this.armyModel.getModelTypeForEntity(numericEntityId, params.category, params.tier, biome);
 
-    if (this.components && ownerAddress !== 0n) {
-      playerCosmeticsStore.hydrateFromBlitzComponent(this.components, ownerAddress);
-    }
-
     const cosmetic = resolveArmyCosmetic({
+      attributes:
+        this.store?.get("PlayerCosmetics", { game_id: configManager.getActiveGameId(), player: ownerAddress })
+          ?.attributes ?? [],
       owner: ownerAddress,
       troopType: params.category,
       tier: params.tier,
@@ -2749,8 +2765,7 @@ export class ArmyManager {
   }): PlayerColorProfile {
     return playerColorManager.getProfileForUnit(
       army.isMine,
-      army.isAlly ??
-        arePlayersAllied(this.components, useAccountStore.getState().account?.address, army.owner?.address),
+      army.isAlly ?? arePlayersAllied(this.store, useAccountStore.getState().account?.address, army.owner?.address),
       army.isDaydreamsAgent,
       army.owner?.address,
     );
@@ -2990,7 +3005,7 @@ export class ArmyManager {
       {
         entityId: this.toNumericId(army.entityId),
         isMine: army.isMine,
-        isAlly: arePlayersAllied(this.components, useAccountStore.getState().account?.address, army.owner.address),
+        isAlly: arePlayersAllied(this.store, useAccountStore.getState().account?.address, army.owner.address),
         ownerAddress: army.owner.address,
         underAttack: army.attackedFromDegrees !== undefined,
       },
@@ -3058,11 +3073,14 @@ ${
   }
 
   private resolveLiveExplorerTroops(entityId: ID) {
-    if (!this.components) {
+    if (!this.store) {
       return null;
     }
 
-    return getComponentValue(this.components.ExplorerTroops, gameEntityKey([BigInt(entityId)]))?.troops ?? null;
+    return (
+      this.store.get("ExplorerTroops", { game_id: configManager.getActiveGameId(), explorer_id: entityId })?.troops ??
+      null
+    );
   }
 
   private resolveArmyStaminaSnapshot(

@@ -1,18 +1,10 @@
-import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
-import { activeGameRows } from "@/sync/recs-rows";
-import { useDojo } from "@bibliothecadao/react";
-import { useMemo } from "react";
+import { configManager } from "@bibliothecadao/eternum";
+import { useNativeRow } from "@bibliothecadao/react";
 import { WinnersTable } from "./components/winners-table";
 
 export const PrizePanel = () => {
-  const {
-    setup: { components },
-  } = useDojo();
-  const revision = useWorldSlicesStore((state) => state.leaderboardRevision);
-  const finalized = useMemo(() => {
-    void revision;
-    return BigInt(activeGameRows(components.GameRegistry).at(0)?.final_trial_id ?? 0) > 0n;
-  }, [components, revision]);
+  const game = useNativeRow("GameRegistry", { game_id: configManager.getActiveGameId() });
+  const finalized = (game?.final_trial_id ?? 0n) > 0n;
 
   return (
     <div className="flex h-full flex-col gap-3 p-5">

@@ -1,1 +1,1 @@
-export * from "./dojo-context";
+export * from "./game-context";

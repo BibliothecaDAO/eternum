@@ -150,6 +150,22 @@ const schema = {
                 "structure_systems",
                 "resource_systems",
                 "production_systems",
+                "blitz_realm_systems",
+                "realm_systems",
+                "village_systems",
+                "hyperstructure_create_systems",
+                "bitcoin_mine_systems",
+                "trade_systems",
+                "bank_systems",
+                "swap_systems",
+                "liquidity_systems",
+                "hyperstructure_systems",
+                "faith_systems",
+                "season_systems",
+                "relic_systems",
+                "artificer_systems",
+                "guild_systems",
+                "resource_bridge_systems",
               ]
             : [],
         events: eventLayouts(artifacts[domain]),
@@ -280,25 +296,6 @@ async function writeFixtures(schema) {
 }
 console.log(`Generated ${schema.models.length} models at ${fileURLToPath(new URL("schema/schema.json", root))}`);
 
-function clientType(type) {
-  if (type === "core::bool") return "Boolean";
-  if (["core::integer::u64", "core::integer::u256"].includes(type)) return "BigInt";
-  if (/^core::integer::u(8|16|32)$/.test(type)) return "Number";
-  if (
-    type === "core::integer::u128" ||
-    type === "core::felt252" ||
-    type.endsWith("::ContractAddress") ||
-    type.endsWith("::ClassHash")
-  )
-    return "BigInt";
-  const span = /^core::array::(?:Span|Array)::<(.+)>$/.exec(type);
-  if (span) return [clientType(span[1])];
-  const definition = types.get(type);
-  if (definition?.type === "struct")
-    return Object.fromEntries(definition.members.map((member) => [member.name, clientType(member.type)]));
-  if (definition?.type === "enum" && definition.variants.every((variant) => variant.type === "()")) return "String";
-  throw new Error(`Unsupported client binding ${type}`);
-}
 await writeJson("schema/bindings.json", {
   schemaIdentity: schema.identity,
   commandAbi: artifacts.season,
@@ -307,9 +304,6 @@ await writeJson("schema/bindings.json", {
     ...schema.models.map((model) => ({
       name: model.name,
       scope: model.scope,
-      schema: Object.fromEntries(
-        [...model.keys, ...model.members].map((member) => [member.name, clientType(member.type)]),
-      ),
     })),
   ],
 });
@@ -323,3 +317,59 @@ async function writeText(path, text) {
     await writeFile(url, text);
   }
 }
+
+function factType(type) {
+  if (type === "core::bool") return { ts: "boolean", wire: "boolean" };
+  if (type === "core::felt252" || type.endsWith("::ContractAddress") || type.endsWith("::ClassHash"))
+    return { ts: "bigint", wire: "felt" };
+  const integer = /^core::integer::u(8|16|32|64|128|256)$/.exec(type);
+  if (integer) return { ts: Number(integer[1]) <= 32 ? "number" : "bigint", wire: `u${integer[1]}` };
+  const span = /^core::array::(?:Span|Array)::<(.+)>$/.exec(type);
+  if (span) {
+    const item = factType(span[1]);
+    return { ts: `readonly (${item.ts})[]`, wire: [item.wire] };
+  }
+  const definition = types.get(type);
+  if (definition?.type === "enum" && definition.variants.every((variant) => variant.type === "()")) {
+    const variants = definition.variants.map((variant) => variant.name);
+    return { ts: variants.map(JSON.stringify).join(" | "), wire: { enum: variants } };
+  }
+  if (definition?.type === "struct") return factMembers(definition.members);
+  throw new Error(`Unsupported native fact type ${type}`);
+}
+
+function factMembers(members) {
+  const fields = members.map((member) => [member.name, factType(member.type)]);
+  return {
+    ts: `{ ${fields.map(([name, type]) => `readonly ${name}: ${type.ts}`).join("; ")} }`,
+    wire: Object.fromEntries(fields.map(([name, type]) => [name, type.wire])),
+  };
+}
+
+const factRows = schema.models.map((model) => [model.name, factMembers([...model.keys, ...model.members])]);
+const declarations = [
+  "// Generated from native fact models and contract ABIs. Run the native schema generator to update.",
+  `export const nativeFactSchemaIdentity = ${JSON.stringify(schema.identity)};`,
+  "export interface NativeRows {",
+  ...factRows.map(([name, row]) => `  ${name}: ${row.ts};`),
+  "}",
+  "export interface NativeKeys {",
+  ...schema.models.map((model) => `  ${model.name}: ${factMembers(model.keys).ts};`),
+  "}",
+  "export type NativeModelName = keyof NativeRows;",
+  `export const nativeFactModels = ${JSON.stringify(
+    Object.fromEntries(
+      schema.models.map((model, index) => [
+        model.name,
+        {
+          keys: model.keys.map((member) => member.name),
+          scope: model.scope,
+          fields: factRows[index][1].wire,
+        },
+      ]),
+    ),
+    null,
+    2,
+  )} as const;`,
+];
+await writeText("schema/client.gen.ts", declarations.join("\n") + "\n");

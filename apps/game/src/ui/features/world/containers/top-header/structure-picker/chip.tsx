@@ -34,6 +34,7 @@ export type StructureWithMetadata = Structure & {
   realmLevel: number;
   realmLevelLabel: string | null;
   population: number;
+  guardCount: number;
   populationCapacity: number;
   buildingTilesOccupied: number | null;
   buildingTilesTotal: number | null;

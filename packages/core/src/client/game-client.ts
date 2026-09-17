@@ -1,9 +1,15 @@
 import { nativeModelDefinition } from "./native-models";
 import { nativeSubmission, type NativeClientConnection } from "./native-submission";
-import { nativeConfiguration } from "./native-config";
-import { setup, type DojoSetupConfig, type SetupNetworkEnvironment, type SetupResult } from "@bibliothecadao/dojo";
-import { type Config, ContractAddress, type SystemCallAuthHandler } from "@bibliothecadao/types";
-import type { AccountInterface } from "starknet";
+import { EternumProvider } from "@bibliothecadao/provider";
+import { NativeFactStore } from "./native-fact-store";
+import {
+  ContractAddress,
+  type SystemCallAuthHandler,
+  createSystemCalls,
+  type SystemCalls,
+  type Manifest,
+} from "@bibliothecadao/types";
+import type { AccountInterface, ResourceBoundsBN } from "starknet";
 
 import { configManager } from "../managers/config-manager";
 import {
@@ -14,39 +20,41 @@ import {
   type GameSyncRuntime,
 } from "../sync/game-sync-runtime";
 import type { HeraldSocket } from "../sync/herald-game-sync-transport";
-import { getGameSyncModelsForChannel, type GameSyncChannel } from "../sync/model-manifest";
 import type { GameSyncScheduler } from "../sync/scheduler";
 import { WorldSpatialProjection } from "../sync/world-spatial-projection";
 import { createGameActions, type GameActions } from "./actions";
-import { isGameScoped, setGameScope } from "./game-scope";
+import { setGameScope } from "./game-scope";
 import { createHeraldGameSyncSession, type GameClientObserver } from "./herald-session";
 import { createGameViews, type GameViews } from "./views";
 import type { WorldDeployment } from "./world-directory";
 
-/** The setup() inputs a host still owns: the world's VRF provider and the chain's fee bounds. */
-type GameClientSetupEnvironment = Pick<SetupNetworkEnvironment, "executionResourceBounds" | "vrfProviderAddress">;
+export interface GameClientSetup {
+  store: NativeFactStore;
+  network: { provider: EternumProvider };
+  systemCalls: SystemCalls;
+}
+
+type GameClientSetupEnvironment = { executionResourceBounds?: ResourceBoundsBN };
 
 export interface CreateGameClientInput {
-  native?: NativeClientConnection;
+  native: NativeClientConnection;
   world: WorldDeployment;
   gameId: number;
   presetId: number;
-  /** The manifest and RPC url setup() connects with; the host patches the manifest for its world. */
-  dojoConfig: DojoSetupConfig;
+  /** The manifest and RPC URL for this deployment. */
+  networkConfig: { manifest: Manifest; rpcUrl: string };
   setupEnvironment: GameClientSetupEnvironment;
   authHandler?: SystemCallAuthHandler;
   scheduler: GameSyncScheduler;
   socketFactory?: (url: string) => HeraldSocket;
   observer?: GameClientObserver;
-  /** The balance config for this game, read once the snapshot is in RECS (the mode flag lives in WorldConfig). */
-  resolveGameConfig: (setup: SetupResult) => Config;
 }
 
 export interface GameClient {
   world: WorldDeployment;
   gameId: number;
   presetId: number;
-  setup: SetupResult;
+  setup: GameClientSetup;
   runtime: GameSyncRuntime;
   projection: WorldSpatialProjection;
   /** The account that signs this client's actions; null until connect(). */
@@ -71,15 +79,14 @@ export interface GameClient {
 export async function createGameClient(input: CreateGameClientInput): Promise<GameClient> {
   selectGame(input);
   const setupResult = await bootstrapWorld(input);
-  if (input.native)
-    setupResult.network.provider.setNativeSubmission(
-      nativeSubmission(input.native, setupResult.components, input.gameId, input.world.worldAddress),
-    );
+  setupResult.network.provider.setNativeSubmission(
+    nativeSubmission(input.native, setupResult.store, input.gameId, input.world.worldAddress),
+  );
   input.observer?.onSetupCompleted?.(setupResult);
   const runtime = installFreshGameSyncRuntime();
   try {
     const projection = await startSync(runtime, setupResult, input);
-    applyGameConfig(setupResult, input);
+    applyGameConfig(setupResult);
     return buildGameClient(input, setupResult, runtime, projection);
   } catch (error) {
     // A superseding session owns the runtime now; anything else leaves a half-started client to tear down.
@@ -94,46 +101,39 @@ const selectGame = ({ world, gameId, presetId }: CreateGameClientInput): void =>
   setGameScope(world.namespace, gameId);
 };
 
-const bootstrapWorld = (input: CreateGameClientInput): Promise<SetupResult> => {
-  const release = (input.dojoConfig.manifest as unknown as { native?: { activeSchema: string } }).native;
-  if (
-    Boolean(release) !== Boolean(input.native) ||
-    (release && release.activeSchema !== input.native?.bindings.schemaIdentity)
-  )
+const bootstrapWorld = async (input: CreateGameClientInput): Promise<GameClientSetup> => {
+  const release = (input.networkConfig.manifest as unknown as { native?: { activeSchema: string } }).native;
+  if (!release || release.activeSchema !== input.native.bindings.schemaIdentity)
     throw new Error("Native client bindings do not match the deployment");
-  return setup(
-    input.dojoConfig,
-    {
-      ...input.setupEnvironment,
-      // The provider prepends gameId to every game-system call's calldata on the appchain worlds.
-      namespace: input.world.namespace,
-      gameId: input.gameId,
-      useBurner: false,
-      nativeBindings: input.native?.bindings,
-    },
-    input.authHandler,
-  );
+  const provider = new EternumProvider(input.networkConfig.manifest, input.networkConfig.rpcUrl, "0x0", undefined, {
+    executionResourceBounds: input.setupEnvironment.executionResourceBounds,
+    namespace: input.world.namespace,
+    gameId: input.gameId,
+  });
+  return {
+    store: new NativeFactStore(),
+    network: { provider },
+    systemCalls: createSystemCalls({ provider, authHandler: input.authHandler }),
+  };
 };
 
 const startSync = async (
   runtime: GameSyncRuntime,
-  setupResult: SetupResult,
+  setupResult: GameClientSetup,
   input: CreateGameClientInput,
 ): Promise<WorldSpatialProjection> => {
   await runtime.startSession(
     createHeraldGameSyncSession({
       baseUrl: input.world.heraldBaseUrl,
       chain: input.world.chain,
-      entityModels: input.native
-        ? input.native.bindings.models.map((model) => model.name)
-        : syncModelNames("gamewide-entity"),
-      eventModels: input.native ? [] : syncModelNames("global-event"),
-      modelDefinition: input.native ? nativeModelDefinition(input.native.bindings) : undefined,
+      entityModels: input.native.bindings.models.map((model) => model.name),
+      eventModels: input.native.bindings.events.map((event) => event.name),
+      modelDefinition: nativeModelDefinition(input.native.bindings),
       gameId: input.gameId,
       worldAddress: input.world.worldAddress,
       observer: input.observer,
       scheduler: input.scheduler,
-      setup: setupResult,
+      store: setupResult.store,
       socketFactory: input.socketFactory,
     }),
   );
@@ -141,39 +141,33 @@ const startSync = async (
   return installWorldSpatialProjection(runtime, setupResult);
 };
 
-const syncModelNames = (channel: GameSyncChannel): string[] =>
-  getGameSyncModelsForChannel(channel, { includeS2Only: isGameScoped() }).map(({ name }) => name);
-
 /** Herald's stream carries transaction status, so submits wait on the stream instead of polling the RPC. */
-const routeTransactionWaitsThroughStream = (setupResult: SetupResult, runtime: GameSyncRuntime): void => {
+const routeTransactionWaitsThroughStream = (setupResult: GameClientSetup, runtime: GameSyncRuntime): void => {
   setupResult.network.provider.setTransactionStreamWaiter(
     (transactionHash) => runtime.waitForTransaction(transactionHash),
     (transactionHash) => runtime.recordSubmittedTransaction(transactionHash),
   );
 };
 
-const installWorldSpatialProjection = (runtime: GameSyncRuntime, setupResult: SetupResult): WorldSpatialProjection => {
+const installWorldSpatialProjection = (
+  runtime: GameSyncRuntime,
+  setupResult: GameClientSetup,
+): WorldSpatialProjection => {
   const projection = new WorldSpatialProjection({
-    tileOptComponent: setupResult.network.contractComponents.TileOpt,
-    explorerTroopsComponent: setupResult.network.contractComponents.ExplorerTroops,
+    store: setupResult.store,
   });
   runtime.installWorldSpatialProjection(projection);
   return projection;
 };
 
 /** From here on an empty keyed config lookup is a bug, not a sync still in flight. */
-const applyGameConfig = (setupResult: SetupResult, input: CreateGameClientInput) => {
-  configManager.setDojo(
-    setupResult.components,
-    input.resolveGameConfig(setupResult),
-    input.native ? nativeConfiguration(setupResult.components, input.gameId) : undefined,
-  );
-  configManager.markConfigSynced();
+const applyGameConfig = (setupResult: GameClientSetup) => {
+  configManager.setStore(setupResult.store);
 };
 
 const buildGameClient = (
   input: CreateGameClientInput,
-  setupResult: SetupResult,
+  setupResult: GameClientSetup,
   runtime: GameSyncRuntime,
   projection: WorldSpatialProjection,
 ): GameClient => {
