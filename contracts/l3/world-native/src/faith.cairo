@@ -128,11 +128,12 @@ pub struct PledgeStory {
 }
 
 #[starknet::interface]
-pub trait IFaithSettlement<T> {
-    fn settle_faith_wonders(ref self: T, game_id: u32, timestamp: u64) -> bool;
-    fn faith_winner_count(self: @T, game_id: u32, wonder_id: u32) -> u32;
-    fn settle_player_faith(ref self: T, game_id: u32, player: ContractAddress, wonder_id: u32, timestamp: u64);
+pub trait IFaithOwnership<T> {
+    fn transfer_faith_ownership(
+        ref self: T, key: crate::resources::ResourceKey, owner: ContractAddress, timestamp: u64,
+    );
 }
+
 #[starknet::component]
 pub mod FaithState {
     use starknet::ContractAddress;
@@ -143,8 +144,7 @@ pub mod FaithState {
     use crate::lifecycle::Lifecycle;
     use crate::lifecycle::Lifecycle::InternalTrait as LifeInternalTrait;
     use crate::resources::ResourceKey;
-    use crate::structures::StructureState::InternalTrait as StructureInternalTrait;
-    use crate::structures::{StructureRecord, StructureState};
+    use crate::structures::{IStructuresDispatcher, IStructuresDispatcherTrait, StructureRecord};
     use super::{FaithfulStructure, PlayerFaithPoints, WonderFaith, WonderFaithWinners};
 
     #[storage]
@@ -170,7 +170,6 @@ pub mod FaithState {
         TContractState,
         +HasComponent<TContractState>,
         impl Life: Lifecycle::HasComponent<TContractState>,
-        impl Structures: StructureState::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of super::IFaith<ComponentState<TContractState>> {
         fn configure_faith(ref self: ComponentState<TContractState>, game_id: u32, rules: super::FaithRules) {
@@ -313,14 +312,13 @@ pub mod FaithState {
             }
         }
     }
-    #[embeddable_as(FaithSettlementImpl)]
+    #[generate_trait]
     pub impl PrizeSettlement<
         TContractState,
         +HasComponent<TContractState>,
         impl Life: Lifecycle::HasComponent<TContractState>,
-        impl Structures: StructureState::HasComponent<TContractState>,
         +Drop<TContractState>,
-    > of super::IFaithSettlement<ComponentState<TContractState>> {
+    > of PrizeSettlementTrait<TContractState> {
         fn settle_faith_wonders(ref self: ComponentState<TContractState>, game_id: u32, timestamp: u64) -> bool {
             let game = self.authorize_prizes(game_id, timestamp);
             let (start, mut high_score, mut winners) = self.prize_checkpoint.read(game_id);
@@ -368,26 +366,20 @@ pub mod FaithState {
         TContractState,
         +HasComponent<TContractState>,
         impl Life: Lifecycle::HasComponent<TContractState>,
-        impl Structures: StructureState::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of InternalTrait<TContractState> {
         fn authorize_prizes(
             self: @ComponentState<TContractState>, game_id: u32, timestamp: u64,
         ) -> crate::game::GameRegistry {
-            assert!(
-                starknet::get_caller_address() == get_dep_component!(self, Life).require_active().prizes,
-                "only prizes domain",
-            );
-            crate::commands::assert_context_time(timestamp);
-            let game = self.games().game(game_id);
+            let game = self.authorize(game_id, timestamp);
             self.require_started(game, timestamp);
-            assert!(!self.games().rules(game_id).blitz_mode_on, "faith requires Eternum");
             assert!(game.end_at != 0 && timestamp >= game.end_at, "game not ended");
             game
         }
         fn games(self: @ComponentState<TContractState>) -> IGameDispatcher {
             IGameDispatcher { contract_address: get_dep_component!(self, Life).require_active().season }
         }
+        #[inline(never)]
         fn authorize(self: @ComponentState<TContractState>, game_id: u32, timestamp: u64) -> crate::game::GameRegistry {
             assert!(
                 starknet::get_caller_address() == get_dep_component!(self, Life).require_active().season,
@@ -404,7 +396,17 @@ pub mod FaithState {
             );
         }
         fn structure(self: @ComponentState<TContractState>, game_id: u32, id: u32) -> StructureRecord {
-            get_dep_component!(self, Structures).record(ResourceKey { game_id, entity_id: id })
+            let record = IStructuresDispatcher {
+                contract_address: get_dep_component!(self, Life).require_active().structures,
+            }
+                .structure(ResourceKey { game_id, entity_id: id })
+                .expect('missing structure');
+            StructureRecord {
+                owner: record.owner,
+                base: record.base,
+                resources_packed: record.resources_packed,
+                metadata: record.metadata,
+            }
         }
         fn wonder(self: @ComponentState<TContractState>, game_id: u32, id: u32) -> StructureRecord {
             let structure = self.structure(game_id, id);

@@ -488,8 +488,9 @@ fn provision_and_upgrade_is_one_atomic_recorded_action() {
         let season = prepare_with_resources(
             Some(array![ResourceAmount { resource_type: 1, amount: 100 * RESOURCE_PRECISION }].span()),
         );
-        start_cheat_caller_address(season, 222.try_into().unwrap());
-        IUpgradeRulesDispatcher { contract_address: season }
+        let registry = IDomainDispatcher { contract_address: season }.domain_state().peers.registry;
+        start_cheat_caller_address(registry, 222.try_into().unwrap());
+        IUpgradeRulesDispatcher { contract_address: registry }
             .configure_upgrades(
                 8,
                 UpgradeLimits { realm_max: 1, village_max: 1 },
@@ -500,7 +501,7 @@ fn provision_and_upgrade_is_one_atomic_recorded_action() {
                 ]
                     .span(),
             );
-        stop_cheat_caller_address(season);
+        stop_cheat_caller_address(registry);
         execute(season, command(123.try_into().unwrap()), 1005);
         let peers = IDomainDispatcher { contract_address: season }.domain_state().peers;
         let structures = IStructuresDispatcher { contract_address: peers.structures };

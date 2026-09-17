@@ -91,10 +91,10 @@ fn configure_structures(peers: Peers, game_id: u32, preset: StructurePreset) {
         crate::camps::ICampRulesDispatcher { contract_address: peers.structures }, game_id, preset.camps,
     );
     crate::faith::IFaithDispatcherTrait::configure_faith(
-        crate::faith::IFaithDispatcher { contract_address: peers.structures }, game_id, preset.faith,
+        crate::faith::IFaithDispatcher { contract_address: peers.prizes }, game_id, preset.faith,
     );
     crate::upgrades::IUpgradeRulesDispatcherTrait::configure_upgrades(
-        crate::upgrades::IUpgradeRulesDispatcher { contract_address: peers.season },
+        crate::upgrades::IUpgradeRulesDispatcher { contract_address: peers.registry },
         game_id,
         preset.upgrade_limits,
         preset.upgrades,

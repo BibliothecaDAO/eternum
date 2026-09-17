@@ -142,10 +142,12 @@ pub mod Lifecycle {
                 );
         }
 
+        #[inline(never)]
         fn assert_authority(self: @ComponentState<TContractState>) {
             assert!(get_caller_address() == self.state.read().authority, "only authority");
         }
 
+        #[inline(never)]
         fn assert_configurator(self: @ComponentState<TContractState>) {
             let state = self.state.read();
             let caller = get_caller_address();
@@ -153,6 +155,7 @@ pub mod Lifecycle {
             assert!(caller == state.authority || caller == state.peers.registry, "only authority or registrar");
         }
 
+        #[inline(never)]
         fn require_active(self: @ComponentState<TContractState>) -> Peers {
             let state = self.state.read();
             assert!(state.active, "domain inactive");

@@ -325,9 +325,6 @@ pub mod StructuresDomain {
     use crate::commands::ExecutionContext;
     use crate::discovery::Discovery;
     use crate::events::RowSet;
-    use crate::faith::{
-        FaithState, FaithfulStructure, PlayerFaithKey, PlayerFaithPoints, WonderFaith, WonderFaithWinners,
-    };
     use crate::game::{IGameDispatcher, IGameDispatcherTrait, assert_playing};
     use crate::geometry::tile_key;
     use crate::lifecycle::Lifecycle;
@@ -343,12 +340,6 @@ pub mod StructuresDomain {
     use crate::troops::Coord;
     use crate::upgrades::IUpgradeRulesDispatcherTrait;
     use super::{Structure, StructureBase, StructureRecord, StructureState};
-    component!(path: FaithState, storage: faith, event: FaithEvent);
-    impl FaithInternal = FaithState::InternalImpl<ContractState>;
-    #[abi(embed_v0)]
-    impl Faith = FaithState::FaithImpl<ContractState>;
-    #[abi(embed_v0)]
-    impl FaithSettlement = FaithState::FaithSettlementImpl<ContractState>;
     component!(path: BuildingState, storage: buildings, event: BuildingEvent);
     impl BuildingInternal = BuildingState::InternalImpl<ContractState>;
     component!(path: Lifecycle, storage: lifecycle, event: LifecycleEvent);
@@ -367,8 +358,6 @@ pub mod StructuresDomain {
         structures: StructureState::Storage,
         #[substorage(v0)]
         buildings: BuildingState::Storage,
-        #[substorage(v0)]
-        faith: FaithState::Storage,
         address_names: Map<ContractAddress, felt252>,
     }
     #[event]
@@ -377,7 +366,6 @@ pub mod StructuresDomain {
         LifecycleEvent: Lifecycle::Event,
         StructureEvent: StructureState::Event,
         BuildingEvent: BuildingState::Event,
-        FaithEvent: FaithState::Event,
         StoryEvent: StoryEvent,
         RowSet: RowSet,
     }
@@ -807,7 +795,7 @@ pub mod StructuresDomain {
             let record = self.structures.record(key);
             assert!(record.owner == actor, "actor does not own structure");
             assert!(record.base.category == 1 || record.base.category == 5, "structure is not a realm or village");
-            let rules = crate::upgrades::IUpgradeRulesDispatcher { contract_address: peers.season };
+            let rules = crate::upgrades::IUpgradeRulesDispatcher { contract_address: peers.registry };
             let limits = rules.upgrade_limits(game_id);
             let maximum = if record.base.category == 1 {
                 limits.realm_max
@@ -902,7 +890,7 @@ pub mod StructuresDomain {
             if record.base.category == 8 {
                 crate::bitcoin::IBitcoinFundingDispatcherTrait::bitcoin_mine_captured(
                     crate::bitcoin::IBitcoinFundingDispatcher {
-                        contract_address: self.lifecycle.require_active().resources,
+                        contract_address: self.lifecycle.require_active().prizes,
                     },
                     key,
                     timestamp,
@@ -926,21 +914,6 @@ pub mod StructuresDomain {
                         timestamp,
                     );
             }
-        }
-    }
-    #[abi(embed_v0)]
-    impl FaithViews of crate::faith::IFaithOwnershipViews<ContractState> {
-        fn wonder_faith(self: @ContractState, key: ResourceKey) -> WonderFaith {
-            self.faith.faith_wonders.read((key.game_id, key.entity_id))
-        }
-        fn faithful_structure(self: @ContractState, key: ResourceKey) -> FaithfulStructure {
-            self.faith.faith_pledges.read((key.game_id, key.entity_id))
-        }
-        fn player_faith_points(self: @ContractState, key: PlayerFaithKey) -> PlayerFaithPoints {
-            self.faith.faith_players.read((key.game_id, key.player, key.wonder_id))
-        }
-        fn wonder_faith_winners(self: @ContractState, game_id: u32) -> WonderFaithWinners {
-            self.faith.winners(game_id)
         }
     }
     #[inline(never)]
@@ -1219,8 +1192,14 @@ pub mod StructuresDomain {
             let record = self.structures.record(key);
             let rules = self.game_dispatcher().rules(key.game_id);
             if record.owner != 0.try_into().unwrap() && rules.faith_enabled {
-                let game = self.game_dispatcher().game(key.game_id);
-                self.faith.transfer(key.game_id, key.entity_id, owner, timestamp, game.end_at);
+                crate::faith::IFaithOwnershipDispatcherTrait::transfer_faith_ownership(
+                    crate::faith::IFaithOwnershipDispatcher {
+                        contract_address: self.lifecycle.require_active().prizes,
+                    },
+                    key,
+                    owner,
+                    timestamp,
+                );
             }
             self.structures.transfer_owner(key, owner);
         }
@@ -1260,7 +1239,7 @@ pub mod StructuresDomain {
             self: @ContractState, game_id: u32, base: StructureBase, directions: Span<u8>,
         ) -> Coord {
             let limits = crate::upgrades::IUpgradeRulesDispatcher {
-                contract_address: self.lifecycle.require_active().season,
+                contract_address: self.lifecycle.require_active().registry,
             }
                 .upgrade_limits(game_id);
             let maximum = match base.category {

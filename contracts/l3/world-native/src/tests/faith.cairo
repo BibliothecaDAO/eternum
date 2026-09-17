@@ -16,9 +16,9 @@ pub fn setup() -> (super::Deployment, ResourceKey, ResourceKey) {
     let (deployment, wonder, realm) = setup_with_rules(rules);
     set_wonder(deployment, wonder, true);
     set_wonder(deployment, realm, false);
-    start_cheat_caller_address(deployment.peers.structures, super::authority());
-    IFaithDispatcher { contract_address: deployment.peers.structures }.configure_faith(3, config());
-    stop_cheat_caller_address(deployment.peers.structures);
+    start_cheat_caller_address(deployment.peers.prizes, super::authority());
+    IFaithDispatcher { contract_address: deployment.peers.prizes }.configure_faith(3, config());
+    stop_cheat_caller_address(deployment.peers.prizes);
     (deployment, wonder, realm)
 }
 fn config() -> FaithRules {
@@ -39,7 +39,7 @@ pub fn set_wonder(deployment: super::Deployment, key: ResourceKey, enabled: bool
     );
 }
 fn view(deployment: super::Deployment) -> IFaithOwnershipViewsDispatcher {
-    IFaithOwnershipViewsDispatcher { contract_address: deployment.peers.structures }
+    IFaithOwnershipViewsDispatcher { contract_address: deployment.peers.prizes }
 }
 fn pledge(structure: ResourceKey, wonder: ResourceKey) -> Command {
     Command::PledgeFaith(Pledge { structure_id: structure.entity_id, wonder_id: wonder.entity_id })
@@ -144,7 +144,7 @@ fn blacklist_requires_wonder_owner_removal_first_and_checks_both_address_and_str
     assert!(execute(deployment, pledge(realm, wonder), 70));
     assert!(execute(deployment, Command::SetFaithBlacklist(SetBlacklist { blocked_id: 999, ..block }), 500));
     assert!(
-        IFaithDispatcher { contract_address: deployment.peers.structures }
+        IFaithDispatcher { contract_address: deployment.peers.prizes }
             .faith_blacklisted(BlacklistKey { game_id: 3, wonder_id: wonder.entity_id, blocked_id: 999 }),
     );
 }
@@ -165,7 +165,7 @@ fn subservient_wonders_cannot_receive_pledges_and_submission_requires_no_followe
 #[feature("safe_dispatcher")]
 fn faith_configuration_and_commands_reject_foreign_callers_and_isolate_games() {
     let (deployment, wonder, realm) = setup();
-    let safe = IFaithSafeDispatcher { contract_address: deployment.peers.structures };
+    let safe = IFaithSafeDispatcher { contract_address: deployment.peers.prizes };
     assert!(safe.configure_faith(2, config()).is_err());
     assert!(
         safe
@@ -177,7 +177,7 @@ fn faith_configuration_and_commands_reject_foreign_callers_and_isolate_games() {
             )
             .is_err(),
     );
-    start_cheat_caller_address(deployment.peers.structures, super::authority());
+    start_cheat_caller_address(deployment.peers.prizes, super::authority());
     assert!(safe.configure_faith(3, config()).is_err());
     assert!(safe.configure_faith(2, FaithRules { owner_share_bps: 10001, ..config() }).is_err());
     assert!(safe.configure_faith(999, config()).is_err());
