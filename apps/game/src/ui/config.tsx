@@ -88,6 +88,7 @@ export const BuildingThumbs = {
   hyperstructures: `${prefix}hyperstructure.png`,
   leaderboard: "/images/buildings/thumb/leaderboard.png",
   worldMap: `${prefix}world.png`,
+  compass: `${prefix}compass.png`,
   squire: "/images/buildings/thumb/squire.png",
   question: `${prefix}shortcuts.png`,
   scale: `${prefix}trade.png`,
