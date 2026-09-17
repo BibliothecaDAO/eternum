@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "a82b6f9149c9bba7f476cd8542d46c0cee826cffb9a58d50665447cd8482ffd9",
+  "schemaIdentity": "b87199a38b170f17d01ec3e227e6fa67fa131d96e03374d254ea57cc3ec6d810",
   "commandAbi": [
     {
       "type": "impl",
@@ -1363,6 +1363,20 @@
       ]
     },
     {
+      "type": "struct",
+      "name": "world_native::names::SetEntityName",
+      "members": [
+        {
+          "name": "entity_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "name",
+          "type": "core::felt252"
+        }
+      ]
+    },
+    {
       "type": "enum",
       "name": "world_native::commands::Command",
       "variants": [
@@ -1689,6 +1703,10 @@
         {
           "name": "ProvisionAndUpgradeRealm",
           "type": "core::integer::u32"
+        },
+        {
+          "name": "SetEntityName",
+          "type": "world_native::names::SetEntityName"
         }
       ]
     },
@@ -4236,6 +4254,10 @@
     {
       "name": "AddressName",
       "scope": "deployment"
+    },
+    {
+      "name": "EntityName",
+      "scope": "game"
     },
     {
       "name": "WonderFaith",

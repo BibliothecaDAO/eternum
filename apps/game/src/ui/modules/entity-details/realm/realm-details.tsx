@@ -1,3 +1,5 @@
+import { NativeBridgePanel } from "@/ui/features/world/components/actions/native-bridge-panel";
+import Button from "@/ui/design-system/atoms/button";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
@@ -41,6 +43,7 @@ const SectionRow = ({ label, children }: { label: string; children: React.ReactN
 );
 
 const RealmVillageDetails = () => {
+  const ordersAllowed = useUIStore(canIssueOrders);
   const dojo = useGame();
   const currentBlockTimestamp = useCurrentBlockTimestamp();
   const structureEntityId = useUIStore((state) => state.structureEntityId);
@@ -117,6 +120,18 @@ const RealmVillageDetails = () => {
         </div>
 
         {(isRealm || isVillageLike) && <Castle />}
+        {ordersAllowed && isVillageLike && structure.isMine && !structure.structure.base.starting_troops_granted && (
+          <Button
+            onClick={() =>
+              void dojo.setup.systemCalls
+                .receive_army_grant({ signer: dojo.account.account, village_id: structureEntityId })
+                .catch((error: unknown) => toast.error(extractReadableErrorMessage(error)))
+            }
+          >
+            Receive village army
+          </Button>
+        )}
+        {(isRealm || isVillageLike) && <NativeBridgePanel structureId={structureEntityId} />}
       </div>
     )
   );

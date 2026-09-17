@@ -30,7 +30,7 @@ export const getEntityInfo = (
 
   let name = undefined;
   if (explorer) {
-    const armyName = getArmyName(explorer.explorer_id);
+    const armyName = getArmyName(explorer.explorer_id, store);
     name = {
       name: armyName,
       originalName: armyName,
@@ -79,8 +79,9 @@ export const getEntityInfo = (
   };
 };
 
-export const getArmyName = (armyEntityId: ID) => {
-  return `Army ${armyEntityId}`;
+export const getArmyName = (armyEntityId: ID, store: NativeFactStore) => {
+  const named = store.get("EntityName", { game_id: configManager.getActiveGameId(), entity_id: armyEntityId });
+  return named && named.name !== 0n ? shortString.decodeShortString(named.name.toString()) : `Army ${armyEntityId}`;
 };
 
 const getRealmName = (structure: NativeRows["Structure"]) => {

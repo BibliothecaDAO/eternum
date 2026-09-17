@@ -28,20 +28,14 @@ const asCallArray = (calls: AllowArray<Call>): Call[] => (Array.isArray(calls) ?
 
 const ISOLATED_CONSTRUCTION_TRANSACTION_TYPES = new Set<TransactionType>([TransactionType.DESTROY_BUILDING]);
 
-const hasVrfRequestRandomCall = (transaction: QueueableTransaction): boolean =>
-  asCallArray(transaction.calls).some((call) => call.entrypoint === "request_random");
-
 const isConstructionWriteTransaction = (transaction: QueueableTransaction): boolean =>
   Boolean(transaction.transactionType && ISOLATED_CONSTRUCTION_TRANSACTION_TYPES.has(transaction.transactionType));
 
 const shouldSubmitIndividually = (item: QueueItem): boolean =>
-  item.transaction.transactionType === TransactionType.EXPLORE ||
-  hasVrfRequestRandomCall(item.transaction) ||
-  isConstructionWriteTransaction(item.transaction);
+  item.transaction.transactionType === TransactionType.EXPLORE || isConstructionWriteTransaction(item.transaction);
 
 /**
  * Sensitive submissions never merge with others:
- * - VRF request_random calls must stay paired with exactly one consumer.
  * - Building destruction must not let one rejected slot roll back unrelated
  *   construction calls in the same multicall.
  */

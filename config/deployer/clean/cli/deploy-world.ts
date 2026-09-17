@@ -1,4 +1,6 @@
 #!/usr/bin/env bun
+import { executeNativeAdminCommand } from "../world/native/command";
+import type { NativeCommand } from "../../../../packages/provider/src/native-command";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { RpcProvider } from "starknet";
@@ -22,6 +24,8 @@ async function main() {
     "world-address",
     "rpc-url",
     "inspect",
+    "command",
+    "game-id",
   ]);
   if (args.profile === "native") {
     supported.add("identity");
@@ -32,6 +36,28 @@ async function main() {
     if (!supported.has(flag)) throw new Error(`Unknown deployment option: --${flag}`);
   if (args.inspect !== undefined && args.inspect !== "true") throw new Error("--inspect does not take a value");
   const root = resolve(import.meta.dir, "../../../..");
+  if (args.command) {
+    if (args.profile !== "native" || !args.manifest || !args["rpc-url"] || !args["game-id"])
+      throw new Error("Administrative commands require --profile native, --manifest, --rpc-url and --game-id");
+    const accountAddress = process.env.NATIVE_ACCOUNT_ADDRESS;
+    const privateKey = process.env.NATIVE_PRIVATE_KEY;
+    const admissionUrl = process.env.ADMISSION_URL;
+    if (!accountAddress || !privateKey || !admissionUrl)
+      throw new Error("Native credentials and ADMISSION_URL are required");
+    const provider = new RpcProvider({ nodeUrl: args["rpc-url"] });
+    await assertProviderChain(provider, "madara", "--rpc-url");
+    const transactionHash = await executeNativeAdminCommand({
+      provider,
+      manifest: JSON.parse(readFileSync(args.manifest, "utf8")),
+      gameId: Number(args["game-id"]),
+      accountAddress,
+      privateKey,
+      admissionUrl,
+      command: JSON.parse(readFileSync(args.command, "utf8")) as NativeCommand,
+    });
+    console.log(JSON.stringify({ event: "native_admin_command", transactionHash }));
+    return;
+  }
   if (args.profile === "native") return runNativeDeployment(args, root);
   const game = resolve(root, "contracts/l3/game");
   const profile = readWorldProfile(args.profile ?? resolve(game, "dojo_madara.toml"));

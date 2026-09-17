@@ -45,7 +45,7 @@ export const formatArmies = (
       isHome:
         structure !== undefined &&
         isArmyAdjacentToStructure(explorer.coord, structure.base.coord_x, structure.base.coord_y, structure.base.alt),
-      name: getArmyName(explorer.explorer_id),
+      name: getArmyName(explorer.explorer_id, store),
       hasAdjacentStructure: hasAdjacentOwnedStructure(explorer.coord, playerAddress, store),
     };
   });

@@ -1,9 +1,14 @@
+import { useGame } from "@bibliothecadao/react";
+import Button from "@/ui/design-system/atoms/button";
+import { toast } from "@/ui/features/event-feed/notify";
+import { useUIStore } from "@/hooks/store/use-ui-store";
+import { canIssueOrders } from "@/utils/can-issue-orders";
 import { buildWonderFaithDetail, type WonderFaithDetail } from "@/services/leaderboard/faith-leaderboard-service";
 import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { useFaithReadModels } from "@/services/leaderboard/use-faith-read-models";
 import { displayAddress } from "@/ui/utils/utils";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 const formatInt = (value: number): string => value.toLocaleString("en-US");
 
@@ -41,6 +46,25 @@ export const WonderFaithDetailPanel = ({
   compact = false,
   className,
 }: WonderFaithDetailPanelProps) => {
+  const {
+    setup: { systemCalls },
+    account: { account },
+  } = useGame();
+  const ordersAllowed = useUIStore(canIssueOrders);
+  const [claiming, setClaiming] = useState(false);
+  const claim = async (kind: "wonder" | "player" | "prize") => {
+    setClaiming(true);
+    try {
+      const value = { player: account.address, wonder_id: wonderId };
+      if (kind === "wonder") await systemCalls.claim_wonder_points({ signer: account, value: wonderId });
+      else if (kind === "player") await systemCalls.claim_player_faith_points({ signer: account, value });
+      else await systemCalls.claim_faith_prize({ signer: account, value });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Faith claim failed");
+    } finally {
+      setClaiming(false);
+    }
+  };
   const readModels = useFaithReadModels();
   const wonderDetail = useMemo(() => buildWonderFaithDetail(readModels, wonderId), [readModels, wonderId]);
 
@@ -81,6 +105,19 @@ export const WonderFaithDetailPanel = ({
         </div>
       </div>
 
+      {ordersAllowed && (
+        <div className="flex flex-wrap gap-2">
+          <Button disabled={claiming} onClick={() => void claim("wonder")}>
+            Update wonder points
+          </Button>
+          <Button disabled={claiming} onClick={() => void claim("player")}>
+            Claim faith points
+          </Button>
+          <Button disabled={claiming} onClick={() => void claim("prize")}>
+            Claim faith prize
+          </Button>
+        </div>
+      )}
       <div className="grid grid-cols-2 gap-2 text-xs">
         <StatCard label="Total FP" value={formatBigInt(wonderDetail.totalFaithPoints)} mono />
         <StatCard label="Total FP/sec" value={formatInt(wonderDetail.totalFaithPointsPerSec)} mono />

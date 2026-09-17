@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-18",
+    title: "Faith, Armies and Resource Bridge",
+    type: "feature",
+    description:
+      "Claim faith points and prizes, receive your village army, and rename explorers. Eternum settlements can deposit and withdraw supported resources.",
+  },
+  {
+    date: "2026-09-18",
     title: "Synchronized Player Actions",
     description:
       "Actions wait for your player state to synchronize. Structures no longer appear unclaimed while their ownership is loading.",

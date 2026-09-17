@@ -61,7 +61,7 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
     explorer ? { game_id: configManager.getActiveGameId(), entity_id: explorer.owner } : undefined,
   );
   const structureResources = useResourceManager(explorer?.owner ?? 0);
-  const ownershipRevision = useNativeRevision(["GuildMember", "Guild"]);
+  const ownershipRevision = useNativeRevision(["GuildMember", "Guild", "EntityName"]);
   const owner = explorer ? getExplorerOwner(store, explorer) : 0n;
 
   const staminaSnapshot = useMemo(() => {
@@ -98,7 +98,7 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
     const guild = owner ? getGuildFromPlayerAddress(owner, store) : undefined;
     const isMine = owner === userAddress;
 
-    const addressName = owner ? (ownerProfile.name ?? undefined) : getArmyName(armyEntityId);
+    const addressName = owner ? (ownerProfile.name ?? undefined) : getArmyName(armyEntityId, store);
 
     const structureOwnerName = structure ? mode.structure.getName(structure).name : undefined;
 

@@ -3,6 +3,7 @@ use snforge_std::{EventSpyTrait, EventsFilterTrait, spy_events};
 use crate::combat::TroopsTrait;
 use crate::commands::{Command, CreateExplorer};
 use crate::guards::{GuardKey, IGuardsDispatcher, IGuardsDispatcherTrait};
+use crate::names::{INamesDispatcher, INamesDispatcherTrait, SetEntityName};
 use crate::ownership::{GuardAddStory, Story};
 use crate::resources::{IResourcesDispatcher, IResourcesDispatcherTrait, ResourceKey, ResourceSlot};
 use crate::rules::RESOURCE_PRECISION;
@@ -444,4 +445,31 @@ fn troop_actions_emit_one_unique_story_each_and_rejections_emit_none() {
         index += 1;
     }
     assert_eq!(index, expected.len());
+}
+
+#[test]
+fn entity_names_follow_owned_armies_and_reject_missing_or_foreign_entities() {
+    let (d, home, explorer, _) = setup();
+    let names = INamesDispatcher { contract_address: d.peers.structures };
+    let key = ResourceKey { game_id: 3, entity_id: explorer };
+    assert!(execute(d, Command::SetEntityName(SetEntityName { entity_id: explorer, name: 'Vanguard' }), 80));
+    assert_eq!(names.entity_name(key).name, 'Vanguard');
+    assert!(execute(d, Command::SetEntityName(SetEntityName { entity_id: home.entity_id, name: 'Home' }), 80));
+    assert_eq!(names.entity_name(home).name, 'Home');
+    assert_terminal_rejection(d, Command::SetEntityName(SetEntityName { entity_id: 99999, name: 'Missing' }), 80);
+    let mut record = IStructuresDispatcher { contract_address: d.peers.structures }.structure(home).unwrap();
+    record.owner = 0x123.try_into().unwrap();
+    set_fixture(
+        d.peers.structures,
+        selector!("structures"),
+        array![3, home.entity_id.into()].span(),
+        crate::structures::StructureRecord {
+            owner: record.owner,
+            base: record.base,
+            resources_packed: record.resources_packed,
+            metadata: record.metadata,
+        },
+    );
+    assert_terminal_rejection(d, Command::SetEntityName(SetEntityName { entity_id: explorer, name: 'Stolen' }), 80);
+    assert_eq!(names.entity_name(key).name, 'Vanguard');
 }

@@ -1,7 +1,8 @@
+import { frameNativeIntent } from "../../packages/provider/src/native-command";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { CallData, CairoCustomEnum, ec, hash, RpcProvider, shortString } from "starknet";
+import { CallData, CairoCustomEnum, ec, hash, RpcProvider } from "starknet";
 
 export interface NativeFixture {
   scope: string;
@@ -57,27 +58,11 @@ export async function admissionFor(provider: RpcProvider, fixture: NativeFixture
 
 export function signedRequest(fixture: NativeFixture, admission: string[], arguments_: string[]) {
   const [, rules, , nonce, order, , timestamp] = admission;
-  const command = hash.computePoseidonHashOnElements([
-    shortString.encodeShortString("ETERNUM_COMMAND"),
-    1,
-    ...arguments_,
-  ]);
-  const intent = [
-    shortString.encodeShortString("ETERNUM_ACTION"),
-    "0x1",
-    fixture.chain,
-    fixture.execution.address,
-    fixture.game,
-    fixture.actor,
-    nonce,
-    command,
-    rules,
-    hex(BigInt(timestamp) - 300n),
-    hex(BigInt(timestamp) + 60n),
-    hex(BigInt(order) + 100n),
-    hex(arguments_.length),
-    ...arguments_,
-  ].map(hex);
+  const intent = frameNativeIntent({
+    chain: fixture.chain, deployment: fixture.execution.address, gameId: fixture.game, actor: fixture.actor,
+    nonce, rules, validFrom: BigInt(timestamp) - 300n, validUntil: BigInt(timestamp) + 60n,
+    lastOrder: BigInt(order) + 100n, arguments: arguments_,
+  });
   const action = hash.computePoseidonHashOnElements(intent);
   const signature = ec.starkCurve.sign(action, "0x3039");
   return { action, intent, r: hex(signature.r), s: hex(signature.s), public_key: fixture.playerPublicKey };

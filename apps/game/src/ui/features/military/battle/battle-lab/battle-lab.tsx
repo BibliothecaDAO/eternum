@@ -262,7 +262,6 @@ export const BattleLab = ({
         if (state.selectedGuardSlot === null) throw new Error("No structure guard is selected");
         await attack_guard_vs_explorer({
           signer: account,
-          ethereal: snapshot.defenderAlt,
           structure_id: attackerEntityId,
           structure_guard_slot: state.selectedGuardSlot,
           explorer_id: target.id || 0,
@@ -270,7 +269,6 @@ export const BattleLab = ({
       } else if (target.targetType === TargetType.Army) {
         await attack_explorer_vs_explorer({
           signer: account,
-          ethereal: snapshot.defenderAlt,
           aggressor_id: attackerEntityId,
           defender_id: target.id || 0,
           steal_resources: targetResources,
@@ -278,7 +276,6 @@ export const BattleLab = ({
       } else {
         await attack_explorer_vs_guard({
           signer: account,
-          ethereal: snapshot.defenderAlt,
           explorer_id: attackerEntityId,
           structure_id: target.id || 0,
         });

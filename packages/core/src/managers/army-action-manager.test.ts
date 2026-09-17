@@ -3,7 +3,6 @@ import {
   Direction,
   ETHEREAL_STRIDE,
   getLayerNeighborHexes,
-  packTileSeed,
   getDirectionBetweenAdjacentHexes,
   getHexesWithinRadius,
   getNeighborHexes,
@@ -476,7 +475,6 @@ describe("ArmyActionManager ethereal submissions", () => {
     expect(explorer_explore).toHaveBeenCalledWith(
       expect.objectContaining({
         directions: [destination.direction],
-        vrf_source_salt: packTileSeed({ alt, col: destination.col, row: destination.row }),
       }),
     );
   });

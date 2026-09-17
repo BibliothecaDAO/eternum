@@ -720,6 +720,10 @@ pub mod SeasonDomain {
                 value.serialize(ref calldata);
                 (peers.structures, selector!("transfer_structure_ownership"))
             },
+            Command::SetEntityName(value) => {
+                value.serialize(ref calldata);
+                (peers.structures, selector!("set_entity_name"))
+            },
             Command::SetAddressName(value) => {
                 value.serialize(ref calldata);
                 (peers.structures, selector!("set_address_name"))
