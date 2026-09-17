@@ -39,6 +39,7 @@ pub mod blitz_prizes;
 pub mod buildings;
 
 pub mod camps;
+pub mod combat_actions;
 
 pub mod combat_domain;
 
@@ -71,6 +72,7 @@ pub mod presets;
 pub mod prizes;
 
 pub mod production;
+pub mod raid;
 pub mod random;
 pub mod registrar;
 

@@ -553,6 +553,14 @@ pub mod SeasonDomain {
                 value.serialize(ref calldata);
                 (peers.troops, selector!("manage_troops"))
             },
+            Command::GuardAttack(value) => {
+                value.serialize(ref calldata);
+                (peers.troops, selector!("guard_attack"))
+            },
+            Command::Raid(value) => {
+                value.serialize(ref calldata);
+                (peers.troops, selector!("raid"))
+            },
             Command::MarkGameSettled => (peers.season, selector!("mark_game_settled")),
             Command::LeaveGuild => (peers.registry, selector!("leave_guild")),
             Command::SetGuildWhitelist(value) => {

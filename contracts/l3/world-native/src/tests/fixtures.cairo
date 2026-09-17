@@ -15,7 +15,7 @@ pub trait IFixture<T> {
 pub mod TroopFixture {
     use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
     use starknet::{ContractAddress, get_caller_address};
-    use crate::commands::{Battle, CreateExplorer, ExecutionContext, Explore};
+    use crate::commands::{CreateExplorer, ExecutionContext, Explore};
     use crate::lifecycle::Lifecycle;
     use crate::troops::{Coord, ExplorerKey, ExplorerTroops, Stamina, TroopState, TroopTier, TroopType, Troops};
     component!(path: Lifecycle, storage: lifecycle, event: LifecycleEvent);
@@ -104,7 +104,11 @@ pub mod TroopFixture {
             panic!("fixture unsupported command");
         }
         fn battle(
-            ref self: ContractState, game_id: u32, actor: ContractAddress, command: Battle, context: ExecutionContext,
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            command: crate::combat_actions::AttackExplorer,
+            context: ExecutionContext,
         ) {
             panic!("fixture unsupported command");
         }

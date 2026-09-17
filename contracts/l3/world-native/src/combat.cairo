@@ -20,19 +20,6 @@ pub struct CombatContext {
 
 #[generate_trait]
 pub impl TroopsImpl of TroopsTrait {
-    fn standard_combat_context(biome: Biome) -> CombatContext {
-        CombatContext {
-            timestamp: starknet::get_block_timestamp(),
-            attacker_roll: 0,
-            defender_roll: 0,
-            attacker_biome: biome,
-            defender_biome: biome,
-            attack_distance: 1,
-            attacker_is_structure_guard: false,
-            defender_is_structure_guard: false,
-        }
-    }
-
     fn attack_range(ref self: Troops) -> u32 {
         match self.category {
             TroopType::Crossbowman => 2,
@@ -206,26 +193,6 @@ pub impl TroopsImpl of TroopsTrait {
         }
 
         1_u8.into()
-    }
-
-    fn damage(
-        ref self: Troops,
-        ref bravo: Troops,
-        biome: Biome,
-        troop_stamina_config: TroopStaminaConfig,
-        troop_damage_config: TroopDamageConfig,
-        current_tick: u64,
-        current_tick_interval: u64,
-    ) -> (u128, u128, u64, u64) {
-        self
-            .damage_with_context(
-                ref bravo,
-                Self::standard_combat_context(biome),
-                troop_stamina_config,
-                troop_damage_config,
-                current_tick,
-                current_tick_interval,
-            )
     }
 
     fn damage_with_context(
@@ -418,26 +385,6 @@ pub impl TroopsImpl of TroopsTrait {
         )
     }
 
-
-    fn attack(
-        ref self: Troops,
-        ref bravo: Troops,
-        biome: Biome,
-        troop_stamina_config: TroopStaminaConfig,
-        troop_damage_config: TroopDamageConfig,
-        current_tick: u64,
-        current_tick_interval: u64,
-    ) {
-        self
-            .attack_with_context(
-                ref bravo,
-                Self::standard_combat_context(biome),
-                troop_stamina_config,
-                troop_damage_config,
-                current_tick,
-                current_tick_interval,
-            );
-    }
 
     fn attack_with_context(
         ref self: Troops,

@@ -245,7 +245,9 @@ fn configuration_is_authority_only_immutable_and_missing_configuration_is_not_a_
 fn explorer_battles_use_agent_ownership_without_reading_a_fictitious_home() {
     let (d, explorer, agent) = setup(false, limits(2, 1));
     let command = Command::Battle(
-        crate::commands::Battle { attacker_id: explorer.explorer_id, defender_id: agent.explorer_id },
+        crate::combat_actions::AttackExplorer {
+            attacker_id: explorer.explorer_id, defender_id: agent.explorer_id, steal_resources: array![].span(),
+        },
     );
     assert_terminal_rejection(d, command, 180);
     assert!(

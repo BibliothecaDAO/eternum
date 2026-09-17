@@ -114,7 +114,7 @@ function eventLayouts(abi) {
       return;
     }
     const name = event.name.split("::").at(-1);
-    if (!["RowSet", "RowMemberSet", "RowDeleted", "BattleEvent", "StoryEvent"].includes(name))
+    if (!["RowSet", "RowMemberSet", "RowDeleted", "BattleEvent", "StoryEvent", "RaidEvent"].includes(name))
       throw new Error(`Unexpected event ${name}`);
     layouts.push({ name, prefix, members: event.members });
   }
@@ -175,6 +175,16 @@ const schema = {
       derivedRows: ["LastBattle"],
       event: artifacts.troops.find(
         (item) => item.type === "event" && item.name === "world_native::troops::BattleEvent",
+      ),
+    },
+    {
+      name: "RaidEvent",
+      owners: ["troops"],
+      scope: "game",
+      version: 1,
+      derivedRows: [],
+      event: artifacts.troops.find(
+        (item) => item.type === "event" && item.name === "world_native::combat_actions::RaidEvent",
       ),
     },
   ],

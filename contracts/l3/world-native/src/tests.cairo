@@ -1,4 +1,5 @@
 mod bitcoin;
+mod combat_actions;
 mod entry;
 mod fixtures;
 mod hyperstructures;

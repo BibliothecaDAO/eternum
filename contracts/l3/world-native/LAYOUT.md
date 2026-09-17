@@ -455,3 +455,7 @@ Troop management reuses ExplorerTroops, Guard and ResourceWeight. Guard occupanc
 of a second count. CombatDomain owns battle calculation and reads the existing immutable season rules; TroopsDomain owns
 and writes the resulting armies. Combat authenticates its Troops peer and cannot write another domain's rows. Peers
 appends the combat address, requiring the fresh rehearsal deployment.
+
+VillageRaid appends the last successful raid tick to TroopsDomain, keyed by game and village. Combat and raid outcomes
+are immutable events; they do not duplicate the current armies or balances in another row. Their event codec requires
+the fresh native rehearsal deployment.

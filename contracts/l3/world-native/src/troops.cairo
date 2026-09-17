@@ -175,7 +175,9 @@ pub struct BattleEvent {
     pub defender_owner: u32,
     pub winner_id: u32,
     pub coord: Coord,
-    pub max_reward: Span<(u8, u128)>,
+    pub max_reward: Span<crate::resources::ResourceAmount>,
+    pub attacker: crate::combat_actions::BattleSide,
+    pub defender: crate::combat_actions::BattleSide,
     pub timestamp: u64,
 }
 
@@ -282,6 +284,7 @@ pub mod TroopsDomain {
     use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
     use starknet::{ContractAddress, get_caller_address};
     use crate::combat::{CombatContext, TroopsTrait};
+    use crate::combat_actions::battle_side;
     use crate::combat_domain::{ICombatDispatcher, ICombatDispatcherTrait};
     use crate::commands::{Battle, CreateExplorer, ExecutionContext, Explore};
     use crate::game::{IGameDispatcher, IGameDispatcherTrait, assert_playing};
@@ -312,6 +315,7 @@ pub mod TroopsDomain {
         agent_discovery_stats: starknet::storage::Map<u32, crate::agents::AgentDiscoveryStats>,
         #[substorage(v0)]
         guards: crate::guards::GuardState::Storage,
+        village_raids: starknet::storage::Map<(u32, u32), u64>,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -320,6 +324,7 @@ pub mod TroopsDomain {
         LifecycleEvent: Lifecycle::Event,
         TroopEvent: TroopState::Event,
         BattleEvent: super::BattleEvent,
+        RaidEvent: crate::combat_actions::RaidEvent,
         OwnershipRow: crate::events::RowSet,
         OwnershipDeleted: crate::events::RowDeleted,
     }
@@ -891,20 +896,19 @@ pub mod TroopsDomain {
             }
         }
         fn battle(
-            ref self: ContractState, game_id: u32, actor: ContractAddress, command: Battle, context: ExecutionContext,
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            command: crate::combat_actions::AttackExplorer,
+            context: ExecutionContext,
         ) {
             let rules = self.authorize(game_id, context);
+            crate::resources::assert_unique_transfer_resources(command.steal_resources);
             let attacker_key = ExplorerKey { game_id, explorer_id: command.attacker_id };
             let defender_key = ExplorerKey { game_id, explorer_id: command.defender_id };
             let mut attacker = self.owned_explorer(attacker_key, actor);
             let mut defender = self.troops.explorer(defender_key).expect('missing defender');
-            let defender_owner = if defender.owner == super::AGENT_HOME {
-                let owner = self.agent_owners.read((game_id, command.defender_id));
-                assert!(owner != 0.try_into().unwrap(), "agent owner is not set");
-                owner
-            } else {
-                self.structures_dispatcher().structure_owner(ResourceKey { game_id, entity_id: defender.owner })
-            };
+            let defender_owner = self.explorer_owner(defender_key, defender);
             assert!(defender_owner != actor, "actor owns defender");
             self.assert_battle_immunity(game_id, attacker.owner, rules, context.timestamp);
             self.assert_battle_immunity(game_id, defender.owner, rules, context.timestamp);
@@ -920,6 +924,17 @@ pub mod TroopsDomain {
             attacker.troops = attacker_after;
             defender.troops = defender_after;
             self.finish_battle(attacker_key, attacker, attacker_before);
+            if defender.troops.count == 0 && attacker.troops.count != 0 {
+                self
+                    .take_loot(
+                        game_id,
+                        command.defender_id,
+                        command.attacker_id,
+                        command.steal_resources,
+                        false,
+                        context.timestamp,
+                    );
+            }
             self.finish_battle(defender_key, defender, defender_before);
             self
                 .emit(
@@ -932,7 +947,9 @@ pub mod TroopsDomain {
                         defender_owner: defender.owner,
                         winner_id: battle_winner(attacker, defender),
                         coord: defender.coord,
-                        max_reward: array![].span(),
+                        max_reward: command.steal_resources,
+                        attacker: battle_side(actor, attacker_before, attacker.troops, combat.attacker_roll),
+                        defender: battle_side(defender_owner, defender_before, defender.troops, combat.defender_roll),
                         timestamp: context.timestamp,
                     },
                 );
@@ -974,13 +991,18 @@ pub mod TroopsDomain {
             let slot = self.guards.next(target_key, target.base.troop_max_guard_count);
             let tick = context.timestamp / rules.tick_config.armies_tick_in_seconds;
             let mut guard: Troops = Default::default();
+            let attacker_before = attacker.troops.count;
+            let mut defender_before = 0;
+            let mut rolls = (0_u8, 0_u8);
             if let Some(slot) = slot {
                 guard = self.guards.guard(slot).troops;
+                defender_before = guard.count;
                 let before = attacker.troops.count;
                 let defender = ExplorerTroops { owner: command.defender_id, coord: destination, troops: guard };
                 let combat = CombatContext {
                     defender_is_structure_guard: true, ..self.combat_context(game_id, attacker, defender, context),
                 };
+                rolls = (combat.attacker_roll, combat.defender_roll);
                 let (attacker_after, guard_after) = ICombatDispatcher {
                     contract_address: self.lifecycle.require_active().combat,
                 }
@@ -1011,22 +1033,9 @@ pub mod TroopsDomain {
                     );
                 self.troops.save(key, attacker);
             }
-            if adjacent
-                && attacker.troops.count != 0
-                && attacker.owner != super::AGENT_HOME
-                && (target.base.category != 5 || rules.blitz_mode_on)
-                && self.guards.next(target_key, target.base.troop_max_guard_count).is_none() {
-                self.guards.reset(target_key);
-                crate::guards::IStructureCaptureDispatcherTrait::capture_structure(
-                    crate::guards::IStructureCaptureDispatcher {
-                        contract_address: self.lifecycle.require_active().structures,
-                    },
-                    target_key,
-                    attacker.owner,
-                    context.timestamp,
-                );
-            }
+            self.try_capture(attacker, target_key, target, rules, context.timestamp);
             if slot.is_some() {
+                let (attacker_roll, defender_roll) = rolls;
                 let winner = if attacker.troops.count == 0 && guard.count != 0 {
                     command.defender_id
                 } else if guard.count == 0 && attacker.troops.count != 0 {
@@ -1046,6 +1055,8 @@ pub mod TroopsDomain {
                             winner_id: winner,
                             coord: destination,
                             max_reward: array![].span(),
+                            attacker: battle_side(actor, attacker_before, attacker.troops, attacker_roll),
+                            defender: battle_side(target.owner, defender_before, guard, defender_roll),
                             timestamp: context.timestamp,
                         },
                     );
@@ -1053,6 +1064,297 @@ pub mod TroopsDomain {
                 self.game_dispatcher().allocate_entity(game_id);
             }
         }
+    }
+    #[abi(embed_v0)]
+    impl CombatActions of crate::combat_actions::ICombatActions<ContractState> {
+        fn village_last_raided(self: @ContractState, key: ResourceKey) -> u64 {
+            self.village_raids.read((key.game_id, key.entity_id))
+        }
+        fn guard_attack(
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            command: crate::combat_actions::GuardAttack,
+            context: ExecutionContext,
+        ) {
+            let rules = self.authorize(game_id, context);
+            let home = self.owned_structure(game_id, command.guard.structure_id, actor);
+            let guard_key = crate::guards::GuardKey {
+                game_id, structure_id: command.guard.structure_id, slot: command.guard.slot,
+            };
+            let mut guard = self.guards.guard(guard_key);
+            let defender_key = ExplorerKey { game_id, explorer_id: command.explorer_id };
+            let mut defender = self.troops.explorer(defender_key).expect('missing defender');
+            let defender_owner = self.explorer_owner(defender_key, defender);
+            assert!(guard.troops.count != 0 && defender.troops.count != 0, "dead combatant");
+            let coord = crate::structures::structure_coord(home.base);
+            assert_structure_range(coord, defender.coord, guard.troops.attack_range());
+            self.assert_battle_immunity(game_id, command.guard.structure_id, rules, context.timestamp);
+            self.assert_battle_immunity(game_id, defender.owner, rules, context.timestamp);
+            let attacker = ExplorerTroops { owner: command.guard.structure_id, coord, troops: guard.troops };
+            let combat = CombatContext {
+                attacker_is_structure_guard: true, ..self.combat_context(game_id, attacker, defender, context),
+            };
+            let (attacker_after, defender_after) = ICombatDispatcher {
+                contract_address: self.lifecycle.require_active().combat,
+            }
+                .resolve_battle(game_id, guard.troops, defender.troops, combat);
+            let before = defender.troops.count;
+            defender.troops = defender_after;
+            self.finish_battle(defender_key, defender, before);
+            guard.troops = attacker_after;
+            if guard.troops.count == 0 {
+                guard.troops.stamina.reset();
+                guard
+                    .destroyed_tick = (context.timestamp / rules.tick_config.armies_tick_in_seconds)
+                    .try_into()
+                    .unwrap();
+            }
+            self.guards.save(guard_key, guard);
+            self
+                .try_capture(
+                    defender,
+                    ResourceKey { game_id, entity_id: command.guard.structure_id },
+                    home,
+                    rules,
+                    context.timestamp,
+                );
+            self
+                .emit(
+                    super::BattleEvent {
+                        version: 1,
+                        game_id,
+                        attacker_id: command.guard.structure_id,
+                        defender_id: command.explorer_id,
+                        attacker_owner: 0,
+                        defender_owner: defender.owner,
+                        winner_id: battle_winner(ExplorerTroops { troops: guard.troops, ..attacker }, defender),
+                        coord: defender.coord,
+                        max_reward: array![].span(),
+                        attacker: battle_side(actor, attacker.troops.count, guard.troops, combat.attacker_roll),
+                        defender: battle_side(defender_owner, before, defender.troops, combat.defender_roll),
+                        timestamp: context.timestamp,
+                    },
+                );
+            self.game_dispatcher().allocate_entity(game_id);
+            self.game_dispatcher().allocate_entity(game_id);
+        }
+        fn raid(
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            command: crate::combat_actions::Raid,
+            context: ExecutionContext,
+        ) {
+            let rules = self.authorize(game_id, context);
+            assert!(!rules.blitz_mode_on, "no raid in blitz mode");
+            crate::resources::assert_unique_transfer_resources(command.steal_resources);
+            let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
+            let explorer = self.owned_explorer(key, actor);
+            let target_key = ResourceKey { game_id, entity_id: command.structure_id };
+            let target = self.structures_dispatcher().structure(target_key).expect('missing raid target');
+            assert!(target.owner != actor, "actor owns defender");
+            assert!(explorer.troops.count != 0, "aggressor has no troops");
+            let destination = crate::structures::structure_coord(target.base);
+            assert!(crate::geometry::adjacent(explorer.coord, destination), "raid requires adjacency");
+            self.assert_battle_immunity(game_id, explorer.owner, rules, context.timestamp);
+            self.assert_battle_immunity(game_id, command.structure_id, rules, context.timestamp);
+            let result = self.resolve_raid(game_id, explorer, target_key, destination, context);
+            let troops_before = explorer.troops.count;
+            self.apply_raid_losses(key, explorer, target_key, result);
+            let success = self.raid_success(game_id, result, context);
+            if success {
+                self.collect_raid_loot(game_id, command, target, rules, context.timestamp);
+            }
+            self
+                .emit(
+                    crate::combat_actions::RaidEvent {
+                        version: 1,
+                        game_id,
+                        explorer_id: command.explorer_id,
+                        structure_id: command.structure_id,
+                        success,
+                        player: actor,
+                        target_owner: target.owner,
+                        troops_before,
+                        troops_after: result.explorer.count,
+                        requested_loot: command.steal_resources,
+                        timestamp: context.timestamp,
+                    },
+                );
+        }
+    }
+    #[generate_trait]
+    impl CombatActionsInternal of CombatActionsInternalTrait {
+        fn apply_raid_losses(
+            ref self: ContractState,
+            key: ExplorerKey,
+            explorer: ExplorerTroops,
+            target: ResourceKey,
+            result: crate::raid::RaidResolution,
+        ) {
+            if !result.guarded {
+                return;
+            }
+            self.finish_battle(key, ExplorerTroops { troops: result.explorer, ..explorer }, explorer.troops.count);
+            for index in 0_usize..4 {
+                self
+                    .guards
+                    .save(
+                        crate::guards::GuardKey {
+                            game_id: key.game_id, structure_id: target.entity_id, slot: 3 - index.try_into().unwrap(),
+                        },
+                        *result.guards.at(index),
+                    );
+            }
+        }
+        fn explorer_owner(self: @ContractState, key: ExplorerKey, explorer: ExplorerTroops) -> ContractAddress {
+            if explorer.owner == super::AGENT_HOME {
+                let owner = self.agent_owners.read((key.game_id, key.explorer_id));
+                assert!(owner != 0.try_into().unwrap(), "agent owner is not set");
+                owner
+            } else {
+                self
+                    .structures_dispatcher()
+                    .structure_owner(ResourceKey { game_id: key.game_id, entity_id: explorer.owner })
+            }
+        }
+        fn resolve_raid(
+            self: @ContractState,
+            game_id: u32,
+            explorer: ExplorerTroops,
+            target: ResourceKey,
+            destination: Coord,
+            context: ExecutionContext,
+        ) -> crate::raid::RaidResolution {
+            let mut guards = array![];
+            // Resolve outer guards first, preserving damage and cooldown evaluation order.
+            let mut slot = 4_u8;
+            while slot != 0 {
+                slot -= 1;
+                guards
+                    .append(
+                        self.guards.guard(crate::guards::GuardKey { game_id, structure_id: target.entity_id, slot }),
+                    );
+            }
+            let biome = self.map_dispatcher().biome(tile_key(game_id, destination)).into();
+            ICombatDispatcher { contract_address: self.lifecycle.require_active().combat }
+                .resolve_raid(game_id, explorer.troops, guards.span(), biome, context.timestamp)
+        }
+        fn raid_success(
+            self: @ContractState, game_id: u32, result: crate::raid::RaidResolution, context: ExecutionContext,
+        ) -> bool {
+            let mut raw_root = context.raw_root;
+            let seed = crate::random::game_root(ref raw_root, game_id, self.game_dispatcher().game(game_id).seed);
+            crate::raid::success(result, seed, context.timestamp)
+        }
+        fn collect_raid_loot(
+            ref self: ContractState,
+            game_id: u32,
+            command: crate::combat_actions::Raid,
+            target: Structure,
+            rules: SliceRules,
+            timestamp: u64,
+        ) {
+            let village = target.base.category == 5;
+            let tick = timestamp / rules.tick_config.armies_tick_in_seconds;
+            if village {
+                let last = self.village_raids.read((game_id, command.structure_id));
+                if last != 0 && tick < last + rules.battle_config.village_raid_immunity_ticks.into() {
+                    for resource in command.steal_resources {
+                        assert!(
+                            crate::resources::is_troop_resource(*resource.resource_type),
+                            "village raid resource immunity",
+                        );
+                    }
+                }
+            }
+            self
+                .take_loot(
+                    game_id, command.structure_id, command.explorer_id, command.steal_resources, true, timestamp,
+                );
+            if village {
+                self.village_raids.write((game_id, command.structure_id), tick);
+                self
+                    .emit(
+                        crate::events::RowSet {
+                            version: 1,
+                            model: 'VillageRaid',
+                            keys: array![game_id.into(), command.structure_id.into()].span(),
+                            values: array![tick.into()].span(),
+                        },
+                    );
+            }
+        }
+        fn take_loot(
+            ref self: ContractState,
+            game_id: u32,
+            from: u32,
+            to: u32,
+            resources: Span<crate::resources::ResourceAmount>,
+            storable_only: bool,
+            timestamp: u64,
+        ) {
+            let dispatcher = self.resources_dispatcher();
+            let from = ResourceKey { game_id, entity_id: from };
+            let to = ResourceKey { game_id, entity_id: to };
+            for resource in resources {
+                let mut amount = *resource.amount;
+                if storable_only {
+                    let weight = dispatcher.resource_weight(to);
+                    let unit = dispatcher.resource_rule(game_id, *resource.resource_type).unit_weight;
+                    if unit != 0 && weight.capacity != 0xffffffffffffffffffffffffffffffff {
+                        amount =
+                            core::cmp::min(
+                                amount, (weight.capacity - core::cmp::min(weight.capacity, weight.weight)) / unit,
+                            );
+                    }
+                }
+                if amount != 0 {
+                    dispatcher.spend_resource(from, *resource.resource_type, amount, timestamp);
+                    dispatcher.grant_resource(to, *resource.resource_type, amount, timestamp);
+                }
+            }
+        }
+        fn try_capture(
+            ref self: ContractState,
+            explorer: ExplorerTroops,
+            key: ResourceKey,
+            target: Structure,
+            rules: SliceRules,
+            timestamp: u64,
+        ) {
+            if explorer.troops.count == 0
+                || explorer.owner == super::AGENT_HOME
+                || (target.base.category == 5 && !rules.blitz_mode_on) {
+                return;
+            }
+            if !crate::geometry::adjacent(explorer.coord, crate::structures::structure_coord(target.base))
+                || self.guards.next(key, target.base.troop_max_guard_count).is_some() {
+                return;
+            }
+            self.guards.reset(key);
+            crate::guards::IStructureCaptureDispatcherTrait::capture_structure(
+                crate::guards::IStructureCaptureDispatcher {
+                    contract_address: self.lifecycle.require_active().structures,
+                },
+                key,
+                explorer.owner,
+                timestamp,
+            );
+        }
+    }
+    fn assert_structure_range(attacker: Coord, defender: Coord, range: u32) {
+        let stride: u128 = if attacker.alt {
+            15
+        } else {
+            1
+        };
+        let separation = distance(attacker, defender);
+        assert!(
+            attacker.alt == defender.alt && separation > 0 && separation <= range.into() * stride,
+            "structure is out of range",
+        );
     }
     #[abi(embed_v0)]
     impl Travel of crate::commands::ITravelCommands<ContractState> {

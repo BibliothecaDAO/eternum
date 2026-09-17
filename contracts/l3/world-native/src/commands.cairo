@@ -38,7 +38,7 @@ pub enum Command {
     CreateExplorer: CreateExplorer,
     Explore: Explore,
     ClaimProduction: u32,
-    Battle: Battle,
+    Battle: crate::combat_actions::AttackExplorer,
     Move: Move,
     ToggleAlternate: ToggleAlternate,
     TransferStructureOwnership: crate::ownership::TransferOwnership,
@@ -113,6 +113,8 @@ pub enum Command {
     MintDevelopmentResources: crate::dev::MintResources,
     MarkGameSettled,
     ManageTroops: crate::troop_management::ManageTroops,
+    GuardAttack: crate::combat_actions::GuardAttack,
+    Raid: crate::combat_actions::Raid,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
@@ -146,7 +148,13 @@ pub trait ITroopCommands<T> {
         ref self: T, game_id: u32, actor: ContractAddress, command: CreateExplorer, context: ExecutionContext,
     );
     fn explore(ref self: T, game_id: u32, actor: ContractAddress, command: Explore, context: ExecutionContext);
-    fn battle(ref self: T, game_id: u32, actor: ContractAddress, command: Battle, context: ExecutionContext);
+    fn battle(
+        ref self: T,
+        game_id: u32,
+        actor: ContractAddress,
+        command: crate::combat_actions::AttackExplorer,
+        context: ExecutionContext,
+    );
 }
 
 #[starknet::interface]

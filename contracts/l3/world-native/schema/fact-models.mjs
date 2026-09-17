@@ -27,6 +27,8 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
         value: "zero",
         meaning: "No troops or resurrection delay in this guard slot.",
       };
+    if (row.name === "VillageRaid")
+      row.absence = { value: "zero", meaning: "The village has not been successfully raided." };
     if (row.name === "LedgerOperator")
       row.absence = {
         value: "zero",
@@ -176,6 +178,9 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
     model("TradeOrder", ["economy"], "game", struct("trade::TradeKey"), struct("trade::TradeOrder")),
     model("TradeRules", ["economy"], "game", method("economy", "trade_rules").inputs, struct("trade::TradeRules")),
     model("Guard", ["troops"], "game", struct("guards::GuardKey"), struct("guards::Guard")),
+    model("VillageRaid", ["troops"], "game", method("troops", "village_last_raided").inputs, [
+      { name: "last_tick", type: "core::integer::u64" },
+    ]),
     model("BitcoinMine", ["resources"], "game", struct("resources::ResourceKey"), struct("bitcoin::MineFunding")),
     model("BitcoinClaim", ["resources"], "game", struct("bitcoin::ClaimKey"), [
       { name: "claimed", type: "core::bool" },
@@ -457,6 +462,7 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
 
 // Paths describe observable values, not serialized row positions.
 const behaviouralFacts = {
+  VillageRaid: { domain: "combat", fields: { lastRaidedAtTick: "last_tick" } },
   Guard: { domain: "troops", fields: { troops: "troops", destroyedAt: "destroyed_tick" } },
   BitcoinMine: {
     domain: "bitcoin",
