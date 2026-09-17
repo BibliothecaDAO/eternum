@@ -34,6 +34,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-09-18",
+    title: "Illustrated Mobile HUD",
+    description:
+      "Replaced the compact HUD's labeled generic symbols with spacious illustrated Eternum controls for Empire, Map, Log, Chat and Details.",
+    type: "improvement",
+  },
+  {
     date: "2026-09-16",
     title: "Game-World Menu Icons",
     description:
