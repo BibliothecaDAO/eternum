@@ -317,7 +317,6 @@ pub fn settlement(deployment: super::Deployment, mode: crate::settlement::Settle
             cosmetic_limit: 0,
             cosmetic_collection: 0.try_into().unwrap(),
             cosmetic_timelock: 0.try_into().unwrap(),
-            ledger_operator: 0.try_into().unwrap(),
         },
         grants,
     );

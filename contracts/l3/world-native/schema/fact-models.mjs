@@ -27,6 +27,11 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
         value: "zero",
         meaning: "No troops or resurrection delay in this guard slot.",
       };
+    if (row.name === "LedgerOperator")
+      row.absence = {
+        value: "zero",
+        meaning: "No ledger relay is configured; realm entry is open and prizes belong to gameplay accounts.",
+      };
     if (row.name === "Guild" || row.name === "GuildMember")
       row.absence = { value: "empty", meaning: "No guild or membership exists for this key." };
     if (row.name === "GuildWhitelist") row.absence = { value: "false", meaning: "The player is not whitelisted." };
@@ -46,6 +51,14 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
   };
   const domainKey = [{ name: "address", type: struct("lifecycle::Peers")[0].type }];
   return [
+    model(
+      "LedgerOperator",
+      ["registry"],
+      "deployment",
+      domainKey,
+      [{ name: "operator", type: method("registry", "ledger_operator").outputs[0].type }],
+      "address",
+    ),
     model("AgentRules", ["troops"], "game", method("troops", "agent_rules").inputs, struct("agents::AgentRules")),
     model(
       "AgentDiscoveryStats",
@@ -429,7 +442,7 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
   ];
 }
 
-// Paths describe observable values, not serialized row positions. Oracle adapters live only in the parity fixture.
+// Paths describe observable values, not serialized row positions.
 const behaviouralFacts = {
   Guard: { domain: "troops", fields: { troops: "troops", destroyedAt: "destroyed_tick" } },
   BitcoinMine: {

@@ -1,4 +1,5 @@
 mod bitcoin;
+mod entry;
 mod fixtures;
 mod hyperstructures;
 mod market;

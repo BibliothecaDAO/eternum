@@ -34,6 +34,7 @@ fn setup(dev: bool) -> (Deployment, u32) {
 }
 fn setup_config(dev: bool, mode: SettlementMode, game_rules: crate::rules::SliceRules) -> (Deployment, u32) {
     let deployment = super::setup_with_domains(true, "StructuresDomain", "TroopsDomain");
+    super::entry::set_operator(deployment, authority());
     let games = IGameDispatcher { contract_address: deployment.peers.season };
     start_cheat_caller_address(deployment.peers.season, authority());
     games.create_game(3, crate::game::GameRegistry { dev_mode_on: dev, ..games.game(1) }, game_rules);
@@ -54,7 +55,6 @@ fn setup_config(dev: bool, mode: SettlementMode, game_rules: crate::rules::Slice
                 cosmetic_limit: 0,
                 cosmetic_collection: 0.try_into().unwrap(),
                 cosmetic_timelock: 0.try_into().unwrap(),
-                ledger_operator: authority(),
             },
             grants,
         );

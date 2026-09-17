@@ -1,4 +1,7 @@
-use snforge_std::{start_cheat_block_timestamp_global, start_cheat_caller_address, stop_cheat_caller_address};
+use snforge_std::{
+    EventSpyTrait, EventsFilterTrait, spy_events, start_cheat_block_timestamp_global, start_cheat_caller_address,
+    stop_cheat_caller_address,
+};
 use starknet::ContractAddress;
 use crate::blitz_prizes::{
     IBlitzPrizesDispatcher, IBlitzPrizesDispatcherTrait, IBlitzPrizesSafeDispatcher, IBlitzPrizesSafeDispatcherTrait,
@@ -48,7 +51,6 @@ fn setup(scores: Span<u128>, series: bool) -> super::Deployment {
                 cosmetic_limit: 0,
                 cosmetic_collection: player(0),
                 cosmetic_timelock: player(0),
-                ledger_operator: player(0),
             },
         ),
     );
@@ -299,4 +301,43 @@ fn constant_attendance_retains_the_original_rate_and_series_budget() {
     }
     assert_eq!(state.soft_supply, 0);
     assert_eq!(state.overspend_remaining, 100);
+}
+
+#[test]
+fn ledger_rank_results_use_the_bound_wallet_after_operator_rotation() {
+    assert_prize_recipient(true);
+}
+#[test]
+fn open_entry_rank_results_belong_to_the_gameplay_account() {
+    assert_prize_recipient(false);
+}
+fn assert_prize_recipient(uses_ledger: bool) {
+    let d = setup(array![100].span(), false);
+    set_fixture(d.peers.season, selector!("player_points"), array![3, 100].span(), 0_u128);
+    set_fixture(d.peers.season, selector!("player_points"), array![3, d.actor.into()].span(), 100_u128);
+    set_fixture(d.peers.settlement, selector!("entered_players"), array![3, d.actor.into()].span(), true);
+    if uses_ledger {
+        super::entry::set_operator(d, player(123));
+        super::entry::set_operator(d, player(456));
+    }
+    let mut spy = spy_events();
+    assert!(rank(d, array![0x111_u32].span(), 1, 1).is_ok());
+    let events = spy.get_events().emitted_by(d.peers.prizes);
+    let mut found = false;
+    for (_, event) in events.events.span() {
+        if event.keys.len() > 1 && *event.keys.at(1) == selector!("StoryEvent") {
+            let mut data = event.data.span();
+            let story: crate::ownership::Story = Serde::deserialize(ref data).unwrap();
+            if let crate::ownership::Story::PrizeResult(result) = story {
+                assert_eq!(result.player, d.actor);
+                assert_eq!(result.owner, if uses_ledger {
+                    player(0x333)
+                } else {
+                    d.actor
+                });
+                found = true;
+            }
+        }
+    }
+    assert!(found, "missing prize result");
 }

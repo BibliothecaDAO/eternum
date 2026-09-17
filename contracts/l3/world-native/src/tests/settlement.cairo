@@ -28,7 +28,6 @@ fn rules() -> SettlementRules {
         cosmetic_limit: 3,
         cosmetic_collection: 0.try_into().unwrap(),
         cosmetic_timelock: 0.try_into().unwrap(),
-        ledger_operator: 0.try_into().unwrap(),
     }
 }
 
@@ -160,7 +159,8 @@ fn realm_resource_table_rejects_invalid_ids_and_packing_overflow() {
 fn entry_entitlements_require_operator_and_compare_every_registration_field() {
     let deployment = setup(true);
     let operator = 0x444.try_into().unwrap();
-    configure(deployment, 1, SettlementRules { ledger_operator: operator, ..rules() });
+    configure(deployment, 1, rules());
+    super::entry::set_operator(deployment, operator);
     let entry = crate::settlement::EntryEntitlement {
         realm_id: 1, metadata_1: 2, metadata_2: 3, metadata_3: 4, pass_kind: 0,
     };

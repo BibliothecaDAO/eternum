@@ -4,6 +4,7 @@ pub mod SettlementDomain {
     use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
     use starknet::{ContractAddress, get_caller_address};
     use crate::commands::ExecutionContext as DomainContext;
+    use crate::entry::{ILedgerOperatorDispatcher, ILedgerOperatorDispatcherTrait};
     use crate::game::{IGameDispatcher, IGameDispatcherTrait};
     use crate::lifecycle::Lifecycle;
     use crate::names::{INamesDispatcher, INamesDispatcherTrait, SetAddressName};
@@ -83,7 +84,8 @@ pub mod SettlementDomain {
                 assert!(game.dev_mode_on, "development mode required");
                 self.settlements.record_entry(key, actor);
             } else {
-                self.settlements.reserve_entry(key, actor);
+                let requires_ledger = self.ledger_operator().is_non_zero();
+                self.settlements.reserve_entry(key, actor, requires_ledger);
             }
             let mut root = context.raw_root;
             let seed = crate::random::game_root(ref root, game_id, game.seed);
@@ -127,7 +129,8 @@ pub mod SettlementDomain {
             self.villages.pass(key)
         }
         fn register_village_pass(ref self: ContractState, key: VillagePassKey, owner: ContractAddress) {
-            let operator = self.settlements.rules(key.game_id).ledger_operator;
+            assert!(key.game_id != 0, "game id zero is reserved");
+            let operator = self.ledger_operator();
             assert!(operator.is_non_zero() && get_caller_address() == operator, "only ledger operator");
             self.villages.register(key, owner);
         }
@@ -205,7 +208,8 @@ pub mod SettlementDomain {
         fn register_entitlement(
             ref self: ContractState, key: EntryKey, entitlement: crate::settlement::EntryEntitlement,
         ) {
-            let operator = self.settlements.rules(key.game_id).ledger_operator;
+            assert!(key.game_id != 0, "game id zero is reserved");
+            let operator = self.ledger_operator();
             assert!(operator.is_non_zero() && get_caller_address() == operator, "only ledger operator");
             assert!(key.owner.is_non_zero(), "invalid entitlement owner");
             self.settlements.register_entitlement(key, entitlement);
@@ -227,7 +231,8 @@ pub mod SettlementDomain {
             assert!(get_caller_address() == peers.season, "only recorded settlement dispatch");
             self.validate_registration(game_id, command.name, context.timestamp);
             assert!(!self.settlements.entered_players.read((game_id, actor)), "player already settled");
-            self.settlements.reserve_entry(EntryKey { game_id, owner: command.owner }, actor);
+            let requires_ledger = self.ledger_operator().is_non_zero();
+            self.settlements.reserve_entry(EntryKey { game_id, owner: command.owner }, actor, requires_ledger);
             self
                 .settlements
                 .store_cosmetics(
@@ -247,6 +252,9 @@ pub mod SettlementDomain {
     }
     #[generate_trait]
     impl Internal of InternalTrait {
+        fn ledger_operator(self: @ContractState) -> ContractAddress {
+            ILedgerOperatorDispatcher { contract_address: self.lifecycle.require_active().registry }.ledger_operator()
+        }
         fn games(self: @ContractState) -> IGameDispatcher {
             IGameDispatcher { contract_address: self.lifecycle.require_active().season }
         }
@@ -256,7 +264,7 @@ pub mod SettlementDomain {
             if let Some(realm_id) = selected {
                 return (realm_id, self.realms.traits(realm_id));
             }
-            if self.settlements.rules(key.game_id).ledger_operator.is_zero() {
+            if self.ledger_operator().is_zero() {
                 let remaining = crate::realms::CANONICAL_REALM_COUNT - settled.into();
                 assert!(remaining > 0, "all canonical realms allocated");
                 let index = crate::random::range(seed, 71419, remaining.into()).try_into().unwrap();

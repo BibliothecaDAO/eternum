@@ -58,9 +58,11 @@ pub struct PrizeResult {
 }
 #[starknet::component]
 pub mod BlitzPrizeState {
+    use core::num::traits::Zero;
     use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
     use starknet::{ContractAddress, get_caller_address, get_tx_info};
     use crate::commands::ExecutionContext;
+    use crate::entry::{ILedgerOperatorDispatcher, ILedgerOperatorDispatcherTrait};
     use crate::events::{RowDeleted, RowSet};
     use crate::game::{GameRegistry, IGameDispatcher, IGameDispatcherTrait};
     use crate::lifecycle::Lifecycle::{DomainImpl, InternalTrait as LifeInternal};
@@ -234,6 +236,11 @@ pub mod BlitzPrizeState {
         fn settlements(self: @ComponentState<TContractState>) -> ISettlementViewsDispatcher {
             ISettlementViewsDispatcher { contract_address: get_dep_component!(self, Life).require_active().settlement }
         }
+        fn uses_ledger(self: @ComponentState<TContractState>) -> bool {
+            ILedgerOperatorDispatcher { contract_address: get_dep_component!(self, Life).require_active().registry }
+                .ledger_operator()
+                .is_non_zero()
+        }
         fn authorize(self: @ComponentState<TContractState>, game_id: u32, timestamp: u64) -> GameRegistry {
             assert!(
                 get_caller_address() == get_dep_component!(self, Life).require_active().season,
@@ -330,7 +337,7 @@ pub mod BlitzPrizeState {
                 while index < end {
                     let player = self.players.read((game_id, index));
                     self.write_rank(game_id, player, PlayerRank { rank, chests: reward, elite });
-                    let owner = if game_uses_ledger(self.settlements(), game_id) {
+                    let owner = if self.uses_ledger() {
                         self.season().prize_recipient(player)
                     } else {
                         player
@@ -422,8 +429,5 @@ pub mod BlitzPrizeState {
                     },
                 );
         }
-    }
-    fn game_uses_ledger(settlements: ISettlementViewsDispatcher, game_id: u32) -> bool {
-        settlements.settlement_rules(game_id).ledger_operator != 0.try_into().unwrap()
     }
 }

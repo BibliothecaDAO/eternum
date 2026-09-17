@@ -437,3 +437,5 @@ Troops appends immutable AgentRules keyed by game and AgentDiscoveryStats contai
 LORDS units. Current population remains in TroopState and decreases on destruction; lifetime and minted totals never
 decrease. Agent ownership stays in the existing map. Creation, travel and displacement share one occupier projection, so
 moving an agent cannot turn its tile marker into a realm-owned explorer marker.
+
+EntryAdministration owns the deployment ledger operator in RegistryDomain. Rotation preserves game entitlements and village passes. SettlementRules no longer copies that operational address into immutable game configuration; this layout requires the fresh native rehearsal deployment.

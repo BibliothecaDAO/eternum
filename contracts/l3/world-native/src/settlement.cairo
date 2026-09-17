@@ -18,7 +18,6 @@ pub struct SettlementRules {
     pub cosmetic_limit: u8,
     pub cosmetic_collection: ContractAddress,
     pub cosmetic_timelock: ContractAddress,
-    pub ledger_operator: ContractAddress,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
@@ -430,10 +429,15 @@ pub mod SettlementState {
                     },
                 );
         }
-        fn reserve_entry(ref self: ComponentState<TContractState>, key: EntryKey, player: starknet::ContractAddress) {
+        fn reserve_entry(
+            ref self: ComponentState<TContractState>,
+            key: EntryKey,
+            player: starknet::ContractAddress,
+            requires_ledger: bool,
+        ) {
             assert!(key.owner.is_non_zero(), "gameplay account is not bound");
             assert!(self.entries.read((key.game_id, key.owner)).is_none(), "owner already settled");
-            if self.rules(key.game_id).ledger_operator.is_non_zero() {
+            if requires_ledger {
                 assert!(self.entitlements.read((key.game_id, key.owner)).is_some(), "entry entitlement required");
             }
             self.record_entry(key, player);

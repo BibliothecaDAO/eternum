@@ -7387,9 +7387,61 @@
               "kind": "data"
             }
           ]
+        },
+        {
+          "name": "RowSet",
+          "prefix": [
+            "0x3b3d5129d8af6b2490084948d4ef23b7f6b9aff257cdb1445f733cf69878558",
+            "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "model",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "keys",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            },
+            {
+              "name": "values",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            }
+          ]
         }
       ],
       "entrypoints": [
+        {
+          "type": "function",
+          "name": "ledger_operator",
+          "inputs": [],
+          "outputs": [
+            {
+              "type": "core::starknet::contract_address::ContractAddress"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "set_ledger_operator",
+          "inputs": [
+            {
+              "name": "operator",
+              "type": "core::starknet::contract_address::ContractAddress"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
         {
           "type": "function",
           "name": "domain_state",
@@ -7608,6 +7660,36 @@
     }
   },
   "models": [
+    {
+      "name": "LedgerOperator",
+      "identity": "0x4c65646765724f70657261746f72",
+      "owners": [
+        "registry"
+      ],
+      "scope": "deployment",
+      "emitterKey": "address",
+      "keys": [
+        {
+          "name": "address",
+          "type": "core::starknet::contract_address::ContractAddress",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "operator",
+          "type": "core::starknet::contract_address::ContractAddress",
+          "id": "0x6f70657261746f72",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": 1,
+      "absence": {
+        "value": "zero",
+        "meaning": "No ledger relay is configured; realm entry is open and prizes belong to gameplay accounts."
+      }
+    },
     {
       "name": "AgentRules",
       "identity": "0x4167656e7452756c6573",
@@ -9328,16 +9410,10 @@
           "type": "core::starknet::contract_address::ContractAddress",
           "id": "0x636f736d657469635f74696d656c6f636b",
           "feltLength": 1
-        },
-        {
-          "name": "ledger_operator",
-          "type": "core::starknet::contract_address::ContractAddress",
-          "id": "0x6c65646765725f6f70657261746f72",
-          "feltLength": 1
         }
       ],
       "keyLength": 1,
-      "valueLength": 8,
+      "valueLength": 7,
       "observation": {
         "domain": "realm/blitz",
         "fields": {
@@ -16216,10 +16292,6 @@
         {
           "name": "cosmetic_timelock",
           "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
-          "name": "ledger_operator",
-          "type": "core::starknet::contract_address::ContractAddress"
         }
       ]
     },
@@ -16848,5 +16920,5 @@
       ]
     }
   },
-  "identity": "a9f3ac72b578d972b4fbc2fbaa307b4806c2d779644f36711183d8def0910d48"
+  "identity": "edfb63196b09a66c194548a5388fb87e948f7ec4c005f8ca8510d1db63f610b8"
 }

@@ -42,6 +42,7 @@ pub mod camps;
 pub mod dev;
 pub mod discovery;
 pub mod economy;
+pub mod entry;
 
 pub mod exploration_rewards;
 

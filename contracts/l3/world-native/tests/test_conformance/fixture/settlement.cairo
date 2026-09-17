@@ -64,7 +64,6 @@ fn prepare_with_resources(grant_override: Option<Span<world_native::resources::R
                 cosmetic_limit: 3,
                 cosmetic_collection: 11.try_into().unwrap(),
                 cosmetic_timelock: 12.try_into().unwrap(),
-                ledger_operator: 0.try_into().unwrap(),
             },
             grants,
         );
