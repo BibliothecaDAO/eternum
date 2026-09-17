@@ -147,6 +147,13 @@ fn production_pass_is_atomic_single_use_and_army_grant_uses_recorded_time() {
     ledger.register_village_pass(pass, 0x333.try_into().unwrap()).unwrap();
     assert!(ledger.register_village_pass(pass, deployment.actor).is_err());
     stop_cheat_caller_address(deployment.peers.settlement);
+    let realm_map = IMapDispatcher { contract_address: deployment.peers.map };
+    for direction in 0_u8..6 {
+        let neighbor = crate::geometry::neighbor(Coord { alt: false, x: 2000000, y: 2000000 }, direction);
+        let tile = realm_map.tile(crate::geometry::tile_key(3, neighbor)).unwrap();
+        assert!(tile.data % 0x20000000000 == 0, "realm neighbours must be biome only");
+        assert!(tile.data / 0x20000000000 % 256 != 0, "realm neighbour biome missing");
+    }
     let pools = ISettlementPoolDispatcher { contract_address: deployment.peers.map };
     let before = pools.village_pool(3);
     assert!(!run(deployment, settle(0xffffffff, 7), 100));
@@ -169,11 +176,11 @@ fn production_pass_is_atomic_single_use_and_army_grant_uses_recorded_time() {
     let coord = Coord { alt: false, x: village.base.coord_x, y: village.base.coord_y };
     let map = IMapDispatcher { contract_address: deployment.peers.map };
     for direction in 0_u8..6 {
-        assert!(
-            map.tile(crate::geometry::tile_key(3, crate::geometry::neighbor(coord, direction))).is_none(),
-            "village revealed a neighbour",
-        );
+        let tile = map.tile(crate::geometry::tile_key(3, crate::geometry::neighbor(coord, direction))).unwrap();
+        assert!(tile.data % 0x20000000000 == 0, "settlement surroundings must have no occupant or discovery");
+        assert!(tile.data / 0x20000000000 % 256 != 0, "neighbour biome missing");
     }
+    assert!(IGameDispatcher { contract_address: deployment.peers.season }.player_points(3, deployment.actor) == 0);
     assert!(!run(deployment, settle(realm, 7), 100));
     assert!(!run(deployment, Command::ReceiveVillageArmy(village_id), 100));
     let interval = recorded::rules().tick_config.armies_tick_in_seconds;

@@ -1065,6 +1065,7 @@ pub mod StructuresDomain {
             }
             let rules = self.game_dispatcher().rules(game_id);
             self.reveal_structure_tile(game_id, coord);
+            self.map_dispatcher().reveal_structure_surroundings(game_id, coord);
             self.structures.create(key, record);
             let village = record.base.category == crate::ownership::VILLAGE_CATEGORY;
             let occupier = if village {
