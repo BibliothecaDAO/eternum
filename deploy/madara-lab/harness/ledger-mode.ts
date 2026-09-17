@@ -285,18 +285,14 @@ export async function finalizeLedgerGame(options: FinalizeLedgerGameOptions): Pr
   const mainnetProvider = new RpcProvider({ nodeUrl: options.mainnetRpcUrl });
   await assertProviderChain(mainnetProvider, "mainnet", "LEDGER_RPC_URL");
   const poolBeforeFinalization = (await readLedgerGame(mainnetProvider, options.ledgerAddress, options.gameId)).pool;
-  const schedule = { endAt: Number(client.setup.store.require("GameRegistry", { game_id: options.gameId }).end_at) };
-  await waitForChainTimestamp(
-    options.provider,
-    schedule.endAt + 1,
-    Math.max(120_000, (schedule.endAt - Math.floor(Date.now() / 1_000)) * 1_000 + 120_000),
-  );
-
-  const completed = [...client.setup.store.inGame("Hyperstructure", options.gameId)]
-    .filter((row) => row.stage === "Complete")
-    .map((row) => row.entity_id);
-  for (const entity_ids of chunk(completed, 16))
-    await client.setup.systemCalls.checkpoint_hyperstructures({ signer: options.account, entity_ids });
+  const registry = () => client.setup.store.require("GameRegistry", { game_id: options.gameId });
+  const readyAt = Number(registry().end_at) + registry().end_grace_seconds + 1;
+  await waitForChainTimestamp(options.provider, readyAt, Math.max(120_000, (readyAt - Math.floor(Date.now() / 1_000)) * 1_000 + 120_000));
+  const deadline = Date.now() + 120_000;
+  while (!registry().settled) {
+    if (Date.now() >= deadline) throw new Error("Game finalization batches timed out");
+    await game.submit(options.account, () => client.setup.network.provider.submitCommand(options.account, { kind: "MarkGameSettled", value: undefined }));
+  }
   const players = rankPlayersByRegisteredPoints(
     [...client.setup.store.inGame("PlayerEntry", options.gameId)],
     [...client.setup.store.inGame("PlayerPoints", options.gameId)],
@@ -307,28 +303,20 @@ export async function finalizeLedgerGame(options: FinalizeLedgerGameOptions): Pr
     );
   }
   const trialId = randomTrialId();
-  const ranking = await trackTransaction({
-    botId: -1,
-    gameId: options.gameId,
-    provider: options.provider,
-    kind: "rank_players",
-    stage: "setup",
-    send: () =>
-      game.submit(options.account, () =>
-        client.setup.systemCalls.rank_players({ signer: options.account, trial_id: trialId, players }),
-      ),
-  });
-  if (ranking.outcome !== "completed") throw new Error(`Ranking failed: ${ranking.error ?? ranking.outcome}`);
-  const rankingTransactionHash = ranking.transactionHash!;
-  await waitForWorldState(
-    client,
-    () =>
-      client.setup.store.require("GameRegistry", { game_id: options.gameId }).final_trial_id === trialId
-        ? true
-        : undefined,
-    120_000,
-    () => `Final ranking ${trialId}`,
-  );
+  let rankingTransactionHash = "";
+  while (registry().final_trial_id !== trialId) {
+    if (Date.now() >= deadline) throw new Error("Ranking batches timed out");
+    const trial = client.setup.store.get("RankingTrial", { game_id: options.gameId });
+    const processed = trial?.processed ?? 0;
+    const ranking = await trackTransaction({
+      botId: -1, gameId: options.gameId, provider: options.provider, kind: "rank_players", stage: "setup",
+      send: () => game.submit(options.account, () => client.setup.network.provider.submitCommand(options.account, {
+        kind: "RankPlayers", value: { trial_id: trialId, committed: players.length, players: players.slice(processed, processed + 64) },
+      })),
+    });
+    if (ranking.outcome !== "completed") throw new Error(`Ranking failed: ${ranking.error ?? ranking.outcome}`);
+    rankingTransactionHash = ranking.transactionHash!;
+  }
   const finalized = await waitForLedgerFinalization(mainnetProvider, options.ledgerAddress, options.gameId);
   const sweep = await sweepLedgerBalances(
     mainnetProvider,

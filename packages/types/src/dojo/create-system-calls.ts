@@ -1,4 +1,5 @@
-import { Call, GetTransactionReceiptResponse } from "starknet";
+import type { NativeCommandPayloads } from "../../../../contracts/l3/world-native/schema/commands.gen";
+import { GetTransactionReceiptResponse } from "starknet";
 import * as SystemProps from "../types";
 
 export type SystemCallAuthHandler = {
@@ -32,10 +33,6 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
   const settle_village = (props: Parameters<typeof provider.settle_village>[0]) => provider.settle_village(props);
   const settle_blitz = (props: Parameters<typeof provider.settle_blitz>[0]) => provider.settle_blitz(props);
 
-  const uuid = async () => {
-    return await provider.uuid();
-  };
-
   const bitcoin_mine_contribute_labor = async (
     props: SystemProps.BitcoinMineContributeLaborProps,
   ): Promise<GetTransactionReceiptResponse> => provider.bitcoin_mine_contribute_labor(props);
@@ -59,34 +56,6 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
 
   const cancel_order = async (props: SystemProps.CancelOrderProps): Promise<GetTransactionReceiptResponse> => {
     return await provider.cancel_order(props);
-  };
-
-  const mint_and_settle_test_realm = async (
-    props: SystemProps.MintAndSettleTestRealmProps,
-  ): Promise<GetTransactionReceiptResponse> => {
-    return await provider.mint_and_settle_test_realm(props);
-  };
-
-  const mint_test_realm = async (props: SystemProps.MintTestRealmProps): Promise<GetTransactionReceiptResponse> => {
-    return await provider.mint_test_realm(props);
-  };
-
-  const mint_season_passes = async (
-    props: SystemProps.MintSeasonPassesProps,
-  ): Promise<GetTransactionReceiptResponse> => {
-    return await provider.mint_season_passes(props);
-  };
-
-  const attach_lords = async (props: SystemProps.AttachLordsProps): Promise<GetTransactionReceiptResponse> => {
-    return await provider.attach_lords(props);
-  };
-
-  const detach_lords = async (props: SystemProps.DetachLordsProps): Promise<GetTransactionReceiptResponse> => {
-    return await provider.detach_lords(props);
-  };
-
-  const mint_test_lords = async (props: SystemProps.MintTestLordsProps): Promise<GetTransactionReceiptResponse> => {
-    return await provider.mint_test_lords(props);
   };
 
   const bridge_deposit_into_realm = async (
@@ -113,18 +82,10 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.upgrade_realm(props);
   };
 
-  const send_resources = async (props: SystemProps.SendResourcesProps): Promise<GetTransactionReceiptResponse> => {
-    return await provider.send_resources(props);
-  };
-
   const send_resources_multiple = async (
     props: SystemProps.SendResourcesMultipleProps,
   ): Promise<GetTransactionReceiptResponse> => {
     return await provider.send_resources_multiple(props);
-  };
-
-  const pickup_resources = async (props: SystemProps.PickupResourcesProps): Promise<GetTransactionReceiptResponse> => {
-    return await provider.pickup_resources(props);
   };
 
   const arrivals_offload = async (props: SystemProps.ArrivalsOffloadProps): Promise<GetTransactionReceiptResponse> => {
@@ -161,12 +122,6 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     props: SystemProps.ExecuteRealmProductionPlanProps,
   ): Promise<GetTransactionReceiptResponse> => {
     return await provider.execute_realm_production_plan(props);
-  };
-
-  const change_bank_owner_fee = async (
-    props: SystemProps.ChangeBankOwnerFeeProps,
-  ): Promise<GetTransactionReceiptResponse> => {
-    return await provider.change_bank_owner_fee(props);
   };
 
   const buy_resources = async (props: SystemProps.BuyResourcesProps): Promise<GetTransactionReceiptResponse> => {
@@ -227,15 +182,6 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
 
   const disband_guild = async (props: SystemProps.DisbandGuild): Promise<GetTransactionReceiptResponse> => {
     return await provider.disband_guild(props);
-  };
-
-  const isLive = async () => {
-    try {
-      await provider.uuid();
-      return true;
-    } catch {
-      return false;
-    }
   };
 
   const burn_resource_for_labor_production = async (
@@ -358,53 +304,14 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.structure_troop_adjacent_transfer(props);
   };
 
-  const create_village = async (props: SystemProps.CreateVillageProps): Promise<GetTransactionReceiptResponse> => {
-    return await provider.create_village(props);
-  };
-
   const receive_army_grant = async (
     props: SystemProps.ReceiveArmyGrantProps,
   ): Promise<GetTransactionReceiptResponse> => {
     return await provider.receive_army_grant(props);
   };
 
-  const open_loot_chest = async (props: SystemProps.OpenLootChestProps): Promise<GetTransactionReceiptResponse> => {
-    return await provider.open_loot_chest(props);
-  };
-
-  const create_marketplace_orders = async (
-    props: SystemProps.CreateMarketplaceOrdersProps,
-  ): Promise<GetTransactionReceiptResponse> => {
-    return await provider.create_marketplace_orders(props);
-  };
-
-  const accept_marketplace_order = async (
-    props: SystemProps.AcceptMarketplaceOrdersProps,
-    approval: Call,
-  ): Promise<GetTransactionReceiptResponse> => {
-    return await provider.accept_marketplace_orders(props, approval);
-  };
-
-  const cancel_marketplace_order = async (
-    props: SystemProps.CancelMarketplaceOrderProps,
-  ): Promise<GetTransactionReceiptResponse> => {
-    return await provider.cancel_marketplace_order(props);
-  };
-
-  const edit_marketplace_order = async (
-    props: SystemProps.EditMarketplaceOrderProps,
-  ): Promise<GetTransactionReceiptResponse> => {
-    return await provider.edit_marketplace_order(props);
-  };
-
   const leave_guild = async (props: SystemProps.LeaveGuildProps): Promise<GetTransactionReceiptResponse> => {
     return await provider.leave_guild(props);
-  };
-
-  const claim_wonder_production_bonus = async (
-    props: SystemProps.ClaimWonderProductionBonusProps,
-  ): Promise<GetTransactionReceiptResponse> => {
-    return await provider.claim_wonder_production_bonus(props);
   };
 
   const pledge_faith = async (props: SystemProps.PledgeFaithProps): Promise<GetTransactionReceiptResponse> => {
@@ -456,18 +363,26 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
   };
 
   const systemCalls = {
-    send_resources: withAuth(send_resources),
+    claim_wonder_points: withAuth(
+      (props: SystemProps.SystemSigner & { value: NativeCommandPayloads["ClaimWonderPoints"] }) =>
+        provider.claim_wonder_points(props),
+    ),
+    claim_player_faith_points: withAuth(
+      (props: SystemProps.SystemSigner & { value: NativeCommandPayloads["ClaimPlayerFaithPoints"] }) =>
+        provider.claim_player_faith_points(props),
+    ),
+    claim_faith_prize: withAuth(
+      (props: SystemProps.SystemSigner & { value: NativeCommandPayloads["ClaimFaithPrize"] }) =>
+        provider.claim_faith_prize(props),
+    ),
     send_resources_multiple: withAuth(send_resources_multiple),
-    pickup_resources: withAuth(pickup_resources),
     arrivals_offload: withAuth(arrivals_offload),
     remove_liquidity: withAuth(remove_liquidity),
     add_liquidity: withAuth(add_liquidity),
     sell_resources: withAuth(sell_resources),
     buy_resources: withAuth(buy_resources),
-    change_bank_owner_fee: withAuth(change_bank_owner_fee),
     set_address_name: withAuth(set_address_name),
     set_entity_name: withAuth(set_entity_name),
-    isLive: isLive,
     bitcoin_mine_contribute_labor: withAuth(bitcoin_mine_contribute_labor),
     bitcoin_mine_claim_phase_reward: withAuth(bitcoin_mine_claim_phase_reward),
     bitcoin_mine_close_phase: withAuth(bitcoin_mine_close_phase),
@@ -478,31 +393,21 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     upgrade_realm: withAuth(upgrade_realm),
     provision_realm: withAuth(provision_realm),
     create_hyperstructure: withAuth(create_hyperstructure),
-    create_village: withAuth(create_village),
     receive_army_grant: withAuth(receive_army_grant),
     destroy_building: withAuth(destroy_building),
     pause_production: withAuth(pause_production),
     resume_production: withAuth(resume_production),
     execute_realm_production_plan: withAuth(execute_realm_production_plan),
     create_building: withAuth(create_building),
-    claim_wonder_production_bonus: withAuth(claim_wonder_production_bonus),
     pledge_faith: withAuth(pledge_faith),
     remove_faith: withAuth(remove_faith),
     update_wonder_ownership: withAuth(update_wonder_ownership),
     update_structure_ownership: withAuth(update_structure_ownership),
 
-    uuid: uuid,
-
     initialize_hyperstructure: withAuth(initialize_hyperstructure),
     allocate_shares: withAuth(allocate_shares),
     contribute_to_construction: withAuth(contribute_to_construction),
     set_access: withAuth(set_access),
-    checkpoint_hyperstructures: withAuth((props: SystemProps.SystemSigner & { entity_ids: number[] }) =>
-      provider.checkpoint_hyperstructures(props),
-    ),
-    rank_players: withAuth((props: SystemProps.SystemSigner & { trial_id: bigint; players: string[] }) =>
-      provider.rank_players(props),
-    ),
     end_game: withAuth(end_game),
 
     create_guild: withAuth(create_guild),
@@ -510,16 +415,9 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     update_whitelist: withAuth(update_whitelist),
     remove_guild_member: withAuth(remove_guild_member),
     disband_guild: withAuth(disband_guild),
-
-    mint_test_realm: withAuth(mint_test_realm),
-    mint_season_passes: withAuth(mint_season_passes),
-    attach_lords: withAuth(attach_lords),
-    detach_lords: withAuth(detach_lords),
-    mint_test_lords: withAuth(mint_test_lords),
     settle_blitz: withAuth(settle_blitz),
     settle_season: withAuth(settle_season),
     settle_village: withAuth(settle_village),
-    mint_and_settle_test_realm: withAuth(mint_and_settle_test_realm),
     bridge_deposit_into_realm: withAuth(bridge_deposit_into_realm),
     bridge_withdraw_from_realm: withAuth(bridge_withdraw_from_realm),
 
@@ -548,15 +446,6 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     troop_troop_adjacent_transfer: withAuth(troop_troop_adjacent_transfer),
     troop_structure_adjacent_transfer: withAuth(troop_structure_adjacent_transfer),
     structure_troop_adjacent_transfer: withAuth(structure_troop_adjacent_transfer),
-
-    // Loot Chest
-    open_loot_chest: withAuth(open_loot_chest),
-
-    // Marketplace
-    create_marketplace_orders: withAuth(create_marketplace_orders),
-    accept_marketplace_orders: withAuth(accept_marketplace_order),
-    cancel_marketplace_order: withAuth(cancel_marketplace_order),
-    edit_marketplace_order: withAuth(edit_marketplace_order),
 
     leave_guild: withAuth(leave_guild),
 

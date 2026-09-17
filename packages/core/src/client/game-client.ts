@@ -103,7 +103,7 @@ const bootstrapWorld = async (input: CreateGameClientInput): Promise<GameClientS
   const release = (input.networkConfig.manifest as unknown as { native?: { activeSchema: string } }).native;
   if (!release || release.activeSchema !== input.native.bindings.schemaIdentity)
     throw new Error("Native client bindings do not match the deployment");
-  const provider = new EternumProvider(input.networkConfig.manifest, input.networkConfig.rpcUrl, "0x0", undefined, {
+  const provider = new EternumProvider(input.networkConfig.manifest, input.networkConfig.rpcUrl, undefined, {
     executionResourceBounds: input.setupEnvironment.executionResourceBounds,
     namespace: input.world.namespace,
     gameId: input.gameId,
@@ -144,6 +144,14 @@ const startSync = async (
         () => "Gameplay nonce from Herald",
       );
     }),
+    input.native.bindings.commandAbi,
+    (actor) => {
+      let owned: number | undefined;
+      for (const row of setupResult.store.structuresOwnedBy(input.gameId, BigInt(actor)))
+        if (owned === undefined || row.entity_id < owned) owned = row.entity_id;
+      if (owned === undefined) throw new Error("Action requires an owned structure in the current game");
+      return owned;
+    },
   );
   routeTransactionWaitsThroughStream(setupResult, runtime);
   return installWorldSpatialProjection(runtime, setupResult);

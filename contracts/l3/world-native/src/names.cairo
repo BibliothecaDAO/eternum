@@ -12,8 +12,18 @@ pub struct AddressName {
     pub name: felt252,
 }
 
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct SetEntityName {
+    pub entity_id: u32,
+    pub name: felt252,
+}
+
 #[starknet::interface]
 pub trait INames<T> {
+    fn entity_name(self: @T, key: crate::resources::ResourceKey) -> AddressName;
+    fn set_entity_name(
+        ref self: T, game_id: u32, actor: ContractAddress, command: SetEntityName, context: ExecutionContext,
+    );
     fn address_name(self: @T, address: ContractAddress) -> AddressName;
     fn set_address_name(
         ref self: T, game_id: u32, actor: ContractAddress, command: SetAddressName, context: ExecutionContext,

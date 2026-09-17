@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
-import { createNativeTicketSubmission } from "./native-submission";
+import { createNativeTicketSubmission } from "./native-ticket";
 
 // The transport uses the published Rust/Cairo intent vector, including its tag and version.
 const vector = readFileSync(
-  new URL("../../../../contracts/l3/randomness-protocol/tests/fixtures/v2.txt", import.meta.url),
+  new URL("../../../contracts/l3/randomness-protocol/tests/fixtures/v2.txt", import.meta.url),
   "utf8",
 )
   .trim()
@@ -30,7 +30,7 @@ describe("native ticket transport", () => {
     vi.stubGlobal("fetch", fetch);
     const pending = createNativeTicketSubmission("https://tickets.test/")(signed);
     await vi.advanceTimersByTimeAsync(100);
-    await expect(pending).resolves.toEqual({ transaction_hash: "0x99" });
+    await expect(pending).resolves.toEqual({ transaction_hash: "0x99", order: 7n });
     expect(fetch.mock.calls[0][0]).toBe("https://tickets.test/actions");
     expect(JSON.parse(fetch.mock.calls[0][1].body)).toEqual(signed);
     expect(fetch.mock.calls.slice(1).map(([url]) => url)).toEqual([
@@ -57,7 +57,7 @@ describe("native ticket transport", () => {
     await vi.advanceTimersByTimeAsync(5_000);
     expect(fetch).toHaveBeenCalledTimes(2);
     complete(json({ action, order: 7, transaction_hash: "0x99" }));
-    await expect(pending).resolves.toEqual({ transaction_hash: "0x99" });
+    await expect(pending).resolves.toEqual({ transaction_hash: "0x99", order: 7n });
   });
 
   it("retries admission backpressure with byte-identical intent and signature", async () => {
@@ -70,7 +70,7 @@ describe("native ticket transport", () => {
     vi.stubGlobal("fetch", fetch);
     const pending = createNativeTicketSubmission("https://tickets.test")(signed);
     await vi.advanceTimersByTimeAsync(100);
-    await expect(pending).resolves.toEqual({ transaction_hash: "0x99" });
+    await expect(pending).resolves.toEqual({ transaction_hash: "0x99", order: 7n });
     expect(fetch.mock.calls[0][1].body).toBe(fetch.mock.calls[1][1].body);
     expect(fetch.mock.calls[0][1].signal).toBe(fetch.mock.calls[1][1].signal);
     expect(fetch.mock.calls[2][0]).toBe(`https://tickets.test/actions/${action}`);

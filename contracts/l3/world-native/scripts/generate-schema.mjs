@@ -390,3 +390,37 @@ const declarations = [
   )} as const;`,
 ];
 await writeText("schema/client.gen.ts", declarations.join("\n") + "\n");
+
+function commandType(type) {
+  if (type === "()") return "undefined";
+  if (type === "core::bool") return "boolean";
+  if (
+    type === "core::felt252" ||
+    type.endsWith("::ContractAddress") ||
+    type.endsWith("::ClassHash") ||
+    /^core::integer::u/.test(type)
+  )
+    return "BigNumberish";
+  const span = /^core::array::(?:Span|Array)::<(.+)>$/.exec(type);
+  if (span) return `readonly (${commandType(span[1])})[]`;
+  const item = types.get(type);
+  if (item?.type === "struct")
+    return `{ ${item.members.map(({ name, type }) => `readonly ${name}: ${commandType(type)}`).join("; ")} }`;
+  if (item?.type === "enum")
+    return item.variants
+      .map(({ name, type }) => `{ readonly kind: ${JSON.stringify(name)}; readonly value: ${commandType(type)} }`)
+      .join(" | ");
+  throw new Error(`Unsupported native command type ${type}`);
+}
+const command = types.get("world_native::commands::Command");
+await writeText(
+  "schema/commands.gen.ts",
+  [
+    "// Generated from the compiled Command ABI. Run the native schema generator to update.",
+    'import type { BigNumberish } from "starknet";',
+    "export interface NativeCommandPayloads {",
+    ...command.variants.map(({ name, type }) => `  ${name}: ${commandType(type)};`),
+    "}",
+    "export type NativeCommand = { [K in keyof NativeCommandPayloads]: { kind: K; value: NativeCommandPayloads[K] } }[keyof NativeCommandPayloads];",
+  ].join("\n") + "\n",
+);

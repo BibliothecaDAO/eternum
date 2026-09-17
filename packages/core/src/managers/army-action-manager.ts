@@ -9,7 +9,6 @@ import {
   type HexEntityInfo,
   type HexPosition,
   type ID,
-  packTileSeed,
   ResourcesIds,
   TileOccupier,
   type SystemCalls,
@@ -418,15 +417,9 @@ export class ArmyActionManager {
       }
     }
 
-    const vrfSourceSalt = packTileSeed({
-      alt: this._getCurrentPosition().alt,
-      col: destinationHex.col,
-      row: destinationHex.row,
-    });
     return this.systemCalls.explorer_explore({
       explorer_id: this.entityId,
       directions: [direction],
-      vrf_source_salt: vrfSourceSalt,
       signer,
     });
   };

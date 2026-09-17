@@ -32,6 +32,10 @@ describe("army ownership dependencies", () => {
           emit = callback;
           return unsubscribe;
         },
+        require: (model: string) => {
+          if (model !== "Structure") throw new Error(`Unexpected required model ${model}`);
+          return { owner: currentOwner };
+        },
         get: (model: string, keys: { explorer_id?: number }) =>
           model === "ExplorerTroops"
             ? { game_id: 1, explorer_id: keys.explorer_id, owner: keys.explorer_id === 3 ? 20 : 10 }

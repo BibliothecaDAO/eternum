@@ -475,7 +475,6 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
 
         return attack_guard_vs_explorer({
           signer: account,
-          ethereal,
           structure_id: attacker.id,
           structure_guard_slot: guardSlot,
           explorer_id: resolvedTarget.id,
@@ -483,7 +482,6 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
       } else if (resolvedTarget.targetType === TargetType.Army) {
         return attack_explorer_vs_explorer({
           signer: account,
-          ethereal,
           aggressor_id: attacker.id,
           defender_id: resolvedTarget.id,
           steal_resources: targetResources,
@@ -491,7 +489,6 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
       } else {
         return attack_explorer_vs_guard({
           signer: account,
-          ethereal,
           explorer_id: attacker.id,
           structure_id: resolvedTarget.id,
         });
@@ -508,7 +505,6 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
 
       return attack_explorer_vs_guard_and_garrison({
         signer: account,
-        ethereal,
         explorer_id: attacker.id,
         structure_id: resolvedTarget.id,
         structure_direction: direction,

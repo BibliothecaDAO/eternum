@@ -337,7 +337,7 @@ pub mod StructuresDomain {
         ISettlementDisplacementDispatcher, ISettlementDisplacementDispatcherTrait, ISettlementViewsDispatcher,
         ISettlementViewsDispatcherTrait,
     };
-    use crate::troops::Coord;
+    use crate::troops::{Coord, ExplorerKey, ITroopsDispatcher, ITroopsDispatcherTrait};
     use crate::upgrades::IUpgradeRulesDispatcherTrait;
     use super::{Structure, StructureBase, StructureRecord, StructureState};
     component!(path: BuildingState, storage: buildings, event: BuildingEvent);
@@ -359,6 +359,7 @@ pub mod StructuresDomain {
         #[substorage(v0)]
         buildings: BuildingState::Storage,
         address_names: Map<ContractAddress, felt252>,
+        entity_names: Map<(u32, u32), felt252>,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -819,6 +820,42 @@ pub mod StructuresDomain {
     }
     #[abi(embed_v0)]
     impl Names of crate::names::INames<ContractState> {
+        fn entity_name(self: @ContractState, key: ResourceKey) -> crate::names::AddressName {
+            crate::names::AddressName { name: self.entity_names.read((key.game_id, key.entity_id)) }
+        }
+        fn set_entity_name(
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            command: crate::names::SetEntityName,
+            context: ExecutionContext,
+        ) {
+            let peers = self.lifecycle.require_active();
+            assert!(get_caller_address() == peers.season, "only authenticated command domain");
+            crate::commands::assert_context_time(context.timestamp);
+            assert_playing(self.game_dispatcher().game(game_id), context.timestamp);
+            let key = ResourceKey { game_id, entity_id: command.entity_id };
+            let home = match self.structures.structure(key) {
+                Option::Some(_) => key,
+                Option::None => {
+                    let explorer = ITroopsDispatcher { contract_address: peers.troops }
+                        .explorer(ExplorerKey { game_id, explorer_id: command.entity_id })
+                        .expect('entity does not exist');
+                    ResourceKey { game_id, entity_id: explorer.owner }
+                },
+            };
+            assert!(self.structures.record(home).owner == actor, "actor does not own entity");
+            self.entity_names.write((game_id, command.entity_id), command.name);
+            self
+                .emit(
+                    RowSet {
+                        version: 1,
+                        model: 'EntityName',
+                        keys: array![game_id.into(), command.entity_id.into()].span(),
+                        values: array![command.name].span(),
+                    },
+                );
+        }
         fn address_name(self: @ContractState, address: ContractAddress) -> crate::names::AddressName {
             crate::names::AddressName { name: self.address_names.read(address) }
         }

@@ -31,6 +31,7 @@ export interface MintAndSettleTestRealmProps extends SystemSigner {
 export interface BridgeDepositIntoRealmProps extends SystemSigner {
   resources: {
     tokenAddress: BigNumberish;
+    resource_type: BigNumberish;
     amount: BigNumberish;
   }[];
   recipient_structure_id: BigNumberish;
@@ -40,6 +41,7 @@ export interface BridgeDepositIntoRealmProps extends SystemSigner {
 export interface BridgeWithdrawFromRealmProps extends SystemSigner {
   resources: {
     tokenAddress: BigNumberish;
+    resource_type: BigNumberish;
     amount: BigNumberish;
   }[];
   from_structure_id: BigNumberish;
@@ -493,8 +495,6 @@ export interface ExplorerMoveProps extends SystemSigner {
   directions: number[];
   /** Whether to explore new tiles along the way */
   explore: boolean;
-  /** Optional VRF source salt (packed tile seed) required when explore=true and VRF is enabled */
-  vrf_source_salt?: BigNumberish;
 }
 
 /**
@@ -518,15 +518,13 @@ export interface ToggleAlternateProps extends SystemSigner {
 }
 
 /**
- * Properties for exploring with an explorer (includes VRF and reward extraction)
+ * Properties for exploring and receiving the discovery reward
  */
 export interface ExplorerExploreProps extends SystemSigner {
   /** ID of the explorer to move */
   explorer_id: number;
   /** Array of directions to move in */
   directions: number[];
-  /** VRF source salt (packed tile seed for the destination tile) */
-  vrf_source_salt?: BigNumberish;
 }
 
 /**
@@ -579,8 +577,6 @@ export interface GuardExplorerSwapProps extends SystemSigner {
  * Properties for explorer vs explorer attack
  */
 export interface AttackExplorerVsExplorerProps extends SystemSigner {
-  /** The defending tile is ethereal and needs a combat VRF seed. */
-  ethereal?: boolean;
   /** ID of the attacking explorer */
   aggressor_id: number;
   /** ID of the defending explorer */
@@ -593,8 +589,6 @@ export interface AttackExplorerVsExplorerProps extends SystemSigner {
  * Properties for explorer vs guard attack
  */
 export interface AttackExplorerVsGuardProps extends SystemSigner {
-  /** The defending tile is ethereal and needs a combat VRF seed. */
-  ethereal?: boolean;
   /** ID of the attacking explorer */
   explorer_id: number;
   /** ID of the structure with defending guard */
@@ -605,8 +599,6 @@ export interface AttackExplorerVsGuardProps extends SystemSigner {
  * Properties for an explorer vs guard attack that garrisons surviving troops into the captured structure
  */
 export interface AttackExplorerVsGuardAndGarrisonProps extends SystemSigner {
-  /** The defending tile is ethereal and needs a combat VRF seed. */
-  ethereal?: boolean;
   /** ID of the attacking explorer */
   explorer_id: number;
   /** ID of the structure with defending guard */
@@ -623,8 +615,6 @@ export interface AttackExplorerVsGuardAndGarrisonProps extends SystemSigner {
  * Properties for guard vs explorer attack
  */
 export interface AttackGuardVsExplorerProps extends SystemSigner {
-  /** The defending tile is ethereal and needs a combat VRF seed. */
-  ethereal?: boolean;
   /** ID of the structure with attacking guard */
   structure_id: number;
   /** Guard slot of the attacking troops */

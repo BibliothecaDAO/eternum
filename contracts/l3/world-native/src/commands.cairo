@@ -116,6 +116,7 @@ pub enum Command {
     DepositResource: crate::bridge::Deposit,
     WithdrawResource: crate::bridge::Withdraw,
     ProvisionAndUpgradeRealm: u32,
+    SetEntityName: crate::names::SetEntityName,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]

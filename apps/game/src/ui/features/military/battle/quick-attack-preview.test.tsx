@@ -272,7 +272,7 @@ describe("QuickAttackPreview", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = false;
   });
 
-  it("labels the ethereal +10% assumption and sends the defender layer with the attack", async () => {
+  it("labels the ethereal +10% preview and submits the selected combatants", async () => {
     mocks.attackerStamina = { amount: 50n, updated_tick: 1n };
     await act(async () => {
       root.render(
@@ -289,7 +289,9 @@ describe("QuickAttackPreview", () => {
       findPrimaryActionButton(container)?.click();
       await waitForAsyncWork();
     });
-    expect(mocks.attackExplorerVsGuard).toHaveBeenCalledWith(expect.objectContaining({ ethereal: true }));
+    expect(mocks.attackExplorerVsGuard).toHaveBeenCalledWith(
+      expect.objectContaining({ explorer_id: 1, structure_id: 2 }),
+    );
   });
 
   it("disables unguarded structure claims when stamina is below the required threshold", async () => {

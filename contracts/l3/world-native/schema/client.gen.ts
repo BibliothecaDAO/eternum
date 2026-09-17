@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "a82b6f9149c9bba7f476cd8542d46c0cee826cffb9a58d50665447cd8482ffd9";
+export const nativeFactSchemaIdentity = "b87199a38b170f17d01ec3e227e6fa67fa131d96e03374d254ea57cc3ec6d810";
 export interface NativeRows {
   Preset: { readonly preset_id: number; readonly commitment: bigint };
   Series: { readonly series_id: bigint; readonly owner: bigint; readonly created_games: number };
@@ -75,6 +75,7 @@ export interface NativeRows {
   HyperstructureShares: { readonly game_id: number; readonly entity_id: number; readonly start_at: bigint; readonly multiplier: number; readonly shareholders: readonly ({ readonly player: bigint; readonly bps: number })[] };
   HyperstructureRules: { readonly game_id: number; readonly initialize_shards: bigint; readonly resources: readonly ({ readonly resource_type: number; readonly minimum: number; readonly maximum: number; readonly points: bigint })[] };
   AddressName: { readonly address: bigint; readonly name: bigint };
+  EntityName: { readonly game_id: number; readonly entity_id: number; readonly name: bigint };
   WonderFaith: { readonly game_id: number; readonly wonder_id: number; readonly last_recorded_owner: bigint; readonly claimed_points: bigint; readonly claim_per_sec: number; readonly claim_last_at: bigint; readonly owner_claim_per_sec: number; readonly num_structures_pledged: number };
   FaithfulStructure: { readonly game_id: number; readonly structure_id: number; readonly wonder_id: number; readonly faithful_since: bigint; readonly fp_to_wonder_owner_per_sec: number; readonly fp_to_struct_owner_per_sec: number; readonly last_recorded_owner: bigint };
   PlayerFaithPoints: { readonly game_id: number; readonly player: bigint; readonly wonder_id: number; readonly points_claimed: bigint; readonly points_per_sec_as_owner: number; readonly points_per_sec_as_pledger: number; readonly last_updated_at: bigint };
@@ -168,6 +169,7 @@ export interface NativeKeys {
   HyperstructureShares: { readonly game_id: number; readonly entity_id: number };
   HyperstructureRules: { readonly game_id: number };
   AddressName: { readonly address: bigint };
+  EntityName: { readonly game_id: number; readonly entity_id: number };
   WonderFaith: { readonly game_id: number; readonly wonder_id: number };
   FaithfulStructure: { readonly game_id: number; readonly structure_id: number };
   PlayerFaithPoints: { readonly game_id: number; readonly player: bigint; readonly wonder_id: number };
@@ -1385,6 +1387,18 @@ export const nativeFactModels = {
     "scope": "deployment",
     "fields": {
       "address": "felt",
+      "name": "felt"
+    }
+  },
+  "EntityName": {
+    "keys": [
+      "game_id",
+      "entity_id"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "entity_id": "u32",
       "name": "felt"
     }
   },

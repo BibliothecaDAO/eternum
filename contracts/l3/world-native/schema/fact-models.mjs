@@ -343,6 +343,7 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
       method("structures", "address_name").inputs,
       struct("names::AddressName"),
     ),
+    model("EntityName", ["structures"], "game", struct("resources::ResourceKey"), struct("names::AddressName")),
     ...["WonderFaith", "FaithfulStructure"].map((name) =>
       model(
         name,
