@@ -169,8 +169,6 @@ const ETERNUM_STRUCTURES_PER_BOT = 1;
 const settlementStructureCount = (gameType: HarnessGameType) =>
   gameType === "eternum" ? ETERNUM_STRUCTURES_PER_BOT : BLITZ_STRUCTURES_PER_BOT;
 export const RECEIPT_POLL_INTERVAL_MS = 50;
-/** The Blitz explore cost: the measured window opens once every bot can afford one explorer action. */
-export const FIRST_ACTION_REQUIRED_STAMINA = 30;
 const TRANSACTION_TIMEOUT_MS = 30_000;
 const SETUP_TRANSACTION_TIMEOUT_MS = 120_000;
 const MODEL_UPDATE_TIMEOUT_MS = 30_000;
@@ -409,7 +407,7 @@ export async function runWorkload({
 }: RunWorkloadOptions): Promise<WorkloadResult> {
   const ticks = resolveWorkloadTicks(minutes, intervalSeconds);
   const overheadRpc = createRpcMetrics();
-  const readinessWaitMs = await waitForEveryBotToHaveActionStamina(game, provider, bots, overheadRpc);
+  const readinessWaitMs = await waitForExplorerStaminaRestored(game, provider, bots, overheadRpc);
 
   const workloadStartedAtMs = Date.now();
   const actions: TrackedTransaction[] = [];
@@ -846,7 +844,7 @@ function applyExplorerUpdate(
   if (kind === "move") explorer.atFrontier = !explorer.atFrontier;
 }
 
-async function waitForEveryBotToHaveActionStamina(
+async function waitForExplorerStaminaRestored(
   game: HarnessGame,
   provider: RpcProvider,
   bots: HarnessBot[],
@@ -858,17 +856,15 @@ async function waitForEveryBotToHaveActionStamina(
   while (Date.now() <= deadline) {
     const { armies } = await readChainTicks(game, provider, rpc);
     const everyBotReady = bots.every((bot) =>
-      bot.explorers.some(
-        (explorer) => game.explorerStamina(explorer.explorerId, armies) >= FIRST_ACTION_REQUIRED_STAMINA,
+      bot.explorers.every(
+        (explorer) => game.explorerStamina(explorer.explorerId, armies) >= game.explorerMaxStamina(explorer.explorerId),
       ),
     );
     if (everyBotReady) return Date.now() - startedAtMs;
     await sleep(ACTION_READINESS_POLL_INTERVAL_MS);
   }
 
-  throw new Error(
-    `Every bot did not gain ${FIRST_ACTION_REQUIRED_STAMINA} explorer stamina within 360 seconds of chain time`,
-  );
+  throw new Error("Explorers did not restore their configured stamina capacity within 360 seconds of chain time");
 }
 
 async function readChainTicks(game: HarnessGame, provider: RpcProvider, rpc: RpcMetrics): Promise<ChainTicks> {

@@ -202,11 +202,11 @@ accounts bind to themselves through PlayerRegistry before settlement. The harnes
 creating a game.
 
 The harness creates a fresh dev-mode game, deploys 96 guest gameplay accounts, settles and provisions each player,
-then rotates actions across the three realm explorers each settlement receives. The measured window starts when every
-bot has enough explorer stamina for one legal action; it does not wait for every explorer to refill. The harness plays
-through the shared game client (`@bibliothecadao/eternum`): one client subscribes to the game's Herald stream and holds
-it in RECS, and each bot acts through its own `createGameActions(client, { signer })` facade, so build the packages
-first. Run the acceptance workload from the repository root:
+then rotates actions across the three realm explorers each settlement receives. Setup explores normally until each
+explorer has a revealed route origin. The measured window starts after every explorer regenerates to its configured
+stamina capacity, so those setup actions do not consume the workload budget. The harness plays through the shared game
+client (`@bibliothecadao/eternum`): one client subscribes to Herald and applies native facts to its store. Each bot acts
+through its own `createGameActions(client, { signer })` facade, so build the packages first. Run the acceptance workload from the repository root:
 
 ```bash
 pnpm build:packages

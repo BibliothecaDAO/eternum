@@ -216,7 +216,7 @@ async function main(): Promise<void> {
 
     const evidenceBefore = await collectHarnessEvidenceBeforeRun();
     console.log(
-      "Waiting until every bot has explorer stamina for its first action, then starting the measured workload",
+      "Waiting for every explorer to recover setup stamina to its configured capacity, then starting the measured workload",
     );
     const workload = await runWorkload({
       bots: run.bots,

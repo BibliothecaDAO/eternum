@@ -235,6 +235,7 @@ export class GameSyncRuntime {
     const generation = this.beginRun("subscribing");
     const recoveryStartedAt = this.now();
     const bufferedUpdates: BufferedEntityUpdate[] = [];
+    const bufferedTransactions: GameSyncTransaction[] = [];
     const existingEntitiesByModel = this.captureExistingEntities(session);
     const seenEntitiesByModel = new Map(session.snapshotModels.map((model) => [model, new Set<string>()]));
     this.snapshotAppliedOperations = 0;
@@ -300,7 +301,17 @@ export class GameSyncRuntime {
         },
         onTransaction: (transaction) => {
           if (!this.isCurrentGeneration(generation)) return;
-          this.acceptTransaction(transaction);
+          if (this.status !== "running") {
+            bufferedTransactions.push(transaction);
+            return;
+          }
+          // A status follows its rows on the wire, but their scheduled store write may still be pending.
+          void this.ingestQueue
+            ?.drain()
+            .then(() => {
+              if (this.isCurrentGeneration(generation)) this.acceptTransaction(transaction);
+            })
+            .catch((error) => this.stopAfterLiveBatchFailure(generation, error));
         },
       });
       this.adoptWriter(generation, writer);
@@ -315,6 +326,7 @@ export class GameSyncRuntime {
       await this.replayBufferedUpdates(generation, bufferedUpdates);
       this.assertCurrentGeneration(generation);
       this.status = "running";
+      bufferedTransactions.forEach((transaction) => this.acceptTransaction(transaction));
       this.metrics.lastRecoveryDurationMs = this.now() - recoveryStartedAt;
       this.publishMetrics();
     } catch (error) {

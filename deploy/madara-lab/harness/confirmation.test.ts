@@ -1,5 +1,9 @@
 import { describe, expect, it } from "bun:test";
 import type { RpcProvider } from "starknet";
+import { EventEmitter } from "node:events";
+import type { GameClient } from "@bibliothecadao/eternum";
+import type { Account } from "starknet";
+import { createHarnessGame } from "./harness-game";
 import { trackTransaction } from "./driver";
 
 const never = new Promise(() => {});
@@ -38,5 +42,35 @@ describe("transaction confirmation deadline", () => {
   it("accepts setup sends without a Herald barrier and completed action barriers", async () => {
     expect((await track(undefined)).outcome).toBe("completed");
     expect((await track(Promise.resolve())).outcome).toBe("completed");
+  });
+});
+
+describe("shared client submission barrier", () => {
+  it("does not confuse a queued action's pending response with applied Herald state", async () => {
+    const provider = new EventEmitter();
+    let applied!: () => void;
+    const barrier = new Promise<void>((resolve) => {
+      applied = resolve;
+    });
+    const hashes: string[] = [];
+    const client = {
+      gameId: 1,
+      setup: { store: {}, systemCalls: {}, network: { provider } },
+      runtime: {
+        waitForTransaction: (hash: string) => {
+          hashes.push(hash);
+          return barrier;
+        },
+      },
+    } as unknown as GameClient;
+    const game = createHarnessGame(client);
+    const submission = await game.submit({ address: "0xabc" } as Account, async () => {
+      provider.emit("transactionSubmitted", { signerAddress: "0xabc", transactionHash: "0x123" });
+      return { statusReceipt: "PENDING", transaction_hash: "0x123" };
+    });
+    expect(hashes).toEqual(["0x123"]);
+    expect(submission.confirmed).toBe(barrier);
+    applied();
+    await submission.confirmed;
   });
 });

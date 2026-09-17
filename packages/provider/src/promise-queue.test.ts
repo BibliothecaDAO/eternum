@@ -61,6 +61,20 @@ describe("PromiseQueue", () => {
     });
   });
 
+  it("keeps native commands separate even when one signer queues them together", async () => {
+    const queue = new PromiseQueue(executor, { batchDelayMs: 0, batchCalls: false });
+    const signer = makeSigner();
+    const calls = [makeCall("first"), makeCall("second")];
+    await Promise.all(calls.map((call) => queue.enqueue({ signer, calls: call })));
+    expect(executor.executeAndCheckTransaction).toHaveBeenCalledTimes(2);
+    calls.forEach((call, index) =>
+      expect(executor.executeAndCheckTransaction).toHaveBeenNthCalledWith(index + 1, signer, call, undefined, {
+        waitForConfirmation: false,
+        transactionType: undefined,
+      }),
+    );
+  });
+
   // 2 -----------------------------------------------------------------------
   it("multiple items within batch delay are grouped by category", async () => {
     vi.useFakeTimers();
