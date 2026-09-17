@@ -361,6 +361,8 @@ pub mod StructuresDomain {
     struct Storage {
         #[substorage(v0)]
         lifecycle: Lifecycle::Storage,
+        camp_resource_count: Map<u32, Option<u32>>,
+        camp_grants: Map<(u32, u32), crate::resources::ResourceAmount>,
         #[substorage(v0)]
         structures: StructureState::Storage,
         #[substorage(v0)]
@@ -403,6 +405,36 @@ pub mod StructuresDomain {
                     .resources_dispatcher()
                     .grant_resource(key, *resource.resource_type, *resource.amount, context.timestamp);
             }
+        }
+    }
+    #[abi(embed_v0)]
+    impl Camps of crate::camps::ICampRules<ContractState> {
+        fn configure_camps(ref self: ContractState, game_id: u32, resources: Span<crate::resources::ResourceAmount>) {
+            self.assert_authority();
+            let _ = self.game_dispatcher().game(game_id);
+            assert!(self.camp_resource_count.read(game_id).is_none(), "camp resources already configured");
+            for index in 0..resources.len() {
+                let resource = *resources.at(index);
+                let _ = self.resources_dispatcher().resource_rule(game_id, resource.resource_type);
+                self.camp_grants.write((game_id, index), resource);
+            }
+            self.camp_resource_count.write(game_id, Some(resources.len()));
+            let mut values = array![];
+            resources.serialize(ref values);
+            self
+                .emit(
+                    RowSet {
+                        version: 1, model: 'CampResources', keys: array![game_id.into()].span(), values: values.span(),
+                    },
+                );
+        }
+        fn camp_resources(self: @ContractState, game_id: u32) -> Span<crate::resources::ResourceAmount> {
+            let count = self.camp_resource_count.read(game_id).expect('camp resources not configured');
+            let mut resources = array![];
+            for index in 0..count {
+                resources.append(self.camp_grants.read((game_id, index)));
+            }
+            resources.span()
         }
     }
     #[constructor]
@@ -985,6 +1017,25 @@ pub mod StructuresDomain {
                 },
                 Discovery::Hyperstructure => self.create_hyperstructure(key, seed, completed),
                 Discovery::BitcoinMine => {},
+                Discovery::Camp => {
+                    assert!(rules.blitz_mode_on, "camps require Blitz");
+                    for resource in self.camp_resources(game_id) {
+                        self
+                            .resources_dispatcher()
+                            .grant_resource(key, *resource.resource_type, *resource.amount, timestamp);
+                    }
+                    self
+                        .create_producer(
+                            key,
+                            coord,
+                            0xffffffffffffffffffffffffffffffff,
+                            self.resources_dispatcher().resource_rule(game_id, 23).village_rate,
+                            23,
+                            25,
+                            rules.building_config.base_population,
+                            timestamp,
+                        );
+                },
                 Discovery::None => panic!("cannot create empty discovery"),
             }
             self.structures.create(key, record);
@@ -1439,12 +1490,13 @@ fn discovered_structure(
         Discovery::Mine => (4_u8, 12_u8, 0_u8, capacities.fragment_mine_capacity),
         Discovery::Hyperstructure => (2, 9, 3, capacities.hyperstructure_capacity),
         Discovery::BitcoinMine => (8, 38, 3, capacities.bitcoin_mine_capacity),
+        Discovery::Camp => (crate::camps::CAMP_CATEGORY, crate::camps::CAMP_OCCUPIER, 0, capacities.camp_capacity),
         Discovery::None => panic!("cannot create empty discovery"),
     };
     assert!(
         discovery == Discovery::Mine || coord.alt == (discovery == Discovery::BitcoinMine), "invalid discovery layer",
     );
-    let max_guards = if discovery == Discovery::Mine {
+    let max_guards = if discovery == Discovery::Mine || discovery == Discovery::Camp {
         1
     } else {
         4
@@ -1452,7 +1504,11 @@ fn discovered_structure(
     let base = StructureBase {
         troop_explorer_count: 0,
         troop_max_guard_count: max_guards,
-        troop_max_explorer_count: 0,
+        troop_max_explorer_count: if discovery == Discovery::Camp {
+            1
+        } else {
+            0
+        },
         created_at: timestamp.try_into().unwrap(),
         category,
         coord_x: coord.x,

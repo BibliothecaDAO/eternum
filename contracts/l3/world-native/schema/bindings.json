@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "3f465b6c05349be2b897f1d7c803552cd37a768bccca3b5b7b1f6c8e582d527f",
+  "schemaIdentity": "3f5349990cbe969b8242e151c6375b3be1e9bb64a848787852cb77da06b509e6",
   "commandAbi": [
     {
       "type": "impl",
@@ -3686,6 +3686,19 @@
     }
   ],
   "models": [
+    {
+      "name": "CampResources",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "resources": [
+          {
+            "resource_type": "Number",
+            "amount": "BigInt"
+          }
+        ]
+      }
+    },
     {
       "name": "Guild",
       "scope": "game",

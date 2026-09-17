@@ -428,3 +428,7 @@ whitelist entries keyed by game, guild and player, and a private member-count in
 Membership is the sole player fact; the count is not projected. Guild identifiers retain the full founder address. The
 former Season membership placeholder is removed. The registry peer extends the nested lifecycle peer layout and requires
 the same fresh rehearsal deployment; no live upgrade compatibility is claimed.
+
+Structures appends immutable camp grant entries keyed by game and index, with an optional entry count distinguishing
+unconfigured games from a configured empty list. CampResources projects those entries once. Camp balances, Labor
+production, guards, occupancy and buildings reuse their existing owning rows; no separate camp status is stored.

@@ -361,7 +361,12 @@ pub mod TroopsDomain {
                 .base
                 .category;
             assert!(
-                category == 2 || category == 3 || category == 4 || category == 8, "invalid guarded structure category",
+                category == 2
+                    || category == 3
+                    || category == 4
+                    || category == crate::camps::CAMP_CATEGORY
+                    || category == 8,
+                "invalid guarded structure category",
             );
             let guards = super::discovery_guards(category, seed, self.game_dispatcher().rules(key.game_id), timestamp);
             for slot in 0..guards.len() {
@@ -1198,23 +1203,23 @@ fn spend_stamina(
 
 fn discovery_guards(category: u8, seed: u256, rules: crate::rules::SliceRules, timestamp: u64) -> Span<Troops> {
     use crate::troops::{TroopTier, TroopType};
-    let mine = category == 4;
+    let light_guard = category == 4 || category == crate::camps::CAMP_CATEGORY;
     let three_guards = category == 2 || category == 3;
-    let count = if mine {
+    let count = if light_guard {
         1_u8
     } else if three_guards {
         3
     } else {
         4
     };
-    let tier = if mine {
+    let tier = if light_guard {
         TroopTier::T1
     } else {
         TroopTier::T2
     };
     let mut guards = array![];
     for slot in 0_u8..count {
-        let category = if mine {
+        let category = if light_guard {
             TroopType::Crossbowman
         } else {
             match slot {

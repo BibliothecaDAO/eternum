@@ -35,6 +35,8 @@ pub mod artificer;
 pub mod blitz_prizes;
 pub mod buildings;
 
+pub mod camps;
+
 pub mod dev;
 pub mod discovery;
 pub mod economy;

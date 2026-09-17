@@ -644,6 +644,7 @@ mod artificer;
 mod blitz_prizes;
 
 mod building_commands;
+mod camps;
 
 mod dev;
 mod faith;

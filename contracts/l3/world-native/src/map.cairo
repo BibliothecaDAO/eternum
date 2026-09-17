@@ -372,7 +372,7 @@ pub mod MapDomain {
                     alt: false, x: 2147483646 - rules.map_center_offset, y: 2147483646 - rules.map_center_offset,
                 };
                 crate::discovery::surface(
-                    rules.map_config, seed, timestamp, distance(coord, center), hyperstructures, false,
+                    rules.map_config, seed, timestamp, distance(coord, center), hyperstructures, rules.blitz_mode_on,
                 )
             }
         }

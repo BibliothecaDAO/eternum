@@ -2528,6 +2528,38 @@
         },
         {
           "type": "function",
+          "name": "configure_camps",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "resources",
+              "type": "core::array::Span::<world_native::resources::ResourceAmount>"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "camp_resources",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::array::Span::<world_native::resources::ResourceAmount>"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
           "name": "create_bank",
           "inputs": [
             {
@@ -7512,6 +7544,31 @@
     }
   },
   "models": [
+    {
+      "name": "CampResources",
+      "identity": "0x43616d705265736f7572636573",
+      "owners": [
+        "structures"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "resources",
+          "type": "core::array::Span::<world_native::resources::ResourceAmount>",
+          "id": "0x7265736f7572636573",
+          "feltLength": null
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": null
+    },
     {
       "name": "Guild",
       "identity": "0x4775696c64",
@@ -13169,6 +13226,10 @@
         {
           "name": "BitcoinMine",
           "type": "()"
+        },
+        {
+          "name": "Camp",
+          "type": "()"
         }
       ]
     },
@@ -16609,5 +16670,5 @@
       ]
     }
   },
-  "identity": "3f465b6c05349be2b897f1d7c803552cd37a768bccca3b5b7b1f6c8e582d527f"
+  "identity": "3f5349990cbe969b8242e151c6375b3be1e9bb64a848787852cb77da06b509e6"
 }

@@ -8,25 +8,27 @@ pub enum Discovery {
     Mine,
     Hyperstructure,
     BitcoinMine,
+    Camp,
 }
 
 pub fn surface(
-    config: MapConfig, seed: u256, timestamp: u64, distance: u128, hyperstructures: u32, reserved: bool,
+    config: MapConfig, seed: u256, timestamp: u64, distance: u128, hyperstructures: u32, blitz: bool,
 ) -> Discovery {
-    if reserved {
-        return Discovery::None;
-    }
-    let hyper_success = hyperstructure_weight(config, distance, hyperstructures);
-    let hyper_total: u128 = config.hyps_win_prob.into() + config.hyps_fail_prob.into();
-    if lottery(seed, 1, hyper_success, hyper_total - hyper_success, timestamp) {
-        return Discovery::Hyperstructure;
+    if !blitz {
+        let hyper_success = hyperstructure_weight(config, distance, hyperstructures);
+        let hyper_total: u128 = config.hyps_win_prob.into() + config.hyps_fail_prob.into();
+        if lottery(seed, 1, hyper_success, hyper_total - hyper_success, timestamp) {
+            return Discovery::Hyperstructure;
+        }
     }
     if lottery(
         seed, 2, config.shards_mines_win_probability.into(), config.shards_mines_fail_probability.into(), timestamp,
     ) {
         return Discovery::Mine;
     }
-    // The pinned season rules skip camps before rolling and retain the agent lottery.
+    if blitz && lottery(seed, 7, config.camp_win_probability.into(), config.camp_fail_probability.into(), timestamp) {
+        return Discovery::Camp;
+    }
     if lottery(seed, 3, config.agent_discovery_prob.into(), config.agent_discovery_fail_prob.into(), timestamp) {
         panic!("unsupported agent discovery");
     }
