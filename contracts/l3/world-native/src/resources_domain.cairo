@@ -210,7 +210,11 @@ pub mod ResourcesDomain {
             travel_time: u64,
             timestamp: u64,
         ) {
-            assert!(get_caller_address() == self.lifecycle.require_active().economy, "only economy domain");
+            let peers = self.lifecycle.require_active();
+            assert!(
+                get_caller_address() == peers.economy || get_caller_address() == peers.bridge,
+                "only economy or bridge domain",
+            );
             crate::commands::assert_context_time(timestamp);
             let _ = self.rule(key.game_id, resource.resource_type);
             let rules = self.game_dispatcher().rules(key.game_id);
@@ -350,7 +354,11 @@ pub mod ResourcesDomain {
         fn apply_production_relic(
             ref self: ContractState, key: ResourceKey, relic_id: u8, rule: crate::relics::RelicRule, timestamp: u64,
         ) {
-            assert!(get_caller_address() == self.lifecycle.require_active().economy, "only economy domain");
+            let peers = self.lifecycle.require_active();
+            assert!(
+                get_caller_address() == peers.economy || get_caller_address() == peers.bridge,
+                "only economy or bridge domain",
+            );
             crate::commands::assert_context_time(timestamp);
             let rules = IGameDispatcher { contract_address: self.lifecycle.require_active().season }.rules(key.game_id);
             let mut bonus = self.production.bonus(key);
@@ -914,7 +922,10 @@ pub mod ResourcesDomain {
             let peers = self.lifecycle.require_active();
             let caller = get_caller_address();
             assert!(
-                caller == peers.structures || caller == peers.economy || caller == peers.troops,
+                caller == peers.structures
+                    || caller == peers.economy
+                    || caller == peers.troops
+                    || caller == peers.bridge,
                 "only resource settlement domain",
             );
         }

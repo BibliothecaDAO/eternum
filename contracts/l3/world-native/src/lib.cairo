@@ -36,6 +36,10 @@ pub mod agents;
 pub mod artificer;
 
 pub mod blitz_prizes;
+
+pub mod bridge;
+
+pub mod bridge_domain;
 pub mod buildings;
 
 pub mod camps;

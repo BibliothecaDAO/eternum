@@ -1,4 +1,5 @@
 mod bitcoin;
+mod bridge;
 mod combat_actions;
 mod entry;
 mod fixtures;
@@ -107,24 +108,35 @@ fn setup_with_domains(activate: bool, structures_class: ByteArray, troops_class:
     let (prizes, _) = deploy("PrizesDomain", @array![authority().into()]);
     let (registry_domain, _) = deploy("RegistryDomain", @array![authority().into()]);
     let (combat, _) = deploy("CombatDomain", @array![authority().into()]);
+    let (bridge, _) = deploy("BridgeDomain", @array![authority().into()]);
     let peers = Peers {
-        season, map, structures, troops, settlement, resources, economy, prizes, registry: registry_domain, combat,
+        season,
+        map,
+        structures,
+        troops,
+        settlement,
+        resources,
+        economy,
+        prizes,
+        registry: registry_domain,
+        combat,
+        bridge,
     };
     for address in array![
-        season, map, structures, troops, settlement, resources, economy, prizes, registry_domain, combat,
+        season, map, structures, troops, settlement, resources, economy, prizes, registry_domain, combat, bridge,
     ] {
         start_cheat_caller_address(address, authority());
         IDomainDispatcher { contract_address: address }.configure(peers);
     }
     if activate {
         for address in array![
-            season, map, structures, troops, settlement, resources, economy, prizes, registry_domain, combat,
+            season, map, structures, troops, settlement, resources, economy, prizes, registry_domain, combat, bridge,
         ] {
             IDomainDispatcher { contract_address: address }.activate();
         }
     }
     for address in array![
-        season, map, structures, troops, settlement, resources, economy, prizes, registry_domain, combat,
+        season, map, structures, troops, settlement, resources, economy, prizes, registry_domain, combat, bridge,
     ] {
         stop_cheat_caller_address(address);
     }
@@ -398,11 +410,22 @@ fn registered_account_with_unapproved_class_is_rejected_before_key_read() {
     let (prizes, _) = deploy("PrizesDomain", @array![authority().into()]);
     let (registry_domain, _) = deploy("RegistryDomain", @array![authority().into()]);
     let (combat, _) = deploy("CombatDomain", @array![authority().into()]);
+    let (bridge, _) = deploy("BridgeDomain", @array![authority().into()]);
     let peers = Peers {
-        season, map, structures, troops, settlement, resources, economy, prizes, registry: registry_domain, combat,
+        season,
+        map,
+        structures,
+        troops,
+        settlement,
+        resources,
+        economy,
+        prizes,
+        registry: registry_domain,
+        combat,
+        bridge,
     };
     for address in array![
-        season, map, structures, troops, settlement, resources, economy, prizes, registry_domain, combat,
+        season, map, structures, troops, settlement, resources, economy, prizes, registry_domain, combat, bridge,
     ] {
         start_cheat_caller_address(address, authority());
         IDomainDispatcher { contract_address: address }.configure(peers);
@@ -573,8 +596,19 @@ fn activation_rejects_peer_mismatch_authority_mismatch_and_double_activation() {
         let (prizes, _) = deploy("PrizesDomain", @array![authority().into()]);
         let (registry_domain, _) = deploy("RegistryDomain", @array![authority().into()]);
         let (combat, _) = deploy("CombatDomain", @array![authority().into()]);
+        let (bridge, _) = deploy("BridgeDomain", @array![authority().into()]);
         let peers = Peers {
-            season, map, structures, troops, settlement, resources, economy, prizes, registry: registry_domain, combat,
+            season,
+            map,
+            structures,
+            troops,
+            settlement,
+            resources,
+            economy,
+            prizes,
+            registry: registry_domain,
+            combat,
+            bridge,
         };
         for address in array![season, structures, troops, settlement] {
             start_cheat_caller_address(address, authority());

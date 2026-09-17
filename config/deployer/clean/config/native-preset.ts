@@ -269,6 +269,13 @@ function buildEconomy(config: Config, tokens: Array<{ resource_type: number; tok
     withdrawals: config.blitz.mode.on
       ? new CairoOption(CairoOptionVariant.None)
       : new CairoOption(CairoOptionVariant.Some, {
+          deposits: {
+            paused: false,
+            realm_fee_bps: bridge.realm_fee_dpt_percent,
+            velords_fee_bps: bridge.velords_fee_on_dpt_percent,
+            season_fee_bps: bridge.season_pool_fee_on_dpt_percent,
+            client_fee_bps: bridge.client_fee_on_dpt_percent,
+          },
           rules: {
             paused: false,
             bank_fee_bps: bridge.realm_fee_wtdr_percent,

@@ -2,6 +2,7 @@
 pub mod EconomyDomain {
     use starknet::storage::StorageMapReadAccess;
     use starknet::{ContractAddress, get_caller_address};
+    use crate::bridge::IBankWithdrawalDispatcherTrait;
     use crate::commands::ExecutionContext;
     use crate::game::{IGameDispatcher, IGameDispatcherTrait, assert_main_with_grace, assert_playing};
     use crate::relics::RelicState;
@@ -10,7 +11,7 @@ pub mod EconomyDomain {
     impl Relics = RelicState::RelicsImpl<ContractState>;
     #[abi(embed_v0)]
     impl Artificer = RelicState::ArtificerImpl<ContractState>;
-    use crate::hyperstructures::{HyperstructureState, IHyperstructures};
+    use crate::hyperstructures::HyperstructureState;
     use crate::lifecycle::Lifecycle;
     use crate::market::{
         AddLiquidity, BankPlacement, BankRules, IBankCreationDispatcher, IBankCreationDispatcherTrait, LiquidityKey,
@@ -23,18 +24,15 @@ pub mod EconomyDomain {
         AcceptOrder, CreateOrder, IEconomyDeliveryDispatcher, IEconomyDeliveryDispatcherTrait, TradeFill, TradeKey,
         TradeOrder, TradeRules, TradeState,
     };
-    use crate::withdrawals::WithdrawalState;
     component!(path: HyperstructureState, storage: hyperstructures, event: HyperstructureEvent);
     #[abi(embed_v0)]
     impl Hyperstructures = HyperstructureState::HyperstructuresImpl<ContractState>;
-    component!(path: WithdrawalState, storage: withdrawals, event: WithdrawalEvent);
     component!(path: MarketState, storage: markets, event: MarketEvent);
     component!(path: Lifecycle, storage: lifecycle, event: LifecycleEvent);
     component!(path: TradeState, storage: trades, event: TradeEvent);
     #[abi(embed_v0)]
     impl Domain = Lifecycle::DomainImpl<ContractState>;
     impl LifecycleInternal = Lifecycle::InternalImpl<ContractState>;
-    impl WithdrawalInternal = WithdrawalState::InternalImpl<ContractState>;
     impl MarketInternal = MarketState::InternalImpl<ContractState>;
     impl TradeInternal = TradeState::InternalImpl<ContractState>;
     #[storage]
@@ -49,8 +47,6 @@ pub mod EconomyDomain {
         trades: TradeState::Storage,
         #[substorage(v0)]
         markets: MarketState::Storage,
-        #[substorage(v0)]
-        withdrawals: WithdrawalState::Storage,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -60,7 +56,6 @@ pub mod EconomyDomain {
         LifecycleEvent: Lifecycle::Event,
         TradeEvent: TradeState::Event,
         MarketEvent: MarketState::Event,
-        WithdrawalEvent: WithdrawalState::Event,
         StoryEvent: StoryEvent,
     }
     #[constructor]
@@ -139,25 +134,6 @@ pub mod EconomyDomain {
                 .emit_story(
                     game_id, trade_id, order.maker_id, actor, Story::TradeCancelled(trade_id), context.timestamp,
                 );
-        }
-    }
-    #[abi(embed_v0)]
-    impl Withdrawals of crate::withdrawals::IWithdrawals<ContractState> {
-        fn configure_withdrawals(
-            ref self: ContractState,
-            game_id: u32,
-            rules: crate::withdrawals::WithdrawalRules,
-            tokens: Span<crate::withdrawals::ResourceToken>,
-        ) {
-            self.lifecycle.assert_configurator();
-            let _ = self.games().game(game_id);
-            self.withdrawals.configure(game_id, rules, tokens);
-        }
-        fn withdrawal_rules(self: @ContractState, game_id: u32) -> crate::withdrawals::WithdrawalRules {
-            self.withdrawals.rules(game_id)
-        }
-        fn resource_token(self: @ContractState, key: MarketKey) -> ContractAddress {
-            self.withdrawals.token(key)
         }
     }
     #[abi(embed_v0)]
@@ -272,12 +248,12 @@ pub mod EconomyDomain {
             self.markets.write_market(key, market);
             self.markets.write_shares(liquidity, owned - command.shares);
             if command.structure_id == 0 {
-                self
-                    .withdraw_liquidity_token(
+                crate::bridge::IBankWithdrawalDispatcher { contract_address: self.lifecycle.require_active().bridge }
+                    .withdraw_bank_resources(
                         game_id, actor, command.bank_id, command.resource_type, resource, context.timestamp,
                     );
-                self
-                    .withdraw_liquidity_token(
+                crate::bridge::IBankWithdrawalDispatcher { contract_address: self.lifecycle.require_active().bridge }
+                    .withdraw_bank_resources(
                         game_id, actor, command.bank_id, crate::resources::LORDS, lords, context.timestamp,
                     );
             } else {
@@ -377,61 +353,6 @@ pub mod EconomyDomain {
                 .emit_swap(
                     game_id, actor, command, quote.market, lords, quote.owner_fee, quote.lp_fee, buy, context.timestamp,
                 );
-        }
-        fn withdraw_liquidity_token(
-            ref self: ContractState,
-            game_id: u32,
-            actor: ContractAddress,
-            bank_id: u32,
-            resource_type: u8,
-            amount: u128,
-            timestamp: u64,
-        ) {
-            let rules = self.withdrawals.rules(game_id);
-            assert!(!rules.paused, "resource bridge withdrawal is paused");
-            let token = self.withdrawals.token(MarketKey { game_id, resource_type });
-            let completed = self.hyperstructures.completed_hyperstructure_count(game_id);
-            let amount = self.withdrawals.retained_amount(game_id, resource_type, amount, completed);
-            let bank_fee = amount * rules.bank_fee_bps.into() / 10000;
-            if rules.bank_fee_bps != 0 {
-                assert!(bank_fee != 0, "amount too small to pay bank fees");
-                self.deliver_bank_withdrawal_fee(game_id, bank_id, resource_type, bank_fee, timestamp);
-            }
-            let converted = crate::withdrawals::token_amount(token, amount);
-            let velords_fee = converted * rules.velords_fee_bps.into() / 10000;
-            let season_fee = converted * rules.season_fee_bps.into() / 10000;
-            let client_fee = converted * rules.client_fee_bps.into() / 10000;
-            assert!(velords_fee != 0 && season_fee != 0 && client_fee != 0, "amount too small to pay platform fees");
-            crate::withdrawals::transfer_or_mint(token, rules.velords_recipient, velords_fee);
-            crate::withdrawals::transfer_or_mint(token, rules.season_recipient, season_fee);
-            crate::withdrawals::transfer_or_mint(token, rules.velords_recipient, client_fee);
-            let bank_tokens = crate::withdrawals::token_amount(token, bank_fee);
-            crate::withdrawals::transfer_or_mint(
-                token, actor, converted - bank_tokens - velords_fee - season_fee - client_fee,
-            );
-        }
-        fn deliver_bank_withdrawal_fee(
-            ref self: ContractState, game_id: u32, bank_id: u32, resource_type: u8, amount: u128, timestamp: u64,
-        ) {
-            let key = ResourceKey { game_id, entity_id: bank_id };
-            let resource = ResourceAmount { resource_type, amount };
-            IEconomyDeliveryDispatcher { contract_address: self.lifecycle.require_active().resources }
-                .queue_economy_delivery(key, resource, 0, timestamp);
-            let bank = self.bank_structure(game_id, bank_id);
-            let story = Story::ResourceTransferStory(
-                crate::ownership::ResourceTransferStory {
-                    transfer_type: crate::ownership::TransferType::InstantArrivals,
-                    from_entity_id: 0,
-                    from_entity_owner_address: 0.try_into().unwrap(),
-                    to_entity_id: bank_id,
-                    to_entity_owner_address: bank.owner,
-                    resources: array![resource].span(),
-                    is_mint: true,
-                    travel_time: 0,
-                },
-            );
-            let id = self.games().allocate_entity(game_id);
-            self.emit_story(game_id, id, bank_id, bank.owner, story, timestamp);
         }
         fn assert_economy_submission(self: @ContractState, game_id: u32, timestamp: u64) {
             assert!(

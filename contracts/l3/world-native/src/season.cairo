@@ -371,6 +371,7 @@ pub mod SeasonDomain {
                     || caller == peers.map
                     || caller == peers.structures
                     || caller == peers.resources
+                    || caller == peers.bridge
                     || caller == peers.economy
                     || caller == peers.prizes,
                 "only gameplay domain",
@@ -528,6 +529,14 @@ pub mod SeasonDomain {
     ) -> Result<Span<felt252>, Array<felt252>> {
         let mut calldata = array![game_id.into(), actor.into()];
         let (target, selector) = match command {
+            Command::DepositResource(value) => {
+                value.serialize(ref calldata);
+                (peers.bridge, selector!("deposit_resource"))
+            },
+            Command::WithdrawResource(value) => {
+                value.serialize(ref calldata);
+                (peers.bridge, selector!("withdraw_resource"))
+            },
             Command::ClaimBitcoinPhase(value) => {
                 value.serialize(ref calldata);
                 (peers.resources, selector!("claim_bitcoin_phase"))

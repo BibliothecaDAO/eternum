@@ -165,14 +165,15 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
     model("RelicDiscovery", ["map"], "game", method("map", "relic_discovery_time").inputs, [
       { name: "last_at", type: "core::integer::u64" },
     ]),
+    model("DepositRules", ["bridge"], "game", method("bridge", "deposit_rules").inputs, struct("bridge::DepositRules")),
     model(
       "WithdrawalRules",
-      ["economy"],
+      ["bridge"],
       "game",
-      method("economy", "withdrawal_rules").inputs,
+      method("bridge", "withdrawal_rules").inputs,
       struct("withdrawals::WithdrawalRules"),
     ),
-    model("ResourceToken", ["economy"], "game", struct("market::MarketKey"), [
+    model("ResourceToken", ["bridge"], "game", struct("market::MarketKey"), [
       { name: "token", type: struct("withdrawals::ResourceToken")[1].type },
     ]),
     model("BankRules", ["economy"], "game", method("economy", "bank_rules").inputs, struct("market::BankRules")),

@@ -87,6 +87,13 @@ fn definition(blitz: bool) -> PresetDefinition {
             } else {
                 Some(
                     WithdrawalPreset {
+                        deposits: crate::bridge::DepositRules {
+                            paused: false,
+                            realm_fee_bps: 500,
+                            velords_fee_bps: 100,
+                            season_fee_bps: 200,
+                            client_fee_bps: 300,
+                        },
                         rules: crate::withdrawals::WithdrawalRules {
                             paused: false,
                             bank_fee_bps: 0,

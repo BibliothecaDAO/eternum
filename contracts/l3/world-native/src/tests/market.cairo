@@ -188,18 +188,18 @@ fn rejected_market_actions_preserve_reserves_shares_and_balances() {
     assert_terminal_rejection(deployment, add(other, 1, 1), 200);
 }
 
-fn configure_wallet(
+pub fn configure_wallet(
     deployment: super::Deployment, paused: bool,
 ) -> (starknet::ContractAddress, starknet::ContractAddress) {
-    let (resource, _) = super::deploy("BankTokenFixture", @array![deployment.peers.economy.into()]);
-    let (lords, _) = super::deploy("BankTokenFixture", @array![deployment.peers.economy.into()]);
+    let (resource, _) = super::deploy("BankTokenFixture", @array![deployment.peers.bridge.into()]);
+    let (lords, _) = super::deploy("BankTokenFixture", @array![deployment.peers.bridge.into()]);
     let mut retention = array![];
     for (troop_percent, resource_percent) in array![(0, 25), (25, 50), (50, 70), (70, 85), (85, 95), (95, 95)] {
         retention.append(crate::withdrawals::Retention { troop_percent, resource_percent });
     }
-    start_cheat_caller_address(deployment.peers.economy, super::authority());
+    start_cheat_caller_address(deployment.peers.bridge, super::authority());
     crate::withdrawals::IWithdrawalsDispatcherTrait::configure_withdrawals(
-        crate::withdrawals::IWithdrawalsDispatcher { contract_address: deployment.peers.economy },
+        crate::withdrawals::IWithdrawalsDispatcher { contract_address: deployment.peers.bridge },
         3,
         crate::withdrawals::WithdrawalRules {
             paused,
@@ -217,7 +217,7 @@ fn configure_wallet(
         ]
             .span(),
     );
-    stop_cheat_caller_address(deployment.peers.economy);
+    stop_cheat_caller_address(deployment.peers.bridge);
     (resource, lords)
 }
 fn token_balance(token: starknet::ContractAddress, owner: starknet::ContractAddress) -> u256 {
@@ -226,38 +226,43 @@ fn token_balance(token: starknet::ContractAddress, owner: starknet::ContractAddr
     )
 }
 #[test]
-fn wallet_liquidity_withdrawal_preserves_retention_fees_decimals_and_transfer_or_mint() {
-    for funded in array![false, true] {
-        let (deployment, source, _) = setup();
-        let (resource, lords) = configure_wallet(deployment, false);
-        if funded {
-            for token in array![resource, lords] {
-                super::fixtures::ITokenFixtureDispatcherTrait::seed(
-                    super::fixtures::ITokenFixtureDispatcher { contract_address: token },
-                    deployment.peers.economy,
-                    1000000000000000000000000,
-                );
-            }
+fn wallet_liquidity_withdrawal_preserves_retention_fees_and_mints_when_unfunded() {
+    assert_wallet_liquidity_withdrawal(false);
+}
+#[test]
+fn wallet_liquidity_withdrawal_preserves_retention_fees_and_transfers_when_funded() {
+    assert_wallet_liquidity_withdrawal(true);
+}
+fn assert_wallet_liquidity_withdrawal(funded: bool) {
+    let (deployment, source, _) = setup();
+    let (resource, lords) = configure_wallet(deployment, false);
+    if funded {
+        for token in array![resource, lords] {
+            super::fixtures::ITokenFixtureDispatcherTrait::seed(
+                super::fixtures::ITokenFixtureDispatcher { contract_address: token },
+                deployment.peers.bridge,
+                1000000000000000000000000,
+            );
         }
-        assert!(execute(deployment, add(source, 1000 * RESOURCE_PRECISION, 1000 * RESOURCE_PRECISION), 40));
-        assert!(execute_recorded_at(deployment, remove(0, 1000 * RESOURCE_PRECISION), 50, 1000));
-        assert_eq!(token_balance(resource, deployment.actor), 222500000000000000000);
-        assert_eq!(token_balance(lords, deployment.actor), 890000000000000000000);
-        assert_eq!(token_balance(resource, 0x777.try_into().unwrap()), 10000000000000000000);
-        assert_eq!(token_balance(resource, 0x888.try_into().unwrap()), 5000000000000000000);
-        assert_eq!(token_balance(lords, 0x777.try_into().unwrap()), 40000000000000000000);
-        assert_eq!(token_balance(lords, 0x888.try_into().unwrap()), 20000000000000000000);
-        assert_eq!(
-            arrival(deployment, BANK, 50, 0),
-            array![
-                ResourceAmount { resource_type: 2, amount: 12500000000 },
-                ResourceAmount { resource_type: 37, amount: 50000000000 },
-            ]
-                .span(),
-        );
-        assert_eq!(lp(deployment), 0);
-        assert_eq!(market(deployment), Default::default());
     }
+    assert!(execute(deployment, add(source, 1000 * RESOURCE_PRECISION, 1000 * RESOURCE_PRECISION), 40));
+    assert!(execute_recorded_at(deployment, remove(0, 1000 * RESOURCE_PRECISION), 50, 1000));
+    assert_eq!(token_balance(resource, deployment.actor), 222500000000000000000);
+    assert_eq!(token_balance(lords, deployment.actor), 890000000000000000000);
+    assert_eq!(token_balance(resource, 0x777.try_into().unwrap()), 10000000000000000000);
+    assert_eq!(token_balance(resource, 0x888.try_into().unwrap()), 5000000000000000000);
+    assert_eq!(token_balance(lords, 0x777.try_into().unwrap()), 40000000000000000000);
+    assert_eq!(token_balance(lords, 0x888.try_into().unwrap()), 20000000000000000000);
+    assert_eq!(
+        arrival(deployment, BANK, 50, 0),
+        array![
+            ResourceAmount { resource_type: 2, amount: 12500000000 },
+            ResourceAmount { resource_type: 37, amount: 50000000000 },
+        ]
+            .span(),
+    );
+    assert_eq!(lp(deployment), 0);
+    assert_eq!(market(deployment), Default::default());
 }
 #[test]
 fn wallet_token_failure_rolls_back_prior_token_payments_fees_and_shares() {
@@ -386,9 +391,10 @@ fn bank_trade_and_withdrawal_configuration_are_independent_and_immutable() {
     crate::trade::ITradeDispatcherTrait::configure_trade(trade, 3, crate::trade::TradeRules { max_count: 7 });
     assert_eq!(crate::trade::ITradeDispatcherTrait::trade_rules(trade, 3).max_count, 7);
     assert_eq!(view(deployment).bank_rules(3).lp_fee_num, 3);
-    let withdrawals = crate::withdrawals::IWithdrawalsSafeDispatcher { contract_address: deployment.peers.economy };
+    let withdrawals = crate::withdrawals::IWithdrawalsSafeDispatcher { contract_address: deployment.peers.bridge };
     let rules = crate::withdrawals::IWithdrawalsSafeDispatcherTrait::withdrawal_rules(withdrawals, 3).unwrap();
     assert_eq!(rules.bank_fee_bps, 500);
+    start_cheat_caller_address(deployment.peers.bridge, super::authority());
     assert!(
         crate::withdrawals::IWithdrawalsSafeDispatcherTrait::configure_withdrawals(
             withdrawals, 3, rules, array![].span(),

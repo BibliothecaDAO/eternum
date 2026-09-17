@@ -45,13 +45,19 @@ pub trait IResourceToken<T> {
     fn transfer(ref self: T, recipient: ContractAddress, amount: u256) -> bool;
     fn mint(ref self: T, recipient: ContractAddress, amount: u256);
 }
-pub fn token_amount(token: ContractAddress, amount: u128) -> u256 {
+fn token_scale(token: ContractAddress) -> u256 {
     let decimals = IResourceTokenDispatcher { contract_address: token }.decimals();
     let mut scale: u256 = 1;
     for _ in 0_u8..decimals {
         scale *= 10;
     }
-    amount.into() * scale / crate::rules::RESOURCE_PRECISION.into()
+    scale
+}
+pub fn token_amount(token: ContractAddress, amount: u128) -> u256 {
+    amount.into() * token_scale(token) / crate::rules::RESOURCE_PRECISION.into()
+}
+pub fn resource_amount(token: ContractAddress, amount: u256) -> u128 {
+    (amount * crate::rules::RESOURCE_PRECISION.into() / token_scale(token)).try_into().unwrap()
 }
 pub fn transfer_or_mint(token: ContractAddress, recipient: ContractAddress, amount: u256) {
     let token = IResourceTokenDispatcher { contract_address: token };
@@ -174,13 +180,18 @@ pub mod WithdrawalState {
         fn retained_amount(
             self: @ComponentState<TContractState>, game_id: u32, resource_type: u8, amount: u128, completed: u32,
         ) -> u128 {
+            self.retained_tokens(game_id, resource_type, amount.into(), completed).try_into().unwrap()
+        }
+        fn retained_tokens(
+            self: @ComponentState<TContractState>, game_id: u32, resource_type: u8, amount: u256, completed: u32,
+        ) -> u256 {
             if resource_type == crate::resources::LORDS {
                 return amount;
             }
             let count = self.terms.read(game_id).retention_count;
             assert!(count != 0, "missing withdrawal rules");
             let rate = self.retention.read((game_id, core::cmp::min(completed, count - 1)));
-            let percent: u128 = if crate::resources::is_troop_resource(resource_type) {
+            let percent: u256 = if crate::resources::is_troop_resource(resource_type) {
                 rate.troop_percent.into()
             } else {
                 rate.resource_percent.into()

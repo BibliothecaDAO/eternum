@@ -30,6 +30,7 @@ pub struct SettlementPreset {
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct WithdrawalPreset {
+    pub deposits: crate::bridge::DepositRules,
     pub rules: crate::withdrawals::WithdrawalRules,
     pub tokens: Span<crate::withdrawals::ResourceToken>,
 }
@@ -67,7 +68,7 @@ pub fn initialize_game(
     configure_resources(peers.resources, game_id, preset.resources);
     configure_structures(peers, game_id, preset.structures);
     configure_settlement(peers.settlement, game_id, preset, params);
-    configure_economy(peers.economy, game_id, preset.economy);
+    configure_economy(peers, game_id, preset.economy);
     configure_season(peers, game_id, preset);
     initialize_map(peers.map, game_id, preset);
 }
@@ -129,7 +130,8 @@ fn configure_settlement(
         crate::village::IVillagesDispatcher { contract_address: address }, game_id, settlement.villages,
     );
 }
-fn configure_economy(address: ContractAddress, game_id: u32, preset: EconomyPreset) {
+fn configure_economy(peers: Peers, game_id: u32, preset: EconomyPreset) {
+    let address = peers.economy;
     crate::trade::ITradeDispatcherTrait::configure_trade(
         crate::trade::ITradeDispatcher { contract_address: address }, game_id, preset.trade,
     );
@@ -148,8 +150,11 @@ fn configure_economy(address: ContractAddress, game_id: u32, preset: EconomyPres
         crate::artificer::IArtificerDispatcher { contract_address: address }, game_id, preset.research_cost,
     );
     if let Some(withdrawals) = preset.withdrawals {
+        crate::bridge::IBridgeDispatcherTrait::configure_deposits(
+            crate::bridge::IBridgeDispatcher { contract_address: peers.bridge }, game_id, withdrawals.deposits,
+        );
         crate::withdrawals::IWithdrawalsDispatcherTrait::configure_withdrawals(
-            crate::withdrawals::IWithdrawalsDispatcher { contract_address: address },
+            crate::withdrawals::IWithdrawalsDispatcher { contract_address: peers.bridge },
             game_id,
             withdrawals.rules,
             withdrawals.tokens,

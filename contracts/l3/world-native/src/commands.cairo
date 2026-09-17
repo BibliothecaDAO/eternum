@@ -115,6 +115,8 @@ pub enum Command {
     ManageTroops: crate::troop_management::ManageTroops,
     GuardAttack: crate::combat_actions::GuardAttack,
     Raid: crate::combat_actions::Raid,
+    DepositResource: crate::bridge::Deposit,
+    WithdrawResource: crate::bridge::Withdraw,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]

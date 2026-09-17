@@ -6146,35 +6146,6 @@
           ]
         },
         {
-          "name": "RowSet",
-          "prefix": [
-            "0x3e0fff9a6a438c00f3149e5b4346c8677fcf93ff5a01eedb48b5d0d95eecd75",
-            "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
-          ],
-          "members": [
-            {
-              "name": "version",
-              "type": "core::integer::u8",
-              "kind": "key"
-            },
-            {
-              "name": "model",
-              "type": "core::felt252",
-              "kind": "key"
-            },
-            {
-              "name": "keys",
-              "type": "core::array::Span::<core::felt252>",
-              "kind": "data"
-            },
-            {
-              "name": "values",
-              "type": "core::array::Span::<core::felt252>",
-              "kind": "data"
-            }
-          ]
-        },
-        {
           "name": "StoryEvent",
           "prefix": [
             "0x33b7d96bc1ff34b0a89214516b6ef5d2b8bdd9c301222eda2a1e96f78b84b96"
@@ -6343,58 +6314,6 @@
           ],
           "outputs": [],
           "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "configure_withdrawals",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "rules",
-              "type": "world_native::withdrawals::WithdrawalRules"
-            },
-            {
-              "name": "tokens",
-              "type": "core::array::Span::<world_native::withdrawals::ResourceToken>"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "withdrawal_rules",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "world_native::withdrawals::WithdrawalRules"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "resource_token",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::market::MarketKey"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::starknet::contract_address::ContractAddress"
-            }
-          ],
-          "state_mutability": "view"
         },
         {
           "type": "function",
@@ -8207,6 +8126,356 @@
           "state_mutability": "external"
         }
       ]
+    },
+    "bridge": {
+      "contract": "BridgeDomain",
+      "systems": [],
+      "events": [
+        {
+          "name": "RowSet",
+          "prefix": [
+            "0x1517f684ec2bc21ca20251bbef26b7ad0434759388fc50e84858abf49e4024b",
+            "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "model",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "keys",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            },
+            {
+              "name": "values",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            }
+          ]
+        },
+        {
+          "name": "RowSet",
+          "prefix": [
+            "0x3e0fff9a6a438c00f3149e5b4346c8677fcf93ff5a01eedb48b5d0d95eecd75",
+            "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "model",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "keys",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            },
+            {
+              "name": "values",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            }
+          ]
+        },
+        {
+          "name": "RowSet",
+          "prefix": [
+            "0x3e50265c9f967c83de816cef243b045f3dd470037ce9fcd20fbd6884b8c572d",
+            "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "model",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "keys",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            },
+            {
+              "name": "values",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            }
+          ]
+        },
+        {
+          "name": "StoryEvent",
+          "prefix": [
+            "0x3e50265c9f967c83de816cef243b045f3dd470037ce9fcd20fbd6884b8c572d",
+            "0x33b7d96bc1ff34b0a89214516b6ef5d2b8bdd9c301222eda2a1e96f78b84b96"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "game_id",
+              "type": "core::integer::u32",
+              "kind": "key"
+            },
+            {
+              "name": "id",
+              "type": "core::integer::u32",
+              "kind": "key"
+            },
+            {
+              "name": "owner",
+              "type": "core::option::Option::<core::starknet::contract_address::ContractAddress>",
+              "kind": "key"
+            },
+            {
+              "name": "entity_id",
+              "type": "core::option::Option::<core::integer::u32>",
+              "kind": "key"
+            },
+            {
+              "name": "tx_hash",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "story",
+              "type": "world_native::ownership::Story",
+              "kind": "data"
+            },
+            {
+              "name": "timestamp",
+              "type": "core::integer::u64",
+              "kind": "data"
+            }
+          ]
+        }
+      ],
+      "entrypoints": [
+        {
+          "type": "function",
+          "name": "configure_withdrawals",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "rules",
+              "type": "world_native::withdrawals::WithdrawalRules"
+            },
+            {
+              "name": "tokens",
+              "type": "core::array::Span::<world_native::withdrawals::ResourceToken>"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "withdrawal_rules",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "world_native::withdrawals::WithdrawalRules"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "resource_token",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::market::MarketKey"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::starknet::contract_address::ContractAddress"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "domain_state",
+          "inputs": [],
+          "outputs": [
+            {
+              "type": "world_native::lifecycle::DomainState"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "configure",
+          "inputs": [
+            {
+              "name": "peers",
+              "type": "world_native::lifecycle::Peers"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "activate",
+          "inputs": [],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "upgrade",
+          "inputs": [
+            {
+              "name": "class_hash",
+              "type": "core::starknet::class_hash::ClassHash"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "configure_deposits",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "rules",
+              "type": "world_native::bridge::DepositRules"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "deposit_rules",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "world_native::bridge::DepositRules"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "deposit_resource",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "command",
+              "type": "world_native::bridge::Deposit"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "withdraw_resource",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "command",
+              "type": "world_native::bridge::Withdraw"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "withdraw_bank_resources",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "bank_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "resource_type",
+              "type": "core::integer::u8"
+            },
+            {
+              "name": "amount",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "timestamp",
+              "type": "core::integer::u64"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        }
+      ]
     }
   },
   "models": [
@@ -9140,10 +9409,59 @@
       "valueLength": 1
     },
     {
+      "name": "DepositRules",
+      "identity": "0x4465706f73697452756c6573",
+      "owners": [
+        "bridge"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "paused",
+          "type": "core::bool",
+          "id": "0x706175736564",
+          "feltLength": 1
+        },
+        {
+          "name": "realm_fee_bps",
+          "type": "core::integer::u16",
+          "id": "0x7265616c6d5f6665655f627073",
+          "feltLength": 1
+        },
+        {
+          "name": "velords_fee_bps",
+          "type": "core::integer::u16",
+          "id": "0x76656c6f7264735f6665655f627073",
+          "feltLength": 1
+        },
+        {
+          "name": "season_fee_bps",
+          "type": "core::integer::u16",
+          "id": "0x736561736f6e5f6665655f627073",
+          "feltLength": 1
+        },
+        {
+          "name": "client_fee_bps",
+          "type": "core::integer::u16",
+          "id": "0x636c69656e745f6665655f627073",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": 5
+    },
+    {
       "name": "WithdrawalRules",
       "identity": "0x5769746864726177616c52756c6573",
       "owners": [
-        "economy"
+        "bridge"
       ],
       "scope": "game",
       "keys": [
@@ -9210,7 +9528,7 @@
       "name": "ResourceToken",
       "identity": "0x5265736f75726365546f6b656e",
       "owners": [
-        "economy"
+        "bridge"
       ],
       "scope": "game",
       "keys": [
@@ -12168,7 +12486,8 @@
         "economy",
         "prizes",
         "registry",
-        "combat"
+        "combat",
+        "bridge"
       ],
       "scope": "deployment",
       "emitterKey": "address",
@@ -12190,7 +12509,7 @@
           "name": "peers",
           "type": "world_native::lifecycle::Peers",
           "id": "0x7065657273",
-          "feltLength": 10
+          "feltLength": 11
         },
         {
           "name": "active",
@@ -12200,7 +12519,7 @@
         }
       ],
       "keyLength": 1,
-      "valueLength": 12
+      "valueLength": 13
     },
     {
       "name": "DomainClass",
@@ -12215,7 +12534,8 @@
         "economy",
         "prizes",
         "registry",
-        "combat"
+        "combat",
+        "bridge"
       ],
       "scope": "deployment",
       "emitterKey": "address",
@@ -12505,7 +12825,8 @@
         "structures",
         "resources",
         "economy",
-        "prizes"
+        "prizes",
+        "bridge"
       ],
       "scope": "game",
       "version": 1,
@@ -13832,6 +14153,80 @@
         }
       ]
     },
+    "world_native::bridge::Deposit": {
+      "type": "struct",
+      "name": "world_native::bridge::Deposit",
+      "members": [
+        {
+          "name": "structure_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "resource_type",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "amount",
+          "type": "core::integer::u256"
+        },
+        {
+          "name": "client_fee_recipient",
+          "type": "core::starknet::contract_address::ContractAddress"
+        }
+      ]
+    },
+    "world_native::bridge::DepositRules": {
+      "type": "struct",
+      "name": "world_native::bridge::DepositRules",
+      "members": [
+        {
+          "name": "paused",
+          "type": "core::bool"
+        },
+        {
+          "name": "realm_fee_bps",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "velords_fee_bps",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "season_fee_bps",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "client_fee_bps",
+          "type": "core::integer::u16"
+        }
+      ]
+    },
+    "world_native::bridge::Withdraw": {
+      "type": "struct",
+      "name": "world_native::bridge::Withdraw",
+      "members": [
+        {
+          "name": "structure_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "recipient",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "resource_type",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "amount",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "client_fee_recipient",
+          "type": "core::starknet::contract_address::ContractAddress"
+        }
+      ]
+    },
     "world_native::buildings::Building": {
       "type": "struct",
       "name": "world_native::buildings::Building",
@@ -14457,6 +14852,14 @@
         {
           "name": "Raid",
           "type": "world_native::combat_actions::Raid"
+        },
+        {
+          "name": "DepositResource",
+          "type": "world_native::bridge::Deposit"
+        },
+        {
+          "name": "WithdrawResource",
+          "type": "world_native::bridge::Withdraw"
         }
       ]
     },
@@ -15302,6 +15705,10 @@
         },
         {
           "name": "combat",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "bridge",
           "type": "core::starknet::contract_address::ContractAddress"
         }
       ]
@@ -16194,6 +16601,10 @@
       "type": "struct",
       "name": "world_native::presets::WithdrawalPreset",
       "members": [
+        {
+          "name": "deposits",
+          "type": "world_native::bridge::DepositRules"
+        },
         {
           "name": "rules",
           "type": "world_native::withdrawals::WithdrawalRules"
@@ -18427,5 +18838,5 @@
       ]
     }
   },
-  "identity": "831466cbdf61f0aaa37d7ed34d43dd3a8c639a4bdc30de6cb9c225f0d995645a"
+  "identity": "f3f125e5717106702cc7ff6f4b5db2c435cb10d1e474b7e6062f75e2f16cbc7d"
 }

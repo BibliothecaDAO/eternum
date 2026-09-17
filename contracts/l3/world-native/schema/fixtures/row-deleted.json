@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "831466cbdf61f0aaa37d7ed34d43dd3a8c639a4bdc30de6cb9c225f0d995645a",
+  "schemaIdentity": "f3f125e5717106702cc7ff6f4b5db2c435cb10d1e474b7e6062f75e2f16cbc7d",
   "deployment": {
     "season": "0x101",
     "map": "0x102",
@@ -10,7 +10,8 @@
     "economy": "0x107",
     "prizes": "0x108",
     "registry": "0x109",
-    "combat": "0x10a"
+    "combat": "0x10a",
+    "bridge": "0x10b"
   },
   "raw": {
     "from_address": "0x100",

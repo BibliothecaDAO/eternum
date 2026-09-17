@@ -379,6 +379,13 @@ count, and the resource-token whitelist. Its projected rules include the ladder;
 representation of that span. Token amounts retain the external token's decimals. Completed counts are read from the
 hyperstructure component below. Regional bank ids retain the six reserved values below the maximum entity id.
 
+Bridge owns `WithdrawalState` and `BridgeState`; Economy calls Bridge for external bank-liquidity payouts. Bridge stores
+immutable deposit terms in `deposits: Map<game_id, Option<DepositRules>>`. Arrival balances and weights remain in
+Resources. Village bridge fees use the stored connected realm and its current owner; withdrawal fees retain transport
+time and donkey costs. The fee is carved out of the withdrawal rather than burned a second time. `Peers` appends Bridge;
+moving withdrawal custody and extending this topology requires a fresh deployment, with no live upgrade compatibility
+claimed for the earlier topology.
+
 Hyperstructure construction is owned by Economy. `HyperstructureState` stores one stage instead of overlapping
 initialized/completed flags, sparse contributed amounts keyed by `(game_id, structure_id, resource_type)`, immutable
 construction ranges, and a shareholder allocation with its accrual cursor and multiplier. Requirements and completion
