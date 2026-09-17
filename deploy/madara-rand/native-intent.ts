@@ -14,6 +14,11 @@ export interface NativeFixture {
   game: string;
   nativeSource: string;
   provision: { realmCount: number; realmIds: number[]; layers?: ("surface" | "ethereal")[] };
+  geometry?: {
+    realm: { alt: boolean; x: number; y: number };
+    explorer: { alt: boolean; x: number; y: number };
+    spire?: { alt: boolean; x: number; y: number };
+  }[];
   explorers?: number[];
   firstExploreNonce?: string;
 }

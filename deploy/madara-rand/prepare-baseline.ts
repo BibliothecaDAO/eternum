@@ -26,6 +26,7 @@ assert(Number.isSafeInteger(count) && count > 0 && count <= 1024);
 const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
 const fixture = JSON.parse(readFileSync(nativeFixturePath, "utf8"));
 assert.equal(fixture.rpc, "http://127.0.0.1:15050/rpc/v0_9_0");
+assert.equal(fixture.geometry?.length, count, "Prepare native coordinates before the matched baseline");
 const provider = new RpcProvider({ nodeUrl: fixture.rpc });
 const admin = fixtureAdmin(provider);
 const player = createMadaraAccount(provider, fixture.actor, "0x3039");
@@ -84,7 +85,7 @@ transactions.push({ action: "chain_config", hash: chain.transactionHash });
 const preset = await registerPreset(admin, buildPresetRegistration(config, 1), manifest);
 transactions.push({ action: "preset", hash: preset.transactionHash });
 let gameId = 0;
-for (let index = 1; index <= 7; index++) {
+for (let index = 1; index <= Number(BigInt(fixture.game)); index++) {
   const now = (await provider.getBlock("latest")).timestamp;
   const params = buildCreateGameParams(config, {
     gameName: `baseline_${index}`,
@@ -109,7 +110,7 @@ for (let start = 0; start < count; start += 8) {
       call("bootstrap", {
         game_id: gameId,
         actor: fixture.actor,
-        coord: { alt: false, x: 2147483626 + (start + offset) * 20, y: 2147483626 },
+        coord: fixture.geometry[start + offset].realm,
         grants: [
           [26, "1000000000000"],
           [35, "5000000000000"],
@@ -126,7 +127,7 @@ for (let start = 1; start < count; start += 16) {
     Array.from({ length: Math.min(8, Math.ceil((count - start) / 2)) }, (_, offset) =>
       call("spire", {
         game_id: gameId,
-        coord: { alt: false, x: 2147483627 + (start + offset * 2) * 20, y: 2147483627 },
+        coord: fixture.geometry[start + offset * 2].spire,
       }),
     ),
   );
@@ -151,10 +152,13 @@ async function waitRows(model: string, expected: number) {
 }
 const homes = (await waitRows("Structure", count))
   .map((row) => row.value)
-  .filter((row) => BigInt(row.owner) === BigInt(fixture.actor))
-  .sort((left, right) => Number(BigInt(left.base.coord_x) - BigInt(right.base.coord_x)));
+  .filter((row) => BigInt(row.owner) === BigInt(fixture.actor));
 assert.equal(homes.length, count);
-const realmIds = homes.map((row) => Number(BigInt(row.entity_id)));
+const realmIds: number[] = fixture.geometry.map(({ realm }: { realm: { x: number; y: number } }) => {
+  const home = homes.find((row) => Number(row.base.coord_x) === realm.x && Number(row.base.coord_y) === realm.y);
+  assert(home, "Baseline realm missing at the native planner coordinate");
+  return Number(home.entity_id);
+});
 const contract = (name: string) => {
   const found = manifest.contracts.find((entry: { tag: string }) => entry.tag === `s2-${name}`);
   assert(found, `Missing baseline ${name}`);
@@ -213,6 +217,21 @@ for (let start = 1; start < count; start += 16) {
     player,
   );
 }
+async function verifyExplorerPositions() {
+  const deadline = Date.now() + 30000;
+  while (Date.now() < deadline) {
+    const positioned = (await rows("ExplorerTroops")).map((row) => row.value);
+    const matches = explorers.every((id, index) => {
+      const actual = positioned.find((row) => Number(row.explorer_id) === id)?.coord;
+      const expected = fixture.geometry[index].explorer;
+      return actual && actual.alt === expected.alt && Number(actual.x) === expected.x && Number(actual.y) === expected.y;
+    });
+    if (matches) return;
+    await sleep(100);
+  }
+  throw new Error("Baseline explorers did not reach the native starting coordinates");
+}
+await verifyExplorerPositions();
 writeFileSync(
   output,
   JSON.stringify(
@@ -225,6 +244,7 @@ writeFileSync(
       artifactsPath,
       realmIds,
       explorers,
+      geometry: fixture.geometry,
       layers: explorers.map((_, index) => (index % 2 ? "ethereal" : "surface")),
       manifestPath,
       source: "unchanged pinned Dojo exploration; the current zero-provider transaction-hash placeholder is retained",
