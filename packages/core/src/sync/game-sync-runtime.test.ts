@@ -459,6 +459,37 @@ describe("GameSyncRuntime lifecycle", () => {
     await expect(reverted).rejects.toThrow("game rule");
   });
 
+  it("waits for scheduled rows before publishing a transaction status or releasing its waiters", async () => {
+    const memory = createMemoryStore();
+    const harness = createSessionHarness({ store: memory.store, transactionStatusChannel: true });
+    let flush: (() => void) | undefined;
+    harness.session.scheduler = {
+      schedule: (task) => {
+        flush = task;
+        return () => {};
+      },
+    };
+    const published = vi.fn();
+    harness.session.onTransaction = published;
+    const runtime = new GameSyncRuntime();
+    await runtime.startSession(harness.session);
+    const completed = vi.fn();
+    const wait = runtime.waitForTransaction("0xabc").then(completed);
+    harness.emitEntityBatch({
+      entities: [entity("player", { ActionNonce: { next_nonce: 2 } })],
+      preconfirmed: true,
+      transactionHash: "0xabc",
+    });
+    harness.emitTransaction({ block: null, hash: "0xabc", status: "PRE_CONFIRMED" });
+    await flushMicrotasks();
+    expect(completed).not.toHaveBeenCalled();
+    expect(published).not.toHaveBeenCalled();
+    flush!();
+    await wait;
+    expect(memory.rows.get("player")).toEqual({ ActionNonce: { next_nonce: 2 } });
+    expect(published).toHaveBeenCalledOnce();
+  });
+
   it("refuses transaction waits when the transport has no status channel", async () => {
     const harness = createSessionHarness({});
     const runtime = new GameSyncRuntime();

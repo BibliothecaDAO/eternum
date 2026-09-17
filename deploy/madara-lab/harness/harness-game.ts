@@ -4,6 +4,7 @@ import {
   createGameActions,
   FELT_CENTER,
   ResourceManager,
+  StaminaManager,
   multiplyByPrecision,
   type ArmyPathIndexes,
   type GameActions,
@@ -59,6 +60,7 @@ export interface HarnessGame {
   explorerOf(structureId: ID): ID | undefined;
   explorer(explorerId: ID): ExplorerRow | undefined;
   explorerStamina(explorerId: ID, armiesTick: number): number;
+  explorerMaxStamina(explorerId: ID): number;
   /** The cheapest stamina an action of this kind can cost under the game's rulebook. */
   minimumStaminaFor(kind: "move" | "explore"): number;
   production(structureId: ID): ProductionState | undefined;
@@ -126,6 +128,10 @@ export function createHarnessGame(client: GameClient): HarnessGame {
       if (!stamina) throw new Error(`Explorer ${explorerId} has no synchronized stamina`);
       return Number(stamina.amount);
     },
+    explorerMaxStamina: (explorerId) => {
+      const { troops } = store.require("ExplorerTroops", { game_id, explorer_id: explorerId });
+      return StaminaManager.getMaxStamina(troops.category, troops.tier);
+    },
     minimumStaminaFor: (kind) =>
       kind === "explore" ? configManager.getExploreStaminaCost() : configManager.getMinTravelStaminaCost(),
     production: (structureId) => {
@@ -169,8 +175,8 @@ const configuredTickSeconds = (tick: TickIds): number => {
 
 /**
  * The provider announces every hash it sent with the signer that sent it, and a bot submits one action at a time,
- * so the next announcement for this signer is this action's. The action itself resolves once the client saw the
- * transaction on Herald's stream (the provider waits on runtime.waitForTransaction) or gave up on it.
+ * so the next announcement for this signer is this action's. Confirmation waits explicitly for applied Herald state;
+ * queued calls may resolve at submission and cannot serve as that barrier.
  */
 const captureSubmission = (
   client: GameClient,
@@ -191,12 +197,15 @@ const captureSubmission = (
     const onSubmitted = (event: SubmittedEvent) => {
       if (!event.signerAddress || normalizeAddress(event.signerAddress) !== signer) return;
       settle();
-      resolve({ transactionHash: event.transactionHash, confirmed });
+      resolve({
+        transactionHash: event.transactionHash,
+        confirmed: client.runtime.waitForTransaction(event.transactionHash),
+      });
     };
     provider.on("transactionSubmitted", onSubmitted);
-    const confirmed = act();
+    const submitted = act();
     // A failure before the hash is announced is a submit failure; after it, the awaiting side reads the rejection.
-    confirmed.catch((error: unknown) => {
+    submitted.catch((error: unknown) => {
       settle();
       reject(error);
     });

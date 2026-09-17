@@ -127,6 +127,24 @@ describe("Madara harness workload", () => {
     });
   });
 
+  it("waits for setup stamina to regenerate before measuring the workload", async () => {
+    spyOn(configManager, "getMapCenter").mockReturnValue(0);
+    const world = fakeWorld();
+    const bot = readyHarnessBot(world);
+    let reads = 0;
+    world.game.explorerStamina = () => (++reads === 1 ? 119 : 120);
+    const workload = await runWorkload({
+      bots: [bot],
+      game: world.game,
+      intervalSeconds: 1,
+      minutes: 0.001,
+      provider: confirmingProvider(),
+    });
+    expect(workload.readinessWaitMs).toBeGreaterThanOrEqual(1_000);
+    expect(workload.actions).toHaveLength(1);
+    expect(workload.actions[0].outcome).toBe("completed");
+  });
+
   it("plays every explorer step through the bot's client actions and reads the result from the shared store", async () => {
     spyOn(configManager, "getMapCenter").mockReturnValue(0);
     const world = fakeWorld();
@@ -395,7 +413,11 @@ function fakeWorld(): FakeWorld {
       moves.push({ explorerId, path });
       const step = path.at(-1)!.hex;
       const current = explorers.get(explorerId)!;
-      explorers.set(explorerId, { ...current, coord: { x: step.col, y: step.row }, staminaAmount: current.staminaAmount - 10n });
+      explorers.set(explorerId, {
+        ...current,
+        coord: { x: step.col, y: step.row },
+        staminaAmount: current.staminaAmount - 10n,
+      });
       explored.add(key({ x: step.col, y: step.row }));
       changed();
     },
@@ -412,9 +434,15 @@ function fakeWorld(): FakeWorld {
     explorerOf: () => undefined,
     explorer: (explorerId) => explorers.get(explorerId),
     explorerStamina: (explorerId) => Number(explorers.get(explorerId)!.staminaAmount),
+    explorerMaxStamina: () => 120,
     minimumStaminaFor: (kind) => (kind === "explore" ? 30 : 10),
     production: (structureId) => production.get(structureId),
-    armyPathIndexes: () => ({ structureHexes: new Map(), armyHexes: new Map(), exploredHexes: new Map(), chestHexes: new Map() }),
+    armyPathIndexes: () => ({
+      structureHexes: new Map(),
+      armyHexes: new Map(),
+      exploredHexes: new Map(),
+      chestHexes: new Map(),
+    }),
     settle: async () => {},
     provision: async () => {},
     produceWood: async (_signer, structureId) => {

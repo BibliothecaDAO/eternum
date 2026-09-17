@@ -127,7 +127,7 @@ export class PromiseQueue {
 
   constructor(
     private executor: TransactionExecutor,
-    options?: { batchDelayMs?: number; batchDelayConfig?: BatchDelayConfig },
+    private readonly options?: { batchDelayMs?: number; batchDelayConfig?: BatchDelayConfig; batchCalls?: boolean },
   ) {
     if (options?.batchDelayConfig) {
       this.delayConfig = options.batchDelayConfig;
@@ -196,7 +196,8 @@ export class PromiseQueue {
   private processQueue() {
     const items = this.queue;
     this.queue = [];
-    for (const batch of buildSubmissionBatches(items)) {
+    const batches = this.options?.batchCalls === false ? items.map((item) => [item]) : buildSubmissionBatches(items);
+    for (const batch of batches) {
       void this.submitBatch(batch);
     }
   }

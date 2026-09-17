@@ -5,7 +5,6 @@ import path from "node:path";
 import type { HarnessAccount } from "./account-factory";
 import type { LedgerHarnessEvidence } from "./ledger-mode";
 import {
-  FIRST_ACTION_REQUIRED_STAMINA,
   RECEIPT_POLL_INTERVAL_MS,
   createRpcMetrics,
   type MeasuredRpcMethod,
@@ -247,8 +246,7 @@ function buildHarnessManifest(
       blockingReverts: analysis.blockingReverts.length,
       revertReasons: analysis.revertReasons,
       readiness: {
-        condition: "every_bot_has_explorer_stamina_for_first_action",
-        requiredStamina: FIRST_ACTION_REQUIRED_STAMINA,
+        condition: "every_explorer_at_configured_stamina_capacity",
         waitMs: input.workload.readinessWaitMs,
       },
       startedAt: input.workload.startedAt,

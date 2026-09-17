@@ -153,6 +153,31 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     });
   });
 
+  it("serializes all native actions per player until the stream barrier without blocking another player", async () => {
+    const provider = makeProvider();
+    let release!: (value: unknown) => void;
+    const barrier = new Promise((resolve) => {
+      release = resolve;
+    });
+    provider.nativeSubmission = vi.fn().mockImplementation(async (signer: { address: string }, call: Call) => ({
+      transaction_hash: signer.address === "0xabc" ? (call.entrypoint === "first" ? "0x1" : "0x2") : "0x3",
+    }));
+    provider.waitForTransactionWithCheckInternal = vi
+      .fn()
+      .mockImplementation((hash: string) => (hash === "0x1" ? barrier : Promise.resolve({ isReverted: () => false })));
+    const firstSigner = { address: "0xabc" };
+    const options = { waitForConfirmation: false };
+    const call = (entrypoint: string): Call => ({ contractAddress: "0x123", entrypoint, calldata: [] });
+    await provider.executeAndCheckTransaction(firstSigner, call("first"), undefined, options);
+    const next = provider.executeAndCheckTransaction(firstSigner, call("second"), undefined, options);
+    await provider.executeAndCheckTransaction({ address: "0xdef" }, call("other"), undefined, options);
+    expect(provider.nativeSubmission).toHaveBeenCalledTimes(2);
+    expect(provider.nativeSubmission.mock.calls.map(([signer]: any[]) => signer.address)).toEqual(["0xabc", "0xdef"]);
+    release({ isReverted: () => false });
+    await next;
+    expect(provider.nativeSubmission).toHaveBeenCalledTimes(3);
+  });
+
   it("serializes non-explore VRF submissions for the same signer/source when waitForConfirmation is false", async () => {
     const provider = makeProvider();
     provider.VRF_PROVIDER_ADDRESS = "0x999";

@@ -329,7 +329,7 @@ export class EternumProvider extends EventEmitter {
     // No timed batching: appchain txs land in <1s, so waiting to merge actions only adds
     // latency (and a merged multicall makes one revert fail unrelated actions). The queue
     // stays for per-signer serialization; a backlog still coalesces naturally.
-    this.promiseQueue = new PromiseQueue(this, { batchDelayMs: 0 });
+    this.promiseQueue = new PromiseQueue(this, { batchDelayMs: 0, batchCalls: !("native" in this.manifest) });
   }
 
   public execute(signer: AccountInterface, calls: AllowArray<Call>, _namespace?: string, details?: UniversalDetails) {
@@ -504,6 +504,7 @@ export class EternumProvider extends EventEmitter {
     signer: Account | AccountInterface,
     transactionDetails: AllowArray<Call>,
   ): string | undefined {
+    if (this.nativeSubmission) return `native:${this.gameId}:${this.normalizeAddress(signer.address)}`;
     if (txType === TransactionType.EXPLORE) {
       return this.getExploreSerializationKey(signer, transactionDetails);
     }
@@ -943,9 +944,8 @@ export class EternumProvider extends EventEmitter {
     const vrfSerializationKey = this.getTransactionSerializationKey(txType, signer, transactionDetails);
     let releaseVrfExecutionLock: (() => void) | undefined;
     if (vrfSerializationKey) {
-      // Explores of the same explorer (and VRF requests from the same source)
-      // serialise here by design: the next explore's calls are built from the
-      // position the previous one leaves behind. Every other action pipelines.
+      // Native actions share the player's recorded nonce; the next command signs only after Herald applies it.
+      // Legacy explores still serialize by explorer or randomness source.
       releaseVrfExecutionLock = await this.acquireVrfExecutionLock(vrfSerializationKey);
       if (txType === TransactionType.EXPLORE) {
         this.emit("transactionProgress", {
