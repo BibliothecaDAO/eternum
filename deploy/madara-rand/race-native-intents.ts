@@ -1,9 +1,8 @@
 #!/usr/bin/env bun
 import assert from "node:assert/strict";
 import { writeFileSync } from "node:fs";
-import { setTimeout as sleep } from "node:timers/promises";
 import { RpcProvider } from "starknet";
-import { admissionFor, commandArguments, exploreArguments, readFixture, signedRequest } from "./native-intent";
+import { admissionFor, commandArguments, exploreArguments, readFixture, signedRequest, waitForOutcome } from "./native-intent";
 
 const [path, output] = process.argv.slice(2);
 if (!path || !output) throw new Error("usage: race-native-intents.ts FIXTURE_JSON OUTPUT_JSON");
@@ -17,18 +16,6 @@ async function submit(request: { intent: string[]; r: string; s: string }) {
     signal: AbortSignal.timeout(30000),
   });
   return { status: response.status, body: await response.text() };
-}
-async function result(order: string) {
-  const deadline = Date.now() + 30000;
-  while (Date.now() < deadline) {
-    const value = await provider.callContract(
-      { contractAddress: fixture.execution.address, entrypoint: "get_result", calldata: [order] },
-      "pre_confirmed",
-    );
-    if (BigInt(value[0]) !== 0n) return value;
-    await sleep(10);
-  }
-  throw new Error("Accepted result remains pending; preserve its ticket");
 }
 const admission = await admissionFor(provider, fixture);
 const args = exploreArguments(fixture, admission[3]);
@@ -45,8 +32,8 @@ assert.equal(winners.size, 1, "Conflicting nonce admitted more than one action")
 assert.equal(responses.filter((entry) => entry.status === 200).length, 16);
 for (const response of responses.filter((entry) => entry.status !== 200))
   assert(response.status >= 400 && response.status < 500, response.body);
-const executed = await result(admission[4]);
-assert.equal(BigInt(executed[0]), 1n);
+const executed = await waitForOutcome(provider, fixture, "http://127.0.0.1:15081/actions", [...winners][0]);
+assert.equal(BigInt(executed.status), 1n);
 const following = await admissionFor(provider, fixture);
 assert.equal(BigInt(following[3]), BigInt(admission[3]) + 1n);
 assert.equal(BigInt(following[4]), BigInt(admission[4]) + 1n);
@@ -59,11 +46,11 @@ const { action, ...rejectedRequest } = signedRequest(
 );
 const acknowledgement = await submit(rejectedRequest);
 assert.equal(acknowledgement.status, 200, acknowledgement.body);
-const rejected = await result(following[4]);
-assert.equal(BigInt(rejected[0]), 2n, "Invalid direction was not a terminal rejection");
+const rejected = await waitForOutcome(provider, fixture, "http://127.0.0.1:15081/actions", action);
+assert.equal(BigInt(rejected.status), 2n, "Invalid direction was not a terminal rejection");
 const retry = await submit(rejectedRequest);
 assert.deepEqual(retry, acknowledgement);
-assert.deepEqual(await result(following[4]), rejected, "Retry changed the accepted binding or terminal result");
+assert.deepEqual(await waitForOutcome(provider, fixture, "http://127.0.0.1:15081/actions", action), rejected, "Retry changed the accepted binding or terminal result");
 const consumed = await admissionFor(provider, fixture);
 assert.equal(BigInt(consumed[3]), BigInt(following[3]) + 1n);
 assert.equal(BigInt(consumed[4]), BigInt(following[4]) + 1n);

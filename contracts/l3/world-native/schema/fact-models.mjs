@@ -441,15 +441,6 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
       "address",
     ),
     model("Authentication", ["season"], "deployment", domainKey, struct("season::Authentication"), "address"),
-    model("ExecutionHead", ["season"], "deployment", domainKey, struct("recording::ExecutionHead"), "address"),
-    model(
-      "ExecutionResult",
-      ["season"],
-      "deployment",
-      [...domainKey, ...method("season", "get_result").inputs],
-      types.get(method("season", "get_result").outputs[0].type).members,
-      "address",
-    ),
     model("OwnershipRulesReady", ["season"], "game", method("season", "ownership_rules_ready").inputs, [
       { name: "ready", type: "core::bool" },
     ]),

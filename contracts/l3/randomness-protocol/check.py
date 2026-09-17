@@ -74,8 +74,8 @@ def main():
     require_clean_sources(madara, rust_roots)
     require_clean_sources(protocol, cairo_roots)
     sources = collect_sources(roots)
-    fixture = protocol / "tests/fixtures/v1.txt"
-    for name in ["v1.txt", "context-v1.txt"]:
+    fixture = protocol / "tests/fixtures/v2.txt"
+    for name in ["v2.txt", "context-v1.txt"]:
         if (protocol / "tests/fixtures" / name).read_bytes() != (rust / "tests/fixtures" / name).read_bytes():
             raise SystemExit(f"Rust and Cairo fixtures differ: {name}")
     gates = [

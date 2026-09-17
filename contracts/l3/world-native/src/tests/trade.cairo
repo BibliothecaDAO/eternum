@@ -44,7 +44,10 @@ fn balance(deployment: super::Deployment, key: ResourceKey, resource_type: u8) -
         .resource_balance(ResourceSlot { game_id: key.game_id, entity_id: key.entity_id, resource_type })
 }
 fn create(deployment: super::Deployment, command: CreateOrder) -> TradeKey {
-    assert!(execute(deployment, Command::CreateTradeOrder(command), 40));
+    create_at(deployment, command, 40)
+}
+fn create_at(deployment: super::Deployment, command: CreateOrder, timestamp: u64) -> TradeKey {
+    assert!(execute(deployment, Command::CreateTradeOrder(command), timestamp));
     let view = ITradeDispatcher { contract_address: deployment.peers.economy };
     let mut latest = 0;
     for trade_id in 1_u32..100 {
@@ -160,9 +163,12 @@ fn recorded_trade_times_survive_outages_and_cancel_has_only_game_grace() {
     let key = create(deployment, offer(maker));
     assert!(execute_recorded_at(deployment, accept(key, taker, 1), 50, 1000));
     assert_eq!(arrival(deployment, taker, 50, 20), array![ResourceAmount { resource_type: 2, amount: 10 }].span());
-    assert_terminal_rejection(deployment, Command::CancelTradeOrder(key.trade_id), 211);
     assert!(execute_recorded_at(deployment, Command::CancelTradeOrder(key.trade_id), 210, 1000));
     assert_eq!(balance(deployment, maker, 2), 990);
+    let (late, maker, _) = setup();
+    let open = create(late, offer(maker));
+    assert_terminal_rejection(late, Command::CancelTradeOrder(open.trade_id), 211);
+    assert!(ITradeDispatcher { contract_address: late.peers.economy }.trade_order(open).is_some());
 }
 #[test]
 #[feature("safe_dispatcher")]
@@ -258,7 +264,7 @@ fn insufficient_payment_or_donkeys_reverts_the_entire_fill() {
             50,
         ),
     );
-    let second = create(deployment, offer(maker));
+    let second = create_at(deployment, offer(maker), 50);
     assert_terminal_rejection(deployment, accept(second, taker, 1), 50);
     assert_eq!(balance(deployment, taker, 3), 1000);
 }

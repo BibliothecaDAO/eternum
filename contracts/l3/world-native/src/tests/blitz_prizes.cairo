@@ -331,7 +331,7 @@ fn assert_prize_recipient(uses_ledger: bool) {
             if let crate::ownership::Story::PrizeResult(result) = story {
                 assert_eq!(result.player, d.actor);
                 assert_eq!(result.owner, if uses_ledger {
-                    player(0x333)
+                    player(0x444)
                 } else {
                     d.actor
                 });

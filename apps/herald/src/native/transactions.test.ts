@@ -1,10 +1,28 @@
+import { NativeWorldFold } from "./world-fold";
 import { CallData, hash, shortString } from "starknet";
 import { describe, expect, it, vi } from "vitest";
 import { NativeLiveWorld as LiveWorld } from "./live-world";
 import type { MadaraRpc } from "../madara-rpc";
 import { WorldEventDecodeMonitor } from "../world-event-decoder";
-import { manifest, receipt, rowEvent, schema, setup } from "./fixtures";
+import { manifest, receipt, schema, setup } from "./fixtures";
 import { transactionGameIds } from "./transactions";
+
+function executionEvent(status: number, nonceConsumed = true, nonce = 0, order = 1) {
+  const layout = schema.domains.season.events.find((event) => event.name === "ExecutionRecorded")!;
+  return {
+    from_address: manifest.world.address,
+    keys: layout.prefix,
+    data: [
+      "1",
+      "0x111",
+      String(nonce),
+      nonceConsumed ? "1" : "0",
+      String(order),
+      String(status),
+      status === 2 ? shortString.encodeShortString("GAMEPLAY_REJECTED") : "0",
+    ],
+  };
+}
 
 function call(game: number, entrypoint = "execute") {
   const abi = [...Object.values(schema.types), ...schema.domains.season.entrypoints];
@@ -62,11 +80,7 @@ describe("native transaction receipt routing", () => {
       const connection = live.attach("1", { send: (value) => messages.push(JSON.parse(value)) });
       live.resume(connection, { type: "resume", epoch: "old", seq: 0 });
       messages.length = 0;
-      const result = rowEvent(
-        "ExecutionResult",
-        [manifest.world.address, "1"],
-        ["2", "9", shortString.encodeShortString("GAMEPLAY_REJECTED"), "10"],
-      );
+      const result = executionEvent(2);
       const rejected = { ...receipt([result], "0x124"), finality_status };
       live.acceptReceipt(rejected);
       live.acceptTransaction({
@@ -80,7 +94,7 @@ describe("native transaction receipt routing", () => {
       expect(JSON.stringify(transactions)).toContain("GAMEPLAY_REJECTED");
       expect(rejected.execution_status).toBe("SUCCEEDED");
       native.applyReceipt(fold, rejected, 10, 0);
-      expect(BigInt(String(fold.modelRows("ExecutionResult")[0].value.status))).toBe(2n);
+      expect(BigInt(String(fold.modelRows("ActionNonce")[0].value.next_nonce))).toBe(1n);
       expect(native.receiptFailures).toBe(0);
       expect(native.halted).toBeUndefined();
       if (finality_status === "ACCEPTED_ON_L2") {
@@ -97,8 +111,20 @@ describe("native transaction receipt routing", () => {
 
   it("preserves a successful recorded action's finality", () => {
     const { native, fold } = setup();
-    const succeeded = receipt([rowEvent("ExecutionResult", [manifest.world.address, "1"], ["1", "9", "11", "10"])]);
+    const succeeded = receipt([executionEvent(1)]);
     expect(native.actionReceipt(fold, succeeded)).toBe(succeeded);
+  });
+
+  it("leaves the nonce row unchanged for a stale-nonce rejection and restores it from a checkpoint", () => {
+    const { native, decoder, fold } = setup();
+    native.applyReceipt(fold, receipt([executionEvent(1)]), 10, 0);
+    const before = fold.modelRows("ActionNonce");
+    native.applyReceipt(fold, receipt([executionEvent(2, false, 0, 2)], "0x999"), 11, 0);
+    expect(fold.modelRows("ActionNonce")).toEqual(before);
+    const restored = NativeWorldFold.restore(decoder.registry, fold.checkpoint());
+    expect(restored.modelRows("ActionNonce")).toEqual(before);
+    native.applyReceipt(restored, receipt([executionEvent(1, true, 1, 3)], "0x998"), 12, 0);
+    expect(BigInt(String(restored.modelRows("ActionNonce")[0].value.next_nonce))).toBe(2n);
   });
 
   it("delivers a reverted receipt received before its sequencer-submitted transaction", () => {

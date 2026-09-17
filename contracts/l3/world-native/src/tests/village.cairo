@@ -1,6 +1,4 @@
-use eternum_randomness_protocol::entrypoint::{
-    IRecordedExecutionViewsDispatcher, IRecordedExecutionViewsDispatcherTrait,
-};
+use eternum_randomness_protocol::entrypoint::IRecordedExecutionViewsDispatcher;
 use snforge_std::fs::{FileTrait, read_txt};
 use snforge_std::{start_cheat_block_timestamp_global, start_cheat_caller_address, stop_cheat_caller_address};
 use crate::commands::{Command, ExecutionContext};
@@ -19,6 +17,7 @@ use crate::village::{
     IVillagesDispatcher, IVillagesDispatcherTrait, IVillagesSafeDispatcher, IVillagesSafeDispatcherTrait, SettleVillage,
     VillagePassKey, VillageRules,
 };
+use super::recorded_receipts::RecordedReceiptsTrait;
 use super::{Deployment, authority, context, intent, recorded, signature};
 
 pub fn village_rules() -> VillageRules {
@@ -123,14 +122,13 @@ fn run(deployment: Deployment, command: Command, timestamp: u64) -> bool {
         s,
     );
     IRecordedExecutionViewsDispatcher { contract_address: deployment.peers.season }
-        .get_result(season.execution_head().order)
+        .recorded_outcome(season.execution_head().order)
+        .unwrap()
         .status == 1
 }
 
 fn settle(realm: u32, pass_id: u16) -> Command {
-    Command::SettleVillage(
-        SettleVillage { owner: 0x333.try_into().unwrap(), pass_id, connected_realm_entity_id: realm },
-    )
+    Command::SettleVillage(SettleVillage { pass_id, connected_realm_entity_id: realm })
 }
 
 #[test]
@@ -261,7 +259,9 @@ fn exhausted_geometry_records_rejection_and_keeps_the_pass() {
     let pool = ISettlementPoolDispatcher { contract_address: deployment.peers.map };
     assert!(pool.village_pool(3).opened == 0 && pool.settlement_pool(3).opened == 0);
     let season = ISeasonDispatcher { contract_address: deployment.peers.season };
-    let result = IRecordedExecutionViewsDispatcher { contract_address: deployment.peers.season }.get_result(1);
-    assert!(result.status == 2 && result.result == 'GAMEPLAY_REJECTED');
+    let result = IRecordedExecutionViewsDispatcher { contract_address: deployment.peers.season }
+        .recorded_outcome(1)
+        .unwrap();
+    assert!(result.status == 2 && result.reason == 'GAMEPLAY_REJECTED');
     assert!(season.execution_head().order == 1 && season.next_nonce(3, deployment.actor) == 1);
 }

@@ -36,10 +36,9 @@ async function main() {
   const context = {
     envelope: [
       shortString.encodeShortString("ETERNUM_ENTROPY"),
-      "0x1",
+      "0x2",
       "0x3",
       "0x1",
-      "0x0",
       "0x0",
       "0x3ed",
       "0x3db",

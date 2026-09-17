@@ -28,24 +28,14 @@ pub struct Admission {
     pub execution_config: felt252,
     pub nonce: u64,
     pub order: u64,
-    pub predecessor: felt252,
     pub preceding_state: felt252,
     pub timestamp: u64,
-}
-
-#[derive(Copy, Drop, Serde, starknet::Store)]
-pub struct ExecutionResult {
-    pub status: u8,
-    pub binding: felt252,
-    /// Status 1: output commitment. Status 2: terminal rejection reason code.
-    pub result: felt252,
-    pub state: felt252,
 }
 
 #[starknet::interface]
 pub trait IRecordedExecutionViews<T> {
     fn get_admission(self: @T, game: felt252, actor: felt252) -> Admission;
-    fn get_result(self: @T, order: u64) -> ExecutionResult;
+    fn get_head(self: @T) -> crate::recording::ExecutionHead;
 }
 
 pub fn authenticate_submission(authority: ContractAddress, epoch: u64, l2_gas: u64) {

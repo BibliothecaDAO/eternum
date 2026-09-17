@@ -76,7 +76,6 @@ fn rejected_crafting_preserves_balances_and_consumes_the_ticket() {
     let (d, home) = setup(false);
     let command = Command::CraftRelic(home.entity_id);
     assert_terminal_rejection(d, command, 19);
-    assert_terminal_rejection(d, command, 200);
     structure(d, home, 987.try_into().unwrap(), 1);
     assert_terminal_rejection(d, command, 30);
     structure(d, home, d.actor, 4);
@@ -88,6 +87,7 @@ fn rejected_crafting_preserves_balances_and_consumes_the_ticket() {
     assert_terminal_rejection(d, command, 30);
     assert_eq!(balance(d, home, RESEARCH), 0);
     assert_eq!(balance(d, home, 40), 2 * RESOURCE_PRECISION);
+    assert_terminal_rejection(d, command, 200);
 }
 #[test]
 #[feature("safe_dispatcher")]

@@ -4,7 +4,6 @@ use crate::resources::ResourceAmount;
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct SettleVillage {
-    pub owner: ContractAddress,
     pub pass_id: u16,
     pub connected_realm_entity_id: u32,
 }

@@ -25,7 +25,7 @@ struct Vector {
 
 #[test]
 fn canonical_cross_language_vectors() {
-    let input = read_txt(@FileTrait::new("tests/fixtures/v1.txt"));
+    let input = read_txt(@FileTrait::new("tests/fixtures/v2.txt"));
     let mut fields = input.span();
     let vectors: Array<Vector> = Serde::deserialize(ref fields).unwrap();
     assert!(fields.is_empty(), "trailing fixture data");
@@ -71,18 +71,18 @@ fn rejects_noncanonical_bytes() {
 
 #[test]
 fn rejects_malformed_envelopes() {
-    let input = read_txt(@FileTrait::new("tests/fixtures/v1.txt"));
+    let input = read_txt(@FileTrait::new("tests/fixtures/v2.txt"));
     let mut fields = input.span();
     let vectors: Array<Vector> = Serde::deserialize(ref fields).unwrap();
     for vector in vectors {
         for length in 0..vector.envelope.len() {
             assert!(decode_envelope(vector.envelope.span().slice(0, length)).is_none(), "truncated envelope");
         }
-        for bad_index in array![0, 1, 3, 6, 8, 9, 10] {
+        for bad_index in array![0, 1, 3, 5, 7, 8, 9] {
             let malformed = replace(vector.envelope.span(), bad_index, -1);
             assert!(decode_envelope(malformed.span()).is_none(), "invalid field");
         }
-        for zero_index in array![3, 8] {
+        for zero_index in array![3, 7] {
             let malformed = replace(vector.envelope.span(), zero_index, 0);
             assert!(decode_envelope(malformed.span()).is_none(), "zero order or bounds");
         }
@@ -94,7 +94,7 @@ fn rejects_malformed_envelopes() {
 
 #[test]
 fn rejects_malformed_intents() {
-    let input = read_txt(@FileTrait::new("tests/fixtures/v1.txt"));
+    let input = read_txt(@FileTrait::new("tests/fixtures/v2.txt"));
     let mut fields = input.span();
     let vectors: Array<Vector> = Serde::deserialize(ref fields).unwrap();
     for vector in vectors {

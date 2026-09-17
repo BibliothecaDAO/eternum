@@ -16,6 +16,7 @@ use snforge_std::{
     start_cheat_transaction_hash, start_cheat_transaction_version,
 };
 use starknet::{ContractAddress, ResourcesBounds};
+use super::receipts::RecordedReceiptsTrait;
 
 pub fn pair() -> StarkCurveKeyPair {
     KeyPairTrait::from_secret_key(12345)
@@ -60,7 +61,6 @@ pub fn envelope(action: @Intent) -> Envelope {
     Envelope {
         action: action_identity(action),
         order: 1,
-        predecessor: 0,
         preceding_state: 0,
         timestamp: 1005,
         execution_config: 987,
@@ -77,7 +77,8 @@ pub fn terminal_arguments(ref action: Intent) {
 }
 
 pub fn outcome(address: ContractAddress) -> Array<felt252> {
-    let (_, _, _, timestamp, root) = IFixtureDispatcher { contract_address: address }.progress();
-    let result = IRecordedExecutionViewsDispatcher { contract_address: address }.get_result(1);
+    let timestamp = IRecordedExecutionViewsDispatcher { contract_address: address }.get_head().timestamp;
+    let root = IFixtureDispatcher { contract_address: address }.outcome();
+    let result = IRecordedExecutionViewsDispatcher { contract_address: address }.recorded_outcome(1).unwrap();
     array![result.status.into(), timestamp.into(), root.low.into(), root.high.into(), (root.low % 2).into()]
 }

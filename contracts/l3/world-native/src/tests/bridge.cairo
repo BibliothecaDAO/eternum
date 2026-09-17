@@ -256,7 +256,7 @@ fn missing_donkeys_reverts_the_withdrawal_burn_and_fee_arrival() {
 #[test]
 fn bridge_rejects_wrong_owner_category_unlisted_resource_and_closed_game() {
     let (d, _, target, token) = setup(false, false);
-    for time in array![19_u64, 211] {
+    for time in array![19_u64] {
         assert_terminal_rejection(d, deposit(target), time);
         assert_terminal_rejection(d, withdraw(target, d.actor), time);
     }
@@ -296,6 +296,19 @@ fn bridge_rejects_wrong_owner_category_unlisted_resource_and_closed_game() {
         assert_terminal_rejection(d, deposit(target), 40);
         assert_terminal_rejection(d, withdraw(target, d.actor), 40);
     }
+    set_fixture(
+        d.peers.structures,
+        selector!("structures"),
+        array![3, target.entity_id.into()].span(),
+        StructureRecord {
+            owner: structure.owner,
+            base: structure.base,
+            metadata: structure.metadata,
+            resources_packed: structure.resources_packed,
+        },
+    );
+    assert_terminal_rejection(d, deposit(target), 211);
+    assert_terminal_rejection(d, withdraw(target, d.actor), 211);
     assert_eq!(tokens(token, d.actor), TOKENS);
     assert_eq!(balance(d, target, 2), STOCK);
     assert!(arrival(d, target, 0).is_empty());

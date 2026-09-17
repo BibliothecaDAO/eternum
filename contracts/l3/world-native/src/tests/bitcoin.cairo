@@ -116,8 +116,8 @@ fn phases_outside_game_and_contributions_after_end_are_rejected() {
     let (deployment, first, _) = setup();
     assert_terminal_rejection(deployment, Command::CloseBitcoinPhase(0), 30);
     assert_terminal_rejection(deployment, Command::CloseBitcoinPhase(1), 30);
-    assert_terminal_rejection(deployment, Command::CloseBitcoinPhase(20), 210);
     assert_terminal_rejection(deployment, contribute(first, 10), 200);
+    assert_terminal_rejection(deployment, Command::CloseBitcoinPhase(20), 210);
     assert_eq!(balance(deployment, first), 1000);
 }
 
@@ -169,60 +169,75 @@ fn sat(deployment: super::Deployment, key: ResourceKey) -> u128 {
         .resource_balance(ResourceSlot { game_id: key.game_id, entity_id: key.entity_id, resource_type: 58 })
 }
 
-#[test]
-fn winner_and_owner_destinations_forfeit_independently_and_carried_shares_are_never_split_again() {
-    for winner_has_destination in array![false, true] {
-        for owner_has_destination in array![false, true] {
-            let (deployment, winner_home, owner_home) = setup();
-            let owner = 0x777.try_into().unwrap();
-            let other = 0x888.try_into().unwrap();
-            let mine = mine(deployment, 2000100);
-            capture(deployment, mine, owner, 30);
-            assert!(execute(deployment, contribute(winner_home, 100), 40));
-            if !winner_has_destination {
-                set_owner(deployment, winner_home, other);
-            }
-            set_owner(deployment, owner_home, if owner_has_destination {
-                owner
-            } else {
-                other
-            });
-            close_and_bind(deployment, 4);
-            assert!(execute(deployment, claim(4, array![mine.entity_id].span()), 50));
-            assert_eq!(sat(deployment, winner_home), if winner_has_destination {
-                800
-            } else {
-                0
-            });
-            assert_eq!(sat(deployment, owner_home), if owner_has_destination {
-                200
-            } else {
-                0
-            });
-            let view = IBitcoinViewsDispatcher { contract_address: deployment.peers.resources };
-            let carry = view.bitcoin_mine(mine);
-            assert_eq!(carry.unsplit_carry, 0);
-            assert_eq!(carry.winner_carry, if winner_has_destination {
-                0
-            } else {
-                800
-            });
-            assert_eq!(carry.owner_carry, if owner_has_destination {
-                0
-            } else {
-                200
-            });
-            set_owner(deployment, winner_home, deployment.actor);
-            set_owner(deployment, owner_home, owner);
-            assert!(execute(deployment, contribute(winner_home, 100), 50));
-            close_and_bind(deployment, 5);
-            assert!(execute(deployment, claim(5, array![mine.entity_id].span()), 60));
-            assert_eq!(sat(deployment, winner_home), 1600);
-            assert_eq!(sat(deployment, owner_home), 400);
-            assert_eq!(view.bitcoin_mine(mine).winner_carry, 0);
-            assert_eq!(view.bitcoin_mine(mine).owner_carry, 0);
-        }
+fn assert_independent_forfeiture(winner_has_destination: bool, owner_has_destination: bool) {
+    let (deployment, winner_home, owner_home) = setup();
+    let owner = 0x777.try_into().unwrap();
+    let other = 0x888.try_into().unwrap();
+    let mine = mine(deployment, 2000100);
+    capture(deployment, mine, owner, 30);
+    assert!(execute(deployment, contribute(winner_home, 100), 40));
+    if !winner_has_destination {
+        set_owner(deployment, winner_home, other);
     }
+    set_owner(deployment, owner_home, if owner_has_destination {
+        owner
+    } else {
+        other
+    });
+    close_and_bind(deployment, 4);
+    assert!(execute(deployment, claim(4, array![mine.entity_id].span()), 50));
+    assert_eq!(sat(deployment, winner_home), if winner_has_destination {
+        800
+    } else {
+        0
+    });
+    assert_eq!(sat(deployment, owner_home), if owner_has_destination {
+        200
+    } else {
+        0
+    });
+    let view = IBitcoinViewsDispatcher { contract_address: deployment.peers.resources };
+    let carry = view.bitcoin_mine(mine);
+    assert_eq!(carry.unsplit_carry, 0);
+    assert_eq!(carry.winner_carry, if winner_has_destination {
+        0
+    } else {
+        800
+    });
+    assert_eq!(carry.owner_carry, if owner_has_destination {
+        0
+    } else {
+        200
+    });
+    set_owner(deployment, winner_home, deployment.actor);
+    set_owner(deployment, owner_home, owner);
+    assert!(execute(deployment, contribute(winner_home, 100), 50));
+    close_and_bind(deployment, 5);
+    assert!(execute(deployment, claim(5, array![mine.entity_id].span()), 60));
+    assert_eq!(sat(deployment, winner_home), 1600);
+    assert_eq!(sat(deployment, owner_home), 400);
+    assert_eq!(view.bitcoin_mine(mine).winner_carry, 0);
+    assert_eq!(view.bitcoin_mine(mine).owner_carry, 0);
+}
+
+#[test]
+fn forfeiture_with_winner_false_owner_false() {
+    assert_independent_forfeiture(false, false);
+}
+
+#[test]
+fn forfeiture_with_winner_false_owner_true() {
+    assert_independent_forfeiture(false, true);
+}
+
+#[test]
+fn forfeiture_with_winner_true_owner_false() {
+    assert_independent_forfeiture(true, false);
+}
+
+#[test]
+fn forfeiture_with_winner_true_owner_true() {
+    assert_independent_forfeiture(true, true);
 }
 
 #[test]

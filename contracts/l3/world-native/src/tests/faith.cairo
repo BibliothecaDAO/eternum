@@ -238,9 +238,9 @@ fn equal_scoring_wonders_remain_tied_without_duplicate_winner_entries() {
 fn faith_requires_eternum_and_enabled_pledges_and_obeys_each_time_boundary() {
     let (deployment, wonder, realm) = setup();
     assert_terminal_rejection(deployment, pledge(wonder, wonder), 19);
-    assert_terminal_rejection(deployment, pledge(wonder, wonder), 200);
     assert_terminal_rejection(deployment, claim(0.try_into().unwrap(), wonder), 40);
     assert_terminal_rejection(deployment, Command::ClaimWonderPoints(realm.entity_id), 40);
+    assert_terminal_rejection(deployment, pledge(wonder, wonder), 200);
     let config = crate::rules::SliceRules { faith_enabled: false, blitz_mode_on: false, ..super::recorded::rules() };
     let (disabled, wonder, _) = setup_with_rules(config);
     assert_terminal_rejection(disabled, pledge(wonder, wonder), 40);

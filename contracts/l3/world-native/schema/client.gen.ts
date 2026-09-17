@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "cb33163b1cd8c2be7f3b961a4f31c4394b83df12441304bef699ccafae4979fd";
+export const nativeFactSchemaIdentity = "83d0e43a5450810079b45a5cf6eab46d56884619cdbf339f34cfc012cc6bd926";
 export interface NativeRows {
   Preset: { readonly preset_id: number; readonly commitment: bigint };
   Series: { readonly series_id: bigint; readonly owner: bigint; readonly created_games: number };
@@ -94,8 +94,6 @@ export interface NativeRows {
   DomainState: { readonly address: bigint; readonly authority: bigint; readonly peers: { readonly season: bigint; readonly map: bigint; readonly structures: bigint; readonly troops: bigint; readonly settlement: bigint; readonly resources: bigint; readonly economy: bigint; readonly prizes: bigint; readonly registry: bigint; readonly combat: bigint; readonly bridge: bigint }; readonly active: boolean };
   DomainClass: { readonly address: bigint; readonly class_hash: bigint };
   Authentication: { readonly address: bigint; readonly submitter: bigint; readonly registry: bigint; readonly account_class: bigint };
-  ExecutionHead: { readonly address: bigint; readonly order: bigint; readonly binding: bigint; readonly state: bigint; readonly timestamp: bigint; readonly root: bigint };
-  ExecutionResult: { readonly address: bigint; readonly order: bigint; readonly status: number; readonly binding: bigint; readonly result: bigint; readonly state: bigint };
   OwnershipRulesReady: { readonly game_id: number; readonly ready: boolean };
   AgentController: { readonly address: bigint; readonly controller: bigint };
   ActionNonce: { readonly game_id: number; readonly actor: bigint; readonly next_nonce: bigint };
@@ -194,8 +192,6 @@ export interface NativeKeys {
   DomainState: { readonly address: bigint };
   DomainClass: { readonly address: bigint };
   Authentication: { readonly address: bigint };
-  ExecutionHead: { readonly address: bigint };
-  ExecutionResult: { readonly address: bigint; readonly order: bigint };
   OwnershipRulesReady: { readonly game_id: number };
   AgentController: { readonly address: bigint };
   ActionNonce: { readonly game_id: number; readonly actor: bigint };
@@ -1784,35 +1780,6 @@ export const nativeFactModels = {
       "submitter": "felt",
       "registry": "felt",
       "account_class": "felt"
-    }
-  },
-  "ExecutionHead": {
-    "keys": [
-      "address"
-    ],
-    "scope": "deployment",
-    "fields": {
-      "address": "felt",
-      "order": "u64",
-      "binding": "felt",
-      "state": "felt",
-      "timestamp": "u64",
-      "root": "u256"
-    }
-  },
-  "ExecutionResult": {
-    "keys": [
-      "address",
-      "order"
-    ],
-    "scope": "deployment",
-    "fields": {
-      "address": "felt",
-      "order": "u64",
-      "status": "u8",
-      "binding": "felt",
-      "result": "felt",
-      "state": "felt"
     }
   },
   "OwnershipRulesReady": {

@@ -51,11 +51,11 @@ describe("native bindings in the shared game client", () => {
     ["close_bitcoin_phase", [42], [35, 42]],
     ["bind_bitcoin_phase", [42], [36, 42]],
     ["claim_phase_reward", [42, 2, 7, 8], [37, 42, 2, 7, 8]],
-    ["settle_season", [65, 273, 1], [14, 65, 273, 1]],
-    ["settle_season", [65, 273, 0, 8000], [14, 65, 273, 0, 8000]],
-    ["settle_village", [273, 7, 9], [15, 273, 7, 9]],
-    ["settle_blitz", [65, 273, 0, 0, 0, 1], [11, 65, 273, 0, 0, 0, 1]],
-    ["settle_blitz", [65, 273, 777, 42, 1, 1, 273, 99, 0], [11, 65, 273, 777, 42, 1, 1, 273, 99, 0]],
+    ["settle_season", [65, 1], [14, 65, 1]],
+    ["settle_season", [65, 0, 8000], [14, 65, 0, 8000]],
+    ["settle_village", [7, 9], [15, 7, 9]],
+    ["settle_blitz", [65, 0, 0, 0, 1], [11, 65, 0, 0, 0, 1]],
+    ["settle_blitz", [65, 777, 42, 1, 1, 273, 99, 0], [11, 65, 777, 42, 1, 1, 273, 99, 0]],
     ["guard_add", [9, 2, 2, 1, 100], [77, 0, 9, 2, 2, 1, 100]],
     ["guard_delete", [9, 2], [77, 1, 9, 2]],
     ["explorer_add", [7, 100, 3], [77, 2, 7, 100]],
@@ -153,14 +153,6 @@ describe("native bindings in the shared game client", () => {
         bridge: "0x10b",
       },
       active: true,
-    });
-    write("ExecutionHead", [0x101n], {
-      address: "0x101",
-      order: 6,
-      binding: "123",
-      state: "456",
-      timestamp: 99,
-      root: "0",
     });
     const submit = vi.fn(async (_action: SignedNativeIntent) => ({ transaction_hash: "0x99" }));
     const signIntent = vi.fn(async () => ({ r: 1n, s: 2n }));

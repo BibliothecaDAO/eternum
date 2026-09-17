@@ -50,12 +50,12 @@ export async function admissionFor(provider: RpcProvider, fixture: NativeFixture
     },
     "pre_confirmed",
   );
-  assert.equal(admission.length, 8);
+  assert.equal(admission.length, 7);
   return admission;
 }
 
 export function signedRequest(fixture: NativeFixture, admission: string[], arguments_: string[]) {
-  const [, rules, , nonce, order, , , timestamp] = admission;
+  const [, rules, , nonce, order, , timestamp] = admission;
   const command = hash.computePoseidonHashOnElements([
     shortString.encodeShortString("ETERNUM_COMMAND"),
     1,
@@ -88,4 +88,28 @@ export function exploreArguments(fixture: NativeFixture, nonce: string) {
   const explorer = fixture.explorers[index];
   assert(explorer !== undefined, "Fresh explorer pool exhausted; preserve this deployment and prepare a new fixture");
   return commandArguments(fixture, "Explore", { explorer_id: explorer, direction: 0 });
+}
+
+export async function waitForOutcome(provider: RpcProvider, fixture: NativeFixture, endpoint: string, action: string) {
+  const deadline = Date.now() + 30_000;
+  while (Date.now() < deadline) {
+    const response = await fetch(`${endpoint}/${action}`, { signal: AbortSignal.timeout(5_000) });
+    if (!response.ok) throw new Error(`Action status failed: ${response.status}`);
+    const status = await response.json();
+    if (status.transaction_hash) {
+      const receipt = await provider.getTransactionReceipt(status.transaction_hash);
+      const events = "events" in receipt ? receipt.events : [];
+      const event = events.find((event) => BigInt(event.from_address) === BigInt(fixture.execution.address)
+        && event.keys.at(-1) === hash.getSelectorFromName("ExecutionRecorded"));
+      if (!event) throw new Error("Accepted transaction has no execution event");
+      const [game, actor, nonce, consumed, order, outcome, reason] = event.data;
+      assert.equal(event.data.length, 7);
+      assert.equal(BigInt(game), BigInt(fixture.game));
+      assert.equal(BigInt(actor), BigInt(fixture.actor));
+      return { nonce, nonceConsumed: BigInt(consumed) === 1n, order, status: outcome, reason,
+        transactionHash: status.transaction_hash as string };
+    }
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+  throw new Error("Accepted ticket remains pending; preserve its journal");
 }

@@ -236,7 +236,7 @@ fn building_actions_require_ownership_and_the_recorded_game_window() {
     let (deployment, home) = building_world();
     let structures = IStructuresDispatcher { contract_address: deployment.peers.structures };
     let before = resource_facts(deployment, home);
-    for timestamp in array![19_u64, 201] {
+    for timestamp in array![19_u64] {
         for command in array![
             create(home, 37), Command::PauseBuildingProduction(change(home)),
             Command::ResumeBuildingProduction(change(home)), Command::DestroyBuilding(change(home)),
@@ -261,6 +261,23 @@ fn building_actions_require_ownership_and_the_recorded_game_window() {
         Command::ResumeBuildingProduction(change(home)), Command::DestroyBuilding(change(home)),
     ] {
         assert_terminal_rejection(deployment, command, 60);
+    }
+    set_fixture(
+        deployment.peers.structures,
+        selector!("structures"),
+        array![3, home.entity_id.into()].span(),
+        crate::structures::StructureRecord {
+            owner: structure.owner,
+            base: structure.base,
+            metadata: structure.metadata,
+            resources_packed: structure.resources_packed,
+        },
+    );
+    for command in array![
+        create(home, 37), Command::PauseBuildingProduction(change(home)),
+        Command::ResumeBuildingProduction(change(home)), Command::DestroyBuilding(change(home)),
+    ] {
+        assert_terminal_rejection(deployment, command, 201);
     }
     assert_eq!(resource_facts(deployment, home), before);
     assert!(structures.building(east()).is_none());

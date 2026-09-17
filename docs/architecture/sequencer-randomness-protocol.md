@@ -1,207 +1,171 @@
-# Recorded sequencer entropy, version 1
+# Recorded sequencer entropy, version 2
 
-This protocol trusts operator honesty. It does not prove honest sampling or fair admission. Production use requires
-protocol review. Encoding tests alone do not establish acceptance, fencing, recovery or latency guarantees.
+The protocol trusts the operator to sample honestly and admit fairly. It makes accepted actions reproducible; it does
+not cryptographically prove honest sampling. Protocol review remains required before value depends on draws.
 
 ## Canonical representation
 
-All integers are unsigned. A felt is strictly less than `2^251 + 17 * 2^192 + 1`. Canonical bytes are the concatenation
-of each felt's **32-byte big-endian** representation, including leading zeros. Decoders reject noncanonical field
-elements instead of reducing them modulo the field. They reject unknown versions, truncation and trailing elements.
-There is no alternate JSON signing representation. Human-readable vector files contain the same field elements in hex.
+Integers are unsigned. Felts are strictly below `2^251 + 17 * 2^192 + 1`, encoded as 32-byte big-endian values including
+leading zeros. Decoders reject noncanonical values, unknown versions, truncation and trailing elements.
 
-The signed intent is this exact felt sequence:
+The signed intent retains version 1:
 
-| Position  | Value                                                  | Type         |
-| --------- | ------------------------------------------------------ | ------------ |
-| 0         | `ETERNUM_ACTION` (ASCII short string)                  | felt         |
-| 1         | `1`                                                    | version      |
-| 2         | Chain identity                                         | felt         |
-| 3         | Deployment identity: native season entrypoint address  | felt         |
-| 4         | Game ID                                                | felt         |
-| 5         | Bound gameplay account resolved through PlayerRegistry | felt         |
-| 6         | Actor action nonce, starting at zero                   | u64          |
-| 7         | Owning command selector                                | felt         |
-| 8         | Immutable rules/config identity                        | felt         |
-| 9         | Earliest acceptance timestamp, inclusive               | u64          |
-| 10        | Latest acceptance timestamp, inclusive                 | u64          |
-| 11        | Latest acceptable journal order, inclusive             | u64, nonzero |
-| 12        | Argument count, at most 256                            | u32          |
-| 13 onward | Complete command arguments                             | felt array   |
+| Position  | Value                                      | Type       |
+| --------- | ------------------------------------------ | ---------- |
+| 0         | `ETERNUM_ACTION`                           | felt       |
+| 1         | `1`                                        | version    |
+| 2         | Chain identity                             | felt       |
+| 3         | Native season entrypoint address           | felt       |
+| 4         | Game ID                                    | felt       |
+| 5         | Gameplay account                           | felt       |
+| 6         | Actor nonce                                | u64        |
+| 7         | Command commitment                         | felt       |
+| 8         | Immutable rules identity                   | felt       |
+| 9         | Earliest acceptance time, inclusive        | u64        |
+| 10        | Latest acceptance time, inclusive          | u64        |
+| 11        | Latest acceptable journal order, inclusive | u64        |
+| 12        | Argument count, at most 256                | u32        |
+| 13 onward | Serialized command arguments               | felt array |
 
-`action_id = poseidon_hash_span(intent_felts)`. The existing approved gameplay key signs that identity. Signatures are
-authentication witnesses and are stored with the record, outside the identity: signature malleability, transport request
-IDs, transaction hashes, credential rotation and authority epochs cannot create another action identity. The nonce
-uniqueness key is `(chain, deployment, game, actor, nonce)` across commands within the game. An identical intent
-resolves to its existing ticket; different signed content for that nonce conflicts. No nonce is released after
-acceptance.
+`action_id = poseidon_hash_span(intent_felts)`. The registered gameplay key signs this identity. The native command
+commitment is `poseidon_hash_span([ETERNUM_COMMAND, 1, ...canonical_serialized_arguments])`; a mismatch is rejected.
+Signatures, transport request IDs, transaction hashes and authority epochs are outside the identity. The nonce
+uniqueness key is `(chain, deployment, game, actor, nonce)`. An identical intent returns its existing ticket; different
+content conflicts.
 
-The entropy envelope is this exact felt sequence:
+The version 2 envelope removes the separate predecessor binding. The preceding state already commits that binding:
 
-| Position | Value                                                         | Type         |
-| -------- | ------------------------------------------------------------- | ------------ |
-| 0        | `ETERNUM_ENTROPY` (ASCII short string)                        | felt         |
-| 1        | `1`                                                           | version      |
-| 2        | Action identity above                                         | felt         |
-| 3        | Deployment-wide journal order, starting at one                | u64, nonzero |
-| 4        | Previous accepted envelope binding; zero for the first record | felt         |
-| 5        | Commitment to the execution predecessor state                 | felt         |
-| 6        | Fixed gameplay timestamp                                      | u64          |
-| 7        | Immutable execution configuration identity                    | felt         |
-| 8        | Sequencer-selected L2 gas allowance                           | u64, nonzero |
-| 9        | Root low limb                                                 | u128         |
-| 10       | Root high limb                                                | u128         |
+| Position | Value                                          | Type    |
+| -------- | ---------------------------------------------- | ------- |
+| 0        | `ETERNUM_ENTROPY`                              | felt    |
+| 1        | `2`                                            | version |
+| 2        | Action identity                                | felt    |
+| 3        | Deployment-wide journal order, starting at one | u64     |
+| 4        | Preceding execution state, zero initially      | felt    |
+| 5        | Recorded gameplay timestamp                    | u64     |
+| 6        | Immutable execution configuration identity     | felt    |
+| 7        | Sequencer-selected L2 gas allowance, nonzero   | u64     |
+| 8        | Root low limb                                  | u128    |
+| 9        | Root high limb                                 | u128    |
 
-`binding = poseidon_hash_span(envelope_felts)`. The root is the full 32 OS-generated bytes interpreted as one big-endian
-u256: `high = bytes[0..16]`, `low = bytes[16..32]`. Cairo receives `u256 { low, high }`. No reduction, masking or
-rejection discards root bits. In particular an all-ones root remains a valid u256, not a felt.
+`binding = poseidon_hash_span(envelope_felts)`. The root is 32 OS-generated bytes interpreted as a big-endian u256:
+`high = bytes[0..16]`, `low = bytes[16..32]`. No root bits are reduced or discarded. Sampling uses `getrandom` once
+after durable reservation; syscall failure or a short read has no fallback. Accepted roots remain in the replicated
+journal and transaction calldata, not in contract storage. Neither block hash nor host identity supplies entropy.
 
-The predecessor-state and execution-config commitments must have a canonical artifact definition before chain
-integration; their values are opaque protocol identifiers here. They do not seed or alter the root. The integration must
-retain the referenced state/config artifacts and verify them during replay; a hash without its recoverable preimage does
-not meet recovery. This version does not use a block hash or host identity as an entropy source.
+## Admission and execution
 
-## Ordering, acceptance and recovery
+One deployment has one ordered stream for all actions, including non-random actions. Admission verifies the chain,
+deployment, game, rules, PlayerRegistry binding, approved account class, registered key, signature, current nonce and
+validity window. Acceptance durably commits the signed intent, authorization witness, order, execution context and root
+before acknowledgement, execution or public disclosure. An ambiguous durability acknowledgement pauses admission.
 
-One deployment has one execution stream, including every non-random command that can affect its games. Acceptance
-atomically commits signed intent, nonce reservation, order, predecessor, execution context and root. Until that commit
-succeeds there is no ticket acknowledgement, execution, public entropy or result. On an ambiguous timeout, consult the
-authoritative committed prefix before any new proposal; lack of a durability acknowledgement pauses acceptance.
+`IRecordedExecution.execute(intent, context, r, s)` is the only gameplay entrypoint. Context contains the canonical
+envelope, authority epoch and accepted-key witness. The sequencing account must be the caller and v3 transaction sender;
+the contract verifies its signature over the transaction hash, current epoch and recorded L2 gas bound. Query versions,
+callbacks and extra calls cannot bypass these checks. The entrypoint verifies the player signature against the key read
+from the registered, approved gameplay account and requires the accepted-key witness to match. Settlement derives the
+owner through PlayerRegistry; settlement arguments contain no owner.
 
-Admission verifies player binding, approved account implementation, signature, chain/deployment/game, immutable rules,
-nonce and validity. Expiry applies at acceptance. Later expiry or authorization changes cannot cancel accepted actions
-or overtake their order. The journal retains the accepted authorization evidence; the native entrypoint must reconcile
-this with its authentication interface before integration. No arbitrary player callback is permitted in that path.
+Key rotation must wait until the player's pending ticket executes. Registry bindings are immutable. A rotation must
+serialize with admission and remain fenced through recovery; checking for an empty queue before a separate transaction
+is insufficient. Authority credential rotation preserves the authority address, accepted envelope and player witness.
 
-Execution consumes the committed ticket in order with its original root, predecessor state, timestamp, rules and bounds.
-Operational failure retains the ticket. An authenticated, next-order ticket with an invalid action records a terminal
-reason and advances order. Its actor nonce advances only when the game/actor key is representable and the nonce equals
-the current value. A stale nonce never consumes a different action's nonce. Zero game/actor keys and the final u64 nonce
-have no representable successor; they remain untouched. Admission rejects stale and exhausted nonces before sampling.
-Game losses must be ordinary successful state transitions. A reverted wrapper cannot be treated as a fresh admission.
-Zero bounds are invalid; nonzero bounds still require execution-specific sufficiency checks by the service. Neither
-player multicalls nor player-supplied roots are accepted command forms.
+Recorded time governs execution. It must not exceed block time or precede the execution head timestamp; equal timestamps
+are allowed. Expiry is checked against recorded acceptance time, once. An accepted action executes with the same root
+and context however late it runs. Execution lag above 300 seconds is a leader-side operational alert, never a rejection.
 
-Authority epochs belong to storage fencing and transaction submission authorization, outside the immutable intent and
-envelope. Promotion fences old storage writers and queued chain submissions before resuming the verified prefix. The new
-authority resubmits unchanged accepted content. Restore with missing or corrupt accepted content stops the stream; it
-never regenerates entropy. Local container drills exercise process/disk-volume failures and do not establish independent
-physical-host durability.
+An authenticated next-order ticket with an invalid action records a terminal reason and advances order. Its actor nonce
+advances only when the game and actor are representable and the submitted nonce equals the current nonce with a
+representable successor. A stale nonce never consumes another action's nonce. Admission rejects stale or exhausted
+nonces before sampling. Game losses are successful gameplay transitions.
 
-## Current game derivation
+Malformed envelopes, mismatched action identities, invalid order or preceding state, invalid configuration, future or
+backwards timestamps, and failed sequencing authentication establish no ticket and consume nothing.
 
-`contracts/l3/game/src/utils/random.cairo` stays unchanged. Given the transported root and the existing salt:
+## Storage, event and views
+
+Each consumed action writes its actor nonce and the execution head. The head uses two slots: `order + timestamp * 2^64`
+and a running state commitment. A stale or unrepresentable nonce is not written. There is no stored root or per-order
+result map.
+
+One `ExecutionRecorded` event carries seven data felts in order:
+
+| Field           | Type                                         |
+| --------------- | -------------------------------------------- |
+| game_id         | felt                                         |
+| actor           | felt                                         |
+| submitted nonce | u64                                          |
+| nonce consumed  | bool                                         |
+| order           | u64                                          |
+| status          | u8: 1 applied, 2 rejected                    |
+| reason          | felt: zero for applied, nonzero for rejected |
+
+The event has the component and event selector keys. Herald validates its codec and atomically derives the `ActionNonce`
+row only when `nonce consumed` is true, setting `next_nonce = submitted nonce + 1`. A stale-nonce rejection leaves that
+row unchanged. Gameplay rows remain authoritative for action effects.
+
+The running commitment is:
+
+```
+following_state = poseidon_hash_span([
+    preceding_state, binding, status, reason, nonce_consumed
+])
+```
+
+This commits the accepted action, root, time and outcome. It is an execution transcript commitment, not the chain's
+storage trie root. The service reconstructs it from accepted journal records and their transaction receipts.
+
+`IRecordedExecutionViews.get_admission(game, actor)` returns seven fields: registered key, rules identity, execution
+configuration identity, actor nonce, next order, preceding state and current block timestamp. That timestamp is an
+admission observation, not a previous ticket's acceptance time. `get_head()` returns order, recorded timestamp and
+state. There is no `get_result(order)` view; outcomes come from receipts tied to the retained accepted binding.
+
+Terminal reasons include `INVALID_GAME`, `INVALID_ACTOR`, `STALE_NONCE`, `NONCE_EXHAUSTED`, `FOREIGN_CHAIN`,
+`FOREIGN_DEPLOYMENT`, `INVALID_RULES`, `INVALID_SIGNATURE`, `INVALID_ACCEPTANCE`, `INVALID_COMMAND`, `GAMEPLAY_REJECTED`
+and `EXECUTION_FAILED`. Domain reverts roll back domain effects before recording a rejection.
+
+## Recovery and definitive execution failure
+
+The journal retains the exact signed transactions before broadcast. Recovery reads the chain head and reconstructs
+outcomes from receipts of those transactions, checking emitter, action fields, order, event shape and resulting state. A
+covered ticket whose receipt is temporarily unavailable waits for reconciliation; missing data never creates an outcome.
+
+Only an included execution revert or a deterministic sequencer refusal permits the authority to submit
+`reject_execution` for that ticket, recording `EXECUTION_FAILED` in its original order. Resource or event-size limits
+are examples of deterministic refusals. A missing receipt, timeout, disconnect, full queue, account-nonce race or
+restart is not definitive failure. Read the head first: adopt an already recorded outcome, otherwise replay the
+unchanged ticket. An authentication revert caused by order or predecessor mismatch requires reconciliation, never
+terminalization.
+
+Execution remains serial: the next envelope binds the preceding execution's resulting state. No envelope is accepted
+against guessed state. Promotion fences old journal writers and chain submissions before replay. Missing or corrupt
+accepted content stops recovery; entropy is never regenerated. Independent-host recovery remains a separate gate.
+
+## Gameplay derivation and cosmetics
+
+The existing game derivation is unchanged:
 
 ```
 h = poseidon_hash_span([root.low, root.high, salt])
 draw = u256(h) % upper_bound
 ```
 
-The bound must be positive. Preserve the existing caller's salt, game scoping, increment order and timestamp context.
-Weighted choices initialize salt from gameplay time and increment it by 18 before each attempt, including duplicate
-rejections without replacement. Uniform choices use indices starting at zero. This version introduces neither named
-purpose domains nor draw counters and does not replace modulo reduction with rejection sampling.
+Bounds are positive. Preserve caller salts, game scoping, increments and recorded timestamp context. Weighted choices
+start from gameplay time and increment the salt by 18 before each attempt, including duplicate rejections without
+replacement. Uniform choices use indices starting at zero.
 
-## Integration status
+Cosmetic ownership and attributes are read from the bound L2 wallet at a finalized L2 block during admission and
+retained with that block identity. Settlement uses those facts unchanged. L2 locks remain best effort on real L2 time:
+skip and record issuance after game end. A lock failure cannot cancel settlement or allocate another root.
 
-Protocol vectors are developed independently of the native entrypoint. Its authentication and command ABI remain owned
-by the native foundation change. The protocol package is not a production submitter or a replacement native world.
-Journal deployment, storage/submission fencing, protected explore, build artifacts and measurements have separate gates.
+## Conformance
 
-## Reproduce the protocol gate
+Rust and Cairo share `tests/fixtures/v2.txt` for canonical encoding, identities and draw vectors. The conformance suite
+runs against the protocol stub and native season domain, covering authentication, malformed transport, delayed
+execution, monotonic time, nonce consumption, outcome events and recovery head. Native tests additionally cover
+registered keys, registry-derived settlement ownership and actual gameplay effects. The compiled ABI check verifies the
+published interfaces.
 
-From the Eternum repository root:
-
-```sh
-python3 contracts/l3/randomness-protocol/check.py ~/projects/madara /tmp/randomness-protocol-evidence
-```
-
-The runner requires identical fixture files and executes Rust codec tests, crate Clippy, Cairo codec tests and
-`recorded_roots_preserve_current_game_derivation` against the unchanged game function. Its report includes the complete
-commands, exit codes and hashes of the tested source, fixture and logs. The checked report is
-`sequencer-randomness-protocol-gates.json`; it is codec/derivation evidence, not an action benchmark or integration
-pass.
-
-The local topology inspection is recorded in `sequencer-randomness-local-evidence.json`. Independent-host recovery
-remains unproved with that local-only topology. No protected explore, replicated-journal drill, release-image build or
-baseline/embedded/sidecar measurement is claimed by this increment.
-
-## Acceptance context and entrypoint conformance
-
-`contracts/l3/randomness-protocol/src/entrypoint.cairo` defines the required `execute(intent, context, r, s)` interface
-for #4994. `Intent` is the existing v1 struct, serialized in its declared field order. The signature covers
-`action_identity(intent)`, including the existing v1 tag and version. Context contains an array of canonical v1 envelope
-felts, a submission authority epoch, and the gameplay public key verified at acceptance. The latter two fields are
-witnesses, outside action identity and envelope binding. No alternate entrypoint is introduced.
-
-Accepted tickets execute with their original recorded context and root, in journal order, however late they run. Delay
-is never a rejection reason. The contract rejects future context timestamps and checks the signed validity interval
-against recorded acceptance time. A ticket accepted at 1005 with validity ending at 1010 still executes a day later
-using gameplay time 1005. Expiry is decided once at acceptance. Recovery cannot refresh the timestamp, cancel a losing
-action, or admit its nonce again.
-
-Execution lag above **300 seconds** is an operational alert in the leader, measured against host wall time. It is not a
-consensus limit; a bad host clock cannot cancel accepted work. Admission still checks signed expiry against its current
-chain observation, preventing an old closed block from admitting an intent whose window has passed. Tickets admitted
-after recovery receive newly observed contexts.
-
-Authorization is resolved before acceptance using PlayerRegistry and the approved gameplay account implementation. The
-journal records that evidence and the exact public key alongside the signed intent. Revocations received before
-acceptance reject admission. Changes after acceptance govern future actions and cannot invalidate the accepted signature
-or release its nonce. The trusted sequencing authority attests the recorded key in context; the entrypoint verifies the
-signature using that key. It must not resolve a newer key and silently substitute it for pending authorization.
-Authority credential rotation changes neither this evidence nor action identity. The native implementation owns registry
-resolution; the conformance stub deliberately uses one fixed actor/key fixture and makes no registry-integration claim.
-
-The conformance suite currently verifies delayed execution, signed-field changes, foreign identities, duplicate and
-out-of-order consumption, envelope framing/version, zero bounds, authority epoch, authorization witness, predecessor,
-configuration, and timestamp bounds. Its fixture's progress getter exists only to observe test effects. Replace fixture
-deployment and observation with native deployment/rows once #4994 implements the interface; retain the execution tests.
-`tests/fixtures/context-v1.txt` contains the same acceptance and timestamp boundary vectors in Rust and Cairo.
-
-The ticket working set serializes duplicate admission by the five-part nonce key. It retains sampled bytes privately
-until a commit acknowledgement and preserves them through submitted, executed or terminal-rejected, and consumed states.
-Sampling uses a direct `rustix::rand::getrandom` syscall on exactly 32 bytes, with initialization required and the
-returned byte count checked. Syscall errors and short reads fail without a fallback. Its one-attempt flag is set before
-calling the source. The working set is not durable storage: the journal increment must durably reserve exclusive
-sampling ownership before this call and must never reconstruct a sampler from an unresolved proposal. Losing the process
-between that durable reservation and replication of its root stops the proposal without regeneration.
-
-### Submission conformance
-
-The action entrypoint remains `execute(intent, context, r, s)`. The companion `IRecordedExecutionViews` interface
-supplies `get_admission(game, actor)` and `get_result(order)`. Admission returns the current gameplay key, rules
-identity, execution configuration identity, actor nonce, next order, predecessor binding, predecessor state identity and
-timestamp. The service records these values before sampling; retries use the retained record. Results return status 0
-(absent), 1 (executed, including a loss), or 2 (terminal rejection), plus the envelope binding, result identity and
-following state identity. Result rows remain available for recovery and must agree with the native row fold.
-
-The conformance account permits exactly one call to the configured deployment's `execute` selector. Both account
-validation and execution verify the ordinary v3 transaction signature. The entrypoint independently verifies the
-sequencing account signature, current authority epoch and recorded L2 resource bound. Query versions, missing
-signatures, callbacks and extra calls fail, including when an RPC simulation skips account validation. Credential
-rotation changes the account's key and epoch without changing its address or a pending action's identity, entropy,
-player authorization witness, order or recorded context.
-
-`RecordedExecutionStub` exercises this interface only. Its fixed game, rules, configuration and transcript state are
-test fixtures; they are not a deployed explore or evidence of native registry, gameplay or Herald integration.
-
-## Terminal results
-
-The execute and recovery-view ABI is unchanged. `ExecutionResult.status` is 0 for absent, 1 for applied gameplay and 2
-for terminal rejection. For status 1, `result` is the existing output commitment. For status 2, it is an ASCII felt
-reason code: `INVALID_GAME`, `INVALID_ACTOR`, `STALE_NONCE`, `NONCE_EXHAUSTED`, `FOREIGN_CHAIN`, `FOREIGN_DEPLOYMENT`,
-`INVALID_RULES`, `INVALID_SIGNATURE`, `INVALID_ACCEPTANCE`, `INVALID_COMMAND` or `GAMEPLAY_REJECTED`. The binding
-retains the original envelope; the state commitment includes this result. Domain reverts roll back domain writes before
-recording `GAMEPLAY_REJECTED`. Detailed VM error traces are diagnostic data, not another persistent row. Existing
-recorded results remain readable and are not rewritten; historical status-2 results may contain their original opaque
-rejection commitment. Recovery treats the result as an opaque identity in either version.
-
-Malformed envelopes, altered action bindings, invalid predecessor/configuration/order, future timestamps and failed
-sequencing-authority authentication consume nothing. They cannot establish the next accepted ticket. Once those checks
-pass, invalid action signatures and acceptance windows are terminal results rather than transaction reverts.
-
-Cosmetic locks remain on real L2 block time, outside this ordered stream. Native settlement must not await or depend on
-a lock. Issuance is a best-effort side effect associated with the accepted ticket. If game end has passed at issue time,
-record the skip with that ticket. A lock failure cannot cancel settlement or allocate a replacement root. The L2 lock
-contracts are unchanged.
+The stub's root observation is test-only gameplay data. Production contracts do not store the root. Version 2 changes
+storage and the event codec; it requires a fresh rehearsal deployment. No live upgrade compatibility is claimed.

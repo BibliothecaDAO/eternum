@@ -2,12 +2,11 @@
 import assert from "node:assert/strict";
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
-import { setTimeout as sleep } from "node:timers/promises";
 import { CallData, CairoOption, CairoOptionVariant, RpcProvider } from "starknet";
 import { createMadaraAccount } from "../../config/deployer/clean/shared/madara-account";
 import { waitForSuccess } from "../../config/deployer/clean/shared/declare";
 import { nativeDomainAbi } from "../../config/deployer/clean/world/native/manifest";
-import { admissionFor, commandArguments, readFixture, signedRequest } from "./native-intent";
+import { admissionFor, commandArguments, readFixture, signedRequest, waitForOutcome } from "./native-intent";
 
 type Scalar = string | number;
 type Coord = { alt: boolean; x: Scalar; y: Scalar };
@@ -78,20 +77,10 @@ async function execute(command: string, args: object) {
   assert.equal(response.status, 200, await response.clone().text());
   const accepted = await response.json();
   assert.equal(BigInt(accepted.action), BigInt(action));
-  const deadline = Date.now() + 30000;
-  while (Date.now() < deadline) {
-    const result = (await rows<{ order: Scalar; status: Scalar; result: Scalar }>("ExecutionResult")).find(
-      (row) => BigInt(row.order) === BigInt(admission[4]),
-    );
-    if (result) {
-      actions.push({ action, order: admission[4], command });
-      writeFileSync(actionsPath, JSON.stringify(actions, null, 2) + "\n");
-      assert.equal(BigInt(result.status), 1n, `${command} rejected with ${result.result}; preserve ticket`);
-      return;
-    }
-    await sleep(100);
-  }
-  throw new Error(`Preparation order ${admission[4]} remains pending; recover its existing ticket before continuing`);
+  const result = await waitForOutcome(provider, fixture, "http://127.0.0.1:15081/actions", action);
+  actions.push({ action, order: result.order, command });
+  writeFileSync(actionsPath, JSON.stringify(actions, null, 2) + "\n");
+  assert.equal(BigInt(result.status), 1n, `${command} rejected with ${result.reason}; preserve ticket`);
 }
 
 async function settle(realm: number) {
@@ -99,7 +88,6 @@ async function settle(realm: number) {
   if (!found) {
     await execute("SettleSeason", {
       name: "0x72656865617273616c",
-      owner: fixture.owner,
       selected_realm: new CairoOption(CairoOptionVariant.Some, realm),
     });
     found = await home(realm);

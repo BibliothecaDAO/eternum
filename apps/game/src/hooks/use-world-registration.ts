@@ -119,11 +119,10 @@ export const useWorldRegistration = ({
 
         if (!config?.gameId || !usernameFelt) throw new Error("The selected game is not ready for settlement");
         setEntryStage("settling");
-        await submitSettlement(config, starknetAccount, (client, owner) =>
+        await submitSettlement(config, starknetAccount, (client) =>
           client.setup.systemCalls.settle_blitz({
             signer: starknetAccount,
             name: usernameFelt,
-            owner,
             cosmeticsBlockHash: "0x0",
             cosmeticsBlockNumber: 0,
             cosmetics: [],

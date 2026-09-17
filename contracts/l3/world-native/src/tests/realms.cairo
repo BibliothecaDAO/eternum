@@ -125,7 +125,7 @@ fn forged_season_commands_cannot_allocate_or_place_realms() {
             season,
             1,
             deployment.actor,
-            crate::realms::SettleSeason { name: 'forged', owner: deployment.actor, selected_realm: Option::None },
+            crate::realms::SettleSeason { name: 'forged', selected_realm: Option::None },
             super::context(),
         )
             .is_err(),

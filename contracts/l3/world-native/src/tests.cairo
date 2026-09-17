@@ -1,3 +1,4 @@
+use recorded_receipts::RecordedReceiptsTrait;
 mod bitcoin;
 mod bridge;
 mod combat_actions;
@@ -21,9 +22,7 @@ mod structure_storage;
 mod trade;
 mod troop_management;
 mod village;
-use eternum_randomness_protocol::entrypoint::{
-    IRecordedExecutionViewsDispatcher, IRecordedExecutionViewsDispatcherTrait,
-};
+use eternum_randomness_protocol::entrypoint::IRecordedExecutionViewsDispatcher;
 use fixtures::{
     IFixtureDispatcher, IFixtureDispatcherTrait, IRollbackFixtureDispatcher, IRollbackFixtureDispatcherTrait,
     IUpgradeFixtureDispatcher, IUpgradeFixtureDispatcherTrait,
@@ -85,10 +84,10 @@ pub fn bind_authority(d: Deployment) -> Deployment {
         .contract_class()
         .deploy_at(@array![keypair(12345).public_key], authority())
         .unwrap();
-    let (registry, _) = deploy("RegistryFixture", @array![0x333, authority().into()]);
-    start_cheat_caller_address(d.peers.season, authority());
-    ISeasonDispatcher { contract_address: d.peers.season }.set_authentication(submitter(), registry, d.account_class);
-    stop_cheat_caller_address(d.peers.season);
+    let registry = ISeasonDispatcher { contract_address: d.peers.season }.authentication().registry;
+    fixtures::IRegistryFixtureDispatcherTrait::add_binding(
+        fixtures::IRegistryFixtureDispatcher { contract_address: registry }, 0x444.try_into().unwrap(), authority(),
+    );
     Deployment { actor: authority(), ..d }
 }
 
@@ -199,22 +198,22 @@ fn forged_signature_actor_game_and_replayed_intent_are_rejected() {
         .unwrap();
     let results = IRecordedExecutionViewsDispatcher { contract_address: deployment.peers.season };
     gateway.execute(action, context(), bad_r, bad_s).unwrap();
-    assert_eq!(results.get_result(1).result, 'INVALID_SIGNATURE');
+    assert_eq!(results.recorded_outcome(1).unwrap().reason, 'INVALID_SIGNATURE');
     let mut forged = action;
     forged.actor = 0x999.try_into().unwrap();
     gateway.execute(forged, context(), r, s).unwrap();
-    assert_eq!(results.get_result(2).result, 'INVALID_SIGNATURE');
+    assert_eq!(results.recorded_outcome(2).unwrap().reason, 'INVALID_ACTOR');
     forged = action;
     forged.game_id = 2;
     gateway.execute(forged, context(), r, s).unwrap();
-    assert_eq!(results.get_result(3).result, 'INVALID_SIGNATURE');
+    assert_eq!(results.recorded_outcome(3).unwrap().reason, 'INVALID_SIGNATURE');
     let mut successor = action;
     successor.nonce = 1;
     let (r, s) = signature(deployment, successor);
     gateway.execute(successor, context(), r, s).unwrap();
-    assert_eq!(results.get_result(4).status, 1);
+    assert_eq!(results.recorded_outcome(4).unwrap().status, 1);
     gateway.execute(successor, context(), r, s).unwrap();
-    assert_eq!(results.get_result(5).result, 'STALE_NONCE');
+    assert_eq!(results.recorded_outcome(5).unwrap().reason, 'STALE_NONCE');
     assert_eq!(ISeasonDispatcher { contract_address: deployment.peers.season }.next_nonce(1, deployment.actor), 2);
 }
 
@@ -370,17 +369,17 @@ fn signatures_are_bound_to_deployment_command_nonce_and_deadline() {
     let mut changed = action;
     changed.command = Command::ClaimProduction(7);
     gateway.execute(changed, context(), r, s).unwrap();
-    assert_eq!(results.get_result(1).result, 'INVALID_SIGNATURE');
+    assert_eq!(results.recorded_outcome(1).unwrap().reason, 'INVALID_SIGNATURE');
     changed = action;
     changed.nonce = 1;
     gateway.execute(changed, context(), r, s).unwrap();
-    assert_eq!(results.get_result(2).result, 'INVALID_SIGNATURE');
+    assert_eq!(results.recorded_outcome(2).unwrap().reason, 'INVALID_SIGNATURE');
     changed = action;
     changed.nonce = 2;
     changed.deadline = 99;
     let (expired_r, expired_s) = signature(first, changed);
     gateway.execute(changed, context(), expired_r, expired_s).unwrap();
-    assert_eq!(results.get_result(3).result, 'INVALID_ACCEPTANCE');
+    assert_eq!(results.recorded_outcome(3).unwrap().reason, 'INVALID_ACCEPTANCE');
     assert!(gateway.execute(action, ExecutionContext { raw_root: 1, timestamp: 101 }, r, s).is_err());
     // Both deployments use the same test key; address binding still changes the digest.
     assert!(
@@ -436,9 +435,7 @@ fn registered_account_with_unapproved_class_is_rejected_before_key_read() {
     start_cheat_block_timestamp(season, 100);
     recorded::create_games(season, authority());
     let error = recorded::admission(season, actor).unwrap_err();
-    assert_eq!(
-        snforge_std::byte_array::try_deserialize_bytearray_error(error.span()).unwrap(), "unapproved gameplay account",
-    );
+    assert_eq!(error.span(), array!['unregistered actor'].span());
     assert_eq!(ISeasonDispatcher { contract_address: season }.next_nonce(1, actor), 0);
 }
 
@@ -702,5 +699,7 @@ mod faith;
 mod faith_prizes;
 
 mod guilds;
+
+mod recorded_receipts;
 
 mod season_lifecycle;

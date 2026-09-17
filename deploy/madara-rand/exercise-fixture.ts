@@ -10,6 +10,7 @@ import {
   hex,
   readFixture,
   signedRequest,
+  waitForOutcome,
   type NativeFixture as Fixture,
 } from "./native-intent";
 
@@ -23,19 +24,6 @@ async function post(endpoint: string, body: unknown) {
   return { status: response.status, body: await response.text() };
 }
 
-async function waitForResult(provider: RpcProvider, deployment: string, order: string) {
-  const until = Date.now() + 30_000;
-  while (Date.now() < until) {
-    const result = await provider.callContract(
-      { contractAddress: deployment, entrypoint: "get_result", calldata: [order] },
-      "pre_confirmed",
-    );
-    if (BigInt(result[0]) !== 0n) return result;
-    await sleep(10);
-  }
-  throw new Error("Committed ticket did not execute within the smoke-test deadline");
-}
-
 async function previewAttempts(
   provider: RpcProvider,
   fixture: Fixture,
@@ -47,12 +35,11 @@ async function previewAttempts(
 ) {
   const envelope = [
     shortString.encodeShortString("ETERNUM_ENTROPY"),
-    "0x1",
+    "0x2",
     action,
     admission[4],
     admission[5],
     admission[6],
-    admission[7],
     admission[2],
     hex(1_200_000_000),
     "0x1",
@@ -191,8 +178,8 @@ async function main() {
     assert.equal(BigInt(accepted.action), BigInt(action));
     assert.equal(BigInt(accepted.order), BigInt(order));
   }
-  const result = await waitForResult(provider, fixture.execution.address, order);
-  assert.equal(BigInt(result[0]), 1n, "Native explore was terminally rejected");
+  const result = await waitForOutcome(provider, fixture, endpoint, action);
+  assert.equal(BigInt(result.status), 1n, "Native explore was terminally rejected");
   const following = await provider.callContract(
     {
       contractAddress: fixture.execution.address,
@@ -203,18 +190,18 @@ async function main() {
   );
   assert.equal(BigInt(following[3]), BigInt(nonce) + 1n);
   assert.equal(BigInt(following[4]), BigInt(order) + 1n);
-  assert.equal(BigInt(following[5]), BigInt(result[1]));
-  assert.equal(BigInt(following[6]), BigInt(result[3]));
+  assert.equal(BigInt(result.order), BigInt(order));
+  assert(result.nonceConsumed);
   const changed = { ...request, intent: [...intent.slice(0, -1), "0x3"] };
   const conflict = await post(endpoint, changed);
   assert.equal(conflict.status, 400);
   const replay = await post(endpoint, request);
   assert.equal(replay.status, 200);
-  const replayResult = await waitForResult(provider, fixture.execution.address, order);
+  const replayResult = await waitForOutcome(provider, fixture, endpoint, action);
   assert.deepEqual(replayResult, result);
   writeFileSync(
     outputPath,
-    `${JSON.stringify({ scope: "native explore admission and recovery; not latency-budget evidence", action, order, nonce, submissionEpochMs, acknowledgementEpochMs, previews, rejections, duplicates: responses.length, conflict: conflict.status, result_selector: hash.getSelectorFromName("get_result"), result }, null, 2)}\n`,
+    `${JSON.stringify({ scope: "native explore admission and recovery; not latency-budget evidence", action, order, nonce, submissionEpochMs, acknowledgementEpochMs, previews, rejections, duplicates: responses.length, conflict: conflict.status, result }, null, 2)}\n`,
     { flag: "wx" },
   );
 }

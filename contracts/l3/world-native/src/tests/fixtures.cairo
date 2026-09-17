@@ -145,35 +145,39 @@ pub mod AccountFixture {
     }
 }
 
+#[starknet::interface]
+pub trait IRegistryFixture<T> {
+    fn add_binding(ref self: T, owner: ContractAddress, account: ContractAddress);
+}
+
 #[starknet::contract]
 pub mod RegistryFixture {
     use starknet::ContractAddress;
-    use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
+    use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
     #[storage]
     struct Storage {
-        owner: ContractAddress,
-        account: ContractAddress,
+        owners: Map<ContractAddress, ContractAddress>,
+        accounts: Map<ContractAddress, ContractAddress>,
     }
     #[constructor]
     fn constructor(ref self: ContractState, owner: ContractAddress, account: ContractAddress) {
-        self.owner.write(owner);
-        self.account.write(account);
+        self.owners.write(account, owner);
+        self.accounts.write(owner, account);
+    }
+    #[abi(embed_v0)]
+    impl Fixture of super::IRegistryFixture<ContractState> {
+        fn add_binding(ref self: ContractState, owner: ContractAddress, account: ContractAddress) {
+            self.owners.write(account, owner);
+            self.accounts.write(owner, account);
+        }
     }
     #[abi(embed_v0)]
     impl Registry of crate::season::IPlayerRegistry<ContractState> {
         fn owner_of(self: @ContractState, account: ContractAddress) -> ContractAddress {
-            if account == self.account.read() {
-                self.owner.read()
-            } else {
-                0.try_into().unwrap()
-            }
+            self.owners.read(account)
         }
         fn account_of(self: @ContractState, owner: ContractAddress) -> ContractAddress {
-            if owner == self.owner.read() {
-                self.account.read()
-            } else {
-                0.try_into().unwrap()
-            }
+            self.accounts.read(owner)
         }
     }
 }
