@@ -2324,6 +2324,79 @@
           ]
         },
         {
+          "name": "RowDeleted",
+          "prefix": [
+            "0x25ae90a953996564a5d7abf58c4bf68d5e5219c38a2d22e8f351e922a143b40",
+            "0x34ee03e4825cf92d0335b5828e3389af6c145ecff05fce078c3753d871cc7f5"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "model",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "keys",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            }
+          ]
+        },
+        {
+          "name": "StoryEvent",
+          "prefix": [
+            "0x25ae90a953996564a5d7abf58c4bf68d5e5219c38a2d22e8f351e922a143b40",
+            "0x33b7d96bc1ff34b0a89214516b6ef5d2b8bdd9c301222eda2a1e96f78b84b96"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "game_id",
+              "type": "core::integer::u32",
+              "kind": "key"
+            },
+            {
+              "name": "id",
+              "type": "core::integer::u32",
+              "kind": "key"
+            },
+            {
+              "name": "owner",
+              "type": "core::option::Option::<core::starknet::contract_address::ContractAddress>",
+              "kind": "key"
+            },
+            {
+              "name": "entity_id",
+              "type": "core::option::Option::<core::integer::u32>",
+              "kind": "key"
+            },
+            {
+              "name": "tx_hash",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "story",
+              "type": "world_native::ownership::Story",
+              "kind": "data"
+            },
+            {
+              "name": "timestamp",
+              "type": "core::integer::u64",
+              "kind": "data"
+            }
+          ]
+        },
+        {
           "name": "StoryEvent",
           "prefix": [
             "0x33b7d96bc1ff34b0a89214516b6ef5d2b8bdd9c301222eda2a1e96f78b84b96"
@@ -2968,7 +3041,7 @@
           ],
           "outputs": [
             {
-              "type": "world_native::ownership::WonderFaith"
+              "type": "world_native::faith::WonderFaith"
             }
           ],
           "state_mutability": "view"
@@ -2984,7 +3057,7 @@
           ],
           "outputs": [
             {
-              "type": "world_native::ownership::FaithfulStructure"
+              "type": "world_native::faith::FaithfulStructure"
             }
           ],
           "state_mutability": "view"
@@ -2995,12 +3068,12 @@
           "inputs": [
             {
               "name": "key",
-              "type": "world_native::ownership::PlayerFaithKey"
+              "type": "world_native::faith::PlayerFaithKey"
             }
           ],
           "outputs": [
             {
-              "type": "world_native::ownership::PlayerFaithPoints"
+              "type": "world_native::faith::PlayerFaithPoints"
             }
           ],
           "state_mutability": "view"
@@ -3016,10 +3089,226 @@
           ],
           "outputs": [
             {
-              "type": "world_native::ownership::WonderFaithWinners"
+              "type": "world_native::faith::WonderFaithWinners"
             }
           ],
           "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "configure_faith",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "rules",
+              "type": "world_native::faith::FaithRules"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "faith_rules",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "world_native::faith::FaithRules"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "faith_blacklisted",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::faith::BlacklistKey"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::bool"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "pledge_faith",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "command",
+              "type": "world_native::faith::Pledge"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "remove_faith",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "structure_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "update_wonder_ownership",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "wonder_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "update_faithful_ownership",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "structure_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "claim_wonder_points",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "wonder_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "claim_player_faith_points",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "command",
+              "type": "world_native::faith::ClaimPlayer"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "set_faith_blacklist",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "command",
+              "type": "world_native::faith::SetBlacklist"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
         },
         {
           "type": "function",
@@ -6227,6 +6516,88 @@
   },
   "models": [
     {
+      "name": "FaithRules",
+      "identity": "0x466169746852756c6573",
+      "owners": [
+        "structures"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "wonder_rate",
+          "type": "core::integer::u16",
+          "id": "0x776f6e6465725f72617465",
+          "feltLength": 1
+        },
+        {
+          "name": "realm_rate",
+          "type": "core::integer::u16",
+          "id": "0x7265616c6d5f72617465",
+          "feltLength": 1
+        },
+        {
+          "name": "village_rate",
+          "type": "core::integer::u16",
+          "id": "0x76696c6c6167655f72617465",
+          "feltLength": 1
+        },
+        {
+          "name": "owner_share_bps",
+          "type": "core::integer::u16",
+          "id": "0x6f776e65725f73686172655f627073",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": 4
+    },
+    {
+      "name": "FaithBlacklist",
+      "identity": "0x4661697468426c61636b6c697374",
+      "owners": [
+        "structures"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "wonder_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "blocked_id",
+          "type": "core::felt252",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "blocked",
+          "type": "core::bool",
+          "id": "0x626c6f636b6564",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 3,
+      "valueLength": 1,
+      "absence": {
+        "value": "false",
+        "meaning": "The identifier is not blacklisted."
+      }
+    },
+    {
       "name": "SeasonWinThreshold",
       "identity": "0x536561736f6e57696e5468726573686f6c64",
       "owners": [
@@ -8775,6 +9146,10 @@
       ],
       "keyLength": 2,
       "valueLength": 5,
+      "absence": {
+        "value": "empty",
+        "meaning": "The structure has no faith allegiance."
+      },
       "observation": {
         "domain": "faith",
         "fields": {
@@ -8844,44 +9219,6 @@
           "ownershipPointsPerSecond": "points_per_sec_as_owner",
           "pledgePointsPerSecond": "points_per_sec_as_pledger",
           "settledAt": "last_updated_at"
-        }
-      }
-    },
-    {
-      "name": "WonderFaithWinners",
-      "identity": "0x576f6e646572466169746857696e6e657273",
-      "owners": [
-        "structures"
-      ],
-      "scope": "game",
-      "keys": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "high_score",
-          "type": "core::integer::u128",
-          "id": "0x686967685f73636f7265",
-          "feltLength": 1
-        },
-        {
-          "name": "wonder_ids",
-          "type": "core::array::Span::<core::integer::u32>",
-          "id": "0x776f6e6465725f696473",
-          "feltLength": null
-        }
-      ],
-      "keyLength": 1,
-      "valueLength": null,
-      "observation": {
-        "domain": "faith",
-        "fields": {
-          "score": "high_score",
-          "wonders": "wonder_ids"
         }
       }
     },
@@ -10974,6 +11311,34 @@
         {
           "name": "CloseSeason",
           "type": "()"
+        },
+        {
+          "name": "PledgeFaith",
+          "type": "world_native::faith::Pledge"
+        },
+        {
+          "name": "RemoveFaith",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "UpdateWonderOwnership",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "UpdateFaithfulOwnership",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "ClaimWonderPoints",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "ClaimPlayerFaithPoints",
+          "type": "world_native::faith::ClaimPlayer"
+        },
+        {
+          "name": "SetFaithBlacklist",
+          "type": "world_native::faith::SetBlacklist"
         }
       ]
     },
@@ -11122,6 +11487,224 @@
         {
           "name": "amount",
           "type": "core::integer::u128"
+        }
+      ]
+    },
+    "world_native::faith::BlacklistKey": {
+      "type": "struct",
+      "name": "world_native::faith::BlacklistKey",
+      "members": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "wonder_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "blocked_id",
+          "type": "core::felt252"
+        }
+      ]
+    },
+    "world_native::faith::ClaimPlayer": {
+      "type": "struct",
+      "name": "world_native::faith::ClaimPlayer",
+      "members": [
+        {
+          "name": "player",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "wonder_id",
+          "type": "core::integer::u32"
+        }
+      ]
+    },
+    "world_native::faith::FaithfulStructure": {
+      "type": "struct",
+      "name": "world_native::faith::FaithfulStructure",
+      "members": [
+        {
+          "name": "wonder_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "faithful_since",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "fp_to_wonder_owner_per_sec",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "fp_to_struct_owner_per_sec",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "last_recorded_owner",
+          "type": "core::starknet::contract_address::ContractAddress"
+        }
+      ]
+    },
+    "world_native::faith::FaithRules": {
+      "type": "struct",
+      "name": "world_native::faith::FaithRules",
+      "members": [
+        {
+          "name": "wonder_rate",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "realm_rate",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "village_rate",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "owner_share_bps",
+          "type": "core::integer::u16"
+        }
+      ]
+    },
+    "world_native::faith::PlayerFaithKey": {
+      "type": "struct",
+      "name": "world_native::faith::PlayerFaithKey",
+      "members": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "player",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "wonder_id",
+          "type": "core::integer::u32"
+        }
+      ]
+    },
+    "world_native::faith::PlayerFaithPoints": {
+      "type": "struct",
+      "name": "world_native::faith::PlayerFaithPoints",
+      "members": [
+        {
+          "name": "points_claimed",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "points_per_sec_as_owner",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "points_per_sec_as_pledger",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "last_updated_at",
+          "type": "core::integer::u64"
+        }
+      ]
+    },
+    "world_native::faith::Pledge": {
+      "type": "struct",
+      "name": "world_native::faith::Pledge",
+      "members": [
+        {
+          "name": "structure_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "wonder_id",
+          "type": "core::integer::u32"
+        }
+      ]
+    },
+    "world_native::faith::PledgeStory": {
+      "type": "struct",
+      "name": "world_native::faith::PledgeStory",
+      "members": [
+        {
+          "name": "structure_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "wonder_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "owner_rate",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "pledger_rate",
+          "type": "core::integer::u16"
+        }
+      ]
+    },
+    "world_native::faith::SetBlacklist": {
+      "type": "struct",
+      "name": "world_native::faith::SetBlacklist",
+      "members": [
+        {
+          "name": "wonder_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "blocked_id",
+          "type": "core::felt252"
+        },
+        {
+          "name": "blocked",
+          "type": "core::bool"
+        }
+      ]
+    },
+    "world_native::faith::WonderFaith": {
+      "type": "struct",
+      "name": "world_native::faith::WonderFaith",
+      "members": [
+        {
+          "name": "last_recorded_owner",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "claimed_points",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "claim_per_sec",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "claim_last_at",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "owner_claim_per_sec",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "num_structures_pledged",
+          "type": "core::integer::u32"
+        }
+      ]
+    },
+    "world_native::faith::WonderFaithWinners": {
+      "type": "struct",
+      "name": "world_native::faith::WonderFaithWinners",
+      "members": [
+        {
+          "name": "high_score",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "wonder_ids",
+          "type": "core::array::Span::<core::integer::u32>"
         }
       ]
     },
@@ -11911,32 +12494,6 @@
         }
       ]
     },
-    "world_native::ownership::FaithfulStructure": {
-      "type": "struct",
-      "name": "world_native::ownership::FaithfulStructure",
-      "members": [
-        {
-          "name": "wonder_id",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "faithful_since",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "fp_to_wonder_owner_per_sec",
-          "type": "core::integer::u16"
-        },
-        {
-          "name": "fp_to_struct_owner_per_sec",
-          "type": "core::integer::u16"
-        },
-        {
-          "name": "last_recorded_owner",
-          "type": "core::starknet::contract_address::ContractAddress"
-        }
-      ]
-    },
     "world_native::ownership::FaithPointsClaimedStory": {
       "type": "struct",
       "name": "world_native::ownership::FaithPointsClaimedStory",
@@ -11978,46 +12535,6 @@
         {
           "name": "amount",
           "type": "core::integer::u128"
-        }
-      ]
-    },
-    "world_native::ownership::PlayerFaithKey": {
-      "type": "struct",
-      "name": "world_native::ownership::PlayerFaithKey",
-      "members": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "player",
-          "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
-          "name": "wonder_id",
-          "type": "core::integer::u32"
-        }
-      ]
-    },
-    "world_native::ownership::PlayerFaithPoints": {
-      "type": "struct",
-      "name": "world_native::ownership::PlayerFaithPoints",
-      "members": [
-        {
-          "name": "points_claimed",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "points_per_sec_as_owner",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "points_per_sec_as_pledger",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "last_updated_at",
-          "type": "core::integer::u64"
         }
       ]
     },
@@ -12184,6 +12701,14 @@
         {
           "name": "SeasonEnded",
           "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "FaithPledged",
+          "type": "world_native::faith::PledgeStory"
+        },
+        {
+          "name": "FaithRemoved",
+          "type": "world_native::faith::Pledge"
         }
       ]
     },
@@ -12248,50 +12773,6 @@
         {
           "name": "InstantArrivals",
           "type": "()"
-        }
-      ]
-    },
-    "world_native::ownership::WonderFaith": {
-      "type": "struct",
-      "name": "world_native::ownership::WonderFaith",
-      "members": [
-        {
-          "name": "last_recorded_owner",
-          "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
-          "name": "claimed_points",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "claim_per_sec",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "claim_last_at",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "owner_claim_per_sec",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "num_structures_pledged",
-          "type": "core::integer::u32"
-        }
-      ]
-    },
-    "world_native::ownership::WonderFaithWinners": {
-      "type": "struct",
-      "name": "world_native::ownership::WonderFaithWinners",
-      "members": [
-        {
-          "name": "high_score",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "wonder_ids",
-          "type": "core::array::Span::<core::integer::u32>"
         }
       ]
     },
@@ -14214,5 +14695,5 @@
       ]
     }
   },
-  "identity": "997ae130cd422960e12f73950c8254f654807831a256daa9fd4157d43b5dfd4a"
+  "identity": "89027605009a7250522903354dccacddb479c6964a207c7ae291d0777abc40fb"
 }

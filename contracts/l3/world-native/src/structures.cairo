@@ -325,15 +325,15 @@ pub mod StructuresDomain {
     use crate::commands::ExecutionContext;
     use crate::discovery::Discovery;
     use crate::events::RowSet;
+    use crate::faith::{
+        FaithState, FaithfulStructure, PlayerFaithKey, PlayerFaithPoints, WonderFaith, WonderFaithWinners,
+    };
     use crate::game::{IGameDispatcher, IGameDispatcherTrait, assert_playing};
     use crate::geometry::tile_key;
     use crate::lifecycle::Lifecycle;
     use crate::map::{IMapDispatcher, IMapDispatcherTrait};
     use crate::mines::{IMineRulesDispatcher, IMineRulesDispatcherTrait, MinePoolKey};
-    use crate::ownership::{
-        FaithOwnershipState, FaithPointsClaimedStory, FaithfulStructure, PlayerFaithKey, PlayerFaithPoints, Story,
-        StoryEvent, TransferOwnership, WonderFaith, WonderFaithWinners,
-    };
+    use crate::ownership::{Story, StoryEvent, TransferOwnership};
     use crate::resources::{IResourcesDispatcher, IResourcesDispatcherTrait, ResourceKey};
     use crate::rules::RESOURCE_PRECISION;
     use crate::settlement::{
@@ -343,8 +343,10 @@ pub mod StructuresDomain {
     use crate::troops::Coord;
     use crate::upgrades::IUpgradeRulesDispatcherTrait;
     use super::{Structure, StructureBase, StructureRecord, StructureState};
-    component!(path: FaithOwnershipState, storage: faith, event: FaithEvent);
-    impl FaithInternal = FaithOwnershipState::InternalImpl<ContractState>;
+    component!(path: FaithState, storage: faith, event: FaithEvent);
+    impl FaithInternal = FaithState::InternalImpl<ContractState>;
+    #[abi(embed_v0)]
+    impl Faith = FaithState::FaithImpl<ContractState>;
     component!(path: BuildingState, storage: buildings, event: BuildingEvent);
     impl BuildingInternal = BuildingState::InternalImpl<ContractState>;
     component!(path: Lifecycle, storage: lifecycle, event: LifecycleEvent);
@@ -362,7 +364,7 @@ pub mod StructuresDomain {
         #[substorage(v0)]
         buildings: BuildingState::Storage,
         #[substorage(v0)]
-        faith: FaithOwnershipState::Storage,
+        faith: FaithState::Storage,
         address_names: Map<ContractAddress, felt252>,
     }
     #[event]
@@ -371,7 +373,7 @@ pub mod StructuresDomain {
         LifecycleEvent: Lifecycle::Event,
         StructureEvent: StructureState::Event,
         BuildingEvent: BuildingState::Event,
-        FaithEvent: FaithOwnershipState::Event,
+        FaithEvent: FaithState::Event,
         StoryEvent: StoryEvent,
         RowSet: RowSet,
     }
@@ -869,7 +871,7 @@ pub mod StructuresDomain {
         }
     }
     #[abi(embed_v0)]
-    impl FaithViews of crate::ownership::IFaithOwnershipViews<ContractState> {
+    impl FaithViews of crate::faith::IFaithOwnershipViews<ContractState> {
         fn wonder_faith(self: @ContractState, key: ResourceKey) -> WonderFaith {
             self.faith.faith_wonders.read((key.game_id, key.entity_id))
         }
@@ -1140,34 +1142,9 @@ pub mod StructuresDomain {
             let rules = self.game_dispatcher().rules(key.game_id);
             if record.owner != 0.try_into().unwrap() && rules.faith_enabled {
                 let game = self.game_dispatcher().game(key.game_id);
-                if let Some(accrual) = self.faith.transfer(key.game_id, key.entity_id, owner, timestamp, game.end_at) {
-                    self.emit_faith_accrual(key.game_id, accrual, timestamp);
-                }
+                self.faith.transfer(key.game_id, key.entity_id, owner, timestamp, game.end_at);
             }
             self.structures.transfer_owner(key, owner);
-        }
-        fn emit_faith_accrual(
-            ref self: ContractState, game_id: u32, accrual: crate::ownership::Accrual, timestamp: u64,
-        ) {
-            self
-                .emit(
-                    StoryEvent {
-                        version: 1,
-                        game_id,
-                        id: self.game_dispatcher().allocate_entity(game_id),
-                        owner: None,
-                        entity_id: Some(accrual.wonder_id),
-                        tx_hash: starknet::get_tx_info().unbox().transaction_hash,
-                        story: Story::FaithPointsClaimedStory(
-                            FaithPointsClaimedStory {
-                                wonder_id: accrual.wonder_id,
-                                new_points: accrual.new_points,
-                                total_points: accrual.total_points,
-                            },
-                        ),
-                        timestamp,
-                    },
-                );
         }
         fn erect_building(
             ref self: ContractState,

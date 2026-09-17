@@ -34,6 +34,8 @@ pub mod discovery;
 pub mod economy;
 
 pub mod exploration_rewards;
+
+pub mod faith;
 pub mod fixed_constants;
 pub mod game;
 pub mod geometry;

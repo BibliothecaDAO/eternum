@@ -91,6 +91,13 @@ pub enum Command {
     ApplyRelic: crate::relics::ApplyRelic,
     ExtractExplorationReward: u32,
     CloseSeason,
+    PledgeFaith: crate::faith::Pledge,
+    RemoveFaith: u32,
+    UpdateWonderOwnership: u32,
+    UpdateFaithfulOwnership: u32,
+    ClaimWonderPoints: u32,
+    ClaimPlayerFaithPoints: crate::faith::ClaimPlayer,
+    SetFaithBlacklist: crate::faith::SetBlacklist,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]

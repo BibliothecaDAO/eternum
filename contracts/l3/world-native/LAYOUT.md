@@ -397,3 +397,13 @@ configuration; their weights and whole-unit rewards are supplied by the preset, 
 GameState appends an optional victory threshold keyed by game. `None` means unconfigured and a configured zero disables
 point-triggered closure. Closing a season updates its existing end time and status after checkpointing completed
 hyperstructures; no duplicate end-state row is stored. The winner is part of immutable season-end history.
+
+Faith state moves from the ownership module into its own component module, retaining Structures' `faith` substorage and
+its existing maps. Immutable rates and blacklist entries append there. Pledges and blacklist entries emit deletes when
+cleared. Wonder and player accrual remain in that component so ownership transfers settle the same facts that pledge and
+claim commands read; there is no second ownership or score ledger.
+
+Faith winners are a read-only aggregate of the wonder score rows, not a second stored leaderboard. The previous
+high-score and tied-winner maps and their row projection are removed. An id-only initialized-wonder index supports that
+view; tied winners have equal rewards regardless of listing order. This layout change joins the fresh-rehearsal codec
+change and makes no live upgrade claim.

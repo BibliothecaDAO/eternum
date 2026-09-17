@@ -488,6 +488,34 @@ pub mod SeasonDomain {
                 value.serialize(ref calldata);
                 (peers.resources, selector!("bind_bitcoin_phase"))
             },
+            Command::PledgeFaith(value) => {
+                value.serialize(ref calldata);
+                (peers.structures, selector!("pledge_faith"))
+            },
+            Command::RemoveFaith(value) => {
+                value.serialize(ref calldata);
+                (peers.structures, selector!("remove_faith"))
+            },
+            Command::UpdateWonderOwnership(value) => {
+                value.serialize(ref calldata);
+                (peers.structures, selector!("update_wonder_ownership"))
+            },
+            Command::UpdateFaithfulOwnership(value) => {
+                value.serialize(ref calldata);
+                (peers.structures, selector!("update_faithful_ownership"))
+            },
+            Command::ClaimWonderPoints(value) => {
+                value.serialize(ref calldata);
+                (peers.structures, selector!("claim_wonder_points"))
+            },
+            Command::ClaimPlayerFaithPoints(value) => {
+                value.serialize(ref calldata);
+                (peers.structures, selector!("claim_player_faith_points"))
+            },
+            Command::SetFaithBlacklist(value) => {
+                value.serialize(ref calldata);
+                (peers.structures, selector!("set_faith_blacklist"))
+            },
             Command::CloseSeason => (get_contract_address(), selector!("close_season")),
             Command::CreateExplorer(value) => {
                 value.serialize(ref calldata);

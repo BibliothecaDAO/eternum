@@ -27,6 +27,9 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
         value: "zero",
         meaning: "No troops or resurrection delay in this guard slot.",
       };
+    if (row.name === "FaithfulStructure")
+      row.absence = { value: "empty", meaning: "The structure has no faith allegiance." };
+    if (row.name === "FaithBlacklist") row.absence = { value: "false", meaning: "The identifier is not blacklisted." };
     if (row.name === "ResourceAllowance")
       row.absence = { value: "zero", meaning: "No approval for this owner, recipient and resource." };
     if (row.name === "ProductionBonus")
@@ -38,6 +41,16 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
   };
   const domainKey = [{ name: "address", type: struct("lifecycle::Peers")[0].type }];
   return [
+    model(
+      "FaithRules",
+      ["structures"],
+      "game",
+      method("structures", "faith_rules").inputs,
+      struct("faith::FaithRules"),
+    ),
+    model("FaithBlacklist", ["structures"], "game", struct("faith::BlacklistKey"), [
+      { name: "blocked", type: "core::bool" },
+    ]),
     model("SeasonWinThreshold", ["season"], "game", method("season", "season_win_threshold").inputs, [
       { name: "points", type: "core::integer::u128" },
     ]),
@@ -255,22 +268,15 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
           struct("resources::ResourceKey")[0],
           { name: name === "WonderFaith" ? "wonder_id" : "structure_id", type: "core::integer::u32" },
         ],
-        struct(`ownership::${name}`),
+        struct(`faith::${name}`),
       ),
     ),
     model(
       "PlayerFaithPoints",
       ["structures"],
       "game",
-      struct("ownership::PlayerFaithKey"),
-      struct("ownership::PlayerFaithPoints"),
-    ),
-    model(
-      "WonderFaithWinners",
-      ["structures"],
-      "game",
-      method("structures", "wonder_faith_winners").inputs,
-      struct("ownership::WonderFaithWinners"),
+      struct("faith::PlayerFaithKey"),
+      struct("faith::PlayerFaithPoints"),
     ),
 
     model(
@@ -533,9 +539,5 @@ const behaviouralFacts = {
       pledgePointsPerSecond: "points_per_sec_as_pledger",
       settledAt: "last_updated_at",
     },
-  },
-  WonderFaithWinners: {
-    domain: "faith",
-    fields: { score: "high_score", wonders: "wonder_ids" },
   },
 };
