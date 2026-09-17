@@ -41,6 +41,7 @@ export interface HeraldGameDirectoryEntry {
   settled_realms_count: number;
   settled_villages_count: number;
   settlement: HeraldGameSettlementConfig | null;
+  /** Effective phase at Herald's chain clock; Settled requires recorded settlement. */
   status: HeraldGameStatus;
 }
 

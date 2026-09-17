@@ -103,7 +103,7 @@ describe("herald HTTP", () => {
     expect(directoryResponse.headers.get("access-control-allow-origin")).toBe("*");
     await expect(directoryResponse.json()).resolves.toMatchObject({
       chain: "madara",
-      games: [{ game_id: 7, name: "test", status: "Created" }],
+      games: [{ game_id: 7, name: "test", status: "Ended" }],
     });
 
     expect((await handler(new Request("http://herald/madara/games", { method: "OPTIONS" }))).status).toBe(204);
@@ -212,4 +212,19 @@ it("streams directory invalidations atomically and reconnects from the current s
   expect(decode((await resumed.read()).value)).toBe("data: changed\n\n");
   await resumed.cancel();
   expect(listeners.size).toBe(0);
+});
+
+it("derives directory phases from advancing chain time with no registry write", async () => {
+  let timestamp = 1;
+  const handler = createHeraldRequestHandler({ ...httpState, chainTimestamp: () => timestamp });
+  const status = async () => {
+    const response = await handler(new Request("http://herald/madara/games"));
+    expect(response.status).toBe(200);
+    return (await response.json()).games[0].status;
+  };
+  expect(await status()).toBe("Created");
+  timestamp = 2;
+  expect(await status()).toBe("Live");
+  timestamp = 3;
+  expect(await status()).toBe("Ended");
 });

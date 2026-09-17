@@ -61,6 +61,7 @@ describe("Herald game directory", () => {
     const directory = buildGameDirectory({
       chain: "madara",
       confirmedBlock: 136_924,
+      timestamp: 250,
       fold: { modelRows: (model) => models.get(model) ?? [] },
     });
 
@@ -92,6 +93,7 @@ describe("Herald game directory", () => {
     const directory = buildGameDirectory({
       chain: "madara",
       confirmedBlock: 136_924,
+      timestamp: 250,
       fold: { modelRows: (model) => models.get(model) ?? [] },
       playerAddress: "0xabc",
     });
@@ -103,10 +105,64 @@ describe("Herald game directory", () => {
     const directory = buildGameDirectory({
       chain: "madara",
       confirmedBlock: 136_924,
+      timestamp: 250,
       fold: { modelRows: (model) => models.get(model) ?? [] },
       playerAddress: "0xdef",
     });
 
     expect(directory.games[0]?.player_state).toEqual({ registered: false, settled: false });
+  });
+});
+
+const directoryStatus = (timestamp: number, overrides: Partial<typeof registry> = {}) =>
+  buildGameDirectory({
+    chain: "madara",
+    confirmedBlock: 42,
+    timestamp,
+    fold: {
+      modelRows: (model) =>
+        model === "GameRegistry"
+          ? [row("0x1", { ...registry, dev_mode_on: false, status: "Registration", ...overrides })]
+          : (models.get(model) ?? []),
+    },
+  }).games[0].status;
+
+describe("directory phase from the chain clock", () => {
+  it.each([
+    [199, "Registration"],
+    [200, "Live"],
+    [299, "Live"],
+    [300, "Ended"],
+    [360, "Ended"],
+  ])("advances an unchanged registry at timestamp %i to %s", (timestamp, status) => {
+    expect(directoryStatus(timestamp)).toBe(status);
+  });
+
+  it("closes an empty expired registration without a game transaction", () => {
+    expect(
+      directoryStatus(1789592400, {
+        game_id: "0xd",
+        start_main_at: "1789588800",
+        end_at: "1789592400",
+        end_grace_seconds: "86400",
+      }),
+    ).toBe("Ended");
+  });
+
+  it("preserves explicit end and settlement without inventing settlement from time", () => {
+    expect(directoryStatus(100, { status: "Ended" })).toBe("Ended");
+    expect(directoryStatus(100, { status: "Settled" })).toBe("Settled");
+    expect(directoryStatus(999, { status: "Settled" })).toBe("Settled");
+    expect(directoryStatus(999)).toBe("Ended");
+  });
+
+  it("keeps an open-ended game live and a not-yet-open created game created", () => {
+    expect(directoryStatus(999, { end_at: "0x0" })).toBe("Live");
+    expect(directoryStatus(100, { status: "Created" })).toBe("Created");
+  });
+
+  it("opens development games immediately but respects their scheduled end", () => {
+    expect(directoryStatus(100, { dev_mode_on: true })).toBe("Live");
+    expect(directoryStatus(300, { dev_mode_on: true })).toBe("Ended");
   });
 });
