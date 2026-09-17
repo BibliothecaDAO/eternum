@@ -62,6 +62,8 @@ pub enum Story {
     SeasonEnded: ContractAddress,
     FaithPledged: crate::faith::PledgeStory,
     FaithRemoved: crate::faith::Pledge,
+    PrizeDistributionFinal: u128,
+    PrizeResult: crate::blitz_prizes::PrizeResult,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]

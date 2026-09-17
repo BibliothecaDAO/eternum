@@ -101,6 +101,9 @@ pub enum Command {
     FundFaithPrizes: u128,
     DistributeFaithPrizes,
     ClaimFaithPrize: crate::faith::ClaimPlayer,
+    AllocateGameChests,
+    RankPlayers: crate::blitz_prizes::RankPlayers,
+    ResetRanking,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]

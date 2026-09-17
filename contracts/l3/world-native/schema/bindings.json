@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "37fcdfd46fecf548855bbc1ceb6486cbc878a810ece84ffff794a40ba62ba732",
+  "schemaIdentity": "8e6d410343d9e45ce61ba001c5ef7ed1d3c16e8a6d2858a870a2ac7e16867d9e",
   "commandAbi": [
     {
       "type": "impl",
@@ -89,6 +89,65 @@
           ],
           "outputs": [],
           "state_mutability": "external"
+        }
+      ]
+    },
+    {
+      "type": "impl",
+      "name": "PrizeSeason",
+      "interface_name": "world_native::blitz_prizes::IPrizeSeason"
+    },
+    {
+      "type": "interface",
+      "name": "world_native::blitz_prizes::IPrizeSeason",
+      "items": [
+        {
+          "type": "function",
+          "name": "checkpoint_prize_points",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "timestamp",
+              "type": "core::integer::u64"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "finalize_ranking",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "trial_id",
+              "type": "core::integer::u128"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "prize_recipient",
+          "inputs": [
+            {
+              "name": "player",
+              "type": "core::starknet::contract_address::ContractAddress"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::starknet::contract_address::ContractAddress"
+            }
+          ],
+          "state_mutability": "view"
         }
       ]
     },
@@ -1048,6 +1107,34 @@
       ]
     },
     {
+      "type": "struct",
+      "name": "core::array::Span::<core::starknet::contract_address::ContractAddress>",
+      "members": [
+        {
+          "name": "snapshot",
+          "type": "@core::array::Array::<core::starknet::contract_address::ContractAddress>"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::blitz_prizes::RankPlayers",
+      "members": [
+        {
+          "name": "trial_id",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "committed",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "players",
+          "type": "core::array::Span::<core::starknet::contract_address::ContractAddress>"
+        }
+      ]
+    },
+    {
       "type": "enum",
       "name": "world_native::commands::Command",
       "variants": [
@@ -1314,6 +1401,18 @@
         {
           "name": "ClaimFaithPrize",
           "type": "world_native::faith::ClaimPlayer"
+        },
+        {
+          "name": "AllocateGameChests",
+          "type": "()"
+        },
+        {
+          "name": "RankPlayers",
+          "type": "world_native::blitz_prizes::RankPlayers"
+        },
+        {
+          "name": "ResetRanking",
+          "type": "()"
         }
       ]
     },
@@ -3276,6 +3375,36 @@
       ]
     },
     {
+      "type": "struct",
+      "name": "world_native::blitz_prizes::PrizeResult",
+      "members": [
+        {
+          "name": "trial_id",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "index",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "player",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "owner",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "rank",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "chests",
+          "type": "core::integer::u16"
+        }
+      ]
+    },
+    {
       "type": "enum",
       "name": "world_native::ownership::Story",
       "variants": [
@@ -3370,6 +3499,14 @@
         {
           "name": "FaithRemoved",
           "type": "world_native::faith::Pledge"
+        },
+        {
+          "name": "PrizeDistributionFinal",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "PrizeResult",
+          "type": "world_native::blitz_prizes::PrizeResult"
         }
       ]
     },
@@ -3469,6 +3606,68 @@
     }
   ],
   "models": [
+    {
+      "name": "SeriesChestRules",
+      "scope": "deployment",
+      "schema": {
+        "series_id": "BigInt",
+        "num_games": "Number",
+        "total_chests": "BigInt",
+        "cap_ratio_bps": "BigInt"
+      }
+    },
+    {
+      "name": "SeriesChestState",
+      "scope": "deployment",
+      "schema": {
+        "series_id": "BigInt",
+        "game_index": "Number",
+        "ema_players_scaled": "BigInt",
+        "recent_first": "BigInt",
+        "recent_second": "BigInt",
+        "recent_third": "BigInt",
+        "recent_count": "Number",
+        "anchor_first": "BigInt",
+        "anchor_second": "BigInt",
+        "anchor_count": "Number",
+        "last_rate_bps": "BigInt",
+        "soft_supply": "BigInt",
+        "overspend_remaining": "BigInt"
+      }
+    },
+    {
+      "name": "GameChestReward",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "allocated": "Number",
+        "distributed": "Number"
+      }
+    },
+    {
+      "name": "RankingTrial",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "trial_id": "BigInt",
+        "committed": "Number",
+        "processed": "Number",
+        "last_rank": "Number",
+        "last_points": "BigInt",
+        "total_points": "BigInt"
+      }
+    },
+    {
+      "name": "PlayerRank",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "player": "BigInt",
+        "rank": "Number",
+        "chests": "Number",
+        "elite": "Boolean"
+      }
+    },
     {
       "name": "FaithRewardToken",
       "scope": "game",

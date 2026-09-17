@@ -190,6 +190,9 @@ pub mod SettlementDomain {
         fn settlement_progress(self: @ContractState, game_id: u32) -> SettlementProgress {
             self.settlements.progress.read(game_id)
         }
+        fn player_has_settled(self: @ContractState, game_id: u32, player: ContractAddress) -> bool {
+            self.settlements.entered_players.read((game_id, player))
+        }
         fn player_entry(self: @ContractState, key: EntryKey) -> Option<PlayerEntry> {
             self.settlements.entry(key)
         }

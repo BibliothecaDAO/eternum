@@ -26,7 +26,7 @@ fn rules() -> HyperstructureRules {
 pub fn setup() -> (super::Deployment, ResourceKey, ResourceKey, ResourceKey) {
     setup_mode(false)
 }
-fn setup_mode(blitz: bool) -> (super::Deployment, ResourceKey, ResourceKey, ResourceKey) {
+pub fn setup_mode(blitz: bool) -> (super::Deployment, ResourceKey, ResourceKey, ResourceKey) {
     let mut ruleset = super::recorded::rules();
     ruleset.blitz_mode_on = blitz;
     ruleset.victory_points_grant_config.hyp_points_per_second = 1000;
@@ -303,7 +303,7 @@ fn construction_requirements_preserve_per_resource_seed_division_and_exclusive_m
     );
 }
 
-fn settlement(deployment: super::Deployment, mode: crate::settlement::SettlementMode, profile: u8) {
+pub fn settlement(deployment: super::Deployment, mode: crate::settlement::SettlementMode, profile: u8) {
     let fields = snforge_std::fs::read_txt(@snforge_std::fs::FileTrait::new("tests/fixtures/settlement.txt"));
     let mut fields = fields.span();
     let grants: crate::settlement::RealmGrants = Serde::deserialize(ref fields).unwrap();

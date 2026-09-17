@@ -615,6 +615,8 @@ fn realm_upgrade_changes_only_its_display_and_rejects_foreign_occupants() {
     assert!(safe.vacate(key, 7).is_err());
 }
 
+mod blitz_prizes;
+
 mod building_commands;
 mod faith;
 

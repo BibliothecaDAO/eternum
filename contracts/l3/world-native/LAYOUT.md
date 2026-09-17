@@ -413,3 +413,9 @@ funded/distributed pool and `(game_id, player, wonder_id)` claim markers reserve
 from the frozen scores and pool; no per-wonder prize allocation duplicates those facts. Only Prizes may settle faith
 scores for distribution, and only Season may issue payout commands. The lifecycle peer set appends `prizes`; this nested
 layout change requires the fresh rehearsal deployment already required above.
+
+Prizes appends `BlitzPrizeState`: immutable series chest terms and the rolling controller state keyed by series id; game
+chest allocation and ranking trial keyed by game; one rank/award row keyed by game and player; and an internal ordered
+player index for batch continuation, tie allocation and reset. No per-rank counts, duplicate rank lists or cached ring
+sums are stored. Series records are shared deployment facts, while every game record begins with game id. Ranking resets
+emit deletions; finalized rankings and game chest allocations cannot be reset or allocated twice.

@@ -29,6 +29,8 @@ pub mod parity_types {
     pub use crate::rules::{TroopDamageConfig, TroopStaminaConfig};
     pub use crate::troops::{Stamina, TroopBoosts, TroopTier, TroopType, Troops};
 }
+
+pub mod blitz_prizes;
 pub mod buildings;
 pub mod discovery;
 pub mod economy;
@@ -59,6 +61,7 @@ pub mod random;
 pub mod relics;
 pub mod resources;
 pub mod resources_domain;
+pub mod series_chests;
 pub mod structures;
 
 pub mod trade;

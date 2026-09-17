@@ -119,6 +119,7 @@ pub trait ISettlementAdmission<T> {
 
 #[starknet::interface]
 pub trait ISettlementViews<T> {
+    fn player_has_settled(self: @T, game_id: u32, player: ContractAddress) -> bool;
     fn settlement_rules(self: @T, game_id: u32) -> SettlementRules;
     fn realm_grants(self: @T, game_id: u32) -> RealmGrants;
     fn settlement_progress(self: @T, game_id: u32) -> SettlementProgress;

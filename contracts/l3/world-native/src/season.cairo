@@ -137,6 +137,35 @@ pub mod SeasonDomain {
     }
 
     #[abi(embed_v0)]
+    impl PrizeSeason of crate::blitz_prizes::IPrizeSeason<ContractState> {
+        fn checkpoint_prize_points(ref self: ContractState, game_id: u32, timestamp: u64) {
+            let peers = self.lifecycle.require_active();
+            assert!(get_caller_address() == peers.prizes, "only prizes domain");
+            crate::commands::assert_context_time(timestamp);
+            let game = self.games.game(game_id);
+            assert!(game.end_at != 0 && timestamp >= game.end_at, "game not ended");
+            crate::hyperstructures::IHyperstructuresDispatcherTrait::settle_completed_hyperstructures(
+                crate::hyperstructures::IHyperstructuresDispatcher { contract_address: peers.economy },
+                game_id,
+                timestamp,
+            );
+        }
+        fn finalize_ranking(ref self: ContractState, game_id: u32, trial_id: u128) {
+            assert!(get_caller_address() == self.lifecycle.require_active().prizes, "only prizes domain");
+            let mut game = self.games.game(game_id);
+            assert!(game.final_trial_id == 0 && trial_id != 0 && trial_id != 1000, "invalid final ranking");
+            game.final_trial_id = trial_id;
+            self.games.write_game(game_id, game);
+        }
+        fn prize_recipient(self: @ContractState, player: ContractAddress) -> ContractAddress {
+            let owner = IPlayerRegistryDispatcher { contract_address: self.authentication.read().registry }
+                .owner_of(player);
+            assert!(owner != 0.try_into().unwrap(), "unregistered prize recipient");
+            owner
+        }
+    }
+
+    #[abi(embed_v0)]
     impl SettlementAdmission of crate::settlement::ISettlementAdmission<ContractState> {
         fn settlement_admission(
             self: @ContractState, game_id: u32, actor: ContractAddress,
@@ -316,7 +345,8 @@ pub mod SeasonDomain {
                     || caller == peers.map
                     || caller == peers.structures
                     || caller == peers.resources
-                    || caller == peers.economy,
+                    || caller == peers.economy
+                    || caller == peers.prizes,
                 "only gameplay domain",
             );
             self.games.allocate(game_id)
@@ -491,6 +521,12 @@ pub mod SeasonDomain {
             Command::FundFaithPrizes(value) => {
                 value.serialize(ref calldata);
                 (peers.prizes, selector!("fund_faith_prizes"))
+            },
+            Command::AllocateGameChests => (peers.prizes, selector!("allocate_game_chests")),
+            Command::ResetRanking => (peers.prizes, selector!("reset_ranking")),
+            Command::RankPlayers(value) => {
+                value.serialize(ref calldata);
+                (peers.prizes, selector!("rank_players"))
             },
             Command::DistributeFaithPrizes => (peers.prizes, selector!("distribute_faith_prizes")),
             Command::ClaimFaithPrize(value) => {

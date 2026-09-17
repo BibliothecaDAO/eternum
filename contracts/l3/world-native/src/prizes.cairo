@@ -2,6 +2,7 @@
 pub mod PrizesDomain {
     use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
     use starknet::{ContractAddress, get_caller_address, get_contract_address};
+    use crate::blitz_prizes::BlitzPrizeState;
     use crate::commands::ExecutionContext;
     use crate::events::RowSet;
     use crate::faith::{
@@ -11,6 +12,9 @@ pub mod PrizesDomain {
     use crate::faith_prizes::{IPrizeTokenDispatcher, IPrizeTokenDispatcherTrait, PrizePool};
     use crate::game::{GameRegistry, IGameDispatcher, IGameDispatcherTrait};
     use crate::lifecycle::Lifecycle;
+    component!(path: BlitzPrizeState, storage: blitz, event: BlitzEvent);
+    #[abi(embed_v0)]
+    impl BlitzPrizes = BlitzPrizeState::BlitzPrizesImpl<ContractState>;
     component!(path: Lifecycle, storage: lifecycle, event: LifecycleEvent);
     #[abi(embed_v0)]
     impl Domain = Lifecycle::DomainImpl<ContractState>;
@@ -19,6 +23,8 @@ pub mod PrizesDomain {
     struct Storage {
         #[substorage(v0)]
         lifecycle: Lifecycle::Storage,
+        #[substorage(v0)]
+        blitz: BlitzPrizeState::Storage,
         reward_tokens: Map<u32, Option<ContractAddress>>,
         faith_pools: Map<u32, PrizePool>,
         faith_claims: Map<(u32, ContractAddress, u32), bool>,
@@ -27,6 +33,7 @@ pub mod PrizesDomain {
     #[derive(Drop, starknet::Event)]
     enum Event {
         LifecycleEvent: Lifecycle::Event,
+        BlitzEvent: BlitzPrizeState::Event,
         RowSet: RowSet,
     }
     #[constructor]

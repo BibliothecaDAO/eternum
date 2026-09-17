@@ -27,6 +27,8 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
         value: "zero",
         meaning: "No troops or resurrection delay in this guard slot.",
       };
+    if (row.name === "RankingTrial" || row.name === "PlayerRank")
+      row.absence = { value: "empty", meaning: "No ranking trial or player rank has been recorded." };
     if (row.name === "FaithfulStructure")
       row.absence = { value: "empty", meaning: "The structure has no faith allegiance." };
     if (row.name === "FaithBlacklist") row.absence = { value: "false", meaning: "The identifier is not blacklisted." };
@@ -41,6 +43,35 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
   };
   const domainKey = [{ name: "address", type: struct("lifecycle::Peers")[0].type }];
   return [
+    model(
+      "SeriesChestRules",
+      ["prizes"],
+      "deployment",
+      method("prizes", "series_chest_rules").inputs,
+      struct("series_chests::SeriesRules"),
+    ),
+    model(
+      "SeriesChestState",
+      ["prizes"],
+      "deployment",
+      method("prizes", "series_chest_state").inputs,
+      struct("series_chests::SeriesState"),
+    ),
+    model(
+      "GameChestReward",
+      ["prizes"],
+      "game",
+      method("prizes", "game_chests").inputs,
+      struct("blitz_prizes::GameChests"),
+    ),
+    model(
+      "RankingTrial",
+      ["prizes"],
+      "game",
+      method("prizes", "ranking_trial").inputs,
+      struct("blitz_prizes::RankingTrial"),
+    ),
+    model("PlayerRank", ["prizes"], "game", method("prizes", "player_rank").inputs, struct("blitz_prizes::PlayerRank")),
     model("FaithRewardToken", ["prizes"], "game", method("prizes", "faith_reward_token").inputs, [
       { name: "token", type: method("prizes", "faith_reward_token").outputs[0].type },
     ]),
