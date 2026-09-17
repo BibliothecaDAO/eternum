@@ -384,6 +384,14 @@ const formatters: Record<string, StoryFormatter> = {
       icon: "troop",
     };
   },
+  TroopsTransferred: (event, payload, components) => ({
+    title: "Troops reassigned",
+    description: joinPieces([
+      `Route: ${describeArmy(payload.source, event, components)} → ${describeArmy(payload.target, event, components)}`,
+      `Transferred: ${formatResourceAmount(payload.amount)}`,
+    ]),
+    icon: "troop",
+  }),
   ExplorerExplorerSwapStory: (_, payload, components) => {
     const fromRef = describeExplorer(payload.from_explorer_id, components);
     const toRef = describeExplorer(payload.to_explorer_id, components);
@@ -509,6 +517,18 @@ function describeBuildingStatus(payload: Record<string, unknown>): string {
   if (payload.paused === truthy) return "Paused";
   if (payload.unpaused === truthy) return "Resumed";
   return "Updated";
+}
+
+function describeArmy(value: unknown, event: StoryEventSystemUpdate, components?: NativeFactStore): string {
+  if (!value || typeof value !== "object") throw new Error("Missing troop transfer participant");
+  const army = value as Record<string, unknown>;
+  if (army.Explorer !== undefined) return describeExplorer(army.Explorer, components);
+  if (!army.Guard || typeof army.Guard !== "object") throw new Error("Unknown troop transfer participant");
+  const guard = army.Guard as Record<string, unknown>;
+  const structure =
+    describeStructureDetails(event, components, undefined, undefined, guard.structure_id) ??
+    `Structure ${formatNumber(guard.structure_id)}`;
+  return `${structure} · ${formatSlotLabel(guard.slot)}`;
 }
 
 function describeStructureDetails(

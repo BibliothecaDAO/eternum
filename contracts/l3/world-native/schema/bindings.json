@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "0894c830298da14b84984e73e7fe19e021919ac42879b4680f79237a57866ace",
+  "schemaIdentity": "a82b6f9149c9bba7f476cd8542d46c0cee826cffb9a58d50665447cd8482ffd9",
   "commandAbi": [
     {
       "type": "impl",
@@ -3669,6 +3669,46 @@
       ]
     },
     {
+      "type": "struct",
+      "name": "world_native::troop_management::ExplorerCreated",
+      "members": [
+        {
+          "name": "explorer_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "structure_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "category",
+          "type": "world_native::troops::TroopType"
+        },
+        {
+          "name": "tier",
+          "type": "world_native::troops::TroopTier"
+        },
+        {
+          "name": "amount",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "spawn_direction",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::troop_management::ExplorerRemoved",
+      "members": [
+        {
+          "name": "explorer_id",
+          "type": "core::integer::u32"
+        }
+      ]
+    },
+    {
       "type": "enum",
       "name": "world_native::ownership::Story",
       "variants": [
@@ -3775,6 +3815,26 @@
         {
           "name": "RelicCrafted",
           "type": "core::integer::u8"
+        },
+        {
+          "name": "ExplorerCreateStory",
+          "type": "world_native::troop_management::ExplorerCreated"
+        },
+        {
+          "name": "ExplorerAddStory",
+          "type": "world_native::troop_management::RecruitExplorer"
+        },
+        {
+          "name": "ExplorerDeleteStory",
+          "type": "world_native::troop_management::ExplorerRemoved"
+        },
+        {
+          "name": "GuardDeleteStory",
+          "type": "world_native::troop_management::GuardSlot"
+        },
+        {
+          "name": "TroopsTransferred",
+          "type": "world_native::troop_management::TransferTroops"
         }
       ]
     },

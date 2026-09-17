@@ -1,4 +1,7 @@
-use snforge_std::{start_cheat_block_timestamp_global, start_cheat_caller_address, stop_cheat_caller_address};
+use snforge_std::{
+    EventSpyTrait, EventsFilterTrait, spy_events, start_cheat_block_timestamp_global, start_cheat_caller_address,
+    stop_cheat_caller_address,
+};
 use crate::commands::{Command, ExecutionContext};
 use crate::market::{
     AddLiquidity, BankPlacement, BankRules, IBankDispatcher, IBankDispatcherTrait, IBankSafeDispatcher,
@@ -441,4 +444,22 @@ fn market_price_and_share_vectors_preserve_integer_rounding() {
 #[should_panic(expected: "liquidity mints zero shares")]
 fn liquidity_rejects_a_deposit_that_rounds_to_zero_shares() {
     crate::market::liquidity_cost(Market { lords: 1000, resource: 1000, shares: 1 }, 1, 1);
+}
+
+#[test]
+fn liquidity_changes_allocate_distinct_story_ids_instead_of_reusing_the_bank() {
+    let (d, source, _) = setup();
+    let mut spy = spy_events();
+    assert!(execute(d, add(source, 1000 * RESOURCE_PRECISION, 1000 * RESOURCE_PRECISION), 40));
+    assert!(execute(d, add(source, 1000 * RESOURCE_PRECISION, 1000 * RESOURCE_PRECISION), 41));
+    let mut ids = array![];
+    for (_, event) in spy.get_events().emitted_by(d.peers.economy).events.span() {
+        if *event.keys.at(0) == selector!("StoryEvent") {
+            ids.append(*event.keys.at(3));
+        }
+    }
+    assert_eq!(ids.len(), 2);
+    assert_ne!(*ids.at(0), *ids.at(1));
+    assert_ne!(*ids.at(0), BANK.into());
+    assert_ne!(*ids.at(1), BANK.into());
 }

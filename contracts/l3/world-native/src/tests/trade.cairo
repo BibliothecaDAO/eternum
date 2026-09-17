@@ -1,4 +1,7 @@
-use snforge_std::{start_cheat_block_timestamp_global, start_cheat_caller_address, stop_cheat_caller_address};
+use snforge_std::{
+    EventSpyTrait, EventsFilterTrait, spy_events, start_cheat_block_timestamp_global, start_cheat_caller_address,
+    stop_cheat_caller_address,
+};
 use crate::commands::{Command, ExecutionContext};
 use crate::resources::{IResourcesDispatcher, IResourcesDispatcherTrait, ResourceAmount, ResourceKey, ResourceSlot};
 use crate::rules::RESOURCE_PRECISION;
@@ -291,4 +294,22 @@ fn village_troop_purchases_use_trade_ownership_and_troop_transport_speed() {
     assert!(execute(deployment, accept(key, taker, 1), 50));
     assert_eq!(arrival(deployment, taker, 50, 40), array![ResourceAmount { resource_type: 26, amount: 10 }].span());
     assert_eq!(arrival(deployment, maker, 50, 20), array![ResourceAmount { resource_type: 3, amount: 20 }].span());
+}
+
+#[test]
+fn trade_creation_and_cancellation_have_distinct_story_ids() {
+    let (d, maker, _) = setup();
+    let mut spy = spy_events();
+    let key = create(d, offer(maker));
+    assert!(execute(d, Command::CancelTradeOrder(key.trade_id), 50));
+    let mut ids = array![];
+    for (_, event) in spy.get_events().emitted_by(d.peers.economy).events.span() {
+        if *event.keys.at(0) == selector!("StoryEvent") {
+            ids.append(*event.keys.at(3));
+        }
+    }
+    assert_eq!(ids.len(), 2);
+    assert_ne!(*ids.at(0), *ids.at(1));
+    assert_ne!(*ids.at(0), key.trade_id.into());
+    assert_ne!(*ids.at(1), key.trade_id.into());
 }
