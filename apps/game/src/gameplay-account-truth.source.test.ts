@@ -5,10 +5,7 @@ import { join, relative, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const CLIENT_SOURCE_ROOT = resolve(process.cwd(), "src");
-const IDENTITY_WALLET_BOUNDARIES = [
-  "hooks/context/gameplay-account-sync.tsx",
-  "ui/modules/identity/identity-login.tsx",
-];
+const IDENTITY_WALLET_BOUNDARIES = ["hooks/context/gameplay-account-sync.tsx"];
 
 const sourceFiles = (directory: string): string[] =>
   readdirSync(directory).flatMap((entry) => {

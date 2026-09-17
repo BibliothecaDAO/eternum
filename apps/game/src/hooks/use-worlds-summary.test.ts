@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const reactQueryMocks = vi.hoisted(() => ({
   useQuery: vi.fn(),
+  useQueryClient: vi.fn(),
 }));
 
 const directoryMocks = vi.hoisted(() => ({
@@ -13,6 +14,8 @@ const summaryMocks = vi.hoisted(() => ({
   fetchAppchainWorldsSummary: vi.fn(),
 }));
 
+vi.mock("react", () => ({ useEffect: vi.fn() }));
+vi.mock("@bibliothecadao/eternum/game-client", () => ({ subscribeHeraldDirectory: vi.fn() }));
 vi.mock("@tanstack/react-query", () => reactQueryMocks);
 vi.mock("@/runtime/world/world-directory", () => directoryMocks);
 vi.mock("./appchain-worlds-summary", () => summaryMocks);

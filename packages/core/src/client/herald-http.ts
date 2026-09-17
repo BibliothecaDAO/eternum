@@ -125,3 +125,29 @@ export const fetchHeraldGameLeaderboard = async (
     `Herald leaderboard for ${world.id} game ${gameId}`,
   );
 };
+
+const directoryStreams = new Map<string, { source: EventSource; listeners: Set<() => void> }>();
+
+/** One invalidation stream per world, shared by every mounted directory consumer. */
+export function subscribeHeraldDirectory(world: WorldDeployment, onChange: () => void): () => void {
+  const url = buildHeraldUrl(world, "/games/updates");
+  let stream = directoryStreams.get(url);
+  if (!stream) {
+    const listeners = new Set<() => void>();
+    const source = new EventSource(url);
+    source.onmessage = () => {
+      for (const listener of listeners) listener();
+    };
+    stream = { source, listeners };
+    directoryStreams.set(url, stream);
+  }
+  stream.listeners.add(onChange);
+  const subscribed = stream;
+  return () => {
+    if (!subscribed.listeners.delete(onChange)) return;
+    if (!subscribed.listeners.size) {
+      subscribed.source.close();
+      directoryStreams.delete(url);
+    }
+  };
+}

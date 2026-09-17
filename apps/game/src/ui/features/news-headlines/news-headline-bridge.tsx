@@ -1,4 +1,5 @@
 import { getScopedGameId } from "@bibliothecadao/eternum/game-client";
+import { resolveGameEndHeadline } from "./game-end-headline";
 import { createBuildingMilestones } from "./building-milestones";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
@@ -7,12 +8,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore — module resolution handled by bundler at runtime
-import { Position } from "@bibliothecadao/eternum";
+import { Position, displayPlayerName, getAddressName } from "@bibliothecadao/eternum";
 import { getActiveGameSyncRuntime } from "@bibliothecadao/eternum/game-sync";
 // @ts-ignore
 import { ContractAddress, StructureType } from "@bibliothecadao/types";
 // @ts-ignore
-import { useGame, useQuery } from "@bibliothecadao/react";
+import { useGame, useQuery, useNativeRevision } from "@bibliothecadao/react";
 
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useGoToStructure, useNavigateToMapView } from "@/hooks/helpers/use-navigate";
@@ -36,6 +37,7 @@ export function NewsHeadlineBridge() {
   const { isMapView } = useQuery();
   const setSelectedHex = useUIStore((state) => state.setSelectedHex);
   const gameWinner = useUIStore((state) => state.gameWinner);
+  const endRevision = useNativeRevision(["GameRegistry", "PlayerRank", "AddressName"]);
   const goToStructure = useGoToStructure(setup);
   const navigateToMapView = useNavigateToMapView();
   const entityReader = useMemo(() => {
@@ -54,9 +56,6 @@ export function NewsHeadlineBridge() {
 
   // Dedup
   const shownIdsRef = useRef(new Set<string>());
-
-  // Init-skip refs
-  const gameEndFiredRef = useRef(false);
 
   // Navigation refs
   const navRef = useRef({ goToStructure, navigateToMapView, setSelectedHex, isMapView });
@@ -165,19 +164,15 @@ export function NewsHeadlineBridge() {
 
   // --- Game end detection ---
   useEffect(() => {
-    if (!gameWinner || gameEndFiredRef.current) return;
-    gameEndFiredRef.current = true;
-
-    const winnerName = gameWinner.name || "Unknown";
-    enqueue({
-      id: `game-end:${gameWinner.address}`,
-      type: "game-end",
-      title: "THE AGE HAS ENDED",
-      description: `"${winnerName} claims victory"`,
-      icon: "game-end",
-      timestamp: Date.now(),
-    });
-  }, [gameWinner, enqueue]);
+    const headline = resolveGameEndHeadline(
+      setup.store,
+      getScopedGameId(),
+      nowSeconds,
+      gameWinner?.address ?? null,
+      (address) => displayPlayerName(address, getAddressName(address, setup.store)),
+    );
+    if (headline) enqueue(headline);
+  }, [setup.store, nowSeconds, gameWinner, endRevision, enqueue]);
 
   // --- Navigation handler ---
   const handleNavigate = useCallback(

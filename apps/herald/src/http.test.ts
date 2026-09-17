@@ -185,3 +185,31 @@ it("serves the bounded story cursor only when history decoding is healthy", asyn
   expect((await healthy(new Request(endpoint + "?after=bad"))).status).toBe(400);
   expect((await handler(new Request(endpoint))).status).toBe(503);
 });
+
+it("streams directory invalidations atomically and reconnects from the current snapshot", async () => {
+  const listeners = new Set<(models: ReadonlySet<string>) => void>();
+  const handler = createHeraldRequestHandler({
+    ...httpState,
+    subscribeConfirmedChanges: (listener) => {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+  });
+  const response = await handler(new Request("http://herald/madara/games/updates"));
+  expect(response.headers.get("content-type")).toBe("text/event-stream");
+  const reader = response.body!.getReader();
+  const decode = (data: Uint8Array | undefined) => new TextDecoder().decode(data);
+  expect(decode((await reader.read()).value)).toBe("data: changed\n\n");
+  for (const listener of listeners) listener(new Set(["ExplorerTroops"]));
+  for (const listener of listeners) listener(new Set(["Structure", "GameRegistry"]));
+  expect(decode((await reader.read()).value)).toBe("data: changed\n\n");
+  await reader.cancel();
+  expect(listeners.size).toBe(0);
+  const reconnected = await handler(new Request("http://herald/madara/games/updates"));
+  const resumed = reconnected.body!.getReader();
+  expect(decode((await resumed.read()).value)).toBe("data: changed\n\n");
+  await resumed.cancel();
+  expect(listeners.size).toBe(0);
+});

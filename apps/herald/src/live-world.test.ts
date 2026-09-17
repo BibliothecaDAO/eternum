@@ -295,6 +295,8 @@ describe("LiveWorld", () => {
   it("publishes one pre-confirmed diff per transaction and game", async () => {
     const { live } = liveFixture();
     const socket = attachResumed(live);
+    const directoryChanges = vi.fn(() => live.modelRows("TestModel"));
+    const unsubscribe = live.subscribeConfirmedChanges(directoryChanges);
 
     const first = subscribedSet("0x222", "0x2", 0);
     const second = subscribedSet("0x222", "0x3", 1, "0xdef");
@@ -302,6 +304,7 @@ describe("LiveWorld", () => {
     const receipt = live.acceptReceipt(preconfirmedReceipt([first, second]));
     await endMacrotask();
     expect(socket.messages.filter(({ type }) => type === "diff")).toHaveLength(0);
+    expect(directoryChanges).not.toHaveBeenCalled();
 
     live.acceptPreconfirmedEvent(second);
     await endMacrotask();
@@ -310,6 +313,8 @@ describe("LiveWorld", () => {
     expect(coalescedDiffs).toHaveLength(1);
     expect(coalescedDiffs[0]!.set).toHaveLength(2);
     expect(coalescedDiffs[0]).toMatchObject({ transaction_hash: "0x222" });
+    expect(directoryChanges).not.toHaveBeenCalled();
+    unsubscribe();
 
     const nextTransaction = subscribedSet("0x333", "0x4");
     live.acceptPreconfirmedEvent(nextTransaction);
@@ -880,4 +885,18 @@ describe("timed review snapshots", () => {
       expect.objectContaining({ game_id: "7", confirmed_block: 13 }),
     );
   });
+});
+
+it("invalidates directory reads only after the confirmed facts change", async () => {
+  const confirmed = { ...setEvent("0x101", "0x201", ["0x1", "0x7", "0x1", "0x3"]), block_number: 13 };
+  const { live } = liveFixture({ rpc: rpcFixture(replacementBlock(), [confirmed]) });
+  const notify = vi.fn(() => live.modelRows("TestModel")[0]!.value);
+  const stop = live.subscribeConfirmedChanges(notify);
+  live.acceptPreconfirmedEvent(subscribedSet("0x201", "0x3"));
+  expect(notify).not.toHaveBeenCalled();
+  await live.reconcileAfterSubscribe();
+  expect(notify).toHaveBeenCalledOnce();
+  expect(notify).toHaveBeenCalledWith(new Set(["TestModel"]));
+  expect(notify.mock.results[0]!.value).toEqual({ game_id: "0x7", value: "0x3" });
+  stop();
 });
