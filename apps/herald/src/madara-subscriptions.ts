@@ -1,6 +1,9 @@
-import type { ModelRegistry } from "./model-registry";
 import type { RpcHead, RpcReceipt, RpcSubscribedEvent, RpcSubscribedTransaction } from "./types";
-import { WORLD_EVENT_SELECTORS } from "./world-event-decoder";
+
+export interface WorldEventSubscription {
+  from_address: string;
+  keys: string[][];
+}
 
 interface SubscriptionHandlers {
   onEvent: (event: RpcSubscribedEvent) => Promise<void> | void;
@@ -19,7 +22,6 @@ interface JsonRpcMessage {
   result?: unknown;
 }
 
-const SUBSCRIPTION_COUNT = 4;
 const RECONNECT_MS = 200;
 
 export class MadaraSubscriptions {
@@ -34,7 +36,7 @@ export class MadaraSubscriptions {
 
   constructor(
     private readonly url: string,
-    private readonly registry: ModelRegistry,
+    private readonly eventSubscription: WorldEventSubscription | undefined,
     private readonly handlers: SubscriptionHandlers,
   ) {}
 
@@ -66,7 +68,7 @@ export class MadaraSubscriptions {
         const payload = JSON.parse(String(message.data)) as JsonRpcMessage;
         if (payload.id !== undefined) {
           this.acceptSubscription(payload, ready);
-          if (ready.size === SUBSCRIPTION_COUNT && !subscriptionsReady) {
+          if (ready.size === (this.eventSubscription ? 4 : 3) && !subscriptionsReady) {
             subscriptionsReady = true;
             this.enqueue(async () => {
               await this.handlers.onReady();
@@ -98,11 +100,12 @@ export class MadaraSubscriptions {
 
   private subscribe(socket: WebSocket): void {
     this.send(socket, 1, "starknet_subscribeNewHeads", {});
-    this.send(socket, 2, "starknet_subscribeEvents", {
-      from_address: this.registry.worldAddress,
-      finality_status: "PRE_CONFIRMED",
-      keys: [Object.values(WORLD_EVENT_SELECTORS), [...this.registry.bySelector.keys()]],
-    });
+    if (this.eventSubscription) {
+      this.send(socket, 2, "starknet_subscribeEvents", {
+        ...this.eventSubscription,
+        finality_status: "PRE_CONFIRMED",
+      });
+    }
     this.send(socket, 3, "starknet_subscribeNewTransactionReceipts", {
       finality_status: ["PRE_CONFIRMED", "ACCEPTED_ON_L2"],
     });

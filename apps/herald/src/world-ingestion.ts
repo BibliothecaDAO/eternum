@@ -7,10 +7,12 @@ import { LiveWorld, type LiveWorldInput } from "./live-world";
 import type { MadaraRpc } from "./madara-rpc";
 import type { ModelRegistry } from "./model-registry";
 import { loadConfirmedWorld } from "./checkpoint-loader";
-import type { WorldEventDecodeMonitor } from "./world-event-decoder";
+import { WORLD_EVENT_SELECTORS, type WorldEventDecodeMonitor } from "./world-event-decoder";
+import type { WorldEventSubscription } from "./madara-subscriptions";
 
 export interface WorldIngestion {
   registry: ModelRegistry;
+  eventSubscription?: WorldEventSubscription;
   readModels: WorldReadModels;
   historyCodec: HistoryCodec;
   checkpointCodec?: CheckpointCodec;
@@ -28,6 +30,10 @@ export function createDojoWorldIngestion(
 ): WorldIngestion {
   return {
     registry,
+    eventSubscription: {
+      from_address: registry.worldAddress,
+      keys: [Object.values(WORLD_EVENT_SELECTORS), [...registry.bySelector.keys()]],
+    },
     historyCodec: dojoHistoryCodec,
     readModels: { directory: buildGameDirectory, leaderboard: buildLiveLeaderboard },
     load: (input) =>

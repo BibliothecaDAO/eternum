@@ -29,7 +29,6 @@ def main():
     manifest = read_release(release)
     output.mkdir(parents=True)
     deployment = Path(__file__).resolve().parent
-    repository = deployment.parents[1]
     primary, witness = running_journal_hosts()
     native_source = Path(sys.argv[4]).resolve()
     bootstrap = output / 'bootstrap.env'
@@ -53,7 +52,7 @@ def main():
     run(['docker', 'run', '--rm', '--entrypoint', '/bin/randomness-sidecar',
          '--mount', f'type=bind,source={native_source / "contracts/l3/world-native/schema/schema.json"},target=/schema.json,readonly',
          manifest['image'], '--check-native-schema', '/schema.json'], output / 'admission-schema-check.log', deployment)
-    run(['bun', 'deploy/madara-rand/deploy-fixture.ts', str(output), fixture_id, str(native_source), sys.argv[5], primary, witness], output / 'deploy.log', repository)
+    run(['bun', 'deploy/madara-rand/deploy-fixture.ts', str(output), fixture_id, str(native_source), sys.argv[5], primary, witness], output / 'deploy.log', native_source)
     initialize_database(deployment, output, database, primary)
     run([*initial, 'stop', 'madara'], output / 'stop-bootstrap.log', deployment)
     configured = compose(deployment, release, output / 'service.env')

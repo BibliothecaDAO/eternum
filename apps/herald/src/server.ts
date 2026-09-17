@@ -124,7 +124,7 @@ const main = async (): Promise<void> => {
   let server: ReturnType<typeof Bun.serve<HeraldSocketData>> | undefined;
   let shuttingDown = false;
 
-  const subscriptions = new MadaraSubscriptions(config.wsUrl, registry, {
+  const subscriptions = new MadaraSubscriptions(config.wsUrl, ingestion.eventSubscription, {
     onEvent: (event) => live.acceptPreconfirmedEvent(event),
     onFatal: (error) => {
       console.error(JSON.stringify({ error: error.message, event: "herald_fatal" }));

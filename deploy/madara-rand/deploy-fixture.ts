@@ -2,10 +2,28 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { CallData, CairoCustomEnum, ec, hash, RpcProvider, type Account, type RawArgs } from "starknet";
+import {
+  CallData,
+  CairoCustomEnum,
+  CairoOption,
+  CairoOptionVariant,
+  ec,
+  hash,
+  RpcProvider,
+  type Account,
+} from "starknet";
 import { assertProviderChain } from "../../packages/chain/chain-guard.js";
 import { declareClass, readClassArtifact, waitForSuccess } from "../../config/deployer/clean/shared/declare";
+import { createMadaraAccount } from "../../config/deployer/clean/shared/madara-account";
 import { fixtureAdmin } from "./fixture-admin";
+import { loadEnvironmentConfiguration } from "../../config/deployer/clean/config/config-loader";
+import { buildNativePreset } from "../../config/deployer/clean/config/native-preset";
+import {
+  buildNativePresetRegistration,
+  registerNativePreset,
+} from "../../config/deployer/clean/registrar/native-preset";
+import { nativeDomainAbi } from "../../config/deployer/clean/world/native/manifest";
+import type { NativeWorldManifest } from "../../config/deployer/clean/world/native/types";
 
 const RPC = "http://127.0.0.1:15050/rpc/v0_9_0";
 // Public local fixture credentials, independent of entropy generation.
@@ -33,95 +51,51 @@ async function deploy(account: Account, compiled: ReturnType<typeof readClassArt
   return { address, classHash: compiled.classHash, transactionHash: transaction.transaction_hash };
 }
 
-async function provisionGame(
-  source: string,
-  manifest: {
-    native: {
-      activeSchema: string;
-      schemas: Record<string, { domains: Record<string, { contract: string }> }>;
-      domains: Record<string, { address: string }>;
-    };
-  },
-  admin: Account,
-  actor: string,
-  count: number,
-) {
-  const preset = JSON.parse(readFileSync(resolve(source, "contracts/l3/world-native/fixtures/preset-1.json"), "utf8"));
-  const schema = manifest.native.schemas[manifest.native.activeSchema];
-  const codecs = Object.fromEntries(
-    Object.entries(schema.domains).map(([domain, value]) => [
-      domain,
-      new CallData(artifact(source, "world-native", `world_native_${value.contract}`).sierra.abi),
-    ]),
-  );
-  const call = (domain: string, entrypoint: string, args: RawArgs) => ({
-    contractAddress: manifest.native.domains[domain].address,
-    entrypoint,
-    calldata: codecs[domain].compile(entrypoint, args),
-  });
+async function createGame(manifestPath: string, manifest: NativeWorldManifest, admin: Account, count: number) {
+  const config = loadEnvironmentConfiguration("madara.eternum");
+  const definition = buildNativePreset(config);
+  const registration = buildNativePresetRegistration(config, 1, manifestPath);
+  const registered = await registerNativePreset(admin, 1, registration);
+  const codec = new CallData(nativeDomainAbi(manifest, "registry"));
   const timestamp = (await admin.getBlock("latest")).timestamp;
-  const initial = await admin.execute(
-    [
-      call("season", "create_game", {
-        game_id: 7,
-        game: {
+  const [gameId] = await admin.callContract({
+    contractAddress: registration.address,
+    entrypoint: "next_game_id",
+  });
+  const transaction = await admin.execute(
+    {
+      contractAddress: registration.address,
+      entrypoint: "create_game",
+      calldata: codec.compile("create_game", {
+        params: {
           name: "0x72616e646f6d6e657373",
+          preset_id: 1,
           series_id: 0,
           game_number_in_series: 0,
-          preset_id: 1,
-          creator: admin.address,
-          status: new CairoCustomEnum({ Live: {} }),
+          start_settling_at: timestamp,
+          start_main_at: timestamp,
+          duration_seconds: 86400,
+          end_grace_seconds: 86400,
           dev_mode_on: true,
-          start_settling_at: timestamp - 10000,
-          start_main_at: timestamp - 10000,
-          end_at: timestamp + 86400,
-          end_grace_seconds: 0,
-          registration_grace_seconds: 0,
-          final_trial_id: 0,
+          mode: new CairoCustomEnum({ Single: {} }),
+          registration_limit: 0,
+          registration_start: timestamp - 1,
+          biome_climate: definition.rules.biome_climate_config,
+          map_override: new CairoOption(CairoOptionVariant.None),
           seed: 1,
         },
-        rules: preset.rules,
+        definition,
       }),
-      call("structures", "configure_resources", { game_id: 7, rules: preset.resources }),
-    ],
+    },
     { tip: 0 },
   );
-  await waitForSuccess(admin, initial.transaction_hash);
-  const transactions = [initial.transaction_hash];
-  for (let start = 0; start < count; start += 8) {
-    const calls = Array.from({ length: Math.min(8, count - start) }, (_, index) =>
-      call("structures", "provision_realm", {
-        game_id: 7,
-        actor,
-        coord: { alt: false, x: 2147483626 + (start + index) * 20, y: 2147483626 },
-        grants: [
-          [26, "1000000000000"],
-          [35, "5000000000000"],
-          [36, "5000000000000"],
-          [38, "100000000000"],
-        ],
-      }),
-    );
-    const transaction = await admin.execute(calls, { tip: 0 });
-    await waitForSuccess(admin, transaction.transaction_hash);
-    transactions.push(transaction.transaction_hash);
-  }
-  for (let start = 1; start < count; start += 16) {
-    const calls = Array.from({ length: Math.min(8, Math.ceil((count - start) / 2)) }, (_, offset) =>
-      call("structures", "provision_spire", {
-        game_id: 7,
-        coord: { alt: false, x: 2147483627 + (start + offset * 2) * 20, y: 2147483627 },
-      }),
-    );
-    const transaction = await admin.execute(calls, { tip: 0 });
-    await waitForSuccess(admin, transaction.transaction_hash);
-    transactions.push(transaction.transaction_hash);
-  }
+  await waitForSuccess(admin, transaction.transaction_hash);
   return {
-    transactions,
+    gameId,
+    transactions: [registered, transaction.transaction_hash].filter((value) => value !== null),
     layers: Array.from({ length: count }, (_, index) => (index % 2 === 1 ? "ethereal" : "surface")),
-    realmIds: Array.from({ length: count }, (_, index) => index + 1),
-    rulesRevision: preset.rulesRevision,
+    realmCount: count,
+    realmIds: [] as number[],
   };
 }
 
@@ -168,7 +142,10 @@ async function main() {
     fixtureId,
   );
   const bound = await admin.execute(
-    { contractAddress: registry.address, entrypoint: "bind", calldata: [admin.address, player.address] },
+    [
+      { contractAddress: registry.address, entrypoint: "bind", calldata: [admin.address, player.address] },
+      { contractAddress: STRK, entrypoint: "transfer", calldata: [player.address, "1000000000000000000", "0"] },
+    ],
     { tip: 0 },
   );
   await waitForSuccess(admin, bound.transaction_hash);
@@ -178,6 +155,18 @@ async function main() {
     JSON.stringify({ playerRegistryAddress: registry.address, playerAccountClassHash: player.classHash }),
   );
   const nativeManifest = resolve(output, "native-manifest.json");
+  const schema = JSON.parse(readFileSync(resolve(source, "contracts/l3/world-native/schema/schema.json"), "utf8"));
+  // The gameplay account administers this development fixture; its account interface cannot declare classes.
+  for (const domain of Object.values(schema.domains) as { contract: string }[]) {
+    await declareClass(
+      admin,
+      artifact(source, "world-native", `world_native_${domain.contract}`),
+      (transactionHash) => {
+        console.log(JSON.stringify({ stage: "declared-domain", domain: domain.contract, transactionHash }));
+      },
+    );
+  }
+  const playerAccount = createMadaraAccount(provider, player.address, PLAYER_KEY);
   const deployment = JSON.parse(
     execFileSync(
       "bun",
@@ -198,7 +187,12 @@ async function main() {
         "--rpc-url",
         RPC,
       ],
-      { cwd: source, encoding: "utf8", stdio: ["ignore", "pipe", "inherit"] },
+      {
+        cwd: source,
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "inherit"],
+        env: { ...process.env, DOJO_ACCOUNT_ADDRESS: player.address, DOJO_PRIVATE_KEY: PLAYER_KEY },
+      },
     ),
   );
   const manifest = JSON.parse(readFileSync(nativeManifest, "utf8"));
@@ -211,7 +205,7 @@ async function main() {
     { tip: 0 },
   );
   await waitForSuccess(admin, configured.transaction_hash);
-  const game = await provisionGame(source, manifest, admin, player.address, count);
+  const game = await createGame(nativeManifest, manifest, playerAccount, count);
   const fixture = {
     schema: 1,
     fixtureId,
@@ -221,7 +215,8 @@ async function main() {
     authority,
     execution,
     actor: player.address,
-    game: "0x7",
+    owner: admin.address,
+    game: game.gameId,
     playerPublicKey: ec.starkCurve.getStarkKey(PLAYER_KEY),
     nativeSource: source,
     nativeRevision: revision,

@@ -109,8 +109,11 @@ image, feature configurations, dependency graphs and binary hashes.
 
 ```sh
 python3 deploy/madara-rand/release/build.py ~/projects/madara /tmp/madara-rand-release
+python3 deploy/madara-rand/release/build-herald.py NATIVE_REVISION /tmp/madara-rand-release /tmp/madara-rand-herald
 python3 deploy/madara-rand/start-fixture.py /tmp/madara-rand-release /tmp/madara-rand-fixture 10 \
   ~/projects/eternum-native-world 288
+python3 deploy/madara-rand/start-herald.py /tmp/madara-rand-release /tmp/madara-rand-herald \
+  /tmp/madara-rand-fixture /tmp/madara-rand-herald-runtime
 bun deploy/madara-rand/prepare-native-actions.ts /tmp/madara-rand-fixture/fixture.json
 bun deploy/madara-rand/exercise-fixture.ts /tmp/madara-rand-fixture/fixture.json /tmp/randomness-sidecar-smoke.json sidecar
 python3 deploy/madara-rand/deployed-check.py /tmp/madara-rand-release /tmp/madara-rand-fixture /tmp/randomness-deployed
@@ -141,8 +144,10 @@ The OS sampler calls the initialized Linux `getrandom` syscall directly. The fol
 python3 deploy/madara-rand/drills/entropy-failure.py ~/projects/madara /tmp/randomness-entropy-failure
 ```
 
-The release fixture deploys the conforming native season, map, structures and troops domains through the existing
-deployer. It uses PlayerRegistry and the real gameplay account class. Typed commands arrive in the published intent's
+The release fixture deploys all native domains through the existing deployer and registers the complete immutable
+Eternum preset. It uses PlayerRegistry and the real gameplay account class. The bound fixture player also administers
+the development world, allowing resource grants through authenticated development commands. Preparation settles realms
+through recorded commands and reads their state from Herald; development access spires retain the benchmark setup. Typed commands arrive in the published intent's
 arguments, and the season verifies their commitment before execution. Both placements submit real explorer creation,
 Ethereal entry and exploration through the same authority account. The conformance stub remains only as the second
 implementation exercised by the shared protocol invariant tests; it is absent from the deployment path.
@@ -163,8 +168,8 @@ bun deploy/madara-rand/check-herald.ts FIXTURE/fixture.json sidecar DELIVERY_OUT
 Prepare a fresh Dojo world using the original artifacts and the existing deployer with `--manifest` under the local
 output directory. `prepare-baseline.ts` provisions unchanged Dojo rules and both layers; its usage requires the native
 fixture, native source and original Dojo artifacts. Provision two independent native fixtures with 288 explorers each.
-The original preset pools and weights remain intact. Raw-root parity is separately checked by the foundation oracle;
-these performance runs use the actual baseline placeholder and independently sampled native roots.
+The original preset pools and weights remain intact. These performance runs use the baseline placeholder and
+independently sampled native roots.
 
 Freeze all inputs before collection:
 

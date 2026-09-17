@@ -10,9 +10,10 @@ export interface NativeFixture {
   authority: { address: string };
   execution: { address: string };
   actor: string;
+  owner: string;
   game: string;
   nativeSource: string;
-  provision: { realmIds: number[]; layers?: ("surface" | "ethereal")[] };
+  provision: { realmCount: number; realmIds: number[]; layers?: ("surface" | "ethereal")[] };
   explorers?: number[];
   firstExploreNonce?: string;
 }

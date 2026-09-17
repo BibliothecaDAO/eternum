@@ -3,51 +3,67 @@ import assert from "node:assert/strict";
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
-import { CallData, CairoOption, RpcProvider } from "starknet";
+import { CallData, CairoOption, CairoOptionVariant, RpcProvider } from "starknet";
+import { createMadaraAccount } from "../../config/deployer/clean/shared/madara-account";
+import { waitForSuccess } from "../../config/deployer/clean/shared/declare";
+import { nativeDomainAbi } from "../../config/deployer/clean/world/native/manifest";
 import { admissionFor, commandArguments, readFixture, signedRequest } from "./native-intent";
+
+type Scalar = string | number;
+type Coord = { alt: boolean; x: Scalar; y: Scalar };
+type Home = {
+  entity_id: Scalar;
+  owner: Scalar;
+  metadata: { realm_id: Scalar };
+  troop_explorers: Scalar[];
+  base: { coord_x: Scalar; coord_y: Scalar };
+};
+type Explorer = { explorer_id: Scalar; coord: Coord };
+type Tile = { alt: boolean; col: Scalar; row: Scalar; data: Scalar };
 
 const path = process.argv[2];
 if (!path) throw new Error("usage: prepare-native-actions.ts FIXTURE_JSON");
 const fixture = readFixture(path);
 assert(!fixture.explorers, "Explorer preparation already completed");
+assert(fixture.owner && fixture.provision.realmCount, "Expected a full native fixture");
 const provider = new RpcProvider({ nodeUrl: fixture.rpc });
 const manifest = JSON.parse(readFileSync(resolve(dirname(path), "native-manifest.json"), "utf8"));
-const actions: { order: string; action: string; command: string }[] = [];
+const administrator = createMadaraAccount(provider, fixture.actor, "0x3039");
+const structures = {
+  address: manifest.native.domains.structures.address,
+  codec: new CallData(nativeDomainAbi(manifest, "structures")),
+};
+const actionsPath = resolve(dirname(path), "prepared-actions.json");
+const actions: { order: string; action: string; command: string }[] = (() => {
+  try {
+    return JSON.parse(readFileSync(actionsPath, "utf8"));
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return [];
+    throw error;
+  }
+})();
 
-function domain(name: string, contract: string) {
-  const artifact = JSON.parse(
-    readFileSync(
-      resolve(
-        fixture.nativeSource,
-        `contracts/l3/world-native/target/dev/world_native_${contract}.contract_class.json`,
-      ),
-      "utf8",
-    ),
-  );
-  return { address: manifest.native.domains[name].address as string, codec: new CallData(artifact.abi) };
-}
-const structures = domain("structures", "StructuresDomain");
-const troops = domain("troops", "TroopsDomain");
-
-async function existingExplorer(realm: number) {
-  const values = await provider.callContract(
-    { contractAddress: structures.address, entrypoint: "structure", calldata: [fixture.game, String(realm)] },
-    "pre_confirmed",
-  );
-  const home = (structures.codec.parse("structure", values) as CairoOption<{ troop_explorers: bigint[] }>).unwrap();
-  assert(home, "Provisioned realm missing");
-  assert(home.troop_explorers.length <= 1, "Unexpected fixture explorer count");
-  return home.troop_explorers.length ? Number(home.troop_explorers[0]) : undefined;
+async function rows<T>(model: string): Promise<T[]> {
+  const response = await fetch(`http://127.0.0.1:13003/madara/games/${BigInt(fixture.game)}/snapshot?models=${model}`, {
+    signal: AbortSignal.timeout(10000),
+  });
+  assert(response.ok, `Herald ${model} snapshot failed: ${response.status}`);
+  const snapshot = await response.json();
+  const collection = snapshot.models.find((entry: { model: string }) => entry.model === model);
+  assert(collection, `Herald omitted ${model}`);
+  return collection.rows.map((row: { value: T }) => row.value);
 }
 
-async function isEthereal(explorer: number) {
-  const values = await provider.callContract(
-    { contractAddress: troops.address, entrypoint: "explorer", calldata: [fixture.game, String(explorer)] },
-    "pre_confirmed",
-  );
-  const row = (troops.codec.parse("explorer", values) as CairoOption<{ coord: { alt: boolean } }>).unwrap();
-  assert(row, "Prepared explorer missing");
-  return row.coord.alt;
+async function home(realm: number) {
+  const found = (await rows<Home>("Structure")).find((row) => Number(row.metadata.realm_id) === realm);
+  if (found) assert.equal(BigInt(found.owner), BigInt(fixture.actor), "Prepared realm changed ownership");
+  return found;
+}
+
+async function explorer(id: number) {
+  const found = (await rows<Explorer>("ExplorerTroops")).find((row) => Number(row.explorer_id) === id);
+  assert(found, "Prepared explorer missing from Herald");
+  return found;
 }
 
 async function execute(command: string, args: object) {
@@ -64,37 +80,95 @@ async function execute(command: string, args: object) {
   assert.equal(BigInt(accepted.action), BigInt(action));
   const deadline = Date.now() + 30000;
   while (Date.now() < deadline) {
-    const result = await provider.callContract(
-      { contractAddress: fixture.execution.address, entrypoint: "get_result", calldata: [admission[4]] },
-      "pre_confirmed",
+    const result = (await rows<{ order: Scalar; status: Scalar; result: Scalar }>("ExecutionResult")).find(
+      (row) => BigInt(row.order) === BigInt(admission[4]),
     );
-    if (BigInt(result[0]) !== 0n) {
-      assert.equal(BigInt(result[0]), 1n, `${command} rejected; preserve ticket`);
+    if (result) {
       actions.push({ action, order: admission[4], command });
+      writeFileSync(actionsPath, JSON.stringify(actions, null, 2) + "\n");
+      assert.equal(BigInt(result.status), 1n, `${command} rejected with ${result.result}; preserve ticket`);
       return;
     }
-    await sleep(20);
+    await sleep(100);
   }
-  throw new Error("Preparation remains pending; recover its existing ticket before continuing");
+  throw new Error(`Preparation order ${admission[4]} remains pending; recover its existing ticket before continuing`);
+}
+
+async function settle(realm: number) {
+  let found = await home(realm);
+  if (!found) {
+    await execute("SettleSeason", {
+      name: "0x72656865617273616c",
+      owner: fixture.owner,
+      selected_realm: new CairoOption(CairoOptionVariant.Some, realm),
+    });
+    found = await home(realm);
+  }
+  assert(found, "Successful settlement did not produce a realm");
+  return found;
+}
+
+async function provisionResources(entity: number) {
+  const balances = (
+    await rows<{ entity_id: Scalar; resource_type: Scalar; balance: Scalar }>("ResourceBalance")
+  ).filter((row) => Number(row.entity_id) === entity);
+  const grants = [
+    [26, 1000n],
+    [35, 5000n],
+    [36, 5000n],
+    [38, 100n],
+  ].flatMap(([resource, units]) => {
+    const resource_type = Number(resource);
+    const current = BigInt(balances.find((row) => Number(row.resource_type) === resource_type)?.balance ?? 0);
+    const required = BigInt(units) * 1_000_000_000n;
+    return current < required ? [{ resource_type, amount: (required - current).toString() }] : [];
+  });
+  if (grants.length) await execute("MintDevelopmentResources", { entity_id: entity, resources: grants });
+}
+
+async function provisionAccess(coord: Coord) {
+  // The retained benchmark fixture places an access spire north-west of its eastward explorer.
+  const spire = { alt: false, x: Number(coord.x) - (Number(coord.y) % 2), y: Number(coord.y) + 1 };
+  const existing = (await rows<Tile>("TileOpt")).find(
+    (tile) => !tile.alt && Number(tile.col) === spire.x && Number(tile.row) === spire.y,
+  );
+  if (existing && (BigInt(existing.data) / 2n) % 256n === 35n) return;
+  const transaction = await administrator.execute(
+    {
+      contractAddress: structures.address,
+      entrypoint: "provision_spire",
+      calldata: structures.codec.compile("provision_spire", { game_id: fixture.game, coord: spire }),
+    },
+    { tip: 0 },
+  );
+  await waitForSuccess(administrator, transaction.transaction_hash);
 }
 
 const explorers: number[] = [];
-for (const realm of fixture.provision.realmIds) {
-  let explorer = await existingExplorer(realm);
-  if (explorer === undefined) {
+for (let index = 0; index < fixture.provision.realmCount; index++) {
+  let settled = await settle(index + 1);
+  const realm = Number(settled.entity_id);
+  await provisionResources(realm);
+  assert(settled.troop_explorers.length <= 1, "Unexpected fixture explorer count");
+  if (!settled.troop_explorers.length) {
     await execute("CreateExplorer", { structure_id: realm, category: 0, tier: 0, amount: "1000000000", direction: 0 });
-    explorer = await existingExplorer(realm);
-    assert(explorer !== undefined, "Successful creation did not produce an explorer");
+    const created = await home(index + 1);
+    assert(created, "Prepared realm disappeared during explorer creation");
+    settled = created;
   }
-  const index = explorers.length;
-  if (fixture.provision.layers?.[index] === "ethereal" && !(await isEthereal(explorer))) {
-    await execute("ToggleAlternate", { explorer_id: explorer, spire_direction: 2 });
-    assert(await isEthereal(explorer), "Alternate entry did not change layer");
+  const id = Number(settled.troop_explorers[0]);
+  assert(Number.isSafeInteger(id), "Successful creation did not produce an explorer");
+  const troop = await explorer(id);
+  if (fixture.provision.layers?.[index] === "ethereal" && !troop.coord.alt) {
+    await provisionAccess(troop.coord);
+    await execute("ToggleAlternate", { explorer_id: id, spire_direction: 2 });
+    assert((await explorer(id)).coord.alt, "Alternate entry did not change layer");
   }
-  explorers.push(explorer);
-  console.log(JSON.stringify({ prepared: explorers.length, total: fixture.provision.realmIds.length, explorer }));
+  explorers.push(id);
+  fixture.provision.realmIds[index] = realm;
+  writeFileSync(path, JSON.stringify(fixture, null, 2) + "\n");
+  console.log(JSON.stringify({ prepared: explorers.length, total: fixture.provision.realmCount, explorer: id }));
 }
 fixture.explorers = explorers;
 fixture.firstExploreNonce = (await admissionFor(provider, fixture))[3];
 writeFileSync(path, JSON.stringify(fixture, null, 2) + "\n");
-writeFileSync(resolve(dirname(path), "prepared-actions.json"), JSON.stringify(actions, null, 2) + "\n", { flag: "wx" });
