@@ -4,9 +4,8 @@ import { describe, expect, it, vi } from "vitest";
 import setFixture from "../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 import deleted from "../../../../contracts/l3/world-native/schema/fixtures/row-deleted.json";
 import malformed from "../../../../contracts/l3/world-native/schema/fixtures/malformed-row.json";
-import { NativeLiveWorld as LiveWorld } from "./live-world";
-import { WorldEventDecodeMonitor } from "../world-event-decoder";
-import { NativeWorldFold as WorldFold } from "./world-fold";
+import { LiveWorld } from "../live-world";
+import { WorldFold } from "../world-fold";
 import { createHeraldRequestHandler } from "../http";
 import type { MadaraRpc } from "../madara-rpc";
 import type { RpcEvent, RpcBlockWithReceipts } from "../types";
@@ -102,21 +101,11 @@ describe("native confirmed replay and transaction delivery", () => {
       confirmedBlock: 9,
       confirmedFold: fold,
       rpc: {} as MadaraRpc,
-      decodeMonitor: new WorldEventDecodeMonitor(),
     });
     const connection = live.attach("1", { send: (text) => messages.push(JSON.parse(text)) });
     live.resume(connection, { epoch: "previous", seq: 0, type: "resume" });
     messages.length = 0;
     const map = rowEvent("TileOpt", ["1", "0", "12", "34"], ["0"]);
-    const first = {
-      ...setFixture.raw,
-      block_number: null,
-      transaction_hash: "0x77",
-      transaction_index: 0,
-      event_index: 0,
-      finality_status: "PRE_CONFIRMED",
-    };
-    live.acceptPreconfirmedEvent(first);
     live.detach(connection);
     const reconnect = live.attach("1", { send: (text) => messages.push(JSON.parse(text)) });
     live.resume(reconnect, { epoch: "previous", seq: 0, type: "resume" });
@@ -145,7 +134,6 @@ describe("native confirmed replay and transaction delivery", () => {
       confirmedBlock: 9,
       confirmedFold: fold,
       rpc: {} as MadaraRpc,
-      decodeMonitor: new WorldEventDecodeMonitor(),
     });
     const connection = live.attach("1", { send: (text) => messages.push(text) });
     live.resume(connection, { epoch: "old", seq: 0, type: "resume" });
@@ -186,7 +174,6 @@ it("halts a confirmed rejection at the last checkpoint without killing receipt s
     checkpointStore,
     checkpointEveryBlocks: 1,
     rpc,
-    decodeMonitor: new WorldEventDecodeMonitor(),
   });
   await expect(live.acceptSubscribedHead({ block_number: 11, timestamp: 3000 })).resolves.toBeUndefined();
   live.acceptReceipt({ ...receipt([setFixture.raw]), finality_status: "PRE_CONFIRMED" });
@@ -210,7 +197,6 @@ it("halts a live confirmed fold atomically while leaving the process available",
     checkpointStore: { save: vi.fn() },
     checkpointEveryBlocks: 1,
     rpc,
-    decodeMonitor: new WorldEventDecodeMonitor(),
   });
   await expect(live.acceptSubscribedHead({ block_number: 10, timestamp: 2160 })).resolves.toBeUndefined();
   expect(native.halted).toMatchObject({ block: 10 });

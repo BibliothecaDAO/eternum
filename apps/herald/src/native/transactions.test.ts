@@ -1,9 +1,8 @@
-import { NativeWorldFold } from "./world-fold";
+import { WorldFold } from "../world-fold";
 import { CallData, hash, shortString } from "starknet";
 import { describe, expect, it, vi } from "vitest";
-import { NativeLiveWorld as LiveWorld } from "./live-world";
+import { LiveWorld } from "../live-world";
 import type { MadaraRpc } from "../madara-rpc";
-import { WorldEventDecodeMonitor } from "../world-event-decoder";
 import { manifest, receipt, schema, setup } from "./fixtures";
 import { transactionGameIds } from "./transactions";
 
@@ -75,7 +74,6 @@ describe("native transaction receipt routing", () => {
         confirmedFold: fold,
         rpc: {} as MadaraRpc,
         historyStore: historyStore as never,
-        decodeMonitor: new WorldEventDecodeMonitor(),
       });
       const connection = live.attach("1", { send: (value) => messages.push(JSON.parse(value)) });
       live.resume(connection, { type: "resume", epoch: "old", seq: 0 });
@@ -138,7 +136,7 @@ describe("native transaction receipt routing", () => {
     const before = fold.modelRows("ActionNonce");
     native.applyReceipt(fold, receipt([executionEvent(2, false, 0, 2)], "0x999"), 11, 0);
     expect(fold.modelRows("ActionNonce")).toEqual(before);
-    const restored = NativeWorldFold.restore(decoder.registry, fold.checkpoint());
+    const restored = WorldFold.restore(decoder.registry, fold.checkpoint());
     expect(restored.modelRows("ActionNonce")).toEqual(before);
     native.applyReceipt(restored, receipt([executionEvent(1, true, 1, 3)], "0x998"), 12, 0);
     expect(BigInt(String(restored.modelRows("ActionNonce")[0].value.next_nonce))).toBe(2n);
@@ -156,7 +154,6 @@ describe("native transaction receipt routing", () => {
       confirmedBlock: 9,
       confirmedFold: fold,
       rpc: {} as MadaraRpc,
-      decodeMonitor: new WorldEventDecodeMonitor(),
     });
     const connection = live.attach("1", { send: (value) => messages.push(JSON.parse(value)) });
     live.resume(connection, { type: "resume", epoch: "old", seq: 0 });

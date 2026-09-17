@@ -6,7 +6,7 @@ import deleteFixture from "../../../../contracts/l3/world-native/schema/fixtures
 import foreignFixture from "../../../../contracts/l3/world-native/schema/fixtures/foreign-emitter.json";
 import malformedFixture from "../../../../contracts/l3/world-native/schema/fixtures/malformed-row.json";
 import { toJsonValue } from "../model-registry";
-import { NativeWorldFold as WorldFold } from "./world-fold";
+import { WorldFold } from "../world-fold";
 
 import { schema, manifest, receipt, raw, setup, battleEvent } from "./fixtures";
 

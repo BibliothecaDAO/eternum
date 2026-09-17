@@ -1,4 +1,4 @@
-import type { Felt, RawWorldEvent, RpcBlockWithReceipts, RpcHead } from "./types";
+import type { RpcBlockWithReceipts, RpcHead } from "./types";
 
 interface JsonRpcSuccess<Result> {
   jsonrpc: "2.0";
@@ -10,25 +10,6 @@ interface JsonRpcFailure {
   jsonrpc: "2.0";
   id: number;
   error: { code: number; message: string; data?: unknown };
-}
-
-interface EventPage {
-  events: RawWorldEvent[];
-  continuation_token?: string;
-}
-
-interface GetEventsInput {
-  worldAddress: Felt;
-  eventSelectors: readonly Felt[];
-  modelSelectors: readonly Felt[];
-  fromBlock: number;
-  toBlock: number;
-  chunkSize?: number;
-}
-
-export interface EventPageResult {
-  events: RawWorldEvent[];
-  page: number;
 }
 
 export class MadaraRpc {
@@ -49,33 +30,6 @@ export class MadaraRpc {
     return this.request<RpcBlockWithReceipts>("starknet_getBlockWithReceipts", [
       typeof block === "number" ? { block_number: block } : block,
     ]);
-  }
-
-  public async *getEvents(input: GetEventsInput): AsyncGenerator<EventPageResult> {
-    const seenTokens = new Set<string>();
-    let continuationToken: string | undefined;
-    let page = 0;
-
-    do {
-      const result = await this.request<EventPage>("starknet_getEvents", [
-        {
-          address: input.worldAddress,
-          chunk_size: input.chunkSize ?? 1_000,
-          continuation_token: continuationToken,
-          from_block: { block_number: input.fromBlock },
-          keys: [input.eventSelectors, input.modelSelectors],
-          to_block: { block_number: input.toBlock },
-        },
-      ]);
-      page += 1;
-      yield { events: result.events, page };
-
-      continuationToken = result.continuation_token;
-      if (continuationToken && seenTokens.has(continuationToken)) {
-        throw new Error(`Madara repeated getEvents continuation token ${continuationToken}`);
-      }
-      if (continuationToken) seenTokens.add(continuationToken);
-    } while (continuationToken);
   }
 
   private async request<Result>(method: string, params: unknown[]): Promise<Result> {

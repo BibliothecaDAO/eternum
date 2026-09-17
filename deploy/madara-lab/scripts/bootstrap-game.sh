@@ -1,30 +1,16 @@
 #!/usr/bin/env bash
-# Declares the gameplay account, deploys PlayerRegistry, and initializes the
-# persistent s2 registrar with the fee-free 96-player Madara preset.
+# Bootstrap the local gameplay identity and native persistent world.
 set -euo pipefail
-
 LAB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REPO_ROOT="$(cd "$LAB_DIR/../.." && pwd)"
-
-# Keep the same RPC route as world deployment.
-export RPC_URL="${RPC_URL:-http://127.0.0.1:5050/rpc/v0_10_2}"
-export DOJO_ACCOUNT_ADDRESS="${DOJO_ACCOUNT_ADDRESS:-0x055be462e718c4166d656d11f89e341115b8bc82389c3762a10eade04fcb225d}"
-export DOJO_PRIVATE_KEY="${DOJO_PRIVATE_KEY:-0x077e56c6dc32d40a67f6f7e6625c8dc5e570abe49c0a24e9202e4ae906abcc07}"
-export BINDING_AUTHORITY_ADDRESS="${BINDING_AUTHORITY_ADDRESS:-0x008a1719e7ca19f3d91e8ef50a48fc456575f645497a1d55f30e3781f786afe4}"
-# Read the registrar address from the freshly migrated manifest, not the hardcoded constants.ts value: the world
-# class hash (and so every contract address) changes whenever the contracts change, so a fresh lab deploy lands at a
-# different registrar than the checked-in constant. GAME_MANIFEST_PATH nulls that stale override (registrar/calls.ts).
-export GAME_MANIFEST_PATH="${GAME_MANIFEST_PATH:-contracts/l3/game/manifest_madara.json}"
-
-echo "==> declare gameplay account and deploy PlayerRegistry"
+cd "$REPO_ROOT"
+: "${NATIVE_WORLD_MANIFEST:?NATIVE_WORLD_MANIFEST is required}"
+: "${NATIVE_ACCOUNT_ADDRESS:?NATIVE_ACCOUNT_ADDRESS is required}"
+: "${NATIVE_PRIVATE_KEY:?NATIVE_PRIVATE_KEY is required}"
+: "${RPC_URL:?RPC_URL is required}"
+: "${SEQUENCING_SUBMITTER_ADDRESS:?SEQUENCING_SUBMITTER_ADDRESS is required}"
+: "${NATIVE_WORLD_SEED:?NATIVE_WORLD_SEED is required}"
 bun "$LAB_DIR/scripts/deploy-gameplay-contracts.ts"
-
-# deploy-s2-world's ChainConfig needs the L3 operator (the register_from_l2 gate) and the PlayerRegistry just
-# deployed. The lab runs dev-mode games with no L2 relay, so the operator is inert here — default it to the
-# deployer account so the write-once ChainConfig holds a non-zero address until a real operator arrives with L2.
-# No ledger operator on the lab: entry is open until a mainnet ledger relays into this chain.
-export S2_OPERATOR_ADDRESS="${S2_OPERATOR_ADDRESS:-0x0}"
-export PLAYER_REGISTRY_ADDRESS="${PLAYER_REGISTRY_ADDRESS:-$(jq -r '.playerRegistryAddress' "$LAB_DIR/.lab/gameplay-contracts.json")}"
-
-echo "==> bootstrap s2 ChainConfig and register the Madara Blitz preset"
-bun "$LAB_DIR/scripts/deploy-s2-world.ts" --environment madara.blitz
+bun config/deployer/clean/cli/deploy-world.ts --identity "$LAB_DIR/.lab/gameplay-contracts.json" \
+  --submitter "$SEQUENCING_SUBMITTER_ADDRESS" --seed "$NATIVE_WORLD_SEED"
+bun config/deployer/clean/registrar/register-preset.ts --environment madara.blitz --preset-id 2 --balance-profile official-60

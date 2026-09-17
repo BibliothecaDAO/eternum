@@ -2,10 +2,10 @@ import { randomUUID } from "node:crypto";
 import { Pool } from "pg";
 import { describe, expect, it, vi } from "vitest";
 import { HistoryStore } from "./history-store";
-import { backfillHistory } from "./history-backfill";
-import { WorldEventDecodeMonitor } from "./world-event-decoder";
+import { backfillNativeHistory } from "./native/load";
+import { createNativeHistoryCodec } from "./native/history";
+import { schema as nativeSchema, setup } from "./native/fixtures";
 import type { MadaraRpc } from "./madara-rpc";
-import type { ModelRegistry } from "./model-registry";
 
 const databaseUrl = process.env.HERALD_TEST_DATABASE_URL;
 describe.skipIf(!databaseUrl)("existing history progress", () => {
@@ -15,24 +15,18 @@ describe.skipIf(!databaseUrl)("existing history progress", () => {
     await admin.query(`CREATE SCHEMA ${schema}`);
     const url = new URL(databaseUrl!);
     url.searchParams.set("options", `-c search_path=${schema}`);
-    let store = new HistoryStore(url.toString(), "madara", "0x123");
+    let store = new HistoryStore(url.toString(), "madara", "0x123", createNativeHistoryCodec(nativeSchema));
     try {
       await store.initialize();
       await admin.query(
         `INSERT INTO ${schema}.herald_history_progress (chain, world_address, complete_through_block) VALUES ('madara', '0x123', 500001)`,
       );
       await store.close();
-      store = new HistoryStore(url.toString(), "madara", "0x123");
+      store = new HistoryStore(url.toString(), "madara", "0x123", createNativeHistoryCodec(nativeSchema));
       await store.initialize();
-      const getEvents = vi.fn(async function* () {});
-      await backfillHistory({
-        historyStore: store,
-        rpc: { getEvents } as unknown as MadaraRpc,
-        registry: { worldAddress: "0x123", events: [] } as unknown as ModelRegistry,
-        decodeMonitor: new WorldEventDecodeMonitor(),
-        toBlock: 500001,
-      });
-      expect(getEvents).not.toHaveBeenCalled();
+      const getBlockWithReceipts = vi.fn();
+      await backfillNativeHistory(setup().native, { getBlockWithReceipts } as unknown as MadaraRpc, store, 500001);
+      expect(getBlockWithReceipts).not.toHaveBeenCalled();
       expect(await store.historyProgress()).toBe(500001);
       store.markLeaderboardReady();
       expect(store.leaderboard("7")).not.toBeNull();
@@ -55,7 +49,7 @@ describe.skipIf(!databaseUrl)("confirmed story cursor", () => {
     await admin.query(`CREATE SCHEMA ${schema}`);
     const url = new URL(databaseUrl!);
     url.searchParams.set("options", `-c search_path=${schema}`);
-    const store = new HistoryStore(url.toString(), "madara", "0x123");
+    const store = new HistoryStore(url.toString(), "madara", "0x123", createNativeHistoryCodec(nativeSchema));
     try {
       await store.initialize();
       await store.appendEvents([], 10);

@@ -14,27 +14,6 @@ export interface ManifestModel {
   members: ManifestMember[];
 }
 
-export interface StructAbiEntry {
-  type: "struct";
-  name: string;
-  members: Array<{ name: string; type: string }>;
-}
-
-export interface EnumAbiEntry {
-  type: "enum";
-  name: string;
-  variants: Array<{ name: string; type: string }>;
-}
-
-export type ManifestAbiEntry = StructAbiEntry | EnumAbiEntry | Record<string, unknown>;
-
-export interface WorldManifest {
-  world: { address: Felt };
-  models: ManifestModel[];
-  events: ManifestModel[];
-  abis: ManifestAbiEntry[];
-}
-
 export interface RawWorldEvent {
   block_number: number | null;
   transaction_hash: Felt;
@@ -88,15 +67,7 @@ export interface RpcHead {
   timestamp: number;
 }
 
-export interface RpcSubscribedEvent extends RpcEvent {
-  block_number: number | null;
-  transaction_hash: Felt;
-  transaction_index: number;
-  event_index: number;
-  finality_status: string;
-}
-
-export interface EventPosition {
+interface EventPosition {
   blockNumber: number | null;
   transactionHash: Felt;
   transactionIndex: number;
@@ -179,9 +150,4 @@ export interface ReplayMetrics {
   store_events: number;
   event_messages: number;
   pages: number;
-}
-
-export interface BuiltGameSnapshot {
-  snapshot: GameSnapshot;
-  metrics: ReplayMetrics;
 }

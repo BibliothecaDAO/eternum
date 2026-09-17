@@ -113,7 +113,7 @@ const executeRun = async (
 ): Promise<LaunchSummary> => {
   // Safe to set process-wide: the DB single-writer index keeps exactly one run executing at a time.
   process.env.HERALD_URL = herald.url;
-  process.env.GAME_MANIFEST_PATH = registrar.manifestPath;
+  process.env.NATIVE_WORLD_MANIFEST = registrar.manifestPath;
 
   if (run.kind === "game" && "gameName" in run.request) {
     return launchGame(buildGameRequest(run.request, rpc, registrar), store);

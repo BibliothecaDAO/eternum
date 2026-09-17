@@ -1,84 +1,49 @@
 import { describe, expect, test } from "bun:test";
-import type { RegistrarManifest } from "../registrar/calls";
-
-const {
+import schema from "../../../../contracts/l3/world-native/schema/schema.json";
+import {
   assertRegistrarAvailable,
-  resolveRegistrarExecutionDetails,
-  resolveRegistrarContractAddress,
-  resolveRegistrarWorldAddress,
   resolveCreatedGameId,
-} = await import("../registrar/calls");
+  resolveRegistrarExecutionDetails,
+  resolveRegistrarWorldAddress,
+  type RegistrarManifest,
+} from "../registrar/calls";
 
-const manifest: RegistrarManifest = {
-  events: [{ tag: "s2-GameCreated", selector: "0xabc" }],
-};
+const manifest = {
+  world: { address: "0x123" },
+  native: {
+    activeSchema: schema.identity,
+    schemas: { [schema.identity]: schema },
+    domains: { registry: { address: "0x456" }, season: { address: "0x123" } },
+  },
+} as unknown as RegistrarManifest;
 
-describe("registrar receipt parsing", () => {
-  test("uses fixed zero-price bounds on the fee-free lab chain", () => {
-    expect(resolveRegistrarExecutionDetails("madara.blitz")).toEqual({
-      version: 3,
-      tip: 0,
-      resourceBounds: {
-        l1_gas: { max_amount: 0n, max_price_per_unit: 0n },
-        l1_data_gas: { max_amount: 0n, max_price_per_unit: 0n },
-        l2_gas: { max_amount: 1_200_000_000n, max_price_per_unit: 0n },
-      },
+describe("native registrar", () => {
+  test("uses fixed zero-price bounds on the lab chain", () => {
+    expect(resolveRegistrarExecutionDetails("madara.blitz").resourceBounds?.l2_gas).toEqual({
+      max_amount: 1_200_000_000n,
+      max_price_per_unit: 0n,
     });
   });
-
-  test("reads a directly emitted GameCreated key", () => {
-    const receipt = {
-      events: [{ keys: ["0xabc", "0x7"], data: [] }],
-    };
-
-    expect(resolveCreatedGameId(receipt, manifest)).toBe(7);
-  });
-
-  test("reads GameCreated from the Dojo EventEmitted envelope", () => {
-    const receipt = {
-      events: [
-        {
-          keys: ["0x111", "0xabc", "0x222"],
-          data: ["0x2", "0x7", "0x1", "0x4", "0x0", "0x123", "0x456", "0x789"],
-        },
-      ],
-    };
-
-    expect(resolveCreatedGameId(receipt, manifest)).toBe(7);
-  });
-
-  test("ignores unrelated events", () => {
-    const receipt = {
-      events: [{ keys: ["0xdef", "0x7"], data: [] }],
-    };
-
-    expect(resolveCreatedGameId(receipt, manifest)).toBeUndefined();
-  });
-
-  test("rejects a stale pre-A2 appchain manifest", () => {
-    const staleManifest: RegistrarManifest = {
-      world: { address: "0xstaleworld" },
-      contracts: [
-        {
-          tag: "s1_eternum-registrar_systems",
-          address: "0xstaleregistrar",
-          systems: ["create_game"],
-        },
-        { tag: "s1_eternum-blitz_realm_systems", address: "0xstaleblitz" },
-      ],
-    };
-
-    expect(() => resolveRegistrarWorldAddress(staleManifest)).toThrow("s2-registrar_systems is missing");
-    expect(() => resolveRegistrarContractAddress("blitz_realm_systems", staleManifest)).toThrow(
-      "blitz_realm_systems is missing",
+  test("rejects a non-native manifest before any transaction", () => {
+    expect(() => assertRegistrarAvailable({ world: { address: "0x123" } } as RegistrarManifest)).toThrow(
+      "native registry ABI",
     );
   });
-
-  test("resolves the registrar from the selected deployment manifest", () => {
-    expect(
-      resolveRegistrarContractAddress("registrar_systems", {
-        contracts: [{ tag: "s2-registrar_systems", address: "0x456" }],
-      }),
-    ).toBe("0x456");
+  test("resolves the world from the validated native deployment", () => {
+    assertRegistrarAvailable(manifest);
+    expect(resolveRegistrarWorldAddress(manifest)).toBe("0x123");
+  });
+  test("accepts each declared game row prefix only from the season domain", () => {
+    const model = schema.models.find((model) => model.name === "GameRegistry")!;
+    for (const layout of schema.domains.season.events.filter((event) => event.name === "RowSet")) {
+      const event = {
+        from_address: "0x123",
+        keys: [...layout.prefix, "1", model.identity],
+        data: ["1", "7", "1", "0"],
+      };
+      expect(resolveCreatedGameId({ events: [event] }, manifest)).toBe(7);
+      expect(resolveCreatedGameId({ events: [{ ...event, from_address: "0x999" }] }, manifest)).toBeUndefined();
+      expect(resolveCreatedGameId({ events: [{ ...event, data: ["1", "7", "2", "0"] }] }, manifest)).toBeUndefined();
+    }
   });
 });

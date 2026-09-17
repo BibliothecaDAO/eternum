@@ -3,7 +3,6 @@ name: knip
 on:
   pull_request:
     paths-ignore:
-      - "contracts/**"
       - "**/manifest.json"
       - ".github/**"
       - "pnpm-lock.yaml"

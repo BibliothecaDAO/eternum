@@ -157,8 +157,8 @@ async function main(): Promise<void> {
     await runLedgerSweepOnly(options);
     return;
   }
-  const manifestPath = requiredEnvironmentValue("GAME_MANIFEST_PATH", "native harness");
-  const admissionUrl = requiredEnvironmentValue("NATIVE_ADMISSION_URL", "native harness");
+  const manifestPath = requiredEnvironmentValue("NATIVE_WORLD_MANIFEST", "native harness");
+  const admissionUrl = requiredEnvironmentValue("ADMISSION_URL", "native harness");
   const gameplayContractsPath = requiredEnvironmentValue("GAMEPLAY_CONTRACTS_PATH", "native harness");
   process.env.HERALD_URL = options.heraldUrl;
 
@@ -180,8 +180,8 @@ async function main(): Promise<void> {
   const signingKeys = new Map<bigint, string>();
   if (options.ledger)
     signingKeys.set(
-      BigInt(process.env.DOJO_ACCOUNT_ADDRESS ?? MADARA_ADMIN_ADDRESS),
-      process.env.DOJO_PRIVATE_KEY ?? MADARA_ADMIN_PRIVATE_KEY,
+      BigInt(process.env.NATIVE_ACCOUNT_ADDRESS ?? MADARA_ADMIN_ADDRESS),
+      process.env.NATIVE_PRIVATE_KEY ?? MADARA_ADMIN_PRIVATE_KEY,
     );
   const client = await connectHarnessGameClient({
     admissionUrl,
@@ -300,7 +300,7 @@ async function resolveHarnessGame(
   const gameName = options.gameName ?? `lab-${Date.now().toString(36)}`;
   const startAt = Math.floor(Date.now() / 1_000) + (options.ledger ? options.ledgerStartDelaySeconds : 60);
   const summary = await launchGame({
-    accountAddress: process.env.DOJO_ACCOUNT_ADDRESS ?? MADARA_ADMIN_ADDRESS,
+    accountAddress: process.env.NATIVE_ACCOUNT_ADDRESS ?? MADARA_ADMIN_ADDRESS,
     devModeOn: options.gameType === "blitz" && !options.ledger,
     durationSeconds: Math.ceil(options.minutes * 60) + (options.ledger ? 300 : 3_600),
     environmentId: options.gameType === "eternum" ? "madara.eternum" : "madara.blitz",
@@ -308,7 +308,7 @@ async function resolveHarnessGame(
     ledgerAddress: ledgerEnvironment?.ledgerAddress,
     ledgerRpcUrl: ledgerEnvironment?.mainnetRpcUrl,
     lordsAddress: ledgerEnvironment?.lordsAddress,
-    privateKey: process.env.DOJO_PRIVATE_KEY ?? MADARA_ADMIN_PRIVATE_KEY,
+    privateKey: process.env.NATIVE_PRIVATE_KEY ?? MADARA_ADMIN_PRIVATE_KEY,
     rpcUrl: options.rpcUrl,
     startTime: startAt,
     version: defaultPresetForEnvironment(options.gameType === "eternum" ? "madara.eternum" : "madara.blitz"),
@@ -514,8 +514,8 @@ async function finalizeValuePlaneRun({
   const finalization = await finalizeLedgerGame({
     account: new Account({
       provider,
-      address: process.env.DOJO_ACCOUNT_ADDRESS ?? MADARA_ADMIN_ADDRESS,
-      signer: process.env.DOJO_PRIVATE_KEY ?? MADARA_ADMIN_PRIVATE_KEY,
+      address: process.env.NATIVE_ACCOUNT_ADDRESS ?? MADARA_ADMIN_ADDRESS,
+      signer: process.env.NATIVE_PRIVATE_KEY ?? MADARA_ADMIN_PRIVATE_KEY,
     }),
     concurrency: options.setupConcurrency,
     gameId: run.game.gameId,

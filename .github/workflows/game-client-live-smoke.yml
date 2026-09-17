@@ -24,9 +24,9 @@ jobs:
     permissions:
       contents: read
     env:
-      NATIVE_WORLD_MANIFEST: ${{ runner.temp }}/native-world.json
+      NATIVE_WORLD_MANIFEST: /tmp/native-world.json
       NATIVE_WORLD_MANIFEST_URL: ${{ vars.NATIVE_WORLD_MANIFEST_URL }}
-      VITE_PUBLIC_ADMISSION_URL: ${{ vars.VITE_PUBLIC_ADMISSION_URL }}
+      ADMISSION_URL: ${{ vars.ADMISSION_URL }}
       MANIFEST_PATH: game-client-headless-manifest.json
       HERALD_URL: https://herald.realms.party
       RPC_URL: https://rpc.realms.party
@@ -55,8 +55,9 @@ jobs:
 
       - name: Read native release manifest
         run: |
-          test -n "$NATIVE_WORLD_MANIFEST_URL" && test -n "$VITE_PUBLIC_ADMISSION_URL"
+          test -n "$NATIVE_WORLD_MANIFEST_URL" && test -n "$ADMISSION_URL"
           curl --fail --silent --show-error --location "$NATIVE_WORLD_MANIFEST_URL" -o "$NATIVE_WORLD_MANIFEST"
+          node deploy/madara-lab/scripts/validate-native-target.mjs
 
       - name: Run headless game client against the first Live lab game
         # A failed live boot is the signal this workflow exists for; nothing downstream should soften it.
@@ -66,6 +67,7 @@ jobs:
           pnpm --silent smoke:game-client \
             --herald-url "$HERALD_URL" \
             --rpc-url "$RPC_URL" \
+            --admission-url "$ADMISSION_URL" \
             | tee "$MANIFEST_PATH"
 
       - name: Upload headless manifest

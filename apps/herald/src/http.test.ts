@@ -15,7 +15,7 @@ const snapshot: GameSnapshot = {
   confirmed_block: 12,
   game_id: "7",
   models: [
-    { model: "WorldConfig", rows: [{ key: "0x1", value: { game_id: "0x7" } }] },
+    { model: "SliceRules", rows: [{ key: "0x1", value: { game_id: "0x7" } }] },
     { model: "Structure", rows: [] },
   ],
 };
@@ -36,7 +36,7 @@ const httpState: Parameters<typeof createHeraldRequestHandler>[0] = {
               game_id: "0x7",
               name: "0x74657374",
               preset_id: "0x1",
-              status: "Created",
+              settled: false,
               dev_mode_on: false,
               start_settling_at: "0x1",
               start_main_at: "0x2",
@@ -46,6 +46,15 @@ const httpState: Parameters<typeof createHeraldRequestHandler>[0] = {
           },
         ];
       }
+      if (model === "SliceRules")
+        return [
+          {
+            key: "0x7",
+            value: { game_id: "7", blitz_mode_on: true, victory_points_grant_config: { hyp_points_per_second: "1" } },
+          },
+        ];
+      if (model === "SettlementRules")
+        return [{ key: "0x7", value: { game_id: "7", registration_limit: "96", registration_start: "1" } }];
       return [];
     },
     snapshot: () => snapshot,
@@ -222,7 +231,7 @@ it("derives directory phases from advancing chain time with no registry write", 
     expect(response.status).toBe(200);
     return (await response.json()).games[0].status;
   };
-  expect(await status()).toBe("Created");
+  expect(await status()).toBe("Registration");
   timestamp = 2;
   expect(await status()).toBe("Live");
   timestamp = 3;

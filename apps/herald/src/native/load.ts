@@ -1,7 +1,7 @@
 import type { CheckpointStore } from "../checkpoint-store";
 import type { HistoryStore } from "../history-store";
 import type { MadaraRpc } from "../madara-rpc";
-import { NativeWorldFold as WorldFold } from "./world-fold";
+import { WorldFold } from "../world-fold";
 import { NativeReceiptRejected, type NativeIngestion } from "./ingestion";
 
 export async function loadNativeWorld(input: {

@@ -15,7 +15,7 @@ services:
         PORT: 3003
         HERALD_CHAIN: madara
         HERALD_RPC_URL: http://madara:9944/rpc/v0_10_2
-        HERALD_MANIFEST_PATH: /fixture/native-manifest.json
+        NATIVE_WORLD_MANIFEST: /fixture/native-manifest.json
       DATABASE_URL: ${HERALD_DATABASE_URL:?Set the isolated Herald database}
     ports: ["127.0.0.1:13003:3003"]
   herald-replay:

@@ -1,4 +1,5 @@
-import { GAME_SYNC_MODEL_MANIFEST } from "@bibliothecadao/eternum/game-sync-models";
+import { createNativeHistoryCodec } from "./native/history";
+import { schema } from "./native/fixtures";
 import { beforeEach, expect, it, vi } from "vitest";
 import type { DecodedWorldEvent } from "./types";
 const db = vi.hoisted(() => ({ query: vi.fn(), transaction: vi.fn(), release: vi.fn() }));
@@ -11,11 +12,20 @@ vi.mock("pg", () => ({
 import { HistoryStore } from "./history-store";
 
 const value = {
-  story: { PointsRegisteredStory: { owner_address: "0xabc", activity: "Exploration", points: "0x4c4b40" } },
+  player: "0xabc",
+  activity: "Exploration",
+  points: "0x4c4b40",
 };
 const event = {
   kind: "event",
-  model: GAME_SYNC_MODEL_MANIFEST.find((model) => model.name === "StoryEvent")!,
+  model: {
+    name: "PointsAwarded",
+    availability: "all",
+    channels: ["global-event"],
+    deletion: "event-ephemeral",
+    recovery: "event-deduped",
+    s2Scope: "game",
+  },
   key: { game_id: "0x1c" },
   value,
   entityId: "0x1",
@@ -35,7 +45,7 @@ it("restores points after restart, counts only new SQL rows and serves without m
   db.transaction.mockImplementation(async (sql: string) => ({
     rows: sql.includes("INSERT INTO herald_history_events") && insertCount++ === 0 ? [{ game_id: "28", value }] : [],
   }));
-  const store = new HistoryStore("postgres://test", "madara", "0xworld");
+  const store = new HistoryStore("postgres://test", "madara", "0xworld", createNativeHistoryCodec(schema));
   await store.initialize();
   expect(store.leaderboard("28")).toBeNull();
   store.markLeaderboardReady();
@@ -57,7 +67,7 @@ it("does not publish a rolled-back points registration", async () => {
     if (sql === "COMMIT") throw new Error("commit failed");
     return { rows: sql.includes("INSERT INTO herald_history_events") ? [{ game_id: "28", value }] : [] };
   });
-  const store = new HistoryStore("postgres://test", "madara", "0xworld");
+  const store = new HistoryStore("postgres://test", "madara", "0xworld", createNativeHistoryCodec(schema));
   await store.initialize();
   store.markLeaderboardReady();
   await expect(store.appendEvents([event])).rejects.toThrow("commit failed");
@@ -68,7 +78,7 @@ it("does not publish a rolled-back points registration", async () => {
 
 it("applies the story variant to both the history count and the bounded page", async () => {
   db.query.mockImplementation(async (sql: string) => ({ rows: sql.includes("COUNT(*)") ? [{ total: "2" }] : [] }));
-  const store = new HistoryStore("postgres://test", "madara", "0x123");
+  const store = new HistoryStore("postgres://test", "madara", "0x123", createNativeHistoryCodec(schema));
   const page = await store.queryEvents({
     gameId: "28",
     model: "StoryEvent",

@@ -1,40 +1,13 @@
-import { afterEach, describe, expect, mock, test } from "bun:test";
-import { expectedChainId } from "@realms-world/chain/chain-guard";
-import { RpcProvider } from "starknet";
-import type { LaunchSeriesRequest, LaunchSeriesStepId, SeriesLaunchGameSummary } from "../types";
-
-mock.module("../../../../contracts/l3/game/manifest_madara.json", () => ({
-  default: {
-    world: { address: "0xsharedworld" },
-    contracts: [
-      {
-        tag: "s2-registrar_systems",
-        address: "0xregistrar",
-        abi: [
-          { type: "function", name: "bootstrap_chain_config" },
-          { type: "function", name: "register_preset" },
-          { type: "function", name: "register_series" },
-          { type: "function", name: "create_game" },
-        ],
-      },
-    ],
-    events: [{ tag: "s2-GameCreated", selector: "0xabc" }],
-  },
-}));
-
-const { runGroupedSeriesLikeGameStep } = await import("../launch/series-like-runner");
-const { buildInitialSeriesLaunchSummary } = await import("../launch/series-summary");
-
-const originalFetch = globalThis.fetch;
-const originalGetChainId = RpcProvider.prototype.getChainId;
-const originalHeraldUrl = process.env.HERALD_URL;
-
-afterEach(() => {
-  globalThis.fetch = originalFetch;
-  RpcProvider.prototype.getChainId = originalGetChainId;
-  if (originalHeraldUrl === undefined) delete process.env.HERALD_URL;
-  else process.env.HERALD_URL = originalHeraldUrl;
-});
+import { describe, expect, mock, test } from "bun:test";
+import type {
+  LaunchGameStepRequest,
+  LaunchGameSummary,
+  LaunchSeriesRequest,
+  LaunchSeriesStepId,
+  SeriesLaunchGameSummary,
+} from "../types";
+import { runGroupedSeriesLikeGameStep } from "../launch/series-like-runner";
+import { buildInitialSeriesLaunchSummary } from "../launch/series-summary";
 
 describe("grouped series-like runner", () => {
   test("treats the parent series as the create-worlds prerequisite", async () => {
@@ -62,19 +35,21 @@ describe("grouped series-like runner", () => {
   });
 
   test("skips wait-for-factory-indexes for children whose create-worlds step never succeeded", async () => {
-    RpcProvider.prototype.getChainId = async () =>
-      expectedChainId("madara") as Awaited<ReturnType<RpcProvider["getChainId"]>>;
-    process.env.HERALD_URL = "https://herald.example";
-    const fetchCalls: string[] = [];
-    globalThis.fetch = (async (url: Parameters<typeof fetch>[0]) => {
-      fetchCalls.push(String(url));
-
-      if (fetchCalls.length <= 2) {
-        return Response.json({ games: [{ game_id: 7, name: "bltz-knicker-06" }] });
-      }
-
-      throw new Error(`Unexpected fetch call: ${String(url)}`);
-    }) as unknown as typeof fetch;
+    const runGameStep = mock(
+      async (step: LaunchGameStepRequest): Promise<LaunchGameSummary> => ({
+        environment: "madara.blitz",
+        chain: "madara",
+        gameType: "blitz",
+        gameName: step.gameName,
+        startTime: 4070930400,
+        startTimeIso: "2099-01-01T06:00:00.000Z",
+        rpcUrl: "https://rpc.example",
+        gameId: 7,
+        configMode: "batched",
+        configSteps: [],
+        dryRun: false,
+      }),
+    );
 
     const request = buildSeriesRequest({
       waitForFactoryIndexTimeoutMs: 25,
@@ -101,8 +76,14 @@ describe("grouped series-like runner", () => {
       summary,
       stepId: "wait-for-factory-indexes",
       persistSummary: async (next) => next,
+      runGameStep,
     });
 
+    expect(runGameStep).toHaveBeenCalledTimes(1);
+    expect(runGameStep.mock.calls[0]?.[0]).toMatchObject({
+      gameName: "bltz-knicker-06",
+      stepId: "wait-for-factory-index",
+    });
     expect(nextSummary.games[0]?.steps.find((step) => step.id === "wait-for-factory-indexes")?.status).toBe(
       "succeeded",
     );

@@ -26,13 +26,6 @@ export interface HistoryCodec {
   participants?: (value: Record<string, unknown>) => { owners: string[]; entities: string[] };
 }
 
-export const dojoHistoryCodec: HistoryCodec = {
-  storyModels: ["StoryEvent"],
-  pointsModel: "StoryEvent",
-  pointsVariant: "PointsRegisteredStory",
-  readPoints: readPointsRegistration,
-};
-
 interface StoredHistoryEvent {
   block_number: number;
   entity_id: string | null;
@@ -113,7 +106,7 @@ export class HistoryStore {
     databaseUrl: string,
     private readonly chain: string,
     private readonly worldAddress: string,
-    private readonly codec: HistoryCodec = dojoHistoryCodec,
+    private readonly codec: HistoryCodec,
   ) {
     this.pool = new Pool({ connectionString: databaseUrl, max: 2 });
   }

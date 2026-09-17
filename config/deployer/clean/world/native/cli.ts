@@ -4,7 +4,6 @@ import { RpcProvider } from "starknet";
 import { assertProviderChain } from "@realms-world/chain";
 import type { CliArgs } from "../../cli/args";
 import { createMadaraAccount } from "../../shared/madara-account";
-import { readWorldProfile } from "../artifacts";
 import { writeWorldOutputs } from "../manifest";
 import { loadNativeWorld } from "./artifacts";
 import { buildNativeManifest } from "./manifest";
@@ -13,12 +12,11 @@ import { inspectNativeWorld } from "./plan";
 import type { NativeWorldManifest } from "./types";
 
 export async function runNativeDeployment(args: CliArgs, root: string): Promise<void> {
-  const manifestPath = required(args, "manifest");
+  const manifestPath = args.manifest ?? requiredEnvironment("NATIVE_WORLD_MANIFEST");
   const seed = required(args, "seed");
   const identity = JSON.parse(readFileSync(required(args, "identity"), "utf8"));
-  const profile = readWorldProfile(resolve(root, "contracts/l3/game/dojo_madara.toml"));
-  const authority = process.env.DOJO_ACCOUNT_ADDRESS ?? profile.env.account_address;
-  const provider = new RpcProvider({ nodeUrl: args["rpc-url"] ?? process.env.RPC_URL ?? profile.env.rpc_url });
+  const authority = requiredEnvironment("NATIVE_ACCOUNT_ADDRESS");
+  const provider = new RpcProvider({ nodeUrl: args["rpc-url"] ?? requiredEnvironment("RPC_URL") });
   await assertProviderChain(provider, "madara", "RPC_URL");
   const previous = existsSync(manifestPath)
     ? (JSON.parse(readFileSync(manifestPath, "utf8")) as NativeWorldManifest)
@@ -41,7 +39,7 @@ export async function runNativeDeployment(args: CliArgs, root: string): Promise<
     if (!plan.synced) process.exitCode = 1;
     return;
   }
-  const account = createMadaraAccount(provider, authority, process.env.DOJO_PRIVATE_KEY ?? profile.env.private_key);
+  const account = createMadaraAccount(provider, authority, requiredEnvironment("NATIVE_PRIVATE_KEY"));
   const report = await deployNativeWorld(local, account, (transaction) =>
     console.error(JSON.stringify({ event: "native_world_transaction", ...transaction })),
   );
@@ -70,5 +68,11 @@ export async function runNativeDeployment(args: CliArgs, root: string): Promise<
 function required(args: CliArgs, name: string): string {
   const value = args[name];
   if (!value || value === "true") throw new Error(`Native deployment requires --${name}`);
+  return value;
+}
+
+function requiredEnvironment(name: string): string {
+  const value = process.env[name]?.trim();
+  if (!value) throw new Error(`${name} is required`);
   return value;
 }

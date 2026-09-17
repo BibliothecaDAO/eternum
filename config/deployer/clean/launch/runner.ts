@@ -19,13 +19,11 @@ import {
 } from "../ledger/calls";
 import {
   assertRegistrarAvailable,
-  isNativeRegistrar,
   createRegistrarGame,
   resolveRegistrarEnvironmentId,
   resolveRegistrarWorldAddress,
 } from "../registrar/calls";
 import { findGameRegistryByName, waitForGameRegistryById } from "../registrar/game-registry";
-import { buildCreateGameParams } from "../registrar/preset";
 import { resolveAccountCredentials } from "../shared/credentials";
 import { requireRpcUrl } from "../shared/rpc";
 import type {
@@ -244,8 +242,7 @@ async function ensureSponsoredLedgerPool(launch: PreparedLaunch, gameId: number)
 }
 
 function buildRegistrarGameParams(launch: PreparedLaunch) {
-  const buildParams = isNativeRegistrar(launch.runtime.environment.id) ? buildNativeGameParams : buildCreateGameParams;
-  return buildParams(launch.config, {
+  return buildNativeGameParams(launch.config, {
     gameName: launch.request.gameName,
     presetId: launch.runtime.presetId,
     seriesName: launch.request.seriesName,
@@ -319,9 +316,7 @@ async function createGame(launch: PreparedLaunch): Promise<void> {
         buildRegistrarGameParams(launch),
         environmentId,
         ledger,
-        isNativeRegistrar(environmentId)
-          ? buildNativePreset(loadNativePresetConfiguration(environmentId, launch.runtime.presetId))
-          : undefined,
+        buildNativePreset(loadNativePresetConfiguration(environmentId, launch.runtime.presetId)),
       ),
     {
       start: `Creating "${launch.request.gameName}" through the persistent registrar`,
