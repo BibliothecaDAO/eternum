@@ -23,6 +23,12 @@ export class NativeWorldFold extends WorldFold {
     return new NativeWorldFold(this.registry, this);
   }
 
+  public override finalizedGameIds(): readonly string[] {
+    return this.modelRows("GameRegistry")
+      .filter(({ value }) => value.settled === true)
+      .map(({ value }) => BigInt(value.game_id as string).toString());
+  }
+
   protected override derivedModels(): readonly string[] {
     return [];
   }

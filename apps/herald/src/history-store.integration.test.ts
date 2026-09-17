@@ -132,13 +132,18 @@ describe.skipIf(!databaseUrl)("native confirmed history", () => {
         "BattleEvent",
       ]);
       const snapshot = fold.reviewSnapshot(1, 10);
-      await store.freezeReviewSnapshot(snapshot);
+      await store.freezeReviewSnapshot(snapshot.game_id, () => snapshot);
       await store.close();
       store = new HistoryStore(url.toString(), "madara", manifest.world.address, nativeHistoryCodec);
       await store.initialize();
       store.markLeaderboardReady();
       expect(store.leaderboard("1")).toEqual(before);
       expect(await store.reviewSnapshot("1")).toEqual(snapshot);
+      const repeated = vi.fn(() => {
+        throw new Error("Finalized review must not be rebuilt");
+      });
+      for (let head = 11; head < 20; head++) await store.freezeReviewSnapshot("1", repeated);
+      expect(repeated).not.toHaveBeenCalled();
       const battles = await store.queryEvents({ gameId: "1", model: "BattleEvent", limit: 10, offset: 0 });
       expect(battles.total).toBe(1);
       for (const [owner, entityId] of [

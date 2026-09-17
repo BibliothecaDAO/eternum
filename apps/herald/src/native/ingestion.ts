@@ -138,16 +138,13 @@ export class NativeIngestion {
     const decoded: DecodedWorldEvent[] = [];
     receipt.events.forEach((raw, eventIndex) => {
       if (!this.decoder.owns(raw.from_address)) return;
-      const event = this.decoder.decode(
-        {
-          ...raw,
-          block_number: blockNumber,
-          transaction_hash: normalizeFelt(receipt.transaction_hash),
-          transaction_index: transactionIndex,
-          event_index: eventIndex,
-        },
-        fold,
-      );
+      const event = this.decoder.decode({
+        ...raw,
+        block_number: blockNumber,
+        transaction_hash: normalizeFelt(receipt.transaction_hash),
+        transaction_index: transactionIndex,
+        event_index: eventIndex,
+      });
       fold.apply(event);
       decoded.push(event);
     });

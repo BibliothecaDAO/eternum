@@ -104,6 +104,7 @@ const storedHistoryEvent = (event: DecodedWorldEvent, codec: HistoryCodec): Stor
 export class HistoryStore {
   private readonly pool: Pool;
   private readonly points = new PointsLeaderboard();
+  private readonly frozenReviews = new Set<string>();
   private leaderboardReady = false;
   private writeQueue = Promise.resolve();
   private writeFailure?: Error;
@@ -177,6 +178,14 @@ export class HistoryStore {
         PRIMARY KEY (chain, world_address, game_id)
       );
     `);
+    await this.pool.query(
+      `ALTER TABLE herald_game_review_snapshots ADD COLUMN IF NOT EXISTS finalized BOOLEAN NOT NULL DEFAULT false`,
+    );
+    const frozen = await this.pool.query<{ game_id: string }>(
+      `SELECT game_id::text FROM herald_game_review_snapshots WHERE chain = $1 AND world_address = $2 AND finalized`,
+      [this.chain, this.worldAddress],
+    );
+    for (const { game_id } of frozen.rows) this.frozenReviews.add(game_id);
     await this.restorePointsLeaderboard();
   }
 
@@ -285,21 +294,27 @@ export class HistoryStore {
       });
   }
 
-  public async freezeReviewSnapshot(snapshot: HeraldGameSnapshot): Promise<void> {
+  public async freezeReviewSnapshot(gameId: string, createSnapshot: () => HeraldGameSnapshot): Promise<void> {
+    if (this.frozenReviews.has(gameId)) return;
+    const snapshot = createSnapshot();
+    if (snapshot.game_id !== gameId) throw new Error("Review snapshot game mismatch");
     await this.pool.query(
       `INSERT INTO herald_game_review_snapshots (
-         chain, world_address, game_id, confirmed_block, snapshot
-       ) VALUES ($1, $2, $3, $4, $5::jsonb)
-       ON CONFLICT (chain, world_address, game_id) DO NOTHING`,
-      [this.chain, this.worldAddress, snapshot.game_id, snapshot.confirmed_block, JSON.stringify(snapshot)],
+         chain, world_address, game_id, confirmed_block, snapshot, finalized
+       ) VALUES ($1, $2, $3, $4, $5::jsonb, true)
+       ON CONFLICT (chain, world_address, game_id) DO UPDATE
+       SET confirmed_block = EXCLUDED.confirmed_block, snapshot = EXCLUDED.snapshot, finalized = true, frozen_at = now()
+       WHERE NOT herald_game_review_snapshots.finalized`,
+      [this.chain, this.worldAddress, gameId, snapshot.confirmed_block, JSON.stringify(snapshot)],
     );
+    this.frozenReviews.add(gameId);
   }
 
   public async reviewSnapshot(gameId: string): Promise<HeraldGameSnapshot | null> {
     const result = await this.pool.query<{ snapshot: HeraldGameSnapshot }>(
       `SELECT snapshot
        FROM herald_game_review_snapshots
-       WHERE chain = $1 AND world_address = $2 AND game_id = $3`,
+       WHERE chain = $1 AND world_address = $2 AND game_id = $3 AND finalized`,
       [this.chain, this.worldAddress, gameId],
     );
     return result.rows[0]?.snapshot ?? null;

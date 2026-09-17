@@ -153,6 +153,9 @@ pub mod SeasonDomain {
                 context.timestamp > game.end_at + game.end_grace_seconds.into(),
                 "game settlement grace period is active",
             );
+            if !self.settle_final_points(game_id, context.timestamp) {
+                return;
+            }
             game.settled = true;
             self.games.write_game(game_id, game);
         }
@@ -163,14 +166,7 @@ pub mod SeasonDomain {
         fn checkpoint_prize_points(ref self: ContractState, game_id: u32, timestamp: u64) -> bool {
             let peers = self.lifecycle.require_active();
             assert!(get_caller_address() == peers.prizes, "only prizes domain");
-            crate::commands::assert_context_time(timestamp);
-            let game = self.games.game(game_id);
-            assert!(game.end_at != 0 && timestamp >= game.end_at, "game not ended");
-            crate::hyperstructures::IHyperstructuresDispatcherTrait::settle_final_hyperstructures(
-                crate::hyperstructures::IHyperstructuresDispatcher { contract_address: peers.economy },
-                game_id,
-                timestamp,
-            )
+            self.settle_final_points(game_id, timestamp)
         }
         fn finalize_ranking(ref self: ContractState, game_id: u32, trial_id: u128) {
             assert!(get_caller_address() == self.lifecycle.require_active().prizes, "only prizes domain");
@@ -255,6 +251,7 @@ pub mod SeasonDomain {
         fn command_commitment(self: @ContractState, command: Command) -> felt252 {
             crate::commands::command_commitment(command)
         }
+        #[inline(never)]
         fn rules_commitment(self: @ContractState, rules: SliceRules) -> felt252 {
             let mut values = array!['ETERNUM_RULES', 1];
             rules.serialize(ref values);
@@ -400,6 +397,16 @@ pub mod SeasonDomain {
 
     #[generate_trait]
     impl Internal of InternalTrait {
+        #[inline(never)]
+        fn settle_final_points(ref self: ContractState, game_id: u32, timestamp: u64) -> bool {
+            crate::hyperstructures::IHyperstructuresDispatcherTrait::settle_final_hyperstructures(
+                crate::hyperstructures::IHyperstructuresDispatcher {
+                    contract_address: self.lifecycle.require_active().economy,
+                },
+                game_id,
+                timestamp,
+            )
+        }
         fn record_season_end(ref self: ContractState, game_id: u32, winner: ContractAddress, timestamp: u64) {
             self
                 .emit(

@@ -1,4 +1,3 @@
-import { hasGameEnded } from "@bibliothecadao/eternum/game-sync";
 import { toJsonValue, type ModelRegistry } from "./model-registry";
 import type {
   DecodedRecord,
@@ -278,10 +277,10 @@ export class WorldFold {
       .sort((left, right) => Number(left) - Number(right));
   }
 
-  public endedGameIds(confirmedTimestamp: number): readonly string[] {
+  public finalizedGameIds(): readonly string[] {
     if (!this.rowsByModel.has("GameRegistry")) return [];
     return [...this.materializedRows("GameRegistry").values()]
-      .filter((row) => hasGameEnded(String(row.value.status), Number(row.value.end_at), confirmedTimestamp))
+      .filter((row) => String(row.value.status) === "Settled")
       .map((row) => scalarGameId(row.key, "GameRegistry"));
   }
 

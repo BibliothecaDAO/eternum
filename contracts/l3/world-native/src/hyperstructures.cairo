@@ -579,7 +579,7 @@ pub mod HyperstructureState {
                         version: 1,
                         model: 'HyperstructureShares',
                         keys: array![key.game_id.into(), key.entity_id.into()].span(),
-                        member: selector!("start_at"),
+                        member: 'start_at',
                         values: array![cutoff.into()].span(),
                     },
                 );

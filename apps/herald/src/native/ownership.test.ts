@@ -13,7 +13,7 @@ function faithStory() {
 describe("native ownership projections", () => {
   it("decodes faith accrual into the legacy story payload", () => {
     const { decoder, fold } = setup();
-    const decoded = decoder.decode(faithStory(), fold);
+    const decoded = decoder.decode(faithStory());
     expect(decoded.kind).toBe("event");
     expect(decoded.model.name).toBe("StoryEvent");
     if (decoded.kind !== "event") throw new Error("Expected history event");
@@ -26,10 +26,10 @@ describe("native ownership projections", () => {
   });
 
   it("rejects malformed history and history emitted by the wrong domain", () => {
-    const { decoder, fold } = setup();
+    const { decoder } = setup();
     const event = faithStory();
-    expect(() => decoder.decode({ ...event, data: event.data.slice(0, -1) }, fold)).toThrow();
-    expect(() => decoder.decode({ ...event, from_address: manifest.native.domains.map.address }, fold)).toThrow();
+    expect(() => decoder.decode({ ...event, data: event.data.slice(0, -1) })).toThrow();
+    expect(() => decoder.decode({ ...event, from_address: manifest.native.domains.map.address })).toThrow();
   });
 
   it("exposes both ownership commands through the generated command ABI", () => {

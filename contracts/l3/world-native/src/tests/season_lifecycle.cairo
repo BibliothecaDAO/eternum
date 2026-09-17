@@ -304,3 +304,38 @@ fn final_checkpoint(d: super::Deployment) -> bool {
         crate::blitz_prizes::IPrizeSeasonDispatcher { contract_address: d.peers.season }, 3, 1000,
     )
 }
+
+#[test]
+fn game_finalization_waits_for_the_last_hyperstructure_checkpoint_batch() {
+    let (deployment, keys) = nine_completed_hyperstructures();
+    let deployment = super::bind_authority(deployment);
+    let game = games(deployment).game(3);
+    let timestamp = game.end_at + game.end_grace_seconds.into() + 1;
+    assert!(execute(deployment, Command::MarkGameSettled, timestamp));
+    assert!(!games(deployment).game(3).settled);
+    assert_eq!(hypers(deployment).hyperstructure_shares(*keys.at(7)).start_at, game.end_at);
+    assert_eq!(hypers(deployment).hyperstructure_shares(*keys.at(8)).start_at, 50);
+    assert!(execute(deployment, Command::MarkGameSettled, timestamp + 1));
+    assert!(games(deployment).game(3).settled);
+    assert_eq!(hypers(deployment).hyperstructure_shares(*keys.at(8)).start_at, game.end_at);
+}
+
+#[test]
+fn checkpoint_member_event_uses_the_declared_short_string_identity() {
+    let (deployment, hyper, home, _) = super::hyperstructures::setup();
+    super::hyperstructures::complete(deployment, hyper, home);
+    configure(deployment, 1);
+    let mut events = snforge_std::spy_events();
+    assert!(execute(deployment, Command::CloseSeason, 100));
+    let mut found = false;
+    for (_, event) in events.get_events().emitted_by(deployment.peers.economy).events.span() {
+        if event.keys.len() == 5
+            && *event.keys.at(1) == selector!("RowMemberSet")
+            && *event.keys.at(3) == 'HyperstructureShares' {
+            assert_eq!(*event.keys.at(4), 'start_at');
+            assert_eq!(event.data.span(), array![2, 3, hyper.entity_id.into(), 1, 100].span());
+            found = true;
+        }
+    }
+    assert!(found);
+}

@@ -840,8 +840,8 @@ describe("LiveWorld wire economy", () => {
   });
 });
 
-describe("timed review snapshots", () => {
-  it("freezes a dev game's confirmed snapshot when its clock ends without a status change", async () => {
+describe("finalized review snapshots", () => {
+  it("waits for authoritative finalization after clock expiry", async () => {
     const registryCodec = codec({ ...gameModel, name: "GameRegistry" }, "0x103");
     const timedRegistry: ModelRegistry = { ...registry, persistent: [registryCodec] };
     const fold = WorldFold.restore(timedRegistry, {
@@ -872,18 +872,23 @@ describe("timed review snapshots", () => {
       registry: timedRegistry,
       rpc: rpcFixture({ ...replacementBlock(), transactions: [] }),
     });
-    await live.freezeEndedReviewSnapshots(99);
+    await live.freezeFinalizedReviewSnapshots();
     expect(historyStore.freezeReviewSnapshot).not.toHaveBeenCalled();
     await live.acceptSubscribedHead({ block_number: 13, timestamp: 100 });
-    expect(historyStore.freezeReviewSnapshot).toHaveBeenCalledWith(
-      expect.objectContaining({ game_id: "7", confirmed_block: 13 }),
-    );
+    expect(historyStore.freezeReviewSnapshot).not.toHaveBeenCalled();
+    fold.apply({
+      kind: "set",
+      model: { ...gameModel, name: "GameRegistry" },
+      entityId: "0x1",
+      key: { game_id: 7n },
+      value: { status: "Settled", end_at: 100n, dev_mode_on: true },
+      position: { blockNumber: 13, transactionHash: "0x55", transactionIndex: 0, eventIndex: 0 },
+    });
+    await live.freezeFinalizedReviewSnapshots();
+    expect(historyStore.freezeReviewSnapshot).toHaveBeenCalledWith("7", expect.any(Function));
+    const makeSnapshot = vi.mocked(historyStore.freezeReviewSnapshot).mock.calls[0][1];
+    expect(makeSnapshot()).toMatchObject({ game_id: "7", confirmed_block: 13 });
     expect(historyStore.appendEvents).toHaveBeenCalledWith([], 13);
-    // Startup recovery uses the timestamp of the loaded confirmed head as well.
-    await live.freezeEndedReviewSnapshots(101);
-    expect(historyStore.freezeReviewSnapshot).toHaveBeenLastCalledWith(
-      expect.objectContaining({ game_id: "7", confirmed_block: 13 }),
-    );
   });
 });
 

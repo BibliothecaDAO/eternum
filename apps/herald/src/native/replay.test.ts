@@ -132,7 +132,7 @@ describe("native confirmed replay and transaction delivery", () => {
   it.each([
     malformed.raw,
     { ...setFixture.raw, from_address: manifest.native.domains.map.address },
-    rowEvent("DomainClass", [manifest.native.domains.season.address], ["0xbad"]),
+    { ...setFixture.raw, keys: [...setFixture.raw.keys.slice(0, 2), "2", ...setFixture.raw.keys.slice(3)] },
   ])("rejects invalid rows without partial publication and accepts the next valid receipt", (invalid) => {
     const { native, decoder, fold } = setup();
     const messages: string[] = [];
