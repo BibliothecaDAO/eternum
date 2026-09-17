@@ -125,6 +125,7 @@ pub mod HyperstructureState {
         pub hyper_counts: Map<u32, u32>,
         pub hyper_exists: Map<(u32, u32), bool>,
         pub hyper_progress: Map<(u32, u32, u8), u128>,
+        // Length plus one distinguishes an empty Blitz recipe from missing configuration.
         pub hyper_rule_count: Map<u32, u32>,
         pub hyper_shards: Map<u32, u128>,
         pub hyper_costs: Map<(u32, u32), ConstructionResource>,
@@ -154,7 +155,10 @@ pub mod HyperstructureState {
             get_dep_component!(@self, Life).assert_configurator();
             self.games().game(game_id);
             assert!(self.hyper_rule_count.read(game_id) == 0, "hyperstructure rules already configured");
-            assert!(!rules.resources.is_empty(), "empty construction requirements");
+            assert!(
+                !rules.resources.is_empty() || self.games().rules(game_id).blitz_mode_on,
+                "empty construction requirements",
+            );
             for index in 0..rules.resources.len() {
                 let cost = *rules.resources.at(index);
                 assert!(
@@ -170,7 +174,7 @@ pub mod HyperstructureState {
                 }
                 self.hyper_costs.write((game_id, index), cost);
             }
-            self.hyper_rule_count.write(game_id, rules.resources.len());
+            self.hyper_rule_count.write(game_id, rules.resources.len() + 1);
             self.hyper_shards.write(game_id, rules.initialize_shards);
             let mut values = array![];
             rules.serialize(ref values);
@@ -379,7 +383,7 @@ pub mod HyperstructureState {
             let count = self.hyper_rule_count.read(game_id);
             assert!(count != 0, "hyperstructure rules missing");
             let mut resources = array![];
-            for index in 0..count {
+            for index in 0..count - 1 {
                 resources.append(self.hyper_costs.read((game_id, index)));
             }
             HyperstructureRules { initialize_shards: self.hyper_shards.read(game_id), resources: resources.span() }

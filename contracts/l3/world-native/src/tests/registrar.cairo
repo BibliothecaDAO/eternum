@@ -75,7 +75,11 @@ fn definition(blitz: bool) -> PresetDefinition {
             banks: crate::market::BankRules {
                 lp_fee_num: 3, lp_fee_denom: 1000, owner_fee_num: 1, owner_fee_denom: 100,
             },
-            hyperstructures: super::hyperstructures::rules(),
+            hyperstructures: if blitz {
+                crate::hyperstructures::HyperstructureRules { initialize_shards: 0, resources: array![].span() }
+            } else {
+                super::hyperstructures::rules()
+            },
             relics: super::relics::rules(),
             research_cost: 100,
             withdrawals: if blitz {
@@ -184,6 +188,29 @@ fn blitz_launch_initializes_domains_once_and_allocates_isolated_games() {
         );
     }
     assert_eq!(registry(d).next_game_id(), 3);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn blitz_launch_accepts_empty_construction_requirements_without_allowing_reconfiguration() {
+    let d = setup();
+    let preset = definition(true);
+    registry(d).register_preset(1, preset);
+    let game_id = registry(d).create_game(params(true), preset);
+    let economy = crate::hyperstructures::IHyperstructuresDispatcher { contract_address: d.peers.economy };
+    assert_eq!(
+        crate::hyperstructures::IHyperstructuresDispatcherTrait::hyperstructure_rules(economy, game_id),
+        preset.economy.hyperstructures,
+    );
+    start_cheat_caller_address(d.peers.economy, super::authority());
+    assert!(
+        crate::hyperstructures::IHyperstructuresSafeDispatcherTrait::configure_hyperstructures(
+            crate::hyperstructures::IHyperstructuresSafeDispatcher { contract_address: d.peers.economy },
+            game_id,
+            preset.economy.hyperstructures,
+        )
+            .is_err(),
+    );
 }
 
 #[test]

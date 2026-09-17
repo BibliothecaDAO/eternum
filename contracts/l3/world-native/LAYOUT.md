@@ -385,7 +385,9 @@ construction ranges, and a shareholder allocation with its accrual cursor and mu
 counts are derived from the configured ranges and hyperstructure records; there is no total-progress or global-count
 row. The private discovery index supports the discovery lottery and completion enumeration. Tile occupancy identifies
 the structure and does not duplicate its construction stage. The former Structures hyperstructure storage is removed;
-this codec/layout change requires a fresh rehearsal deployment.
+this codec/layout change requires a fresh rehearsal deployment. The private construction-rule count stores length plus
+one: zero means unconfigured, and one represents Blitz's empty construction recipe. This encoding also requires the
+fresh deployment; it is not compatible with earlier count values.
 
 Season owns player points and the aggregate used by prize settlement. `PlayerPoints` and `PointsTotal` replace the
 placeholder prize projection. Guild membership is read from Registry for construction permissions.

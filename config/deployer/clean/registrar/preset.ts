@@ -104,7 +104,7 @@ function createResourceListAllocator(resourceLists: unknown[]) {
   };
 }
 
-function buildMapConfig(config: Config) {
+export function buildMapConfig(config: Config) {
   return {
     reward_resource_amount: config.exploration.reward,
     shards_mines_win_probability: config.exploration.shardsMinesWinProbability,
@@ -128,7 +128,7 @@ function buildMapConfig(config: Config) {
   };
 }
 
-function buildTroopDamageConfig(config: Config) {
+export function buildTroopDamageConfig(config: Config) {
   return {
     damage_raid_percent_num: config.troop.damage.damageRaidPercentNum,
     damage_biome_bonus_num: config.troop.damage.damageBiomeBonusNum,
@@ -143,7 +143,7 @@ function buildTroopDamageConfig(config: Config) {
   };
 }
 
-function buildTroopStaminaConfig(config: Config) {
+export function buildTroopStaminaConfig(config: Config) {
   const precision = config.resources.resourcePrecision;
   return {
     stamina_gain_per_tick: config.troop.stamina.staminaGainPerTick,
@@ -163,7 +163,7 @@ function buildTroopStaminaConfig(config: Config) {
   };
 }
 
-function buildTroopLimitConfig(config: Config) {
+export function buildTroopLimitConfig(config: Config) {
   return {
     guard_resurrection_delay: config.troop.limit.guardResurrectionDelay,
     mercenaries_troop_lower_bound: config.troop.limit.mercenariesTroopLowerBound,
@@ -183,7 +183,7 @@ function buildTroopLimitConfig(config: Config) {
   };
 }
 
-function buildCapacityConfig(config: Config) {
+export function buildCapacityConfig(config: Config) {
   return {
     structure_capacity: 0,
     troop_capacity: config.carryCapacityGram[CapacityConfig.Army],
@@ -192,7 +192,7 @@ function buildCapacityConfig(config: Config) {
   };
 }
 
-function buildStructureCapacityConfig(config: Config) {
+export function buildStructureCapacityConfig(config: Config) {
   return {
     realm_capacity: config.carryCapacityGram[CapacityConfig.RealmStructure],
     village_capacity: config.carryCapacityGram[CapacityConfig.VillageStructure],
@@ -205,7 +205,7 @@ function buildStructureCapacityConfig(config: Config) {
   };
 }
 
-function buildBiomeClimateConfig(config: Config) {
+export function buildBiomeClimateConfig(config: Config) {
   return {
     elevation_scale_bps: config.biomeClimate.elevationScaleBps,
     moisture_scale_bps: config.biomeClimate.moistureScaleBps,
@@ -230,7 +230,7 @@ function buildSettlementConfig(config: Config) {
   };
 }
 
-function resolveBlitzProfileId(config: Config): number {
+export function resolveBlitzProfileId(config: Config): number {
   const profileId = BLITZ_PROFILE_IDS[config.blitz.exploration.rewardProfileId];
   if (!profileId) {
     throw new Error(`Unsupported Blitz reward profile "${config.blitz.exploration.rewardProfileId}"`);

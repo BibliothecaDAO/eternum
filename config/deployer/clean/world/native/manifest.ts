@@ -1,6 +1,14 @@
-import { hash } from "starknet";
+import { hash, type Abi } from "starknet";
 import type { NativeWorld, NativeWorldManifest } from "./types";
 import type { NativePlan } from "./types";
+
+export function nativeDomainAbi(manifest: NativeWorldManifest, name: string): Abi {
+  const schema = manifest.native?.schemas[manifest.native.activeSchema];
+  const domain = schema?.domains[name];
+  if (!domain) throw new Error(`Manifest has no native ${name} ABI`);
+  // Domain entrypoint names can overlap (for example season and registry create_game).
+  return [...Object.values(schema.types), ...domain.entrypoints] as Abi;
+}
 
 export function buildNativeManifest(local: NativeWorld, before: NativePlan): NativeWorldManifest {
   const season = local.domains.find((domain) => domain.name === "season")!;
