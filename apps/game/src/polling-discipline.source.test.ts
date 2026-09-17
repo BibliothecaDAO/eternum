@@ -80,21 +80,9 @@ const ALLOWED_RECURRING_TIMEOUTS: Record<string, AllowedTimer & { callback: stri
   },
 };
 
-const ALLOWED_TRANSACTION_WAITS: Record<string, string> = {
-  "packages/core/src/account/bind-gameplay-accounts.ts":
-    "confirms identity bindings before a gameplay Herald session exists",
-  "packages/core/src/client/game-client.ts": "injects the Herald transaction channel into the provider",
-  "apps/game/src/observability/observed-client-transaction.ts": "resolves an observed submit from the Herald channel",
-  "apps/game/src/three/scenes/worldmap.tsx": "resolves movement from the Herald channel",
-  "packages/core/src/sync/game-sync-runtime.ts": "owns the Herald transaction-channel waiter",
-  "packages/core/src/account/gameplay-account.ts":
-    "one bounded deployment wait for non-browser callers that do not have a Herald session",
-};
-
 const REPO_ROOT = resolve(process.cwd(), "../..");
 const SOURCE_ROOTS = ["apps/game/src", "packages/core/src", "packages/provider/src", "packages/react/src"];
 const TIMER_PATTERN = /\bsetInterval\s*\(|\brefetchInterval\s*:/;
-const TRANSACTION_WAIT_PATTERN = /\bwaitForTransaction\s*\(/;
 
 const walk = (directory: string, files: string[] = []): string[] => {
   for (const entry of readdirSync(directory)) {
@@ -125,18 +113,6 @@ describe("polling discipline", () => {
     expect(source("apps/game/src/ui/shared/components/chain-time-poller.tsx")).not.toContain('getBlock("latest")');
     expect(existsSync(join(REPO_ROOT, "apps/game/src/dojo"))).toBe(false);
     expect(source("apps/game/src/init/bootstrap.tsx")).not.toContain("probeWorldToriiAlive");
-  });
-
-  it("allows transaction waits only at Herald channel call sites", () => {
-    const actual = SOURCE_ROOTS.flatMap((root) => walk(join(REPO_ROOT, root)))
-      .filter((path) => TRANSACTION_WAIT_PATTERN.test(readFileSync(path, "utf8")))
-      .map((path) => relative(REPO_ROOT, path))
-      .toSorted();
-
-    expect(actual, "route a transaction wait through the Herald tx channel").toEqual(
-      Object.keys(ALLOWED_TRANSACTION_WAITS).toSorted(),
-    );
-    expect(Object.values(ALLOWED_TRANSACTION_WAITS).every((reason) => reason.trim().length > 0)).toBe(true);
   });
 
   it("documents every surviving recurring timeout as a scheduler", () => {

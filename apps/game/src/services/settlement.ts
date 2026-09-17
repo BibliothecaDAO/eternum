@@ -25,7 +25,16 @@ export async function submitSettlement<T>(
       calldata: [signer.address],
     });
     if (!owner || BigInt(owner) === 0n) throw new Error("Gameplay account is not bound");
-    return await submit(client, owner);
+    const result = await submit(client, owner);
+    if (
+      typeof result !== "object" ||
+      result === null ||
+      !("transaction_hash" in result) ||
+      typeof result.transaction_hash !== "string"
+    )
+      throw new Error("Settlement did not return its transaction identity");
+    await client.runtime.waitForTransaction(result.transaction_hash);
+    return result;
   } finally {
     client.dispose();
   }

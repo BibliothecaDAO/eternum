@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   world: vi.fn(),
   connect: vi.fn(),
   dispose: vi.fn(),
+  wait: vi.fn(),
 }));
 vi.mock("./game-client", () => ({ createBrowserGameClient: mocks.create }));
 vi.mock("@/runtime/world/world-directory", () => ({ requireWorldById: mocks.world }));
@@ -17,7 +18,7 @@ vi.mock("@bibliothecadao/eternum/game-client", () => ({ fetchHeraldGameDirectory
 
 const meta = { gameId: 7, worldId: "blitz" } as WorldConfigMeta;
 const world = { playerRegistryAddress: "0x777" };
-const client = { connect: mocks.connect, dispose: mocks.dispose };
+const client = { connect: mocks.connect, dispose: mocks.dispose, runtime: { waitForTransaction: mocks.wait } };
 const ownerLookup = vi.fn();
 const signer = { address: "0x123", callContract: ownerLookup } as unknown as AccountInterface;
 
@@ -31,13 +32,43 @@ beforeEach(() => {
 
 describe("native settlement", () => {
   it("loads the selected game's preset, connects its actor and submits with the registry binding", async () => {
-    const submit = vi.fn(async () => "receipt");
-    expect(await submitSettlement(meta, signer, submit)).toBe("receipt");
+    const receipt = { transaction_hash: "0xabc", statusReceipt: "PENDING" };
+    const submit = vi.fn(async () => receipt);
+    expect(await submitSettlement(meta, signer, submit)).toBe(receipt);
+    expect(mocks.wait).toHaveBeenCalledWith("0xabc");
     expect(mocks.world).toHaveBeenCalledWith("blitz");
     expect(mocks.create).toHaveBeenCalledWith({ world, gameId: 7, presetId: 2 });
     expect(mocks.connect).toHaveBeenCalledWith(signer);
     expect(ownerLookup).toHaveBeenCalledWith({ contractAddress: "0x777", entrypoint: "owner_of", calldata: ["0x123"] });
     expect(submit).toHaveBeenCalledWith(client, "0x456");
+    expect(mocks.dispose).toHaveBeenCalledOnce();
+  });
+
+  it("keeps the entry stream alive until the submitted settlement is applied", async () => {
+    let applied!: () => void;
+    mocks.wait.mockReturnValue(
+      new Promise<void>((resolve) => {
+        applied = resolve;
+      }),
+    );
+    const settlement = submitSettlement(meta, signer, async () => ({ transaction_hash: "0xabc" }));
+    await vi.waitFor(() => expect(mocks.wait).toHaveBeenCalledWith("0xabc"));
+    expect(mocks.dispose).not.toHaveBeenCalled();
+    applied();
+    await settlement;
+    expect(mocks.dispose).toHaveBeenCalledOnce();
+  });
+
+  it("reports a terminal gameplay rejection delivered after submission", async () => {
+    const rejection = new Error("settlement rejected");
+    mocks.wait.mockRejectedValue(rejection);
+    await expect(submitSettlement(meta, signer, async () => ({ transaction_hash: "0xabc" }))).rejects.toBe(rejection);
+    expect(mocks.dispose).toHaveBeenCalledOnce();
+  });
+
+  it("rejects a missing transaction identity before closing the stream", async () => {
+    await expect(submitSettlement(meta, signer, async () => undefined)).rejects.toThrow("transaction identity");
+    expect(mocks.wait).not.toHaveBeenCalled();
     expect(mocks.dispose).toHaveBeenCalledOnce();
   });
 

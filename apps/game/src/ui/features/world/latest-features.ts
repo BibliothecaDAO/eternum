@@ -35,6 +35,18 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-17",
+    title: "Responsive army selection",
+    description: "Army range checks stay responsive as more players and structures fill the map.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-17",
+    title: "Confirmed settlement before entry",
+    description: "Game entry waits for your settlement to appear and reports a rejected settlement before proceeding.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-17",
     title: "Reliable game entry and updates",
     description:
       "The lobby opens before game rules load, and exploration rewards keep your next action ready without reconnecting.",
