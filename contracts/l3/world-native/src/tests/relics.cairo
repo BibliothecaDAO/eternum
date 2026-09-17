@@ -88,10 +88,6 @@ fn setup(blitz: bool) -> (super::Deployment, ResourceKey, ResourceKey) {
     let structures = crate::structures::IStructuresDispatcher { contract_address: deployment.peers.structures };
     let id = crate::structures::IStructuresDispatcherTrait::structure(structures, home).unwrap().troop_explorers.at(0);
     let explorer = ResourceKey { game_id: 3, entity_id: *id };
-    let coord = troop(deployment, explorer).coord;
-    start_cheat_caller_address(deployment.peers.map, deployment.peers.troops);
-    IMapDispatcher { contract_address: deployment.peers.map }.reveal(crate::geometry::tile_key(3, coord), 1);
-    stop_cheat_caller_address(deployment.peers.map);
     for id in 39_u8..57 {
         grant(deployment, explorer, id, 3 * RESOURCE_PRECISION);
         grant(deployment, home, id, 3 * RESOURCE_PRECISION);
