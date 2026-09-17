@@ -13,7 +13,10 @@ import { DatabaseFailure } from "./errors";
 import { launchName, type ClaimedLaunchRun, type LaunchRun, type LaunchSummary } from "./model";
 import { applyDurableLaunchDefaults, type LaunchJobRequest, type LaunchKind } from "./schemas";
 
-const migrationUrl = new URL("../migrations/0001_launch_runs.sql", import.meta.url);
+const migrationUrls = [
+  new URL("../migrations/0001_launch_runs.sql", import.meta.url),
+  new URL("../migrations/0002_launch_environments.sql", import.meta.url),
+];
 
 interface LaunchRunRow extends QueryResultRow {
   id: string;
@@ -86,7 +89,7 @@ export class PostgresLaunchStore implements LaunchServiceStore {
   }
 
   async initialize(): Promise<void> {
-    await this.pool.query(await readFile(migrationUrl, "utf8"));
+    for (const migration of migrationUrls) await this.pool.query(await readFile(migration, "utf8"));
   }
 
   async close(): Promise<void> {

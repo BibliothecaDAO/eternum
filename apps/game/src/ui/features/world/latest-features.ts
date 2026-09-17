@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-17",
+    title: "Clear game creation feedback",
+    description:
+      "Creating a game shows its progress and keeps any launch error beside the button, so you can fix it and retry without losing the form.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-17",
     title: "Reliable game end effects",
     description:
       "Frozen terrain updates without a reload. A game-end banner announces the clock ending and names the winner or tied winners when the final result arrives.",
