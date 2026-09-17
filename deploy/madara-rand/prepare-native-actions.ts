@@ -126,9 +126,12 @@ async function provisionResources(entity: number) {
   if (grants.length) await execute("MintDevelopmentResources", { entity_id: entity, resources: grants });
 }
 
+function accessSpire(coord: Coord) {
+  return { alt: false, x: Number(coord.x) - (Number(coord.y) % 2), y: Number(coord.y) + 1 };
+}
+
 async function provisionAccess(coord: Coord) {
-  // The retained benchmark fixture places an access spire north-west of its eastward explorer.
-  const spire = { alt: false, x: Number(coord.x) - (Number(coord.y) % 2), y: Number(coord.y) + 1 };
+  const spire = accessSpire(coord);
   const existing = (await rows<Tile>("TileOpt")).find(
     (tile) => !tile.alt && Number(tile.col) === spire.x && Number(tile.row) === spire.y,
   );
@@ -145,6 +148,7 @@ async function provisionAccess(coord: Coord) {
 }
 
 const explorers: number[] = [];
+fixture.geometry = [];
 for (let index = 0; index < fixture.provision.realmCount; index++) {
   let settled = await settle(index + 1);
   const realm = Number(settled.entity_id);
@@ -165,6 +169,12 @@ for (let index = 0; index < fixture.provision.realmCount; index++) {
     assert((await explorer(id)).coord.alt, "Alternate entry did not change layer");
   }
   explorers.push(id);
+  const prepared = await explorer(id);
+  fixture.geometry.push({
+    realm: { alt: false, x: Number(settled.base.coord_x), y: Number(settled.base.coord_y) },
+    explorer: { alt: prepared.coord.alt, x: Number(prepared.coord.x), y: Number(prepared.coord.y) },
+    ...(prepared.coord.alt ? { spire: accessSpire(prepared.coord) } : {}),
+  });
   fixture.provision.realmIds[index] = realm;
   writeFileSync(path, JSON.stringify(fixture, null, 2) + "\n");
   console.log(JSON.stringify({ prepared: explorers.length, total: fixture.provision.realmCount, explorer: id }));

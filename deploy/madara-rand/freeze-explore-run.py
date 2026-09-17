@@ -22,6 +22,7 @@ def main():
     if subprocess.check_output(['git', 'status', '--porcelain'], text=True).strip():
         raise SystemExit('commit the runner before freezing its measurement inputs')
     fixtures = dict(zip(('baseline', 'embedded', 'sidecar'), (baseline, embedded, sidecar)))
+    geometry = None
     for path in fixtures.values():
         fixture = json.loads(path.read_text())
         if len(fixture['explorers']) != 288:
@@ -29,6 +30,12 @@ def main():
         layers = fixture.get('layers', fixture.get('provision', {}).get('layers'))
         if layers != ['surface', 'ethereal'] * 144:
             raise SystemExit('all placements require the same alternating layers')
+        coordinates = fixture.get('geometry')
+        if not isinstance(coordinates, list) or len(coordinates) != 288:
+            raise SystemExit('each deployment must record its prepared realm, explorer and access-spire coordinates')
+        if geometry is not None and coordinates != geometry:
+            raise SystemExit('the prepared coordinates differ between placements')
+        geometry = coordinates
     manifest = {
         'schema': 1, 'scope': 'single-host deployed explore comparison',
         'frozenAt': datetime.now(timezone.utc).isoformat(),
