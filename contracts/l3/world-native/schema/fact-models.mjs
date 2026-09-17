@@ -177,9 +177,13 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
     model("BitcoinMine", ["prizes"], "game", struct("resources::ResourceKey"), struct("bitcoin::MineFunding")),
     model("BitcoinClaim", ["prizes"], "game", struct("bitcoin::ClaimKey"), [{ name: "claimed", type: "core::bool" }]),
     model("BitcoinPhase", ["prizes"], "game", struct("bitcoin::PhaseKey"), struct("bitcoin::Phase")),
-    model("BitcoinContribution", ["prizes"], "game", struct("bitcoin::ContributionKey"), [
-      { name: "labor", type: "core::integer::u128" },
-    ]),
+    model(
+      "BitcoinContribution",
+      ["prizes"],
+      "game",
+      struct("bitcoin::ContributionKey"),
+      struct("bitcoin::Contribution"),
+    ),
     model("MineKindConfig", ["resources"], "game", struct("mines::MineKindKey"), struct("mines::MineKindConfig")),
     model("MinePool", ["resources"], "game", struct("mines::MinePoolKey"), [
       { name: "weights", type: "core::array::Span::<world_native::mines::MineWeight>" },
@@ -429,7 +433,6 @@ const behaviouralFacts = {
       nextClaim: "next_phase",
       unsplitCarry: "unsplit_carry",
       winnerCarry: "winner_carry",
-      ownerCarry: "owner_carry",
     },
   },
   BitcoinClaim: { domain: "bitcoin", fields: { claimed: "claimed" } },
@@ -437,7 +440,7 @@ const behaviouralFacts = {
     domain: "bitcoin",
     fields: { labor: "total_labor", contributors: "contributors", state: "state", root: "root" },
   },
-  BitcoinContribution: { domain: "bitcoin", fields: { labor: "labor" } },
+  BitcoinContribution: { domain: "bitcoin", fields: { labor: "labor", destination: "structure_id" } },
   RealmTraits: { domain: "realm/season", fields: { wonder: "wonder", order: "order", resources: "resources" } },
   RealmCatalogue: { domain: "realm/season", fields: { initialized: "initialized" } },
   ResourceBalance: { domain: "resources", fields: { balance: "balance" } },

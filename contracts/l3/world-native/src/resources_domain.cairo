@@ -147,7 +147,7 @@ pub mod ResourcesDomain {
         ) {
             self.assert_structures();
             self.resources.initialize(key, capacity);
-            if category == 1 || category == 5 || category == 8 {
+            if category == 8 {
                 crate::bitcoin::IBitcoinFundingDispatcherTrait::register_bitcoin_structure(
                     crate::bitcoin::IBitcoinFundingDispatcher {
                         contract_address: self.lifecycle.require_active().prizes,

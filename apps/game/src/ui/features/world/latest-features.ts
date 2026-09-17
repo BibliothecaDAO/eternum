@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-17",
+    title: "Mining Claims Catch Up",
+    description:
+      "Claim ready mining phases together. Winner rewards return to the first contributing structure; the owner's share stays in the mine.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-17",
     title: "Simpler Army and Structure Display",
     description:
       "Removed autonomous map agents and hyperstructure level variants. Player armies keep their normal ownership colors and troop models.",

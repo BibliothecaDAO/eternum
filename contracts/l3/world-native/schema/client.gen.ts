@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "351c1bbbbc12bd84d8fcb6ed346ee88692a3bca5e560359685af76c2277ea316";
+export const nativeFactSchemaIdentity = "0894c830298da14b84984e73e7fe19e021919ac42879b4680f79237a57866ace";
 export interface NativeRows {
   Preset: { readonly preset_id: number; readonly commitment: bigint };
   Series: { readonly series_id: bigint; readonly owner: bigint; readonly created_games: number };
@@ -36,10 +36,10 @@ export interface NativeRows {
   TradeRules: { readonly game_id: number; readonly max_count: number };
   Guard: { readonly game_id: number; readonly structure_id: number; readonly slot: number; readonly troops: { readonly category: "Knight" | "Paladin" | "Crossbowman"; readonly tier: "T1" | "T2" | "T3"; readonly count: bigint; readonly stamina: { readonly amount: bigint; readonly updated_tick: bigint }; readonly boosts: { readonly incr_damage_dealt_percent_num: number; readonly incr_damage_dealt_end_tick: number; readonly decr_damage_gotten_percent_num: number; readonly decr_damage_gotten_end_tick: number; readonly incr_stamina_regen_percent_num: number; readonly incr_stamina_regen_tick_count: number; readonly incr_explore_reward_percent_num: number; readonly incr_explore_reward_end_tick: number }; readonly battle_cooldown_end: number }; readonly destroyed_tick: number };
   VillageRaid: { readonly game_id: number; readonly entity_id: number; readonly last_tick: bigint };
-  BitcoinMine: { readonly game_id: number; readonly entity_id: number; readonly eligible_from: bigint; readonly next_phase: bigint; readonly unsplit_carry: bigint; readonly winner_carry: bigint; readonly owner_carry: bigint };
+  BitcoinMine: { readonly game_id: number; readonly entity_id: number; readonly eligible_from: bigint; readonly next_phase: bigint; readonly unsplit_carry: bigint; readonly winner_carry: bigint };
   BitcoinClaim: { readonly game_id: number; readonly phase: bigint; readonly mine_id: number; readonly claimed: boolean };
   BitcoinPhase: { readonly game_id: number; readonly phase: bigint; readonly total_labor: bigint; readonly contributors: number; readonly state: "Open" | "Closed" | "Bound"; readonly root: bigint };
-  BitcoinContribution: { readonly game_id: number; readonly phase: bigint; readonly player: bigint; readonly labor: bigint };
+  BitcoinContribution: { readonly game_id: number; readonly phase: bigint; readonly player: bigint; readonly labor: bigint; readonly structure_id: number };
   MineKindConfig: { readonly game_id: number; readonly kind: number; readonly resource_type: number; readonly building_category: number; readonly production_rate: bigint; readonly cap_min: bigint; readonly cap_steps: number };
   MinePool: { readonly game_id: number; readonly weights: readonly ({ readonly kind: number; readonly weight: number })[] };
   RealmTraits: { readonly realm_id: number; readonly wonder: number; readonly order: number; readonly resources: readonly (number)[] };
@@ -695,8 +695,7 @@ export const nativeFactModels = {
       "eligible_from": "u64",
       "next_phase": "u64",
       "unsplit_carry": "u128",
-      "winner_carry": "u128",
-      "owner_carry": "u128"
+      "winner_carry": "u128"
     }
   },
   "BitcoinClaim": {
@@ -745,7 +744,8 @@ export const nativeFactModels = {
       "game_id": "u32",
       "phase": "u64",
       "player": "felt",
-      "labor": "u128"
+      "labor": "u128",
+      "structure_id": "u32"
     }
   },
   "MineKindConfig": {

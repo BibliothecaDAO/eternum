@@ -6665,7 +6665,7 @@
           ],
           "outputs": [
             {
-              "type": "core::integer::u128"
+              "type": "world_native::bitcoin::Contribution"
             }
           ],
           "state_mutability": "view"
@@ -9842,24 +9842,17 @@
           "type": "core::integer::u128",
           "id": "0x77696e6e65725f6361727279",
           "feltLength": 1
-        },
-        {
-          "name": "owner_carry",
-          "type": "core::integer::u128",
-          "id": "0x6f776e65725f6361727279",
-          "feltLength": 1
         }
       ],
       "keyLength": 2,
-      "valueLength": 5,
+      "valueLength": 4,
       "observation": {
         "domain": "bitcoin",
         "fields": {
           "eligibleFrom": "eligible_from",
           "nextClaim": "next_phase",
           "unsplitCarry": "unsplit_carry",
-          "winnerCarry": "winner_carry",
-          "ownerCarry": "owner_carry"
+          "winnerCarry": "winner_carry"
         }
       }
     },
@@ -9991,14 +9984,21 @@
           "type": "core::integer::u128",
           "id": "0x6c61626f72",
           "feltLength": 1
+        },
+        {
+          "name": "structure_id",
+          "type": "core::integer::u32",
+          "id": "0x7374727563747572655f6964",
+          "feltLength": 1
         }
       ],
       "keyLength": 3,
-      "valueLength": 1,
+      "valueLength": 2,
       "observation": {
         "domain": "bitcoin",
         "fields": {
-          "labor": "labor"
+          "labor": "labor",
+          "destination": "structure_id"
         }
       }
     },
@@ -13664,6 +13664,20 @@
         }
       ]
     },
+    "world_native::bitcoin::Contribution": {
+      "type": "struct",
+      "name": "world_native::bitcoin::Contribution",
+      "members": [
+        {
+          "name": "labor",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "structure_id",
+          "type": "core::integer::u32"
+        }
+      ]
+    },
     "world_native::bitcoin::ContributionKey": {
       "type": "struct",
       "name": "world_native::bitcoin::ContributionKey",
@@ -13700,10 +13714,6 @@
         },
         {
           "name": "winner_carry",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "owner_carry",
           "type": "core::integer::u128"
         }
       ]
@@ -18449,5 +18459,5 @@
       ]
     }
   },
-  "identity": "351c1bbbbc12bd84d8fcb6ed346ee88692a3bca5e560359685af76c2277ea316"
+  "identity": "0894c830298da14b84984e73e7fe19e021919ac42879b4680f79237a57866ace"
 }
