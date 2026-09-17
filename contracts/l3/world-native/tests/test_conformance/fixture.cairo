@@ -1,5 +1,6 @@
 use world_native::hyperstructures::{IHyperstructuresDispatcher, IHyperstructuresDispatcherTrait};
 use world_native::resources::{IResourcesDispatcher, IResourcesDispatcherTrait, ResourceRule};
+use super::receipts::RecordedReceiptsTrait;
 mod settlement;
 use eternum_randomness_protocol::authority::{
     ISequencingAccountSafeDispatcher, ISequencingAccountSafeDispatcherTrait, ISequencingAuthorityDispatcher,
@@ -304,7 +305,6 @@ pub fn envelope(action: @Intent) -> Envelope {
     Envelope {
         action: action_identity(action),
         order: 1,
-        predecessor: 0,
         preceding_state: 0,
         timestamp: 1005,
         execution_config,
@@ -331,10 +331,6 @@ pub struct IFixtureDispatcher {
 pub impl IFixtureDispatcherImpl of IFixtureDispatcherTrait {
     fn authority(self: IFixtureDispatcher) -> ContractAddress {
         ISeasonDispatcher { contract_address: self.contract_address }.authentication().submitter
-    }
-    fn progress(self: IFixtureDispatcher) -> (u64, felt252, felt252, u64, u256) {
-        let head = ISeasonDispatcher { contract_address: self.contract_address }.execution_head();
-        (head.order, head.binding, head.state, head.timestamp, head.root)
     }
 }
 
@@ -410,18 +406,17 @@ fn accepted_malformed_commands_are_terminal_and_cannot_stall_the_stream() {
         let (r, s) = pair().sign(action_identity(@action)).unwrap();
         IRecordedExecutionDispatcher { contract_address: address }.execute(action, context(@recorded), r, s);
         let views = IRecordedExecutionViewsDispatcher { contract_address: address };
-        assert!(views.get_result(1).status == 2, "malformed command must be terminal");
+        assert!(views.recorded_outcome(1).unwrap().status == 2, "malformed command must be terminal");
         let next = views.get_admission(7, 456);
         assert!(next.nonce == 1 && next.order == 2, "malformed command must consume its ticket");
         let mut valid = intent(address);
         valid.nonce = next.nonce;
         let mut successor = envelope(@valid);
         successor.order = next.order;
-        successor.predecessor = next.predecessor;
         successor.preceding_state = next.preceding_state;
         let (r, s) = pair().sign(action_identity(@valid)).unwrap();
         IRecordedExecutionDispatcher { contract_address: address }.execute(valid, context(@successor), r, s);
-        assert!(views.get_result(2).status == 1, "valid successor must execute");
+        assert!(views.recorded_outcome(2).unwrap().status == 1, "valid successor must execute");
     }
 }
 
@@ -434,7 +429,11 @@ pub fn outcome(address: ContractAddress) -> Array<felt252> {
     let troops = world_native::troops::ITroopsDispatcher { contract_address: peers.troops };
     let game = IGameDispatcher { contract_address: address };
     let mut values = array![];
-    IRecordedExecutionViewsDispatcher { contract_address: address }.get_result(1).status.serialize(ref values);
+    IRecordedExecutionViewsDispatcher { contract_address: address }
+        .recorded_outcome(1)
+        .unwrap()
+        .status
+        .serialize(ref values);
     troops.explorer(world_native::troops::ExplorerKey { game_id: 7, explorer_id: 2 }).serialize(ref values);
     for entity_id in array![1_u32, 2] {
         let key = world_native::resources::ResourceKey { game_id: 7, entity_id };

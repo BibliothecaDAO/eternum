@@ -142,12 +142,11 @@ export function createHarnessGame(client: GameClient): HarnessGame {
       };
     },
     armyPathIndexes: () => buildArmyPathIndexes(client),
-    settle: (signer, owner, name, gameType) =>
+    settle: (signer, _owner, name, gameType) =>
       gameType === "eternum"
-        ? systemCalls.settle_season({ signer, owner, name: shortString.encodeShortString(name) })
+        ? systemCalls.settle_season({ signer, name: shortString.encodeShortString(name) })
         : systemCalls.settle_blitz({
             signer,
-            owner,
             name: shortString.encodeShortString(name),
             cosmetics: [],
             cosmeticsBlockHash: "0x0",

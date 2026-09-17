@@ -226,6 +226,12 @@ fn malformed_refills_and_out_of_game_actions_reject_without_spending() {
         structure_id: home.entity_id, resource_types: array![26].span(), amounts: array![1].span(),
     };
     let before = resource_facts(deployment, home);
+    for command in array![
+        Command::BurnLaborForResourceProduction(valid), Command::BurnResourceForResourceProduction(valid),
+        Command::BurnResourceForLaborProduction(valid),
+    ] {
+        assert_terminal_rejection(deployment, command, 19);
+    }
     for malformed in array![
         RefillProduction { amounts: array![].span(), ..valid }, RefillProduction { amounts: array![0].span(), ..valid },
         RefillProduction { resource_types: array![0].span(), ..valid },
@@ -240,7 +246,7 @@ fn malformed_refills_and_out_of_game_actions_reject_without_spending() {
         }
         assert_eq!(resource_facts(deployment, home), before);
     }
-    for timestamp in array![19_u64, 201] {
+    for timestamp in array![201_u64] {
         assert_terminal_rejection(deployment, Command::BurnLaborForResourceProduction(valid), timestamp);
         assert_terminal_rejection(deployment, Command::BurnResourceForResourceProduction(valid), timestamp);
         assert_terminal_rejection(deployment, Command::BurnResourceForLaborProduction(valid), timestamp);

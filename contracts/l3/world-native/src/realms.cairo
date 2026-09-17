@@ -20,7 +20,6 @@ pub struct RealmCatalogue {
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct SettleSeason {
     pub name: felt252,
-    pub owner: ContractAddress,
     pub selected_realm: Option<u32>,
 }
 

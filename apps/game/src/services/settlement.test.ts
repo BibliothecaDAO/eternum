@@ -31,7 +31,7 @@ beforeEach(() => {
 });
 
 describe("native settlement", () => {
-  it("loads the selected game's preset, connects its actor and submits with the registry binding", async () => {
+  it("loads the selected game's preset and submits through its authenticated actor", async () => {
     const receipt = { transaction_hash: "0xabc", statusReceipt: "PENDING" };
     const submit = vi.fn(async () => receipt);
     expect(await submitSettlement(meta, signer, submit)).toBe(receipt);
@@ -39,8 +39,8 @@ describe("native settlement", () => {
     expect(mocks.world).toHaveBeenCalledWith("blitz");
     expect(mocks.create).toHaveBeenCalledWith({ world, gameId: 7, presetId: 2 });
     expect(mocks.connect).toHaveBeenCalledWith(signer);
-    expect(ownerLookup).toHaveBeenCalledWith({ contractAddress: "0x777", entrypoint: "owner_of", calldata: ["0x123"] });
-    expect(submit).toHaveBeenCalledWith(client, "0x456");
+    expect(ownerLookup).not.toHaveBeenCalled();
+    expect(submit).toHaveBeenCalledWith(client);
     expect(mocks.dispose).toHaveBeenCalledOnce();
   });
 
@@ -72,11 +72,11 @@ describe("native settlement", () => {
     expect(mocks.dispose).toHaveBeenCalledOnce();
   });
 
-  it("refuses an unbound actor before submitting and closes the entry stream", async () => {
-    ownerLookup.mockResolvedValue(["0x0"]);
-    const submit = vi.fn();
-    await expect(submitSettlement(meta, signer, submit)).rejects.toThrow("not bound");
-    expect(submit).not.toHaveBeenCalled();
+  it("reports admission authentication failure and closes the entry stream", async () => {
+    const rejection = new Error("unregistered actor");
+    const submit = vi.fn().mockRejectedValue(rejection);
+    await expect(submitSettlement(meta, signer, submit)).rejects.toBe(rejection);
+    expect(ownerLookup).not.toHaveBeenCalled();
     expect(mocks.dispose).toHaveBeenCalledOnce();
   });
 

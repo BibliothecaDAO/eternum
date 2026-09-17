@@ -307,7 +307,7 @@ fn a_late_configuration_failure_rolls_back_all_domains_and_the_series_allocation
 fn settlement_uses_recorded_time_after_grace_and_rejections_consume_tickets() {
     let (d, _, _) = super::resource_commands::setup();
     let command = crate::commands::Command::MarkGameSettled;
-    super::resource_commands::assert_terminal_rejection(d, command, 500);
+    super::resource_commands::assert_terminal_rejection(d, command, 100);
     let d = super::bind_authority(d);
     let games = IGameDispatcher { contract_address: d.peers.season };
     let game = games.game(3);

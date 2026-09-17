@@ -11,6 +11,7 @@ export function decodeMembers(schema: NativeSchema, members: NativeMember[], fel
   const reader = new SerdeReader(schema, felts);
   members.forEach((member) => reader.read(member.type));
   reader.finish();
+  if (members.length === 0) return {};
   return memberDecoder(schema, members).parse("row", felts) as DecodedRecord;
 }
 

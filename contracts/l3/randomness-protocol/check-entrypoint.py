@@ -39,7 +39,7 @@ def main():
     expected = Interface(expected_path)
     native = Interface(sys.argv[1])
     comparisons = []
-    for name in ('execute', 'get_admission', 'get_result'):
+    for name in ('execute', 'reject_execution', 'get_admission', 'get_head'):
         required = expected.function(name)
         actual = native.function(name)
         comparisons.append({'function': name, 'matches': required == actual, 'required': required, 'actual': actual})

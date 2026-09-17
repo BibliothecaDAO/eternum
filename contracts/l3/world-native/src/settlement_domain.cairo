@@ -74,12 +74,13 @@ pub mod SettlementDomain {
         ) {
             let peers = self.lifecycle.require_active();
             assert!(get_caller_address() == peers.season, "only authenticated command domain");
+            let owner = self.bound_owner(actor);
             let game = self.games().game(game_id);
             assert!(!self.games().rules(game_id).blitz_mode_on, "not a season game");
             assert!(command.name != 0, "name cannot be empty");
             assert!(game.dev_mode_on || context.timestamp >= game.start_settling_at, "settling not started");
             assert!(game.end_at == 0 || context.timestamp < game.end_at, "game ended");
-            let key = EntryKey { game_id, owner: command.owner };
+            let key = EntryKey { game_id, owner: owner };
             if command.selected_realm.is_some() {
                 assert!(game.dev_mode_on, "development mode required");
                 self.settlements.record_entry(key, actor);
@@ -143,6 +144,7 @@ pub mod SettlementDomain {
         ) {
             let peers = self.lifecycle.require_active();
             assert!(get_caller_address() == peers.season, "only authenticated command domain");
+            let owner = self.bound_owner(actor);
             let game = self.games().game(game_id);
             let rules = self.games().rules(game_id);
             assert!(game.dev_mode_on || context.timestamp >= game.start_settling_at, "settling not started");
@@ -150,7 +152,7 @@ pub mod SettlementDomain {
             let dev_entry = game.dev_mode_on && !rules.blitz_mode_on;
             let pass = VillagePassKey { game_id, pass_id: command.pass_id };
             if !dev_entry {
-                self.villages.require_pass(pass, command.owner);
+                self.villages.require_pass(pass, owner);
             }
             let mut raw_root = context.raw_root;
             let seed = crate::random::game_root(ref raw_root, game_id, game.seed);
@@ -170,7 +172,7 @@ pub mod SettlementDomain {
                     context,
                 );
             if !dev_entry {
-                self.villages.consume(pass, command.owner, village_id);
+                self.villages.consume(pass, owner, village_id);
             }
         }
     }
@@ -229,17 +231,15 @@ pub mod SettlementDomain {
         ) {
             let peers = self.lifecycle.require_active();
             assert!(get_caller_address() == peers.season, "only recorded settlement dispatch");
+            let owner = self.bound_owner(actor);
             self.validate_registration(game_id, command.name, context.timestamp);
             assert!(!self.settlements.entered_players.read((game_id, actor)), "player already settled");
             let requires_ledger = self.ledger_operator().is_non_zero();
-            self.settlements.reserve_entry(EntryKey { game_id, owner: command.owner }, actor, requires_ledger);
+            self.settlements.reserve_entry(EntryKey { game_id, owner: owner }, actor, requires_ledger);
             self
                 .settlements
                 .store_cosmetics(
-                    CosmeticsKey { game_id, player: actor },
-                    command.owner,
-                    command.cosmetics_block_hash,
-                    command.cosmetics,
+                    CosmeticsKey { game_id, player: actor }, owner, command.cosmetics_block_hash, command.cosmetics,
                 );
             let coords = self.claim_realm_locations(game_id, context);
             let first_realm = self
@@ -252,6 +252,19 @@ pub mod SettlementDomain {
     }
     #[generate_trait]
     impl Internal of InternalTrait {
+        fn bound_owner(self: @ContractState, actor: ContractAddress) -> ContractAddress {
+            let season = crate::season::ISeasonDispatcher { contract_address: self.lifecycle.require_active().season };
+            let registry = crate::season::IPlayerRegistryDispatcher {
+                contract_address: crate::season::ISeasonDispatcherTrait::authentication(season).registry,
+            };
+            let owner = crate::season::IPlayerRegistryDispatcherTrait::owner_of(registry, actor);
+            assert!(
+                owner.is_non_zero()
+                    && crate::season::IPlayerRegistryDispatcherTrait::account_of(registry, owner) == actor,
+                "unregistered actor",
+            );
+            owner
+        }
         fn ledger_operator(self: @ContractState) -> ContractAddress {
             ILedgerOperatorDispatcher { contract_address: self.lifecycle.require_active().registry }.ledger_operator()
         }

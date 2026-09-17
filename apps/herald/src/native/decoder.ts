@@ -160,7 +160,9 @@ function decodeEvent(
   layout: NativeEventLayout,
 ): DecodedWorldEvent {
   const header = event.keys.slice(layout.prefix.length);
-  if (BigInt(header[0] ?? -1) !== 1n) throw new Error("Unsupported native event version");
+  const keyMembers = layout.members.filter((member) => member.kind === "key");
+  const versioned = keyMembers[0]?.name === "version";
+  if (versioned && BigInt(header[0] ?? -1) !== 1n) throw new Error("Unsupported native event version");
   const position = {
     blockNumber: event.block_number,
     transactionHash: normalizeFelt(event.transaction_hash),
@@ -171,8 +173,8 @@ function decodeEvent(
     (projection) => projection.name === layout.name && projection.owners.includes(domain),
   );
   if (!projection) throw new Error("Unowned native event");
-  const key = decodeMembers(schema, layout.members.filter((member) => member.kind === "key").slice(1), header.slice(1));
-  if (BigInt(key.game_id as bigint) === 0n) throw new Error("Reserved native game id");
+  const key = decodeMembers(schema, versioned ? keyMembers.slice(1) : keyMembers, versioned ? header.slice(1) : header);
+  if (projection.scope === "game" && BigInt(key.game_id as bigint) === 0n) throw new Error("Reserved native game id");
   const value = decodeMembers(
     schema,
     layout.members.filter((member) => member.kind === "data"),
@@ -184,7 +186,7 @@ function decodeEvent(
       name: layout.name,
       channels: ["global-event"],
       availability: "all",
-      s2Scope: "game",
+      s2Scope: projection.scope === "game" ? "game" : "chain",
       recovery: "event-deduped",
       deletion: "event-ephemeral",
     },

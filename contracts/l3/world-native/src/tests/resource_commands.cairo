@@ -1,6 +1,5 @@
 use eternum_randomness_protocol::entrypoint::{
     IRecordedExecutionDispatcher, IRecordedExecutionDispatcherTrait, IRecordedExecutionViewsDispatcher,
-    IRecordedExecutionViewsDispatcherTrait,
 };
 use snforge_std::{start_cheat_block_timestamp_global, start_cheat_caller_address, stop_cheat_caller_address};
 use crate::arrivals::{ArrivalKey, has_arrived};
@@ -17,6 +16,7 @@ use crate::settlement::{
 };
 use crate::structures::{IStructuresDispatcher, IStructuresDispatcherTrait, StructureRecord};
 use crate::troops::{Coord, ExplorerKey, ITroopsDispatcher, ITroopsDispatcherTrait};
+use super::recorded_receipts::RecordedReceiptsTrait;
 use super::{Deployment, authority, context, intent, recorded, signature};
 
 pub fn setup() -> (Deployment, ResourceKey, ResourceKey) {
@@ -119,7 +119,8 @@ pub fn execute_recorded_at(deployment: Deployment, command: Command, timestamp: 
     );
     IRecordedExecutionDispatcher { contract_address: deployment.peers.season }.execute(ticket, recorded_context, r, s);
     IRecordedExecutionViewsDispatcher { contract_address: deployment.peers.season }
-        .get_result(season.execution_head().order)
+        .recorded_outcome(season.execution_head().order)
+        .unwrap()
         .status == 1
 }
 
@@ -563,9 +564,11 @@ pub fn assert_terminal_rejection(deployment: Deployment, command: Command, times
     assert!(!execute(deployment, command, timestamp));
     assert_eq!(season.next_nonce(3, deployment.actor), nonce + 1);
     assert_eq!(season.execution_head().order, order + 1);
-    let result = IRecordedExecutionViewsDispatcher { contract_address: deployment.peers.season }.get_result(order + 1);
+    let result = IRecordedExecutionViewsDispatcher { contract_address: deployment.peers.season }
+        .recorded_outcome(order + 1)
+        .unwrap();
     assert_eq!(result.status, 2);
-    assert_eq!(result.result, 'GAMEPLAY_REJECTED');
+    assert_eq!(result.reason, 'GAMEPLAY_REJECTED');
 }
 
 #[test]
@@ -683,79 +686,135 @@ fn sending_and_pickup_preserve_arrival_order_allowances_and_donkey_costs() {
 }
 
 #[test]
-fn blitz_troop_deposits_require_home_and_target_ownership_for_every_structure() {
-    troop_deposit_ownership(true);
+fn blitz_troop_deposits_require_ownership_for_category_1() {
+    troop_deposit_ownership(true, 1);
 }
 
 #[test]
-fn eternum_troop_deposits_require_home_and_target_ownership_for_every_structure() {
-    troop_deposit_ownership(false);
+fn blitz_troop_deposits_require_ownership_for_category_2() {
+    troop_deposit_ownership(true, 2);
 }
 
-fn troop_deposit_ownership(blitz_mode_on: bool) {
+#[test]
+fn blitz_troop_deposits_require_ownership_for_category_3() {
+    troop_deposit_ownership(true, 3);
+}
+
+#[test]
+fn blitz_troop_deposits_require_ownership_for_category_4() {
+    troop_deposit_ownership(true, 4);
+}
+
+#[test]
+fn blitz_troop_deposits_require_ownership_for_category_5() {
+    troop_deposit_ownership(true, 5);
+}
+
+#[test]
+fn blitz_troop_deposits_require_ownership_for_category_7() {
+    troop_deposit_ownership(true, 7);
+}
+
+#[test]
+fn blitz_troop_deposits_require_ownership_for_category_8() {
+    troop_deposit_ownership(true, 8);
+}
+
+#[test]
+fn eternum_troop_deposits_require_ownership_for_category_1() {
+    troop_deposit_ownership(false, 1);
+}
+
+#[test]
+fn eternum_troop_deposits_require_ownership_for_category_2() {
+    troop_deposit_ownership(false, 2);
+}
+
+#[test]
+fn eternum_troop_deposits_require_ownership_for_category_3() {
+    troop_deposit_ownership(false, 3);
+}
+
+#[test]
+fn eternum_troop_deposits_require_ownership_for_category_4() {
+    troop_deposit_ownership(false, 4);
+}
+
+#[test]
+fn eternum_troop_deposits_require_ownership_for_category_5() {
+    troop_deposit_ownership(false, 5);
+}
+
+#[test]
+fn eternum_troop_deposits_require_ownership_for_category_7() {
+    troop_deposit_ownership(false, 7);
+}
+
+#[test]
+fn eternum_troop_deposits_require_ownership_for_category_8() {
+    troop_deposit_ownership(false, 8);
+}
+
+fn troop_deposit_ownership(blitz_mode_on: bool, category: u8) {
     let (deployment, home, target) = setup_with_rules(crate::rules::SliceRules { blitz_mode_on, ..recorded::rules() });
     let structures = IStructuresDispatcher { contract_address: deployment.peers.structures };
     let structure = structures.structure(target).unwrap();
     let explorer = explorer_fixture(deployment, 70, home.entity_id, Coord { alt: false, x: 2000009, y: 2000000 }, 1000);
     grant(deployment, explorer, 26, 100);
     grant(deployment, explorer, 1, 100);
-    for category in array![1_u8, 2, 3, 4, 5, 7, 8] {
-        let coord = if category == 8 {
-            Coord { alt: true, x: 1999995, y: 2000000 }
-        } else {
-            Coord { alt: false, x: 2000009, y: 2000000 }
-        };
+    let coord = if category == 8 {
+        Coord { alt: true, x: 1999995, y: 2000000 }
+    } else {
+        Coord { alt: false, x: 2000009, y: 2000000 }
+    };
+    set_fixture(
+        deployment.peers.troops,
+        selector!("explorers"),
+        array![3, 70].span(),
+        crate::troops::ExplorerTroops { owner: home.entity_id, coord, ..Default::default() },
+    );
+    for owner in array![deployment.actor, 0x998.try_into().unwrap(), 0x999.try_into().unwrap()] {
         set_fixture(
-            deployment.peers.troops,
-            selector!("explorers"),
-            array![3, 70].span(),
-            crate::troops::ExplorerTroops { owner: home.entity_id, coord, ..Default::default() },
+            deployment.peers.structures,
+            selector!("structures"),
+            array![3, target.entity_id.into()].span(),
+            StructureRecord {
+                owner,
+                base: crate::structures::StructureBase { category, alt: coord.alt, ..structure.base },
+                metadata: crate::structures::StructureMetadata { village_realm: home.entity_id, ..structure.metadata },
+                resources_packed: structure.resources_packed,
+            },
         );
-        for owner in array![deployment.actor, 0x998.try_into().unwrap(), 0x999.try_into().unwrap()] {
-            set_fixture(
-                deployment.peers.structures,
-                selector!("structures"),
-                array![3, target.entity_id.into()].span(),
-                StructureRecord {
-                    owner,
-                    base: crate::structures::StructureBase { category, alt: coord.alt, ..structure.base },
-                    metadata: crate::structures::StructureMetadata {
-                        village_realm: home.entity_id, ..structure.metadata,
-                    },
-                    resources_packed: structure.resources_packed,
-                },
-            );
-            let transfer = crate::resources::ResourceTransfer {
-                from_entity_id: 70,
-                to_entity_id: target.entity_id,
-                resources: array![
-                    ResourceAmount { resource_type: 1, amount: 1 }, ResourceAmount { resource_type: 26, amount: 1 },
-                ]
-                    .span(),
-            };
-            if owner == deployment.actor {
-                assert!(
-                    execute(deployment, Command::TransferExplorerResourcesToStructure(transfer), 40),
-                    "owner deposit rejected for category {}",
-                    category,
-                );
-            } else {
-                let before_source = resource_facts(deployment, explorer);
-                let before_target = resource_facts(deployment, target);
-                assert_terminal_rejection(deployment, Command::TransferExplorerResourcesToStructure(transfer), 40);
-                assert_eq!(resource_facts(deployment, explorer), before_source);
-                assert_eq!(resource_facts(deployment, target), before_target);
-            }
+        let transfer = crate::resources::ResourceTransfer {
+            from_entity_id: 70,
+            to_entity_id: target.entity_id,
+            resources: array![
+                ResourceAmount { resource_type: 1, amount: 1 }, ResourceAmount { resource_type: 26, amount: 1 },
+            ]
+                .span(),
+        };
+        if owner == deployment.actor {
             assert!(
-                execute(
-                    deployment,
-                    Command::TransferExplorerResourcesToStructure(
-                        crate::resources::ResourceTransfer { resources: amount(1, 1), ..transfer },
-                    ),
-                    40,
-                ),
+                execute(deployment, Command::TransferExplorerResourcesToStructure(transfer), 40),
+                "owner deposit rejected for category {}",
+                category,
             );
+        } else {
+            let before_source = resource_facts(deployment, explorer);
+            let before_target = resource_facts(deployment, target);
+            assert_terminal_rejection(deployment, Command::TransferExplorerResourcesToStructure(transfer), 40);
+            assert_eq!(resource_facts(deployment, explorer), before_source);
+            assert_eq!(resource_facts(deployment, target), before_target);
         }
+        assert!(
+            execute(
+                deployment,
+                Command::TransferExplorerResourcesToStructure(
+                    crate::resources::ResourceTransfer { resources: amount(1, 1), ..transfer },
+                ),
+                40,
+            ),
+        );
     }
 }
 

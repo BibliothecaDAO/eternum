@@ -184,8 +184,8 @@ fn rejected_market_actions_preserve_reserves_shares_and_balances() {
         assert_eq!(balance(deployment, other.entity_id, 2), STOCK);
         assert_eq!(balance(deployment, other.entity_id, 37), STOCK);
     }
-    assert_terminal_rejection(deployment, remove(source.entity_id, 1), 211);
     assert_terminal_rejection(deployment, add(other, 1, 1), 200);
+    assert_terminal_rejection(deployment, remove(source.entity_id, 1), 211);
 }
 
 pub fn configure_wallet(

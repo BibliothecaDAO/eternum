@@ -1,5 +1,6 @@
 pub mod authority;
 pub mod entrypoint;
+pub mod recording;
 pub mod stub;
 use core::poseidon::poseidon_hash_span;
 
@@ -25,7 +26,6 @@ pub struct Intent {
 pub struct Envelope {
     pub action: felt252,
     pub order: u64,
-    pub predecessor: felt252,
     pub preceding_state: felt252,
     pub timestamp: u64,
     pub execution_config: felt252,
@@ -62,13 +62,13 @@ pub fn action_identity(intent: @Intent) -> felt252 {
 
 pub fn encode_envelope(envelope: @Envelope) -> Array<felt252> {
     assert!(*envelope.order > 0 && *envelope.l2_gas > 0, "invalid execution bounds");
-    let mut fields = array![ENVELOPE_TAG, 1];
+    let mut fields = array![ENVELOPE_TAG, 2];
     envelope.serialize(ref fields);
     fields
 }
 
 pub fn decode_envelope(mut fields: Span<felt252>) -> Option<Envelope> {
-    if *fields.pop_front()? != ENVELOPE_TAG || *fields.pop_front()? != 1 {
+    if *fields.pop_front()? != ENVELOPE_TAG || *fields.pop_front()? != 2 {
         return Option::None;
     }
     let envelope: Envelope = Serde::deserialize(ref fields)?;

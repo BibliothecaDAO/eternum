@@ -112,10 +112,10 @@ fn failed_prize_transfers_leave_the_claim_available_for_the_next_ticket() {
 #[test]
 fn distribution_freezes_once_and_zero_point_players_cannot_take_another_players_prize() {
     let (deployment, wonder, realm, token) = setup();
-    assert_terminal_rejection(deployment, Command::DistributeFaithPrizes, 199);
     assert_terminal_rejection(deployment, Command::FundFaithPrizes(0), 30);
     assert!(execute(deployment, Command::FundFaithPrizes(1000), 30));
     assert!(execute(deployment, pledge(wonder, wonder), 40));
+    assert_terminal_rejection(deployment, Command::DistributeFaithPrizes, 199);
     assert_terminal_rejection(deployment, claim(deployment.actor, wonder), 199);
     assert_terminal_rejection(deployment, claim(deployment.actor, wonder), 200);
     assert!(execute(deployment, Command::DistributeFaithPrizes, 200));

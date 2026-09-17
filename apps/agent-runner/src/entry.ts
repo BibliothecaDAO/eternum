@@ -61,16 +61,9 @@ export async function ensureSettled(
 const ensureSettlement = async (game: RunnerGame, signer: AccountInterface, username: string): Promise<ID[]> => {
   const settled = settledStructureIds(game.client, signer.address);
   if (settled) return settled;
-  const [owner] = await signer.callContract({
-    contractAddress: game.client.world.playerRegistryAddress,
-    entrypoint: "owner_of",
-    calldata: [signer.address],
-  });
-  if (!owner || BigInt(owner) === 0n) throw new Error("Gameplay account is not bound");
   await game.client.setup.systemCalls.settle_blitz({
     signer,
     name: shortString.encodeShortString(username),
-    owner,
     cosmeticsBlockHash: "0x0",
     cosmeticsBlockNumber: 0,
     cosmetics: [],

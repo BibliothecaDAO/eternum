@@ -1383,29 +1383,25 @@ export class EternumProvider extends EventEmitter {
     });
   }
 
-  public async settle_season(
-    props: SystemProps.SystemSigner & { name: string; owner: string; selectedRealm?: number },
-  ) {
+  public async settle_season(props: SystemProps.SystemSigner & { name: string; selectedRealm?: number }) {
     return this.promiseQueue.enqueue({
       signer: props.signer,
       calls: {
         contractAddress: getContractByName(this.manifest, `${this.namespace}-realm_systems`),
         entrypoint: "settle_season",
-        calldata: [props.name, props.owner, ...(props.selectedRealm === undefined ? [1] : [0, props.selectedRealm])],
+        calldata: [props.name, ...(props.selectedRealm === undefined ? [1] : [0, props.selectedRealm])],
       },
       transactionType: TransactionType.SETTLE,
     });
   }
 
-  public async settle_village(
-    props: SystemProps.SystemSigner & { owner: string; passId: bigint; connectedRealmEntityId: number },
-  ) {
+  public async settle_village(props: SystemProps.SystemSigner & { passId: bigint; connectedRealmEntityId: number }) {
     return this.promiseQueue.enqueue({
       signer: props.signer,
       calls: {
         contractAddress: getContractByName(this.manifest, `${this.namespace}-village_systems`),
         entrypoint: "settle_village",
-        calldata: [props.owner, props.passId.toString(), props.connectedRealmEntityId],
+        calldata: [props.passId.toString(), props.connectedRealmEntityId],
       },
       transactionType: TransactionType.SETTLE,
     });
@@ -1414,7 +1410,6 @@ export class EternumProvider extends EventEmitter {
   public async settle_blitz(
     props: SystemProps.SystemSigner & {
       name: string;
-      owner: string;
       cosmeticsBlockHash: string;
       cosmeticsBlockNumber: number;
       cosmetics: readonly { tokenId: string; owner: string; attributes: string }[];
@@ -1428,7 +1423,6 @@ export class EternumProvider extends EventEmitter {
         entrypoint: "settle_blitz",
         calldata: [
           props.name,
-          props.owner,
           props.cosmeticsBlockHash,
           props.cosmeticsBlockNumber,
           props.cosmetics.length,

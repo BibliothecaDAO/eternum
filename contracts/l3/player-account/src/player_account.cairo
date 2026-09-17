@@ -2,6 +2,7 @@ use starknet::ContractAddress;
 
 #[starknet::interface]
 pub trait IRealmsPlayerAccount<TContractState> {
+    fn get_public_key(self: @TContractState) -> felt252;
     fn owner(self: @TContractState) -> ContractAddress;
     fn binding_authority(self: @TContractState) -> ContractAddress;
     fn rotate_public_key(ref self: TContractState, new_key: felt252);
@@ -33,14 +34,11 @@ pub mod RealmsPlayerAccount {
     #[abi(embed_v0)]
     impl SRC6Impl = AccountComponent::SRC6Impl<ContractState>;
     #[abi(embed_v0)]
-    impl PublicKeyImpl = AccountComponent::PublicKeyImpl<ContractState>;
-    #[abi(embed_v0)]
-    impl PublicKeyCamelImpl = AccountComponent::PublicKeyCamelImpl<ContractState>;
-    #[abi(embed_v0)]
     impl SRC6CamelOnlyImpl = AccountComponent::SRC6CamelOnlyImpl<ContractState>;
     #[abi(embed_v0)]
     impl SRC5Impl = SRC5Component::SRC5Impl<ContractState>;
     impl AccountInternalImpl = AccountComponent::InternalImpl<ContractState>;
+    impl PublicKeyImpl = AccountComponent::PublicKeyImpl<ContractState>;
 
     #[storage]
     pub struct Storage {
@@ -97,6 +95,10 @@ pub mod RealmsPlayerAccount {
 
     #[abi(embed_v0)]
     impl RealmsPlayerAccountImpl of IRealmsPlayerAccount<ContractState> {
+        fn get_public_key(self: @ContractState) -> felt252 {
+            self.account.get_public_key()
+        }
+
         fn owner(self: @ContractState) -> ContractAddress {
             self.owner.read()
         }

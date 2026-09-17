@@ -4,7 +4,7 @@ import { createNativeTicketSubmission } from "./native-submission";
 
 // The transport uses the published Rust/Cairo intent vector, including its tag and version.
 const vector = readFileSync(
-  new URL("../../../../contracts/l3/randomness-protocol/tests/fixtures/v1.txt", import.meta.url),
+  new URL("../../../../contracts/l3/randomness-protocol/tests/fixtures/v2.txt", import.meta.url),
   "utf8",
 )
   .trim()

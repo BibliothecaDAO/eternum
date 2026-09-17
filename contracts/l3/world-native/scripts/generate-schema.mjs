@@ -117,9 +117,16 @@ function eventLayouts(abi) {
     }
     const name = event.name.split("::").at(-1);
     if (
-      !["RowSet", "RowMemberSet", "RowDeleted", "BattleEvent", "StoryEvent", "RaidEvent", "PointsAwarded"].includes(
-        name,
-      )
+      ![
+        "RowSet",
+        "RowMemberSet",
+        "RowDeleted",
+        "BattleEvent",
+        "StoryEvent",
+        "RaidEvent",
+        "PointsAwarded",
+        "ExecutionRecorded",
+      ].includes(name)
     )
       throw new Error(`Unexpected event ${name}`);
     layouts.push({ name, prefix, members: event.members });
@@ -176,6 +183,15 @@ const schema = {
   ),
   models,
   events: [
+    {
+      name: "ExecutionRecorded",
+      owners: ["season"],
+      scope: "deployment",
+      version: 1,
+      event: artifacts.season.find(
+        (item) => item.type === "event" && item.name === "eternum_randomness_protocol::recording::ExecutionRecorded",
+      ),
+    },
     {
       name: "PointsAwarded",
       owners: ["season"],

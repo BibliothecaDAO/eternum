@@ -156,30 +156,45 @@
           ]
         },
         {
-          "name": "RowSet",
+          "name": "ExecutionRecorded",
           "prefix": [
             "0x69f02dc1b775d01454e609e3b1a05502065f4b1d549991c82c4052131893f2",
-            "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
+            "0x31046a1629667e4e8157bcaec0ee46928b0644e5b078ee76a3ca5a94700a0d9"
           ],
           "members": [
             {
-              "name": "version",
-              "type": "core::integer::u8",
-              "kind": "key"
-            },
-            {
-              "name": "model",
+              "name": "game_id",
               "type": "core::felt252",
-              "kind": "key"
-            },
-            {
-              "name": "keys",
-              "type": "core::array::Span::<core::felt252>",
               "kind": "data"
             },
             {
-              "name": "values",
-              "type": "core::array::Span::<core::felt252>",
+              "name": "actor",
+              "type": "core::felt252",
+              "kind": "data"
+            },
+            {
+              "name": "nonce",
+              "type": "core::integer::u64",
+              "kind": "data"
+            },
+            {
+              "name": "nonce_consumed",
+              "type": "core::bool",
+              "kind": "data"
+            },
+            {
+              "name": "order",
+              "type": "core::integer::u64",
+              "kind": "data"
+            },
+            {
+              "name": "status",
+              "type": "core::integer::u8",
+              "kind": "data"
+            },
+            {
+              "name": "reason",
+              "type": "core::felt252",
               "kind": "data"
             }
           ]
@@ -564,7 +579,7 @@
           "inputs": [],
           "outputs": [
             {
-              "type": "world_native::recording::ExecutionHead"
+              "type": "eternum_randomness_protocol::recording::ExecutionHead"
             }
           ],
           "state_mutability": "view"
@@ -639,16 +654,11 @@
         },
         {
           "type": "function",
-          "name": "get_result",
-          "inputs": [
-            {
-              "name": "order",
-              "type": "core::integer::u64"
-            }
-          ],
+          "name": "get_head",
+          "inputs": [],
           "outputs": [
             {
-              "type": "eternum_randomness_protocol::entrypoint::ExecutionResult"
+              "type": "eternum_randomness_protocol::recording::ExecutionHead"
             }
           ],
           "state_mutability": "view"
@@ -12717,105 +12727,6 @@
       "valueLength": 3
     },
     {
-      "name": "ExecutionHead",
-      "identity": "0x457865637574696f6e48656164",
-      "owners": [
-        "season"
-      ],
-      "scope": "deployment",
-      "emitterKey": "address",
-      "keys": [
-        {
-          "name": "address",
-          "type": "core::starknet::contract_address::ContractAddress",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "order",
-          "type": "core::integer::u64",
-          "id": "0x6f72646572",
-          "feltLength": 1
-        },
-        {
-          "name": "binding",
-          "type": "core::felt252",
-          "id": "0x62696e64696e67",
-          "feltLength": 1
-        },
-        {
-          "name": "state",
-          "type": "core::felt252",
-          "id": "0x7374617465",
-          "feltLength": 1
-        },
-        {
-          "name": "timestamp",
-          "type": "core::integer::u64",
-          "id": "0x74696d657374616d70",
-          "feltLength": 1
-        },
-        {
-          "name": "root",
-          "type": "core::integer::u256",
-          "id": "0x726f6f74",
-          "feltLength": 2
-        }
-      ],
-      "keyLength": 1,
-      "valueLength": 6
-    },
-    {
-      "name": "ExecutionResult",
-      "identity": "0x457865637574696f6e526573756c74",
-      "owners": [
-        "season"
-      ],
-      "scope": "deployment",
-      "emitterKey": "address",
-      "keys": [
-        {
-          "name": "address",
-          "type": "core::starknet::contract_address::ContractAddress",
-          "feltLength": 1
-        },
-        {
-          "name": "order",
-          "type": "core::integer::u64",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "status",
-          "type": "core::integer::u8",
-          "id": "0x737461747573",
-          "feltLength": 1
-        },
-        {
-          "name": "binding",
-          "type": "core::felt252",
-          "id": "0x62696e64696e67",
-          "feltLength": 1
-        },
-        {
-          "name": "result",
-          "type": "core::felt252",
-          "id": "0x726573756c74",
-          "feltLength": 1
-        },
-        {
-          "name": "state",
-          "type": "core::felt252",
-          "id": "0x7374617465",
-          "feltLength": 1
-        }
-      ],
-      "keyLength": 2,
-      "valueLength": 4
-    },
-    {
       "name": "OwnershipRulesReady",
       "identity": "0x4f776e65727368697052756c65735265616479",
       "owners": [
@@ -12898,6 +12809,56 @@
     }
   ],
   "events": [
+    {
+      "name": "ExecutionRecorded",
+      "owners": [
+        "season"
+      ],
+      "scope": "deployment",
+      "version": 1,
+      "event": {
+        "type": "event",
+        "name": "eternum_randomness_protocol::recording::ExecutionRecorded",
+        "kind": "struct",
+        "members": [
+          {
+            "name": "game_id",
+            "type": "core::felt252",
+            "kind": "data"
+          },
+          {
+            "name": "actor",
+            "type": "core::felt252",
+            "kind": "data"
+          },
+          {
+            "name": "nonce",
+            "type": "core::integer::u64",
+            "kind": "data"
+          },
+          {
+            "name": "nonce_consumed",
+            "type": "core::bool",
+            "kind": "data"
+          },
+          {
+            "name": "order",
+            "type": "core::integer::u64",
+            "kind": "data"
+          },
+          {
+            "name": "status",
+            "type": "core::integer::u8",
+            "kind": "data"
+          },
+          {
+            "name": "reason",
+            "type": "core::felt252",
+            "kind": "data"
+          }
+        ]
+      }
+    },
     {
       "name": "PointsAwarded",
       "owners": [
@@ -13711,10 +13672,6 @@
           "type": "core::integer::u64"
         },
         {
-          "name": "predecessor",
-          "type": "core::felt252"
-        },
-        {
           "name": "preceding_state",
           "type": "core::felt252"
         },
@@ -13738,28 +13695,6 @@
         },
         {
           "name": "accepted_public_key",
-          "type": "core::felt252"
-        }
-      ]
-    },
-    "eternum_randomness_protocol::entrypoint::ExecutionResult": {
-      "type": "struct",
-      "name": "eternum_randomness_protocol::entrypoint::ExecutionResult",
-      "members": [
-        {
-          "name": "status",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "binding",
-          "type": "core::felt252"
-        },
-        {
-          "name": "result",
-          "type": "core::felt252"
-        },
-        {
-          "name": "state",
           "type": "core::felt252"
         }
       ]
@@ -13811,6 +13746,24 @@
         {
           "name": "arguments",
           "type": "core::array::Array::<core::felt252>"
+        }
+      ]
+    },
+    "eternum_randomness_protocol::recording::ExecutionHead": {
+      "type": "struct",
+      "name": "eternum_randomness_protocol::recording::ExecutionHead",
+      "members": [
+        {
+          "name": "order",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "timestamp",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "state",
+          "type": "core::felt252"
         }
       ]
     },
@@ -16905,38 +16858,8 @@
           "type": "core::felt252"
         },
         {
-          "name": "owner",
-          "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
           "name": "selected_realm",
           "type": "core::option::Option::<core::integer::u32>"
-        }
-      ]
-    },
-    "world_native::recording::ExecutionHead": {
-      "type": "struct",
-      "name": "world_native::recording::ExecutionHead",
-      "members": [
-        {
-          "name": "order",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "binding",
-          "type": "core::felt252"
-        },
-        {
-          "name": "state",
-          "type": "core::felt252"
-        },
-        {
-          "name": "timestamp",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "root",
-          "type": "core::integer::u256"
         }
       ]
     },
@@ -18057,10 +17980,6 @@
           "type": "core::felt252"
         },
         {
-          "name": "owner",
-          "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
           "name": "cosmetics_block_hash",
           "type": "core::felt252"
         },
@@ -18823,10 +18742,6 @@
       "name": "world_native::village::SettleVillage",
       "members": [
         {
-          "name": "owner",
-          "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
           "name": "pass_id",
           "type": "core::integer::u16"
         },
@@ -18963,5 +18878,5 @@
       ]
     }
   },
-  "identity": "cb33163b1cd8c2be7f3b961a4f31c4394b83df12441304bef699ccafae4979fd"
+  "identity": "83d0e43a5450810079b45a5cf6eab46d56884619cdbf339f34cfc012cc6bd926"
 }

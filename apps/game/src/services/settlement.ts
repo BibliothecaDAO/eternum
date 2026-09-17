@@ -9,7 +9,7 @@ import type { AccountInterface } from "starknet";
 export async function submitSettlement<T>(
   meta: WorldConfigMeta,
   signer: AccountInterface,
-  submit: (client: GameClient, owner: string) => Promise<T>,
+  submit: (client: GameClient) => Promise<T>,
 ): Promise<T> {
   if (!meta.gameId) throw new Error("The selected game is not ready for settlement");
   const world = requireWorldById(meta.worldId);
@@ -19,13 +19,7 @@ export async function submitSettlement<T>(
   const client = await createBrowserGameClient({ world, gameId: listing.game_id, presetId: listing.preset_id });
   try {
     client.connect(signer);
-    const [owner] = await signer.callContract({
-      contractAddress: world.playerRegistryAddress,
-      entrypoint: "owner_of",
-      calldata: [signer.address],
-    });
-    if (!owner || BigInt(owner) === 0n) throw new Error("Gameplay account is not bound");
-    const result = await submit(client, owner);
+    const result = await submit(client);
     if (
       typeof result !== "object" ||
       result === null ||

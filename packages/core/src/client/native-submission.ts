@@ -116,35 +116,29 @@ function translateCommand(call: Call, gameId: number, season: string, store: Nat
       return build("ClaimBitcoinPhase", { phase: args[0], mine_ids: args.slice(2) });
     }
     case "settle_season":
-      if (args.length === 3 && Number(args[2]) === 1)
+      if (args.length === 2 && Number(args[1]) === 1)
+        return build("SettleSeason", { name: args[0], selected_realm: new CairoOption(CairoOptionVariant.None) });
+      if (args.length === 3 && Number(args[1]) === 0)
         return build("SettleSeason", {
           name: args[0],
-          owner: args[1],
-          selected_realm: new CairoOption(CairoOptionVariant.None),
-        });
-      if (args.length === 4 && Number(args[2]) === 0)
-        return build("SettleSeason", {
-          name: args[0],
-          owner: args[1],
-          selected_realm: new CairoOption(CairoOptionVariant.Some, args[3]),
+          selected_realm: new CairoOption(CairoOptionVariant.Some, args[2]),
         });
       break;
     case "settle_village":
-      if (args.length !== 3) break;
-      return build("SettleVillage", { owner: args[0], pass_id: args[1], connected_realm_entity_id: args[2] });
+      if (args.length !== 2) break;
+      return build("SettleVillage", { pass_id: args[0], connected_realm_entity_id: args[1] });
     case "settle_blitz": {
-      const count = Number(args[4]);
-      if (!Number.isSafeInteger(count) || count < 0 || args.length !== 6 + count * 3) break;
+      const count = Number(args[3]);
+      if (!Number.isSafeInteger(count) || count < 0 || args.length !== 5 + count * 3) break;
       if (![0, 1].includes(Number(args.at(-1)))) break;
       return build("SettleBlitz", {
         name: args[0],
-        owner: args[1],
-        cosmetics_block_hash: args[2],
-        cosmetics_block_number: args[3],
+        cosmetics_block_hash: args[1],
+        cosmetics_block_number: args[2],
         cosmetics: Array.from({ length: count }, (_, index) => ({
-          token_id: args[5 + index * 3],
-          owner: args[6 + index * 3],
-          attributes: args[7 + index * 3],
+          token_id: args[4 + index * 3],
+          owner: args[5 + index * 3],
+          attributes: args[6 + index * 3],
         })),
         grant_starting_troops: Number(args.at(-1)) === 1,
       });

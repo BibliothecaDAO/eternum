@@ -64,10 +64,10 @@ export class NativeIngestion {
     const events = this.validateReceipt(fold.overlay(), receipt, receipt.block_number ?? null, 0);
     const rejection = events.find(
       (event) =>
-        event.kind === "set" && event.model.name === "ExecutionResult" && BigInt(String(event.value.status)) === 2n,
+        event.kind === "event" && event.model.name === "ExecutionRecorded" && BigInt(String(event.value.status)) === 2n,
     );
-    if (!rejection || rejection.kind !== "set") return receipt;
-    const code = normalizeFelt(String(rejection.value.result));
+    if (!rejection || rejection.kind !== "event") return receipt;
+    const code = normalizeFelt(String(rejection.value.reason));
     return {
       ...receipt,
       execution_status: "REVERTED",

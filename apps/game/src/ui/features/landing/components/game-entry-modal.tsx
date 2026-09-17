@@ -1378,10 +1378,9 @@ export const GameEntryModal = ({
       const signer = account as unknown as Account;
       const existingVillageIds = new Set(ownedVillageIdSet);
       if (!worldMeta) throw new Error("The selected game is not ready for settlement");
-      await submitSettlement(worldMeta, signer, (client, owner) =>
+      await submitSettlement(worldMeta, signer, (client) =>
         client.setup.systemCalls.settle_village({
           signer,
-          owner,
           passId: isDevMode ? 0n : selectedVillagePassTokenId!,
           connectedRealmEntityId: activeVillageRealmEntityId,
         }),
@@ -1495,17 +1494,15 @@ export const GameEntryModal = ({
       const settlementTarget = isEternumDevMode ? (initialSnapshot?.settledCount ?? 0) + 1 : expectedSettlementCount;
       if (isEternumDevMode) setDevSettlementTarget(settlementTarget);
       setSettleStage("settling");
-      await submitSettlement(worldMeta, signer, (client, owner) =>
+      await submitSettlement(worldMeta, signer, (client) =>
         isEternumMode
           ? client.setup.systemCalls.settle_season({
               signer,
-              owner,
               name: usernameFelt,
               selectedRealm: isEternumDevMode ? Number(devRealmNumber) : undefined,
             })
           : client.setup.systemCalls.settle_blitz({
               signer,
-              owner,
               name: usernameFelt,
               cosmeticsBlockHash: "0x0",
               cosmeticsBlockNumber: 0,

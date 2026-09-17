@@ -10,7 +10,7 @@ use crate::guilds::{
 };
 use crate::resources::ResourceKey;
 use crate::season::{ISeasonDispatcher, ISeasonDispatcherTrait};
-use super::resource_commands::{execute, execute_recorded_at, set_fixture, setup_with_rules};
+use super::resource_commands::{execute, execute_recorded_at, setup_with_rules};
 fn setup() -> (super::Deployment, ResourceKey, ResourceKey, ContractAddress) {
     let (d, home, second) = setup_with_rules(super::recorded::rules());
     let (friend, _) = super::deploy("AccountFixture", @array![super::keypair(12345).public_key]);
@@ -22,6 +22,10 @@ fn setup() -> (super::Deployment, ResourceKey, ResourceKey, ContractAddress) {
             ),
             30,
         ),
+    );
+    let registry = ISeasonDispatcher { contract_address: d.peers.season }.authentication().registry;
+    super::fixtures::IRegistryFixtureDispatcherTrait::add_binding(
+        super::fixtures::IRegistryFixtureDispatcher { contract_address: registry }, 0x555.try_into().unwrap(), friend,
     );
     (d, home, second, friend)
 }
@@ -45,7 +49,6 @@ fn act(d: super::Deployment, actor: ContractAddress, command: Command) -> bool {
 }
 fn act_at(d: super::Deployment, actor: ContractAddress, command: Command, accepted: u64, executed: u64) -> bool {
     let season = ISeasonDispatcher { contract_address: d.peers.season };
-    set_fixture(season.authentication().registry, selector!("account"), array![].span(), actor);
     start_cheat_block_timestamp_global(accepted);
     let admission = IRecordedExecutionViewsDispatcher { contract_address: d.peers.season }
         .get_admission(3, actor.into());
@@ -132,14 +135,17 @@ fn invalid_names_ownership_and_missing_guilds_reject_without_moving_membership()
 }
 #[test]
 fn accepted_guild_actions_survive_outages_but_actions_accepted_after_end_reject() {
+    let (early, early_home, _) = setup_with_rules(super::recorded::rules());
+    assert!(!act_at(early, early.actor, create(early_home, true), 19, 19));
     let (d, home, _, _) = setup();
-    assert!(!act_at(d, d.actor, create(home, true), 19, 19));
     assert!(act_at(d, d.actor, create(home, true), 40, 5000));
     assert!(view(d).guild(3, d.actor).is_some());
-    assert!(!act_at(d, d.actor, Command::LeaveGuild, 200, 5000));
-    assert_eq!(member(d, d.actor), d.actor);
     assert!(act_at(d, d.actor, Command::LeaveGuild, 199, 5000));
     assert!(view(d).guild(3, d.actor).is_none());
+    let (late, home, _, _) = setup();
+    assert!(act_at(late, late.actor, create(home, true), 40, 5000));
+    assert!(!act_at(late, late.actor, Command::LeaveGuild, 200, 5000));
+    assert_eq!(member(late, late.actor), late.actor);
 }
 #[test]
 #[feature("safe_dispatcher")]

@@ -66,12 +66,12 @@ pub fn owner(deployment: super::Deployment, key: ResourceKey, owner: starknet::C
         StructureRecord { owner, base: value.base, resources_packed: value.resources_packed, metadata: value.metadata },
     );
 }
-fn contribute(hyper: ResourceKey, from: ResourceKey, resources: Span<ResourceAmount>) -> Command {
+pub fn contribute(hyper: ResourceKey, from: ResourceKey, resources: Span<ResourceAmount>) -> Command {
     Command::ContributeHyperstructure(
         Contribution { hyperstructure_id: hyper.entity_id, from_structure_id: from.entity_id, resources },
     )
 }
-fn amount(resource_type: u8, amount: u128) -> ResourceAmount {
+pub fn amount(resource_type: u8, amount: u128) -> ResourceAmount {
     ResourceAmount { resource_type, amount: amount * RESOURCE_PRECISION }
 }
 fn balance(deployment: super::Deployment, key: ResourceKey, resource_type: u8) -> u128 {

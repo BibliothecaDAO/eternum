@@ -69,7 +69,6 @@ pub struct AcceptedCosmetic {
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct SettleBlitz {
     pub name: felt252,
-    pub owner: ContractAddress,
     pub cosmetics_block_hash: felt252,
     pub cosmetics_block_number: u64,
     pub cosmetics: Span<AcceptedCosmetic>,

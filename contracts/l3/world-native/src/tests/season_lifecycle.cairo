@@ -136,7 +136,18 @@ fn closing_includes_every_completed_hyperstructure_and_skips_foundations() {
             second = crate::resources::ResourceKey { game_id: 3, entity_id: id };
             super::hyperstructures::owner(deployment, second, deployment.actor);
             super::resource_commands::grant(deployment, second, 24, 5 * crate::rules::RESOURCE_PRECISION);
-            super::hyperstructures::complete(deployment, second, home);
+            assert!(execute(deployment, Command::InitializeHyperstructure(second.entity_id), 50));
+            assert!(
+                execute(
+                    deployment,
+                    super::hyperstructures::contribute(
+                        second,
+                        home,
+                        array![super::hyperstructures::amount(2, 10), super::hyperstructures::amount(3, 20)].span(),
+                    ),
+                    50,
+                ),
+            );
         }
     }
     let before = games(deployment).player_points(3, deployment.actor);

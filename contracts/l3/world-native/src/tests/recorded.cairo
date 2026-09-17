@@ -7,8 +7,7 @@ use eternum_randomness_protocol::entrypoint::{
     Admission, ExecutionContext, IRecordedExecutionDispatcher, IRecordedExecutionDispatcherTrait,
     IRecordedExecutionFailureSafeDispatcher, IRecordedExecutionFailureSafeDispatcherTrait,
     IRecordedExecutionSafeDispatcher, IRecordedExecutionSafeDispatcherTrait, IRecordedExecutionViewsDispatcher,
-    IRecordedExecutionViewsDispatcherTrait, IRecordedExecutionViewsSafeDispatcher,
-    IRecordedExecutionViewsSafeDispatcherTrait,
+    IRecordedExecutionViewsSafeDispatcher, IRecordedExecutionViewsSafeDispatcherTrait,
 };
 use eternum_randomness_protocol::{Envelope, Intent, action_identity, encode_envelope};
 use snforge_std::fs::{FileTrait, read_txt};
@@ -24,6 +23,7 @@ use crate::game::{GameRegistry, IGameDispatcher, IGameDispatcherTrait};
 use crate::lifecycle::{IDomainDispatcher, IDomainDispatcherTrait};
 use crate::season::{ISeasonDispatcher, ISeasonDispatcherTrait, ISeasonSafeDispatcher};
 use super::fixtures::{IFixtureDispatcher, IFixtureDispatcherTrait};
+use super::recorded_receipts::RecordedReceiptsTrait;
 
 #[derive(Copy, Drop, Serde)]
 pub struct FixtureAction {
@@ -114,7 +114,6 @@ pub fn make_context(season: ContractAddress, action: FixtureAction, context: Dom
     let envelope = Envelope {
         action: action_identity(@make_intent(season, action)),
         order: head.order + 1,
-        predecessor: head.binding,
         preceding_state: head.state,
         timestamp: context.timestamp,
         execution_config: poseidon_hash_span(values.span()),
@@ -180,13 +179,13 @@ fn definitive_execution_failure_consumes_only_its_ticket_then_successor_executes
             ],
         );
     let view = IRecordedExecutionViewsDispatcher { contract_address: d.peers.season };
-    assert_eq!(view.get_result(1).status, 2);
-    assert_eq!(view.get_result(1).result, 'EXECUTION_FAILED');
+    assert_eq!(view.recorded_outcome(1).unwrap().status, 2);
+    assert_eq!(view.recorded_outcome(1).unwrap().reason, 'EXECUTION_FAILED');
     let season = ISeasonDispatcher { contract_address: d.peers.season };
     assert_eq!(season.next_nonce(1, d.actor), 1);
-    assert_eq!(season.execution_head().root, 987654321);
+    assert_eq!(season.execution_head().order, 1);
     super::execute(d, FixtureAction { nonce: 1, ..action });
-    assert_eq!(view.get_result(2).status, 1);
+    assert_eq!(view.recorded_outcome(2).unwrap().status, 1);
     assert_eq!(season.next_nonce(1, d.actor), 2);
 }
 
@@ -214,7 +213,9 @@ fn failure_recording_rejects_unauthenticated_and_already_executed_tickets() {
     assert!(call.reject_execution(make_intent(d.peers.season, action), original, r, s).is_err());
     assert_eq!(season.execution_head().order, 1);
     assert_eq!(season.next_nonce(1, d.actor), 1);
-    assert_eq!(IRecordedExecutionViewsDispatcher { contract_address: d.peers.season }.get_result(1).status, 1);
+    assert_eq!(
+        IRecordedExecutionViewsDispatcher { contract_address: d.peers.season }.recorded_outcome(1).unwrap().status, 1,
+    );
 }
 
 #[test]
@@ -228,7 +229,7 @@ fn unexecuted_ticket_recovery_preserves_original_context_after_delay() {
     IRecordedExecutionDispatcher { contract_address: d.peers.season }.execute(retained_intent, retained_context, r, s);
     let season = ISeasonDispatcher { contract_address: d.peers.season };
     assert_eq!(season.execution_head().timestamp, 100);
-    assert_eq!(season.execution_head().root, 987654321);
+    assert_eq!(season.execution_head().order, 1);
     assert_eq!(season.next_nonce(1, d.actor), 1);
     assert_eq!(IFixtureDispatcher { contract_address: d.peers.troops }.received_root(), 987654321);
 }
@@ -243,12 +244,12 @@ fn oversized_command_is_terminal_and_the_next_ticket_executes() {
     let action = FixtureAction { command: Command::RegularizeResourceWeights(ids.span()), ..super::intent(d, 1) };
     super::execute(d, action);
     let view = IRecordedExecutionViewsDispatcher { contract_address: d.peers.season };
-    assert_eq!(view.get_result(1).status, 2);
-    assert_eq!(view.get_result(1).result, 'INVALID_COMMAND');
+    assert_eq!(view.recorded_outcome(1).unwrap().status, 2);
+    assert_eq!(view.recorded_outcome(1).unwrap().reason, 'INVALID_COMMAND');
     let season = ISeasonDispatcher { contract_address: d.peers.season };
     assert_eq!(season.next_nonce(1, d.actor), 1);
     super::execute(d, FixtureAction { nonce: 1, ..super::intent(d, 1) });
-    assert_eq!(view.get_result(2).status, 1);
+    assert_eq!(view.recorded_outcome(2).unwrap().status, 1);
     assert_eq!(season.next_nonce(1, d.actor), 2);
 }
 

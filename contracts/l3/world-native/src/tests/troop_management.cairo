@@ -197,7 +197,7 @@ fn guard_deletion_does_not_erase_defeat_delay_and_explorer_deletion_clears_owned
     assert!(execute(d, manage(ManageTroops::RemoveExplorer(first)), 180));
     assert!(troop(d, first).is_none());
     assert!(!resource(d).has_resource(ResourceKey { game_id: 3, entity_id: first }));
-    assert_terminal_rejection(d, manage(ManageTroops::RemoveExplorer(first)), 140);
+    assert_terminal_rejection(d, manage(ManageTroops::RemoveExplorer(first)), 180);
 }
 
 #[test]
