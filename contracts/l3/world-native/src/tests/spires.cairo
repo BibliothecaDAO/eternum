@@ -36,12 +36,12 @@ fn initialize(d: Deployment, game_id: u32, config: SpireLayout) {
 #[test]
 fn lattice_retains_center_then_point_side_order_and_hex_geometry() {
     let center = Coord { alt: false, x: 100, y: 100 };
-    let expected = array![(100, 100), (130, 100), (115, 130), (85, 130), (70, 100), (85, 70), (115, 70), (160, 100)];
+    let expected = array![(100, 100), (130, 100), (115, 70), (85, 70), (70, 100), (85, 130), (115, 130), (160, 100)];
     for index in 0..expected.len() {
         let (x, y) = *expected.at(index);
         assert_eq!(location(center, layout(19), index), Coord { alt: false, x, y });
     }
-    assert_eq!(location(center, layout(19), 13), Coord { alt: false, x: 145, y: 130 });
+    assert_eq!(location(center, layout(19), 13), Coord { alt: false, x: 145, y: 70 });
     let mut seen = array![];
     for index in 0_u32..19 {
         let coord = location(center, layout(19), index);
@@ -148,4 +148,19 @@ fn internal_placement_authenticates_the_structures_domain() {
     start_cheat_caller_address(d.peers.map, d.peers.structures);
     assert_eq!(safe.place_spire(1, center(d, 1)).unwrap(), 1);
     assert!(safe.place_spire(1, center(d, 1)).is_err());
+}
+
+#[test]
+fn eternum_preset_spires_follow_the_pinned_east_southwest_ring_order() {
+    let center = Coord { alt: false, x: 2000000, y: 2000000 };
+    let preset = SpireLayout { count: 6, base_distance: 10, layer_distance: 6, max_layer: 6 };
+    // Pinned start directions: E, SE, SW, W, NW; the center consumes ordinal zero.
+    let expected = array![
+        (2000000, 2000000), (2000060, 2000000), (2000030, 1999940), (1999970, 1999940), (1999940, 2000000),
+        (1999970, 2000060),
+    ];
+    for index in 0..expected.len() {
+        let (x, y) = *expected.at(index);
+        assert_eq!(location(center, preset, index), Coord { alt: false, x, y });
+    }
 }

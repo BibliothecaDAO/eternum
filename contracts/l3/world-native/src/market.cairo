@@ -158,6 +158,7 @@ pub fn liquidity_cost(market: Market, lords: u128, resource: u128) -> (u128, u12
         (market.lords * resource / market.resource, resource)
     };
     let shares = lords * market.shares / market.lords;
+    assert!(shares > 0, "liquidity mints zero shares");
     (lords, resource, shares)
 }
 pub fn liquidity_payout(market: Market, shares: u128) -> (u128, u128) {

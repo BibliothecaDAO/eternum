@@ -309,3 +309,49 @@ fn settlement_uses_recorded_time_after_grace_and_rejections_consume_tickets() {
     assert_eq!(status_at(games.game(3), boundary + 1), GameStatus::Settled);
     super::resource_commands::assert_terminal_rejection(d, command, boundary + 2);
 }
+
+#[test]
+#[feature("safe_dispatcher")]
+fn preset_registration_rejects_enabled_mines_without_a_pool() {
+    let d = setup();
+    let mut preset = definition(true);
+    preset.rules.map_config.shards_mines_win_probability = 1;
+    preset.resources.surface_mines = array![].span();
+    assert!(safe(d).register_preset(1, preset).is_err());
+    assert_eq!(registry(d).preset_commitment(1), 0);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn preset_registration_rejects_camps_with_zero_village_labor() {
+    let d = setup();
+    let mut preset = definition(true);
+    preset.rules.map_config.camp_win_probability = 1;
+    let mut resources = array![];
+    for rule in preset.resources.resources {
+        resources
+            .append(
+                ResourceRule { village_rate: if *rule.resource_type == 23 {
+                    0
+                } else {
+                    *rule.village_rate
+                }, ..*rule },
+            );
+    }
+    preset.resources.resources = resources.span();
+    assert!(safe(d).register_preset(1, preset).is_err());
+    assert_eq!(registry(d).preset_commitment(1), 0);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn preset_registration_rejects_equal_or_reversed_mercenary_bounds() {
+    let d = setup();
+    let mut preset = definition(true);
+    preset.rules.troop_limit_config.mercenaries_troop_lower_bound = 10;
+    for upper in array![10_u16, 9] {
+        preset.rules.troop_limit_config.mercenaries_troop_upper_bound = upper;
+        assert!(safe(d).register_preset(1, preset).is_err());
+        assert_eq!(registry(d).preset_commitment(1), 0);
+    }
+}

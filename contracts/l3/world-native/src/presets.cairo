@@ -54,6 +54,24 @@ pub struct PresetDefinition {
     pub faith_reward_token: ContractAddress,
 }
 
+pub fn validate(preset: PresetDefinition) {
+    let map = preset.rules.map_config;
+    assert!(
+        map.shards_mines_win_probability == 0 || !preset.resources.surface_mines.is_empty(), "empty enabled mine pool",
+    );
+    let troops = preset.rules.troop_limit_config;
+    assert!(troops.mercenaries_troop_lower_bound < troops.mercenaries_troop_upper_bound, "invalid mercenary bounds");
+    if preset.rules.blitz_mode_on && map.camp_win_probability != 0 {
+        let mut labor_rate = None;
+        for rule in preset.resources.resources {
+            if *rule.resource_type == 23 {
+                labor_rate = Some(*rule.village_rate);
+            }
+        }
+        assert!(labor_rate.expect('missing village labor rule') > 0, "zero camp labor rate");
+    }
+}
+
 pub fn commitment(preset: PresetDefinition) -> felt252 {
     let mut values = array!['NATIVE_PRESET', 1];
     preset.serialize(ref values);

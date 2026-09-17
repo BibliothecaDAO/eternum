@@ -116,7 +116,7 @@ fn chest(deployment: super::Deployment, origin: Coord, seed: u256, time: u64) ->
     let coord = crate::relics::chest_destination(origin, seed, time, 12);
     start_cheat_block_timestamp_global(time);
     start_cheat_caller_address(deployment.peers.map, deployment.peers.troops);
-    map_relics(deployment).discover_relic_chest(3, origin, seed, time);
+    map_relics(deployment).discover_relic_chest(3, origin, origin, seed, time);
     stop_cheat_caller_address(deployment.peers.map);
     coord
 }
@@ -287,12 +287,12 @@ fn chest_discovery_is_blitz_surface_only_timed_and_skips_reserved_or_occupied_ti
     assert_eq!(map_relics(deployment).relic_discovery_time(3), 40);
     start_cheat_caller_address(deployment.peers.map, deployment.peers.troops);
     start_cheat_block_timestamp_global(49);
-    map_relics(deployment).discover_relic_chest(3, origin, 322, 49);
+    map_relics(deployment).discover_relic_chest(3, origin, origin, 322, 49);
     assert_eq!(map_relics(deployment).relic_discovery_time(3), 40);
     start_cheat_block_timestamp_global(50);
-    map_relics(deployment).discover_relic_chest(3, Coord { alt: true, ..origin }, 322, 50);
+    map_relics(deployment).discover_relic_chest(3, Coord { alt: true, ..origin }, origin, 322, 50);
     assert_eq!(map_relics(deployment).relic_discovery_time(3), 40);
-    map_relics(deployment).discover_relic_chest(3, origin, 322, 50);
+    map_relics(deployment).discover_relic_chest(3, origin, origin, 322, 50);
     assert_eq!(map_relics(deployment).relic_discovery_time(3), 50);
 }
 #[test]
@@ -349,7 +349,7 @@ fn relic_configuration_and_internal_effects_reject_foreign_callers() {
     stop_cheat_caller_address(deployment.peers.economy);
     let map = IRelicMapSafeDispatcher { contract_address: deployment.peers.map };
     let coord = troop(deployment, explorer).coord;
-    assert!(map.discover_relic_chest(3, coord, 123, 40).is_err());
+    assert!(map.discover_relic_chest(3, coord, coord, 123, 40).is_err());
     assert!(map.consume_relic_chest(3, coord).is_err());
     assert!(map.reveal_relic_ring(3, coord, 2).is_err());
     let troops = crate::relics::IRelicTroopsSafeDispatcher { contract_address: deployment.peers.troops };
@@ -553,4 +553,18 @@ fn exploration_grants_a_surface_reward_atomically_and_extraction_cannot_pay_twic
         assert!(execute_recorded_at(deployment, Command::ExtractExplorationReward(explorer.entity_id), 41, 5001));
         assert_eq!(balance(deployment, recipient, 2), before + 10 * RESOURCE_PRECISION);
     }
+}
+
+#[test]
+fn chest_search_skips_the_explorers_vacated_start_tile() {
+    let (deployment, _, _) = setup(true);
+    let origin = Coord { alt: false, x: 2000200, y: 2000200 };
+    let vacated = Coord { alt: false, x: 2000211, y: 2000198 };
+    start_cheat_block_timestamp_global(40);
+    start_cheat_caller_address(deployment.peers.map, deployment.peers.troops);
+    map_relics(deployment).discover_relic_chest(3, origin, vacated, 321, 40);
+    let map = IMapDispatcher { contract_address: deployment.peers.map };
+    assert!(map.tile(crate::geometry::tile_key(3, vacated)).is_none());
+    let tile = map.tile(crate::geometry::tile_key(3, Coord { x: 2000212, ..vacated })).unwrap();
+    assert_eq!(tile.data / 2 % 256, 34);
 }

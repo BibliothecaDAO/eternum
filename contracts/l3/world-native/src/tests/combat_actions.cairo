@@ -383,6 +383,7 @@ fn combat_actions_and_raid_calculation_reject_foreign_callers() {
 #[test]
 fn raiding_requires_at_least_one_whole_troop_per_occupied_guard() {
     let (d, _, target, attacker, _) = setup(false);
+    limit_guards(d, target, 4);
     let mut explorer = troop(d, attacker).unwrap();
     explorer.troops.count = RESOURCE_PRECISION;
     set_fixture(d.peers.troops, selector!("explorers"), array![3, attacker.into()].span(), explorer);
@@ -560,4 +561,76 @@ fn mutual_destruction_does_not_recreate_resource_rows_for_loot() {
             assert_eq!(*event.data.at(event.data.len() - 1), 0, "loot revived a resource balance");
         }
     }
+}
+
+fn limit_guards(d: super::Deployment, key: ResourceKey, maximum: u8) {
+    let original = IStructuresDispatcher { contract_address: d.peers.structures }.structure(key).unwrap();
+    set_fixture(
+        d.peers.structures,
+        selector!("structures"),
+        array![3, key.entity_id.into()].span(),
+        StructureRecord {
+            owner: original.owner,
+            base: crate::structures::StructureBase { troop_max_guard_count: maximum, ..original.base },
+            resources_packed: original.resources_packed,
+            metadata: original.metadata,
+        },
+    );
+}
+
+#[test]
+fn raid_ignores_guards_outside_the_structures_slot_limit() {
+    let (d, _, target, attacker, _) = setup(false);
+    limit_guards(d, target, 1);
+    set_guard(d, target, 3, 100000);
+    grant(d, target, 2, 90);
+    let before = troop(d, attacker).unwrap();
+    assert!(execute(d, raid(attacker, target, resources(90)), 80));
+    assert_eq!(troop(d, attacker).unwrap(), before);
+    assert_eq!(balance(d, attacker, 2), 90);
+    assert_eq!(guard(d, target, 3).troops.count, 100000 * RESOURCE_PRECISION);
+}
+
+#[test]
+fn structure_capture_ignores_guards_outside_the_slot_limit() {
+    let (d, _, target, attacker, _) = setup(false);
+    limit_guards(d, target, 1);
+    set_guard(d, target, 3, 100000);
+    let before = troop(d, attacker).unwrap().troops.count;
+    assert!(
+        execute(
+            d,
+            Command::BattleGuard(crate::commands::Battle { attacker_id: attacker, defender_id: target.entity_id }),
+            80,
+        ),
+    );
+    assert_eq!(
+        IStructuresDispatcher { contract_address: d.peers.structures }.structure(target).unwrap().owner, d.actor,
+    );
+    assert_eq!(troop(d, attacker).unwrap().troops.count, before);
+}
+
+#[test]
+fn a_destroyed_raider_never_collects_loot_even_when_the_roll_wins() {
+    let (d, _, target, attacker, _) = setup(false);
+    let mut explorer = troop(d, attacker).unwrap();
+    explorer.troops.count = RESOURCE_PRECISION;
+    set_fixture(d.peers.troops, selector!("explorers"), array![3, attacker.into()].span(), explorer);
+    set_guard(d, target, 0, 1);
+    grant(d, target, 2, 90);
+    let mut spy = spy_events();
+    assert!(execute(d, raid(attacker, target, resources(90)), 84));
+    assert!(troop(d, attacker).is_none());
+    assert!(
+        !IResourcesDispatcher { contract_address: d.peers.resources }
+            .has_resource(ResourceKey { game_id: 3, entity_id: attacker }),
+    );
+    assert_eq!(balance(d, target.entity_id, 2), 90);
+    let mut saw_winning_roll = false;
+    for (_, event) in spy.get_events().emitted_by(d.peers.troops).events.span() {
+        if *event.keys.at(0) == selector!("RaidEvent") {
+            saw_winning_roll = *event.data.at(0) == 1;
+        }
+    }
+    assert!(saw_winning_roll, "fixture must exercise a winning raid roll");
 }

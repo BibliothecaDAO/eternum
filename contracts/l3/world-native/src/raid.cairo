@@ -17,7 +17,7 @@ pub struct RaidResolution {
 pub fn resolve(
     mut explorer: Troops, guards: Span<Guard>, biome: Biome, rules: SliceRules, timestamp: u64,
 ) -> RaidResolution {
-    assert!(guards.len() == 4, "invalid guard slots");
+    assert!(guards.len() <= 4, "invalid guard slots");
     let mut count = 0_u128;
     for guard in guards {
         if *guard.troops.count != 0 {

@@ -49,7 +49,7 @@ pub trait IRelics<T> {
 #[starknet::interface]
 pub trait IRelicMap<T> {
     fn relic_discovery_time(self: @T, game_id: u32) -> u64;
-    fn discover_relic_chest(ref self: T, game_id: u32, coord: Coord, seed: u256, timestamp: u64);
+    fn discover_relic_chest(ref self: T, game_id: u32, coord: Coord, excluded: Coord, seed: u256, timestamp: u64);
     fn consume_relic_chest(ref self: T, game_id: u32, coord: Coord);
     fn reveal_relic_ring(ref self: T, game_id: u32, coord: Coord, radius: u8);
 }

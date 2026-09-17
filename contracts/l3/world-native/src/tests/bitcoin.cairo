@@ -551,19 +551,6 @@ fn a_single_guard_in_the_highest_slot_must_be_fought_before_capture() {
     let mine = mine(deployment, 2000100);
     let explorer = attacking_explorer(deployment, home, 2000085);
     let structures = crate::structures::IStructuresDispatcher { contract_address: deployment.peers.structures };
-    let mut target = crate::structures::IStructuresDispatcherTrait::structure(structures, mine).unwrap();
-    target.base.troop_max_guard_count = 1;
-    super::resource_commands::set_fixture(
-        deployment.peers.structures,
-        selector!("structures"),
-        array![3, mine.entity_id.into()].span(),
-        crate::structures::StructureRecord {
-            owner: target.owner,
-            base: target.base,
-            resources_packed: target.resources_packed,
-            metadata: target.metadata,
-        },
-    );
     let guard = crate::guards::IGuardsDispatcherTrait::guard(
         crate::guards::IGuardsDispatcher { contract_address: deployment.peers.troops },
         crate::guards::GuardKey { game_id: 3, structure_id: mine.entity_id, slot: 0 },
@@ -722,4 +709,48 @@ fn configured_owner_cut_preserves_every_unit_including_rounding() {
     let maximum = 0xffffffffffffffffffffffffffffffff_u128;
     let (winner, owner) = crate::bitcoin::split_prize(maximum, 2000);
     assert_eq!(winner + owner, maximum);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn discovery_guard_initialization_rejects_more_guards_than_the_structure_allows() {
+    let (d, _, _) = setup();
+    let key = mine(d, 2000100);
+    let original = crate::structures::IStructuresDispatcherTrait::structure(
+        crate::structures::IStructuresDispatcher { contract_address: d.peers.structures }, key,
+    )
+        .unwrap();
+    super::resource_commands::set_fixture(
+        d.peers.structures,
+        selector!("structures"),
+        array![3, key.entity_id.into()].span(),
+        crate::structures::StructureRecord {
+            owner: original.owner,
+            base: crate::structures::StructureBase { troop_max_guard_count: 2, ..original.base },
+            resources_packed: original.resources_packed,
+            metadata: original.metadata,
+        },
+    );
+    for slot in 0_u8..4 {
+        super::resource_commands::set_fixture(
+            d.peers.troops,
+            selector!("guards"),
+            array![3, key.entity_id.into(), slot.into()].span(),
+            Default::<crate::guards::Guard>::default(),
+        );
+    }
+    start_cheat_caller_address(d.peers.troops, d.peers.structures);
+    assert!(
+        crate::guards::IGuardsSafeDispatcherTrait::initialize_structure_guards(
+            crate::guards::IGuardsSafeDispatcher { contract_address: d.peers.troops }, key, 99, 30,
+        )
+            .is_err(),
+    );
+    assert_eq!(
+        crate::guards::IGuardsDispatcherTrait::guard(
+            crate::guards::IGuardsDispatcher { contract_address: d.peers.troops },
+            crate::guards::GuardKey { game_id: 3, structure_id: key.entity_id, slot: 0 },
+        ),
+        Default::default(),
+    );
 }
