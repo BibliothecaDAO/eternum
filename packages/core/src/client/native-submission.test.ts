@@ -10,7 +10,7 @@ const vector = readFileSync(
   .trim()
   .split(/\s+/);
 const intentLength = Number(BigInt(vector[1]));
-const signed = { intent: vector.slice(2, 2 + intentLength), r: "0x3", s: "0x4" };
+const signed = { intent: vector.slice(2, 2 + intentLength), r: "0x3", s: "0x4", public_key: "0x5" };
 const action = vector[2 + intentLength];
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status });
 
@@ -38,6 +38,26 @@ describe("native ticket transport", () => {
       `https://tickets.test/actions/${action}`,
     ]);
     expect(fetch.mock.calls.filter(([, options]) => options.method === "POST")).toHaveLength(1);
+  });
+
+  it("waits for a held status response without issuing another request on a timer", async () => {
+    vi.useFakeTimers();
+    let complete!: (response: Response) => void;
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce(json({ action, order: 7 }))
+      .mockImplementationOnce(
+        () =>
+          new Promise<Response>((resolve) => {
+            complete = resolve;
+          }),
+      );
+    vi.stubGlobal("fetch", fetch);
+    const pending = createNativeTicketSubmission("https://tickets.test")(signed);
+    await vi.advanceTimersByTimeAsync(5_000);
+    expect(fetch).toHaveBeenCalledTimes(2);
+    complete(json({ action, order: 7, transaction_hash: "0x99" }));
+    await expect(pending).resolves.toEqual({ transaction_hash: "0x99" });
   });
 
   it("retries admission backpressure with byte-identical intent and signature", async () => {

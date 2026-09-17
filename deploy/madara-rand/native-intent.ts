@@ -10,6 +10,7 @@ export interface NativeFixture {
   authority: { address: string };
   execution: { address: string };
   actor: string;
+  playerPublicKey: string;
   owner: string;
   game: string;
   nativeSource: string;
@@ -79,7 +80,7 @@ export function signedRequest(fixture: NativeFixture, admission: string[], argum
   ].map(hex);
   const action = hash.computePoseidonHashOnElements(intent);
   const signature = ec.starkCurve.sign(action, "0x3039");
-  return { action, intent, r: hex(signature.r), s: hex(signature.s) };
+  return { action, intent, r: hex(signature.r), s: hex(signature.s), public_key: fixture.playerPublicKey };
 }
 
 export function exploreArguments(fixture: NativeFixture, nonce: string) {
@@ -93,7 +94,7 @@ export function exploreArguments(fixture: NativeFixture, nonce: string) {
 export async function waitForOutcome(provider: RpcProvider, fixture: NativeFixture, endpoint: string, action: string) {
   const deadline = Date.now() + 30_000;
   while (Date.now() < deadline) {
-    const response = await fetch(`${endpoint}/${action}`, { signal: AbortSignal.timeout(5_000) });
+    const response = await fetch(`${endpoint}/${action}`, { signal: AbortSignal.timeout(30_000) });
     if (!response.ok) throw new Error(`Action status failed: ${response.status}`);
     const status = await response.json();
     if (status.transaction_hash) {
@@ -109,7 +110,6 @@ export async function waitForOutcome(provider: RpcProvider, fixture: NativeFixtu
       return { nonce, nonceConsumed: BigInt(consumed) === 1n, order, status: outcome, reason,
         transactionHash: status.transaction_hash as string };
     }
-    await new Promise((resolve) => setTimeout(resolve, 10));
   }
   throw new Error("Accepted ticket remains pending; preserve its journal");
 }

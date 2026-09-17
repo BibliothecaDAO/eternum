@@ -32,7 +32,8 @@ export async function createBrowserGameClient(input: BrowserGameInput) {
           throw new Error("Gameplay identity changed before signing");
         const key = getStoredGameplayKey({ storage: localStorage, chainId, owner });
         if (!key) throw new Error("Gameplay signing key is unavailable");
-        return ec.starkCurve.sign(digest, key.privateKey);
+        const signature = ec.starkCurve.sign(digest, key.privateKey);
+        return { r: signature.r, s: signature.s, publicKey: BigInt(key.publicKey) };
       },
       submitIntent: createNativeTicketSubmission(input.world.admissionUrl),
     },

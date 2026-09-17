@@ -16,13 +16,14 @@ export interface SignedNativeIntent {
   intent: string[];
   r: string;
   s: string;
+  public_key: string;
 }
 
 export interface NativeClientConnection {
   bindings: NativeWorldBindings;
   chainId: string;
   /** Signs with the connected player's existing gameplay key. */
-  signIntent(actor: AccountInterface, digest: string): Promise<{ r: bigint; s: bigint }>;
+  signIntent(actor: AccountInterface, digest: string): Promise<{ r: bigint; s: bigint; publicKey: bigint }>;
   /** Acceptance time and entropy are assigned only by the sequencing service. */
   submitIntent(action: SignedNativeIntent): Promise<{ transaction_hash: string }>;
 }
@@ -81,6 +82,7 @@ export function nativeSubmission(
       intent: encoded,
       r: `0x${signature.r.toString(16)}`,
       s: `0x${signature.s.toString(16)}`,
+      public_key: `0x${signature.publicKey.toString(16)}`,
     });
   };
 }
@@ -501,7 +503,7 @@ export function createNativeTicketSubmission(baseUrl: string): NativeClientConne
   const actionsUrl = `${baseUrl.replace(/\/$/, "")}/actions`;
   return async (signed) => {
     const action = hash.computePoseidonHashOnElements(signed.intent);
-    const signal = AbortSignal.timeout(20_000);
+    const signal = AbortSignal.timeout(120_000);
     const response = await admitSignedAction(actionsUrl, signed, signal);
     const accepted = await response.json();
     if (typeof accepted.action !== "string" || BigInt(accepted.action) !== BigInt(action))
@@ -527,7 +529,7 @@ export function createNativeTicketSubmission(baseUrl: string): NativeClientConne
             return { transaction_hash: status.transaction_hash };
           }
         }
-        await new Promise((resolve) => setTimeout(resolve, 100));
+        if (!statusResponse.ok) await new Promise((resolve) => setTimeout(resolve, 1_000));
       }
     } catch (cause) {
       throw new Error(

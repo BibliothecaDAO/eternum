@@ -178,6 +178,30 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     expect(provider.nativeSubmission).toHaveBeenCalledTimes(3);
   });
 
+  it("releases a native command barrier and reports a stalled Herald before the next command", async () => {
+    vi.useFakeTimers();
+    const provider = makeProvider();
+    provider.TRANSACTION_CONFIRM_TIMEOUT_MS = 100;
+    provider.nativeSubmission = vi
+      .fn()
+      .mockResolvedValueOnce({ transaction_hash: "0x1" })
+      .mockResolvedValueOnce({ transaction_hash: "0x2" });
+    provider.waitForTransactionWithCheckInternal = vi
+      .fn()
+      .mockImplementationOnce(() => new Promise(() => {}))
+      .mockResolvedValueOnce({ isReverted: () => false });
+    const signer = { address: "0xabc" };
+    const call = { contractAddress: "0x123", entrypoint: "move", calldata: [] };
+    await provider.executeAndCheckTransaction(signer, call, undefined, { waitForConfirmation: false });
+    const next = provider.executeAndCheckTransaction(signer, call, undefined, { waitForConfirmation: false });
+    expect(provider.nativeSubmission).toHaveBeenCalledOnce();
+    await vi.advanceTimersByTimeAsync(101);
+    await next;
+    expect(provider.nativeSubmission).toHaveBeenCalledTimes(2);
+    expect(findTransactionFailedPayload(provider)?.message).toContain("Herald did not apply transaction 0x1");
+    expect(provider.pendingVrfExecutionLocks.size).toBe(0);
+  });
+
   it("serializes non-explore VRF submissions for the same signer/source when waitForConfirmation is false", async () => {
     const provider = makeProvider();
     provider.VRF_PROVIDER_ADDRESS = "0x999";

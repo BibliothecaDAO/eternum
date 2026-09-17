@@ -198,7 +198,7 @@ function requireModel(name: string): NativeModelName {
 }
 
 function gameIdOf(row: Fact): number {
-  return "game_id" in row ? row.game_id : "key" in row ? row.key.game_id : 0;
+  return "game_id" in row ? row.game_id : 0;
 }
 
 function factKey(model: NativeModelName, keys: object): string {
