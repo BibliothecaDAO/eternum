@@ -72,6 +72,13 @@ export const setBoundedTransactionEntry = <Value>(map: Map<string, Value>, key: 
 };
 
 export class LiveWorld {
+  private readonly changeListeners = new Set<(models: ReadonlySet<string>) => void>();
+
+  public subscribeConfirmedChanges(listener: (models: ReadonlySet<string>) => void): () => void {
+    this.changeListeners.add(listener);
+    return () => this.changeListeners.delete(listener);
+  }
+
   public readonly hub: GameStreamHub;
   protected confirmedFold: WorldFold;
   protected overlayFold: WorldFold;
@@ -306,6 +313,10 @@ export class LiveWorld {
   private broadcastConfirmedChanges(changes: FoldChange[], block: number): void {
     const published = this.overlayLedger.settleConfirmed(collapseChanges(changes));
     this.broadcastChanges(published, block, false);
+    if (this.changeListeners.size && changes.length) {
+      const models = new Set(changes.map((change) => (change.set ?? change.del)!.model));
+      for (const listener of this.changeListeners) listener(models);
+    }
   }
 
   protected resetOverlay(): void {

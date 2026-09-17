@@ -35,6 +35,27 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-17",
+    title: "Reliable game end effects",
+    description:
+      "Frozen terrain updates without a reload. A game-end banner announces the clock ending and names the winner or tied winners when the final result arrives.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-17",
+    title: "Wallet choice and live lobby",
+    description:
+      "Pick a wallet to connect and sign in in one flow, with wallet choices available after an error. Lobby countdowns advance every second and player counts refresh while the lobby is open.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-17",
+    title: "Settlement surroundings revealed",
+    description:
+      "New realms and villages reveal the six neighbouring terrain tiles when settled, without discoveries or exploration rewards.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-17",
     title: "Responsive army selection",
     description: "Army range checks stay responsive as more players and structures fill the map.",
     type: "fix",

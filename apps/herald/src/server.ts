@@ -159,6 +159,7 @@ const main = async (): Promise<void> => {
 
   await subscriptions.start();
   const http = createHeraldRequestHandler({
+    subscribeConfirmedChanges: (listener) => live.subscribeConfirmedChanges(listener),
     readModels: ingestion.readModels,
     chain: config.chain,
     worldAddress: registry.worldAddress,
@@ -180,6 +181,7 @@ const main = async (): Promise<void> => {
   server = Bun.serve<HeraldSocketData>({
     port: config.port,
     fetch: (request, bunServer) => {
+      if (new URL(request.url).pathname === `/${config.chain}/games/updates`) bunServer.timeout(request, 0);
       const gameId = streamGameId(new URL(request.url).pathname, config.chain);
       if (gameId && bunServer.upgrade(request, { data: { gameId } })) return;
       return http(request);

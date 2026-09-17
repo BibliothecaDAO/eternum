@@ -1,9 +1,11 @@
 import type { WorldSummary } from "@bibliothecadao/types";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { subscribeHeraldDirectory } from "@bibliothecadao/eternum/game-client";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { getWorldDirectory } from "@/runtime/world/world-directory";
 import { fetchAppchainWorldsSummary } from "./appchain-worlds-summary";
-import { WORLD_SUMMARY_QUERY_KEY } from "./world-list-queries";
+import { WORLD_SUMMARY_QUERY_KEY, invalidateWorldListQueries } from "./world-list-queries";
 
 /**
  * The landing games list: the union of every directory world's GameRegistry
@@ -23,10 +25,20 @@ export async function fetchWorldsSummary(): Promise<WorldSummary[]> {
   return perWorld.flat();
 }
 
-export const useWorldsSummary = () =>
-  useQuery({
+export const useWorldsSummary = () => {
+  const queryClient = useQueryClient();
+  useEffect(() => {
+    const unsubscribe = getWorldDirectory().map((world) =>
+      subscribeHeraldDirectory(world, () => {
+        void invalidateWorldListQueries(queryClient);
+      }),
+    );
+    return () => unsubscribe.forEach((stop) => stop());
+  }, [queryClient]);
+  return useQuery({
     queryKey: WORLD_SUMMARY_QUERY_KEY,
     queryFn: fetchWorldsSummary,
     staleTime: 25_000,
     retry: 1,
   });
+};
