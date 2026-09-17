@@ -1,3 +1,5 @@
+import { MusicRouterProvider } from "@/audio";
+import { getGameModeId } from "@/config/game-modes";
 /**
  * Game route module - lazy loaded to avoid pulling heavy deps (World, Dojo, Three.js, etc.)
  * into the landing page bundle.
@@ -37,16 +39,18 @@ const TransactionListenerBridge = () => {
 const ReadyApp = ({ backgroundImage, setupResult, account }: ReadyAppProps) => {
   return (
     <GameProvider value={setupResult} account={account}>
-      <ErrorBoundary>
-        <PlaySceneHandoff />
-        <StoryEventAudioCues />
-        <NewsHeadlineBridge />
-        <TransactionListenerBridge />
-        <TransactionAudioCues />
-        <World backgroundImage={backgroundImage} />
-        <ChunkTransitionIndicator />
-        <WorldLoading />
-      </ErrorBoundary>
+      <MusicRouterProvider modeId={getGameModeId()}>
+        <ErrorBoundary>
+          <PlaySceneHandoff />
+          <StoryEventAudioCues />
+          <NewsHeadlineBridge />
+          <TransactionListenerBridge />
+          <TransactionAudioCues />
+          <World backgroundImage={backgroundImage} />
+          <ChunkTransitionIndicator />
+          <WorldLoading />
+        </ErrorBoundary>
+      </MusicRouterProvider>
     </GameProvider>
   );
 };

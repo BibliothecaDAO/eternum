@@ -457,7 +457,12 @@ async function captureBlockStats(since: string, until: string): Promise<BlockSta
 }
 
 async function readMadaraImage(): Promise<HarnessEvidence["madaraImage"]> {
-  const output = await runCommand(["docker", "inspect", "--format={{.Config.Image}}|{{.Image}}", "madara-lab"]);
+  const output = await runCommand([
+    "docker",
+    "inspect",
+    "--format={{.Config.Image}}|{{.Image}}",
+    process.env.MADARA_CONTAINER ?? "madara-lab",
+  ]);
   const [tag, digest] = output.trim().split("|");
   if (!tag || !digest) throw new Error(`Could not parse Madara image metadata: ${output}`);
   return { tag, digest };

@@ -288,6 +288,7 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
       this.acceptSequencedMessage(message);
     } catch (error) {
       const failure = error instanceof Error ? error : new Error(String(error));
+      console.error(`[GameSync] Herald message rejected: ${failure.message}`);
       if (!this.ready.settled) this.ready.reject(failure);
       if (!this.initialSnapshotComplete) {
         this.initialSnapshotFailure = failure;
@@ -372,43 +373,49 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
   }
 
   private acceptDiff(message: Extract<HeraldMessage, { type: "diff" }>): void {
-    const entities = [
-      ...message.set.flatMap((change) => this.acceptSet(change, message)),
-      ...message.del.flatMap((change) => this.acceptDelete(change)),
-    ];
+    const entities: GameSyncEntity[] = [];
+    const events: HeraldSet[] = [];
+    const updates = new Map<string, StoredRow | null>();
+    const definition = this.options.modelDefinition ?? getGameSyncModel;
+    for (const change of message.set) {
+      if (definition(change.model).deletion === "event-ephemeral") {
+        events.push(change);
+        continue;
+      }
+      const identity = rowIdentity(change.model, change.key);
+      const current = updates.has(identity) ? updates.get(identity) : this.currentRows.get(identity);
+      if (!current || !isSameRowValue(current.value, change.value)) entities.push(toEntity(change));
+      updates.set(identity, change);
+    }
+    for (const change of message.del) {
+      if (definition(change.model).deletion === "event-ephemeral") continue;
+      updates.set(rowIdentity(change.model, change.key), null);
+      entities.push(toRemoval(change));
+    }
+
     this.deliverEntities(entities, {
       preconfirmed: message.preconfirmed,
       ...(message.transaction_hash ? { transactionHash: message.transaction_hash } : {}),
     });
+    for (const [identity, row] of updates) {
+      if (row) this.currentRows.set(identity, row);
+      else this.currentRows.delete(identity);
+    }
+    for (const event of events) this.deliverEvent(event, message);
   }
 
-  private acceptSet(
-    change: HeraldSet,
-    confirmation: { block: number | null; preconfirmed: boolean },
-  ): GameSyncEntity[] {
-    if ((this.options.modelDefinition ?? getGameSyncModel)(change.model).deletion === "event-ephemeral") {
-      this.handlers?.onEvent(toEntity(change), {
+  private deliverEvent(event: HeraldSet, confirmation: { block: number | null; preconfirmed: boolean }): void {
+    try {
+      this.handlers?.onEvent(toEntity(event), {
         block: confirmation.block,
         preconfirmed: confirmation.preconfirmed,
         confirmedAfterAttach:
           !confirmation.preconfirmed && confirmation.block !== null && confirmation.block > this.attachedThroughBlock,
       });
-      return [];
+    } catch (error) {
+      // Ephemeral delivery cannot undo persistent rows or interrupt following transaction status.
+      console.error(`[GameSync] event delivery failed for ${event.model}: ${String(error)}`);
     }
-
-    const identity = rowIdentity(change.model, change.key);
-    const current = this.currentRows.get(identity);
-    if (current && isSameRowValue(current.value, change.value)) return [];
-    this.currentRows.set(identity, change);
-    return [toEntity(change)];
-  }
-
-  // A delete is delivered even when the row is unknown here: removing an absent component is
-  // free, and it keeps RECS honest for rows that reached it outside this stream.
-  private acceptDelete(change: HeraldDelete): GameSyncEntity[] {
-    if ((this.options.modelDefinition ?? getGameSyncModel)(change.model).deletion === "event-ephemeral") return [];
-    this.currentRows.delete(rowIdentity(change.model, change.key));
-    return [toRemoval(change)];
   }
 
   private deliverEntities(entities: GameSyncEntity[], delivery: EntityDelivery): void {
@@ -449,8 +456,8 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
       const current = this.currentRows.get(identity);
       if (!current || !isSameRowValue(current.value, row.value)) entities.push(toEntity(row));
     });
-    this.replaceState(rows);
     this.deliverEntities(entities, { preconfirmed: false });
+    this.replaceState(rows);
   }
 
   private replaceState(rows: Map<string, StoredRow>): void {

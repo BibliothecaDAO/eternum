@@ -104,8 +104,8 @@ describe("native bindings in the shared game client", () => {
     expect(signIntent).toHaveBeenCalledOnce();
     expect(submitIntent).toHaveBeenCalledOnce();
     const encoded = submitIntent.mock.calls[0][0].intent.map(BigInt);
-    expect(encoded.slice(10)).toEqual([BigInt(expected.length), ...expected.map(BigInt)]);
-    expect(encoded[5]).toBe(
+    expect(encoded.slice(12)).toEqual([BigInt(expected.length), ...expected.map(BigInt)]);
+    expect(encoded[7]).toBe(
       BigInt(hash.computePoseidonHashOnElements([shortString.encodeShortString("ETERNUM_COMMAND"), 1, ...expected])),
     );
   });
@@ -179,19 +179,19 @@ describe("native bindings in the shared game client", () => {
     await send(actor, { contractAddress: "0x101", entrypoint: "explorer_create", calldata: [1, 9, 0, 0, 100, 0] });
     expect(submit).toHaveBeenCalledOnce();
     expect(Object.keys(submit.mock.calls[0][0]).sort()).toEqual(["intent", "r", "s"]);
-    expect(signIntent).toHaveBeenCalledOnce();
+    expect(signIntent).toHaveBeenCalledWith(actor, hash.computePoseidonHashOnElements(submit.mock.calls[0][0].intent));
     const calldata = submit.mock.calls[0][0].intent.map((felt) => BigInt(felt).toString());
-    expect(calldata.slice(0, 5)).toEqual(["1", "257", "1", "273", "3"]);
-    expect(calldata[7]).toBe("0");
-    expect(Number(calldata[8])).toBeGreaterThan(Math.floor(Date.now() / 1_000));
-    expect(calldata[9]).toBe("18446744073709551615");
+    expect(calldata.slice(2, 7)).toEqual(["1", "257", "1", "273", "3"]);
+    expect(calldata[9]).toBe("0");
+    expect(Number(calldata[10])).toBeGreaterThan(Math.floor(Date.now() / 1_000));
+    expect(calldata[11]).toBe("18446744073709551615");
     const codec = new CallData(bindings.commandAbi);
     const originalRules = codec.compile("rules_commitment", { rules: preset.rules });
     const storedRules = codec.compile("rules_commitment", {
       rules: client.store.require("SliceRules", { game_id: 1 }),
     });
     expect(storedRules).toEqual(originalRules);
-    expect(calldata[6]).toBe(
+    expect(calldata[8]).toBe(
       BigInt(
         hash.computePoseidonHashOnElements([shortString.encodeShortString("ETERNUM_RULES"), 1, ...originalRules]),
       ).toString(),
@@ -226,7 +226,7 @@ describe("native bindings in the shared game client", () => {
       submit.mock.calls
         .at(-1)![0]
         .intent.map((felt) => BigInt(felt).toString())
-        .slice(10, 14),
+        .slice(12, 16),
     ).toEqual(["3", "8", "9", "2748"]);
     await expect(
       send({ address: "0x789" } as AccountInterface, {
@@ -240,7 +240,7 @@ describe("native bindings in the shared game client", () => {
       submit.mock.calls
         .at(-1)![0]
         .intent.map((felt) => BigInt(felt).toString())
-        .slice(10, 13),
+        .slice(12, 15),
     ).toEqual(["2", "9", "9"]);
     for (const [entrypoint, variant, fields] of [
       ["approve", "17", [9, 12]],
@@ -268,8 +268,8 @@ describe("native bindings in the shared game client", () => {
         "38",
         "0",
       ];
-      expect(encoded.slice(10, 11 + expected.length)).toEqual([String(expected.length), ...expected]);
-      expect(encoded[5]).toBe(
+      expect(encoded.slice(12, 13 + expected.length)).toEqual([String(expected.length), ...expected]);
+      expect(encoded[7]).toBe(
         BigInt(
           hash.computePoseidonHashOnElements([shortString.encodeShortString("ETERNUM_COMMAND"), 1, ...expected]),
         ).toString(),
@@ -280,14 +280,14 @@ describe("native bindings in the shared game client", () => {
       submit.mock.calls
         .at(-1)![0]
         .intent.map((felt) => BigInt(felt).toString())
-        .slice(10, 16),
+        .slice(12, 18),
     ).toEqual(["5", "23", "9", "4", "48", "255"]);
     await send(actor, { contractAddress: "0x101", entrypoint: "structure_regularize_weight", calldata: [1, 2, 9, 12] });
     expect(
       submit.mock.calls
         .at(-1)![0]
         .intent.map((felt) => BigInt(felt).toString())
-        .slice(10, 15),
+        .slice(12, 17),
     ).toEqual(["4", "19", "2", "9", "12"]);
     for (const [entrypoint, variant, amountsFirst] of [
       ["burn_resource_for_labor_production", "27", false],
@@ -303,8 +303,8 @@ describe("native bindings in the shared game client", () => {
       });
       const encoded = submit.mock.calls.at(-1)![0].intent.map((felt) => BigInt(felt).toString());
       const expected = [variant, "9", "2", ...types.map(String), "2", ...amounts.map(String)];
-      expect(encoded.slice(10, 11 + expected.length)).toEqual([String(expected.length), ...expected]);
-      expect(encoded[5]).toBe(
+      expect(encoded.slice(12, 13 + expected.length)).toEqual([String(expected.length), ...expected]);
+      expect(encoded[7]).toBe(
         BigInt(
           hash.computePoseidonHashOnElements([shortString.encodeShortString("ETERNUM_COMMAND"), 1, ...expected]),
         ).toString(),
@@ -327,7 +327,7 @@ describe("native bindings in the shared game client", () => {
         submit.mock.calls
           .at(-1)![0]
           .intent.map((felt) => BigInt(felt).toString())
-          .slice(10, 18),
+          .slice(12, 20),
       ).toEqual(["7", "30", "9", "2", "0", "1", "37", simple ? "1" : "0"]);
     }
     for (const [entrypoint, variant] of [
@@ -340,7 +340,7 @@ describe("native bindings in the shared game client", () => {
         submit.mock.calls
           .at(-1)![0]
           .intent.map((felt) => BigInt(felt).toString())
-          .slice(10, 16),
+          .slice(12, 18),
       ).toEqual(["5", variant, "9", "0", "11", "10"]);
     }
     const beforeBuildings = submit.mock.calls.length;
@@ -372,8 +372,8 @@ describe("native bindings in the shared game client", () => {
     ]) {
       await send(actor, { contractAddress: "0x101", entrypoint, calldata: [1, 9, "0x456"] });
       const encoded = submit.mock.calls.at(-1)![0].intent.map((felt) => BigInt(felt).toString());
-      expect(encoded.slice(10, 14)).toEqual(["3", variant, "9", "1110"]);
-      expect(encoded[4]).toBe("3");
+      expect(encoded.slice(12, 16)).toEqual(["3", variant, "9", "1110"]);
+      expect(encoded[6]).toBe("3");
     }
   });
 });

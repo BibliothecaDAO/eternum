@@ -4,7 +4,12 @@ import { setTimeout as sleep } from "node:timers/promises";
 import { Account, CallData, RpcProvider, ec, uint256, validateAndParseAddress, type Call } from "starknet";
 import { assertProviderChain } from "../../../packages/chain/chain-guard.js";
 
-import { bindGameplayAccounts, waitForWorldState, type GameClient, type GameplayAccountBindingResult } from "@bibliothecadao/eternum";
+import {
+  bindGameplayAccounts,
+  waitForWorldState,
+  type GameClient,
+  type GameplayAccountBindingResult,
+} from "@bibliothecadao/eternum";
 import { decodeGameLedgerGame } from "../../../packages/core/src/data/abi/GameLedger";
 import { mapWithConcurrency, type HarnessAccount, type HarnessGameplayIdentity } from "./account-factory";
 import { trackTransaction } from "./driver";
@@ -254,9 +259,17 @@ export async function bindLedgerGameplayAccounts(
 }
 
 export async function waitForRelayedLedgerRegistrations(client: GameClient, owners: readonly string[]): Promise<void> {
-  await waitForWorldState(client, () => owners.every((owner) =>
-    client.setup.store.get("EntryEntitlement", { game_id: client.gameId, owner: BigInt(owner) })) ? true : undefined,
-    RELAY_TIMEOUT_MS, () => `Ledger entitlements for game ${client.gameId}`);
+  await waitForWorldState(
+    client,
+    () =>
+      owners.every((owner) =>
+        client.setup.store.get("EntryEntitlement", { game_id: client.gameId, owner: BigInt(owner) }),
+      )
+        ? true
+        : undefined,
+    RELAY_TIMEOUT_MS,
+    () => `Ledger entitlements for game ${client.gameId}`,
+  );
 }
 
 export async function waitForGameStart(provider: RpcProvider, startAt: number): Promise<void> {
@@ -280,7 +293,8 @@ export async function finalizeLedgerGame(options: FinalizeLedgerGameOptions): Pr
   );
 
   const completed = [...client.setup.store.inGame("Hyperstructure", options.gameId)]
-    .filter((row) => row.stage === "Complete").map((row) => row.entity_id);
+    .filter((row) => row.stage === "Complete")
+    .map((row) => row.entity_id);
   for (const entity_ids of chunk(completed, 16))
     await client.setup.systemCalls.checkpoint_hyperstructures({ signer: options.account, entity_ids });
   const players = rankPlayersByRegisteredPoints(
@@ -293,15 +307,28 @@ export async function finalizeLedgerGame(options: FinalizeLedgerGameOptions): Pr
     );
   }
   const trialId = randomTrialId();
-  const ranking = await trackTransaction({ botId: -1, gameId: options.gameId, provider: options.provider,
-    kind: "rank_players", stage: "setup", send: () => game.submit(options.account, () =>
-      client.setup.systemCalls.rank_players({ signer: options.account, trial_id: trialId, players })),
+  const ranking = await trackTransaction({
+    botId: -1,
+    gameId: options.gameId,
+    provider: options.provider,
+    kind: "rank_players",
+    stage: "setup",
+    send: () =>
+      game.submit(options.account, () =>
+        client.setup.systemCalls.rank_players({ signer: options.account, trial_id: trialId, players }),
+      ),
   });
   if (ranking.outcome !== "completed") throw new Error(`Ranking failed: ${ranking.error ?? ranking.outcome}`);
   const rankingTransactionHash = ranking.transactionHash!;
-  await waitForWorldState(client, () =>
-    client.setup.store.require("GameRegistry", { game_id: options.gameId }).final_trial_id === trialId ? true : undefined,
-    120_000, () => `Final ranking ${trialId}`);
+  await waitForWorldState(
+    client,
+    () =>
+      client.setup.store.require("GameRegistry", { game_id: options.gameId }).final_trial_id === trialId
+        ? true
+        : undefined,
+    120_000,
+    () => `Final ranking ${trialId}`,
+  );
   const finalized = await waitForLedgerFinalization(mainnetProvider, options.ledgerAddress, options.gameId);
   const sweep = await sweepLedgerBalances(
     mainnetProvider,
@@ -546,9 +573,7 @@ export function rankPlayersByRegisteredPoints(
   settlements: readonly Record<string, unknown>[],
   registeredPoints: readonly Record<string, unknown>[],
 ): string[] {
-  const points = new Map(
-    registeredPoints.map((row) => [normalizeFelt(row.address), BigInt(row.points as string)]),
-  );
+  const points = new Map(registeredPoints.map((row) => [normalizeFelt(row.address), BigInt(row.points as string)]));
   return settlements
     .map((row) => normalizeAddress(row.player, "PlayerEntry.player"))
     .filter((address, index, all) => all.findIndex((candidate) => sameAddress(candidate, address)) === index)

@@ -93,10 +93,12 @@ const createLoggingObserver = (gameId: number): GameClientObserver => {
   let confirmedTimestamp: number | null = null;
   setChainProvenTimestampSource(() => confirmedTimestamp);
   return {
-  onHead: (head) => { if (!head.preconfirmed) confirmedTimestamp = head.timestamp; },
-  onSubscriptionActive: () => console.log(`Game client subscribed to game ${gameId}`),
-  onSnapshotPhaseCompleted: (phase, durationMs) =>
-    console.log(`Game client snapshot ${phase} completed in ${Math.round(durationMs)} ms`),
-  onLiveApplyFailed: (error) => console.error(`Game client live apply failed: ${error.message}`),
+    onHead: (head) => {
+      if (!head.preconfirmed) confirmedTimestamp = head.timestamp;
+    },
+    onSubscriptionActive: () => console.log(`Game client subscribed to game ${gameId}`),
+    onSnapshotPhaseCompleted: (phase, durationMs) =>
+      console.log(`Game client snapshot ${phase} completed in ${Math.round(durationMs)} ms`),
+    onLiveApplyFailed: (error) => console.error(`Game client live apply failed: ${error.message}`),
   };
 };

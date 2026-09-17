@@ -29,26 +29,47 @@ export async function closeHarnessSeason(options: {
   if (threshold <= 0n) throw new Error("Eternum victory target is missing");
   const pointsForWin = Number(threshold) / 1_000_000;
   const scores = new LeaderboardManager(store).pointsPerPlayer;
-  const leader = options.accounts.map((account) => ({ account, points: scores.get(BigInt(account.address)) ?? 0 }))
+  const leader = options.accounts
+    .map((account) => ({ account, points: scores.get(BigInt(account.address)) ?? 0 }))
     .sort((a, b) => b.points - a.points)[0];
   const evidence: SeasonFinalizationEvidence = {
-    gameId: game_id, status: "target-not-reached", pointsForWin, highestBotPoints: leader?.points ?? 0,
+    gameId: game_id,
+    status: "target-not-reached",
+    pointsForWin,
+    highestBotPoints: leader?.points ?? 0,
   };
   if (!leader || leader.points < pointsForWin) return evidence;
   const signer = leader.account.account;
   const transaction = await trackTransaction({
-    botId: leader.account.botId, gameId: game_id, provider: options.provider, kind: "season_close", stage: "setup",
+    botId: leader.account.botId,
+    gameId: game_id,
+    provider: options.provider,
+    kind: "season_close",
+    stage: "setup",
     send: () => game.submit(signer, () => client.setup.systemCalls.end_game({ signer })),
   });
-  if (transaction.outcome !== "completed") throw new Error(`Season close failed: ${transaction.error ?? transaction.outcome}`);
-  const endAt = await game.waitFor(() => {
-    const ended = store.require("GameRegistry", { game_id });
-    return ended.settled ? Number(ended.end_at) : undefined;
-  }, 120_000, () => `Closed season ${game_id}`);
+  if (transaction.outcome !== "completed")
+    throw new Error(`Season close failed: ${transaction.error ?? transaction.outcome}`);
+  const endAt = await game.waitFor(
+    () => {
+      const ended = store.require("GameRegistry", { game_id });
+      return ended.settled ? Number(ended.end_at) : undefined;
+    },
+    120_000,
+    () => `Closed season ${game_id}`,
+  );
   const total = [...store.inGame("PlayerPoints", game_id)].reduce((sum, row) => sum + row.points, 0n);
   if (store.require("PointsTotal", { game_id }).total !== total)
     throw new Error("Final registered points do not match the season total");
-  if ([...store.inGame("HyperstructureShares", game_id)].some((row) => row.start_at > 0n && row.start_at < BigInt(endAt)))
+  if (
+    [...store.inGame("HyperstructureShares", game_id)].some((row) => row.start_at > 0n && row.start_at < BigInt(endAt))
+  )
     throw new Error("Finalization left unregistered shareholder points");
-  return { ...evidence, status: "closed", winner: leader.account.address, transactionHash: transaction.transactionHash, endAt };
+  return {
+    ...evidence,
+    status: "closed",
+    winner: leader.account.address,
+    transactionHash: transaction.transactionHash,
+    endAt,
+  };
 }

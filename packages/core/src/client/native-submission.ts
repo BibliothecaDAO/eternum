@@ -58,11 +58,11 @@ export function nativeSubmission(
       last_order: 0xffffffffffffffffn,
       arguments: arguments_,
     };
-    const digest = intentIdentity(intent);
-    const signature = await input.signIntent(actor, digest);
     // The player signs fixed intent fields and the arguments span before transport.
     // Only the sequencing service constructs the execution envelope.
     const encoded = [
+      shortString.encodeShortString("ETERNUM_ACTION"),
+      1,
       intent.chain,
       intent.deployment,
       intent.game_id,
@@ -76,6 +76,7 @@ export function nativeSubmission(
       intent.arguments.length,
       ...intent.arguments,
     ].map((value) => `0x${BigInt(value).toString(16)}`);
+    const signature = await input.signIntent(actor, hash.computePoseidonHashOnElements(encoded));
     return input.submitIntent({
       intent: encoded,
       r: `0x${signature.r.toString(16)}`,
@@ -86,37 +87,6 @@ export function nativeSubmission(
 
 function taggedHash(tag: string, fields: string[]): string {
   return hash.computePoseidonHashOnElements([shortString.encodeShortString(tag), 1, ...fields]);
-}
-
-function intentIdentity(intent: {
-  chain: string;
-  deployment: string;
-  game_id: number;
-  actor: string;
-  nonce: bigint;
-  command: string;
-  rules: string;
-  valid_from: number;
-  valid_until: number;
-  last_order: bigint;
-  arguments: string[];
-}): string {
-  return hash.computePoseidonHashOnElements([
-    shortString.encodeShortString("ETERNUM_ACTION"),
-    1,
-    intent.chain,
-    intent.deployment,
-    intent.game_id,
-    intent.actor,
-    intent.nonce,
-    intent.command,
-    intent.rules,
-    intent.valid_from,
-    intent.valid_until,
-    intent.last_order,
-    intent.arguments.length,
-    ...intent.arguments,
-  ]);
 }
 
 function nextNonce(store: NativeFactStore, gameId: number, actor: string): bigint {
@@ -536,7 +506,7 @@ function ownedStructureWitness(store: NativeFactStore, gameId: number, actor: bi
 export function createNativeTicketSubmission(baseUrl: string): NativeClientConnection["submitIntent"] {
   const actionsUrl = `${baseUrl.replace(/\/$/, "")}/actions`;
   return async (signed) => {
-    const action = taggedHash("ETERNUM_ACTION", signed.intent);
+    const action = hash.computePoseidonHashOnElements(signed.intent);
     const signal = AbortSignal.timeout(20_000);
     const response = await admitSignedAction(actionsUrl, signed, signal);
     const accepted = await response.json();

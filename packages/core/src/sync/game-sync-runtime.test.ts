@@ -350,6 +350,28 @@ describe("GameSyncRuntime recovery", () => {
     expect(memory.events).toHaveLength(1);
   });
 
+  it("identifies timestamp-free native events by transaction position across confirmation and recovery", async () => {
+    const memory = createMemoryStore();
+    const harness = createSessionHarness({ store: memory.store });
+    harness.session.onEvent = vi.fn();
+    const runtime = new GameSyncRuntime();
+    await runtime.startSession(harness.session);
+    const award = (index: number, hash = "0x123") =>
+      entity("award", {
+        PointsAwarded: { points: "0x10", event_position: { transaction_hash: hash, event_index: index } },
+      });
+    harness.emitEvent(award(3), { block: null, preconfirmed: true });
+    harness.emitEvent(award(3, "0x0123"), { block: 12, preconfirmed: false });
+    harness.emitEvent(award(4), { block: 12, preconfirmed: false });
+    harness.emitEvent(award(3, "0x124"), { block: 12, preconfirmed: false });
+    await flushMicrotasks();
+    await runtime.recover();
+    harness.emitEvent(award(3), { block: 12, preconfirmed: false });
+    await flushMicrotasks();
+    expect(harness.session.onEvent).toHaveBeenCalledTimes(4);
+    expect(memory.events).toHaveLength(3);
+  });
+
   it("keeps delivering the diff when a session event handler throws", async () => {
     const memory = createMemoryStore();
     const harness = createSessionHarness({ store: memory.store });

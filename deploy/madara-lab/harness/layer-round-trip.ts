@@ -2,13 +2,7 @@ import { ETHEREAL_STRIDE, tileDataToTile } from "@bibliothecadao/types";
 import { setTimeout as sleep } from "node:timers/promises";
 import type { RpcProvider } from "starknet";
 import type { GameClient } from "@bibliothecadao/eternum";
-import {
-  cubeDistance,
-  neighbor,
-  trackTransaction,
-  type HarnessBot,
-  type TrackedTransaction,
-} from "./driver";
+import { cubeDistance, neighbor, trackTransaction, type HarnessBot, type TrackedTransaction } from "./driver";
 import type { HarnessGame } from "./harness-game";
 
 type Coord = { alt: boolean; x: number; y: number };
@@ -210,9 +204,13 @@ function chooseEtherealExplore(arrival: Coord, tiles: readonly Tile[]) {
 
 async function toggleLayer(context: RoundTripContext, kind: "enter" | "exit", direction: number) {
   const expected = { ...positionOf(context.explorer), alt: kind === "enter" };
-  await submitStep(context, kind, () => context.client.setup.systemCalls.toggle_alternate({
-    signer: context.bot.account, explorer_id: Number(context.explorer.explorerId), spire_direction: direction,
-  }));
+  await submitStep(context, kind, () =>
+    context.client.setup.systemCalls.toggle_alternate({
+      signer: context.bot.account,
+      explorer_id: Number(context.explorer.explorerId),
+      spire_direction: direction,
+    }),
+  );
   if (!samePosition(context.explorer, expected))
     throw new Error(`${kind} changed the landing coordinates or used the wrong layer`);
 }
@@ -225,14 +223,20 @@ async function moveExplorer(
   target: Coord,
 ) {
   await waitForStamina(context);
-  await submitStep(context, kind, () => context.client.setup.systemCalls.explorer_move({
-    signer: context.bot.account, explorer_id: Number(context.explorer.explorerId), directions: [direction], explore,
-  }));
+  await submitStep(context, kind, () =>
+    context.client.setup.systemCalls.explorer_move({
+      signer: context.bot.account,
+      explorer_id: Number(context.explorer.explorerId),
+      directions: [direction],
+      explore,
+    }),
+  );
   if (context.explorer.alt !== target.alt) throw new Error("Movement crossed layers without spire travel");
   if (explore) {
     await context.game.waitFor(
-      () => readTiles(context.client).some((tile) => sameTile(tile, target) && tile.biome !== 0) ? true : undefined,
-      OBSERVATION_TIMEOUT_MS, () => `Revealed tile ${target.x},${target.y}`,
+      () => (readTiles(context.client).some((tile) => sameTile(tile, target) && tile.biome !== 0) ? true : undefined),
+      OBSERVATION_TIMEOUT_MS,
+      () => `Revealed tile ${target.x},${target.y}`,
     );
     context.evidence.steps.at(-1)!.exploredTile = target;
   } else if (!samePosition(context.explorer, target)) throw new Error("Explorer movement did not reach its target");
@@ -254,7 +258,8 @@ async function submitStep(context: RoundTripContext, kind: StepKind, act: () => 
     throw new Error(`${kind} failed: ${transaction.error ?? transaction.outcome}`);
   }
   const row = context.client.setup.store.get("ExplorerTroops", {
-    game_id: context.gameId, explorer_id: Number(before.explorerId),
+    game_id: context.gameId,
+    explorer_id: Number(before.explorerId),
   });
   if (!row) throw new Error(`Explorer ${before.explorerId} disappeared`);
   context.explorer = readExplorer(row);
@@ -282,9 +287,16 @@ const sameTile = (tile: Tile, coord: Coord) => tile.alt === coord.alt && tile.co
 function readTiles(client: GameClient) {
   return [...client.setup.store.inGame("TileOpt", client.gameId)].map((row) => tileDataToTile(row.data));
 }
-function readExplorer(row: import("../../../contracts/l3/world-native/schema/client.gen").NativeRows["ExplorerTroops"]): Explorer {
-  return { explorerId: String(row.explorer_id), owner: String(row.owner), ...row.coord,
-    stamina: Number(row.troops.stamina.amount), staminaUpdatedTick: Number(row.troops.stamina.updated_tick) };
+function readExplorer(
+  row: import("../../../contracts/l3/world-native/schema/client.gen").NativeRows["ExplorerTroops"],
+): Explorer {
+  return {
+    explorerId: String(row.explorer_id),
+    owner: String(row.owner),
+    ...row.coord,
+    stamina: Number(row.troops.stamina.amount),
+    staminaUpdatedTick: Number(row.troops.stamina.updated_tick),
+  };
 }
 function requireRecord(value: unknown, name: string): Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error(`Missing ${name}`);

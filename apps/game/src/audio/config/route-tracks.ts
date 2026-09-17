@@ -1,4 +1,3 @@
-import { getGameModeId } from "@/config/game-modes";
 import type { GameModeId } from "@/config/game-modes";
 
 /**
@@ -6,7 +5,7 @@ import type { GameModeId } from "@/config/game-modes";
  */
 interface RouteMatchContext {
   pathname: string;
-  modeId: GameModeId;
+  modeId: GameModeId | null;
 }
 
 export type PlaylistMode = "sequence" | "shuffle";
@@ -141,7 +140,7 @@ const ROUTE_TRACK_DEFINITIONS: RouteTrackDefinition[] = [
 export const matchRoutePlaylist = (pathname: string, override?: Partial<RouteMatchContext>): MatchedRoutePlaylist => {
   const baseContext: RouteMatchContext = {
     pathname,
-    modeId: getGameModeId(),
+    modeId: null,
     ...override,
   };
 

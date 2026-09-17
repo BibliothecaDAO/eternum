@@ -91,7 +91,8 @@ export function createHarnessGame(client: GameClient): HarnessGame {
     settlementStructureIds: (player) => {
       if (![...store.inGame("PlayerEntry", game_id)].some((row) => row.player === BigInt(player))) return undefined;
       return [...store.structuresOwnedBy(game_id, BigInt(player))]
-        .filter((row) => row.base.category === StructureType.Realm).map((row) => row.entity_id);
+        .filter((row) => row.base.category === StructureType.Realm)
+        .map((row) => row.entity_id);
     },
     structureCoord: (structureId) => {
       const structure = store.get("Structure", { game_id, entity_id: structureId });
@@ -100,7 +101,9 @@ export function createHarnessGame(client: GameClient): HarnessGame {
     startingTroopType: (structureId) => {
       const resource = new ResourceManager(store, structureId);
       const required = BigInt(multiplyByPrecision(EXPLORER_TROOP_COUNT));
-      const balances = [ResourcesIds.Knight, ResourcesIds.Paladin, ResourcesIds.Crossbowman].map((id) => resource.balance(id));
+      const balances = [ResourcesIds.Knight, ResourcesIds.Paladin, ResourcesIds.Crossbowman].map((id) =>
+        resource.balance(id),
+      );
       const funded = balances.findIndex((balance) => BigInt(balance) >= required);
       if (funded < 0) return undefined;
       return T1_TROOP_TYPES[funded];
@@ -133,10 +136,18 @@ export function createHarnessGame(client: GameClient): HarnessGame {
       };
     },
     armyPathIndexes: () => buildArmyPathIndexes(client),
-    settle: (signer, owner, name, gameType) => gameType === "eternum"
-      ? systemCalls.settle_season({ signer, owner, name: shortString.encodeShortString(name) })
-      : systemCalls.settle_blitz({ signer, owner, name: shortString.encodeShortString(name),
-          cosmetics: [], cosmeticsBlockHash: "0x0", cosmeticsBlockNumber: 0, grantStartingTroops: true }),
+    settle: (signer, owner, name, gameType) =>
+      gameType === "eternum"
+        ? systemCalls.settle_season({ signer, owner, name: shortString.encodeShortString(name) })
+        : systemCalls.settle_blitz({
+            signer,
+            owner,
+            name: shortString.encodeShortString(name),
+            cosmetics: [],
+            cosmeticsBlockHash: "0x0",
+            cosmeticsBlockNumber: 0,
+            grantStartingTroops: true,
+          }),
     provision: (signer, structureId) => systemCalls.provision_realm({ signer, realm_entity_id: structureId }),
     produceWood: (signer, structureId) =>
       client.setup.systemCalls.burn_labor_for_resource_production({

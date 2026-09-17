@@ -195,6 +195,8 @@ const resolveTileRenderable = (tileOpt: TileOpt | undefined): TileSpatialRendera
   if (!tileOpt) return undefined;
 
   const tile = tileOptToTile(tileOpt);
+  // Occupancy can exist before a biome is revealed, including an explorer’s spawn tile.
+  if (tile.biome === 0) return undefined;
 
   return Object.freeze({
     kind: "tile" as const,

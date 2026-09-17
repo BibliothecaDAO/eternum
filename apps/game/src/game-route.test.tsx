@@ -8,6 +8,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const usePlayRouteBootControllerMock = vi.fn();
 const worldMountedMock = vi.hoisted(() => vi.fn());
 
+vi.mock("@/audio", () => ({
+  MusicRouterProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
+vi.mock("@/config/game-modes", () => ({ getGameModeId: () => "blitz" }));
+
 vi.mock("./game-entry/play-route-boot", () => ({
   usePlayRouteBootController: (...args: unknown[]) => usePlayRouteBootControllerMock(...args),
 }));
