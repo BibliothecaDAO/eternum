@@ -133,7 +133,12 @@ pub fn command_commitment(command: Command) -> felt252 {
     poseidon_hash_span(fields.span())
 }
 
+pub const MAX_COMMAND_ITEMS: u32 = 64;
+
 pub fn decode_command(arguments: Span<felt252>, commitment: felt252) -> Result<Command, Array<felt252>> {
+    if arguments.len() > 256 {
+        return Err(array!['command arguments limit']);
+    }
     let mut fields = arguments;
     let command: Command = Serde::deserialize(ref fields).ok_or(array!['malformed command'])?;
     if !fields.is_empty() {
@@ -142,7 +147,44 @@ pub fn decode_command(arguments: Span<felt252>, commitment: felt252) -> Result<C
     if command_commitment(command) != commitment {
         return Err(array!['command commitment mismatch']);
     }
+    if command_items(command) > MAX_COMMAND_ITEMS {
+        return Err(array!['command items limit']);
+    }
     Ok(command)
+}
+
+fn command_items(command: Command) -> u32 {
+    match command {
+        Command::Move(value) => value.directions.len(),
+        Command::SettleBlitz(value) => value.cosmetics.len(),
+        Command::ApproveResources(value) => value.resources.len(),
+        Command::BurnStructureResources(value) => value.resources.len(),
+        Command::BurnExplorerResources(value) => value.resources.len(),
+        Command::TransferExplorerResources(value) => value.resources.len(),
+        Command::TransferStructureResourcesToExplorer(value) => value.resources.len(),
+        Command::SendResources(value) => value.resources.len(),
+        Command::PickupResources(value) => value.resources.len(),
+        Command::TransferExplorerResourcesToStructure(value) => value.resources.len(),
+        Command::ClaimBitcoinPhase(value) => value.mine_ids.len(),
+        Command::ContributeHyperstructure(value) => value.resources.len(),
+        Command::AllocateHyperstructureShares(value) => value.shareholders.len(),
+        Command::RankPlayers(value) => value.players.len(),
+        Command::MintDevelopmentResources(value) => value.resources.len(),
+        Command::RegularizeResourceWeights(value) => value.len(),
+        Command::CheckpointHyperstructures(value) => value.len(),
+        Command::CreateBanks(value) => value.len(),
+        _ => 0,
+    }
+}
+
+#[inline(never)]
+pub fn assert_unique_entity_ids(ids: Span<u32>) {
+    let mut seen: core::dict::Felt252Dict<u128> = Default::default();
+    for id in ids {
+        let key = (*id).into();
+        assert!(seen.get(key) == 0, "duplicate entity id");
+        seen.insert(key, 1);
+    }
 }
 
 #[starknet::interface]

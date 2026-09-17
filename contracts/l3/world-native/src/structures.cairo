@@ -398,6 +398,7 @@ pub mod StructuresDomain {
             crate::commands::assert_context_time(context.timestamp);
             assert!(self.game_dispatcher().game(game_id).dev_mode_on, "development mode required");
             let key = ResourceKey { game_id, entity_id: command.entity_id };
+            crate::resources::assert_unique_resources(command.resources);
             for resource in command.resources {
                 assert!(*resource.amount != 0, "amount must not be zero");
                 self.structures.structure(key).expect('structure does not exist');

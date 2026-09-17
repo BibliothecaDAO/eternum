@@ -823,3 +823,30 @@ fn delayed_village_troops_ignore_the_connection_and_keep_transport_ownership_rul
         }
     }
 }
+
+#[test]
+fn duplicate_ids_in_approvals_burns_and_weight_repair_reject_without_mutating_balances() {
+    let (d, source, target) = setup();
+    let before = resource_facts(d, source);
+    let resources = array![
+        ResourceAmount { resource_type: 1, amount: 10 }, ResourceAmount { resource_type: 1, amount: 20 },
+    ]
+        .span();
+    for command in array![
+        Command::ApproveResources(
+            ResourceApproval { owner_entity_id: source.entity_id, approved_entity_id: target.entity_id, resources },
+        ),
+        Command::BurnStructureResources(ResourceBurn { entity_id: source.entity_id, resources }),
+        Command::RegularizeResourceWeights(array![source.entity_id, source.entity_id].span()),
+    ] {
+        assert_terminal_rejection(d, command, 40);
+        assert_eq!(resource_facts(d, source), before);
+    }
+    let allowance = crate::resources::IResourceAllowanceDispatcher { contract_address: d.peers.resources }
+        .resource_allowance(
+            AllowanceKey {
+                game_id: 3, owner_entity_id: source.entity_id, approved_entity_id: target.entity_id, resource_type: 1,
+            },
+        );
+    assert_eq!(allowance, 0);
+}

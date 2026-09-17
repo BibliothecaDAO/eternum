@@ -42,7 +42,7 @@ pub trait IBlitzPrizes<T> {
 }
 #[starknet::interface]
 pub trait IPrizeSeason<T> {
-    fn checkpoint_prize_points(ref self: T, game_id: u32, timestamp: u64);
+    fn checkpoint_prize_points(ref self: T, game_id: u32, timestamp: u64) -> bool;
     fn finalize_ranking(ref self: T, game_id: u32, trial_id: u128);
     fn prize_recipient(self: @T, player: ContractAddress) -> ContractAddress;
 }
@@ -82,6 +82,10 @@ pub mod BlitzPrizeState {
         pub trials: Map<u32, RankingTrial>,
         pub ranks: Map<(u32, ContractAddress), PlayerRank>,
         pub players: Map<(u32, u16), ContractAddress>,
+        pub group_counts: Map<(u32, u16), u16>,
+        pub award_cursor: Map<u32, u16>,
+        pub award_remaining: Map<u32, u16>,
+        pub resetting: Map<u32, bool>,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -166,14 +170,22 @@ pub mod BlitzPrizeState {
             self.require_ended(game, context.timestamp);
             assert!(game.final_trial_id == 0, "rankings already finalized");
             assert!(command.trial_id != 0 && command.trial_id != 1000, "invalid trial id");
-            assert!(!command.players.is_empty(), "players list is empty");
+            assert!(!self.resetting.read(game_id), "ranking reset incomplete");
             let mut trial = self.trials.read(game_id);
+            if trial.trial_id != 0 && trial.processed == trial.committed {
+                assert!(command.trial_id == trial.trial_id && command.players.is_empty(), "ranking already complete");
+                self.finalize(game_id, game, trial, actor, context.timestamp);
+                return;
+            }
+            assert!(!command.players.is_empty(), "players list is empty");
             if trial.trial_id == 0 {
                 let registered = self.settlements().settlement_progress(game_id).registered;
                 assert!(
                     command.committed > 0 && command.committed == registered, "roster does not match registrations",
                 );
-                self.season().checkpoint_prize_points(game_id, context.timestamp);
+                if !self.season().checkpoint_prize_points(game_id, context.timestamp) {
+                    return;
+                }
                 trial.trial_id = command.trial_id;
                 trial.committed = command.committed;
             } else {
@@ -197,9 +209,14 @@ pub mod BlitzPrizeState {
             let game = self.authorize(game_id, context.timestamp);
             self.require_admin(actor);
             assert!(game.final_trial_id == 0, "finalized rankings are immutable");
-            let trial = self.trials.read(game_id);
-            for index in 0..trial.processed {
+            assert!(self.award_cursor.read(game_id) == 0, "prize distribution already started");
+            self.resetting.write(game_id, true);
+            let mut trial = self.trials.read(game_id);
+            let start = trial.processed - core::cmp::min(trial.processed, 8);
+            for index in start..trial.processed {
                 let player = self.players.read((game_id, index));
+                let rank = self.ranks.read((game_id, player)).rank;
+                self.group_counts.write((game_id, rank), 0);
                 self.ranks.write((game_id, player), PlayerRank { rank: 0, chests: 0, elite: false });
                 self.players.write((game_id, index), 0.try_into().unwrap());
                 self
@@ -209,6 +226,12 @@ pub mod BlitzPrizeState {
                         },
                     );
             }
+            if start != 0 {
+                trial.processed = start;
+                self.write_trial(game_id, trial);
+                return;
+            }
+            self.resetting.write(game_id, false);
             self
                 .trials
                 .write(
@@ -287,6 +310,8 @@ pub mod BlitzPrizeState {
                     trial.last_rank = trial.processed + 1;
                 }
             }
+            let group = (game_id, trial.last_rank);
+            self.group_counts.write(group, self.group_counts.read(group) + 1);
             self.players.write((game_id, trial.processed), player);
             trial.processed += 1;
             trial.last_points = points;
@@ -304,57 +329,65 @@ pub mod BlitzPrizeState {
             assert!(trial.total_points == self.games().season_points(game_id), "ranked points do not match game total");
             self.allocate_chests(game_id, game);
             let mut chests = self.chests.read(game_id).unwrap();
-            self.award_groups(game_id, trial, ref chests, timestamp);
+            let complete = self.award_batch(game_id, trial, ref chests, timestamp);
             self.write_chests(game_id, chests);
+            if !complete {
+                return;
+            }
             self.season().finalize_ranking(game_id, trial.trial_id);
             self.story(game_id, actor, Story::PrizeDistributionFinal(trial.trial_id), timestamp);
         }
-        fn award_groups(
+        fn award_batch(
             ref self: ComponentState<TContractState>,
             game_id: u32,
             trial: RankingTrial,
             ref chests: GameChests,
             timestamp: u64,
-        ) {
-            let mut remaining = chests.allocated;
-            let mut index = 0;
-            while index < trial.processed {
-                let first = self.players.read((game_id, index));
-                let rank = self.ranks.read((game_id, first)).rank;
-                let mut end = index + 1;
-                while end < trial.processed
-                    && self.ranks.read((game_id, self.players.read((game_id, end)))).rank == rank {
-                    end += 1;
-                }
-                let reward = crate::series_chests::tied_chests(
-                    self.games().player_points(game_id, first),
-                    trial.total_points,
-                    chests.allocated,
-                    end - index,
-                    ref remaining,
-                );
-                let elite = end <= core::cmp::min(trial.committed / 2, 66);
-                while index < end {
-                    let player = self.players.read((game_id, index));
-                    self.write_rank(game_id, player, PlayerRank { rank, chests: reward, elite });
-                    let owner = if self.uses_ledger() {
-                        self.season().prize_recipient(player)
-                    } else {
-                        player
-                    };
-                    self
-                        .story(
-                            game_id,
-                            owner,
-                            Story::PrizeResult(
-                                PrizeResult { trial_id: trial.trial_id, index, player, owner, rank, chests: reward },
-                            ),
-                            timestamp,
-                        );
-                    chests.distributed += reward;
-                    index += 1;
-                }
+        ) -> bool {
+            let start = self.award_cursor.read(game_id);
+            let end = start + core::cmp::min(8, trial.processed - start);
+            let mut remaining = if start == 0 {
+                chests.allocated
+            } else {
+                self.award_remaining.read(game_id)
+            };
+            for index in start..end {
+                let player = self.players.read((game_id, index));
+                let rank = self.ranks.read((game_id, player)).rank;
+                let count = self.group_counts.read((game_id, rank));
+                let reward = if index == rank - 1 {
+                    crate::series_chests::tied_chests(
+                        self.games().player_points(game_id, player),
+                        trial.total_points,
+                        chests.allocated,
+                        count,
+                        ref remaining,
+                    )
+                } else {
+                    let first = self.players.read((game_id, rank - 1));
+                    self.ranks.read((game_id, first)).chests
+                };
+                let elite = rank - 1 + count <= core::cmp::min(trial.committed / 2, 66);
+                self.write_rank(game_id, player, PlayerRank { rank, chests: reward, elite });
+                let owner = if self.uses_ledger() {
+                    self.season().prize_recipient(player)
+                } else {
+                    player
+                };
+                self
+                    .story(
+                        game_id,
+                        owner,
+                        Story::PrizeResult(
+                            PrizeResult { trial_id: trial.trial_id, index, player, owner, rank, chests: reward },
+                        ),
+                        timestamp,
+                    );
+                chests.distributed += reward;
             }
+            self.award_remaining.write(game_id, remaining);
+            self.award_cursor.write(game_id, end);
+            end == trial.processed
         }
         fn story(
             ref self: ComponentState<TContractState>,

@@ -84,7 +84,9 @@ pub mod SequencingAccount {
             assert!(calls.len() == 1, "one recorded action required");
             let call = calls.at(0);
             assert!(
-                *call.to == self.deployment.read() && *call.selector == selector!("execute"), "foreign authority call",
+                *call.to == self.deployment.read()
+                    && (*call.selector == selector!("execute") || *call.selector == selector!("reject_execution")),
+                "foreign authority call",
             );
             assert!(tx.signature.len() == 2, "invalid authority signature length");
             assert!(

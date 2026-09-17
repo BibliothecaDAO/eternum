@@ -1,7 +1,13 @@
 use core::poseidon::poseidon_hash_span;
+use eternum_randomness_protocol::authority::{
+    ISequencingAccountDispatcher, ISequencingAccountDispatcherTrait, ISequencingAuthorityDispatcher,
+    ISequencingAuthorityDispatcherTrait,
+};
 use eternum_randomness_protocol::entrypoint::{
     Admission, ExecutionContext, IRecordedExecutionDispatcher, IRecordedExecutionDispatcherTrait,
-    IRecordedExecutionSafeDispatcher, IRecordedExecutionSafeDispatcherTrait, IRecordedExecutionViewsSafeDispatcher,
+    IRecordedExecutionFailureSafeDispatcher, IRecordedExecutionFailureSafeDispatcherTrait,
+    IRecordedExecutionSafeDispatcher, IRecordedExecutionSafeDispatcherTrait, IRecordedExecutionViewsDispatcher,
+    IRecordedExecutionViewsDispatcherTrait, IRecordedExecutionViewsSafeDispatcher,
     IRecordedExecutionViewsSafeDispatcherTrait,
 };
 use eternum_randomness_protocol::{Envelope, Intent, action_identity, encode_envelope};
@@ -17,6 +23,7 @@ use crate::commands::{Command, ExecutionContext as DomainContext, command_commit
 use crate::game::{GameRegistry, IGameDispatcher, IGameDispatcherTrait};
 use crate::lifecycle::{IDomainDispatcher, IDomainDispatcherTrait};
 use crate::season::{ISeasonDispatcher, ISeasonDispatcherTrait, ISeasonSafeDispatcher};
+use super::fixtures::{IFixtureDispatcher, IFixtureDispatcherTrait};
 
 #[derive(Copy, Drop, Serde)]
 pub struct FixtureAction {
@@ -146,4 +153,129 @@ pub impl FixtureSafeSeason of FixtureSafeSeasonTrait {
 #[feature("safe_dispatcher")]
 pub fn admission(season: ContractAddress, actor: ContractAddress) -> Result<Admission, Array<felt252>> {
     IRecordedExecutionViewsSafeDispatcher { contract_address: season }.get_admission(1, actor.into())
+}
+
+#[test]
+fn definitive_execution_failure_consumes_only_its_ticket_then_successor_executes() {
+    let d = super::setup(true);
+    let action = super::intent(d, 1);
+    let (r, s) = super::signature(d, action);
+    let original = make_context(d.peers.season, action, super::context());
+    let authority = super::submitter();
+    snforge_std::start_cheat_caller_address(authority, super::authority());
+    ISequencingAuthorityDispatcher { contract_address: authority }.configure(d.peers.season);
+    snforge_std::start_cheat_caller_address(authority, 0.try_into().unwrap());
+    configure_submitter(authority, authority);
+    let mut calldata = array![];
+    make_intent(d.peers.season, action).serialize(ref calldata);
+    original.serialize(ref calldata);
+    r.serialize(ref calldata);
+    s.serialize(ref calldata);
+    ISequencingAccountDispatcher { contract_address: authority }
+        .__execute__(
+            array![
+                starknet::account::Call {
+                    to: d.peers.season, selector: selector!("reject_execution"), calldata: calldata.span(),
+                },
+            ],
+        );
+    let view = IRecordedExecutionViewsDispatcher { contract_address: d.peers.season };
+    assert_eq!(view.get_result(1).status, 2);
+    assert_eq!(view.get_result(1).result, 'EXECUTION_FAILED');
+    let season = ISeasonDispatcher { contract_address: d.peers.season };
+    assert_eq!(season.next_nonce(1, d.actor), 1);
+    assert_eq!(season.execution_head().root, 987654321);
+    super::execute(d, FixtureAction { nonce: 1, ..action });
+    assert_eq!(view.get_result(2).status, 1);
+    assert_eq!(season.next_nonce(1, d.actor), 2);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn failure_recording_rejects_unauthenticated_and_already_executed_tickets() {
+    let d = super::setup(true);
+    let action = super::intent(d, 1);
+    let (r, s) = super::signature(d, action);
+    let call = IRecordedExecutionFailureSafeDispatcher { contract_address: d.peers.season };
+    snforge_std::start_cheat_caller_address(d.peers.season, d.actor);
+    assert!(
+        call
+            .reject_execution(
+                make_intent(d.peers.season, action), make_context(d.peers.season, action, super::context()), r, s,
+            )
+            .is_err(),
+    );
+    let season = ISeasonDispatcher { contract_address: d.peers.season };
+    assert_eq!(season.execution_head().order, 0);
+    assert_eq!(season.next_nonce(1, d.actor), 0);
+    snforge_std::start_cheat_caller_address(d.peers.season, super::submitter());
+    let original = make_context(d.peers.season, action, super::context());
+    super::execute(d, action);
+    assert!(call.reject_execution(make_intent(d.peers.season, action), original, r, s).is_err());
+    assert_eq!(season.execution_head().order, 1);
+    assert_eq!(season.next_nonce(1, d.actor), 1);
+    assert_eq!(IRecordedExecutionViewsDispatcher { contract_address: d.peers.season }.get_result(1).status, 1);
+}
+
+#[test]
+fn unexecuted_ticket_recovery_preserves_original_context_after_delay() {
+    let d = super::setup(true);
+    let action = super::intent(d, 1);
+    let (r, s) = super::signature(d, action);
+    let retained_intent = make_intent(d.peers.season, action);
+    let retained_context = make_context(d.peers.season, action, super::context());
+    snforge_std::start_cheat_block_timestamp(d.peers.season, 86400);
+    IRecordedExecutionDispatcher { contract_address: d.peers.season }.execute(retained_intent, retained_context, r, s);
+    let season = ISeasonDispatcher { contract_address: d.peers.season };
+    assert_eq!(season.execution_head().timestamp, 100);
+    assert_eq!(season.execution_head().root, 987654321);
+    assert_eq!(season.next_nonce(1, d.actor), 1);
+    assert_eq!(IFixtureDispatcher { contract_address: d.peers.troops }.received_root(), 987654321);
+}
+
+#[test]
+fn oversized_command_is_terminal_and_the_next_ticket_executes() {
+    let d = super::setup(true);
+    let mut ids = array![];
+    for id in 1_u32..255 {
+        ids.append(id);
+    }
+    let action = FixtureAction { command: Command::RegularizeResourceWeights(ids.span()), ..super::intent(d, 1) };
+    super::execute(d, action);
+    let view = IRecordedExecutionViewsDispatcher { contract_address: d.peers.season };
+    assert_eq!(view.get_result(1).status, 2);
+    assert_eq!(view.get_result(1).result, 'INVALID_COMMAND');
+    let season = ISeasonDispatcher { contract_address: d.peers.season };
+    assert_eq!(season.next_nonce(1, d.actor), 1);
+    super::execute(d, FixtureAction { nonce: 1, ..super::intent(d, 1) });
+    assert_eq!(view.get_result(2).status, 1);
+    assert_eq!(season.next_nonce(1, d.actor), 2);
+}
+
+#[test]
+fn command_item_bound_counts_items_not_their_serialized_fields() {
+    let mut resources = array![];
+    for resource_type in 1_u8..59 {
+        resources.append(crate::resources::ResourceAmount { resource_type, amount: 1 });
+    }
+    let command = Command::BurnStructureResources(
+        crate::resources::ResourceBurn { entity_id: 1, resources: resources.span() },
+    );
+    let mut fields = array![];
+    command.serialize(ref fields);
+    assert!(fields.len() > crate::commands::MAX_COMMAND_ITEMS);
+    assert_eq!(crate::commands::decode_command(fields.span(), command_commitment(command)).unwrap(), command);
+    let mut ids = array![];
+    for id in 1_u32..65 {
+        ids.append(id);
+    }
+    let command = Command::RegularizeResourceWeights(ids.span());
+    let mut fields = array![];
+    command.serialize(ref fields);
+    assert!(crate::commands::decode_command(fields.span(), command_commitment(command)).is_ok());
+    ids.append(65);
+    let command = Command::RegularizeResourceWeights(ids.span());
+    let mut fields = array![];
+    command.serialize(ref fields);
+    assert!(crate::commands::decode_command(fields.span(), command_commitment(command)).is_err());
 }

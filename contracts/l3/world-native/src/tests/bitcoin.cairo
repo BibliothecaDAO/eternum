@@ -233,7 +233,8 @@ fn zero_contributor_prize_rolls_unsplit_then_pays_once_and_retries_do_nothing() 
     capture(deployment, mine, owner, 30);
     set_owner(deployment, owner_home, owner);
     assert!(execute(deployment, Command::CloseBitcoinPhase(4), 49));
-    assert!(execute(deployment, claim(4, array![mine.entity_id, mine.entity_id].span()), 50));
+    assert_terminal_rejection(deployment, claim(4, array![mine.entity_id, mine.entity_id].span()), 50);
+    assert!(execute(deployment, claim(4, array![mine.entity_id].span()), 50));
     let view = IBitcoinViewsDispatcher { contract_address: deployment.peers.resources };
     assert_eq!(view.bitcoin_mine(mine).unsplit_carry, 1000);
     assert_eq!(sat(deployment, owner_home), 0);
@@ -245,7 +246,8 @@ fn zero_contributor_prize_rolls_unsplit_then_pays_once_and_retries_do_nothing() 
     assert_eq!(sat(deployment, winner_home), 1600);
     assert_eq!(sat(deployment, owner_home), 400);
     assert!(execute(deployment, claim(4, array![mine.entity_id].span()), 61));
-    assert!(execute(deployment, claim(5, array![mine.entity_id, mine.entity_id].span()), 62));
+    assert_terminal_rejection(deployment, claim(5, array![mine.entity_id, mine.entity_id].span()), 62);
+    assert!(execute(deployment, claim(5, array![mine.entity_id].span()), 62));
     assert_eq!(view.bitcoin_mine(mine), after);
     assert_eq!(sat(deployment, winner_home), 1600);
     assert_eq!(sat(deployment, owner_home), 400);

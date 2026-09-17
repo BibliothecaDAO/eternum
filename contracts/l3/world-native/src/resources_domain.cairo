@@ -266,6 +266,7 @@ pub mod ResourcesDomain {
                 assert!(phase.state == crate::bitcoin::PhaseStatus::Bound, "Bitcoin phase root is not bound");
             }
             assert!(!command.mine_ids.is_empty(), "empty Bitcoin claim batch");
+            crate::commands::assert_unique_entity_ids(command.mine_ids);
             for mine_id in command.mine_ids {
                 self
                     .claim_bitcoin_mine(
@@ -454,7 +455,7 @@ pub mod ResourcesDomain {
             context: ExecutionContext,
         ) {
             self.assert_resource_command(game_id, context.timestamp);
-            crate::resources::assert_unique_transfer_resources(command.resources);
+            crate::resources::assert_unique_resources(command.resources);
             let from = ResourceKey { game_id, entity_id: command.from_entity_id };
             assert!(self.structure_owner(from) == actor, "actor does not own sender");
             self.transfer_delayed(game_id, command, false, context.timestamp);
@@ -467,7 +468,7 @@ pub mod ResourcesDomain {
             context: ExecutionContext,
         ) {
             self.assert_resource_command(game_id, context.timestamp);
-            crate::resources::assert_unique_transfer_resources(command.resources);
+            crate::resources::assert_unique_resources(command.resources);
             let to = ResourceKey { game_id, entity_id: command.to_entity_id };
             assert!(self.structure_owner(to) == actor, "actor does not own recipient");
             self.consume_allowances(game_id, command);
@@ -560,6 +561,7 @@ pub mod ResourcesDomain {
             self.assert_resource_command(game_id, context.timestamp);
             assert!(command.owner_entity_id != command.approved_entity_id, "self approval");
             assert!(!command.resources.is_empty(), "no resource to approve");
+            crate::resources::assert_unique_resources(command.resources);
             let owner = ResourceKey { game_id, entity_id: command.owner_entity_id };
             let recipient = ResourceKey { game_id, entity_id: command.approved_entity_id };
             assert!(self.structure_owner(owner) == actor, "actor does not own structure");
@@ -588,6 +590,7 @@ pub mod ResourcesDomain {
             self.assert_resource_command(game_id, context.timestamp);
             let key = ResourceKey { game_id, entity_id: command.entity_id };
             assert!(self.structure_owner(key) == actor, "actor does not own structure");
+            crate::resources::assert_unique_resources(command.resources);
             self.burn(key, command.resources);
             self
                 .emit_resource_story(
@@ -609,6 +612,7 @@ pub mod ResourcesDomain {
                 .troops_dispatcher()
                 .authorized_explorer(ExplorerKey { game_id, explorer_id: command.entity_id }, actor);
             let key = ResourceKey { game_id, entity_id: command.entity_id };
+            crate::resources::assert_unique_resources(command.resources);
             self.burn(key, command.resources);
             self
                 .emit_resource_story(
@@ -680,6 +684,7 @@ pub mod ResourcesDomain {
             );
             crate::game::assert_settling_with_grace(self.game_dispatcher().game(game_id), context.timestamp);
             assert!(!structure_ids.is_empty(), "structure ids are empty");
+            crate::commands::assert_unique_entity_ids(structure_ids);
             for id in structure_ids {
                 let key = ResourceKey { game_id, entity_id: *id };
                 assert!(self.structure_owner(key) != 0.try_into().unwrap(), "structure has no owner");
@@ -945,9 +950,11 @@ pub mod ResourcesDomain {
         fn game_dispatcher(self: @ContractState) -> IGameDispatcher {
             IGameDispatcher { contract_address: self.lifecycle.require_active().season }
         }
+        #[inline(never)]
         fn structure_owner(self: @ContractState, key: ResourceKey) -> ContractAddress {
             IStructuresDispatcher { contract_address: self.lifecycle.require_active().structures }.structure_owner(key)
         }
+        #[inline(never)]
         fn rule(self: @ContractState, game_id: u32, resource_type: u8) -> ResourceRule {
             assert!(self.resources_configured.read(game_id), "missing resource rules");
             assert!(resource_type > 0 && resource_type <= 58, "invalid resource type");
@@ -1079,7 +1086,7 @@ pub mod ResourcesDomain {
         fn transfer_instant(
             ref self: ContractState, game_id: u32, command: crate::resources::ResourceTransfer, timestamp: u64,
         ) {
-            crate::resources::assert_unique_transfer_resources(command.resources);
+            crate::resources::assert_unique_resources(command.resources);
             let from = ResourceKey { game_id, entity_id: command.from_entity_id };
             let to = ResourceKey { game_id, entity_id: command.to_entity_id };
             for resource in command.resources {

@@ -89,7 +89,9 @@ pub mod PrizesDomain {
             self.require_ended(self.authorize(game_id, context.timestamp), context.timestamp);
             let mut pool = self.faith_prize_pool(game_id);
             assert!(!pool.distributed, "faith prizes already distributed");
-            self.settlement().settle_faith_wonders(game_id, context.timestamp);
+            if !self.settlement().settle_faith_wonders(game_id, context.timestamp) {
+                return;
+            }
             pool.distributed = true;
             self.write_pool(game_id, pool);
         }
@@ -159,13 +161,9 @@ pub mod PrizesDomain {
         fn wonder_prize(self: @ContractState, game_id: u32, wonder_id: u32) -> u128 {
             let pool = self.faith_prize_pool(game_id);
             assert!(pool.distributed, "faith prizes not distributed");
-            let winners = self.faith().wonder_faith_winners(game_id);
-            let mut won = false;
-            for id in winners.wonder_ids {
-                won = won || *id == wonder_id;
-            }
-            assert!(won, "no prize for wonder");
-            let prize = pool.funded / winners.wonder_ids.len().into();
+            let winners = self.settlement().faith_winner_count(game_id, wonder_id);
+            assert!(winners != 0, "no prize for wonder");
+            let prize = pool.funded / winners.into();
             assert!(prize > 0, "no prize for wonder");
             prize
         }

@@ -72,7 +72,8 @@ pub trait IHyperstructures<T> {
     fn hyperstructure_shares(self: @T, key: ResourceKey) -> ShareAllocation;
     fn hyperstructure_count(self: @T, game_id: u32) -> u32;
     fn completed_hyperstructure_count(self: @T, game_id: u32) -> u32;
-    fn settle_completed_hyperstructures(ref self: T, game_id: u32, timestamp: u64);
+    fn settle_completed_hyperstructures(ref self: T, game_id: u32, timestamp: u64) -> bool;
+    fn settle_final_hyperstructures(ref self: T, game_id: u32, timestamp: u64) -> bool;
     fn record_hyperstructure(ref self: T, key: ResourceKey, seed: felt252, completed: bool);
     fn initialize_hyperstructure(ref self: T, game_id: u32, actor: ContractAddress, id: u32, context: ExecutionContext);
     fn contribute_hyperstructure(
@@ -133,6 +134,8 @@ pub mod HyperstructureState {
         pub hyper_share_start: Map<(u32, u32), u64>,
         pub hyper_multiplier: Map<(u32, u32), u8>,
         pub hyper_shares: Map<(u32, u32, u32), Share>,
+        pub final_checkpoint_cursor: Map<u32, u32>,
+        pub close_attempt: Map<u32, Option<(u64, u32, u32)>>,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -269,6 +272,7 @@ pub mod HyperstructureState {
             context: ExecutionContext,
         ) {
             self.assert_command(game_id, context.timestamp);
+            crate::resources::assert_unique_resources(contribution.resources);
             let key = ResourceKey { game_id, entity_id: contribution.hyperstructure_id };
             let from = ResourceKey { game_id, entity_id: contribution.from_structure_id };
             self.assert_owner(from, actor);
@@ -337,16 +341,36 @@ pub mod HyperstructureState {
             state.access = command.access;
             self.write_state(key, state);
         }
-        fn settle_completed_hyperstructures(ref self: ComponentState<TContractState>, game_id: u32, timestamp: u64) {
+        fn settle_completed_hyperstructures(
+            ref self: ComponentState<TContractState>, game_id: u32, timestamp: u64,
+        ) -> bool {
             assert!(get_caller_address() == self.peers().season, "only authenticated command domain");
             crate::commands::assert_context_time(timestamp);
             self.games().game(game_id);
-            for index in 0..self.hyper_counts.read(game_id) {
-                let id = self.hyper_ids.read((game_id, index));
-                if self.hyper_states.read((game_id, id)).stage == Stage::Complete {
-                    self.checkpoint(ResourceKey { game_id, entity_id: id }, timestamp);
-                }
-            }
+            let (cutoff, start, count) = self
+                .close_attempt
+                .read(game_id)
+                .unwrap_or((timestamp, 0, self.hyper_counts.read(game_id)));
+            let end = self.checkpoint_batch(game_id, cutoff, start, count);
+            self.close_attempt.write(game_id, if end == count {
+                None
+            } else {
+                Some((cutoff, end, count))
+            });
+            end == count
+        }
+        fn settle_final_hyperstructures(
+            ref self: ComponentState<TContractState>, game_id: u32, timestamp: u64,
+        ) -> bool {
+            assert!(get_caller_address() == self.peers().season, "only authenticated command domain");
+            crate::commands::assert_context_time(timestamp);
+            let game = self.games().game(game_id);
+            assert!(game.end_at != 0 && timestamp >= game.end_at, "game not ended");
+            let count = self.hyper_counts.read(game_id);
+            let start = self.final_checkpoint_cursor.read(game_id);
+            let end = self.checkpoint_batch(game_id, game.end_at, start, count);
+            self.final_checkpoint_cursor.write(game_id, end);
+            end == count
         }
         fn checkpoint_hyperstructures(
             ref self: ComponentState<TContractState>,
@@ -358,6 +382,7 @@ pub mod HyperstructureState {
             assert!(get_caller_address() == self.peers().season, "only authenticated command domain");
             crate::commands::assert_context_time(context.timestamp);
             self.games().game(game_id);
+            crate::commands::assert_unique_entity_ids(ids);
             for id in ids {
                 self.checkpoint(ResourceKey { game_id, entity_id: *id }, context.timestamp);
             }
@@ -370,6 +395,18 @@ pub mod HyperstructureState {
         impl Life: Lifecycle::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of InternalTrait<TContractState> {
+        fn checkpoint_batch(
+            ref self: ComponentState<TContractState>, game_id: u32, cutoff: u64, start: u32, count: u32,
+        ) -> u32 {
+            let end = start + core::cmp::min(8, count - start);
+            for index in start..end {
+                let id = self.hyper_ids.read((game_id, index));
+                if self.hyper_states.read((game_id, id)).stage == Stage::Complete {
+                    self.checkpoint(ResourceKey { game_id, entity_id: id }, cutoff);
+                }
+            }
+            end
+        }
         fn peers(self: @ComponentState<TContractState>) -> Peers {
             get_dep_component!(self, Life).require_active()
         }
@@ -613,7 +650,11 @@ pub mod HyperstructureState {
             );
         }
         let mut total: u16 = 0;
+        let mut seen: core::dict::Felt252Dict<u128> = Default::default();
         for share in shares {
+            let player = (*share.player).into();
+            assert!(seen.get(player) == 0, "duplicate shareholder");
+            seen.insert(player, 1);
             assert!(*share.player != 0.try_into().unwrap(), "zero shareholder");
             assert!(*share.bps >= 100, "minimum share is one percent");
             total += *share.bps;

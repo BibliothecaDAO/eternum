@@ -15,6 +15,12 @@ pub trait IRecordedExecution<T> {
     fn execute(ref self: T, intent: Intent, context: ExecutionContext, r: felt252, s: felt252);
 }
 
+/// The sequencing authority attests to a definitive execution failure of this exact ticket.
+#[starknet::interface]
+pub trait IRecordedExecutionFailure<T> {
+    fn reject_execution(ref self: T, intent: Intent, context: ExecutionContext, r: felt252, s: felt252);
+}
+
 #[derive(Copy, Drop, Serde)]
 pub struct Admission {
     pub public_key: felt252,

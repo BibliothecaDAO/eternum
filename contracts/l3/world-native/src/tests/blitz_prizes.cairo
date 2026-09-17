@@ -341,3 +341,61 @@ fn assert_prize_recipient(uses_ledger: bool) {
     }
     assert!(found, "missing prize result");
 }
+
+#[test]
+fn large_tie_groups_are_awarded_in_bounded_batches_without_changing_equal_shares() {
+    let mut scores = array![];
+    let mut ids = array![];
+    for index in 0_u32..17 {
+        scores.append(600000000_u128);
+        ids.append(100 + index);
+    }
+    let d = setup(scores.span(), true);
+    assert!(rank(d, ids.span(), 17, 1).is_ok());
+    assert_eq!(games(d).game(3).final_trial_id, 0);
+    let reward = view(d).game_chests(3).unwrap().allocated / 17;
+    for index in 0_u32..8 {
+        assert_eq!(view(d).player_rank(3, player(100 + index)).unwrap().chests, reward);
+    }
+    assert_eq!(view(d).player_rank(3, player(108)).unwrap().chests, 0);
+    assert_eq!(view(d).game_chests(3).unwrap().distributed, reward * 8);
+    assert!(rank(d, array![].span(), 17, 1).is_ok());
+    assert_eq!(games(d).game(3).final_trial_id, 0);
+    assert_eq!(view(d).game_chests(3).unwrap().distributed, reward * 16);
+    assert!(rank(d, array![].span(), 17, 1).is_ok());
+    assert_eq!(games(d).game(3).final_trial_id, 1);
+    assert_eq!(view(d).game_chests(3).unwrap().distributed, reward * 17);
+    for index in 0_u32..17 {
+        let row = view(d).player_rank(3, player(100 + index)).unwrap();
+        assert_eq!(row.rank, 1);
+        assert_eq!(row.chests, reward);
+        assert!(!row.elite);
+    }
+}
+
+#[test]
+fn ranking_reset_deletes_at_most_one_batch_and_blocks_ranking_until_complete() {
+    let mut scores = array![];
+    let mut ids = array![];
+    for index in 0_u32..18 {
+        scores.append(100_u128);
+        if index < 17 {
+            ids.append(100 + index);
+        }
+    }
+    let d = setup(scores.span(), false);
+    assert!(rank(d, ids.span(), 18, 1).is_ok());
+    view(d).reset_ranking(3, super::authority(), super::context());
+    assert_eq!(view(d).ranking_trial(3).processed, 9);
+    assert!(view(d).player_rank(3, player(108)).is_some());
+    assert!(view(d).player_rank(3, player(109)).is_none());
+    assert!(rank(d, array![117].span(), 18, 1).is_err());
+    view(d).reset_ranking(3, super::authority(), super::context());
+    assert_eq!(view(d).ranking_trial(3).processed, 1);
+    view(d).reset_ranking(3, super::authority(), super::context());
+    assert_eq!(view(d).ranking_trial(3).trial_id, 0);
+    for index in 0_u32..17 {
+        assert!(view(d).player_rank(3, player(100 + index)).is_none());
+    }
+    assert!(rank(d, array![100].span(), 18, 2).is_ok());
+}

@@ -221,3 +221,45 @@ fn paying_one_games_winner_keeps_another_games_funding_reserved() {
     assert_eq!(view(deployment).faith_prize_pool(4).funded, 600);
     assert!(!view(deployment).faith_prize_pool(4).distributed);
 }
+
+#[test]
+fn faith_distribution_checkpoints_bounded_batches_before_any_claim() {
+    let (deployment, first, _, token) = setup();
+    let structures = crate::structures::IStructuresDispatcher { contract_address: deployment.peers.structures };
+    let template = crate::structures::IStructuresDispatcherTrait::structure(structures, first).unwrap();
+    assert!(execute(deployment, Command::FundFaithPrizes(9000), 30));
+    let mut wonders = array![];
+    for id in 100_u32..109 {
+        let key = ResourceKey { game_id: 3, entity_id: id };
+        super::resource_commands::set_fixture(
+            deployment.peers.structures,
+            selector!("structures"),
+            array![3, id.into()].span(),
+            crate::structures::StructureRecord {
+                owner: template.owner,
+                base: template.base,
+                resources_packed: template.resources_packed,
+                metadata: template.metadata,
+            },
+        );
+        assert!(execute(deployment, pledge(key, key), 40));
+        wonders.append(key);
+    }
+    assert!(execute(deployment, Command::DistributeFaithPrizes, 200));
+    assert!(!view(deployment).faith_prize_pool(3).distributed);
+    assert_terminal_rejection(deployment, claim(deployment.actor, *wonders.at(0)), 201);
+    let faith = crate::faith::IFaithOwnershipViewsDispatcher { contract_address: deployment.peers.structures };
+    assert_eq!(
+        crate::faith::IFaithOwnershipViewsDispatcherTrait::wonder_faith(faith, *wonders.at(7)).claimed_points, 80000,
+    );
+    assert_eq!(
+        crate::faith::IFaithOwnershipViewsDispatcherTrait::wonder_faith(faith, *wonders.at(8)).claimed_points, 0,
+    );
+    assert!(execute(deployment, Command::DistributeFaithPrizes, 300));
+    assert!(view(deployment).faith_prize_pool(3).distributed);
+    assert_eq!(
+        crate::faith::IFaithOwnershipViewsDispatcherTrait::wonder_faith(faith, *wonders.at(8)).claimed_points, 80000,
+    );
+    assert!(execute(deployment, claim(deployment.actor, *wonders.at(8)), 301));
+    assert_eq!(balance(token, deployment.peers.prizes), 8000);
+}

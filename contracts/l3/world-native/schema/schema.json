@@ -348,7 +348,11 @@
               "type": "core::integer::u64"
             }
           ],
-          "outputs": [],
+          "outputs": [
+            {
+              "type": "core::bool"
+            }
+          ],
           "state_mutability": "external"
         },
         {
@@ -568,6 +572,30 @@
         {
           "type": "function",
           "name": "execute",
+          "inputs": [
+            {
+              "name": "intent",
+              "type": "eternum_randomness_protocol::Intent"
+            },
+            {
+              "name": "context",
+              "type": "eternum_randomness_protocol::entrypoint::ExecutionContext"
+            },
+            {
+              "name": "r",
+              "type": "core::felt252"
+            },
+            {
+              "name": "s",
+              "type": "core::felt252"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "reject_execution",
           "inputs": [
             {
               "name": "intent",
@@ -3790,8 +3818,32 @@
               "type": "core::integer::u64"
             }
           ],
-          "outputs": [],
+          "outputs": [
+            {
+              "type": "core::bool"
+            }
+          ],
           "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "faith_winner_count",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "wonder_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::integer::u32"
+            }
+          ],
+          "state_mutability": "view"
         },
         {
           "type": "function",
@@ -6832,7 +6884,31 @@
               "type": "core::integer::u64"
             }
           ],
-          "outputs": [],
+          "outputs": [
+            {
+              "type": "core::bool"
+            }
+          ],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "settle_final_hyperstructures",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "timestamp",
+              "type": "core::integer::u64"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::bool"
+            }
+          ],
           "state_mutability": "external"
         },
         {
@@ -18882,5 +18958,5 @@
       ]
     }
   },
-  "identity": "731a6de5cb17509abe2382df77a28a3eb93b8aece1f07c7ebc7b9b32fc868139"
+  "identity": "2f82abff5ca675b3b36708167d8cf3acab5dabc2f2539d6158963e2c28de883a"
 }
