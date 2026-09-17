@@ -39,7 +39,7 @@ describe("appchain registrar preset", () => {
       resourceLists: 209,
       resourceMinMaxLists: 3,
     });
-    expect(buildRegisterPresetCalldata(payload)).toHaveLength(2_097);
+    expect(buildRegisterPresetCalldata(payload)).toHaveLength(2_083);
     expect(payload.presetConfig.preset_id).toBe(1);
     expect(payload.gameConfig.preset_id).toBe(1);
     expect(payload.gameConfig.blitz_registration_config).toEqual({
@@ -159,7 +159,6 @@ describe("Eternum portal preset", () => {
     expect(payload.presetConfig).toMatchObject({
       map_config: { holysite_win_probability: 0, holysite_fail_probability: 0 },
       faith_config: { holy_site_fp_per_sec: 0 },
-      structure_capacity_config: { holysite_capacity: 0 },
       quest_config: { quest_discovery_prob: 0, quest_discovery_fail_prob: 0 },
       quest_games: [],
     });

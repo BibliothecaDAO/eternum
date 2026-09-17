@@ -42,11 +42,7 @@ export interface CombatSimulationContext {
 export interface CombatParameters {
   damage_raid_percent_num: number;
   damage_biome_bonus_num: number;
-  damage_beta_small: bigint;
-  damage_beta_large: bigint;
   damage_scaling_factor: bigint;
-  damage_c0: bigint;
-  damage_delta: bigint;
   t1_damage_value: bigint;
   t2_damage_multiplier: bigint;
   t3_damage_multiplier: bigint;
@@ -397,11 +393,7 @@ export class CombatSimulator {
     return {
       damage_raid_percent_num: 1000, //10%
       damage_biome_bonus_num: 3000,
-      damage_beta_small: 4611686018427387904n, // 0.25
-      damage_beta_large: 2213609288845146193n, // 0.12
       damage_scaling_factor: 36893488147419103232n, // 2
-      damage_c0: 100_000n * CombatSimulator.MAX_U64, // 100_000
-      damage_delta: 50_000n * CombatSimulator.MAX_U64, // 50_000
       t1_damage_value: 1844674407370955161600n, // 100
       t2_damage_multiplier: 55340232221128654848n, // 3
       t3_damage_multiplier: 166020696663385964544n, // 9

@@ -64,7 +64,7 @@ describe("worldmap terrain ecology refresh", () => {
     expect(harness.latestAnchors().settlementAnchors.map(({ structureId }) => structureId)).toEqual(["1", "2"]);
 
     await harness.writeStructure(3, 3n, StructureType.Hyperstructure, 1);
-    await harness.writeTile("reserved", 2, 0, 3, TileOccupier.HyperstructureLevel1);
+    await harness.writeTile("reserved", 2, 0, 3, TileOccupier.Hyperstructure);
     harness.projection.flush();
     await harness.waitForPresentation(5);
     expect(harness.latestAnchors().settlementAnchors).toContainEqual(

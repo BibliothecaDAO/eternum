@@ -16,14 +16,6 @@ pub trait IStructureOwnership<T> {
     );
 }
 
-#[starknet::interface]
-pub trait IAgentOwnership<T> {
-    fn agent_owner(self: @T, game_id: u32, explorer_id: u32) -> ContractAddress;
-    fn transfer_agent_ownership(
-        ref self: T, game_id: u32, actor: ContractAddress, command: TransferOwnership, context: ExecutionContext,
-    );
-}
-
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct FaithPointsClaimedStory {
     pub wonder_id: u32,

@@ -348,8 +348,6 @@ export interface TroopLimitConfigProps {
   guard_resurrection_delay: BigNumberish;
   mercenaries_troop_lower_bound: BigNumberish;
   mercenaries_troop_upper_bound: BigNumberish;
-  agent_troop_lower_bound: BigNumberish;
-  agent_troop_upper_bound: BigNumberish;
   settlement_deployment_cap: BigNumberish;
   city_deployment_cap: BigNumberish;
   kingdom_deployment_cap: BigNumberish;
@@ -365,11 +363,7 @@ export interface TroopLimitConfigProps {
 export interface TroopDamageConfigProps {
   damage_raid_percent_num: BigNumberish;
   damage_biome_bonus_num: BigNumberish;
-  damage_beta_small: BigNumberish;
-  damage_beta_large: BigNumberish;
   damage_scaling_factor: BigNumberish;
-  damage_c0: BigNumberish;
-  damage_delta: BigNumberish;
   t1_damage_value: BigNumberish;
   t2_damage_multiplier: BigNumberish;
   t3_damage_multiplier: BigNumberish;
@@ -793,11 +787,6 @@ export interface LeaveGuildProps extends SystemSigner {}
 
 export interface TransferStructureOwnershipProps extends SystemSigner {
   structure_id: BigNumberish;
-  new_owner: BigNumberish;
-}
-
-export interface TransferAgentOwnershipProps extends SystemSigner {
-  explorer_id: BigNumberish;
   new_owner: BigNumberish;
 }
 

@@ -465,34 +465,6 @@ fn extraction_rejects_wrong_layer_dead_explorer_and_mismatched_tile() {
     set_fixture(deployment.peers.troops, selector!("explorers"), array![3, explorer.entity_id.into()].span(), original);
     assert!(execute(deployment, Command::ExtractExplorationReward(explorer.entity_id), 40));
 }
-#[test]
-fn owned_agents_pay_their_own_essence_and_receive_their_chest_points() {
-    let (deployment, home, explorer) = setup(true);
-    let original = troop(deployment, explorer);
-    set_fixture(
-        deployment.peers.troops,
-        selector!("explorers"),
-        array![3, explorer.entity_id.into()].span(),
-        crate::troops::ExplorerTroops { owner: crate::troops::AGENT_HOME, ..original },
-    );
-    set_fixture(
-        deployment.peers.troops,
-        selector!("agent_owners"),
-        array![3, explorer.entity_id.into()].span(),
-        deployment.actor,
-    );
-    grant(deployment, explorer, 38, 1000 * RESOURCE_PRECISION);
-    let home_before = balance(deployment, home, 38);
-    assert!(execute(deployment, apply(explorer, 39, Recipient::Explorer), 40));
-    assert_eq!(balance(deployment, explorer, 38), 750 * RESOURCE_PRECISION);
-    assert_eq!(balance(deployment, home, 38), home_before);
-    let coord = chest(deployment, Coord { alt: false, x: 2000200, y: 2000200 }, 321, 40);
-    move_fixture(deployment, explorer, crate::geometry::neighbor(coord, 0));
-    assert!(execute(deployment, Command::OpenRelicChest(OpenChest { explorer_id: explorer.entity_id, coord }), 50));
-    let games = crate::game::IGameDispatcher { contract_address: deployment.peers.season };
-    assert_eq!(crate::game::IGameDispatcherTrait::player_points(games, 3, deployment.actor), 77);
-    assert_eq!(crate::game::IGameDispatcherTrait::player_points(games, 3, 0.try_into().unwrap()), 0);
-}
 
 #[test]
 fn an_explore_action_discovers_a_chest_while_eternum_does_not() {

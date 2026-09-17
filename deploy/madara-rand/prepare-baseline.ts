@@ -73,7 +73,6 @@ const chain = await bootstrapChainConfig(
     ledgerOperatorAddress: "0x0",
     playerRegistryAddress: fixture.registry.address,
     vrfProviderAddress: "0x0",
-    agentControllerAddress: "0x0",
     cosmeticsAddress: "0x0",
     timelockAddress: "0x0",
     lootChestAddress: "0x0",

@@ -39,9 +39,7 @@ export enum TileOccupier {
   RealmWonderLevel3 = 7,
   RealmWonderLevel4 = 8,
   //
-  HyperstructureLevel1 = 9,
-  HyperstructureLevel2 = 10,
-  HyperstructureLevel3 = 11,
+  Hyperstructure = 9,
   //
   Mine = 12,
   Village = 13,
@@ -57,15 +55,6 @@ export enum TileOccupier {
   ExplorerCrossbowmanT2Regular = 22,
   ExplorerCrossbowmanT3Regular = 23,
   //
-  ExplorerKnightT1Daydreams = 24,
-  ExplorerKnightT2Daydreams = 25,
-  ExplorerKnightT3Daydreams = 26,
-  ExplorerPaladinT1Daydreams = 27,
-  ExplorerPaladinT2Daydreams = 28,
-  ExplorerPaladinT3Daydreams = 29,
-  ExplorerCrossbowmanT1Daydreams = 30,
-  ExplorerCrossbowmanT2Daydreams = 31,
-  ExplorerCrossbowmanT3Daydreams = 32,
   //
   Chest = 34,
   Spire = 35,
@@ -356,13 +345,6 @@ export interface BlitzExplorationReward {
 
 export interface Config {
   spireTravelEssenceCost: number;
-  agent: {
-    controller_address: string;
-    max_lifetime_count: number;
-    max_current_count: number;
-    min_spawn_lords_amount: number;
-    max_spawn_lords_amount: number;
-  };
   village: {
     village_pass_nft_address: string;
     village_mint_initial_recipient: string;
@@ -399,8 +381,6 @@ export interface Config {
     reward: number;
     shardsMinesFailProbability: number;
     shardsMinesWinProbability: number;
-    agentFindProbability: number;
-    agentFindFailProbability: number;
     campFindProbability: number;
     campFindFailProbability: number;
     hyperstructureWinProbAtCenter: number;
@@ -440,10 +420,6 @@ export interface Config {
       damageRaidPercentNum: number;
       damageBiomeBonusNum: number;
       damageScalingFactor: bigint;
-      damageC0: bigint;
-      damageDelta: bigint;
-      damageBetaSmall: bigint;
-      damageBetaLarge: bigint;
     };
     stamina: {
       staminaGainPerTick: number;
@@ -465,8 +441,6 @@ export interface Config {
       guardResurrectionDelay: number;
       mercenariesTroopLowerBound: number;
       mercenariesTroopUpperBound: number;
-      agentTroopLowerBound: number;
-      agentTroopUpperBound: number;
       settlementDeploymentCap: number;
       cityDeploymentCap: number;
       kingdomDeploymentCap: number;
@@ -613,8 +587,6 @@ export type FactoryMapConfigOverrides = Partial<
     Config["exploration"],
     | "shardsMinesWinProbability"
     | "shardsMinesFailProbability"
-    | "agentFindProbability"
-    | "agentFindFailProbability"
     | "campFindProbability"
     | "campFindFailProbability"
     | "bitcoinMineWinProbability"

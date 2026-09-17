@@ -7,7 +7,6 @@ pub struct MineKindKey {
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct MinePoolKey {
     pub game_id: u32,
-    pub alt: bool,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
@@ -33,9 +32,7 @@ pub struct MineWeight {
 
 #[starknet::interface]
 pub trait IMineRules<T> {
-    fn configure_mines(
-        ref self: T, game_id: u32, kinds: Span<MineKindEntry>, surface: Span<MineWeight>, ethereal: Span<MineWeight>,
-    );
+    fn configure_mines(ref self: T, game_id: u32, kinds: Span<MineKindEntry>, surface: Span<MineWeight>);
     fn mine_kind(self: @T, key: MineKindKey) -> MineKindConfig;
     fn mine_pool(self: @T, key: MinePoolKey) -> Span<MineWeight>;
     fn mine_draw(self: @T, key: MinePoolKey, seed: u256) -> (u8, MineKindConfig, u128);
@@ -72,8 +69,8 @@ pub mod MineState {
     pub struct Storage {
         pub mine_configured: Map<u32, bool>,
         pub mine_kinds: Map<(u32, u8), MineKindConfig>,
-        pub mine_pool_count: Map<(u32, bool), u8>,
-        pub mine_weights: Map<(u32, bool, u8), MineWeight>,
+        pub mine_pool_count: Map<u32, u8>,
+        pub mine_weights: Map<(u32, u8), MineWeight>,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -88,7 +85,6 @@ pub mod MineState {
             game_id: u32,
             kinds: Span<MineKindEntry>,
             surface: Span<MineWeight>,
-            ethereal: Span<MineWeight>,
         ) {
             assert!(!self.mine_configured.read(game_id), "immutable mine configuration");
             assert!(!kinds.is_empty() && kinds.len() <= 255, "invalid mine kind count");
@@ -118,8 +114,7 @@ pub mod MineState {
                         },
                     );
             }
-            self.write_pool(MinePoolKey { game_id, alt: false }, surface);
-            self.write_pool(MinePoolKey { game_id, alt: true }, ethereal);
+            self.write_pool(MinePoolKey { game_id }, surface);
             self.mine_configured.write(game_id, true);
         }
         fn kind(self: @ComponentState<TContractState>, key: MineKindKey) -> MineKindConfig {
@@ -131,8 +126,8 @@ pub mod MineState {
         fn pool(self: @ComponentState<TContractState>, key: MinePoolKey) -> Span<MineWeight> {
             assert!(self.mine_configured.read(key.game_id), "missing mine configuration");
             let mut weights = array![];
-            for index in 0..self.mine_pool_count.read((key.game_id, key.alt)) {
-                weights.append(self.mine_weights.read((key.game_id, key.alt, index)));
+            for index in 0..self.mine_pool_count.read(key.game_id) {
+                weights.append(self.mine_weights.read((key.game_id, index)));
             }
             weights.span()
         }
@@ -145,18 +140,15 @@ pub mod MineState {
                 previous = entry.kind;
                 assert!(entry.weight != 0, "zero mine weight");
                 assert!(self.mine_kinds.read((key.game_id, entry.kind)).production_rate != 0, "unknown pooled mine");
-                self.mine_weights.write((key.game_id, key.alt, index), entry);
+                self.mine_weights.write((key.game_id, index), entry);
             }
-            self.mine_pool_count.write((key.game_id, key.alt), count);
+            self.mine_pool_count.write(key.game_id, count);
             let mut values = array![];
             weights.serialize(ref values);
             self
                 .emit(
                     RowSet {
-                        version: 1,
-                        model: 'MinePool',
-                        keys: array![key.game_id.into(), key.alt.into()].span(),
-                        values: values.span(),
+                        version: 1, model: 'MinePool', keys: array![key.game_id.into()].span(), values: values.span(),
                     },
                 );
         }

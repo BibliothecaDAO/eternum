@@ -35,7 +35,7 @@ fn close_settles_all_completed_shares_before_testing_the_victory_threshold() {
     assert_eq!(games(deployment).player_points(3, deployment.actor), before + 50000);
     assert_eq!(hypers(deployment).hyperstructure_shares(hyper).start_at, 100);
     assert_terminal_rejection(deployment, Command::CloseSeason, 101);
-    assert!(execute(deployment, Command::CheckpointHyperstructures(array![hyper.entity_id].span()), 500));
+    super::hyperstructures::checkpoint(deployment, 500);
     assert_eq!(games(deployment).player_points(3, deployment.actor), before + 50000);
 }
 

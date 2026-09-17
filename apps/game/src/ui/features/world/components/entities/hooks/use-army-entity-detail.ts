@@ -1,16 +1,16 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
-import { getCharacterName } from "@/utils/agent";
 import { getExplorerStaminaSnapshot } from "@/utils/explorer-stamina";
 import { usePlayerProfile } from "@/hooks/use-player-profile";
 import {
   configManager,
   getExplorerOwner,
+  getArmyName,
   getArmyRelicEffects,
   getGuildFromPlayerAddress,
 } from "@bibliothecadao/eternum";
 import { useGame, useNativeRow, useResourceManager, useNativeRevision } from "@bibliothecadao/react";
-import { ContractAddress, ID, TroopTier, TroopType } from "@bibliothecadao/types";
+import { ContractAddress, ID } from "@bibliothecadao/types";
 import { useCallback, useMemo, useState } from "react";
 
 interface UseArmyEntityDetailOptions {
@@ -61,7 +61,7 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
     explorer ? { game_id: configManager.getActiveGameId(), entity_id: explorer.owner } : undefined,
   );
   const structureResources = useResourceManager(explorer?.owner ?? 0);
-  const ownershipRevision = useNativeRevision(["AgentOwner", "GuildMember", "Guild"]);
+  const ownershipRevision = useNativeRevision(["GuildMember", "Guild"]);
   const owner = explorer ? getExplorerOwner(store, explorer) : 0n;
 
   const staminaSnapshot = useMemo(() => {
@@ -98,9 +98,7 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
     const guild = owner ? getGuildFromPlayerAddress(owner, store) : undefined;
     const isMine = owner === userAddress;
 
-    const addressName = owner
-      ? (ownerProfile.name ?? undefined)
-      : getCharacterName(explorer.troops.tier as TroopTier, explorer.troops.category as TroopType, armyEntityId);
+    const addressName = owner ? (ownerProfile.name ?? undefined) : getArmyName(armyEntityId);
 
     const structureOwnerName = structure ? mode.structure.getName(structure).name : undefined;
 

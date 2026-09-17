@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-17",
+    title: "Simpler Army and Structure Display",
+    description:
+      "Removed autonomous map agents and hyperstructure level variants. Player armies keep their normal ownership colors and troop models.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-17",
     title: "Command sync recovery",
     description:
       "A stalled game update now reports an error and releases queued controls instead of blocking play until reload.",

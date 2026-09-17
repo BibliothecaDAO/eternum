@@ -187,7 +187,6 @@ export const installRecsStoreBridge = ({ store, runtime }: RecsStoreBridgeInput)
     ResourceWeight: ["resources"],
     ProductionBonus: ["resources"],
     ExplorerTroops: ["armies"],
-    AgentOwner: ["armies"],
     PlayerEntry: ["settlement"],
     ResourceArrival: ["arrivals"],
     WonderFaith: ["faith"],

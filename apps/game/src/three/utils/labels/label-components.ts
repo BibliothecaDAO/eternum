@@ -193,7 +193,6 @@ interface OwnerDisplayOptions {
   isAlly?: boolean;
   cameraView: CameraView;
   color?: string;
-  isDaydreamsAgent?: boolean;
 }
 
 interface OwnerDisplayOptions {
@@ -206,12 +205,11 @@ interface OwnerDisplayOptions {
   isAlly?: boolean;
   cameraView: CameraView;
   color?: string;
-  isDaydreamsAgent?: boolean;
   structureName?: string;
 }
 
 export const createOwnerDisplayElement = (options: OwnerDisplayOptions): HTMLElement => {
-  const { owner, isMine, isAlly, color, isDaydreamsAgent, cameraView: inputView, structureName } = options;
+  const { owner, isMine, isAlly, color, cameraView: inputView, structureName } = options;
   const cameraView = resolveCameraView(inputView);
 
   const container = document.createElement("div");
@@ -240,9 +238,7 @@ export const createOwnerDisplayElement = (options: OwnerDisplayOptions): HTMLEle
 
   // Determine text color
   let finalTextColor: string;
-  if (isDaydreamsAgent) {
-    finalTextColor = "#FFF5EA";
-  } else if (color) {
+  if (color) {
     finalTextColor = color;
   } else {
     // Import from label-config to avoid circular dependency

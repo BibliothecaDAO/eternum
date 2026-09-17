@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "83d0e43a5450810079b45a5cf6eab46d56884619cdbf339f34cfc012cc6bd926",
+  "schemaIdentity": "25027c3a57f90de5a5e75cc03170842522ddaf0247d69228e196d6a33dda21f7",
   "commandAbi": [
     {
       "type": "impl",
@@ -1496,10 +1496,6 @@
           "type": "world_native::ownership::TransferOwnership"
         },
         {
-          "name": "TransferAgentOwnership",
-          "type": "world_native::ownership::TransferOwnership"
-        },
-        {
           "name": "SetAddressName",
           "type": "world_native::names::SetAddressName"
         },
@@ -1672,10 +1668,6 @@
           "type": "world_native::hyperstructures::SetConstructionAccess"
         },
         {
-          "name": "CheckpointHyperstructures",
-          "type": "core::array::Span::<core::integer::u32>"
-        },
-        {
           "name": "OpenRelicChest",
           "type": "world_native::relics::OpenChest"
         },
@@ -1836,14 +1828,6 @@
           "type": "core::integer::u16"
         },
         {
-          "name": "agent_discovery_prob",
-          "type": "core::integer::u16"
-        },
-        {
-          "name": "agent_discovery_fail_prob",
-          "type": "core::integer::u16"
-        },
-        {
           "name": "camp_win_probability",
           "type": "core::integer::u16"
         },
@@ -1958,23 +1942,7 @@
           "type": "core::integer::u16"
         },
         {
-          "name": "damage_beta_small",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "damage_beta_large",
-          "type": "core::integer::u64"
-        },
-        {
           "name": "damage_scaling_factor",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "damage_c0",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "damage_delta",
           "type": "core::integer::u128"
         },
         {
@@ -2070,14 +2038,6 @@
           "type": "core::integer::u16"
         },
         {
-          "name": "agents_troop_lower_bound",
-          "type": "core::integer::u16"
-        },
-        {
-          "name": "agents_troop_upper_bound",
-          "type": "core::integer::u16"
-        },
-        {
           "name": "settlement_deployment_cap",
           "type": "core::integer::u32"
         },
@@ -2124,10 +2084,6 @@
       "name": "world_native::rules::CapacityConfig",
       "members": [
         {
-          "name": "structure_capacity",
-          "type": "core::integer::u128"
-        },
-        {
           "name": "troop_capacity",
           "type": "core::integer::u32"
         },
@@ -2163,10 +2119,6 @@
         },
         {
           "name": "bank_structure_capacity",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "holysite_capacity",
           "type": "core::integer::u64"
         },
         {
@@ -2369,18 +2321,6 @@
       "type": "interface",
       "name": "world_native::season::ISeason",
       "items": [
-        {
-          "type": "function",
-          "name": "set_agent_controller",
-          "inputs": [
-            {
-              "name": "address",
-              "type": "core::starknet::contract_address::ContractAddress"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
         {
           "type": "function",
           "name": "set_authentication",
@@ -2758,17 +2698,6 @@
       "type": "interface",
       "name": "world_native::game::IGame",
       "items": [
-        {
-          "type": "function",
-          "name": "agent_controller",
-          "inputs": [],
-          "outputs": [
-            {
-              "type": "core::starknet::contract_address::ContractAddress"
-            }
-          ],
-          "state_mutability": "view"
-        },
         {
           "type": "function",
           "name": "ownership_rules_ready",
@@ -4091,14 +4020,6 @@
       "scope": "deployment"
     },
     {
-      "name": "AgentRules",
-      "scope": "game"
-    },
-    {
-      "name": "AgentDiscoveryStats",
-      "scope": "game"
-    },
-    {
       "name": "CampResources",
       "scope": "game"
     },
@@ -4251,10 +4172,6 @@
       "scope": "deployment"
     },
     {
-      "name": "AgentPopulation",
-      "scope": "game"
-    },
-    {
       "name": "RealmGrants",
       "scope": "game"
     },
@@ -4379,10 +4296,6 @@
       "scope": "deployment"
     },
     {
-      "name": "AgentOwner",
-      "scope": "game"
-    },
-    {
       "name": "WonderFaith",
       "scope": "game"
     },
@@ -4445,10 +4358,6 @@
     {
       "name": "OwnershipRulesReady",
       "scope": "game"
-    },
-    {
-      "name": "AgentController",
-      "scope": "deployment"
     },
     {
       "name": "ActionNonce",

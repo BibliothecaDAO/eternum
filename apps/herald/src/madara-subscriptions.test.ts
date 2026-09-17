@@ -113,7 +113,6 @@ describe("MadaraSubscriptions", () => {
   it("starts native ingestion from complete receipts without a model-selector subscription", async () => {
     vi.stubGlobal("WebSocket", FakeWebSocket);
     const ingestion = createNativeWorldIngestion(nativeSetup().native);
-    expect(ingestion.registry.bySelector.size + Object.keys(WORLD_EVENT_SELECTORS).length).toBeGreaterThan(100);
     const accepted: unknown[] = [];
     const subscriptions = new MadaraSubscriptions("ws://rpc.test", ingestion.eventSubscription, {
       onEvent: () => {

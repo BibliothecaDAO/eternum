@@ -432,11 +432,11 @@ pub mod SettlementState {
             ref self: ComponentState<TContractState>,
             key: EntryKey,
             player: starknet::ContractAddress,
-            requires_ledger: bool,
+            requires_entitlement: bool,
         ) {
             assert!(key.owner.is_non_zero(), "gameplay account is not bound");
             assert!(self.entries.read((key.game_id, key.owner)).is_none(), "owner already settled");
-            if requires_ledger {
+            if requires_entitlement {
                 assert!(self.entitlements.read((key.game_id, key.owner)).is_some(), "entry entitlement required");
             }
             self.record_entry(key, player);

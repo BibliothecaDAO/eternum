@@ -3,11 +3,12 @@ use snforge_std::{start_cheat_caller_address, stop_cheat_caller_address};
 use crate::game::{IGameDispatcher, IGameDispatcherTrait};
 use crate::map::{IMapDispatcher, IMapDispatcherTrait};
 use crate::settlement::{
-    IBlitzReservationsSafeDispatcher, IBlitzReservationsSafeDispatcherTrait, ISettlementConfigurationDispatcher,
-    ISettlementConfigurationDispatcherTrait, ISettlementConfigurationSafeDispatcher,
-    ISettlementConfigurationSafeDispatcherTrait, ISettlementEntrySafeDispatcherTrait, ISettlementPoolDispatcher,
-    ISettlementPoolDispatcherTrait, ISettlementPoolSafeDispatcher, ISettlementPoolSafeDispatcherTrait,
-    ISettlementViewsDispatcher, ISettlementViewsDispatcherTrait, SettlementMode, SettlementRules,
+    IBlitzReservationsSafeDispatcher, IBlitzReservationsSafeDispatcherTrait, ISettlementCommandsDispatcher,
+    ISettlementCommandsDispatcherTrait, ISettlementConfigurationDispatcher, ISettlementConfigurationDispatcherTrait,
+    ISettlementConfigurationSafeDispatcher, ISettlementConfigurationSafeDispatcherTrait,
+    ISettlementEntrySafeDispatcherTrait, ISettlementPoolDispatcher, ISettlementPoolDispatcherTrait,
+    ISettlementPoolSafeDispatcher, ISettlementPoolSafeDispatcherTrait, ISettlementViewsDispatcher,
+    ISettlementViewsDispatcherTrait, SettleBlitz, SettlementMode, SettlementRules,
 };
 use super::{Deployment, authority, context, execute, intent, recorded, setup, submitter};
 
@@ -179,7 +180,6 @@ fn entry_entitlements_require_operator_and_compare_every_registration_field() {
     assert!(ledger.entry_entitlement(crate::settlement::EntryKey { game_id: 2, ..key }).unwrap().is_none());
 }
 
-
 #[test]
 #[feature("safe_dispatcher")]
 fn village_placement_keeps_every_mode_entry_capacity_and_shares_reservations() {
@@ -236,4 +236,34 @@ fn remember_distinct(ref seen: Array<crate::troops::Coord>, added: Span<crate::t
         }
         seen.append(*coord);
     }
+}
+
+#[test]
+#[should_panic(expected: "entry entitlement required")]
+fn a_missing_ledger_operator_never_bypasses_real_game_entitlements() {
+    let d = setup(true);
+    let games = IGameDispatcher { contract_address: d.peers.season };
+    let mut game_rules = recorded::rules();
+    game_rules.blitz_mode_on = true;
+    start_cheat_caller_address(d.peers.season, authority());
+    games
+        .create_game(
+            3, crate::game::GameRegistry { dev_mode_on: false, start_main_at: 1000, ..games.game(1) }, game_rules,
+        );
+    stop_cheat_caller_address(d.peers.season);
+    configure(d, 3, rules());
+    start_cheat_caller_address(d.peers.settlement, d.peers.season);
+    ISettlementCommandsDispatcher { contract_address: d.peers.settlement }
+        .settle_blitz(
+            3,
+            d.actor,
+            SettleBlitz {
+                name: 'Player',
+                cosmetics_block_hash: 0,
+                cosmetics_block_number: 0,
+                cosmetics: array![].span(),
+                grant_starting_troops: false,
+            },
+            context(),
+        );
 }

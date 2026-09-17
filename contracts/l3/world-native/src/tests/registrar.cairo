@@ -46,7 +46,6 @@ fn definition(blitz: bool) -> PresetDefinition {
             production: super::production::recipes(),
             mine_kinds: super::mines::kinds(),
             surface_mines: array![crate::mines::MineWeight { kind: 1, weight: 1 }].span(),
-            ethereal_mines: array![].span(),
         },
         structures: StructurePreset {
             buildings: super::building_commands::rules(),
@@ -109,9 +108,6 @@ fn definition(blitz: bool) -> PresetDefinition {
                     },
                 )
             },
-        },
-        agents: crate::agents::AgentRules {
-            max_lifetime_count: 10, max_current_count: 3, min_spawn_lords: 2, max_spawn_lords: 7,
         },
         exploration: array![crate::exploration_rewards::ExplorationReward { resource_type: 1, amount: 10, weight: 1 }]
             .span(),
@@ -187,12 +183,6 @@ fn blitz_launch_initializes_domains_once_and_allocates_isolated_games() {
         let settlement = ISettlementViewsDispatcher { contract_address: d.peers.settlement };
         assert_eq!(settlement.realm_grants(expected), preset.settlement.realms);
         assert_eq!(settlement.settlement_rules(expected).registration_limit, 2);
-        assert_eq!(
-            crate::agents::IAgentsDispatcherTrait::agent_rules(
-                crate::agents::IAgentsDispatcher { contract_address: d.peers.troops }, expected,
-            ),
-            preset.agents,
-        );
     }
     assert_eq!(registry(d).next_game_id(), 3);
 }

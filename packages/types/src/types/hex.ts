@@ -185,13 +185,11 @@ export const isTileOccupierStructure = (tileOccupier: TileOccupier) => {
     tileOccupier === TileOccupier.ReservedHyperstructure ||
     tileOccupier === TileOccupier.RealmRegularLevel1 ||
     tileOccupier === TileOccupier.RealmWonderLevel1 ||
-    tileOccupier === TileOccupier.HyperstructureLevel1 ||
+    tileOccupier === TileOccupier.Hyperstructure ||
     tileOccupier === TileOccupier.RealmRegularLevel2 ||
     tileOccupier === TileOccupier.RealmWonderLevel2 ||
-    tileOccupier === TileOccupier.HyperstructureLevel2 ||
     tileOccupier === TileOccupier.RealmRegularLevel3 ||
     tileOccupier === TileOccupier.RealmWonderLevel3 ||
-    tileOccupier === TileOccupier.HyperstructureLevel3 ||
     tileOccupier === TileOccupier.RealmRegularLevel4 ||
     tileOccupier === TileOccupier.RealmWonderLevel4 ||
     tileOccupier === TileOccupier.Mine ||

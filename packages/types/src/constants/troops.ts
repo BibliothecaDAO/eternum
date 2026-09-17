@@ -35,8 +35,6 @@ export const BANDITS_NAME = "The Vanguard";
 // Short-string felt used by set_mercenaries_name_config onchain.
 export const MERCENARIES_NAME_FELT = encodeAsciiFelt(BANDITS_NAME);
 
-export const DAYDREAMS_AGENTS = "Daydreams Agent";
-
 /**
  * Guard slot IDs - consistent with Cairo contract GuardSlot enum
  * Guards are attacked in order: Alpha (0) -> Bravo (1) -> Charlie (2) -> Delta (3)

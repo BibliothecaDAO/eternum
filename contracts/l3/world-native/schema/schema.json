@@ -480,18 +480,6 @@
         },
         {
           "type": "function",
-          "name": "set_agent_controller",
-          "inputs": [
-            {
-              "name": "address",
-              "type": "core::starknet::contract_address::ContractAddress"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
           "name": "set_authentication",
           "inputs": [
             {
@@ -659,17 +647,6 @@
           "outputs": [
             {
               "type": "eternum_randomness_protocol::recording::ExecutionHead"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "agent_controller",
-          "inputs": [],
-          "outputs": [
-            {
-              "type": "core::starknet::contract_address::ContractAddress"
             }
           ],
           "state_mutability": "view"
@@ -2032,70 +2009,6 @@
       "entrypoints": [
         {
           "type": "function",
-          "name": "configure_agents",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "rules",
-              "type": "world_native::agents::AgentRules"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "agent_rules",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "world_native::agents::AgentRules"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "agent_discovery_stats",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "world_native::agents::AgentDiscoveryStats"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "can_discover_agent",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::bool"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
           "name": "apply_troop_relic",
           "inputs": [
             {
@@ -2200,22 +2113,6 @@
         },
         {
           "type": "function",
-          "name": "agent_population",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "world_native::troops::AgentPopulation"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
           "name": "authorized_explorer",
           "inputs": [
             {
@@ -2245,50 +2142,6 @@
             {
               "name": "explorer_id",
               "type": "core::integer::u32"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "agent_owner",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "explorer_id",
-              "type": "core::integer::u32"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::starknet::contract_address::ContractAddress"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "transfer_agent_ownership",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "actor",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "command",
-              "type": "world_native::ownership::TransferOwnership"
-            },
-            {
-              "name": "context",
-              "type": "world_native::commands::ExecutionContext"
             }
           ],
           "outputs": [],
@@ -5331,10 +5184,6 @@
             {
               "name": "surface",
               "type": "core::array::Span::<world_native::mines::MineWeight>"
-            },
-            {
-              "name": "ethereal",
-              "type": "core::array::Span::<world_native::mines::MineWeight>"
             }
           ],
           "outputs": [],
@@ -7028,30 +6877,6 @@
             {
               "name": "command",
               "type": "world_native::hyperstructures::SetConstructionAccess"
-            },
-            {
-              "name": "context",
-              "type": "world_native::commands::ExecutionContext"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "checkpoint_hyperstructures",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "actor",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "ids",
-              "type": "core::array::Span::<core::integer::u32>"
             },
             {
               "name": "context",
@@ -8761,80 +8586,6 @@
       }
     },
     {
-      "name": "AgentRules",
-      "identity": "0x4167656e7452756c6573",
-      "owners": [
-        "troops"
-      ],
-      "scope": "game",
-      "keys": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "max_lifetime_count",
-          "type": "core::integer::u16",
-          "id": "0x6d61785f6c69666574696d655f636f756e74",
-          "feltLength": 1
-        },
-        {
-          "name": "max_current_count",
-          "type": "core::integer::u16",
-          "id": "0x6d61785f63757272656e745f636f756e74",
-          "feltLength": 1
-        },
-        {
-          "name": "min_spawn_lords",
-          "type": "core::integer::u8",
-          "id": "0x6d696e5f737061776e5f6c6f726473",
-          "feltLength": 1
-        },
-        {
-          "name": "max_spawn_lords",
-          "type": "core::integer::u8",
-          "id": "0x6d61785f737061776e5f6c6f726473",
-          "feltLength": 1
-        }
-      ],
-      "keyLength": 1,
-      "valueLength": 4
-    },
-    {
-      "name": "AgentDiscoveryStats",
-      "identity": "0x4167656e74446973636f766572795374617473",
-      "owners": [
-        "troops"
-      ],
-      "scope": "game",
-      "keys": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "spawned",
-          "type": "core::integer::u16",
-          "id": "0x737061776e6564",
-          "feltLength": 1
-        },
-        {
-          "name": "lords_minted",
-          "type": "core::integer::u32",
-          "id": "0x6c6f7264735f6d696e746564",
-          "feltLength": 1
-        }
-      ],
-      "keyLength": 1,
-      "valueLength": 2
-    },
-    {
       "name": "CampResources",
       "identity": "0x43616d705265736f7572636573",
       "owners": [
@@ -10299,11 +10050,6 @@
           "name": "game_id",
           "type": "core::integer::u32",
           "feltLength": 1
-        },
-        {
-          "name": "alt",
-          "type": "core::bool",
-          "feltLength": 1
         }
       ],
       "members": [
@@ -10314,7 +10060,7 @@
           "feltLength": null
         }
       ],
-      "keyLength": 2,
+      "keyLength": 1,
       "valueLength": null,
       "observation": {
         "domain": "mines",
@@ -10403,37 +10149,6 @@
         "domain": "realm/season",
         "fields": {
           "initialized": "initialized"
-        }
-      }
-    },
-    {
-      "name": "AgentPopulation",
-      "identity": "0x4167656e74506f70756c6174696f6e",
-      "owners": [
-        "troops"
-      ],
-      "scope": "game",
-      "keys": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "count",
-          "type": "core::integer::u16",
-          "id": "0x636f756e74",
-          "feltLength": 1
-        }
-      ],
-      "keyLength": 1,
-      "valueLength": 1,
-      "observation": {
-        "domain": "troops",
-        "fields": {
-          "active": "count"
         }
       }
     },
@@ -11913,42 +11628,6 @@
       }
     },
     {
-      "name": "AgentOwner",
-      "identity": "0x4167656e744f776e6572",
-      "owners": [
-        "troops"
-      ],
-      "scope": "game",
-      "keys": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        },
-        {
-          "name": "explorer_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "address",
-          "type": "core::starknet::contract_address::ContractAddress",
-          "id": "0x61646472657373",
-          "feltLength": 1
-        }
-      ],
-      "keyLength": 2,
-      "valueLength": 1,
-      "observation": {
-        "domain": "ownership",
-        "fields": {
-          "owner": "address"
-        }
-      }
-    },
-    {
       "name": "WonderFaith",
       "identity": "0x576f6e6465724661697468",
       "owners": [
@@ -12416,7 +12095,7 @@
           "name": "map_config",
           "type": "world_native::rules::MapConfig",
           "id": "0x6d61705f636f6e666967",
-          "feltLength": 18
+          "feltLength": 16
         },
         {
           "name": "biome_climate_config",
@@ -12434,7 +12113,7 @@
           "name": "troop_damage_config",
           "type": "world_native::rules::TroopDamageConfig",
           "id": "0x74726f6f705f64616d6167655f636f6e666967",
-          "feltLength": 10
+          "feltLength": 6
         },
         {
           "name": "troop_stamina_config",
@@ -12446,19 +12125,19 @@
           "name": "troop_limit_config",
           "type": "world_native::rules::TroopLimitConfig",
           "id": "0x74726f6f705f6c696d69745f636f6e666967",
-          "feltLength": 15
+          "feltLength": 13
         },
         {
           "name": "capacity_config",
           "type": "world_native::rules::CapacityConfig",
           "id": "0x63617061636974795f636f6e666967",
-          "feltLength": 4
+          "feltLength": 3
         },
         {
           "name": "structure_capacity_config",
           "type": "world_native::rules::StructureCapacityConfig",
           "id": "0x7374727563747572655f63617061636974795f636f6e666967",
-          "feltLength": 8
+          "feltLength": 7
         },
         {
           "name": "building_config",
@@ -12510,7 +12189,7 @@
         }
       ],
       "keyLength": 1,
-      "valueLength": 98
+      "valueLength": 88
     },
     {
       "name": "EntitySequence",
@@ -12745,32 +12424,6 @@
           "name": "ready",
           "type": "core::bool",
           "id": "0x7265616479",
-          "feltLength": 1
-        }
-      ],
-      "keyLength": 1,
-      "valueLength": 1
-    },
-    {
-      "name": "AgentController",
-      "identity": "0x4167656e74436f6e74726f6c6c6572",
-      "owners": [
-        "season"
-      ],
-      "scope": "deployment",
-      "emitterKey": "address",
-      "keys": [
-        {
-          "name": "address",
-          "type": "core::starknet::contract_address::ContractAddress",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "controller",
-          "type": "core::starknet::contract_address::ContractAddress",
-          "id": "0x636f6e74726f6c6c6572",
           "feltLength": 1
         }
       ],
@@ -13767,42 +13420,6 @@
         }
       ]
     },
-    "world_native::agents::AgentDiscoveryStats": {
-      "type": "struct",
-      "name": "world_native::agents::AgentDiscoveryStats",
-      "members": [
-        {
-          "name": "spawned",
-          "type": "core::integer::u16"
-        },
-        {
-          "name": "lords_minted",
-          "type": "core::integer::u32"
-        }
-      ]
-    },
-    "world_native::agents::AgentRules": {
-      "type": "struct",
-      "name": "world_native::agents::AgentRules",
-      "members": [
-        {
-          "name": "max_lifetime_count",
-          "type": "core::integer::u16"
-        },
-        {
-          "name": "max_current_count",
-          "type": "core::integer::u16"
-        },
-        {
-          "name": "min_spawn_lords",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "max_spawn_lords",
-          "type": "core::integer::u8"
-        }
-      ]
-    },
     "world_native::arrivals::Arrival": {
       "type": "struct",
       "name": "world_native::arrivals::Arrival",
@@ -14636,10 +14253,6 @@
           "type": "world_native::ownership::TransferOwnership"
         },
         {
-          "name": "TransferAgentOwnership",
-          "type": "world_native::ownership::TransferOwnership"
-        },
-        {
           "name": "SetAddressName",
           "type": "world_native::names::SetAddressName"
         },
@@ -14810,10 +14423,6 @@
         {
           "name": "SetConstructionAccess",
           "type": "world_native::hyperstructures::SetConstructionAccess"
-        },
-        {
-          "name": "CheckpointHyperstructures",
-          "type": "core::array::Span::<core::integer::u32>"
         },
         {
           "name": "OpenRelicChest",
@@ -15059,10 +14668,6 @@
         },
         {
           "name": "Camp",
-          "type": "()"
-        },
-        {
-          "name": "Agent",
           "type": "()"
         }
       ]
@@ -16120,10 +15725,6 @@
         {
           "name": "game_id",
           "type": "core::integer::u32"
-        },
-        {
-          "name": "alt",
-          "type": "core::bool"
         }
       ]
     },
@@ -16572,10 +16173,6 @@
           "type": "world_native::presets::EconomyPreset"
         },
         {
-          "name": "agents",
-          "type": "world_native::agents::AgentRules"
-        },
-        {
           "name": "exploration",
           "type": "core::array::Span::<world_native::exploration_rewards::ExplorationReward>"
         },
@@ -16607,10 +16204,6 @@
         },
         {
           "name": "surface_mines",
-          "type": "core::array::Span::<world_native::mines::MineWeight>"
-        },
-        {
-          "name": "ethereal_mines",
           "type": "core::array::Span::<world_native::mines::MineWeight>"
         }
       ]
@@ -17310,10 +16903,6 @@
       "name": "world_native::rules::CapacityConfig",
       "members": [
         {
-          "name": "structure_capacity",
-          "type": "core::integer::u128"
-        },
-        {
           "name": "troop_capacity",
           "type": "core::integer::u32"
         },
@@ -17341,14 +16930,6 @@
         },
         {
           "name": "shards_mines_fail_probability",
-          "type": "core::integer::u16"
-        },
-        {
-          "name": "agent_discovery_prob",
-          "type": "core::integer::u16"
-        },
-        {
-          "name": "agent_discovery_fail_prob",
           "type": "core::integer::u16"
         },
         {
@@ -17518,10 +17099,6 @@
           "type": "core::integer::u64"
         },
         {
-          "name": "holysite_capacity",
-          "type": "core::integer::u64"
-        },
-        {
           "name": "camp_capacity",
           "type": "core::integer::u64"
         },
@@ -17562,23 +17139,7 @@
           "type": "core::integer::u16"
         },
         {
-          "name": "damage_beta_small",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "damage_beta_large",
-          "type": "core::integer::u64"
-        },
-        {
           "name": "damage_scaling_factor",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "damage_c0",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "damage_delta",
           "type": "core::integer::u128"
         },
         {
@@ -17609,14 +17170,6 @@
         },
         {
           "name": "mercenaries_troop_upper_bound",
-          "type": "core::integer::u16"
-        },
-        {
-          "name": "agents_troop_lower_bound",
-          "type": "core::integer::u16"
-        },
-        {
-          "name": "agents_troop_upper_bound",
           "type": "core::integer::u16"
         },
         {
@@ -18535,16 +18088,6 @@
         }
       ]
     },
-    "world_native::troops::AgentPopulation": {
-      "type": "struct",
-      "name": "world_native::troops::AgentPopulation",
-      "members": [
-        {
-          "name": "count",
-          "type": "core::integer::u16"
-        }
-      ]
-    },
     "world_native::troops::Coord": {
       "type": "struct",
       "name": "world_native::troops::Coord",
@@ -18878,5 +18421,5 @@
       ]
     }
   },
-  "identity": "83d0e43a5450810079b45a5cf6eab46d56884619cdbf339f34cfc012cc6bd926"
+  "identity": "25027c3a57f90de5a5e75cc03170842522ddaf0247d69228e196d6a33dda21f7"
 }

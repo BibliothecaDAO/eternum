@@ -53,7 +53,6 @@ async function bootstrapRegistrar(params: {
     ledgerOperatorAddress: params.ledgerOperatorAddress,
     playerRegistryAddress: params.playerRegistryAddress,
     vrfProviderAddress: optionalEnvironmentAddress("VRF_PROVIDER_ADDRESS"),
-    agentControllerAddress: optionalEnvironmentAddress("AGENT_CONTROLLER_ADDRESS"),
     cosmeticsAddress: optionalEnvironmentAddress("COSMETICS_ADDRESS"),
     timelockAddress: optionalEnvironmentAddress("TIMELOCK_ADDRESS"),
     lootChestAddress: optionalEnvironmentAddress("LOOT_CHEST_ADDRESS"),

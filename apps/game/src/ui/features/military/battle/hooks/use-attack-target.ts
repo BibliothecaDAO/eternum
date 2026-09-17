@@ -73,7 +73,7 @@ export const useAttackTargetData = (
     col: targetHex.x,
     row: targetHex.y,
   });
-  const guardsRevision = useNativeRevision(["Guard", "AgentOwner", "Structure"]);
+  const guardsRevision = useNativeRevision(["Guard", "Structure"]);
   const targetTile = useMemo(() => (targetTileOpt ? tileOptToTile(targetTileOpt) : undefined), [targetTileOpt]);
 
   const { currentArmiesTick, currentBlockTimestamp } = useBlockTimestamp();

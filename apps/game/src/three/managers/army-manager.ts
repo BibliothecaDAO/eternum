@@ -185,7 +185,6 @@ interface AddArmyParams {
   owningStructureId?: ID | null;
   category: TroopType;
   tier: TroopTier;
-  isDaydreamsAgent: boolean;
   troopCount?: number;
   currentStamina?: number;
   maxStamina?: number;
@@ -397,10 +396,7 @@ export class ArmyManager {
   private subscribeToGuildMembership(): void {
     this.unsubscribeGuildMembership = this.store?.subscribe((changes) => {
       for (const change of changes) {
-        if (change.model === "AgentOwner") {
-          const row = change.current ?? change.previous;
-          if (row?.game_id === configManager.getActiveGameId()) this.refreshExplorerOwner(row.explorer_id);
-        } else if (change.model === "PlayerCosmetics") {
+        if (change.model === "PlayerCosmetics") {
           const row = change.current ?? change.previous;
           if (row?.game_id === configManager.getActiveGameId()) this.refreshCosmeticsForOwner(row.player);
         }
@@ -523,7 +519,6 @@ export class ArmyManager {
       owningStructureId: ownerStructureId,
       category,
       tier,
-      isDaydreamsAgent: false,
       troopCount: divideByPrecision(Number(explorerTroops.troops.count)),
       currentStamina: Number(explorerTroops.troops.stamina.amount),
       maxStamina: StaminaManager.getMaxStamina(category, tier),
@@ -668,7 +663,6 @@ export class ArmyManager {
       },
       category: TroopType.Paladin,
       tier: TroopTier.T1,
-      isDaydreamsAgent: false,
       troopCount: 10,
       currentStamina: 10,
       maxStamina: 100,
@@ -836,7 +830,6 @@ export class ArmyManager {
         },
         category,
         tier,
-        isDaydreamsAgent: false,
         troopCount: Math.floor(Math.random() * 100) + 10,
         currentStamina: Math.floor(Math.random() * 100),
         maxStamina: 100,
@@ -920,7 +913,6 @@ export class ArmyManager {
     const nextIsMine = isAddressEqualToAccount(mergedOwner.address);
     const nextColor = this.getArmyColor({
       isMine: nextIsMine,
-      isDaydreamsAgent: army.isDaydreamsAgent,
       owner: { address: mergedOwner.address },
     });
 
@@ -1239,10 +1231,6 @@ export class ArmyManager {
     });
 
     this.armyModel.assignModelToEntity(numericId, modelType);
-
-    if (army.isDaydreamsAgent) {
-      this.armyModel.setIsAgent(true);
-    }
 
     const cosmeticPresentation = resolveArmyCosmeticPresentation({
       attributes:
@@ -1797,7 +1785,6 @@ export class ArmyManager {
     // Relation colours are shared with sails, structures and labels.
     const color = this.getArmyColor({
       isMine,
-      isDaydreamsAgent: params.isDaydreamsAgent,
       owner: { address: finalOwnerAddress || 0n },
     });
 
@@ -1826,7 +1813,6 @@ export class ArmyManager {
         color,
         category: params.category,
         tier: params.tier,
-        isDaydreamsAgent: params.isDaydreamsAgent,
         // Enhanced data
         troopCount: finalTroopCount,
         currentStamina: finalCurrentStamina,
@@ -2760,13 +2746,11 @@ export class ArmyManager {
   private getArmyColorProfile(army: {
     isMine: boolean;
     isAlly?: boolean;
-    isDaydreamsAgent: boolean;
     owner?: { address: bigint };
   }): PlayerColorProfile {
     return playerColorManager.getProfileForUnit(
       army.isMine,
       army.isAlly ?? arePlayersAllied(this.store, useAccountStore.getState().account?.address, army.owner?.address),
-      army.isDaydreamsAgent,
       army.owner?.address,
     );
   }
@@ -2774,12 +2758,7 @@ export class ArmyManager {
   /**
    * Get the primary color hex string for an army (backward compatible)
    */
-  private getArmyColor(army: {
-    isMine: boolean;
-    isAlly?: boolean;
-    isDaydreamsAgent: boolean;
-    owner?: { address: bigint };
-  }): string {
+  private getArmyColor(army: { isMine: boolean; isAlly?: boolean; owner?: { address: bigint } }): string {
     const profile = this.getArmyColorProfile(army);
     return `#${profile.primary.getHexString()}`;
   }
@@ -2791,7 +2770,6 @@ export class ArmyManager {
       const nextIsMine = isAddressEqualToAccount(army.owner.address);
       const nextColor = this.getArmyColor({
         isMine: nextIsMine,
-        isDaydreamsAgent: army.isDaydreamsAgent,
         owner: army.owner,
       });
 

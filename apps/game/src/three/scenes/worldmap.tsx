@@ -1400,7 +1400,7 @@ export default class WorldmapScene extends WarpTravel {
     const facts = this.structureManager.getStructureMarkerFacts(structure.entityId);
     if (!facts) return;
     const position = this.resolveMarkerWorldPosition(structure.hexCoords);
-    const color = playerColorManager.getProfileForUnit(facts.isMine, facts.isAlly, false, facts.ownerAddress).primary;
+    const color = playerColorManager.getProfileForUnit(facts.isMine, facts.isAlly, facts.ownerAddress).primary;
     this.strategicMarkers.setStructure(
       structure.entityId,
       resolveStructureMarkerKind(facts.structureType),
@@ -1414,7 +1414,7 @@ export default class WorldmapScene extends WarpTravel {
     const ownerAddress = this.getArmyOwnerAddress(army.entityId);
     const position = this.resolveMarkerWorldPosition(army.hexCoords);
     const isMine = ownerAddress !== undefined && isAddressEqualToAccount(ownerAddress);
-    const color = playerColorManager.getProfileForUnit(isMine, false, false, ownerAddress).primary;
+    const color = playerColorManager.getProfileForUnit(isMine, false, ownerAddress).primary;
     this.strategicMarkers.setArmy(
       army.entityId,
       army.troopTier as StrategicArmyMarkerTier,

@@ -15,8 +15,6 @@ type BlitzRegistrationConfig = Config["blitz"]["registration"];
 type PairOverrideKey =
   | "shardsMinesWinProbability"
   | "shardsMinesFailProbability"
-  | "agentFindProbability"
-  | "agentFindFailProbability"
   | "campFindProbability"
   | "campFindFailProbability"
   | "bitcoinMineWinProbability"
@@ -36,7 +34,6 @@ type BlitzRegistrationOverrideKey = "registration_count_max";
 export type FactoryMoreOptionFieldId =
   | "shards"
   | "camp"
-  | "agent"
   | "bitcoinMine"
   | "hyperstructureCenter"
   | "hyperstructureRadiusMultiplier"
@@ -164,7 +161,6 @@ const BLITZ_MAX_PLAYERS_MIN = 1;
 const EMPTY_MORE_OPTIONS_DRAFT: FactoryMoreOptionsDraft = {
   shards: "",
   camp: "",
-  agent: "",
   bitcoinMine: "",
   hyperstructureCenter: "",
   hyperstructureRadiusMultiplier: "",
@@ -225,17 +221,6 @@ const FIELD_DEFINITIONS: FactoryMoreOptionDefinition[] = [
     pairSum: PERCENTAGE_PAIR_SUM_U16,
     winKey: "campFindProbability",
     failKey: "campFindFailProbability",
-  },
-  {
-    id: "agent",
-    section: "discovery",
-    modes: ["eternum", "blitz"],
-    kind: "percentage-pair",
-    label: "Agent chance",
-    step: "0.001",
-    pairSum: PERCENTAGE_PAIR_SUM_U16,
-    winKey: "agentFindProbability",
-    failKey: "agentFindFailProbability",
   },
   {
     id: "bitcoinMine",
@@ -370,7 +355,6 @@ const getFieldDefinitionsForPlacement = (
 const buildEmptyErrors = (): FactoryMoreOptionsErrors => ({
   shards: null,
   camp: null,
-  agent: null,
   bitcoinMine: null,
   hyperstructureCenter: null,
   hyperstructureRadiusMultiplier: null,
@@ -398,8 +382,6 @@ const resolveFieldHelperText = (definition: FactoryMoreOptionDefinition, mode: F
       return mode === "blitz" ? "Percent chance to find an Essence Rift." : "Percent chance to find a Shard Mine.";
     case "camp":
       return "Percent chance to find a Camp.";
-    case "agent":
-      return "Percent chance to find an Agent.";
     case "bitcoinMine":
       return "Percent chance to find a Bitcoin Mine.";
     case "hyperstructureCenter":

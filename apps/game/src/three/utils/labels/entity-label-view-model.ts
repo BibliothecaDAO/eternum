@@ -4,7 +4,7 @@ import type { ID } from "@bibliothecadao/types";
 import type { ArmyData, StructureInfo } from "../../types";
 
 type EntityLabelKind = "army" | "chest" | "structure";
-export type EntityLabelRelation = "agent" | "ally" | "enemy" | "mine" | "neutral";
+export type EntityLabelRelation = "ally" | "enemy" | "mine" | "neutral";
 export type EntityLabelVariant = EntityLabelRelation | "structure";
 
 interface EntityLabelDetailRow {
@@ -27,9 +27,9 @@ export interface EntityLabelViewModel {
 }
 
 type ArmyLabelSource = Pick<ArmyData, "entityId" | "owner"> &
-  Partial<
-    Pick<ArmyData, "category" | "currentStamina" | "isDaydreamsAgent" | "isMine" | "maxStamina" | "tier" | "troopCount">
-  > & { isAlly?: boolean };
+  Partial<Pick<ArmyData, "category" | "currentStamina" | "isMine" | "maxStamina" | "tier" | "troopCount">> & {
+    isAlly?: boolean;
+  };
 
 type StructureLabelSource = Pick<
   StructureInfo,
@@ -52,7 +52,7 @@ export function buildArmyEntityLabelViewModel(army: ArmyLabelSource): EntityLabe
     compactText: title,
     detailRows: buildArmyDetailRows(army),
     entityId: army.entityId,
-    iconKey: army.isDaydreamsAgent ? "daydreams" : army.isMine ? "army" : "enemy_army",
+    iconKey: army.isMine ? "army" : "enemy_army",
     kind: "army",
     relation,
     title,
@@ -96,15 +96,7 @@ export function applyEntityLabelViewModelMetadata(element: HTMLElement, model: E
   element.dataset.labelVariant = model.variant;
 }
 
-export function resolveEntityLabelRelation(input: {
-  isAlly?: boolean;
-  isDaydreamsAgent?: boolean;
-  isMine?: boolean;
-}): EntityLabelRelation {
-  if (input.isDaydreamsAgent) {
-    return "agent";
-  }
-
+export function resolveEntityLabelRelation(input: { isAlly?: boolean; isMine?: boolean }): EntityLabelRelation {
   if (input.isMine) {
     return "mine";
   }

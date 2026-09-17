@@ -24,7 +24,6 @@ const army = {
   color: "#ffffff",
   category: TroopType.Knight,
   tier: TroopTier.T2,
-  isDaydreamsAgent: false,
   troopCount: 1500,
   currentStamina: 75,
   maxStamina: 100,

@@ -9,7 +9,6 @@ pub enum Discovery {
     Hyperstructure,
     BitcoinMine,
     Camp,
-    Agent,
 }
 
 pub fn surface(

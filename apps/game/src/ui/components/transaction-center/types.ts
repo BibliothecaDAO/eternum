@@ -172,8 +172,6 @@ export const getTxMessage = (type: TransactionType): string => {
     // Structures & Ownership
     case TransactionType.TRANSFER_STRUCTURE_OWNERSHIP:
       return "Transferred structure ownership";
-    case TransactionType.TRANSFER_AGENT_OWNERSHIP:
-      return "Transferred agent ownership";
     case TransactionType.STRUCTURE_BURN:
       return "Burned structure";
     case TransactionType.SET_ENTITY_NAME:
@@ -257,7 +255,6 @@ export const getTxMessage = (type: TransactionType): string => {
     case TransactionType.SET_SEASON_CONFIG:
     case TransactionType.SET_VRF_CONFIG:
     case TransactionType.SET_RESOURCE_BRIDGE_FEE_SPLIT_CONFIG:
-    case TransactionType.SET_AGENT_CONFIG:
     case TransactionType.SET_CAPACITY_CONFIG:
     case TransactionType.SET_DONKEY_SPEED_CONFIG:
     case TransactionType.SET_RESOURCE_WEIGHT_CONFIG:
@@ -435,7 +432,6 @@ export const getTxIcon = (type: TransactionType): string => {
 
     // Structures & Ownership
     case TransactionType.TRANSFER_STRUCTURE_OWNERSHIP:
-    case TransactionType.TRANSFER_AGENT_OWNERSHIP:
       return "🔄";
     case TransactionType.STRUCTURE_BURN:
     case TransactionType.TROOP_BURN:
@@ -509,7 +505,6 @@ export const getTxIcon = (type: TransactionType): string => {
     case TransactionType.SET_SEASON_CONFIG:
     case TransactionType.SET_VRF_CONFIG:
     case TransactionType.SET_RESOURCE_BRIDGE_FEE_SPLIT_CONFIG:
-    case TransactionType.SET_AGENT_CONFIG:
     case TransactionType.SET_CAPACITY_CONFIG:
     case TransactionType.SET_DONKEY_SPEED_CONFIG:
     case TransactionType.SET_RESOURCE_WEIGHT_CONFIG:

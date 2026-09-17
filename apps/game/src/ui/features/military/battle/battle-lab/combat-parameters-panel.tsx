@@ -45,8 +45,8 @@ export const CombatParametersPanel = ({ parameters, onParametersChange, show }: 
                 }
               }}
               min={0}
-              max={key === "damage_c0" || key === "damage_delta" ? 1_000_000 : 1000}
-              step={key === "damage_c0" || key === "damage_delta" ? 1000 : 0.01}
+              max={1000}
+              step={0.01}
               className="rounded border border-gold/20 bg-black/40 px-2 py-1 text-gold focus:border-gold/40 focus:outline-none"
             />
           </label>

@@ -348,51 +348,16 @@ pub mod MapDomain {
                         adjacent = true;
                     }
                 }
-                let discovery = crate::discovery::ethereal(
+                crate::discovery::ethereal(
                     rules.map_config, rules.bitcoin_mine_config.enabled, adjacent, seed, timestamp,
-                );
-                if discovery != crate::discovery::Discovery::None {
-                    return discovery;
-                }
-                let pool = crate::mines::IMineRulesDispatcherTrait::mine_pool(
-                    crate::mines::IMineRulesDispatcher { contract_address: self.lifecycle.require_active().resources },
-                    crate::mines::MinePoolKey { game_id: key.game_id, alt: true },
-                );
-                if !pool.is_empty()
-                    && crate::random::lottery(
-                        seed,
-                        2,
-                        rules.map_config.shards_mines_win_probability.into(),
-                        rules.map_config.shards_mines_fail_probability.into(),
-                        timestamp,
-                    ) {
-                    crate::discovery::Discovery::Mine
-                } else {
-                    crate::discovery::Discovery::None
-                }
+                )
             } else {
                 let center = Coord {
                     alt: false, x: 2147483646 - rules.map_center_offset, y: 2147483646 - rules.map_center_offset,
                 };
-                let discovery = crate::discovery::surface(
+                crate::discovery::surface(
                     rules.map_config, seed, timestamp, distance(coord, center), hyperstructures, rules.blitz_mode_on,
-                );
-                if discovery == crate::discovery::Discovery::None && rules.map_config.agent_discovery_prob != 0 {
-                    let troops = crate::agents::IAgentsDispatcher {
-                        contract_address: self.lifecycle.require_active().troops,
-                    };
-                    if crate::agents::IAgentsDispatcherTrait::can_discover_agent(troops, key.game_id)
-                        && crate::random::lottery(
-                            seed,
-                            3,
-                            rules.map_config.agent_discovery_prob.into(),
-                            rules.map_config.agent_discovery_fail_prob.into(),
-                            timestamp,
-                        ) {
-                        return crate::discovery::Discovery::Agent;
-                    }
-                }
-                discovery
+                )
             }
         }
         fn tile(self: @ContractState, key: TileKey) -> Option<TileOpt> {

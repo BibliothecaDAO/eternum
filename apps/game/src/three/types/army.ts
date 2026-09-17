@@ -78,10 +78,6 @@ export enum ModelType {
   ShipPaladin1 = "ship-paladin1",
   ShipPaladin2 = "ship-paladin2",
   ShipPaladin3 = "ship-paladin3",
-  AgentApix = "apix",
-  AgentElisa = "elisa",
-  AgentIstarai = "istarai",
-  AgentYP = "ypanther",
 }
 
 export interface AnimatedInstancedMesh extends InstancedMesh {

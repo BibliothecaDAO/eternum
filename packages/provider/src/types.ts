@@ -156,7 +156,6 @@ export enum TransactionType {
 
   // Structures & Ownership
   TRANSFER_STRUCTURE_OWNERSHIP = "transfer_structure_ownership",
-  TRANSFER_AGENT_OWNERSHIP = "transfer_agent_ownership",
   STRUCTURE_BURN = "structure_burn",
   SET_ENTITY_NAME = "set_entity_name",
   SET_ADDRESS_NAME = "set_address_name",
@@ -217,7 +216,6 @@ export enum TransactionType {
   SET_SEASON_CONFIG = "set_season_config",
   SET_VRF_CONFIG = "set_vrf_config",
   SET_RESOURCE_BRIDGE_FEE_SPLIT_CONFIG = "set_resource_bridge_fee_split_config",
-  SET_AGENT_CONFIG = "set_agent_config",
   SET_CAPACITY_CONFIG = "set_capacity_config",
   SET_DONKEY_SPEED_CONFIG = "set_donkey_speed_config",
   SET_RESOURCE_WEIGHT_CONFIG = "set_resource_weight_config",

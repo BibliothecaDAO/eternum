@@ -294,50 +294,6 @@ fn explorer_transfers_keep_capacity_loss_and_reject_wrong_layers_atomically() {
 }
 
 #[test]
-fn explorer_burn_uses_the_agent_owner_only_for_agent_explorers() {
-    let (deployment, home, _) = setup();
-    let coord = Coord { alt: false, x: 2000000, y: 2000000 };
-    let agent = explorer_fixture(deployment, 70, crate::troops::AGENT_HOME, coord, 100);
-    let regular = explorer_fixture(deployment, 71, home.entity_id, Coord { x: coord.x + 1, ..coord }, 100);
-    grant(deployment, agent, 1, 50);
-    grant(deployment, regular, 1, 50);
-    let burn = crate::resources::ResourceBurn { entity_id: agent.entity_id, resources: amount(1, 10) };
-    assert!(!execute(deployment, Command::BurnExplorerResources(burn), 40));
-    set_fixture(
-        deployment.peers.troops, selector!("agent_owners"), array![3, agent.entity_id.into()].span(), deployment.actor,
-    );
-    assert_eq!(
-        ITroopsDispatcher { contract_address: deployment.peers.troops }
-            .authorized_explorer(ExplorerKey { game_id: 3, explorer_id: agent.entity_id }, deployment.actor)
-            .owner,
-        crate::troops::AGENT_HOME,
-    );
-    assert!(execute(deployment, Command::BurnExplorerResources(burn), 40));
-    set_fixture(
-        deployment.peers.troops, selector!("agent_owners"), array![3, regular.entity_id.into()].span(), authority(),
-    );
-    assert!(
-        execute(
-            deployment,
-            Command::BurnExplorerResources(crate::resources::ResourceBurn { entity_id: regular.entity_id, ..burn }),
-            40,
-        ),
-    );
-    let resources = IResourcesDispatcher { contract_address: deployment.peers.resources };
-    for key in array![agent, regular] {
-        assert_eq!(
-            resources.resource_balance(ResourceSlot { game_id: 3, entity_id: key.entity_id, resource_type: 1 }), 40,
-        );
-        assert_eq!(
-            resources
-                .resource_production(ResourceSlot { game_id: 3, entity_id: key.entity_id, resource_type: 1 })
-                .last_updated_at,
-            0,
-        );
-    }
-}
-
-#[test]
 fn structure_transfer_harvests_but_rejects_all_nine_troop_resources() {
     let (deployment, home, _) = setup();
     let explorer = explorer_fixture(deployment, 70, home.entity_id, Coord { alt: false, x: 2000001, y: 2000000 }, 100);
@@ -816,29 +772,6 @@ fn troop_deposit_ownership(blitz_mode_on: bool, category: u8) {
             ),
         );
     }
-}
-
-#[test]
-fn an_agent_without_a_home_structure_cannot_deposit_troops() {
-    let (deployment, target, _) = setup();
-    let explorer = explorer_fixture(
-        deployment, 70, crate::troops::AGENT_HOME, Coord { alt: false, x: 2000001, y: 2000000 }, 1000,
-    );
-    set_fixture(deployment.peers.troops, selector!("agent_owners"), array![3, 70].span(), deployment.actor);
-    grant(deployment, explorer, 26, 100);
-    let before_source = resource_facts(deployment, explorer);
-    let before_target = resource_facts(deployment, target);
-    assert_terminal_rejection(
-        deployment,
-        Command::TransferExplorerResourcesToStructure(
-            crate::resources::ResourceTransfer {
-                from_entity_id: 70, to_entity_id: target.entity_id, resources: amount(26, 1),
-            },
-        ),
-        40,
-    );
-    assert_eq!(resource_facts(deployment, explorer), before_source);
-    assert_eq!(resource_facts(deployment, target), before_target);
 }
 
 fn village_fixture(deployment: Deployment, key: ResourceKey, owner: starknet::ContractAddress) {
