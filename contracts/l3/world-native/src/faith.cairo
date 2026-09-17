@@ -172,7 +172,7 @@ pub mod FaithState {
         +Drop<TContractState>,
     > of super::IFaith<ComponentState<TContractState>> {
         fn configure_faith(ref self: ComponentState<TContractState>, game_id: u32, rules: super::FaithRules) {
-            get_dep_component!(@self, Life).assert_authority();
+            get_dep_component!(@self, Life).assert_configurator();
             self.games().game(game_id);
             assert!(self.faith_rules.read(game_id).is_none(), "faith rules already configured");
             assert!(rules.owner_share_bps <= 10000, "invalid faith owner share");

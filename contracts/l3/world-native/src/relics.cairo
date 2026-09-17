@@ -198,7 +198,7 @@ pub mod RelicState {
         +Drop<TContractState>,
     > of super::IRelics<ComponentState<TContractState>> {
         fn configure_relics(ref self: ComponentState<TContractState>, game_id: u32, rules: Span<RelicRule>) {
-            get_dep_component!(@self, Life).assert_authority();
+            get_dep_component!(@self, Life).assert_configurator();
             self.games().game(game_id);
             assert!(!self.relic_configured.read(game_id), "relic rules already configured");
             assert!(rules.len() == 18, "all eighteen relic rules required");
@@ -296,7 +296,7 @@ pub mod RelicState {
         +Drop<TContractState>,
     > of crate::artificer::IArtificer<ComponentState<TContractState>> {
         fn configure_artificer(ref self: ComponentState<TContractState>, game_id: u32, research_cost: u128) {
-            get_dep_component!(@self, Life).assert_authority();
+            get_dep_component!(@self, Life).assert_configurator();
             self.games().game(game_id);
             assert!(self.artificer_costs.read(game_id).is_none(), "artificer already configured");
             self.artificer_costs.write(game_id, Some(research_cost));

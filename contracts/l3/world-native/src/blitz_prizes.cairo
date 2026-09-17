@@ -98,7 +98,7 @@ pub mod BlitzPrizeState {
         +Drop<TContractState>,
     > of super::IBlitzPrizes<ComponentState<TContractState>> {
         fn configure_series_chests(ref self: ComponentState<TContractState>, series_id: felt252, rules: SeriesRules) {
-            get_dep_component!(@self, Life).assert_authority();
+            get_dep_component!(@self, Life).assert_configurator();
             assert!(series_id != 0, "zero series id");
             assert!(self.series_rules.read(series_id).is_none(), "series already configured");
             crate::series_chests::validate_rules(rules);

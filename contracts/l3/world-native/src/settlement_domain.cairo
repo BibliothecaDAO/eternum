@@ -118,7 +118,7 @@ pub mod SettlementDomain {
     #[abi(embed_v0)]
     impl Villages of crate::village::IVillages<ContractState> {
         fn configure_villages(ref self: ContractState, game_id: u32, rules: VillageRules) {
-            assert!(get_caller_address() == self.lifecycle.domain_state().authority, "only domain authority");
+            self.lifecycle.assert_configurator();
             let _ = self.games().game(game_id);
             self.villages.configure(game_id, rules);
         }
@@ -177,7 +177,7 @@ pub mod SettlementDomain {
     #[abi(embed_v0)]
     impl SettlementConfiguration of crate::settlement::ISettlementConfiguration<ContractState> {
         fn configure_settlement(ref self: ContractState, game_id: u32, rules: SettlementRules, grants: RealmGrants) {
-            assert!(get_caller_address() == self.lifecycle.domain_state().authority, "only domain authority");
+            self.lifecycle.assert_configurator();
             let _ = self.games().game(game_id);
             self.settlements.configure(game_id, rules, grants);
         }

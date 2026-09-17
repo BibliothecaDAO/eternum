@@ -151,7 +151,7 @@ pub mod HyperstructureState {
         fn configure_hyperstructures(
             ref self: ComponentState<TContractState>, game_id: u32, rules: HyperstructureRules,
         ) {
-            get_dep_component!(@self, Life).assert_authority();
+            get_dep_component!(@self, Life).assert_configurator();
             self.games().game(game_id);
             assert!(self.hyper_rule_count.read(game_id) == 0, "hyperstructure rules already configured");
             assert!(!rules.resources.is_empty(), "empty construction requirements");

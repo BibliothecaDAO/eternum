@@ -31,7 +31,7 @@ fn close_settles_all_completed_shares_before_testing_the_victory_threshold() {
     assert!(execute(deployment, Command::CloseSeason, 100));
     let game = games(deployment).game(3);
     assert_eq!(game.end_at, 100);
-    assert_eq!(game.status, GameStatus::Ended);
+    assert_eq!(crate::game::status_at(game, 100), GameStatus::Ended);
     assert_eq!(games(deployment).player_points(3, deployment.actor), before + 50000);
     assert_eq!(hypers(deployment).hyperstructure_shares(hyper).start_at, 100);
     assert_terminal_rejection(deployment, Command::CloseSeason, 101);
@@ -63,7 +63,9 @@ fn outage_recovery_closes_at_recorded_time_with_the_same_points_as_immediate_exe
     configure(delayed, 1);
     assert!(execute_recorded_at(delayed, Command::CloseSeason, 100, 10000));
     assert_eq!(games(delayed).game(3).end_at, games(immediate).game(3).end_at);
-    assert_eq!(games(delayed).game(3).status, games(immediate).game(3).status);
+    assert_eq!(
+        crate::game::status_at(games(delayed).game(3), 100), crate::game::status_at(games(immediate).game(3), 100),
+    );
     assert_eq!(games(delayed).player_points(3, delayed.actor), games(immediate).player_points(3, immediate.actor));
     assert_eq!(
         hypers(delayed).hyperstructure_shares(second).start_at, hypers(immediate).hyperstructure_shares(first).start_at,

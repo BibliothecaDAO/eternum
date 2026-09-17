@@ -267,6 +267,26 @@
         },
         {
           "type": "function",
+          "name": "mark_game_settled",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
           "name": "checkpoint_prize_points",
           "inputs": [
             {
@@ -1179,6 +1199,18 @@
               "type": "core::array::Span::<world_native::troops::Coord>"
             }
           ],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "initialize_reservations",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [],
           "state_mutability": "external"
         },
         {
@@ -7468,6 +7500,35 @@
               "kind": "data"
             }
           ]
+        },
+        {
+          "name": "RowSet",
+          "prefix": [
+            "0x1d49ec0dbefa7d265631af343d40c174377daf255950534c56e7ea482e0b434",
+            "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "model",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "keys",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            },
+            {
+              "name": "values",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            }
+          ]
         }
       ],
       "entrypoints": [
@@ -7492,6 +7553,105 @@
             }
           ],
           "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "register_preset",
+          "inputs": [
+            {
+              "name": "preset_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "definition",
+              "type": "world_native::presets::PresetDefinition"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "preset_commitment",
+          "inputs": [
+            {
+              "name": "preset_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::felt252"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "register_series",
+          "inputs": [
+            {
+              "name": "series_id",
+              "type": "core::felt252"
+            },
+            {
+              "name": "owner",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "rules",
+              "type": "world_native::series_chests::SeriesRules"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "series",
+          "inputs": [
+            {
+              "name": "series_id",
+              "type": "core::felt252"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::option::Option::<world_native::registrar::Series>"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "next_game_id",
+          "inputs": [],
+          "outputs": [
+            {
+              "type": "core::integer::u32"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "create_game",
+          "inputs": [
+            {
+              "name": "params",
+              "type": "world_native::registrar::CreateGameParams"
+            },
+            {
+              "name": "definition",
+              "type": "world_native::presets::PresetDefinition"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::integer::u32"
+            }
+          ],
           "state_mutability": "external"
         },
         {
@@ -7712,6 +7872,88 @@
     }
   },
   "models": [
+    {
+      "name": "Preset",
+      "identity": "0x507265736574",
+      "owners": [
+        "registry"
+      ],
+      "scope": "deployment",
+      "keys": [
+        {
+          "name": "preset_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "commitment",
+          "type": "core::felt252",
+          "id": "0x636f6d6d69746d656e74",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": 1
+    },
+    {
+      "name": "Series",
+      "identity": "0x536572696573",
+      "owners": [
+        "registry"
+      ],
+      "scope": "deployment",
+      "keys": [
+        {
+          "name": "series_id",
+          "type": "core::felt252",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "owner",
+          "type": "core::starknet::contract_address::ContractAddress",
+          "id": "0x6f776e6572",
+          "feltLength": 1
+        },
+        {
+          "name": "created_games",
+          "type": "core::integer::u16",
+          "id": "0x637265617465645f67616d6573",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": 2
+    },
+    {
+      "name": "GameSequence",
+      "identity": "0x47616d6553657175656e6365",
+      "owners": [
+        "registry"
+      ],
+      "scope": "deployment",
+      "emitterKey": "address",
+      "keys": [
+        {
+          "name": "address",
+          "type": "core::starknet::contract_address::ContractAddress",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "next_game_id",
+          "type": "core::integer::u32",
+          "id": "0x6e6578745f67616d655f6964",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": 1
+    },
     {
       "name": "SpireLayout",
       "identity": "0x53706972654c61796f7574",
@@ -11271,9 +11513,9 @@
           "feltLength": 1
         },
         {
-          "name": "status",
-          "type": "world_native::game::GameStatus",
-          "id": "0x737461747573",
+          "name": "settled",
+          "type": "core::bool",
+          "id": "0x736574746c6564",
           "feltLength": 1
         },
         {
@@ -11307,12 +11549,6 @@
           "feltLength": 1
         },
         {
-          "name": "registration_grace_seconds",
-          "type": "core::integer::u32",
-          "id": "0x726567697374726174696f6e5f67726163655f7365636f6e6473",
-          "feltLength": 1
-        },
-        {
           "name": "final_trial_id",
           "type": "core::integer::u128",
           "id": "0x66696e616c5f747269616c5f6964",
@@ -11326,7 +11562,7 @@
         }
       ],
       "keyLength": 1,
-      "valueLength": 14
+      "valueLength": 13
     },
     {
       "name": "SliceRules",
@@ -12361,6 +12597,48 @@
         {
           "name": "Some",
           "type": "world_native::map::TileOpt"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
+    "core::option::Option::<world_native::presets::WithdrawalPreset>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::presets::WithdrawalPreset>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::presets::WithdrawalPreset"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
+    "core::option::Option::<world_native::registrar::Series>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::registrar::Series>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::registrar::Series"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
+    "core::option::Option::<world_native::rules::MapConfig>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::rules::MapConfig>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::rules::MapConfig"
         },
         {
           "name": "None",
@@ -13467,6 +13745,10 @@
         {
           "name": "MintDevelopmentResources",
           "type": "world_native::dev::MintResources"
+        },
+        {
+          "name": "MarkGameSettled",
+          "type": "()"
         }
       ]
     },
@@ -13897,8 +14179,8 @@
           "type": "core::starknet::contract_address::ContractAddress"
         },
         {
-          "name": "status",
-          "type": "world_native::game::GameStatus"
+          "name": "settled",
+          "type": "core::bool"
         },
         {
           "name": "dev_mode_on",
@@ -13921,42 +14203,12 @@
           "type": "core::integer::u32"
         },
         {
-          "name": "registration_grace_seconds",
-          "type": "core::integer::u32"
-        },
-        {
           "name": "final_trial_id",
           "type": "core::integer::u128"
         },
         {
           "name": "seed",
           "type": "core::felt252"
-        }
-      ]
-    },
-    "world_native::game::GameStatus": {
-      "type": "enum",
-      "name": "world_native::game::GameStatus",
-      "variants": [
-        {
-          "name": "Created",
-          "type": "()"
-        },
-        {
-          "name": "Registration",
-          "type": "()"
-        },
-        {
-          "name": "Live",
-          "type": "()"
-        },
-        {
-          "name": "Ended",
-          "type": "()"
-        },
-        {
-          "name": "Settled",
-          "type": "()"
         }
       ]
     },
@@ -15042,6 +15294,178 @@
         }
       ]
     },
+    "world_native::presets::EconomyPreset": {
+      "type": "struct",
+      "name": "world_native::presets::EconomyPreset",
+      "members": [
+        {
+          "name": "trade",
+          "type": "world_native::trade::TradeRules"
+        },
+        {
+          "name": "banks",
+          "type": "world_native::market::BankRules"
+        },
+        {
+          "name": "hyperstructures",
+          "type": "world_native::hyperstructures::HyperstructureRules"
+        },
+        {
+          "name": "relics",
+          "type": "core::array::Span::<world_native::relics::RelicRule>"
+        },
+        {
+          "name": "research_cost",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "withdrawals",
+          "type": "core::option::Option::<world_native::presets::WithdrawalPreset>"
+        }
+      ]
+    },
+    "world_native::presets::PresetDefinition": {
+      "type": "struct",
+      "name": "world_native::presets::PresetDefinition",
+      "members": [
+        {
+          "name": "rules",
+          "type": "world_native::rules::SliceRules"
+        },
+        {
+          "name": "resources",
+          "type": "world_native::presets::ResourcePreset"
+        },
+        {
+          "name": "structures",
+          "type": "world_native::presets::StructurePreset"
+        },
+        {
+          "name": "settlement",
+          "type": "world_native::presets::SettlementPreset"
+        },
+        {
+          "name": "economy",
+          "type": "world_native::presets::EconomyPreset"
+        },
+        {
+          "name": "agents",
+          "type": "world_native::agents::AgentRules"
+        },
+        {
+          "name": "exploration",
+          "type": "core::array::Span::<world_native::exploration_rewards::ExplorationReward>"
+        },
+        {
+          "name": "season_win_points",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "faith_reward_token",
+          "type": "core::starknet::contract_address::ContractAddress"
+        }
+      ]
+    },
+    "world_native::presets::ResourcePreset": {
+      "type": "struct",
+      "name": "world_native::presets::ResourcePreset",
+      "members": [
+        {
+          "name": "resources",
+          "type": "core::array::Span::<world_native::resources::ResourceRule>"
+        },
+        {
+          "name": "production",
+          "type": "core::array::Span::<world_native::production::RecipeConfig>"
+        },
+        {
+          "name": "mine_kinds",
+          "type": "core::array::Span::<world_native::mines::MineKindEntry>"
+        },
+        {
+          "name": "surface_mines",
+          "type": "core::array::Span::<world_native::mines::MineWeight>"
+        },
+        {
+          "name": "ethereal_mines",
+          "type": "core::array::Span::<world_native::mines::MineWeight>"
+        }
+      ]
+    },
+    "world_native::presets::SettlementPreset": {
+      "type": "struct",
+      "name": "world_native::presets::SettlementPreset",
+      "members": [
+        {
+          "name": "reward_profile",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "cosmetic_limit",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "cosmetic_collection",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "cosmetic_timelock",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "realms",
+          "type": "world_native::settlement::RealmGrants"
+        },
+        {
+          "name": "villages",
+          "type": "world_native::village::VillageRules"
+        },
+        {
+          "name": "spires",
+          "type": "core::option::Option::<world_native::spires::SpireLayout>"
+        }
+      ]
+    },
+    "world_native::presets::StructurePreset": {
+      "type": "struct",
+      "name": "world_native::presets::StructurePreset",
+      "members": [
+        {
+          "name": "buildings",
+          "type": "core::array::Span::<world_native::buildings::BuildingRuleConfig>"
+        },
+        {
+          "name": "camps",
+          "type": "core::array::Span::<world_native::resources::ResourceAmount>"
+        },
+        {
+          "name": "faith",
+          "type": "world_native::faith::FaithRules"
+        },
+        {
+          "name": "upgrade_limits",
+          "type": "world_native::upgrades::UpgradeLimits"
+        },
+        {
+          "name": "upgrades",
+          "type": "core::array::Span::<world_native::upgrades::UpgradeRecipe>"
+        }
+      ]
+    },
+    "world_native::presets::WithdrawalPreset": {
+      "type": "struct",
+      "name": "world_native::presets::WithdrawalPreset",
+      "members": [
+        {
+          "name": "rules",
+          "type": "world_native::withdrawals::WithdrawalRules"
+        },
+        {
+          "name": "tokens",
+          "type": "core::array::Span::<world_native::withdrawals::ResourceToken>"
+        }
+      ]
+    },
     "world_native::production::ProductionBonus": {
       "type": "struct",
       "name": "world_native::production::ProductionBonus",
@@ -15213,6 +15637,86 @@
         {
           "name": "root",
           "type": "core::integer::u256"
+        }
+      ]
+    },
+    "world_native::registrar::CreateGameParams": {
+      "type": "struct",
+      "name": "world_native::registrar::CreateGameParams",
+      "members": [
+        {
+          "name": "name",
+          "type": "core::felt252"
+        },
+        {
+          "name": "preset_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "series_id",
+          "type": "core::felt252"
+        },
+        {
+          "name": "game_number_in_series",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "start_settling_at",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "start_main_at",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "duration_seconds",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "end_grace_seconds",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "dev_mode_on",
+          "type": "core::bool"
+        },
+        {
+          "name": "mode",
+          "type": "world_native::settlement::SettlementMode"
+        },
+        {
+          "name": "registration_limit",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "registration_start",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "biome_climate",
+          "type": "world_native::rules::BiomeClimateConfig"
+        },
+        {
+          "name": "map_override",
+          "type": "core::option::Option::<world_native::rules::MapConfig>"
+        },
+        {
+          "name": "seed",
+          "type": "core::felt252"
+        }
+      ]
+    },
+    "world_native::registrar::Series": {
+      "type": "struct",
+      "name": "world_native::registrar::Series",
+      "members": [
+        {
+          "name": "owner",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "created_games",
+          "type": "core::integer::u16"
         }
       ]
     },
@@ -17051,5 +17555,5 @@
       ]
     }
   },
-  "identity": "b79bb82283415dc48699795eefe28798fdf6183b56f7d9170eab3ebe9bee62a4"
+  "identity": "4f28f9a7c85d2430f159348de0927fac7deb35901005ed7b4f0d50ea35d44b96"
 }

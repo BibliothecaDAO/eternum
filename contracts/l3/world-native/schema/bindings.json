@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "b79bb82283415dc48699795eefe28798fdf6183b56f7d9170eab3ebe9bee62a4",
+  "schemaIdentity": "4f28f9a7c85d2430f159348de0927fac7deb35901005ed7b4f0d50ea35d44b96",
   "commandAbi": [
     {
       "type": "impl",
@@ -73,6 +73,37 @@
         {
           "type": "function",
           "name": "close_season",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        }
+      ]
+    },
+    {
+      "type": "impl",
+      "name": "GameSettlement",
+      "interface_name": "world_native::registrar::IGameSettlement"
+    },
+    {
+      "type": "interface",
+      "name": "world_native::registrar::IGameSettlement",
+      "items": [
+        {
+          "type": "function",
+          "name": "mark_game_settled",
           "inputs": [
             {
               "name": "game_id",
@@ -1505,6 +1536,10 @@
         {
           "name": "MintDevelopmentResources",
           "type": "world_native::dev::MintResources"
+        },
+        {
+          "name": "MarkGameSettled",
+          "type": "()"
         }
       ]
     },
@@ -2408,32 +2443,6 @@
       "interface_name": "world_native::game::IGame"
     },
     {
-      "type": "enum",
-      "name": "world_native::game::GameStatus",
-      "variants": [
-        {
-          "name": "Created",
-          "type": "()"
-        },
-        {
-          "name": "Registration",
-          "type": "()"
-        },
-        {
-          "name": "Live",
-          "type": "()"
-        },
-        {
-          "name": "Ended",
-          "type": "()"
-        },
-        {
-          "name": "Settled",
-          "type": "()"
-        }
-      ]
-    },
-    {
       "type": "struct",
       "name": "world_native::game::GameRegistry",
       "members": [
@@ -2458,8 +2467,8 @@
           "type": "core::starknet::contract_address::ContractAddress"
         },
         {
-          "name": "status",
-          "type": "world_native::game::GameStatus"
+          "name": "settled",
+          "type": "core::bool"
         },
         {
           "name": "dev_mode_on",
@@ -2479,10 +2488,6 @@
         },
         {
           "name": "end_grace_seconds",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "registration_grace_seconds",
           "type": "core::integer::u32"
         },
         {
@@ -3687,6 +3692,31 @@
   ],
   "models": [
     {
+      "name": "Preset",
+      "scope": "deployment",
+      "schema": {
+        "preset_id": "Number",
+        "commitment": "BigInt"
+      }
+    },
+    {
+      "name": "Series",
+      "scope": "deployment",
+      "schema": {
+        "series_id": "BigInt",
+        "owner": "BigInt",
+        "created_games": "Number"
+      }
+    },
+    {
+      "name": "GameSequence",
+      "scope": "deployment",
+      "schema": {
+        "address": "BigInt",
+        "next_game_id": "Number"
+      }
+    },
+    {
       "name": "SpireLayout",
       "scope": "game",
       "schema": {
@@ -4711,13 +4741,12 @@
         "game_number_in_series": "Number",
         "preset_id": "Number",
         "creator": "BigInt",
-        "status": "String",
+        "settled": "Boolean",
         "dev_mode_on": "Boolean",
         "start_settling_at": "BigInt",
         "start_main_at": "BigInt",
         "end_at": "BigInt",
         "end_grace_seconds": "Number",
-        "registration_grace_seconds": "Number",
         "final_trial_id": "BigInt",
         "seed": "BigInt"
       }

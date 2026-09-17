@@ -51,6 +51,18 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
   };
   const domainKey = [{ name: "address", type: struct("lifecycle::Peers")[0].type }];
   return [
+    model("Preset", ["registry"], "deployment", method("registry", "preset_commitment").inputs, [
+      { name: "commitment", type: "core::felt252" },
+    ]),
+    model("Series", ["registry"], "deployment", method("registry", "series").inputs, struct("registrar::Series")),
+    model(
+      "GameSequence",
+      ["registry"],
+      "deployment",
+      domainKey,
+      [{ name: "next_game_id", type: "core::integer::u32" }],
+      "address",
+    ),
     model("SpireLayout", ["map"], "game", method("map", "spire_layout").inputs, struct("spires::SpireLayout")),
     model(
       "LedgerOperator",

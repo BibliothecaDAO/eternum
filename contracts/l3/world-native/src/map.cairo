@@ -221,7 +221,7 @@ pub mod MapDomain {
     #[abi(embed_v0)]
     impl Spires of crate::spires::ISpires<ContractState> {
         fn initialize_spires(ref self: ContractState, game_id: u32, layout: crate::spires::SpireLayout) {
-            self.lifecycle.assert_authority();
+            self.lifecycle.assert_configurator();
             let peers = self.lifecycle.require_active();
             let games = IGameDispatcher { contract_address: peers.season };
             assert!(!games.rules(game_id).blitz_mode_on, "spires require an Eternum game");
@@ -314,42 +314,13 @@ pub mod MapDomain {
         ) {
             let season = self.lifecycle.require_active().season;
             assert!(get_caller_address() == season, "only season domain");
-            let game = IGameDispatcher { contract_address: season }.game(game_id);
-            let game_rules = IGameDispatcher { contract_address: season }.rules(game_id);
-            assert!(game_rules.blitz_mode_on, "not a Blitz game");
-            assert!(game.end_at == 0 || context.timestamp < game.end_at, "game ended");
-            let rules = ISettlementViewsDispatcher { contract_address: self.lifecycle.require_active().settlement }
-                .settlement_rules(game_id);
-            let required = crate::settlement_grid::reservation_count(rules.registration_limit, rules.mode);
-            let center = self.map_center(game_id);
-            let mut placed = self.settlements.reserved_hyperstructures.read(game_id);
-            let last = core::cmp::min(required, placed + count.into());
-            while placed < last {
-                let coord = crate::settlement_grid::reservation_location(
-                    center, rules.mode, rules.reward_profile, placed,
-                );
-                let key = tile_key(game_id, coord);
-                let previous = self.map.tile(key).map(|tile| tile.data).unwrap_or(0);
-                assert!(previous % BIOME_SCALE == 0, "occupied reservation tile");
-                if previous / BIOME_SCALE % BYTE_RANGE == 0 {
-                    self.map.reveal(key, self.biome(key));
-                }
-                self.map.reserve_hyperstructure(key);
-                placed += 1;
-            }
-            if placed != self.settlements.reserved_hyperstructures.read(game_id) {
-                self.settlements.reserved_hyperstructures.write(game_id, placed);
-                self
-                    .emit(
-                        crate::events::RowSet {
-                            version: 1,
-                            model: 'HyperstructureReservations',
-                            keys: array![game_id.into()].span(),
-                            values: array![placed.into()].span(),
-                        },
-                    );
-            }
+            self.reserve_sites(game_id, count, context.timestamp);
         }
+        fn initialize_reservations(ref self: ContractState, game_id: u32) {
+            assert!(get_caller_address() == self.lifecycle.require_active().registry, "only registrar domain");
+            self.reserve_sites(game_id, 255, starknet::get_block_timestamp());
+        }
+
         fn release_hyperstructure(ref self: ContractState, game_id: u32, coord: Coord) {
             assert!(get_caller_address() == self.lifecycle.require_active().structures, "only structures domain");
             self.map.release_hyperstructure(tile_key(game_id, coord));
@@ -466,7 +437,7 @@ pub mod MapDomain {
         fn configure_extraction(
             ref self: ContractState, game_id: u32, rewards: Span<crate::exploration_rewards::ExplorationReward>,
         ) {
-            self.lifecycle.assert_authority();
+            self.lifecycle.assert_configurator();
             IGameDispatcher { contract_address: self.lifecycle.require_active().season }.game(game_id);
             assert!(self.exploration_reward_count.read(game_id) == 0, "immutable extraction rewards");
             assert!(!rewards.is_empty(), "empty exploration pool");
@@ -633,6 +604,45 @@ pub mod MapDomain {
     }
     #[generate_trait]
     impl Internal of InternalTrait {
+        fn reserve_sites(ref self: ContractState, game_id: u32, count: u8, timestamp: u64) {
+            let season = self.lifecycle.require_active().season;
+            let game = IGameDispatcher { contract_address: season }.game(game_id);
+            let game_rules = IGameDispatcher { contract_address: season }.rules(game_id);
+            assert!(game_rules.blitz_mode_on, "not a Blitz game");
+            assert!(game.end_at == 0 || timestamp < game.end_at, "game ended");
+            let rules = ISettlementViewsDispatcher { contract_address: self.lifecycle.require_active().settlement }
+                .settlement_rules(game_id);
+            let required = crate::settlement_grid::reservation_count(rules.registration_limit, rules.mode);
+            let center = self.map_center(game_id);
+            let mut placed = self.settlements.reserved_hyperstructures.read(game_id);
+            let last = core::cmp::min(required, placed + count.into());
+            while placed < last {
+                let coord = crate::settlement_grid::reservation_location(
+                    center, rules.mode, rules.reward_profile, placed,
+                );
+                let key = tile_key(game_id, coord);
+                let previous = self.map.tile(key).map(|tile| tile.data).unwrap_or(0);
+                assert!(previous % BIOME_SCALE == 0, "occupied reservation tile");
+                if previous / BIOME_SCALE % BYTE_RANGE == 0 {
+                    self.map.reveal(key, self.biome(key));
+                }
+                self.map.reserve_hyperstructure(key);
+                placed += 1;
+            }
+            if placed != self.settlements.reserved_hyperstructures.read(game_id) {
+                self.settlements.reserved_hyperstructures.write(game_id, placed);
+                self
+                    .emit(
+                        crate::events::RowSet {
+                            version: 1,
+                            model: 'HyperstructureReservations',
+                            keys: array![game_id.into()].span(),
+                            values: array![placed.into()].span(),
+                        },
+                    );
+            }
+        }
+
         fn create_spire(ref self: ContractState, game_id: u32, coord: Coord) -> u32 {
             for alt in array![false, true] {
                 let tile = self.map.tile(tile_key(game_id, Coord { alt, ..coord }));

@@ -10,7 +10,7 @@ use crate::rules::RESOURCE_PRECISION;
 use crate::structures::{IStructuresDispatcher, IStructuresDispatcherTrait, structure_coord};
 use crate::troops::{Coord, TroopTier, TroopType};
 
-fn kinds() -> Span<MineKindEntry> {
+pub fn kinds() -> Span<MineKindEntry> {
     array![
         MineKindEntry {
             kind: 1,

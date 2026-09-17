@@ -56,7 +56,7 @@ fn building_packing_preserves_structure_pause_and_full_width_population(
     );
 }
 
-fn recipes() -> Span<RecipeConfig> {
+pub fn recipes() -> Span<RecipeConfig> {
     let mut recipes = array![];
     for resource_type in 1_u8..59 {
         recipes

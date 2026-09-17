@@ -81,8 +81,7 @@ pub mod ResourcesDomain {
             self.resources.weight(key)
         }
         fn configure_resources(ref self: ContractState, game_id: u32, rules: Span<ResourceRule>) {
-            self.lifecycle.assert_authority();
-            self.lifecycle.require_active();
+            self.lifecycle.assert_configurator();
             let _ = self.game_dispatcher().game(game_id);
             assert!(!self.resources_configured.read(game_id), "resource rules already configured");
             assert!(rules.len() == 58, "incomplete resource rules");
@@ -318,8 +317,7 @@ pub mod ResourcesDomain {
             surface: Span<crate::mines::MineWeight>,
             ethereal: Span<crate::mines::MineWeight>,
         ) {
-            self.lifecycle.assert_authority();
-            self.lifecycle.require_active();
+            self.lifecycle.assert_configurator();
             let _ = self.game_dispatcher().game(game_id);
             self.mines.configure(game_id, kinds, surface, ethereal);
         }
@@ -376,8 +374,7 @@ pub mod ResourcesDomain {
     #[abi(embed_v0)]
     impl ProductionRules of crate::production::IProductionRules<ContractState> {
         fn configure_production(ref self: ContractState, game_id: u32, recipes: Span<RecipeConfig>) {
-            self.lifecycle.assert_authority();
-            self.lifecycle.require_active();
+            self.lifecycle.assert_configurator();
             let _ = self.game_dispatcher().game(game_id);
             self.production.configure(game_id, recipes);
         }

@@ -97,7 +97,7 @@ pub mod SeasonDomain {
     #[abi(embed_v0)]
     impl SeasonLifecycle of crate::game::ISeasonLifecycle<ContractState> {
         fn configure_season_win(ref self: ContractState, game_id: u32, points: u128) {
-            self.lifecycle.assert_authority();
+            self.lifecycle.assert_configurator();
             self.games.game(game_id);
             assert!(self.games.win_thresholds.read(game_id).is_none(), "season win threshold already configured");
             self.games.win_thresholds.write(game_id, Some(points));
@@ -130,9 +130,29 @@ pub mod SeasonDomain {
             assert!(threshold != 0, "season win threshold is zero");
             assert!(self.games.player_points.read((game_id, actor)) >= threshold, "not enough points to end season");
             game.end_at = context.timestamp;
-            game.status = crate::game::GameStatus::Ended;
             self.games.write_game(game_id, game);
             self.record_season_end(game_id, actor, context.timestamp);
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl GameSettlement of crate::registrar::IGameSettlement<ContractState> {
+        fn mark_game_settled(ref self: ContractState, game_id: u32, actor: ContractAddress, context: DomainContext) {
+            assert!(
+                get_caller_address() == self.lifecycle.require_active().season, "only authenticated command domain",
+            );
+            assert!(actor == self.lifecycle.domain_state().authority, "only domain authority");
+            crate::commands::assert_context_time(context.timestamp);
+            let mut game = self.games.game(game_id);
+            assert!(
+                crate::game::status_at(game, context.timestamp) == crate::game::GameStatus::Ended, "game has not ended",
+            );
+            assert!(
+                context.timestamp > game.end_at + game.end_grace_seconds.into(),
+                "game settlement grace period is active",
+            );
+            game.settled = true;
+            self.games.write_game(game_id, game);
         }
     }
 
@@ -194,7 +214,7 @@ pub mod SeasonDomain {
         fn configure_upgrades(
             ref self: ContractState, game_id: u32, limits: UpgradeLimits, recipes: Span<UpgradeRecipe>,
         ) {
-            assert!(get_caller_address() == self.lifecycle.domain_state().authority, "only domain authority");
+            self.lifecycle.assert_configurator();
             let _ = self.games.game(game_id);
             self.upgrades.configure(game_id, limits, recipes);
         }
@@ -329,9 +349,7 @@ pub mod SeasonDomain {
             self.games.rules(game_id)
         }
         fn create_game(ref self: ContractState, game_id: u32, game: GameRegistry, rules: SliceRules) {
-            let state = self.lifecycle.domain_state();
-            assert!(get_caller_address() == state.authority, "only domain authority");
-            self.lifecycle.require_active();
+            self.lifecycle.assert_configurator();
             self.games.create(game_id, game, rules);
         }
         fn allocate_entity(ref self: ContractState, game_id: u32) -> u32 {
@@ -531,6 +549,7 @@ pub mod SeasonDomain {
                 value.serialize(ref calldata);
                 (peers.registry, selector!("join_guild"))
             },
+            Command::MarkGameSettled => (peers.season, selector!("mark_game_settled")),
             Command::LeaveGuild => (peers.registry, selector!("leave_guild")),
             Command::SetGuildWhitelist(value) => {
                 value.serialize(ref calldata);

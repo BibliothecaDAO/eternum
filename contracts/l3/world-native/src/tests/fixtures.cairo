@@ -268,6 +268,12 @@ pub mod MapUpgradeFixture {
 
 #[starknet::interface]
 pub trait IRollbackFixture<T> {
+    fn attempt_game(
+        ref self: T,
+        registry: ContractAddress,
+        params: crate::registrar::CreateGameParams,
+        definition: crate::presets::PresetDefinition,
+    ) -> bool;
     fn attempt(
         ref self: T,
         season: ContractAddress,
@@ -288,6 +294,19 @@ pub mod RollbackFixture {
     struct Storage {}
     #[abi(embed_v0)]
     impl Rollback of super::IRollbackFixture<ContractState> {
+        #[feature("safe_dispatcher")]
+        fn attempt_game(
+            ref self: ContractState,
+            registry: ContractAddress,
+            params: crate::registrar::CreateGameParams,
+            definition: crate::presets::PresetDefinition,
+        ) -> bool {
+            crate::registrar::IRegistrarSafeDispatcherTrait::create_game(
+                crate::registrar::IRegistrarSafeDispatcher { contract_address: registry }, params, definition,
+            )
+                .is_ok()
+        }
+
         #[feature("safe_dispatcher")]
         fn attempt(
             ref self: ContractState,

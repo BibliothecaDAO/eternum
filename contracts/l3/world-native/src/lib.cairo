@@ -64,11 +64,13 @@ pub mod market;
 
 pub mod names;
 pub mod ownership;
+pub mod presets;
 
 pub mod prizes;
 
 pub mod production;
 pub mod random;
+pub mod registrar;
 
 pub mod registry;
 

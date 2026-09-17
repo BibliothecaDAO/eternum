@@ -13,7 +13,7 @@ use super::resource_commands::{
     assert_terminal_rejection, execute, execute_recorded_at, grant, set_fixture, setup_with_rules,
 };
 
-fn rules() -> HyperstructureRules {
+pub fn rules() -> HyperstructureRules {
     HyperstructureRules {
         initialize_shards: 5 * RESOURCE_PRECISION,
         resources: array![

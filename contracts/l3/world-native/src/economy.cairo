@@ -70,7 +70,7 @@ pub mod EconomyDomain {
     #[abi(embed_v0)]
     impl Trade of crate::trade::ITrade<ContractState> {
         fn configure_trade(ref self: ContractState, game_id: u32, rules: TradeRules) {
-            self.lifecycle.assert_authority();
+            self.lifecycle.assert_configurator();
             let _ = self.games().game(game_id);
             self.trades.configure(game_id, rules);
         }
@@ -149,7 +149,7 @@ pub mod EconomyDomain {
             rules: crate::withdrawals::WithdrawalRules,
             tokens: Span<crate::withdrawals::ResourceToken>,
         ) {
-            self.lifecycle.assert_authority();
+            self.lifecycle.assert_configurator();
             let _ = self.games().game(game_id);
             self.withdrawals.configure(game_id, rules, tokens);
         }
@@ -163,7 +163,7 @@ pub mod EconomyDomain {
     #[abi(embed_v0)]
     impl Bank of crate::market::IBank<ContractState> {
         fn configure_banks(ref self: ContractState, game_id: u32, rules: BankRules) {
-            self.lifecycle.assert_authority();
+            self.lifecycle.assert_configurator();
             let _ = self.games().game(game_id);
             self.markets.configure(game_id, rules);
         }

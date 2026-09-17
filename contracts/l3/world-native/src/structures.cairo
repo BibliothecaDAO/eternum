@@ -410,7 +410,7 @@ pub mod StructuresDomain {
     #[abi(embed_v0)]
     impl Camps of crate::camps::ICampRules<ContractState> {
         fn configure_camps(ref self: ContractState, game_id: u32, resources: Span<crate::resources::ResourceAmount>) {
-            self.assert_authority();
+            self.lifecycle.assert_configurator();
             let _ = self.game_dispatcher().game(game_id);
             assert!(self.camp_resource_count.read(game_id).is_none(), "camp resources already configured");
             for index in 0..resources.len() {
@@ -494,7 +494,7 @@ pub mod StructuresDomain {
         fn configure_buildings(
             ref self: ContractState, game_id: u32, rules: Span<crate::buildings::BuildingRuleConfig>,
         ) {
-            self.assert_authority();
+            self.lifecycle.assert_configurator();
             let _ = self.game_dispatcher().game(game_id);
             self.buildings.configure(game_id, rules);
         }

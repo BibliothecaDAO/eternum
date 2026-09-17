@@ -43,7 +43,7 @@ pub mod PrizesDomain {
     #[abi(embed_v0)]
     impl FaithPrizes of crate::faith_prizes::IFaithPrizes<ContractState> {
         fn configure_faith_reward_token(ref self: ContractState, game_id: u32, token: ContractAddress) {
-            self.lifecycle.assert_authority();
+            self.lifecycle.assert_configurator();
             self.games().game(game_id);
             assert!(self.reward_tokens.read(game_id).is_none(), "faith token already configured");
             self.reward_tokens.write(game_id, Some(token));

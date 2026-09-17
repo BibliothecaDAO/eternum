@@ -325,7 +325,7 @@ pub mod TroopsDomain {
     #[abi(embed_v0)]
     impl Agents of crate::agents::IAgents<ContractState> {
         fn configure_agents(ref self: ContractState, game_id: u32, rules: crate::agents::AgentRules) {
-            assert!(get_caller_address() == self.lifecycle.domain_state().authority, "only domain authority");
+            self.lifecycle.assert_configurator();
             let _ = self.game_dispatcher().game(game_id);
             assert!(self.agent_rules.read(game_id).is_none(), "agent rules already configured");
             assert!(rules.min_spawn_lords <= rules.max_spawn_lords, "invalid agent reward bounds");

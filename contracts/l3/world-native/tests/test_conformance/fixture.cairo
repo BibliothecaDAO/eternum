@@ -24,7 +24,7 @@ use world_native::commands::{
     Command, CreateExplorer, Explore, ITroopCommandsDispatcher, ITroopCommandsDispatcherTrait,
     ITroopCommandsSafeDispatcher, ITroopCommandsSafeDispatcherTrait, command_commitment,
 };
-use world_native::game::{GameRegistry, GameStatus, IGameDispatcher, IGameDispatcherTrait};
+use world_native::game::{GameRegistry, IGameDispatcher, IGameDispatcherTrait};
 use world_native::lifecycle::{IDomainDispatcher, IDomainDispatcherTrait, Peers};
 use world_native::map::IMapDispatcherTrait;
 use world_native::season::{ISeasonDispatcher, ISeasonDispatcherTrait};
@@ -185,13 +185,12 @@ fn provision_game(peers: Peers, actor: ContractAddress, administrator: ContractA
                 game_number_in_series: 0,
                 preset_id: 1,
                 creator: administrator,
-                status: GameStatus::Live,
+                settled: false,
                 dev_mode_on: true,
                 start_settling_at: 0,
                 start_main_at: 0,
                 end_at: 999999,
                 end_grace_seconds: 0,
-                registration_grace_seconds: 0,
                 final_trial_id: 0,
                 seed: 1,
             },

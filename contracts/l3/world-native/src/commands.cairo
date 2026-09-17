@@ -111,6 +111,7 @@ pub enum Command {
     SetGuildWhitelist: crate::guilds::SetWhitelist,
     RemoveGuildMember: ContractAddress,
     MintDevelopmentResources: crate::dev::MintResources,
+    MarkGameSettled,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]

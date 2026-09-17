@@ -11,7 +11,7 @@ use crate::settlement::{
 };
 use super::{Deployment, authority, context, execute, intent, recorded, setup, submitter};
 
-fn grants() -> crate::settlement::RealmGrants {
+pub fn grants() -> crate::settlement::RealmGrants {
     let data = read_txt(@FileTrait::new("tests/fixtures/settlement.txt"));
     let mut fields = data.span();
     let grants = Serde::deserialize(ref fields).unwrap();

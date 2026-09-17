@@ -16,14 +16,12 @@ pub struct GameRegistry {
     pub game_number_in_series: u16,
     pub preset_id: u32,
     pub creator: ContractAddress,
-    pub status: GameStatus,
+    pub settled: bool,
     pub dev_mode_on: bool,
     pub start_settling_at: u64,
     pub start_main_at: u64,
     pub end_at: u64,
     pub end_grace_seconds: u32,
-    // Reserved for the deployed model layout; point registration no longer uses a grace period.
-    pub registration_grace_seconds: u32,
     pub final_trial_id: u128,
     pub seed: felt252,
 }
@@ -49,6 +47,18 @@ pub trait ISeasonLifecycle<T> {
     fn configure_season_win(ref self: T, game_id: u32, points: u128);
     fn season_win_threshold(self: @T, game_id: u32) -> u128;
     fn close_season(ref self: T, game_id: u32, actor: ContractAddress, context: crate::commands::ExecutionContext);
+}
+
+pub fn status_at(game: GameRegistry, timestamp: u64) -> GameStatus {
+    if game.settled {
+        GameStatus::Settled
+    } else if game.end_at != 0 && timestamp >= game.end_at {
+        GameStatus::Ended
+    } else if game.dev_mode_on || timestamp >= game.start_main_at {
+        GameStatus::Live
+    } else {
+        GameStatus::Registration
+    }
 }
 
 pub fn assert_playing(game: GameRegistry, now: u64) {

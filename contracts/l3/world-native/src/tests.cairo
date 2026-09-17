@@ -7,6 +7,7 @@ mod mines;
 mod production;
 mod realms;
 mod recorded;
+mod registrar;
 mod relics;
 mod resource_commands;
 mod resources;

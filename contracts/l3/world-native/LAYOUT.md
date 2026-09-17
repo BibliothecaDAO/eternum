@@ -444,3 +444,9 @@ requires the fresh native rehearsal deployment.
 
 MapDomain stores immutable SpireLayout by game. Spire locations are the two layers’ TileOpt occupants; no second
 position index or mutable spire count is stored. Initialization creates the complete lattice atomically.
+
+RegistrarState stores immutable preset commitments, series owners and creation counts, and the next game identity.
+Registration calldata retains the typed preset definition; game creation verifies the same canonical definition before
+applying domain configuration atomically. Series chest economics remain in PrizesDomain. GameRegistry stores only the
+final settlement flag; phases derive from its clock, and the unused registration grace field is removed. This layout
+requires the fresh native rehearsal deployment.
