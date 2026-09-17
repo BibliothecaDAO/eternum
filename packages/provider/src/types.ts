@@ -60,6 +60,7 @@ interface TransactionStreamStatus {
 export type TransactionStreamWaiter = (transactionHash: string) => Promise<TransactionStreamStatus>;
 
 export enum TransactionType {
+  PROVISION_REALM = "provision_realm",
   BITCOIN_MINE_CONTRIBUTE_LABOR = "bitcoin_mine_contribute_labor",
   BITCOIN_MINE_CLAIM_PHASE_REWARD = "bitcoin_mine_claim_phase_reward",
   // Exploration & Movement

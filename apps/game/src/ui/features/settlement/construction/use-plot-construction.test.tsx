@@ -11,9 +11,9 @@ const mocks = vi.hoisted(() => ({
   owner: 1n,
 }));
 vi.mock("@bibliothecadao/react", () => ({
-  useDojo: () => ({ setup: { components: {} }, account: { account: { address: "0x1" } } }),
+  useNativeRevision: () => 0,
+  useGame: () => ({ setup: { store: {} }, account: { account: { address: "0x1" } } }),
 }));
-vi.mock("@dojoengine/react", () => ({ useComponentValue: () => undefined }));
 vi.mock("@bibliothecadao/eternum", () => ({
   getRealmInfo: () => ({ owner: mocks.owner, resources: [] }),
   getBuildingCosts: () => [{ resource: 1, amount: 10 }],
@@ -23,10 +23,6 @@ vi.mock("@/hooks/store/use-ui-store", () => ({
   useUIStore: (select: any) => select({ useSimpleCost: true, setUseSimpleCost: vi.fn() }),
 }));
 vi.mock("@/hooks/store/use-popover-store", () => ({ usePopoverStore: { getState: () => ({ close: mocks.close }) } }));
-vi.mock("@bibliothecadao/eternum/game-client", () => ({
-  gameEntityKey: () => "entity",
-  buildingEntityKey: () => "building",
-}));
 vi.mock("@/utils/can-issue-orders", () => ({ canIssueOrders: () => mocks.allowed }));
 vi.mock("@/sync/active-game-client", () => ({
   requireActiveGameClient: () => ({ actions: { placeBuilding: mocks.place } }),

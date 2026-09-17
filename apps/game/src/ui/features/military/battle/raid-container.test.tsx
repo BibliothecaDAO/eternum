@@ -25,9 +25,6 @@ const mocks = vi.hoisted(() => ({
     amount: BigInt(currentArmiesTick * 10),
     updated_tick: BigInt(currentArmiesTick),
   })),
-  getComponentValue: vi.fn(() => ({
-    balances: {},
-  })),
   raidExplorerVsGuard: vi.fn(async () => undefined),
   updateSelectedEntityId: vi.fn(),
 }));
@@ -82,7 +79,9 @@ vi.mock("./raid-result", () => ({
 }));
 
 vi.mock("@bibliothecadao/react", () => ({
-  useDojo: () => ({
+  useNativeRevision: () => 0,
+  useNativeRow: () => ({ weight: 0n }),
+  useGame: () => ({
     account: {
       account: {
         address: "0x123",
@@ -92,16 +91,9 @@ vi.mock("@bibliothecadao/react", () => ({
       systemCalls: {
         raid_explorer_vs_guard: mocks.raidExplorerVsGuard,
       },
-      components: {
-        Resource: Symbol("Resource"),
-      },
+      store: {},
     },
   }),
-}));
-
-vi.mock("@dojoengine/recs", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@dojoengine/recs")>()),
-  getComponentValue: mocks.getComponentValue,
 }));
 
 vi.mock("@bibliothecadao/eternum", () => ({
@@ -124,6 +116,7 @@ vi.mock("@bibliothecadao/eternum", () => ({
     }
   },
   configManager: {
+    getActiveGameId: () => 1,
     getBiome: () => "forest",
     getCombatConfig: () => ({
       stamina_attack_req: 50,

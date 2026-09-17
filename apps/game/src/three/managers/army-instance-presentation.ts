@@ -28,6 +28,7 @@ export function resolveArmyCosmeticPresentation(input: {
     "owner" | "category" | "tier" | "cosmeticId" | "cosmeticAssetPaths" | "usesFallbackCosmeticSkin" | "attachments"
   >;
   modelType: ModelType;
+  attributes: readonly bigint[];
   reResolveCosmetics?: boolean;
 }): {
   cosmeticId?: string;
@@ -51,6 +52,7 @@ export function resolveArmyCosmeticPresentation(input: {
 
   if (input.reResolveCosmetics) {
     const cosmetic = resolveArmyCosmetic({
+      attributes: input.attributes,
       owner: input.army.owner.address,
       troopType: input.army.category,
       tier: input.army.tier,

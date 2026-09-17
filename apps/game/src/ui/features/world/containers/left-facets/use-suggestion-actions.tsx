@@ -8,16 +8,14 @@ import { buildRealmBuilding } from "@/ui/features/settlement/construction/realm-
 import { ProductionModal } from "@/ui/features/settlement";
 import { useRealmActions } from "@/ui/modules/entity-details/hooks/use-realm-actions";
 import { getRealmInfo, Position } from "@bibliothecadao/eternum";
-import { useDojo, useQuery } from "@bibliothecadao/react";
+import { useGame, useQuery } from "@bibliothecadao/react";
 import { type BuildingType, type ID, type ResourcesIds } from "@bibliothecadao/types";
-import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { useCallback, useRef, useState } from "react";
 import type { EmpireSuggestion } from "./use-empire-suggestions";
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 
 /** Explicit suggestion actions focus their realm and use the existing order flows. */
 export const useSuggestionActions = () => {
-  const { setup } = useDojo();
+  const { setup } = useGame();
   const { isMapView } = useQuery();
   const goToStructure = useGoToStructure(setup);
   const mode = useGameModeConfig();
@@ -63,7 +61,7 @@ export const useSuggestionActions = () => {
       const entityId = Number(suggestion.realmId);
       if (!Number.isFinite(entityId)) return;
 
-      const realm = getRealmInfo(gameEntityKey([BigInt(entityId)]), setup.components);
+      const realm = getRealmInfo(entityId, setup.store);
       await buildRealmBuilding({
         entityId,
         realmPosition: realm?.position,
@@ -74,7 +72,7 @@ export const useSuggestionActions = () => {
         onBuildSuccess: setSelectedBuildingHex,
       });
     },
-    [mode, setLeftNavigationView, setSelectedBuildingHex, setup.components, useSimpleCost],
+    [mode, setLeftNavigationView, setSelectedBuildingHex, setup.store, useSimpleCost],
   );
 
   const runSuggestionClick = useCallback(

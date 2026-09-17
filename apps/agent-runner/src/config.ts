@@ -22,6 +22,7 @@ export type RunnerSigner =
 export interface RunnerConfig {
   chain: RunnerChain;
   heraldUrl: string;
+  admissionUrl: string;
   rpcUrl: string;
   game: RunnerGameSelector;
   manifestPath: string;
@@ -50,13 +51,13 @@ type Env = Record<string, string | undefined>;
 export class RunnerConfigError extends Error {}
 
 const REPOSITORY_ROOT = fileURLToPath(new URL("../../..", import.meta.url));
-const DEFAULT_MANIFEST_PATH = "contracts/l3/game/manifest_madara.json";
 const DEFAULT_DATA_ROOT = "./.agent-data";
 const DEFAULT_QUIET_WINDOW_MS = 5_000;
 
 const FLAGS = {
   chain: { type: "string" },
   "herald-url": { type: "string" },
+  "admission-url": { type: "string" },
   "rpc-url": { type: "string" },
   "game-id": { type: "string" },
   "game-name": { type: "string" },
@@ -84,11 +85,15 @@ export const parseArgs = (argv: readonly string[]): RunnerArgs =>
 export const resolveConfig = (args: RunnerArgs, env: Env): RunnerConfig => ({
   chain: resolveChain(args),
   heraldUrl: requireValue(args, env, { flag: "herald-url", envVars: ["HERALD_URL", "VITE_PUBLIC_HERALD_URL"] }),
+  admissionUrl: requireValue(args, env, {
+    flag: "admission-url",
+    envVars: ["ADMISSION_URL", "VITE_PUBLIC_ADMISSION_URL"],
+  }),
   rpcUrl: requireValue(args, env, { flag: "rpc-url", envVars: ["RPC_URL", "VITE_PUBLIC_NODE_URL"] }),
   game: resolveGameSelector(args),
   manifestPath: path.resolve(
     REPOSITORY_ROOT,
-    stringArg(args, "manifest") ?? env.GAME_MANIFEST_PATH ?? DEFAULT_MANIFEST_PATH,
+    requireValue(args, env, { flag: "manifest", envVars: ["NATIVE_WORLD_MANIFEST"] }),
   ),
   playerAccountClassHash: requireValue(args, env, {
     flag: "player-account-class-hash",

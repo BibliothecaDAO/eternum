@@ -1,29 +1,19 @@
-import { ClientComponents, ID, Troops, TroopTier, TroopType } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
-import { configManager, gameEntityKey } from "./config-manager";
+import { ID, Troops, TroopTier, TroopType } from "@bibliothecadao/types";
+import type { NativeFactStore } from "../client/native-fact-store";
+import { configManager } from "./config-manager";
 
 export class StaminaManager {
   constructor(
-    private components: ClientComponents,
+    private store: NativeFactStore,
     private armyEntityId: ID,
   ) {}
 
   public getStamina(currentArmiesTick: number) {
-    let armyOnchainStamina = getComponentValue(
-      this.components.ExplorerTroops,
-      gameEntityKey([BigInt(this.armyEntityId)]),
-    )?.troops.stamina;
-
-    if (!armyOnchainStamina) {
-      return { ...DEFAULT_STAMINA, entity_id: this.armyEntityId };
-    }
-
-    const troops = getComponentValue(
-      this.components.ExplorerTroops,
-      gameEntityKey([BigInt(this.armyEntityId)]),
-    )?.troops;
-
-    if (!troops) return { ...DEFAULT_STAMINA, entity_id: this.armyEntityId };
+    const troops = this.store.get("ExplorerTroops", {
+      game_id: configManager.getActiveGameId(),
+      explorer_id: this.armyEntityId,
+    })?.troops;
+    if (!troops) return undefined;
 
     return StaminaManager.getStamina(troops, currentArmiesTick);
   }
@@ -85,8 +75,3 @@ export class StaminaManager {
     };
   }
 }
-
-const DEFAULT_STAMINA = {
-  amount: 0n,
-  last_refill_tick: 0n,
-};

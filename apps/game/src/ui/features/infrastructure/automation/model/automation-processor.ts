@@ -1,3 +1,4 @@
+import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import {
   AUTOMATION_INPUT_BUDGET_PERCENT,
   DONKEY_DEFAULT_RESOURCE_PERCENT,
@@ -11,7 +12,7 @@ import {
 import { calculatePresetAllocations } from "@/utils/automation-presets";
 import { verboseLog } from "@/utils/dev-mode";
 import { configManager, divideByPrecision, ResourceManager } from "@bibliothecadao/eternum";
-import { ClientComponents, ResourcesIds } from "@bibliothecadao/types";
+import { ResourcesIds } from "@bibliothecadao/types";
 
 export const PROCESS_INTERVAL_MS = 60 * 1000;
 
@@ -280,55 +281,36 @@ export const buildAutomationPlanSkipMessage = (plan: RealmProductionPlan): strin
 };
 
 interface BuildRealmResourceSnapshotArgs {
-  components: ClientComponents | null | undefined;
+  store: NativeFactStore | null | undefined;
   realmId: number;
   currentTick?: number;
 }
 
 export const buildRealmResourceSnapshot = ({
-  components,
+  store,
   realmId,
   currentTick,
 }: BuildRealmResourceSnapshotArgs): RealmResourceSnapshot => {
   const snapshot: RealmResourceSnapshot = new Map();
 
-  if (!components) return snapshot;
+  if (!store) return snapshot;
   if (!Number.isFinite(realmId) || realmId <= 0) return snapshot;
   if (typeof currentTick !== "number" || !Number.isFinite(currentTick)) return snapshot;
 
-  const manager = new ResourceManager(components, realmId);
-  const resourceComponent = manager.getResource();
-  if (!resourceComponent) return snapshot;
+  const manager = new ResourceManager(store, realmId);
+  if (!manager.hasResources()) return snapshot;
 
   for (const resourceId of ALL_RESOURCE_IDS) {
-    try {
-      const balanceAndProduction = ResourceManager.balanceAndProduction(resourceComponent, resourceId);
-      const { production } = balanceAndProduction;
-      const { balance: projectedBalance } = ResourceManager.balanceWithProduction(
-        resourceComponent,
-        currentTick,
-        resourceId,
-      );
-      const balanceHuman = divideByPrecision(Number(projectedBalance));
-      const hasActiveProduction = Boolean(production && production.building_count > 0);
-      const productionData = ResourceManager.calculateResourceProductionData(
-        resourceId,
-        balanceAndProduction,
-        currentTick,
-      );
-      const productionPerSecond = Number.isFinite(productionData.productionPerSecond)
-        ? productionData.productionPerSecond
-        : 0;
-
-      snapshot.set(resourceId, {
-        resourceId,
-        balanceHuman,
-        hasActiveProduction,
-        productionPerSecond,
-      });
-    } catch {
-      // ignore per-resource errors to avoid failing the whole snapshot
-    }
+    const current = manager.current(resourceId);
+    if (!current) continue;
+    const { balance } = manager.balanceWithProduction(currentTick, resourceId);
+    const production = ResourceManager.calculateResourceProductionData(resourceId, current, currentTick);
+    snapshot.set(resourceId, {
+      resourceId,
+      balanceHuman: divideByPrecision(balance),
+      hasActiveProduction: (current?.production?.building_count ?? 0) > 0,
+      productionPerSecond: production.productionPerSecond,
+    });
   }
 
   return snapshot;

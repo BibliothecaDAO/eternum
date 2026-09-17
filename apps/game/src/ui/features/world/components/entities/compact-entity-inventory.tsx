@@ -10,7 +10,6 @@ import type { RelicHolderPreview } from "@/ui/features/relics/components/player-
 import { RelicActivationSelector } from "@/ui/features/relics/components/relic-activation-selector";
 import { divideByPrecision, ResourceManager } from "@bibliothecadao/eternum";
 import {
-  ClientComponents,
   EntityType,
   getRelicInfo,
   ID,
@@ -19,11 +18,10 @@ import {
   resources as resourceDefs,
   ResourcesIds,
 } from "@bibliothecadao/types";
-import { ComponentValue } from "@dojoengine/recs";
 import Sparkles from "lucide-react/dist/esm/icons/sparkles";
 
 interface CompactEntityInventoryProps {
-  resources?: ComponentValue<ClientComponents["Resource"]["schema"]> | null;
+  resources?: ResourceManager | null;
   activeRelicIds?: number[];
   recipientType: RelicRecipientType;
   entityId?: ID;
@@ -81,7 +79,7 @@ export const formatInventoryAmount = (value: number, options?: { compact?: boole
 };
 
 export const buildDisplayItems = (
-  resourceComponent?: ComponentValue<ClientComponents["Resource"]["schema"]> | null,
+  resourceComponent?: ResourceManager | null,
   currentDefaultTick?: number,
   activeRelicIds: number[] = [],
   recipientType?: RelicRecipientType,
@@ -90,9 +88,7 @@ export const buildDisplayItems = (
   if (!resourceComponent) return [] as DisplayItem[];
 
   const projectedTick = currentDefaultTick ?? 0;
-  const balances = ResourceManager.getResourceBalancesWithProduction(resourceComponent, projectedTick).filter(
-    (resource) => resource.amount > 0,
-  );
+  const balances = resourceComponent.balances(projectedTick).filter((resource) => resource.amount > 0);
 
   const activeRelicSet = new Set(activeRelicIds);
   const tiers = resourceTiers ?? {};

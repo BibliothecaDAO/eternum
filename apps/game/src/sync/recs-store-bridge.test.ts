@@ -1,34 +1,63 @@
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
-
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
-import { createRecsGameSyncStore } from "@bibliothecadao/eternum/game-client";
-import { defineContractComponents } from "@bibliothecadao/types";
-import { createWorld } from "@dojoengine/recs";
+import { configManager } from "@bibliothecadao/eternum";
+import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import preset from "../../../../contracts/l3/world-native/fixtures/preset-1.json";
+import { hash } from "starknet";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-
 import { installRecsStoreBridge } from "./recs-store-bridge";
 
-interface ParityEntity {
-  hashed_keys: string;
-  models: Record<string, Record<string, unknown>>;
-}
-
-// A real herald Structure row (from the parity fixture) written through the real store: RECS only reads back
-// complete rows, so a hand-made partial would never reach the bridge.
-const structureRow = (
-  JSON.parse(
-    readFileSync(resolve(process.cwd(), "../../packages/core/src/client/recs-game-sync-store.parity.json"), "utf8"),
-  ) as {
-    entities: ParityEntity[];
-  }
-).entities.find((entity) => "Structure" in entity.models)!;
-
+const structure = (entityId: number, gameId = 1) => ({
+  game_id: gameId,
+  entity_id: entityId,
+  owner: "0x123",
+  base: {
+    category: 1,
+    level: 0,
+    created_at: 0,
+    coord_x: 100,
+    coord_y: 100,
+    alt: false,
+    troop_explorer_count: 0,
+    troop_max_guard_count: 1,
+    troop_max_explorer_count: 1,
+    starting_troops_granted: false,
+  },
+  metadata: { realm_id: 1, order: 0, has_wonder: false, village_realm: 0, mine_kind: 0 },
+  resources_packed: "0",
+  troop_explorers: [],
+});
 const createHarness = () => {
-  const world = createWorld();
-  const components = defineContractComponents(world, "s2");
-  const store = createRecsGameSyncStore({ network: { contractComponents: components, world } } as never, ["Structure"]);
+  const store = new NativeFactStore();
+  const game = {
+    game_id: 1,
+    name: "0",
+    series_id: "0",
+    game_number_in_series: 0,
+    preset_id: 1,
+    creator: "0x123",
+    settled: false,
+    dev_mode_on: true,
+    start_settling_at: "1",
+    start_main_at: "2",
+    end_at: "1000",
+    end_grace_seconds: 0,
+    final_trial_id: "0",
+    seed: "1",
+  };
+  store.applyEntityOperations([
+    {
+      type: "upsert",
+      entities: [
+        {
+          hashed_keys: hash.computePoseidonHashOnElements([1]),
+          models: { SliceRules: { ...preset.rules, game_id: 1 }, GameRegistry: game },
+        },
+      ],
+    },
+  ]);
+  configManager.setActiveGame(1, 1);
+  configManager.setStore(store);
   let sliceApplied: (() => void) | null = null;
   const runtime = {
     subscribeSliceApplied: (listener: () => void) => {
@@ -38,68 +67,90 @@ const createHarness = () => {
       };
     },
   };
-  const writeStructures = (entityIds: number[]) =>
+  const writeStructures = (ids: number[], gameId = 1) =>
     store.applyEntityOperations([
       {
         type: "upsert",
-        entities: entityIds.map((entityId) => ({
-          hashed_keys: `0x${entityId.toString(16)}`,
-          models: { Structure: { ...structureRow.models.Structure, entity_id: `0x${entityId.toString(16)}` } },
+        entities: ids.map((id) => ({
+          hashed_keys: hash.computePoseidonHashOnElements([gameId, id]),
+          models: { Structure: structure(id, gameId) },
         })),
       },
     ]);
   return {
+    store,
+    game,
     applySlice: () => sliceApplied?.(),
     hasSliceListener: () => sliceApplied !== null,
-    install: () => installRecsStoreBridge({ components: components as never, runtime: runtime as never }),
+    install: () => installRecsStoreBridge({ store, runtime: runtime as never }),
     writeStructures,
   };
 };
 
-describe("RECS → store bridge", () => {
+describe("native fact to view bridge", () => {
   const setSlices = vi.spyOn(useWorldSlicesStore, "setState");
   const setUi = vi.spyOn(useUIStore, "setState");
   const disposers: Array<() => void> = [];
-
   beforeEach(() => {
     setSlices.mockClear();
     setUi.mockClear();
   });
-
   afterEach(() => {
     disposers.splice(0).forEach((dispose) => dispose());
-    useWorldSlicesStore.setState({ structures: [] });
+    useWorldSlicesStore.setState(useWorldSlicesStore.getInitialState());
   });
 
-  it("derives every slice once at install, then once per applied slice however many rows changed", () => {
+  it("publishes all transaction changes once without waiting for the ambient slice", () => {
     const harness = createHarness();
     disposers.push(harness.install());
-
     expect(setSlices).toHaveBeenCalledTimes(1);
-    expect(setUi).toHaveBeenCalledTimes(2); // the season clock, then the derived player facts
-    expect(harness.hasSliceListener()).toBe(true);
-
+    expect(setUi).toHaveBeenCalledTimes(1);
     setSlices.mockClear();
     harness.writeStructures([1, 2, 3]);
-    expect(setSlices).not.toHaveBeenCalled();
-
-    harness.applySlice();
     expect(setSlices).toHaveBeenCalledTimes(1);
-    expect(useWorldSlicesStore.getState().structures.map((structure) => structure.entity_id)).toEqual([1, 2, 3]);
-
+    expect(useWorldSlicesStore.getState().structures.map((row) => row.entity_id)).toEqual([1, 2, 3]);
+    expect(useWorldSlicesStore.getState().structures[0]).toBe(
+      harness.store.get("Structure", { game_id: 1, entity_id: 1 }),
+    );
     harness.applySlice();
     expect(setSlices).toHaveBeenCalledTimes(1);
   });
 
-  it("derives for selection and relic changes only among store writes", () => {
+  it("filters other games and removes deleted structures", () => {
+    const harness = createHarness();
+    disposers.push(harness.install());
+    harness.writeStructures([1]);
+    harness.writeStructures([2], 2);
+    expect(useWorldSlicesStore.getState().structures.map((row) => row.entity_id)).toEqual([1]);
+    harness.store.applyEntityOperations([
+      { type: "remove-components", entityId: hash.computePoseidonHashOnElements([1, 1]), models: ["Structure"] },
+    ]);
+    expect(useWorldSlicesStore.getState().structures).toEqual([]);
+  });
+
+  it("updates the game clock from persistent game changes", () => {
+    const harness = createHarness();
+    disposers.push(harness.install());
+    harness.store.applyEntityOperations([
+      {
+        type: "upsert",
+        entities: [
+          {
+            hashed_keys: hash.computePoseidonHashOnElements([1]),
+            models: { GameRegistry: { ...harness.game, end_at: "500" } },
+          },
+        ],
+      },
+    ]);
+    expect(useUIStore.getState().gameEndAt).toBe(500);
+  });
+
+  it("derives only for selection and relic changes among UI writes", () => {
     const harness = createHarness();
     disposers.push(harness.install());
     setUi.mockClear();
-
     useUIStore.setState({ isLoadingScreenEnabled: !useUIStore.getState().isLoadingScreenEnabled } as never);
-    expect(setUi).toHaveBeenCalledTimes(1); // the write itself, nothing derived behind it
-
-    // Store actions call the creator's own set, which the spy does not see; the bridge's write does.
+    expect(setUi).toHaveBeenCalledTimes(1);
     useUIStore.getState().triggerRelicsRefresh();
     expect(setUi).toHaveBeenCalledTimes(2);
     expect(setUi.mock.calls[1]?.[0]).toHaveProperty("playerRelics");
@@ -111,11 +162,9 @@ describe("RECS → store bridge", () => {
     dispose();
     expect(harness.hasSliceListener()).toBe(false);
     setSlices.mockClear();
-
     harness.writeStructures([9]);
     harness.applySlice();
     useUIStore.getState().triggerRelicsRefresh();
-
     expect(setSlices).not.toHaveBeenCalled();
     expect(useWorldSlicesStore.getState().structures).toHaveLength(0);
   });

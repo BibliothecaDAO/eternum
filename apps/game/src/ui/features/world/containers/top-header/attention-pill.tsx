@@ -1,8 +1,9 @@
+import { configManager } from "@bibliothecadao/eternum";
 import { HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { memo, useMemo, useRef } from "react";
 import Bell from "lucide-react/dist/esm/icons/bell";
-import { useDojo } from "@bibliothecadao/react";
+import { useGame, useNativeRevision } from "@bibliothecadao/react";
 import { Position } from "@bibliothecadao/eternum";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
@@ -21,16 +22,20 @@ export const AttentionPill = memo(() => {
 AttentionPill.displayName = "AttentionPill";
 
 function AttentionCycle() {
-  const { setup } = useDojo();
+  const { setup } = useGame();
   const goToStructure = useGoToStructure(setup);
   const structures = useUIStore((state) => state.playerStructures);
   const arrivedIds = useUIStore((state) => state.arrivedArrivalStructureIds);
   const suggestions = useEmpireSuggestions();
   const previousKey = useRef<string | null>(null);
   const now = Math.floor(useNowMs() / 1000);
+  const revision = useNativeRevision(["Guard"]);
   const { targets } = useMemo(
-    () => resolveStructureAttention(structures, arrivedIds, now),
-    [structures, arrivedIds, now],
+    () =>
+      resolveStructureAttention(structures, arrivedIds, now, [
+        ...setup.store.inGame("Guard", configManager.getActiveGameId()),
+      ]),
+    [structures, arrivedIds, now, setup.store, revision],
   );
   const items = [
     ...targets.map((target) => ({

@@ -29,7 +29,7 @@ import {
   isTileOccupierReservedHyperstructure,
   isTileOccupierStructure,
 } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
+import { useGame } from "@bibliothecadao/react";
 import { type ReactNode, useCallback, useMemo } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
 
@@ -200,7 +200,7 @@ const RelicCrateTilePanel = ({
 }) => {
   const {
     setup: { systemCalls },
-  } = useDojo();
+  } = useGame();
   const account = useAccountStore((state) => state.account);
   const explorerId = useAdjacentOwnExplorer(selectedHex);
   const canOpen = Boolean(account) && explorerId !== null;

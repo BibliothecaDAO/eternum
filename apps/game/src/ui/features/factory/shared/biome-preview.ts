@@ -1,7 +1,6 @@
 import { BIOME_COLORS } from "@/three/managers/biome-colors";
-import { FELT_CENTER } from "@/ui/config";
 import { Biome, type BiomeClimateConfig } from "@bibliothecadao/eternum";
-import { BiomeType } from "@bibliothecadao/types";
+import { BiomeType, HexGrid } from "@bibliothecadao/types";
 
 export interface FactoryBiomeClimateValues {
   elevationScaleBps?: number;
@@ -147,6 +146,6 @@ export const buildFactoryBiomePreviewModel = (input: {
     climate,
     size: BIOME_PREVIEW_SIZE,
     center: BIOME_PREVIEW_CENTER,
-    mapCenter: FELT_CENTER(),
+    mapCenter: HexGrid.CENTER,
   });
 };

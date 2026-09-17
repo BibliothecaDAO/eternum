@@ -1,9 +1,9 @@
-import { CallData, hash } from "starknet";
+import { CallData, hash, shortString } from "starknet";
 import { describe, expect, it, vi } from "vitest";
 import { NativeLiveWorld as LiveWorld } from "./live-world";
 import type { MadaraRpc } from "../madara-rpc";
 import { WorldEventDecodeMonitor } from "../world-event-decoder";
-import { manifest, receipt, schema, setup } from "./fixtures";
+import { manifest, receipt, rowEvent, schema, setup } from "./fixtures";
 import { transactionGameIds } from "./transactions";
 
 function call(game: number, entrypoint = "execute") {
@@ -41,6 +41,66 @@ describe("native transaction receipt routing", () => {
     foreign[0] = "0x999";
     expect(transactionGameIds(manifest, ["1", ...foreign])).toEqual([]);
   });
+  it.each(["PRE_CONFIRMED", "ACCEPTED_ON_L2"])(
+    "reports a recorded rejection at %s without reverting ticket state",
+    (finality_status) => {
+      const { native, decoder, fold } = setup();
+      const messages: Record<string, unknown>[] = [];
+      const historyStore = { recordTransaction: vi.fn() };
+      const live = new LiveWorld({
+        native,
+        registry: decoder.registry,
+        chain: "madara",
+        checkpointEveryBlocks: 100,
+        checkpointStore: { save: vi.fn() },
+        confirmedBlock: 9,
+        confirmedFold: fold,
+        rpc: {} as MadaraRpc,
+        historyStore: historyStore as never,
+        decodeMonitor: new WorldEventDecodeMonitor(),
+      });
+      const connection = live.attach("1", { send: (value) => messages.push(JSON.parse(value)) });
+      live.resume(connection, { type: "resume", epoch: "old", seq: 0 });
+      messages.length = 0;
+      const result = rowEvent(
+        "ExecutionResult",
+        [manifest.world.address, "1"],
+        ["2", "9", shortString.encodeShortString("GAMEPLAY_REJECTED"), "10"],
+      );
+      const rejected = { ...receipt([result], "0x124"), finality_status };
+      live.acceptReceipt(rejected);
+      live.acceptTransaction({
+        finality_status: "PRE_CONFIRMED",
+        transaction_hash: "0x124",
+        sender_address: "0x999",
+        calldata: ["1", ...call(1)],
+      });
+      const transactions = messages.filter((message) => message.type === "tx");
+      expect(JSON.stringify(transactions)).toContain("REVERTED");
+      expect(JSON.stringify(transactions)).toContain("GAMEPLAY_REJECTED");
+      expect(rejected.execution_status).toBe("SUCCEEDED");
+      native.applyReceipt(fold, rejected, 10, 0);
+      expect(BigInt(String(fold.modelRows("ExecutionResult")[0].value.status))).toBe(2n);
+      expect(native.receiptFailures).toBe(0);
+      expect(native.halted).toBeUndefined();
+      if (finality_status === "ACCEPTED_ON_L2") {
+        expect(historyStore.recordTransaction).toHaveBeenCalledWith(
+          "1",
+          expect.objectContaining({
+            execution_status: "REVERTED",
+            revert_reason: "Native action rejected: GAMEPLAY_REJECTED",
+          }),
+        );
+      } else expect(historyStore.recordTransaction).not.toHaveBeenCalled();
+    },
+  );
+
+  it("preserves a successful recorded action's finality", () => {
+    const { native, fold } = setup();
+    const succeeded = receipt([rowEvent("ExecutionResult", [manifest.world.address, "1"], ["1", "9", "11", "10"])]);
+    expect(native.actionReceipt(fold, succeeded)).toBe(succeeded);
+  });
+
   it("delivers a reverted receipt received before its sequencer-submitted transaction", () => {
     const { native, decoder, fold } = setup();
     const messages: Record<string, unknown>[] = [];

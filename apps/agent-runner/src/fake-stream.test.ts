@@ -21,7 +21,7 @@ const NO_EMPIRE = { structures: [], explorers: [] };
 const dataDirs: string[] = [];
 
 afterEach(async () => {
-  ClientConfigManager.instance().setActiveGame(0, 0);
+  ClientConfigManager.instance().setActiveGame(28, 0);
   await Promise.all(dataDirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })));
 });
 
@@ -29,9 +29,9 @@ type FakeGame = ReturnType<typeof createFakeGame>;
 
 /** A world with one explorer that can explore one hex; the planner and the move are stubbed like the tools tests. */
 const seedScoutingWorld = (game: FakeGame, owner: ContractAddress): void => {
-  seedGameRegistry(game.components, { status: "Live", startMainAt: 0, endAt: 0 });
-  seedStructure(game.components, { entityId: 12, owner, x: 100, y: 100 });
-  seedExplorer(game.components, { explorerId: 101, owner: 12, x: SCOUT_HEX.x, y: SCOUT_HEX.y });
+  seedGameRegistry(game.store, { status: "Live", startMainAt: 0, endAt: 0 });
+  seedStructure(game.store, { entityId: 12, owner, x: 100, y: 100 });
+  seedExplorer(game.store, { explorerId: 101, owner: 12, x: SCOUT_HEX.x, y: SCOUT_HEX.y });
   game.actions.armyPaths.mockImplementation(() => {
     const paths = new ActionPaths();
     paths.set(ActionPaths.posKey(REACHABLE), [
@@ -139,9 +139,9 @@ describe("resolveOfflineScout", () => {
     const game = createFakeGame(null);
     expect(resolveOfflineScout(game, NO_EMPIRE)).toBeNull();
 
-    seedStructure(game.components, { entityId: 13, owner: RIVAL, x: 102, y: 100 });
-    seedExplorer(game.components, { explorerId: 201, owner: 13, x: 101, y: 101 });
-    seedExplorer(game.components, { explorerId: 150, owner: 13, x: 103, y: 101 });
+    seedStructure(game.store, { entityId: 13, owner: RIVAL, x: 102, y: 100 });
+    seedExplorer(game.store, { explorerId: 201, owner: 13, x: 101, y: 101 });
+    seedExplorer(game.store, { explorerId: 150, owner: 13, x: 103, y: 101 });
     expect(resolveOfflineScout(game, NO_EMPIRE)).toEqual({ explorerId: 150 });
     expect(resolveOfflineScout(game, { structures: [12], explorers: [101] })).toEqual({ explorerId: 101 });
   });

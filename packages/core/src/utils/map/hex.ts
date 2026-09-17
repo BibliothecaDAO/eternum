@@ -193,7 +193,7 @@ export const isTileOccupierStructure = (tileOccupier: TileOccupier) => {
     tileOccupier === TileOccupier.HyperstructureLevel3 ||
     tileOccupier === TileOccupier.RealmRegularLevel4 ||
     tileOccupier === TileOccupier.RealmWonderLevel4 ||
-    tileOccupier === TileOccupier.FragmentMine ||
+    tileOccupier === TileOccupier.Mine ||
     tileOccupier === TileOccupier.Village ||
     tileOccupier === TileOccupier.Bank ||
     tileOccupier === TileOccupier.Camp ||

@@ -42,7 +42,7 @@ vi.mock("@/ui/features/social/player/finalized-blitz-leaderboard", () => ({
   normalizeLeaderboardAddress: (address: bigint) => `0x${address.toString(16)}`,
 }));
 vi.mock("@bibliothecadao/eternum", () => ({ getGuildFromPlayerAddress: () => ({ name: "Bibliotheca" }) }));
-vi.mock("@bibliothecadao/react", () => ({ useDojo: () => ({ setup: { components: {} } }) }));
+vi.mock("@bibliothecadao/react", () => ({ useGame: () => ({ setup: { store: {} } }), useNativeRevision: () => 0 }));
 vi.mock("@/utils/spectator-session", () => ({ isExplicitSpectateSession: () => mocks.spectating }));
 vi.mock("@starknet-react/core", () => ({ useDisconnect: () => ({ disconnectAsync: mocks.disconnect }) }));
 vi.mock("@/hooks/store/use-world-appearance-store", () => ({

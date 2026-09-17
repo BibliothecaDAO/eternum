@@ -79,7 +79,7 @@ export const CATEGORY_FILTER_OPTIONS: Array<{
   { value: StructureType.Realm, label: "Realms", icon: Crown },
   { value: StructureType.Village, label: "Villages", icon: Castle },
   { value: StructureType.Camp, label: "Camps", icon: Tent },
-  { value: StructureType.FragmentMine, label: "Mines", icon: Pickaxe },
+  { value: StructureType.Mine, label: "Mines", icon: Pickaxe },
   { value: StructureType.Hyperstructure, label: "Hyperstructures", icon: Sparkles },
 ];
 

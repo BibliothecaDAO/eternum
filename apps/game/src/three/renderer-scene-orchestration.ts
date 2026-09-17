@@ -1,4 +1,4 @@
-import type { SetupResult } from "@bibliothecadao/dojo";
+import type { GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
 import type { Raycaster, Vector2 } from "three";
 import type { MapControls } from "three/addons/controls/MapControls.js";
 import type { SceneManager } from "@/three/scene-manager";

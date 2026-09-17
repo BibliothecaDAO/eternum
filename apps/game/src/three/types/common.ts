@@ -26,6 +26,7 @@ export interface StructureInfo {
   isAlly: boolean;
   owner: { address: bigint; ownerName: string; guildName: string };
   structureType: StructureType;
+  mineKind?: number;
   hasWonder: boolean;
   realmOrder?: number;
   cosmeticId?: string;

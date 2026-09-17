@@ -27,6 +27,7 @@ import { useStructureEntityDetail } from "../hooks/use-structure-entity-detail";
 import { EntityDetailLayoutVariant } from "../layout";
 import { useStructureProductionSummary } from "../structure-production-summary";
 import { MergedResourcePanel } from "@/ui/features/world/containers/left-facets/merged-resource-panel";
+import { BitcoinMiningActionPanel } from "../../actions/bitcoin-mining-action-panel";
 import { FaithDevotionActionPanel } from "../../actions/faith-devotion-action-panel";
 
 interface StructureBannerEntityDetailProps {
@@ -160,7 +161,7 @@ const StructureBannerEntityDetailContent = memo(
     const canOpenTransferPanel =
       isMine &&
       structureCategory !== undefined &&
-      [StructureType.Realm, StructureType.Village, StructureType.Camp, StructureType.FragmentMine].includes(
+      [StructureType.Realm, StructureType.Village, StructureType.Camp, StructureType.Mine].includes(
         structureCategory as StructureType,
       ) &&
       typeof structure.entity_id !== "undefined";
@@ -308,6 +309,8 @@ const StructureBannerEntityDetailContent = memo(
             <p className={HUD_BODY_MUTED}>No resources stored.</p>
           )}
         </InfoBubble>
+
+        <BitcoinMiningActionPanel structureEntityId={structureEntityId} />
 
         {showFaithTab && (
           <InfoBubble variant="section" title="Faith" icon={Sparkles}>

@@ -3,13 +3,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { resolveFactoryManifestContractAddress } from "./resolve-factory-manifest-contract-address";
 
 const mocks = vi.hoisted(() => ({
-  getGameManifest: vi.fn(),
+  getNativeManifest: vi.fn(),
   getWorldById: vi.fn(),
   resolveWorldIdForGame: vi.fn(),
 }));
 
-vi.mock("@contracts", () => ({
-  getGameManifest: mocks.getGameManifest,
+vi.mock("@/runtime/world/native-manifest", () => ({
+  getNativeManifest: mocks.getNativeManifest,
 }));
 
 vi.mock("@bibliothecadao/eternum/game-client", async (importOriginal) => ({
@@ -26,9 +26,10 @@ describe("resolveFactoryManifestContractAddress", () => {
     vi.clearAllMocks();
 
     mocks.resolveWorldIdForGame.mockResolvedValue("blitz");
-    mocks.getWorldById.mockReturnValue({ id: "blitz", worldAddress: "0x111" });
-    mocks.getGameManifest.mockReturnValue({
-      contracts: [{ tag: "s2-prize_distribution_systems", address: "0xabc" }],
+    mocks.getWorldById.mockReturnValue({ id: "blitz", chain: "appchain", worldAddress: "0x111" });
+    mocks.getNativeManifest.mockReturnValue({
+      world: { address: "0x111" },
+      contracts: [{ tag: "native-prizes", address: "0xabc" }],
     });
   });
 
@@ -36,30 +37,30 @@ describe("resolveFactoryManifestContractAddress", () => {
     const result = await resolveFactoryManifestContractAddress({
       chain: "appchain",
       worldName: "etrn-sunrise-01",
-      manifestContractName: "s2-prize_distribution_systems",
+      manifestContractName: "native-prizes",
     });
 
     expect(result).toEqual({
       kind: "success",
       worldName: "etrn-sunrise-01",
-      resolvedTag: "s2-prize_distribution_systems",
+      resolvedTag: "native-prizes",
       worldAddress: "0x111",
       contractAddress: "0xabc",
     });
     expect(mocks.resolveWorldIdForGame).toHaveBeenCalledWith("etrn-sunrise-01");
-    expect(mocks.getGameManifest).toHaveBeenCalledWith("appchain", "blitz");
+    expect(mocks.getNativeManifest).toHaveBeenCalledWith();
   });
 
   it("normalizes custom contract names before lookup", async () => {
     const result = await resolveFactoryManifestContractAddress({
       chain: "appchain",
       worldName: "ETRN-SUNRISE-01",
-      manifestContractName: "{prize_distribution_systems}",
+      manifestContractName: "{prizes}",
     });
 
     expect(result).toMatchObject({
       kind: "success",
-      resolvedTag: "s2-prize_distribution_systems",
+      resolvedTag: "native-prizes",
     });
   });
 
@@ -70,7 +71,7 @@ describe("resolveFactoryManifestContractAddress", () => {
     const result = await resolveFactoryManifestContractAddress({
       chain: "appchain",
       worldName: "etrn-sun",
-      manifestContractName: "prize_distribution_systems",
+      manifestContractName: "prizes",
     });
 
     expect(result).toEqual({
@@ -81,24 +82,25 @@ describe("resolveFactoryManifestContractAddress", () => {
   });
 
   it("returns contract suggestions when the manifest tag is missing", async () => {
-    mocks.getGameManifest.mockReturnValue({
+    mocks.getNativeManifest.mockReturnValue({
+      world: { address: "0x111" },
       contracts: [
-        { tag: "s2-prize_distribution_systems", address: "0xabc" },
-        { tag: "s2-realm_systems", address: "0xdef" },
+        { tag: "native-prizes", address: "0xabc" },
+        { tag: "native-structures", address: "0xdef" },
       ],
     });
 
     const result = await resolveFactoryManifestContractAddress({
       chain: "appchain",
       worldName: "etrn-sunrise-01",
-      manifestContractName: "resource_systems",
+      manifestContractName: "resources",
     });
 
     expect(result).toEqual({
       kind: "failure",
       code: "contract_not_found",
-      message: 'No manifest contract matched "s2-resource_systems".',
-      contractSuggestions: ["s2-prize_distribution_systems", "s2-realm_systems"],
+      message: 'No manifest contract matched "native-resources".',
+      contractSuggestions: ["native-prizes", "native-structures"],
     });
   });
 });

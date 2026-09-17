@@ -25,10 +25,6 @@ vi.mock("../developer/resolve-factory-manifest-contract-address", () => ({
   resolveFactoryManifestContractAddress: vi.fn(),
 }));
 
-vi.mock("./factory-v2-developer-config", () => ({
-  FactoryV2DeveloperConfig: () => <div>Factory config panel</div>,
-}));
-
 const waitForAsyncWork = async () => {
   await Promise.resolve();
   await Promise.resolve();
@@ -101,7 +97,6 @@ describe("FactoryV2DeveloperTools", () => {
     await unlockDeveloperTools();
 
     expect(container.textContent).toContain("Developer tools");
-    expect(container.textContent).toContain("Factory config panel");
     expect(localStorage.getItem("factory-v2-developer-tools-visible")).toBe("true");
   });
 
@@ -134,7 +129,7 @@ describe("FactoryV2DeveloperTools", () => {
     vi.mocked(resolveFactoryManifestContractAddress).mockResolvedValue({
       kind: "success",
       worldName: "etrn-sunrise-01",
-      resolvedTag: "s2-prize_distribution_systems",
+      resolvedTag: "native-prizes",
       worldAddress: "0x111",
       contractAddress: "0xabc",
     });
@@ -188,7 +183,7 @@ describe("FactoryV2DeveloperTools", () => {
       .mockResolvedValueOnce({
         kind: "success",
         worldName: "etrn-sunrise-01",
-        resolvedTag: "s2-prize_distribution_systems",
+        resolvedTag: "native-prizes",
         worldAddress: "0x111",
         contractAddress: "0xabc",
       });
@@ -224,7 +219,7 @@ describe("FactoryV2DeveloperTools", () => {
     expect(vi.mocked(resolveFactoryManifestContractAddress)).toHaveBeenNthCalledWith(2, {
       chain: "appchain",
       worldName: "etrn-sunrise-01",
-      manifestContractName: "s2-prize_distribution_systems",
+      manifestContractName: "native-prizes",
     });
     expect(container.textContent).toContain("0xabc");
   });

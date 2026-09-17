@@ -1,5 +1,5 @@
 import { classifyTransactionError } from "@bibliothecadao/provider";
-import { useDojo } from "@bibliothecadao/react";
+import { useGame } from "@bibliothecadao/react";
 import { useEffect } from "react";
 import { AudioManager } from "@/audio/core/AudioManager";
 import { formatReadableErrorForConsole } from "@/utils/error-message";
@@ -21,7 +21,7 @@ export function TransactionAudioCues() {
     setup: {
       network: { provider },
     },
-  } = useDojo();
+  } = useGame();
 
   useEffect(() => {
     const handleTransactionPending = (receipt: unknown) => {

@@ -1,21 +1,18 @@
-import { openTradesQuery, readMarket, readOpenTrades } from "@bibliothecadao/eternum";
-import { useEntityQuery } from "@dojoengine/react";
+import { readMarket, readOpenTrades } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
-import { useDojo, usePlayerOwnedRealmEntities, usePlayerOwnedVillageEntities } from "../";
+import { useGame } from "../context";
+import { usePlayerOwnedRealmEntities, usePlayerOwnedVillageEntities } from "./use-realm";
+import { useNativeRevision } from "./use-native-facts";
 
 export function useMarket(currentBlockTimestamp: number) {
   const {
-    setup: { components },
-  } = useDojo();
-
-  const playerRealmEntities = usePlayerOwnedRealmEntities();
-  const playerVillageEntities = usePlayerOwnedVillageEntities();
-
-  const tradeEntities = useEntityQuery(openTradesQuery(components));
-  const openTrades = useMemo(() => readOpenTrades(components, tradeEntities, currentBlockTimestamp), [tradeEntities]);
-
+    setup: { store },
+  } = useGame();
+  const realms = usePlayerOwnedRealmEntities();
+  const villages = usePlayerOwnedVillageEntities();
+  const revision = useNativeRevision(["TradeOrder", "Structure", "AddressName"]);
   return useMemo(
-    () => readMarket(openTrades, [...playerRealmEntities, ...playerVillageEntities]),
-    [openTrades, playerRealmEntities, playerVillageEntities],
+    () => readMarket(readOpenTrades(store, currentBlockTimestamp), [...realms, ...villages]),
+    [store, currentBlockTimestamp, realms, villages, revision],
   );
 }

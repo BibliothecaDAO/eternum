@@ -18,7 +18,7 @@ import {
   ResourceManager,
 } from "@bibliothecadao/eternum";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { useDojo } from "@bibliothecadao/react";
+import { useNativeRevision, useNativeRow } from "@bibliothecadao/react";
 import {
   ID,
   RelicEffectWithEndTick,
@@ -30,9 +30,7 @@ import {
 import Factory from "lucide-react/dist/esm/icons/factory";
 import FlaskConical from "lucide-react/dist/esm/icons/flask-conical";
 import Sparkles from "lucide-react/dist/esm/icons/sparkles";
-import { getComponentValue } from "@dojoengine/recs";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
+import { useCallback, useMemo } from "react";
 
 export const ResourceChip = ({
   resourceId,
@@ -68,14 +66,11 @@ export const ResourceChip = ({
   const setTooltip = useTooltipStore((state) => state.setTooltip);
   const openSurface = usePopoverStore((state) => state.openSurface);
   const closeSurface = usePopoverStore((state) => state.closeSurface);
-  const {
-    setup: { components },
-  } = useDojo();
-  const [balance, setBalance] = useState(0);
-  const [amountProduced, setAmountProduced] = useState(0n);
-  const [amountProducedLimited, setAmountProducedLimited] = useState(0n);
-  const [hasReachedMaxCap, setHasReachedMaxCap] = useState(false);
-  const [displayBalance, setDisplayBalance] = useState(0);
+  const revision = useNativeRevision(["ResourceBalance", "ResourceProduction", "ResourceWeight", "ProductionBonus"]);
+  const structure = useNativeRow("Structure", {
+    game_id: configManager.getActiveGameId(),
+    entity_id: resourceManager.entityId,
+  });
 
   const storeDefaultTick = useBlockTimestampStore((state) => state.currentDefaultTick);
   const storeArmiesTick = useBlockTimestampStore((state) => state.currentArmiesTick);
@@ -87,33 +82,18 @@ export const ResourceChip = ({
   const currentTick = currentDefaultTick || 0;
   const resourceEnumId = resourceId as ResourcesIds;
 
-  const actualBalance = useMemo(() => {
-    return resourceManager.balance(resourceId);
-  }, [resourceManager, resourceId, currentTick]);
-
-  // Always show actual + produced (was previously only on hover)
-  useEffect(() => {
-    setDisplayBalance(Number(actualBalance || 0) + Number(amountProduced || 0n));
-  }, [actualBalance, amountProduced]);
-
-  useEffect(() => {
-    if (currentTick === 0) return;
-
-    const { balance, hasReachedMaxCapacity, amountProduced, amountProducedLimited } =
-      resourceManager.balanceWithProduction(currentTick, resourceEnumId);
-
-    setBalance(balance);
-    setHasReachedMaxCap(hasReachedMaxCapacity);
-    setAmountProduced(amountProduced);
-    setAmountProducedLimited(amountProducedLimited);
-  }, [resourceManager, resourceEnumId, currentTick]);
-
-  const productionInfo = useMemo(() => {
-    const resourceComponent = resourceManager.getResource();
-    if (!resourceComponent) return null;
-
-    return ResourceManager.balanceAndProduction(resourceComponent, resourceEnumId);
-  }, [resourceManager, resourceEnumId, currentTick]);
+  const {
+    balance,
+    hasReachedMaxCapacity: hasReachedMaxCap,
+    amountProduced,
+  } = useMemo(
+    () => resourceManager.balanceWithProduction(currentTick, resourceEnumId),
+    [resourceManager, currentTick, resourceEnumId, revision],
+  );
+  const productionInfo = useMemo(
+    () => resourceManager.current(resourceEnumId),
+    [resourceManager, resourceEnumId, revision],
+  );
 
   const productionData = useMemo(() => {
     if (!productionInfo) return null;
@@ -127,13 +107,6 @@ export const ResourceChip = ({
   const timeUntilValueReached = useMemo(() => {
     return resourceManager.timeUntilValueReached(currentTick, resourceId);
   }, [resourceManager, currentTick]);
-
-  // The default tick advances on the one clock; the cap is re-read as it does.
-  useEffect(() => {
-    if (!isProducing || hasReachedMaxCap) return;
-    const { hasReachedMaxCapacity } = resourceManager.balanceWithProduction(currentTick, resourceEnumId);
-    setHasReachedMaxCap(hasReachedMaxCapacity);
-  }, [resourceManager, resourceEnumId, currentTick, isProducing, hasReachedMaxCap]);
 
   const icon = useMemo(() => {
     return <ResourceIcon withTooltip={false} resource={ResourcesIds[resourceId]} size="sm" className="self-center" />;
@@ -154,11 +127,10 @@ export const ResourceChip = ({
       return false;
     }
 
-    const structure = getComponentValue(components.Structure, gameEntityKey([BigInt(resourceManager.entityId)]));
-    const structureCategory = Number(structure?.base?.category ?? structure?.category ?? 0);
+    const structureCategory = structure?.base.category;
 
     return structureCategory === StructureType.Realm || structureCategory === StructureType.Village;
-  }, [balance, components.Structure, resourceEnumId, resourceManager.entityId]);
+  }, [balance, structure, resourceEnumId]);
 
   const handleOpenProduction = useCallback(() => {
     if (!canShowProductionShortcut) return;
@@ -237,7 +209,7 @@ export const ResourceChip = ({
     >
       {icon}
       <CountUpNumber
-        value={displayBalance}
+        value={balance}
         format={(v) => currencyFormat(v, 2)}
         className={cn(HUD_VALUE, "tabular-nums", relicEffectActivated && "text-relic")}
         highlightClassName="text-green font-bold scale-105"

@@ -1,15 +1,13 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
-import { useComponentValue } from "@dojoengine/react";
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 import { Button, NumberInput, Tabs } from "@/ui/design-system/atoms";
 import { HUD_BODY_MUTED, HUD_CUE, HUD_HEADLINE, HUD_LABEL, HUD_VALUE } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules";
 import { isVillageLikeStructureCategory } from "@/ui/lib/structure-capabilities";
 import { configManager, divideByPrecision, formatTime, getBuildingQuantity } from "@bibliothecadao/eternum";
-import { useDojo, useResourceManager } from "@bibliothecadao/react";
+import { useGame, useResourceManager } from "@bibliothecadao/react";
 import { getBuildingFromResource, RealmInfo, ResourcesIds } from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
 import { LaborResourcesPanel } from "./labor-resources-panel";
@@ -39,29 +37,27 @@ export const ResourceProductionControls = ({
   compact?: boolean;
 }) => {
   const {
+    account: { account },
     setup: {
-      account: { account },
-      components,
+      store,
       systemCalls: { burn_resource_for_resource_production, burn_labor_for_resource_production },
     },
-  } = useDojo();
+  } = useGame();
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const ordersAllowed = useUIStore(canIssueOrders);
   const currentDefaultTick = useCurrentDefaultTick();
-  useComponentValue(components.Resource, gameEntityKey([BigInt(realm.entityId)]));
-  useComponentValue(components.StructureBuildings, gameEntityKey([BigInt(realm.entityId)]));
 
   const laborConfig = useMemo(() => configManager.getLaborConfig(selectedResource), [selectedResource]);
 
-  // take wonder bonus into account
+  // Apply the recorded production bonus.
   const resourceOutputPerInputResourcesWithBonus = useMemo(() => {
     if (!laborConfig) return 0;
     return laborConfig.resourceOutputPerInputResources * bonus;
   }, [laborConfig, bonus]);
 
-  // take wonder bonus into account
+  // Apply the recorded production bonus.
   const outputResourceAmountWithBonus = useMemo(() => {
     return configManager.complexSystemResourceOutput[selectedResource].amount * bonus;
   }, [selectedResource, bonus]);
@@ -184,7 +180,7 @@ export const ResourceProductionControls = ({
     }
   }, [isOverBalance, useRawResources, ticks, laborConfig, productionAmount]);
 
-  const buildingCount = getBuildingQuantity(realm.entityId, getBuildingFromResource(selectedResource), components);
+  const buildingCount = getBuildingQuantity(realm.entityId, getBuildingFromResource(selectedResource), store);
 
   // Only show the tabs that the user can actually select
   const selectableTabs = [

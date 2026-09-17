@@ -14,7 +14,7 @@ describe("terrain settlement influence", () => {
 
   it("gives mines and hyperstructures stronger footprints than villages", () => {
     const village = resolveTerrainSettlementInfluence(anchor(StructureType.Village, RealmLevels.Settlement));
-    const mine = resolveTerrainSettlementInfluence(anchor(StructureType.FragmentMine, RealmLevels.Settlement));
+    const mine = resolveTerrainSettlementInfluence(anchor(StructureType.Mine, RealmLevels.Settlement));
     const hyperstructure = resolveTerrainSettlementInfluence(
       anchor(StructureType.Hyperstructure, RealmLevels.Settlement),
     );

@@ -1,16 +1,11 @@
-import { useUIStore } from "@/hooks/store/use-ui-store";
-import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
-import { getActiveWorld } from "@/runtime/world";
-import { fetchHeraldGameHistory } from "@bibliothecadao/eternum/game-client";
-import { requireWorldById } from "@/runtime/world/world-directory";
+import { useStoryEvents } from "@/hooks/store/use-story-events-store";
 import { HUD_BODY_MUTED, HUD_CUE } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_PILL_BUTTON } from "@/ui/design-system/atoms/overlay-surface";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { SelectResource } from "@/ui/design-system/molecules/select-resource";
 import { TradeHistoryEvent, TradeHistoryRowHeader, type TradeEvent } from "./trade-history-event";
-import { useDojo } from "@bibliothecadao/react";
-import { configManager } from "@bibliothecadao/eternum";
+import { useGame } from "@bibliothecadao/react";
 import { ResourcesIds } from "@bibliothecadao/types";
 import { memo, useEffect, useMemo, useState } from "react";
 
@@ -21,59 +16,37 @@ export const MarketTradingHistory = memo(() => {
     account: {
       account: { address },
     },
-    setup: { components },
-  } = useDojo();
+  } = useGame();
 
-  const [tradeEvents, setTradeEvents] = useState<TradeEvent[]>([]);
   const [showOnlyYourSwaps, setShowOnlyYourSwaps] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [isLoading, setIsLoading] = useState(false);
-  const playerStructures = useUIStore((state) => state.playerStructures);
-  // Owner lookup comes from the bridge's structures slice, one array per ingest slice instead of one per row.
-  const structures = useWorldSlicesStore((state) => state.structures);
-  const profile = getActiveWorld();
-  const world = requireWorldById(profile?.worldId);
-  const gameId = configManager.getActiveGameId();
-
-  useEffect(() => {
-    setIsLoading(true);
-    const ownerByEntity = new Map(
-      structures.map((structure) => [String(structure.entity_id), String(structure.owner)] as const),
-    );
-    const playerEntityIds = new Set(playerStructures.map((structure) => String(structure.entityId)));
-    void fetchHeraldGameHistory(world, gameId, { limit: 500, model: "SwapEvent" })
-      .then((page) =>
-        page.items.map(({ value }): TradeEvent => {
-          const entityId = Number(BigInt(String(value.entity_id)));
-          const isBuy = value.buy === true || value.buy === "0x1" || value.buy === 1n;
-          const lordsAmount = BigInt(String(value.lords_amount));
-          const resourceAmount = BigInt(String(value.resource_amount));
-          const resourceType = Number(BigInt(String(value.resource_type)));
-          return {
-            type: "AMM Swap",
-            event: {
-              takerId: entityId,
-              makerId: 0,
-              makerAddress: "0x0",
-              takerAddress: ownerByEntity.get(String(value.entity_id)) ?? "0x0",
-              isYours: playerEntityIds.has(String(value.entity_id)),
-              resourceGiven: {
-                resourceId: isBuy ? ResourcesIds.Lords : resourceType,
-                amount: Number(isBuy ? lordsAmount : resourceAmount),
-              },
-              resourceTaken: {
-                resourceId: isBuy ? resourceType : ResourcesIds.Lords,
-                amount: Number(isBuy ? resourceAmount : lordsAmount),
-              },
-              eventTime: new Date(Number(BigInt(String(value.timestamp))) * 1_000),
-            },
-          };
-        }),
-      )
-      .then(setTradeEvents)
-      .catch(() => setTradeEvents([]))
-      .finally(() => setIsLoading(false));
-  }, [address, gameId, playerStructures, structures, world]);
+  const { data: swaps, isLoading } = useStoryEvents(500, "BankSwap");
+  const tradeEvents = useMemo<TradeEvent[]>(
+    () =>
+      swaps.map((swap) => {
+        const value = swap.storyPayload;
+        const buy = value.buy === true;
+        const lords = Number(BigInt(String(value.lords_amount)));
+        const amount = Number(BigInt(String(value.resource_amount)));
+        const resource = Number(value.resource_type);
+        if (!swap.owner) throw new Error("Bank swap history has no actor");
+        return {
+          id: swap.event_id,
+          type: "AMM Swap",
+          event: {
+            takerId: Number(value.structure_id),
+            makerId: Number(value.bank_id),
+            makerAddress: "0x0",
+            takerAddress: swap.owner,
+            isYours: BigInt(swap.owner) === BigInt(address),
+            resourceGiven: { resourceId: buy ? ResourcesIds.Lords : resource, amount: buy ? lords : amount },
+            resourceTaken: { resourceId: buy ? resource : ResourcesIds.Lords, amount: buy ? amount : lords },
+            eventTime: new Date(swap.timestampMs),
+          },
+        };
+      }),
+    [swaps, address],
+  );
 
   const [selectedResourceId, setSelectedResourceId] = useState<number | null>(null);
 
@@ -136,12 +109,7 @@ export const MarketTradingHistory = memo(() => {
         ) : paginatedEvents.length === 0 ? (
           <p className={cn(HUD_BODY_MUTED, "px-3 py-6 text-center")}>No swaps yet</p>
         ) : (
-          paginatedEvents.map((trade, index) => (
-            <TradeHistoryEvent
-              key={`${trade.event.eventTime.getTime()}-${trade.event.takerAddress}-${index}`}
-              trade={trade}
-            />
-          ))
+          paginatedEvents.map((trade) => <TradeHistoryEvent key={trade.id} trade={trade} />)
         )}
       </div>
       {showPagination && (

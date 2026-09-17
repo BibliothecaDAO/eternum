@@ -14,11 +14,10 @@ import {
   configManager,
   divideByPrecision,
   getBalance,
-  getEntityIdFromKeys,
   getTroopName,
   getTroopResourceId,
 } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
+import { useGame, useNativeRow, useNativeRevision } from "@bibliothecadao/react";
 import {
   ArmyInfo,
   Direction,
@@ -29,12 +28,10 @@ import {
   TroopTier,
   TroopType,
 } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
 import clsx from "clsx";
 import LockIcon from "lucide-react/dist/esm/icons/lock";
 import Pen from "lucide-react/dist/esm/icons/pen";
 import { useEffect, useMemo, useState } from "react";
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 import { requireActiveGameClient } from "@/sync/active-game-client";
 
 type ArmyManagementCardProps = {
@@ -88,8 +85,8 @@ const DirectionButton: React.FC<DirectionButtonProps> = ({
 
 const ArmyCreate = ({ owner_entity, army, isExplorer, guardSlot, onCancel, onSuccess }: ArmyCreateProps) => {
   const {
-    setup: { components },
-  } = useDojo();
+    setup: { store },
+  } = useGame();
 
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
 
@@ -109,7 +106,8 @@ const ArmyCreate = ({ owner_entity, army, isExplorer, guardSlot, onCancel, onSuc
   const [selectedDirection, setSelectedDirection] = useState<Direction | null>(null);
   const [activeTab, setActiveTab] = useState<"troops" | "direction">("troops");
 
-  const structure = getComponentValue(components.Structure, gameEntityKey([BigInt(owner_entity)]));
+  const revision = useNativeRevision(["ResourceBalance", "ResourceProduction", "ResourceWeight"]);
+  const structure = useNativeRow("Structure", { game_id: configManager.getActiveGameId(), entity_id: owner_entity });
   const structureLevel = structure?.base?.level ?? 0;
   const troopCapacityLimit = configManager.getMaxArmySize(structureLevel, selectedTier) || null;
   const currentTroopCountValue = Number(army?.troops?.count ?? 0);
@@ -207,10 +205,10 @@ const ArmyCreate = ({ owner_entity, army, isExplorer, guardSlot, onCancel, onSuc
 
   const maxAffordableTroops = useMemo(() => {
     const resourceId = getTroopResourceId(selectedTroopType, selectedTier);
-    const balance = getBalance(owner_entity, resourceId, currentDefaultTick, components).balance;
+    const balance = getBalance(owner_entity, resourceId, currentDefaultTick, store).balance;
     const available = Number(divideByPrecision(balance) || 0);
     return Math.max(0, Math.min(available, remainingTroopCapacity));
-  }, [owner_entity, selectedTroopType, selectedTier, currentDefaultTick, components, remainingTroopCapacity]);
+  }, [owner_entity, selectedTroopType, selectedTier, currentDefaultTick, store, remainingTroopCapacity, revision]);
 
   useEffect(() => {
     setTroopCount((current) => Math.max(0, Math.min(current, maxAffordableTroops)));
@@ -316,7 +314,7 @@ const ArmyCreate = ({ owner_entity, army, isExplorer, guardSlot, onCancel, onSuc
                   owner_entity,
                   getTroopResourceId(troop.troopType, selectedTier),
                   currentDefaultTick,
-                  components,
+                  store,
                 ).balance;
                 const isCurrentTroopType =
                   !army || army.troops.count === 0n
@@ -511,12 +509,11 @@ const ArmyCreate = ({ owner_entity, army, isExplorer, guardSlot, onCancel, onSuc
   );
 };
 
-// TODO Unify this. Push all useComponentValues up to the top level
 export const ArmyManagementCard = ({ owner_entity, army }: ArmyManagementCardProps) => {
   const {
     account: { account },
     network: { provider },
-  } = useDojo();
+  } = useGame();
 
   const [isLoading, setIsLoading] = useState(false);
 

@@ -48,6 +48,7 @@ describe("cosmetics resolver", () => {
 
   it("returns base army cosmetic when no selection present", () => {
     const result = resolveArmyCosmetic({
+      attributes: [],
       owner: 0n,
       troopType: TroopType.Knight,
       tier: TroopTier.T1,
@@ -62,6 +63,7 @@ describe("cosmetics resolver", () => {
 
   it("falls back to default structure cosmetic", () => {
     const result = resolveStructureCosmetic({
+      attributes: [],
       owner: 0n,
       structureType: StructureType.Realm,
       defaultModelKey: "Realm",
@@ -92,6 +94,7 @@ describe("cosmetics resolver", () => {
     });
 
     const result = resolveArmyCosmetic({
+      attributes: [],
       owner: "0x1",
       troopType: TroopType.Crossbowman,
       tier: TroopTier.T1,
@@ -122,6 +125,7 @@ describe("cosmetics resolver", () => {
     });
 
     const result = resolveArmyCosmetic({
+      attributes: [],
       owner: "0x1",
       troopType: TroopType.Knight,
       tier: TroopTier.T3,
@@ -167,6 +171,7 @@ describe("cosmetics resolver", () => {
     });
 
     const result = resolveArmyCosmetic({
+      attributes: [0x205010901n],
       owner: "0x1",
       troopType: TroopType.Crossbowman,
       tier: TroopTier.T1,
@@ -203,6 +208,7 @@ describe("cosmetics resolver", () => {
     });
 
     const result = resolveStructureCosmetic({
+      attributes: [0x2030601n, 0x2040401n],
       owner: "0x1",
       structureType: StructureType.Realm,
       defaultModelKey: "Realm",
@@ -211,5 +217,32 @@ describe("cosmetics resolver", () => {
     expect(result.attachments.filter((attachment) => attachment.slot === "aura")).toEqual([
       expect.objectContaining({ id: "winter-spike-aura" }),
     ]);
+  });
+  it("uses admitted attributes without a local inventory snapshot", () => {
+    const result = resolveArmyCosmetic({
+      attributes: [0x107050201n],
+      owner: "0x123",
+      troopType: TroopType.Knight,
+      tier: TroopTier.T3,
+      defaultModelType: ModelType.Knight3,
+    });
+    expect(result.skin.cosmeticId).toBe("army:Knight:T3:legacy");
+    expect(result.skin.isFallback).toBe(false);
+  });
+
+  it("does not authorize protected attachments from local inventory", () => {
+    playerCosmeticsStore.setPendingBlitzLoadout("world", "0x123", {
+      tokenIds: ["0xabc"],
+      selectedBySlot: { aura: { tokenId: "0xabc", cosmeticIds: ["attachment:army:aura-legacy"] } },
+    });
+    playerCosmeticsStore.markAppliedBlitzLoadout("world", "0x123");
+    const result = resolveArmyCosmetic({
+      attributes: [],
+      owner: "0x123",
+      troopType: TroopType.Knight,
+      tier: TroopTier.T3,
+      defaultModelType: ModelType.Knight3,
+    });
+    expect(result.attachments).toEqual([]);
   });
 });

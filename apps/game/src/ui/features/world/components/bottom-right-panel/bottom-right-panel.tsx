@@ -1,3 +1,4 @@
+import { getMinePresentation } from "@bibliothecadao/types";
 import { HUD_COLUMN_WIDTH } from "@/ui/features/world/containers/hud-layout";
 import { RightHudColumn } from "@/ui/features/world/containers/right-hud-column";
 import { canIssueOrders } from "@/utils/can-issue-orders";
@@ -7,7 +8,6 @@ import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { buildingEntityKey, gameEntityKey } from "@bibliothecadao/eternum/game-client";
 import { useTileAt } from "@/hooks/helpers/use-tile-at";
 import { isVillageLikeStructureCategory, normalizeStructureCategory } from "@/lib/structure-type-utils";
 import { formatTilePanelTitle } from "./tile-panel-title";
@@ -28,7 +28,7 @@ import {
   isTileOccupierStructure,
 } from "@bibliothecadao/eternum";
 import { getActiveGameSyncRuntime } from "@bibliothecadao/eternum/game-sync";
-import { useDojo, useQuery } from "@bibliothecadao/react";
+import { useGame, useQuery, useNativeRevision, useNativeRow } from "@bibliothecadao/react";
 import {
   BUILDINGS_CENTER,
   BuildingType,
@@ -39,7 +39,6 @@ import {
   TileOccupier,
   findResourceById,
 } from "@bibliothecadao/types";
-import { useComponentValue } from "@dojoengine/react";
 import { memo, ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { SelectedWorldmapEntity } from "@/ui/features/world/components/actions/selected-worldmap-entity";
@@ -188,8 +187,7 @@ const MapTilePanel = () => {
 };
 
 const LocalTilePanel = () => {
-  const { setup } = useDojo();
-  const buildingComponent = setup.components.Building;
+  const { setup } = useGame();
   const ordersAllowed = useUIStore(canIssueOrders);
   const selectedBuildingHex = useUIStore((state) => state.selectedBuildingHex);
   const setSelectedBuildingHex = useUIStore((state) => state.setSelectedBuildingHex);
@@ -202,11 +200,11 @@ const LocalTilePanel = () => {
   const currentDefaultTick = useCurrentDefaultTick();
   const mode = useGameModeConfig();
 
-  const structureKey = gameEntityKey([BigInt(structureEntityId)]);
-  const liveStructure = useComponentValue(setup.components.Structure, structureKey);
-  // Affordability and open-plot checks below must update when their RECS inputs change.
-  useComponentValue(setup.components.Resource, structureKey);
-  useComponentValue(setup.components.StructureBuildings, structureKey);
+  const liveStructure = useNativeRow("Structure", {
+    game_id: configManager.getActiveGameId(),
+    entity_id: structureEntityId,
+  });
+  useNativeRevision(["ResourceBalance", "ResourceProduction", "ResourceWeight", "StructureBuildings", "Building"]);
   const selectedStructure = useMemo(() => {
     const base = liveStructure?.base;
     if (!base) return null;
@@ -233,15 +231,17 @@ const LocalTilePanel = () => {
     }
   }, [selectedBuildingHex, selectedStructure, setSelectedBuildingHex]);
 
-  const building = useComponentValue(
-    buildingComponent,
-    selectedBuildingHex
-      ? buildingEntityKey(
-          selectedBuildingHex.outerCol,
-          selectedBuildingHex.outerRow,
-          selectedBuildingHex.innerCol,
-          selectedBuildingHex.innerRow,
-        )
+  const building = useNativeRow(
+    "Building",
+    selectedBuildingHex && liveStructure
+      ? {
+          game_id: configManager.getActiveGameId(),
+          alt: liveStructure.base.alt,
+          outer_col: selectedBuildingHex.outerCol,
+          outer_row: selectedBuildingHex.outerRow,
+          inner_col: selectedBuildingHex.innerCol,
+          inner_row: selectedBuildingHex.innerRow,
+        }
       : undefined,
   );
 
@@ -261,7 +261,8 @@ const LocalTilePanel = () => {
     if (isCastleTile) {
       if (selectedStructureCategory === StructureType.Realm) return "Castle";
       if (isVillageLikeStructureCategory(selectedStructureCategory)) return mode.labels.village;
-      if (selectedStructureCategory === StructureType.FragmentMine) return mode.labels.fragmentMine;
+      if (selectedStructureCategory === StructureType.Mine)
+        return getMinePresentation(liveStructure!.metadata.mine_kind).name;
       if (selectedStructureCategory === StructureType.Hyperstructure) return "Hyperstructure";
       if (selectedStructureCategory === StructureType.Bank) return "Bank";
       return "Structure";
@@ -324,7 +325,7 @@ const LocalTilePanel = () => {
   const buildCost =
     hasBuilding && buildingCategory !== null
       ? normalizeResourceEntries(
-          getBuildingCosts(structureEntityId, setup.components, buildingCategory as BuildingType, useSimpleCost) ?? [],
+          getBuildingCosts(structureEntityId, setup.store, buildingCategory as BuildingType, useSimpleCost) ?? [],
         )
       : [];
 
@@ -492,7 +493,7 @@ const LocalTilePanel = () => {
     if (buildCost.length === 0) return false;
     if (!hasAvailableTile) return false;
     return buildCost.every((entry) => {
-      const balanceInfo = getBalance(structureEntityId ?? 0, entry.resource, currentDefaultTick, setup.components);
+      const balanceInfo = getBalance(structureEntityId ?? 0, entry.resource, currentDefaultTick, setup.store);
       return divideByPrecision(balanceInfo.balance) >= entry.amount;
     });
   })();
@@ -622,7 +623,7 @@ const LocalTilePanel = () => {
                     structureEntityId ?? 0,
                     entry.resource,
                     currentDefaultTick,
-                    setup.components,
+                    setup.store,
                   );
                   const balance = divideByPrecision(balanceInfo.balance);
                   const hasEnough = balance >= entry.amount;
@@ -719,6 +720,10 @@ const LocalTilePanel = () => {
 };
 
 export const MinimapPanel = ({ compact = false }: { compact?: boolean }) => {
+  const {
+    setup: { store },
+  } = useGame();
+  useNativeRevision(["Structure"]);
   const [tiles, setTiles] = useState<MinimapTile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { isMapView } = useQuery();
@@ -776,7 +781,15 @@ export const MinimapPanel = ({ compact = false }: { compact?: boolean }) => {
       <div className="relative flex h-full min-h-0 flex-col">
         <div className="relative flex-1 min-h-0 overflow-hidden rounded-b-xl rounded-t-none border border-gold/15 bg-gradient-to-br from-black/70 via-black/60 to-amber-900/20">
           <HexMinimap
-            tiles={tiles}
+            tiles={tiles.map((tile) => ({
+              ...tile,
+              mineKind: tile.occupier_id
+                ? store.get("Structure", {
+                    game_id: configManager.getActiveGameId(),
+                    entity_id: Number(tile.occupier_id),
+                  })?.metadata.mine_kind
+                : undefined,
+            }))}
             selectedHex={focusSelectedHex}
             navigationTarget={navigationTarget}
             cameraTargetHex={focusHex}

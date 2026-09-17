@@ -24,7 +24,7 @@ export const StaminaSummary = ({ selectedEntityId, isExplored, path }: StaminaSu
   }, [path]);
 
   const requiredStamina = Math.max(0, isExplored ? totalCost : configManager.getExploreStaminaCost());
-  const currentStamina = Number(stamina.amount ?? 0n);
+  const currentStamina = Number(stamina?.amount ?? 0n);
   const staminaRatio = requiredStamina === 0 ? Number.POSITIVE_INFINITY : currentStamina / requiredStamina;
   const statusColor =
     staminaRatio >= 1 ? "text-order-brilliance" : staminaRatio >= 0.5 ? "text-gold" : "text-order-giants";

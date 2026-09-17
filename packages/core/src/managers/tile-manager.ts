@@ -2,7 +2,6 @@ import {
   type DojoAccount,
   BUILDINGS_CENTER,
   BuildingType,
-  ClientComponents,
   Direction,
   HexPosition,
   ID,
@@ -14,9 +13,9 @@ import {
   getNeighborHexes,
   getProducedResource,
 } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
+import type { NativeFactStore } from "../client/native-fact-store";
 import { DEFAULT_COORD_ALT, FELT_CENTER, getTileAt } from "..";
-import { buildingEntityKey, gameEntityKey } from "./config-manager";
+import { configManager } from "./config-manager";
 
 const BUILDING_SLOT_COORDINATES = [
   { col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1] },
@@ -43,9 +42,11 @@ export class TileManager {
   private FELT_CENTER: number;
 
   constructor(
-    private readonly components: ClientComponents,
+    private readonly store: NativeFactStore,
     private readonly systemCalls: SystemCalls,
     hexCoords: HexPosition,
+    private readonly alt = false,
+    private readonly gameId = configManager.getActiveGameId(),
   ) {
     this.col = hexCoords.col;
     this.row = hexCoords.row;
@@ -53,10 +54,17 @@ export class TileManager {
   }
 
   /** Bound to where the structure stands, so callers name the structure instead of plumbing its hex. */
-  static forStructure(components: ClientComponents, systemCalls: SystemCalls, structureEntityId: ID): TileManager {
-    const structure = getComponentValue(components.Structure, gameEntityKey([BigInt(structureEntityId)]));
-    if (!structure) throw new Error(`Structure ${structureEntityId} is not in RECS; its building slots are unknown`);
-    return new TileManager(components, systemCalls, { col: structure.base.coord_x, row: structure.base.coord_y });
+  static forStructure(store: NativeFactStore, systemCalls: SystemCalls, structureEntityId: ID): TileManager {
+    const structure = store.require("Structure", {
+      game_id: configManager.getActiveGameId(),
+      entity_id: structureEntityId,
+    });
+    return new TileManager(
+      store,
+      systemCalls,
+      { col: structure.base.coord_x, row: structure.base.coord_y },
+      structure.base.alt,
+    );
   }
 
   getHexCoords = () => {
@@ -69,31 +77,19 @@ export class TileManager {
   }
 
   getRealmLevel = (realmEntityId: number): RealmLevels => {
-    const structure = getComponentValue(this.components.Structure, gameEntityKey([BigInt(realmEntityId)]));
+    const structure = this.store.require("Structure", { game_id: this.gameId, entity_id: realmEntityId });
     return (structure?.base.level || RealmLevels.Settlement) as RealmLevels;
   };
 
   getWonder = (realmEntityId: number) => {
-    const structure = getComponentValue(this.components.Structure, gameEntityKey([BigInt(realmEntityId)]));
+    const structure = this.store.require("Structure", { game_id: this.gameId, entity_id: realmEntityId });
     return structure?.metadata.has_wonder || false;
   };
 
   existingBuildings = () => {
-    // Read every bounded local slot through the overridable component. Indexed
-    // HasValue queries can omit override-only entities, while scanning the
-    // whole streamed world component makes local redraw cost grow with the map.
     const buildings = BUILDING_SLOT_COORDINATES.flatMap(({ col, row }) => {
-      const entity = buildingEntityKey(this.col, this.row, col, row);
-      const value = getComponentValue(this.components.Building, entity);
-      if (
-        value == null ||
-        value.outer_col !== this.col ||
-        value.outer_row !== this.row ||
-        value.entity_id === 0 ||
-        value.category === BuildingType.None
-      ) {
-        return [];
-      }
+      const value = this.getBuilding({ col, row });
+      if (!value || value.category === BuildingType.None) return [];
       const category = value.category;
 
       return [
@@ -112,26 +108,26 @@ export class TileManager {
     return buildings;
   };
 
-  getBuilding = (hexCoords: HexPosition) => {
-    const building = getComponentValue(
-      this.components.Building,
-      buildingEntityKey(this.col, this.row, hexCoords.col, hexCoords.row),
-    );
-    return building;
-  };
+  getBuilding = (hexCoords: HexPosition) =>
+    this.store.get("Building", {
+      game_id: this.gameId,
+      alt: this.alt,
+      outer_col: this.col,
+      outer_row: this.row,
+      inner_col: hexCoords.col,
+      inner_row: hexCoords.row,
+    });
 
   isHexOccupied = (hexCoords: HexPosition) => {
-    const { col, row } = hexCoords;
-    const entity = buildingEntityKey(this.col, this.row, col, row);
-    const building = getComponentValue(this.components.Building, entity);
+    const building = this.getBuilding(hexCoords);
     return building !== undefined && building.category !== BuildingType.None;
   };
 
   structureType = () => {
-    const tile = getTileAt(this.components, DEFAULT_COORD_ALT, this.col, this.row);
+    const tile = getTileAt(this.store, this.alt, this.col, this.row, this.gameId);
 
     if (tile?.occupier_is_structure) {
-      const structure = getComponentValue(this.components.Structure, gameEntityKey([BigInt(tile?.occupier_id)]));
+      const structure = this.store.get("Structure", { game_id: this.gameId, entity_id: tile.occupier_id });
       if (structure) {
         let category = structure.base.category;
         return category as StructureType;

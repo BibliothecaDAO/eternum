@@ -83,7 +83,7 @@ export function useImportantFeed() {
   const address = useAccountStore((state) => state.account?.address ?? null);
   const headlines = useHeadlineFeedStore((state) => state.headlines);
   const headlineFeed = orderHeadlineFeed(headlines, nowMs, tickSeconds);
-  const { data: stories } = useStoryEvents(350, "BattleStory");
+  const { data: stories } = useStoryEvents(350, "BattleEvent");
   const feed = useFeedRows();
   const rows = selectImportantFeedRows(stories, feed, "all", address, headlineFeed.recent);
   return { nowMs, rows, pinned: headlineFeed.pinned };

@@ -536,6 +536,13 @@ pub struct RealmGrants {
 
 #[starknet::interface]
 pub trait IRealmCreation<T> {
+    fn provision_and_upgrade_realm(
+        ref self: T,
+        game_id: u32,
+        actor: ContractAddress,
+        structure_id: u32,
+        context: crate::commands::ExecutionContext,
+    );
     fn activate_realm_economy(
         ref self: T,
         game_id: u32,

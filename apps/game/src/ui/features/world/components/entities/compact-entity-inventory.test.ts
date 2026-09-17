@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { ResourcesIds } from "@bibliothecadao/types";
 
 const mocks = vi.hoisted(() => ({
-  getResourceBalancesWithProduction: vi.fn(),
+  balances: vi.fn(),
 }));
 
 vi.mock("@/config/game-modes/use-game-mode-config", () => ({
@@ -36,9 +36,6 @@ vi.mock("@/ui/features/relics/components/relic-activation-selector", () => ({
 
 vi.mock("@bibliothecadao/eternum", () => ({
   divideByPrecision: (value: number) => value,
-  ResourceManager: {
-    getResourceBalancesWithProduction: mocks.getResourceBalancesWithProduction,
-  },
 }));
 
 vi.mock("@bibliothecadao/types", () => ({
@@ -68,18 +65,18 @@ import { buildDisplayItems, countDisplayItems, filterDisplayItems } from "./comp
 
 describe("buildDisplayItems", () => {
   it("uses the provided currentDefaultTick when projecting balances", () => {
-    mocks.getResourceBalancesWithProduction.mockReturnValue([
+    mocks.balances.mockReturnValue([
       { resourceId: ResourcesIds.Wood, amount: 25 },
       { resourceId: ResourcesIds.Wheat, amount: 0 },
     ]);
 
-    const resourceComponent = { some: "resource" } as never;
+    const resourceComponent = { balances: mocks.balances } as never;
     const result = buildDisplayItems(resourceComponent, 1234, [], undefined, {
       common: [ResourcesIds.Wood],
       food: [ResourcesIds.Wheat],
     });
 
-    expect(mocks.getResourceBalancesWithProduction).toHaveBeenCalledWith(resourceComponent, 1234);
+    expect(mocks.balances).toHaveBeenCalledWith(1234);
     expect(result).toHaveLength(1);
     expect(result[0]).toMatchObject({
       resourceId: ResourcesIds.Wood,
@@ -88,13 +85,13 @@ describe("buildDisplayItems", () => {
   });
 
   it("filters inventory items into resource and relic groups", () => {
-    mocks.getResourceBalancesWithProduction.mockReturnValue([
+    mocks.balances.mockReturnValue([
       { resourceId: ResourcesIds.Wood, amount: 25 },
       { resourceId: ResourcesIds.Dragonhide, amount: 1 },
     ]);
 
     const result = buildDisplayItems(
-      { some: "resource" } as never,
+      { balances: mocks.balances } as never,
       1234,
       [ResourcesIds.Dragonhide],
       RelicRecipientType.Explorer,
@@ -117,13 +114,13 @@ describe("buildDisplayItems", () => {
   });
 
   it("filters usable relics to compatible inactive relics", () => {
-    mocks.getResourceBalancesWithProduction.mockReturnValue([
+    mocks.balances.mockReturnValue([
       { resourceId: ResourcesIds.Wood, amount: 25 },
       { resourceId: ResourcesIds.Dragonhide, amount: 1 },
       { resourceId: ResourcesIds.AncientFragment, amount: 1 },
     ]);
 
-    const result = buildDisplayItems({ some: "resource" } as never, 1234, [], RelicRecipientType.Explorer);
+    const result = buildDisplayItems({ balances: mocks.balances } as never, 1234, [], RelicRecipientType.Explorer);
 
     expect(filterDisplayItems(result, "usableRelics")).toEqual([
       expect.objectContaining({
@@ -136,10 +133,10 @@ describe("buildDisplayItems", () => {
   });
 
   it("excludes active compatible relics from usable relic filters", () => {
-    mocks.getResourceBalancesWithProduction.mockReturnValue([{ resourceId: ResourcesIds.Dragonhide, amount: 1 }]);
+    mocks.balances.mockReturnValue([{ resourceId: ResourcesIds.Dragonhide, amount: 1 }]);
 
     const result = buildDisplayItems(
-      { some: "resource" } as never,
+      { balances: mocks.balances } as never,
       1234,
       [ResourcesIds.Dragonhide],
       RelicRecipientType.Explorer,
@@ -149,14 +146,14 @@ describe("buildDisplayItems", () => {
   });
 
   it("counts total, resource, relic, and active relic item groups without treating active relics as usable", () => {
-    mocks.getResourceBalancesWithProduction.mockReturnValue([
+    mocks.balances.mockReturnValue([
       { resourceId: ResourcesIds.Wood, amount: 25 },
       { resourceId: ResourcesIds.Wheat, amount: 10 },
       { resourceId: ResourcesIds.Dragonhide, amount: 2 },
     ]);
 
     const result = buildDisplayItems(
-      { some: "resource" } as never,
+      { balances: mocks.balances } as never,
       1234,
       [ResourcesIds.Dragonhide],
       RelicRecipientType.Explorer,
@@ -173,12 +170,12 @@ describe("buildDisplayItems", () => {
   });
 
   it("marks relics compatible with the selected recipient type", () => {
-    mocks.getResourceBalancesWithProduction.mockReturnValue([
+    mocks.balances.mockReturnValue([
       { resourceId: ResourcesIds.Dragonhide, amount: 1 },
       { resourceId: ResourcesIds.AncientFragment, amount: 1 },
     ]);
 
-    const result = buildDisplayItems({ some: "resource" } as never, 1234, [], RelicRecipientType.Explorer);
+    const result = buildDisplayItems({ balances: mocks.balances } as never, 1234, [], RelicRecipientType.Explorer);
 
     expect(result).toEqual([
       expect.objectContaining({
@@ -195,13 +192,13 @@ describe("buildDisplayItems", () => {
   });
 
   it("counts inactive compatible relics as usable", () => {
-    mocks.getResourceBalancesWithProduction.mockReturnValue([
+    mocks.balances.mockReturnValue([
       { resourceId: ResourcesIds.Dragonhide, amount: 2 },
       { resourceId: ResourcesIds.AncientFragment, amount: 1 },
     ]);
 
     const result = buildDisplayItems(
-      { some: "resource" } as never,
+      { balances: mocks.balances } as never,
       1234,
       [ResourcesIds.AncientFragment],
       RelicRecipientType.Explorer,

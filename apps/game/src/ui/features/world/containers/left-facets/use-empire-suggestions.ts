@@ -13,17 +13,8 @@ import {
   getBlockTimestamp,
   getRealmInfo,
 } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
-import {
-  type BiomeType,
-  BuildingType,
-  type ClientComponents,
-  type ID,
-  ResourcesIds,
-  StructureType,
-  TroopType,
-} from "@bibliothecadao/types";
-import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
+import { useGame, useNativeRevision } from "@bibliothecadao/react";
+import { type BiomeType, BuildingType, type ID, ResourcesIds, StructureType, TroopType } from "@bibliothecadao/types";
 import type { LucideIcon } from "lucide-react";
 import ArrowUpCircle from "lucide-react/dist/esm/icons/arrow-up-circle";
 import Building2 from "lucide-react/dist/esm/icons/building-2";
@@ -33,7 +24,7 @@ import Shield from "lucide-react/dist/esm/icons/shield";
 import Sparkles from "lucide-react/dist/esm/icons/sparkles";
 import Wheat from "lucide-react/dist/esm/icons/wheat";
 import { useMemo } from "react";
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
+import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import {
   buildBlitzRealmSuggestions,
   type BlitzBuildKey,
@@ -63,7 +54,7 @@ type BlitzActivityInput = {
 
 type BuildabilityContext = {
   entityId: number;
-  components: ClientComponents;
+  store: NativeFactStore;
   realm: ReturnType<typeof getRealmInfo> | null | undefined;
   mode: ReturnType<typeof useGameModeConfig>;
   useSimpleCost: boolean;
@@ -141,12 +132,7 @@ const resolveBlitzActivity = ({
 const resolveUpgradeCosts = (level: number): RawUpgradeCost[] =>
   (configManager.realmUpgradeCosts[level] as RawUpgradeCost[] | undefined) ?? [];
 
-const canAffordRealmUpgrade = (
-  realmId: ID,
-  realmLevel: number,
-  components: ClientComponents,
-  currentDefaultTick: number,
-) => {
+const canAffordRealmUpgrade = (realmId: ID, realmLevel: number, store: NativeFactStore, currentDefaultTick: number) => {
   const maxLevel = configManager.getMaxLevel(StructureType.Realm);
   const nextLevel = realmLevel + 1;
   if (realmLevel >= maxLevel || nextLevel > maxLevel) return false;
@@ -155,7 +141,7 @@ const canAffordRealmUpgrade = (
   if (costs.length === 0) return true;
 
   return costs.every((cost) => {
-    const balance = getBalance(realmId, cost.resource, currentDefaultTick, components);
+    const balance = getBalance(realmId, cost.resource, currentDefaultTick, store);
     return divideByPrecision(balance.balance) >= cost.amount;
   });
 };
@@ -176,7 +162,7 @@ const resolveBuildabilityForBuilding = (context: BuildabilityContext, buildingTy
     entityId: context.entityId,
     buildingType,
     useSimpleCost: context.useSimpleCost,
-    components: context.components,
+    store: context.store,
     realm: context.realm,
     mode: context.mode,
     hasAvailableBuildingTile: context.hasAvailableBuildingTile,
@@ -248,9 +234,10 @@ const decorateSuggestion = (draft: BlitzSuggestionDraft): EmpireSuggestion => {
  */
 export const useEmpireSuggestions = (): EmpireSuggestion[] => {
   const {
-    setup: { components },
-  } = useDojo();
+    setup: { store },
+  } = useGame();
   const mode = useGameModeConfig();
+  const revision = useNativeRevision(["Guard", "ResourceBalance", "ResourceProduction", "ResourceWeight"]);
   const resolvedWorldGameMode = useResolvedWorldGameMode();
   const currentBlockTimestamp = useCurrentBlockTimestamp();
   const playerStructures = useUIStore((state) => state.playerStructures);
@@ -261,7 +248,7 @@ export const useEmpireSuggestions = (): EmpireSuggestion[] => {
   const devModeOn = useUIStore((state) => state.devModeOn);
   const metadata = useStructuresWithMetadata({
     structures: playerStructures,
-    components,
+    store,
     nameUpdateVersion: structureNameVersion,
   });
 
@@ -281,14 +268,14 @@ export const useEmpireSuggestions = (): EmpireSuggestion[] => {
         if (structure.category !== StructureType.Realm) return [];
 
         const entityId = Number(structure.entityId);
-        const realm = getRealmInfo(gameEntityKey([BigInt(entityId)]), components);
+        const realm = getRealmInfo(entityId, store);
         const hasAvailableBuildingTile = resolveRealmHasAvailableBuildingTile({
           entityId,
           realmPosition: realm?.position,
         });
         const buildabilityContext: BuildabilityContext = {
           entityId,
-          components,
+          store,
           realm,
           mode,
           useSimpleCost,
@@ -303,18 +290,13 @@ export const useEmpireSuggestions = (): EmpireSuggestion[] => {
           realmName: structure.displayName,
           realmLevel: structure.realmLevel,
           isBlitzActive,
-          canAffordUpgrade: canAffordRealmUpgrade(
-            structure.entityId,
-            structure.realmLevel,
-            components,
-            currentDefaultTick,
-          ),
+          canAffordUpgrade: canAffordRealmUpgrade(structure.entityId, structure.realmLevel, store, currentDefaultTick),
           hasAvailableBuildingTile,
           buildingTilesOccupied: structure.buildingTilesOccupied,
           buildingCounts,
           population: structure.population,
           populationCapacity: structure.populationCapacity,
-          occupiedGuards: Number(base?.troop_guard_count ?? 0),
+          occupiedGuards: structure.guardCount,
           maxGuards: Number(base?.troop_max_guard_count ?? 0),
           occupiedExplorers: Number(base?.troop_explorer_count ?? 0),
           maxExplorers: Number(base?.troop_max_explorer_count ?? 0),
@@ -324,5 +306,5 @@ export const useEmpireSuggestions = (): EmpireSuggestion[] => {
       })
       .toSorted(compareSuggestionDrafts)
       .map(decorateSuggestion);
-  }, [metadata, components, mode, useSimpleCost, isBlitzActive]);
+  }, [metadata, store, mode, useSimpleCost, isBlitzActive, revision, currentBlockTimestamp]);
 };

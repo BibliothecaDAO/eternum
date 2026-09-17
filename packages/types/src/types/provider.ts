@@ -831,12 +831,14 @@ export interface ApplyRelicProps extends SystemSigner {
 }
 
 export interface BitcoinMineContributeLaborProps extends SystemSigner {
-  mine_id: BigNumberish;
-  target_phase_id: BigNumberish;
+  structure_id: BigNumberish;
   labor_amount: BigNumberish;
 }
 
-export interface BitcoinMineClaimPhaseRewardProps extends SystemSigner {
+export interface BitcoinMinePhaseProps extends SystemSigner {
   phase_id: BigNumberish;
+}
+
+export interface BitcoinMineClaimPhaseRewardProps extends BitcoinMinePhaseProps {
   mine_ids: BigNumberish[];
 }

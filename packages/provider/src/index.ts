@@ -6,7 +6,6 @@
  */
 import type { Manifest } from "@bibliothecadao/types";
 import * as SystemProps from "@bibliothecadao/types";
-import { DojoProvider } from "@dojoengine/core";
 import EventEmitter from "eventemitter3";
 import {
   Account,
@@ -17,6 +16,7 @@ import {
   CallData,
   GetTransactionReceiptResponse,
   ResourceBoundsBN,
+  RpcProvider,
   uint256,
   UniversalDetails,
 } from "starknet";
@@ -229,7 +229,7 @@ export const getContractByName = (manifest: Manifest, name: string) => {
       (contract) => Array.isArray(contract.systems) && contract.systems.includes(system),
     );
     if (contract) return contract.address;
-    throw new Error(`System ${system} is outside the native slice`);
+    throw new Error(`System ${system} is not declared in the native manifest`);
   }
   const contract = manifest.contracts.find((item) => item.tag === name);
   if (!contract) {
@@ -237,46 +237,6 @@ export const getContractByName = (manifest: Manifest, name: string) => {
   }
   return contract.address;
 };
-
-/**
- * Higher order function that adds event emitter functionality to a class
- *
- * @param Base - The base class to extend
- * @returns A new class with event emitter capabilities
- */
-function ApplyEventEmitter<T extends new (...args: any[]) => {}>(Base: T) {
-  return class extends Base {
-    eventEmitter = new EventEmitter();
-
-    /**
-     * Emit an event
-     * @param event - The event name
-     * @param args - Arguments to pass to event handlers
-     */
-    emit(event: string, ...args: any[]) {
-      this.eventEmitter.emit(event, ...args);
-    }
-
-    /**
-     * Subscribe to an event
-     * @param event - The event name to listen for
-     * @param listener - Callback function when event occurs
-     */
-    on(event: string, listener: (...args: any[]) => void) {
-      this.eventEmitter.on(event, listener);
-    }
-
-    /**
-     * Unsubscribe from an event
-     * @param event - The event name to stop listening to
-     * @param listener - The callback function to remove
-     */
-    off(event: string, listener: (...args: any[]) => void) {
-      this.eventEmitter.off(event, listener);
-    }
-  };
-}
-const EnhancedDojoProvider = ApplyEventEmitter(DojoProvider);
 
 export const buildVrfCalls = async ({
   account,
@@ -307,7 +267,9 @@ export const buildVrfCalls = async ({
   return calls;
 };
 
-export class EternumProvider extends EnhancedDojoProvider {
+export class EternumProvider extends EventEmitter {
+  readonly manifest: Manifest;
+  readonly provider: RpcProvider;
   promiseQueue: PromiseQueue;
   private readonly TRANSACTION_CONFIRM_TIMEOUT_MS = 10_000;
   private readonly TRANSACTION_SUBMIT_TIMEOUT_MS = DEFAULT_TRANSACTION_SUBMIT_TIMEOUT_MS;
@@ -348,8 +310,9 @@ export class EternumProvider extends EnhancedDojoProvider {
       transactionStreamWaiter?: TransactionStreamWaiter;
     },
   ) {
-    super(katana, url);
+    super();
     this.manifest = katana;
+    this.provider = new RpcProvider({ nodeUrl: url });
     this.retryConfig = retryConfig;
     this.namespace = scope?.namespace ?? NAMESPACE;
     this.gameId = scope?.gameId ?? 0;
@@ -363,14 +326,14 @@ export class EternumProvider extends EnhancedDojoProvider {
         : [],
     );
 
-    this.getWorldAddress = function () {
-      const worldAddress = this.manifest.world.address;
-      return worldAddress;
-    };
     // No timed batching: appchain txs land in <1s, so waiting to merge actions only adds
     // latency (and a merged multicall makes one revert fail unrelated actions). The queue
     // stays for per-signer serialization; a backlog still coalesces naturally.
     this.promiseQueue = new PromiseQueue(this, { batchDelayMs: 0 });
+  }
+
+  public execute(signer: AccountInterface, calls: AllowArray<Call>, _namespace?: string, details?: UniversalDetails) {
+    return signer.execute(calls, details);
   }
 
   public setNativeSubmission(submit: NativeSubmission): void {
@@ -1408,6 +1371,87 @@ export class EternumProvider extends EnhancedDojoProvider {
    * }
    * ```
    */
+  public async create_hyperstructure(props: SystemProps.SystemSigner & { x: number; y: number; alt: boolean }) {
+    return this.promiseQueue.enqueue({
+      signer: props.signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${this.namespace}-hyperstructure_create_systems`),
+        entrypoint: "create_hyperstructure",
+        calldata: [props.alt ? 1 : 0, props.x, props.y],
+      },
+      transactionType: TransactionType.INITIALIZE,
+    });
+  }
+
+  public async settle_season(
+    props: SystemProps.SystemSigner & { name: string; owner: string; selectedRealm?: number },
+  ) {
+    return this.promiseQueue.enqueue({
+      signer: props.signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${this.namespace}-realm_systems`),
+        entrypoint: "settle_season",
+        calldata: [props.name, props.owner, ...(props.selectedRealm === undefined ? [1] : [0, props.selectedRealm])],
+      },
+      transactionType: TransactionType.SETTLE,
+    });
+  }
+
+  public async settle_village(
+    props: SystemProps.SystemSigner & { owner: string; passId: bigint; connectedRealmEntityId: number },
+  ) {
+    return this.promiseQueue.enqueue({
+      signer: props.signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${this.namespace}-village_systems`),
+        entrypoint: "settle_village",
+        calldata: [props.owner, props.passId.toString(), props.connectedRealmEntityId],
+      },
+      transactionType: TransactionType.SETTLE,
+    });
+  }
+
+  public async settle_blitz(
+    props: SystemProps.SystemSigner & {
+      name: string;
+      owner: string;
+      cosmeticsBlockHash: string;
+      cosmeticsBlockNumber: number;
+      cosmetics: readonly { tokenId: string; owner: string; attributes: string }[];
+      grantStartingTroops: boolean;
+    },
+  ) {
+    return this.promiseQueue.enqueue({
+      signer: props.signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${this.namespace}-blitz_realm_systems`),
+        entrypoint: "settle_blitz",
+        calldata: [
+          props.name,
+          props.owner,
+          props.cosmeticsBlockHash,
+          props.cosmeticsBlockNumber,
+          props.cosmetics.length,
+          ...props.cosmetics.flatMap((item) => [item.tokenId, item.owner, item.attributes]),
+          props.grantStartingTroops ? 1 : 0,
+        ],
+      },
+      transactionType: TransactionType.SETTLE,
+    });
+  }
+
+  public async provision_realm(props: SystemProps.UpgradeRealmProps & { upgrade?: boolean }) {
+    return this.promiseQueue.enqueue({
+      signer: props.signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${this.namespace}-blitz_realm_systems`),
+        entrypoint: props.upgrade ? "provision_and_upgrade_realm" : "provision_realm",
+        calldata: [props.realm_entity_id],
+      },
+      transactionType: TransactionType.PROVISION_REALM,
+    });
+  }
+
   public async upgrade_realm(props: SystemProps.UpgradeRealmProps) {
     const { realm_entity_id, signer } = props;
 
@@ -2528,13 +2572,13 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async bitcoin_mine_contribute_labor(props: SystemProps.BitcoinMineContributeLaborProps) {
-    const { signer, mine_id, target_phase_id, labor_amount } = props;
+    const { signer, structure_id, labor_amount } = props;
     return this.promiseQueue.enqueue({
       signer,
       calls: {
         contractAddress: getContractByName(this.manifest, `${this.namespace}-bitcoin_mine_systems`),
         entrypoint: "contribute_labor",
-        calldata: [mine_id, target_phase_id, labor_amount],
+        calldata: [structure_id, labor_amount],
       },
       transactionType: TransactionType.BITCOIN_MINE_CONTRIBUTE_LABOR,
     });
@@ -2543,24 +2587,33 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async bitcoin_mine_claim_phase_reward(props: SystemProps.BitcoinMineClaimPhaseRewardProps) {
     const { signer, phase_id, mine_ids } = props;
     const contractAddress = getContractByName(this.manifest, `${this.namespace}-bitcoin_mine_systems`);
-    const calls: Call[] = [];
-    if (isVrfEnabled(this.VRF_PROVIDER_ADDRESS)) {
-      calls.push(
-        createVrfRequestRandomCall({
-          vrfProviderAddress: this.VRF_PROVIDER_ADDRESS,
-          addressToCall: contractAddress,
-          source: { type: "nonce", value: signer.address },
-        }),
-      );
-    }
-    calls.push({
-      contractAddress,
-      entrypoint: "claim_phase_reward",
-      calldata: [phase_id, mine_ids.length, ...mine_ids],
-    });
     return this.promiseQueue.enqueue({
       signer,
-      calls,
+      calls: {
+        contractAddress,
+        entrypoint: "claim_phase_reward",
+        calldata: [phase_id, mine_ids.length, ...mine_ids],
+      },
+      transactionType: TransactionType.BITCOIN_MINE_CLAIM_PHASE_REWARD,
+    });
+  }
+
+  public async bitcoin_mine_close_phase(props: SystemProps.BitcoinMinePhaseProps) {
+    return this.queueBitcoinPhase(props, "close_bitcoin_phase");
+  }
+
+  public async bitcoin_mine_bind_phase(props: SystemProps.BitcoinMinePhaseProps) {
+    return this.queueBitcoinPhase(props, "bind_bitcoin_phase");
+  }
+
+  private queueBitcoinPhase({ signer, phase_id }: SystemProps.BitcoinMinePhaseProps, entrypoint: string) {
+    return this.promiseQueue.enqueue({
+      signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${this.namespace}-bitcoin_mine_systems`),
+        entrypoint,
+        calldata: [phase_id],
+      },
       transactionType: TransactionType.BITCOIN_MINE_CLAIM_PHASE_REWARD,
     });
   }
@@ -2688,7 +2741,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     }
   }
   private withCombatRandomness(props: { signer: AccountInterface; ethereal?: boolean }, attack: Call): Call | Call[] {
-    if (!props.ethereal || !isVrfEnabled(this.VRF_PROVIDER_ADDRESS)) return attack;
+    if (this.nativeSubmission || !props.ethereal || !isVrfEnabled(this.VRF_PROVIDER_ADDRESS)) return attack;
     return [
       createVrfRequestRandomCall({
         vrfProviderAddress: this.VRF_PROVIDER_ADDRESS,
@@ -3091,6 +3144,30 @@ export class EternumProvider extends EnhancedDojoProvider {
         calldata: [hyperstructure_entity_id, access],
       },
       transactionType: TransactionType.SET_ACCESS,
+    });
+  }
+
+  public async checkpoint_hyperstructures(props: SystemProps.SystemSigner & { entity_ids: number[] }) {
+    return this.promiseQueue.enqueue({
+      signer: props.signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${this.namespace}-hyperstructure_systems`),
+        entrypoint: "checkpoint_hyperstructures",
+        calldata: [props.entity_ids.length, ...props.entity_ids],
+      },
+      transactionType: TransactionType.CLAIM_CONSTRUCTION_POINTS,
+    });
+  }
+
+  public async rank_players(props: SystemProps.SystemSigner & { trial_id: bigint; players: string[] }) {
+    return this.promiseQueue.enqueue({
+      signer: props.signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${this.namespace}-prize_distribution_systems`),
+        entrypoint: "rank_players",
+        calldata: [props.trial_id, props.players.length, props.players.length, ...props.players],
+      },
+      transactionType: TransactionType.END_GAME,
     });
   }
 

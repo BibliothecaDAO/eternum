@@ -1,14 +1,14 @@
-import { executeMadaraAndWait } from "./transactions";
 import { randomBytes } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { setTimeout as sleep } from "node:timers/promises";
 import { Account, CallData, RpcProvider, ec, uint256, validateAndParseAddress, type Call } from "starknet";
 import { assertProviderChain } from "../../../packages/chain/chain-guard.js";
 
-import { bindGameplayAccounts, type GameplayAccountBindingResult } from "@bibliothecadao/eternum";
+import { bindGameplayAccounts, waitForWorldState, type GameClient, type GameplayAccountBindingResult } from "@bibliothecadao/eternum";
 import { decodeGameLedgerGame } from "../../../packages/core/src/data/abi/GameLedger";
 import { mapWithConcurrency, type HarnessAccount, type HarnessGameplayIdentity } from "./account-factory";
-import { HeraldObserver } from "./herald-observer";
+import { trackTransaction } from "./driver";
+import type { HarnessGame } from "./harness-game";
 import {
   estimateLedgerStrkFeeFloor,
   executeMainnetAndWait,
@@ -100,11 +100,11 @@ interface BindLedgerGameplayAccountsOptions {
 interface FinalizeLedgerGameOptions {
   account: Account;
   gameId: number;
-  heraldUrl: string;
+  client: GameClient;
+  game: HarnessGame;
   mainnetRpcUrl: string;
   ledgerAddress: string;
   provider: RpcProvider;
-  registrarSystemAddress: string;
   registrations: readonly LedgerRegistrationRuntime[];
   sweepManifestPath: string;
   lordsAddress: string;
@@ -253,29 +253,10 @@ export async function bindLedgerGameplayAccounts(
   });
 }
 
-export async function waitForRelayedLedgerRegistrations(
-  heraldUrl: string,
-  gameId: number,
-  owners: readonly string[],
-): Promise<void> {
-  const expectedOwners = new Set(owners.map(normalizeFelt));
-  const observer = new HeraldObserver(heraldUrl, "madara");
-  await observer.waitForModelRows(
-    gameId,
-    ["LedgerRegistration"],
-    (models) => {
-      const relayedOwners = new Set(
-        models
-          .get("LedgerRegistration")!
-          .filter((row) => truthyFelt(row.registered))
-          .map((row) => normalizeFelt(row.owner)),
-      );
-      return (
-        relayedOwners.size === expectedOwners.size && [...expectedOwners].every((owner) => relayedOwners.has(owner))
-      );
-    },
-    RELAY_TIMEOUT_MS,
-  );
+export async function waitForRelayedLedgerRegistrations(client: GameClient, owners: readonly string[]): Promise<void> {
+  await waitForWorldState(client, () => owners.every((owner) =>
+    client.setup.store.get("EntryEntitlement", { game_id: client.gameId, owner: BigInt(owner) })) ? true : undefined,
+    RELAY_TIMEOUT_MS, () => `Ledger entitlements for game ${client.gameId}`);
 }
 
 export async function waitForGameStart(provider: RpcProvider, startAt: number): Promise<void> {
@@ -287,47 +268,40 @@ export async function waitForGameStart(provider: RpcProvider, startAt: number): 
 }
 
 export async function finalizeLedgerGame(options: FinalizeLedgerGameOptions): Promise<LedgerFinalizationEvidence> {
-  const observer = new HeraldObserver(options.heraldUrl, "madara");
+  const { client, game } = options;
   const mainnetProvider = new RpcProvider({ nodeUrl: options.mainnetRpcUrl });
   await assertProviderChain(mainnetProvider, "mainnet", "LEDGER_RPC_URL");
   const poolBeforeFinalization = (await readLedgerGame(mainnetProvider, options.ledgerAddress, options.gameId)).pool;
-  const schedule = await readGameSchedule(observer, options.gameId);
+  const schedule = { endAt: Number(client.setup.store.require("GameRegistry", { game_id: options.gameId }).end_at) };
   await waitForChainTimestamp(
     options.provider,
     schedule.endAt + 1,
     Math.max(120_000, (schedule.endAt - Math.floor(Date.now() / 1_000)) * 1_000 + 120_000),
   );
 
-  await checkpointGameShares(observer, options, schedule.endAt);
-  const players = await readRankedPlayers(observer, options.gameId);
+  const completed = [...client.setup.store.inGame("Hyperstructure", options.gameId)]
+    .filter((row) => row.stage === "Complete").map((row) => row.entity_id);
+  for (const entity_ids of chunk(completed, 16))
+    await client.setup.systemCalls.checkpoint_hyperstructures({ signer: options.account, entity_ids });
+  const players = rankPlayersByRegisteredPoints(
+    [...client.setup.store.inGame("PlayerEntry", options.gameId)],
+    [...client.setup.store.inGame("PlayerPoints", options.gameId)],
+  );
   if (players.length !== options.registrations.length) {
     throw new Error(
       `Result roster has ${players.length} players; ledger mode registered ${options.registrations.length}`,
     );
   }
   const trialId = randomTrialId();
-  const rankingTransactionHash = await executeMadaraAndWait(
-    options.account,
-    {
-      contractAddress: options.registrarSystemAddress,
-      entrypoint: "rank_players",
-      calldata: [
-        options.gameId.toString(),
-        trialId.toString(),
-        players.length.toString(),
-        players.length.toString(),
-        ...players,
-      ],
-    },
-    `finalize game ${options.gameId} ranking`,
-  );
-
-  await observer.waitForModelRows(
-    options.gameId,
-    ["GameRegistry"],
-    (models) => models.get("GameRegistry")!.some((row) => BigInt(row.final_trial_id as string) === trialId),
-    120_000,
-  );
+  const ranking = await trackTransaction({ botId: -1, gameId: options.gameId, provider: options.provider,
+    kind: "rank_players", stage: "setup", send: () => game.submit(options.account, () =>
+      client.setup.systemCalls.rank_players({ signer: options.account, trial_id: trialId, players })),
+  });
+  if (ranking.outcome !== "completed") throw new Error(`Ranking failed: ${ranking.error ?? ranking.outcome}`);
+  const rankingTransactionHash = ranking.transactionHash!;
+  await waitForWorldState(client, () =>
+    client.setup.store.require("GameRegistry", { game_id: options.gameId }).final_trial_id === trialId ? true : undefined,
+    120_000, () => `Final ranking ${trialId}`);
   const finalized = await waitForLedgerFinalization(mainnetProvider, options.ledgerAddress, options.gameId);
   const sweep = await sweepLedgerBalances(
     mainnetProvider,
@@ -568,69 +542,15 @@ async function readLedgerRegistration(
   return truthyFelt(result[0]);
 }
 
-async function readGameSchedule(observer: HeraldObserver, gameId: number) {
-  const rows = await observer.readModelRows(gameId, ["GameRegistry"]);
-  const game = rows.get("GameRegistry")![0];
-  if (!game) throw new Error(`GameRegistry ${gameId} is absent from Herald`);
-  return {
-    endAt: safeNumber(game.end_at, "GameRegistry.end_at"),
-  };
-}
-
-async function checkpointGameShares(
-  observer: HeraldObserver,
-  options: { account: Account; gameId: number; registrarSystemAddress: string },
-  cutoff: number,
-): Promise<void> {
-  const models = await observer.readModelRows(options.gameId, ["HyperstructureGlobals"]);
-  const globals = models.get("HyperstructureGlobals")![0];
-  const count = globals ? safeNumber(globals.completed_count, "HyperstructureGlobals.completed_count") : 0;
-  for (let start = 0; start < count; start += 16) {
-    await executeMadaraAndWait(
-      options.account,
-      {
-        contractAddress: options.registrarSystemAddress,
-        entrypoint: "checkpoint_share_points",
-        calldata: [options.gameId.toString(), start.toString(), Math.min(16, count - start).toString()],
-      },
-      `checkpoint completed hyperstructures ${start}–${Math.min(start + 16, count)}`,
-    );
-  }
-  if (count === 0) return;
-  await observer.waitForModelRows(
-    options.gameId,
-    ["CompletedHyperstructure", "HyperstructureShareholders"],
-    (rows) => {
-      const completed = rows.get("CompletedHyperstructure")!;
-      const shares = new Map(
-        rows.get("HyperstructureShareholders")!.map((row) => [String(row.hyperstructure_id), row]),
-      );
-      return (
-        completed.length === count &&
-        completed.every((row) => {
-          const share = shares.get(String(row.hyperstructure_id));
-          return share && safeNumber(share.start_at, "HyperstructureShareholders.start_at") >= cutoff;
-        })
-      );
-    },
-    120_000,
-  );
-}
-
-async function readRankedPlayers(observer: HeraldObserver, gameId: number): Promise<string[]> {
-  const rows = await observer.readModelRows(gameId, ["BlitzSettlement", "PlayerRegisteredPoints"]);
-  return rankPlayersByRegisteredPoints(rows.get("BlitzSettlement")!, rows.get("PlayerRegisteredPoints")!);
-}
-
 export function rankPlayersByRegisteredPoints(
   settlements: readonly Record<string, unknown>[],
   registeredPoints: readonly Record<string, unknown>[],
 ): string[] {
   const points = new Map(
-    registeredPoints.map((row) => [normalizeFelt(row.address), BigInt(row.registered_points as string)]),
+    registeredPoints.map((row) => [normalizeFelt(row.address), BigInt(row.points as string)]),
   );
   return settlements
-    .map((row) => normalizeAddress(row.player, "BlitzSettlement.player"))
+    .map((row) => normalizeAddress(row.player, "PlayerEntry.player"))
     .filter((address, index, all) => all.findIndex((candidate) => sameAddress(candidate, address)) === index)
     .map((address) => ({ address, points: points.get(normalizeFelt(address)) ?? 0n }))
     .toSorted((left, right) => {
@@ -690,12 +610,6 @@ function normalizeAddress(value: unknown, label: string): string {
 
 function sameAddress(left: string, right: string): boolean {
   return BigInt(left) === BigInt(right);
-}
-
-function safeNumber(value: unknown, label: string): number {
-  const parsed = Number(BigInt(value as string | number | bigint));
-  if (!Number.isSafeInteger(parsed)) throw new Error(`${label} must be a safe integer`);
-  return parsed;
 }
 
 function randomTrialId(): bigint {

@@ -99,7 +99,7 @@ export const ProductionWorkflows = ({
           realmEntityId={realm.entityId.toString()}
           realmName={realmDisplayName}
           producedResources={producedResources}
-          entityType={isVillageLikeStructureCategory(realm.structure?.category) ? "village" : "realm"}
+          entityType={isVillageLikeStructureCategory(realm.structure?.base.category) ? "village" : "realm"}
         />
       ),
     },

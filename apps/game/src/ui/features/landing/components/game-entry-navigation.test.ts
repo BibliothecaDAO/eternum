@@ -1,11 +1,11 @@
 // @vitest-environment node
 
 import { configManager } from "@bibliothecadao/eternum";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { resolveGameEntryTarget } from "./game-entry-navigation";
 
-configManager.mapCenter = 2010831280;
+vi.spyOn(configManager, "getMapCenter").mockReturnValue(2010831280);
 
 describe("resolveGameEntryTarget", () => {
   it("routes player entry through the bootstrapped world-map target when one is available", () => {

@@ -1,4 +1,5 @@
-import { afterAll, describe, expect, test } from "bun:test";
+import { assertRegistrarAvailable, createRegistrarGame, resolveCreatedGameId } from "../registrar/calls";
+import { afterAll, describe, expect, test, mock } from "bun:test";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -7,7 +8,12 @@ import schema from "../../../../contracts/l3/world-native/schema/schema.json";
 import { applyBlitzBalanceProfile } from "../../../source/blitz";
 import { loadEnvironmentConfiguration } from "../config/config-loader";
 import { buildNativePreset } from "../config/native-preset";
-import { buildNativePresetRegistration, registerNativePreset } from "../registrar/native-preset";
+import {
+  buildNativePresetRegistration,
+  registerNativePreset,
+  buildNativeGameParams,
+  loadNativePresetConfiguration,
+} from "../registrar/native-preset";
 import { nativeDomainAbi } from "../world/native/manifest";
 
 const abi = [...Object.values(schema.types), ...schema.domains.registry.entrypoints];
@@ -129,3 +135,49 @@ describe("native immutable balance presets", () => {
     await expect(registerNativePreset(account, 2, registration)).rejects.toThrow("differs from manifest");
   });
 });
+
+test.each([1, 2, 3])(
+  "native launch encodes preset %i and resolves its game from the season emitter",
+  async (presetId) => {
+    const config = loadNativePresetConfiguration(presetId === 1 ? "madara.eternum" : "madara.blitz", presetId);
+    const definition = buildNativePreset(config);
+    const params = buildNativeGameParams(config, {
+      gameName: "native-launch",
+      presetId,
+      startMainAt: 2000000000,
+      durationSeconds: 3600,
+      devModeOn: true,
+      singleRealmMode: presetId === 1,
+      twoPlayerMode: presetId === 3,
+      useMapOverride: false,
+    });
+    const manifest = {
+      world: { address: "0x456" },
+      native: {
+        domains: { registry: { address: "0x123" }, season: { address: "0x456" } },
+        activeSchema: schema.identity,
+        schemas: { [schema.identity]: schema },
+      },
+    };
+    const layout = schema.domains.season.events.find((event) => event.name === "RowSet")!;
+    const model = schema.models.find((model) => model.name === "GameRegistry")!;
+    const event = { from_address: "0x456", keys: [...layout.prefix, "1", model.identity], data: ["1", "7", "1", "0"] };
+    const receipt = { execution_status: "SUCCEEDED", events: [event] };
+    const execute = mock(async (_call: unknown, _details: unknown) => ({ transaction_hash: "0x789" }));
+    const account = { execute, waitForTransaction: async () => receipt } as unknown as Account;
+    assertRegistrarAvailable(manifest as never);
+    const created = await createRegistrarGame(account, params, manifest as never, undefined, definition);
+    expect(created.gameId).toBe(7);
+    expect(created.transactionHash).toBe("0x789");
+    expect(execute.mock.calls[0][0]).toEqual({
+      contractAddress: "0x123",
+      entrypoint: "create_game",
+      calldata: codec.compile("create_game", { params, definition }),
+    });
+    expect(params.registration_limit).toBe(presetId === 1 ? 0 : presetId === 3 ? 2 : 96);
+    expect(resolveCreatedGameId({ events: [{ ...event, from_address: "0x999" }] }, manifest as never)).toBeUndefined();
+    await expect(createRegistrarGame(account, params, manifest as never)).rejects.toThrow(
+      "immutable preset definition",
+    );
+  },
+);

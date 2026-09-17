@@ -5,7 +5,7 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Tabs } from "@/ui/design-system/atoms/tab";
 import { PrizePanel } from "@/ui/features/prize";
 import { getPlayerInfo } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
+import { useGame } from "@bibliothecadao/react";
 import { ContractAddress, StructureType } from "@bibliothecadao/types";
 import { Shapes, Sparkles, Users } from "lucide-react";
 import { ReactNode, useCallback, useEffect, useMemo } from "react";
@@ -44,7 +44,7 @@ const countStructuresByOwner = (structures: WorldSlicesStore["structures"]) =>
     if (structure.base.category === StructureType.Realm) counts.realms += 1;
     if (structure.base.category === StructureType.Hyperstructure) counts.hyperstructures += 1;
     if (structure.base.category === StructureType.Bank) counts.banks += 1;
-    if (structure.base.category === StructureType.FragmentMine) counts.mines += 1;
+    if (structure.base.category === StructureType.Mine) counts.mines += 1;
     if (structure.base.category === StructureType.Village) counts.villages += 1;
     countsByOwner.set(structure.owner, counts);
     return countsByOwner;
@@ -59,8 +59,8 @@ export const LEADERBOARD_POPOVER_ID = "leaderboard";
 export const SocialBoard = ({ focusOwnPlayer = false }: { focusOwnPlayer?: boolean }) => {
   const {
     account: { account },
-    setup: { components },
-  } = useDojo();
+    setup: { store },
+  } = useGame();
 
   const selectedTab = useSocialStore((state) => state.selectedTab);
   const isExpanded = useSocialStore((state) => state.isExpanded);
@@ -108,9 +108,9 @@ export const SocialBoard = ({ focusOwnPlayer = false }: { focusOwnPlayer?: boole
 
   useEffect(() => {
     setPlayerInfo(
-      getPlayerInfo(players, ContractAddress(account.address), playersByRank, playerStructureCountsMap, components),
+      getPlayerInfo(players, ContractAddress(account.address), playersByRank, playerStructureCountsMap, store),
     );
-  }, [players, account.address, playersByRank, playerStructureCountsMap, components, setPlayerInfo]);
+  }, [players, account.address, playersByRank, playerStructureCountsMap, store, setPlayerInfo]);
 
   const viewGuildMembers = useCallback(
     (guildEntityId: ContractAddress) => {

@@ -23,15 +23,12 @@ const mocks = vi.hoisted(() => ({
   guards: [] as any[],
   tiles: [{ occupierId: 0, hexCoords: { col: 11, row: 10 } }],
 }));
-const components = { Structure: "Structure", Resource: "Resource" };
 const systemCalls = {};
 vi.mock("@bibliothecadao/react", () => ({
-  useDojo: () => ({ setup: { components, systemCalls }, account: { account: { address: "0x1" } } }),
+  useGame: () => ({ setup: { store: {}, systemCalls }, account: { account: { address: "0x1" } } }),
+  useNativeRow: (model: string) => (model === "Structure" ? mocks.structure : undefined),
+  useNativeRevision: () => mocks.resource.balance,
 }));
-vi.mock("@dojoengine/react", () => ({
-  useComponentValue: (component: string) => (component === "Structure" ? mocks.structure : mocks.resource),
-}));
-vi.mock("@bibliothecadao/eternum/game-client", () => ({ gameEntityKey: () => "structure" }));
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
   useCurrentArmiesTick: () => 1,
   useCurrentBlockTimestamp: () => 60,
@@ -50,7 +47,11 @@ vi.mock("@/sync/active-game-client", () => ({
 vi.mock("@bibliothecadao/eternum", async () => {
   const types = await import("@bibliothecadao/types");
   return {
-    configManager: { getMaxArmySize: () => 3000, getWorldStructureDefenseSlotsConfig: () => ({}) },
+    configManager: {
+      getActiveGameId: () => 1,
+      getMaxArmySize: () => 3000,
+      getWorldStructureDefenseSlotsConfig: () => ({}),
+    },
     divideByPrecision: (value: number) => Number(value),
     getBalance: () => ({ balance: mocks.resource.balance }),
     getGuardsByStructure: () => mocks.guards,

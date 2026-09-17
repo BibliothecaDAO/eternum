@@ -46,13 +46,7 @@ const SANCTIONED_CLIENT_FILES = new Set([
 
 // Shared packages ship in the client bundle and get no informational console
 // output at all — errors and warnings only.
-const PACKAGE_SOURCE_ROOTS = [
-  "packages/core/src",
-  "packages/provider/src",
-  "packages/dojo/src",
-  "packages/react/src",
-  "packages/types/src",
-];
+const PACKAGE_SOURCE_ROOTS = ["packages/core/src", "packages/provider/src", "packages/react/src", "packages/types/src"];
 
 const CLIENT_ROOT = process.cwd();
 const REPO_ROOT = resolve(CLIENT_ROOT, "../..");

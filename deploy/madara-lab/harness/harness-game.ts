@@ -3,16 +3,15 @@ import {
   configManager,
   createGameActions,
   FELT_CENTER,
-  gameEntityKey,
+  ResourceManager,
   multiplyByPrecision,
   type ArmyPathIndexes,
   type GameActions,
   type GameClient,
   waitForWorldState,
 } from "@bibliothecadao/eternum";
-import { getComponentValue } from "@dojoengine/recs";
-import type { Account } from "starknet";
-import { ResourcesIds, TickIds, TroopType, type ID } from "@bibliothecadao/types";
+import { shortString, type Account } from "starknet";
+import { ResourcesIds, StructureType, TickIds, TroopType, type ID } from "@bibliothecadao/types";
 
 export interface Coord {
   x: number;
@@ -46,7 +45,7 @@ interface SubmittedEvent {
   transactionHash: string;
 }
 
-/** The game as the harness plays it: RECS facts, the projection's occupancy, and per-bot action facades over one client. */
+/** The game as the harness plays it: native facts, the projection's occupancy, and per-bot action facades over one client. */
 export interface HarnessGame {
   gameId: number;
   /** Actions signed by this bot; every bot gets its own facade over the shared world. */
@@ -64,6 +63,8 @@ export interface HarnessGame {
   minimumStaminaFor(kind: "move" | "explore"): number;
   production(structureId: ID): ProductionState | undefined;
   armyPathIndexes(): ArmyPathIndexes;
+  settle(signer: Account, owner: string, name: string, gameType: "blitz" | "eternum"): Promise<unknown>;
+  provision(signer: Account, structureId: ID): Promise<unknown>;
   produceWood(signer: Account, structureId: ID): Promise<unknown>;
   /** Runs a client action and resolves with its hash as soon as the chain accepted it; one at a time per signer. */
   submit(signer: Account, act: () => Promise<unknown>): Promise<HarnessSubmission>;
@@ -75,7 +76,8 @@ export const EXPLORER_TROOP_COUNT = 10;
 const T1_TROOP_TYPES: readonly TroopType[] = [TroopType.Knight, TroopType.Paladin, TroopType.Crossbowman];
 
 export function createHarnessGame(client: GameClient): HarnessGame {
-  const { components } = client.setup;
+  const { store, systemCalls } = client.setup;
+  const game_id = client.gameId;
   const awaitingHash = new Set<string>();
 
   return {
@@ -86,19 +88,21 @@ export function createHarnessGame(client: GameClient): HarnessGame {
       default: Math.floor(timestamp / configuredTickSeconds(TickIds.Default)),
     }),
     mapCenter: () => ({ x: FELT_CENTER(), y: FELT_CENTER() }),
-    settlementStructureIds: (player) =>
-      getComponentValue(components.BlitzSettlement, gameEntityKey([BigInt(player)]))?.structure_ids,
+    settlementStructureIds: (player) => {
+      if (![...store.inGame("PlayerEntry", game_id)].some((row) => row.player === BigInt(player))) return undefined;
+      return [...store.structuresOwnedBy(game_id, BigInt(player))]
+        .filter((row) => row.base.category === StructureType.Realm).map((row) => row.entity_id);
+    },
     structureCoord: (structureId) => {
-      const structure = getComponentValue(components.Structure, gameEntityKey([BigInt(structureId)]));
+      const structure = store.get("Structure", { game_id, entity_id: structureId });
       return structure ? { x: structure.base.coord_x, y: structure.base.coord_y } : undefined;
     },
     startingTroopType: (structureId) => {
-      const resource = getComponentValue(components.Resource, gameEntityKey([BigInt(structureId)]));
-      if (!resource) return undefined;
+      const resource = new ResourceManager(store, structureId);
       const required = BigInt(multiplyByPrecision(EXPLORER_TROOP_COUNT));
-      const balances = [resource.KNIGHT_T1_BALANCE, resource.PALADIN_T1_BALANCE, resource.CROSSBOWMAN_T1_BALANCE];
+      const balances = [ResourcesIds.Knight, ResourcesIds.Paladin, ResourcesIds.Crossbowman].map((id) => resource.balance(id));
       const funded = balances.findIndex((balance) => BigInt(balance) >= required);
-      if (funded < 0) throw new Error(`Structure ${structureId} has no funded T1 troop type`);
+      if (funded < 0) return undefined;
       return T1_TROOP_TYPES[funded];
     },
     explorerOf: (structureId) => {
@@ -106,7 +110,7 @@ export function createHarnessGame(client: GameClient): HarnessGame {
       return explorers.length === 1 ? explorers[0]!.entityId : undefined;
     },
     explorer: (explorerId) => {
-      const row = getComponentValue(components.ExplorerTroops, gameEntityKey([BigInt(explorerId)]));
+      const row = store.get("ExplorerTroops", { game_id, explorer_id: explorerId });
       if (!row) return undefined;
       return {
         coord: { x: row.coord.x, y: row.coord.y },
@@ -114,18 +118,26 @@ export function createHarnessGame(client: GameClient): HarnessGame {
         staminaUpdatedTick: BigInt(row.troops.stamina.updated_tick),
       };
     },
-    explorerStamina: (explorerId, armiesTick) => Number(client.views.stamina(explorerId).getStamina(armiesTick).amount),
+    explorerStamina: (explorerId, armiesTick) => {
+      const stamina = client.views.stamina(explorerId).getStamina(armiesTick);
+      if (!stamina) throw new Error(`Explorer ${explorerId} has no synchronized stamina`);
+      return Number(stamina.amount);
+    },
     minimumStaminaFor: (kind) =>
       kind === "explore" ? configManager.getExploreStaminaCost() : configManager.getMinTravelStaminaCost(),
     production: (structureId) => {
-      const resource = getComponentValue(components.Resource, gameEntityKey([BigInt(structureId)]));
-      if (!resource) return undefined;
+      const resource = new ResourceManager(store, structureId);
       return {
-        laborBalance: BigInt(resource.LABOR_BALANCE),
-        woodOutput: BigInt(resource.WOOD_PRODUCTION.output_amount_left),
+        laborBalance: resource.balance(ResourcesIds.Labor),
+        woodOutput: resource.current(ResourcesIds.Wood)?.production?.output_amount_left ?? 0n,
       };
     },
     armyPathIndexes: () => buildArmyPathIndexes(client),
+    settle: (signer, owner, name, gameType) => gameType === "eternum"
+      ? systemCalls.settle_season({ signer, owner, name: shortString.encodeShortString(name) })
+      : systemCalls.settle_blitz({ signer, owner, name: shortString.encodeShortString(name),
+          cosmetics: [], cosmeticsBlockHash: "0x0", cosmeticsBlockNumber: 0, grantStartingTroops: true }),
+    provision: (signer, structureId) => systemCalls.provision_realm({ signer, realm_entity_id: structureId }),
     produceWood: (signer, structureId) =>
       client.setup.systemCalls.burn_labor_for_resource_production({
         signer,

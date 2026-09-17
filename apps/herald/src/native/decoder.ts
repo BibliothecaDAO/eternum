@@ -213,9 +213,12 @@ function decodeEvent(
       recovery: "event-deduped",
       deletion: "event-ephemeral",
     },
-    entityId: normalizeFelt(hash.computePoseidonHashOnElements(header.slice(1))),
+    entityId: normalizeFelt(hash.computePoseidonHashOnElements([position.transactionHash, position.eventIndex])),
     position,
     key,
-    value,
+    value: {
+      ...value,
+      event_position: { transaction_hash: position.transactionHash, event_index: position.eventIndex },
+    },
   };
 }

@@ -5,7 +5,7 @@ import { GuildMemberList } from "./guild-member-list";
 import { useSocialStore } from "../components/use-social-store";
 import { formatSocialText, twitterTemplates } from "@/ui/socials";
 import { getGuild, getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
-import { useDojo, useGuildMembers, useGuildWhitelist } from "@bibliothecadao/react";
+import { useGame, useGuildMembers, useGuildWhitelist } from "@bibliothecadao/react";
 import { ContractAddress, PlayerInfo } from "@bibliothecadao/types";
 import CalendarDays from "lucide-react/dist/esm/icons/calendar-days";
 import Mail from "lucide-react/dist/esm/icons/mail";
@@ -25,17 +25,17 @@ interface GuildMembersProps {
 export const GuildMembers = ({ players, viewPlayerInfo, setIsExpanded }: GuildMembersProps) => {
   const {
     setup: {
-      components,
+      store,
       systemCalls: { join_guild, remove_guild_member, disband_guild, update_whitelist, leave_guild },
     },
     account: { account },
-  } = useDojo();
+  } = useGame();
 
   const selectedGuildEntityId = useSocialStore((state) => state.selectedGuild);
   const guildMembers = useGuildMembers(selectedGuildEntityId);
   const invitedPlayers = useGuildWhitelist(selectedGuildEntityId);
-  const userGuild = getGuildFromPlayerAddress(ContractAddress(account.address), components);
-  const selectedGuild = getGuild(selectedGuildEntityId, ContractAddress(account.address), components);
+  const userGuild = getGuildFromPlayerAddress(ContractAddress(account.address), store);
+  const selectedGuild = getGuild(selectedGuildEntityId, ContractAddress(account.address), store);
 
   const [isLoading, setIsLoading] = useState(false);
   const [viewGuildInvites, setViewGuildInvites] = useState(false);

@@ -41,8 +41,6 @@
   },
   "dependencies": {
     "@latticexyz/utils": "^2.0.0-next.12",
-    "@dojoengine/core": "catalog:game",
-    "@bibliothecadao/dojo": "workspace:*",
     "@bibliothecadao/provider": "workspace:*",
     "@bibliothecadao/types": "workspace:*",
     "@realms-world/chain": "workspace:*",

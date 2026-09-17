@@ -16,7 +16,23 @@
         "name_systems",
         "structure_systems",
         "resource_systems",
-        "production_systems"
+        "production_systems",
+        "blitz_realm_systems",
+        "realm_systems",
+        "village_systems",
+        "hyperstructure_create_systems",
+        "bitcoin_mine_systems",
+        "trade_systems",
+        "bank_systems",
+        "swap_systems",
+        "liquidity_systems",
+        "hyperstructure_systems",
+        "faith_systems",
+        "season_systems",
+        "relic_systems",
+        "artificer_systems",
+        "guild_systems",
+        "resource_bridge_systems"
       ],
       "events": [
         {
@@ -3219,6 +3235,30 @@
             },
             {
               "name": "village_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "provision_and_upgrade_realm",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "structure_id",
               "type": "core::integer::u32"
             },
             {
@@ -14860,6 +14900,10 @@
         {
           "name": "WithdrawResource",
           "type": "world_native::bridge::Withdraw"
+        },
+        {
+          "name": "ProvisionAndUpgradeRealm",
+          "type": "core::integer::u32"
         }
       ]
     },
@@ -18838,5 +18882,5 @@
       ]
     }
   },
-  "identity": "f3f125e5717106702cc7ff6f4b5db2c435cb10d1e474b7e6062f75e2f16cbc7d"
+  "identity": "731a6de5cb17509abe2382df77a28a3eb93b8aece1f07c7ebc7b9b32fc868139"
 }

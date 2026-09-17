@@ -4,16 +4,15 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { ResourcesIds } from "@bibliothecadao/types";
 const mocks = vi.hoisted(() => ({ allowed: true, owner: 1n, labor: true }));
 vi.mock("@bibliothecadao/react", () => ({
-  useDojo: () => ({ setup: { components: {} }, account: { account: { address: "0x1" } } }),
+  useNativeRevision: () => 0,
+  useGame: () => ({ setup: { store: {} }, account: { account: { address: "0x1" } } }),
 }));
 vi.mock("@bibliothecadao/eternum", () => ({
   getRealmInfo: () => ({ owner: mocks.owner, entityId: 5 }),
   configManager: { isLaborProductionEnabled: () => mocks.labor },
 }));
-vi.mock("@dojoengine/react", () => ({ useComponentValue: () => undefined }));
 vi.mock("@/hooks/store/use-ui-store", () => ({ useUIStore: (select: any) => select({}) }));
 vi.mock("@/utils/can-issue-orders", () => ({ canIssueOrders: () => mocks.allowed }));
-vi.mock("@bibliothecadao/eternum/game-client", () => ({ gameEntityKey: () => "realm" }));
 vi.mock("./production-controls", () => ({
   ProductionControls: ({ selectedResource, compact, realm }: any) => (
     <div data-resource={selectedResource} data-compact={compact} data-realm={realm.entityId} />

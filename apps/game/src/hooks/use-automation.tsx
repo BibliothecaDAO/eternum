@@ -29,7 +29,7 @@ import {
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { calculatePresetAllocations, getAutomationOverallocation } from "@/utils/automation-presets";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { useDojo } from "@bibliothecadao/react";
+import { useGame } from "@bibliothecadao/react";
 import { getAutomationProjectionTick, getBlockTimestamp, configManager } from "@bibliothecadao/eternum";
 import { ResourcesIds } from "@bibliothecadao/types";
 import { useCallback, useEffect, useRef } from "react";
@@ -97,10 +97,10 @@ export const useAutomation = () => {
   const {
     setup: {
       systemCalls: { execute_realm_production_plan },
-      components,
+      store,
     },
     account: { account: starknetSignerAccount },
-  } = useDojo();
+  } = useGame();
 
   const setNextRunTimestamp = useAutomationStore((state) => state.setNextRunTimestamp);
   const recordExecution = useAutomationStore((state) => state.recordExecution);
@@ -169,7 +169,7 @@ export const useAutomation = () => {
   }, [isGameOver, stopAutomation]);
 
   useEffect(() => {
-    if (!components) {
+    if (!store) {
       return;
     }
     const season = configManager.getSeasonConfig();
@@ -185,7 +185,7 @@ export const useAutomation = () => {
     automationEnabledAtRef.current = update.automationEnabledAtMs;
     nextRunTimestampRef.current = update.nextRunMs;
     setNextRunTimestampRef.current(nextRunTimestampRef.current);
-  }, [components, pruneForGame]);
+  }, [store, pruneForGame]);
 
   useEffect(() => {
     if (!hydrated) {
@@ -200,7 +200,7 @@ export const useAutomation = () => {
     }
 
     managedStructures.forEach((structure) => {
-      const entityType = isVillageLikeStructureCategory(structure.structure?.category) ? "village" : "realm";
+      const entityType = isVillageLikeStructureCategory(structure.structure?.base.category) ? "village" : "realm";
       const name = mode.structure.getName(structure.structure).name;
       const realmId = String(structure.entityId);
       syncedRealmIdsRef.current.add(realmId);
@@ -236,8 +236,8 @@ export const useAutomation = () => {
       return { ran: false, anyExecuted: false };
     }
 
-    if (!components) {
-      verboseLog("Automation: Missing Dojo components. Skipping automation pass.");
+    if (!store) {
+      verboseLog("Automation: Missing native facts. Skipping automation pass.");
       return { ran: false, anyExecuted: false };
     }
 
@@ -310,7 +310,7 @@ export const useAutomation = () => {
         if (
           Number.isFinite(realmIdNum) &&
           realmIdNum > 0 &&
-          !isEntityOwnedByAccount(components, realmIdNum, accountAddress)
+          !isEntityOwnedByAccount(store, realmIdNum, accountAddress)
         ) {
           recordRealmSkippedStatus({
             realmId: activeRealmConfig.realmId,
@@ -325,7 +325,7 @@ export const useAutomation = () => {
         const rawSnapshot: RealmResourceSnapshot =
           Number.isFinite(realmIdNum) && realmIdNum > 0
             ? buildRealmResourceSnapshot({
-                components,
+                store,
                 realmId: realmIdNum,
                 currentTick: conservativeTick,
               })
@@ -459,7 +459,7 @@ export const useAutomation = () => {
         if (
           Number.isFinite(realmIdNum) &&
           realmIdNum > 0 &&
-          !isEntityOwnedByAccount(components, realmIdNum, accountAddress)
+          !isEntityOwnedByAccount(store, realmIdNum, accountAddress)
         ) {
           recordRealmSkippedStatus({
             realmId: activeRealmConfig.realmId,
@@ -559,7 +559,7 @@ export const useAutomation = () => {
 
     return { ran: true, anyExecuted };
   }, [
-    components,
+    store,
     execute_realm_production_plan,
     recordExecution,
     recordStatus,

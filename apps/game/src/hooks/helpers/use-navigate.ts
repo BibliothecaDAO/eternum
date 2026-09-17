@@ -3,10 +3,9 @@ import { useCallback } from "react";
 import { Position } from "@bibliothecadao/eternum";
 
 import { buildPlayHref, parsePlayRoute, type PlayScene } from "@/play/navigation/play-route";
-import { SetupResult } from "@bibliothecadao/dojo";
+import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import { useQuery } from "@bibliothecadao/react";
 import { ID } from "@bibliothecadao/types";
-import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { useUIStore } from "../store/use-ui-store";
 
 type PositionLike = Position | { x?: number; y?: number; col?: number; row?: number };
@@ -122,7 +121,7 @@ export const useNavigateToMapView = () => {
   };
 };
 
-export const useGoToStructure = (setupResult: SetupResult | null) => {
+export const useGoToStructure = (setupResult: GameClientSetup | null) => {
   const setStructureEntityId = useUIStore((state) => state.setStructureEntityId);
   const setSelectedHex = useUIStore((state) => state.setSelectedHex);
   const navigateToHexView = useNavigateToHexView();

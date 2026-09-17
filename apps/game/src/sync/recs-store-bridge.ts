@@ -3,8 +3,7 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { type AppStore, useUIStore } from "@/hooks/store/use-ui-store";
 import { useWorldSlicesStore, type WorldSlicesStore } from "@/hooks/store/use-world-slices-store";
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
-import { activeGameRows, allRows } from "@/sync/recs-rows";
+import type { NativeFactStore, NativeModelName } from "@bibliothecadao/eternum/game-client";
 import type { PlayerRelicsData } from "@/types";
 import { readBlitzSettlementPlayerAddresses } from "@/services/blitz/blitz-settlement-players";
 import { identityProfiles } from "@/services/identity/player-profiles";
@@ -13,34 +12,24 @@ import { DEV_MODE_ENABLED } from "@/utils/dev-mode";
 import { isExplicitSpectateSession } from "@/utils/spectator-session";
 import {
   ClientConfigManager,
-  DEFAULT_COORD_ALT,
+  configManager,
   formatArmies,
   formatArrivals,
   formatGuilds,
   getAddressName,
-  getGuildFromPlayerAddress,
   readStructures,
-  structuresByOwnerQuery,
   ResourceManager,
   summarizeIncomingTroopArrivals,
 } from "@bibliothecadao/eternum";
 import type { GameSyncRuntime } from "@bibliothecadao/eternum/game-sync";
-import {
-  type ClientComponents,
-  ContractAddress,
-  EntityType,
-  type Player,
-  ResourcesIds,
-  type Structure,
-} from "@bibliothecadao/types";
-import { type Component, getComponentEntities, getComponentValue, runQuery } from "@dojoengine/recs";
+import { ContractAddress, EntityType, type Player, ResourcesIds, type Structure } from "@bibliothecadao/types";
 import { type IdentityProfile, profileOfIdentityUser } from "@realms-world/identity";
-import { env } from "../../env";
 
 type Slice =
   | "arrivals"
   | "armies"
   | "buildings"
+  | "clock"
   | "faith"
   | "guilds"
   | "hyperstructures"
@@ -52,7 +41,7 @@ type Slice =
   | "structures";
 
 interface RecsStoreBridgeInput {
-  components: ClientComponents;
+  store: NativeFactStore;
   runtime: GameSyncRuntime;
 }
 
@@ -80,15 +69,13 @@ const publishBridgeMetrics = (metrics: RecsStoreBridgeMetrics): void => {
  * as no name when it is the registration fallback. The signed-in user's own session stands in for their profile
  * until identity answers; every new address is asked for in one batch.
  */
-const readPlayers = (components: ClientComponents): Player[] => {
+const readPlayers = (store: NativeFactStore): Player[] => {
   const self = readSelfProfile();
-  const rows = [...getComponentEntities(components.AddressName as Component)].flatMap((entity) => {
-    const addressName = getComponentValue(components.AddressName, entity);
-    if (!addressName) return [];
+  const rows = [...store.entries("AddressName")].map(([entity, addressName]) => {
     const address = addressName.address;
     const profile = identityProfiles.get(address) ?? (self?.address === address ? self.profile : undefined);
-    const chainName = getAddressName(address, components) ?? null;
-    return [{ address, entity, name: profile?.name ?? chainName, portrait: profile?.portrait ?? null }];
+    const chainName = getAddressName(address, store) ?? null;
+    return { address, entity, name: profile?.name ?? chainName, portrait: profile?.portrait ?? null };
   });
   identityProfiles.request(rows.map((row) => row.address));
   return rows;
@@ -101,46 +88,37 @@ const readSelfProfile = (): { address: ContractAddress; profile: IdentityProfile
   return { address: ContractAddress(address), profile: profileOfIdentityUser(user) };
 };
 
-const readGuilds = (components: ClientComponents, account: string) =>
-  formatGuilds(
-    [...getComponentEntities(components.Guild as Component)].filter((entity) => {
-      const guild = getComponentValue(components.Guild, entity);
-      return guild !== undefined && Number(guild.member_count) !== 0;
-    }),
-    ContractAddress(account),
-    components,
+const readGuilds = (store: NativeFactStore, account: string) =>
+  formatGuilds(store.inGame("Guild", configManager.getActiveGameId()), ContractAddress(account), store).filter(
+    (guild) => guild.memberCount > 0,
   );
 
-const readBuildings = (components: ClientComponents) =>
-  allRows(components.Building).map((building) => ({
-    innerCol: Number(building.inner_col ?? 0),
-    innerRow: Number(building.inner_row ?? 0),
-    outerEntityId: Number(building.outer_entity_id ?? 0),
+const readBuildings = (store: NativeFactStore) =>
+  [...store.inGame("Building", configManager.getActiveGameId())].map((building) => ({
+    innerCol: building.inner_col,
+    innerRow: building.inner_row,
+    outerEntityId: building.outer_entity_id,
   }));
 
-// Explicit spectator sessions are pure observers: no owned structures means no ownership chrome anywhere.
-const readPlayerStructures = (components: ClientComponents, account: string): Structure[] => {
+const readPlayerStructures = (store: NativeFactStore, account: string): Structure[] => {
   if (account === NO_ACCOUNT || isExplicitSpectateSession()) return [];
   const owner = ContractAddress(account);
-  return readStructures(components, [...runQuery(structuresByOwnerQuery(components, owner))], owner);
+  return readStructures(store, owner, owner);
 };
 
-const readSelectableArmies = (components: ClientComponents, account: string) =>
-  formatArmies([...getComponentEntities(components.ExplorerTroops as Component)], ContractAddress(account), components)
+const readSelectableArmies = (store: NativeFactStore, account: string) =>
+  formatArmies(store.inGame("ExplorerTroops", configManager.getActiveGameId()), ContractAddress(account), store)
     .filter((army) => army.isMine)
     .map((army) => ({ entityId: army.entityId }));
 
-const readRelics = (
-  components: ClientComponents,
-  playerStructures: Structure[],
-  armyIds: number[],
-): PlayerRelicsData => {
+const readRelics = (store: NativeFactStore, playerStructures: Structure[], armyIds: number[]): PlayerRelicsData => {
   const relicsOf = (entityId: number) => {
-    const resource = getComponentValue(components.Resource, gameEntityKey([BigInt(entityId)]));
-    if (!resource) return [];
-    return ResourceManager.getResourceBalances(resource).filter(
-      ({ resourceId }) => resourceId >= ResourcesIds.StaminaRelic1 && resourceId <= ResourcesIds.TroopProductionRelic2,
-    );
+    return new ResourceManager(store, entityId)
+      .balances()
+      .filter(
+        ({ resourceId }) =>
+          resourceId >= ResourcesIds.StaminaRelic1 && resourceId <= ResourcesIds.TroopProductionRelic2,
+      );
   };
   return {
     structures: playerStructures.flatMap((structure) => {
@@ -150,7 +128,7 @@ const readRelics = (
         : [
             {
               entityId: structure.entityId,
-              position: { alt: DEFAULT_COORD_ALT, x: structure.position.x, y: structure.position.y },
+              position: { alt: structure.structure.base.alt, x: structure.position.x, y: structure.position.y },
               relics,
               structureType: structure.structure.base.category,
               type: EntityType.STRUCTURE,
@@ -159,7 +137,7 @@ const readRelics = (
     }),
     armies: armyIds.flatMap((entityId) => {
       const relics = relicsOf(entityId);
-      const army = getComponentValue(components.ExplorerTroops, gameEntityKey([BigInt(entityId)]));
+      const army = store.get("ExplorerTroops", { game_id: configManager.getActiveGameId(), explorer_id: entityId });
       return relics.length === 0 || !army
         ? []
         : [
@@ -174,58 +152,47 @@ const readRelics = (
   };
 };
 
-const readSeasonWinner = (components: ClientComponents, seasonEnded: WorldSlicesStore["seasonEnded"]) => {
-  if (!seasonEnded) return null;
-  const address = ContractAddress(seasonEnded.winnerAddress);
-  return {
-    address,
-    guildName: getGuildFromPlayerAddress(address, components)?.name ?? "Unknown",
-    name: getAddressName(address, components) ?? "Unknown",
-  };
-};
-
 /** Per-game clock and dev-mode gates, read once from the scoped config manager. */
-const publishSeasonClock = (): void => {
+const readSeasonClock = (): Partial<AppStore> => {
   const config = ClientConfigManager.instance();
   const season = config.getSeasonConfig();
-  useUIStore.setState({
+  return {
     devModeOn: Boolean(config.getDevModeConfig().dev_mode_on),
     gameEndAt: resolveFiniteSeasonEndAt(season.endAt || undefined),
     gameStartMainAt: resolveSeasonStartTimestamp(season.startMainAt || undefined),
-  });
+  };
 };
 
-/**
- * The one RECS → store bridge. RECS update streams only mark slices dirty; the runtime's slice-applied hook is the
- * chokepoint where dirty slices are derived once and published in one store write each, so the overlay re-renders at
- * most once per ingest slice however many rows the slice carried. Account, selection and relic-refresh changes flush
- * immediately because nothing else would.
- */
-export const installRecsStoreBridge = ({ components, runtime }: RecsStoreBridgeInput): (() => void) => {
+/** Derived UI views publish after an atomic native transaction or a completed ambient slice. */
+export const installRecsStoreBridge = ({ store, runtime }: RecsStoreBridgeInput): (() => void) => {
   const dirty = new Set<Slice>();
   const metrics: RecsStoreBridgeMetrics = { accountTriggers: 0, derives: 0, sliceTriggers: 0, storeTriggers: 0 };
-  let seasonEnded: WorldSlicesStore["seasonEnded"] = null;
   const account = () => useAccountStore.getState().account?.address ?? NO_ACCOUNT;
 
-  const sources: Array<[Component, Slice[]]> = [
-    [components.AddressName as Component, ["players", "faith", "mine"]],
-    [components.Guild as Component, ["guilds"]],
-    [components.GuildMember as Component, ["guilds"]],
-    [components.Structure as Component, ["structures", "mine"]],
-    [components.Building as Component, ["buildings"]],
-    [components.Hyperstructure as Component, ["hyperstructures", "leaderboard"]],
-    [components.HyperstructureShareholders as Component, ["leaderboard"]],
-    [components.PlayerRank as Component, ["leaderboard"]],
-    [components.PlayerRegisteredPoints as Component, ["leaderboard"]],
-    [components.PlayersRankTrial as Component, ["leaderboard"]],
-    [components.GameRegistry as Component, ["leaderboard"]],
-    [components.Resource as Component, ["resources"]],
-    [components.ExplorerTroops as Component, ["armies"]],
-    [components.BlitzSettlement as Component, ["settlement"]],
-    [components.ResourceArrival as Component, ["arrivals"]],
-    [components.WonderFaith as Component, ["faith"]],
-    [components.FaithfulStructure as Component, ["faith"]],
-  ];
+  const sources: Partial<Record<NativeModelName, Slice[]>> = {
+    AddressName: ["players", "faith", "mine"],
+    Guild: ["guilds"],
+    GuildMember: ["guilds"],
+    Structure: ["structures", "mine"],
+    StructureBuildings: ["mine"],
+    Building: ["buildings"],
+    Hyperstructure: ["hyperstructures", "leaderboard"],
+    HyperstructureShares: ["leaderboard"],
+    PlayerRank: ["leaderboard"],
+    PlayerPoints: ["leaderboard"],
+    RankingTrial: ["leaderboard"],
+    GameRegistry: ["clock", "leaderboard"],
+    ResourceBalance: ["resources"],
+    ResourceProduction: ["resources"],
+    ResourceWeight: ["resources"],
+    ProductionBonus: ["resources"],
+    ExplorerTroops: ["armies"],
+    AgentOwner: ["armies"],
+    PlayerEntry: ["settlement"],
+    ResourceArrival: ["arrivals"],
+    WonderFaith: ["faith"],
+    FaithfulStructure: ["faith"],
+  };
 
   const flush = (): void => {
     if (dirty.size === 0) return;
@@ -235,49 +202,42 @@ export const installRecsStoreBridge = ({ components, runtime }: RecsStoreBridgeI
     dirty.clear();
     const address = account();
     const slices: Partial<WorldSlicesStore> = {};
-    const ui: Partial<AppStore> = {};
+    const ui: Partial<AppStore> = pending.has("clock") ? readSeasonClock() : {};
 
-    if (pending.has("players")) slices.players = readPlayers(components);
-    if (pending.has("guilds")) slices.guilds = readGuilds(components, address);
-    if (pending.has("structures")) slices.structures = activeGameRows(components.Structure);
-    if (pending.has("buildings")) slices.buildings = readBuildings(components);
-    if (pending.has("hyperstructures")) slices.hyperstructures = allRows(components.Hyperstructure);
+    if (pending.has("players")) slices.players = readPlayers(store);
+    if (pending.has("guilds")) slices.guilds = readGuilds(store, address);
+    if (pending.has("structures")) slices.structures = [...store.inGame("Structure", configManager.getActiveGameId())];
+    if (pending.has("buildings")) slices.buildings = readBuildings(store);
+    if (pending.has("hyperstructures"))
+      slices.hyperstructures = [...store.inGame("Hyperstructure", configManager.getActiveGameId())];
     if (pending.has("leaderboard")) slices.leaderboardRevision = useWorldSlicesStore.getState().leaderboardRevision + 1;
     if (pending.has("resources")) slices.resourcesRevision = useWorldSlicesStore.getState().resourcesRevision + 1;
     if (pending.has("armies")) slices.armiesRevision = useWorldSlicesStore.getState().armiesRevision + 1;
     if (pending.has("settlement")) {
-      slices.blitzSettlementPlayers = readBlitzSettlementPlayerAddresses(components, [
-        ...getComponentEntities(components.BlitzSettlement as Component),
-      ]);
+      slices.blitzSettlementPlayers = readBlitzSettlementPlayerAddresses(store);
     }
     if (pending.has("arrivals")) {
-      slices.resourceArrivals = formatArrivals(allRows(components.ResourceArrival));
+      slices.resourceArrivals = formatArrivals(store.inGame("ResourceArrival", configManager.getActiveGameId()));
       ui.publicIncomingTroopArrivalsByStructure = summarizeIncomingTroopArrivals(
         slices.resourceArrivals,
         useChainTimeStore.getState().getNowSeconds(),
       );
     }
     if (pending.has("faith")) {
-      slices.addressNames = allRows(components.AddressName);
-      slices.wonderFaith = activeGameRows(components.WonderFaith);
-      slices.faithfulStructures = activeGameRows(components.FaithfulStructure);
+      slices.addressNames = [...store.rows("AddressName")];
+      slices.wonderFaith = [...store.inGame("WonderFaith", configManager.getActiveGameId())];
+      slices.faithfulStructures = [...store.inGame("FaithfulStructure", configManager.getActiveGameId())];
     }
     if (pending.has("mine") || pending.has("armies") || pending.has("resources")) {
-      const playerStructures =
-        pending.has("mine") || !useUIStore.getState().playerStructures.length
-          ? readPlayerStructures(components, address)
-          : useUIStore.getState().playerStructures;
-      const selectableArmies =
-        pending.has("mine") || pending.has("armies")
-          ? readSelectableArmies(components, address)
-          : useUIStore.getState().selectableArmies;
+      const playerStructures = readPlayerStructures(store, address);
+      const selectableArmies = readSelectableArmies(store, address);
       if (pending.has("mine")) ui.playerStructures = playerStructures;
       if (pending.has("mine") || pending.has("armies")) ui.selectableArmies = selectableArmies;
       ui.playerRelics =
         address === NO_ACCOUNT
           ? null
           : readRelics(
-              components,
+              store,
               playerStructures,
               selectableArmies.map((army) => army.entityId),
             );
@@ -286,29 +246,17 @@ export const installRecsStoreBridge = ({ components, runtime }: RecsStoreBridgeI
       ui.disableButtons =
         !playerStructures.some((structure) => structure.entityId === structureEntityId) ||
         address === NO_ACCOUNT ||
-        env.VITE_PUBLIC_SEASON_START_TIME >= Date.now() / 1000;
+        configManager.getSeasonConfig().startMainAt > useChainTimeStore.getState().getNowSeconds();
     }
-    if (seasonEnded && useWorldSlicesStore.getState().seasonEnded !== seasonEnded) {
-      slices.seasonEnded = seasonEnded;
-      ui.gameWinner = readSeasonWinner(components, seasonEnded);
-    }
-
     if (Object.keys(slices).length > 0) useWorldSlicesStore.setState(slices);
     if (Object.keys(ui).length > 0) useUIStore.setState(ui);
   };
 
   const markDirty = (...affected: Slice[]) => affected.forEach((slice) => dirty.add(slice));
-  const subscriptions = sources.map(([component, affected]) =>
-    component.update$.subscribe(() => markDirty(...affected)),
-  );
-  // Event rows are written then removed in the same step; the set carries the winner.
-  subscriptions.push(
-    (components.events.SeasonEnded as Component).update$.subscribe(({ value: [current] }) => {
-      if (!current) return;
-      seasonEnded = { timestamp: Number(current.timestamp), winnerAddress: BigInt(current.winner_address as bigint) };
-      markDirty("players");
-    }),
-  );
+  const unsubscribeFacts = store.subscribe((changes) => {
+    for (const change of changes) markDirty(...(sources[change.model] ?? []));
+    flush();
+  });
   const unsubscribeSlices = runtime.subscribeSliceApplied(() => {
     metrics.sliceTriggers += 1;
     flush();
@@ -340,12 +288,11 @@ export const installRecsStoreBridge = ({ components, runtime }: RecsStoreBridgeI
     flush();
   });
 
-  publishSeasonClock();
-  markDirty(...sources.flatMap(([, affected]) => affected));
+  markDirty(...Object.values(sources).flat());
   flush();
 
   return () => {
-    subscriptions.forEach((subscription) => subscription.unsubscribe());
+    unsubscribeFacts();
     unsubscribeSlices();
     unsubscribeAccount();
     unsubscribeProfiles();

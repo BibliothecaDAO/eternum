@@ -1,6 +1,4 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
-import { getComponentValue } from "@dojoengine/recs";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { isVillageLikeStructureCategory } from "@/lib/structure-type-utils";
 import {
@@ -16,8 +14,7 @@ import {
   getStructureRelicEffects,
 } from "@bibliothecadao/eternum";
 import { usePlayerProfile } from "@/hooks/use-player-profile";
-import { useDojo } from "@bibliothecadao/react";
-import { useComponentValue } from "@dojoengine/react";
+import { useGame, useNativeRow, useNativeRevision, useResourceManager } from "@bibliothecadao/react";
 import { ContractAddress, ID, BANDITS_NAME, RelicEffectWithEndTick, StructureType } from "@bibliothecadao/types";
 import { useCallback, useMemo } from "react";
 
@@ -34,21 +31,30 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
   const {
     setup,
     account,
-    setup: { components },
-  } = useDojo();
+    setup: { store },
+  } = useGame();
   const mode = useGameModeConfig();
 
   const goToStructure = useGoToStructure(setup);
 
   const userAddress = ContractAddress(account.account.address);
   const structureEntityIdNumber = Number(structureEntityId ?? 0);
-  const recsEntity = gameEntityKey([BigInt(structureEntityIdNumber || 0)]);
-  const structure = useComponentValue(components.Structure, recsEntity);
-  const resources = useComponentValue(components.Resource, recsEntity);
-  const productionBoostBonus = useComponentValue(components.ProductionBoostBonus, recsEntity);
-  const playerGuild = structure ? getGuildFromPlayerAddress(ContractAddress(structure.owner), components) : undefined;
-  const userGuild = getGuildFromPlayerAddress(userAddress, components);
-  const guards = structure ? getGuardsByStructure(structure) : [];
+  const keys = { game_id: configManager.getActiveGameId(), entity_id: structureEntityIdNumber };
+  const structure = useNativeRow("Structure", keys);
+  const resources = useResourceManager(structureEntityIdNumber);
+  const productionBoostBonus = useNativeRow("ProductionBonus", keys);
+  const shares = useNativeRow("HyperstructureShares", keys);
+  const revision = useNativeRevision([
+    "GuildMember",
+    "Guild",
+    "Guard",
+    "Hyperstructure",
+    "HyperstructureProgress",
+    "Structure",
+  ]);
+  const playerGuild = structure ? getGuildFromPlayerAddress(ContractAddress(structure.owner), store) : undefined;
+  const userGuild = getGuildFromPlayerAddress(userAddress, store);
+  const guards = structure ? getGuardsByStructure(structure, store) : [];
   const isMine = structure?.owner === userAddress;
   const isAlly = isMine || Boolean(playerGuild && userGuild && playerGuild.entityId === userGuild.entityId);
   const ownerProfile = usePlayerProfile(structure?.owner);
@@ -56,26 +62,29 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
   const relicEffects: RelicEffectWithEndTick[] = useMemo(() => {
     const effects: RelicEffectWithEndTick[] = [];
     const { currentArmiesTick } = getBlockTimestamp();
-    if (structure) effects.push(...getStructureArmyRelicEffects(structure, currentArmiesTick));
+    if (structure) {
+      for (const guard of store.inGame("Guard", structure.game_id)) {
+        if (guard.structure_id === structure.entity_id)
+          effects.push(...getStructureArmyRelicEffects(guard, currentArmiesTick));
+      }
+    }
     if (productionBoostBonus) effects.push(...getStructureRelicEffects(productionBoostBonus, currentArmiesTick));
     return effects;
-  }, [productionBoostBonus, structure]);
+  }, [productionBoostBonus, structure, store, revision]);
   const structureDetails = structure
     ? { structure, resources, playerGuild, guards, isAlly, addressName, isMine, relicEffects }
     : null;
   const hyperstructureRealmCount =
     structure?.base.category === StructureType.Hyperstructure
-      ? getRealmCountPerHyperstructure(components).get(structureEntityId)
+      ? getRealmCountPerHyperstructure(store).get(structureEntityId)
       : undefined;
   // The chain grants hyp_points_per_second × points_multiplier per second; the realm count only feeds the
   // multiplier at claim time, so the panel reads the multiplier the chain holds.
   const hyperstructurePointsPerSecond =
     structure?.base.category === StructureType.Hyperstructure
-      ? configManager.getHyperstructureConfig().pointsPerCycle *
-        Number(
-          getComponentValue(components.Hyperstructure, gameEntityKey([BigInt(structureEntityId)]))?.points_multiplier ??
-            0,
-        )
+      ? (store.require("SliceRules", { game_id: keys.game_id }).victory_points_grant_config.hyp_points_per_second *
+          (shares?.multiplier ?? 0)) /
+        1_000_000
       : undefined;
 
   const ownerDisplayName = structure?.owner ? displayPlayerName(structure.owner, ownerProfile.name) : BANDITS_NAME;
@@ -84,8 +93,8 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
 
   const typeLabel = useMemo(() => {
     if (!structure?.base?.category) return undefined;
-    return mode.structure.getTypeName(structure.base.category as StructureType);
-  }, [mode, structure?.base?.category]);
+    return mode.structure.getTypeName(structure.base.category as StructureType, structure.metadata.mine_kind);
+  }, [mode, structure?.base?.category, structure?.metadata.mine_kind]);
 
   const backgroundImage = useMemo(() => {
     if (!structure?.base?.category) return undefined;
@@ -106,7 +115,7 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
       }
       case StructureType.Hyperstructure:
         return "/images/buildings/construction/hyperstructure.png";
-      case StructureType.FragmentMine:
+      case StructureType.Mine:
         return "/images/buildings/construction/essence-rift.png";
       case StructureType.Village:
       case StructureType.Camp:
@@ -120,8 +129,7 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
     }
   }, [structure?.base?.category, structure?.base?.level]);
 
-  const guardSlotsUsed =
-    structure?.base.troop_guard_count !== undefined ? Number(structure.base.troop_guard_count) : undefined;
+  const guardSlotsUsed = structure ? guards.filter((guard) => guard.troops.count > 0n).length : undefined;
   const guardSlotsMax =
     structure?.base.troop_max_guard_count !== undefined ? Number(structure?.base?.troop_max_guard_count) : undefined;
 
@@ -159,8 +167,8 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
   }, [structure, isMine, isAlly]);
 
   const progress = useMemo(() => {
-    return isHyperstructure ? getHyperstructureProgress(structure?.entity_id, components) : undefined;
-  }, [isHyperstructure, structure?.entity_id, components]);
+    return isHyperstructure ? getHyperstructureProgress(structure?.entity_id, store) : undefined;
+  }, [isHyperstructure, structure?.entity_id, store, revision]);
 
   const structureName = useMemo(() => {
     return structure ? mode.structure.getName(structure).name : undefined;

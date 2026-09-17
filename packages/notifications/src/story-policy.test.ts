@@ -118,3 +118,12 @@ it("excludes unknown variants in production and diagnoses them in development", 
     vi.unstubAllEnvs();
   }
 });
+
+it("routes native battles and raids to the owners recorded in the event", () => {
+  expect(includesStoryNotification("important", "BattleEvent")).toBe(true);
+  expect(storyRecipients("BattleEvent", null, { attacker: { player: "0x11" }, defender: { player: "0x12" } })).toEqual([
+    "0x11",
+    "0x12",
+  ]);
+  expect(storyRecipients("RaidEvent", null, { player: "0x11", target_owner: "0x12" })).toEqual(["0x11", "0x12"]);
+});

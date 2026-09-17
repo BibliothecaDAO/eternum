@@ -1,15 +1,12 @@
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 import { useNowMs } from "@/hooks/helpers/use-block-timestamp";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { configManager, getEntityIdFromKeys, getStructureRelicEffects, ResourceManager } from "@bibliothecadao/eternum";
-import { useBuildings, useDojo } from "@bibliothecadao/react";
+import { configManager, getStructureRelicEffects, ResourceManager } from "@bibliothecadao/eternum";
+import { useBuildings, useNativeRow, useResourceManager } from "@bibliothecadao/react";
 import { getProducedResource, ID, RealmInfo, ResourcesIds } from "@bibliothecadao/types";
-import { useComponentValue } from "@dojoengine/react";
-import { HasValue, runQuery } from "@dojoengine/recs";
 import clsx from "clsx";
 import { HUD_BODY, HUD_HEADLINE, HUD_LABEL, HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
-import SparklesIcon from "lucide-react/dist/esm/icons/sparkles";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import Button from "@/ui/design-system/atoms/button";
 import { isVillageLikeStructureCategory } from "@/ui/lib/structure-capabilities";
@@ -17,7 +14,6 @@ import { REALM_PRESETS, RealmPresetId } from "@/utils/automation-presets";
 import { useAutomationStore } from "@/hooks/store/use-automation-store";
 import { ProductionStatusBadge } from "@/ui/shared";
 import { formatTimeRemaining } from "../../economy/resources/entity-resource-table/utils";
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 
 interface ProductionSidebarProps {
   realms: RealmInfo[];
@@ -49,30 +45,12 @@ const SidebarRealm = ({
   onSelectResource: (realmId: ID, resource: ResourcesIds) => void;
 }) => {
   const mode = useGameModeConfig();
-  const {
-    setup: {
-      components: { Building, Resource, ProductionBoostBonus },
-    },
-  } = useDojo();
-
   const currentTime = useNowMs();
-
-  const buildings = useMemo(() => {
-    const buildings = runQuery([
-      HasValue(Building, {
-        outer_entity_id: realm.entityId,
-      }),
-    ]);
-
-    return buildings;
-  }, [realm]);
-
-  // Get production data
-  const resourceData = useComponentValue(Resource, gameEntityKey([BigInt(realm.entityId)]));
+  const resourceData = useResourceManager(realm.entityId);
 
   const { currentDefaultTick } = getBlockTimestamp();
 
-  const buildingsData = useBuildings(realm.position.x, realm.position.y);
+  const buildingsData = useBuildings(realm.position.x, realm.position.y, realm.structure.base.alt);
   const productionBuildings = useMemo(
     () => buildingsData.filter((building) => building && getProducedResource(building.category)),
     [buildingsData],
@@ -104,8 +82,8 @@ const SidebarRealm = ({
       let outputRemaining: number | null = null;
       let activeBuildings = 0;
 
-      if (resourceData) {
-        const productionInfo = ResourceManager.balanceAndProduction(resourceData, resourceId);
+      const productionInfo = resourceData.current(resourceId);
+      if (productionInfo) {
         const productionData = ResourceManager.calculateResourceProductionData(
           resourceId,
           productionInfo,
@@ -149,22 +127,15 @@ const SidebarRealm = ({
   );
   const hasProduction = resourceProductionSummary.length > 0;
 
-  // Get bonuses
-  const productionBoostBonus = useComponentValue(ProductionBoostBonus, gameEntityKey([BigInt(realm.entityId)]));
-
-  const { wonderBonus, hasActivatedWonderBonus } = useMemo(() => {
-    const wonderBonusConfig = configManager.getWonderBonusConfig();
-    const hasActivatedWonderBonus = productionBoostBonus && productionBoostBonus.wonder_incr_percent_num > 0;
-    return {
-      wonderBonus: hasActivatedWonderBonus ? 1 + wonderBonusConfig.bonusPercentNum / 10000 : 1,
-      hasActivatedWonderBonus,
-    };
-  }, [productionBoostBonus]);
+  const productionBoostBonus = useNativeRow("ProductionBonus", {
+    game_id: configManager.getActiveGameId(),
+    entity_id: realm.entityId,
+  });
 
   const activeRelics = useMemo(() => {
     if (!productionBoostBonus) return [];
     return getStructureRelicEffects(productionBoostBonus, getBlockTimestamp().currentArmiesTick);
-  }, [productionBoostBonus]);
+  }, [productionBoostBonus, currentDefaultTick]);
 
   return (
     <div
@@ -183,21 +154,13 @@ const SidebarRealm = ({
             <h3 className={clsx(HUD_HEADLINE, "truncate")}>{mode.structure.getName(realm.structure).name}</h3>
             <p className={HUD_BODY}>
               {hasProduction
-                ? `${buildings.size} buildings · ${activeProductionBuildings}/${totalProductionBuildings} producing`
-                : `${buildings.size} buildings · no production`}
+                ? `${buildingsData.length} buildings · ${activeProductionBuildings}/${totalProductionBuildings} producing`
+                : `${buildingsData.length} buildings · no production`}
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            {(hasActivatedWonderBonus || activeRelics.length > 0) && (
+            {activeRelics.length > 0 && (
               <div className="flex gap-1 shrink-0">
-                {hasActivatedWonderBonus && (
-                  <div
-                    className="bg-gold/20 p-1 rounded"
-                    title={`Wonder Bonus: +${((wonderBonus - 1) * 100).toFixed(2)}%`}
-                  >
-                    <SparklesIcon className="w-4 h-4 text-gold" />
-                  </div>
-                )}
                 {activeRelics.length > 0 && (
                   <div className="bg-relic-activated/20 p-1 rounded" title={`${activeRelics.length} Active Relics`}>
                     <span className="text-xs font-bold text-relic-activated">{activeRelics.length}</span>
@@ -280,7 +243,7 @@ export const ProductionSidebar = memo(
       const campStructures: RealmInfo[] = [];
 
       realms.forEach((realm) => {
-        if (isVillageLikeStructureCategory(realm.structure?.category)) {
+        if (isVillageLikeStructureCategory(realm.structure?.base.category)) {
           campStructures.push(realm);
         } else {
           realmStructures.push(realm);
@@ -307,7 +270,9 @@ export const ProductionSidebar = memo(
       () => realms.find((realm) => realm.entityId === selectedRealmEntityId),
       [realms, selectedRealmEntityId],
     );
-    const selectedEntityType: AutomationTab = isVillageLikeStructureCategory(selectedRealmInfo?.structure?.category)
+    const selectedEntityType: AutomationTab = isVillageLikeStructureCategory(
+      selectedRealmInfo?.structure?.base.category,
+    )
       ? "village"
       : "realm";
 
@@ -397,7 +362,7 @@ export const ProductionSidebar = memo(
         const realmInfo = structureMap.get(realmId);
         if (!realmInfo) return;
 
-        const entityType = isVillageLikeStructureCategory(realmInfo.structure?.category) ? "village" : "realm";
+        const entityType = isVillageLikeStructureCategory(realmInfo.structure?.base.category) ? "village" : "realm";
         const realmName = mode.structure.getName(realmInfo.structure).name;
         upsertRealm(realmId, { realmName, entityType });
         setRealmPreset(realmId, pendingPreset.presetId);

@@ -1,6 +1,7 @@
+import { configManager } from "@bibliothecadao/eternum";
 import { Position } from "@bibliothecadao/eternum";
 import { BuildingType, StructureType, TroopTier, TroopType } from "@bibliothecadao/types";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { ArmyData, StructureInfo } from "../../types";
 import {
   buildArmyEntityLabelViewModel,
@@ -9,6 +10,13 @@ import {
   resolveArmyTitle,
   resolveStructureTitle,
 } from "./entity-label-view-model";
+
+vi.spyOn(configManager, "getMapCenter").mockReturnValue(2010831280);
+vi.spyOn(configManager, "getBlitzConfig").mockReturnValue({
+  blitz_mode_on: false,
+  blitz_settlement_config: { single_realm_mode: true, two_player_mode: false },
+  blitz_exploration_config: { reward_profile_id: 1 },
+});
 
 const army = {
   entityId: 101,
@@ -42,6 +50,13 @@ const structure = {
 } satisfies StructureInfo;
 
 describe("entity label view model", () => {
+  it("labels both mine kinds in the same world and rejects an unknown kind", () => {
+    const mine = { ...structure, structureType: StructureType.Mine, structureName: "" };
+    expect(resolveStructureTitle({ ...mine, mineKind: 1 })).toBe("Essence Rift #202");
+    expect(resolveStructureTitle({ ...mine, mineKind: 2 })).toBe("Fragment Mine #202");
+    expect(() => resolveStructureTitle({ ...mine, mineKind: 99 })).toThrow("Unknown mine kind 99");
+  });
+
   it("builds army identity and expanded metrics from one model", () => {
     const model = buildArmyEntityLabelViewModel(army);
 

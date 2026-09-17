@@ -34,6 +34,20 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-09-17",
+    title: "Independent village placement",
+    description:
+      "Villages use the settlement planner. Choose a connected realm for the army grant and bridge fee; villages no longer use one of six surrounding tiles.",
+    type: "feature",
+  },
+  {
+    date: "2026-09-17",
+    title: "Consistent reinforcement and production",
+    description:
+      "Reinforcement checks the target owner in every game mode. Production controls show the recorded resource, labor, and troop bonuses through their end ticks.",
+    type: "fix",
+  },
+  {
     date: "2026-09-14",
     title: "World selection validation",
     description: "Game entry and registration report an unavailable world instead of selecting another deployment.",

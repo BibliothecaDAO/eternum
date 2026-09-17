@@ -1,3 +1,4 @@
+import { configManager } from "@bibliothecadao/eternum";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/hooks/store/use-account-store", () => ({
@@ -52,6 +53,7 @@ vi.mock("@bibliothecadao/eternum", () => {
   return new Proxy(
     {
       StructureTileSystemUpdate: eternumProxy,
+      configManager: { getActiveGameId: () => 1 },
     } as Record<string, unknown>,
     {
       get: (target, prop) => (prop in target ? target[prop as string] : eternumProxy),
@@ -79,15 +81,6 @@ vi.mock("@bibliothecadao/types", () => {
     },
   );
 });
-
-vi.mock("@dojoengine/recs", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@dojoengine/recs")>()),
-  getComponentValue: vi.fn(),
-}));
-
-vi.mock("@dojoengine/utils", () => ({
-  getEntityIdFromKeys: vi.fn(),
-}));
 
 vi.mock("starknet", () => ({
   shortString: {
@@ -468,21 +461,12 @@ describe("StructureManager structure info cache", () => {
 
   it("rebuilds a record after its component row changes", () => {
     const subject = createCacheSubject();
-    const callbacks: Record<string, (update: { value: unknown[] }) => void> = {};
-    const component = (name: string) => ({
-      update$: {
-        subscribe: (callback: (update: { value: unknown[] }) => void) => {
-          callbacks[name] = callback;
-          return { unsubscribe: vi.fn() };
-        },
+    let emit!: (changes: unknown[]) => void;
+    subject.store = {
+      subscribe: (callback: typeof emit) => {
+        emit = callback;
+        return vi.fn();
       },
-    });
-
-    subject.components = {
-      Structure: component("structure"),
-      StructureBuildings: component("buildings"),
-      Hyperstructure: component("hyperstructure"),
-      AddressName: component("addressName"),
     };
     subject.recsUnsubscribes = [];
     subject.entityIdLabels = new Map();
@@ -498,22 +482,22 @@ describe("StructureManager structure info cache", () => {
 
     const stale = { entityId: 7, stale: true };
     subject.structureInfoCache.set(7, stale);
-    callbacks.buildings({ value: [{ entity_id: 7 }, undefined] });
+    emit([{ model: "StructureBuildings", current: { game_id: configManager.getActiveGameId(), entity_id: 7 } }]);
     expect(subject.structureInfoCache.get(7)).not.toBe(stale);
     expect(subject.buildStructureInfo).toHaveBeenCalledTimes(1);
 
     subject.structureInfoCache.set(7, stale);
-    callbacks.hyperstructure({ value: [undefined, { hyperstructure_id: 7 }] });
+    emit([{ model: "Hyperstructure", previous: { game_id: configManager.getActiveGameId(), entity_id: 7 } }]);
     expect(subject.structureInfoCache.get(7)).not.toBe(stale);
 
     subject.structureInfoCache.set(7, stale);
-    callbacks.structure({ value: [{ entity_id: 7 }, undefined] });
+    emit([{ model: "Structure", current: { game_id: configManager.getActiveGameId(), entity_id: 7 } }]);
     expect(subject.structureInfoCache.get(7)).not.toBe(stale);
 
     subject.structureInfoCache.set(8, stale);
-    callbacks.addressName({ value: [{ address: 1n, name: 2n }, undefined] });
+    emit([{ model: "AddressName", current: { address: 1n, name: 2n } }]);
     expect(subject.structureInfoCache.size).toBe(0);
-    expect(subject.requestVisibleStructuresRefresh).not.toHaveBeenCalled();
+    expect(subject.requestVisibleStructuresRefresh).toHaveBeenCalledWith({ refreshExisting: true });
   });
 
   it("drops the cached record when a battle direction changes", () => {

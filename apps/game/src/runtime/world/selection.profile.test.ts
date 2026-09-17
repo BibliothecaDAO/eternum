@@ -11,6 +11,7 @@ const { deployment } = vi.hoisted(() => ({
     id: "blitz",
     chain: "madara" as const,
     namespace: "s2" as const,
+    admissionUrl: "https://tickets.realms.test",
     heraldBaseUrl: "https://herald.realms.test",
     rpcUrl: "https://rpc.realms.test",
     worldAddress: "0x222",

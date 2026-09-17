@@ -1,12 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { useDojo } from "@bibliothecadao/react";
-import { useComponentValue } from "@dojoengine/react";
+import { useGame, useNativeRevision } from "@bibliothecadao/react";
 import { type BuildingTiles, getRealmInfo } from "@bibliothecadao/eternum";
 import { BuildingType, BuildingTypeToString, ContractAddress, type HexPosition } from "@bibliothecadao/types";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
-import { buildingEntityKey, gameEntityKey } from "@bibliothecadao/eternum/game-client";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { requireActiveGameClient } from "@/sync/active-game-client";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
@@ -22,21 +20,24 @@ export interface PlotConstructionTarget {
 
 export function usePlotConstruction(target: PlotConstructionTarget) {
   const {
-    setup: { components },
+    setup: { store },
     account: { account },
-  } = useDojo();
+  } = useGame();
   const mode = useGameModeConfig();
   const ordersAllowed = useUIStore(canIssueOrders);
   const useSimpleCost = useUIStore((state) => state.useSimpleCost);
   const setUseSimpleCost = useUIStore((state) => state.setUseSimpleCost);
   const currentDefaultTick = useCurrentDefaultTick();
-  const entity = gameEntityKey([BigInt(target.entityId)]);
-  useComponentValue(components.Structure, entity);
-  useComponentValue(components.StructureBuildings, entity);
-  useComponentValue(components.Resource, entity);
-  const outer = target.tileManager.getHexCoords();
-  useComponentValue(components.Building, buildingEntityKey(outer.col, outer.row, target.spot.col, target.spot.row));
-  const realm = getRealmInfo(entity, components);
+  useNativeRevision([
+    "Structure",
+    "StructureBuildings",
+    "ResourceBalance",
+    "ResourceProduction",
+    "ResourceWeight",
+    "ProductionBonus",
+    "Building",
+  ]);
+  const realm = getRealmInfo(target.entityId, store);
   const isOwner = Boolean(account?.address && realm?.owner === ContractAddress(account.address));
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -47,7 +48,7 @@ export function usePlotConstruction(target: PlotConstructionTarget) {
       entityId: target.entityId,
       buildingType,
       useSimpleCost,
-      components,
+      store,
       realm,
       mode,
       targetSpot: target.spot,
@@ -60,7 +61,7 @@ export function usePlotConstruction(target: PlotConstructionTarget) {
       return {
         type,
         label: BuildingTypeToString[type],
-        requirements: resolveBuildingRequirements(target.entityId, components, type, useSimpleCost, currentDefaultTick),
+        requirements: resolveBuildingRequirements(target.entityId, store, type, useSimpleCost, currentDefaultTick),
         reason: state.reason,
         disabled: !state.canSubmit || pending,
       };

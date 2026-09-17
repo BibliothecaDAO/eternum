@@ -1,4 +1,4 @@
-import type { SetupResult } from "@bibliothecadao/dojo";
+import type { GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
 import type { GameClientObserver, GameSyncSnapshotPhase } from "@bibliothecadao/eternum/game-client";
 import type { GameSyncHead, GameSyncSnapshotProgress } from "@bibliothecadao/eternum/game-sync";
 
@@ -72,7 +72,7 @@ export const createGameSyncObserver = (input: GameSyncObserverInput): GameClient
   },
   onStoryEventsReset: resetGameSyncStoryEvents,
   onDiffReceived: recordClientActionDiffReceived,
-  onRecsApplied: recordClientActionRecsApplied,
+  onEntitiesApplied: recordClientActionRecsApplied,
   onMetrics: DEV_MODE_ENABLED ? publishSyncMetrics : undefined,
   onSnapshotProgress: (progress) => input.reportProgress(snapshotProgressPercentage(progress)),
   onSnapshotPhaseStarted: (phase) => markGameEntryMilestone(`${snapshotPhaseMilestone(phase)}-started`),

@@ -1,11 +1,10 @@
-import { ClientComponents, ResourceArrivalInfo, SystemCalls } from "@bibliothecadao/types";
+import { ResourceArrivalInfo, SystemCalls } from "@bibliothecadao/types";
 import { Account, AccountInterface } from "starknet";
 
 export class ResourceArrivalManager {
   arrival: ResourceArrivalInfo;
 
   constructor(
-    _components: ClientComponents,
     private readonly systemCalls: SystemCalls,
     arrival: ResourceArrivalInfo,
   ) {

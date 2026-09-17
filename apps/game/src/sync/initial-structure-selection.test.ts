@@ -5,7 +5,7 @@ vi.mock("@bibliothecadao/types", () => ({
     Realm: 1,
     Village: 2,
     Bank: 3,
-    FragmentMine: 4,
+    Mine: 4,
   },
 }));
 
@@ -13,7 +13,7 @@ const StructureType = {
   Realm: 1,
   Village: 2,
   Bank: 3,
-  FragmentMine: 4,
+  Mine: 4,
 } as const;
 
 const { resolveInitialStructureSelection } = await import("./initial-structure-selection");
@@ -76,7 +76,7 @@ describe("resolveInitialStructureSelection", () => {
   it("uses first global structure in spectator mode when no owned structures are available", () => {
     const selected = resolve({
       ownedStructures: [],
-      firstGlobalStructure: structure(77, 12, 18, StructureType.FragmentMine),
+      firstGlobalStructure: structure(77, 12, 18, StructureType.Mine),
     });
 
     expect(selected).toEqual({

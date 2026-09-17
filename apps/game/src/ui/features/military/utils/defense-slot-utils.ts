@@ -17,7 +17,7 @@ export const getStructureDefenseSlotLimit = (
   const level = levelRaw !== null && levelRaw !== undefined ? Number(levelRaw) : undefined;
 
   switch (category) {
-    case StructureType.FragmentMine:
+    case StructureType.Mine:
     case StructureType.Hyperstructure:
     case StructureType.Bank:
     case StructureType.Camp:

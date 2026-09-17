@@ -5,21 +5,11 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { identityUsername, useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { resolvePlayerNameFelt } from "@/services/identity/player-name";
-import {
-  buildBlitzSettleCalls,
-  namespaceForChain,
-  normalizeSelector,
-  resolveWorldIdForGame,
-} from "@bibliothecadao/eternum/game-client";
-import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
-import { requireWorldById } from "@/runtime/world/world-directory";
+import { submitSettlement } from "@/services/settlement";
 import { resolveBlitzGrantStartingTroops } from "@/services/blitz/blitz-settlement-options";
-import { getGameManifest } from "@contracts";
 import type { GameChain as Chain } from "@realms-world/chain";
-import { getContractByName } from "@dojoengine/core";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Account } from "starknet";
-import { env } from "../../env";
 import { isRegistrationCapacityReached, resolveEffectiveRegistrationCountMax } from "./registration-capacity";
 import type { WorldConfigMeta } from "./use-world-availability";
 
@@ -76,10 +66,6 @@ export const useWorldRegistration = ({
   const [entryStage, setEntryStage] = useState<EntryStage>("idle");
   const [error, setError] = useState<string | null>(null);
 
-  // Cache resolved contracts
-  const contractsCacheRef = useRef<Record<string, string> | null>(null);
-  const systemManifest = useMemo(() => getGameManifest(chain), [chain]);
-
   const devModeOn = config?.devModeOn ?? false;
   const registrationCount = config?.registrationCount ?? 0;
   const registrationCountMax = resolveEffectiveRegistrationCountMax(config);
@@ -111,57 +97,6 @@ export const useWorldRegistration = ({
 
   const isSettling = entryStage !== "idle" && entryStage !== "done" && entryStage !== "error";
 
-  /** Resolve the selected game's contract addresses from its deployment manifest. */
-  const resolveContracts = useCallback(async (): Promise<Record<string, string>> => {
-    if (contractsCacheRef.current) return contractsCacheRef.current;
-
-    const worldId = await resolveWorldIdForGame(worldName);
-    const contracts = requireWorldById(worldId).contractsBySelector;
-    contractsCacheRef.current = contracts;
-    return contracts;
-  }, [chain, worldName]);
-
-  const getWorldSystemAddress = useCallback(
-    (contracts: Record<string, string>, systemName: string): string => {
-      const contract = getContractByName(systemManifest, namespaceForChain(chain), systemName) as {
-        selector?: string;
-      };
-      const selector = contract.selector ? normalizeSelector(contract.selector) : null;
-      if (!selector) {
-        throw new Error(`${systemName} selector not found in manifest`);
-      }
-
-      const address = contracts[selector];
-      if (!address) {
-        throw new Error(`${systemName} contract not found for this world`);
-      }
-
-      return address;
-    },
-    [systemManifest],
-  );
-
-  /**
-   * Build calls to settle directly into a blitz world.
-   */
-  const buildSettleCalls = useCallback(
-    (blitzSystemsAddress: string) => {
-      if (!address || !usernameFelt) {
-        throw new Error("Gameplay account is not ready for settlement.");
-      }
-      return buildBlitzSettleCalls({
-        blitzSystemsAddress,
-        signerAddress: address,
-        usernameFelt,
-        // Settle targets the chosen game explicitly (meta carries its id).
-        gameId: config?.gameId,
-        vrfProviderAddress: env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS,
-        grantStartingTroops: resolveBlitzGrantStartingTroops(),
-      });
-    },
-    [address, config, usernameFelt],
-  );
-
   /**
    * Execute the world entry flow
    */
@@ -173,10 +108,6 @@ export const useWorldRegistration = ({
       setEntryStage("preparing");
 
       try {
-        // Resolve contracts
-        const contracts = await resolveContracts();
-
-        // Cast account to starknet Account for execute
         const starknetAccount = account as unknown as Account;
 
         // Eternum seasons settle exclusively through the entry modal's planner
@@ -186,17 +117,19 @@ export const useWorldRegistration = ({
           throw new Error("Eternum seasons settle through the entry modal.");
         }
 
-        const blitzSystemsAddress = getWorldSystemAddress(contracts, "blitz_realm_systems");
+        if (!config?.gameId || !usernameFelt) throw new Error("The selected game is not ready for settlement");
         setEntryStage("settling");
-        const settleCalls = buildSettleCalls(blitzSystemsAddress);
-        await executeObservedClientTransaction({
-          account: starknetAccount,
-          calls: settleCalls,
-          surface: "registration",
-          operation: "blitz_realm_systems.settle",
-          chain,
-          worldName,
-        });
+        await submitSettlement(config, starknetAccount, (client, owner) =>
+          client.setup.systemCalls.settle_blitz({
+            signer: starknetAccount,
+            name: usernameFelt,
+            owner,
+            cosmeticsBlockHash: "0x0",
+            cosmeticsBlockNumber: 0,
+            cosmetics: [],
+            grantStartingTroops: resolveBlitzGrantStartingTroops(),
+          }),
+        );
 
         setEntryStage("done");
       } catch (err) {
@@ -205,7 +138,7 @@ export const useWorldRegistration = ({
         setEntryStage("error");
       }
     },
-    [canSettle, account, address, config, worldName, chain, resolveContracts, getWorldSystemAddress, buildSettleCalls],
+    [canSettle, account, config, worldName, usernameFelt],
   );
 
   return {

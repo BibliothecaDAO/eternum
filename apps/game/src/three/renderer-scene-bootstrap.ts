@@ -2,7 +2,7 @@ import { TransitionManager } from "@/three/managers/transition-manager";
 import { SceneManager } from "@/three/scene-manager";
 import HexceptionScene from "@/three/scenes/hexception";
 import WorldmapScene from "@/three/scenes/worldmap";
-import type { SetupResult } from "@bibliothecadao/dojo";
+import type { GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
 import type { Raycaster, Vector2 } from "three";
 import type { MapControls } from "three/addons/controls/MapControls.js";
 import type { PipelineCompiler } from "./pipeline-compiler";

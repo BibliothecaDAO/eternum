@@ -31,6 +31,7 @@ const waitForGameRegistryByIdMock = mock(async ({ gameId }: { gameId: number }) 
 const writeLaunchSummaryMock = mock(() => ".context/game-launch/madara-blitz-bltz-test.json");
 const buildCreateGameParamsMock = mock((_: unknown, params: unknown) => params);
 const originalGetChainId = RpcProvider.prototype.getChainId;
+const actualPreset = await import("../registrar/preset");
 
 mock.module("../config/config-loader", () => ({
   loadEnvironmentConfiguration: () => buildLaunchConfig(),
@@ -39,6 +40,7 @@ mock.module("../config/config-loader", () => ({
 
 mock.module("../registrar/calls", () => ({
   assertRegistrarAvailable: assertRegistrarAvailableMock,
+  isNativeRegistrar: () => false,
   createRegistrarGame: createRegistrarGameMock,
   resolveRegistrarEnvironmentId: (environmentId: string) => environmentId,
   resolveRegistrarWorldAddress: () => "0xworld",
@@ -57,6 +59,7 @@ mock.module("../registrar/game-registry", () => ({
 }));
 
 mock.module("../registrar/preset", () => ({
+  ...actualPreset,
   buildCreateGameParams: buildCreateGameParamsMock,
 }));
 
@@ -147,6 +150,7 @@ describe("registrar game launch", () => {
       expect.anything(),
       "madara.blitz",
       undefined,
+      undefined,
     );
     expect(createLedgerOperatorAccountMock).not.toHaveBeenCalled();
     expect(openLedgerGameMock).not.toHaveBeenCalled();
@@ -170,7 +174,7 @@ describe("registrar game launch", () => {
         expect.objectContaining({ address: "0xoperator" }),
         { address: "0xledger", rpcUrl: "https://mainnet.example/rpc" },
         19,
-        8,
+        2,
         4_070_908_800,
         4_070_912_400,
       );

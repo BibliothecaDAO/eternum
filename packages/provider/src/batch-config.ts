@@ -100,6 +100,7 @@ export const TRANSACTION_COST_CATEGORY: Partial<Record<TransactionType, Transact
   // Buildings (state writes)
   [TransactionType.CREATE_BUILDING]: TransactionCostCategory.MEDIUM,
   [TransactionType.DESTROY_BUILDING]: TransactionCostCategory.MEDIUM,
+  [TransactionType.PROVISION_REALM]: TransactionCostCategory.MEDIUM,
   [TransactionType.LEVEL_UP]: TransactionCostCategory.MEDIUM,
   [TransactionType.DESTROY]: TransactionCostCategory.MEDIUM,
   [TransactionType.UPGRADE_LEVEL]: TransactionCostCategory.MEDIUM,

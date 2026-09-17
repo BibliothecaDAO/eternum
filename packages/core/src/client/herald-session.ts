@@ -1,5 +1,5 @@
 import type { GameSyncModelDefinition } from "../sync/model-manifest";
-import type { SetupResult } from "@bibliothecadao/dojo";
+import type { GameClientSetup } from "./game-client";
 import type { GameChain } from "@realms-world/chain";
 
 import type {
@@ -8,23 +8,23 @@ import type {
   GameSyncHead,
   GameSyncRuntimeMetrics,
   GameSyncSessionStart,
+  GameSyncStore,
   GameSyncSnapshotProgress,
 } from "../sync/game-sync-types";
 import { HeraldGameSyncTransport, type HeraldSocket } from "../sync/herald-game-sync-transport";
 import type { GameSyncScheduler } from "../sync/scheduler";
 import type { StoryEventScope } from "../sync/story-event-identity";
-import { createRecsGameSyncStore } from "./recs-game-sync-store";
 
 export type GameSyncSnapshotPhase = GameSyncSnapshotProgress["phase"];
 
 /**
- * What a client wants to know about its boot and Herald session beyond the rows landing in RECS. The web client
+ * What a client wants to know about its boot and Herald session beyond the rows landing in the store. The web client
  * feeds its stores, progress bar, and entry timeline from these; a headless client may log them or ignore them.
  * Every field is optional.
  */
 export interface GameClientObserver {
   /** setup() finished: components and the provider exist, the Herald session has not started. */
-  onSetupCompleted?: (setup: SetupResult) => void;
+  onSetupCompleted?: (setup: GameClientSetup) => void;
   /** The Herald subscription is active; the snapshot follows. */
   onSubscriptionActive?: () => void;
   /** A live delivery arrived: liveness, not content. */
@@ -39,8 +39,8 @@ export interface GameClientObserver {
   onStoryEventsReset?: () => void;
   /** The diff for a submitted transaction reached the client. */
   onDiffReceived?: (transactionHash: string) => void;
-  /** The diff for a submitted transaction is in RECS. */
-  onRecsApplied?: (transactionHash: string) => void;
+  /** The diff for a submitted transaction is in the store. */
+  onEntitiesApplied?: (transactionHash: string) => void;
   onMetrics?: (metrics: GameSyncRuntimeMetrics) => void;
   onSnapshotProgress?: (progress: GameSyncSnapshotProgress) => void;
   onSnapshotPhaseStarted?: (phase: GameSyncSnapshotPhase) => void;
@@ -57,7 +57,7 @@ export interface CreateHeraldGameSyncSessionInput {
   worldAddress: string;
   observer?: GameClientObserver;
   scheduler: GameSyncScheduler;
-  setup: SetupResult;
+  store: GameSyncStore;
   socketFactory?: (url: string) => HeraldSocket;
 }
 
@@ -85,7 +85,6 @@ export function createHeraldGameSyncSession(input: CreateHeraldGameSyncSessionIn
   const observer = input.observer ?? {};
   const scope: StoryEventScope = { chain: input.chain, worldAddress: input.worldAddress, gameId: input.gameId };
   observer.onStoryEventsReset?.();
-  const syncModels = [...input.entityModels, ...input.eventModels];
   return {
     onLiveUpdate: observer.onLiveUpdate,
     onError: (error) => {
@@ -95,13 +94,13 @@ export function createHeraldGameSyncSession(input: CreateHeraldGameSyncSessionIn
     onEvent: (event, confirmation) => observer.onStoryEvent?.(event, scope, confirmation),
     onMetrics: observer.onMetrics,
     onSnapshotProgress: createSnapshotProgressObserver(observer),
-    onTransactionEntitiesApplied: observer.onRecsApplied,
+    onTransactionEntitiesApplied: observer.onEntitiesApplied,
     onTransactionEntitiesReceived: observer.onDiffReceived,
     onSubscriptionActive: observer.onSubscriptionActive,
     onHead: observer.onHead,
     scheduler: input.scheduler,
     snapshotModels: input.entityModels,
-    store: createRecsGameSyncStore(input.setup, syncModels),
+    store: input.store,
     transport: new HeraldGameSyncTransport({
       modelDefinition: input.modelDefinition,
       socketFactory: input.socketFactory,

@@ -1,3 +1,4 @@
+import { configManager } from "@bibliothecadao/eternum";
 import { useCurrentBlockTimestamp, useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useCompactLane } from "@/hooks/helpers/use-compact-hud";
 import { useUISound } from "@/audio";
@@ -17,12 +18,10 @@ import {
   isMilitaryResource,
   multiplyByPrecision,
 } from "@bibliothecadao/eternum";
-import { useDojo, useResourceManager } from "@bibliothecadao/react";
+import { useGame, useResourceManager } from "@bibliothecadao/react";
 import { findResourceById, ResourcesIds, StructureType, type ID, type MarketInterface } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 import { resolveBestPrice } from "./best-prices";
 
 const ONE_MONTH = 2628000;
@@ -273,7 +272,7 @@ export const OrderRow = memo(
     updateBalance: boolean;
     setUpdateBalance: (value: boolean) => void;
   }) => {
-    const dojo = useDojo();
+    const dojo = useGame();
 
     const playTradeExecuteSound = useUISound("ui.trade_execute");
 
@@ -447,8 +446,8 @@ export const OrderRow = memo(
             donkeysNeeded={donkeysNeeded}
             donkeyBalance={donkeyBalance}
             isVillageAndMilitaryResource={
-              getComponentValue(dojo.setup.components.Structure, gameEntityKey([BigInt(entityId)]))?.category ===
-                StructureType.Village &&
+              dojo.setup.store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: entityId })?.base
+                .category === StructureType.Village &&
               (isMilitaryResource(offer.makerGets[0].resourceId) || isMilitaryResource(offer.takerGets[0].resourceId))
             }
           />
@@ -557,10 +556,10 @@ export const OrderCreation = memo(
     const {
       account: { account },
       setup: {
-        components,
+        store,
         systemCalls: { create_order },
       },
-    } = useDojo();
+    } = useGame();
 
     useEffect(() => {
       setBid(String(lords / resource));
@@ -699,7 +698,7 @@ export const OrderCreation = memo(
 
     const renderConfirmationPopupCreateOrder = useCallback(() => {
       const isVillageAndMilitaryResource =
-        getComponentValue(components.Structure, gameEntityKey([BigInt(entityId)]))?.category ===
+        store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: entityId })?.base.category ===
           StructureType.Village && isMilitaryResource(resourceId);
 
       return (

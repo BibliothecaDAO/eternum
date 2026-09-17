@@ -1,3 +1,4 @@
+import { configManager } from "@bibliothecadao/eternum";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -31,6 +32,7 @@ const findButton = (label: string) =>
   [...container.querySelectorAll("button")].find((button) => button.textContent === label)!;
 
 beforeEach(() => {
+  vi.spyOn(configManager, "isGameOver").mockReturnValue(false);
   (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
   mocks.isSpectating = false;
   mocks.explicit = false;

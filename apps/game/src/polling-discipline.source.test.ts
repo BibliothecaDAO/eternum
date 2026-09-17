@@ -86,7 +86,6 @@ const ALLOWED_TRANSACTION_WAITS: Record<string, string> = {
   "packages/core/src/client/game-client.ts": "injects the Herald transaction channel into the provider",
   "apps/game/src/observability/observed-client-transaction.ts": "resolves an observed submit from the Herald channel",
   "apps/game/src/three/scenes/worldmap.tsx": "resolves movement from the Herald channel",
-  "apps/game/src/ui/utils/transactions.ts": "resolves a submitted hash from the Herald channel",
   "packages/core/src/sync/game-sync-runtime.ts": "owns the Herald transaction-channel waiter",
   "packages/core/src/account/gameplay-account.ts":
     "one bounded deployment wait for non-browser callers that do not have a Herald session",

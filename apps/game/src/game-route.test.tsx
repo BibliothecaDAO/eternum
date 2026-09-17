@@ -14,8 +14,8 @@ vi.mock("./game-entry/play-route-boot", () => ({
 
 vi.mock("./game-entry/play-scene-handoff", () => ({ PlaySceneHandoff: () => null }));
 
-vi.mock("./hooks/context/dojo-context", () => ({
-  DojoProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+vi.mock("./hooks/context/game-context", () => ({
+  GameProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
 vi.mock("./hooks/use-transaction-listener", () => ({
@@ -226,7 +226,7 @@ describe("GameRoute", () => {
     expect(container.textContent).not.toContain("Sign in to Continue");
   });
 
-  it("keys the ready app by the active boot token so route rebootstrap remounts DojoProvider", () => {
+  it("keys the ready app by the active boot token so route rebootstrap remounts GameProvider", () => {
     const source = readFileSync(resolve(process.cwd(), "src/game-route.tsx"), "utf8");
 
     expect(source).toContain("bootToken");

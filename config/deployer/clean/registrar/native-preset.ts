@@ -1,6 +1,10 @@
+import { applyBlitzBalanceProfile } from "../../../source/blitz";
+import { loadEnvironmentConfiguration } from "../config/config-loader";
+import type { DeploymentEnvironmentId } from "../types";
 import { readFileSync } from "node:fs";
-import { CallData, hash, shortString, type Account } from "starknet";
+import { CallData, CairoCustomEnum, CairoOption, CairoOptionVariant, hash, shortString, type Account } from "starknet";
 import type { Config } from "@bibliothecadao/types";
+import { buildCreateGameParams, type CreateGamePayloadInput } from "./preset";
 import { buildNativePreset } from "../config/native-preset";
 import { waitForSuccess } from "../shared/declare";
 import type { NativeWorldManifest } from "../world/native/types";
@@ -50,4 +54,36 @@ export async function registerNativePreset(
   });
   await waitForSuccess(account, receipt.transaction_hash);
   return receipt.transaction_hash;
+}
+
+export function buildNativeGameParams(config: Config, input: CreateGamePayloadInput) {
+  const common = buildCreateGameParams(config, input);
+  return {
+    name: common.name,
+    preset_id: common.preset_id,
+    series_id: common.series_id,
+    game_number_in_series: common.game_number_in_series,
+    start_settling_at: common.start_settling_at,
+    start_main_at: common.start_main_at,
+    duration_seconds: common.duration_seconds,
+    end_grace_seconds: common.end_grace_seconds,
+    dev_mode_on: common.dev_mode_on,
+    mode: new CairoCustomEnum({ [input.twoPlayerMode ? "Duel" : common.single_realm_mode ? "Single" : "Triple"]: {} }),
+    registration_limit: config.blitz.mode.on ? common.registration_count_max : 0,
+    registration_start: common.registration_start_at,
+    biome_climate: common.biome_climate_config,
+    map_override: new CairoOption(
+      input.useMapOverride ? CairoOptionVariant.Some : CairoOptionVariant.None,
+      common.map_override,
+    ),
+    seed: common.seed,
+  };
+}
+
+export function loadNativePresetConfiguration(environment: DeploymentEnvironmentId, presetId: number): Config {
+  const config = loadEnvironmentConfiguration(environment);
+  if (presetId === 1 && !config.blitz.mode.on) return config;
+  if ((presetId === 2 || presetId === 3) && config.blitz.mode.on)
+    return applyBlitzBalanceProfile(config, presetId === 2 ? "official-60" : "official-90");
+  throw new Error(`No native preset definition for ${environment} preset ${presetId}`);
 }

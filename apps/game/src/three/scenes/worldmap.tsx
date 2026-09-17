@@ -88,7 +88,7 @@ import {
   recordClientActionRendered,
   recordClientActionSubmitted,
 } from "@/observability/client-action-latency";
-import { SetupResult } from "@bibliothecadao/dojo";
+import type { GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
 import {
   ActionPath,
   ActionPaths,
@@ -117,7 +117,6 @@ import {
   Structure,
   StructureType,
 } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
 import throttle from "lodash/throttle";
 import { Box3, Group, Raycaster, Sphere, Vector2, Vector3 } from "three";
 import { MapControls } from "three/addons/controls/MapControls.js";
@@ -387,7 +386,6 @@ import {
   collectWorldmapTerrainEcologyAnchors,
 } from "./worldmap-terrain-ecology-refresh-runtime";
 import { WorldmapTerrainContent } from "./worldmap-terrain-content";
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 import {
   WORLDMAP_CAMERA_ZOOM,
   resolveWorldmapCameraFieldOfViewDegrees,
@@ -565,7 +563,7 @@ function resolveStructureMarkerKind(structureType: StructureType): StrategicStru
   if (structureType === StructureType.Realm) return "realm";
   if (structureType === StructureType.Hyperstructure) return "hyperstructure";
   if (structureType === StructureType.Bank) return "bank";
-  if (structureType === StructureType.FragmentMine || structureType === StructureType.BitcoinMine) return "mine";
+  if (structureType === StructureType.Mine || structureType === StructureType.BitcoinMine) return "mine";
   return isVillageLikeStructureCategory(structureType) ? "village" : "realm";
 }
 
@@ -1323,12 +1321,12 @@ export default class WorldmapScene extends WarpTravel {
       this.showSuggestedArmyDeployment();
     });
     const unsubscribeTerrainEcology = bindWorldmapTerrainEcologyRefresh({
-      onStructureComponentChanged: (current) => {
+      onStructureChanged: (current) => {
         if (current?.entity_id !== undefined) this.refreshStructureMarkersForEntity(current.entity_id);
       },
       projection: this.worldSpatialProjection,
       requestRefresh: () => this.scheduleTerrainEcologyRefresh(),
-      structureComponent: this.dojo.components.Structure,
+      store: this.dojo.store,
     });
     const unsubscribeArmies = this.worldSpatialProjection.subscribeArmies((published) => {
       this.followSelectedArmyLayer(published);
@@ -1621,8 +1619,7 @@ export default class WorldmapScene extends WarpTravel {
 
   /** Top-10 by the live leaderboard; recomputed only when a label-priority refresh asks for it. */
   private resolveTopOwnerAddresses(): ReadonlySet<string> {
-    const leaderboard = LeaderboardManager.instance(this.dojo.components);
-    leaderboard.updatePoints();
+    const leaderboard = LeaderboardManager.instance(this.dojo.store);
     const top = new Set<string>();
     leaderboard.playersByRank.slice(0, TOP_OWNER_LABEL_COUNT).forEach(([address]: [bigint, number]) => {
       const key = normalizeOwnerAddress(address);
@@ -1685,7 +1682,7 @@ export default class WorldmapScene extends WarpTravel {
     this.interactionAdapter = createWorldmapInteractionAdapter({
       state: this.state,
       selectedHexManager: this.selectedHexManager,
-      dojoComponents: this.dojo.components,
+      store: this.dojo.store,
     });
     this.interactiveHexManager.applyHoverPalette(resolveHoverVisualPalette({ hasSelection: false }));
     this.interactiveHexManager.setSurfaceVisibility(false);
@@ -2034,13 +2031,19 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private getArmyOwnerAddress(entityId: ID): ContractAddress | undefined {
-    const explorer = getComponentValue(this.dojo.components.ExplorerTroops, gameEntityKey([BigInt(entityId)]));
+    const explorer = this.dojo.store.get("ExplorerTroops", {
+      game_id: configManager.getActiveGameId(),
+      explorer_id: entityId,
+    });
     if (!explorer || explorer.owner === 0) return undefined;
     return this.getStructureOwnerAddress(explorer.owner);
   }
 
   private getArmyOwnerStructureId(entityId: ID): ID | null {
-    const explorer = getComponentValue(this.dojo.components.ExplorerTroops, gameEntityKey([BigInt(entityId)]));
+    const explorer = this.dojo.store.get("ExplorerTroops", {
+      game_id: configManager.getActiveGameId(),
+      explorer_id: entityId,
+    });
     return explorer?.owner && explorer.owner !== 0 ? explorer.owner : null;
   }
 
@@ -2070,7 +2073,10 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private getStructureOwnerAddress(entityId: ID): ContractAddress | undefined {
-    const structure = getComponentValue(this.dojo.components.Structure, gameEntityKey([BigInt(entityId)]));
+    const structure = this.dojo.store.get("Structure", {
+      game_id: configManager.getActiveGameId(),
+      entity_id: entityId,
+    });
     return structure ? ContractAddress(structure.owner) : undefined;
   }
 
@@ -2278,6 +2284,7 @@ export default class WorldmapScene extends WarpTravel {
       const didSubmit = await submitActiveWorldBlitzHyperstructureCreation({
         account,
         hexCoords,
+        systemCalls: this.dojo.systemCalls,
       });
 
       if (!didSubmit) {
@@ -2888,7 +2895,7 @@ export default class WorldmapScene extends WarpTravel {
     const traversalAction = resolveSpireTraversalAction({
       attackerHex: { col: attacker.hexCoords.col, row: attacker.hexCoords.row },
       attackerAlt: attacker.hexCoords.alt,
-      getTile: (alt, col, row) => getTileAt(this.dojo.components, alt, col, row),
+      getTile: (alt, col, row) => getTileAt(this.dojo.store, alt, col, row),
     });
 
     if (traversalAction.kind === "attack") {
@@ -3067,11 +3074,14 @@ export default class WorldmapScene extends WarpTravel {
 
     this.showSelectedStructure(selectedEntityId, hexCoords);
 
-    const structureData = getComponentValue(this.dojo.components.Structure, gameEntityKey([BigInt(selectedEntityId)]));
+    const structureData = this.dojo.store.get("Structure", {
+      game_id: configManager.getActiveGameId(),
+      entity_id: selectedEntityId,
+    });
     const attackRange = structureData
       ? Math.max(
           0,
-          ...getGuardsByStructure(structureData)
+          ...getGuardsByStructure(structureData, this.dojo.store)
             .filter((guard) => Number(guard.troops.count) > 0)
             .map((guard) => getTroopAttackRange(guard.troops.category)),
         )
@@ -3223,7 +3233,10 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private resolveLiveExplorerTroopsForMovementStamina(entityId: ID) {
-    return getComponentValue(this.dojo.components.ExplorerTroops, gameEntityKey([BigInt(entityId)]))?.troops ?? null;
+    return (
+      this.dojo.store.get("ExplorerTroops", { game_id: configManager.getActiveGameId(), explorer_id: entityId })
+        ?.troops ?? null
+    );
   }
 
   private logBlockedMovementStamina(input: {
@@ -3364,10 +3377,10 @@ export default class WorldmapScene extends WarpTravel {
     // Action paths plan from RECS ExplorerTroops — the same coord the submit
     // freshness guard checks. The visual display position may lag it mid-tween
     // and is presentation only, never planning input.
-    const explorerTroopsCoord = getComponentValue(
-      this.dojo.components.ExplorerTroops,
-      gameEntityKey([BigInt(selectedEntityId)]),
-    )?.coord;
+    const explorerTroopsCoord = this.dojo.store.get("ExplorerTroops", {
+      game_id: configManager.getActiveGameId(),
+      explorer_id: selectedEntityId,
+    })?.coord;
     if (!explorerTroopsCoord) {
       if (import.meta.env.DEV) {
         console.error(`[Worldmap] Army ${selectedEntityId} has no ExplorerTroops coord; suppressing action paths`);
@@ -5712,7 +5725,10 @@ export default class WorldmapScene extends WarpTravel {
     return collectWorldmapTerrainEcologyAnchors({
       cells,
       getStructureFacts: (entityId) => {
-        const component = getComponentValue(this.dojo.components.Structure, gameEntityKey([BigInt(entityId)]));
+        const component = this.dojo.store.get("Structure", {
+          game_id: configManager.getActiveGameId(),
+          entity_id: entityId,
+        });
         return component
           ? {
               base: {

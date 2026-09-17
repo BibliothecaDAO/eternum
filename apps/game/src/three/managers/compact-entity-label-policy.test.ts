@@ -1,12 +1,20 @@
+import { configManager } from "@bibliothecadao/eternum";
 import { Position } from "@bibliothecadao/eternum";
 import { StructureType, TroopTier, TroopType } from "@bibliothecadao/types";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { ArmyData, StructureInfo } from "../types";
 import {
   resolveArmyCompactEntityLabel,
   resolveCompactEntityLabelVariant,
   resolveStructureCompactEntityLabel,
 } from "./compact-entity-label-policy";
+
+vi.spyOn(configManager, "getMapCenter").mockReturnValue(2010831280);
+vi.spyOn(configManager, "getBlitzConfig").mockReturnValue({
+  blitz_mode_on: false,
+  blitz_settlement_config: { single_realm_mode: true, two_player_mode: false },
+  blitz_exploration_config: { reward_profile_id: 1 },
+});
 
 const baseArmy = {
   entityId: 101,

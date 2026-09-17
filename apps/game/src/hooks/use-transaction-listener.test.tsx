@@ -50,7 +50,7 @@ const useTransactionStoreMock = vi.hoisted(() =>
 );
 
 vi.mock("@bibliothecadao/react", () => ({
-  useDojo: () => ({
+  useGame: () => ({
     setup: {
       network: {
         provider,

@@ -1,10 +1,12 @@
-import { BuildingType, ClientComponents, ID, ResourceCost, ResourcesIds } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
+import { BuildingType, ID, ResourceCost, ResourcesIds } from "@bibliothecadao/types";
+import type { NativeFactStore } from "../client/native-fact-store";
 import { configManager, getBuildingCount } from "..";
-import { gameEntityKey } from "../managers/config-manager";
 
-export const getBuildingQuantity = (entityId: ID, buildingType: BuildingType, components: ClientComponents) => {
-  const structureBuildings = getComponentValue(components.StructureBuildings, gameEntityKey([BigInt(entityId)]));
+export const getBuildingQuantity = (entityId: ID, buildingType: BuildingType, store: NativeFactStore) => {
+  const structureBuildings = store.get("StructureBuildings", {
+    game_id: configManager.getActiveGameId(),
+    entity_id: entityId,
+  });
 
   const buildingCount = getBuildingCount(buildingType, [
     structureBuildings?.packed_counts_1 || 0n,
@@ -29,13 +31,13 @@ export const getConsumedBy = (resourceProduced: ResourcesIds) => {
 
 export const getBuildingCosts = (
   realmEntityId: ID,
-  components: ClientComponents,
+  store: NativeFactStore,
   buildingCategory: BuildingType,
   useSimpleCost: boolean,
 ) => {
   const buildingBaseCostPercentIncrease = configManager.getBuildingBaseCostPercentIncrease() / 10000;
 
-  const buildingQuantity = getBuildingQuantity(realmEntityId, buildingCategory, components);
+  const buildingQuantity = getBuildingQuantity(realmEntityId, buildingCategory, store);
 
   let updatedCosts: ResourceCost[] = [];
 

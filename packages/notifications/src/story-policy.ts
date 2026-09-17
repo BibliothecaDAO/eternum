@@ -1,10 +1,29 @@
 import { NOTIFICATION_LEVELS, type NotificationLevel } from "./preferences";
 
-type RecipientSource = "owner" | "explorer" | "battle" | "transfer";
+type RecipientSource = "owner" | "explorer" | "battle" | "transfer" | "nativeBattle" | "raid";
 type StoryRule = { level: Exclude<NotificationLevel, "off">; recipients: RecipientSource } | { excluded: string };
 
 // Recipient fields are emitted with the action. Never resolve them from present-day structure ownership.
 const STORY_RULES = {
+  StructureCapturedStory: { level: "all", recipients: "owner" },
+  BitcoinAwardStory: { level: "all", recipients: "owner" },
+  TradeCreated: { level: "all", recipients: "owner" },
+  TradeAccepted: { level: "all", recipients: "owner" },
+  TradeCancelled: { level: "all", recipients: "owner" },
+  BankSwap: { level: "all", recipients: "owner" },
+  BankLiquidity: { level: "all", recipients: "owner" },
+  HyperstructurePoints: { level: "all", recipients: "owner" },
+  RelicChestOpened: { level: "all", recipients: "owner" },
+  ExplorationReward: { level: "all", recipients: "owner" },
+  SeasonEnded: { level: "all", recipients: "owner" },
+  FaithPledged: { level: "all", recipients: "owner" },
+  FaithRemoved: { level: "all", recipients: "owner" },
+  PrizeDistributionFinal: { level: "all", recipients: "owner" },
+  PrizeResult: { level: "all", recipients: "owner" },
+  RelicCrafted: { level: "all", recipients: "owner" },
+
+  BattleEvent: { level: "important", recipients: "nativeBattle" },
+  RaidEvent: { level: "important", recipients: "raid" },
   BattleStory: { level: "important", recipients: "battle" },
   RealmCreatedStory: { level: "standard", recipients: "owner" },
   BuildingPlacementStory: { level: "standard", recipients: "owner" },
@@ -53,6 +72,11 @@ export function storyRecipients(story: string, owner: unknown, payload: Record<s
     owner: [owner],
     explorer: [payload.explorer_owner],
     battle: [payload.attacker_owner_address, payload.defender_owner_address],
+    nativeBattle: [
+      (payload.attacker as Record<string, unknown> | undefined)?.player,
+      (payload.defender as Record<string, unknown> | undefined)?.player,
+    ],
+    raid: [payload.player, payload.target_owner],
     transfer: [payload.from_entity_owner_address, payload.to_entity_owner_address],
   };
   return [...new Set(sources[rule.recipients].map(recipientAddress).filter((address) => address !== null))];

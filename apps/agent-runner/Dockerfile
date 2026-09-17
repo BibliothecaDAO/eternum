@@ -31,8 +31,7 @@ FROM base AS prod-deps
 RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
     pnpm install --frozen-lockfile --prod --filter "@bibliothecadao/agent-runner..."
 
-# The repository layout is kept: the runner resolves the world manifest, the generated balance documents, and the
-# workspace symlinks relative to the repository root, and pnpm's node_modules are relative symlinks into /app.
+# The repository layout preserves workspace symlinks and schema imports. The deployment mounts its native manifest.
 FROM oven/bun:${BUN_VERSION}-slim AS runtime
 WORKDIR /app
 COPY --from=prod-deps /app/node_modules ./node_modules
@@ -41,20 +40,17 @@ COPY --from=prod-deps /app/apps/agent-runner/node_modules ./apps/agent-runner/no
 COPY apps/agent-runner/package.json apps/agent-runner/tsconfig.json ./apps/agent-runner/
 COPY apps/agent-runner/src ./apps/agent-runner/src
 COPY apps/agent-runner/templates ./apps/agent-runner/templates
-# The five workspace packages the runner imports (`pnpm --filter "@bibliothecadao/agent-runner^..."`): production
+# The four workspace packages the runner imports (`pnpm --filter "@bibliothecadao/agent-runner^..."`): production
 # node_modules from prod-deps, dist from build.
 COPY --from=prod-deps /app/packages/chain ./packages/chain
 COPY --from=prod-deps /app/packages/types ./packages/types
 COPY --from=prod-deps /app/packages/provider ./packages/provider
-COPY --from=prod-deps /app/packages/dojo ./packages/dojo
 COPY --from=prod-deps /app/packages/core ./packages/core
 COPY --from=build /app/packages/chain/dist ./packages/chain/dist
 COPY --from=build /app/packages/types/dist ./packages/types/dist
 COPY --from=build /app/packages/provider/dist ./packages/provider/dist
-COPY --from=build /app/packages/dojo/dist ./packages/dojo/dist
 COPY --from=build /app/packages/core/dist ./packages/core/dist
-COPY config/generated/blitz.madara.json config/generated/eternum.madara.json ./config/generated/
-COPY contracts/l3/game/manifest_madara.json ./contracts/l3/game/manifest_madara.json
+COPY contracts/l3/world-native/schema/bindings.json ./contracts/l3/world-native/schema/bindings.json
 WORKDIR /app/apps/agent-runner
 # The supervisor seeds and reads the agent's files here: soul, skills, memory, directions, runs, and the guest key.
 ENV AGENT_DATA_DIR=/data

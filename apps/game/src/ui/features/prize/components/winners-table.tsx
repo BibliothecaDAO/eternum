@@ -1,8 +1,6 @@
-import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
-import { activeGameRows } from "@/sync/recs-rows";
 import { displayAddress } from "@/ui/utils/utils";
-import { getAddressName, toHexString } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
+import { configManager, getAddressName, toHexString } from "@bibliothecadao/eternum";
+import { useGame, useNativeRevision } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
 import { useMemo } from "react";
 
@@ -25,21 +23,21 @@ const formatPoints = (value: bigint): string => {
 
 export const WinnersTable = () => {
   const {
-    setup: { components },
-  } = useDojo();
-  const leaderboardRevision = useWorldSlicesStore((state) => state.leaderboardRevision);
+    setup: { store },
+  } = useGame();
+  const leaderboardRevision = useNativeRevision(["PlayerPoints", "PlayerRank", "AddressName"]);
 
   const rows = useMemo<WinnerRow[]>(() => {
-    // The revision is the recompute signal, not an input: ranks and registered points are read from RECS here.
+    // The revision is the recompute signal, not an input: ranks and registered points are read from native facts here.
     void leaderboardRevision;
     const pointsByPlayer = new Map<bigint, bigint>(
-      activeGameRows(components.PlayerRegisteredPoints).map((row) => [
+      [...store.inGame("PlayerPoints", configManager.getActiveGameId())].map((row) => [
         row.address as bigint,
-        row.registered_points as bigint,
+        row.points as bigint,
       ]),
     );
 
-    return activeGameRows(components.PlayerRank)
+    return [...store.inGame("PlayerRank", configManager.getActiveGameId())]
       .flatMap((value) => {
         if (Number(value.rank) <= 0) return [];
         const player = value.player as bigint;
@@ -53,10 +51,10 @@ export const WinnersTable = () => {
         ];
       })
       .toSorted((left, right) => left.rank - right.rank || (left.player < right.player ? -1 : 1));
-  }, [components, leaderboardRevision]);
+  }, [store, leaderboardRevision]);
 
   const playerName = (address: bigint): string =>
-    getAddressName(ContractAddress(address), components) || displayAddress(toHexString(address));
+    getAddressName(ContractAddress(address), store) || displayAddress(toHexString(address));
 
   if (rows.length === 0) return <div className="text-gray-400 text-sm">No ranked players yet.</div>;
 

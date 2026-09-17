@@ -1,59 +1,41 @@
-import {
-  allRealmsQuery,
-  readRealmInfos,
-  readStructureRows,
-  realmsByOwnerQuery,
-  villagesByOwnerQuery,
-} from "@bibliothecadao/eternum";
-import { ContractAddress, RealmInfo } from "@bibliothecadao/types";
-import { useEntityQuery } from "@dojoengine/react";
+import { readRealmInfos, readStructureIds, readStructureRows } from "@bibliothecadao/eternum";
+import { StructureType } from "@bibliothecadao/types";
 import { useMemo } from "react";
-import { useDojo } from "../context";
+import { useGame } from "../context";
+import { useNativeRevision } from "./use-native-facts";
 
-export function usePlayerOwnedRealmsInfo(): RealmInfo[] {
+const useOwnedRealmInfo = (category: StructureType) => {
   const {
-    setup: { components },
-  } = useDojo();
-
-  const realmEntities = usePlayerOwnedRealmEntities();
-
-  return useMemo(() => readRealmInfos(components, realmEntities), [realmEntities]);
-}
-
-export function usePlayerOwnedVillagesInfo(): RealmInfo[] {
-  const {
-    setup: { components },
-  } = useDojo();
-
-  const villageEntities = usePlayerOwnedVillageEntities();
-
-  return useMemo(() => readRealmInfos(components, villageEntities), [villageEntities]);
-}
-
-export const usePlayerOwnedVillageEntities = () => {
-  const {
+    setup: { store },
     account: { account },
-    setup: { components },
-  } = useDojo();
-
-  return useEntityQuery(villagesByOwnerQuery(components, ContractAddress(account.address)));
+  } = useGame();
+  const revision = useNativeRevision(["Structure", "StructureBuildings", "ResourceWeight", "AddressName"]);
+  return useMemo(
+    () => readRealmInfos(store, BigInt(account.address), category),
+    [store, account.address, category, revision],
+  );
 };
+export const usePlayerOwnedRealmsInfo = () => useOwnedRealmInfo(StructureType.Realm);
+export const usePlayerOwnedVillagesInfo = () => useOwnedRealmInfo(StructureType.Village);
 
-export const usePlayerOwnedRealmEntities = () => {
+const useOwnedStructureIds = (category: StructureType) => {
   const {
+    setup: { store },
     account: { account },
-    setup: { components },
-  } = useDojo();
-
-  return useEntityQuery(realmsByOwnerQuery(components, ContractAddress(account.address)));
+  } = useGame();
+  const revision = useNativeRevision(["Structure"]);
+  return useMemo(
+    () => readStructureIds(store, BigInt(account.address), category),
+    [store, account.address, category, revision],
+  );
 };
+export const usePlayerOwnedVillageEntities = () => useOwnedStructureIds(StructureType.Village);
+export const usePlayerOwnedRealmEntities = () => useOwnedStructureIds(StructureType.Realm);
 
 export const useAllRealms = () => {
   const {
-    setup: { components },
-  } = useDojo();
-
-  const realmEntities = useEntityQuery(allRealmsQuery(components));
-
-  return useMemo(() => readStructureRows(components, realmEntities), [realmEntities]);
+    setup: { store },
+  } = useGame();
+  const revision = useNativeRevision(["Structure"]);
+  return useMemo(() => readStructureRows(store, StructureType.Realm), [store, revision]);
 };

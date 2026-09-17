@@ -6,14 +6,13 @@ interface NavigatorWithBattery extends Navigator {
   getBattery?: () => Promise<{ level: number; charging: boolean }>;
 }
 
-const { getBlockTimestampMock, getComponentValueMock, getEntityIdFromKeysMock, getStaminaMock } = vi.hoisted(() => ({
+const { getBlockTimestampMock, getNativeRowMock, getStaminaMock } = vi.hoisted(() => ({
   getBlockTimestampMock: vi.fn(() => ({
     currentBlockTimestamp: 0,
     currentDefaultTick: 0,
     currentArmiesTick: 5,
   })),
-  getComponentValueMock: vi.fn(),
-  getEntityIdFromKeysMock: vi.fn(() => 1),
+  getNativeRowMock: vi.fn(),
   getStaminaMock: vi.fn(),
 }));
 
@@ -56,22 +55,6 @@ vi.mock("@bibliothecadao/eternum", async () => {
   };
 });
 
-vi.mock("@dojoengine/recs", async () => {
-  const actual = await vi.importActual<object>("@dojoengine/recs");
-  return {
-    ...actual,
-    getComponentValue: getComponentValueMock,
-  };
-});
-
-vi.mock("@dojoengine/utils", async () => {
-  const actual = await vi.importActual<object>("@dojoengine/utils");
-  return {
-    ...actual,
-    getEntityIdFromKeys: getEntityIdFromKeysMock,
-  };
-});
-
 import { ArmyManager } from "./army-manager";
 
 describe("ArmyManager stamina sync", () => {
@@ -105,7 +88,7 @@ describe("ArmyManager stamina sync", () => {
       battle_cooldown_end: 0,
     };
 
-    getComponentValueMock.mockReturnValue({
+    getNativeRowMock.mockReturnValue({
       troops: liveTroops,
     });
 
@@ -117,9 +100,7 @@ describe("ArmyManager stamina sync", () => {
     const fakeManager = {
       armyPresentations: new Map([[1, army]]),
       entityIdLabels: new Map(),
-      components: {
-        ExplorerTroops: {},
-      },
+      store: { get: getNativeRowMock },
       resolveLiveExplorerTroops(entityId: number) {
         return ArmyManager.prototype["resolveLiveExplorerTroops"].call(this, entityId);
       },
@@ -135,11 +116,11 @@ describe("ArmyManager stamina sync", () => {
 
     ArmyManager.prototype["recomputeStaminaForAllArmies"].call(fakeManager, 5);
 
-    expect(getComponentValueMock).toHaveBeenCalled();
+    expect(getNativeRowMock).toHaveBeenCalled();
     expect(army.currentStamina).toBe(50);
   });
 
-  it("uses live RECS stamina even when a presentation cache was previously newer", () => {
+  it("uses live native stamina even when a presentation cache was previously newer", () => {
     const army = {
       entityId: 1,
       troopCount: 10,
@@ -169,7 +150,7 @@ describe("ArmyManager stamina sync", () => {
       battle_cooldown_end: 0,
     };
 
-    getComponentValueMock.mockReturnValue({
+    getNativeRowMock.mockReturnValue({
       troops: staleLiveTroops,
     });
 
@@ -181,9 +162,7 @@ describe("ArmyManager stamina sync", () => {
     const fakeManager = {
       armyPresentations: new Map([[1, army]]),
       entityIdLabels: new Map(),
-      components: {
-        ExplorerTroops: {},
-      },
+      store: { get: getNativeRowMock },
       resolveLiveExplorerTroops(entityId: number) {
         return ArmyManager.prototype["resolveLiveExplorerTroops"].call(this, entityId);
       },

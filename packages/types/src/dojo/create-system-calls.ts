@@ -28,6 +28,10 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     }) as T;
   };
 
+  const settle_season = (props: Parameters<typeof provider.settle_season>[0]) => provider.settle_season(props);
+  const settle_village = (props: Parameters<typeof provider.settle_village>[0]) => provider.settle_village(props);
+  const settle_blitz = (props: Parameters<typeof provider.settle_blitz>[0]) => provider.settle_blitz(props);
+
   const uuid = async () => {
     return await provider.uuid();
   };
@@ -35,6 +39,11 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
   const bitcoin_mine_contribute_labor = async (
     props: SystemProps.BitcoinMineContributeLaborProps,
   ): Promise<GetTransactionReceiptResponse> => provider.bitcoin_mine_contribute_labor(props);
+
+  const bitcoin_mine_close_phase = (props: SystemProps.BitcoinMinePhaseProps): Promise<GetTransactionReceiptResponse> =>
+    provider.bitcoin_mine_close_phase(props);
+  const bitcoin_mine_bind_phase = (props: SystemProps.BitcoinMinePhaseProps): Promise<GetTransactionReceiptResponse> =>
+    provider.bitcoin_mine_bind_phase(props);
 
   const bitcoin_mine_claim_phase_reward = async (
     props: SystemProps.BitcoinMineClaimPhaseRewardProps,
@@ -91,6 +100,14 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
   ): Promise<GetTransactionReceiptResponse> => {
     return await provider.bridge_withdraw_from_realm(props);
   };
+
+  const create_hyperstructure = async (
+    props: SystemProps.SystemSigner & { x: number; y: number; alt: boolean },
+  ): Promise<GetTransactionReceiptResponse> => provider.create_hyperstructure(props);
+
+  const provision_realm = async (
+    props: SystemProps.UpgradeRealmProps & { upgrade?: boolean },
+  ): Promise<GetTransactionReceiptResponse> => provider.provision_realm(props);
 
   const upgrade_realm = async (props: SystemProps.UpgradeRealmProps): Promise<GetTransactionReceiptResponse> => {
     return await provider.upgrade_realm(props);
@@ -459,10 +476,14 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     isLive: isLive,
     bitcoin_mine_contribute_labor: withAuth(bitcoin_mine_contribute_labor),
     bitcoin_mine_claim_phase_reward: withAuth(bitcoin_mine_claim_phase_reward),
+    bitcoin_mine_close_phase: withAuth(bitcoin_mine_close_phase),
+    bitcoin_mine_bind_phase: withAuth(bitcoin_mine_bind_phase),
     create_order: withAuth(create_order),
     accept_order: withAuth(accept_order),
     cancel_order: withAuth(cancel_order),
     upgrade_realm: withAuth(upgrade_realm),
+    provision_realm: withAuth(provision_realm),
+    create_hyperstructure: withAuth(create_hyperstructure),
     create_village: withAuth(create_village),
     receive_army_grant: withAuth(receive_army_grant),
     destroy_building: withAuth(destroy_building),
@@ -482,6 +503,12 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     allocate_shares: withAuth(allocate_shares),
     contribute_to_construction: withAuth(contribute_to_construction),
     set_access: withAuth(set_access),
+    checkpoint_hyperstructures: withAuth((props: SystemProps.SystemSigner & { entity_ids: number[] }) =>
+      provider.checkpoint_hyperstructures(props),
+    ),
+    rank_players: withAuth((props: SystemProps.SystemSigner & { trial_id: bigint; players: string[] }) =>
+      provider.rank_players(props),
+    ),
     end_game: withAuth(end_game),
 
     create_guild: withAuth(create_guild),
@@ -495,6 +522,9 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     attach_lords: withAuth(attach_lords),
     detach_lords: withAuth(detach_lords),
     mint_test_lords: withAuth(mint_test_lords),
+    settle_blitz: withAuth(settle_blitz),
+    settle_season: withAuth(settle_season),
+    settle_village: withAuth(settle_village),
     mint_and_settle_test_realm: withAuth(mint_and_settle_test_realm),
     bridge_deposit_into_realm: withAuth(bridge_deposit_into_realm),
     bridge_withdraw_from_realm: withAuth(bridge_withdraw_from_realm),

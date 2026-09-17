@@ -1,4 +1,3 @@
-import { activeGameRows } from "@/sync/recs-rows";
 import { getScopedGameId } from "@bibliothecadao/eternum/game-client";
 import { createBuildingMilestones } from "./building-milestones";
 import { useAccountStore } from "@/hooks/store/use-account-store";
@@ -13,7 +12,7 @@ import { getActiveGameSyncRuntime } from "@bibliothecadao/eternum/game-sync";
 // @ts-ignore
 import { ContractAddress, StructureType } from "@bibliothecadao/types";
 // @ts-ignore
-import { useDojo, useQuery } from "@bibliothecadao/react";
+import { useGame, useQuery } from "@bibliothecadao/react";
 
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useGoToStructure, useNavigateToMapView } from "@/hooks/helpers/use-navigate";
@@ -33,7 +32,7 @@ const resolveCaptureTitle = (isHyperstructure: boolean, playerTook: boolean, pla
 };
 
 export function NewsHeadlineBridge() {
-  const { setup } = useDojo();
+  const { setup } = useGame();
   const { isMapView } = useQuery();
   const setSelectedHex = useUIStore((state) => state.setSelectedHex);
   const gameWinner = useUIStore((state) => state.gameWinner);
@@ -41,8 +40,8 @@ export function NewsHeadlineBridge() {
   const navigateToMapView = useNavigateToMapView();
   const entityReader = useMemo(() => {
     const projection = getActiveGameSyncRuntime()?.getWorldSpatialProjection();
-    return projection ? createWorldEventEntityReader(setup.components, projection) : null;
-  }, [setup.components]);
+    return projection ? createWorldEventEntityReader(setup.store, projection) : null;
+  }, [setup.store]);
 
   const address = useAccountStore((state) => state.account?.address);
   const startAt = useUIStore((state) => state.gameStartMainAt);
@@ -92,30 +91,34 @@ export function NewsHeadlineBridge() {
     return () => clearTimeout(timer);
   }, [currentHeadline, dismiss]);
 
-  // Ownership headlines follow the same RECS row transition for realms and hyperstructures. Rifts and camps
+  // Ownership headlines follow the same native row transition for realms and hyperstructures. Rifts and camps
   // change hands too often to be news.
   useEffect(() => {
-    const subscription = setup.components.Structure.update$.subscribe(({ value: [current, previous] }) => {
-      if (!current || !previous || current.owner === previous.owner) return;
-      if (!NEWSWORTHY_CAPTURES.has(current.base.category as StructureType)) return;
-      if (!entityReader) return;
-      const isHyperstructure = current.base.category === StructureType.Hyperstructure;
-      const player = address ? BigInt(address) : null;
-      const structureName = entityReader.getStructure(current.entity_id)?.structureName ?? `#${current.entity_id}`;
-      const captor = entityReader.getPlayerName(ContractAddress(current.owner).toString());
-      const previousOwner = entityReader.getPlayerName(ContractAddress(previous.owner).toString());
-      enqueue({
-        id: `capture:${current.entity_id}:${previous.owner}:${current.owner}:${Date.now()}`,
-        type: isHyperstructure ? "hyper-capture" : "realm-fall",
-        icon: isHyperstructure ? "hyper-capture" : "realm-fall",
-        title: resolveCaptureTitle(isHyperstructure, current.owner === player, previous.owner === player),
-        description: `${captor} took ${structureName} from ${previousOwner}`,
-        location: { x: current.base.coord_x, y: current.base.coord_y, entityId: current.entity_id },
-        timestamp: Date.now(),
-      });
+    return setup.store.subscribe((changes) => {
+      for (const change of changes) {
+        if (change.model !== "Structure") continue;
+        const { current, previous } = change;
+        if (!current || !previous || current.game_id !== getScopedGameId() || current.owner === previous.owner)
+          continue;
+        if (!NEWSWORTHY_CAPTURES.has(current.base.category as StructureType)) continue;
+        if (!entityReader) continue;
+        const isHyperstructure = current.base.category === StructureType.Hyperstructure;
+        const player = address ? BigInt(address) : null;
+        const structureName = entityReader.getStructure(current.entity_id)?.structureName ?? `#${current.entity_id}`;
+        const captor = entityReader.getPlayerName(ContractAddress(current.owner).toString());
+        const previousOwner = entityReader.getPlayerName(ContractAddress(previous.owner).toString());
+        enqueue({
+          id: `capture:${current.entity_id}:${previous.owner}:${current.owner}:${Date.now()}`,
+          type: isHyperstructure ? "hyper-capture" : "realm-fall",
+          icon: isHyperstructure ? "hyper-capture" : "realm-fall",
+          title: resolveCaptureTitle(isHyperstructure, current.owner === player, previous.owner === player),
+          description: `${captor} took ${structureName} from ${previousOwner}`,
+          location: { x: current.base.coord_x, y: current.base.coord_y, entityId: current.entity_id },
+          timestamp: Date.now(),
+        });
+      }
     });
-    return () => subscription.unsubscribe();
-  }, [setup.components, entityReader, address, enqueue]);
+  }, [setup.store, entityReader, address, enqueue]);
 
   useEffect(() => {
     if (!startAt) return;
@@ -136,26 +139,29 @@ export function NewsHeadlineBridge() {
   }, [startAt, nowSeconds, enqueue]);
 
   useEffect(() => {
-    const resolveMilestone = createBuildingMilestones(activeGameRows(setup.components.Building));
-    const subscription = setup.components.Building.update$.subscribe(({ value: [current] }) => {
-      if (!current || current.game_id !== getScopedGameId()) return;
-      const buildingName = resolveMilestone(current, getActiveGameSyncRuntime()?.getStatus() === "running");
-      if (!buildingName) return;
-      const structureId = current.outer_entity_id;
-      const structure = entityReader?.getStructure(structureId);
-      const realmName = structure?.structureName || `Realm #${structureId}`;
-      enqueue({
-        id: `t3-building:${structureId}`,
-        type: "t3-building",
-        icon: "t3-building",
-        title: "TIER 3 BUILDING RAISED",
-        description: `${realmName} has raised a Tier 3 ${buildingName}`,
-        location: structure ? { x: structure.coordX, y: structure.coordY, entityId: structureId } : undefined,
-        timestamp: Date.now(),
-      });
+    const resolveMilestone = createBuildingMilestones([...setup.store.inGame("Building", getScopedGameId())]);
+    return setup.store.subscribe((changes) => {
+      for (const change of changes) {
+        if (change.model !== "Building") continue;
+        const { current } = change;
+        if (!current || current.game_id !== getScopedGameId()) continue;
+        const buildingName = resolveMilestone(current, getActiveGameSyncRuntime()?.getStatus() === "running");
+        if (!buildingName) continue;
+        const structureId = current.outer_entity_id;
+        const structure = entityReader?.getStructure(structureId);
+        const realmName = structure?.structureName || `Realm #${structureId}`;
+        enqueue({
+          id: `t3-building:${structureId}`,
+          type: "t3-building",
+          icon: "t3-building",
+          title: "TIER 3 BUILDING RAISED",
+          description: `${realmName} has raised a Tier 3 ${buildingName}`,
+          location: structure ? { x: structure.coordX, y: structure.coordY, entityId: structureId } : undefined,
+          timestamp: Date.now(),
+        });
+      }
     });
-    return () => subscription.unsubscribe();
-  }, [setup.components, entityReader, enqueue]);
+  }, [setup.store, entityReader, enqueue]);
 
   // --- Game end detection ---
   useEffect(() => {

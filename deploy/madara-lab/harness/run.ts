@@ -4,8 +4,9 @@ import { closeHarnessSeason } from "./season-lifecycle";
 import { defaultPresetForEnvironment } from "../../../config/deployer/clean/constants";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import type { GameClient } from "@bibliothecadao/eternum";
 import type { CommittedManifest } from "@bibliothecadao/eternum/game-client";
-import { Account, BlockTag, logger, RpcProvider } from "starknet";
+import { Account, BlockTag, ec, logger, RpcProvider } from "starknet";
 import { assertChainId, assertProviderChain } from "../../../packages/chain/chain-guard.js";
 import { launchGame } from "../../../config/deployer/clean/launch/runner";
 import { createHarnessAccounts } from "./account-factory";
@@ -15,7 +16,6 @@ import {
   prepareHarnessBots,
   runWorkload,
   type HarnessGameType,
-  type HarnessSystemAddresses,
   type TrackedTransaction,
 } from "./driver";
 import {
@@ -54,7 +54,7 @@ interface GameplayContractsArtifact extends HarnessGameplayContracts {
 }
 
 interface WorldManifest extends CommittedManifest {
-  contracts: Array<{ address: string; selector: string; tag: string }>;
+  contracts: Array<{ address: string; selector: string; tag: string; systems: string[] }>;
 }
 
 interface LaunchedGame {
@@ -162,18 +162,17 @@ async function main(): Promise<void> {
     await runLedgerSweepOnly(options);
     return;
   }
-  // The launch path resolves the registrar from GAME_MANIFEST_PATH (registrar/calls.ts); default it to the madara
-  // manifest so a redeployed lab uses the freshly migrated registrar, not the stale hardcoded constants.ts address.
-  process.env.GAME_MANIFEST_PATH ??= "contracts/l3/game/manifest_madara.json";
+  const manifestPath = requiredEnvironmentValue("GAME_MANIFEST_PATH", "native harness");
+  const admissionUrl = requiredEnvironmentValue("NATIVE_ADMISSION_URL", "native harness");
+  const gameplayContractsPath = requiredEnvironmentValue("GAMEPLAY_CONTRACTS_PATH", "native harness");
   process.env.HERALD_URL = options.heraldUrl;
 
   const provider = createHarnessProvider(options.rpcUrl);
   const [chainId, gameplayContracts, manifest] = await Promise.all([
     provider.getChainId(),
-    readJson<GameplayContractsArtifact>(path.join(LAB_DIRECTORY, ".lab/gameplay-contracts.json")),
-    readJson<WorldManifest>(path.resolve(REPOSITORY_ROOT, process.env.GAME_MANIFEST_PATH)),
+    readJson<GameplayContractsArtifact>(path.resolve(REPOSITORY_ROOT, gameplayContractsPath)),
+    readJson<WorldManifest>(path.resolve(REPOSITORY_ROOT, manifestPath)),
   ]);
-  const systems = resolveSystemAddresses(manifest);
   assertChainId(chainId, "madara", "RPC_URL");
   if (!options.ledger && BigInt(gameplayContracts.playerRegistryAddress) !== 0n) {
     requiredEnvironmentValue("BINDING_AUTHORITY_PRIVATE_KEY", "harness with PlayerRegistry");
@@ -183,7 +182,17 @@ async function main(): Promise<void> {
     ? await loadLedgerBotIdentities(path.resolve(REPOSITORY_ROOT, options.ledgerAccountsPath!), options.bots)
     : undefined;
   const game = await resolveHarnessGame(options, ledgerEnvironment);
+  const signingKeys = new Map<bigint, string>();
+  if (options.ledger) signingKeys.set(BigInt(process.env.DOJO_ACCOUNT_ADDRESS ?? MADARA_ADMIN_ADDRESS),
+    process.env.DOJO_PRIVATE_KEY ?? MADARA_ADMIN_PRIVATE_KEY);
   const client = await connectHarnessGameClient({
+    admissionUrl,
+    chainId,
+    signIntent: async (actor, digest) => {
+      const key = signingKeys.get(BigInt(actor.address));
+      if (!key) throw new Error(`No harness signing key for ${actor.address}`);
+      return ec.starkCurve.sign(digest, key);
+    },
     gameId: game.gameId,
     gameplayContracts,
     heraldUrl: options.heraldUrl,
@@ -195,6 +204,8 @@ async function main(): Promise<void> {
     const harnessGame = createHarnessGame(client);
     const setupTransactions: TrackedTransaction[] = [];
     const run = await prepareGameRun({
+      client,
+      signingKeys,
       game,
       gameplayContracts,
       harnessGame,
@@ -203,7 +214,6 @@ async function main(): Promise<void> {
       options,
       provider,
       setupTransactions,
-      systems,
     });
 
     const evidenceBefore = await collectHarnessEvidenceBeforeRun();
@@ -230,9 +240,8 @@ async function main(): Promise<void> {
               bots: run.bots,
               gameId: game.gameId,
               provider,
-              heraldUrl: options.heraldUrl,
-              troopMovementAddress: systems.troopMovement,
-              altMovementAddress: requireContract(manifest, "s2-alt_movement_systems"),
+              client,
+              game: harnessGame,
             }),
           ]
         : [];
@@ -242,15 +251,14 @@ async function main(): Promise<void> {
         ? [
             await closeHarnessSeason({
               accounts: run.accounts,
-              gameId: game.gameId,
-              heraldUrl: options.heraldUrl,
+              client,
+              game: harnessGame,
               provider,
-              seasonSystemAddress: requireContract(manifest, "s2-season_systems"),
             }),
           ]
         : [];
 
-    const valuePlane = await finalizeValuePlaneRun({ run, ledgerEnvironment, options, provider, systems });
+    const valuePlane = await finalizeValuePlaneRun({ run, ledgerEnvironment, options, provider, client, harnessGame });
 
     const evidence = await finishHarnessEvidence(evidenceBefore, workload.startedAt, workload.endedAt);
     const minimumThresholdActions = resolveMinimumThresholdActions(options, workload.plannedActions);
@@ -310,30 +318,11 @@ async function resolveHarnessGame(
   return { gameId: summary.gameId, gameName, startAt };
 }
 
-function resolveSystemAddresses(manifest: WorldManifest): HarnessSystemAddresses {
-  return {
-    realm: requireContract(manifest, "s2-realm_systems"),
-    registrar: requireContract(manifest, "s2-registrar_systems"),
-    blitzRealm: requireContract(manifest, "s2-blitz_realm_systems"),
-    prizeDistribution: requireContract(manifest, "s2-prize_distribution_systems"),
-    production: requireContract(manifest, "s2-production_systems"),
-    troopManagement: requireContract(manifest, "s2-troop_management_systems"),
-    troopMovement: requireContract(manifest, "s2-troop_movement_systems"),
-  };
-}
-
-function requireContract(manifest: WorldManifest, tag: string): string {
-  const contract = manifest.contracts.find((candidate) => candidate.tag === tag);
-  if (!contract?.address || BigInt(contract.address) === 0n) {
-    throw new Error(`Manifest does not define ${tag}`);
-  }
-  return contract.address;
-}
-
 function resolveMinimumThresholdActions(options: HarnessCliOptions, plannedActions: number): number {
   const isAcceptanceRun = options.bots === 96 && options.minutes === 10 && options.intervalSeconds === 15;
   return isAcceptanceRun ? 3_500 : plannedActions;
 }
+
 
 function parseFlags(args: string[]): Record<string, string> {
   const values: Record<string, string> = {};
@@ -354,6 +343,7 @@ function parseFlags(args: string[]): Record<string, string> {
 }
 
 async function prepareGameRun({
+  client,  signingKeys,
   game,
   gameplayContracts,
   harnessGame,
@@ -362,7 +352,6 @@ async function prepareGameRun({
   options,
   provider,
   setupTransactions,
-  systems,
 }: {
   game: LaunchedGame;
   gameplayContracts: GameplayContractsArtifact;
@@ -372,7 +361,8 @@ async function prepareGameRun({
   options: HarnessCliOptions;
   provider: RpcProvider;
   setupTransactions: TrackedTransaction[];
-  systems: HarnessSystemAddresses;
+  signingKeys: Map<bigint, string>;
+  client: GameClient;
 }): Promise<PreparedGameRun> {
   const ledger =
     ledgerEnvironment && ledgerIdentities
@@ -387,10 +377,11 @@ async function prepareGameRun({
     concurrency: options.setupConcurrency,
     count: options.bots,
     gameId: game.gameId,
-    identities: ledger ? toHarnessGameplayIdentities(ledgerIdentities) : undefined,
+    identities: ledgerIdentities ? toHarnessGameplayIdentities(ledgerIdentities) : undefined,
     provider,
   });
 
+  for (const account of accounts) signingKeys.set(BigInt(account.address), account.privateKey);
   let binding: LedgerHarnessEvidence["binding"] | undefined;
   // Settlement is keyed by the bound owner whenever the chain has a player registry, so guests bind as their own owners.
   const authorityPrivateKey =
@@ -405,11 +396,10 @@ async function prepareGameRun({
       provider,
     });
   }
-  if (ledger && ledgerEnvironment) {
+  if (ledger && ledgerEnvironment && ledgerIdentities) {
     console.log(`Waiting for ${accounts.length} mainnet registrations to reach the L3 fold`);
     await waitForRelayedLedgerRegistrations(
-      options.heraldUrl,
-      game.gameId,
+      client,
       ledgerIdentities.map(({ mainnetAddress }) => mainnetAddress),
     );
   }
@@ -430,7 +420,6 @@ async function prepareGameRun({
     provider,
     setupConcurrency: options.setupConcurrency,
     setupTransactions,
-    systems,
   });
   return {
     accounts,
@@ -511,13 +500,15 @@ async function finalizeValuePlaneRun({
   ledgerEnvironment,
   options,
   provider,
-  systems,
+  client,
+  harnessGame,
 }: {
   run: PreparedGameRun;
   ledgerEnvironment?: LedgerEnvironment;
   options: HarnessCliOptions;
   provider: RpcProvider;
-  systems: HarnessSystemAddresses;
+  client: GameClient;
+  harnessGame: HarnessGame;
 }): Promise<LedgerHarnessEvidence | undefined> {
   if (!run.ledger || !ledgerEnvironment) return undefined;
   console.log(`Waiting for game ${run.game.gameId} to close, then publishing its competition ranking`);
@@ -529,12 +520,12 @@ async function finalizeValuePlaneRun({
     }),
     concurrency: options.setupConcurrency,
     gameId: run.game.gameId,
-    heraldUrl: options.heraldUrl,
+    client,
+    game: harnessGame,
     ledgerAddress: ledgerEnvironment.ledgerAddress,
     lordsAddress: ledgerEnvironment.lordsAddress,
     mainnetRpcUrl: ledgerEnvironment.mainnetRpcUrl,
     provider,
-    registrarSystemAddress: systems.registrar,
     registrations: run.ledger.registrations,
     sweepManifestPath: run.ledger.registration.sweepManifestPath,
     treasuryAddress: ledgerEnvironment.treasuryAddress,

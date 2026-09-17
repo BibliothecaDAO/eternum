@@ -10,7 +10,7 @@ import { markGameEntryMilestone } from "./ui/layouts/game-entry-timeline";
 import { Navigate, useNavigate } from "react-router-dom";
 import type { Account, AccountInterface } from "starknet";
 import { usePlayRouteBootController } from "./game-entry/play-route-boot";
-import { DojoProvider } from "./hooks/context/dojo-context";
+import { GameProvider } from "./hooks/context/game-context";
 import { useTransactionListener } from "./hooks/use-transaction-listener";
 import type { SetupResult } from "./init/bootstrap";
 import { PlayRouteBootstrapErrorScreen } from "./ui/layouts/play-route-bootstrap-error-screen";
@@ -36,7 +36,7 @@ const TransactionListenerBridge = () => {
 
 const ReadyApp = ({ backgroundImage, setupResult, account }: ReadyAppProps) => {
   return (
-    <DojoProvider value={setupResult} account={account}>
+    <GameProvider value={setupResult} account={account}>
       <ErrorBoundary>
         <PlaySceneHandoff />
         <StoryEventAudioCues />
@@ -47,7 +47,7 @@ const ReadyApp = ({ backgroundImage, setupResult, account }: ReadyAppProps) => {
         <ChunkTransitionIndicator />
         <WorldLoading />
       </ErrorBoundary>
-    </DojoProvider>
+    </GameProvider>
   );
 };
 

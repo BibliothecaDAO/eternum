@@ -33,7 +33,11 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
     process.env.VITE_PUBLIC_GAME_VERSION ||
     undefined;
 
-  const plugins = [clientDataPlugin(), svgr({ dimensions: false, svgo: false, typescript: true }), react()];
+  const plugins = [
+    clientDataPlugin(appEnv.NATIVE_WORLD_MANIFEST),
+    svgr({ dimensions: false, svgo: false, typescript: true }),
+    react(),
+  ];
 
   if (shouldUseMkcert(isServe)) {
     plugins.unshift(mkcert() as any);
@@ -201,16 +205,8 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
             // Three.js ecosystem - Separate chunk for 3D graphics
             three: ["three/webgpu"],
 
-            // Blockchain/Dojo ecosystem - Separate chunk for crypto functionality
-            blockchain: [
-              "@bibliothecadao/dojo",
-              "@bibliothecadao/eternum",
-              "@bibliothecadao/provider",
-              "@bibliothecadao/types",
-              "@dojoengine/core",
-              "@dojoengine/state",
-              "starknet",
-            ],
+            // Blockchain ecosystem - Separate chunk for crypto functionality
+            blockchain: ["@bibliothecadao/eternum", "@bibliothecadao/provider", "@bibliothecadao/types", "starknet"],
 
             // React ecosystem - Core framework chunk
             "react-vendor": ["react", "react-dom", "react-beautiful-dnd", "react-draggable"],

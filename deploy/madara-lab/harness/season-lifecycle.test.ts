@@ -1,66 +1,60 @@
 import { afterEach, expect, mock, spyOn, test } from "bun:test";
-import { HeraldObserver } from "./herald-observer";
+import { configManager, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { closeHarnessSeason } from "./season-lifecycle";
 
-const rows = (target: number, dev = false) =>
-  new Map<string, Record<string, unknown>[]>([
-    ["GameRegistry", [{ game_id: 1, preset_id: 10, end_at: 200, dev_mode_on: dev }]],
-    [
-      "PresetConfig",
-      [
-        {
-          preset_id: 10,
-          victory_points_win_config: { points_for_win: String(target * 1_000_000) },
-          victory_points_grant_config: { hyp_points_per_second: 1_000_000 },
-        },
-      ],
-    ],
-    ["Hyperstructure", [{ game_id: 1, hyperstructure_id: 7, completed: true, points_multiplier: 1 }]],
-    [
-      "HyperstructureShareholders",
-      [{ game_id: 1, hyperstructure_id: 7, start_at: 50, shareholders: [["0x1", 10000]] }],
-    ],
-    ["PlayerRegisteredPoints", []],
-  ]);
-
-const options = () => ({
-  gameId: 1,
-  heraldUrl: "http://herald.test",
-  seasonSystemAddress: "0x7",
-  provider: { getBlock: async () => ({ timestamp: 100 }) } as never,
-  accounts: [
-    {
-      address: "0x1",
-      account: {
-        execute: mock(async () => ({ transaction_hash: "0xabc" })),
-        waitForTransaction: async () => ({ execution_status: "SUCCEEDED" }),
+function fixture(target: number, dev = false) {
+  let settled = false;
+  const end = mock(async () => { settled = true; });
+  const rows = (model: string) => {
+    switch (model) {
+      case "GameRegistry": return [{ game_id: 1, end_at: settled ? 100n : 200n, settled, dev_mode_on: dev }];
+      case "SeasonWinThreshold": return [{ game_id: 1, points: BigInt(target) * 1000000n }];
+      case "PointsTotal": return [{ game_id: 1, total: 50000000n }];
+      case "PlayerPoints": return [{ game_id: 1, address: 1n, points: settled ? 50000000n : 0n }];
+      case "HyperstructureShares": return [{ game_id: 1, start_at: settled ? 100n : 50n, multiplier: 1, shareholders: [{ player: 1n, bps: 10000 }] }];
+      case "SliceRules": return [{ victory_points_grant_config: { hyp_points_per_second: 1000000 } }];
+      default: throw new Error(`Unexpected model ${model}`);
+    }
+  };
+  spyOn(configManager, "getActiveGameId").mockReturnValue(1);
+  setBlockTimestampSource(() => 100);
+  return {
+    end,
+    options: {
+      client: { gameId: 1, setup: { store: { require: (model: string) => rows(model)[0], inGame: rows }, systemCalls: { end_game: end } } },
+      game: {
+        submit: async (_signer: unknown, act: () => Promise<unknown>) => ({ transactionHash: "0xabc", confirmed: act() }),
+        waitFor: async (read: () => unknown) => read(),
       },
-    },
-  ] as never,
-});
+      provider: {
+        getTransactionStatus: async () => ({ finality_status: "ACCEPTED_ON_L2", execution_status: "SUCCEEDED" }),
+        getTransactionReceipt: async () => ({ block_number: 1 }),
+      },
+      accounts: [{ botId: 1, address: "0x1", account: { address: "0x1" } }],
+    } as unknown as Parameters<typeof closeHarnessSeason>[0],
+  };
+}
 
-afterEach(() => mock.restore());
+afterEach(() => { mock.restore(); setBlockTimestampSource(null); });
 
 test("an Eternum workload below the victory target does not claim lifecycle success", async () => {
-  spyOn(HeraldObserver.prototype, "readModelRows").mockResolvedValue(rows(100));
-  const result = await closeHarnessSeason(options());
+  const context = fixture(100);
+  const result = await closeHarnessSeason(context.options);
   expect(result.status).toBe("target-not-reached");
   expect(result.highestBotPoints).toBe(50);
+  expect(context.end).not.toHaveBeenCalled();
 });
 
-test("a bot can close using accrued shares and verifies the registered result", async () => {
-  spyOn(HeraldObserver.prototype, "readModelRows").mockResolvedValue(rows(50));
-  const final = rows(50);
-  final.set("GameRegistry", [{ end_at: 100, status: "Ended" }]);
-  final.set("PlayerRegisteredPoints", [{ address: "0x1", registered_points: "50000000" }]);
-  final.set("SeasonPrize", [{ total_registered_points: "50000000" }]);
-  final.set("HyperstructureShareholders", [{ hyperstructure_id: 7, start_at: 100 }]);
-  spyOn(HeraldObserver.prototype, "waitForModelRows").mockResolvedValue(final);
-  const result = await closeHarnessSeason(options());
-  expect(result).toMatchObject({ status: "closed", winner: "0x1", endAt: 100, transactionHash: "0xabc" });
+test("a bot closes through the client and verifies the registered result", async () => {
+  const context = fixture(50);
+  const result = await closeHarnessSeason(context.options);
+  expect(result).toMatchObject({ status: "closed", winner: "0x1", endAt: 100 });
+  expect(BigInt(result.transactionHash!)).toBe(0xabcn);
+  expect(context.end).toHaveBeenCalledTimes(1);
 });
 
 test("dev mode cannot provide Eternum finalization evidence", async () => {
-  spyOn(HeraldObserver.prototype, "readModelRows").mockResolvedValue(rows(50, true));
-  expect(closeHarnessSeason(options())).rejects.toThrow("dev mode off");
+  const context = fixture(50, true);
+  await expect(closeHarnessSeason(context.options)).rejects.toThrow("dev mode off");
+  expect(context.end).not.toHaveBeenCalled();
 });

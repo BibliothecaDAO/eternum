@@ -79,6 +79,16 @@ describe("native row decoder", () => {
     native.applyReceipt(fold, receipt([battleEvent()]), 11, 0);
     expect(fold.checkpoint()).toEqual(before);
   });
+  it("keeps repeated native events distinct and their identity stable at confirmation", () => {
+    const { native, fold } = setup();
+    const changes = native.applyReceipt(fold, receipt([battleEvent(), battleEvent()]), null, 0).changes;
+    expect(changes[0].change!.set!.key).not.toBe(changes[1].change!.set!.key);
+    expect(changes[0].change!.set!.value.event_position).toEqual({ transaction_hash: "0x55", event_index: 0 });
+    const confirmed = native.applyReceipt(fold, receipt([battleEvent(), battleEvent()]), 10, 0).changes;
+    expect(confirmed.map(({ change }) => change!.set)).toEqual(changes.map(({ change }) => change!.set));
+    const later = native.applyReceipt(fold, receipt([battleEvent()], "0x56"), 11, 0).changes;
+    expect(later[0].change!.set!.key).not.toBe(changes[0].change!.set!.key);
+  });
   it("binds checkpoints to the schema and deployment identity", () => {
     const { native, fold, decoder } = setup();
     native.applyReceipt(fold, receipt([setFixture.raw]), 10, 0);

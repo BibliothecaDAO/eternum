@@ -52,9 +52,9 @@ describe("game entry phase resolution", () => {
       isCheckingWorldAvailability: false,
       hasWorldMeta: true,
       isEternumMode: false,
-      isLoadingEternumPrereqs: false,
+      isLoadingVillagePrereqs: false,
       hasVillageRevealResult: false,
-      eternumSettlementMode: "realm",
+      settlementMode: "realm",
       hasVillagePass: false,
       checksComplete: true,
       needsSettlement: false,
@@ -75,9 +75,9 @@ describe("game entry phase resolution", () => {
       isCheckingWorldAvailability: false,
       hasWorldMeta: true,
       isEternumMode: false,
-      isLoadingEternumPrereqs: false,
+      isLoadingVillagePrereqs: false,
       hasVillageRevealResult: false,
-      eternumSettlementMode: "realm",
+      settlementMode: "realm",
       hasVillagePass: false,
       checksComplete: true,
       needsSettlement: false,
@@ -98,9 +98,9 @@ describe("game entry phase resolution", () => {
       isCheckingWorldAvailability: false,
       hasWorldMeta: true,
       isEternumMode: false,
-      isLoadingEternumPrereqs: false,
+      isLoadingVillagePrereqs: false,
       hasVillageRevealResult: false,
-      eternumSettlementMode: "realm",
+      settlementMode: "realm",
       hasVillagePass: false,
       checksComplete: true,
       needsSettlement: false,
@@ -121,9 +121,9 @@ describe("game entry phase resolution", () => {
       isCheckingWorldAvailability: false,
       hasWorldMeta: true,
       isEternumMode: false,
-      isLoadingEternumPrereqs: false,
+      isLoadingVillagePrereqs: false,
       hasVillageRevealResult: false,
-      eternumSettlementMode: "realm",
+      settlementMode: "realm",
       hasVillagePass: false,
       checksComplete: true,
       needsSettlement: false,
@@ -144,9 +144,9 @@ describe("game entry phase resolution", () => {
       isCheckingWorldAvailability: false,
       hasWorldMeta: true,
       isEternumMode: true,
-      isLoadingEternumPrereqs: false,
+      isLoadingVillagePrereqs: false,
       hasVillageRevealResult: false,
-      eternumSettlementMode: "realm",
+      settlementMode: "realm",
       hasVillagePass: false,
       checksComplete: true,
       needsSettlement: false,
@@ -168,9 +168,9 @@ describe("Eternum dev settlement", () => {
     isCheckingWorldAvailability: false,
     hasWorldMeta: true,
     isEternumMode: true,
-    isLoadingEternumPrereqs: false,
+    isLoadingVillagePrereqs: false,
     hasVillageRevealResult: false,
-    eternumSettlementMode: "realm" as const,
+    settlementMode: "realm" as const,
     hasVillagePass: false,
     checksComplete: true,
     needsSettlement: false,
@@ -186,10 +186,10 @@ describe("Eternum dev settlement", () => {
     );
   });
   it("allows village placement without a pass only for dev games", () => {
-    expect(resolveGameEntryModalPhase({ ...input, eternumSettlementMode: "village", isEternumDevMode: true })).toBe(
+    expect(resolveGameEntryModalPhase({ ...input, settlementMode: "village", isDevMode: true })).toBe(
       "village-placement",
     );
-    expect(resolveGameEntryModalPhase({ ...input, eternumSettlementMode: "village", isEternumDevMode: false })).toBe(
+    expect(resolveGameEntryModalPhase({ ...input, settlementMode: "village", isDevMode: false })).toBe(
       "village-pass-required",
     );
   });
@@ -204,5 +204,32 @@ describe("Eternum dev settlement", () => {
         isSettlingAdditionalRealm: true,
       }),
     ).toBe("ready");
+  });
+});
+
+describe("village placement across modes", () => {
+  it.each(["blitz", "eternum"])("requires a pass outside dev mode in %s", (worldMode) => {
+    const input = {
+      bootstrapStatus: "ready" as const,
+      hasPhaseError: false,
+      isBlitzMode: worldMode === "blitz",
+      isEternumMode: worldMode === "eternum",
+      isSpectateMode: false,
+      worldMode,
+      isCheckingWorldAvailability: false,
+      hasWorldMeta: true,
+      isLoadingVillagePrereqs: false,
+      hasVillageRevealResult: false,
+      settlementMode: "village" as const,
+      hasVillagePass: false,
+      checksComplete: true,
+      needsSettlement: false,
+      canPlay: true,
+      isBlitzSettlementUnlocked: true,
+    };
+    expect(resolveGameEntryModalPhase(input)).toBe("village-pass-required");
+    expect(resolveGameEntryModalPhase({ ...input, hasVillagePass: true })).toBe("village-placement");
+    expect(resolveGameEntryModalPhase({ ...input, isDevMode: true })).toBe("village-placement");
+    expect(resolveGameEntryModalPhase({ ...input, hasVillageRevealResult: true })).toBe("village-reveal");
   });
 });

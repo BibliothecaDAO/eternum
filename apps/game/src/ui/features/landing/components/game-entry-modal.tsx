@@ -26,18 +26,11 @@ import { resolvePlayerNameFelt } from "@/services/identity/player-name";
 import { useVillagePassInventory, type VillagePassInventoryItem } from "@/hooks/use-village-pass-inventory";
 import { getWorldKey, useWorldsAvailability } from "@/hooks/use-world-availability";
 
-import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
-import {
-  buildBlitzSettleCalls,
-  buildEternumSettleCalls,
-  namespaceForChain,
-  normalizeSelector,
-} from "@bibliothecadao/eternum/game-client";
+import { submitSettlement } from "@/services/settlement";
 import { resolveBlitzGrantStartingTroops } from "@/services/blitz/blitz-settlement-options";
 import {
   createHeraldPreSessionReader,
   type PlayerStructure,
-  type RealmVillageSlot,
   type SettlementSnapshot,
 } from "@/runtime/world/herald-pre-session-reader";
 import { requireWorldById } from "@/runtime/world/world-directory";
@@ -47,12 +40,11 @@ import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { getRpcUrlForChain } from "@/runtime/chain-rpc";
 import { BootstrapLoadingPanel } from "@/ui/layouts/bootstrap-loading/bootstrap-loading-panel";
 import { markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
-import { getContractByName } from "@dojoengine/core";
 
-import { Direction, DirectionName, ResourcesIds, StructureType } from "@bibliothecadao/types";
-import { getGameManifest, getSeasonAddresses } from "@contracts";
+import { ResourcesIds, StructureType } from "@bibliothecadao/types";
+import { getSeasonAddresses } from "@contracts";
 import type { GameChain as Chain } from "@realms-world/chain";
-import { Account, Call, CallData } from "starknet";
+import { Account } from "starknet";
 import {
   isGameEntryPreflightComplete,
   resolveGameEntryBlockingError,
@@ -63,8 +55,6 @@ import { resolveBlitzSettlementAvailability } from "./game-entry-blitz-timing";
 
 import { resolveGameEntryTarget } from "./game-entry-navigation";
 import { isSelectedWorldEntityWaitAborted, waitForSelectedWorldEntityState } from "./selected-world-entity-wait";
-
-import { env } from "../../../../../env";
 
 const DEBUG_MODAL = false;
 const SETTLEMENT_SYNC_TIMEOUT_MS = 90000;
@@ -118,24 +108,6 @@ const formatUnlockCountdown = (secondsLeft: number): string => {
   return `${hours}:${minutes}:${seconds}`;
 };
 
-const ALL_VILLAGE_DIRECTIONS: readonly Direction[] = [
-  Direction.EAST,
-  Direction.NORTH_EAST,
-  Direction.NORTH_WEST,
-  Direction.WEST,
-  Direction.SOUTH_WEST,
-  Direction.SOUTH_EAST,
-];
-
-const VILLAGE_DIRECTION_LAYOUT: ReadonlyArray<readonly [Direction, number, number]> = [
-  [Direction.NORTH_WEST, 1, 1],
-  [Direction.NORTH_EAST, 1, 3],
-  [Direction.WEST, 2, 1],
-  [Direction.EAST, 2, 3],
-  [Direction.SOUTH_WEST, 3, 1],
-  [Direction.SOUTH_EAST, 3, 3],
-];
-
 const resolveResourceLabel = (resourceId: number): string | null => {
   const label = ResourcesIds[resourceId as ResourcesIds];
   return typeof label === "string" ? label : null;
@@ -165,82 +137,6 @@ const VILLAGE_REVEAL_RESOURCE_IDS: readonly number[] = [
   ResourcesIds.Mithral,
   ResourcesIds.Dragonhide,
 ];
-
-const DIRECTION_SLOT_KEY_TO_ENUM: Record<string, Direction> = {
-  east: Direction.EAST,
-  northeast: Direction.NORTH_EAST,
-  northwest: Direction.NORTH_WEST,
-  west: Direction.WEST,
-  southwest: Direction.SOUTH_WEST,
-  southeast: Direction.SOUTH_EAST,
-};
-
-const normalizeDirectionSlotKey = (value: string): string => value.replace(/[\s_-]/g, "").toLowerCase();
-
-const hasNonZeroNumericValue = (value: string | null | undefined): boolean => {
-  if (!value) return false;
-  try {
-    return BigInt(value) !== 0n;
-  } catch {
-    return false;
-  }
-};
-
-const hasAddressNameValue = (value: unknown): boolean => {
-  if (value == null) return false;
-  try {
-    return BigInt(value as string | number | bigint) !== 0n;
-  } catch {
-    return true;
-  }
-};
-
-const parseDirectionSlotValue = (value: unknown): Direction | null => {
-  if (typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 5) {
-    return value as Direction;
-  }
-
-  if (typeof value === "string") {
-    const normalized = normalizeDirectionSlotKey(value);
-    return DIRECTION_SLOT_KEY_TO_ENUM[normalized] ?? null;
-  }
-
-  return null;
-};
-
-const parseAvailableVillageDirections = (slot: RealmVillageSlot): Set<Direction> => {
-  const parsed = new Set<Direction>();
-  for (const entry of slot.directions_left) {
-    const directEntryDirection = parseDirectionSlotValue(entry);
-    if (directEntryDirection != null) {
-      parsed.add(directEntryDirection);
-      continue;
-    }
-    if (!entry || typeof entry !== "object") continue;
-    for (const key of Object.keys(entry)) {
-      const direction = parseDirectionSlotValue(key);
-      if (direction != null) {
-        parsed.add(direction);
-      }
-    }
-  }
-  return parsed;
-};
-
-const resolveRealmAvailableVillageDirections = (
-  villageDirectionsByRealmEntityId: Map<number, Set<Direction>>,
-  realmEntityId: number | null,
-): Set<Direction> => {
-  if (realmEntityId == null) return new Set<Direction>();
-  const indexedDirections = villageDirectionsByRealmEntityId.get(realmEntityId);
-  if (indexedDirections) {
-    return indexedDirections;
-  }
-
-  // StructureVillageSlots can lag right after realm settlement; default to 6 possible directions
-  // and let the settlement system enforce final slot availability.
-  return new Set<Direction>(ALL_VILLAGE_DIRECTIONS);
-};
 
 const unpackPackedResourceIds = (packedValue: string | number | bigint | null | undefined): number[] => {
   if (packedValue == null) return [];
@@ -294,10 +190,6 @@ const mapVillageSettleError = (error: unknown): string => {
     return "Choose a settled realm.";
   }
 
-  if (message.includes("connected realm already has") || message.includes("slot is not available")) {
-    return "This direction slot is occupied. Pick another slot.";
-  }
-
   if (message.includes("evp: village token can not be transferred")) {
     return "Village pass transfer blocked by world config. The village_systems contract likely needs DISTRIBUTOR_ROLE on Village Pass.";
   }
@@ -316,20 +208,14 @@ const mapVillageSettleError = (error: unknown): string => {
     return "Village pass unavailable in this wallet or already consumed.";
   }
 
+  if (message.includes("exhausted")) return "No village placement remains in this game. The pass was not consumed.";
   return "Village settlement failed. Please try again.";
-};
-
-type ResolvedWorldSystemAddresses = {
-  blitzRealmSystemsAddress: string | null;
-  nameSystemsAddress: string | null;
-  realmSystemsAddress: string | null;
-  villageSystemsAddress: string | null;
 };
 
 const toPaddedFeltAddress = (address: string): string => `0x${BigInt(address).toString(16).padStart(64, "0")}`;
 
 // Types
-type EternumSettlementMode = "realm" | "village";
+type SettlementMode = "realm" | "village";
 
 type OwnedRealmOption = {
   entityId: number;
@@ -337,15 +223,6 @@ type OwnedRealmOption = {
   coordX: number;
   coordY: number;
   label: string;
-};
-
-type SettleableVillageRealmOption = OwnedRealmOption & {
-  freeDirectionCount: number;
-};
-
-type VillageDirectionSlot = {
-  direction: Direction;
-  isAvailable: boolean;
 };
 
 type VillageRevealResult = {
@@ -589,9 +466,7 @@ const VillagePassRequiredPhase = ({
           <AlertCircle className="w-8 h-8 text-red-300" />
         </div>
         <h2 className="text-lg font-semibold text-gold mb-2">Village Pass Required</h2>
-        <p className="text-xs text-gold/60">
-          You need at least one Village Pass to settle a village in Eternum Seasons.
-        </p>
+        <p className="text-xs text-gold/60">You need at least one Village Pass to settle a village in this game.</p>
       </div>
 
       <Button
@@ -623,44 +498,27 @@ const VillagePlacementPhase = ({
   settleableRealms,
   selectedRealmEntityId,
   onSelectRealmEntityId,
-  directionSlots,
-  selectedDirection,
-  onSelectDirection,
   onConfirmSettlement,
   isSubmittingSettlement,
   settlementError,
   villagePassInventoryError,
-  villageSlotsError,
 }: {
   devMode?: boolean;
   villagePassBalance: bigint;
   villagePasses: VillagePassInventoryItem[];
   selectedVillagePassTokenId: bigint | null;
   onSelectVillagePass: (tokenId: bigint) => void;
-  settleableRealms: SettleableVillageRealmOption[];
+  settleableRealms: OwnedRealmOption[];
   selectedRealmEntityId: number | null;
   onSelectRealmEntityId: (realmEntityId: number | null) => void;
-  directionSlots: VillageDirectionSlot[];
-  selectedDirection: Direction | null;
-  onSelectDirection: (direction: Direction | null) => void;
   onConfirmSettlement: () => void;
   isSubmittingSettlement: boolean;
   settlementError: string | null;
   villagePassInventoryError: string | null;
-  villageSlotsError: string | null;
 }) => {
   const selectedRealm = settleableRealms.find((realm) => realm.entityId === selectedRealmEntityId) ?? null;
-  const directionSlotLookup = useMemo(
-    () => new Map(directionSlots.map((slot) => [slot.direction, slot])),
-    [directionSlots],
-  );
-  const selectedDirectionSlot = selectedDirection != null ? directionSlotLookup.get(selectedDirection) : null;
   const canSubmit =
-    (devMode || selectedVillagePassTokenId != null) &&
-    selectedRealmEntityId != null &&
-    selectedDirection != null &&
-    selectedDirectionSlot?.isAvailable === true &&
-    !isSubmittingSettlement;
+    (devMode || selectedVillagePassTokenId != null) && selectedRealmEntityId != null && !isSubmittingSettlement;
 
   return (
     <div className="flex flex-col gap-4">
@@ -668,7 +526,9 @@ const VillagePlacementPhase = ({
         <img src="/images/logos/eternum-loader.png" className="w-12" alt="Village settlement" />
         <div>
           <h2 className="text-lg font-semibold text-gold">Settle Village</h2>
-          <p className="text-xs text-gold/65">Choose one of your settled realms and a free village slot.</p>
+          <p className="text-xs text-gold/65">
+            Choose a realm for the army grant and bridge fee. The settlement planner chooses the village tile.
+          </p>
         </div>
       </div>
 
@@ -724,8 +584,8 @@ const VillagePlacementPhase = ({
         <section className="rounded-xl border border-gold/25 bg-gradient-to-b from-[#1a140b]/95 via-[#100d08]/95 to-[#0b0906]/95 p-3 md:p-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-sm font-semibold text-gold">Realm + Direction</p>
-              <p className="text-[11px] text-gold/60">Available directions are highlighted in green.</p>
+              <p className="text-sm font-semibold text-gold">Connected Realm</p>
+              <p className="text-[11px] text-gold/60">Village placement is independent of your realm’s location.</p>
             </div>
             <div className="inline-flex items-center gap-2 rounded-full border border-gold/30 bg-gold/10 px-3 py-1 text-[11px] text-gold/85">
               <span className="font-semibold">Step 3 / 3</span>
@@ -750,58 +610,15 @@ const VillagePlacementPhase = ({
               <option value="">Select a realm</option>
               {settleableRealms.map((realm) => (
                 <option key={realm.entityId} value={realm.entityId}>
-                  {realm.label} · {realm.freeDirectionCount}/6 free slots
+                  {realm.label}
                 </option>
               ))}
             </select>
           </label>
 
           {settleableRealms.length === 0 && (
-            <p className="mt-2 text-[11px] text-amber-200/85">
-              No settled realm currently has a free village slot. Each realm supports up to 6 village slots.
-            </p>
+            <p className="mt-2 text-[11px] text-amber-200/85">Settle a realm before creating a village.</p>
           )}
-          {villageSlotsError && <p className="mt-2 text-[11px] text-amber-200/85">{villageSlotsError}</p>}
-
-          <div className="mt-4 rounded-lg border border-gold/20 bg-black/20 p-3">
-            <div className="grid grid-cols-3 grid-rows-3 gap-2">
-              {VILLAGE_DIRECTION_LAYOUT.map(([direction, row, column]) => {
-                const slot = directionSlotLookup.get(direction);
-                const isAvailable = slot?.isAvailable ?? false;
-                const isSelected = selectedDirection === direction;
-                return (
-                  <button
-                    key={direction}
-                    type="button"
-                    style={{ gridRow: row, gridColumn: column }}
-                    disabled={!isAvailable}
-                    onClick={() => onSelectDirection(direction)}
-                    className={cn(
-                      "rounded-md border px-2 py-2 text-xs transition-colors",
-                      isAvailable
-                        ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-100 hover:bg-emerald-500/25"
-                        : "border-red-500/30 bg-red-500/10 text-red-200/80 cursor-not-allowed",
-                      isSelected && isAvailable && "border-gold/70 bg-gold/20 text-gold",
-                    )}
-                  >
-                    <span className="block font-semibold">{DirectionName[direction]}</span>
-                    <span className="text-[10px] opacity-80">{isAvailable ? "Free" : "Occupied"}</span>
-                  </button>
-                );
-              })}
-              <div className="col-start-2 row-start-2 flex items-center justify-center rounded-md border border-gold/25 bg-black/35 px-2 py-2 text-center text-[11px] text-gold/80">
-                {selectedRealm ? (
-                  <span>
-                    Realm #{selectedRealm.realmId ?? "?"}
-                    <br />
-                    Entity {selectedRealm.entityId}
-                  </span>
-                ) : (
-                  <span>Select realm</span>
-                )}
-              </div>
-            </div>
-          </div>
         </section>
       </div>
 
@@ -820,9 +637,6 @@ const VillagePlacementPhase = ({
             </span>
             <span className="rounded border border-gold/25 bg-black/25 px-2 py-1">
               Realm: {selectedRealm ? `#${selectedRealm.realmId ?? "?"}` : "None"}
-            </span>
-            <span className="rounded border border-gold/25 bg-black/25 px-2 py-1">
-              Direction: {selectedDirection != null ? DirectionName[selectedDirection] : "None"}
             </span>
           </div>
           <Button
@@ -995,7 +809,8 @@ export const GameEntryModal = ({
   const worldMode = worldMeta?.mode ?? "unknown";
   const isBlitzMode = worldMode === "blitz";
   const isEternumMode = worldMode === "eternum";
-  const isEternumDevMode = isEternumMode && worldMeta?.devModeOn === true;
+  const isDevMode = worldMeta?.devModeOn === true;
+  const isEternumDevMode = isEternumMode && isDevMode;
   const [devRealmNumber, setDevRealmNumber] = useState("1");
   const [devSettlementTarget, setDevSettlementTarget] = useState<number | null>(null);
   const validDevRealmNumber =
@@ -1026,10 +841,9 @@ export const GameEntryModal = ({
   const [needsSettlement, setNeedsSettlement] = useState(false);
   const [canPlay, setCanPlay] = useState(false);
 
-  const [eternumSettlementMode, setEternumSettlementMode] = useState<EternumSettlementMode>("realm");
+  const [settlementMode, setSettlementMode] = useState<SettlementMode>("realm");
   const [selectedVillagePassTokenId, setSelectedVillagePassTokenId] = useState<bigint | null>(null);
   const [selectedVillageRealmEntityId, setSelectedVillageRealmEntityId] = useState<number | null>(null);
-  const [selectedVillageDirection, setSelectedVillageDirection] = useState<Direction | null>(null);
   const [isSubmittingVillageSettlement, setIsSubmittingVillageSettlement] = useState(false);
   const [villageSettlementError, setVillageSettlementError] = useState<string | null>(null);
   const [villageRevealResult, setVillageRevealResult] = useState<VillageRevealResult | null>(null);
@@ -1049,45 +863,6 @@ export const GameEntryModal = ({
   );
   const seasonAddresses = getSeasonAddresses(chain);
   const villagePassAddress = worldMeta?.villagePassAddress || seasonAddresses.villagePass || null;
-  const systemManifest = useMemo(() => getGameManifest(chain), [chain]);
-  const resolvedSystemSelectors = useMemo(() => {
-    const resolveSelector = (systemName: string): string | null => {
-      try {
-        const contract = getContractByName(systemManifest, namespaceForChain(chain), systemName) as {
-          selector?: string;
-        };
-        return contract.selector ? normalizeSelector(contract.selector) : null;
-      } catch {
-        return null;
-      }
-    };
-
-    return {
-      blitzRealmSystemsSelector: resolveSelector("blitz_realm_systems"),
-      nameSystemsSelector: resolveSelector("name_systems"),
-      realmSystemsSelector: resolveSelector("realm_systems"),
-      villageSystemsSelector: resolveSelector("village_systems"),
-    };
-  }, [systemManifest]);
-  const resolvedWorldSystemAddresses = useMemo<ResolvedWorldSystemAddresses>(() => {
-    if (!worldMeta)
-      return {
-        blitzRealmSystemsAddress: null,
-        nameSystemsAddress: null,
-        realmSystemsAddress: null,
-        villageSystemsAddress: null,
-      };
-    const contracts = requireWorldById(worldMeta.worldId).contractsBySelector;
-    const resolveAddress = (selector: string | null): string | null =>
-      selector ? (contracts[selector] ?? null) : null;
-
-    return {
-      blitzRealmSystemsAddress: resolveAddress(resolvedSystemSelectors.blitzRealmSystemsSelector),
-      nameSystemsAddress: resolveAddress(resolvedSystemSelectors.nameSystemsSelector),
-      realmSystemsAddress: resolveAddress(resolvedSystemSelectors.realmSystemsSelector),
-      villageSystemsAddress: resolveAddress(resolvedSystemSelectors.villageSystemsSelector),
-    };
-  }, [resolvedSystemSelectors, worldMeta?.worldId]);
   const {
     villagePassBalance,
     villagePasses,
@@ -1099,7 +874,7 @@ export const GameEntryModal = ({
     ownerAddress: account?.address,
     villagePassAddress,
     rpcUrl: selectedWorldRpcUrl,
-    enabled: isOpen && isEternumMode && !isEternumDevMode,
+    enabled: isOpen && !isDevMode && settlementMode === "village",
   });
   const {
     data: ownedStructures = [],
@@ -1108,25 +883,14 @@ export const GameEntryModal = ({
     refetch: refetchOwnedStructures,
   } = useQuery({
     queryKey: ["eternumOwnedStructures", chain, worldName, worldMeta?.gameId, account?.address],
-    enabled: isOpen && isEternumMode && Boolean(worldMeta?.gameId) && Boolean(account?.address),
+    enabled: isOpen && Boolean(worldMeta?.gameId) && Boolean(account?.address),
     queryFn: async () => {
       if (!account?.address) return [];
       return await getSelectedWorldReader().fetchPlayerStructures(account.address);
     },
     staleTime: 10_000,
   });
-  const {
-    data: realmVillageSlots = [],
-    error: villageSlotsErrorRaw,
-    refetch: refetchRealmVillageSlots,
-  } = useQuery({
-    queryKey: ["eternumRealmVillageSlots", chain, worldName, worldMeta?.gameId],
-    enabled: isOpen && isEternumMode && Boolean(worldMeta?.gameId),
-    queryFn: async () => await getSelectedWorldReader().fetchRealmVillageSlots(),
-    staleTime: 10_000,
-  });
   const ownedStructuresError = ownedStructuresErrorRaw instanceof Error ? ownedStructuresErrorRaw.message : null;
-  const villageSlotsError = villageSlotsErrorRaw instanceof Error ? villageSlotsErrorRaw.message : null;
   const villagePassInventoryWarning = useMemo(() => {
     if (!villagePassInventoryError) return null;
     const normalized = villagePassInventoryError.toLowerCase();
@@ -1167,43 +931,14 @@ export const GameEntryModal = ({
       ),
     [ownedStructures],
   );
-  const villageDirectionsByRealmEntityId = useMemo(() => {
-    const lookup = new Map<number, Set<Direction>>();
-    for (const slot of realmVillageSlots as RealmVillageSlot[]) {
-      lookup.set(slot.connected_realm_entity_id, parseAvailableVillageDirections(slot));
-    }
-    return lookup;
-  }, [realmVillageSlots]);
-  const settleableVillageRealms = useMemo<SettleableVillageRealmOption[]>(() => {
-    return ownedRealms
-      .map((realm) => {
-        const freeDirections = resolveRealmAvailableVillageDirections(villageDirectionsByRealmEntityId, realm.entityId);
-        return {
-          ...realm,
-          freeDirectionCount: freeDirections.size,
-        };
-      })
-      .filter((realm) => realm.freeDirectionCount > 0);
-  }, [ownedRealms, villageDirectionsByRealmEntityId]);
-  const selectedVillageAvailableDirections = useMemo(() => {
-    return resolveRealmAvailableVillageDirections(villageDirectionsByRealmEntityId, selectedVillageRealmEntityId);
-  }, [selectedVillageRealmEntityId, villageDirectionsByRealmEntityId]);
-  const villageDirectionSlots = useMemo<VillageDirectionSlot[]>(
-    () =>
-      ALL_VILLAGE_DIRECTIONS.map((direction) => ({
-        direction,
-        isAvailable: selectedVillageAvailableDirections.has(direction),
-      })),
-    [selectedVillageAvailableDirections],
-  );
+  const settleableVillageRealms = ownedRealms;
 
   useEffect(() => {
     if (!isOpen) {
       hasEnteredGameRef.current = false;
-      setEternumSettlementMode("realm");
+      setSettlementMode("realm");
       setSelectedVillagePassTokenId(null);
       setSelectedVillageRealmEntityId(null);
-      setSelectedVillageDirection(null);
       setIsSubmittingVillageSettlement(false);
       setVillageSettlementError(null);
       setVillageRevealResult(null);
@@ -1211,10 +946,6 @@ export const GameEntryModal = ({
   }, [isOpen]);
 
   useEffect(() => {
-    if (!isEternumMode) {
-      setSelectedVillagePassTokenId(null);
-      return;
-    }
     if (villagePasses.length === 0) return;
 
     setSelectedVillagePassTokenId((current) => {
@@ -1223,13 +954,9 @@ export const GameEntryModal = ({
       }
       return villagePasses[0]?.tokenId ?? null;
     });
-  }, [isEternumMode, villagePasses]);
+  }, [villagePasses]);
 
   useEffect(() => {
-    if (!isEternumMode) {
-      setSelectedVillageRealmEntityId(null);
-      return;
-    }
     if (settleableVillageRealms.length === 0) {
       setSelectedVillageRealmEntityId(null);
       return;
@@ -1241,26 +968,11 @@ export const GameEntryModal = ({
       }
       return settleableVillageRealms[0]?.entityId ?? null;
     });
-  }, [isEternumMode, settleableVillageRealms]);
-
-  useEffect(() => {
-    if (!isEternumMode) {
-      setSelectedVillageDirection(null);
-      return;
-    }
-
-    setSelectedVillageDirection((current) => {
-      if (current != null && selectedVillageAvailableDirections.has(current)) {
-        return current;
-      }
-      const firstAvailableDirection = selectedVillageAvailableDirections.values().next().value as Direction | undefined;
-      return firstAvailableDirection ?? null;
-    });
-  }, [isEternumMode, selectedVillageAvailableDirections]);
+  }, [settleableVillageRealms]);
 
   useEffect(() => {
     setVillageSettlementError(null);
-  }, [selectedVillagePassTokenId, selectedVillageRealmEntityId, selectedVillageDirection]);
+  }, [selectedVillagePassTokenId, selectedVillageRealmEntityId]);
 
   const resetBootstrapDependentState = useCallback(() => {
     setPreflightError(null);
@@ -1272,10 +984,9 @@ export const GameEntryModal = ({
     setSettledRealmCount(0);
     setDevSettlementTarget(null);
     setDevRealmNumber("1");
-    setEternumSettlementMode("realm");
+    setSettlementMode("realm");
     setSelectedVillagePassTokenId(null);
     setSelectedVillageRealmEntityId(null);
-    setSelectedVillageDirection(null);
     setIsSubmittingVillageSettlement(false);
     setVillageSettlementError(null);
     setVillageRevealResult(null);
@@ -1324,10 +1035,10 @@ export const GameEntryModal = ({
   const seasonStartAt = worldMeta?.startSettlingAt ?? worldMeta?.startMainAt ?? null;
   const seasonHasStarted = seasonStartAt != null && seasonStartAt <= nowSeconds;
   const seasonNotEnded = worldMeta?.endAt == null || worldMeta.endAt === 0 || nowSeconds <= worldMeta.endAt;
-  const seasonTimingValid = isEternumDevMode || (seasonHasStarted && seasonNotEnded);
+  const seasonTimingValid = isDevMode || (seasonHasStarted && seasonNotEnded);
   const secondsUntilSeasonStart = seasonStartAt == null ? null : Math.max(0, seasonStartAt - nowSeconds);
   const hasVillagePass = villagePassBalance > 0n || villagePasses.length > 0;
-  const isLoadingEternumPrereqs =
+  const isLoadingVillagePrereqs =
     isCheckingWorldAvailability || isLoadingVillagePassInventory || isLoadingOwnedStructures || !worldMeta;
   const entryPreflightComplete = isGameEntryPreflightComplete({
     isEternumMode,
@@ -1394,14 +1105,15 @@ export const GameEntryModal = ({
       isCheckingWorldAvailability,
       hasWorldMeta: worldMeta != null,
       isEternumMode,
-      isLoadingEternumPrereqs,
+      isLoadingVillagePrereqs,
       hasVillageRevealResult: villageRevealResult != null,
-      eternumSettlementMode,
+      settlementMode,
       hasVillagePass,
       checksComplete,
       needsSettlement,
       canPlay,
       isEternumDevMode,
+      isDevMode,
       isSettlingAdditionalRealm: devSettlementTarget !== null,
       isBlitzSettlementUnlocked: isEternumMode ? seasonTimingValid : blitzSettlementAvailability.isUnlocked,
     });
@@ -1409,6 +1121,7 @@ export const GameEntryModal = ({
     return result;
   }, [
     bootstrapStatus,
+    isDevMode,
     isEternumDevMode,
     devSettlementTarget,
     phaseError,
@@ -1421,7 +1134,7 @@ export const GameEntryModal = ({
     blitzSettlementAvailability.isUnlocked,
     seasonTimingValid,
     isEternumMode,
-    isLoadingEternumPrereqs,
+    isLoadingVillagePrereqs,
     isCheckingWorldAvailability,
     hasVillagePass,
     worldMode,
@@ -1429,10 +1142,8 @@ export const GameEntryModal = ({
     villagePasses,
     selectedVillagePassTokenId,
     selectedVillageRealmEntityId,
-    selectedVillageDirection,
-    villageDirectionSlots,
     villageRevealResult,
-    eternumSettlementMode,
+    settlementMode,
     entryIntent,
     worldName,
   ]);
@@ -1484,120 +1195,6 @@ export const GameEntryModal = ({
       return observation.snapshot;
     },
     [beginEntityWait, chain, readSettlementSnapshot, syncSettlementStateFromSnapshot, worldMeta, worldName],
-  );
-
-  const executeEntryObservedTransaction = useCallback(
-    async ({
-      signer,
-      calls,
-      operation,
-      waitForConfirmation = true,
-    }: {
-      signer: Account;
-      calls: Call | Call[];
-      operation: string;
-      waitForConfirmation?: boolean;
-    }) => {
-      return await executeObservedClientTransaction({
-        account: signer,
-        calls,
-        surface: "settlement",
-        operation,
-        chain,
-        worldName,
-        waitForConfirmation,
-      });
-    },
-    [chain, worldName],
-  );
-
-  const resolveWorldSystemAddress = useCallback(
-    (systemName: string): string => {
-      const contractAddress =
-        systemName === "blitz_realm_systems"
-          ? resolvedWorldSystemAddresses?.blitzRealmSystemsAddress
-          : systemName === "name_systems"
-            ? resolvedWorldSystemAddresses?.nameSystemsAddress
-            : systemName === "realm_systems"
-              ? resolvedWorldSystemAddresses?.realmSystemsAddress
-              : systemName === "village_systems"
-                ? resolvedWorldSystemAddresses?.villageSystemsAddress
-                : null;
-
-      if (!contractAddress) {
-        throw new Error(`${systemName} contract not found for selected world`);
-      }
-
-      return contractAddress;
-    },
-    [resolvedWorldSystemAddresses],
-  );
-
-  const resolveOptionalPlayerNameForSettlement = useCallback(async (): Promise<string | null> => {
-    if (!account?.address) return null;
-
-    const addressName = await getSelectedWorldReader().fetchAddressName(account.address);
-    if (hasAddressNameValue(addressName)) {
-      return null;
-    }
-
-    if (!usernameFelt) {
-      throw new Error("Unable to resolve player name for settlement.");
-    }
-
-    return usernameFelt;
-  }, [account?.address, getSelectedWorldReader, usernameFelt]);
-
-  const buildSetAddressNameCall = useCallback(
-    (playerName: string): Call => ({
-      contractAddress: resolveWorldSystemAddress("name_systems"),
-      entrypoint: "set_address_name",
-      calldata: CallData.compile([playerName]),
-    }),
-    [resolveWorldSystemAddress],
-  );
-
-  const buildVillageSettlementCalls = useCallback(
-    ({
-      signerAddress,
-      villagePassTokenId,
-      connectedRealmEntityId,
-      direction,
-      optionalPlayerName,
-    }: {
-      signerAddress: string;
-      villagePassTokenId: bigint;
-      connectedRealmEntityId: number;
-      direction: Direction;
-      optionalPlayerName: string | null;
-    }): Call[] => {
-      const gameId = worldMeta?.gameId;
-      if (!gameId) throw new Error("The selected game ID is required for settlement.");
-      const villageSystemsAddress = resolveWorldSystemAddress("village_systems");
-      const calls: Call[] = [];
-
-      if (optionalPlayerName) {
-        calls.push(buildSetAddressNameCall(optionalPlayerName));
-      }
-
-      const vrfProviderAddress = env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS;
-      if (hasNonZeroNumericValue(vrfProviderAddress)) {
-        calls.push({
-          contractAddress: vrfProviderAddress as string,
-          entrypoint: "request_random",
-          calldata: CallData.compile([villageSystemsAddress, 0, signerAddress]),
-        });
-      }
-
-      calls.push({
-        contractAddress: villageSystemsAddress,
-        entrypoint: "create",
-        calldata: CallData.compile([gameId, villagePassTokenId, connectedRealmEntityId, direction]),
-      });
-
-      return calls;
-    },
-    [buildSetAddressNameCall, resolveWorldSystemAddress, worldMeta?.gameId],
   );
 
   const waitForVillageResourceReveal = useCallback(
@@ -1723,9 +1320,8 @@ export const GameEntryModal = ({
     setPreflightRetryNonce((current) => current + 1);
     if (isEternumMode) {
       void refetchOwnedStructures();
-      void refetchRealmVillageSlots();
     }
-  }, [isEternumMode, refetchOwnedStructures, refetchRealmVillageSlots, resetBootstrapDependentState]);
+  }, [isEternumMode, refetchOwnedStructures, resetBootstrapDependentState]);
 
   const handleGetVillagePass = useCallback(() => {
     window.open("https://empire.realms.world/trade", "_blank", "noopener,noreferrer");
@@ -1754,9 +1350,6 @@ export const GameEntryModal = ({
 
   const handleVillageSettle = useCallback(async () => {
     const activeVillageRealmEntityId = selectedVillageRealmEntityId;
-    const activeVillageDirection = selectedVillageDirection;
-    const activeVillageDirectionAvailable =
-      activeVillageDirection != null && selectedVillageAvailableDirections.has(activeVillageDirection);
 
     if (!account?.address) {
       setVillageSettlementError("Connect your wallet first.");
@@ -1766,47 +1359,33 @@ export const GameEntryModal = ({
       setVillageSettlementError("Season timing invalid. Village settlement is currently unavailable.");
       return;
     }
-    if (!isEternumDevMode && !villagePassAddress) {
+    if (!isDevMode && !villagePassAddress) {
       setVillageSettlementError("Village pass contract not configured for this world.");
       return;
     }
-    if (!isEternumDevMode && !selectedVillagePassTokenId) {
+    if (!isDevMode && !selectedVillagePassTokenId) {
       setVillageSettlementError("Select a village pass token before settling.");
       return;
     }
     if (activeVillageRealmEntityId == null) {
-      setVillageSettlementError("Select a settled realm with a free village slot.");
+      setVillageSettlementError("Select a settled realm.");
       return;
     }
-    if (activeVillageDirection == null) {
-      setVillageSettlementError("Select an available direction slot.");
-      return;
-    }
-    if (!activeVillageDirectionAvailable) {
-      setVillageSettlementError("This direction slot is occupied. Choose another slot.");
-      return;
-    }
-
     setIsSubmittingVillageSettlement(true);
     setVillageSettlementError(null);
 
     try {
       const signer = account as unknown as Account;
       const existingVillageIds = new Set(ownedVillageIdSet);
-      const optionalPlayerName = await resolveOptionalPlayerNameForSettlement();
-      const villageSettlementCalls = buildVillageSettlementCalls({
-        signerAddress: account.address,
-        villagePassTokenId: isEternumDevMode ? 0n : selectedVillagePassTokenId!,
-        connectedRealmEntityId: activeVillageRealmEntityId,
-        direction: activeVillageDirection,
-        optionalPlayerName,
-      });
-
-      await executeEntryObservedTransaction({
-        signer,
-        calls: villageSettlementCalls,
-        operation: "village_systems.create",
-      });
+      if (!worldMeta) throw new Error("The selected game is not ready for settlement");
+      await submitSettlement(worldMeta, signer, (client, owner) =>
+        client.setup.systemCalls.settle_village({
+          signer,
+          owner,
+          passId: isDevMode ? 0n : selectedVillagePassTokenId!,
+          connectedRealmEntityId: activeVillageRealmEntityId,
+        }),
+      );
 
       const revealResult = await waitForVillageResourceReveal({
         ownerAddress: account.address,
@@ -1815,11 +1394,10 @@ export const GameEntryModal = ({
 
       setVillageRevealResult(revealResult);
       setVillageSettlementError(null);
-      setEternumSettlementMode("village");
+      setSettlementMode("village");
 
       refetchVillagePassInventory();
       void refetchOwnedStructures();
-      void refetchRealmVillageSlots();
     } catch (error) {
       if (isSelectedWorldEntityWaitAborted(error)) return;
       debugLog(worldName, "Village settlement failed:", error);
@@ -1833,17 +1411,11 @@ export const GameEntryModal = ({
     villagePassAddress,
     selectedVillagePassTokenId,
     selectedVillageRealmEntityId,
-    selectedVillageDirection,
-    selectedVillageAvailableDirections,
     ownedVillageIdSet,
-    resolveOptionalPlayerNameForSettlement,
-    buildVillageSettlementCalls,
-    isEternumDevMode,
-    executeEntryObservedTransaction,
+    isDevMode,
     waitForVillageResourceReveal,
     refetchVillagePassInventory,
     refetchOwnedStructures,
-    refetchRealmVillageSlots,
     worldName,
     chain,
   ]);
@@ -1851,11 +1423,10 @@ export const GameEntryModal = ({
   const handleSettleAnotherVillage = useCallback(() => {
     setVillageRevealResult(null);
     setVillageSettlementError(null);
-    setEternumSettlementMode("village");
+    setSettlementMode("village");
     void refetchOwnedStructures();
-    void refetchRealmVillageSlots();
     refetchVillagePassInventory();
-  }, [refetchOwnedStructures, refetchRealmVillageSlots, refetchVillagePassInventory]);
+  }, [refetchOwnedStructures, refetchVillagePassInventory]);
 
   const finalizeSuccessfulSettlement = useCallback(() => {
     debugLog(worldName, "Settlement complete!");
@@ -1882,7 +1453,7 @@ export const GameEntryModal = ({
     [autoSettleEnabled, autoSettleEntryKey, markFailed, worldName],
   );
 
-  // Settlement handler - calls actual Dojo system calls
+  // Settlement is an authenticated, recorded action.
   const handleSettle = useCallback(async () => {
     if (!isBlitzMode && !isEternumMode) {
       debugLog(worldName, "Settlement requires a resolved game mode");
@@ -1900,8 +1471,6 @@ export const GameEntryModal = ({
       if (!worldMeta) {
         throw new Error("World configuration is still loading. Please wait a moment and try again.");
       }
-      const realmSystemName = isEternumMode ? "realm_systems" : "blitz_realm_systems";
-      const realmSystemsAddress = resolveWorldSystemAddress(realmSystemName);
       const signer = account as unknown as Account;
       if (!usernameFelt) {
         throw new Error("Unable to resolve player name for settlement.");
@@ -1926,27 +1495,24 @@ export const GameEntryModal = ({
       const settlementTarget = isEternumDevMode ? (initialSnapshot?.settledCount ?? 0) + 1 : expectedSettlementCount;
       if (isEternumDevMode) setDevSettlementTarget(settlementTarget);
       setSettleStage("settling");
-      await executeEntryObservedTransaction({
-        signer,
-        calls: isEternumMode
-          ? buildEternumSettleCalls({
-              realmSystemsAddress,
-              devRealmId: isEternumDevMode ? Number(devRealmNumber) : undefined,
-              signerAddress: signer.address,
-              usernameFelt,
-              gameId: worldMeta.gameId,
-              vrfProviderAddress: env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS,
+      await submitSettlement(worldMeta, signer, (client, owner) =>
+        isEternumMode
+          ? client.setup.systemCalls.settle_season({
+              signer,
+              owner,
+              name: usernameFelt,
+              selectedRealm: isEternumDevMode ? Number(devRealmNumber) : undefined,
             })
-          : buildBlitzSettleCalls({
-              blitzSystemsAddress: realmSystemsAddress,
-              signerAddress: signer.address,
-              usernameFelt,
-              gameId: worldMeta.gameId,
-              vrfProviderAddress: env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS,
+          : client.setup.systemCalls.settle_blitz({
+              signer,
+              owner,
+              name: usernameFelt,
+              cosmeticsBlockHash: "0x0",
+              cosmeticsBlockNumber: 0,
+              cosmetics: [],
               grantStartingTroops: resolveBlitzGrantStartingTroops(),
             }),
-        operation: `${realmSystemName}.${isEternumDevMode ? "settle_dev" : "settle"}`,
-      });
+      );
 
       setSettleStage("syncing");
       const finalSnapshot = await waitForSettlementTarget(settlementTarget);
@@ -1959,7 +1525,6 @@ export const GameEntryModal = ({
       setDevSettlementTarget(null);
       if (isEternumMode) {
         void refetchOwnedStructures();
-        void refetchRealmVillageSlots();
       }
       finalizeSuccessfulSettlement();
     } catch (error) {
@@ -1973,7 +1538,6 @@ export const GameEntryModal = ({
     autoSettleEntryKey,
     account,
     expectedSettlementCount,
-    executeEntryObservedTransaction,
     finalizeFailedBlitzSettlement,
     finalizeSuccessfulSettlement,
     isBlitzMode,
@@ -1981,7 +1545,6 @@ export const GameEntryModal = ({
     isEternumDevMode,
     devRealmNumber,
     refetchOwnedStructures,
-    refetchRealmVillageSlots,
     markSettling,
     syncSettlementStateFromSnapshot,
     usernameFelt,
@@ -1989,7 +1552,6 @@ export const GameEntryModal = ({
     worldMeta,
     worldName,
     readSettlementSnapshot,
-    resolveWorldSystemAddress,
   ]);
 
   useEffect(() => {
@@ -2010,7 +1572,7 @@ export const GameEntryModal = ({
   // Auto-enter game when ready (spectate mode or already settled players)
   useEffect(() => {
     debugLog(worldName, "Auto-enter check - phase:", phase, "isSpectateMode:", isSpectateMode);
-    const shouldAutoEnter = phase === "ready" && (!isEternumMode || entryIntent === "play");
+    const shouldAutoEnter = phase === "ready" && entryIntent === "play";
     if (shouldAutoEnter) {
       debugLog(worldName, "Auto-entering game...");
       handleEnterGame();
@@ -2036,10 +1598,14 @@ export const GameEntryModal = ({
     }
   };
 
-  const showEternumSettlementModeToggle =
+  const showSettlementModeToggle =
     isEternumMode && ["settlement", "village-pass-required", "village-placement", "ready"].includes(phase);
-  const usesDesktopCenteredSettlementLayout =
-    isEternumMode && ["village-pass-required", "village-placement", "village-reveal", "ready"].includes(phase);
+  const usesDesktopCenteredSettlementLayout = [
+    "village-pass-required",
+    "village-placement",
+    "village-reveal",
+    "ready",
+  ].includes(phase);
 
   return (
     <div
@@ -2093,15 +1659,15 @@ export const GameEntryModal = ({
               "lg:min-h-0 lg:flex-1 lg:max-h-none lg:overflow-y-auto lg:pr-4 lg:scrollbar-thin lg:scrollbar-thumb-gold/20 lg:scrollbar-track-transparent",
           )}
         >
-          {showEternumSettlementModeToggle && (
+          {showSettlementModeToggle && (
             <div className="mb-3 flex items-center justify-center">
               <div className="inline-flex rounded-lg border border-gold/25 bg-black/30 p-1">
                 <button
                   type="button"
-                  onClick={() => setEternumSettlementMode("realm")}
+                  onClick={() => setSettlementMode("realm")}
                   className={cn(
                     "rounded-md px-3 py-1.5 text-xs transition-colors",
-                    eternumSettlementMode === "realm"
+                    settlementMode === "realm"
                       ? "bg-gold text-brown font-semibold"
                       : "text-gold/75 hover:text-gold hover:bg-gold/10",
                   )}
@@ -2110,10 +1676,10 @@ export const GameEntryModal = ({
                 </button>
                 <button
                   type="button"
-                  onClick={() => setEternumSettlementMode("village")}
+                  onClick={() => setSettlementMode("village")}
                   className={cn(
                     "rounded-md px-3 py-1.5 text-xs transition-colors",
-                    eternumSettlementMode === "village"
+                    settlementMode === "village"
                       ? "bg-gold text-brown font-semibold"
                       : "text-gold/75 hover:text-gold hover:bg-gold/10",
                   )}
@@ -2172,7 +1738,7 @@ export const GameEntryModal = ({
               >
                 <VillagePassRequiredPhase
                   onGetVillagePass={handleGetVillagePass}
-                  onSwitchToRealmMode={() => setEternumSettlementMode("realm")}
+                  onSwitchToRealmMode={() => setSettlementMode("realm")}
                   showRealmShortcut={true}
                 />
               </motion.div>
@@ -2185,7 +1751,7 @@ export const GameEntryModal = ({
                 exit={{ opacity: 0 }}
               >
                 <VillagePlacementPhase
-                  devMode={isEternumDevMode}
+                  devMode={isDevMode}
                   villagePassBalance={villagePassBalance}
                   villagePasses={villagePasses}
                   selectedVillagePassTokenId={selectedVillagePassTokenId}
@@ -2193,14 +1759,10 @@ export const GameEntryModal = ({
                   settleableRealms={settleableVillageRealms}
                   selectedRealmEntityId={selectedVillageRealmEntityId}
                   onSelectRealmEntityId={setSelectedVillageRealmEntityId}
-                  directionSlots={villageDirectionSlots}
-                  selectedDirection={selectedVillageDirection}
-                  onSelectDirection={setSelectedVillageDirection}
                   onConfirmSettlement={handleVillageSettle}
                   isSubmittingSettlement={isSubmittingVillageSettlement}
                   settlementError={villageSettlementError ?? ownedStructuresError}
                   villagePassInventoryError={villagePassInventoryWarning}
-                  villageSlotsError={villageSlotsError}
                 />
               </motion.div>
             )}
@@ -2252,9 +1814,9 @@ export const GameEntryModal = ({
                     Settle Another Realm
                   </Button>
                 )}
-                {!isSpectateMode && isEternumMode && (
+                {!isSpectateMode && (
                   <Button
-                    onClick={() => setEternumSettlementMode("village")}
+                    onClick={() => setSettlementMode("village")}
                     variant="outline"
                     className="w-full h-10 mt-2"
                     forceUppercase={false}

@@ -1,6 +1,7 @@
 import { FELT_CENTER as SETTLEMENT_CENTER } from "@/ui/config";
-import { ClientComponents, StructureType } from "@bibliothecadao/types";
-import { getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
+import { StructureType } from "@bibliothecadao/types";
+import { configManager } from "@bibliothecadao/eternum";
+import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { SETTLEMENT_BASE_DISTANCE, SETTLEMENT_SUBSEQUENT_DISTANCE } from "../constants/settlement-constants";
 import { SettlementLocation } from "./settlement-types";
 
@@ -40,18 +41,7 @@ const coordinatesToSettlementLocation = (x: number, y: number): SettlementLocati
 /**
  * Gets all bank locations from the game state
  */
-export const getBanksLocations = (components: ClientComponents) => {
-  const bankEntities = runQuery([HasValue(components.Structure, { category: StructureType.Bank })]);
-  const bankPositions = Array.from(bankEntities).map((entity) => {
-    const structure = getComponentValue(components.Structure, entity);
-    if (structure) {
-      const x = structure?.base.coord_x;
-      const y = structure?.base.coord_y;
-
-      // Use the improved reverse calculation function
-      return coordinatesToSettlementLocation(x, y);
-    }
-    return null;
-  });
-  return bankPositions.filter((position) => position !== null) as SettlementLocation[];
-};
+export const getBanksLocations = (store: NativeFactStore): SettlementLocation[] =>
+  [...store.inGame("Structure", configManager.getActiveGameId())]
+    .filter((structure) => structure.base.category === StructureType.Bank)
+    .map((structure) => coordinatesToSettlementLocation(structure.base.coord_x, structure.base.coord_y));

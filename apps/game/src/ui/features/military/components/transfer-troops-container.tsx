@@ -1,8 +1,6 @@
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
-import { useGameEntityComponentValue } from "@/hooks/helpers/use-game-entity-component-value";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import Button from "@/ui/design-system/atoms/button";
-import { resolveArmyToArmyTransferRestriction } from "@/ui/lib/structure-capabilities";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { formatNumber } from "@/ui/utils/utils";
 
@@ -14,9 +12,8 @@ import {
   getGuardsByStructure,
   getTroopResourceId,
   multiplyByPrecision,
-  ResourceManager,
 } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
+import { useGame, useNativeRow, useResourceManager, useNativeRevision } from "@bibliothecadao/react";
 import {
   ActorType,
   DISPLAYED_SLOT_NUMBER_MAP,
@@ -36,7 +33,7 @@ import { getStructureDefenseSlotLimit, getUnlockedGuardSlots, MAX_GUARD_SLOT_COU
 import { getGuardStaminaSnapshot } from "../utils/guard-stamina";
 import { TransferBalanceCardData, TransferBalanceCards } from "./transfer-troops/transfer-balance-cards";
 import { getActorTypes, TransferDirection } from "./transfer-troops/transfer-direction";
-import { BALANCE_TRANSFER_SLOT, getSameStructureTransferBlockReason } from "./transfer-troops/transfer-eligibility";
+import { BALANCE_TRANSFER_SLOT, getTroopTransferBlockReason } from "./transfer-troops/transfer-eligibility";
 import { TransferSlotSelection } from "./transfer-troops/transfer-slot-selection";
 import { DeploymentStrengthSummary } from "./deployment-strength-summary";
 
@@ -76,7 +73,7 @@ export const TransferTroopsContainer = ({
   const {
     account: { account },
     setup: {
-      components,
+      store,
       systemCalls: {
         explorer_explorer_swap,
         explorer_guard_swap,
@@ -86,25 +83,42 @@ export const TransferTroopsContainer = ({
         troop_structure_adjacent_transfer,
       },
     },
-  } = useDojo();
+  } = useGame();
   const { currentBlockTimestamp, currentDefaultTick, currentArmiesTick } = useBlockTimestamp();
 
   const [loading, setLoading] = useState(false);
   const [troopAmount, setTroopAmount] = useState<number>(0);
   const [guardSlot, setGuardSlot] = useState<GuardSelection>(null);
+  const guardRevision = useNativeRevision(["Guard"]);
   const actorTypes = useMemo(() => getActorTypes(transferDirection), [transferDirection]);
-  const selectedStructure = useGameEntityComponentValue(components.Structure, selectedEntityId);
-  const selectedResourceState = useGameEntityComponentValue(components.Resource, selectedEntityId);
-  const selectedExplorerTroops = useGameEntityComponentValue(components.ExplorerTroops, selectedEntityId);
-  const targetStructure = useGameEntityComponentValue(components.Structure, targetEntityId);
-  const targetExplorerTroops = useGameEntityComponentValue(components.ExplorerTroops, targetEntityId);
-  const selectedExplorerConnectedStructure = useGameEntityComponentValue(
-    components.Structure,
-    selectedExplorerTroops?.owner,
+  const selectedStructure = useNativeRow("Structure", {
+    game_id: configManager.getActiveGameId(),
+    entity_id: selectedEntityId,
+  });
+  const selectedResourceState = useResourceManager(selectedEntityId);
+  const selectedExplorerTroops = useNativeRow("ExplorerTroops", {
+    game_id: configManager.getActiveGameId(),
+    explorer_id: selectedEntityId,
+  });
+  const targetStructure = useNativeRow("Structure", {
+    game_id: configManager.getActiveGameId(),
+    entity_id: targetEntityId,
+  });
+  const targetExplorerTroops = useNativeRow("ExplorerTroops", {
+    game_id: configManager.getActiveGameId(),
+    explorer_id: targetEntityId,
+  });
+  const selectedExplorerConnectedStructure = useNativeRow(
+    "Structure",
+    selectedExplorerTroops
+      ? { game_id: configManager.getActiveGameId(), entity_id: selectedExplorerTroops.owner }
+      : undefined,
   );
-  const targetExplorerConnectedStructure = useGameEntityComponentValue(
-    components.Structure,
-    targetExplorerTroops?.owner,
+  const targetExplorerConnectedStructure = useNativeRow(
+    "Structure",
+    targetExplorerTroops
+      ? { game_id: configManager.getActiveGameId(), entity_id: targetExplorerTroops.owner }
+      : undefined,
   );
   const isSelectedLoading =
     actorTypes.selected === ActorType.Structure
@@ -118,23 +132,25 @@ export const TransferTroopsContainer = ({
   }, [selectedEntityId, targetExplorerTroops?.owner]);
 
   const structureTroopBalance = useMemo(() => {
-    if (!targetExplorerTroops?.troops || !selectedResourceState) return undefined;
+    if (!targetExplorerTroops?.troops || !selectedResourceState.hasResources()) return undefined;
     const { category, tier } = targetExplorerTroops.troops;
     const resourceId = getTroopResourceId(category as TroopType, tier as TroopTier);
     return {
       resourceId,
-      balance: ResourceManager.balanceWithProduction(selectedResourceState, currentDefaultTick, resourceId).balance,
+      balance: selectedResourceState.balanceWithProduction(currentDefaultTick, resourceId).balance,
       category,
       tier,
     };
   }, [currentDefaultTick, selectedResourceState, targetExplorerTroops?.troops]);
   const sameStructureBlockReason = useMemo(
     () =>
-      getSameStructureTransferBlockReason({
+      getTroopTransferBlockReason({
         transferDirection,
         selectedEntityId,
         targetEntityId,
         selectedExplorerOwner: selectedExplorerTroops?.owner ?? null,
+        sourceHomeOwner: selectedExplorerConnectedStructure?.owner,
+        targetOwner: targetStructure?.owner,
         targetExplorerOwner: targetExplorerTroops?.owner ?? null,
         guardSlot,
       }),
@@ -142,22 +158,14 @@ export const TransferTroopsContainer = ({
       guardSlot,
       selectedEntityId,
       selectedExplorerTroops?.owner,
+      selectedExplorerConnectedStructure?.owner,
+      targetStructure?.owner,
       targetEntityId,
       targetExplorerTroops?.owner,
       transferDirection,
     ],
   );
-  const transferRestriction = useMemo(() => {
-    if (transferDirection === TransferDirection.ExplorerToExplorer) {
-      return resolveArmyToArmyTransferRestriction({
-        modeId: mode.id,
-        source: selectedExplorerConnectedStructure,
-        destination: targetExplorerConnectedStructure,
-      });
-    }
-
-    return null;
-  }, [mode.id, selectedExplorerConnectedStructure, targetExplorerConnectedStructure, transferDirection]);
+  const transferRestriction = sameStructureBlockReason;
   const isTransferBlocked = transferRestriction !== null;
 
   const troopCapacityLimit = useMemo(() => {
@@ -197,7 +205,8 @@ export const TransferTroopsContainer = ({
       return [];
     }
 
-    const { base, category } = structure;
+    const { base } = structure;
+    const category = base.category;
     const limits: number[] = [];
     const derivedLimit = getStructureDefenseSlotLimit(category as StructureType | undefined, base.level ?? null);
     if (typeof derivedLimit === "number" && Number.isFinite(derivedLimit)) {
@@ -269,7 +278,9 @@ export const TransferTroopsContainer = ({
   // list of guards
   const targetGuards = useMemo(() => {
     if (!targetStructure) return [];
-    const guards = getGuardsByStructure(targetStructure).filter((guard) => targetGuardSlotSet.has(Number(guard.slot)));
+    const guards = getGuardsByStructure(targetStructure, store).filter((guard) =>
+      targetGuardSlotSet.has(Number(guard.slot)),
+    );
     return guards.map((guard) => {
       const troopCategory = guard.troops.category as TroopType;
       const troopTier = guard.troops.tier as TroopTier;
@@ -288,12 +299,12 @@ export const TransferTroopsContainer = ({
         },
       };
     });
-  }, [targetStructure, targetGuardSlotSet, currentArmiesTick, currentBlockTimestamp]);
+  }, [store, guardRevision, targetStructure, targetGuardSlotSet, currentArmiesTick, currentBlockTimestamp]);
 
   // list of guards
   const selectedGuards = useMemo(() => {
     if (!selectedStructure) return [];
-    const guards = getGuardsByStructure(selectedStructure).filter((guard) =>
+    const guards = getGuardsByStructure(selectedStructure, store).filter((guard) =>
       selectedGuardSlotSet.has(Number(guard.slot)),
     );
     return guards.map((guard) => {
@@ -314,7 +325,7 @@ export const TransferTroopsContainer = ({
         },
       };
     });
-  }, [selectedStructure, selectedGuardSlotSet, currentArmiesTick, currentBlockTimestamp]);
+  }, [store, guardRevision, selectedStructure, selectedGuardSlotSet, currentArmiesTick, currentBlockTimestamp]);
 
   const selectedTroop = useMemo(() => {
     if (transferDirection === TransferDirection.StructureToExplorer) {
@@ -787,13 +798,12 @@ export const TransferTroopsContainer = ({
         BigInt(troopAmountWithPrecision) >= sourceExplorerCount;
 
       if (willEmptySourceExplorer) {
-        if (!selectedResourceState) {
+        if (!selectedResourceState.hasResources()) {
           throw new Error("Unable to load explorer resources for auto relic transfer");
         }
 
         const relicResources: RelicResourceTransfer[] = RELIC_RESOURCE_IDS.map((resourceId) => {
-          const { balance } = ResourceManager.balanceWithProduction(
-            selectedResourceState,
+          const { balance } = selectedResourceState.balanceWithProduction(
             currentDefaultTick,
             resourceId as ResourcesIds,
           );

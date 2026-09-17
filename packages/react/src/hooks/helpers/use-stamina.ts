@@ -1,15 +1,13 @@
-import { gameEntityKey, readStaminaManager } from "@bibliothecadao/eternum";
-import { ID } from "@bibliothecadao/types";
-import { useComponentValue } from "@dojoengine/react";
+import { readStaminaManager } from "@bibliothecadao/eternum";
+import type { ID } from "@bibliothecadao/types";
 import { useMemo } from "react";
-import { useDojo } from "../context";
+import { useGame } from "../context";
+import { useNativeRevision } from "./use-native-facts";
 
 export const useStaminaManager = (entityId: ID) => {
   const {
-    setup: { components },
-  } = useDojo();
-
-  const explorer = useComponentValue(components.ExplorerTroops, gameEntityKey([BigInt(entityId)]));
-
-  return useMemo(() => readStaminaManager(components, entityId), [entityId, explorer]);
+    setup: { store },
+  } = useGame();
+  const revision = useNativeRevision(["ExplorerTroops"]);
+  return useMemo(() => readStaminaManager(store, entityId), [store, entityId, revision]);
 };

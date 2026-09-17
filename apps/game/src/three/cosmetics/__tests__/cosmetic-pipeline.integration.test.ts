@@ -80,6 +80,7 @@ describe("cosmetic pipeline integration", () => {
     playerCosmeticsStore.markAppliedBlitzLoadout("blitz:mainnet:alpha", "0x123");
 
     const result = resolveArmyCosmetic({
+      attributes: [0x107050201n, 0x4050301n],
       owner: "0x123",
       troopType: TroopType.Knight,
       tier: TroopTier.T3,
@@ -126,12 +127,14 @@ describe("cosmetic pipeline integration", () => {
     await controller.enterPreview();
 
     const army = resolveArmyCosmetic({
+      attributes: [0x107050201n, 0x4050301n],
       owner: "0x123",
       troopType: TroopType.Knight,
       tier: TroopTier.T3,
       defaultModelType: ModelType.Knight3,
     });
     const structure = resolveStructureCosmetic({
+      attributes: [0x3040101n, 0x2040401n],
       owner: "0x123",
       structureType: StructureType.Realm,
       stage: 2,
@@ -171,6 +174,7 @@ describe("cosmetic pipeline integration", () => {
 
     expect(
       resolveArmyCosmetic({
+        attributes: [0x107050201n, 0x4050301n],
         owner: "0x123",
         troopType: TroopType.Knight,
         tier: TroopTier.T3,
@@ -193,6 +197,7 @@ describe("cosmetic pipeline integration", () => {
     await controller.enterPreview();
 
     const reenteredArmy = resolveArmyCosmetic({
+      attributes: [],
       owner: "0x123",
       troopType: TroopType.Knight,
       tier: TroopTier.T3,
@@ -225,6 +230,7 @@ describe("cosmetic pipeline integration", () => {
     });
 
     const result = resolveStructureCosmetic({
+      attributes: [0x3040101n, 0x2040401n],
       owner: "0x999",
       structureType: StructureType.Realm,
       stage: 2,
@@ -238,12 +244,14 @@ describe("cosmetic pipeline integration", () => {
 
   it("keeps fallback semantics for owners without a custom loadout", () => {
     const army = resolveArmyCosmetic({
+      attributes: [0x107050201n, 0x4050301n],
       owner: "0x0",
       troopType: TroopType.Knight,
       tier: TroopTier.T1,
       defaultModelType: ModelType.Knight1,
     });
     const structure = resolveStructureCosmetic({
+      attributes: [0x3040101n, 0x2040401n],
       owner: "0x0",
       structureType: StructureType.Realm,
       defaultModelKey: "Realm",

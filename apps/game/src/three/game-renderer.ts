@@ -4,7 +4,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { DEV_MODE_ENABLED } from "@/utils/dev-mode";
 import { GRAPHICS_DEV_GUI_ENABLED, createGuiFolder } from "@/three/utils/gui-manager";
 import { IS_MOBILE } from "@/ui/config";
-import { SetupResult } from "@bibliothecadao/dojo";
+import type { GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
 import { env } from "../../env";
 import { recordGameEntryDuration } from "@/ui/layouts/game-entry-timeline";
 import { SceneName } from "./types";
