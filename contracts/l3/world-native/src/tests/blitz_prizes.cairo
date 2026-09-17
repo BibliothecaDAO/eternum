@@ -1,7 +1,4 @@
-use snforge_std::{
-    ContractClassTrait, DeclareResultTrait, declare, start_cheat_block_timestamp_global, start_cheat_caller_address,
-    stop_cheat_caller_address,
-};
+use snforge_std::{start_cheat_block_timestamp_global, start_cheat_caller_address, stop_cheat_caller_address};
 use starknet::ContractAddress;
 use crate::blitz_prizes::{
     IBlitzPrizesDispatcher, IBlitzPrizesDispatcherTrait, IBlitzPrizesSafeDispatcher, IBlitzPrizesSafeDispatcherTrait,
@@ -24,24 +21,12 @@ fn player(id: u32) -> ContractAddress {
 fn rules() -> SeriesRules {
     SeriesRules { num_games: 3, total_chests: 1000, cap_ratio_bps: 11000 }
 }
-fn bind_authority(d: super::Deployment) -> super::Deployment {
-    declare("AccountFixture")
-        .unwrap()
-        .contract_class()
-        .deploy_at(@array![super::keypair(12345).public_key], super::authority())
-        .unwrap();
-    let (registry, _) = super::deploy("RegistryFixture", @array![0x333, super::authority().into()]);
-    start_cheat_caller_address(d.peers.season, super::authority());
-    ISeasonDispatcher { contract_address: d.peers.season }
-        .set_authentication(super::submitter(), registry, d.account_class);
-    stop_cheat_caller_address(d.peers.season);
-    super::Deployment { actor: super::authority(), ..d }
-}
+
 fn setup(scores: Span<u128>, series: bool) -> super::Deployment {
     let mut config = super::recorded::rules();
     config.blitz_mode_on = true;
     let (d, _, _) = setup_with_rules(config);
-    let d = bind_authority(d);
+    let d = super::bind_authority(d);
     set_fixture(
         d.peers.settlement,
         selector!("progress"),
@@ -283,7 +268,7 @@ fn the_first_ranking_batch_settles_all_share_points_through_recorded_game_end() 
     super::hyperstructures::complete(d, hyper, home);
     let recipient = d.actor;
     let before = games(d).player_points(3, recipient);
-    let d = bind_authority(d);
+    let d = super::bind_authority(d);
     set_fixture(
         d.peers.settlement,
         selector!("progress"),

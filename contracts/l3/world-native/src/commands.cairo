@@ -110,6 +110,7 @@ pub enum Command {
     LeaveGuild,
     SetGuildWhitelist: crate::guilds::SetWhitelist,
     RemoveGuildMember: ContractAddress,
+    MintDevelopmentResources: crate::dev::MintResources,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]

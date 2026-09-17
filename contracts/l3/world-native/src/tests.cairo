@@ -72,6 +72,19 @@ fn setup(activate: bool) -> Deployment {
 fn setup_with_structures(activate: bool, structures_class: ByteArray) -> Deployment {
     setup_with_domains(activate, structures_class, "TroopFixture")
 }
+pub fn bind_authority(d: Deployment) -> Deployment {
+    declare("AccountFixture")
+        .unwrap()
+        .contract_class()
+        .deploy_at(@array![keypair(12345).public_key], authority())
+        .unwrap();
+    let (registry, _) = deploy("RegistryFixture", @array![0x333, authority().into()]);
+    start_cheat_caller_address(d.peers.season, authority());
+    ISeasonDispatcher { contract_address: d.peers.season }.set_authentication(submitter(), registry, d.account_class);
+    stop_cheat_caller_address(d.peers.season);
+    Deployment { actor: authority(), ..d }
+}
+
 fn setup_with_domains(activate: bool, structures_class: ByteArray, troops_class: ByteArray) -> Deployment {
     let pair = keypair(12345);
     recorded::deploy_submitter(submitter());
@@ -631,6 +644,8 @@ mod artificer;
 mod blitz_prizes;
 
 mod building_commands;
+
+mod dev;
 mod faith;
 
 mod faith_prizes;

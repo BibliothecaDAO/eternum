@@ -519,6 +519,10 @@ pub mod SeasonDomain {
                 value.serialize(ref calldata);
                 (peers.prizes, selector!("fund_faith_prizes"))
             },
+            Command::MintDevelopmentResources(value) => {
+                value.serialize(ref calldata);
+                (peers.structures, selector!("mint_resources"))
+            },
             Command::CreateGuild(value) => {
                 value.serialize(ref calldata);
                 (peers.registry, selector!("create_guild"))

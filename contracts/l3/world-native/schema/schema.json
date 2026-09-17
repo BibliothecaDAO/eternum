@@ -2504,6 +2504,30 @@
       "entrypoints": [
         {
           "type": "function",
+          "name": "mint_resources",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "command",
+              "type": "world_native::dev::MintResources"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
           "name": "create_bank",
           "inputs": [
             {
@@ -13023,6 +13047,10 @@
         {
           "name": "RemoveGuildMember",
           "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "MintDevelopmentResources",
+          "type": "world_native::dev::MintResources"
         }
       ]
     },
@@ -13105,6 +13133,20 @@
         {
           "name": "spire_direction",
           "type": "core::integer::u8"
+        }
+      ]
+    },
+    "world_native::dev::MintResources": {
+      "type": "struct",
+      "name": "world_native::dev::MintResources",
+      "members": [
+        {
+          "name": "entity_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "resources",
+          "type": "core::array::Span::<world_native::resources::ResourceAmount>"
         }
       ]
     },
@@ -16567,5 +16609,5 @@
       ]
     }
   },
-  "identity": "36f663376d7e24474084faef7822ac841003e34805a19991f6f7ac328b3ece51"
+  "identity": "3f465b6c05349be2b897f1d7c803552cd37a768bccca3b5b7b1f6c8e582d527f"
 }
