@@ -112,6 +112,7 @@ pub enum Command {
     RemoveGuildMember: ContractAddress,
     MintDevelopmentResources: crate::dev::MintResources,
     MarkGameSettled,
+    ManageTroops: crate::troop_management::ManageTroops,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]

@@ -282,6 +282,7 @@ pub mod TroopsDomain {
     use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
     use starknet::{ContractAddress, get_caller_address};
     use crate::combat::{CombatContext, TroopsTrait};
+    use crate::combat_domain::{ICombatDispatcher, ICombatDispatcherTrait};
     use crate::commands::{Battle, CreateExplorer, ExecutionContext, Explore};
     use crate::game::{IGameDispatcher, IGameDispatcherTrait, assert_playing};
     use crate::geometry::{distance, neighbor, spire_neighbor, tile_key};
@@ -412,40 +413,21 @@ pub mod TroopsDomain {
             ref self: ContractState, key: ResourceKey, category: TroopType, amount: u128, timestamp: u64,
         ) {
             assert!(get_caller_address() == self.lifecycle.require_active().structures, "only structures domain");
-            let base = self.structures_dispatcher().structure(key).expect('missing guard structure').base;
-            assert!(base.troop_max_guard_count > 0, "structure guard limit");
+            let home = self.structures_dispatcher().structure(key).expect('missing guard structure');
             let guard_key = crate::guards::GuardKey { game_id: key.game_id, structure_id: key.entity_id, slot: 0 };
             let mut guard = self.guards.guard(guard_key);
-            let mut troops = guard.troops;
             let rules = self.game_dispatcher().rules(key.game_id);
-            let interval = rules.tick_config.armies_tick_in_seconds;
-            let current_tick = timestamp / interval;
-            if troops.count == 0 {
-                if guard.destroyed_tick != 0 {
-                    let delay: u64 = rules.troop_limit_config.guard_resurrection_delay.into();
-                    let ticks = delay / interval + if delay % interval == 0 {
-                        0
-                    } else {
-                        1
-                    };
-                    assert!(current_tick >= guard.destroyed_tick.into() + ticks, "guard resurrection delay");
-                }
-                troops.category = category;
-                troops.tier = TroopTier::T1;
-            } else {
-                assert!(troops.category == category && troops.tier == TroopTier::T1, "incorrect category or tier");
-            }
-            troops
-                .stamina
-                .refill(ref troops.boosts, troops.category, troops.tier, rules.troop_stamina_config, current_tick);
-            if troops.count == 0 {
-                troops.stamina.amount = 0;
-            }
-            troops.stamina.revert_initial_amount(rules.troop_stamina_config, current_tick);
-            troops.count += amount;
-            let limit: u128 = super::max_army_size(rules.troop_limit_config, base.level, troops.tier).into();
-            assert!(troops.count <= limit * RESOURCE_PRECISION, "structure guard troop limit");
-            guard.troops = troops;
+            self
+                .add_guard_troops(
+                    guard_key,
+                    ref guard,
+                    Troops { category, tier: TroopTier::T1, ..Default::default() },
+                    amount,
+                    home,
+                    rules,
+                    timestamp,
+                    true,
+                );
             self.guards.save(guard_key, guard);
         }
     }
@@ -506,6 +488,298 @@ pub mod TroopsDomain {
             self.write_agent_owner(game_id, command.entity_id, command.new_owner);
         }
     }
+    #[abi(embed_v0)]
+    impl Management of crate::troop_management::ITroopManagement<ContractState> {
+        fn manage_troops(
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            command: crate::troop_management::ManageTroops,
+            context: ExecutionContext,
+        ) {
+            let rules = self.authorize(game_id, context);
+            match command {
+                crate::troop_management::ManageTroops::RecruitGuard(value) => self
+                    .recruit_guard(game_id, actor, value, rules, context.timestamp),
+                crate::troop_management::ManageTroops::RemoveGuard(value) => self
+                    .remove_managed_guard(game_id, actor, value),
+                crate::troop_management::ManageTroops::RecruitExplorer(value) => self
+                    .recruit_explorer(game_id, actor, value, rules, context.timestamp),
+                crate::troop_management::ManageTroops::RemoveExplorer(id) => self
+                    .remove_managed_explorer(game_id, actor, id),
+                crate::troop_management::ManageTroops::Transfer(value) => self
+                    .transfer_troops(game_id, actor, value, rules, context.timestamp),
+            }
+        }
+    }
+
+    #[derive(Copy, Drop)]
+    struct ManagedArmy {
+        troops: Troops,
+        home: u32,
+        coord: Coord,
+        level: u8,
+    }
+    #[generate_trait]
+    impl ManagementInternal of ManagementInternalTrait {
+        fn remove_managed_guard(
+            ref self: ContractState, game_id: u32, actor: ContractAddress, slot: crate::troop_management::GuardSlot,
+        ) {
+            self.owned_structure(game_id, slot.structure_id, actor);
+            let key = crate::guards::GuardKey { game_id, structure_id: slot.structure_id, slot: slot.slot };
+            let mut guard = self.guards.guard(key);
+            if guard.troops.count != 0 {
+                guard.troops.count = 0;
+                guard.troops.stamina.reset();
+                self.guards.save(key, guard);
+            }
+        }
+        fn remove_managed_explorer(ref self: ContractState, game_id: u32, actor: ContractAddress, id: u32) {
+            let key = ExplorerKey { game_id, explorer_id: id };
+            let explorer = self.owned_explorer(key, actor);
+            assert!(explorer.owner != super::AGENT_HOME, "agent has no home garrison");
+            assert!(explorer.troops.count != 0, "explorer is dead");
+            self.destroy_explorer(key, explorer);
+        }
+
+        fn pay_troops(
+            ref self: ContractState,
+            game_id: u32,
+            home: u32,
+            category: TroopType,
+            tier: TroopTier,
+            amount: u128,
+            timestamp: u64,
+        ) {
+            crate::troop_management::assert_amount(amount);
+            let tier = match tier {
+                TroopTier::T1 => 0,
+                TroopTier::T2 => 1,
+                TroopTier::T3 => 2,
+            };
+            self
+                .resources_dispatcher()
+                .spend_resource(
+                    ResourceKey { game_id, entity_id: home }, super::troop_resource(category, tier), amount, timestamp,
+                );
+        }
+        fn recruit_guard(
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            command: crate::troop_management::RecruitGuard,
+            rules: SliceRules,
+            timestamp: u64,
+        ) {
+            let home = self.owned_structure(game_id, command.guard.structure_id, actor);
+            self
+                .pay_troops(
+                    game_id, command.guard.structure_id, command.category, command.tier, command.amount, timestamp,
+                );
+            let key = crate::guards::GuardKey {
+                game_id, structure_id: command.guard.structure_id, slot: command.guard.slot,
+            };
+            let mut guard = self.guards.guard(key);
+            let incoming = Troops { category: command.category, tier: command.tier, ..Default::default() };
+            self.add_guard_troops(key, ref guard, incoming, command.amount, home, rules, timestamp, true);
+            self.guards.save(key, guard);
+        }
+        fn recruit_explorer(
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            command: crate::troop_management::RecruitExplorer,
+            rules: SliceRules,
+            timestamp: u64,
+        ) {
+            let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
+            let mut explorer = self.owned_explorer(key, actor);
+            assert!(explorer.owner != super::AGENT_HOME, "agent has no home garrison");
+            let home = self.owned_structure(game_id, explorer.owner, actor);
+            assert!(
+                crate::geometry::adjacent(explorer.coord, crate::structures::structure_coord(home.base)),
+                "explorer not adjacent to home",
+            );
+            self
+                .pay_troops(
+                    game_id, explorer.owner, explorer.troops.category, explorer.troops.tier, command.amount, timestamp,
+                );
+            explorer.troops.count += command.amount;
+            crate::troop_management::refill(ref explorer.troops, rules, timestamp);
+            explorer
+                .troops
+                .stamina
+                .revert_initial_amount(
+                    rules.troop_stamina_config, timestamp / rules.tick_config.armies_tick_in_seconds,
+                );
+            crate::troop_management::assert_size(explorer.troops, home.base.level, rules);
+            self
+                .resources_dispatcher()
+                .change_explorer_capacity(
+                    ResourceKey { game_id, entity_id: command.explorer_id }, command.amount, true,
+                );
+            self.troops.update_troops(key, explorer.troops);
+        }
+        fn read_managed_army(
+            self: @ContractState, game_id: u32, actor: ContractAddress, army: crate::troop_management::Army,
+        ) -> ManagedArmy {
+            match army {
+                crate::troop_management::Army::Explorer(id) => {
+                    let explorer = self.owned_explorer(ExplorerKey { game_id, explorer_id: id }, actor);
+                    assert!(explorer.owner != super::AGENT_HOME, "agent has no home garrison");
+                    let home = self.owned_structure(game_id, explorer.owner, actor);
+                    ManagedArmy {
+                        troops: explorer.troops, home: explorer.owner, coord: explorer.coord, level: home.base.level,
+                    }
+                },
+                crate::troop_management::Army::Guard(slot) => {
+                    let home = self.owned_structure(game_id, slot.structure_id, actor);
+                    let guard = self
+                        .guards
+                        .guard(crate::guards::GuardKey { game_id, structure_id: slot.structure_id, slot: slot.slot });
+                    ManagedArmy {
+                        troops: guard.troops,
+                        home: slot.structure_id,
+                        coord: crate::structures::structure_coord(home.base),
+                        level: home.base.level,
+                    }
+                },
+            }
+        }
+        fn transfer_troops(
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            command: crate::troop_management::TransferTroops,
+            rules: SliceRules,
+            timestamp: u64,
+        ) {
+            crate::troop_management::assert_amount(command.amount);
+            let mut source = self.read_managed_army(game_id, actor, command.source);
+            let mut target = self.read_managed_army(game_id, actor, command.target);
+            assert!(crate::geometry::adjacent(source.coord, target.coord), "armies are not adjacent");
+            assert!(command.amount <= source.troops.count, "insufficient source troops");
+            let target_is_explorer = match command.target {
+                crate::troop_management::Army::Explorer(_) => {
+                    assert!(source.home == target.home, "armies must share a home");
+                    assert!(target.troops.count != 0, "target explorer is dead");
+                    true
+                },
+                crate::troop_management::Army::Guard(_) => {
+                    assert!(
+                        match command.source {
+                            crate::troop_management::Army::Explorer(_) => true,
+                            _ => false,
+                        },
+                        "guard to guard transfer is unsupported",
+                    );
+                    false
+                },
+            };
+            if target.troops.count != 0 {
+                crate::troop_management::assert_matching(source.troops, target.troops);
+            }
+            source.troops.count -= command.amount;
+            crate::troop_management::merge_timers(ref source.troops, ref target.troops, rules, timestamp);
+            self.apply_transfer_source(game_id, command.source, source.troops, command.amount, target_is_explorer);
+            match command.target {
+                crate::troop_management::Army::Explorer(id) => {
+                    target.troops.count += command.amount;
+                    crate::troop_management::assert_size(target.troops, target.level, rules);
+                    self
+                        .resources_dispatcher()
+                        .change_explorer_capacity(ResourceKey { game_id, entity_id: id }, command.amount, true);
+                    self.troops.update_troops(ExplorerKey { game_id, explorer_id: id }, target.troops);
+                },
+                crate::troop_management::Army::Guard(slot) => {
+                    let key = crate::guards::GuardKey { game_id, structure_id: slot.structure_id, slot: slot.slot };
+                    let mut guard = crate::guards::Guard { troops: target.troops, ..self.guards.guard(key) };
+                    let home = self.owned_structure(game_id, slot.structure_id, actor);
+                    self.add_guard_troops(key, ref guard, source.troops, command.amount, home, rules, timestamp, false);
+                    self.guards.save(key, guard);
+                },
+            }
+        }
+        fn apply_transfer_source(
+            ref self: ContractState,
+            game_id: u32,
+            source: crate::troop_management::Army,
+            mut troops: Troops,
+            amount: u128,
+            check_weight: bool,
+        ) {
+            match source {
+                crate::troop_management::Army::Explorer(id) => {
+                    let key = ResourceKey { game_id, entity_id: id };
+                    self.resources_dispatcher().change_explorer_capacity(key, amount, false);
+                    if check_weight {
+                        let weight = self.resources_dispatcher().resource_weight(key);
+                        assert!(weight.weight <= weight.capacity, "source explorer would be overweight");
+                    }
+                    let explorer_key = ExplorerKey { game_id, explorer_id: id };
+                    if troops.count == 0 {
+                        self.destroy_explorer(explorer_key, self.troops.explorer(explorer_key).unwrap());
+                    } else {
+                        self.troops.update_troops(explorer_key, troops);
+                    }
+                },
+                crate::troop_management::Army::Guard(slot) => {
+                    let key = crate::guards::GuardKey { game_id, structure_id: slot.structure_id, slot: slot.slot };
+                    if troops.count == 0 {
+                        troops.stamina.reset();
+                    }
+                    self.guards.save(key, crate::guards::Guard { troops, ..self.guards.guard(key) });
+                },
+            }
+        }
+        fn add_guard_troops(
+            self: @ContractState,
+            key: crate::guards::GuardKey,
+            ref guard: crate::guards::Guard,
+            incoming: Troops,
+            amount: u128,
+            home: Structure,
+            rules: SliceRules,
+            timestamp: u64,
+            reset_stamina: bool,
+        ) {
+            let empty = guard.troops.count == 0;
+            let tick = timestamp / rules.tick_config.armies_tick_in_seconds;
+            if empty {
+                if guard.destroyed_tick != 0 {
+                    let seconds: u64 = rules.troop_limit_config.guard_resurrection_delay.into();
+                    let duration = rules.tick_config.armies_tick_in_seconds;
+                    let delay = seconds / duration + if seconds % duration == 0 {
+                        0
+                    } else {
+                        1
+                    };
+                    assert!(tick >= Into::<u32, u64>::into(guard.destroyed_tick) + delay, "guard resurrection delay");
+                }
+                let mut occupied = 0_u8;
+                for slot in 0_u8..4 {
+                    if self.guards.guard(crate::guards::GuardKey { slot, ..key }).troops.count != 0 {
+                        occupied += 1;
+                    }
+                }
+                assert!(occupied < home.base.troop_max_guard_count, "structure guard limit");
+                guard.troops.category = incoming.category;
+                guard.troops.tier = incoming.tier;
+            } else {
+                crate::troop_management::assert_matching(incoming, guard.troops);
+            }
+            crate::troop_management::refill(ref guard.troops, rules, timestamp);
+            if empty {
+                guard.troops.stamina.amount = 0;
+            }
+            if reset_stamina {
+                guard.troops.stamina.revert_initial_amount(rules.troop_stamina_config, tick);
+            }
+            guard.troops.count += amount;
+            crate::troop_management::assert_size(guard.troops, home.base.level, rules);
+        }
+    }
+
     #[abi(embed_v0)]
     impl Actions of crate::commands::ITroopCommands<ContractState> {
         fn create_explorer(
@@ -639,16 +913,12 @@ pub mod TroopsDomain {
             let attacker_before = attacker.troops.count;
             let defender_before = defender.troops.count;
             let combat = self.combat_context(game_id, attacker, defender, context);
-            attacker
-                .troops
-                .attack_with_context(
-                    ref defender.troops,
-                    combat,
-                    rules.troop_stamina_config,
-                    rules.troop_damage_config,
-                    context.timestamp / rules.tick_config.armies_tick_in_seconds,
-                    rules.tick_config.armies_tick_in_seconds,
-                );
+            let (attacker_after, defender_after) = ICombatDispatcher {
+                contract_address: self.lifecycle.require_active().combat,
+            }
+                .resolve_battle(game_id, attacker.troops, defender.troops, combat);
+            attacker.troops = attacker_after;
+            defender.troops = defender_after;
             self.finish_battle(attacker_key, attacker, attacker_before);
             self.finish_battle(defender_key, defender, defender_before);
             self
@@ -711,16 +981,12 @@ pub mod TroopsDomain {
                 let combat = CombatContext {
                     defender_is_structure_guard: true, ..self.combat_context(game_id, attacker, defender, context),
                 };
-                attacker
-                    .troops
-                    .attack_with_context(
-                        ref guard,
-                        combat,
-                        rules.troop_stamina_config,
-                        rules.troop_damage_config,
-                        tick,
-                        rules.tick_config.armies_tick_in_seconds,
-                    );
+                let (attacker_after, guard_after) = ICombatDispatcher {
+                    contract_address: self.lifecycle.require_active().combat,
+                }
+                    .resolve_battle(game_id, attacker.troops, guard, combat);
+                attacker.troops = attacker_after;
+                guard = guard_after;
                 self.finish_battle(key, attacker, before);
                 let mut row = self.guards.guard(slot);
                 if guard.count == 0 {
@@ -1180,8 +1446,10 @@ pub mod TroopsDomain {
         fn finish_battle(ref self: ContractState, key: ExplorerKey, explorer: ExplorerTroops, before: u128) {
             self
                 .resources_dispatcher()
-                .reduce_explorer_capacity(
-                    ResourceKey { game_id: key.game_id, entity_id: key.explorer_id }, before - explorer.troops.count,
+                .change_explorer_capacity(
+                    ResourceKey { game_id: key.game_id, entity_id: key.explorer_id },
+                    before - explorer.troops.count,
+                    false,
                 );
             if explorer.troops.count == 0 {
                 self.destroy_explorer(key, explorer);

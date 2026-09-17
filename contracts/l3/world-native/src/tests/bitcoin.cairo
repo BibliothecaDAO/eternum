@@ -1,4 +1,7 @@
-use snforge_std::{start_cheat_block_timestamp_global, start_cheat_caller_address, stop_cheat_caller_address};
+use snforge_std::{
+    EventSpyTrait, EventsFilterTrait, spy_events, start_cheat_block_timestamp_global, start_cheat_caller_address,
+    stop_cheat_caller_address,
+};
 use crate::bitcoin::{
     ContributeLabor, ContributionKey, IBitcoinCommandsDispatcher, IBitcoinCommandsDispatcherTrait,
     IBitcoinCommandsSafeDispatcher, IBitcoinCommandsSafeDispatcherTrait, IBitcoinViewsDispatcher,
@@ -523,6 +526,62 @@ fn attacking_explorer(deployment: super::Deployment, home: ResourceKey, x: u32) 
     crate::map::IMapDispatcherTrait::occupy(map, tile, id, 17, false);
     stop_cheat_caller_address(deployment.peers.map);
     id
+}
+
+#[test]
+fn a_single_guard_in_the_highest_slot_must_be_fought_before_capture() {
+    let (deployment, home, _) = setup();
+    let mine = mine(deployment, 2000100);
+    let explorer = attacking_explorer(deployment, home, 2000085);
+    let structures = crate::structures::IStructuresDispatcher { contract_address: deployment.peers.structures };
+    let mut target = crate::structures::IStructuresDispatcherTrait::structure(structures, mine).unwrap();
+    target.base.troop_max_guard_count = 1;
+    super::resource_commands::set_fixture(
+        deployment.peers.structures,
+        selector!("structures"),
+        array![3, mine.entity_id.into()].span(),
+        crate::structures::StructureRecord {
+            owner: target.owner,
+            base: target.base,
+            resources_packed: target.resources_packed,
+            metadata: target.metadata,
+        },
+    );
+    let guard = crate::guards::IGuardsDispatcherTrait::guard(
+        crate::guards::IGuardsDispatcher { contract_address: deployment.peers.troops },
+        crate::guards::GuardKey { game_id: 3, structure_id: mine.entity_id, slot: 0 },
+    );
+    for slot in 0_u8..4 {
+        super::resource_commands::set_fixture(
+            deployment.peers.troops,
+            selector!("guards"),
+            array![3, mine.entity_id.into(), slot.into()].span(),
+            if slot == 3 {
+                guard
+            } else {
+                Default::default()
+            },
+        );
+    }
+    let mut spy = spy_events();
+    assert!(
+        execute(
+            deployment,
+            Command::BattleGuard(crate::commands::Battle { attacker_id: explorer, defender_id: mine.entity_id }),
+            40,
+        ),
+    );
+    let events = spy.get_events().emitted_by(deployment.peers.troops);
+    let mut fought = false;
+    for (_, event) in events.events.span() {
+        if *event.keys.at(0) == selector!("BattleEvent") {
+            fought = true;
+        }
+    }
+    assert!(fought, "occupied guard slot was skipped");
+    assert_eq!(
+        crate::structures::IStructuresDispatcherTrait::structure(structures, mine).unwrap().owner, deployment.actor,
+    );
 }
 
 #[test]

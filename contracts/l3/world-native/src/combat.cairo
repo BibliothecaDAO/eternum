@@ -52,132 +52,39 @@ pub impl TroopsImpl of TroopsTrait {
 
 
     fn _biome_damage_bonus(ref self: Troops, biome: Biome, troop_damage_config: TroopDamageConfig) -> Fixed {
-        let ZERO: u16 = 0;
-        let VALUE: u16 = troop_damage_config.damage_biome_bonus_num;
-        let ADD: bool = true;
-        let SUBTRACT: bool = false;
-        let NEUTRAL: bool = false;
-
-        let (sign, numerator): (bool, u16) = match biome {
-            Biome::None => (NEUTRAL, ZERO),
-            Biome::DeepOcean => {
-                match self.category {
-                    TroopType::Knight => (NEUTRAL, ZERO), // 0
-                    TroopType::Crossbowman => (ADD, VALUE), // +x
-                    TroopType::Paladin => (SUBTRACT, VALUE) // -x
-                }
+        let value = troop_damage_config.damage_biome_bonus_num;
+        let (sign, numerator) = match biome {
+            Biome::None | Biome::Underground => (false, 0),
+            Biome::DeepOcean | Biome::Ocean |
+            Biome::Scorched => match self.category {
+                TroopType::Knight => (false, 0),
+                TroopType::Crossbowman => (true, value),
+                TroopType::Paladin => (false, value),
             },
-            Biome::Ocean => {
-                match self.category {
-                    TroopType::Knight => (NEUTRAL, ZERO), // 0
-                    TroopType::Crossbowman => (ADD, VALUE), // +x
-                    TroopType::Paladin => (SUBTRACT, VALUE) // -x
-                }
+            Biome::Beach |
+            Biome::Snow => match self.category {
+                TroopType::Knight => (false, value),
+                TroopType::Crossbowman => (true, value),
+                TroopType::Paladin => (false, 0),
             },
-            Biome::Beach => {
-                match self.category {
-                    TroopType::Knight => (SUBTRACT, VALUE), // -x
-                    TroopType::Crossbowman => (ADD, VALUE), // +x
-                    TroopType::Paladin => (NEUTRAL, ZERO) // 0
-                }
+            Biome::Bare | Biome::Shrubland |
+            Biome::Grassland => match self.category {
+                TroopType::Knight => (false, 0),
+                TroopType::Crossbowman => (false, value),
+                TroopType::Paladin => (true, value),
             },
-            Biome::Scorched => {
-                match self.category {
-                    TroopType::Knight => (NEUTRAL, ZERO), // 0
-                    TroopType::Crossbowman => (ADD, VALUE), // +x
-                    TroopType::Paladin => (SUBTRACT, VALUE) // -x
-                }
+            Biome::Tundra | Biome::TemperateDesert |
+            Biome::SubtropicalDesert => match self.category {
+                TroopType::Knight => (false, value),
+                TroopType::Crossbowman => (false, 0),
+                TroopType::Paladin => (true, value),
             },
-            Biome::Bare => {
-                match self.category {
-                    TroopType::Knight => (NEUTRAL, ZERO), // 0
-                    TroopType::Crossbowman => (SUBTRACT, VALUE), // -x
-                    TroopType::Paladin => (ADD, VALUE) // +x
-                }
-            },
-            Biome::Tundra => {
-                match self.category {
-                    TroopType::Knight => (SUBTRACT, VALUE), // -x
-                    TroopType::Crossbowman => (NEUTRAL, ZERO), // 0
-                    TroopType::Paladin => (ADD, VALUE) // +x
-                }
-            },
-            Biome::Snow => {
-                match self.category {
-                    TroopType::Knight => (SUBTRACT, VALUE), // -x
-                    TroopType::Crossbowman => (ADD, VALUE), // +x
-                    TroopType::Paladin => (NEUTRAL, ZERO) // 0
-                }
-            },
-            Biome::TemperateDesert => {
-                match self.category {
-                    TroopType::Knight => (SUBTRACT, VALUE), // -x
-                    TroopType::Crossbowman => (NEUTRAL, ZERO), // 0
-                    TroopType::Paladin => (ADD, VALUE) // +x
-                }
-            },
-            Biome::Shrubland => {
-                match self.category {
-                    TroopType::Knight => (NEUTRAL, ZERO), // 0
-                    TroopType::Crossbowman => (SUBTRACT, VALUE), // -x
-                    TroopType::Paladin => (ADD, VALUE) // +x
-                }
-            },
-            Biome::Taiga => {
-                match self.category {
-                    TroopType::Knight => (ADD, VALUE), // +x
-                    TroopType::Crossbowman => (NEUTRAL, ZERO), // 0
-                    TroopType::Paladin => (SUBTRACT, VALUE) // -x
-                }
-            },
-            Biome::Grassland => {
-                match self.category {
-                    TroopType::Knight => (NEUTRAL, ZERO), // 0
-                    TroopType::Crossbowman => (SUBTRACT, VALUE), // -x
-                    TroopType::Paladin => (ADD, VALUE) // +x
-                }
-            },
-            Biome::TemperateDeciduousForest => {
-                match self.category {
-                    TroopType::Knight => (ADD, VALUE), // +x
-                    TroopType::Crossbowman => (NEUTRAL, ZERO), // 0
-                    TroopType::Paladin => (SUBTRACT, VALUE) // -x
-                }
-            },
-            Biome::TemperateRainForest => {
-                match self.category {
-                    TroopType::Knight => (ADD, VALUE), // +x
-                    TroopType::Crossbowman => (NEUTRAL, ZERO), // 0
-                    TroopType::Paladin => (SUBTRACT, VALUE) // -x
-                }
-            },
-            Biome::SubtropicalDesert => {
-                match self.category {
-                    TroopType::Knight => (SUBTRACT, VALUE), // -x
-                    TroopType::Crossbowman => (NEUTRAL, ZERO), // 0
-                    TroopType::Paladin => (ADD, VALUE) // +x
-                }
-            },
-            Biome::TropicalSeasonalForest => {
-                match self.category {
-                    TroopType::Knight => (ADD, VALUE), // +x
-                    TroopType::Crossbowman => (NEUTRAL, ZERO), // 0
-                    TroopType::Paladin => (SUBTRACT, VALUE) // -x
-                }
-            },
-            Biome::TropicalRainForest => {
-                match self.category {
-                    TroopType::Knight => (ADD, VALUE), // +x
-                    TroopType::Crossbowman => (NEUTRAL, ZERO), // 0
-                    TroopType::Paladin => (SUBTRACT, VALUE) // -x
-                }
-            },
-            Biome::Underground => {
-                match self.category {
-                    TroopType::Knight => (NEUTRAL, ZERO), // 0
-                    TroopType::Crossbowman => (NEUTRAL, ZERO), // 0
-                    TroopType::Paladin => (NEUTRAL, ZERO) // 0
-                }
+            Biome::Taiga | Biome::TemperateDeciduousForest | Biome::TemperateRainForest |
+            Biome::TropicalSeasonalForest |
+            Biome::TropicalRainForest => match self.category {
+                TroopType::Knight => (true, value),
+                TroopType::Crossbowman => (false, 0),
+                TroopType::Paladin => (false, value),
             },
         };
 
@@ -194,132 +101,25 @@ pub impl TroopsImpl of TroopsTrait {
     }
 
     fn stamina_travel_bonus(ref self: Troops, biome: Biome, troop_stamina_config: TroopStaminaConfig) -> (bool, u16) {
-        let ZERO: u16 = 0;
-        let VALUE: u16 = troop_stamina_config.stamina_bonus_value;
-        let ADD: bool = true;
-        let SUBTRACT: bool = false;
-        let NEUTRAL: bool = false;
-
+        let value = troop_stamina_config.stamina_bonus_value;
         match biome {
-            Biome::None => (NEUTRAL, ZERO),
-            Biome::DeepOcean => {
-                match self.category {
-                    TroopType::Knight => (SUBTRACT, VALUE), // -1
-                    TroopType::Crossbowman => (SUBTRACT, VALUE), // -1
-                    TroopType::Paladin => (SUBTRACT, VALUE) // -1
-                }
-            },
-            Biome::Ocean => {
-                match self.category {
-                    TroopType::Knight => (SUBTRACT, VALUE), // -1
-                    TroopType::Crossbowman => (SUBTRACT, VALUE), // -1
-                    TroopType::Paladin => (SUBTRACT, VALUE) // -1
-                }
-            },
-            Biome::Beach => {
-                match self.category {
-                    TroopType::Knight => (NEUTRAL, ZERO), // 0
-                    TroopType::Crossbowman => (NEUTRAL, ZERO), // 0
-                    TroopType::Paladin => (NEUTRAL, ZERO) // 0
-                }
-            },
-            Biome::Scorched => {
-                match self.category {
-                    TroopType::Knight => (ADD, VALUE), // +1
-                    TroopType::Crossbowman => (ADD, VALUE), // +1
-                    TroopType::Paladin => (ADD, VALUE) // +1
-                }
-            },
-            Biome::Bare => {
-                match self.category {
-                    TroopType::Knight => (NEUTRAL, ZERO), // 0
-                    TroopType::Crossbowman => (NEUTRAL, ZERO), // 0
-                    TroopType::Paladin => (SUBTRACT, VALUE) // -1
-                }
-            },
-            Biome::Tundra => {
-                match self.category {
-                    TroopType::Knight => (NEUTRAL, ZERO), // 0
-                    TroopType::Crossbowman => (NEUTRAL, ZERO), // 0
-                    TroopType::Paladin => (SUBTRACT, VALUE) // -1
-                }
-            },
-            Biome::Snow => {
-                match self.category {
-                    TroopType::Knight => (NEUTRAL, ZERO), // 0
-                    TroopType::Crossbowman => (NEUTRAL, ZERO), // 0
-                    TroopType::Paladin => (NEUTRAL, ZERO) // 0
-                }
-            },
-            Biome::TemperateDesert => {
-                match self.category {
-                    TroopType::Knight => (NEUTRAL, ZERO), // 0
-                    TroopType::Crossbowman => (NEUTRAL, ZERO), // 0
-                    TroopType::Paladin => (SUBTRACT, VALUE) // -1
-                }
-            },
-            Biome::Shrubland => {
-                match self.category {
-                    TroopType::Knight => (NEUTRAL, ZERO), // 0
-                    TroopType::Crossbowman => (NEUTRAL, ZERO), // 0
-                    TroopType::Paladin => (SUBTRACT, VALUE) // -1
-                }
-            },
-            Biome::Taiga => {
-                match self.category {
-                    TroopType::Knight => (NEUTRAL, ZERO), // 0
-                    TroopType::Crossbowman => (NEUTRAL, ZERO), // 0
-                    TroopType::Paladin => (ADD, VALUE) // +1
-                }
-            },
-            Biome::Grassland => {
-                match self.category {
-                    TroopType::Knight => (NEUTRAL, ZERO), // 0
-                    TroopType::Crossbowman => (NEUTRAL, ZERO), // 0
-                    TroopType::Paladin => (SUBTRACT, VALUE) // -1
-                }
-            },
-            Biome::TemperateDeciduousForest => {
-                match self.category {
-                    TroopType::Knight => (NEUTRAL, ZERO), // 0
-                    TroopType::Crossbowman => (NEUTRAL, ZERO), // 0
-                    TroopType::Paladin => (ADD, VALUE) // +1
-                }
-            },
-            Biome::TemperateRainForest => {
-                match self.category {
-                    TroopType::Knight => (NEUTRAL, ZERO), // 0
-                    TroopType::Crossbowman => (NEUTRAL, ZERO), // 0
-                    TroopType::Paladin => (ADD, VALUE) // +1
-                }
-            },
-            Biome::SubtropicalDesert => {
-                match self.category {
-                    TroopType::Knight => (NEUTRAL, ZERO), // 0
-                    TroopType::Crossbowman => (NEUTRAL, ZERO), // 0
-                    TroopType::Paladin => (SUBTRACT, VALUE) // -1
-                }
-            },
-            Biome::TropicalSeasonalForest => {
-                match self.category {
-                    TroopType::Knight => (NEUTRAL, ZERO), // 0
-                    TroopType::Crossbowman => (NEUTRAL, ZERO), // 0
-                    TroopType::Paladin => (ADD, VALUE) // +1
-                }
-            },
+            Biome::None | Biome::Beach | Biome::Snow | Biome::Underground => (false, 0),
+            Biome::DeepOcean | Biome::Ocean => (false, value),
+            Biome::Scorched => (true, value),
+            Biome::Bare | Biome::Tundra | Biome::TemperateDesert | Biome::Shrubland | Biome::Grassland |
+            Biome::SubtropicalDesert => { (false, if self.category == TroopType::Paladin {
+                value
+            } else {
+                0
+            }) },
+            Biome::Taiga | Biome::TemperateDeciduousForest | Biome::TemperateRainForest |
+            Biome::TropicalSeasonalForest |
             Biome::TropicalRainForest => {
-                match self.category {
-                    TroopType::Knight => (NEUTRAL, ZERO), // 0
-                    TroopType::Crossbowman => (NEUTRAL, ZERO), // 0
-                    TroopType::Paladin => (ADD, VALUE) // +1
-                }
-            },
-            Biome::Underground => {
-                match self.category {
-                    TroopType::Knight => (NEUTRAL, ZERO), // 0
-                    TroopType::Crossbowman => (NEUTRAL, ZERO), // 0
-                    TroopType::Paladin => (NEUTRAL, ZERO) // 0
-                }
+                (self.category == TroopType::Paladin, if self.category == TroopType::Paladin {
+                    value
+                } else {
+                    0
+                })
             },
         }
     }

@@ -450,3 +450,8 @@ Registration calldata retains the typed preset definition; game creation verifie
 applying domain configuration atomically. Series chest economics remain in PrizesDomain. GameRegistry stores only the
 final settlement flag; phases derive from its clock, and the unused registration grace field is removed. This layout
 requires the fresh native rehearsal deployment.
+
+Troop management reuses ExplorerTroops, Guard and ResourceWeight. Guard occupancy is derived from the four slots instead
+of a second count. CombatDomain owns battle calculation and reads the existing immutable season rules; TroopsDomain owns
+and writes the resulting armies. Combat authenticates its Troops peer and cannot write another domain's rows. Peers
+appends the combat address, requiring the fresh rehearsal deployment.

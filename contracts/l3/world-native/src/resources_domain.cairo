@@ -127,10 +127,10 @@ pub mod ResourcesDomain {
             let rules = self.game_dispatcher().rules(key.game_id);
             self.resources.initialize(key, rules.capacity_config.troop_capacity.into() * amount);
         }
-        fn reduce_explorer_capacity(ref self: ContractState, key: ResourceKey, lost: u128) {
+        fn change_explorer_capacity(ref self: ContractState, key: ResourceKey, amount: u128, increase: bool) {
             self.assert_troops();
             let rules = self.game_dispatcher().rules(key.game_id);
-            self.resources.decrease_capacity(key, rules.capacity_config.troop_capacity.into() * lost);
+            self.resources.change_capacity(key, rules.capacity_config.troop_capacity.into() * amount, increase);
         }
         fn spend_food(ref self: ContractState, key: ResourceKey, wheat: u128, fish: u128, timestamp: u64) {
             self.assert_troops();

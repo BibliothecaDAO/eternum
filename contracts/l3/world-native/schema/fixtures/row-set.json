@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "4f28f9a7c85d2430f159348de0927fac7deb35901005ed7b4f0d50ea35d44b96",
+  "schemaIdentity": "5f75b18a80eae74b982746b847bb4af4db30de90f3b471f502560fcc1656980c",
   "deployment": {
     "season": "0x101",
     "map": "0x102",
@@ -9,7 +9,8 @@
     "resources": "0x106",
     "economy": "0x107",
     "prizes": "0x108",
-    "registry": "0x109"
+    "registry": "0x109",
+    "combat": "0x10a"
   },
   "raw": {
     "from_address": "0x100",

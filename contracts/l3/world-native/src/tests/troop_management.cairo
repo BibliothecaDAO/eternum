@@ -1,0 +1,313 @@
+use eternum_cubit::f128::types::fixed::FixedTrait;
+use crate::combat::TroopsTrait;
+use crate::commands::{Command, CreateExplorer};
+use crate::guards::{GuardKey, IGuardsDispatcher, IGuardsDispatcherTrait};
+use crate::resources::{IResourcesDispatcher, IResourcesDispatcherTrait, ResourceKey, ResourceSlot};
+use crate::rules::RESOURCE_PRECISION;
+use crate::structures::{IStructuresDispatcher, IStructuresDispatcherTrait};
+use crate::troop_management::{Army, GuardSlot, ManageTroops, RecruitExplorer, RecruitGuard, TransferTroops};
+use crate::troops::{ExplorerKey, ExplorerTroops, ITroopsDispatcher, ITroopsDispatcherTrait, TroopTier, TroopType};
+use super::resource_commands::{assert_terminal_rejection, execute, execute_recorded_at, grant, set_fixture};
+
+fn setup() -> (super::Deployment, ResourceKey, u32, u32) {
+    let mut rules = super::recorded::rules();
+    rules.troop_limit_config.guard_resurrection_delay = 60;
+    let (d, home, _) = super::resource_commands::setup_with_rules(rules);
+    grant(d, home, 26, 1000 * RESOURCE_PRECISION);
+    grant(d, home, 32, 1000 * RESOURCE_PRECISION);
+    let structures = IStructuresDispatcher { contract_address: d.peers.structures };
+    let original = structures.structure(home).unwrap();
+    set_fixture(
+        d.peers.structures,
+        selector!("structures"),
+        array![3, home.entity_id.into()].span(),
+        crate::structures::StructureRecord {
+            owner: original.owner,
+            base: crate::structures::StructureBase {
+                troop_max_explorer_count: 4, troop_max_guard_count: 1, ..original.base,
+            },
+            resources_packed: original.resources_packed,
+            metadata: original.metadata,
+        },
+    );
+    for (amount, direction) in array![(10_u128, 0_u8), (5, 1)] {
+        assert!(
+            execute(
+                d,
+                Command::CreateExplorer(
+                    CreateExplorer {
+                        structure_id: home.entity_id,
+                        category: 0,
+                        tier: 0,
+                        amount: amount * RESOURCE_PRECISION,
+                        direction,
+                    },
+                ),
+                80,
+            ),
+        );
+    }
+    let ids = structures.structure(home).unwrap().troop_explorers;
+    (d, home, *ids.at(0), *ids.at(1))
+}
+fn troop(d: super::Deployment, id: u32) -> Option<ExplorerTroops> {
+    ITroopsDispatcher { contract_address: d.peers.troops }.explorer(ExplorerKey { game_id: 3, explorer_id: id })
+}
+fn guard(d: super::Deployment, home: ResourceKey, slot: u8) -> crate::guards::Guard {
+    IGuardsDispatcher { contract_address: d.peers.troops }
+        .guard(GuardKey { game_id: 3, structure_id: home.entity_id, slot })
+}
+fn manage(action: ManageTroops) -> Command {
+    Command::ManageTroops(action)
+}
+fn transfer(source: Army, target: Army, amount: u128) -> Command {
+    manage(ManageTroops::Transfer(TransferTroops { source, target, amount: amount * RESOURCE_PRECISION }))
+}
+fn recruit(home: ResourceKey, slot: u8, amount: u128) -> Command {
+    manage(
+        ManageTroops::RecruitGuard(
+            RecruitGuard {
+                guard: GuardSlot { structure_id: home.entity_id, slot },
+                category: TroopType::Knight,
+                tier: TroopTier::T1,
+                amount: amount * RESOURCE_PRECISION,
+            },
+        ),
+    )
+}
+fn resource(d: super::Deployment) -> IResourcesDispatcher {
+    IResourcesDispatcher { contract_address: d.peers.resources }
+}
+fn count(d: super::Deployment, home: ResourceKey) -> u128 {
+    resource(d).resource_balance(ResourceSlot { game_id: 3, entity_id: home.entity_id, resource_type: 26 })
+}
+
+#[test]
+fn recruitment_spends_troop_resources_and_updates_capacity_with_recorded_stamina() {
+    let (d, home, first, _) = setup();
+    let before = count(d, home);
+    let capacity = resource(d).resource_weight(ResourceKey { game_id: 3, entity_id: first }).capacity;
+    assert!(
+        execute_recorded_at(
+            d,
+            manage(
+                ManageTroops::RecruitExplorer(RecruitExplorer { explorer_id: first, amount: 2 * RESOURCE_PRECISION }),
+            ),
+            140,
+            10000,
+        ),
+    );
+    assert_eq!(troop(d, first).unwrap().troops.count, 12 * RESOURCE_PRECISION);
+    assert_eq!(resource(d).resource_weight(ResourceKey { game_id: 3, entity_id: first }).capacity, capacity * 12 / 10);
+    assert_eq!(count(d, home), before - 2 * RESOURCE_PRECISION);
+    assert!(execute_recorded_at(d, recruit(home, 3, 3), 140, 10000));
+    assert_eq!(guard(d, home, 3).troops.count, 3 * RESOURCE_PRECISION);
+    assert_eq!(guard(d, home, 3).troops.stamina.amount, 0);
+    assert_eq!(count(d, home), before - 5 * RESOURCE_PRECISION);
+    assert_terminal_rejection(d, recruit(home, 0, 1), 140);
+    assert_eq!(guard(d, home, 0).troops.count, 0);
+}
+
+#[test]
+fn explorer_transfer_preserves_the_worse_stamina_and_cooldown_and_deletes_an_empty_source() {
+    let (d, home, first, second) = setup();
+    for (id, stamina, cooldown) in array![(first, 2_u64, 190_u32), (second, 9, 150)] {
+        let mut row = troop(d, id).unwrap();
+        row.troops.stamina.amount = stamina;
+        row.troops.stamina.updated_tick = 2;
+        row.troops.battle_cooldown_end = cooldown;
+        set_fixture(d.peers.troops, selector!("explorers"), array![3, id.into()].span(), row);
+    }
+    let old_position = troop(d, first).unwrap().coord;
+    assert!(execute(d, transfer(Army::Explorer(first), Army::Explorer(second), 10), 140));
+    assert!(troop(d, first).is_none());
+    assert!(!resource(d).has_resource(ResourceKey { game_id: 3, entity_id: first }));
+    let target = troop(d, second).unwrap().troops;
+    assert_eq!(target.count, 15 * RESOURCE_PRECISION);
+    assert_eq!(target.stamina.amount, 2);
+    assert_eq!(target.battle_cooldown_end, 190);
+    let home_state = IStructuresDispatcher { contract_address: d.peers.structures }.structure(home).unwrap();
+    assert_eq!(home_state.troop_explorers, array![second].span());
+    let tile = crate::map::IMapDispatcherTrait::tile(
+        crate::map::IMapDispatcher { contract_address: d.peers.map }, crate::geometry::tile_key(3, old_position),
+    )
+        .unwrap();
+    assert_eq!(tile.data % 0x20000000000, 0);
+}
+
+#[test]
+fn transfers_to_guards_and_back_preserve_counts_and_reject_foreign_homes() {
+    let (d, home, first, second) = setup();
+    let slot = GuardSlot { structure_id: home.entity_id, slot: 3 };
+    assert!(execute(d, transfer(Army::Explorer(first), Army::Guard(slot), 3), 140));
+    assert_eq!(guard(d, home, 3).troops.count, 3 * RESOURCE_PRECISION);
+    assert_eq!(troop(d, first).unwrap().troops.count, 7 * RESOURCE_PRECISION);
+    assert!(execute(d, transfer(Army::Guard(slot), Army::Explorer(second), 3), 140));
+    assert_eq!(guard(d, home, 3).troops.count, 0);
+    assert_eq!(guard(d, home, 3).troops.stamina.amount, 0);
+    assert_eq!(troop(d, second).unwrap().troops.count, 8 * RESOURCE_PRECISION);
+    let mut row = troop(d, second).unwrap();
+    row.owner = 999;
+    set_fixture(d.peers.troops, selector!("explorers"), array![3, second.into()].span(), row);
+    assert_terminal_rejection(d, transfer(Army::Explorer(first), Army::Explorer(second), 1), 140);
+}
+
+#[test]
+fn malformed_amounts_overweight_transfers_and_wrong_categories_reject_without_spending() {
+    let (d, home, first, second) = setup();
+    let before = count(d, home);
+    for amount in array![0, RESOURCE_PRECISION - 1, 100000000 * RESOURCE_PRECISION] {
+        assert_terminal_rejection(
+            d, manage(ManageTroops::RecruitExplorer(RecruitExplorer { explorer_id: first, amount })), 140,
+        );
+    }
+    assert_eq!(count(d, home), before);
+    assert_eq!(troop(d, first).unwrap().troops.count, 10 * RESOURCE_PRECISION);
+    grant(d, ResourceKey { game_id: 3, entity_id: first }, 1, 1);
+    assert_terminal_rejection(d, transfer(Army::Explorer(first), Army::Explorer(second), 10), 140);
+    let mut target = troop(d, second).unwrap();
+    target.troops.category = TroopType::Paladin;
+    set_fixture(d.peers.troops, selector!("explorers"), array![3, second.into()].span(), target);
+    assert_terminal_rejection(d, transfer(Army::Explorer(first), Army::Explorer(second), 1), 140);
+    assert_terminal_rejection(d, recruit(home, 4, 1), 140);
+}
+
+#[test]
+fn guard_deletion_does_not_erase_defeat_delay_and_explorer_deletion_clears_owned_facts() {
+    let (d, home, first, _) = setup();
+    set_fixture(
+        d.peers.troops,
+        selector!("guards"),
+        array![3, home.entity_id.into(), 3].span(),
+        crate::guards::Guard { destroyed_tick: 2, ..Default::default() },
+    );
+    assert!(execute(d, manage(ManageTroops::RemoveGuard(GuardSlot { structure_id: home.entity_id, slot: 3 })), 140));
+    assert_eq!(guard(d, home, 3).destroyed_tick, 2);
+    assert_terminal_rejection(d, recruit(home, 3, 1), 140);
+    assert!(execute(d, recruit(home, 3, 1), 180));
+    assert_eq!(guard(d, home, 3).troops.count, RESOURCE_PRECISION);
+    assert_eq!(guard(d, home, 3).troops.stamina.amount, 0);
+    assert!(execute(d, manage(ManageTroops::RemoveExplorer(first)), 140));
+    assert!(troop(d, first).is_none());
+    assert!(!resource(d).has_resource(ResourceKey { game_id: 3, entity_id: first }));
+    assert_terminal_rejection(d, manage(ManageTroops::RemoveExplorer(first)), 140);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn management_and_combat_calculation_reject_foreign_callers() {
+    let (d, _, first, second) = setup();
+    let safe = crate::troop_management::ITroopManagementSafeDispatcher { contract_address: d.peers.troops };
+    assert!(
+        crate::troop_management::ITroopManagementSafeDispatcherTrait::manage_troops(
+            safe, 3, d.actor, ManageTroops::RemoveExplorer(first), super::context(),
+        )
+            .is_err(),
+    );
+    assert!(
+        crate::combat_domain::ICombatSafeDispatcherTrait::resolve_battle(
+            crate::combat_domain::ICombatSafeDispatcher { contract_address: d.peers.combat },
+            3,
+            troop(d, first).unwrap().troops,
+            troop(d, second).unwrap().troops,
+            crate::combat::CombatContext {
+                timestamp: 100,
+                attacker_roll: 0,
+                defender_roll: 0,
+                attacker_biome: crate::biome::Biome::Grassland,
+                defender_biome: crate::biome::Biome::Grassland,
+                attack_distance: 1,
+                attacker_is_structure_guard: false,
+                defender_is_structure_guard: false,
+            },
+        )
+            .is_err(),
+    );
+    assert!(troop(d, first).is_some());
+}
+
+#[test]
+fn biome_damage_and_travel_modifiers_retain_every_category_and_biome() {
+    let damage = array![
+        array![0_u8, 0, 0, 2, 0, 0, 2, 2, 2, 0, 1, 0, 1, 1, 2, 1, 1, 0].span(),
+        array![0_u8, 2, 2, 0, 2, 1, 1, 0, 1, 1, 2, 1, 2, 2, 1, 2, 2, 0].span(),
+        array![0_u8, 1, 1, 1, 1, 2, 0, 1, 0, 2, 0, 2, 0, 0, 0, 0, 0, 0].span(),
+    ];
+    let travel = array![
+        array![0_u8, 2, 2, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0].span(),
+        array![0_u8, 2, 2, 0, 1, 2, 2, 0, 2, 2, 1, 2, 1, 1, 2, 1, 1, 0].span(),
+        array![0_u8, 2, 2, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0].span(),
+    ];
+    let rules = super::recorded::rules();
+    let categories = array![TroopType::Knight, TroopType::Paladin, TroopType::Crossbowman];
+    for category in 0_u32..3 {
+        for biome in 0_u8..18 {
+            let mut troops = crate::troops::Troops { category: *categories.at(category), ..Default::default() };
+            let expected = match *damage.at(category).at(biome.into()) {
+                0 => FixedTrait::ONE(),
+                1 => FixedTrait::new(10000 + rules.troop_damage_config.damage_biome_bonus_num.into(), false)
+                    / FixedTrait::new(10000, false),
+                2 => FixedTrait::new(10000 - rules.troop_damage_config.damage_biome_bonus_num.into(), false)
+                    / FixedTrait::new(10000, false),
+                _ => panic!("invalid damage vector"),
+            };
+            assert!(troops._biome_damage_bonus(biome.into(), rules.troop_damage_config) == expected);
+            let (positive, amount) = troops.stamina_travel_bonus(biome.into(), rules.troop_stamina_config);
+            let modifier = *travel.at(category).at(biome.into());
+            assert_eq!(positive, modifier == 1);
+            assert_eq!(amount, if modifier == 0 {
+                0
+            } else {
+                rules.troop_stamina_config.stamina_bonus_value
+            });
+        }
+    }
+}
+
+#[test]
+fn reinforcement_requires_target_ownership_for_realms_and_villages_without_home_lineage() {
+    let (d, home, other) = super::resource_commands::setup();
+    grant(d, home, 26, 100 * RESOURCE_PRECISION);
+    assert!(
+        execute(
+            d,
+            Command::CreateExplorer(
+                CreateExplorer {
+                    structure_id: home.entity_id, category: 0, tier: 0, amount: 10 * RESOURCE_PRECISION, direction: 0,
+                },
+            ),
+            80,
+        ),
+    );
+    let structures = IStructuresDispatcher { contract_address: d.peers.structures };
+    let id = *structures.structure(home).unwrap().troop_explorers.at(0);
+    let original = structures.structure(other).unwrap();
+    let mut explorer = troop(d, id).unwrap();
+    explorer.coord = crate::geometry::neighbor(crate::structures::structure_coord(original.base), 0);
+    set_fixture(d.peers.troops, selector!("explorers"), array![3, id.into()].span(), explorer);
+    for category in array![1_u8, 5] {
+        for owner in array![d.actor, 777.try_into().unwrap(), 888.try_into().unwrap()] {
+            set_fixture(
+                d.peers.structures,
+                selector!("structures"),
+                array![3, other.entity_id.into()].span(),
+                crate::structures::StructureRecord {
+                    owner,
+                    base: crate::structures::StructureBase { category, ..original.base },
+                    metadata: original.metadata,
+                    resources_packed: original.resources_packed,
+                },
+            );
+            let command = transfer(
+                Army::Explorer(id), Army::Guard(GuardSlot { structure_id: other.entity_id, slot: 0 }), 1,
+            );
+            if owner == d.actor {
+                assert!(execute(d, command, 140));
+            } else {
+                assert_terminal_rejection(d, command, 140);
+            }
+        }
+    }
+    assert_eq!(guard(d, other, 0).troops.count, 2 * RESOURCE_PRECISION);
+    assert_eq!(troop(d, id).unwrap().troops.count, 8 * RESOURCE_PRECISION);
+}

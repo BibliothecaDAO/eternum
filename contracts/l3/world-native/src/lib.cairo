@@ -40,6 +40,8 @@ pub mod buildings;
 
 pub mod camps;
 
+pub mod combat_domain;
+
 pub mod dev;
 pub mod discovery;
 pub mod economy;
@@ -83,6 +85,8 @@ pub mod structures;
 pub mod trade;
 
 pub mod transport;
+
+pub mod troop_management;
 
 pub mod upgrades;
 

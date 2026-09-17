@@ -2135,6 +2135,30 @@
         },
         {
           "type": "function",
+          "name": "manage_troops",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "command",
+              "type": "world_native::troop_management::ManageTroops"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
           "name": "create_explorer",
           "inputs": [
             {
@@ -4617,15 +4641,19 @@
         },
         {
           "type": "function",
-          "name": "reduce_explorer_capacity",
+          "name": "change_explorer_capacity",
           "inputs": [
             {
               "name": "key",
               "type": "world_native::resources::ResourceKey"
             },
             {
-              "name": "lost",
+              "name": "amount",
               "type": "core::integer::u128"
+            },
+            {
+              "name": "increase",
+              "type": "core::bool"
             }
           ],
           "outputs": [],
@@ -7863,6 +7891,113 @@
             {
               "name": "context",
               "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        }
+      ]
+    },
+    "combat": {
+      "contract": "CombatDomain",
+      "systems": [],
+      "events": [
+        {
+          "name": "RowSet",
+          "prefix": [
+            "0x1517f684ec2bc21ca20251bbef26b7ad0434759388fc50e84858abf49e4024b",
+            "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "model",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "keys",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            },
+            {
+              "name": "values",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            }
+          ]
+        }
+      ],
+      "entrypoints": [
+        {
+          "type": "function",
+          "name": "resolve_battle",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "attacker",
+              "type": "world_native::troops::Troops"
+            },
+            {
+              "name": "defender",
+              "type": "world_native::troops::Troops"
+            },
+            {
+              "name": "context",
+              "type": "world_native::combat::CombatContext"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "(world_native::troops::Troops, world_native::troops::Troops)"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "domain_state",
+          "inputs": [],
+          "outputs": [
+            {
+              "type": "world_native::lifecycle::DomainState"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "configure",
+          "inputs": [
+            {
+              "name": "peers",
+              "type": "world_native::lifecycle::Peers"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "activate",
+          "inputs": [],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "upgrade",
+          "inputs": [
+            {
+              "name": "class_hash",
+              "type": "core::starknet::class_hash::ClassHash"
             }
           ],
           "outputs": [],
@@ -11789,7 +11924,8 @@
         "resources",
         "economy",
         "prizes",
-        "registry"
+        "registry",
+        "combat"
       ],
       "scope": "deployment",
       "emitterKey": "address",
@@ -11811,7 +11947,7 @@
           "name": "peers",
           "type": "world_native::lifecycle::Peers",
           "id": "0x7065657273",
-          "feltLength": 9
+          "feltLength": 10
         },
         {
           "name": "active",
@@ -11821,7 +11957,7 @@
         }
       ],
       "keyLength": 1,
-      "valueLength": 11
+      "valueLength": 12
     },
     {
       "name": "DomainClass",
@@ -11835,7 +11971,8 @@
         "resources",
         "economy",
         "prizes",
-        "registry"
+        "registry",
+        "combat"
       ],
       "scope": "deployment",
       "emitterKey": "address",
@@ -12962,6 +13099,84 @@
         }
       ]
     },
+    "world_native::biome::Biome": {
+      "type": "enum",
+      "name": "world_native::biome::Biome",
+      "variants": [
+        {
+          "name": "None",
+          "type": "()"
+        },
+        {
+          "name": "DeepOcean",
+          "type": "()"
+        },
+        {
+          "name": "Ocean",
+          "type": "()"
+        },
+        {
+          "name": "Beach",
+          "type": "()"
+        },
+        {
+          "name": "Scorched",
+          "type": "()"
+        },
+        {
+          "name": "Bare",
+          "type": "()"
+        },
+        {
+          "name": "Tundra",
+          "type": "()"
+        },
+        {
+          "name": "Snow",
+          "type": "()"
+        },
+        {
+          "name": "TemperateDesert",
+          "type": "()"
+        },
+        {
+          "name": "Shrubland",
+          "type": "()"
+        },
+        {
+          "name": "Taiga",
+          "type": "()"
+        },
+        {
+          "name": "Grassland",
+          "type": "()"
+        },
+        {
+          "name": "TemperateDeciduousForest",
+          "type": "()"
+        },
+        {
+          "name": "TemperateRainForest",
+          "type": "()"
+        },
+        {
+          "name": "SubtropicalDesert",
+          "type": "()"
+        },
+        {
+          "name": "TropicalSeasonalForest",
+          "type": "()"
+        },
+        {
+          "name": "TropicalRainForest",
+          "type": "()"
+        },
+        {
+          "name": "Underground",
+          "type": "()"
+        }
+      ]
+    },
     "world_native::bitcoin::BitcoinAwardStory": {
       "type": "struct",
       "name": "world_native::bitcoin::BitcoinAwardStory",
@@ -13424,6 +13639,44 @@
         }
       ]
     },
+    "world_native::combat::CombatContext": {
+      "type": "struct",
+      "name": "world_native::combat::CombatContext",
+      "members": [
+        {
+          "name": "timestamp",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "attacker_roll",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "defender_roll",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "attacker_biome",
+          "type": "world_native::biome::Biome"
+        },
+        {
+          "name": "defender_biome",
+          "type": "world_native::biome::Biome"
+        },
+        {
+          "name": "attack_distance",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "attacker_is_structure_guard",
+          "type": "core::bool"
+        },
+        {
+          "name": "defender_is_structure_guard",
+          "type": "core::bool"
+        }
+      ]
+    },
     "world_native::commands::Battle": {
       "type": "struct",
       "name": "world_native::commands::Battle",
@@ -13749,6 +14002,10 @@
         {
           "name": "MarkGameSettled",
           "type": "()"
+        },
+        {
+          "name": "ManageTroops",
+          "type": "world_native::troop_management::ManageTroops"
         }
       ]
     },
@@ -14564,6 +14821,10 @@
         },
         {
           "name": "registry",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "combat",
           "type": "core::starknet::contract_address::ContractAddress"
         }
       ]
@@ -17208,6 +17469,114 @@
         }
       ]
     },
+    "world_native::troop_management::Army": {
+      "type": "enum",
+      "name": "world_native::troop_management::Army",
+      "variants": [
+        {
+          "name": "Explorer",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "Guard",
+          "type": "world_native::troop_management::GuardSlot"
+        }
+      ]
+    },
+    "world_native::troop_management::GuardSlot": {
+      "type": "struct",
+      "name": "world_native::troop_management::GuardSlot",
+      "members": [
+        {
+          "name": "structure_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "slot",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
+    "world_native::troop_management::ManageTroops": {
+      "type": "enum",
+      "name": "world_native::troop_management::ManageTroops",
+      "variants": [
+        {
+          "name": "RecruitGuard",
+          "type": "world_native::troop_management::RecruitGuard"
+        },
+        {
+          "name": "RemoveGuard",
+          "type": "world_native::troop_management::GuardSlot"
+        },
+        {
+          "name": "RecruitExplorer",
+          "type": "world_native::troop_management::RecruitExplorer"
+        },
+        {
+          "name": "RemoveExplorer",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "Transfer",
+          "type": "world_native::troop_management::TransferTroops"
+        }
+      ]
+    },
+    "world_native::troop_management::RecruitExplorer": {
+      "type": "struct",
+      "name": "world_native::troop_management::RecruitExplorer",
+      "members": [
+        {
+          "name": "explorer_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "amount",
+          "type": "core::integer::u128"
+        }
+      ]
+    },
+    "world_native::troop_management::RecruitGuard": {
+      "type": "struct",
+      "name": "world_native::troop_management::RecruitGuard",
+      "members": [
+        {
+          "name": "guard",
+          "type": "world_native::troop_management::GuardSlot"
+        },
+        {
+          "name": "category",
+          "type": "world_native::troops::TroopType"
+        },
+        {
+          "name": "tier",
+          "type": "world_native::troops::TroopTier"
+        },
+        {
+          "name": "amount",
+          "type": "core::integer::u128"
+        }
+      ]
+    },
+    "world_native::troop_management::TransferTroops": {
+      "type": "struct",
+      "name": "world_native::troop_management::TransferTroops",
+      "members": [
+        {
+          "name": "source",
+          "type": "world_native::troop_management::Army"
+        },
+        {
+          "name": "target",
+          "type": "world_native::troop_management::Army"
+        },
+        {
+          "name": "amount",
+          "type": "core::integer::u128"
+        }
+      ]
+    },
     "world_native::troops::AgentPopulation": {
       "type": "struct",
       "name": "world_native::troops::AgentPopulation",
@@ -17555,5 +17924,5 @@
       ]
     }
   },
-  "identity": "4f28f9a7c85d2430f159348de0927fac7deb35901005ed7b4f0d50ea35d44b96"
+  "identity": "5f75b18a80eae74b982746b847bb4af4db30de90f3b471f502560fcc1656980c"
 }

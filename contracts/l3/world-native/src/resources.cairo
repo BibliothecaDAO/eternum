@@ -203,11 +203,15 @@ pub mod ResourceState {
                     },
                 );
         }
-        fn decrease_capacity(ref self: ComponentState<TContractState>, key: ResourceKey, amount: u128) {
+        fn change_capacity(ref self: ComponentState<TContractState>, key: ResourceKey, amount: u128, increase: bool) {
             self.assert_exists(key);
             let mut weight = self.weights.read((key.game_id, key.entity_id));
             if weight.capacity != 0xffffffffffffffffffffffffffffffff {
-                weight.capacity -= amount;
+                weight.capacity = if increase {
+                    weight.capacity + amount
+                } else {
+                    weight.capacity - amount
+                };
                 self.write_weight(key, weight);
             }
         }
@@ -497,7 +501,7 @@ pub trait IResources<T> {
     fn initialize_resources(ref self: T, key: ResourceKey, capacity: u128, category: u8, timestamp: u64);
     fn initialize_explorer_resources(ref self: T, key: ResourceKey, amount: u128);
     fn destroy_resources(ref self: T, key: ResourceKey);
-    fn reduce_explorer_capacity(ref self: T, key: ResourceKey, lost: u128);
+    fn change_explorer_capacity(ref self: T, key: ResourceKey, amount: u128, increase: bool);
     fn grant_resource(ref self: T, key: ResourceKey, resource_type: u8, amount: u128, timestamp: u64) -> u128;
     fn spend_resource(ref self: T, key: ResourceKey, resource_type: u8, amount: u128, timestamp: u64);
     fn start_production(ref self: T, key: ResourceKey, resource_type: u8, rate: u64, output: u128, timestamp: u64);
