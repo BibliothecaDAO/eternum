@@ -916,7 +916,10 @@ pub mod ResourcesDomain {
         fn assert_resource_settlement_domain(self: @ContractState) {
             let peers = self.lifecycle.require_active();
             let caller = get_caller_address();
-            assert!(caller == peers.structures || caller == peers.economy, "only resource settlement domain");
+            assert!(
+                caller == peers.structures || caller == peers.economy || caller == peers.troops,
+                "only resource settlement domain",
+            );
         }
         fn assert_structures(self: @ContractState) {
             assert!(get_caller_address() == self.lifecycle.require_active().structures, "only structures domain");

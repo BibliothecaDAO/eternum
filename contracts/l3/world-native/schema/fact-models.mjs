@@ -46,6 +46,14 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
   };
   const domainKey = [{ name: "address", type: struct("lifecycle::Peers")[0].type }];
   return [
+    model("AgentRules", ["troops"], "game", method("troops", "agent_rules").inputs, struct("agents::AgentRules")),
+    model(
+      "AgentDiscoveryStats",
+      ["troops"],
+      "game",
+      method("troops", "agent_discovery_stats").inputs,
+      struct("agents::AgentDiscoveryStats"),
+    ),
     model("CampResources", ["structures"], "game", method("structures", "camp_resources").inputs, [
       { name: "resources", type: "core::array::Span::<world_native::resources::ResourceAmount>" },
     ]),

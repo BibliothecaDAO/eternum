@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "3f5349990cbe969b8242e151c6375b3be1e9bb64a848787852cb77da06b509e6",
+  "schemaIdentity": "a9f3ac72b578d972b4fbc2fbaa307b4806c2d779644f36711183d8def0910d48",
   "commandAbi": [
     {
       "type": "impl",
@@ -3686,6 +3686,26 @@
     }
   ],
   "models": [
+    {
+      "name": "AgentRules",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "max_lifetime_count": "Number",
+        "max_current_count": "Number",
+        "min_spawn_lords": "Number",
+        "max_spawn_lords": "Number"
+      }
+    },
+    {
+      "name": "AgentDiscoveryStats",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "spawned": "Number",
+        "lords_minted": "Number"
+      }
+    },
     {
       "name": "CampResources",
       "scope": "game",

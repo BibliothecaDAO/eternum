@@ -1036,7 +1036,7 @@ pub mod StructuresDomain {
                             timestamp,
                         );
                 },
-                Discovery::None => panic!("cannot create empty discovery"),
+                Discovery::None | Discovery::Agent => panic!("discovery is not a structure"),
             }
             self.structures.create(key, record);
             crate::guards::IGuardsDispatcherTrait::initialize_structure_guards(
@@ -1491,7 +1491,7 @@ fn discovered_structure(
         Discovery::Hyperstructure => (2, 9, 3, capacities.hyperstructure_capacity),
         Discovery::BitcoinMine => (8, 38, 3, capacities.bitcoin_mine_capacity),
         Discovery::Camp => (crate::camps::CAMP_CATEGORY, crate::camps::CAMP_OCCUPIER, 0, capacities.camp_capacity),
-        Discovery::None => panic!("cannot create empty discovery"),
+        Discovery::None | Discovery::Agent => panic!("discovery is not a structure"),
     };
     assert!(
         discovery == Discovery::Mine || coord.alt == (discovery == Discovery::BitcoinMine), "invalid discovery layer",

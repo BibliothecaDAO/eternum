@@ -371,9 +371,25 @@ pub mod MapDomain {
                 let center = Coord {
                     alt: false, x: 2147483646 - rules.map_center_offset, y: 2147483646 - rules.map_center_offset,
                 };
-                crate::discovery::surface(
+                let discovery = crate::discovery::surface(
                     rules.map_config, seed, timestamp, distance(coord, center), hyperstructures, rules.blitz_mode_on,
-                )
+                );
+                if discovery == crate::discovery::Discovery::None && rules.map_config.agent_discovery_prob != 0 {
+                    let troops = crate::agents::IAgentsDispatcher {
+                        contract_address: self.lifecycle.require_active().troops,
+                    };
+                    if crate::agents::IAgentsDispatcherTrait::can_discover_agent(troops, key.game_id)
+                        && crate::random::lottery(
+                            seed,
+                            3,
+                            rules.map_config.agent_discovery_prob.into(),
+                            rules.map_config.agent_discovery_fail_prob.into(),
+                            timestamp,
+                        ) {
+                        return crate::discovery::Discovery::Agent;
+                    }
+                }
+                discovery
             }
         }
         fn tile(self: @ContractState, key: TileKey) -> Option<TileOpt> {

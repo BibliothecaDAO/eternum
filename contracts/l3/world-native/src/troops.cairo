@@ -307,6 +307,8 @@ pub mod TroopsDomain {
         #[substorage(v0)]
         troops: TroopState::Storage,
         agent_owners: starknet::storage::Map<(u32, u32), ContractAddress>,
+        agent_rules: starknet::storage::Map<u32, Option<crate::agents::AgentRules>>,
+        agent_discovery_stats: starknet::storage::Map<u32, crate::agents::AgentDiscoveryStats>,
         #[substorage(v0)]
         guards: crate::guards::GuardState::Storage,
     }
@@ -319,6 +321,35 @@ pub mod TroopsDomain {
         BattleEvent: super::BattleEvent,
         OwnershipRow: crate::events::RowSet,
         OwnershipDeleted: crate::events::RowDeleted,
+    }
+    #[abi(embed_v0)]
+    impl Agents of crate::agents::IAgents<ContractState> {
+        fn configure_agents(ref self: ContractState, game_id: u32, rules: crate::agents::AgentRules) {
+            assert!(get_caller_address() == self.lifecycle.domain_state().authority, "only domain authority");
+            let _ = self.game_dispatcher().game(game_id);
+            assert!(self.agent_rules.read(game_id).is_none(), "agent rules already configured");
+            assert!(rules.min_spawn_lords <= rules.max_spawn_lords, "invalid agent reward bounds");
+            self.agent_rules.write(game_id, Some(rules));
+            let mut values = array![];
+            rules.serialize(ref values);
+            self
+                .emit(
+                    crate::events::RowSet {
+                        version: 1, model: 'AgentRules', keys: array![game_id.into()].span(), values: values.span(),
+                    },
+                );
+        }
+        fn agent_rules(self: @ContractState, game_id: u32) -> crate::agents::AgentRules {
+            self.agent_rules.read(game_id).expect('agent rules not configured')
+        }
+        fn agent_discovery_stats(self: @ContractState, game_id: u32) -> crate::agents::AgentDiscoveryStats {
+            self.agent_discovery_stats.read(game_id)
+        }
+        fn can_discover_agent(self: @ContractState, game_id: u32) -> bool {
+            let rules = self.agent_rules(game_id);
+            self.troops.agent_count.read(game_id) < rules.max_current_count
+                && self.agent_discovery_stats.read(game_id).spawned < rules.max_lifetime_count
+        }
     }
     #[constructor]
     fn constructor(ref self: ContractState, authority: ContractAddress) {
@@ -448,12 +479,7 @@ pub mod TroopsDomain {
                 if (data / 0x20000000000) % 256 == 0 {
                     self.map_dispatcher().reveal(tile, self.map_dispatcher().biome(tile));
                 }
-                let category = super::troop_occupier(explorer.troops)
-                    + if explorer.owner == super::AGENT_HOME {
-                        super::AGENT_OCCUPIER_OFFSET
-                    } else {
-                        0
-                    };
+                let category = super::explorer_occupier(explorer);
                 self.map_dispatcher().occupy(tile, explorer_id, category, false);
                 explorer.coord = destination;
                 self.troops.save(key, explorer);
@@ -477,16 +503,7 @@ pub mod TroopsDomain {
         ) {
             let _ = self.authorize(game_id, context);
             assert!(actor == self.game_dispatcher().agent_controller(), "actor is not agent controller");
-            self.agent_owners.write((game_id, command.entity_id), command.new_owner);
-            self
-                .emit(
-                    crate::events::RowSet {
-                        version: 1,
-                        model: 'AgentOwner',
-                        keys: array![game_id.into(), command.entity_id.into()].span(),
-                        values: array![command.new_owner.into()].span(),
-                    },
-                );
+            self.write_agent_owner(game_id, command.entity_id, command.new_owner);
         }
     }
     #[abi(embed_v0)]
@@ -576,7 +593,9 @@ pub mod TroopsDomain {
                         ),
                         context.timestamp,
                     );
-                if discovery != crate::discovery::Discovery::None {
+                if discovery == crate::discovery::Discovery::Agent {
+                    self.create_agent(game_id, destination, seed, rules, context.timestamp);
+                } else if discovery != crate::discovery::Discovery::None {
                     self
                         .structures_dispatcher()
                         .create_discovery(game_id, destination, discovery, seed, context.timestamp);
@@ -588,10 +607,7 @@ pub mod TroopsDomain {
             self
                 .map_dispatcher()
                 .occupy(
-                    tile_key(game_id, explorer.coord),
-                    command.explorer_id,
-                    super::troop_occupier(explorer.troops),
-                    false,
+                    tile_key(game_id, explorer.coord), command.explorer_id, super::explorer_occupier(explorer), false,
                 );
             self.pay_movement(game_id, ref explorer, rules, biome, exploring, context.timestamp);
             self.troops.save(key, explorer);
@@ -608,11 +624,14 @@ pub mod TroopsDomain {
             let defender_key = ExplorerKey { game_id, explorer_id: command.defender_id };
             let mut attacker = self.owned_explorer(attacker_key, actor);
             let mut defender = self.troops.explorer(defender_key).expect('missing defender');
-            let defender_home = self
-                .structures_dispatcher()
-                .structure(ResourceKey { game_id, entity_id: defender.owner })
-                .expect('missing defender home');
-            assert!(defender_home.owner != actor, "actor owns defender");
+            let defender_owner = if defender.owner == super::AGENT_HOME {
+                let owner = self.agent_owners.read((game_id, command.defender_id));
+                assert!(owner != 0.try_into().unwrap(), "agent owner is not set");
+                owner
+            } else {
+                self.structures_dispatcher().structure_owner(ResourceKey { game_id, entity_id: defender.owner })
+            };
+            assert!(defender_owner != actor, "actor owns defender");
             self.assert_battle_immunity(game_id, attacker.owner, rules, context.timestamp);
             self.assert_battle_immunity(game_id, defender.owner, rules, context.timestamp);
             assert!(attacker.troops.count > 0 && defender.troops.count > 0, "dead combatant");
@@ -797,10 +816,7 @@ pub mod TroopsDomain {
             self
                 .map_dispatcher()
                 .occupy(
-                    tile_key(game_id, explorer.coord),
-                    command.explorer_id,
-                    super::troop_occupier(explorer.troops),
-                    false,
+                    tile_key(game_id, explorer.coord), command.explorer_id, super::explorer_occupier(explorer), false,
                 );
             self.pay_food(game_id, explorer, rules, false, context.timestamp);
             self.troops.save(key, explorer);
@@ -835,7 +851,7 @@ pub mod TroopsDomain {
             self.map_dispatcher().vacate(tile_key(game_id, explorer.coord), command.explorer_id);
             self
                 .map_dispatcher()
-                .occupy(destination_key, command.explorer_id, super::troop_occupier(explorer.troops), false);
+                .occupy(destination_key, command.explorer_id, super::explorer_occupier(explorer), false);
             explorer.coord = destination;
             self.troops.save(key, explorer);
             self.game_dispatcher().allocate_entity(game_id);
@@ -907,6 +923,62 @@ pub mod TroopsDomain {
                 .expect('missing home structure');
             assert!(home.owner == actor, "actor does not own structure");
             home
+        }
+        fn create_agent(
+            ref self: ContractState, game_id: u32, coord: Coord, seed: u256, rules: SliceRules, timestamp: u64,
+        ) {
+            assert!(self.can_discover_agent(game_id), "agent population limit reached");
+            let draw = crate::agents::draw(seed, timestamp, rules, self.agent_rules(game_id));
+            assert!(
+                draw.amount <= super::max_army_size(rules.troop_limit_config, 3, draw.tier).into() * RESOURCE_PRECISION,
+                "army size limit",
+            );
+            let explorer_id = self.game_dispatcher().allocate_entity(game_id);
+            let explorer = ExplorerTroops {
+                owner: super::AGENT_HOME,
+                coord,
+                troops: initial_troops(draw.category, draw.tier, draw.amount, rules, timestamp),
+            };
+            self
+                .map_dispatcher()
+                .occupy(tile_key(game_id, coord), explorer_id, super::explorer_occupier(explorer), false);
+            self.troops.create(ExplorerKey { game_id, explorer_id }, explorer);
+            let key = ResourceKey { game_id, entity_id: explorer_id };
+            self.resources_dispatcher().initialize_explorer_resources(key, draw.amount);
+            self
+                .resources_dispatcher()
+                .grant_resource(
+                    key, crate::resources::LORDS, Into::<u32, u128>::into(draw.lords) * RESOURCE_PRECISION, timestamp,
+                );
+            self.write_agent_owner(game_id, explorer_id, self.game_dispatcher().agent_controller());
+            let previous = self.agent_discovery_stats.read(game_id);
+            let stats = crate::agents::AgentDiscoveryStats {
+                spawned: previous.spawned + 1, lords_minted: previous.lords_minted + draw.lords,
+            };
+            self.agent_discovery_stats.write(game_id, stats);
+            let mut values = array![];
+            stats.serialize(ref values);
+            self
+                .emit(
+                    crate::events::RowSet {
+                        version: 1,
+                        model: 'AgentDiscoveryStats',
+                        keys: array![game_id.into()].span(),
+                        values: values.span(),
+                    },
+                );
+        }
+        fn write_agent_owner(ref self: ContractState, game_id: u32, explorer_id: u32, owner: ContractAddress) {
+            self.agent_owners.write((game_id, explorer_id), owner);
+            self
+                .emit(
+                    crate::events::RowSet {
+                        version: 1,
+                        model: 'AgentOwner',
+                        keys: array![game_id.into(), explorer_id.into()].span(),
+                        values: array![owner.into()].span(),
+                    },
+                );
         }
         fn owned_explorer(self: @ContractState, key: ExplorerKey, actor: ContractAddress) -> ExplorerTroops {
             let explorer = self.troops.explorer(key).expect('missing explorer');
@@ -1000,6 +1072,9 @@ pub mod TroopsDomain {
             exploring: bool,
             timestamp: u64,
         ) {
+            if explorer.owner == super::AGENT_HOME {
+                return;
+            }
             let stamina = rules.troop_stamina_config;
             let (wheat, fish) = if exploring {
                 (stamina.stamina_explore_wheat_cost, stamina.stamina_explore_fish_cost)
@@ -1017,6 +1092,9 @@ pub mod TroopsDomain {
                 );
         }
         fn assert_battle_immunity(self: @ContractState, game_id: u32, home_id: u32, rules: SliceRules, timestamp: u64) {
+            if home_id == super::AGENT_HOME {
+                return;
+            }
             let game = self.game_dispatcher().game(game_id);
             let home = self.structures_dispatcher().structure(ResourceKey { game_id, entity_id: home_id }).unwrap();
             let tick = timestamp / rules.tick_config.armies_tick_in_seconds;
@@ -1139,6 +1217,14 @@ pub fn troop_resource(category: TroopType, tier: u8) -> u8 {
         TroopType::Crossbowman => 29,
     }) + tier
 }
+fn explorer_occupier(explorer: ExplorerTroops) -> u8 {
+    troop_occupier(explorer.troops) + if explorer.owner == AGENT_HOME {
+        AGENT_OCCUPIER_OFFSET
+    } else {
+        0
+    }
+}
+
 fn troop_occupier(troops: Troops) -> u8 {
     let category = match troops.category {
         TroopType::Knight => 15,

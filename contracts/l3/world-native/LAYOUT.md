@@ -432,3 +432,8 @@ the same fresh rehearsal deployment; no live upgrade compatibility is claimed.
 Structures appends immutable camp grant entries keyed by game and index, with an optional entry count distinguishing
 unconfigured games from a configured empty list. CampResources projects those entries once. Camp balances, Labor
 production, guards, occupancy and buildings reuse their existing owning rows; no separate camp status is stored.
+
+Troops appends immutable AgentRules keyed by game and AgentDiscoveryStats containing lifetime discoveries and minted
+LORDS units. Current population remains in TroopState and decreases on destruction; lifetime and minted totals never
+decrease. Agent ownership stays in the existing map. Creation, travel and displacement share one occupier projection, so
+moving an agent cannot turn its tile marker into a realm-owned explorer marker.

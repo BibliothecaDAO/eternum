@@ -1787,6 +1787,70 @@
       "entrypoints": [
         {
           "type": "function",
+          "name": "configure_agents",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "rules",
+              "type": "world_native::agents::AgentRules"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "agent_rules",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "world_native::agents::AgentRules"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "agent_discovery_stats",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "world_native::agents::AgentDiscoveryStats"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "can_discover_agent",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::bool"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
           "name": "apply_troop_relic",
           "inputs": [
             {
@@ -7545,6 +7609,80 @@
   },
   "models": [
     {
+      "name": "AgentRules",
+      "identity": "0x4167656e7452756c6573",
+      "owners": [
+        "troops"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "max_lifetime_count",
+          "type": "core::integer::u16",
+          "id": "0x6d61785f6c69666574696d655f636f756e74",
+          "feltLength": 1
+        },
+        {
+          "name": "max_current_count",
+          "type": "core::integer::u16",
+          "id": "0x6d61785f63757272656e745f636f756e74",
+          "feltLength": 1
+        },
+        {
+          "name": "min_spawn_lords",
+          "type": "core::integer::u8",
+          "id": "0x6d696e5f737061776e5f6c6f726473",
+          "feltLength": 1
+        },
+        {
+          "name": "max_spawn_lords",
+          "type": "core::integer::u8",
+          "id": "0x6d61785f737061776e5f6c6f726473",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": 4
+    },
+    {
+      "name": "AgentDiscoveryStats",
+      "identity": "0x4167656e74446973636f766572795374617473",
+      "owners": [
+        "troops"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "spawned",
+          "type": "core::integer::u16",
+          "id": "0x737061776e6564",
+          "feltLength": 1
+        },
+        {
+          "name": "lords_minted",
+          "type": "core::integer::u32",
+          "id": "0x6c6f7264735f6d696e746564",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": 2
+    },
+    {
       "name": "CampResources",
       "identity": "0x43616d705265736f7572636573",
       "owners": [
@@ -12271,6 +12409,42 @@
         }
       ]
     },
+    "world_native::agents::AgentDiscoveryStats": {
+      "type": "struct",
+      "name": "world_native::agents::AgentDiscoveryStats",
+      "members": [
+        {
+          "name": "spawned",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "lords_minted",
+          "type": "core::integer::u32"
+        }
+      ]
+    },
+    "world_native::agents::AgentRules": {
+      "type": "struct",
+      "name": "world_native::agents::AgentRules",
+      "members": [
+        {
+          "name": "max_lifetime_count",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "max_current_count",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "min_spawn_lords",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "max_spawn_lords",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
     "world_native::arrivals::Arrival": {
       "type": "struct",
       "name": "world_native::arrivals::Arrival",
@@ -13229,6 +13403,10 @@
         },
         {
           "name": "Camp",
+          "type": "()"
+        },
+        {
+          "name": "Agent",
           "type": "()"
         }
       ]
@@ -16670,5 +16848,5 @@
       ]
     }
   },
-  "identity": "3f5349990cbe969b8242e151c6375b3be1e9bb64a848787852cb77da06b509e6"
+  "identity": "a9f3ac72b578d972b4fbc2fbaa307b4806c2d779644f36711183d8def0910d48"
 }

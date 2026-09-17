@@ -9,6 +9,7 @@ pub enum Discovery {
     Hyperstructure,
     BitcoinMine,
     Camp,
+    Agent,
 }
 
 pub fn surface(
@@ -28,9 +29,6 @@ pub fn surface(
     }
     if blitz && lottery(seed, 7, config.camp_win_probability.into(), config.camp_fail_probability.into(), timestamp) {
         return Discovery::Camp;
-    }
-    if lottery(seed, 3, config.agent_discovery_prob.into(), config.agent_discovery_fail_prob.into(), timestamp) {
-        panic!("unsupported agent discovery");
     }
     Discovery::None
 }

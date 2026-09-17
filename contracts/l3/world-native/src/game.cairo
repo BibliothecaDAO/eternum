@@ -150,7 +150,6 @@ pub mod GameState {
                 assert!(rules.bitcoin_mine_config.prize_per_phase != 0, "zero Bitcoin prize");
             }
             assert!(rules.bitcoin_mine_config.owner_cut_bps <= 10000, "invalid Bitcoin owner cut");
-            assert!(rules.map_config.agent_discovery_prob == 0, "unsupported discovery rules");
             self.rules.write(game_id, rules);
             self.ownership_rules_ready.write(game_id, true);
             self
