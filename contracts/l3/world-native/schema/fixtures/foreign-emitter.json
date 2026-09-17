@@ -1,12 +1,14 @@
 {
-  "schemaIdentity": "89027605009a7250522903354dccacddb479c6964a207c7ae291d0777abc40fb",
+  "schemaIdentity": "37fcdfd46fecf548855bbc1ceb6486cbc878a810ece84ffff794a40ba62ba732",
   "deployment": {
     "season": "0x101",
     "map": "0x102",
-    "structures": "0x103",
     "troops": "0x100",
+    "structures": "0x104",
     "settlement": "0x105",
-    "resources": "0x106"
+    "resources": "0x106",
+    "economy": "0x107",
+    "prizes": "0x108"
   },
   "raw": {
     "from_address": "0x102",

@@ -127,6 +127,11 @@ pub struct PledgeStory {
     pub pledger_rate: u16,
 }
 
+#[starknet::interface]
+pub trait IFaithSettlement<T> {
+    fn settle_faith_wonders(ref self: T, game_id: u32, timestamp: u64);
+    fn settle_player_faith(ref self: T, game_id: u32, player: ContractAddress, wonder_id: u32, timestamp: u64);
+}
 #[starknet::component]
 pub mod FaithState {
     use starknet::ContractAddress;
@@ -306,6 +311,36 @@ pub mod FaithState {
             }
         }
     }
+    #[embeddable_as(FaithSettlementImpl)]
+    pub impl PrizeSettlement<
+        TContractState,
+        +HasComponent<TContractState>,
+        impl Life: Lifecycle::HasComponent<TContractState>,
+        impl Structures: StructureState::HasComponent<TContractState>,
+        +Drop<TContractState>,
+    > of super::IFaithSettlement<ComponentState<TContractState>> {
+        fn settle_faith_wonders(ref self: ComponentState<TContractState>, game_id: u32, timestamp: u64) {
+            let game = self.authorize_prizes(game_id, timestamp);
+            for index in 0..self.faith_wonder_count.read(game_id) {
+                let id = self.faith_wonder_ids.read((game_id, index));
+                let mut wonder = self.faith_wonders.read((game_id, id));
+                self.settle_wonder(game_id, id, ref wonder, game.end_at, game.end_at);
+                self.write_wonder(game_id, id, wonder);
+            }
+        }
+        fn settle_player_faith(
+            ref self: ComponentState<TContractState>,
+            game_id: u32,
+            player: ContractAddress,
+            wonder_id: u32,
+            timestamp: u64,
+        ) {
+            let game = self.authorize_prizes(game_id, timestamp);
+            assert!(player != 0.try_into().unwrap(), "invalid player");
+            self.wonder(game_id, wonder_id);
+            self.update_rates(game_id, player, wonder_id, true, 0, 0, timestamp, game.end_at);
+        }
+    }
     #[generate_trait]
     pub impl InternalImpl<
         TContractState,
@@ -314,6 +349,20 @@ pub mod FaithState {
         impl Structures: StructureState::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of InternalTrait<TContractState> {
+        fn authorize_prizes(
+            self: @ComponentState<TContractState>, game_id: u32, timestamp: u64,
+        ) -> crate::game::GameRegistry {
+            assert!(
+                starknet::get_caller_address() == get_dep_component!(self, Life).require_active().prizes,
+                "only prizes domain",
+            );
+            crate::commands::assert_context_time(timestamp);
+            let game = self.games().game(game_id);
+            self.require_started(game, timestamp);
+            assert!(!self.games().rules(game_id).blitz_mode_on, "faith requires Eternum");
+            assert!(game.end_at != 0 && timestamp >= game.end_at, "game not ended");
+            game
+        }
         fn games(self: @ComponentState<TContractState>) -> IGameDispatcher {
             IGameDispatcher { contract_address: get_dep_component!(self, Life).require_active().season }
         }

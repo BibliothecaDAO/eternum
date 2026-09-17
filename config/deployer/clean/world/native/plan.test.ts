@@ -44,12 +44,7 @@ function fixture() {
       ...(entrypoint === "domain_state"
         ? [
             state.authority,
-            state.peers.season,
-            state.peers.map,
-            state.peers.structures,
-            state.peers.troops,
-            state.peers.settlement,
-            state.peers.resources,
+            ...schemaJson.types["world_native::lifecycle::Peers"].members.map((member) => state.peers[member.name]),
             state.active ? "1" : "0",
           ]
         : entrypoint === "realm_catalogue"

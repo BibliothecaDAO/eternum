@@ -98,6 +98,9 @@ pub enum Command {
     ClaimWonderPoints: u32,
     ClaimPlayerFaithPoints: crate::faith::ClaimPlayer,
     SetFaithBlacklist: crate::faith::SetBlacklist,
+    FundFaithPrizes: u128,
+    DistributeFaithPrizes,
+    ClaimFaithPrize: crate::faith::ClaimPlayer,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]

@@ -86,17 +86,18 @@ fn setup_with_domains(activate: bool, structures_class: ByteArray, troops_class:
     let (settlement, _) = deploy("SettlementDomain", @array![authority().into()]);
     let (resources, _) = deploy("ResourcesDomain", @array![authority().into()]);
     let (economy, _) = deploy("EconomyDomain", @array![authority().into()]);
-    let peers = Peers { season, map, structures, troops, settlement, resources, economy };
-    for address in array![season, map, structures, troops, settlement, resources, economy] {
+    let (prizes, _) = deploy("PrizesDomain", @array![authority().into()]);
+    let peers = Peers { season, map, structures, troops, settlement, resources, economy, prizes };
+    for address in array![season, map, structures, troops, settlement, resources, economy, prizes] {
         start_cheat_caller_address(address, authority());
         IDomainDispatcher { contract_address: address }.configure(peers);
     }
     if activate {
-        for address in array![season, map, structures, troops, settlement, resources, economy] {
+        for address in array![season, map, structures, troops, settlement, resources, economy, prizes] {
             IDomainDispatcher { contract_address: address }.activate();
         }
     }
-    for address in array![season, map, structures, troops, settlement, resources, economy] {
+    for address in array![season, map, structures, troops, settlement, resources, economy, prizes] {
         stop_cheat_caller_address(address);
     }
     if activate {
@@ -366,8 +367,9 @@ fn registered_account_with_unapproved_class_is_rejected_before_key_read() {
     let (settlement, _) = deploy("SettlementDomain", @array![authority().into()]);
     let (resources, _) = deploy("ResourcesDomain", @array![authority().into()]);
     let (economy, _) = deploy("EconomyDomain", @array![authority().into()]);
-    let peers = Peers { season, map, structures, troops, settlement, resources, economy };
-    for address in array![season, map, structures, troops, settlement, resources, economy] {
+    let (prizes, _) = deploy("PrizesDomain", @array![authority().into()]);
+    let peers = Peers { season, map, structures, troops, settlement, resources, economy, prizes };
+    for address in array![season, map, structures, troops, settlement, resources, economy, prizes] {
         start_cheat_caller_address(address, authority());
         IDomainDispatcher { contract_address: address }.configure(peers);
     }
@@ -534,7 +536,8 @@ fn activation_rejects_peer_mismatch_authority_mismatch_and_double_activation() {
         let (settlement, _) = deploy("SettlementDomain", @array![authority().into()]);
         let (resources, _) = deploy("ResourcesDomain", @array![authority().into()]);
         let (economy, _) = deploy("EconomyDomain", @array![authority().into()]);
-        let peers = Peers { season, map, structures, troops, settlement, resources, economy };
+        let (prizes, _) = deploy("PrizesDomain", @array![authority().into()]);
+        let peers = Peers { season, map, structures, troops, settlement, resources, economy, prizes };
         for address in array![season, structures, troops, settlement] {
             start_cheat_caller_address(address, authority());
             IDomainDispatcher { contract_address: address }.configure(peers);
@@ -614,5 +617,7 @@ fn realm_upgrade_changes_only_its_display_and_rejects_foreign_occupants() {
 
 mod building_commands;
 mod faith;
+
+mod faith_prizes;
 
 mod season_lifecycle;

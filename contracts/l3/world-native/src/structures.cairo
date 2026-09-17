@@ -347,6 +347,8 @@ pub mod StructuresDomain {
     impl FaithInternal = FaithState::InternalImpl<ContractState>;
     #[abi(embed_v0)]
     impl Faith = FaithState::FaithImpl<ContractState>;
+    #[abi(embed_v0)]
+    impl FaithSettlement = FaithState::FaithSettlementImpl<ContractState>;
     component!(path: BuildingState, storage: buildings, event: BuildingEvent);
     impl BuildingInternal = BuildingState::InternalImpl<ContractState>;
     component!(path: Lifecycle, storage: lifecycle, event: LifecycleEvent);

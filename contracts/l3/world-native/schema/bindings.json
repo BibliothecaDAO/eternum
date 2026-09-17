@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "89027605009a7250522903354dccacddb479c6964a207c7ae291d0777abc40fb",
+  "schemaIdentity": "37fcdfd46fecf548855bbc1ceb6486cbc878a810ece84ffff794a40ba62ba732",
   "commandAbi": [
     {
       "type": "impl",
@@ -1302,6 +1302,18 @@
         {
           "name": "SetFaithBlacklist",
           "type": "world_native::faith::SetBlacklist"
+        },
+        {
+          "name": "FundFaithPrizes",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "DistributeFaithPrizes",
+          "type": "()"
+        },
+        {
+          "name": "ClaimFaithPrize",
+          "type": "world_native::faith::ClaimPlayer"
         }
       ]
     },
@@ -2561,6 +2573,10 @@
         {
           "name": "economy",
           "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "prizes",
+          "type": "core::starknet::contract_address::ContractAddress"
         }
       ]
     },
@@ -3453,6 +3469,33 @@
     }
   ],
   "models": [
+    {
+      "name": "FaithRewardToken",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "token": "BigInt"
+      }
+    },
+    {
+      "name": "FaithPrizePool",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "funded": "BigInt",
+        "distributed": "Boolean"
+      }
+    },
+    {
+      "name": "FaithPrizeClaimed",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "player": "BigInt",
+        "wonder_id": "Number",
+        "claimed": "Boolean"
+      }
+    },
     {
       "name": "FaithRules",
       "scope": "game",
@@ -4481,7 +4524,8 @@
           "troops": "BigInt",
           "settlement": "BigInt",
           "resources": "BigInt",
-          "economy": "BigInt"
+          "economy": "BigInt",
+          "prizes": "BigInt"
         },
         "active": "Boolean"
       }

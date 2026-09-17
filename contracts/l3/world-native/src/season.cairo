@@ -488,6 +488,15 @@ pub mod SeasonDomain {
                 value.serialize(ref calldata);
                 (peers.resources, selector!("bind_bitcoin_phase"))
             },
+            Command::FundFaithPrizes(value) => {
+                value.serialize(ref calldata);
+                (peers.prizes, selector!("fund_faith_prizes"))
+            },
+            Command::DistributeFaithPrizes => (peers.prizes, selector!("distribute_faith_prizes")),
+            Command::ClaimFaithPrize(value) => {
+                value.serialize(ref calldata);
+                (peers.prizes, selector!("claim_faith_prize"))
+            },
             Command::PledgeFaith(value) => {
                 value.serialize(ref calldata);
                 (peers.structures, selector!("pledge_faith"))

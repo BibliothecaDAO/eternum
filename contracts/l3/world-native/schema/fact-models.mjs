@@ -41,6 +41,19 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
   };
   const domainKey = [{ name: "address", type: struct("lifecycle::Peers")[0].type }];
   return [
+    model("FaithRewardToken", ["prizes"], "game", method("prizes", "faith_reward_token").inputs, [
+      { name: "token", type: method("prizes", "faith_reward_token").outputs[0].type },
+    ]),
+    model(
+      "FaithPrizePool",
+      ["prizes"],
+      "game",
+      method("prizes", "faith_prize_pool").inputs,
+      struct("faith_prizes::PrizePool"),
+    ),
+    model("FaithPrizeClaimed", ["prizes"], "game", struct("faith::PlayerFaithKey"), [
+      { name: "claimed", type: "core::bool" },
+    ]),
     model(
       "FaithRules",
       ["structures"],

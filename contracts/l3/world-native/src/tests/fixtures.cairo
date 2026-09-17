@@ -337,6 +337,8 @@ pub mod RegistryRoundTripFixture {
 pub trait ITokenFixture<T> {
     fn seed(ref self: T, account: ContractAddress, amount: u256);
     fn set_failure(ref self: T, fail: bool);
+    fn set_transfer_fee(ref self: T, fee: u256);
+    fn transfer_from(ref self: T, sender: ContractAddress, recipient: ContractAddress, amount: u256) -> bool;
 }
 #[starknet::contract]
 pub mod BankTokenFixture {
@@ -349,6 +351,7 @@ pub mod BankTokenFixture {
         balances: Map<ContractAddress, u256>,
         minter: ContractAddress,
         failing: bool,
+        transfer_fee: u256,
     }
     #[constructor]
     fn constructor(ref self: ContractState, minter: ContractAddress) {
@@ -362,6 +365,15 @@ pub mod BankTokenFixture {
         fn set_failure(ref self: ContractState, fail: bool) {
             self.failing.write(fail);
         }
+        fn set_transfer_fee(ref self: ContractState, fee: u256) {
+            self.transfer_fee.write(fee);
+        }
+        fn transfer_from(
+            ref self: ContractState, sender: ContractAddress, recipient: ContractAddress, amount: u256,
+        ) -> bool {
+            assert!(get_caller_address() == self.minter.read(), "token spender not approved");
+            self.transfer_balance(sender, recipient, amount)
+        }
     }
     #[abi(embed_v0)]
     impl Token of crate::withdrawals::IResourceToken<ContractState> {
@@ -372,18 +384,27 @@ pub mod BankTokenFixture {
             self.balances.read(account)
         }
         fn transfer(ref self: ContractState, recipient: ContractAddress, amount: u256) -> bool {
-            let sender = get_caller_address();
-            let balance = self.balances.read(sender);
-            if self.failing.read() || balance < amount {
-                return false;
-            }
-            self.balances.write(sender, balance - amount);
-            self.balances.write(recipient, self.balances.read(recipient) + amount);
-            true
+            self.transfer_balance(get_caller_address(), recipient, amount)
         }
+
         fn mint(ref self: ContractState, recipient: ContractAddress, amount: u256) {
             assert!(get_caller_address() == self.minter.read() && !self.failing.read(), "token mint rejected");
             self.balances.write(recipient, self.balances.read(recipient) + amount);
+        }
+    }
+    #[generate_trait]
+    impl Internal of InternalTrait {
+        fn transfer_balance(
+            ref self: ContractState, sender: ContractAddress, recipient: ContractAddress, amount: u256,
+        ) -> bool {
+            let balance = self.balances.read(sender);
+            let fee = self.transfer_fee.read();
+            if self.failing.read() || balance < amount || amount < fee {
+                return false;
+            }
+            self.balances.write(sender, balance - amount);
+            self.balances.write(recipient, self.balances.read(recipient) + amount - fee);
+            true
         }
     }
 }

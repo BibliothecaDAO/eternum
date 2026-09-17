@@ -9,7 +9,7 @@ use crate::resources::ResourceKey;
 use crate::structures::{IStructuresDispatcher, IStructuresDispatcherTrait, StructureRecord};
 use super::resource_commands::{assert_terminal_rejection, execute, execute_recorded_at, set_fixture, setup_with_rules};
 
-fn setup() -> (super::Deployment, ResourceKey, ResourceKey) {
+pub fn setup() -> (super::Deployment, ResourceKey, ResourceKey) {
     let mut rules = super::recorded::rules();
     rules.faith_enabled = true;
     rules.blitz_mode_on = false;
@@ -24,7 +24,7 @@ fn setup() -> (super::Deployment, ResourceKey, ResourceKey) {
 fn config() -> FaithRules {
     FaithRules { wonder_rate: 500, realm_rate: 100, village_rate: 10, owner_share_bps: 3000 }
 }
-fn set_wonder(deployment: super::Deployment, key: ResourceKey, enabled: bool) {
+pub fn set_wonder(deployment: super::Deployment, key: ResourceKey, enabled: bool) {
     let value = IStructuresDispatcher { contract_address: deployment.peers.structures }.structure(key).unwrap();
     set_fixture(
         deployment.peers.structures,

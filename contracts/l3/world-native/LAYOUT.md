@@ -407,3 +407,9 @@ Faith winners are a read-only aggregate of the wonder score rows, not a second s
 high-score and tied-winner maps and their row projection are removed. An id-only initialized-wonder index supports that
 view; tied winners have equal rewards regardless of listing order. This layout change joins the fresh-rehearsal codec
 change and makes no live upgrade claim.
+
+PrizesDomain owns token custody separately from structure accrual. Its game-scoped immutable reward-token map,
+funded/distributed pool and `(game_id, player, wonder_id)` claim markers reserve awards per game. Wonder prizes derive
+from the frozen scores and pool; no per-wonder prize allocation duplicates those facts. Only Prizes may settle faith
+scores for distribution, and only Season may issue payout commands. The lifecycle peer set appends `prizes`; this nested
+layout change requires the fresh rehearsal deployment already required above.

@@ -36,6 +36,8 @@ pub mod economy;
 pub mod exploration_rewards;
 
 pub mod faith;
+
+pub mod faith_prizes;
 pub mod fixed_constants;
 pub mod game;
 pub mod geometry;
@@ -48,6 +50,8 @@ pub mod market;
 
 pub mod names;
 pub mod ownership;
+
+pub mod prizes;
 
 pub mod production;
 pub mod random;

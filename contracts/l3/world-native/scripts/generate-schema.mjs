@@ -18,6 +18,7 @@ const contracts = {
   settlement: "SettlementDomain",
   resources: "ResourcesDomain",
   economy: "EconomyDomain",
+  prizes: "PrizesDomain",
 };
 const artifacts = Object.fromEntries(
   await Promise.all(
@@ -154,7 +155,9 @@ const schema = {
   projections: [
     {
       name: "StoryEvent",
-      owners: ["structures", "resources"],
+      owners: Object.keys(artifacts).filter((domain) =>
+        artifacts[domain].some((item) => item.type === "event" && item.name === "world_native::ownership::StoryEvent"),
+      ),
       scope: "game",
       version: 1,
       derivedRows: [],
@@ -192,14 +195,12 @@ async function writeJson(path, value) {
 
 async function writeFixtures(schema) {
   const emitter = "0x100";
-  const deployment = {
-    season: "0x101",
-    map: "0x102",
-    structures: "0x103",
-    troops: emitter,
-    settlement: "0x105",
-    resources: "0x106",
-  };
+  const deployment = Object.fromEntries(
+    Object.keys(schema.domains).map((domain, index) => [
+      domain,
+      domain === "troops" ? emitter : `0x${(0x101 + index).toString(16)}`,
+    ]),
+  );
   const model = schema.models.find((model) => model.name === "ExplorerTroops");
   function raw(name, values = []) {
     const layout = schema.domains.troops.events.find(
