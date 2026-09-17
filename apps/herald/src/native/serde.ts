@@ -4,17 +4,33 @@ import { schemaAbi, type NativeMember, type NativeSchema } from "./schema";
 
 const PRIME = (1n << 251n) + 17n * (1n << 192n) + 1n;
 const ADDRESS_BOUND = (1n << 251n) - 256n;
+const decoders = new WeakMap<NativeSchema, Map<string, CallData>>();
 
 /** Check the complete wire frame before the ABI decoder can accept partial or trailing values. */
 export function decodeMembers(schema: NativeSchema, members: NativeMember[], felts: string[]): DecodedRecord {
   const reader = new SerdeReader(schema, felts);
   members.forEach((member) => reader.read(member.type));
   reader.finish();
+  return memberDecoder(schema, members).parse("row", felts) as DecodedRecord;
+}
+
+function memberDecoder(schema: NativeSchema, members: NativeMember[]): CallData {
+  let layouts = decoders.get(schema);
+  if (!layouts) {
+    layouts = new Map();
+    decoders.set(schema, layouts);
+  }
+  // Member updates construct new arrays; reuse the codec by layout, never by row values.
+  const key = JSON.stringify(members.map(({ name, type }) => [name, type]));
+  const existing = layouts.get(key);
+  if (existing) return existing;
   const abi = [
     ...schemaAbi(schema),
     { type: "function", name: "row", inputs: [], outputs: members, state_mutability: "view" },
   ] as Abi;
-  return new CallData(abi).parse("row", felts) as DecodedRecord;
+  const decoder = new CallData(abi);
+  layouts.set(key, decoder);
+  return decoder;
 }
 
 class SerdeReader {
