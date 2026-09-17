@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "dbdd50aba9e65531b824d9ab9a01ce78534a46ee435fe2716fd00de6c6578a67",
+  "schemaIdentity": "831466cbdf61f0aaa37d7ed34d43dd3a8c639a4bdc30de6cb9c225f0d995645a",
   "commandAbi": [
     {
       "type": "impl",
@@ -3100,6 +3100,64 @@
       ]
     },
     {
+      "type": "enum",
+      "name": "world_native::game::PointActivity",
+      "variants": [
+        {
+          "name": "Exploration",
+          "type": "()"
+        },
+        {
+          "name": "RelicChest",
+          "type": "()"
+        },
+        {
+          "name": "HyperstructureCapture",
+          "type": "()"
+        },
+        {
+          "name": "StructureCapture",
+          "type": "()"
+        },
+        {
+          "name": "Hyperstructure",
+          "type": "()"
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "name": "world_native::game::PointsAwarded",
+      "kind": "struct",
+      "members": [
+        {
+          "name": "version",
+          "type": "core::integer::u8",
+          "kind": "key"
+        },
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "kind": "key"
+        },
+        {
+          "name": "player",
+          "type": "core::starknet::contract_address::ContractAddress",
+          "kind": "key"
+        },
+        {
+          "name": "activity",
+          "type": "world_native::game::PointActivity",
+          "kind": "data"
+        },
+        {
+          "name": "points",
+          "type": "core::integer::u128",
+          "kind": "data"
+        }
+      ]
+    },
+    {
       "type": "event",
       "name": "world_native::game::GameState::Event",
       "kind": "enum",
@@ -3107,6 +3165,11 @@
         {
           "name": "RowSet",
           "type": "world_native::events::RowSet",
+          "kind": "nested"
+        },
+        {
+          "name": "PointsAwarded",
+          "type": "world_native::game::PointsAwarded",
           "kind": "nested"
         }
       ]
@@ -3891,6 +3954,10 @@
     }
   ],
   "events": [
+    {
+      "name": "PointsAwarded",
+      "scope": "game"
+    },
     {
       "name": "StoryEvent",
       "scope": "game"
@@ -5218,18 +5285,6 @@
         "game_id": "Number",
         "actor": "BigInt",
         "next_nonce": "BigInt"
-      }
-    },
-    {
-      "name": "LastBattle",
-      "scope": "game",
-      "schema": {
-        "game_id": "Number",
-        "entity_id": "Number",
-        "latest_attacker_id": "OptionalNumber",
-        "latest_attack_timestamp": "OptionalNumber",
-        "latest_defender_id": "OptionalNumber",
-        "latest_defense_timestamp": "OptionalNumber"
       }
     }
   ]

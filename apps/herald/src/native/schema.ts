@@ -39,17 +39,15 @@ export interface NativeSchema {
     }
   >;
   models: NativeModel[];
-  absentCollections: string[];
   types: Record<
     string,
     { type: "struct"; name: string; members: NativeMember[] } | { type: "enum"; name: string; variants: NativeMember[] }
   >;
-  projections: {
+  events: {
     name: string;
     owners: string[];
     scope: "game";
     version: number;
-    derivedRows: string[];
     event: NativeEventLayout;
   }[];
 }

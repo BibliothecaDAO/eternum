@@ -18,6 +18,21 @@ import type {
 import { normalizeFelt, toJsonValue } from "./model-registry";
 import type { DecodedRecord, DecodedWorldEvent, RpcReceipt } from "./types";
 
+export interface HistoryCodec {
+  storyModels: readonly string[];
+  pointsModel: string;
+  pointsVariant?: string;
+  readPoints: typeof readPointsRegistration;
+  participants?: (value: Record<string, unknown>) => { owners: string[]; entities: string[] };
+}
+
+export const dojoHistoryCodec: HistoryCodec = {
+  storyModels: ["StoryEvent"],
+  pointsModel: "StoryEvent",
+  pointsVariant: "PointsRegisteredStory",
+  readPoints: readPointsRegistration,
+};
+
 interface StoredHistoryEvent {
   block_number: number;
   entity_id: string | null;
@@ -25,6 +40,8 @@ interface StoredHistoryEvent {
   game_id: string;
   model: string;
   owner: string | null;
+  participants: string[];
+  entities: string[];
   transaction_hash: string;
   transaction_index: number;
   value: Record<string, unknown>;
@@ -62,11 +79,12 @@ const jsonRecord = (value: unknown): Record<string, unknown> => {
   return converted as Record<string, unknown>;
 };
 
-const storedHistoryEvent = (event: DecodedWorldEvent): StoredHistoryEvent | null => {
+const storedHistoryEvent = (event: DecodedWorldEvent, codec: HistoryCodec): StoredHistoryEvent | null => {
   if (event.kind !== "event" || event.position.blockNumber === null) return null;
   const value = jsonRecord({ ...event.key, ...event.value });
   const gameId = scalarString(event.key.game_id);
   if (!gameId) return null;
+  const participants = codec.participants?.(value);
 
   return {
     block_number: event.position.blockNumber,
@@ -75,6 +93,8 @@ const storedHistoryEvent = (event: DecodedWorldEvent): StoredHistoryEvent | null
     game_id: gameId,
     model: event.model.name,
     owner: addressString(value.owner),
+    participants: participants?.owners ?? [],
+    entities: participants?.entities ?? [],
     transaction_hash: normalizeFelt(event.position.transactionHash),
     transaction_index: event.position.transactionIndex,
     value,
@@ -92,6 +112,7 @@ export class HistoryStore {
     databaseUrl: string,
     private readonly chain: string,
     private readonly worldAddress: string,
+    private readonly codec: HistoryCodec = dojoHistoryCodec,
   ) {
     this.pool = new Pool({ connectionString: databaseUrl, max: 2 });
   }
@@ -112,6 +133,10 @@ export class HistoryStore {
         value JSONB NOT NULL,
         PRIMARY KEY (chain, world_address, transaction_hash, event_index)
       );
+      ALTER TABLE herald_history_events ADD COLUMN IF NOT EXISTS participants TEXT[] NOT NULL DEFAULT '{}';
+      ALTER TABLE herald_history_events ADD COLUMN IF NOT EXISTS entities TEXT[] NOT NULL DEFAULT '{}';
+      CREATE INDEX IF NOT EXISTS herald_history_participants ON herald_history_events USING GIN (participants);
+      CREATE INDEX IF NOT EXISTS herald_history_entities ON herald_history_events USING GIN (entities);
       CREATE INDEX IF NOT EXISTS herald_history_game_model_position
         ON herald_history_events (chain, world_address, game_id, model, block_number DESC, transaction_index DESC, event_index DESC);
       CREATE INDEX IF NOT EXISTS herald_history_story_position
@@ -157,7 +182,7 @@ export class HistoryStore {
 
   public async appendEvents(events: readonly DecodedWorldEvent[], completeThroughBlock?: number): Promise<void> {
     const rows = events.flatMap((event) => {
-      const stored = storedHistoryEvent(event);
+      const stored = storedHistoryEvent(event, this.codec);
       return stored ? [stored] : [];
     });
     if (rows.length === 0 && completeThroughBlock === undefined) return;
@@ -183,20 +208,20 @@ export class HistoryStore {
     const inserted = await client.query<Pick<StoredHistoryEvent, "game_id" | "value">>(
       `INSERT INTO herald_history_events (
              chain, world_address, model, game_id, block_number, transaction_hash,
-             transaction_index, event_index, owner, entity_id, value
+             transaction_index, event_index, owner, entity_id, participants, entities, value
            )
            SELECT $1, $2, row.model, row.game_id::numeric, row.block_number, row.transaction_hash,
-                  row.transaction_index, row.event_index, row.owner, row.entity_id::numeric, row.value
+                  row.transaction_index, row.event_index, row.owner, row.entity_id::numeric, row.participants, row.entities, row.value
            FROM jsonb_to_recordset($3::jsonb) AS row(
              model text, game_id text, block_number bigint, transaction_hash text,
-             transaction_index integer, event_index integer, owner text, entity_id text, value jsonb
+             transaction_index integer, event_index integer, owner text, entity_id text, participants text[], entities text[], value jsonb
            )
            ON CONFLICT DO NOTHING
            RETURNING game_id::text, value`,
       [this.chain, this.worldAddress, JSON.stringify(rows)],
     );
     return inserted.rows.flatMap((row) => {
-      const points = readPointsRegistration(row.value);
+      const points = this.codec.readPoints(row.value);
       return points ? [{ gameId: row.game_id, points }] : [];
     });
   }
@@ -226,12 +251,12 @@ export class HistoryStore {
   private async restorePointsLeaderboard(): Promise<void> {
     const result = await this.pool.query<{ game_id: string; value: Record<string, unknown> }>(
       `SELECT game_id::text, value FROM herald_history_events
-       WHERE chain = $1 AND world_address = $2 AND model = 'StoryEvent'
-         AND value->'story' ? 'PointsRegisteredStory'`,
-      [this.chain, this.worldAddress],
+       WHERE chain = $1 AND world_address = $2 AND model = $3
+         AND ($4::text IS NULL OR value->'story' ? $4)`,
+      [this.chain, this.worldAddress, this.codec.pointsModel, this.codec.pointsVariant ?? null],
     );
     for (const row of result.rows) {
-      const registration = readPointsRegistration(row.value);
+      const registration = this.codec.readPoints(row.value);
       if (registration) this.points.accept(row.game_id, registration);
     }
   }
@@ -310,10 +335,19 @@ export class HistoryStore {
     const result = await this.pool.query<HeraldHistoryEvent>(
       `SELECT block_number::float8, transaction_index, event_index, game_id::text, model, transaction_hash, value
        FROM herald_history_events
-       WHERE chain = $1 AND world_address = $2 AND model = 'StoryEvent' AND block_number <= $3
+       WHERE chain = $1 AND world_address = $2 AND model = ANY($8::text[]) AND block_number <= $3
          AND (block_number, transaction_index, event_index) > ($4, $5, $6)
        ORDER BY block_number, transaction_index, event_index LIMIT $7`,
-      [this.chain, this.worldAddress, head, cursor.block, cursor.transaction, cursor.event, limit + 1],
+      [
+        this.chain,
+        this.worldAddress,
+        head,
+        cursor.block,
+        cursor.transaction,
+        cursor.event,
+        limit + 1,
+        this.codec.storyModels,
+      ],
     );
     page.items = result.rows.slice(0, limit);
     if (result.rows.length > limit) {
@@ -328,12 +362,16 @@ export class HistoryStore {
     const values: unknown[] = [this.chain, this.worldAddress, query.gameId];
     const addFilter = (sql: string, value: unknown) => {
       values.push(value);
-      filters.push(sql.replace("$value", `$${values.length}`));
+      filters.push(sql.replaceAll("$value", `$${values.length}`));
     };
     if (query.model) addFilter("model = $value", query.model);
     if (query.story) addFilter("value->'story' ? $value", query.story);
-    if (query.owner) addFilter("owner = $value", normalizeFelt(query.owner));
-    if (query.entityId) addFilter("entity_id = $value", BigInt(query.entityId).toString());
+    if (query.owner) addFilter("(owner = $value OR participants @> ARRAY[$value]::text[])", normalizeFelt(query.owner));
+    if (query.entityId)
+      addFilter(
+        "(entity_id = $value::numeric OR entities @> ARRAY[$value]::text[])",
+        BigInt(query.entityId).toString(),
+      );
 
     const where = filters.join(" AND ");
     const countResult = await this.pool.query<{ total: string }>(

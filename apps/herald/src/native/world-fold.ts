@@ -1,11 +1,11 @@
 import type { CheckpointCodec } from "../checkpoint-store";
 import type { ModelRegistry } from "../model-registry";
 import type { FoldCheckpoint } from "../types";
-import { checkpointModelMismatch, WorldFold, type StoredModelRow } from "../world-fold";
+import { checkpointModelMismatch, WorldFold } from "../world-fold";
 
 const checkpointMismatch: CheckpointCodec["mismatch"] = (registry, checkpoint) => {
   if (registry.nativeSchemaIdentity !== checkpoint.native_schema_identity) return "native schema identity differs";
-  return checkpointModelMismatch(registry, checkpoint);
+  return checkpointModelMismatch(registry, checkpoint, []);
 };
 
 export class NativeWorldFold extends WorldFold {
@@ -23,12 +23,20 @@ export class NativeWorldFold extends WorldFold {
     return new NativeWorldFold(this.registry, this);
   }
 
-  public override modelRows(model: string) {
-    return this.registry.nativeAbsentCollections?.includes(model) ? [] : super.modelRows(model);
+  protected override derivedModels(): readonly string[] {
+    return [];
   }
 
-  protected override previousBattleParticipant(storageKey: string): StoredModelRow | undefined {
-    return this.storedRow("LastBattle", storageKey);
+  protected override applyEventRows() {
+    return [];
+  }
+
+  public override gameplayAccounts(gameId: string | number | bigint): ReadonlySet<string> {
+    return new Set(
+      this.modelRows("PlayerEntry")
+        .filter(({ value }) => BigInt(value.game_id as string) === BigInt(gameId))
+        .map(({ value }) => `0x${BigInt(value.player as string).toString(16)}`),
+    );
   }
 }
 

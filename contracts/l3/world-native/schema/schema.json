@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "cairoVersion": "2.13.1",
   "encoding": "cairo-serde",
   "modelIdentity": "short-string",
@@ -101,6 +101,40 @@
             {
               "name": "values",
               "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            }
+          ]
+        },
+        {
+          "name": "PointsAwarded",
+          "prefix": [
+            "0x3e037e958ba3b5c1cc99ac16aaf9896423eebd03183c41fbb26548a12336e5f",
+            "0x3c13ec798226b99ece5ff7cda6fda330a04d9f80b95a25689a4e0e66a6b4ca8"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "game_id",
+              "type": "core::integer::u32",
+              "kind": "key"
+            },
+            {
+              "name": "player",
+              "type": "core::starknet::contract_address::ContractAddress",
+              "kind": "key"
+            },
+            {
+              "name": "activity",
+              "type": "world_native::game::PointActivity",
+              "kind": "data"
+            },
+            {
+              "name": "points",
+              "type": "core::integer::u128",
               "kind": "data"
             }
           ]
@@ -10131,6 +10165,11 @@
       ],
       "keyLength": 1,
       "valueLength": 2,
+      "absence": {
+        "parent": "SettlementRules",
+        "value": "zero",
+        "meaning": "No players have settled or registered realms in this game."
+      },
       "observation": {
         "domain": "realm/blitz",
         "fields": {
@@ -12417,13 +12456,47 @@
       "valueLength": 1
     }
   ],
-  "absentCollections": [
-    "WorldConfig",
-    "BlitzSettlement",
-    "PresetConfig",
-    "HyperstructureShareholders"
-  ],
-  "projections": [
+  "events": [
+    {
+      "name": "PointsAwarded",
+      "owners": [
+        "season"
+      ],
+      "scope": "game",
+      "version": 1,
+      "event": {
+        "type": "event",
+        "name": "world_native::game::PointsAwarded",
+        "kind": "struct",
+        "members": [
+          {
+            "name": "version",
+            "type": "core::integer::u8",
+            "kind": "key"
+          },
+          {
+            "name": "game_id",
+            "type": "core::integer::u32",
+            "kind": "key"
+          },
+          {
+            "name": "player",
+            "type": "core::starknet::contract_address::ContractAddress",
+            "kind": "key"
+          },
+          {
+            "name": "activity",
+            "type": "world_native::game::PointActivity",
+            "kind": "data"
+          },
+          {
+            "name": "points",
+            "type": "core::integer::u128",
+            "kind": "data"
+          }
+        ]
+      }
+    },
     {
       "name": "StoryEvent",
       "owners": [
@@ -12436,7 +12509,6 @@
       ],
       "scope": "game",
       "version": 1,
-      "derivedRows": [],
       "event": {
         "type": "event",
         "name": "world_native::ownership::StoryEvent",
@@ -12492,9 +12564,6 @@
       ],
       "scope": "game",
       "version": 1,
-      "derivedRows": [
-        "LastBattle"
-      ],
       "event": {
         "type": "event",
         "name": "world_native::troops::BattleEvent",
@@ -12570,7 +12639,6 @@
       ],
       "scope": "game",
       "version": 1,
-      "derivedRows": [],
       "event": {
         "type": "event",
         "name": "world_native::combat_actions::RaidEvent",
@@ -14849,6 +14917,32 @@
         {
           "name": "seed",
           "type": "core::felt252"
+        }
+      ]
+    },
+    "world_native::game::PointActivity": {
+      "type": "enum",
+      "name": "world_native::game::PointActivity",
+      "variants": [
+        {
+          "name": "Exploration",
+          "type": "()"
+        },
+        {
+          "name": "RelicChest",
+          "type": "()"
+        },
+        {
+          "name": "HyperstructureCapture",
+          "type": "()"
+        },
+        {
+          "name": "StructureCapture",
+          "type": "()"
+        },
+        {
+          "name": "Hyperstructure",
+          "type": "()"
         }
       ]
     },
@@ -18333,5 +18427,5 @@
       ]
     }
   },
-  "identity": "dbdd50aba9e65531b824d9ab9a01ce78534a46ee435fe2716fd00de6c6578a67"
+  "identity": "831466cbdf61f0aaa37d7ed34d43dd3a8c639a4bdc30de6cb9c225f0d995645a"
 }

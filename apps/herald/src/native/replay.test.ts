@@ -1,3 +1,4 @@
+import { createNativeWorldIngestion } from "./world-ingestion";
 import { loadNativeWorld } from "./load";
 import { describe, expect, it, vi } from "vitest";
 import setFixture from "../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
@@ -9,18 +10,8 @@ import { NativeWorldFold as WorldFold } from "./world-fold";
 import { createHeraldRequestHandler } from "../http";
 import type { MadaraRpc } from "../madara-rpc";
 import type { RpcEvent, RpcBlockWithReceipts } from "../types";
-import { schema, manifest, receipt, setup } from "./fixtures";
+import { manifest, receipt, setup, rowEvent, rulesEvent } from "./fixtures";
 
-function rowEvent(name: string, keys: string[], values: string[]): RpcEvent {
-  const model = schema.models.find((model) => model.name === name)!;
-  const domain = model.owners[0];
-  const layout = schema.domains[domain].events.find((event) => event.name === "RowSet")!;
-  return {
-    from_address: manifest.native.domains[domain].address,
-    keys: [...layout.prefix, "0x1", model.identity],
-    data: [String(keys.length), ...keys, String(values.length), ...values],
-  };
-}
 function block(number: number, events: RpcEvent[]): RpcBlockWithReceipts {
   return {
     block_number: number,
@@ -29,14 +20,19 @@ function block(number: number, events: RpcEvent[]): RpcBlockWithReceipts {
   };
 }
 function wireHistory() {
-  const events = [setFixture.raw, rowEvent("PlayerRegisteredPoints", ["1", "0x111"], ["100"])];
+  const events = [setFixture.raw, rowEvent("PlayerPoints", ["1", "0x111"], ["100"])];
   const game = rowEvent(
     "GameRegistry",
     ["1"],
-    ["0x706172697479", "0", "0", "1", "0x111", "2", "1", "1800", "1800", "999999", "0", "0", "0", "1"],
+    ["0x706172697479", "0", "0", "1", "0x111", "0", "0", "1800", "1800", "999999", "0", "0", "1"],
   );
   return [
-    block(10, [game, ...events]),
+    block(10, [
+      game,
+      rulesEvent(),
+      rowEvent("SettlementRules", ["1"], ["1800", "96", "0", "1", "0", "0", "0"]),
+      ...events,
+    ]),
     block(11, [setFixture.raw]),
     block(12, [deleted.raw]),
     block(13, [setFixture.raw]),
@@ -58,6 +54,7 @@ describe("native confirmed replay and transaction delivery", () => {
     expect(restored.modelRows("ExplorerTroops").length).toBeGreaterThan(0);
     const handler = (world: WorldFold) =>
       createHeraldRequestHandler({
+        readModels: createNativeWorldIngestion(native).readModels,
         chain: "madara",
         worldAddress: decoder.registry.worldAddress,
         confirmedBlock: () => 13,
@@ -78,7 +75,7 @@ describe("native confirmed replay and transaction delivery", () => {
       expect(body).toEqual(await live.json());
       expect(path.endsWith("leaderboard") ? body.entries.length : body.games.length).toBeGreaterThan(0);
     }
-    expect(restored.modelRows("PlayerRegisteredPoints").length).toBeGreaterThan(0);
+    expect(restored.modelRows("PlayerPoints").length).toBeGreaterThan(0);
     expect(restored.modelRows("GameRegistry")).toHaveLength(1);
   });
   it("does not keep partial replay state if a later block fetch fails", async () => {

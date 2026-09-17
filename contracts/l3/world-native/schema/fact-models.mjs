@@ -27,6 +27,12 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
         value: "zero",
         meaning: "No troops or resurrection delay in this guard slot.",
       };
+    if (row.name === "SettlementProgress")
+      row.absence = {
+        parent: "SettlementRules",
+        value: "zero",
+        meaning: "No players have settled or registered realms in this game.",
+      };
     if (row.name === "VillageRaid")
       row.absence = { value: "zero", meaning: "The village has not been successfully raided." };
     if (row.name === "LedgerOperator")

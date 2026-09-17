@@ -1,6 +1,6 @@
 import { parseStoryHistoryCursor } from "@bibliothecadao/eternum/game-sync";
 import { buildLiveLeaderboard } from "./live-leaderboard";
-import { buildGameDirectory } from "./game-directory";
+import { buildGameDirectory, type DirectoryInput } from "./game-directory";
 import type { FoldRow, GameSnapshot, ReplayMetrics } from "./types";
 import type { HistoryQuery, HistoryStore } from "./history-store";
 
@@ -9,7 +9,13 @@ interface SnapshotSource {
   snapshot: (gameId: string, confirmedBlock: number, models?: readonly string[]) => GameSnapshot;
 }
 
+export interface WorldReadModels {
+  directory: (input: DirectoryInput) => ReturnType<typeof buildGameDirectory>;
+  leaderboard: typeof buildLiveLeaderboard;
+}
+
 interface HeraldHttpState {
+  readModels?: WorldReadModels;
   ingestionFailure?: () => { block: number | null; transactionHash: string; error: string } | undefined;
   chain: string;
   worldAddress: string;
@@ -85,6 +91,7 @@ const historyQuery = (url: URL, gameId: string): HistoryQuery => ({
 });
 
 export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: Request) => Promise<Response>) => {
+  const readModels = state.readModels ?? { directory: buildGameDirectory, leaderboard: buildLiveLeaderboard };
   const escapedChain = state.chain.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const directoryPath = `/${state.chain}/games`;
   const snapshotPath = new RegExp(`^/${escapedChain}/games/([0-9]+)/snapshot$`);
@@ -115,7 +122,8 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
     if (request.method === "GET" && url.pathname === directoryPath) {
       try {
         return jsonResponse({
-          ...buildGameDirectory({
+          ...readModels.directory({
+            timestamp: state.chainTimestamp(),
             chain: state.chain,
             confirmedBlock: state.confirmedBlock(),
             fold: state.fold,
@@ -136,7 +144,7 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
         const timestamp = state.chainTimestamp();
         if (timestamp <= 0) return jsonResponse({ error: "chain_clock_unavailable" }, 503);
         return jsonResponse(
-          buildLiveLeaderboard(state.fold.modelRows, gameId, timestamp, state.history?.leaderboard(gameId) ?? null),
+          readModels.leaderboard(state.fold.modelRows, gameId, timestamp, state.history?.leaderboard(gameId) ?? null),
         );
       } catch (error) {
         return jsonResponse({ error: error instanceof Error ? error.message : String(error) }, 503);

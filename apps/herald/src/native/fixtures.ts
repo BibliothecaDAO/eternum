@@ -38,3 +38,65 @@ export const setup = () => {
   const decoder = new NativeDecoder(manifest);
   return { decoder, fold: new WorldFold(decoder.registry), native: new NativeIngestion(decoder) };
 };
+
+export function rowEvent(name: string, keys: string[], values: string[]): RpcEvent {
+  const model = schema.models.find((model) => model.name === name)!;
+  const domain = model.owners[0];
+  const layout = schema.domains[domain].events.find((event) => event.name === "RowSet")!;
+  return {
+    from_address: manifest.native.domains[domain].address,
+    keys: [...layout.prefix, "1", model.identity],
+    data: [String(keys.length), ...keys, String(values.length), ...values],
+  };
+}
+
+export function rulesEvent(gameId = "1") {
+  const model = schema.models.find((model) => model.name === "SliceRules")!;
+  const defaults = (type: string): string[] => {
+    const definition = schema.types[type];
+    if (definition?.type === "struct") return definition.members.flatMap(({ type }) => defaults(type));
+    if (definition?.type === "enum") return ["0", ...defaults(definition.variants[0].type)];
+    if (type === "()") return [];
+    return ["0"];
+  };
+  const values = model.members.flatMap((member) => {
+    if (member.name === "blitz_mode_on") return ["1"];
+    if (member.name === "victory_points_grant_config") {
+      const definition = schema.types[member.type];
+      if (definition.type !== "struct") throw new Error("Expected point rules");
+      return definition.members.flatMap((field) =>
+        field.name === "hyp_points_per_second" ? ["1000000"] : defaults(field.type),
+      );
+    }
+    return defaults(member.type);
+  });
+  return rowEvent("SliceRules", [gameId], values);
+}
+
+export function battleEvent(attacker = "7", defender = "8", timestamp = "1920"): RpcEvent {
+  const layout = schema.domains.troops.events.find((event) => event.name === "BattleEvent")!;
+  return {
+    from_address: manifest.native.domains.troops.address,
+    keys: [...layout.prefix, "1", "1", attacker, defender, "2", "3"],
+    data: [
+      attacker,
+      "0",
+      "12",
+      "34",
+      "0",
+      "0x111",
+      "0",
+      "0",
+      "100",
+      "90",
+      "5",
+      "0x222",
+      "1",
+      "1",
+      "80",
+      "0",
+      "4",
+      timestamp,
+    ],
+  };
+}

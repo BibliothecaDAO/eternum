@@ -1,4 +1,4 @@
-use snforge_std::{start_cheat_caller_address, stop_cheat_caller_address};
+use snforge_std::{EventSpyTrait, EventsFilterTrait, start_cheat_caller_address, stop_cheat_caller_address};
 use crate::commands::Command;
 use crate::game::{
     GameStatus, IGameDispatcher, IGameDispatcherTrait, ISeasonLifecycleDispatcher, ISeasonLifecycleDispatcherTrait,
@@ -145,4 +145,42 @@ fn closing_includes_every_completed_hyperstructure_and_skips_foundations() {
     assert_eq!(games(deployment).player_points(3, deployment.actor), before + 100000);
     assert_eq!(hypers(deployment).hyperstructure_shares(first).start_at, 100);
     assert_eq!(hypers(deployment).hyperstructure_shares(second).start_at, 100);
+}
+
+#[test]
+fn point_history_keeps_each_awards_activity_and_amount_without_a_second_balance() {
+    let (deployment, _, _) = setup_with_rules(super::recorded::rules());
+    let mut spy = snforge_std::spy_events();
+    start_cheat_caller_address(deployment.peers.season, deployment.peers.troops);
+    games(deployment).register_exploration(3, deployment.actor);
+    start_cheat_caller_address(deployment.peers.season, deployment.peers.economy);
+    games(deployment).register_relic_points(3, deployment.actor);
+    games(deployment).register_hyperstructure_points(3, deployment.actor, 123);
+    start_cheat_caller_address(deployment.peers.season, deployment.peers.structures);
+    games(deployment).register_capture(3, deployment.actor, 2);
+    games(deployment).register_capture(3, deployment.actor, 5);
+    stop_cheat_caller_address(deployment.peers.season);
+    let mut awarded = 0;
+    let mut activities = 0_u8;
+    for (_, event) in spy.get_events().emitted_by(deployment.peers.season).events.span() {
+        if event.keys.len() == 5 && *event.keys.at(1) == selector!("PointsAwarded") {
+            assert_eq!(*event.keys.at(2), 1);
+            assert_eq!(*event.keys.at(3), 3);
+            assert_eq!(*event.keys.at(4), deployment.actor.into());
+            let amount: u128 = (*event.data.at(1)).try_into().unwrap();
+            awarded += amount;
+            let variant: u8 = (*event.data.at(0)).try_into().unwrap();
+            activities = activities | match variant {
+                0 => 1,
+                1 => 2,
+                2 => 4,
+                3 => 8,
+                4 => 16,
+                _ => panic!("unknown activity"),
+            };
+        }
+    }
+    assert_eq!(activities, 31);
+    assert_eq!(awarded, games(deployment).player_points(3, deployment.actor));
+    assert_eq!(awarded, games(deployment).season_points(3));
 }

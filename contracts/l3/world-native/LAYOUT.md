@@ -105,9 +105,12 @@ booleans as booleans. They include all three event shapes, a wrong-domain emitte
 test asserts the same ExplorerTroops key and serialized payloads, including a present explorer with zero troops and its
 delete/recreate sequence.
 
-The typed `BattleEvent` is an ephemeral combat notification. Its ABI declares its version, keyed participant ids,
-coordinate, reward span and timestamp. It preserves the existing combat event payload so Herald can rebuild `LastBattle`
-from confirmed history through its existing projection. It does not replace any storage mutation's row event.
+Schema version 2 declares native rows and immutable events directly. It contains no absent-collection list or synthetic
+`LastBattle` projection. The typed `BattleEvent` retains participant accounts, categories, tiers, before/after troop
+counts, rolls, coordinates, rewards and recorded time even when an army is deleted. `RaidEvent` retains the raid
+outcome; `PointsAwarded` retains each credited amount and activity without adding a second balance. Herald stores these
+as immutable history and folds current facts only from row events. The schema/codec change requires a fresh rehearsal
+deployment; no live upgrade compatibility with the earlier codec is claimed.
 
 ## Authenticated command boundary
 

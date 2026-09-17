@@ -114,7 +114,11 @@ function eventLayouts(abi) {
       return;
     }
     const name = event.name.split("::").at(-1);
-    if (!["RowSet", "RowMemberSet", "RowDeleted", "BattleEvent", "StoryEvent", "RaidEvent"].includes(name))
+    if (
+      !["RowSet", "RowMemberSet", "RowDeleted", "BattleEvent", "StoryEvent", "RaidEvent", "PointsAwarded"].includes(
+        name,
+      )
+    )
       throw new Error(`Unexpected event ${name}`);
     layouts.push({ name, prefix, members: event.members });
   }
@@ -123,7 +127,7 @@ function eventLayouts(abi) {
 }
 
 const schema = {
-  version: 1,
+  version: 2,
   cairoVersion: "2.13.1",
   encoding: "cairo-serde",
   modelIdentity: "short-string",
@@ -153,8 +157,16 @@ const schema = {
     ]),
   ),
   models,
-  absentCollections: ["WorldConfig", "BlitzSettlement", "PresetConfig", "HyperstructureShareholders"],
-  projections: [
+  events: [
+    {
+      name: "PointsAwarded",
+      owners: ["season"],
+      scope: "game",
+      version: 1,
+      event: artifacts.season.find(
+        (item) => item.type === "event" && item.name === "world_native::game::PointsAwarded",
+      ),
+    },
     {
       name: "StoryEvent",
       owners: Object.keys(artifacts).filter((domain) =>
@@ -162,7 +174,6 @@ const schema = {
       ),
       scope: "game",
       version: 1,
-      derivedRows: [],
       event: artifacts.structures.find(
         (item) => item.type === "event" && item.name === "world_native::ownership::StoryEvent",
       ),
@@ -172,7 +183,6 @@ const schema = {
       owners: ["troops"],
       scope: "game",
       version: 1,
-      derivedRows: ["LastBattle"],
       event: artifacts.troops.find(
         (item) => item.type === "event" && item.name === "world_native::troops::BattleEvent",
       ),
@@ -182,7 +192,6 @@ const schema = {
       owners: ["troops"],
       scope: "game",
       version: 1,
-      derivedRows: [],
       event: artifacts.troops.find(
         (item) => item.type === "event" && item.name === "world_native::combat_actions::RaidEvent",
       ),
@@ -292,7 +301,7 @@ function clientType(type) {
 await writeJson("schema/bindings.json", {
   schemaIdentity: schema.identity,
   commandAbi: artifacts.season,
-  events: schema.projections.map(({ name, scope }) => ({ name, scope })),
+  events: schema.events.map(({ name, scope }) => ({ name, scope })),
   models: [
     ...schema.models.map((model) => ({
       name: model.name,
@@ -301,18 +310,6 @@ await writeJson("schema/bindings.json", {
         [...model.keys, ...model.members].map((member) => [member.name, clientType(member.type)]),
       ),
     })),
-    {
-      name: "LastBattle",
-      scope: "game",
-      schema: {
-        game_id: "Number",
-        entity_id: "Number",
-        latest_attacker_id: "OptionalNumber",
-        latest_attack_timestamp: "OptionalNumber",
-        latest_defender_id: "OptionalNumber",
-        latest_defense_timestamp: "OptionalNumber",
-      },
-    },
   ],
 });
 

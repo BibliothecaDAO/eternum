@@ -11,17 +11,17 @@ import type {
   GameSnapshot,
 } from "./types";
 
-export interface StoredModelRow {
+interface StoredModelRow {
   key: DecodedRecord;
   value: DecodedRecord;
 }
 
 const LAST_BATTLE_MODEL = "LastBattle";
 
-const persistentModelNames = (registry: ModelRegistry): readonly string[] => [
-  ...registry.persistent.map(({ definition }) => definition.name),
-  LAST_BATTLE_MODEL,
-];
+const persistentModelNames = (
+  registry: ModelRegistry,
+  derived: readonly string[] = [LAST_BATTLE_MODEL],
+): readonly string[] => [...registry.persistent.map(({ definition }) => definition.name), ...derived];
 
 const asJsonRecord = (value: DecodedRecord): DecodedRecord => {
   const jsonValue = toJsonValue(value);
@@ -64,8 +64,12 @@ const checkpointRow = ([entityId, row]: [string, StoredModelRow]): FoldCheckpoin
  * to the sync manifest has rows in history the checkpoint never saw, so the fold must be rebuilt from genesis.
  * Returns the human-readable difference, or undefined when the sets match.
  */
-export const checkpointModelMismatch = (registry: ModelRegistry, checkpoint: FoldCheckpoint): string | undefined => {
-  const expectedModels = new Set(persistentModelNames(registry));
+export const checkpointModelMismatch = (
+  registry: ModelRegistry,
+  checkpoint: FoldCheckpoint,
+  derived: readonly string[] = [LAST_BATTLE_MODEL],
+): string | undefined => {
+  const expectedModels = new Set(persistentModelNames(registry, derived));
   const restoredModels = new Set(checkpoint.models.map(({ model }) => model));
   const missing = [...expectedModels].filter((model) => !restoredModels.has(model));
   const unexpected = [...restoredModels].filter((model) => !expectedModels.has(model));
@@ -100,8 +104,10 @@ export class WorldFold {
       this.rowsByModel.set(definition.name, new Map());
       if (definition.s2Scope === "game") this.entityIdsByGameByModel.set(definition.name, new Map());
     });
-    this.rowsByModel.set(LAST_BATTLE_MODEL, new Map());
-    this.entityIdsByGameByModel.set(LAST_BATTLE_MODEL, new Map());
+    for (const name of this.derivedModels()) {
+      this.rowsByModel.set(name, new Map());
+      this.entityIdsByGameByModel.set(name, new Map());
+    }
   }
 
   public static restore(registry: ModelRegistry, checkpoint: FoldCheckpoint): WorldFold {
@@ -110,10 +116,10 @@ export class WorldFold {
       throw new Error(`Checkpoint world ${checkpoint.world_address} does not match ${registry.worldAddress}`);
     }
 
-    const mismatch = checkpointModelMismatch(registry, checkpoint);
+    const fold = new this(registry);
+    const mismatch = checkpointModelMismatch(registry, checkpoint, fold.derivedModels());
     if (mismatch) throw new Error(`Checkpoint model mismatch; ${mismatch}`);
 
-    const fold = new this(registry);
     for (const model of checkpoint.models) {
       const rows = fold.rowsByModel.get(model.model)!;
       for (const row of model.rows) {
@@ -127,7 +133,7 @@ export class WorldFold {
 
   public apply(event: DecodedWorldEvent, onDerivedRow?: (change: FoldChange) => void): FoldChange | undefined {
     if (event.kind === "event") {
-      if (event.model.name === "BattleEvent") this.applyLastBattle(event).forEach((change) => onDerivedRow?.(change));
+      this.applyEventRows(event).forEach((change) => onDerivedRow?.(change));
       return {
         event: true,
         gameId: this.eventGameId(event),
@@ -179,7 +185,7 @@ export class WorldFold {
 
   public checkpoint(): FoldCheckpoint {
     return {
-      models: persistentModelNames(this.registry).map((model) => ({
+      models: persistentModelNames(this.registry, this.derivedModels()).map((model) => ({
         model,
         rows: [...this.materializedRows(model).entries()].map(checkpointRow).sort((left, right) => {
           const leftKey = BigInt(left.entity_id);
@@ -222,16 +228,13 @@ export class WorldFold {
   }
 
   public reviewSnapshot(gameId: string | number | bigint, confirmedBlock: number): GameSnapshot {
-    return this.snapshot(gameId, confirmedBlock, persistentModelNames(this.registry));
+    return this.snapshot(gameId, confirmedBlock, persistentModelNames(this.registry, this.derivedModels()));
   }
 
   private snapshotDefinitions(requestedModels?: readonly string[]) {
     const definitions = [
       ...this.registry.persistent.map(({ definition }) => definition),
-      {
-        name: LAST_BATTLE_MODEL,
-        s2Scope: "game" as const,
-      },
+      ...this.derivedModels().map((name) => ({ name, s2Scope: "game" as const })),
     ];
     if (!requestedModels || requestedModels.length === 0) {
       return orderSnapshotModelsForStreaming(this.registry.persistent.map(({ definition }) => definition));
@@ -245,7 +248,10 @@ export class WorldFold {
   }
 
   public retainedRowCount(): number {
-    return persistentModelNames(this.registry).reduce((total, model) => total + this.materializedRows(model).size, 0);
+    return persistentModelNames(this.registry, this.derivedModels()).reduce(
+      (total, model) => total + this.materializedRows(model).size,
+      0,
+    );
   }
 
   public modelRows(model: string): FoldRow[] {
@@ -279,6 +285,14 @@ export class WorldFold {
       .map((row) => scalarGameId(row.key, "GameRegistry"));
   }
 
+  protected derivedModels(): readonly string[] {
+    return [LAST_BATTLE_MODEL];
+  }
+
+  protected applyEventRows(event: Extract<DecodedWorldEvent, { kind: "event" }>): FoldChange[] {
+    return event.model.name === "BattleEvent" ? this.applyLastBattle(event) : [];
+  }
+
   private applyLastBattle(event: Extract<DecodedWorldEvent, { kind: "event" }>): FoldChange[] {
     const gameId = scalarGameId(event.key, event.model.name);
     const attackerId = this.scalarBattleField(event.key.attacker_id, "attacker_id");
@@ -296,14 +310,10 @@ export class WorldFold {
     return [defender, attacker];
   }
 
-  protected previousBattleParticipant(storageKey: string) {
-    return this.rowsByModel.get(LAST_BATTLE_MODEL)!.get(storageKey);
-  }
-
   private updateLastBattleParticipant(gameId: string, entityId: bigint, update: DecodedRecord): FoldChange {
     const rows = this.rowsByModel.get(LAST_BATTLE_MODEL)!;
     const storageKey = ((BigInt(gameId) << 128n) | entityId).toString();
-    const existing = this.previousBattleParticipant(storageKey);
+    const existing = rows.get(storageKey);
     const row: StoredModelRow = {
       key: { game_id: BigInt(gameId), entity_id: entityId },
       value: { ...(existing?.value ?? {}), ...update },
@@ -329,7 +339,7 @@ export class WorldFold {
     return scalarGameId(existing.key, event.model.name);
   }
 
-  protected storedRow(model: string, entityId: string): StoredModelRow | undefined {
+  private storedRow(model: string, entityId: string): StoredModelRow | undefined {
     const rows = this.rowsByModel.get(model);
     if (!rows) return undefined;
     if (rows.has(entityId)) return rows.get(entityId) ?? undefined;

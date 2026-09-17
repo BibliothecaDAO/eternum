@@ -31,7 +31,6 @@ export interface ModelCodec {
 
 export interface ModelRegistry {
   nativeSchemaIdentity?: string;
-  nativeAbsentCollections?: readonly string[];
   worldAddress: Felt;
   persistent: readonly ModelCodec[];
   events: readonly ModelCodec[];

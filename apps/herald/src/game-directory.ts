@@ -172,12 +172,15 @@ const buildGameEntry = (
   };
 };
 
-export const buildGameDirectory = (input: {
+export interface DirectoryInput {
   chain: string;
   confirmedBlock: number;
   fold: GameDirectorySource;
   playerAddress?: string;
-}): HeraldGameDirectory => {
+  timestamp: number;
+}
+
+export const buildGameDirectory = (input: Omit<DirectoryInput, "timestamp">): HeraldGameDirectory => {
   const configsByGame = rowsByGame(input.fold.modelRows("WorldConfig"));
   const structureRows = input.fold.modelRows("Structure");
   const structureCounts = countSettledStructures(structureRows);

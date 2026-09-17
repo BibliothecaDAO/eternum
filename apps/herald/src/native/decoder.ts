@@ -1,4 +1,4 @@
-import { GAME_SYNC_MODEL_MANIFEST, type GameSyncModelDefinition } from "@bibliothecadao/eternum/game-sync-models";
+import { type GameSyncModelDefinition } from "@bibliothecadao/eternum/game-sync-models";
 import { hash } from "starknet";
 import { normalizeFelt, type ModelCodec, type ModelRegistry } from "../model-registry";
 import type { DecodedWorldEvent, RawWorldEvent, RpcEvent } from "../types";
@@ -24,7 +24,7 @@ export class NativeDecoder {
       throw new Error("Invalid native release");
     for (const [identity, schema] of Object.entries(release.schemas)) {
       if (
-        schema.version !== 1 ||
+        schema.version !== 2 ||
         schema.encoding !== "cairo-serde" ||
         identity !== schema.identity ||
         schemaIdentity(schema) !== identity
@@ -45,12 +45,9 @@ export class NativeDecoder {
     }
     if (BigInt(manifest.world.address) !== BigInt(release.domains.season.address))
       throw new Error("Native deployment identity is not its season domain");
-    if (active.absentCollections.some((name) => active.models.some((model) => model.name === name)))
-      throw new Error("Native collection is both owned and absent");
     const codecs = active.models.map((model) => modelCodec(active, model));
     this.registry = {
       nativeSchemaIdentity: release.activeSchema,
-      nativeAbsentCollections: active.absentCollections,
       worldAddress: normalizeFelt(manifest.world.address),
       persistent: codecs,
       events: [],
@@ -68,8 +65,8 @@ export class NativeDecoder {
       candidate.prefix.every((key, index) => BigInt(key) === BigInt(event.keys[index] ?? -1)),
     );
     if (!layout) throw new Error("Unknown native event prefix");
-    return schema.projections.some((projection) => projection.name === layout.name)
-      ? decodeProjection(event, domain, schema, layout)
+    return schema.events.some((projection) => projection.name === layout.name)
+      ? decodeEvent(event, domain, schema, layout)
       : this.decodeRow(event, domain, schema, layout);
   }
   private decodeRow(
@@ -136,16 +133,14 @@ export class NativeDecoder {
 }
 
 function definition(name: string, scope: "game" | "deployment"): GameSyncModelDefinition {
-  return (
-    GAME_SYNC_MODEL_MANIFEST.find((model) => model.name === name) ?? {
-      name,
-      channels: ["gamewide-entity"],
-      availability: "all",
-      s2Scope: scope === "game" ? "game" : "chain",
-      recovery: "convergent-snapshot",
-      deletion: "component",
-    }
-  );
+  return {
+    name,
+    channels: ["gamewide-entity"],
+    availability: "all",
+    s2Scope: scope === "game" ? "game" : "chain",
+    recovery: "convergent-snapshot",
+    deletion: "component",
+  };
 }
 function modelCodec(schema: NativeSchema, model: NativeModel): ModelCodec {
   return {
@@ -183,7 +178,7 @@ function readFrame(data: string[], withValue: boolean): { keys: string[]; values
   return { keys, values };
 }
 
-function decodeProjection(
+function decodeEvent(
   event: NativeRawEvent,
   domain: string,
   schema: NativeSchema,
@@ -197,11 +192,12 @@ function decodeProjection(
     transactionIndex: event.transaction_index,
     eventIndex: event.event_index,
   };
-  const projection = schema.projections.find(
+  const projection = schema.events.find(
     (projection) => projection.name === layout.name && projection.owners.includes(domain),
   );
-  if (!projection) throw new Error("Unowned native event projection");
+  if (!projection) throw new Error("Unowned native event");
   const key = decodeMembers(schema, layout.members.filter((member) => member.kind === "key").slice(1), header.slice(1));
+  if (BigInt(key.game_id as bigint) === 0n) throw new Error("Reserved native game id");
   const value = decodeMembers(
     schema,
     layout.members.filter((member) => member.kind === "data"),
@@ -209,7 +205,14 @@ function decodeProjection(
   );
   return {
     kind: "event",
-    model: definition(layout.name, "game"),
+    model: {
+      name: layout.name,
+      channels: ["global-event"],
+      availability: "all",
+      s2Scope: "game",
+      recovery: "event-deduped",
+      deletion: "event-ephemeral",
+    },
     entityId: normalizeFelt(hash.computePoseidonHashOnElements(header.slice(1))),
     position,
     key,

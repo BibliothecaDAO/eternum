@@ -26,6 +26,27 @@ pub struct GameRegistry {
     pub seed: felt252,
 }
 
+#[derive(Copy, Drop, Serde)]
+pub enum PointActivity {
+    Exploration,
+    RelicChest,
+    HyperstructureCapture,
+    StructureCapture,
+    Hyperstructure,
+}
+
+#[derive(Drop, starknet::Event)]
+pub struct PointsAwarded {
+    #[key]
+    pub version: u8,
+    #[key]
+    pub game_id: u32,
+    #[key]
+    pub player: ContractAddress,
+    pub activity: PointActivity,
+    pub points: u128,
+}
+
 #[starknet::interface]
 pub trait IGame<T> {
     fn agent_controller(self: @T) -> ContractAddress;
@@ -102,6 +123,7 @@ pub mod GameState {
     #[derive(Drop, starknet::Event)]
     pub enum Event {
         RowSet: RowSet,
+        PointsAwarded: super::PointsAwarded,
     }
     #[generate_trait]
     pub impl InternalImpl<TContractState, +HasComponent<TContractState>> of InternalTrait<TContractState> {
@@ -109,14 +131,19 @@ pub mod GameState {
             ref self: ComponentState<TContractState>, game_id: u32, actor: starknet::ContractAddress,
         ) {
             let amount: u128 = self.rules(game_id).victory_points_grant_config.explore_tiles_points.into();
-            self.register_points(game_id, actor, amount);
+            self.register_points(game_id, actor, amount, super::PointActivity::Exploration);
         }
         fn register_points(
-            ref self: ComponentState<TContractState>, game_id: u32, actor: starknet::ContractAddress, amount: u128,
+            ref self: ComponentState<TContractState>,
+            game_id: u32,
+            actor: starknet::ContractAddress,
+            amount: u128,
+            activity: super::PointActivity,
         ) {
             if amount == 0 {
                 return;
             }
+            self.emit(super::PointsAwarded { version: 1, game_id, player: actor, activity, points: amount });
             let points = self.player_points.read((game_id, actor)) + amount;
             let total = self.season_points.read(game_id) + amount;
             self.player_points.write((game_id, actor), points);

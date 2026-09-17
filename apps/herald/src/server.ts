@@ -98,7 +98,12 @@ const main = async (): Promise<void> => {
   const registry = ingestion.registry;
   const rpc = new MadaraRpc(config.rpcUrl);
   const checkpointStore = new CheckpointStore(config.databaseUrl, ingestion.checkpointCodec);
-  const historyStore = new HistoryStore(config.databaseUrl, config.chain, registry.worldAddress);
+  const historyStore = new HistoryStore(
+    config.databaseUrl,
+    config.chain,
+    registry.worldAddress,
+    ingestion.historyCodec,
+  );
   await historyStore.initialize();
   const loaded = await ingestion.load({ chain: config.chain, checkpointStore, rpc });
   const liveInput = {
@@ -154,6 +159,7 @@ const main = async (): Promise<void> => {
 
   await subscriptions.start();
   const http = createHeraldRequestHandler({
+    readModels: ingestion.readModels,
     chain: config.chain,
     worldAddress: registry.worldAddress,
     confirmedBlock: () => live.confirmedBlock,

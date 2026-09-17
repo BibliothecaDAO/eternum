@@ -314,12 +314,12 @@ pub mod SeasonDomain {
         fn register_relic_points(ref self: ContractState, game_id: u32, actor: ContractAddress) {
             assert!(get_caller_address() == self.lifecycle.require_active().economy, "only economy domain");
             let points = self.games.rules(game_id).victory_points_grant_config.relic_open_points;
-            self.games.register_points(game_id, actor, points.into());
+            self.games.register_points(game_id, actor, points.into(), crate::game::PointActivity::RelicChest);
         }
         fn register_hyperstructure_points(ref self: ContractState, game_id: u32, actor: ContractAddress, amount: u128) {
             assert!(get_caller_address() == self.lifecycle.require_active().economy, "only economy domain");
             self.games.game(game_id);
-            self.games.register_points(game_id, actor, amount);
+            self.games.register_points(game_id, actor, amount, crate::game::PointActivity::Hyperstructure);
         }
         fn player_points(self: @ContractState, game_id: u32, actor: ContractAddress) -> u128 {
             self.games.player_points.read((game_id, actor))
@@ -335,7 +335,18 @@ pub mod SeasonDomain {
             } else {
                 rules.claim_otherstructure_points
             };
-            self.games.register_points(game_id, actor, amount.into());
+            self
+                .games
+                .register_points(
+                    game_id,
+                    actor,
+                    amount.into(),
+                    if category == 2 {
+                        crate::game::PointActivity::HyperstructureCapture
+                    } else {
+                        crate::game::PointActivity::StructureCapture
+                    },
+                );
             amount.into()
         }
         fn register_exploration(ref self: ContractState, game_id: u32, actor: ContractAddress) {

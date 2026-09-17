@@ -11,7 +11,7 @@ import { NativeDecoder } from "./decoder";
 import { NativeIngestion } from "./ingestion";
 import { schemaIdentity } from "./schema";
 
-import { schema, manifest, receipt, raw, setup } from "./fixtures";
+import { schema, manifest, receipt, raw, setup, battleEvent } from "./fixtures";
 
 describe("native row decoder", () => {
   it("consumes the generated fixtures for set, member, deletion and recreation", () => {
@@ -54,54 +54,30 @@ describe("native row decoder", () => {
     native.applyReceipt(fold, { ...receipt([setFixture.raw]), execution_status: "REVERTED" }, 10, 0);
     expect(fold.modelRows("ExplorerTroops")).toEqual([]);
   });
-  it("rebuilds LastBattle from the typed combat event even when an explorer is deleted", () => {
+  it("retains complete combat history when the participating explorer is deleted", () => {
     const { native, fold } = setup();
-    const layout = schema.domains.troops.events.find((event) => event.name === "BattleEvent")!;
-    native.applyReceipt(
-      fold,
-      receipt([
-        setFixture.raw,
-        deleteFixture.raw,
-        {
-          from_address: manifest.native.domains.troops.address,
-          keys: [...layout.prefix, "1", "1", "7", "8", "2", "3"],
-          data: ["2", "0", "12", "34", "0", "1920"],
-        },
-      ]),
-      10,
-      0,
-    );
-    const participants = fold.modelRows("LastBattle");
-    expect(participants).toHaveLength(2);
-    expect(participants.find((row) => row.value.entity_id === "0x7")?.value.latest_defender_id).toBe("0x8");
-    expect(participants.find((row) => row.value.entity_id === "0x8")?.value.latest_attack_timestamp).toBe("0x780");
+    const result = native.applyReceipt(fold, receipt([setFixture.raw, deleteFixture.raw, battleEvent()]), 10, 0);
+    const battle = result.changes.find(({ change }) => change?.event)!.change!.set!;
+    expect(battle.value).toMatchObject({
+      attacker_id: "0x7",
+      defender_id: "0x8",
+      attacker: { player: "0x111", before: "0x64", after: "0x5a" },
+      defender: { player: "0x222", after: "0x0" },
+    });
+    expect(fold.modelRows("ExplorerTroops")).toEqual([]);
+    expect(fold.checkpoint().models.map(({ model }) => model)).not.toContain("LastBattle");
+    expect(() => fold.modelRows("LastBattle")).toThrow("no row collection");
   });
-  it("publishes both battle participants and preserves confirmed fields in an overlay", () => {
+  it("publishes combat as ephemera without mutating persistent rows in either overlay", () => {
     const { native, fold } = setup();
-    const layout = schema.domains.troops.events.find((event) => event.name === "BattleEvent")!;
-    const battle = (attacker: string, defender: string, timestamp: string) => ({
-      from_address: manifest.native.domains.troops.address,
-      keys: [...layout.prefix, "1", "1", attacker, defender, "2", "3"],
-      data: ["2", "0", "12", "34", "0", timestamp],
-    });
-    native.applyReceipt(fold, receipt([battle("7", "8", "1920")]), 10, 0);
+    native.applyReceipt(fold, receipt([setFixture.raw]), 10, 0);
+    const before = fold.checkpoint();
     const overlay = fold.overlay();
-    const result = native.applyReceipt(overlay, receipt([battle("8", "7", "1980")]), null, 0);
-    expect(result.changes.map(({ change }) => change?.set?.model)).toEqual(["BattleEvent", "LastBattle", "LastBattle"]);
-    const participant = result.changes.find(
-      ({ change }) => change?.set?.model === "LastBattle" && change.set.value.entity_id === "0x7",
-    )!.change!.set!.value;
-    expect(participant).toMatchObject({
-      latest_attacker_id: "0x8",
-      latest_attack_timestamp: "0x7bc",
-      latest_defender_id: "0x8",
-      latest_defense_timestamp: "0x780",
-    });
-    expect(
-      fold.modelRows("LastBattle").find((row) => row.value.entity_id === "0x7")!.value.latest_attacker_id,
-    ).toBeUndefined();
-    native.applyReceipt(fold, receipt([battle("8", "7", "1980")]), 11, 0);
-    expect(overlay.checkpoint()).toEqual(fold.checkpoint());
+    const result = native.applyReceipt(overlay, receipt([battleEvent()]), null, 0);
+    expect(result.changes.map(({ change }) => change?.set?.model)).toEqual(["BattleEvent"]);
+    expect(overlay.checkpoint()).toEqual(before);
+    native.applyReceipt(fold, receipt([battleEvent()]), 11, 0);
+    expect(fold.checkpoint()).toEqual(before);
   });
   it("binds checkpoints to the schema and deployment identity", () => {
     const { native, fold, decoder } = setup();
