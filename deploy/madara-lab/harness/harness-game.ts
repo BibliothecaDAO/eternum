@@ -155,13 +155,17 @@ export function createHarnessGame(client: GameClient): HarnessGame {
             grantStartingTroops: true,
           }),
     provision: (signer, structureId) => systemCalls.provision_realm({ signer, realm_entity_id: structureId }),
-    produceWood: (signer, structureId) =>
-      client.setup.systemCalls.burn_labor_for_resource_production({
+    produceWood: (signer, structureId) => {
+      const produce = configManager.getBlitzConfig().blitz_mode_on
+        ? systemCalls.burn_resource_for_resource_production
+        : systemCalls.burn_labor_for_resource_production;
+      return produce({
         signer,
         from_entity_id: structureId,
         production_cycles: [1],
         produced_resource_types: [ResourcesIds.Wood],
-      }),
+      });
+    },
     submit: (signer, act) => captureSubmission(client, awaitingHash, signer.address, act),
     waitFor: (read, timeoutMs, describe) => waitForWorldState(client, read, timeoutMs, describe),
   };

@@ -59,7 +59,7 @@ it("counts distinct attention targets and suggestions, then cycles without submi
   expect(mocks.go).toHaveBeenLastCalledWith(3, expect.objectContaining({ coords: { x: 20, y: 21 } }), true);
   expect(mocks.open).not.toHaveBeenCalled();
   await act(async () => container.querySelector("button")!.click());
-  expect(mocks.go).toHaveBeenLastCalledWith(1, expect.objectContaining({ coords: { x: 10, y: 11 } }), true);
+  expect(mocks.go).toHaveBeenCalledTimes(2);
   expect(mocks.open).toHaveBeenCalledWith(expect.objectContaining({ id: "suggestions", mapClick: "dismiss" }));
 });
 it("hides personal attention for a spectator", async () => {

@@ -3,13 +3,12 @@ import {
   AUTOMATION_INPUT_BUDGET_PERCENT,
   DONKEY_DEFAULT_RESOURCE_PERCENT,
   DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES,
-  MAX_RESOURCE_ALLOCATION_PERCENT,
   RealmAutomationConfig,
   RealmAutomationExecutionSummary,
   type ResourceAutomationPercentages,
   isAutomationResourceBlocked,
 } from "@/hooks/store/use-automation-store";
-import { calculatePresetAllocations } from "@/utils/automation-presets";
+import { resolveProductionPercentages, calculatePresetAllocations } from "@/utils/automation-presets";
 import { verboseLog } from "@/utils/dev-mode";
 import { configManager, divideByPrecision, ResourceManager } from "@bibliothecadao/eternum";
 import { ResourcesIds } from "@bibliothecadao/types";
@@ -77,12 +76,6 @@ const addToRecord = (record: Record<number, number>, resourceId: ResourcesIds, d
 const ensurePositiveNumber = (value: number): number => {
   if (!Number.isFinite(value) || value <= 0) return 0;
   return value;
-};
-
-const clampPercent = (value: number): number => {
-  if (!Number.isFinite(value) || value <= 0) return 0;
-  if (value > MAX_RESOURCE_ALLOCATION_PERCENT) return MAX_RESOURCE_ALLOCATION_PERCENT;
-  return Math.round(value);
 };
 
 const DEFAULT_PLAN_CALLSET: RealmProductionCallset = {
@@ -388,10 +381,7 @@ export const buildRealmProductionPlan = ({
         ? (customPercentages ?? smartPercentages)
         : (presetPercentages ?? { resourceToResource: 0, laborToResource: 0 });
 
-    const percentages: ResourceAutomationPercentages = {
-      resourceToResource: clampPercent(source.resourceToResource),
-      laborToResource: resourceId === ResourcesIds.Donkey ? 0 : clampPercent(source.laborToResource ?? 0),
-    };
+    const percentages = resolveProductionPercentages(source, resourceId);
 
     return { resourceId, percentages, hasActiveProduction };
   });

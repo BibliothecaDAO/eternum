@@ -889,6 +889,17 @@ pub mod TroopsDomain {
             if exploring {
                 self.game_dispatcher().allocate_entity(game_id);
             }
+            if !explorer.coord.alt {
+                crate::exploration_rewards::IExtractionDispatcherTrait::extract_exploration_reward(
+                    crate::exploration_rewards::IExtractionDispatcher {
+                        contract_address: self.lifecycle.require_active().map,
+                    },
+                    game_id,
+                    actor,
+                    command.explorer_id,
+                    ExecutionContext { raw_root, timestamp: context.timestamp },
+                );
+            }
         }
         fn battle(
             ref self: ContractState,

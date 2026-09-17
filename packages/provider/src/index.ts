@@ -2703,7 +2703,7 @@ export class EternumProvider extends EventEmitter {
       calldata: [explorer_id, directions, 1],
     });
 
-    // The native slice exposes tile exploration separately from reward extraction.
+    // Native Explore grants its reward atomically in the same recorded action.
     if (!this.nativeSubmission)
       callData.push({
         contractAddress: troopMovementSystemsAddress,

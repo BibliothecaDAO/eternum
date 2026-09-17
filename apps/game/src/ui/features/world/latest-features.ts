@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-17",
+    title: "Production and exploration fixes",
+    description:
+      "Blitz uses Resource production only. Build orders leave your map selection alone, ships sail bow-first, and surface exploration grants its reward in the same action.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-17",
     title: "Clear game creation feedback",
     description:
       "Creating a game shows its progress and keeps any launch error beside the button, so you can fix it and retry without losing the form.",

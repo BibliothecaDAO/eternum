@@ -92,11 +92,12 @@ const flushArmyModelSlotUploads = (modelData: ModelData): void => {
   ]);
 };
 
-/** Instanced meshes draw raw geometry, so a hull's world scale is written into its vertices once at load. */
+/** Bake authored -Z bows into the movement system's +Z forward axis and tile scale. */
 function bakeShipWorldScale(scene: Object3D): void {
   const scaled = new Set<BufferGeometry>();
   scene.traverse((child) => {
     if (!(child instanceof Mesh) || scaled.has(child.geometry)) return;
+    child.geometry.rotateY(Math.PI);
     child.geometry.scale(SHIP_WORLD_SCALE, SHIP_WORLD_SCALE, SHIP_WORLD_SCALE);
     scaled.add(child.geometry);
   });

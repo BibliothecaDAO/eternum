@@ -31,6 +31,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.form = {
     visible: true,
+    allowSimpleCost: true,
     useSimpleCost: true,
     setUseSimpleCost: vi.fn(),
     build: vi.fn(),
@@ -90,4 +91,10 @@ it("sorts buildable tiles before blocked tiles within each group", async () => {
   mocks.form.groups[0].buildings.reverse();
   await render();
   expect(container.querySelector("button")?.getAttribute("aria-label")).toBe("Farm");
+});
+
+it("does not offer the Simple cost switch in Blitz", async () => {
+  mocks.form.allowSimpleCost = false;
+  await render();
+  expect(container.querySelector('[role="switch"]')).toBeNull();
 });

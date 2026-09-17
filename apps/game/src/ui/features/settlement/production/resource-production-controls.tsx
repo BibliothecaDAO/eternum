@@ -15,7 +15,7 @@ import { RawResourcesPanel } from "./raw-resources-panel";
 
 export const ResourceProductionControls = ({
   selectedResource,
-  useRawResources,
+  useRawResources: requestedRawResources,
   setUseRawResources,
   productionAmount,
   setProductionAmount,
@@ -49,7 +49,12 @@ export const ResourceProductionControls = ({
   const ordersAllowed = useUIStore(canIssueOrders);
   const currentDefaultTick = useCurrentDefaultTick();
 
-  const laborConfig = useMemo(() => configManager.getLaborConfig(selectedResource), [selectedResource]);
+  const laborEnabled = !configManager.getBlitzConfig().blitz_mode_on;
+  const useRawResources = !laborEnabled || requestedRawResources;
+  const laborConfig = useMemo(
+    () => (laborEnabled ? configManager.getLaborConfig(selectedResource) : undefined),
+    [selectedResource, laborEnabled],
+  );
 
   // Apply the recorded production bonus.
   const resourceOutputPerInputResourcesWithBonus = useMemo(() => {

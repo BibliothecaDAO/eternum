@@ -268,3 +268,22 @@ fn labor_conversion_rejects_fractional_inputs_and_resources_with_no_labor_output
         assert_eq!(resource_facts(deployment, home), before);
     }
 }
+
+#[test]
+fn blitz_rejects_labor_recipes_but_accepts_resource_production() {
+    let (deployment, key, _) = super::resource_commands::setup_with_rules(
+        crate::rules::SliceRules { blitz_mode_on: true, ..super::recorded::rules() },
+    );
+    configure(deployment);
+    grant(deployment, key, 2, 100);
+    grant(deployment, key, 3, 100);
+    let refill = RefillProduction {
+        structure_id: key.entity_id, resource_types: array![26].span(), amounts: array![1].span(),
+    };
+    assert_terminal_rejection(deployment, Command::BurnLaborForResourceProduction(refill), 60);
+    let resources = IResourcesDispatcher { contract_address: deployment.peers.resources };
+    let slot = ResourceSlot { game_id: 3, entity_id: key.entity_id, resource_type: 2 };
+    assert_eq!(resources.resource_balance(slot), 100);
+    assert!(execute_recorded_at(deployment, Command::BurnResourceForResourceProduction(refill), 60, 1000));
+    assert_eq!(resources.resource_balance(slot), 90);
+}

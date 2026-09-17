@@ -14,7 +14,13 @@ import { ResourcesIds } from "@bibliothecadao/types";
 import clsx from "clsx";
 import { HUD_BODY_MUTED, HUD_HEADLINE, HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
 import { useCallback, useEffect, useMemo, useState, type ChangeEvent } from "react";
-import { REALM_PRESETS, RealmPresetId, calculatePresetAllocations, inferRealmPreset } from "@/utils/automation-presets";
+import {
+  resolveProductionPercentages,
+  REALM_PRESETS,
+  RealmPresetId,
+  calculatePresetAllocations,
+  inferRealmPreset,
+} from "@/utils/automation-presets";
 
 type RealmAutomationPanelProps = {
   realmEntityId: string;
@@ -80,6 +86,7 @@ export const RealmAutomationPanel = ({
   producedResources,
   entityType = "realm",
 }: RealmAutomationPanelProps) => {
+  const laborEnabled = !configManager.getBlitzConfig().blitz_mode_on;
   const upsertRealm = useAutomationStore((state) => state.upsertRealm);
   const setRealmPreset = useAutomationStore((state) => state.setRealmPreset);
   const setResourcePercentages = useAutomationStore((state) => state.setResourcePercentages);
@@ -140,18 +147,18 @@ export const RealmAutomationPanel = ({
     (resourceId: ResourcesIds): ResourceAutomationPercentages => {
       const fromDraft = draftPercentages[resourceId];
       if (fromDraft) {
-        return fromDraft;
+        return resolveProductionPercentages(fromDraft, resourceId);
       }
       if (activePresetId === "custom") {
         const stored = realmAutomation?.customPercentages?.[resourceId];
         if (stored) {
-          return { ...stored };
+          return resolveProductionPercentages(stored, resourceId);
         }
         const smartDefault = smartPresetAllocations.get(resourceId);
         if (smartDefault) {
           return { ...smartDefault };
         }
-        return createBaselinePercentages(resourceId);
+        return resolveProductionPercentages(createBaselinePercentages(resourceId), resourceId);
       }
 
       const allocation = presetAllocations.get(resourceId);
@@ -159,7 +166,7 @@ export const RealmAutomationPanel = ({
         return { ...allocation };
       }
 
-      return createBaselinePercentages(resourceId);
+      return resolveProductionPercentages(createBaselinePercentages(resourceId), resourceId);
     },
     [
       draftPercentages,
@@ -477,10 +484,7 @@ export const RealmAutomationPanel = ({
       const source = currentResourceSet.has(resourceId)
         ? (draftPercentages[resourceId] ?? resolveDraftPercentages(resourceId))
         : (realmAutomation.customPercentages?.[resourceId] ?? resolveDraftPercentages(resourceId));
-      normalizedPercentages[resourceId] = {
-        resourceToResource: clampPercent(source.resourceToResource),
-        laborToResource: resourceId === ResourcesIds.Donkey ? 0 : clampPercent(source.laborToResource),
-      };
+      normalizedPercentages[resourceId] = resolveProductionPercentages(source, resourceId);
     });
 
     Object.entries(normalizedPercentages).forEach(([key, value]) => {
@@ -708,7 +712,8 @@ export const RealmAutomationPanel = ({
             };
 
             const isDonkeyResource = resourceId === ResourcesIds.Donkey;
-            const laborDisabled = isDonkeyResource || ARMY_T2_T3_RESOURCES.has(resourceId as ResourcesIds);
+            const laborDisabled =
+              !laborEnabled || isDonkeyResource || ARMY_T2_T3_RESOURCES.has(resourceId as ResourcesIds);
 
             return (
               <div

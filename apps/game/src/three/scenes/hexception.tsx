@@ -792,7 +792,7 @@ export default class HexceptionScene extends HexagonScene {
         return;
       }
 
-      const useSimpleCost = this.state.useSimpleCost;
+      const useSimpleCost = this.mode.id !== "blitz" && this.state.useSimpleCost;
       const structureEntityId = useUIStore.getState().structureEntityId;
       const realm = getRealmInfo(structureEntityId, this.dojo.store);
       const buildability = resolveConstructionBuildability({

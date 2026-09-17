@@ -47,6 +47,7 @@ fn ownership(d: super::Deployment) -> IAgentOwnershipDispatcher {
 }
 fn setup(blitz: bool, rules: AgentRules) -> (super::Deployment, ExplorerKey, ExplorerKey) {
     let (d, home, _) = setup_with_rules(game_rules(blitz));
+    super::relics::configure_extraction(d, 2, 10);
     start_cheat_caller_address(d.peers.season, super::authority());
     ISeasonDispatcher { contract_address: d.peers.season }.set_agent_controller(d.actor);
     stop_cheat_caller_address(d.peers.season);

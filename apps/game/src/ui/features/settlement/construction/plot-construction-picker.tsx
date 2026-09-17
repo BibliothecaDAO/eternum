@@ -17,15 +17,17 @@ export function PlotConstructionPicker(target: PlotConstructionTarget) {
     <div className="w-[420px] max-w-full space-y-3 p-3">
       <div className="flex items-center justify-between gap-3">
         <span className="text-sm font-semibold">Build on this plot</span>
-        <label className="flex items-center gap-2 text-xs">
-          Simple cost
-          <input
-            type="checkbox"
-            role="switch"
-            checked={form.useSimpleCost}
-            onChange={(event) => form.setUseSimpleCost(event.target.checked)}
-          />
-        </label>
+        {form.allowSimpleCost && (
+          <label className="flex items-center gap-2 text-xs">
+            Simple cost
+            <input
+              type="checkbox"
+              role="switch"
+              checked={form.useSimpleCost}
+              onChange={(event) => form.setUseSimpleCost(event.target.checked)}
+            />
+          </label>
+        )}
       </div>
       {form.error && (
         <p role="status" className="text-xs">
