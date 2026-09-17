@@ -530,14 +530,14 @@ pub mod TroopsDomain {
         fn remove_managed_guard(
             ref self: ContractState, game_id: u32, actor: ContractAddress, slot: crate::troop_management::GuardSlot,
         ) {
-            self.owned_structure(game_id, slot.structure_id, actor);
+            let home = self.owned_structure(game_id, slot.structure_id, actor);
+            assert!(slot.slot < home.base.troop_max_guard_count, "invalid guard slot");
             let key = crate::guards::GuardKey { game_id, structure_id: slot.structure_id, slot: slot.slot };
             let mut guard = self.guards.guard(key);
-            if guard.troops.count != 0 {
-                guard.troops.count = 0;
-                guard.troops.stamina.reset();
-                self.guards.save(key, guard);
-            }
+            assert!(guard.troops.count != 0, "guard is empty");
+            guard.troops.count = 0;
+            guard.troops.stamina.reset();
+            self.guards.save(key, guard);
         }
         fn remove_managed_explorer(ref self: ContractState, game_id: u32, actor: ContractAddress, id: u32) {
             let key = ExplorerKey { game_id, explorer_id: id };
@@ -639,6 +639,7 @@ pub mod TroopsDomain {
                 },
                 crate::troop_management::Army::Guard(slot) => {
                     let home = self.owned_structure(game_id, slot.structure_id, actor);
+                    assert!(slot.slot < home.base.troop_max_guard_count, "invalid guard slot");
                     let guard = self
                         .guards
                         .guard(crate::guards::GuardKey { game_id, structure_id: slot.structure_id, slot: slot.slot });
@@ -748,6 +749,7 @@ pub mod TroopsDomain {
             timestamp: u64,
             reset_stamina: bool,
         ) {
+            assert!(key.slot < home.base.troop_max_guard_count, "invalid guard slot");
             let empty = guard.troops.count == 0;
             let tick = timestamp / rules.tick_config.armies_tick_in_seconds;
             if empty {
@@ -761,13 +763,6 @@ pub mod TroopsDomain {
                     };
                     assert!(tick >= Into::<u32, u64>::into(guard.destroyed_tick) + delay, "guard resurrection delay");
                 }
-                let mut occupied = 0_u8;
-                for slot in 0_u8..4 {
-                    if self.guards.guard(crate::guards::GuardKey { slot, ..key }).troops.count != 0 {
-                        occupied += 1;
-                    }
-                }
-                assert!(occupied < home.base.troop_max_guard_count, "structure guard limit");
                 guard.troops.category = incoming.category;
                 guard.troops.tier = incoming.tier;
             } else {
@@ -1079,6 +1074,7 @@ pub mod TroopsDomain {
         ) {
             let rules = self.authorize(game_id, context);
             let home = self.owned_structure(game_id, command.guard.structure_id, actor);
+            assert!(command.guard.slot < home.base.troop_max_guard_count, "invalid guard slot");
             let guard_key = crate::guards::GuardKey {
                 game_id, structure_id: command.guard.structure_id, slot: command.guard.slot,
             };

@@ -1,4 +1,5 @@
 use snforge_std::{EventSpyTrait, EventsFilterTrait, spy_events, start_cheat_caller_address, stop_cheat_caller_address};
+use crate::combat::TroopsTrait;
 use crate::combat_actions::{AttackExplorer, GuardAttack, ICombatActionsDispatcher, ICombatActionsDispatcherTrait, Raid};
 use crate::commands::{Command, CreateExplorer};
 use crate::guards::{Guard, GuardKey, IGuardsDispatcher, IGuardsDispatcherTrait};
@@ -10,9 +11,12 @@ use crate::troops::{Coord, ExplorerKey, ExplorerTroops, ITroopsDispatcher, ITroo
 use super::resource_commands::{assert_terminal_rejection, execute, execute_recorded_at, grant, set_fixture};
 
 fn setup(blitz: bool) -> (super::Deployment, ResourceKey, ResourceKey, u32, u32) {
+    setup_with_immunity(blitz, 0)
+}
+fn setup_with_immunity(blitz: bool, immunity: u8) -> (super::Deployment, ResourceKey, ResourceKey, u32, u32) {
     let mut rules = super::recorded::rules();
     rules.blitz_mode_on = blitz;
-    rules.battle_config.regular_immunity_ticks = 0;
+    rules.battle_config.regular_immunity_ticks = immunity;
     rules.battle_config.village_immunity_ticks = 0;
     rules.battle_config.village_raid_immunity_ticks = 3;
     rules.tick_config.armies_tick_in_seconds = 5;
@@ -67,11 +71,14 @@ fn troop(d: super::Deployment, id: u32) -> Option<ExplorerTroops> {
     ITroopsDispatcher { contract_address: d.peers.troops }.explorer(ExplorerKey { game_id: 3, explorer_id: id })
 }
 fn move_fixture(d: super::Deployment, id: u32, x: u32) {
+    move_to(d, id, Coord { alt: false, x, y: 2000000 });
+}
+fn move_to(d: super::Deployment, id: u32, coord: Coord) {
     let mut explorer = troop(d, id).unwrap();
     let map = IMapDispatcher { contract_address: d.peers.map };
     start_cheat_caller_address(d.peers.map, d.peers.troops);
     map.vacate(crate::geometry::tile_key(3, explorer.coord), id);
-    explorer.coord = Coord { alt: false, x, y: 2000000 };
+    explorer.coord = coord;
     map.occupy(crate::geometry::tile_key(3, explorer.coord), id, 2, false);
     stop_cheat_caller_address(d.peers.map);
     set_fixture(d.peers.troops, selector!("explorers"), array![3, id.into()].span(), explorer);
@@ -385,4 +392,172 @@ fn raiding_requires_at_least_one_whole_troop_per_occupied_guard() {
     assert_eq!(troop(d, attacker).unwrap(), explorer);
     assert_eq!(guard(d, target, 0).troops.count, RESOURCE_PRECISION);
     assert_eq!(guard(d, target, 3).troops.count, RESOURCE_PRECISION);
+}
+
+#[test]
+fn ethereal_battle_uses_both_recorded_d20_rolls_in_damage_and_history() {
+    let (d, _, _, attacker, defender) = setup(false);
+    move_to(d, attacker, Coord { alt: true, x: 2000000, y: 2000000 });
+    move_to(d, defender, Coord { alt: true, x: 2000015, y: 2000000 });
+    let before_attacker = troop(d, attacker).unwrap();
+    let before_defender = troop(d, defender).unwrap();
+    let game = crate::game::IGameDispatcher { contract_address: d.peers.season };
+    let rules = crate::game::IGameDispatcherTrait::rules(game, 3);
+    let mut root = super::context().raw_root;
+    let seed = crate::random::game_root(ref root, 3, crate::game::IGameDispatcherTrait::game(game, 3).seed);
+    let attacker_roll: u8 = 1 + crate::random::range(seed, 1, 20).try_into().unwrap();
+    let defender_roll: u8 = 1 + crate::random::range(seed, 2, 20).try_into().unwrap();
+    assert!(attacker_roll >= 1 && attacker_roll <= 20 && defender_roll >= 1 && defender_roll <= 20);
+    let mut expected_attacker = before_attacker.troops;
+    let mut expected_defender = before_defender.troops;
+    expected_attacker
+        .attack_with_context(
+            ref expected_defender,
+            crate::combat::CombatContext {
+                timestamp: 80,
+                attacker_roll,
+                defender_roll,
+                attacker_biome: crate::biome::Biome::Underground,
+                defender_biome: crate::biome::Biome::Underground,
+                attack_distance: 1,
+                attacker_is_structure_guard: false,
+                defender_is_structure_guard: false,
+            },
+            rules.troop_stamina_config,
+            rules.troop_damage_config,
+            16,
+            5,
+        );
+    let mut spy = spy_events();
+    assert!(
+        execute_recorded_at(
+            d,
+            Command::Battle(
+                AttackExplorer { attacker_id: attacker, defender_id: defender, steal_resources: array![].span() },
+            ),
+            80,
+            1000,
+        ),
+    );
+    assert_eq!(troop(d, attacker).unwrap().troops, expected_attacker);
+    assert_eq!(expected_defender.count, 0);
+    assert!(troop(d, defender).is_none());
+    let mut expected = array![];
+    before_attacker.owner.serialize(ref expected);
+    before_defender.coord.serialize(ref expected);
+    let empty: Span<ResourceAmount> = array![].span();
+    empty.serialize(ref expected);
+    crate::combat_actions::battle_side(d.actor, before_attacker.troops.count, expected_attacker, attacker_roll)
+        .serialize(ref expected);
+    crate::combat_actions::battle_side(
+        999.try_into().unwrap(), before_defender.troops.count, expected_defender, defender_roll,
+    )
+        .serialize(ref expected);
+    80_u64.serialize(ref expected);
+    let mut found = false;
+    for (_, event) in spy.get_events().emitted_by(d.peers.troops).events.span() {
+        if *event.keys.at(0) == selector!("BattleEvent") {
+            assert_eq!(event.data.span(), expected.span());
+            found = true;
+        }
+    }
+    assert!(found);
+}
+
+#[test]
+fn cross_layer_battles_require_matching_coordinates_and_an_adjacent_spire() {
+    let (d, _, _, attacker, defender) = setup(false);
+    let origin = troop(d, attacker).unwrap().coord;
+    let command = Command::Battle(
+        AttackExplorer { attacker_id: attacker, defender_id: defender, steal_resources: array![].span() },
+    );
+    move_to(d, defender, Coord { alt: true, ..origin });
+    assert_terminal_rejection(d, command, 80);
+    let map = IMapDispatcher { contract_address: d.peers.map };
+    let spire = crate::geometry::spire_neighbor(origin, 1);
+    start_cheat_caller_address(d.peers.map, d.peers.structures);
+    map.occupy(crate::geometry::tile_key(3, spire), 888, 35, true);
+    stop_cheat_caller_address(d.peers.map);
+    move_to(d, defender, Coord { alt: true, x: origin.x + 1, ..origin });
+    assert_terminal_rejection(d, command, 80);
+    move_to(d, defender, Coord { alt: true, ..origin });
+    assert!(execute(d, command, 80));
+    assert!(troop(d, attacker).is_some());
+    assert!(troop(d, defender).is_none());
+}
+
+#[test]
+fn season_immunity_rejects_combat_until_the_recorded_boundary() {
+    let (d, _, _, attacker, defender) = setup_with_immunity(false, 20);
+    let before_attacker = troop(d, attacker);
+    let before_defender = troop(d, defender);
+    let command = Command::Battle(
+        AttackExplorer { attacker_id: attacker, defender_id: defender, steal_resources: array![].span() },
+    );
+    assert_terminal_rejection(d, command, 119);
+    assert_eq!(troop(d, attacker), before_attacker);
+    assert_eq!(troop(d, defender), before_defender);
+    assert!(execute_recorded_at(d, command, 120, 1000));
+    assert!(troop(d, defender).is_none());
+}
+
+#[test]
+fn guard_attacks_reject_slots_outside_the_structures_limit() {
+    let (d, home, _, _, defender) = setup(false);
+    let original = IStructuresDispatcher { contract_address: d.peers.structures }.structure(home).unwrap();
+    set_fixture(
+        d.peers.structures,
+        selector!("structures"),
+        array![3, home.entity_id.into()].span(),
+        StructureRecord {
+            owner: original.owner,
+            base: crate::structures::StructureBase { troop_max_guard_count: 1, ..original.base },
+            resources_packed: original.resources_packed,
+            metadata: original.metadata,
+        },
+    );
+    move_fixture(d, defender, 2000001);
+    set_guard(d, home, 1, 100);
+    let before = troop(d, defender);
+    assert_terminal_rejection(
+        d,
+        Command::GuardAttack(
+            GuardAttack {
+                guard: crate::troop_management::GuardSlot { structure_id: home.entity_id, slot: 1 },
+                explorer_id: defender,
+            },
+        ),
+        80,
+    );
+    assert_eq!(troop(d, defender), before);
+    assert_eq!(guard(d, home, 1).troops.count, 100 * RESOURCE_PRECISION);
+}
+
+#[test]
+fn mutual_destruction_does_not_recreate_resource_rows_for_loot() {
+    let (d, _, _, attacker, defender) = setup(false);
+    let mut explorer = troop(d, attacker).unwrap();
+    explorer.troops.count = RESOURCE_PRECISION;
+    set_fixture(d.peers.troops, selector!("explorers"), array![3, attacker.into()].span(), explorer);
+    grant(d, ResourceKey { game_id: 3, entity_id: defender }, 2, 90);
+    let mut spy = spy_events();
+    assert!(
+        execute(
+            d,
+            Command::Battle(
+                AttackExplorer { attacker_id: attacker, defender_id: defender, steal_resources: resources(90) },
+            ),
+            80,
+        ),
+    );
+    let resources = IResourcesDispatcher { contract_address: d.peers.resources };
+    for id in array![attacker, defender] {
+        assert!(troop(d, id).is_none());
+        assert!(!resources.has_resource(ResourceKey { game_id: 3, entity_id: id }));
+    }
+    for (_, event) in spy.get_events().emitted_by(d.peers.resources).events.span() {
+        if *event.keys.at(0) == selector!("RowSet") && *event.keys.at(2) == 'ResourceBalance' {
+            assert_eq!(*event.data.at(event.data.len() - 1), 0, "loot revived a resource balance");
+        }
+    }
 }

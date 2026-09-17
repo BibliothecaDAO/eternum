@@ -100,12 +100,12 @@ fn recruitment_spends_troop_resources_and_updates_capacity_with_recorded_stamina
     assert_eq!(troop(d, first).unwrap().troops.count, 12 * RESOURCE_PRECISION);
     assert_eq!(resource(d).resource_weight(ResourceKey { game_id: 3, entity_id: first }).capacity, capacity * 12 / 10);
     assert_eq!(count(d, home), before - 2 * RESOURCE_PRECISION);
-    assert!(execute_recorded_at(d, recruit(home, 3, 3), 140, 10000));
-    assert_eq!(guard(d, home, 3).troops.count, 3 * RESOURCE_PRECISION);
-    assert_eq!(guard(d, home, 3).troops.stamina.amount, 0);
+    assert!(execute_recorded_at(d, recruit(home, 0, 3), 140, 10000));
+    assert_eq!(guard(d, home, 0).troops.count, 3 * RESOURCE_PRECISION);
+    assert_eq!(guard(d, home, 0).troops.stamina.amount, 0);
     assert_eq!(count(d, home), before - 5 * RESOURCE_PRECISION);
-    assert_terminal_rejection(d, recruit(home, 0, 1), 140);
-    assert_eq!(guard(d, home, 0).troops.count, 0);
+    assert_terminal_rejection(d, recruit(home, 1, 1), 140);
+    assert_eq!(guard(d, home, 1).troops.count, 0);
 }
 
 #[test]
@@ -138,13 +138,13 @@ fn explorer_transfer_preserves_the_worse_stamina_and_cooldown_and_deletes_an_emp
 #[test]
 fn transfers_to_guards_and_back_preserve_counts_and_reject_foreign_homes() {
     let (d, home, first, second) = setup();
-    let slot = GuardSlot { structure_id: home.entity_id, slot: 3 };
+    let slot = GuardSlot { structure_id: home.entity_id, slot: 0 };
     assert!(execute(d, transfer(Army::Explorer(first), Army::Guard(slot), 3), 140));
-    assert_eq!(guard(d, home, 3).troops.count, 3 * RESOURCE_PRECISION);
+    assert_eq!(guard(d, home, 0).troops.count, 3 * RESOURCE_PRECISION);
     assert_eq!(troop(d, first).unwrap().troops.count, 7 * RESOURCE_PRECISION);
     assert!(execute(d, transfer(Army::Guard(slot), Army::Explorer(second), 3), 140));
-    assert_eq!(guard(d, home, 3).troops.count, 0);
-    assert_eq!(guard(d, home, 3).troops.stamina.amount, 0);
+    assert_eq!(guard(d, home, 0).troops.count, 0);
+    assert_eq!(guard(d, home, 0).troops.stamina.amount, 0);
     assert_eq!(troop(d, second).unwrap().troops.count, 8 * RESOURCE_PRECISION);
     let mut row = troop(d, second).unwrap();
     row.owner = 999;
@@ -178,16 +178,23 @@ fn guard_deletion_does_not_erase_defeat_delay_and_explorer_deletion_clears_owned
     set_fixture(
         d.peers.troops,
         selector!("guards"),
-        array![3, home.entity_id.into(), 3].span(),
+        array![3, home.entity_id.into(), 0].span(),
         crate::guards::Guard { destroyed_tick: 2, ..Default::default() },
     );
-    assert!(execute(d, manage(ManageTroops::RemoveGuard(GuardSlot { structure_id: home.entity_id, slot: 3 })), 140));
-    assert_eq!(guard(d, home, 3).destroyed_tick, 2);
-    assert_terminal_rejection(d, recruit(home, 3, 1), 140);
-    assert!(execute(d, recruit(home, 3, 1), 180));
-    assert_eq!(guard(d, home, 3).troops.count, RESOURCE_PRECISION);
-    assert_eq!(guard(d, home, 3).troops.stamina.amount, 0);
-    assert!(execute(d, manage(ManageTroops::RemoveExplorer(first)), 140));
+    assert_terminal_rejection(
+        d, manage(ManageTroops::RemoveGuard(GuardSlot { structure_id: home.entity_id, slot: 0 })), 140,
+    );
+    assert_eq!(guard(d, home, 0).destroyed_tick, 2);
+    assert_terminal_rejection(d, recruit(home, 0, 1), 140);
+    assert!(execute(d, recruit(home, 0, 1), 180));
+    assert_eq!(guard(d, home, 0).troops.count, RESOURCE_PRECISION);
+    assert_eq!(guard(d, home, 0).troops.stamina.amount, 0);
+    let remove = manage(ManageTroops::RemoveGuard(GuardSlot { structure_id: home.entity_id, slot: 0 }));
+    assert!(execute(d, remove, 180));
+    assert_eq!(guard(d, home, 0).troops.count, 0);
+    assert_eq!(guard(d, home, 0).destroyed_tick, 2);
+    assert_terminal_rejection(d, remove, 180);
+    assert!(execute(d, manage(ManageTroops::RemoveExplorer(first)), 180));
     assert!(troop(d, first).is_none());
     assert!(!resource(d).has_resource(ResourceKey { game_id: 3, entity_id: first }));
     assert_terminal_rejection(d, manage(ManageTroops::RemoveExplorer(first)), 140);
@@ -310,4 +317,63 @@ fn reinforcement_requires_target_ownership_for_realms_and_villages_without_home_
     }
     assert_eq!(guard(d, other, 0).troops.count, 2 * RESOURCE_PRECISION);
     assert_eq!(troop(d, id).unwrap().troops.count, 8 * RESOURCE_PRECISION);
+}
+
+#[test]
+fn guard_slot_bounds_reject_recruitment_and_both_transfer_ends_without_spending() {
+    let (d, home, first, _) = setup();
+    let balance = count(d, home);
+    let before = troop(d, first);
+    for slot in 1_u8..5 {
+        assert_terminal_rejection(d, recruit(home, slot, 1), 140);
+        let guard = Army::Guard(GuardSlot { structure_id: home.entity_id, slot });
+        assert_terminal_rejection(d, transfer(Army::Explorer(first), guard, 1), 140);
+        assert_terminal_rejection(d, transfer(guard, Army::Explorer(first), 1), 140);
+        assert_eq!(count(d, home), balance);
+        assert_eq!(troop(d, first), before);
+    }
+    assert!(execute(d, recruit(home, 0, 1), 140));
+    assert!(
+        execute(
+            d,
+            transfer(Army::Explorer(first), Army::Guard(GuardSlot { structure_id: home.entity_id, slot: 0 }), 1),
+            140,
+        ),
+    );
+    assert_eq!(guard(d, home, 0).troops.count, 2 * RESOURCE_PRECISION);
+}
+
+#[test]
+fn recruitment_and_transfers_enforce_army_size_before_any_balance_or_capacity_change() {
+    let (d, home, first, second) = setup();
+    let rules = super::recorded::rules();
+    let maximum = crate::troops::max_army_size(rules.troop_limit_config, 0, TroopTier::T1);
+    grant(d, home, 26, Into::<u32, u128>::into(maximum) * RESOURCE_PRECISION);
+    let balance = count(d, home);
+    let weight = resource(d).resource_weight(ResourceKey { game_id: 3, entity_id: first });
+    assert_terminal_rejection(
+        d,
+        manage(
+            ManageTroops::RecruitExplorer(
+                RecruitExplorer { explorer_id: first, amount: Into::<u32, u128>::into(maximum) * RESOURCE_PRECISION },
+            ),
+        ),
+        140,
+    );
+    assert_terminal_rejection(d, recruit(home, 0, maximum.into() + 1), 140);
+    assert_eq!(count(d, home), balance);
+    assert_eq!(resource(d).resource_weight(ResourceKey { game_id: 3, entity_id: first }), weight);
+    let mut target = troop(d, second).unwrap();
+    target.troops.count = Into::<u32, u128>::into(maximum) * RESOURCE_PRECISION;
+    set_fixture(d.peers.troops, selector!("explorers"), array![3, second.into()].span(), target);
+    assert_terminal_rejection(d, transfer(Army::Explorer(first), Army::Explorer(second), 1), 140);
+    assert_eq!(troop(d, second).unwrap(), target);
+    assert_eq!(troop(d, first).unwrap().troops.count, 10 * RESOURCE_PRECISION);
+    assert!(execute(d, recruit(home, 0, maximum.into()), 140));
+    let before = guard(d, home, 0);
+    assert_terminal_rejection(
+        d, transfer(Army::Explorer(first), Army::Guard(GuardSlot { structure_id: home.entity_id, slot: 0 }), 1), 140,
+    );
+    assert_eq!(guard(d, home, 0), before);
+    assert_eq!(troop(d, first).unwrap().troops.count, 10 * RESOURCE_PRECISION);
 }
