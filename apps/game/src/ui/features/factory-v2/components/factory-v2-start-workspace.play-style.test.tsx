@@ -164,6 +164,24 @@ describe("FactoryV2StartWorkspace play style", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = false;
   });
 
+  it("shows launch failures in the action bar for retry", async () => {
+    await act(async () => {
+      root.render(<FactoryV2StartWorkspace {...buildProps({ notice: "Launch service is unavailable." })} />);
+    });
+    const actionBar = container.querySelector('[data-testid="factory-start-action-bar"]')!;
+    expect(actionBar.querySelector('[role="status"]')?.textContent).toBe("Launch service is unavailable.");
+    expect(container.querySelectorAll('[role="status"]').length).toBe(1);
+  });
+
+  it("shows starting feedback and disables submission while busy", async () => {
+    await act(async () => {
+      root.render(<FactoryV2StartWorkspace {...buildProps({ isWatcherBusy: true })} />);
+    });
+    const button = container.querySelector<HTMLButtonElement>('[data-testid="factory-launch-button"]')!;
+    expect(button.disabled).toBe(true);
+    expect(button.textContent).toContain("Starting");
+  });
+
   it("keeps the default path to preset, name, start time and launch", async () => {
     await act(async () => {
       root.render(<FactoryV2StartWorkspace {...buildProps()} />);

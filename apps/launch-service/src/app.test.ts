@@ -63,6 +63,22 @@ describe("launch service authorization", () => {
     expect((await app.request(launchRequest())).status).toBe(202);
   });
 
+  test("returns the requested format when launching and listing Eternum games", async () => {
+    const { app } = createApp(identity(ALLOWED_ADDRESS));
+    const request = launchRequest();
+    const response = await app.request(
+      new Request(request.url, {
+        method: "POST",
+        headers: request.headers,
+        body: JSON.stringify({ environment: "madara.eternum", gameName: "eternum-factory-test", version: "1" }),
+      }),
+    );
+    expect(response.status).toBe(202);
+    expect(await response.json()).toMatchObject({ gameType: "eternum", environment: "madara.eternum" });
+    const listed = await app.request("http://launch.test/api/factory/runs?environment=madara.eternum");
+    expect(await listed.json()).toMatchObject({ runs: [{ gameType: "eternum", gameName: "eternum-factory-test" }] });
+  });
+
   test("queues an authorized launch and keeps reads public", async () => {
     const { app } = createApp(identity(ALLOWED_ADDRESS));
     const created = await app.request(launchRequest());

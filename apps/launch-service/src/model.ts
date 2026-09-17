@@ -67,7 +67,7 @@ export const toFactoryRunRecord = (run: LaunchRun) => {
     runId: run.id,
     environment: run.environment,
     chain: "madara",
-    gameType: "blitz",
+    gameType: run.environment === "madara.eternum" ? "eternum" : "blitz",
     status: publicStatus(run.status),
     executionMode: "fast_trial",
     requestedLaunchStep: "full",

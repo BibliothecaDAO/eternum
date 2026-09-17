@@ -250,13 +250,15 @@ function resolveStartWorkspaceState(
       !moreOptionsDisabledReason &&
       !biomeClimateDisabledReason,
     presetFacts: getPresetFacts(selectedPreset).join(" · "),
-    launchLabel: resolveLaunchLabel({
-      isSeriesLaunch,
-      isRotationLaunch,
-      environmentLabel,
-      modeLabel,
-      seriesGameCount: seriesGames.length,
-    }),
+    launchLabel: isWatcherBusy
+      ? "Starting…"
+      : resolveLaunchLabel({
+          isSeriesLaunch,
+          isRotationLaunch,
+          environmentLabel,
+          modeLabel,
+          seriesGameCount: seriesGames.length,
+        }),
     launchButtonClassName: appearance.primaryButtonClassName,
     launchSummaryItems: resolveLaunchSummaryItems({
       isSeriesLaunch,
@@ -408,7 +410,6 @@ const FactoryV2ConfiguredStartWorkspace = ({
             isLoadingSeries={isLoadingSeries}
             seriesLookupError={seriesLookupError}
             existingRunName={existingRunName}
-            notice={notice}
             appearanceClassName={appearance.listItemClassName}
             cardAppearanceClassName={appearance.quietSurfaceClassName}
             onSelectPreset={onSelectPreset}
@@ -480,6 +481,7 @@ const FactoryV2ConfiguredStartWorkspace = ({
 
           <FactoryV2LaunchActionBar
             launchSummaryItems={workspace.launchSummaryItems}
+            notice={notice}
             launchLabel={workspace.launchLabel}
             canLaunch={workspace.canLaunch}
             appearanceClassName={appearance.quietSurfaceClassName}
@@ -511,7 +513,6 @@ const FactoryV2LaunchSetupSection = ({
   isLoadingSeries,
   seriesLookupError,
   existingRunName,
-  notice,
   appearanceClassName,
   cardAppearanceClassName,
   onSelectPreset,
@@ -546,7 +547,6 @@ const FactoryV2LaunchSetupSection = ({
   isLoadingSeries: boolean;
   seriesLookupError: string | null;
   existingRunName: string | null;
-  notice: string | null;
   appearanceClassName: string;
   cardAppearanceClassName: string;
   onSelectPreset: (presetId: string) => void;
@@ -587,7 +587,6 @@ const FactoryV2LaunchSetupSection = ({
         isLoadingSeries={isLoadingSeries}
         seriesLookupError={seriesLookupError}
         existingRunName={existingRunName}
-        notice={notice}
         onSeriesNameChange={onSeriesNameChange}
         onSeriesGameCountChange={onSeriesGameCountChange}
         onAutoRetryIntervalChange={onAutoRetryIntervalChange}
@@ -604,7 +603,6 @@ const FactoryV2LaunchSetupSection = ({
         rotationEvaluationIntervalMinutes={rotationEvaluationIntervalMinutes}
         autoRetryIntervalMinutes={autoRetryIntervalMinutes}
         existingRunName={existingRunName}
-        notice={notice}
         onRotationNameChange={onRotationNameChange}
         onRotationGameIntervalMinutesChange={onRotationGameIntervalMinutesChange}
         onRotationMaxGamesChange={onRotationMaxGamesChange}
@@ -617,7 +615,6 @@ const FactoryV2LaunchSetupSection = ({
         mode={mode}
         gameName={gameName}
         existingRunName={existingRunName}
-        notice={notice}
         buttonClassName={appearanceClassName}
         onGameNameChange={onGameNameChange}
         onFandomizeGameName={onFandomizeGameName}
@@ -674,7 +671,6 @@ const FactoryV2SingleGameBasics = ({
   mode,
   gameName,
   existingRunName,
-  notice,
   buttonClassName,
   onGameNameChange,
   onFandomizeGameName,
@@ -682,7 +678,6 @@ const FactoryV2SingleGameBasics = ({
   mode: FactoryGameMode;
   gameName: string;
   existingRunName: string | null;
-  notice: string | null;
   buttonClassName: string;
   onGameNameChange: (value: string) => void;
   onFandomizeGameName: () => void;
@@ -714,7 +709,6 @@ const FactoryV2SingleGameBasics = ({
     {existingRunName ? (
       <p className="mt-2 text-sm leading-6 text-gold/50">That name is already in use. We will open that run instead.</p>
     ) : null}
-    {!existingRunName && notice ? <p className="mt-2 text-sm leading-6 text-gold/50">{notice}</p> : null}
   </div>
 );
 
@@ -951,7 +945,6 @@ const FactoryV2SeriesBasics = ({
   isLoadingSeries,
   seriesLookupError,
   existingRunName,
-  notice,
   onSeriesNameChange,
   onSeriesGameCountChange,
   onAutoRetryIntervalChange,
@@ -970,7 +963,6 @@ const FactoryV2SeriesBasics = ({
   isLoadingSeries: boolean;
   seriesLookupError: string | null;
   existingRunName: string | null;
-  notice: string | null;
   onSeriesNameChange: (value: string) => void;
   onSeriesGameCountChange: (value: number) => void;
   onAutoRetryIntervalChange: (value: FactorySeriesRetryIntervalMinutes) => void;
@@ -1014,7 +1006,6 @@ const FactoryV2SeriesBasics = ({
           This series already has a parent run. Launching again will append any new games and resume that shared run.
         </p>
       ) : null}
-      {notice ? <p className="mt-2 text-sm leading-6 text-gold/50">{notice}</p> : null}
     </div>
 
     <div className="grid gap-4 sm:grid-cols-2">
@@ -1084,7 +1075,6 @@ const FactoryV2RotationBasics = ({
   rotationEvaluationIntervalMinutes,
   autoRetryIntervalMinutes,
   existingRunName,
-  notice,
   onRotationNameChange,
   onRotationGameIntervalMinutesChange,
   onRotationMaxGamesChange,
@@ -1101,7 +1091,6 @@ const FactoryV2RotationBasics = ({
   rotationEvaluationIntervalMinutes: FactoryRotationEvaluationIntervalMinutes;
   autoRetryIntervalMinutes: FactorySeriesRetryIntervalMinutes;
   existingRunName: string | null;
-  notice: string | null;
   onRotationNameChange: (value: string) => void;
   onRotationGameIntervalMinutesChange: (value: number) => void;
   onRotationMaxGamesChange: (value: number) => void;
@@ -1129,7 +1118,6 @@ const FactoryV2RotationBasics = ({
           This rotation already exists. Open it from Watch to continue it or run it now.
         </p>
       ) : null}
-      {!existingRunName && notice ? <p className="mt-2 text-sm leading-6 text-gold/50">{notice}</p> : null}
     </div>
 
     <div className="grid gap-4 sm:grid-cols-2">
@@ -1480,6 +1468,7 @@ const FactoryV2NativePickerField = ({
 );
 
 const FactoryV2LaunchActionBar = ({
+  notice,
   launchSummaryItems,
   launchLabel,
   canLaunch,
@@ -1487,6 +1476,7 @@ const FactoryV2LaunchActionBar = ({
   buttonClassName,
   onLaunch,
 }: {
+  notice: string | null;
   launchSummaryItems: string[];
   launchLabel: string;
   canLaunch: boolean;
@@ -1512,6 +1502,11 @@ const FactoryV2LaunchActionBar = ({
       ))}
     </div>
 
+    {notice ? (
+      <p role="status" className="text-sm leading-6 text-gold">
+        {notice}
+      </p>
+    ) : null}
     <button
       type="button"
       data-testid="factory-launch-button"

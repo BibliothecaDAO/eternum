@@ -30,7 +30,22 @@ vi.mock("./factory-v2-mode-switch", () => ({
 }));
 
 vi.mock("./factory-v2-start-workspace", () => ({
-  FactoryV2StartWorkspace: ({ onLaunch }: { onLaunch: () => void }) => <button onClick={onLaunch}>Launch</button>,
+  FactoryV2StartWorkspace: ({
+    onLaunch,
+    isWatcherBusy,
+    notice,
+  }: {
+    onLaunch: () => void;
+    isWatcherBusy: boolean;
+    notice: string | null;
+  }) => (
+    <div>
+      <p role="status">{notice}</p>
+      <button disabled={isWatcherBusy} onClick={onLaunch}>
+        Launch
+      </button>
+    </div>
+  ),
 }));
 
 vi.mock("./factory-v2-watch-workspace", () => ({
@@ -181,6 +196,56 @@ describe("FactoryV2Content network handling", () => {
     });
 
     expect(factory.launchSelectedPreset).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the form visible while submitting and opens progress only after acceptance", async () => {
+    let finish!: (accepted: boolean) => void;
+    const factory = buildFactoryState({
+      launchSelectedPreset: vi.fn(
+        () =>
+          new Promise<boolean>((resolve) => {
+            finish = resolve;
+          }),
+      ),
+    });
+    vi.mocked(useFactoryV2).mockReturnValue(factory as unknown as ReturnType<typeof useFactoryV2>);
+    await act(async () => {
+      root.render(<FactoryV2Content />);
+    });
+    const button = Array.from(container.querySelectorAll("button")).find((item) => item.textContent === "Launch")!;
+    await act(async () => {
+      button.click();
+    });
+    expect(button.disabled).toBe(true);
+    expect(container.textContent).not.toContain("Continue");
+    await act(async () => {
+      button.click();
+    });
+    expect(factory.launchSelectedPreset).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      finish(true);
+      await waitForAsyncWork();
+    });
+    expect(container.textContent).toContain("Continue");
+  });
+
+  it("keeps a rejected launch on the form so its error and retry remain visible", async () => {
+    const factory = buildFactoryState({
+      launchSelectedPreset: vi.fn(async () => false),
+      notice: "The launch service is unavailable.",
+    });
+    vi.mocked(useFactoryV2).mockReturnValue(factory as unknown as ReturnType<typeof useFactoryV2>);
+    await act(async () => {
+      root.render(<FactoryV2Content />);
+    });
+    const button = Array.from(container.querySelectorAll("button")).find((item) => item.textContent === "Launch")!;
+    await act(async () => {
+      button.click();
+      await waitForAsyncWork();
+    });
+    expect(button.disabled).toBe(false);
+    expect(container.querySelector('[role="status"]')?.textContent).toBe(factory.notice);
+    expect(container.textContent).not.toContain("Continue");
   });
 
   it("continues immediately without opening a network switch prompt", async () => {

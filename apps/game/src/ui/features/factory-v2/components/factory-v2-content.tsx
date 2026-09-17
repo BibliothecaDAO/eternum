@@ -17,12 +17,14 @@ export const FactoryV2Content = () => {
     resolveInitialFactoryWorkflow(factory.selectedRun),
   );
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const launchSelectedPreset = async () => {
-    setSelectedWorkflow("watch");
-    const launched = await factory.launchSelectedPreset();
-
-    if (launched) {
-      setSelectedWorkflow("watch");
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      if (await factory.launchSelectedPreset()) setSelectedWorkflow("watch");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -138,7 +140,7 @@ export const FactoryV2Content = () => {
               onLaunch={() => {
                 void launchSelectedPreset();
               }}
-              isWatcherBusy={factory.isWatcherBusy}
+              isWatcherBusy={factory.isWatcherBusy || isSubmitting}
             />
 
             <FactoryV2DeveloperTools
