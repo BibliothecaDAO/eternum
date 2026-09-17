@@ -8,12 +8,7 @@ import { openLedgerGame, type LedgerTarget } from "../ledger/calls";
 import { loadRepoJsonFile } from "../shared/repo";
 import type { DeploymentEnvironmentId } from "../types";
 
-type RegistrarEntrypoint =
-  | "bootstrap_chain_config"
-  | "register_preset"
-  | "register_series"
-  | "create_game"
-  | "backfill_completed_hyperstructures";
+type RegistrarEntrypoint = "register_preset" | "register_series" | "create_game";
 
 interface ManifestAbiEntry {
   type?: string;
@@ -128,9 +123,7 @@ function transactionSucceeded(receipt: unknown): boolean {
   return !helper.execution_status || helper.execution_status === "SUCCEEDED";
 }
 
-// The revert reason must ride in the thrown error: the idempotency matchers (isRegistrarAlreadyInitializedError,
-// isRegistrarAlreadyRegisteredError) test the message, so a bare "failed for transaction 0x…" hides the on-chain
-// assert and turns an expected already-initialized/-registered revert into a hard failure.
+// Preserve the revert reason so registration retries can identify an already registered series.
 function receiptRevertReason(receipt: unknown): string | undefined {
   const reason = (receipt as { revert_reason?: unknown }).revert_reason;
   return typeof reason === "string" && reason.length > 0 ? reason : undefined;
@@ -220,46 +213,10 @@ export function resolveRegistrarEnvironmentId(environmentId: DeploymentEnvironme
   return environmentId;
 }
 
-export function buildRegisterPresetCalldata(payload: {
-  presetConfig: unknown;
-  gameConfig: unknown;
-  sideTables: unknown;
-}): string[] {
-  return CallData.compile([payload.presetConfig, payload.gameConfig, payload.sideTables] as never);
-}
-
-export function buildCreateGameCalldata(params: unknown): string[] {
-  return CallData.compile([params] as never);
-}
-
 export function assertRegistrarAvailable(target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID): void {
   const context = resolveRegistrarContext(target);
   const requiredEntrypoints: RegistrarEntrypoint[] = ["register_preset", "register_series", "create_game"];
   requiredEntrypoints.forEach((entrypoint) => requireRegistrarContract(context, entrypoint));
-}
-
-export async function bootstrapChainConfig(
-  account: Account,
-  chainConfig: unknown,
-  target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID,
-): Promise<RegistrarTransactionResult> {
-  return executeRegistrarCall(
-    account,
-    buildRegistrarCall("bootstrap_chain_config", CallData.compile([chainConfig] as never), target),
-    target,
-  );
-}
-
-export async function registerPreset(
-  account: Account,
-  payload: { presetConfig: unknown; gameConfig: unknown; sideTables: unknown },
-  target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID,
-): Promise<RegistrarTransactionResult> {
-  return executeRegistrarCall(
-    account,
-    buildRegistrarCall("register_preset", buildRegisterPresetCalldata(payload), target),
-    target,
-  );
 }
 
 export async function registerSeries(
@@ -316,25 +273,6 @@ export async function createRegistrarGame(
   };
 }
 
-export function isRegistrarAlreadyInitializedError(error: unknown): boolean {
-  return /chain config already initialized/i.test(error instanceof Error ? error.message : String(error));
-}
-
 export function isRegistrarAlreadyRegisteredError(error: unknown): boolean {
   return /(preset|series) already registered/i.test(error instanceof Error ? error.message : String(error));
-}
-
-export async function backfillCompletedHyperstructures(
-  account: Account,
-  gameId: number,
-  startIndex: number,
-  ids: number[],
-  target: RegistrarTarget,
-): Promise<RegistrarTransactionResult> {
-  const calldata = CallData.compile([gameId, startIndex, ids]);
-  return executeRegistrarCall(
-    account,
-    buildRegistrarCall("backfill_completed_hyperstructures", calldata, target),
-    target,
-  );
 }

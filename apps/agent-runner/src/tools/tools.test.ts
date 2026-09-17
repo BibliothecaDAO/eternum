@@ -196,6 +196,7 @@ describe("createRunnerTools", () => {
 describe("army planner layers", () => {
   it.each([false, true])("uses the explorer layer (alt=%s) for every index", async (alt) => {
     const game = createFakeGame();
+    seedStructure(game.store, { entityId: 12, owner: PLAYER, x: 100, y: 100 });
     seedExplorer(game.store, { explorerId: 101, owner: 12, x: 100, y: 100, alt });
     const armies = vi.spyOn(game.client.projection, "getArmies");
     const tiles = vi.spyOn(game.client.projection, "getTiles");

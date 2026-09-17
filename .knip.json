@@ -18,7 +18,6 @@
     "apps/amm-indexer/apibara.config.ts",
     "apps/amm-indexer/indexers/ammv2.indexer.ts",
     "apps/amm-indexer/indexers/factory-client.ts",
-    "deploy/madara-lab/scripts/deploy-s2-world.ts",
     "apps/indexer/drizzle.config.ts",
     "packages/db/drizzle.config.ts"
   ],
@@ -35,9 +34,7 @@
         "deploy/madara-rand/check-herald.ts",
         "deploy/madara-rand/rotate-fixture.ts",
         "deploy/madara-rand/prepare-native-actions.ts",
-        "deploy/madara-rand/prepare-baseline.ts",
-        "deploy/madara-rand/race-native-intents.ts",
-        "deploy/madara-rand/explore-benchmark.ts"
+        "deploy/madara-rand/race-native-intents.ts"
       ]
     },
     "apps/realms": {

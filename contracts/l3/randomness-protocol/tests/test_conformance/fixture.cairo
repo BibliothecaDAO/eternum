@@ -1,6 +1,7 @@
 use eternum_randomness_protocol::authority::{ISequencingAuthorityDispatcher, ISequencingAuthorityDispatcherTrait};
 use eternum_randomness_protocol::entrypoint::{
-    ExecutionContext, IRecordedExecutionViewsDispatcher, IRecordedExecutionViewsDispatcherTrait,
+    ExecutionContext, IRecordedExecutionFailureSafeDispatcher, IRecordedExecutionFailureSafeDispatcherTrait,
+    IRecordedExecutionViewsDispatcher, IRecordedExecutionViewsDispatcherTrait,
 };
 pub use eternum_randomness_protocol::entrypoint::{
     IRecordedExecutionDispatcher, IRecordedExecutionDispatcherTrait, IRecordedExecutionSafeDispatcher,
@@ -81,4 +82,11 @@ pub fn outcome(address: ContractAddress) -> Array<felt252> {
     let root = IFixtureDispatcher { contract_address: address }.outcome();
     let result = IRecordedExecutionViewsDispatcher { contract_address: address }.recorded_outcome(1).unwrap();
     array![result.status.into(), timestamp.into(), root.low.into(), root.high.into(), (root.low % 2).into()]
+}
+
+#[feature("safe_dispatcher")]
+pub fn reject_execution(
+    address: ContractAddress, intent: Intent, context: ExecutionContext, r: felt252, s: felt252,
+) -> Result<(), Array<felt252>> {
+    IRecordedExecutionFailureSafeDispatcher { contract_address: address }.reject_execution(intent, context, r, s)
 }

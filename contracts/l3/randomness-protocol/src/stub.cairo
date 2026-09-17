@@ -12,8 +12,8 @@ pub mod RecordedExecutionStub {
     use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
     use starknet::{ContractAddress, get_block_timestamp, get_contract_address, get_tx_info};
     use crate::entrypoint::{
-        Admission, ExecutionContext, IRecordedExecution, accepted_context_matches, authenticate_submission,
-        timestamp_in_bounds,
+        Admission, ExecutionContext, IRecordedExecution, IRecordedExecutionFailure, accepted_context_matches,
+        authenticate_submission, timestamp_in_bounds,
     };
     use crate::recording::{ExecutionHead, HeadPacking, RecordedState};
     use crate::{Intent, action_identity, decode_envelope};
@@ -49,23 +49,9 @@ pub mod RecordedExecutionStub {
     impl Execute of IRecordedExecution<ContractState> {
         fn execute(ref self: ContractState, intent: Intent, context: ExecutionContext, r: felt252, s: felt252) {
             let envelope = decode_envelope(context.envelope.span()).expect('malformed envelope');
-            authenticate_submission(self.submitter.read(), context.authority_epoch, envelope.l2_gas);
-            let action = action_identity(@intent);
-            assert!(envelope.action == action, "altered action");
-            let head = self.recording.head.read();
-            assert!(envelope.order == head.order + 1, "out of order");
-            assert!(envelope.preceding_state == head.state, "state predecessor mismatch");
-            assert!(envelope.execution_config == 987, "execution config mismatch");
-            assert!(timestamp_in_bounds(envelope.timestamp, get_block_timestamp()), "future execution time");
-            assert!(envelope.timestamp >= head.timestamp, "backwards execution time");
+            self.authenticate_ticket(@intent, @context, @envelope);
             let reason = self.validate_action(@intent, @context, @envelope, r, s).err();
-            let consumed = intent.game_id == 7
-                && intent.actor == self.actor.read()
-                && intent.nonce == self.nonce.read()
-                && intent.nonce < 0xffffffffffffffff;
-            if consumed {
-                self.nonce.write(intent.nonce + 1);
-            }
+            let consumed = self.consume_nonce(@intent);
             let outcome = match reason {
                 Some(code) => Err(code),
                 None => {
@@ -77,8 +63,50 @@ pub mod RecordedExecutionStub {
         }
     }
 
+    #[abi(embed_v0)]
+    impl Failure of IRecordedExecutionFailure<ContractState> {
+        fn reject_execution(
+            ref self: ContractState, intent: Intent, context: ExecutionContext, r: felt252, s: felt252,
+        ) {
+            let envelope = decode_envelope(context.envelope.span()).expect('malformed envelope');
+            self.authenticate_ticket(@intent, @context, @envelope);
+            assert!(intent.actor == self.actor.read(), "invalid actor");
+            assert!(
+                context.accepted_public_key == self.public_key.read()
+                    && check_ecdsa_signature(envelope.action, self.public_key.read(), r, s),
+                "invalid player signature",
+            );
+            assert!(accepted_context_matches(@intent, @envelope), "invalid acceptance");
+            let consumed = self.consume_nonce(@intent);
+            self.recording.record(@intent, @envelope, consumed, Err('EXECUTION_FAILED'));
+        }
+    }
+
     #[generate_trait]
     impl Internal of InternalTrait {
+        fn authenticate_ticket(
+            self: @ContractState, intent: @Intent, context: @ExecutionContext, envelope: @crate::Envelope,
+        ) {
+            authenticate_submission(self.submitter.read(), *context.authority_epoch, *envelope.l2_gas);
+            let action = action_identity(intent);
+            assert!(*envelope.action == action, "altered action");
+            let head = self.recording.head.read();
+            assert!(*envelope.order == head.order + 1, "out of order");
+            assert!(*envelope.preceding_state == head.state, "state predecessor mismatch");
+            assert!(*envelope.execution_config == 987, "execution config mismatch");
+            assert!(timestamp_in_bounds(*envelope.timestamp, get_block_timestamp()), "future execution time");
+            assert!(*envelope.timestamp >= head.timestamp, "backwards execution time");
+        }
+        fn consume_nonce(ref self: ContractState, intent: @Intent) -> bool {
+            let consumed = *intent.game_id == 7
+                && *intent.actor == self.actor.read()
+                && *intent.nonce == self.nonce.read()
+                && *intent.nonce < 0xffffffffffffffff;
+            if consumed {
+                self.nonce.write(*intent.nonce + 1);
+            }
+            consumed
+        }
         fn validate_action(
             self: @ContractState,
             intent: @Intent,

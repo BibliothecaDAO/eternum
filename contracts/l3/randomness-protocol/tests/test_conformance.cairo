@@ -14,7 +14,7 @@ use eternum_randomness_protocol::{action_identity, encode_envelope};
 use fixture::{
     IFixtureDispatcher, IFixtureDispatcherTrait, IRecordedExecutionDispatcher, IRecordedExecutionDispatcherTrait,
     IRecordedExecutionSafeDispatcher, IRecordedExecutionSafeDispatcherTrait, context, envelope, intent, outcome, pair,
-    setup, terminal_arguments,
+    reject_execution, setup, terminal_arguments,
 };
 use snforge_std::fs::{FileTrait, read_txt};
 use snforge_std::signature::stark_curve::{StarkCurveKeyPair, StarkCurveKeyPairImpl, StarkCurveSignerImpl};
@@ -26,6 +26,53 @@ use snforge_std::{
 };
 use starknet::ResourcesBounds;
 use starknet::account::Call;
+
+#[test]
+fn definitive_failure_is_recorded_and_the_next_ticket_executes() {
+    let address = setup();
+    let action = intent(address);
+    let recorded = envelope(@action);
+    let (r, s) = pair().sign(action_identity(@action)).unwrap();
+    reject_execution(address, action, context(@recorded), r, s).unwrap();
+    let views = IRecordedExecutionViewsDispatcher { contract_address: address };
+    let failed = views.recorded_outcome(1).unwrap();
+    assert!(failed.status == 2 && failed.reason == 'EXECUTION_FAILED' && failed.nonce_consumed, "missing failure");
+    assert!(views.get_admission(7, 456).nonce == 1, "failure did not consume current nonce");
+
+    let mut next = intent(address);
+    next.nonce = 1;
+    let mut next_context = envelope(@next);
+    next_context.order = 2;
+    next_context.preceding_state = views.get_head().state;
+    let (r, s) = pair().sign(action_identity(@next)).unwrap();
+    IRecordedExecutionDispatcher { contract_address: address }.execute(next, context(@next_context), r, s);
+    assert!(views.get_head().order == 2 && views.get_admission(7, 456).nonce == 2, "successor blocked");
+    assert!(views.recorded_outcome(2).unwrap().status == 1, "successor rejected");
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn failure_recording_rejects_forgery_and_preserves_a_stale_nonce() {
+    let address = setup();
+    let action = intent(address);
+    let recorded = envelope(@action);
+    let (_, s) = pair().sign(action_identity(@action)).unwrap();
+    assert!(reject_execution(address, action, context(@recorded), 1, s).is_err(), "forged failure consumed a ticket");
+    let views = IRecordedExecutionViewsDispatcher { contract_address: address };
+    assert!(views.get_head().order == 0 && views.get_admission(7, 456).nonce == 0, "forgery changed progress");
+    for order in 1_u64..3 {
+        let action = intent(address);
+        let mut recorded = envelope(@action);
+        recorded.order = order;
+        recorded.preceding_state = views.get_head().state;
+        let (r, s) = pair().sign(action_identity(@action)).unwrap();
+        reject_execution(address, action, context(@recorded), r, s).unwrap();
+        let failed = views.recorded_outcome(order).unwrap();
+        assert!(failed.status == 2 && failed.reason == 'EXECUTION_FAILED', "missing terminal outcome");
+        assert!(failed.nonce_consumed == (order == 1), "stale nonce consumed twice");
+        assert!(views.get_admission(7, 456).nonce == 1, "failure moved stale nonce");
+    }
+}
 
 #[derive(Drop, Serde)]
 struct ContextVector {

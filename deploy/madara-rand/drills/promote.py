@@ -19,7 +19,7 @@ def capture_chain(command, deployment, fixture, output):
     rows = journal_snapshot(command, deployment, f'randomness_execution_{fixture["fixtureId"]}', output / 'survivor.json')
     progress = []
     for row in rows:
-        result = chain_result(fixture, row['ticket_order'])
+        result = chain_result(fixture, row)
         if int(result[0], 16) == 0:
             break
         progress.append(dict(order=row['ticket_order'], binding=result[1], result=result[2], state=result[3]))

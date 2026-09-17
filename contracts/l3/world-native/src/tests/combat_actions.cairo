@@ -334,7 +334,8 @@ fn raid_rounding_and_weighted_outcomes_keep_the_declared_thresholds() {
             wins += 1;
         }
     }
-    assert!(wins > 0 && wins < 30);
+    // Pinned RNG: Poseidon(root.low, root.high, timestamp + 18) modulo 20, draw < 10.
+    assert_eq!(wins, 15);
 }
 
 #[test]

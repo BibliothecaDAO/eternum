@@ -1,9 +1,0 @@
-time="2026-09-14T19:44:33+02:00" level=warning msg="Found orphan containers (madara-rand-journal-quarantine-1, madara-rand-herald-replay-1, madara-rand-herald-1, madara-rand-journal-replacement-1, madara-rand-registry-1) for this project. If you removed or renamed this service in your compose file, you can run this command with the --remove-orphans flag to clean it up."
- Container madara-rand-missing-journal Creating 
- Container madara-rand-missing-journal Created 
-Error: journal storage operation failed
-
-Caused by:
-    0: db error: ERROR: schema "randomness" does not exist
-    1: ERROR: schema "randomness" does not exist
-

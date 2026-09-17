@@ -4,10 +4,10 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import hashlib
 import json
 import threading
+import subprocess
+from pathlib import Path
 import urllib.request
 from runtime import primary_service, run
-
-RESULT_SELECTOR = '0x1179ac451c36b461fcd4401eb9dc86c94d30a9eae5cb26d828ff914320a45db'
 
 
 def write_drill_report(output, result):
@@ -22,22 +22,19 @@ def write_drill_report(output, result):
 def journal_snapshot(command, deployment, database, output):
     query = """SELECT coalesce(json_agg(row_to_json(t) ORDER BY ticket_order),'[]') FROM
         (SELECT ticket_order,status,encode(action,'hex') action,encode(envelope,'hex') envelope,
-         encode(binding,'hex') binding,encode(result,'hex') result FROM randomness.tickets) t"""
+         encode(binding,'hex') binding,encode(result,'hex') result,encode(intent,'hex') intent,
+         (SELECT coalesce(json_agg(encode(transaction_hash,'hex') ORDER BY transaction_hash),'[]')
+          FROM randomness.submissions s WHERE s.action=tickets.action) transactions FROM randomness.tickets) t"""
     run([*command, 'exec', '-T', primary_service(command), 'psql', '-U', 'postgres', '-d', database, '-Atc', query],
         output, deployment)
     return json.loads(output.read_text())
 
 
-def chain_result(fixture, order):
-    request = urllib.request.Request(fixture['rpc'], headers={'content-type': 'application/json'}, data=json.dumps({
-        'jsonrpc': '2.0', 'id': 1, 'method': 'starknet_call', 'params': {'block_id': 'pre_confirmed', 'request': {
-            'contract_address': fixture['execution']['address'], 'entry_point_selector': RESULT_SELECTOR,
-            'calldata': [hex(order)]}}}).encode())
-    with urllib.request.urlopen(request, timeout=5) as response:
-        result = json.load(response)
-    if 'error' in result:
-        raise RuntimeError(result['error'])
-    return result['result']
+def chain_result(fixture, ticket):
+    module = Path(__file__).resolve().parents[1] / 'native-intent.ts'
+    result = subprocess.check_output(['bun', str(module)],
+                                    input=json.dumps({'fixture': fixture, 'ticket': ticket}), text=True)
+    return json.loads(result)
 
 
 def fault_proxy(gateway, mode, output, reached, release):

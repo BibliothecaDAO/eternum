@@ -43,7 +43,7 @@ pub struct IRecordedExecutionSafeDispatcher {
 #[generate_trait]
 pub impl RecordedDispatcher of IRecordedExecutionDispatcherTrait {
     fn execute(self: IRecordedExecutionDispatcher, intent: Intent, context: ExecutionContext, r: felt252, s: felt252) {
-        submit(self.contract_address, intent, context, r, s).unwrap_syscall();
+        submit(self.contract_address, selector!("execute"), intent, context, r, s).unwrap_syscall();
     }
 }
 #[generate_trait]
@@ -51,12 +51,12 @@ pub impl RecordedSafeDispatcher of IRecordedExecutionSafeDispatcherTrait {
     fn execute(
         self: IRecordedExecutionSafeDispatcher, intent: Intent, context: ExecutionContext, r: felt252, s: felt252,
     ) -> Result<(), Array<felt252>> {
-        submit(self.contract_address, intent, context, r, s)
+        submit(self.contract_address, selector!("execute"), intent, context, r, s)
     }
 }
 #[feature("safe_dispatcher")]
 fn submit(
-    season: ContractAddress, intent: Intent, context: ExecutionContext, r: felt252, s: felt252,
+    season: ContractAddress, entrypoint: felt252, intent: Intent, context: ExecutionContext, r: felt252, s: felt252,
 ) -> Result<(), Array<felt252>> {
     // Route through the actual authority account so callbacks from gameplay domains keep their caller.
     let account = ISeasonDispatcher { contract_address: season }.authentication().submitter;
@@ -84,7 +84,7 @@ fn submit(
     calldata.append(r);
     calldata.append(s);
     ISequencingAccountSafeDispatcher { contract_address: account }
-        .__execute__(array![Call { to: season, selector: selector!("execute"), calldata: calldata.span() }])
+        .__execute__(array![Call { to: season, selector: entrypoint, calldata: calldata.span() }])
         .map(|_results| ())
 }
 
@@ -488,4 +488,10 @@ fn resource_snapshot(
         }
     }
     values
+}
+
+pub fn reject_execution(
+    address: ContractAddress, intent: Intent, context: ExecutionContext, r: felt252, s: felt252,
+) -> Result<(), Array<felt252>> {
+    submit(address, selector!("reject_execution"), intent, context, r, s)
 }
