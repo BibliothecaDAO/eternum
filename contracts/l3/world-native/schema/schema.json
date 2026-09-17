@@ -692,26 +692,6 @@
         },
         {
           "type": "function",
-          "name": "guild_id",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "actor",
-              "type": "core::starknet::contract_address::ContractAddress"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::integer::u32"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
           "name": "register_relic_points",
           "inputs": [
             {
@@ -7201,9 +7181,426 @@
           "state_mutability": "external"
         }
       ]
+    },
+    "registry": {
+      "contract": "RegistryDomain",
+      "systems": [],
+      "events": [
+        {
+          "name": "RowSet",
+          "prefix": [
+            "0x1517f684ec2bc21ca20251bbef26b7ad0434759388fc50e84858abf49e4024b",
+            "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "model",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "keys",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            },
+            {
+              "name": "values",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            }
+          ]
+        },
+        {
+          "name": "RowSet",
+          "prefix": [
+            "0x32b9e31144a312bfd38977e758d7e4ec46050185e704daab9d6ee1fa2ff49df",
+            "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "model",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "keys",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            },
+            {
+              "name": "values",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            }
+          ]
+        },
+        {
+          "name": "RowDeleted",
+          "prefix": [
+            "0x32b9e31144a312bfd38977e758d7e4ec46050185e704daab9d6ee1fa2ff49df",
+            "0x34ee03e4825cf92d0335b5828e3389af6c145ecff05fce078c3753d871cc7f5"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "model",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "keys",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            }
+          ]
+        }
+      ],
+      "entrypoints": [
+        {
+          "type": "function",
+          "name": "domain_state",
+          "inputs": [],
+          "outputs": [
+            {
+              "type": "world_native::lifecycle::DomainState"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "configure",
+          "inputs": [
+            {
+              "name": "peers",
+              "type": "world_native::lifecycle::Peers"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "activate",
+          "inputs": [],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "upgrade",
+          "inputs": [
+            {
+              "name": "class_hash",
+              "type": "core::starknet::class_hash::ClassHash"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "guild_member",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::starknet::contract_address::ContractAddress"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "guild",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "guild_id",
+              "type": "core::starknet::contract_address::ContractAddress"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::option::Option::<world_native::guilds::Guild>"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "guild_whitelisted",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::guilds::WhitelistKey"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::bool"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "create_guild",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "command",
+              "type": "world_native::guilds::CreateGuild"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "join_guild",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "command",
+              "type": "world_native::guilds::JoinGuild"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "leave_guild",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "set_guild_whitelist",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "command",
+              "type": "world_native::guilds::SetWhitelist"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "remove_guild_member",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "member",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        }
+      ]
     }
   },
   "models": [
+    {
+      "name": "Guild",
+      "identity": "0x4775696c64",
+      "owners": [
+        "registry"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "guild_id",
+          "type": "core::starknet::contract_address::ContractAddress",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "public",
+          "type": "core::bool",
+          "id": "0x7075626c6963",
+          "feltLength": 1
+        },
+        {
+          "name": "name",
+          "type": "core::felt252",
+          "id": "0x6e616d65",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 2,
+      "absence": {
+        "value": "empty",
+        "meaning": "No guild or membership exists for this key."
+      }
+    },
+    {
+      "name": "GuildMember",
+      "identity": "0x4775696c644d656d626572",
+      "owners": [
+        "registry"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "actor",
+          "type": "core::starknet::contract_address::ContractAddress",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "guild_id",
+          "type": "core::starknet::contract_address::ContractAddress",
+          "id": "0x6775696c645f6964",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 1,
+      "absence": {
+        "value": "empty",
+        "meaning": "No guild or membership exists for this key."
+      }
+    },
+    {
+      "name": "GuildWhitelist",
+      "identity": "0x4775696c6457686974656c697374",
+      "owners": [
+        "registry"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "guild_id",
+          "type": "core::starknet::contract_address::ContractAddress",
+          "feltLength": 1
+        },
+        {
+          "name": "player",
+          "type": "core::starknet::contract_address::ContractAddress",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "allowed",
+          "type": "core::bool",
+          "id": "0x616c6c6f776564",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 3,
+      "valueLength": 1,
+      "absence": {
+        "value": "false",
+        "meaning": "The player is not whitelisted."
+      }
+    },
     {
       "name": "ArtificerCost",
       "identity": "0x417274696669636572436f7374",
@@ -10765,7 +11162,8 @@
         "settlement",
         "resources",
         "economy",
-        "prizes"
+        "prizes",
+        "registry"
       ],
       "scope": "deployment",
       "emitterKey": "address",
@@ -10787,7 +11185,7 @@
           "name": "peers",
           "type": "world_native::lifecycle::Peers",
           "id": "0x7065657273",
-          "feltLength": 8
+          "feltLength": 9
         },
         {
           "name": "active",
@@ -10797,7 +11195,7 @@
         }
       ],
       "keyLength": 1,
-      "valueLength": 10
+      "valueLength": 11
     },
     {
       "name": "DomainClass",
@@ -10810,7 +11208,8 @@
         "settlement",
         "resources",
         "economy",
-        "prizes"
+        "prizes",
+        "registry"
       ],
       "scope": "deployment",
       "emitterKey": "address",
@@ -11530,6 +11929,20 @@
         {
           "name": "Some",
           "type": "world_native::buildings::Building"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
+    "core::option::Option::<world_native::guilds::Guild>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::guilds::Guild>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::guilds::Guild"
         },
         {
           "name": "None",
@@ -12590,6 +13003,26 @@
         {
           "name": "CraftRelic",
           "type": "core::integer::u32"
+        },
+        {
+          "name": "CreateGuild",
+          "type": "world_native::guilds::CreateGuild"
+        },
+        {
+          "name": "JoinGuild",
+          "type": "world_native::guilds::JoinGuild"
+        },
+        {
+          "name": "LeaveGuild",
+          "type": "()"
+        },
+        {
+          "name": "SetGuildWhitelist",
+          "type": "world_native::guilds::SetWhitelist"
+        },
+        {
+          "name": "RemoveGuildMember",
+          "type": "core::starknet::contract_address::ContractAddress"
         }
       ]
     },
@@ -13093,6 +13526,88 @@
         }
       ]
     },
+    "world_native::guilds::CreateGuild": {
+      "type": "struct",
+      "name": "world_native::guilds::CreateGuild",
+      "members": [
+        {
+          "name": "owned_structure_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "public",
+          "type": "core::bool"
+        },
+        {
+          "name": "name",
+          "type": "core::felt252"
+        }
+      ]
+    },
+    "world_native::guilds::Guild": {
+      "type": "struct",
+      "name": "world_native::guilds::Guild",
+      "members": [
+        {
+          "name": "public",
+          "type": "core::bool"
+        },
+        {
+          "name": "name",
+          "type": "core::felt252"
+        }
+      ]
+    },
+    "world_native::guilds::JoinGuild": {
+      "type": "struct",
+      "name": "world_native::guilds::JoinGuild",
+      "members": [
+        {
+          "name": "owned_structure_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "guild_id",
+          "type": "core::starknet::contract_address::ContractAddress"
+        }
+      ]
+    },
+    "world_native::guilds::SetWhitelist": {
+      "type": "struct",
+      "name": "world_native::guilds::SetWhitelist",
+      "members": [
+        {
+          "name": "player",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "owned_structure_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "allowed",
+          "type": "core::bool"
+        }
+      ]
+    },
+    "world_native::guilds::WhitelistKey": {
+      "type": "struct",
+      "name": "world_native::guilds::WhitelistKey",
+      "members": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "guild_id",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "player",
+          "type": "core::starknet::contract_address::ContractAddress"
+        }
+      ]
+    },
     "world_native::hyperstructures::AllocateShares": {
       "type": "struct",
       "name": "world_native::hyperstructures::AllocateShares",
@@ -13327,6 +13842,10 @@
         },
         {
           "name": "prizes",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "registry",
           "type": "core::starknet::contract_address::ContractAddress"
         }
       ]
@@ -16048,5 +16567,5 @@
       ]
     }
   },
-  "identity": "39c559727b146556e1902433e8ab7eda719a3dfb0c7226b62365cecbd2bbcd5a"
+  "identity": "36f663376d7e24474084faef7822ac841003e34805a19991f6f7ac328b3ece51"
 }

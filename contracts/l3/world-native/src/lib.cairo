@@ -48,6 +48,8 @@ pub mod geometry;
 
 pub mod guards;
 
+pub mod guilds;
+
 pub mod hyperstructures;
 
 pub mod market;
@@ -59,6 +61,8 @@ pub mod prizes;
 
 pub mod production;
 pub mod random;
+
+pub mod registry;
 
 pub mod relics;
 pub mod resources;

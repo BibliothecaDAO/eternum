@@ -291,9 +291,6 @@ pub mod SeasonDomain {
         fn agent_controller(self: @ContractState) -> ContractAddress {
             self.agent_controller.read()
         }
-        fn guild_id(self: @ContractState, game_id: u32, actor: ContractAddress) -> u32 {
-            self.games.guild_membership.read((game_id, actor))
-        }
         fn register_relic_points(ref self: ContractState, game_id: u32, actor: ContractAddress) {
             assert!(get_caller_address() == self.lifecycle.require_active().economy, "only economy domain");
             let points = self.games.rules(game_id).victory_points_grant_config.relic_open_points;
@@ -521,6 +518,23 @@ pub mod SeasonDomain {
             Command::FundFaithPrizes(value) => {
                 value.serialize(ref calldata);
                 (peers.prizes, selector!("fund_faith_prizes"))
+            },
+            Command::CreateGuild(value) => {
+                value.serialize(ref calldata);
+                (peers.registry, selector!("create_guild"))
+            },
+            Command::JoinGuild(value) => {
+                value.serialize(ref calldata);
+                (peers.registry, selector!("join_guild"))
+            },
+            Command::LeaveGuild => (peers.registry, selector!("leave_guild")),
+            Command::SetGuildWhitelist(value) => {
+                value.serialize(ref calldata);
+                (peers.registry, selector!("set_guild_whitelist"))
+            },
+            Command::RemoveGuildMember(value) => {
+                value.serialize(ref calldata);
+                (peers.registry, selector!("remove_guild_member"))
             },
             Command::CraftRelic(value) => {
                 value.serialize(ref calldata);

@@ -38,7 +38,6 @@ pub trait IGame<T> {
     fn allocate_entity(ref self: T, game_id: u32) -> u32;
     fn register_exploration(ref self: T, game_id: u32, actor: ContractAddress);
     fn register_capture(ref self: T, game_id: u32, actor: ContractAddress, category: u8) -> u128;
-    fn guild_id(self: @T, game_id: u32, actor: ContractAddress) -> u32;
     fn register_relic_points(ref self: T, game_id: u32, actor: ContractAddress);
     fn register_hyperstructure_points(ref self: T, game_id: u32, actor: ContractAddress, amount: u128);
     fn player_points(self: @T, game_id: u32, actor: ContractAddress) -> u128;
@@ -84,7 +83,6 @@ pub mod GameState {
         pub rules: Map<u32, SliceRules>,
         pub exists: Map<u32, bool>,
         pub next_entity: Map<u32, u32>,
-        pub guild_membership: Map<(u32, starknet::ContractAddress), u32>,
         pub player_points: Map<(u32, starknet::ContractAddress), u128>,
         pub season_points: Map<u32, u128>,
         pub ownership_rules_ready: Map<u32, bool>,

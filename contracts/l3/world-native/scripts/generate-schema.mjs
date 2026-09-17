@@ -19,6 +19,7 @@ const contracts = {
   resources: "ResourcesDomain",
   economy: "EconomyDomain",
   prizes: "PrizesDomain",
+  registry: "RegistryDomain",
 };
 const artifacts = Object.fromEntries(
   await Promise.all(

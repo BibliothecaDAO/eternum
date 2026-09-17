@@ -105,6 +105,11 @@ pub enum Command {
     RankPlayers: crate::blitz_prizes::RankPlayers,
     ResetRanking,
     CraftRelic: u32,
+    CreateGuild: crate::guilds::CreateGuild,
+    JoinGuild: crate::guilds::JoinGuild,
+    LeaveGuild,
+    SetGuildWhitelist: crate::guilds::SetWhitelist,
+    RemoveGuildMember: ContractAddress,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]

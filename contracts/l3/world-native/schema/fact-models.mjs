@@ -27,6 +27,9 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
         value: "zero",
         meaning: "No troops or resurrection delay in this guard slot.",
       };
+    if (row.name === "Guild" || row.name === "GuildMember")
+      row.absence = { value: "empty", meaning: "No guild or membership exists for this key." };
+    if (row.name === "GuildWhitelist") row.absence = { value: "false", meaning: "The player is not whitelisted." };
     if (row.name === "RankingTrial" || row.name === "PlayerRank")
       row.absence = { value: "empty", meaning: "No ranking trial or player rank has been recorded." };
     if (row.name === "FaithfulStructure")
@@ -43,6 +46,13 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
   };
   const domainKey = [{ name: "address", type: struct("lifecycle::Peers")[0].type }];
   return [
+    model("Guild", ["registry"], "game", method("registry", "guild").inputs, struct("guilds::Guild")),
+    model("GuildMember", ["registry"], "game", method("registry", "guild_member").inputs, [
+      { name: "guild_id", type: method("registry", "guild_member").outputs[0].type },
+    ]),
+    model("GuildWhitelist", ["registry"], "game", struct("guilds::WhitelistKey"), [
+      { name: "allowed", type: "core::bool" },
+    ]),
     model("ArtificerCost", ["economy"], "game", method("economy", "artificer_cost").inputs, [
       { name: "research", type: "core::integer::u128" },
     ]),

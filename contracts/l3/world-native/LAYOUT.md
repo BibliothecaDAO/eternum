@@ -385,8 +385,7 @@ the structure and does not duplicate its construction stage. The former Structur
 this codec/layout change requires a fresh rehearsal deployment.
 
 Season owns player points and the aggregate used by prize settlement. `PlayerPoints` and `PointsTotal` replace the
-placeholder prize projection. Guild membership is read through Season for construction permissions; guild command
-ownership remains in the registry/guild domain work.
+placeholder prize projection. Guild membership is read from Registry for construction permissions.
 
 Economy appends immutable `RelicState` rules keyed by `(game_id, relic_id)`. Map appends the game's last chest-discovery
 time and immutable exploration-reward entries. Relic effects reuse the existing troop boosts and production bonus;
@@ -423,3 +422,9 @@ emit deletions; finalized rankings and game chest allocations cannot be reset or
 RelicState appends an optional research cost keyed by game for artificer crafting. Missing configuration rejects;
 configured zero is distinct from absence. Crafting uses the same immutable relic weights, scoped root and resource
 settlement functions as chest rewards. It adds no craft counter or duplicate relic balance.
+
+RegistryDomain owns GuildState: guild definitions keyed by game and founder, membership keyed by game and player,
+whitelist entries keyed by game, guild and player, and a private member-count index for deleting an empty guild.
+Membership is the sole player fact; the count is not projected. Guild identifiers retain the full founder address. The
+former Season membership placeholder is removed. The registry peer extends the nested lifecycle peer layout and requires
+the same fresh rehearsal deployment; no live upgrade compatibility is claimed.

@@ -106,6 +106,7 @@ pub mod HyperstructureState {
     use crate::events::{RowMemberSet, RowSet};
     use crate::game::{IGameDispatcher, IGameDispatcherTrait, assert_playing};
     use crate::geometry::tile_key;
+    use crate::guilds::{IGuildsDispatcher, IGuildsDispatcherTrait};
     use crate::lifecycle::Lifecycle::InternalTrait as LifecycleInternalTrait;
     use crate::lifecycle::{Lifecycle, Peers};
     use crate::map::{IMapDispatcher, IMapDispatcherTrait};
@@ -327,7 +328,7 @@ pub mod HyperstructureState {
             let mut state = self.state(key);
             assert!(state.stage != Stage::Foundation, "hyperstructure not initialized");
             if command.access == ConstructionAccess::GuildOnly {
-                assert!(self.games().guild_id(game_id, actor) != 0, "owner has no guild");
+                assert!(self.guilds().guild_member(game_id, actor) != 0.try_into().unwrap(), "owner has no guild");
             }
             state.access = command.access;
             self.write_state(key, state);
@@ -367,6 +368,9 @@ pub mod HyperstructureState {
     > of InternalTrait<TContractState> {
         fn peers(self: @ComponentState<TContractState>) -> Peers {
             get_dep_component!(self, Life).require_active()
+        }
+        fn guilds(self: @ComponentState<TContractState>) -> IGuildsDispatcher {
+            IGuildsDispatcher { contract_address: self.peers().registry }
         }
         fn games(self: @ComponentState<TContractState>) -> IGameDispatcher {
             IGameDispatcher { contract_address: self.peers().season }
@@ -413,9 +417,9 @@ pub mod HyperstructureState {
                 ConstructionAccess::Public => {},
                 ConstructionAccess::Private => assert!(actor == owner, "hyperstructure is private"),
                 ConstructionAccess::GuildOnly => {
-                    let guild = self.games().guild_id(key.game_id, owner);
-                    assert!(guild != 0, "hyperstructure owner has no guild");
-                    assert!(self.games().guild_id(key.game_id, actor) == guild, "not in same guild");
+                    let guild = self.guilds().guild_member(key.game_id, owner);
+                    assert!(guild != 0.try_into().unwrap(), "hyperstructure owner has no guild");
+                    assert!(self.guilds().guild_member(key.game_id, actor) == guild, "not in same guild");
                 },
             }
         }

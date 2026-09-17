@@ -231,9 +231,7 @@ fn construction_access_applies_to_contributor_and_current_owners_guild() {
     );
     stop_cheat_caller_address(deployment.peers.economy);
     assert_terminal_rejection(deployment, access(hyper, ConstructionAccess::GuildOnly), 45);
-    set_fixture(
-        deployment.peers.season, selector!("guild_membership"), array![3, deployment.actor.into()].span(), 1_u32,
-    );
+    set_fixture(deployment.peers.registry, selector!("members"), array![3, deployment.actor.into()].span(), 1_felt252);
     assert!(execute(deployment, access(hyper, ConstructionAccess::GuildOnly), 45));
     start_cheat_caller_address(deployment.peers.economy, deployment.peers.season);
     assert!(
@@ -241,7 +239,7 @@ fn construction_access_applies_to_contributor_and_current_owners_guild() {
             .contribute_hyperstructure(3, friend, command, ExecutionContext { timestamp: 45, ..super::context() })
             .is_err(),
     );
-    set_fixture(deployment.peers.season, selector!("guild_membership"), array![3, friend.into()].span(), 1_u32);
+    set_fixture(deployment.peers.registry, selector!("members"), array![3, friend.into()].span(), 1_felt252);
     assert!(
         safe
             .contribute_hyperstructure(3, friend, command, ExecutionContext { timestamp: 45, ..super::context() })
@@ -249,7 +247,7 @@ fn construction_access_applies_to_contributor_and_current_owners_guild() {
     );
     stop_cheat_caller_address(deployment.peers.economy);
     assert!(execute(deployment, access(hyper, ConstructionAccess::Public), 46));
-    set_fixture(deployment.peers.season, selector!("guild_membership"), array![3, friend.into()].span(), 2_u32);
+    set_fixture(deployment.peers.registry, selector!("members"), array![3, friend.into()].span(), 2_felt252);
     start_cheat_caller_address(deployment.peers.economy, deployment.peers.season);
     start_cheat_block_timestamp_global(46);
     assert!(
