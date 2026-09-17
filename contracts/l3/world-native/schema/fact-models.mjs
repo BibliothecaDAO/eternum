@@ -51,6 +51,7 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
   };
   const domainKey = [{ name: "address", type: struct("lifecycle::Peers")[0].type }];
   return [
+    model("SpireLayout", ["map"], "game", method("map", "spire_layout").inputs, struct("spires::SpireLayout")),
     model(
       "LedgerOperator",
       ["registry"],

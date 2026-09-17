@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "edfb63196b09a66c194548a5388fb87e948f7ec4c005f8ca8510d1db63f610b8",
+  "schemaIdentity": "b79bb82283415dc48699795eefe28798fdf6183b56f7d9170eab3ebe9bee62a4",
   "commandAbi": [
     {
       "type": "impl",
@@ -3686,6 +3686,17 @@
     }
   ],
   "models": [
+    {
+      "name": "SpireLayout",
+      "scope": "game",
+      "schema": {
+        "game_id": "Number",
+        "count": "Number",
+        "base_distance": "Number",
+        "layer_distance": "Number",
+        "max_layer": "Number"
+      }
+    },
     {
       "name": "LedgerOperator",
       "scope": "deployment",

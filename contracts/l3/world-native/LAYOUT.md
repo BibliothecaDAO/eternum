@@ -438,4 +438,9 @@ LORDS units. Current population remains in TroopState and decreases on destructi
 decrease. Agent ownership stays in the existing map. Creation, travel and displacement share one occupier projection, so
 moving an agent cannot turn its tile marker into a realm-owned explorer marker.
 
-EntryAdministration owns the deployment ledger operator in RegistryDomain. Rotation preserves game entitlements and village passes. SettlementRules no longer copies that operational address into immutable game configuration; this layout requires the fresh native rehearsal deployment.
+EntryAdministration owns the deployment ledger operator in RegistryDomain. Rotation preserves game entitlements and
+village passes. SettlementRules no longer copies that operational address into immutable game configuration; this layout
+requires the fresh native rehearsal deployment.
+
+MapDomain stores immutable SpireLayout by game. Spire locations are the two layers’ TileOpt occupants; no second
+position index or mutable spire count is stored. Initialization creates the complete lattice atomically.

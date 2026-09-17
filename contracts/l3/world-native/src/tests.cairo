@@ -12,6 +12,7 @@ mod resource_commands;
 mod resources;
 mod rule_storage;
 mod settlement;
+mod spires;
 mod structure_storage;
 mod trade;
 mod village;

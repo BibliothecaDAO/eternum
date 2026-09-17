@@ -194,6 +194,7 @@ pub mod MapDomain {
 
     #[storage]
     struct Storage {
+        spire_layouts: starknet::storage::Map<u32, Option<crate::spires::SpireLayout>>,
         exploration_rewards: starknet::storage::Map<(u32, u32), crate::exploration_rewards::ExplorationReward>,
         exploration_reward_count: starknet::storage::Map<u32, u32>,
         last_relic_discovery: starknet::storage::Map<u32, u64>,
@@ -216,6 +217,37 @@ pub mod MapDomain {
     #[constructor]
     fn constructor(ref self: ContractState, authority: ContractAddress) {
         self.lifecycle.initialize(authority);
+    }
+    #[abi(embed_v0)]
+    impl Spires of crate::spires::ISpires<ContractState> {
+        fn initialize_spires(ref self: ContractState, game_id: u32, layout: crate::spires::SpireLayout) {
+            self.lifecycle.assert_authority();
+            let peers = self.lifecycle.require_active();
+            let games = IGameDispatcher { contract_address: peers.season };
+            assert!(!games.rules(game_id).blitz_mode_on, "spires require an Eternum game");
+            assert!(self.spire_layouts.read(game_id).is_none(), "spires already initialized");
+            crate::spires::validate(layout);
+            let center = self.map_center(game_id);
+            for ordinal in 0_u32..layout.count.into() {
+                self.create_spire(game_id, crate::spires::location(center, layout, ordinal));
+            }
+            self.spire_layouts.write(game_id, Some(layout));
+            let mut values = array![];
+            layout.serialize(ref values);
+            self
+                .emit(
+                    crate::events::RowSet {
+                        version: 1, model: 'SpireLayout', keys: array![game_id.into()].span(), values: values.span(),
+                    },
+                );
+        }
+        fn spire_layout(self: @ContractState, game_id: u32) -> Option<crate::spires::SpireLayout> {
+            self.spire_layouts.read(game_id)
+        }
+        fn place_spire(ref self: ContractState, game_id: u32, coord: Coord) -> u32 {
+            assert!(get_caller_address() == self.lifecycle.require_active().structures, "only structures domain");
+            self.create_spire(game_id, coord)
+        }
     }
     #[abi(embed_v0)]
     impl SeasonPlacement of crate::realms::ISeasonPlacement<ContractState> {
@@ -601,6 +633,31 @@ pub mod MapDomain {
     }
     #[generate_trait]
     impl Internal of InternalTrait {
+        fn create_spire(ref self: ContractState, game_id: u32, coord: Coord) -> u32 {
+            for alt in array![false, true] {
+                let tile = self.map.tile(tile_key(game_id, Coord { alt, ..coord }));
+                assert!(tile.map(|value| (value.data / 2) % BYTE_RANGE == 0).unwrap_or(true), "spire tile occupied");
+            }
+            let id = IGameDispatcher { contract_address: self.lifecycle.require_active().season }
+                .allocate_entity(game_id);
+            for alt in array![false, true] {
+                let center = Coord { alt, ..coord };
+                self.reveal_spire_access(game_id, center);
+                self.map.occupy(tile_key(game_id, center), id, 35, true);
+                for direction in 0_u8..6 {
+                    self.reveal_spire_access(game_id, spire_neighbor(center, direction));
+                }
+            }
+            id
+        }
+        fn reveal_spire_access(ref self: ContractState, game_id: u32, coord: Coord) {
+            let key = tile_key(game_id, coord);
+            let data = self.map.tile(key).map(|tile| tile.data).unwrap_or(0);
+            if data / BIOME_SCALE % BYTE_RANGE == 0 {
+                self.map.reveal(key, self.biome(key));
+            }
+        }
+
         fn map_center(self: @ContractState, game_id: u32) -> Coord {
             let rules = IGameDispatcher { contract_address: self.lifecycle.require_active().season }.rules(game_id);
             let center = 2147483646 - rules.map_center_offset;

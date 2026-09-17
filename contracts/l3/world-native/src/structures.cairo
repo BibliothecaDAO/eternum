@@ -509,21 +509,13 @@ pub mod StructuresDomain {
         fn provision_spire(ref self: ContractState, game_id: u32, coord: Coord) -> u32 {
             self.assert_authority();
             assert!(self.game_dispatcher().game(game_id).dev_mode_on, "fixture provisioning requires development game");
-            let id = self.game_dispatcher().allocate_entity(game_id);
-            for alt in array![false, true] {
-                let layer_coord = Coord { alt, ..coord };
-                self.reveal_structure_tile(game_id, layer_coord);
-                self.map_dispatcher().occupy(tile_key(game_id, layer_coord), id, 35, true);
-                for direction in 0_u8..6 {
-                    let key = tile_key(game_id, crate::geometry::spire_neighbor(layer_coord, direction));
-                    let data = self.map_dispatcher().tile(key).map(|tile| tile.data).unwrap_or(0);
-                    if (data / 0x20000000000) % 256 == 0 {
-                        self.map_dispatcher().reveal(key, self.map_dispatcher().biome(key));
-                    }
-                }
-            }
-            id
+            crate::spires::ISpiresDispatcherTrait::place_spire(
+                crate::spires::ISpiresDispatcher { contract_address: self.lifecycle.require_active().map },
+                game_id,
+                coord,
+            )
         }
+
         fn building(self: @ContractState, key: BuildingKey) -> Option<Building> {
             self.buildings.building(key)
         }

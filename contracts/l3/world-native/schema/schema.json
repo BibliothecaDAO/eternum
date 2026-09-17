@@ -1011,6 +1011,58 @@
       "entrypoints": [
         {
           "type": "function",
+          "name": "initialize_spires",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "layout",
+              "type": "world_native::spires::SpireLayout"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "spire_layout",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::option::Option::<world_native::spires::SpireLayout>"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "place_spire",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "coord",
+              "type": "world_native::troops::Coord"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::integer::u32"
+            }
+          ],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
           "name": "claim_season_settlement",
           "inputs": [
             {
@@ -7661,6 +7713,49 @@
   },
   "models": [
     {
+      "name": "SpireLayout",
+      "identity": "0x53706972654c61796f7574",
+      "owners": [
+        "map"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "count",
+          "type": "core::integer::u16",
+          "id": "0x636f756e74",
+          "feltLength": 1
+        },
+        {
+          "name": "base_distance",
+          "type": "core::integer::u8",
+          "id": "0x626173655f64697374616e6365",
+          "feltLength": 1
+        },
+        {
+          "name": "layer_distance",
+          "type": "core::integer::u8",
+          "id": "0x6c617965725f64697374616e6365",
+          "feltLength": 1
+        },
+        {
+          "name": "max_layer",
+          "type": "core::integer::u8",
+          "id": "0x6d61785f6c61796572",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": 4
+    },
+    {
       "name": "LedgerOperator",
       "identity": "0x4c65646765724f70657261746f72",
       "owners": [
@@ -12301,6 +12396,20 @@
         }
       ]
     },
+    "core::option::Option::<world_native::spires::SpireLayout>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::spires::SpireLayout>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::spires::SpireLayout"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
     "core::option::Option::<world_native::structures::Structure>": {
       "type": "enum",
       "name": "core::option::Option::<world_native::structures::Structure>",
@@ -16309,6 +16418,28 @@
         }
       ]
     },
+    "world_native::spires::SpireLayout": {
+      "type": "struct",
+      "name": "world_native::spires::SpireLayout",
+      "members": [
+        {
+          "name": "count",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "base_distance",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "layer_distance",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "max_layer",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
     "world_native::structures::Structure": {
       "type": "struct",
       "name": "world_native::structures::Structure",
@@ -16920,5 +17051,5 @@
       ]
     }
   },
-  "identity": "edfb63196b09a66c194548a5388fb87e948f7ec4c005f8ca8510d1db63f610b8"
+  "identity": "b79bb82283415dc48699795eefe28798fdf6183b56f7d9170eab3ebe9bee62a4"
 }

@@ -17,6 +17,7 @@ pub mod season;
 pub mod settlement;
 pub mod settlement_domain;
 pub mod settlement_grid;
+pub mod spires;
 pub mod stamina;
 
 #[cfg(test)]
