@@ -116,6 +116,55 @@ describe("HeraldGameSyncTransport", () => {
     });
     writer.cancel();
   });
+  it("does not cache part of a rejected diff before a fresh snapshot recovers it", async () => {
+    vi.useFakeTimers();
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const harness = streamHarness();
+    const subscribed = harness.transport.subscribe(harness.handlers);
+    const socket = harness.sockets[0]!;
+    socket.receive(hello("epoch-a", 0));
+    const writer = await subscribed;
+    snapshot("epoch-a", 0, "0x1", 1).forEach((message) => socket.receive(message));
+    await harness.transport.fetchSnapshotPage();
+    const update = diff("epoch-a", 1, "0x1", 2, true);
+    socket.receive({ ...update, set: [...update.set, { key: "0xbad", model: "UnknownModel", value: {} }] });
+    expect(harness.entities).toHaveLength(0);
+    expect(socket.closed).toBe(true);
+    await vi.advanceTimersByTimeAsync(200);
+    const recovered = harness.sockets[1]!;
+    recovered.receive(hello("epoch-a", 1));
+    snapshot("epoch-a", 1, "0x1", 2).forEach((message) => recovered.receive(message));
+    expect(harness.entities).toHaveLength(1);
+    expect(harness.entities[0]!.models.ExplorerTroops).toMatchObject({ value: 2 });
+    expect(error).toHaveBeenCalledOnce();
+    writer.cancel();
+    error.mockRestore();
+  });
+
+  it("delivers the whole row batch and transaction status when an ephemeral callback fails", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const harness = streamHarness();
+    harness.handlers.onEvent = () => {
+      throw new Error("presentation failed");
+    };
+    harness.handlers.onEntityBatch = (batch) => harness.entities.push(...batch.entities);
+    const subscribed = harness.transport.subscribe(harness.handlers);
+    const socket = harness.sockets[0]!;
+    socket.receive(hello("epoch-a", 0));
+    const writer = await subscribed;
+    snapshot("epoch-a", 0, "0x1", 1).forEach((message) => socket.receive(message));
+    await harness.transport.fetchSnapshotPage();
+    const update = diff("epoch-a", 1, "0x1", 2, true);
+    socket.receive({ ...update, set: [...update.set, { key: "0xstory", model: "StoryEvent", value: {} }] });
+    socket.receive({ type: "tx", epoch: "epoch-a", seq: 2, hash: "0x123", block: null, status: "PRE_CONFIRMED" });
+    expect(harness.entities).toHaveLength(1);
+    expect(harness.transactions).toHaveLength(1);
+    expect(socket.closed).toBe(false);
+    expect(error).toHaveBeenCalledOnce();
+    writer.cancel();
+    error.mockRestore();
+  });
+
   it("retries a stalled handshake without waiting for the browser's close event", async () => {
     vi.useFakeTimers();
     const warning = vi.spyOn(console, "warn").mockImplementation(() => {});

@@ -1,3 +1,4 @@
+import type { GameModeId } from "@/config/game-modes";
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useReducer, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { MatchedRoutePlaylist, matchRoutePlaylist } from "../config/route-tracks";
@@ -64,7 +65,13 @@ const musicRouterReducer = (state: MusicRouterState, action: MusicRouterAction):
 
 const MUSIC_FADE_DURATION_MS = 800;
 
-export const MusicRouterProvider = ({ children }: { children: ReactNode }) => {
+export const MusicRouterProvider = ({
+  children,
+  modeId = null,
+}: {
+  children: ReactNode;
+  modeId?: GameModeId | null;
+}) => {
   const location = useLocation();
   const { ensureReady, play, audioState, isReady, fadeOutAndStopMusic } = useAudio();
   const [state, dispatch] = useReducer(musicRouterReducer, createInitialMusicRouterState());
@@ -76,9 +83,9 @@ export const MusicRouterProvider = ({ children }: { children: ReactNode }) => {
   }, [isReady]);
 
   useEffect(() => {
-    const playlist = matchRoutePlaylist(location.pathname);
+    const playlist = matchRoutePlaylist(location.pathname, { modeId });
     dispatch({ type: "SET_PLAYLIST", payload: playlist });
-  }, [location.pathname]);
+  }, [location.pathname, modeId]);
 
   useEffect(() => {
     return () => {

@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-17",
+    title: "Reliable game entry and updates",
+    description:
+      "The lobby opens before game rules load, and exploration rewards keep your next action ready without reconnecting.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-17",
     title: "Independent village placement",
     description:
       "Villages use the settlement planner. Choose a connected realm for the army grant and bridge fee; villages no longer use one of six surrounding tiles.",

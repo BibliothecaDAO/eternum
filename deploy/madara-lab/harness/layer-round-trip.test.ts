@@ -142,18 +142,39 @@ function fixture(
               inGame: (model: string) => rows(model),
             },
             systemCalls: {
-              toggle_alternate: ({ explorer_id, spire_direction }: { explorer_id: number; spire_direction: number }) => account.execute({
-                contractAddress: "0xa2", entrypoint: "toggle_alternate", calldata: ["7", String(explorer_id), String(spire_direction)],
-              }),
-              explorer_move: ({ explorer_id, directions, explore }: { explorer_id: number; directions: number[]; explore: boolean }) => account.execute({
-                contractAddress: "0xa1", entrypoint: "explorer_move", calldata: ["7", String(explorer_id), "1", String(directions[0]), explore ? "1" : "0"],
-              }),
+              toggle_alternate: ({ explorer_id, spire_direction }: { explorer_id: number; spire_direction: number }) =>
+                account.execute({
+                  contractAddress: "0xa2",
+                  entrypoint: "toggle_alternate",
+                  calldata: ["7", String(explorer_id), String(spire_direction)],
+                }),
+              explorer_move: ({
+                explorer_id,
+                directions,
+                explore,
+              }: {
+                explorer_id: number;
+                directions: number[];
+                explore: boolean;
+              }) =>
+                account.execute({
+                  contractAddress: "0xa1",
+                  entrypoint: "explorer_move",
+                  calldata: ["7", String(explorer_id), "1", String(directions[0]), explore ? "1" : "0"],
+                }),
             },
           },
         } as never,
         game: {
-          submit: async (_signer: unknown, act: () => Promise<{ transaction_hash: string }>) => ({ transactionHash: (await act()).transaction_hash, confirmed: Promise.resolve() }),
-          waitFor: async (read: () => unknown) => { const result = read(); if (result === undefined) throw new Error("Expected folded tile"); return result; },
+          submit: async (_signer: unknown, act: () => Promise<{ transaction_hash: string }>) => ({
+            transactionHash: (await act()).transaction_hash,
+            confirmed: Promise.resolve(),
+          }),
+          waitFor: async (read: () => unknown) => {
+            const result = read();
+            if (result === undefined) throw new Error("Expected folded tile");
+            return result;
+          },
         } as never,
       }),
   };
@@ -214,7 +235,9 @@ describe("Eternum layer round trip", () => {
   });
 });
 
-it("uses a fifteen-coordinate Ethereal movement stride", () => { expect(ETHEREAL_STRIDE).toBe(15); });
+it("uses a fifteen-coordinate Ethereal movement stride", () => {
+  expect(ETHEREAL_STRIDE).toBe(15);
+});
 
 it("measures ethereal combat range in movement steps and rejects remote cross-layer attacks", () => {
   const origin = { col: 100, row: 100, alt: true };

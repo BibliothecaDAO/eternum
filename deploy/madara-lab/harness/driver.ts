@@ -303,7 +303,7 @@ export async function prepareHarnessBots({
 
   await beforeProvision?.();
 
-  return mapWithConcurrency(accounts, setupConcurrency, async (harnessAccount) => {
+  const bots = await mapWithConcurrency(accounts, setupConcurrency, async (harnessAccount) => {
     const structureIds = await waitForSettlement(game, harnessAccount.address, gameType);
     const structures = await waitForStructures(game, structureIds);
 
@@ -342,6 +342,61 @@ export async function prepareHarnessBots({
       structures,
     };
   });
+  const reservations = new PathReservations(bots, game);
+  await mapWithConcurrency(bots, setupConcurrency, async (bot) => {
+    for (const explorer of bot.explorers) {
+      await prepareExplorerRoute(bot, explorer, game, provider, reservations, setupTransactions);
+    }
+  });
+  return bots;
+}
+
+/** Realm placement reveals only its own tile; measured travel needs an explored route origin. */
+async function prepareExplorerRoute(
+  bot: HarnessBot,
+  explorer: ExplorerState,
+  game: HarnessGame,
+  provider: RpcProvider,
+  pathReservations: PathReservations,
+  setupTransactions: TrackedTransaction[],
+): Promise<void> {
+  const deadline = Date.now() + ACTION_READINESS_TIMEOUT_MS;
+  const rpc = createRpcMetrics();
+  const center = game.mapCenter();
+  while (Date.now() < deadline) {
+    const { coord } = requireExplorer(game, explorer.explorerId);
+    if (
+      game
+        .armyPathIndexes()
+        .exploredHexes.get(coord.x - center.x)
+        ?.has(coord.y - center.y)
+    ) {
+      explorer.pathDirections = [];
+      explorer.atFrontier = true;
+      return;
+    }
+    const chainTicks = await readChainTicks(game, provider, rpc);
+    if (game.explorerStamina(explorer.explorerId, chainTicks.armies) < game.minimumStaminaFor("explore")) {
+      await sleep(ACTION_READINESS_POLL_INTERVAL_MS);
+      continue;
+    }
+    const transaction = await runExplorerAction({
+      actionIndex: 0,
+      bot: { ...bot, explorers: [explorer] },
+      chainTicks,
+      game,
+      kind: "explore",
+      pathReservations,
+      provider,
+      rpc,
+      scheduledAtMs: Date.now(),
+      stage: "setup",
+      tick: 0,
+    });
+    setupTransactions.push(transaction);
+    assertCompleted(transaction);
+  }
+  throw new Error(`Explorer ${explorer.explorerId} did not reach an explored route origin before setup timed out`);
 }
 
 export async function runWorkload({
@@ -462,7 +517,10 @@ export function prioritizeExplorer<T extends ExplorerPriority>(
 }
 
 async function settleBot({
-  gameType, harnessAccount, game, provider,
+  gameType,
+  harnessAccount,
+  game,
+  provider,
 }: {
   gameType: HarnessGameType;
   harnessAccount: HarnessAccount;
@@ -475,14 +533,19 @@ async function settleBot({
     gameId: game.gameId,
     kind: "settle",
     provider,
-    send: () => game.submit(harnessAccount.account,
-      () => game.settle(harnessAccount.account, harnessAccount.owner, name, gameType)),
+    send: () =>
+      game.submit(harnessAccount.account, () =>
+        game.settle(harnessAccount.account, harnessAccount.owner, name, gameType),
+      ),
     stage: "setup",
   });
 }
 
 async function provisionBot({
-  harnessAccount, game, provider, structureId,
+  harnessAccount,
+  game,
+  provider,
+  structureId,
 }: {
   harnessAccount: HarnessAccount;
   game: HarnessGame;
@@ -626,7 +689,8 @@ async function runExplorerAction({
   rpc,
   scheduledAtMs,
   tick,
-}: ExecuteBotActionOptions & { kind: "move" | "explore" }): Promise<TrackedTransaction> {
+  stage = "workload",
+}: ExecuteBotActionOptions & { kind: "move" | "explore"; stage?: TransactionStage }): Promise<TrackedTransaction> {
   const plan = planExplorerAction(bot, kind, chainTicks, game, pathReservations);
   const selectedExplorer = plan.explorer;
   selectedExplorer.lastUsedAt = actionIndex;
@@ -650,7 +714,7 @@ async function runExplorerAction({
           currentArmiesTick: chainTicks.armies,
         }),
       ),
-    stage: "workload",
+    stage,
     tick,
   });
   if (transaction.outcome !== "completed") {

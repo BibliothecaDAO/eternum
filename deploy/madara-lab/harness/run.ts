@@ -12,12 +12,7 @@ import { launchGame } from "../../../config/deployer/clean/launch/runner";
 import { createHarnessAccounts } from "./account-factory";
 import { connectHarnessGameClient, type HarnessGameplayContracts } from "./game-client";
 import { createHarnessGame, type HarnessGame } from "./harness-game";
-import {
-  prepareHarnessBots,
-  runWorkload,
-  type HarnessGameType,
-  type TrackedTransaction,
-} from "./driver";
+import { prepareHarnessBots, runWorkload, type HarnessGameType, type TrackedTransaction } from "./driver";
 import {
   bindLedgerGameplayAccounts,
   finalizeLedgerGame,
@@ -183,8 +178,11 @@ async function main(): Promise<void> {
     : undefined;
   const game = await resolveHarnessGame(options, ledgerEnvironment);
   const signingKeys = new Map<bigint, string>();
-  if (options.ledger) signingKeys.set(BigInt(process.env.DOJO_ACCOUNT_ADDRESS ?? MADARA_ADMIN_ADDRESS),
-    process.env.DOJO_PRIVATE_KEY ?? MADARA_ADMIN_PRIVATE_KEY);
+  if (options.ledger)
+    signingKeys.set(
+      BigInt(process.env.DOJO_ACCOUNT_ADDRESS ?? MADARA_ADMIN_ADDRESS),
+      process.env.DOJO_PRIVATE_KEY ?? MADARA_ADMIN_PRIVATE_KEY,
+    );
   const client = await connectHarnessGameClient({
     admissionUrl,
     chainId,
@@ -323,7 +321,6 @@ function resolveMinimumThresholdActions(options: HarnessCliOptions, plannedActio
   return isAcceptanceRun ? 3_500 : plannedActions;
 }
 
-
 function parseFlags(args: string[]): Record<string, string> {
   const values: Record<string, string> = {};
   for (let index = 0; index < args.length; index += 1) {
@@ -343,7 +340,8 @@ function parseFlags(args: string[]): Record<string, string> {
 }
 
 async function prepareGameRun({
-  client,  signingKeys,
+  client,
+  signingKeys,
   game,
   gameplayContracts,
   harnessGame,

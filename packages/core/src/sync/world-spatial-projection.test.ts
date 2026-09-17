@@ -91,7 +91,7 @@ const createHarness = () => {
         alt: input.alt ?? false,
         col: input.col,
         row: input.row,
-        data: encodeTile({ ...input, occupierType: input.occupierType ?? TileOccupier.Chest }),
+        data: encodeTile({ biome: 4, ...input, occupierType: input.occupierType ?? TileOccupier.Chest }),
       },
       skipUpdateStream,
     );
@@ -137,6 +137,28 @@ const createHarness = () => {
 };
 
 describe("WorldSpatialProjection", () => {
+  it("keeps an unrevealed spawn out of terrain and path indexes without hiding its explorer", () => {
+    const { projection, writeTile, writeArmy } = createHarness();
+    writeTile("spawn", {
+      col: 100,
+      row: 200,
+      biome: 0,
+      occupierId: 7,
+      occupierType: TileOccupier.ExplorerKnightT1Regular,
+    });
+    writeArmy("explorer", { explorerId: 7, col: 100, row: 200 });
+    projection.start();
+    expect(projection.getTiles(false)).toEqual([]);
+    expect(projection.getArmies(false)).toHaveLength(1);
+    writeTile("spawn", { col: 100, row: 200, biome: 0, occupierId: 0, occupierType: TileOccupier.None });
+    expect(projection.getTiles(false)).toEqual([]);
+    writeTile("spawn", { col: 100, row: 200, biome: 4, occupierId: 0, occupierType: TileOccupier.None });
+    expect(projection.getTiles(false)).toHaveLength(1);
+    writeTile("spawn", { col: 100, row: 200, biome: 0, occupierId: 0, occupierType: TileOccupier.None });
+    expect(projection.getTiles(false)).toEqual([]);
+    projection.dispose();
+  });
+
   it("indexes live surface tiles for map-wide spatial reads", () => {
     const { projection, writeTile } = createHarness();
     writeTile("surface", {

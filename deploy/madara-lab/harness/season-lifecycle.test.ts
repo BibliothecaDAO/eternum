@@ -4,16 +4,27 @@ import { closeHarnessSeason } from "./season-lifecycle";
 
 function fixture(target: number, dev = false) {
   let settled = false;
-  const end = mock(async () => { settled = true; });
+  const end = mock(async () => {
+    settled = true;
+  });
   const rows = (model: string) => {
     switch (model) {
-      case "GameRegistry": return [{ game_id: 1, end_at: settled ? 100n : 200n, settled, dev_mode_on: dev }];
-      case "SeasonWinThreshold": return [{ game_id: 1, points: BigInt(target) * 1000000n }];
-      case "PointsTotal": return [{ game_id: 1, total: 50000000n }];
-      case "PlayerPoints": return [{ game_id: 1, address: 1n, points: settled ? 50000000n : 0n }];
-      case "HyperstructureShares": return [{ game_id: 1, start_at: settled ? 100n : 50n, multiplier: 1, shareholders: [{ player: 1n, bps: 10000 }] }];
-      case "SliceRules": return [{ victory_points_grant_config: { hyp_points_per_second: 1000000 } }];
-      default: throw new Error(`Unexpected model ${model}`);
+      case "GameRegistry":
+        return [{ game_id: 1, end_at: settled ? 100n : 200n, settled, dev_mode_on: dev }];
+      case "SeasonWinThreshold":
+        return [{ game_id: 1, points: BigInt(target) * 1000000n }];
+      case "PointsTotal":
+        return [{ game_id: 1, total: 50000000n }];
+      case "PlayerPoints":
+        return [{ game_id: 1, address: 1n, points: settled ? 50000000n : 0n }];
+      case "HyperstructureShares":
+        return [
+          { game_id: 1, start_at: settled ? 100n : 50n, multiplier: 1, shareholders: [{ player: 1n, bps: 10000 }] },
+        ];
+      case "SliceRules":
+        return [{ victory_points_grant_config: { hyp_points_per_second: 1000000 } }];
+      default:
+        throw new Error(`Unexpected model ${model}`);
     }
   };
   spyOn(configManager, "getActiveGameId").mockReturnValue(1);
@@ -21,9 +32,15 @@ function fixture(target: number, dev = false) {
   return {
     end,
     options: {
-      client: { gameId: 1, setup: { store: { require: (model: string) => rows(model)[0], inGame: rows }, systemCalls: { end_game: end } } },
+      client: {
+        gameId: 1,
+        setup: { store: { require: (model: string) => rows(model)[0], inGame: rows }, systemCalls: { end_game: end } },
+      },
       game: {
-        submit: async (_signer: unknown, act: () => Promise<unknown>) => ({ transactionHash: "0xabc", confirmed: act() }),
+        submit: async (_signer: unknown, act: () => Promise<unknown>) => ({
+          transactionHash: "0xabc",
+          confirmed: act(),
+        }),
         waitFor: async (read: () => unknown) => read(),
       },
       provider: {
@@ -35,7 +52,10 @@ function fixture(target: number, dev = false) {
   };
 }
 
-afterEach(() => { mock.restore(); setBlockTimestampSource(null); });
+afterEach(() => {
+  mock.restore();
+  setBlockTimestampSource(null);
+});
 
 test("an Eternum workload below the victory target does not claim lifecycle success", async () => {
   const context = fixture(100);

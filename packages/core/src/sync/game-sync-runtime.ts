@@ -43,6 +43,25 @@ const resolveEventTimestamp = (model: string, value: unknown): string => {
   return String(timestamp);
 };
 
+const eventIdentity = (model: string, event: GameSyncEntity, value: unknown): string => {
+  if (isRecord(value) && "event_position" in value) {
+    const position = value.event_position;
+    if (
+      !isRecord(position) ||
+      typeof position.transaction_hash !== "string" ||
+      !/^0x[0-9a-f]+$/i.test(position.transaction_hash) ||
+      !Number.isSafeInteger(position.event_index) ||
+      Number(position.event_index) < 0
+    ) {
+      throw new Error(`Game sync event ${model} has an invalid event position`);
+    }
+    return `${model}:${BigInt(position.transaction_hash)}:${position.event_index}`;
+  }
+  // Historical story keys already identify the event; confirmation may correct its timestamp.
+  if (model === "StoryEvent" || model.endsWith("-StoryEvent")) return `${model}:${event.hashed_keys}`;
+  return `${model}:${event.hashed_keys}:${resolveEventTimestamp(model, value)}`;
+};
+
 const createEmptyMetrics = (): GameSyncRuntimeMetrics => ({
   appliedBatchCount: 0,
   eventGapFillReplayCount: 0,
@@ -381,12 +400,7 @@ export class GameSyncRuntime {
     if (!session) return;
 
     Object.entries(event.models).forEach(([model, value]) => {
-      const timestamp = resolveEventTimestamp(model, value);
-      // StoryEvent keys include a uuid and transaction hash; confirmation may correct the provisional timestamp.
-      const identity =
-        model === "StoryEvent" || model.endsWith("-StoryEvent")
-          ? `${model}:${event.hashed_keys}`
-          : `${model}:${event.hashed_keys}:${timestamp}`;
+      const identity = eventIdentity(model, event, value);
       const previous = this.recentEventIdentities.get(identity);
       const rank = eventConfirmationRank(confirmation);
       if (previous !== undefined && rank <= previous) return;

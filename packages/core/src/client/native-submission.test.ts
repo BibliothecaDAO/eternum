@@ -1,13 +1,17 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { hash, shortString } from "starknet";
+import { readFileSync } from "node:fs";
 import { createNativeTicketSubmission } from "./native-submission";
 
-const signed = { intent: ["0x1", "0x2"], r: "0x3", s: "0x4" };
-const action = hash.computePoseidonHashOnElements([
-  shortString.encodeShortString("ETERNUM_ACTION"),
-  1,
-  ...signed.intent,
-]);
+// The transport uses the published Rust/Cairo intent vector, including its tag and version.
+const vector = readFileSync(
+  new URL("../../../../contracts/l3/randomness-protocol/tests/fixtures/v1.txt", import.meta.url),
+  "utf8",
+)
+  .trim()
+  .split(/\s+/);
+const intentLength = Number(BigInt(vector[1]));
+const signed = { intent: vector.slice(2, 2 + intentLength), r: "0x3", s: "0x4" };
+const action = vector[2 + intentLength];
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status });
 
 afterEach(() => {
