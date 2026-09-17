@@ -4,7 +4,7 @@ import {
   type HeraldGameDirectoryEntry,
   type HeraldLeaderboard,
 } from "@bibliothecadao/eternum/game-sync";
-import type { DirectoryInput } from "../game-directory";
+import { resolveDirectoryStatus, type DirectoryInput } from "../game-directory";
 import type { FoldRow } from "../types";
 
 type Row = Record<string, unknown>;
@@ -60,19 +60,25 @@ function directoryEntry(game: Row, facts: DirectoryRows, input: DirectoryInput):
   );
   const realms = settlements.filter((row) => number(record(row.base).category) === 1);
   const player = input.playerAddress && address(input.playerAddress);
+  const clock = {
+    start_settling_at: number(game.start_settling_at),
+    start_main_at: number(game.start_main_at),
+    end_at: number(game.end_at),
+    end_grace_seconds: number(game.end_grace_seconds),
+  };
   return {
     game_id: number(game.game_id),
     name: shortString(game.name),
     preset_id: number(game.preset_id),
     mode: config.blitz_mode_on ? "blitz" : "eternum",
     dev_mode_on: game.dev_mode_on === true,
-    status: gameStatus(game, input.timestamp),
-    clock: {
-      start_settling_at: number(game.start_settling_at),
-      start_main_at: number(game.start_main_at),
-      end_at: number(game.end_at),
-      end_grace_seconds: number(game.end_grace_seconds),
-    },
+    status: resolveDirectoryStatus(
+      game.settled ? "Settled" : "Registration",
+      clock,
+      game.dev_mode_on === true,
+      input.timestamp,
+    ),
+    clock,
     player_count: new Set(settlements.map((row) => address(row.owner))).size,
     player_state: player
       ? {
@@ -162,13 +168,6 @@ function rankPlayers(
 function shortString(value: unknown): string {
   const hex = integer(value).toString(16);
   return Buffer.from(hex.length % 2 ? `0${hex}` : hex, "hex").toString("utf8");
-}
-
-function gameStatus(game: Row, timestamp: number): HeraldGameDirectoryEntry["status"] {
-  if (game.settled) return "Settled";
-  if (integer(game.end_at) !== 0n && timestamp >= number(game.end_at)) return "Ended";
-  if (game.dev_mode_on || timestamp >= number(game.start_main_at)) return "Live";
-  return "Registration";
 }
 
 function pointCutoff(game: Row, timestamp: number): bigint {

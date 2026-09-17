@@ -109,6 +109,7 @@ const buildGameEntry = (
   worldConfig: Record<string, unknown> | undefined,
   structureCounts: { players: Set<string>; realms: number; villages: number } | undefined,
   playerState: { registered: boolean; settled: boolean } | null,
+  timestamp: number,
 ): HeraldGameDirectoryEntry => {
   const blitz = worldConfig ? asBoolean(worldConfig.blitz_mode_on, "WorldConfig.blitz_mode_on") : null;
   const registration = worldConfig
@@ -119,14 +120,17 @@ const buildGameEntry = (
     : null;
   const settlement = worldConfig ? asRecord(worldConfig.settlement_config, "WorldConfig.settlement_config") : null;
 
+  const clock = {
+    end_at: asNumber(registry.end_at, "GameRegistry.end_at"),
+    end_grace_seconds: asNumber(registry.end_grace_seconds, "GameRegistry.end_grace_seconds"),
+    start_main_at: asNumber(registry.start_main_at, "GameRegistry.start_main_at"),
+    start_settling_at: asNumber(registry.start_settling_at, "GameRegistry.start_settling_at"),
+  };
+  const devMode = asBoolean(registry.dev_mode_on, "GameRegistry.dev_mode_on");
+
   return {
-    clock: {
-      end_at: asNumber(registry.end_at, "GameRegistry.end_at"),
-      end_grace_seconds: asNumber(registry.end_grace_seconds, "GameRegistry.end_grace_seconds"),
-      start_main_at: asNumber(registry.start_main_at, "GameRegistry.start_main_at"),
-      start_settling_at: asNumber(registry.start_settling_at, "GameRegistry.start_settling_at"),
-    },
-    dev_mode_on: asBoolean(registry.dev_mode_on, "GameRegistry.dev_mode_on"),
+    clock,
+    dev_mode_on: devMode,
     game_id: asNumber(registry.game_id, "GameRegistry.game_id"),
     mode: blitz === null ? null : blitz ? "blitz" : "eternum",
     name: decodeShortString(registry.name),
@@ -168,7 +172,7 @@ const buildGameEntry = (
             ),
           }
         : null,
-    status: asStatus(registry.status),
+    status: resolveDirectoryStatus(asStatus(registry.status), clock, devMode, timestamp),
   };
 };
 
@@ -180,7 +184,7 @@ export interface DirectoryInput {
   timestamp: number;
 }
 
-export const buildGameDirectory = (input: Omit<DirectoryInput, "timestamp">): HeraldGameDirectory => {
+export const buildGameDirectory = (input: DirectoryInput): HeraldGameDirectory => {
   const configsByGame = rowsByGame(input.fold.modelRows("WorldConfig"));
   const structureRows = input.fold.modelRows("Structure");
   const structureCounts = countSettledStructures(structureRows);
@@ -199,6 +203,7 @@ export const buildGameDirectory = (input: Omit<DirectoryInput, "timestamp">): He
         input.playerAddress
           ? { registered: playerRegisteredGames.has(gameId), settled: playerSettledGames.has(gameId) }
           : null,
+        input.timestamp,
       );
     })
     .sort((left, right) => right.game_id - left.game_id);
@@ -209,3 +214,16 @@ export const buildGameDirectory = (input: Omit<DirectoryInput, "timestamp">): He
     games,
   };
 };
+
+/** Directory phases advance with the chain clock; settlement still requires a recorded transaction. */
+export function resolveDirectoryStatus(
+  recorded: HeraldGameStatus,
+  clock: Pick<HeraldGameDirectoryEntry["clock"], "start_main_at" | "end_at">,
+  devMode: boolean,
+  timestamp: number,
+): HeraldGameStatus {
+  if (recorded === "Settled" || recorded === "Ended") return recorded;
+  if (clock.end_at > 0 && timestamp >= clock.end_at) return "Ended";
+  if (devMode || timestamp >= clock.start_main_at) return "Live";
+  return recorded;
+}
