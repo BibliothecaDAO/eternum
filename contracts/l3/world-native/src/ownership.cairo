@@ -115,8 +115,8 @@ pub struct RealmCreatedStory {
 pub struct GuardAddStory {
     pub structure_id: u32,
     pub slot: u8,
-    pub category: u8,
-    pub tier: u8,
+    pub category: crate::troops::TroopType,
+    pub tier: crate::troops::TroopTier,
     pub amount: u128,
 }
 

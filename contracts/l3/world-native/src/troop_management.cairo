@@ -45,7 +45,7 @@ pub struct ExplorerCreated {
     pub category: TroopType,
     pub tier: TroopTier,
     pub amount: u128,
-    pub spawn_direction: u8,
+    pub spawn_direction: crate::geometry::Direction,
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct ExplorerRemoved {
@@ -61,12 +61,8 @@ pub fn management_story(command: ManageTroops) -> (u32, crate::ownership::Story)
                 GuardAddStory {
                     structure_id: value.guard.structure_id,
                     slot: value.guard.slot,
-                    category: value.category.into(),
-                    tier: match value.tier {
-                        TroopTier::T1 => 0,
-                        TroopTier::T2 => 1,
-                        TroopTier::T3 => 2,
-                    },
+                    category: value.category,
+                    tier: value.tier,
                     amount: value.amount,
                 },
             ),

@@ -2,7 +2,6 @@ import {
   BuildingType,
   BuildingTypeToString,
   ContractAddress,
-  DISPLAYED_SLOT_NUMBER_MAP,
   GuardSlot,
   RESOURCE_PRECISION,
   resources,
@@ -880,9 +879,9 @@ function formatSlotLabel(value: unknown): string | undefined {
   const label = formatEnum(value);
   const slot = numeric ?? (label ? GuardSlot[label as keyof typeof GuardSlot] : undefined);
   if (slot === undefined) return undefined;
-  const displayed = DISPLAYED_SLOT_NUMBER_MAP[slot as GuardSlot];
-  if (displayed === undefined) throw new Error(`Invalid guard slot: ${String(value)}`);
-  return `Slot ${displayed}`;
+  const name = GuardSlot[slot as GuardSlot];
+  if (name === undefined) throw new Error(`Invalid guard slot: ${String(value)}`);
+  return name;
 }
 
 function formatDirection(value: unknown): string | undefined {

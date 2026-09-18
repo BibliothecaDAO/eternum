@@ -416,12 +416,16 @@ fn troop_actions_emit_one_unique_story_each_and_rejections_emit_none() {
                 category: TroopType::Knight,
                 tier: TroopTier::T1,
                 amount: RESOURCE_PRECISION,
-                spawn_direction: 2,
+                spawn_direction: crate::geometry::Direction::NorthWest,
             },
         ),
         Story::GuardAddStory(
             GuardAddStory {
-                structure_id: home.entity_id, slot: 0, category: 0, tier: 0, amount: 3 * RESOURCE_PRECISION,
+                structure_id: home.entity_id,
+                slot: 0,
+                category: TroopType::Knight,
+                tier: TroopTier::T1,
+                amount: 3 * RESOURCE_PRECISION,
             },
         ),
         Story::ExplorerAddStory(recruitment),

@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "d6ee3a142410e6699345f9118166ffd1449d1f2d9a4fee3baeadccdcaf74f134";
+export const nativeFactSchemaIdentity = "e75211e4b947beacb96424336cddec780629d90860927e4933495f46e8749fe3";
 export interface NativeRows {
   Preset: { readonly preset_id: number; readonly commitment: bigint };
   Series: { readonly series_id: bigint; readonly owner: bigint; readonly created_games: number };
