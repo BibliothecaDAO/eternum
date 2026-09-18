@@ -8,6 +8,7 @@ const baseSummary: WorldSummary = {
   name: "alpha",
   chain: "madara",
   alive: true,
+  ready: true,
   lastCheckedAt: 0,
   mode: "blitz",
   startSettlingAt: 100,
@@ -33,6 +34,7 @@ describe("summaryToWorldConfigMeta", () => {
     const meta = summaryToWorldConfigMeta(baseSummary, null);
 
     expect(meta.mode).toBe("blitz");
+    expect(meta.ready).toBe(true);
     expect(meta.startSettlingAt).toBe(100);
     expect(meta.startMainAt).toBe(200);
     expect(meta.endAt).toBe(1200);
@@ -44,6 +46,10 @@ describe("summaryToWorldConfigMeta", () => {
     expect(meta.registrationStartAt).toBe(100);
     expect(meta.registrationEndAt).toBe(200);
     expect(meta.devModeOn).toBe(false);
+  });
+
+  it("preserves roster readiness independently of the scheduled clock", () => {
+    expect(summaryToWorldConfigMeta({ ...baseSummary, ready: false }, null).ready).toBe(false);
   });
 
   it("resolves eternum mode for eternum summaries", () => {

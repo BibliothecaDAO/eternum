@@ -29,6 +29,7 @@ export interface HeraldGameSettlementConfig {
 }
 
 export interface HeraldGameDirectoryEntry {
+  ready: boolean;
   clock: HeraldGameClock;
   dev_mode_on: boolean;
   game_id: number;

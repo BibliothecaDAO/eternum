@@ -72,12 +72,16 @@ function directoryEntry(game: Row, facts: DirectoryRows, input: DirectoryInput):
     preset_id: number(game.preset_id),
     mode: config.blitz_mode_on ? "blitz" : "eternum",
     dev_mode_on: game.dev_mode_on === true,
-    status: resolveDirectoryStatus(
-      game.settled ? "Settled" : "Registration",
-      clock,
-      game.dev_mode_on === true,
-      input.timestamp,
-    ),
+    ready: game.ready === true,
+    status:
+      game.ready !== true
+        ? "Registration"
+        : resolveDirectoryStatus(
+            game.settled ? "Settled" : "Registration",
+            clock,
+            game.dev_mode_on === true,
+            input.timestamp,
+          ),
     clock,
     player_count: new Set(settlements.map((row) => address(row.owner))).size,
     player_state: player

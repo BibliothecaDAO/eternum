@@ -15,6 +15,7 @@ import type { CreateGameRequest, CreateRotationRequest, CreateSeriesRequest } fr
 
 interface RpcTarget {
   url: string;
+  admissionUrl: string;
 }
 
 interface HeraldTarget {
@@ -68,6 +69,7 @@ const buildGameRequest = (
 ): LaunchGameRequest => ({
   ...sharedRequest(request, rpc, registrar),
   launchKind: "game",
+  admissionUrl: rpc.admissionUrl,
   gameName: request.gameName,
   rosterOwners: request.rosterOwners,
   startTime: requirePersistedStartTime(request),
@@ -130,7 +132,7 @@ const executeRun = async (
 
 export const launchTargetLayers = (config: LaunchServiceConfig) =>
   Layer.mergeAll(
-    Layer.succeed(LaunchRpc, { url: config.rpcUrl }),
+    Layer.succeed(LaunchRpc, { url: config.rpcUrl, admissionUrl: config.admissionUrl }),
     Layer.succeed(LaunchHerald, { url: config.heraldUrl }),
     Layer.succeed(LaunchRegistrar, {
       accountAddress: config.accountAddress,

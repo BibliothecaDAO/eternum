@@ -20,9 +20,6 @@ pub struct StructurePreset {
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct SettlementPreset {
     pub reward_profile: u8,
-    pub cosmetic_limit: u8,
-    pub cosmetic_collection: ContractAddress,
-    pub cosmetic_timelock: ContractAddress,
     pub realms: crate::settlement::RealmGrants,
     pub villages: crate::village::VillageRules,
     pub spires: Option<crate::spires::SpireLayout>,
@@ -131,9 +128,6 @@ fn configure_settlement(
             crate::settlement::SettlementMode::Single
         },
         reward_profile: settlement.reward_profile,
-        cosmetic_limit: settlement.cosmetic_limit,
-        cosmetic_collection: settlement.cosmetic_collection,
-        cosmetic_timelock: settlement.cosmetic_timelock,
     };
     crate::settlement::ISettlementConfigurationDispatcherTrait::configure_settlement(
         crate::settlement::ISettlementConfigurationDispatcher { contract_address: address },

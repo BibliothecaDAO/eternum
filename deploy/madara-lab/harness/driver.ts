@@ -593,6 +593,7 @@ async function settleBot({
   game: HarnessGame;
   provider: HarnessProvider;
 }): Promise<TrackedTransaction> {
+  if (gameType === "blitz") throw new Error("Blitz roster must be settled by the launch authority before the harness starts");
   const name = `bot-${harnessAccount.botId.toString().padStart(3, "0")}`;
   return trackTransaction({
     botId: harnessAccount.botId,

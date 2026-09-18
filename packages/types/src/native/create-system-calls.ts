@@ -33,7 +33,6 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
 
   const settle_season = (props: Parameters<typeof provider.settle_season>[0]) => provider.settle_season(props);
   const settle_village = (props: Parameters<typeof provider.settle_village>[0]) => provider.settle_village(props);
-  const settle_blitz = (props: Parameters<typeof provider.settle_blitz>[0]) => provider.settle_blitz(props);
 
   const bitcoin_mine_contribute_labor = async (
     props: SystemProps.BitcoinMineContributeLaborProps,
@@ -417,7 +416,6 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     update_whitelist: withAuth(update_whitelist),
     remove_guild_member: withAuth(remove_guild_member),
     disband_guild: withAuth(disband_guild),
-    settle_blitz: withAuth(settle_blitz),
     settle_season: withAuth(settle_season),
     settle_village: withAuth(settle_village),
     bridge_deposit_into_realm: withAuth(bridge_deposit_into_realm),

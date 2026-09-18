@@ -5,9 +5,6 @@ import { summaryToWorldConfigMeta } from "@/hooks/summary-to-world-config-meta";
 import { usePlayerWorldRegistrations, getWorldSummaryKey } from "@/hooks/use-player-world-registrations";
 import { type WorldConfigMeta } from "@/hooks/use-world-availability";
 import { useWorldsSummary } from "@/hooks/use-worlds-summary";
-import { useWorldRegistration, type EntryStage } from "@/hooks/use-world-registration";
-import { PLAYER_WORLD_REGISTRATION_QUERY_KEY, WORLD_AVAILABILITY_QUERY_KEY } from "@/hooks/world-list-queries";
-import type { HeraldGameDirectory } from "@bibliothecadao/eternum/game-sync";
 import type { WorldSummary } from "@bibliothecadao/types";
 import type { WorldSelectionInput } from "@/runtime/world";
 import { WorldCountdownDetailed, useGameTimeStatus } from "@/ui/components/world-countdown";
@@ -16,52 +13,11 @@ import { useLandingNetworkState } from "../../hooks/use-landing-network-state";
 import type { LandingNetworkChain } from "../../lib/landing-network-state";
 import { getChainLabel } from "@/ui/utils/network-switch";
 import type { GameChain as Chain } from "@realms-world/chain";
-import { useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, Eye, Loader2, LogIn, Play, RefreshCw, Sparkles, Trophy, UserPlus, Users } from "lucide-react";
+import { CheckCircle2, Eye, Loader2, LogIn, Play, RefreshCw, Sparkles, Trophy, Users } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
-import { toast } from "@/ui/features/event-feed/notify";
 
 const toPaddedFeltAddress = (address: string): string => `0x${BigInt(address).toString(16).padStart(64, "0")}`;
-
-const markGameRegistered = (
-  directory: HeraldGameDirectory | undefined,
-  gameId: number,
-): HeraldGameDirectory | undefined => {
-  if (!directory) return directory;
-  return {
-    ...directory,
-    games: directory.games.map((game) =>
-      game.game_id === gameId
-        ? {
-            ...game,
-            player_state: {
-              registered: true,
-              settled: game.player_state?.settled ?? false,
-            },
-          }
-        : game,
-    ),
-  };
-};
-
-/**
- * Get stage label for world entry progress.
- */
-const getStageLabel = (stage: EntryStage): string => {
-  switch (stage) {
-    case "preparing":
-      return "Preparing...";
-    case "settling":
-      return "Settling...";
-    case "done":
-      return "Settled!";
-    case "error":
-      return "Failed";
-    default:
-      return "Settle";
-  }
-};
 
 /**
  * Chain badge - shows which network the game is on
@@ -195,7 +151,6 @@ interface GameCardProps {
   onSettle?: () => void;
   onSpectate: () => void;
   onSeeScore?: () => void;
-  onRegistrationComplete?: (game: GameData) => void;
   playerAddress: string | null;
   showChainBadge?: boolean;
 }
@@ -209,7 +164,6 @@ const GameCard = ({
   onSettle,
   onSpectate,
   onSeeScore,
-  onRegistrationComplete,
   playerAddress,
   showChainBadge = false,
 }: GameCardProps) => {
@@ -231,42 +185,9 @@ const GameCard = ({
   // Spectate is always available for live and ended games, and also for
   // Blitz worlds during the pre-main registration window.
   const canSpectate = isOngoing || isEnded || canSpectatePreMainBlitz;
-  const handledSettlementStageRef = useRef(false);
-
-  // Inline world-entry hook.
-  const { settle, entryStage, isSettling, error, canSettle, isRegistrationFull } = useWorldRegistration({
-    worldName: game.name,
-    chain: game.chain,
-    config: game.config,
-    isRegistered: game.isRegistered === true,
-    enabled: isBlitzMode && game.status === "ok" && canRegisterPeriod,
-  });
-  const showRegistered = game.isRegistered || entryStage === "done";
-  const canEnterRegisteredBlitz = isBlitzMode && showRegistered && (isUpcoming || isOngoing);
+  const showRegistered = game.isRegistered;
+  const canEnterRegisteredBlitz = isBlitzMode && game.config?.ready && showRegistered && (isUpcoming || isOngoing);
   const canPlay = !isUnknownMode && (canEnterRegisteredBlitz || canOpenEternumEntry);
-
-  // Handle settle entry with toast notification.
-  const handleSettle = useCallback(() => {
-    void settle().catch((err) => {
-      console.error("Settlement failed:", err);
-    });
-  }, [settle]);
-
-  // Show success toast when settlement completes.
-  useEffect(() => {
-    if (entryStage !== "done") {
-      handledSettlementStageRef.current = false;
-      return;
-    }
-
-    if (handledSettlementStageRef.current) return;
-    handledSettlementStageRef.current = true;
-
-    toast.success("Settlement successful!", {
-      description: `You are now settled in ${game.name}.`,
-    });
-    onRegistrationComplete?.(game);
-  }, [entryStage, game, onRegistrationComplete]);
 
   // Status colors - enhanced yellow for upcoming
   const statusColors = {
@@ -405,36 +326,9 @@ const GameCard = ({
               <Loader2 className="w-3 h-3 animate-spin" />
             </div>
           ) : isBlitzMode && game.isRegistered === false && canRegisterPeriod && playerAddress ? (
-            <>
-              {isSettling ? (
-                <div className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-medium bg-gold/10 text-gold border border-gold/30">
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                  {getStageLabel(entryStage)}
-                </div>
-              ) : entryStage === "error" ? (
-                <button
-                  onClick={handleSettle}
-                  className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-semibold bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20 transition-colors"
-                >
-                  Retry
-                </button>
-              ) : canSettle ? (
-                <button
-                  onClick={handleSettle}
-                  className={cn(
-                    "flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-semibold",
-                    "bg-brilliance/20 text-brilliance border border-brilliance/30 hover:bg-brilliance/30 transition-colors",
-                  )}
-                >
-                  <UserPlus className="w-3 h-3" />
-                  Settle
-                </button>
-              ) : isRegistrationFull ? (
-                <div className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-medium bg-white/5 text-white/40 border border-white/10">
-                  Registration full
-                </div>
-              ) : null}
-            </>
+            <div className="flex-1 rounded border border-white/10 px-2 py-1.5 text-xs text-white/60">
+              Assigned players settle automatically
+            </div>
           ) : isBlitzMode && !playerAddress && !showRegistered && canRegisterPeriod ? (
             <GameplayAccountGate />
           ) : null}
@@ -480,13 +374,6 @@ const GameCard = ({
             </button>
           )}
         </div>
-
-        {/* Error message - only show if not already registered */}
-        {entryStage === "error" && error && !showRegistered && (
-          <div className="text-[10px] text-red-400 text-center truncate" title={error}>
-            {error}
-          </div>
-        )}
       </div>
     </div>
   );
@@ -498,7 +385,6 @@ interface UnifiedGameGridProps {
   onAutoSettleGame?: (selection: WorldSelection) => void;
   onSpectate: (selection: WorldSelection) => void;
   onSeeScore?: (selection: WorldSelection) => void;
-  onRegistrationComplete?: () => void;
   className?: string;
   /** Filter games by mode */
   modeFilter?: "blitz" | "eternum";
@@ -534,7 +420,6 @@ export const UnifiedGameGrid = ({
   onSelectGame,
   onSpectate,
   onSeeScore,
-  onRegistrationComplete,
   className,
   modeFilter,
   devModeFilter,
@@ -548,7 +433,6 @@ export const UnifiedGameGrid = ({
   registeredFilter,
   onGamesResolved,
 }: UnifiedGameGridProps) => {
-  const queryClient = useQueryClient();
   const account = useAccountStore((state) => state.account);
   const playerAddress = account?.address && account.address !== "0x0" ? account.address : null;
   const playerFeltLiteral = playerAddress ? toPaddedFeltAddress(playerAddress) : null;
@@ -592,7 +476,8 @@ export const UnifiedGameGrid = ({
         const status: "checking" | "ok" | "fail" = "ok";
 
         let gameStatus: GameStatus = "unknown";
-        if (isEnded(startMainAt, endAt)) gameStatus = "ended";
+        if (!summary.ready) gameStatus = "upcoming";
+        else if (isEnded(startMainAt, endAt)) gameStatus = "ended";
         else if (isOngoing(startMainAt, endAt)) gameStatus = "ongoing";
         else if (isUpcoming(startMainAt)) gameStatus = "upcoming";
 
@@ -705,28 +590,6 @@ export const UnifiedGameGrid = ({
   const handleRefresh = useCallback(async () => {
     await refetchSummary();
   }, [refetchSummary]);
-
-  // When a registration completes, update the shared player-scoped directory
-  // so every grid instance moves the card atomically. The next Herald head
-  // confirms the row; an immediate refetch can race pre-confirmation.
-  const handleRegistrationComplete = useCallback(
-    (game: GameData) => {
-      const worldId = game.config?.worldId;
-      const gameId = game.config?.gameId;
-      if (worldId && gameId && playerFeltLiteral) {
-        queryClient.setQueryData<HeraldGameDirectory>(
-          [...PLAYER_WORLD_REGISTRATION_QUERY_KEY, worldId, playerFeltLiteral],
-          (previous) => markGameRegistered(previous, gameId),
-        );
-      }
-      // The availability cache (entry-modal path) keys by chain:name, not by
-      // the (worldId, gameId) summary key.
-      queryClient.invalidateQueries({ queryKey: [...WORLD_AVAILABILITY_QUERY_KEY, `${game.chain}:${game.name}`] });
-
-      onRegistrationComplete?.();
-    },
-    [onRegistrationComplete, playerFeltLiteral, queryClient],
-  );
 
   const factoryError = summaryError as Error | null;
   const isLoading = summaryIsLoading || playerRegistrationsLoading;
@@ -849,7 +712,6 @@ export const UnifiedGameGrid = ({
                         })
                     : undefined
                 }
-                onRegistrationComplete={handleRegistrationComplete}
                 playerAddress={playerAddress}
                 showChainBadge={true}
               />
@@ -884,7 +746,6 @@ export const UnifiedGameGrid = ({
                           })
                       : undefined
                   }
-                  onRegistrationComplete={handleRegistrationComplete}
                   playerAddress={playerAddress}
                   showChainBadge={true}
                 />

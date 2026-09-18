@@ -41,6 +41,7 @@ export const summaryToWorldConfigMeta = (
 
   return {
     mode,
+    ready: summary.ready,
     worldId: summary.worldId ?? null,
     gameId: summary.gameId ?? null,
     startSettlingAt: summary.startSettlingAt ?? null,

@@ -3,12 +3,20 @@ import { ClientConfigManager, setBuildingCount } from "@bibliothecadao/eternum";
 import { BuildingType } from "@bibliothecadao/types";
 import type { AccountInterface } from "starknet";
 import { ensureSettled } from "./entry";
-import { createFakeGame, PLAYER, writeFact, seedExplorer, seedStructure } from "./test-support/fake-game";
+import {
+  createFakeGame,
+  PLAYER,
+  writeFact,
+  seedExplorer,
+  seedStructure,
+  seedGameRegistry,
+} from "./test-support/fake-game";
 
 afterEach(() => ClientConfigManager.instance().setActiveGame(28, 0));
 
 const settledGame = (provisioned: boolean, troops: bigint, hasExplorer: boolean) => {
   const game = createFakeGame();
+  seedGameRegistry(game.store, { status: "Live", startMainAt: 0, endAt: 1000 });
   seedStructure(game.store, { entityId: 12, owner: PLAYER, x: 100, y: 100 });
   writeFact(game.store, "PlayerEntry", [28, PLAYER], { game_id: 28, owner: PLAYER, player: PLAYER });
   const packed = setBuildingCount(BuildingType.ResourceLabor, [0n, 0n, 0n], provisioned ? 1 : 0);
@@ -40,7 +48,7 @@ const settledGame = (provisioned: boolean, troops: bigint, hasExplorer: boolean)
 describe("settlement provisioning", () => {
   it("provisions the economy even when settlement already granted T1 troops", async () => {
     const { game, signer } = settledGame(false, 100_000_000_000n, false);
-    expect(await ensureSettled(game, signer as unknown as AccountInterface, "test")).toEqual({
+    expect(await ensureSettled(game, signer as unknown as AccountInterface)).toEqual({
       structures: [12],
       explorers: [101],
     });
@@ -48,9 +56,21 @@ describe("settlement provisioning", () => {
     expect(signer.execute).not.toHaveBeenCalled();
     expect(game.actions.createExplorerArmy).toHaveBeenCalledOnce();
   });
+  it("waits for the whole roster before acting on an already settled realm", async () => {
+    const { game, signer } = settledGame(true, 100_000_000_000n, false);
+    const row = game.store.require("GameRegistry", { game_id: 28 });
+    writeFact(game.store, "GameRegistry", [28], { ...row, ready: false });
+    const pending = ensureSettled(game, signer as unknown as AccountInterface);
+    await Promise.resolve();
+    expect(game.actions.createExplorerArmy).not.toHaveBeenCalled();
+    writeFact(game.store, "GameRegistry", [28], { ...row, ready: true });
+    game.applySlice();
+    await pending;
+    expect(game.actions.createExplorerArmy).toHaveBeenCalledOnce();
+  });
   it("resumes a provisioned realm with an existing explorer after all T1 troops were spent", async () => {
     const { game, signer } = settledGame(true, 0n, true);
-    expect(await ensureSettled(game, signer as unknown as AccountInterface, "test")).toEqual({
+    expect(await ensureSettled(game, signer as unknown as AccountInterface)).toEqual({
       structures: [12],
       explorers: [101],
     });

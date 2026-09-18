@@ -48,17 +48,7 @@ fn setup_config(dev: bool, mode: SettlementMode, game_rules: crate::rules::Slice
     start_cheat_caller_address(deployment.peers.settlement, authority());
     ISettlementConfigurationDispatcher { contract_address: deployment.peers.settlement }
         .configure_settlement(
-            3,
-            SettlementRules {
-                registration_start: 0,
-                registration_limit: 2,
-                mode,
-                reward_profile: 1,
-                cosmetic_limit: 0,
-                cosmetic_collection: 0.try_into().unwrap(),
-                cosmetic_timelock: 0.try_into().unwrap(),
-            },
-            grants,
+            3, SettlementRules { registration_start: 0, registration_limit: 2, mode, reward_profile: 1 }, grants,
         );
     IVillagesDispatcher { contract_address: deployment.peers.settlement }
         .configure_villages(3, VillageRules { troop_delay_ticks: 2, ..village_rules() });
@@ -249,10 +239,6 @@ fn assert_blitz_village(mode: SettlementMode) {
         crate::settlement::ISettlementViewsDispatcher { contract_address: deployment.peers.settlement }, 3,
     );
     assert!(progress.registered == 0 && progress.realm_count == 0);
-    let pool = ISettlementPoolDispatcher { contract_address: deployment.peers.map };
-    start_cheat_caller_address(deployment.peers.map, deployment.peers.settlement);
-    assert!(pool.claim_settlement(3, 0, 1).len() == 3);
-    assert!(pool.claim_settlement(3, 1, 2).len() == 3);
 }
 
 #[test]

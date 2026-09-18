@@ -7,6 +7,7 @@ let existingGame: { gameId: number; gameName: string } | null = null;
 let loadedSummary: LaunchGameSummary | null = null;
 let findGameError: Error | null = null;
 
+const settleBlitzRosterMock = mock(async () => undefined);
 const assertRegistrarAvailableMock = mock(() => undefined);
 const createRegistrarGameMock = mock(async (...args: unknown[]) => ({
   transactionHash: "0xcreate",
@@ -40,6 +41,7 @@ mock.module("../config/config-loader", () => ({
 mock.module("../registrar/calls", () => ({
   assertRegistrarAvailable: assertRegistrarAvailableMock,
   createRegistrarGame: createRegistrarGameMock,
+  settleBlitzRoster: settleBlitzRosterMock,
   findRegistrarGame: findGameRegistryByNameMock,
   resolveBlitzRoster: async () => [{ owner: "0xabc", account: "0xdef" }],
   resolveRegistrarEnvironmentId: (environmentId: string) => environmentId,
@@ -83,6 +85,8 @@ beforeEach(() => {
       ReturnType<RpcProvider["getChainId"]>
     >;
   };
+  process.env.ADMISSION_URL = "http://admission.example";
+  settleBlitzRosterMock.mockClear();
   existingGame = null;
   loadedSummary = null;
   findGameError = null;
@@ -119,6 +123,27 @@ describe("registrar game launch", () => {
       }),
     ).rejects.toThrow("LEDGER_RPC_URL is not Starknet mainnet");
     expect(createRegistrarGameMock).not.toHaveBeenCalled();
+  });
+
+  test("requires admission before creating a Blitz game", async () => {
+    delete process.env.ADMISSION_URL;
+    await expect(launchGame(buildRequest())).rejects.toThrow("ADMISSION_URL is required");
+    expect(createRegistrarGameMock).not.toHaveBeenCalled();
+  });
+
+  test("resumes roster preparation without creating another game", async () => {
+    settleBlitzRosterMock.mockRejectedValueOnce(new Error("admission disconnected"));
+    await expect(launchGame(buildRequest())).rejects.toThrow("admission disconnected");
+    existingGame = { gameId: 7, gameName: "bltz-test" };
+    await launchGame(buildRequest());
+    expect(createRegistrarGameMock).toHaveBeenCalledTimes(1);
+    expect(settleBlitzRosterMock).toHaveBeenCalledTimes(2);
+    expect(waitForGameRegistryByIdMock).toHaveBeenCalledTimes(1);
+  });
+
+  test("the create-world step also prepares the roster", async () => {
+    await runLaunchStep({ ...buildRequest(), stepId: "create-world" });
+    expect(settleBlitzRosterMock).toHaveBeenCalledTimes(1);
   });
 
   test("creates one game and waits for its GameRegistry row", async () => {

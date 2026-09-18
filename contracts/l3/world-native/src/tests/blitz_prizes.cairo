@@ -44,13 +44,7 @@ fn setup(scores: Span<u128>, series: bool) -> super::Deployment {
         array![3].span(),
         Some(
             SettlementRules {
-                registration_start: 0,
-                registration_limit: 96,
-                mode: SettlementMode::Single,
-                reward_profile: 1,
-                cosmetic_limit: 0,
-                cosmetic_collection: player(0),
-                cosmetic_timelock: player(0),
+                registration_start: 0, registration_limit: 96, mode: SettlementMode::Single, reward_profile: 1,
             },
         ),
     );

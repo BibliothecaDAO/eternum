@@ -12,6 +12,7 @@ export interface WorldSummary {
   /** GameRegistry id inside its world — key[0] of every per-game model. */
   gameId?: number | null;
   alive: boolean;
+  ready: boolean;
   lastCheckedAt: number;
 
   mode: WorldSummaryMode | null;

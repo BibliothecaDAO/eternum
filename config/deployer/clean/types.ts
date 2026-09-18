@@ -49,6 +49,7 @@ export interface LaunchGameResumeStepState {
 }
 
 export interface LaunchGameRequest extends LedgerLaunchOptions {
+  admissionUrl?: string;
   rosterOwners?: readonly string[];
   launchKind?: "game";
   environmentId: DeploymentEnvironmentId;

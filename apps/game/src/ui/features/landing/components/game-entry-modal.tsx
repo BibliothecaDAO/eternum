@@ -27,7 +27,6 @@ import { useVillagePassInventory, type VillagePassInventoryItem } from "@/hooks/
 import { getWorldKey, useWorldsAvailability } from "@/hooks/use-world-availability";
 
 import { submitSettlement } from "@/services/settlement";
-import { resolveBlitzGrantStartingTroops } from "@/services/blitz/blitz-settlement-options";
 import {
   createHeraldPreSessionReader,
   type PlayerStructure,
@@ -1111,11 +1110,11 @@ export const GameEntryModal = ({
       hasVillagePass,
       checksComplete,
       needsSettlement,
-      canPlay,
+      canPlay: canPlay && (!isBlitzMode || worldMeta?.ready === true),
       isEternumDevMode,
       isDevMode,
       isSettlingAdditionalRealm: devSettlementTarget !== null,
-      isBlitzSettlementUnlocked: isEternumMode ? seasonTimingValid : blitzSettlementAvailability.isUnlocked,
+      isBlitzSettlementUnlocked: isEternumMode ? seasonTimingValid : worldMeta?.ready === true,
     });
 
     return result;
@@ -1454,7 +1453,7 @@ export const GameEntryModal = ({
 
   // Settlement is an authenticated, recorded action.
   const handleSettle = useCallback(async () => {
-    if (!isBlitzMode && !isEternumMode) {
+    if (!isEternumMode) {
       debugLog(worldName, "Settlement requires a resolved game mode");
       return;
     }
@@ -1495,20 +1494,11 @@ export const GameEntryModal = ({
       if (isEternumDevMode) setDevSettlementTarget(settlementTarget);
       setSettleStage("settling");
       await submitSettlement(worldMeta, signer, (client) =>
-        isEternumMode
-          ? client.setup.systemCalls.settle_season({
-              signer,
-              name: usernameFelt,
-              selectedRealm: isEternumDevMode ? Number(devRealmNumber) : undefined,
-            })
-          : client.setup.systemCalls.settle_blitz({
-              signer,
-              name: usernameFelt,
-              cosmeticsBlockHash: "0x0",
-              cosmeticsBlockNumber: 0,
-              cosmetics: [],
-              grantStartingTroops: resolveBlitzGrantStartingTroops(),
-            }),
+        client.setup.systemCalls.settle_season({
+          signer,
+          name: usernameFelt,
+          selectedRealm: isEternumDevMode ? Number(devRealmNumber) : undefined,
+        }),
       );
 
       setSettleStage("syncing");
@@ -1559,13 +1549,19 @@ export const GameEntryModal = ({
   }, [autoSettleEnabled, autoSettleEntryKey, isOpen, markOpening]);
 
   useEffect(() => {
-    if (!autoSettleEnabled || phase !== "settlement" || isSettling || autoSettleAttemptedRef.current) {
+    if (
+      !isEternumMode ||
+      !autoSettleEnabled ||
+      phase !== "settlement" ||
+      isSettling ||
+      autoSettleAttemptedRef.current
+    ) {
       return;
     }
 
     autoSettleAttemptedRef.current = true;
     void handleSettle();
-  }, [autoSettleEnabled, handleSettle, isSettling, phase]);
+  }, [isEternumMode, autoSettleEnabled, handleSettle, isSettling, phase]);
   // Auto-enter game when ready (spectate mode or already settled players)
   useEffect(() => {
     debugLog(worldName, "Auto-enter check - phase:", phase, "isSpectateMode:", isSpectateMode);
@@ -1706,7 +1702,12 @@ export const GameEntryModal = ({
                 />
               </motion.div>
             )}
-            {phase === "settlement" && (
+            {phase === "settlement" && isBlitzMode && (
+              <div className="p-6 text-center">
+                Your realms are being prepared automatically. Entry opens when every player is ready.
+              </div>
+            )}
+            {phase === "settlement" && isEternumMode && (
               <motion.div key="settlement" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                 {isEternumDevMode && (
                   <RealmNumberPicker value={devRealmNumber} onChange={setDevRealmNumber} disabled={isSettling} />

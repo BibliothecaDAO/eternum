@@ -171,7 +171,6 @@ const UpcomingGamesStep = ({
         <UnifiedGameGrid
           onSelectGame={() => undefined}
           onSpectate={() => undefined}
-          onRegistrationComplete={onRegistrationComplete}
           devModeFilter={false}
           statusFilter="upcoming"
           hideHeader

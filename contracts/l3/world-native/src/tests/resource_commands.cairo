@@ -100,13 +100,19 @@ pub fn execute(deployment: Deployment, command: Command, timestamp: u64) -> bool
 }
 
 pub fn execute_recorded_at(deployment: Deployment, command: Command, timestamp: u64, executed_at: u64) -> bool {
+    execute_in_game(deployment, 3, command, timestamp, executed_at)
+}
+
+pub fn execute_in_game(
+    deployment: Deployment, game_id: u32, command: Command, timestamp: u64, executed_at: u64,
+) -> bool {
     let season = ISeasonDispatcher { contract_address: deployment.peers.season };
     let action = recorded::FixtureAction {
         command,
-        rules: IGameDispatcher { contract_address: deployment.peers.season }.rules(3),
-        nonce: season.next_nonce(3, deployment.actor),
+        rules: IGameDispatcher { contract_address: deployment.peers.season }.rules(game_id),
+        nonce: season.next_nonce(game_id, deployment.actor),
         deadline: 10000,
-        ..intent(deployment, 3),
+        ..intent(deployment, game_id),
     };
     let (r, s) = signature(deployment, action);
     start_cheat_block_timestamp_global(executed_at);

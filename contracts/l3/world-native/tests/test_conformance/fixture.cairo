@@ -196,6 +196,7 @@ fn provision_game(peers: Peers, actor: ContractAddress, administrator: ContractA
                 preset_id: 1,
                 creator: administrator,
                 settled: false,
+                ready: true,
                 dev_mode_on: true,
                 start_settling_at: 0,
                 start_main_at: 0,

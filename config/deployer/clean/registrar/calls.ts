@@ -1,3 +1,4 @@
+import { completeNativeAdminCommand } from "../world/native/command";
 import { nativeDomainAbi } from "../world/native/manifest";
 import type { NativeWorldManifest } from "../world/native/types";
 import type { buildNativePreset } from "../config/native-preset";
@@ -352,4 +353,26 @@ export async function createRegistrarGame(
 
 export function isRegistrarAlreadyRegisteredError(error: unknown): boolean {
   return /(preset|series) already registered/i.test(error instanceof Error ? error.message : String(error));
+}
+
+export async function settleBlitzRoster(
+  provider: RpcProvider,
+  gameId: number,
+  credentials: { accountAddress: string; privateKey: string },
+  target: RegistrarTarget,
+  admissionUrl: string,
+): Promise<void> {
+  const { manifest } = resolveRegistrarContext(target);
+  const season = manifest.native.domains.season.address;
+  const result = await provider.callContract({ contractAddress: season, entrypoint: "game", calldata: [gameId] });
+  const game = new CallData(nativeDomainAbi(manifest, "season")).parse("game", result) as { ready: boolean };
+  if (game.ready) return;
+  await completeNativeAdminCommand({
+    provider,
+    manifest,
+    admissionUrl,
+    gameId,
+    ...credentials,
+    command: { kind: "SettleBlitzRoster", value: undefined },
+  });
 }

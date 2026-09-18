@@ -325,7 +325,6 @@ const LearnContent = ({
         onAutoSettleGame={onAutoSettleGame}
         onSpectate={onSpectate}
         onSeeScore={onSeeScore}
-        onRegistrationComplete={onRegistrationComplete}
         devModeFilter={true}
         hideHeader
       />
@@ -646,7 +645,6 @@ const RegisteredActiveGamesBar = ({
         onSelectGame={onSelectGame}
         onAutoSettleGame={onAutoSettleGame}
         onSpectate={onSpectate}
-        onRegistrationComplete={onRegistrationComplete}
         // No mode filter: your active games stay visible even when the hero
         // is on the other mode — a blitz player browsing Seasons must still
         // see the game they're in.
@@ -737,7 +735,6 @@ const PlayTabContent = ({
               onSelectGame={onSelectGame}
               onAutoSettleGame={onAutoSettleGame}
               onSpectate={onSpectate}
-              onRegistrationComplete={onRegistrationComplete}
               modeFilter={resolvedMode}
               statusFilter={["ongoing", "upcoming"]}
               registeredFilter="unregistered"
@@ -763,7 +760,6 @@ const PlayTabContent = ({
               onAutoSettleGame={onAutoSettleGame}
               onSpectate={onSpectate}
               onSeeScore={onSeeScore}
-              onRegistrationComplete={onRegistrationComplete}
               modeFilter={resolvedMode}
               devModeFilter={playedDevModeFilter}
               statusFilter="ended"

@@ -142,17 +142,7 @@ export function createHarnessGame(client: GameClient): HarnessGame {
       };
     },
     armyPathIndexes: () => buildArmyPathIndexes(client),
-    settle: (signer, _owner, name, gameType) =>
-      gameType === "eternum"
-        ? systemCalls.settle_season({ signer, name: shortString.encodeShortString(name) })
-        : systemCalls.settle_blitz({
-            signer,
-            name: shortString.encodeShortString(name),
-            cosmetics: [],
-            cosmeticsBlockHash: "0x0",
-            cosmeticsBlockNumber: 0,
-            grantStartingTroops: true,
-          }),
+    settle: (signer, _owner, name) => systemCalls.settle_season({ signer, name: shortString.encodeShortString(name) }),
     provision: (signer, structureId) => systemCalls.provision_realm({ signer, realm_entity_id: structureId }),
     produceWood: (signer, structureId) => {
       const produce = configManager.getBlitzConfig().blitz_mode_on

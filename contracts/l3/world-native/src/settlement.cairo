@@ -15,9 +15,6 @@ pub struct SettlementRules {
     pub registration_limit: u16,
     pub mode: SettlementMode,
     pub reward_profile: u8,
-    pub cosmetic_limit: u8,
-    pub cosmetic_collection: ContractAddress,
-    pub cosmetic_timelock: ContractAddress,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
@@ -48,33 +45,6 @@ pub struct PlayerEntry {
     pub player: ContractAddress,
 }
 
-#[derive(Copy, Drop, Serde, Debug, PartialEq)]
-pub struct CosmeticsKey {
-    pub game_id: u32,
-    pub player: ContractAddress,
-}
-
-#[derive(Copy, Drop, Serde, Debug, PartialEq)]
-pub struct PlayerCosmetics {
-    pub attributes: Span<u128>,
-}
-
-#[derive(Copy, Drop, Serde, Debug, PartialEq)]
-pub struct AcceptedCosmetic {
-    pub token_id: u128,
-    pub owner: ContractAddress,
-    pub attributes: u128,
-}
-
-#[derive(Copy, Drop, Serde, Debug, PartialEq)]
-pub struct SettleBlitz {
-    pub name: felt252,
-    pub cosmetics_block_hash: felt252,
-    pub cosmetics_block_number: u64,
-    pub cosmetics: Span<AcceptedCosmetic>,
-    pub grant_starting_troops: bool,
-}
-
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct EntryEntitlement {
     pub realm_id: u256,
@@ -84,24 +54,11 @@ pub struct EntryEntitlement {
     pub pass_kind: u8,
 }
 
-#[derive(Copy, Drop, Serde, Debug, PartialEq)]
-pub struct SettlementAdmission {
-    pub owner: ContractAddress,
-    pub collection: ContractAddress,
-    pub timelock: ContractAddress,
-    pub cosmetic_limit: u8,
-    pub game_end: u64,
-}
-
 #[starknet::interface]
 pub trait ISettlementCommands<T> {
-    fn settle_blitz(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        command: SettleBlitz,
-        context: crate::commands::ExecutionContext,
-    );
+    fn settle_blitz_roster(
+        ref self: T, game_id: u32, actor: ContractAddress, context: crate::commands::ExecutionContext,
+    ) -> u64;
 }
 
 #[starknet::interface]
@@ -111,18 +68,13 @@ pub trait ISettlementEntry<T> {
 }
 
 #[starknet::interface]
-pub trait ISettlementAdmission<T> {
-    fn settlement_admission(self: @T, game_id: u32, actor: ContractAddress) -> SettlementAdmission;
-}
-
-#[starknet::interface]
 pub trait ISettlementViews<T> {
+    fn blitz_settlement_order(self: @T, game_id: u32) -> Span<u8>;
     fn player_has_settled(self: @T, game_id: u32, player: ContractAddress) -> bool;
     fn settlement_rules(self: @T, game_id: u32) -> SettlementRules;
     fn realm_grants(self: @T, game_id: u32) -> RealmGrants;
     fn settlement_progress(self: @T, game_id: u32) -> SettlementProgress;
     fn player_entry(self: @T, key: EntryKey) -> Option<PlayerEntry>;
-    fn player_cosmetics(self: @T, key: CosmeticsKey) -> PlayerCosmetics;
 }
 
 #[starknet::interface]
@@ -131,7 +83,6 @@ pub trait ISettlementPool<T> {
     fn village_pool(self: @T, game_id: u32) -> SettlementPool;
     fn claim_village(ref self: T, game_id: u32, registered: u16, seed: u256) -> Coord;
     fn reserved_hyperstructures(self: @T, game_id: u32) -> u32;
-    fn claim_settlement(ref self: T, game_id: u32, registered: u16, seed: u256) -> Span<Coord>;
 }
 
 #[starknet::component]
@@ -208,8 +159,12 @@ pub mod SettlementPoolState {
             registered: u16,
             seed: u256,
         ) -> Coord {
-            // Reserve pending entries first, including every fixed Duel location.
-            let target = target_pool_size(registered, rules.registration_limit, rules.mode);
+            // Fixed Blitz spots were reserved at creation; only Eternum entries open a rolling window.
+            let target = if rules.mode == SettlementMode::Triple {
+                0
+            } else {
+                target_pool_size(registered, rules.registration_limit, rules.mode)
+            };
             if self.prepare_pool(game_id, false, center, rules, target) {
                 self.emit_pool(game_id, false, center, rules);
             }
@@ -245,6 +200,20 @@ pub mod SettlementPoolState {
             self.available_count.write(key, count);
             self.opened.write(key, opened);
             true
+        }
+        fn reserve_blitz_locations(
+            ref self: ComponentState<TContractState>, game_id: u32, center: Coord, rules: SettlementRules,
+        ) {
+            assert!(rules.mode == SettlementMode::Triple, "Regular Blitz required");
+            for index in 0_u32..rules.registration_limit.into() {
+                assert!(
+                    self
+                        .reserve_location(
+                            game_id, settlement_location(center, rules.mode, rules.reward_profile, index),
+                        ),
+                    "overlapping Blitz settlement",
+                );
+            }
         }
         fn reserve_location(ref self: ComponentState<TContractState>, game_id: u32, coords: Span<Coord>) -> bool {
             for coord in coords {
@@ -310,19 +279,16 @@ pub mod SettlementState {
     use core::num::traits::Zero;
     use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
     use crate::events::RowSet;
-    use super::{
-        AcceptedCosmetic, CosmeticsKey, EntryEntitlement, EntryKey, PlayerCosmetics, PlayerEntry, RealmGrants,
-        SettlementProgress, SettlementRules,
-    };
+    use super::{EntryEntitlement, EntryKey, PlayerEntry, RealmGrants, SettlementProgress, SettlementRules};
     #[storage]
     pub struct Storage {
         pub settlement_rules: Map<u32, Option<SettlementRules>>,
         pub grant_counts: Map<u32, u32>,
         pub realm_grants: Map<(u32, u32), crate::resources::ResourceAmount>,
         pub progress: Map<u32, SettlementProgress>,
+        pub blitz_order: Map<(u32, u32), u8>,
+        pub blitz_order_size: Map<u32, u32>,
         pub entries: Map<(u32, starknet::ContractAddress), Option<PlayerEntry>>,
-        pub cosmetic_counts: Map<(u32, starknet::ContractAddress), u32>,
-        pub cosmetics: Map<(u32, starknet::ContractAddress, u32), u128>,
         pub starting_troops: Map<(u32, u8), crate::troops::TroopType>,
         pub realm_resource_counts: Map<u32, u8>,
         pub realm_resources: Map<(u32, u8), u8>,
@@ -455,39 +421,28 @@ pub mod SettlementState {
                     },
                 );
         }
-        fn store_cosmetics(
-            ref self: ComponentState<TContractState>,
-            key: CosmeticsKey,
-            owner: starknet::ContractAddress,
-            block_hash: felt252,
-            cosmetics: Span<AcceptedCosmetic>,
-        ) {
-            let rules = self.rules(key.game_id);
-            if cosmetics.is_empty() || rules.cosmetic_collection.is_zero() || rules.cosmetic_timelock.is_zero() {
-                return;
+        fn blitz_order(self: @ComponentState<TContractState>, game_id: u32) -> Span<u8> {
+            let mut players = array![];
+            for index in 0..self.blitz_order_size.read(game_id) {
+                players.append(self.blitz_order.read((game_id, index)));
             }
-            assert!(block_hash != 0, "missing cosmetic block identity");
-            assert!(cosmetics.len() <= rules.cosmetic_limit.into(), "exceeded maximum cosmetics");
-            let mut attributes = array![];
-            let mut seen: core::dict::Felt252Dict<u128> = Default::default();
-            for cosmetic in cosmetics {
-                let token = (*cosmetic.token_id).into();
-                assert!(seen.get(token) == 0, "duplicate cosmetic");
-                seen.insert(token, 1);
-                assert!(*cosmetic.owner == owner, "wallet does not own cosmetic");
-                assert!(*cosmetic.attributes != 0, "cosmetic attributes cannot be zero");
-                self.cosmetics.write((key.game_id, key.player, attributes.len()), *cosmetic.attributes);
-                attributes.append(*cosmetic.attributes);
+            players.span()
+        }
+        fn initialize_blitz_order(ref self: ComponentState<TContractState>, game_id: u32, count: u32, root: u256) {
+            assert!(self.blitz_order_size.read(game_id) == 0, "settlement order already fixed");
+            let players = super::shuffle_roster(count, root);
+            for index in 0..players.len() {
+                self.blitz_order.write((game_id, index), *players.at(index));
             }
-            self.cosmetic_counts.write((key.game_id, key.player), attributes.len());
+            self.blitz_order_size.write(game_id, count);
             let mut values = array![];
-            PlayerCosmetics { attributes: attributes.span() }.serialize(ref values);
+            players.serialize(ref values);
             self
                 .emit(
                     RowSet {
                         version: 1,
-                        model: 'PlayerCosmetics',
-                        keys: array![key.game_id.into(), key.player.into()].span(),
+                        model: 'BlitzSettlementOrder',
+                        keys: array![game_id.into()].span(),
                         values: values.span(),
                     },
                 );
@@ -505,13 +460,6 @@ pub mod SettlementState {
                         values: values.span(),
                     },
                 );
-        }
-        fn cosmetics(self: @ComponentState<TContractState>, key: CosmeticsKey) -> PlayerCosmetics {
-            let mut attributes = array![];
-            for index in 0..self.cosmetic_counts.read((key.game_id, key.player)) {
-                attributes.append(self.cosmetics.read((key.game_id, key.player, index)));
-            }
-            PlayerCosmetics { attributes: attributes.span() }
         }
     }
 }
@@ -591,4 +539,22 @@ pub trait ISettlementCreation<T> {
         creation: SettlementCreation,
         context: crate::commands::ExecutionContext,
     ) -> u32;
+}
+
+// Fisher-Yates selection fixes each roster position once from the first recorded batch root.
+pub fn shuffle_roster(count: u32, root: u256) -> Span<u8> {
+    assert!(count > 0 && count <= 24, "invalid Blitz roster size");
+    let mut remaining: core::dict::Felt252Dict<u32> = Default::default();
+    for index in 0..count {
+        remaining.insert(index.into(), index);
+    }
+    let mut players = array![];
+    for index in 0..count {
+        let size = count - index;
+        let choice: u32 = crate::random::range(root, 98139 + index.into(), size.into()).try_into().unwrap();
+        players.append(remaining.get(choice.into()).try_into().unwrap());
+        let last = remaining.get((size - 1).into());
+        remaining.insert(choice.into(), last);
+    }
+    players.span()
 }

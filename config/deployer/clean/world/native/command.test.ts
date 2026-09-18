@@ -98,7 +98,7 @@ describe("native administrative command", () => {
     receipt.events[0].data[2] = "1";
     expect(await executeNativeAdminCommand(input)).toEqual({ transactionHash: "0x55", remaining: "1" });
   });
-  it("completes administrative batches only after the final recorded count", async () => {
+  it("completes roster preparation only after the final ticket-scoped remaining count", async () => {
     const { input, receipt, provider, requests } = setup();
     let calls = 0;
     provider.callContract.mockImplementation(async () => ["1", "2", "4", String(3 + calls), "5", "1000"]);
@@ -109,7 +109,9 @@ describe("native administrative command", () => {
       receipt.events[1].data[4] = String(8 + calls++);
       return receipt;
     });
-    expect(await completeNativeAdminCommand(input)).toEqual({ transactionHash: "0x55", remaining: "0" });
+    expect(
+      await completeNativeAdminCommand({ ...input, command: { kind: "SettleBlitzRoster", value: undefined } }),
+    ).toEqual({ transactionHash: "0x55", remaining: "0" });
     expect(requests).toHaveLength(2);
   });
   it("refuses to infer completion from a successful receipt without progress", async () => {

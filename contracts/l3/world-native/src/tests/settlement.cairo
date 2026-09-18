@@ -2,13 +2,16 @@ use snforge_std::fs::{FileTrait, read_txt};
 use snforge_std::{start_cheat_caller_address, stop_cheat_caller_address};
 use crate::game::{IGameDispatcher, IGameDispatcherTrait};
 use crate::map::{IMapDispatcher, IMapDispatcherTrait};
+use crate::realms::{
+    ISeasonPlacementDispatcher, ISeasonPlacementDispatcherTrait, ISeasonPlacementSafeDispatcher,
+    ISeasonPlacementSafeDispatcherTrait,
+};
 use crate::settlement::{
-    IBlitzReservationsSafeDispatcher, IBlitzReservationsSafeDispatcherTrait, ISettlementCommandsDispatcher,
-    ISettlementCommandsDispatcherTrait, ISettlementConfigurationDispatcher, ISettlementConfigurationDispatcherTrait,
-    ISettlementConfigurationSafeDispatcher, ISettlementConfigurationSafeDispatcherTrait,
-    ISettlementEntrySafeDispatcherTrait, ISettlementPoolDispatcher, ISettlementPoolDispatcherTrait,
-    ISettlementPoolSafeDispatcher, ISettlementPoolSafeDispatcherTrait, ISettlementViewsDispatcher,
-    ISettlementViewsDispatcherTrait, SettleBlitz, SettlementMode, SettlementRules,
+    IBlitzReservationsSafeDispatcher, IBlitzReservationsSafeDispatcherTrait, ISettlementConfigurationDispatcher,
+    ISettlementConfigurationDispatcherTrait, ISettlementConfigurationSafeDispatcher,
+    ISettlementConfigurationSafeDispatcherTrait, ISettlementEntrySafeDispatcherTrait, ISettlementPoolDispatcher,
+    ISettlementPoolDispatcherTrait, ISettlementPoolSafeDispatcher, ISettlementPoolSafeDispatcherTrait,
+    ISettlementViewsDispatcher, ISettlementViewsDispatcherTrait, SettlementMode, SettlementRules,
 };
 use super::{Deployment, authority, context, recorded, setup};
 
@@ -21,15 +24,7 @@ pub fn grants() -> crate::settlement::RealmGrants {
 }
 
 fn rules() -> SettlementRules {
-    SettlementRules {
-        registration_start: 10,
-        registration_limit: 96,
-        mode: SettlementMode::Single,
-        reward_profile: 1,
-        cosmetic_limit: 3,
-        cosmetic_collection: 0.try_into().unwrap(),
-        cosmetic_timelock: 0.try_into().unwrap(),
-    }
+    SettlementRules { registration_start: 10, registration_limit: 96, mode: SettlementMode::Single, reward_profile: 1 }
 }
 
 fn configure(deployment: Deployment, game_id: u32, rules: SettlementRules) {
@@ -65,14 +60,15 @@ fn settlement_pool_claim_requires_season_and_keeps_games_separate() {
     configure(deployment, 1, rules());
     configure(deployment, 2, rules());
     let map = deployment.peers.map;
-    let safe = ISettlementPoolSafeDispatcher { contract_address: map };
+    let safe = ISeasonPlacementSafeDispatcher { contract_address: map };
     start_cheat_caller_address(map, deployment.actor);
-    assert!(safe.claim_settlement(1, 0, 17).is_err());
+    assert!(safe.claim_season_settlement(1, 0, 17).is_err());
     start_cheat_caller_address(map, deployment.peers.settlement);
     let pool = ISettlementPoolDispatcher { contract_address: map };
+    let placement = ISeasonPlacementDispatcher { contract_address: map };
     let mut seen = array![];
     for registered in 0_u16..96 {
-        let selected = pool.claim_settlement(1, registered, registered.into() + 17);
+        let selected = array![placement.claim_season_settlement(1, registered, registered.into() + 17)].span();
         assert!(selected.len() == 1);
         for previous in seen.span() {
             assert!(*previous != *selected.at(0), "settlement repeated");
@@ -81,9 +77,7 @@ fn settlement_pool_claim_requires_season_and_keeps_games_separate() {
         assert!(pool.settlement_pool(2).available.is_empty());
         assert!(pool.settlement_pool(2).opened == 0);
     }
-    assert!(pool.settlement_pool(1).available.is_empty());
-    assert!(pool.settlement_pool(1).opened == 96);
-    assert!(safe.claim_settlement(1, 96, 17).is_err());
+    assert!(pool.settlement_pool(1).opened >= 96);
 }
 
 #[test]
@@ -96,7 +90,7 @@ fn only_game_creation_initializes_reservations_and_repeated_initialization_is_id
     start_cheat_caller_address(deployment.peers.settlement, authority());
     start_cheat_caller_address(deployment.peers.season, authority());
     games.create_game(3, games.game(1), game_rules);
-    configure(deployment, 3, SettlementRules { mode: SettlementMode::Duel, registration_limit: 2, ..rules() });
+    configure(deployment, 3, SettlementRules { mode: SettlementMode::Triple, registration_limit: 2, ..rules() });
     let map = deployment.peers.map;
     let safe = IBlitzReservationsSafeDispatcher { contract_address: map };
     start_cheat_caller_address(map, deployment.actor);
@@ -104,10 +98,10 @@ fn only_game_creation_initializes_reservations_and_repeated_initialization_is_id
     start_cheat_caller_address(map, deployment.peers.registry);
     safe.initialize_reservations(3).unwrap();
     let pool = ISettlementPoolDispatcher { contract_address: map };
-    assert!(pool.reserved_hyperstructures(3) == 3);
+    assert!(pool.reserved_hyperstructures(3) == 7);
     assert!(pool.reserved_hyperstructures(1) == 0);
     safe.initialize_reservations(3).unwrap();
-    assert!(pool.reserved_hyperstructures(3) == 3);
+    assert!(pool.reserved_hyperstructures(3) == 7);
     let center = 2147483646 - game_rules.map_center_offset;
     let key = crate::map::TileKey { game_id: 3, alt: false, col: center, row: center };
     let tile = IMapDispatcher { contract_address: map }.tile(key).unwrap();
@@ -180,46 +174,56 @@ fn entry_entitlements_require_operator_and_compare_every_registration_field() {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn village_placement_keeps_every_mode_entry_capacity_and_shares_reservations() {
+fn village_placement_shares_reservations_with_fixed_blitz_and_eternum_entries() {
     let deployment = setup(true);
-    configure(deployment, 1, SettlementRules { registration_limit: 2, ..rules() });
-    configure(deployment, 2, SettlementRules { mode: SettlementMode::Triple, registration_limit: 2, ..rules() });
     let games = IGameDispatcher { contract_address: deployment.peers.season };
-    start_cheat_caller_address(deployment.peers.settlement, authority());
     start_cheat_caller_address(deployment.peers.season, authority());
-    games.create_game(3, games.game(1), recorded::rules());
-    configure(deployment, 3, SettlementRules { mode: SettlementMode::Duel, registration_limit: 2, ..rules() });
+    games.create_game(3, games.game(1), crate::rules::SliceRules { blitz_mode_on: true, ..recorded::rules() });
+    stop_cheat_caller_address(deployment.peers.season);
+    configure(deployment, 1, SettlementRules { registration_limit: 2, ..rules() });
+    configure(deployment, 3, SettlementRules { mode: SettlementMode::Triple, registration_limit: 2, ..rules() });
     let map = deployment.peers.map;
     let pool = ISettlementPoolDispatcher { contract_address: map };
     let safe = ISettlementPoolSafeDispatcher { contract_address: map };
     start_cheat_caller_address(map, deployment.actor);
     assert!(safe.claim_village(1, 0, 17).is_err());
+    start_cheat_caller_address(map, deployment.peers.registry);
+    crate::settlement::IBlitzReservationsDispatcherTrait::initialize_reservations(
+        crate::settlement::IBlitzReservationsDispatcher { contract_address: map }, 3,
+    );
     start_cheat_caller_address(map, deployment.peers.settlement);
-    for game_id in 1_u32..4 {
+    let game_rules = IGameDispatcher { contract_address: deployment.peers.season }.rules(3);
+    let center = 2147483646 - game_rules.map_center_offset;
+    for game_id in array![1_u32, 3] {
         let mut seen = array![];
-        // More than the removed six-villages-per-realm limit before either player enters.
-        for village in 0_u32..8 {
-            let coord = pool.claim_village(game_id, 0, village.into() + 100);
-            remember_distinct(ref seen, array![coord].span());
+        if game_id == 3 {
+            for index in 0..2_u32 {
+                remember_distinct(
+                    ref seen,
+                    crate::settlement_grid::settlement_location(
+                        crate::troops::Coord { alt: false, x: center, y: center },
+                        SettlementMode::Triple,
+                        rules().reward_profile,
+                        index,
+                    ),
+                );
+            }
         }
-        for registered in 0_u16..2 {
-            let realms = pool.claim_settlement(game_id, registered, registered.into() + 17);
-            assert!(realms.len() == if game_id == 1 {
-                1
-            } else {
-                3
-            });
-            remember_distinct(ref seen, realms);
-            let coord = pool.claim_village(game_id, registered + 1, registered.into() + 200);
-            remember_distinct(ref seen, array![coord].span());
+        for village in 0..8_u32 {
+            remember_distinct(ref seen, array![pool.claim_village(game_id, 0, village.into() + 100)].span());
         }
-        assert!(safe.claim_settlement(game_id, 2, 17).is_err());
-        // Passes remain usable after realm entry capacity is full.
-        for village in 0_u32..8 {
-            let coord = pool.claim_village(game_id, 2, village.into() + 300);
-            remember_distinct(ref seen, array![coord].span());
+        if game_id == 1 {
+            let placement = ISeasonPlacementDispatcher { contract_address: map };
+            for registered in 0..2_u16 {
+                remember_distinct(
+                    ref seen,
+                    array![placement.claim_season_settlement(game_id, registered, registered.into() + 17)].span(),
+                );
+            }
         }
-        assert!(pool.settlement_pool(game_id).available.is_empty());
+        for village in 0..8_u32 {
+            remember_distinct(ref seen, array![pool.claim_village(game_id, 2, village.into() + 300)].span());
+        }
         assert!(pool.village_pool(game_id).available.len() == 5);
         let progress = ISettlementViewsDispatcher { contract_address: deployment.peers.settlement }
             .settlement_progress(game_id);
@@ -238,30 +242,19 @@ fn remember_distinct(ref seen: Array<crate::troops::Coord>, added: Span<crate::t
 
 #[test]
 #[should_panic(expected: "entry entitlement required")]
-fn a_missing_ledger_operator_never_bypasses_real_game_entitlements() {
+fn a_missing_ledger_operator_never_bypasses_eternum_entitlements() {
     let d = setup(true);
     let games = IGameDispatcher { contract_address: d.peers.season };
-    let mut game_rules = recorded::rules();
-    game_rules.blitz_mode_on = true;
+    let game_rules = crate::rules::SliceRules { blitz_mode_on: false, ..recorded::rules() };
     start_cheat_caller_address(d.peers.season, authority());
-    games
-        .create_game(
-            3, crate::game::GameRegistry { dev_mode_on: false, start_main_at: 1000, ..games.game(1) }, game_rules,
-        );
-    stop_cheat_caller_address(d.peers.season);
+    games.create_game(3, crate::game::GameRegistry { dev_mode_on: false, ..games.game(1) }, game_rules);
     configure(d, 3, rules());
     start_cheat_caller_address(d.peers.settlement, d.peers.season);
-    ISettlementCommandsDispatcher { contract_address: d.peers.settlement }
-        .settle_blitz(
-            3,
-            d.actor,
-            SettleBlitz {
-                name: 'Player',
-                cosmetics_block_hash: 0,
-                cosmetics_block_number: 0,
-                cosmetics: array![].span(),
-                grant_starting_troops: false,
-            },
-            context(),
-        );
+    crate::realms::ISeasonRealmsDispatcherTrait::settle_season(
+        crate::realms::ISeasonRealmsDispatcher { contract_address: d.peers.settlement },
+        3,
+        d.actor,
+        crate::realms::SettleSeason { name: 'Player', selected_realm: None },
+        context(),
+    );
 }

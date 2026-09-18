@@ -37,6 +37,7 @@ const createHarness = () => {
     preset_id: 1,
     creator: "0x123",
     settled: false,
+    ready: true,
     dev_mode_on: true,
     start_settling_at: "1",
     start_main_at: "2",

@@ -249,9 +249,14 @@ pub mod ResourceState {
         }
 
         fn settle_resource(
-            ref self: ComponentState<TContractState>, key: ResourceKey, resource_type: u8, unit_weight: u128, now: u32,
+            ref self: ComponentState<TContractState>,
+            key: ResourceKey,
+            resource_type: u8,
+            unit_weight: u128,
+            now: u32,
+            start_at: u32,
         ) -> u128 {
-            let resource = self.load_settled(key, resource_type, unit_weight, now);
+            let resource = self.load_settled(key, resource_type, unit_weight, now, start_at);
             self.commit_resource(key, resource_type, resource);
             resource.balance
         }
@@ -262,8 +267,9 @@ pub mod ResourceState {
             amount: u128,
             unit_weight: u128,
             now: u32,
+            start_at: u32,
         ) {
-            let mut resource = self.load_settled(key, resource_type, unit_weight, now);
+            let mut resource = self.load_settled(key, resource_type, unit_weight, now, start_at);
             spend(resource_type, ref resource.balance, ref resource.weight, amount, unit_weight);
             self.commit_resource(key, resource_type, resource);
         }
@@ -274,8 +280,9 @@ pub mod ResourceState {
             amount: u128,
             unit_weight: u128,
             now: u32,
+            start_at: u32,
         ) -> u128 {
-            let mut resource = self.load_settled(key, resource_type, unit_weight, now);
+            let mut resource = self.load_settled(key, resource_type, unit_weight, now, start_at);
             let granted = add(resource_type, ref resource.balance, ref resource.weight, amount, unit_weight);
             self.commit_resource(key, resource_type, resource);
             granted
@@ -287,9 +294,10 @@ pub mod ResourceState {
             output: u128,
             unit_weight: u128,
             now: u32,
+            start_at: u32,
         ) {
             assert_production(resource_type);
-            let mut resource = self.load_settled(key, resource_type, unit_weight, now);
+            let mut resource = self.load_settled(key, resource_type, unit_weight, now, start_at);
             resource.production.output_amount_left += output;
             self.commit_resource(key, resource_type, resource);
         }
@@ -301,9 +309,10 @@ pub mod ResourceState {
             output: u128,
             unit_weight: u128,
             now: u32,
+            start_at: u32,
         ) {
             assert_production(resource_type);
-            let mut resource = self.load_settled(key, resource_type, unit_weight, now);
+            let mut resource = self.load_settled(key, resource_type, unit_weight, now, start_at);
             resource.production.building_count += 1;
             resource.production.production_rate += rate;
             resource.production.output_amount_left += output;
@@ -316,9 +325,10 @@ pub mod ResourceState {
             rate: u64,
             unit_weight: u128,
             now: u32,
+            start_at: u32,
         ) {
             assert_production(resource_type);
-            let mut resource = self.load_settled(key, resource_type, unit_weight, now);
+            let mut resource = self.load_settled(key, resource_type, unit_weight, now, start_at);
             resource.production.building_count -= 1;
             resource.production.production_rate -= rate;
             self.commit_resource(key, resource_type, resource);
@@ -342,13 +352,21 @@ pub mod ResourceState {
             self.write_weight(key, weight);
         }
         fn load_settled(
-            self: @ComponentState<TContractState>, key: ResourceKey, resource_type: u8, unit_weight: u128, now: u32,
+            self: @ComponentState<TContractState>,
+            key: ResourceKey,
+            resource_type: u8,
+            unit_weight: u128,
+            now: u32,
+            start_at: u32,
         ) -> SettledResource {
             let mut resource = SettledResource {
                 balance: self.balance(key, resource_type),
                 production: self.production(key, resource_type),
                 weight: self.weights.read((key.game_id, key.entity_id)),
             };
+            resource
+                .production
+                .last_updated_at = core::cmp::max(resource.production.last_updated_at, core::cmp::min(now, start_at));
             if resource.production.last_updated_at != now {
                 settle(
                     resource_type, ref resource.balance, ref resource.production, ref resource.weight, unit_weight, now,

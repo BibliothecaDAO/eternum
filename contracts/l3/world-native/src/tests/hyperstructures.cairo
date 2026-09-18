@@ -305,13 +305,7 @@ pub fn settlement(deployment: super::Deployment, mode: crate::settlement::Settle
         crate::settlement::ISettlementConfigurationDispatcher { contract_address: deployment.peers.settlement },
         3,
         crate::settlement::SettlementRules {
-            registration_start: 10,
-            registration_limit: 96,
-            mode,
-            reward_profile: profile,
-            cosmetic_limit: 0,
-            cosmetic_collection: 0.try_into().unwrap(),
-            cosmetic_timelock: 0.try_into().unwrap(),
+            registration_start: 10, registration_limit: 96, mode, reward_profile: profile,
         },
         grants,
     );

@@ -22,6 +22,10 @@ export function partitionWorlds(summaries: WorldSummary[], nowSec: number): Worl
       partition.offline.push(summary);
       continue;
     }
+    if (!summary.ready) {
+      partition.upcoming.push(summary);
+      continue;
+    }
     if (summary.startMainAt == null) {
       partition.unknown.push(summary);
       continue;

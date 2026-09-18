@@ -33,8 +33,6 @@ export interface RunnerConfig {
   /** An explicit --data-dir; otherwise resolveDataDir places it under ./.agent-data/<gameId>. */
   dataDir: string | null;
   modelProfile: ModelProfileName;
-  /** The settle username; a signer-derived one is used when absent. */
-  username: string | null;
   /** Scripted model and one scripted direction: a full loop pass with no key and no submissions. */
   offline: boolean;
   /** Stop after this many loop ticks; null plays until the game ends. */
@@ -71,7 +69,6 @@ const FLAGS = {
   "gameplay-account-address": { type: "string" },
   "data-dir": { type: "string" },
   "model-profile": { type: "string" },
-  username: { type: "string" },
   offline: { type: "boolean" },
   "max-ticks": { type: "string" },
   "quiet-window-ms": { type: "string" },
@@ -110,7 +107,6 @@ export const resolveConfig = (args: RunnerArgs, env: Env): RunnerConfig => ({
   signer: resolveSigner(args, env),
   dataDir: stringArg(args, "data-dir") ?? env.AGENT_DATA_DIR ?? null,
   modelProfile: resolveModelProfile(stringArg(args, "model-profile") ?? env.MODEL_PROFILE),
-  username: stringArg(args, "username") ?? env.AGENT_USERNAME ?? null,
   offline: args.offline === true,
   maxTicks: optionalPositiveInteger(args, "max-ticks"),
   quietWindowMs: optionalPositiveInteger(args, "quiet-window-ms") ?? DEFAULT_QUIET_WINDOW_MS,

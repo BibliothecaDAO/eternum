@@ -17,6 +17,7 @@ pub struct GameRegistry {
     pub preset_id: u32,
     pub creator: ContractAddress,
     pub settled: bool,
+    pub ready: bool,
     pub dev_mode_on: bool,
     pub start_settling_at: u64,
     pub start_main_at: u64,
@@ -53,6 +54,7 @@ pub trait IGame<T> {
     fn game(self: @T, game_id: u32) -> GameRegistry;
     fn rules(self: @T, game_id: u32) -> SliceRules;
     fn create_game(ref self: T, game_id: u32, game: GameRegistry, rules: SliceRules);
+    fn start_blitz(ref self: T, game_id: u32, timestamp: u64);
     fn allocate_entity(ref self: T, game_id: u32) -> u32;
     fn register_exploration(ref self: T, game_id: u32, actor: ContractAddress);
     fn register_capture(ref self: T, game_id: u32, actor: ContractAddress, category: u8) -> u128;
@@ -74,6 +76,8 @@ pub trait ISeasonLifecycle<T> {
 pub fn status_at(game: GameRegistry, timestamp: u64) -> GameStatus {
     if game.settled {
         GameStatus::Settled
+    } else if !game.ready {
+        GameStatus::Registration
     } else if game.end_at != 0 && timestamp >= game.end_at {
         GameStatus::Ended
     } else if game.dev_mode_on || timestamp >= game.start_main_at {
@@ -84,11 +88,13 @@ pub fn status_at(game: GameRegistry, timestamp: u64) -> GameStatus {
 }
 
 pub fn assert_playing(game: GameRegistry, now: u64) {
+    assert!(game.ready, "roster not ready");
     assert!(game.dev_mode_on || (now >= game.start_main_at && now >= game.start_settling_at), "game not started");
     assert!(game.end_at == 0 || now < game.end_at, "game ended");
 }
 
 pub fn assert_main_with_grace(game: GameRegistry, now: u64) {
+    assert!(game.ready, "roster not ready");
     assert!(game.dev_mode_on || (now >= game.start_main_at && now >= game.start_settling_at), "game not started");
     assert_grace_end(game, now);
 }

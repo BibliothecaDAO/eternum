@@ -1140,35 +1140,6 @@ export class EternumProvider extends EventEmitter {
     );
   }
 
-  public async settle_blitz(
-    props: SystemProps.SystemSigner & {
-      name: string;
-      cosmeticsBlockHash: string;
-      cosmeticsBlockNumber: number;
-      cosmetics: readonly { tokenId: string; owner: string; attributes: string }[];
-      grantStartingTroops: boolean;
-    },
-  ) {
-    return this.submitCommand(
-      props.signer,
-      {
-        kind: "SettleBlitz",
-        value: {
-          name: props.name,
-          cosmetics_block_hash: props.cosmeticsBlockHash,
-          cosmetics_block_number: props.cosmeticsBlockNumber,
-          cosmetics: props.cosmetics.map((item) => ({
-            token_id: item.tokenId,
-            owner: item.owner,
-            attributes: item.attributes,
-          })),
-          grant_starting_troops: props.grantStartingTroops,
-        },
-      },
-      TransactionType.SETTLE,
-    );
-  }
-
   public async upgrade_realm(props: SystemProps.UpgradeRealmProps) {
     return this.submitCommand(
       props.signer,

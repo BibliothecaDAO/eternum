@@ -196,9 +196,6 @@ function buildStructures(config: Config) {
 function buildSettlement(config: Config) {
   return {
     reward_profile: resolveBlitzProfileId(config),
-    cosmetic_limit: config.blitz.registration.collectible_cosmetics_max_items,
-    cosmetic_collection: config.blitz.registration.collectible_cosmetics_address,
-    cosmetic_timelock: config.blitz.registration.collectible_timelock_address,
     realms: {
       resources: amounts(config.startingResources, config.resources.resourcePrecision),
       starting_troops: startingTroopsByBiome.map((name) => new CairoCustomEnum({ [name]: {} })),

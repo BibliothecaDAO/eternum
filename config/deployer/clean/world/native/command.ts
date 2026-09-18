@@ -14,6 +14,7 @@ import { nativeDomainAbi } from "./manifest";
 import type { NativeWorldManifest } from "./types";
 
 const administrativeCommands = new Set<NativeCommand["kind"]>([
+  "SettleBlitzRoster",
   "FundFaithPrizes",
   "DistributeFaithPrizes",
   "SetFaithBlacklist",
@@ -24,7 +25,12 @@ const administrativeCommands = new Set<NativeCommand["kind"]>([
   "AllocateGameChests",
 ]);
 
-const repeatableBatches = new Set<NativeCommand["kind"]>(["DistributeFaithPrizes", "MarkGameSettled", "ResetRanking"]);
+const repeatableBatches = new Set<NativeCommand["kind"]>([
+  "SettleBlitzRoster",
+  "DistributeFaithPrizes",
+  "MarkGameSettled",
+  "ResetRanking",
+]);
 
 type AdminCommandInput = {
   provider: RpcProvider;
