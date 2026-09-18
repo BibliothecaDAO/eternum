@@ -103,7 +103,6 @@ const FinalResultsStep = ({ data }: { data: GameReviewData }) => (
         ? "Results are finalized."
         : "The game operator will finalize results after the game ends. Your earned points are included automatically."}
     </p>
-    <p className="text-xs text-gold/70">The game operator applies payouts and MMR once results are final.</p>
   </div>
 );
 
@@ -114,9 +113,7 @@ const ResultOutcomeStep = ({
   data: GameReviewData;
   captureRef: MutableRefObject<HTMLDivElement | null>;
 }) => {
-  const rewards = data.rewards;
-  const scoreSubmitted = rewards?.scoreSubmitted ?? data.finalization.rankingFinalized;
-  const chests = rewards?.chests ?? 0;
+  const finalized = data.finalization.rankingFinalized;
 
   return (
     <div className="space-y-4">
@@ -129,24 +126,25 @@ const ResultOutcomeStep = ({
       <div ref={captureRef} className="mx-auto grid w-full gap-3 sm:grid-cols-2" style={CARD_PREVIEW_STYLE}>
         <div className="rounded-xl border border-gold/20 bg-dark/80 p-4">
           <p className="text-[11px] uppercase tracking-wider text-gold/60">Rank</p>
-          <p className="mt-1 text-2xl text-white">{rewards?.isRanked ? (data.personalScore?.rank ?? "—") : "—"}</p>
+          <p className="mt-1 text-2xl text-white">{finalized ? (data.personalScore?.rank ?? "—") : "—"}</p>
         </div>
         <div className="rounded-xl border border-gold/20 bg-dark/80 p-4">
-          <p className="text-[11px] uppercase tracking-wider text-gold/60">Chest entitlement</p>
-          <p className="mt-1 text-2xl text-white">{chests.toLocaleString()}</p>
+          <p className="text-[11px] uppercase tracking-wider text-gold/60">Victory points</p>
+          <p className="mt-1 text-2xl text-white">
+            {finalized ? (data.personalScore?.points.toLocaleString() ?? "—") : "—"}
+          </p>
         </div>
       </div>
 
-      {!scoreSubmitted && (
+      {!finalized && (
         <div className="rounded-xl border border-orange/30 bg-orange/10 p-3 text-sm text-orange">
           Final results are awaiting the game operator.
         </div>
       )}
 
-      {scoreSubmitted && (
+      {finalized && (
         <div className="rounded-xl border border-brilliance/40 bg-brilliance/10 p-3 text-sm text-brilliance">
-          The ordered result is ready for the operator relay. LORDS payouts and MMR are read from the mainnet ledger,
-          not this game world.
+          Your final rank and victory points are recorded.
         </div>
       )}
     </div>
@@ -271,7 +269,7 @@ export const GameReviewModal = ({
     }
 
     if (currentStep === "result-outcome") {
-      return Boolean(data?.rewards);
+      return Boolean(data?.personalScore && data.finalization.rankingFinalized);
     }
 
     if (currentStep === "map-fingerprint") {
@@ -283,7 +281,7 @@ export const GameReviewModal = ({
     }
 
     return false;
-  }, [currentStep, data?.mapSnapshot.available, data?.personalScore, data?.rewards]);
+  }, [currentStep, data?.mapSnapshot.available, data?.personalScore, data?.finalization.rankingFinalized]);
 
   const reviewData = useMemo<GameReviewData | null>(() => {
     if (!data) return null;

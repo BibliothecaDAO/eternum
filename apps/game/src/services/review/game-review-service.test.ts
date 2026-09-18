@@ -9,7 +9,7 @@ import { fetchGameReviewData } from "./game-review-service";
 const PLAYER = "0x62ba685f1d600ac7bda27e556b787548da32c7c0aa3ff5f58dddc07b9116f33";
 const GAME_ID = 5;
 const REVIEW_BLOCK = 100;
-const TRIAL_ID = "0x1c6b";
+const RESULT_COMMITMENT = "0x1c6b";
 
 const herald = vi.hoisted(() => ({
   fetchHistory: vi.fn(),
@@ -56,13 +56,11 @@ const reviewSnapshot = (): HeraldGameSnapshot => ({
   confirmed_block: REVIEW_BLOCK,
   game_id: String(GAME_ID),
   models: [
-    model("GameRegistry", [{ start_main_at: 10, end_at: 90, dev_mode_on: false, final_trial_id: TRIAL_ID }]),
-    model("WorldConfig", [{ blitz_registration_config: { registration_count: 4 } }]),
-    model("BlitzSettlement", [{ player: PLAYER }]),
-    model("PlayerRegisteredPoints", [{ address: PLAYER, registered_points: "0x77359400" }]),
-    model("PlayerRank", [{ player: PLAYER, rank: 1, chests: 2 }]),
-    model("RankPrize", [{ rank: 1, total_players_same_rank_count: 1, grant_elite_nft: false }]),
-    model("PlayersRankTrial", [{ nonce: TRIAL_ID, total_player_count_committed: 4 }]),
+    model("GameRegistry", [{ start_main_at: 10, end_at: 90, dev_mode_on: false }]),
+    model("PlayerEntry", [{ player: PLAYER }]),
+    model("BlitzResult", [
+      { players: [{ player: PLAYER, points: "830000000", rank: 1 }], complete: true, commitment: RESULT_COMMITMENT },
+    ]),
     model("AddressName", []),
     model("Structure", []),
     model("TileOpt", []),
@@ -94,8 +92,9 @@ describe("game review Herald read model", () => {
 
     expect(review.stats.totalTransactions).toBe(42);
     expect(review.stats.totalTilesExplored).toBe(166);
-    expect(review.rewards?.isRanked).toBe(true);
-    expect(review.rewards?.chests).toBe(2);
+    expect(review.finalization.rankingFinalized).toBe(true);
+    expect(review.finalization.resultCommitment).toBe(BigInt(RESULT_COMMITMENT));
+    expect(review.personalScore).toMatchObject({ rank: 1, points: 830 });
     expect(herald.fetchReviewSnapshot).toHaveBeenCalledOnce();
   });
 

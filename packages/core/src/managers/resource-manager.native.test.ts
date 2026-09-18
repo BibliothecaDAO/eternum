@@ -13,8 +13,6 @@ const balance = (game = 1) => ({ game_id: game, entity_id: 7, resource_type: 23,
 const game = {
   game_id: 1,
   name: 1n,
-  series_id: 0n,
-  game_number_in_series: 0,
   preset_id: 1,
   creator: 1n,
   settled: false,
@@ -24,7 +22,6 @@ const game = {
   start_main_at: 200n,
   end_at: 1100n,
   end_grace_seconds: 0,
-  final_trial_id: 0n,
   seed: 1n,
 };
 const production = {

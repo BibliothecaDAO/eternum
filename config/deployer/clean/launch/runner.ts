@@ -259,8 +259,6 @@ async function buildRegistrarGameParams(launch: PreparedLaunch) {
     {
       gameName: launch.request.gameName,
       presetId: launch.runtime.presetId,
-      seriesName: launch.request.seriesName,
-      seriesGameNumber: launch.request.seriesGameNumber,
       startMainAt: launch.runtime.startTime,
       durationSeconds: launch.config.season.durationSeconds,
       devModeOn: launch.config.dev.mode.on,
@@ -393,7 +391,7 @@ async function createAndSettleGame(launch: PreparedLaunch): Promise<void> {
   }
   await createGame(launch);
   if (!launch.config.blitz.mode.on) return;
-  await settleBlitzRoster(
+  launch.summary.finalizeAt = await settleBlitzRoster(
     launch.runtime.provider,
     await resolveGameId(launch),
     launchCredentials(launch),

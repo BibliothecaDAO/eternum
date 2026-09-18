@@ -20,16 +20,13 @@ const administrativeCommands = new Set<NativeCommand["kind"]>([
   "SetFaithBlacklist",
   "CreateBanks",
   "MarkGameSettled",
-  "RankPlayers",
-  "ResetRanking",
-  "AllocateGameChests",
+  "RecordBlitzResults",
 ]);
 
 const repeatableBatches = new Set<NativeCommand["kind"]>([
   "SettleBlitzRoster",
   "DistributeFaithPrizes",
   "MarkGameSettled",
-  "ResetRanking",
 ]);
 
 type AdminCommandInput = {
@@ -70,7 +67,10 @@ export async function executeNativeAdminCommand(
   });
   if (outcome.status === "REVERTED") throw new Error(`Native command rejected: ${outcome.reason}`);
   const remaining = outcome.batchRemaining;
-  if ((repeatableBatches.has(input.command.kind) || input.command.kind === "RankPlayers") && remaining === undefined)
+  if (
+    (repeatableBatches.has(input.command.kind) || input.command.kind === "RecordBlitzResults") &&
+    remaining === undefined
+  )
     throw new Error("Native administrative batch has no remaining count");
   return { transactionHash: accepted.transaction_hash, ...(remaining !== undefined ? { remaining } : {}) };
 }

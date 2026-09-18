@@ -3,7 +3,7 @@ import type { Pool, PoolClient } from "pg";
 import { normalizeAddress } from "./address";
 import { SlotConflict, SlotNotFound, splitPlaytestRoster, type PlaytestSlot, type SlotStore } from "./slots";
 
-const slotProjection = `SELECT s.name, s.closes_at, s.frozen_at,
+const slotProjection = `SELECT s.name, s.closes_at, s.frozen_at, s.closes_at <= clock_timestamp() AS closed,
   COALESCE((SELECT jsonb_agg(jsonb_build_object(
     'owner', r.owner, 'position', r.position, 'gameNumber', r.game_number
   ) ORDER BY r.position) FROM playtest_registrations r WHERE r.slot_name = s.name), '[]'::jsonb) AS registrations
@@ -13,6 +13,7 @@ interface SlotRow {
   name: string;
   closes_at: Date;
   frozen_at: Date | null;
+  closed: boolean;
   registrations: PlaytestSlot["registrations"];
 }
 
@@ -20,6 +21,7 @@ const toSlot = (row: SlotRow): PlaytestSlot => ({
   name: row.name,
   closesAt: row.closes_at.toISOString(),
   frozenAt: row.frozen_at?.toISOString() ?? null,
+  closed: row.closed,
   registrations: row.registrations,
 });
 

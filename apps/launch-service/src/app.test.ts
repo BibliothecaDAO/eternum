@@ -236,7 +236,7 @@ describe("launch service authorization", () => {
 
     expect((await app.request(duel)).status).toBe(202);
     const run = await store.find("game", "madara.blitz", "bltz-duel-game");
-    expect(run?.request.version).toBe("3");
+    expect(run && "version" in run.request ? run.request.version : undefined).toBe("3");
   });
 
   test("launches a real game dev-off and stores devModeOn:false", async () => {
@@ -253,6 +253,6 @@ describe("launch service authorization", () => {
 
     expect((await app.request(realGame)).status).toBe(202);
     const run = await store.find("game", "madara.blitz", "bltz-real-game");
-    expect(run?.request.devModeOn).toBe(false);
+    expect(run && "devModeOn" in run.request ? run.request.devModeOn : undefined).toBe(false);
   });
 });

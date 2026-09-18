@@ -8,13 +8,7 @@ import { requireIdentity, requireLauncher, type IdentityResolver, type LaunchApp
 import { createSlotRoutes } from "./slot-routes";
 import type { SlotStore } from "./slots";
 import { toFactoryRunRecord } from "./model";
-import {
-  CreateGameRequestSchema,
-  CreateRotationRequestSchema,
-  CreateSeriesRequestSchema,
-  type LaunchJobRequest,
-  type LaunchKind,
-} from "./schemas";
+import { CreateGameRequestSchema, type LaunchJobRequest, type LaunchKind } from "./schemas";
 import type { LaunchServiceStore } from "./store";
 
 interface LaunchAppDependencies {
@@ -67,12 +61,6 @@ const deleteRun = async (context: Context, store: LaunchServiceStore, kind: Laun
   const environment = readEnvironment(context.req.param("environment"));
   const deleted = await store.delete(kind, environment, name);
   return deleted ? context.json({ deleted: true }) : context.json({ error: "Run is missing or active." }, 409);
-};
-
-const cancelRun = async (context: Context, store: LaunchServiceStore, kind: LaunchKind, name: string) => {
-  const environment = readEnvironment(context.req.param("environment"));
-  const cancelled = await store.cancel(kind, environment, name);
-  return cancelled ? context.json({ cancelled: true }) : context.json({ error: "Run is missing or active." }, 409);
 };
 
 export const createLaunchApp = (dependencies: LaunchAppDependencies) => {
@@ -129,50 +117,8 @@ export const createLaunchApp = (dependencies: LaunchAppDependencies) => {
     deleteRun(context, dependencies.store, "game", context.req.param("name")),
   );
 
-  app.post("/api/factory/series-runs", async (context) => {
-    try {
-      const request = await decodeBody(context, CreateSeriesRequestSchema);
-      return respondWithRun(context, dependencies.store, "series", request);
-    } catch (error) {
-      return context.json({ error: String(error) }, 400);
-    }
-  });
-  app.get("/api/factory/series-runs/:environment/:name", (context) =>
-    findRun(context, dependencies.store, "series", context.req.param("name")),
+  app.post("/api/factory/results/:environment/:name/actions/continue", (context) =>
+    continueRun(context, dependencies.store, "result", context.req.param("name")),
   );
-  app.post("/api/factory/series-runs/:environment/:name/actions/continue", (context) =>
-    continueRun(context, dependencies.store, "series", context.req.param("name")),
-  );
-  app.post("/api/factory/series-runs/:environment/:name/actions/cancel-auto-retry", (context) =>
-    cancelRun(context, dependencies.store, "series", context.req.param("name")),
-  );
-  app.post("/api/factory/series-runs/:environment/:name/actions/delete", (context) =>
-    deleteRun(context, dependencies.store, "series", context.req.param("name")),
-  );
-
-  app.post("/api/factory/rotation-runs", async (context) => {
-    try {
-      const request = await decodeBody(context, CreateRotationRequestSchema);
-      return respondWithRun(context, dependencies.store, "rotation", request);
-    } catch (error) {
-      return context.json({ error: String(error) }, 400);
-    }
-  });
-  app.get("/api/factory/rotation-runs/:environment/:name", (context) =>
-    findRun(context, dependencies.store, "rotation", context.req.param("name")),
-  );
-  app.post("/api/factory/rotation-runs/:environment/:name/actions/continue", (context) =>
-    continueRun(context, dependencies.store, "rotation", context.req.param("name")),
-  );
-  app.post("/api/factory/rotation-runs/:environment/:name/actions/nudge", (context) =>
-    continueRun(context, dependencies.store, "rotation", context.req.param("name")),
-  );
-  app.post("/api/factory/rotation-runs/:environment/:name/actions/cancel-auto-retry", (context) =>
-    cancelRun(context, dependencies.store, "rotation", context.req.param("name")),
-  );
-  app.post("/api/factory/rotation-runs/:environment/:name/actions/delete", (context) =>
-    deleteRun(context, dependencies.store, "rotation", context.req.param("name")),
-  );
-
   return app;
 };

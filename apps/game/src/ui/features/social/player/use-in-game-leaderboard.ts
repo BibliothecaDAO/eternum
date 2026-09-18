@@ -7,11 +7,7 @@ import { configManager, LeaderboardManager } from "@bibliothecadao/eternum";
 import { useGame } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
 import { useMemo } from "react";
-import {
-  buildFinalizedBlitzStandingLookup,
-  buildRegisteredPointsLookup,
-  normalizeLeaderboardAddress,
-} from "./finalized-blitz-leaderboard";
+import { buildFinalizedBlitzStandingLookup, normalizeLeaderboardAddress } from "./finalized-blitz-leaderboard";
 
 interface InGameLeaderboardStanding {
   address: ContractAddress;
@@ -44,22 +40,10 @@ const buildLiveLeaderboard = (store: NativeFactStore): InGameLeaderboard => {
 };
 
 const buildFinalizedBlitzLeaderboard = (store: NativeFactStore): InGameLeaderboard | null => {
-  const finalizedGame = store.get("GameRegistry", { game_id: configManager.getActiveGameId() });
-  if (!finalizedGame || BigInt(finalizedGame.final_trial_id) === 0n) return null;
+  const result = store.get("BlitzResult", { game_id: configManager.getActiveGameId() });
+  if (!result?.complete) return null;
 
-  const registeredPointsLookup = buildRegisteredPointsLookup(
-    [...store.inGame("PlayerPoints", configManager.getActiveGameId())].map((row) => ({
-      address: row.address as unknown as bigint,
-      registeredPoints: row.points as bigint,
-    })),
-  );
-  const finalizedStandings = buildFinalizedBlitzStandingLookup(
-    [...store.inGame("PlayerRank", configManager.getActiveGameId())].map((row) => ({
-      playerAddress: row.player as unknown as bigint,
-      rank: row.rank as bigint | number,
-    })),
-    registeredPointsLookup,
-  );
+  const finalizedStandings = buildFinalizedBlitzStandingLookup(result.players);
   if (finalizedStandings.size === 0) return null;
 
   return {

@@ -51,8 +51,6 @@ pub fn create_games(season: ContractAddress, authority: ContractAddress) {
                 game_id,
                 GameRegistry {
                     name: 'fixture',
-                    series_id: 0,
-                    game_number_in_series: 0,
                     preset_id: 1,
                     creator: authority,
                     settled: false,
@@ -62,7 +60,6 @@ pub fn create_games(season: ContractAddress, authority: ContractAddress) {
                     start_main_at: 0,
                     end_at: 999999,
                     end_grace_seconds: 0,
-                    final_trial_id: 0,
                     seed: 1,
                 },
                 rules(),

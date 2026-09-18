@@ -13,19 +13,12 @@ export interface HarnessAccount {
   publicKey: string;
 }
 
-export interface HarnessGameplayIdentity {
-  owner: string;
-  privateKey: string;
-}
-
 interface CreateHarnessAccountsOptions {
   authority: string;
   classHash: string;
   concurrency?: number;
   count: number;
   gameId: number;
-  identities?: readonly HarnessGameplayIdentity[];
-  botIdOffset?: number;
   provider: RpcProvider;
 }
 
@@ -37,20 +30,12 @@ export async function createHarnessAccounts({
   concurrency = DEFAULT_DEPLOY_CONCURRENCY,
   count,
   gameId,
-  identities,
-  botIdOffset = 0,
   provider,
 }: CreateHarnessAccountsOptions): Promise<HarnessAccount[]> {
-  if (identities && identities.length !== count) {
-    throw new Error(`Expected ${count} gameplay identities, received ${identities.length}`);
-  }
-  const botIds = Array.from({ length: count }, (_, botId) => botId + botIdOffset);
-
-  return mapWithConcurrency(botIds, concurrency, async (botId, index) => {
-    const identity = identities?.[index];
-    const { privateKey, publicKey } = identity ? gameplayKey(identity.privateKey) : createHarnessKey();
-    // Guests deploy with no owner in the account itself; they are bound to themselves afterwards.
-    const constructorOwner = identity?.owner ?? "0x0";
+  const botIds = Array.from({ length: count }, (_, botId) => botId);
+  return mapWithConcurrency(botIds, concurrency, async (botId) => {
+    const privateKey = stark.randomAddress();
+    const publicKey = ec.starkCurve.getStarkKey(privateKey);
     const startedAt = performance.now();
 
     try {
@@ -59,7 +44,7 @@ export async function createHarnessAccounts({
         await ensureGameplayAccount({
           authority,
           classHash,
-          owner: constructorOwner,
+          owner: "0x0",
           privateKey,
           provider,
           publicKey,
@@ -73,7 +58,7 @@ export async function createHarnessAccounts({
         botId,
         deployedInMs: elapsedMs(startedAt),
         gameId,
-        owner: identity?.owner ?? account.address,
+        owner: account.address,
         privateKey,
         publicKey,
       };
@@ -81,14 +66,6 @@ export async function createHarnessAccounts({
       throw new Error(`Failed to deploy gameplay account for bot ${botId}`, { cause: error });
     }
   });
-}
-
-function gameplayKey(privateKey: string): { privateKey: string; publicKey: string } {
-  return { privateKey, publicKey: ec.starkCurve.getStarkKey(privateKey) };
-}
-
-function createHarnessKey(): { privateKey: string; publicKey: string } {
-  return gameplayKey(stark.randomAddress());
 }
 
 export async function mapWithConcurrency<T, R>(

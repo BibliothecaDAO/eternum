@@ -3,31 +3,19 @@ import { createBuildOrderWorkload } from "./build-order";
 import { runLayerRoundTrip } from "./layer-round-trip";
 import { closeHarnessSeason } from "./season-lifecycle";
 import { defaultPresetForEnvironment } from "../../../config/deployer/clean/constants";
-import { readFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import type { GameClient } from "@bibliothecadao/eternum";
-import type { CommittedManifest } from "@bibliothecadao/eternum/game-client";
-import { Account, ec, logger, RpcProvider } from "starknet";
-import { assertChainId, assertProviderChain } from "../../../packages/chain/chain-guard.js";
+import { bindGameplayAccounts } from "@bibliothecadao/eternum";
+import { splitPlaytestRoster } from "../../../apps/launch-service/src/slots";
+import { configureGameplayAccountSubmits, type CommittedManifest } from "@bibliothecadao/eternum/game-client";
+import { Account, ec, logger } from "starknet";
+import { assertChainId } from "../../../packages/chain/chain-guard.js";
 import { launchGame } from "../../../config/deployer/clean/launch/runner";
-import { createHarnessAccounts } from "./account-factory";
+import { createHarnessAccounts, type HarnessAccount } from "./account-factory";
 import { connectHarnessGameClient, type HarnessGameplayContracts } from "./game-client";
-import { createHarnessGame, type HarnessGame } from "./harness-game";
+import { createHarnessGame } from "./harness-game";
 import { HarnessProvider } from "./provider";
 import { prepareHarnessBots, runWorkload, type HarnessGameType, type TrackedTransaction } from "./driver";
-import {
-  bindLedgerGameplayAccounts,
-  finalizeLedgerGame,
-  loadLedgerBotIdentities,
-  registerLedgerBots,
-  toHarnessGameplayIdentities,
-  waitForGameStart,
-  waitForRelayedLedgerRegistrations,
-  type LedgerBotIdentity,
-  type LedgerHarnessEvidence,
-  type LedgerRegistrationRuntime,
-} from "./ledger-mode";
-import { readLedgerSweepManifest, sweepLedgerBalances, writeLedgerSweepReceipt } from "./ledger-money";
 import { collectHarnessEvidenceBeforeRun, finishHarnessEvidence, writeHarnessReport } from "./report";
 
 interface HarnessCliOptions {
@@ -35,15 +23,12 @@ interface HarnessCliOptions {
   gameType: HarnessGameType;
   bots: number;
   gameId?: number;
+  preparedGamePath?: string;
   gameName?: string;
   intervalSeconds: number;
-  ledger: boolean;
-  ledgerAccountsPath?: string;
-  ledgerStartDelaySeconds: number;
   minutes: number;
   rpcUrl: string;
   setupConcurrency: number;
-  sweepOnlyManifestPath?: string;
   heraldUrl: string;
 }
 
@@ -61,34 +46,7 @@ interface LaunchedGame {
   startAt?: number;
 }
 
-interface LedgerEnvironment {
-  authorityPrivateKey: string;
-  ledgerAddress: string;
-  lordsAddress: string;
-  mainnetRpcUrl: string;
-  treasuryAddress: string;
-  treasuryPrivateKey: string;
-}
-
-interface LedgerSweepEnvironment {
-  lordsAddress: string;
-  mainnetRpcUrl: string;
-  treasuryAddress: string;
-}
-
-interface PreparedGameRun {
-  accounts: Awaited<ReturnType<typeof createHarnessAccounts>>;
-  bots: Awaited<ReturnType<typeof prepareHarnessBots>>;
-  game: LaunchedGame;
-  ledger?: {
-    binding: LedgerHarnessEvidence["binding"];
-    registration: LedgerHarnessEvidence["registration"];
-    registrations: LedgerRegistrationRuntime[];
-  };
-}
-
 const REPOSITORY_ROOT = path.resolve(import.meta.dir, "../../..");
-const LAB_DIRECTORY = path.resolve(import.meta.dir, "..");
 const DEFAULT_RPC_URL = "http://127.0.0.1:5050/rpc/v0_9_0";
 const DEFAULT_HERALD_URL = "http://127.0.0.1:3003";
 const MADARA_ADMIN_ADDRESS = "0x055be462e718c4166d656d11f89e341115b8bc82389c3762a10eade04fcb225d";
@@ -108,35 +66,18 @@ export function parseHarnessArgs(args: string[]): HarnessCliOptions {
   const intervalSeconds = positiveNumber(values["interval-seconds"] ?? "15", "interval-seconds");
   const setupConcurrency = positiveInteger(values["setup-concurrency"] ?? "6", "setup-concurrency");
   const gameId = values["game-id"] === undefined ? undefined : positiveInteger(values["game-id"], "game-id");
-  const ledger = values.ledger === "true";
   const workload = values.workload ?? (values["game-type"] === "eternum" ? "cadence" : "build-order");
   if (workload !== "build-order" && workload !== "cadence")
     throw new Error("--workload must be build-order or cadence");
   const gameType = values["game-type"] ?? "blitz";
   if (gameType !== "blitz" && gameType !== "eternum") throw new Error("--game-type must be blitz or eternum");
   if (gameType === "eternum" && workload === "build-order") throw new Error("Build-order workload requires Blitz");
-  if (ledger && gameType === "eternum") throw new Error("The ledger harness currently registers Blitz passes only");
-  const sweepOnlyManifestPath = values["sweep-only"];
-  const ledgerStartDelaySeconds = positiveInteger(
-    values["ledger-start-delay-seconds"] ?? "900",
-    "ledger-start-delay-seconds",
-  );
-
   if (bots > 96) throw new Error(`The harness supports at most 96 bots, received ${bots}`);
   if (values.games !== undefined)
     throw new Error("The game client holds one game per process; run one harness per game");
-  if (ledger && gameId !== undefined)
-    throw new Error("--ledger always creates a fresh game; --game-id is not supported");
-  if (ledger && sweepOnlyManifestPath) throw new Error("--ledger and --sweep-only are separate modes");
-  if ((ledger || sweepOnlyManifestPath) && !values["ledger-accounts"]) {
-    throw new Error("--ledger-accounts is required with --ledger or --sweep-only");
-  }
-  if (!ledger && !sweepOnlyManifestPath && values["ledger-accounts"]) {
-    throw new Error("--ledger-accounts requires --ledger or --sweep-only");
-  }
-  if (!ledger && values["ledger-start-delay-seconds"]) {
-    throw new Error("--ledger-start-delay-seconds requires --ledger");
-  }
+  if (gameType === "blitz" && gameId !== undefined)
+    throw new Error("Blitz harness creates its fixed roster before launching; omit --game-id");
+  if (bots > 24 && gameId !== undefined) throw new Error("An existing game cannot be split across harness processes");
   if (gameId !== undefined && !values["game-name"]) {
     values["game-name"] = `game-${gameId}`;
   }
@@ -146,25 +87,18 @@ export function parseHarnessArgs(args: string[]): HarnessCliOptions {
     workload,
     bots,
     gameId,
+    preparedGamePath: values["prepared-game"],
     gameName: values["game-name"],
     intervalSeconds,
-    ledger,
-    ledgerAccountsPath: values["ledger-accounts"],
-    ledgerStartDelaySeconds,
     minutes,
     rpcUrl: values["rpc-url"] ?? process.env.RPC_URL ?? DEFAULT_RPC_URL,
     setupConcurrency,
-    sweepOnlyManifestPath,
     heraldUrl: values["herald-url"] ?? process.env.HERALD_URL ?? DEFAULT_HERALD_URL,
   };
 }
 
 async function main(): Promise<void> {
   const options = parseHarnessArgs(process.argv.slice(2));
-  if (options.sweepOnlyManifestPath) {
-    await runLedgerSweepOnly(options);
-    return;
-  }
   const manifestPath = requiredEnvironmentValue("NATIVE_WORLD_MANIFEST", "native harness");
   const admissionUrl = requiredEnvironmentValue("ADMISSION_URL", "native harness");
   const gameplayContractsPath = requiredEnvironmentValue("GAMEPLAY_CONTRACTS_PATH", "native harness");
@@ -177,20 +111,27 @@ async function main(): Promise<void> {
     readJson<WorldManifest>(path.resolve(REPOSITORY_ROOT, manifestPath)),
   ]);
   assertChainId(chainId, "madara", "RPC_URL");
-  if (!options.ledger && BigInt(gameplayContracts.playerRegistryAddress) !== 0n) {
+  if (BigInt(gameplayContracts.playerRegistryAddress) !== 0n) {
     requiredEnvironmentValue("BINDING_AUTHORITY_PRIVATE_KEY", "harness with PlayerRegistry");
   }
-  const ledgerEnvironment = options.ledger ? resolveLedgerEnvironment() : undefined;
-  const ledgerIdentities = options.ledger
-    ? await loadLedgerBotIdentities(path.resolve(REPOSITORY_ROOT, options.ledgerAccountsPath!), options.bots)
-    : undefined;
-  const game = await resolveHarnessGame(options, ledgerEnvironment);
-  const signingKeys = new Map<bigint, string>();
-  if (options.ledger)
-    signingKeys.set(
-      BigInt(process.env.DEPLOYER_ACCOUNT_ADDRESS ?? MADARA_ADMIN_ADDRESS),
-      process.env.DEPLOYER_PRIVATE_KEY ?? MADARA_ADMIN_PRIVATE_KEY,
-    );
+  const prepared = options.preparedGamePath
+    ? await readJson<PreparedGame>(path.resolve(options.preparedGamePath))
+    : await prepareGames(options, gameplayContracts, provider);
+  if (Array.isArray(prepared)) {
+    provider.dispose();
+    await runRosterGroups(options, prepared);
+    return;
+  }
+  const { game } = prepared;
+  if (prepared.accounts.length !== options.bots) throw new Error("Prepared roster size does not match --bots");
+  const accounts: HarnessAccount[] = prepared.accounts.map((account) => ({
+    ...account,
+    account: configureGameplayAccountSubmits(
+      new Account({ provider, address: account.address, signer: account.privateKey }),
+      "madara",
+    ),
+  }));
+  const signingKeys = new Map(accounts.map(({ address, privateKey }) => [BigInt(address), privateKey]));
   const client = await connectHarnessGameClient({
     admissionUrl,
     chainId,
@@ -210,16 +151,13 @@ async function main(): Promise<void> {
   try {
     const harnessGame = createHarnessGame(client);
     const setupTransactions: TrackedTransaction[] = [];
-    const run = await prepareGameRun({
-      client,
-      signingKeys,
-      game,
-      gameplayContracts,
-      harnessGame,
-      ledgerEnvironment,
-      ledgerIdentities,
-      options,
+    if (options.gameType === "eternum" && game.startAt) await waitForGameStart(provider, game.startAt);
+    const bots = await prepareHarnessBots({
+      gameType: options.gameType,
+      accounts,
+      game: harnessGame,
       provider,
+      setupConcurrency: options.setupConcurrency,
       setupTransactions,
     });
 
@@ -228,7 +166,7 @@ async function main(): Promise<void> {
       "Waiting for every explorer to recover setup stamina to its configured capacity, then starting the measured workload",
     );
     const workload = await runWorkload({
-      bots: run.bots,
+      bots,
       buildOrder: options.workload === "build-order" ? createBuildOrderWorkload(client, harnessGame) : undefined,
       game: harnessGame,
       intervalSeconds: options.intervalSeconds,
@@ -245,7 +183,7 @@ async function main(): Promise<void> {
       options.gameType === "eternum"
         ? [
             await runLayerRoundTrip({
-              bots: run.bots,
+              bots,
               gameId: game.gameId,
               provider,
               client,
@@ -258,7 +196,7 @@ async function main(): Promise<void> {
       options.gameType === "eternum"
         ? [
             await closeHarnessSeason({
-              accounts: run.accounts,
+              accounts,
               client,
               game: harnessGame,
               provider,
@@ -266,12 +204,10 @@ async function main(): Promise<void> {
           ]
         : [];
 
-    const valuePlane = await finalizeValuePlaneRun({ run, ledgerEnvironment, options, provider, client, harnessGame });
-
     const evidence = await finishHarnessEvidence(evidenceBefore, workload.startedAt, workload.endedAt);
     const minimumThresholdActions = resolveMinimumThresholdActions(options, workload.plannedActions);
     const report = await writeHarnessReport({
-      accounts: run.accounts,
+      accounts,
       botCount: options.bots,
       chainId,
       evidence,
@@ -283,7 +219,6 @@ async function main(): Promise<void> {
       setupTransactions,
       heraldUrl: options.heraldUrl,
       workload,
-      valuePlane,
       seasonFinalizations,
       layerRoundTrips,
     });
@@ -298,25 +233,20 @@ async function main(): Promise<void> {
 
 export const createHarnessProvider = (rpcUrl: string): HarnessProvider => new HarnessProvider(rpcUrl);
 
-async function resolveHarnessGame(
-  options: HarnessCliOptions,
-  ledgerEnvironment?: LedgerEnvironment,
-): Promise<LaunchedGame> {
+async function resolveHarnessGame(options: HarnessCliOptions, rosterOwners: string[]): Promise<LaunchedGame> {
   if (options.gameId !== undefined) {
     return { gameId: options.gameId, gameName: options.gameName! };
   }
 
   const gameName = options.gameName ?? `lab-${Date.now().toString(36)}`;
-  const startAt = Math.floor(Date.now() / 1_000) + (options.ledger ? options.ledgerStartDelaySeconds : 60);
+  const startAt = Math.floor(Date.now() / 1_000) + 60;
   const summary = await launchGame({
     accountAddress: process.env.DEPLOYER_ACCOUNT_ADDRESS ?? MADARA_ADMIN_ADDRESS,
-    devModeOn: options.gameType === "blitz" && !options.ledger,
-    durationSeconds: Math.ceil(options.minutes * 60) + (options.ledger ? 300 : 3_600),
+    devModeOn: false,
+    durationSeconds: Math.ceil(options.minutes * 60) + 3_600,
     environmentId: options.gameType === "eternum" ? "madara.eternum" : "madara.blitz",
     gameName,
-    ledgerAddress: ledgerEnvironment?.ledgerAddress,
-    ledgerRpcUrl: ledgerEnvironment?.mainnetRpcUrl,
-    lordsAddress: ledgerEnvironment?.lordsAddress,
+    rosterOwners: options.gameType === "blitz" ? rosterOwners : undefined,
     privateKey: process.env.DEPLOYER_PRIVATE_KEY ?? MADARA_ADMIN_PRIVATE_KEY,
     rpcUrl: options.rpcUrl,
     startTime: startAt,
@@ -337,7 +267,26 @@ function parseFlags(args: string[]): Record<string, string> {
     const flag = args[index]!;
     if (!flag.startsWith("--")) throw new Error(`Unexpected argument ${flag}`);
     const name = flag.slice(2);
-    if (name === "help" || name === "ledger") {
+    if (
+      ![
+        "help",
+        "bots",
+        "minutes",
+        "interval-seconds",
+        "setup-concurrency",
+        "game-id",
+        "game-name",
+        "prepared-game",
+        "workload",
+        "game-type",
+        "rpc-url",
+        "herald-url",
+        "games",
+      ].includes(name)
+    ) {
+      throw new Error(`Unsupported harness option --${name}`);
+    }
+    if (name === "help") {
       values[name] = "true";
       continue;
     }
@@ -349,239 +298,106 @@ function parseFlags(args: string[]): Record<string, string> {
   return values;
 }
 
-async function prepareGameRun({
-  client,
-  signingKeys,
-  game,
-  gameplayContracts,
-  harnessGame,
-  ledgerEnvironment,
-  ledgerIdentities,
-  options,
-  provider,
-  setupTransactions,
-}: {
+interface PreparedGame {
   game: LaunchedGame;
-  gameplayContracts: GameplayContractsArtifact;
-  harnessGame: HarnessGame;
-  ledgerEnvironment?: LedgerEnvironment;
-  ledgerIdentities?: LedgerBotIdentity[];
-  options: HarnessCliOptions;
-  provider: HarnessProvider;
-  setupTransactions: TrackedTransaction[];
-  signingKeys: Map<bigint, string>;
-  client: GameClient;
-}): Promise<PreparedGameRun> {
-  const ledger =
-    ledgerEnvironment && ledgerIdentities
-      ? await prepareLedgerRegistrations(game, ledgerIdentities, ledgerEnvironment, options)
-      : undefined;
-  console.log(
-    `Deploying ${options.bots} ${ledger ? "owner-bound" : "guest"} gameplay accounts for game ${game.gameId} (${game.gameName})`,
-  );
+  accounts: Omit<HarnessAccount, "account">[];
+}
+
+async function prepareGames(
+  options: HarnessCliOptions,
+  contracts: GameplayContractsArtifact,
+  provider: HarnessProvider,
+): Promise<PreparedGame | PreparedGame[]> {
   const accounts = await createHarnessAccounts({
-    authority: gameplayContracts.bindingAuthorityAddress,
-    classHash: gameplayContracts.playerAccountClassHash,
+    authority: contracts.bindingAuthorityAddress,
+    classHash: contracts.playerAccountClassHash,
     concurrency: options.setupConcurrency,
     count: options.bots,
-    gameId: game.gameId,
-    identities: ledgerIdentities ? toHarnessGameplayIdentities(ledgerIdentities) : undefined,
+    gameId: 0,
     provider,
   });
-
-  for (const account of accounts) signingKeys.set(BigInt(account.address), account.privateKey);
-  let binding: LedgerHarnessEvidence["binding"] | undefined;
-  // Settlement is keyed by the bound owner whenever the chain has a player registry, so guests bind as their own owners.
-  const authorityPrivateKey =
-    ledgerEnvironment?.authorityPrivateKey ?? process.env.BINDING_AUTHORITY_PRIVATE_KEY?.trim();
-  if (authorityPrivateKey) {
-    console.log(`Binding ${accounts.length} gameplay accounts to their ${ledger ? "mainnet" : "own"} owners`);
-    binding = await bindLedgerGameplayAccounts({
-      accounts,
-      authorityAddress: gameplayContracts.bindingAuthorityAddress,
-      authorityPrivateKey,
-      playerRegistryAddress: gameplayContracts.playerRegistryAddress,
+  await bindGameplayAccounts({
+    accounts: accounts.map(({ address, owner }) => ({ address, owner })),
+    authority: new Account({
       provider,
+      address: contracts.bindingAuthorityAddress,
+      signer: requiredEnvironmentValue("BINDING_AUTHORITY_PRIVATE_KEY", "harness"),
+    }),
+    chain: "madara",
+    playerRegistryAddress: contracts.playerRegistryAddress,
+    provider,
+  });
+  const groups = options.gameType === "blitz" ? splitPlaytestRoster(accounts) : [accounts];
+  const prefix = options.gameName ?? `lab-${Date.now().toString(36)}`;
+  const prepared: PreparedGame[] = [];
+  // Setup shares an authority account. Finish it before concurrent player workloads start.
+  for (const [index, group] of groups.entries()) {
+    const game = await resolveHarnessGame(
+      { ...options, gameName: groups.length > 1 ? `${prefix}-${index + 1}` : prefix },
+      group.map(({ owner }) => owner),
+    );
+    prepared.push({
+      game,
+      accounts: group.map(({ account: _account, ...entry }) => ({ ...entry, gameId: game.gameId })),
     });
   }
-  if (ledger && ledgerEnvironment && ledgerIdentities) {
-    console.log(`Waiting for ${accounts.length} mainnet registrations to reach the L3 fold`);
-    await waitForRelayedLedgerRegistrations(
-      client,
-      ledgerIdentities.map(({ mainnetAddress }) => mainnetAddress),
-    );
-  }
-
-  console.log(`Settling, provisioning, and creating three explorers per bot for game ${game.gameId}`);
-  if (options.gameType === "eternum" && game.startAt) await waitForGameStart(provider, game.startAt);
-  const bots = await prepareHarnessBots({
-    gameType: options.gameType,
-    accounts,
-    beforeProvision:
-      ledger && game.startAt
-        ? async () => {
-            console.log(`All bots settled; waiting for game ${game.gameId} to start at ${game.startAt}`);
-            await waitForGameStart(provider, game.startAt!);
-          }
-        : undefined,
-    game: harnessGame,
-    provider,
-    setupConcurrency: options.setupConcurrency,
-    setupTransactions,
-  });
-  return {
-    accounts,
-    bots,
-    game,
-    ledger:
-      ledger && binding ? { binding, registration: ledger.evidence, registrations: ledger.registrations } : undefined,
-  };
+  return prepared.length === 1 ? prepared[0] : prepared;
 }
 
-async function prepareLedgerRegistrations(
-  game: LaunchedGame,
-  identities: LedgerBotIdentity[],
-  environment: LedgerEnvironment,
-  options: HarnessCliOptions,
-) {
-  console.log(`Funding and registering ${identities.length} bot owners through the mainnet ledger`);
-  return registerLedgerBots({
-    concurrency: options.setupConcurrency,
-    gameId: game.gameId,
-    identities,
-    ledgerAddress: environment.ledgerAddress,
-    lordsAddress: environment.lordsAddress,
-    mainnetRpcUrl: environment.mainnetRpcUrl,
-    recoveryManifestPath: createLedgerSweepManifestPath(game.gameId),
-    treasuryAddress: environment.treasuryAddress,
-    treasuryPrivateKey: environment.treasuryPrivateKey,
-  });
-}
-
-async function runLedgerSweepOnly(options: HarnessCliOptions): Promise<void> {
-  const manifestPath = path.resolve(REPOSITORY_ROOT, options.sweepOnlyManifestPath!);
-  const manifest = await readLedgerSweepManifest(manifestPath);
-  const environment = resolveLedgerSweepEnvironment();
-  assertSameAddress(manifest.lordsAddress, environment.lordsAddress, "LORDS_ADDRESS");
-  assertSameAddress(manifest.treasuryAddress, environment.treasuryAddress, "LEDGER_TREASURY_ADDRESS");
-
-  const identities = await loadLedgerBotIdentities(
-    path.resolve(REPOSITORY_ROOT, options.ledgerAccountsPath!),
-    manifest.accounts.length,
-  );
-  const identityByOwner = new Map(identities.map((identity) => [BigInt(identity.mainnetAddress).toString(), identity]));
-  const provider = new RpcProvider({ nodeUrl: environment.mainnetRpcUrl });
-  await assertProviderChain(provider, "mainnet", "LEDGER_RPC_URL");
-
-  const accounts = manifest.accounts.map(({ owner, preFundLordsBalanceBaseUnits }) => {
-    const identity = identityByOwner.get(BigInt(owner).toString());
-    if (!identity) throw new Error(`--ledger-accounts is missing sweep owner ${owner}`);
-    return {
-      account: new Account({ provider, address: identity.mainnetAddress, signer: identity.mainnetPrivateKey }),
-      owner,
-      preFundLordsBalance: BigInt(preFundLordsBalanceBaseUnits),
-    };
-  });
-  if (accounts.length !== identityByOwner.size) {
-    throw new Error("--ledger-accounts contains an owner absent from the sweep manifest");
+async function runRosterGroups(options: HarnessCliOptions, games: PreparedGame[]): Promise<void> {
+  const directory = path.join(REPOSITORY_ROOT, "deploy/madara-lab/.lab/harness", `rosters-${Date.now()}`);
+  await mkdir(directory, { recursive: true, mode: 0o700 });
+  const paths: string[] = [];
+  for (const game of games) {
+    const file = path.join(directory, `${game.game.gameId}.json`);
+    await writeFile(file, JSON.stringify(game), { mode: 0o600 });
+    paths.push(file);
   }
-
-  const evidence = await sweepLedgerBalances(
-    provider,
-    accounts,
-    environment.lordsAddress,
-    options.setupConcurrency,
-    environment.treasuryAddress,
-  );
-  const receiptPath = await writeLedgerSweepReceipt(manifestPath, evidence);
-  console.log(
-    JSON.stringify({
-      amountBaseUnits: evidence.amount.toString(),
-      receiptPath,
-      transactionHashes: evidence.transactionHashes,
+  const processes = games.map((game, index) =>
+    Bun.spawn({
+      cmd: [
+        process.execPath,
+        import.meta.filename,
+        "--bots",
+        String(game.accounts.length),
+        "--prepared-game",
+        paths[index],
+        "--minutes",
+        String(options.minutes),
+        "--interval-seconds",
+        String(options.intervalSeconds),
+        "--setup-concurrency",
+        String(options.setupConcurrency),
+        "--workload",
+        options.workload,
+        "--rpc-url",
+        options.rpcUrl,
+        "--herald-url",
+        options.heraldUrl,
+      ],
+      stdout: "inherit",
+      stderr: "inherit",
     }),
   );
+  const exits = await Promise.all(processes.map((child) => child.exited));
+  if (exits.some((code) => code !== 0))
+    throw new Error(`Roster workload failed: exit codes ${exits.join(", ")}; prepared rosters: ${directory}`);
 }
 
-async function finalizeValuePlaneRun({
-  run,
-  ledgerEnvironment,
-  options,
-  provider,
-  client,
-  harnessGame,
-}: {
-  run: PreparedGameRun;
-  ledgerEnvironment?: LedgerEnvironment;
-  options: HarnessCliOptions;
-  provider: HarnessProvider;
-  client: GameClient;
-  harnessGame: HarnessGame;
-}): Promise<LedgerHarnessEvidence | undefined> {
-  if (!run.ledger || !ledgerEnvironment) return undefined;
-  console.log(`Waiting for game ${run.game.gameId} to close, then publishing its competition ranking`);
-  const finalization = await finalizeLedgerGame({
-    account: new Account({
-      provider,
-      address: process.env.DEPLOYER_ACCOUNT_ADDRESS ?? MADARA_ADMIN_ADDRESS,
-      signer: process.env.DEPLOYER_PRIVATE_KEY ?? MADARA_ADMIN_PRIVATE_KEY,
-    }),
-    concurrency: options.setupConcurrency,
-    gameId: run.game.gameId,
-    client,
-    game: harnessGame,
-    ledgerAddress: ledgerEnvironment.ledgerAddress,
-    lordsAddress: ledgerEnvironment.lordsAddress,
-    mainnetRpcUrl: ledgerEnvironment.mainnetRpcUrl,
-    provider,
-    registrations: run.ledger.registrations,
-    sweepManifestPath: run.ledger.registration.sweepManifestPath,
-    treasuryAddress: ledgerEnvironment.treasuryAddress,
-  });
-  return {
-    binding: run.ledger.binding,
-    finalization,
-    ledgerAddress: ledgerEnvironment.ledgerAddress,
-    lordsAddress: ledgerEnvironment.lordsAddress,
-    mode: "ledger",
-    registration: run.ledger.registration,
-  };
+async function waitForGameStart(provider: HarnessProvider, target: number): Promise<void> {
+  const deadline = Date.now() + Math.max(120_000, (target - Math.floor(Date.now() / 1_000)) * 1_000 + 120_000);
+  while (Date.now() <= deadline) {
+    const block = await provider.getBlock("latest");
+    if (Number(block.timestamp) >= target) return;
+    await Bun.sleep(1_000);
+  }
+  throw new Error(`Chain timestamp did not reach ${target}`);
 }
 
-function resolveLedgerEnvironment(): LedgerEnvironment {
-  return {
-    authorityPrivateKey: requiredEnvironmentValue("BINDING_AUTHORITY_PRIVATE_KEY"),
-    ledgerAddress: requiredEnvironmentValue("LEDGER_ADDRESS"),
-    lordsAddress: requiredEnvironmentValue("LORDS_ADDRESS"),
-    mainnetRpcUrl: requiredEnvironmentValue("LEDGER_RPC_URL"),
-    treasuryAddress: requiredEnvironmentValue("LEDGER_TREASURY_ADDRESS"),
-    treasuryPrivateKey: requiredEnvironmentValue("LEDGER_TREASURY_PRIVATE_KEY"),
-  };
-}
-
-function resolveLedgerSweepEnvironment(): LedgerSweepEnvironment {
-  return {
-    lordsAddress: requiredEnvironmentValue("LORDS_ADDRESS", "--sweep-only"),
-    mainnetRpcUrl: requiredEnvironmentValue("LEDGER_RPC_URL", "--sweep-only"),
-    treasuryAddress: requiredEnvironmentValue("LEDGER_TREASURY_ADDRESS", "--sweep-only"),
-  };
-}
-
-function requiredEnvironmentValue(name: string, mode = "--ledger"): string {
+function requiredEnvironmentValue(name: string, context: string): string {
   const value = process.env[name]?.trim();
-  if (!value) throw new Error(`${name} is required with ${mode}`);
+  if (!value) throw new Error(`${name} is required for ${context}`);
   return value;
-}
-
-function createLedgerSweepManifestPath(gameId: number): string {
-  const runId = new Date().toISOString().replace(/[-:.]/g, "");
-  return path.join(LAB_DIRECTORY, `.lab/runs/${runId}-game-${gameId}.sweep.json`);
-}
-
-function assertSameAddress(actual: string, expected: string, environmentName: string): void {
-  if (BigInt(actual) !== BigInt(expected)) {
-    throw new Error(`${environmentName} ${expected} does not match sweep manifest address ${actual}`);
-  }
 }
 
 function positiveInteger(value: string, name: string): number {
@@ -604,20 +420,17 @@ function printUsage(): void {
   console.log(`
 Usage: bun deploy/madara-lab/harness/run.ts [options]
 
-  --bots <count>                 default: 96, maximum: 96
+  --bots <count>                 default: 96; Blitz splits into balanced games of up to 24
   --game-type <blitz|eternum>     default: blitz
   --minutes <minutes>            default: 10
   --interval-seconds <seconds>   default: 15
   --setup-concurrency <count>    default: 6
   --workload <build-order|cadence> default: build-order for Blitz, cadence for Eternum
-  --game-id <id>                 use an existing game instead of creating one
+  --prepared-game <path>         resume a prepared roster using its private account file
+  --game-id <id>                 use an existing Eternum game
   --game-name <name>             name for a new game or report label for --game-id
   --rpc-url <url>                default: ${DEFAULT_RPC_URL}
   --herald-url <url>             default: ${DEFAULT_HERALD_URL}
-  --ledger                       use mainnet ledger registration and result settlement
-  --ledger-accounts <path>       JSON array of mainnet bot and gameplay keys; required with --ledger
-  --ledger-start-delay-seconds   registration window before play; default: 900
-  --sweep-only <manifest>        recover LORDS above the manifest's pre-fund baselines, then exit
 `);
 }
 

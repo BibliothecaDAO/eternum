@@ -5,7 +5,6 @@ import { ContractAddress } from "@bibliothecadao/types";
 import { useMemo } from "react";
 
 type WinnerRow = {
-  chests: number;
   player: bigint;
   points: bigint;
   rank: number;
@@ -25,32 +24,13 @@ export const WinnersTable = () => {
   const {
     setup: { store },
   } = useGame();
-  const leaderboardRevision = useNativeRevision(["PlayerPoints", "PlayerRank", "AddressName"]);
+  const leaderboardRevision = useNativeRevision(["BlitzResult", "AddressName"]);
 
   const rows = useMemo<WinnerRow[]>(() => {
-    // The revision is the recompute signal, not an input: ranks and registered points are read from native facts here.
     void leaderboardRevision;
-    const pointsByPlayer = new Map<bigint, bigint>(
-      [...store.inGame("PlayerPoints", configManager.getActiveGameId())].map((row) => [
-        row.address as bigint,
-        row.points as bigint,
-      ]),
-    );
-
-    return [...store.inGame("PlayerRank", configManager.getActiveGameId())]
-      .flatMap((value) => {
-        if (Number(value.rank) <= 0) return [];
-        const player = value.player as bigint;
-        return [
-          {
-            player,
-            rank: Number(value.rank),
-            chests: Number(value.chests),
-            points: pointsByPlayer.get(player) ?? 0n,
-          },
-        ];
-      })
-      .toSorted((left, right) => left.rank - right.rank || (left.player < right.player ? -1 : 1));
+    const result = store.get("BlitzResult", { game_id: configManager.getActiveGameId() });
+    if (!result?.complete) return [];
+    return result.players.toSorted((left, right) => left.rank - right.rank || (left.player < right.player ? -1 : 1));
   }, [store, leaderboardRevision]);
 
   const playerName = (address: bigint): string =>
@@ -66,7 +46,6 @@ export const WinnersTable = () => {
             <th className="py-2 pr-4">Rank</th>
             <th className="py-2 pr-4">Player</th>
             <th className="py-2 pr-4">Points</th>
-            <th className="py-2 pr-4">Chests</th>
           </tr>
         </thead>
         <tbody>
@@ -75,7 +54,6 @@ export const WinnersTable = () => {
               <td className="py-2 pr-4">{row.rank}</td>
               <td className="py-2 pr-4">{playerName(row.player)}</td>
               <td className="py-2 pr-4">{formatPoints(row.points)}</td>
-              <td className="py-2 pr-4">{row.chests.toLocaleString()}</td>
             </tr>
           ))}
         </tbody>

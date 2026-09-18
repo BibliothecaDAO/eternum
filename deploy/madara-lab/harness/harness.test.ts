@@ -31,16 +31,15 @@ import {
   summarizeRpcMetrics,
 } from "./report";
 import { createHarnessProvider, parseHarnessArgs } from "./run";
-import { parseLedgerBotIdentities, rankPlayersByRegisteredPoints, toHarnessGameplayIdentities } from "./ledger-mode";
 import { BlockTag } from "starknet";
 
 describe("Madara harness workload", () => {
-  it("selects Eternum and rejects incompatible ledger registration", () => {
+  it("selects Eternum and rejects deferred ledger options", () => {
     expect(parseHarnessArgs([]).gameType).toBe("blitz");
     expect(parseHarnessArgs(["--game-type", "eternum"]).gameType).toBe("eternum");
     expect(() => parseHarnessArgs(["--game-type", "unknown"])).toThrow("--game-type must be blitz or eternum");
     expect(() => parseHarnessArgs(["--game-type", "eternum", "--ledger"])).toThrow(
-      "The ledger harness currently registers Blitz passes only",
+      "Unsupported harness option --ledger",
     );
   });
 
@@ -403,7 +402,18 @@ describe("Madara harness reporting", () => {
 describe("Madara harness CLI and concurrency", () => {
   it("parses an explicit smoke-run configuration", () => {
     expect(
-      parseHarnessArgs(["--bots", "4", "--minutes", "0.5", "--interval-seconds", "5", "--game-id", "9"]),
+      parseHarnessArgs([
+        "--game-type",
+        "eternum",
+        "--bots",
+        "4",
+        "--minutes",
+        "0.5",
+        "--interval-seconds",
+        "5",
+        "--game-id",
+        "9",
+      ]),
     ).toMatchObject({ bots: 4, minutes: 0.5, intervalSeconds: 5, gameId: 9, gameName: "game-9" });
   });
 
@@ -417,76 +427,6 @@ describe("Madara harness CLI and concurrency", () => {
     expect(parseHarnessArgs(["--workload", "cadence"]).workload).toBe("cadence");
     expect(() => parseHarnessArgs(["--workload", "unknown"])).toThrow("--workload");
     expect(() => parseHarnessArgs(["--games", "2"])).toThrow("one game per process");
-  });
-
-  it("requires an exact persistent identity roster in ledger mode", () => {
-    expect(() => parseHarnessArgs(["--ledger"])).toThrow("--ledger-accounts is required with --ledger or --sweep-only");
-    expect(
-      parseHarnessArgs([
-        "--ledger",
-        "--ledger-accounts",
-        "bots.json",
-        "--bots",
-        "2",
-        "--ledger-start-delay-seconds",
-        "600",
-      ]),
-    ).toMatchObject({
-      bots: 2,
-      ledger: true,
-      ledgerAccountsPath: "bots.json",
-      ledgerStartDelaySeconds: 600,
-    });
-    expect(
-      parseHarnessArgs(["--sweep-only", ".lab/runs/recovery.json", "--ledger-accounts", "bots.json"]),
-    ).toMatchObject({
-      ledger: false,
-      ledgerAccountsPath: "bots.json",
-      sweepOnlyManifestPath: ".lab/runs/recovery.json",
-    });
-    expect(() =>
-      parseHarnessArgs(["--ledger", "--sweep-only", "recovery.json", "--ledger-accounts", "bots.json"]),
-    ).toThrow("--ledger and --sweep-only are separate modes");
-  });
-
-  it("maps validated mainnet owners to persistent gameplay keys without exposing mainnet keys", () => {
-    const identities = parseLedgerBotIdentities(
-      [
-        { mainnetAddress: "0x1", mainnetPrivateKey: "0x11", gameplayPrivateKey: "0x21" },
-        {
-          mainnetAddress: "0x2",
-          mainnetPrivateKey: "0x12",
-          gameplayPrivateKey: "0x22",
-          sword: true,
-        },
-      ],
-      2,
-    );
-
-    expect(identities.map(({ sword, shield }) => ({ sword, shield }))).toEqual([
-      { sword: false, shield: false },
-      { sword: true, shield: false },
-    ]);
-    expect(identities[0]!.mainnetAddress.endsWith("1")).toBe(true);
-    expect(identities[1]!.mainnetAddress.endsWith("2")).toBe(true);
-    expect(toHarnessGameplayIdentities(identities)).toEqual([
-      { owner: identities[0]!.mainnetAddress, privateKey: "0x21" },
-      { owner: identities[1]!.mainnetAddress, privateKey: "0x22" },
-    ]);
-    expect(() => parseLedgerBotIdentities([identities[0]], 2)).toThrow("Expected 2 ledger bot identities");
-  });
-
-  it("submits the full roster by points with deterministic tie ordering", () => {
-    const players = rankPlayersByRegisteredPoints(
-      [{ player: "0x3" }, { player: "0x1" }, { player: "0x2" }, { player: "0x1" }],
-      [
-        { address: "0x1", points: "50" },
-        { address: "0x2", points: "100" },
-        { address: "0x3", points: "100" },
-      ],
-    );
-
-    expect(players.map((address) => BigInt(address))).toEqual([2n, 3n, 1n]);
   });
 
   it("preserves input order while bounding concurrent work", async () => {

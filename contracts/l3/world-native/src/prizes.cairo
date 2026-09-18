@@ -3,7 +3,7 @@ pub mod PrizesDomain {
     const MAX_PHASES_PER_CLAIM: u32 = 8;
     use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
     use starknet::{ContractAddress, get_caller_address, get_contract_address};
-    use crate::blitz_prizes::BlitzPrizeState;
+    use crate::blitz_results::BlitzResultState;
     use crate::commands::ExecutionContext;
     use crate::events::RowSet;
     use crate::faith::{
@@ -21,9 +21,9 @@ pub mod PrizesDomain {
     #[abi(embed_v0)]
     impl Faith = FaithState::FaithImpl<ContractState>;
     impl FaithSettlement = FaithState::PrizeSettlement<ContractState>;
-    component!(path: BlitzPrizeState, storage: blitz, event: BlitzEvent);
+    component!(path: BlitzResultState, storage: blitz, event: BlitzEvent);
     #[abi(embed_v0)]
-    impl BlitzPrizes = BlitzPrizeState::BlitzPrizesImpl<ContractState>;
+    impl BlitzResults = BlitzResultState::BlitzResultsImpl<ContractState>;
     component!(path: Lifecycle, storage: lifecycle, event: LifecycleEvent);
     #[abi(embed_v0)]
     impl Domain = Lifecycle::DomainImpl<ContractState>;
@@ -33,7 +33,7 @@ pub mod PrizesDomain {
         #[substorage(v0)]
         lifecycle: Lifecycle::Storage,
         #[substorage(v0)]
-        blitz: BlitzPrizeState::Storage,
+        blitz: BlitzResultState::Storage,
         #[substorage(v0)]
         faith: FaithState::Storage,
         #[substorage(v0)]
@@ -46,7 +46,7 @@ pub mod PrizesDomain {
     #[derive(Drop, starknet::Event)]
     enum Event {
         LifecycleEvent: Lifecycle::Event,
-        BlitzEvent: BlitzPrizeState::Event,
+        BlitzEvent: BlitzResultState::Event,
         FaithEvent: FaithState::Event,
         BitcoinEvent: crate::bitcoin::BitcoinState::Event,
         StoryEvent: crate::ownership::StoryEvent,

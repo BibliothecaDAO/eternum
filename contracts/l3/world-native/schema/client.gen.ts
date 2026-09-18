@@ -1,8 +1,7 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "c23246ee079783b03c09431bfbc8bf2dd682d958406a7cb5343019d7c5bd1125";
+export const nativeFactSchemaIdentity = "2db222be1b50ba6f69b985c3c2bd24b88fd95970c1e98627a49ef4c707c6ea7e";
 export interface NativeRows {
   Preset: { readonly preset_id: number; readonly commitment: bigint };
-  Series: { readonly series_id: bigint; readonly owner: bigint; readonly created_games: number };
   GameSequence: { readonly address: bigint; readonly next_game_id: number };
   SpireLayout: { readonly game_id: number; readonly count: number; readonly base_distance: number; readonly layer_distance: number; readonly max_layer: number };
   LedgerOperator: { readonly address: bigint; readonly operator: bigint };
@@ -11,11 +10,7 @@ export interface NativeRows {
   GuildMember: { readonly game_id: number; readonly actor: bigint; readonly guild_id: bigint };
   GuildWhitelist: { readonly game_id: number; readonly guild_id: bigint; readonly player: bigint; readonly allowed: boolean };
   ArtificerCost: { readonly game_id: number; readonly research: bigint };
-  SeriesChestRules: { readonly series_id: bigint; readonly num_games: number; readonly total_chests: bigint; readonly cap_ratio_bps: bigint };
-  SeriesChestState: { readonly series_id: bigint; readonly game_index: number; readonly ema_players_scaled: bigint; readonly recent_first: bigint; readonly recent_second: bigint; readonly recent_third: bigint; readonly recent_count: number; readonly anchor_first: bigint; readonly anchor_second: bigint; readonly anchor_count: number; readonly last_rate_bps: bigint; readonly soft_supply: bigint; readonly overspend_remaining: bigint };
-  GameChestReward: { readonly game_id: number; readonly allocated: number; readonly distributed: number };
-  RankingTrial: { readonly game_id: number; readonly trial_id: bigint; readonly committed: number; readonly processed: number; readonly last_rank: number; readonly last_points: bigint; readonly total_points: bigint };
-  PlayerRank: { readonly game_id: number; readonly player: bigint; readonly rank: number; readonly chests: number; readonly elite: boolean };
+  BlitzResult: { readonly game_id: number; readonly players: readonly ({ readonly player: bigint; readonly points: bigint; readonly rank: number })[]; readonly complete: boolean; readonly commitment: bigint };
   FaithRewardToken: { readonly game_id: number; readonly token: bigint };
   FaithPrizePool: { readonly game_id: number; readonly funded: bigint; readonly distributed: boolean };
   FaithPrizeClaimed: { readonly game_id: number; readonly player: bigint; readonly wonder_id: number; readonly claimed: boolean };
@@ -84,7 +79,7 @@ export interface NativeRows {
   ResourceRulesReady: { readonly game_id: number; readonly ready: boolean };
   UpgradeLimits: { readonly game_id: number; readonly realm_max: number; readonly village_max: number };
   UpgradeRecipe: { readonly game_id: number; readonly level: number; readonly costs: readonly ({ readonly resource_type: number; readonly amount: bigint })[] };
-  GameRegistry: { readonly game_id: number; readonly name: bigint; readonly series_id: bigint; readonly game_number_in_series: number; readonly preset_id: number; readonly creator: bigint; readonly settled: boolean; readonly ready: boolean; readonly dev_mode_on: boolean; readonly start_settling_at: bigint; readonly start_main_at: bigint; readonly end_at: bigint; readonly end_grace_seconds: number; readonly final_trial_id: bigint; readonly seed: bigint };
+  GameRegistry: { readonly game_id: number; readonly name: bigint; readonly preset_id: number; readonly creator: bigint; readonly settled: boolean; readonly ready: boolean; readonly dev_mode_on: boolean; readonly start_settling_at: bigint; readonly start_main_at: bigint; readonly end_at: bigint; readonly end_grace_seconds: number; readonly seed: bigint };
   SliceRules: { readonly game_id: number; readonly battle_config: { readonly regular_immunity_ticks: number; readonly village_immunity_ticks: number; readonly village_raid_immunity_ticks: number }; readonly map_config: { readonly reward_resource_amount: number; readonly shards_mines_win_probability: number; readonly shards_mines_fail_probability: number; readonly camp_win_probability: number; readonly camp_fail_probability: number; readonly holysite_win_probability: number; readonly holysite_fail_probability: number; readonly bitcoin_mine_win_probability: number; readonly bitcoin_mine_fail_probability: number; readonly hyps_win_prob: number; readonly hyps_fail_prob: number; readonly hyps_fail_prob_increase_p_hex: number; readonly hyps_fail_prob_increase_p_fnd: number; readonly relic_discovery_interval_sec: number; readonly relic_hex_dist_from_center: number; readonly relic_chest_relics_per_chest: number }; readonly biome_climate_config: { readonly elevation_scale_bps: number; readonly moisture_scale_bps: number; readonly elevation_bias_bps: number; readonly moisture_bias_bps: number; readonly elevation_seed: number; readonly moisture_seed: number }; readonly tick_config: { readonly armies_tick_in_seconds: bigint; readonly delivery_tick_in_seconds: bigint; readonly bitcoin_phase_in_seconds: bigint }; readonly troop_damage_config: { readonly damage_raid_percent_num: number; readonly damage_biome_bonus_num: number; readonly damage_scaling_factor: bigint; readonly t1_damage_value: bigint; readonly t2_damage_multiplier: bigint; readonly t3_damage_multiplier: bigint }; readonly troop_stamina_config: { readonly stamina_gain_per_tick: number; readonly stamina_initial: number; readonly stamina_bonus_value: number; readonly stamina_knight_max: number; readonly stamina_paladin_max: number; readonly stamina_crossbowman_max: number; readonly stamina_attack_req: number; readonly stamina_defense_req: number; readonly stamina_explore_stamina_cost: number; readonly stamina_travel_stamina_cost: number; readonly stamina_explore_wheat_cost: number; readonly stamina_explore_fish_cost: number; readonly stamina_travel_wheat_cost: number; readonly stamina_travel_fish_cost: number }; readonly troop_limit_config: { readonly guard_resurrection_delay: number; readonly mercenaries_troop_lower_bound: number; readonly mercenaries_troop_upper_bound: number; readonly settlement_deployment_cap: number; readonly city_deployment_cap: number; readonly kingdom_deployment_cap: number; readonly empire_deployment_cap: number; readonly t1_tier_strength: number; readonly t2_tier_strength: number; readonly t3_tier_strength: number; readonly t1_tier_modifier: number; readonly t2_tier_modifier: number; readonly t3_tier_modifier: number }; readonly capacity_config: { readonly troop_capacity: number; readonly donkey_capacity: number; readonly storehouse_boost_capacity: number }; readonly structure_capacity_config: { readonly realm_capacity: bigint; readonly village_capacity: bigint; readonly hyperstructure_capacity: bigint; readonly fragment_mine_capacity: bigint; readonly bank_structure_capacity: bigint; readonly camp_capacity: bigint; readonly bitcoin_mine_capacity: bigint }; readonly building_config: { readonly base_population: number; readonly base_cost_percent_increase: number }; readonly bitcoin_mine_config: { readonly enabled: boolean; readonly prize_per_phase: bigint; readonly min_labor_per_contribution: bigint; readonly owner_cut_bps: number }; readonly victory_points_grant_config: { readonly hyp_points_per_second: number; readonly claim_hyperstructure_points: number; readonly claim_otherstructure_points: number; readonly explore_tiles_points: number; readonly relic_open_points: number }; readonly map_center_offset: number; readonly spire_travel_essence_cost: bigint; readonly blitz_mode_on: boolean; readonly faith_enabled: boolean; readonly speed_config: { readonly donkey_sec_per_km: number; readonly donkey_sec_per_km_troops: number } };
   EntitySequence: { readonly game_id: number; readonly next_entity_id: number };
   PlayerPoints: { readonly game_id: number; readonly address: bigint; readonly points: bigint };
@@ -97,7 +92,6 @@ export interface NativeRows {
 }
 export interface NativeKeys {
   Preset: { readonly preset_id: number };
-  Series: { readonly series_id: bigint };
   GameSequence: { readonly address: bigint };
   SpireLayout: { readonly game_id: number };
   LedgerOperator: { readonly address: bigint };
@@ -106,11 +100,7 @@ export interface NativeKeys {
   GuildMember: { readonly game_id: number; readonly actor: bigint };
   GuildWhitelist: { readonly game_id: number; readonly guild_id: bigint; readonly player: bigint };
   ArtificerCost: { readonly game_id: number };
-  SeriesChestRules: { readonly series_id: bigint };
-  SeriesChestState: { readonly series_id: bigint };
-  GameChestReward: { readonly game_id: number };
-  RankingTrial: { readonly game_id: number };
-  PlayerRank: { readonly game_id: number; readonly player: bigint };
+  BlitzResult: { readonly game_id: number };
   FaithRewardToken: { readonly game_id: number };
   FaithPrizePool: { readonly game_id: number };
   FaithPrizeClaimed: { readonly game_id: number; readonly player: bigint; readonly wonder_id: number };
@@ -200,17 +190,6 @@ export const nativeFactModels = {
     "fields": {
       "preset_id": "u32",
       "commitment": "felt"
-    }
-  },
-  "Series": {
-    "keys": [
-      "series_id"
-    ],
-    "scope": "deployment",
-    "fields": {
-      "series_id": "felt",
-      "owner": "felt",
-      "created_games": "u16"
     }
   },
   "GameSequence": {
@@ -310,77 +289,22 @@ export const nativeFactModels = {
       "research": "u128"
     }
   },
-  "SeriesChestRules": {
-    "keys": [
-      "series_id"
-    ],
-    "scope": "deployment",
-    "fields": {
-      "series_id": "felt",
-      "num_games": "u32",
-      "total_chests": "u128",
-      "cap_ratio_bps": "u128"
-    }
-  },
-  "SeriesChestState": {
-    "keys": [
-      "series_id"
-    ],
-    "scope": "deployment",
-    "fields": {
-      "series_id": "felt",
-      "game_index": "u32",
-      "ema_players_scaled": "u128",
-      "recent_first": "u128",
-      "recent_second": "u128",
-      "recent_third": "u128",
-      "recent_count": "u8",
-      "anchor_first": "u128",
-      "anchor_second": "u128",
-      "anchor_count": "u8",
-      "last_rate_bps": "u128",
-      "soft_supply": "u128",
-      "overspend_remaining": "u128"
-    }
-  },
-  "GameChestReward": {
+  "BlitzResult": {
     "keys": [
       "game_id"
     ],
     "scope": "game",
     "fields": {
       "game_id": "u32",
-      "allocated": "u16",
-      "distributed": "u16"
-    }
-  },
-  "RankingTrial": {
-    "keys": [
-      "game_id"
-    ],
-    "scope": "game",
-    "fields": {
-      "game_id": "u32",
-      "trial_id": "u128",
-      "committed": "u16",
-      "processed": "u16",
-      "last_rank": "u16",
-      "last_points": "u128",
-      "total_points": "u128"
-    }
-  },
-  "PlayerRank": {
-    "keys": [
-      "game_id",
-      "player"
-    ],
-    "scope": "game",
-    "fields": {
-      "game_id": "u32",
-      "player": "felt",
-      "rank": "u16",
-      "chests": "u16",
-      "elite": "boolean"
+      "players": [
+        {
+          "player": "felt",
+          "points": "u128",
+          "rank": "u8"
+        }
+      ],
+      "complete": "boolean",
+      "commitment": "felt"
     }
   },
   "FaithRewardToken": {
@@ -1525,8 +1449,6 @@ export const nativeFactModels = {
     "fields": {
       "game_id": "u32",
       "name": "felt",
-      "series_id": "felt",
-      "game_number_in_series": "u16",
       "preset_id": "u32",
       "creator": "felt",
       "settled": "boolean",
@@ -1536,7 +1458,6 @@ export const nativeFactModels = {
       "start_main_at": "u64",
       "end_at": "u64",
       "end_grace_seconds": "u32",
-      "final_trial_id": "u128",
       "seed": "felt"
     }
   },

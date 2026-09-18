@@ -2,7 +2,7 @@ import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { buildLaunchGameRequest, buildLaunchRotationRequest, buildLaunchSeriesRequest } from "../cli/launch-request";
+import { buildLaunchGameRequest } from "../cli/launch-request";
 
 const TEMP_DIRECTORIES: string[] = [];
 const ORIGINAL_RPC_URL = process.env.RPC_URL;
@@ -100,159 +100,17 @@ describe("launch request helpers", () => {
     });
   });
 
-  test("parses targeted child game names for grouped recovery", () => {
-    expect(
-      buildLaunchRotationRequest({
-        environment: "madara.blitz",
-        "rotation-name": "bltz-knicker",
-        "first-game-start-time": "2026-03-18T10:00:00Z",
-        "game-interval-minutes": "60",
-        "max-games": "12",
-        "evaluation-interval-minutes": "15",
-        "target-game-names-json": JSON.stringify(["bltz-knicker-03"]),
-      }).targetGameNames,
-    ).toEqual(["bltz-knicker-03"]);
-  });
-
-  test("parses rotation biome climate overrides by game number from workflow env", () => {
-    process.env.GAME_LAUNCH_BIOME_CLIMATE_OVERRIDES_BY_GAME_NUMBER_JSON = JSON.stringify({
-      2: {
-        elevationSeed: 137,
-        moistureSeed: 991,
-      },
-      3: {
-        elevationScaleBps: 12_000,
-      },
-    });
-
-    expect(
-      buildLaunchRotationRequest({
-        environment: "madara.blitz",
-        "rotation-name": "bltz-biome-loop",
-        "first-game-start-time": "2026-03-18T10:00:00Z",
-        "game-interval-minutes": "60",
-        "max-games": "12",
-        "evaluation-interval-minutes": "15",
-      }).biomeClimateOverridesByGameNumber,
-    ).toEqual({
-      2: {
-        elevationSeed: 137,
-        moistureSeed: 991,
-      },
-      3: {
-        elevationScaleBps: 12_000,
-      },
-    });
-  });
-
-  test("loads weekly series schedules from a YAML config file", () => {
-    const configPath = writeLaunchConfig(`
-launchKind: series
-environmentId: madara.blitz
-seriesName: blitz-weekly-may-2026
-autoRetryEnabled: true
-autoRetryIntervalMinutes: 15
+  test("loads a single game from YAML and keeps explicit shared overrides", () => {
+    const configPath = writeLaunchConfig(`launchKind: game
+environmentId: madara.eternum
+gameName: season-one
+startTime: 2026-09-21T10:00:00Z
 durationSeconds: 86400
-games:
-  - gameName: bltz-weekly-01
-    startTime: 2026-05-02T18:00:00Z
-  - gameName: bltz-weekly-02
-    startTime: 2026-05-09T18:00:00Z
 `);
-
-    expect(
-      buildLaunchSeriesRequest({
-        "config-path": configPath,
-      }),
-    ).toMatchObject({
-      launchKind: "series",
-      environmentId: "madara.blitz",
-      seriesName: "blitz-weekly-may-2026",
-      autoRetryEnabled: true,
-      autoRetryIntervalMinutes: 15,
-      durationSeconds: 86400,
-      games: [
-        {
-          gameName: "bltz-weekly-01",
-          startTime: "2026-05-02T18:00:00Z",
-        },
-        {
-          gameName: "bltz-weekly-02",
-          startTime: "2026-05-09T18:00:00Z",
-        },
-      ],
-    });
-  });
-
-  test("loads the standing Madara rotation with the shared launch preset", () => {
-    const configPath = join(import.meta.dir, "../launch-configs/madara-blitz-daily.yaml");
-
-    expect(buildLaunchRotationRequest({ "config-path": configPath })).toMatchObject({
-      environmentId: "madara.blitz",
-      rotationName: "blitz-daily",
-      advanceWindowGames: 1,
-      evaluationIntervalMinutes: 30,
-      durationSeconds: 3_600,
-      devModeOn: false,
-      version: "2",
-    });
-  });
-
-  test("loads the committed blitz rotation as a rolling weekly cadence", () => {
-    const request = buildLaunchRotationRequest({
-      "config-path": join(import.meta.dir, "../examples/blitz-rotation.yaml"),
-    });
-
-    expect(request).toMatchObject({
-      launchKind: "rotation",
-      environmentId: "madara.blitz",
-      rotationName: "blitz-rotation",
-      firstGameStartTime: "2026-04-20T01:00:00Z",
-      gameIntervalMinutes: 0,
-      maxGames: 5200,
-      advanceWindowGames: 5,
-      evaluationIntervalMinutes: 15,
+    expect(buildLaunchGameRequest({ "config-path": configPath, "duration-seconds": "3600" })).toMatchObject({
+      gameName: "season-one",
+      environmentId: "madara.eternum",
       durationSeconds: 3600,
-      autoRetryEnabled: true,
-      autoRetryIntervalMinutes: 15,
-      weeklyCadence: [
-        { gameNamePrefix: "na-gladiator", weekday: "monday", utcTime: "01:00" },
-        { gameNamePrefix: "apac-gladiator", weekday: "tuesday", utcTime: "11:00" },
-        { gameNamePrefix: "na-gladiator", weekday: "wednesday", utcTime: "02:00" },
-        { gameNamePrefix: "eu-gladiator", weekday: "wednesday", utcTime: "19:00" },
-        { gameNamePrefix: "apac-gladiator", weekday: "thursday", utcTime: "10:00" },
-        { gameNamePrefix: "na-gladiator", weekday: "friday", utcTime: "01:00" },
-        { gameNamePrefix: "eu-gladiator", weekday: "friday", utcTime: "18:00" },
-        { gameNamePrefix: "apac-gladiator", weekday: "saturday", utcTime: "12:00" },
-        { gameNamePrefix: "eu-gladiator", weekday: "saturday", utcTime: "20:00" },
-        { gameNamePrefix: "na-gladiator", weekday: "sunday", utcTime: "03:00" },
-        { gameNamePrefix: "apac-gladiator", weekday: "sunday", utcTime: "11:00" },
-        { gameNamePrefix: "eu-gladiator", weekday: "sunday", utcTime: "19:00" },
-      ],
-    });
-  });
-
-  test("lets explicit CLI overrides win over YAML shared launch options", () => {
-    const configPath = writeLaunchConfig(`
-launchKind: series
-environmentId: madara.blitz
-seriesName: blitz-weekly-may-2026
-durationSeconds: 86400
-twoPlayerMode: false
-games:
-  - gameName: bltz-weekly-01
-    startTime: 2026-05-02T18:00:00Z
-`);
-
-    expect(
-      buildLaunchSeriesRequest({
-        "config-path": configPath,
-        "duration-seconds": "3600",
-        "two-player-mode": "true",
-      }),
-    ).toMatchObject({
-      durationSeconds: 3600,
-      twoPlayerMode: true,
     });
   });
 
@@ -297,4 +155,15 @@ games:
       }),
     ).toThrow("--rpc-url or RPC_URL is required");
   });
+});
+
+test("rejects retired series launches instead of silently creating one game", () => {
+  expect(() =>
+    buildLaunchGameRequest({
+      "launch-kind": "series",
+      environment: "madara.blitz",
+      game: "old-series",
+      "start-time": "1789819200",
+    }),
+  ).toThrow("Only game launches");
 });

@@ -1,7 +1,8 @@
 # Launch service
 
-`@bibliothecadao/launch-service` is the Madara registrar writer and rotation scheduler. Mutations require a verified
-Realms identity session and an address in `LAUNCHER_ALLOWLIST`; reads are public with exact-origin CORS headers.
+`@bibliothecadao/launch-service` is the native game registrar, free-slot scheduler and result finalizer. Mutations
+require a verified Realms identity session and an address in `LAUNCHER_ALLOWLIST`; reads are public with exact-origin
+CORS headers.
 
 Required environment:
 
@@ -13,5 +14,7 @@ Required environment:
 - `RPC_URL`, `HERALD_URL`, `NATIVE_WORLD_MANIFEST`, `ADMISSION_URL`
 - `DEPLOYER_ACCOUNT_ADDRESS`, `DEPLOYER_PRIVATE_KEY` — registrar writer
 
-`bun run src/main.ts` serves port 3006 and claims durable jobs. `bun run src/rotation.ts` is the systemd oneshot used by
-the rotation timer. Both use the same Postgres run store; no launch summary is written to the local filesystem.
+`bun run src/main.ts` serves port 3006, freezes due slot rosters and claims durable jobs. Completing a Blitz launch
+atomically schedules its result job after the actual game end and grace period. Results resume from the chain cursor.
+Failed jobs remain visible and can be retried by a launcher. Slot registration needs a verified identity, but not
+launcher privileges. No L2 service is required for a free slot.

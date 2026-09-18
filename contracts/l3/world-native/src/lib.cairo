@@ -4,7 +4,7 @@ pub mod artificer;
 pub mod biome;
 pub mod bitcoin;
 
-pub mod blitz_prizes;
+pub mod blitz_results;
 
 pub mod bridge;
 
@@ -67,7 +67,6 @@ pub mod resources;
 pub mod resources_domain;
 pub mod rules;
 pub mod season;
-pub mod series_chests;
 pub mod settlement;
 pub mod settlement_domain;
 pub mod settlement_grid;

@@ -234,8 +234,22 @@ export class WorldFold {
   }
 
   public finalizedGameIds(): readonly string[] {
+    const rules = new Map(
+      this.modelRows("SliceRules").map(({ value }) => [BigInt(value.game_id as string).toString(), value]),
+    );
+    const results = new Set(
+      this.modelRows("BlitzResult")
+        .filter(({ value }) => value.complete === true)
+        .map(({ value }) => BigInt(value.game_id as string).toString()),
+    );
     return this.modelRows("GameRegistry")
-      .filter(({ value }) => value.settled === true)
+      .filter(({ value }) => {
+        if (value.settled !== true) return false;
+        const gameId = BigInt(value.game_id as string).toString();
+        const config = rules.get(gameId);
+        if (!config) throw new Error(`Finalized game ${gameId} has no rules`);
+        return config.blitz_mode_on !== true || results.has(gameId);
+      })
       .map(({ value }) => BigInt(value.game_id as string).toString());
   }
 

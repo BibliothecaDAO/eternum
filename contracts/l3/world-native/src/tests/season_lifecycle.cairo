@@ -334,10 +334,15 @@ fn ended_game_checkpoints_are_bounded_and_stop_at_the_game_end() {
 }
 
 fn final_checkpoint(d: super::Deployment) -> u32 {
-    snforge_std::cheat_caller_address(d.peers.season, d.peers.prizes, snforge_std::CheatSpan::TargetCalls(1));
-    crate::blitz_prizes::IPrizeSeasonDispatcherTrait::checkpoint_prize_points(
-        crate::blitz_prizes::IPrizeSeasonDispatcher { contract_address: d.peers.season }, 3, 1000,
+    snforge_std::cheat_caller_address(d.peers.season, d.peers.season, snforge_std::CheatSpan::TargetCalls(1));
+    crate::registrar::IGameSettlementDispatcherTrait::mark_game_settled(
+        crate::registrar::IGameSettlementDispatcher { contract_address: d.peers.season },
+        3,
+        super::authority(),
+        crate::commands::ExecutionContext { timestamp: 1000, ..super::context() },
     )
+        .try_into()
+        .unwrap()
 }
 
 #[test]

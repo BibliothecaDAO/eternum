@@ -32,8 +32,6 @@ const createHarness = () => {
   const game = {
     game_id: 1,
     name: "0",
-    series_id: "0",
-    game_number_in_series: 0,
     preset_id: 1,
     creator: "0x123",
     settled: false,
@@ -43,7 +41,6 @@ const createHarness = () => {
     start_main_at: "2",
     end_at: "1000",
     end_grace_seconds: 0,
-    final_trial_id: "0",
     seed: "1",
   };
   store.applyEntityOperations([

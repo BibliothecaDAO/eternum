@@ -37,7 +37,7 @@ export function NewsHeadlineBridge() {
   const { isMapView } = useQuery();
   const setSelectedHex = useUIStore((state) => state.setSelectedHex);
   const gameWinner = useUIStore((state) => state.gameWinner);
-  const endRevision = useNativeRevision(["GameRegistry", "PlayerRank", "AddressName"]);
+  const endRevision = useNativeRevision(["GameRegistry", "BlitzResult", "AddressName"]);
   const goToStructure = useGoToStructure(setup);
   const navigateToMapView = useNavigateToMapView();
   const entityReader = useMemo(() => {

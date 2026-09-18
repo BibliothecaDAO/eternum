@@ -12,8 +12,6 @@ describe("native game configuration", () => {
       const params = buildCreateGameParams(config, {
         gameName: "bltz-a2",
         presetId: 3,
-        seriesName: "bltz-series",
-        seriesGameNumber: 2,
         startMainAt: 2_000_000_000,
         durationSeconds: 7_200,
         devModeOn: true,
@@ -25,7 +23,6 @@ describe("native game configuration", () => {
       // Settling and registration open at creation time, not at start − window.
       expect(params).toMatchObject({
         preset_id: 3,
-        game_number_in_series: 2,
         start_settling_at: 1_999_990_000,
         start_main_at: 2_000_000_000,
         duration_seconds: 7_200,

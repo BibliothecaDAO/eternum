@@ -24,7 +24,6 @@ const EnvironmentSchema = Schema.Struct({
   PORT: Schema.optional(Schema.String),
   LAUNCH_JOB_LEASE_MS: Schema.optional(Schema.String),
   LAUNCH_JOB_POLL_MS: Schema.optional(Schema.String),
-  LAUNCH_ROTATION_CONFIGS: Schema.optional(Schema.String),
 });
 
 export interface LaunchServiceConfig {
@@ -42,7 +41,6 @@ export interface LaunchServiceConfig {
   port: number;
   leaseMs: number;
   pollMs: number;
-  rotationConfigs: readonly string[];
 }
 
 const positiveInteger = (value: string | undefined, fallback: number, name: string): number => {
@@ -81,13 +79,6 @@ export const readLaunchServiceConfig = (
           port: positiveInteger(raw.PORT, 3006, "PORT"),
           leaseMs: positiveInteger(raw.LAUNCH_JOB_LEASE_MS, 120_000, "LAUNCH_JOB_LEASE_MS"),
           pollMs: positiveInteger(raw.LAUNCH_JOB_POLL_MS, 1_000, "LAUNCH_JOB_POLL_MS"),
-          rotationConfigs: (
-            raw.LAUNCH_ROTATION_CONFIGS ?? "config/deployer/clean/launch-configs/madara-blitz-daily.yaml"
-          )
-            .split(",")
-            .map((value) => value.trim())
-            .filter(Boolean)
-            .map((value) => path.resolve(REPO_ROOT, value)),
         };
       }),
     ),

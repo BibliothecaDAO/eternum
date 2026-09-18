@@ -5,8 +5,6 @@ import { BLITZ_REGISTRATION_COUNT_CAP } from "../constants";
 export interface CreateGamePayloadInput {
   gameName: string;
   presetId: number;
-  seriesName?: string;
-  seriesGameNumber?: number;
   startMainAt: number;
   durationSeconds: number;
   devModeOn: boolean;
@@ -155,13 +153,7 @@ function resolveEndGraceSeconds(config: Config): number {
 }
 
 function deriveGameSeed(input: CreateGamePayloadInput): string {
-  const seriesId = input.seriesName ? shortString.encodeShortString(input.seriesName) : "0x0";
-  const seed = hash.computePoseidonHashOnElements([
-    shortString.encodeShortString(input.gameName),
-    input.startMainAt,
-    seriesId,
-    input.seriesGameNumber ?? 0,
-  ]);
+  const seed = hash.computePoseidonHashOnElements([shortString.encodeShortString(input.gameName), input.startMainAt]);
   return BigInt(seed) === 0n ? "0x1" : seed;
 }
 
@@ -172,8 +164,6 @@ export function buildCreateGameParams(config: Config, input: CreateGamePayloadIn
   return {
     name: shortString.encodeShortString(input.gameName),
     preset_id: input.presetId,
-    series_id: input.seriesName ? shortString.encodeShortString(input.seriesName) : "0x0",
-    game_number_in_series: input.seriesGameNumber ?? 0,
     start_settling_at: startSettlingAt,
     start_main_at: input.startMainAt,
     duration_seconds: input.durationSeconds,

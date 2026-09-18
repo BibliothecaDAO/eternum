@@ -2,7 +2,7 @@ import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { describe, expect, it } from "vitest";
 import { resolveGameEndHeadline } from "./game-end-headline";
 
-function game(store: NativeFactStore, finalTrial = 0, endAt = 100) {
+function game(store: NativeFactStore, endAt = 100) {
   store.applyEntityOperations([
     {
       type: "upsert",
@@ -13,8 +13,6 @@ function game(store: NativeFactStore, finalTrial = 0, endAt = 100) {
             GameRegistry: {
               game_id: 1,
               name: 0,
-              series_id: 0,
-              game_number_in_series: 1,
               preset_id: 2,
               creator: 1,
               settled: false,
@@ -24,7 +22,6 @@ function game(store: NativeFactStore, finalTrial = 0, endAt = 100) {
               start_main_at: 2,
               end_at: endAt,
               end_grace_seconds: 10,
-              final_trial_id: finalTrial,
               seed: 0,
             },
           },
@@ -33,15 +30,20 @@ function game(store: NativeFactStore, finalTrial = 0, endAt = 100) {
     },
   ]);
 }
-function rank(store: NativeFactStore, gameId: number, player: number, place: number) {
+function result(store: NativeFactStore, gameId: number, players: { player: number; rank: number }[], complete = true) {
   store.applyEntityOperations([
     {
       type: "upsert",
       entities: [
         {
-          hashed_keys: String(gameId * 1000 + player),
+          hashed_keys: String(100 + gameId),
           models: {
-            PlayerRank: { game_id: gameId, player, rank: place, chests: 0, elite: false },
+            BlitzResult: {
+              game_id: gameId,
+              players: players.map((player) => ({ ...player, points: 0 })),
+              complete,
+              commitment: complete ? 123 : 0,
+            },
           },
         },
       ],
@@ -66,23 +68,25 @@ describe("game end headlines", () => {
   it("waits for finalization instead of naming a provisional leader, then announces the winner", () => {
     const store = new NativeFactStore();
     game(store);
-    rank(store, 1, 42, 1);
+    result(store, 1, [{ player: 42, rank: 1 }], false);
     expect(headline(store, 100)?.description).toContain("awaiting settlement");
-    game(store, 5);
+    result(store, 1, [{ player: 42, rank: 1 }]);
     expect(headline(store, 100)).toMatchObject({ id: "game-end:1:result", description: "Player 42 wins!" });
   });
   it("recovers a finalized result from the snapshot and respects game scope and ties", () => {
     const store = new NativeFactStore();
-    game(store, 5);
-    rank(store, 2, 99, 1);
-    rank(store, 1, 43, 1);
-    rank(store, 1, 42, 1);
-    rank(store, 1, 44, 3);
+    game(store);
+    result(store, 2, [{ player: 99, rank: 1 }]);
+    result(store, 1, [
+      { player: 43, rank: 1 },
+      { player: 42, rank: 1 },
+      { player: 44, rank: 3 },
+    ]);
     expect(headline(store, 200)?.description).toBe("Player 42 and Player 43 share victory!");
   });
   it("announces the authoritative season winner without requiring a finite end clock", () => {
     const store = new NativeFactStore();
-    game(store, 0, 0);
+    game(store, 0);
     expect(headline(store, 200)).toBeNull();
     expect(headline(store, 200, 42n)?.description).toBe("Player 42 wins!");
   });

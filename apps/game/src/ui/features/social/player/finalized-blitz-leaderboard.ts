@@ -1,10 +1,7 @@
+import type { NativeRows } from "@bibliothecadao/eternum/game-client";
+
 const REGISTERED_POINTS_PRECISION = 1_000_000n;
 const UNRANKED_LEADERBOARD_POSITION = Number.MAX_SAFE_INTEGER;
-
-interface FinalizedBlitzPlayerRankSnapshot {
-  playerAddress: bigint;
-  rank: bigint | number;
-}
 
 interface FinalizedBlitzStanding {
   points: number;
@@ -23,34 +20,18 @@ export const normalizeLeaderboardAddress = (address: bigint | string): string =>
   return `0x${canonicalHex.padStart(64, "0")}`;
 };
 
-export const buildRegisteredPointsLookup = (
-  rows: ReadonlyArray<{ address: bigint; registeredPoints: bigint }>,
-): Map<string, number> => {
-  const registeredPointsLookup = new Map<string, number>();
-
-  rows.forEach(({ address, registeredPoints }) => {
-    registeredPointsLookup.set(
-      normalizeLeaderboardAddress(address),
-      Number(registeredPoints / REGISTERED_POINTS_PRECISION),
-    );
-  });
-
-  return registeredPointsLookup;
-};
-
 export const buildFinalizedBlitzStandingLookup = (
-  rows: ReadonlyArray<FinalizedBlitzPlayerRankSnapshot>,
-  registeredPointsLookup: ReadonlyMap<string, number>,
+  rows: NativeRows["BlitzResult"]["players"],
 ): Map<string, FinalizedBlitzStanding> => {
   const finalizedRows = rows.toSorted((left, right) => Number(left.rank) - Number(right.rank));
 
   const standingLookup = new Map<string, FinalizedBlitzStanding>();
 
   finalizedRows.forEach((row) => {
-    const normalizedAddress = normalizeLeaderboardAddress(row.playerAddress);
+    const normalizedAddress = normalizeLeaderboardAddress(row.player);
     standingLookup.set(normalizedAddress, {
       rank: Number(row.rank),
-      points: registeredPointsLookup.get(normalizedAddress) ?? 0,
+      points: Number(row.points) / Number(REGISTERED_POINTS_PRECISION),
     });
   });
 
