@@ -108,6 +108,7 @@
     "manifest:copy-abis:appchain:eternum": "node scripts/copy-abis.mjs appchain-eternum"
   },
   "dependencies": {
+    "@bibliothecadao/provider": "workspace:*",
     "@bibliothecadao/types": "workspace:*",
     "colors": "^1.4.0",
     "dotenv": "^16.4.7",

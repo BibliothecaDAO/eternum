@@ -452,6 +452,7 @@ export class LiveWorld {
           block: receipt.block_number ?? null,
           hash,
           revert_reason: receipt.revert_reason,
+          ...(receipt.batch_remaining !== undefined ? { batch_remaining: receipt.batch_remaining } : {}),
           status,
         });
       if (receipt.finality_status !== "PRE_CONFIRMED") this.input.historyStore?.recordTransaction(gameId, receipt);

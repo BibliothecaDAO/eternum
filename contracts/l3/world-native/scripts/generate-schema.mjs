@@ -126,6 +126,7 @@ function eventLayouts(abi) {
         "RaidEvent",
         "PointsAwarded",
         "ExecutionRecorded",
+        "BatchProgress",
       ].includes(name)
     )
       throw new Error(`Unexpected event ${name}`);
@@ -183,6 +184,15 @@ const schema = {
   ),
   models,
   events: [
+    {
+      name: "BatchProgress",
+      owners: ["season"],
+      scope: "game",
+      version: 1,
+      event: artifacts.season.find(
+        (item) => item.type === "event" && item.name === "world_native::commands::BatchProgress",
+      ),
+    },
     {
       name: "ExecutionRecorded",
       owners: ["season"],

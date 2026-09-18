@@ -1,3 +1,4 @@
+import { completeNativeBatches } from "@bibliothecadao/provider";
 import { useState } from "react";
 import { configManager, ResourceManager } from "@bibliothecadao/eternum";
 import { useGame, useNativeRow, useNativeRevision } from "@bibliothecadao/react";
@@ -68,15 +69,20 @@ export const BitcoinMiningActionPanel = ({ structureEntityId }: { structureEntit
   const claim = async () => {
     if (!account || !mine || !canClaim || pending) return;
     setPending(true);
-    const props = { signer: account, phase_id: mine.next_phase };
+    const through = phase - 1n;
     try {
-      if (!claimPhase || claimPhase.state === "Open") await systemCalls.bitcoin_mine_close_phase(props);
-      const closed = store.require("BitcoinPhase", { game_id, phase: mine.next_phase });
-      if (closed.total_labor > 0n && closed.state === "Closed") await systemCalls.bitcoin_mine_bind_phase(props);
-      await systemCalls.bitcoin_mine_claim_phase_reward({
-        signer: account,
-        phase_id: phase - 1n,
-        mine_ids: [structureEntityId],
+      await completeNativeBatches(async () => {
+        const next = store.require("BitcoinMine", { game_id, entity_id: structureEntityId }).next_phase;
+        const props = { signer: account, phase_id: next };
+        const current = store.get("BitcoinPhase", { game_id, phase: next });
+        if (!current || current.state === "Open") await systemCalls.bitcoin_mine_close_phase(props);
+        const closed = store.require("BitcoinPhase", { game_id, phase: next });
+        if (closed.total_labor > 0n && closed.state === "Closed") await systemCalls.bitcoin_mine_bind_phase(props);
+        return systemCalls.bitcoin_mine_claim_phase_reward({
+          signer: account,
+          phase_id: through,
+          mine_ids: [structureEntityId],
+        });
       });
       toast.success("Ready mining phases settled");
     } catch (error) {

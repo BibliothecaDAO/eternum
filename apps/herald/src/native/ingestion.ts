@@ -1,3 +1,4 @@
+import { nativeBatchRemaining } from "@bibliothecadao/provider";
 import { shortString } from "starknet";
 import { transactionGameIds } from "./transactions";
 import type { MadaraRpc } from "../madara-rpc";
@@ -66,7 +67,10 @@ export class NativeIngestion {
       (event) =>
         event.kind === "event" && event.model.name === "ExecutionRecorded" && BigInt(String(event.value.status)) === 2n,
     );
-    if (!rejection || rejection.kind !== "event") return receipt;
+    if (!rejection || rejection.kind !== "event") {
+      const remaining = nativeBatchRemaining(receipt.events, this.decoder.manifest.world.address);
+      return remaining === undefined ? receipt : { ...receipt, batch_remaining: remaining };
+    }
     const code = normalizeFelt(String(rejection.value.reason));
     return {
       ...receipt,

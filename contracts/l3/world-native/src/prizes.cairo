@@ -133,7 +133,7 @@ pub mod PrizesDomain {
             actor: ContractAddress,
             command: crate::bitcoin::ClaimPhase,
             context: ExecutionContext,
-        ) {
+        ) -> u64 {
             self.assert_bitcoin_phase_closed(game_id, command.phase, context.timestamp);
             assert!(!command.mine_ids.is_empty(), "empty Bitcoin claim batch");
             assert!(command.mine_ids.len() <= crate::commands::MAX_COMMAND_ITEMS, "too many Bitcoin mines");
@@ -141,12 +141,14 @@ pub mod PrizesDomain {
             let limit = core::cmp::min(
                 MAX_PHASES_PER_CLAIM, crate::commands::MAX_COMMAND_ITEMS / command.mine_ids.len(),
             );
+            let mut remaining = 0;
             for mine_id in command.mine_ids {
-                self
+                remaining += self
                     .claim_bound_phases(
                         ResourceKey { game_id, entity_id: *mine_id }, command.phase, limit, context.timestamp,
                     );
             }
+            remaining
         }
 
         fn contribute_bitcoin_labor(
@@ -245,15 +247,17 @@ pub mod PrizesDomain {
         }
         fn distribute_faith_prizes(
             ref self: ContractState, game_id: u32, actor: ContractAddress, context: ExecutionContext,
-        ) {
+        ) -> u64 {
             self.require_ended(self.authorize(game_id, context.timestamp), context.timestamp);
             let mut pool = self.faith_prize_pool(game_id);
             assert!(!pool.distributed, "faith prizes already distributed");
-            if !self.faith.settle_faith_wonders(game_id, context.timestamp) {
-                return;
+            let remaining = self.faith.settle_faith_wonders(game_id, context.timestamp);
+            if remaining != 0 {
+                return remaining.into();
             }
             pool.distributed = true;
             self.write_pool(game_id, pool);
+            0
         }
         fn claim_faith_prize(
             ref self: ContractState,
@@ -287,7 +291,9 @@ pub mod PrizesDomain {
         fn resources(self: @ContractState) -> IResourcesDispatcher {
             IResourcesDispatcher { contract_address: self.lifecycle.require_active().resources }
         }
-        fn claim_bound_phases(ref self: ContractState, mine: ResourceKey, through: u64, limit: u32, timestamp: u64) {
+        fn claim_bound_phases(
+            ref self: ContractState, mine: ResourceKey, through: u64, limit: u32, timestamp: u64,
+        ) -> u64 {
             let mut phase_id = self.bitcoin.mine(mine).next_phase;
             for _ in 0..limit {
                 if phase_id > through {
@@ -305,6 +311,11 @@ pub mod PrizesDomain {
                         timestamp,
                     );
                 phase_id += 1;
+            }
+            if phase_id > through {
+                0
+            } else {
+                through - phase_id + 1
             }
         }
         fn claim_bitcoin_mine(

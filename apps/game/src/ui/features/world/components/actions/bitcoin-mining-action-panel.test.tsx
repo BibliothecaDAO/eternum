@@ -19,7 +19,13 @@ const state = vi.hoisted(() => ({
 }));
 vi.mock("@bibliothecadao/react", () => ({
   useGame: () => ({
-    setup: { store: { require: () => state.phase }, systemCalls: state.calls },
+    setup: {
+      store: {
+        require: (model: string) => (model === "BitcoinMine" ? state.mine : state.phase),
+        get: () => state.phase,
+      },
+      systemCalls: state.calls,
+    },
     account: { account: { address: "0x1" } },
   }),
   useNativeRevision: () => 0,
@@ -100,6 +106,7 @@ it("allows a non-owner to close, bind and settle a mine in order", async () => {
   });
   state.calls.bitcoin_mine_claim_phase_reward.mockImplementation(async () => {
     steps.push("claim");
+    return { remaining: 0n };
   });
   await render();
   expect(container.querySelector("input")).toBeNull();
@@ -123,4 +130,21 @@ it("reuses a bound root on a retry and reports the rejection", async () => {
   expect(state.calls.bitcoin_mine_bind_phase).not.toHaveBeenCalled();
   expect(state.success).not.toHaveBeenCalled();
   expect(state.error).toHaveBeenCalledWith("Native action rejected");
+});
+
+it("continues a partially claimed backlog before reporting success", async () => {
+  state.owner = 2n;
+  state.mine = { next_phase: 8n };
+  state.phase = { state: "Bound", total_labor: 12n };
+  state.calls.bitcoin_mine_claim_phase_reward
+    .mockImplementationOnce(async () => {
+      expect(state.success).not.toHaveBeenCalled();
+      state.mine = { next_phase: 9n };
+      return { remaining: 1n };
+    })
+    .mockResolvedValueOnce({ remaining: 0n });
+  await render();
+  await click();
+  expect(state.calls.bitcoin_mine_claim_phase_reward).toHaveBeenCalledTimes(2);
+  expect(state.success).toHaveBeenCalledTimes(1);
 });

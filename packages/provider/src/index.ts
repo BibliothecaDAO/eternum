@@ -1,3 +1,6 @@
+export { completeNativeBatches, nativeBatchRemaining } from "./native-batch";
+export type { BatchTransactionReceipt } from "@bibliothecadao/types";
+import { requireBatchReceipt } from "./native-batch";
 export { createNativeTicketSubmission } from "./native-ticket";
 export type { SignedNativeIntent } from "./native-ticket";
 export { encodeNativeCommand, frameNativeIntent, nativeTaggedHash } from "./native-command";
@@ -1039,6 +1042,7 @@ export class EternumProvider extends EventEmitter {
       block_number: transaction.block,
       finality_status: transaction.status,
       statusReceipt: transaction.status,
+      ...(transaction.batchRemaining !== undefined ? { batch_remaining: transaction.batchRemaining } : {}),
       transaction_hash: transaction.hash,
     } as GetTransactionReceiptResponse;
   }
@@ -1284,10 +1288,12 @@ export class EternumProvider extends EventEmitter {
   }
 
   public async bitcoin_mine_claim_phase_reward(props: SystemProps.BitcoinMineClaimPhaseRewardProps) {
-    return this.submitCommand(
-      props.signer,
-      { kind: "ClaimBitcoinPhase", value: { phase: props.phase_id, mine_ids: props.mine_ids } },
-      TransactionType.BITCOIN_MINE_CLAIM_PHASE_REWARD,
+    return requireBatchReceipt(
+      await this.submitCommand(
+        props.signer,
+        { kind: "ClaimBitcoinPhase", value: { phase: props.phase_id, mine_ids: props.mine_ids } },
+        TransactionType.BITCOIN_MINE_CLAIM_PHASE_REWARD,
+      ),
     );
   }
 
@@ -1490,7 +1496,9 @@ export class EternumProvider extends EventEmitter {
   }
 
   public async end_game(props: SystemProps.EndGameProps) {
-    return this.submitCommand(props.signer, { kind: "CloseSeason", value: undefined }, TransactionType.END_GAME);
+    return requireBatchReceipt(
+      await this.submitCommand(props.signer, { kind: "CloseSeason", value: undefined }, TransactionType.END_GAME),
+    );
   }
 
   public async allocate_shares(props: SystemProps.SetCoOwnersProps) {

@@ -116,6 +116,9 @@ importers:
 
   .:
     dependencies:
+      '@bibliothecadao/provider':
+        specifier: workspace:*
+        version: link:packages/provider
       '@bibliothecadao/types':
         specifier: workspace:*
         version: link:packages/types
@@ -621,6 +624,9 @@ importers:
       '@bibliothecadao/eternum':
         specifier: workspace:*
         version: link:../../packages/core
+      '@bibliothecadao/provider':
+        specifier: workspace:*
+        version: link:../../packages/provider
       pg:
         specifier: ^8.18.0
         version: 8.18.0

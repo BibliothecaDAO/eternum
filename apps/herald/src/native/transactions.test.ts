@@ -58,6 +58,43 @@ describe("native transaction receipt routing", () => {
     foreign[0] = "0x999";
     expect(transactionGameIds(manifest, ["1", ...foreign])).toEqual([]);
   });
+  it("decodes a compiled batch result and publishes it with the matching transaction", () => {
+    const { native, decoder, fold } = setup();
+    const layout = schema.domains.season.events.find((event) => event.name === "BatchProgress")!;
+    const progress = { from_address: manifest.world.address, keys: [...layout.prefix, "1"], data: ["0x111", "0", "9"] };
+    const decoded = decoder.decode({
+      ...progress,
+      block_number: 10,
+      transaction_hash: "0x123",
+      transaction_index: 0,
+      event_index: 0,
+    });
+    expect(decoded.kind).toBe("event");
+    const messages: Record<string, unknown>[] = [];
+    const live = new LiveWorld({
+      native,
+      registry: decoder.registry,
+      chain: "madara",
+      checkpointEveryBlocks: 100,
+      checkpointStore: { save: vi.fn() },
+      confirmedBlock: 9,
+      confirmedFold: fold,
+      rpc: {} as MadaraRpc,
+    });
+    const connection = live.attach("1", { send: (value) => messages.push(JSON.parse(value)) });
+    live.resume(connection, { type: "resume", epoch: "old", seq: 0 });
+    live.acceptTransaction({
+      finality_status: "PRE_CONFIRMED",
+      transaction_hash: "0x123",
+      sender_address: "0x999",
+      calldata: ["1", ...call(1)],
+    });
+    live.acceptReceipt(receipt([progress, executionEvent(1)], "0x123"));
+    expect(messages.filter((message) => message.type === "tx").at(-1)).toMatchObject({
+      hash: "0x123",
+      batch_remaining: "9",
+    });
+  });
   it.each(["PRE_CONFIRMED", "ACCEPTED_ON_L2"])(
     "reports a recorded rejection at %s without reverting ticket state",
     (finality_status) => {

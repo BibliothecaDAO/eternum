@@ -435,6 +435,6 @@ fn insufficient_shards_or_a_later_resource_leave_construction_unchanged() {
 pub fn checkpoint(deployment: super::Deployment, timestamp: u64) {
     snforge_std::start_cheat_block_timestamp(deployment.peers.economy, timestamp);
     start_cheat_caller_address(deployment.peers.economy, deployment.peers.season);
-    assert!(view(deployment).settle_completed_hyperstructures(3, timestamp));
+    assert_eq!(view(deployment).settle_completed_hyperstructures(3, timestamp), 0);
     stop_cheat_caller_address(deployment.peers.economy);
 }

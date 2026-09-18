@@ -246,6 +246,34 @@
               "kind": "data"
             }
           ]
+        },
+        {
+          "name": "BatchProgress",
+          "prefix": [
+            "0x34d8e97ef8a63ca5ca08ce1b22a214f440154b5890f88cde8406cd9d20fff7e"
+          ],
+          "members": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32",
+              "kind": "key"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress",
+              "kind": "data"
+            },
+            {
+              "name": "nonce",
+              "type": "core::integer::u64",
+              "kind": "data"
+            },
+            {
+              "name": "remaining",
+              "type": "core::integer::u64",
+              "kind": "data"
+            }
+          ]
         }
       ],
       "entrypoints": [
@@ -298,7 +326,11 @@
               "type": "world_native::commands::ExecutionContext"
             }
           ],
-          "outputs": [],
+          "outputs": [
+            {
+              "type": "core::integer::u64"
+            }
+          ],
           "state_mutability": "external"
         },
         {
@@ -318,7 +350,11 @@
               "type": "world_native::commands::ExecutionContext"
             }
           ],
-          "outputs": [],
+          "outputs": [
+            {
+              "type": "core::integer::u64"
+            }
+          ],
           "state_mutability": "external"
         },
         {
@@ -336,7 +372,7 @@
           ],
           "outputs": [
             {
-              "type": "core::bool"
+              "type": "core::integer::u32"
             }
           ],
           "state_mutability": "external"
@@ -6057,7 +6093,7 @@
           ],
           "outputs": [
             {
-              "type": "core::bool"
+              "type": "core::integer::u32"
             }
           ],
           "state_mutability": "external"
@@ -6077,7 +6113,7 @@
           ],
           "outputs": [
             {
-              "type": "core::bool"
+              "type": "core::integer::u32"
             }
           ],
           "state_mutability": "external"
@@ -6811,7 +6847,11 @@
               "type": "world_native::commands::ExecutionContext"
             }
           ],
-          "outputs": [],
+          "outputs": [
+            {
+              "type": "core::integer::u64"
+            }
+          ],
           "state_mutability": "external"
         },
         {
@@ -6991,7 +7031,11 @@
               "type": "world_native::commands::ExecutionContext"
             }
           ],
-          "outputs": [],
+          "outputs": [
+            {
+              "type": "core::integer::u64"
+            }
+          ],
           "state_mutability": "external"
         },
         {
@@ -7395,7 +7439,11 @@
               "type": "world_native::commands::ExecutionContext"
             }
           ],
-          "outputs": [],
+          "outputs": [
+            {
+              "type": "core::integer::u64"
+            }
+          ],
           "state_mutability": "external"
         },
         {
@@ -7415,7 +7463,11 @@
               "type": "world_native::commands::ExecutionContext"
             }
           ],
-          "outputs": [],
+          "outputs": [
+            {
+              "type": "core::integer::u64"
+            }
+          ],
           "state_mutability": "external"
         },
         {
@@ -12584,6 +12636,41 @@
     }
   ],
   "events": [
+    {
+      "name": "BatchProgress",
+      "owners": [
+        "season"
+      ],
+      "scope": "game",
+      "version": 1,
+      "event": {
+        "type": "event",
+        "name": "world_native::commands::BatchProgress",
+        "kind": "struct",
+        "members": [
+          {
+            "name": "game_id",
+            "type": "core::integer::u32",
+            "kind": "key"
+          },
+          {
+            "name": "actor",
+            "type": "core::starknet::contract_address::ContractAddress",
+            "kind": "data"
+          },
+          {
+            "name": "nonce",
+            "type": "core::integer::u64",
+            "kind": "data"
+          },
+          {
+            "name": "remaining",
+            "type": "core::integer::u64",
+            "kind": "data"
+          }
+        ]
+      }
+    },
     {
       "name": "ExecutionRecorded",
       "owners": [
@@ -18658,5 +18745,5 @@
       ]
     }
   },
-  "identity": "e75211e4b947beacb96424336cddec780629d90860927e4933495f46e8749fe3"
+  "identity": "13df814cbd0179ddaaa2a66abd4a6d4b9c8830bc713ec386066f25134e1481ae"
 }

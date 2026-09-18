@@ -761,11 +761,11 @@ fn a_large_backlog_advances_by_eight_phases_per_claim() {
     for phase in 4_u64..13 {
         assert!(execute(d, Command::CloseBitcoinPhase(phase), (phase + 1) * 10));
     }
-    assert!(execute(d, claim(12, array![mine.entity_id].span()), 130));
+    super::season_lifecycle::execute_batch(d, claim(12, array![mine.entity_id].span()), 130, 1);
     let view = IBitcoinViewsDispatcher { contract_address: d.peers.prizes };
     assert_eq!(view.bitcoin_mine(mine).next_phase, 12);
     assert_eq!(view.bitcoin_mine(mine).unsplit_carry, 8000);
-    assert!(execute(d, claim(12, array![mine.entity_id].span()), 131));
+    super::season_lifecycle::execute_batch(d, claim(12, array![mine.entity_id].span()), 131, 0);
     assert_eq!(view.bitcoin_mine(mine).next_phase, 13);
     assert_eq!(view.bitcoin_mine(mine).unsplit_carry, 9000);
 }

@@ -2,15 +2,18 @@ import { afterEach, expect, mock, spyOn, test } from "bun:test";
 import { configManager, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { closeHarnessSeason } from "./season-lifecycle";
 
-function fixture(target: number, dev = false) {
+function fixture(target: number, dev = false, batches = 1) {
   let settled = false;
+  let remaining = batches;
   const end = mock(async () => {
-    settled = true;
+    remaining -= 1;
+    settled = remaining === 0;
+    return { remaining: BigInt(remaining) };
   });
   const rows = (model: string) => {
     switch (model) {
       case "GameRegistry":
-        return [{ game_id: 1, end_at: settled ? 100n : 200n, settled, dev_mode_on: dev }];
+        return [{ game_id: 1, end_at: settled ? 100n : 200n, settled: false, dev_mode_on: dev }];
       case "SeasonWinThreshold":
         return [{ game_id: 1, points: BigInt(target) * 1000000n }];
       case "PointsTotal":
@@ -77,4 +80,10 @@ test("dev mode cannot provide Eternum finalization evidence", async () => {
   const context = fixture(50, true);
   await expect(closeHarnessSeason(context.options)).rejects.toThrow("dev mode off");
   expect(context.end).not.toHaveBeenCalled();
+});
+
+test("season closure continues incomplete batches without waiting for administrative settlement", async () => {
+  const context = fixture(50, false, 3);
+  expect(await closeHarnessSeason(context.options)).toMatchObject({ status: "closed", endAt: 100 });
+  expect(context.end).toHaveBeenCalledTimes(3);
 });

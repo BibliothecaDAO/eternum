@@ -1,3 +1,4 @@
+import { completeNativeBatches } from "@bibliothecadao/provider";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import Button from "@/ui/design-system/atoms/button";
@@ -52,15 +53,13 @@ export const EndSeasonButton = ({ className }: EndSeasonButtonProps) => {
     }
     setIsLoading(true);
     try {
-      await setup.systemCalls.end_game({
-        signer: account,
-      });
-      // Show congratulations popup on successful season end
-      setShowCongratsPopup(true);
+      await completeNativeBatches(() => setup.systemCalls.end_game({ signer: account }));
+      const game = setup.store.require("GameRegistry", { game_id: configManager.getActiveGameId() });
+      setShowCongratsPopup(Number(game.end_at) <= getBlockTimestamp().currentBlockTimestamp);
     } finally {
       setIsLoading(false);
     }
-  }, [hasFiniteGameEnd, hasReachedFinalPoints, isSeasonOver]);
+  }, [hasFiniteGameEnd, hasReachedFinalPoints, isSeasonOver, setup, account]);
 
   if (!hasFiniteGameEnd) {
     return null;

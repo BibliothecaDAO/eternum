@@ -66,7 +66,9 @@ pub trait IGame<T> {
 pub trait ISeasonLifecycle<T> {
     fn configure_season_win(ref self: T, game_id: u32, points: u128);
     fn season_win_threshold(self: @T, game_id: u32) -> u128;
-    fn close_season(ref self: T, game_id: u32, actor: ContractAddress, context: crate::commands::ExecutionContext);
+    fn close_season(
+        ref self: T, game_id: u32, actor: ContractAddress, context: crate::commands::ExecutionContext,
+    ) -> u64;
 }
 
 pub fn status_at(game: GameRegistry, timestamp: u64) -> GameStatus {
