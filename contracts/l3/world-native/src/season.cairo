@@ -194,30 +194,6 @@ pub mod SeasonDomain {
     }
 
     #[abi(embed_v0)]
-    impl SettlementAdmission of crate::settlement::ISettlementAdmission<ContractState> {
-        fn settlement_admission(
-            self: @ContractState, game_id: u32, actor: ContractAddress,
-        ) -> crate::settlement::SettlementAdmission {
-            self.lifecycle.require_active();
-            let owner = IPlayerRegistryDispatcher { contract_address: self.authentication.read().registry }
-                .owner_of(actor);
-            assert!(owner.is_non_zero(), "unregistered actor");
-            let rules = crate::settlement::ISettlementViewsDispatcherTrait::settlement_rules(
-                crate::settlement::ISettlementViewsDispatcher {
-                    contract_address: self.lifecycle.require_active().settlement,
-                },
-                game_id,
-            );
-            crate::settlement::SettlementAdmission {
-                owner,
-                collection: rules.cosmetic_collection,
-                timelock: rules.cosmetic_timelock,
-                cosmetic_limit: rules.cosmetic_limit,
-                game_end: self.games.game(game_id).end_at,
-            }
-        }
-    }
-    #[abi(embed_v0)]
     impl Season of super::ISeason<ContractState> {
         fn set_authentication(
             ref self: ContractState,
@@ -369,6 +345,17 @@ pub mod SeasonDomain {
             self.lifecycle.assert_configurator();
             self.games.create(game_id, game, rules);
         }
+        fn start_blitz(ref self: ContractState, game_id: u32, timestamp: u64) {
+            assert!(get_caller_address() == self.lifecycle.require_active().settlement, "only settlement domain");
+            assert!(self.games.rules(game_id).blitz_mode_on, "not a Blitz game");
+            let mut game = self.games.game(game_id);
+            assert!(!game.ready, "roster already ready");
+            let duration = game.end_at - game.start_main_at;
+            game.start_main_at = core::cmp::max(game.start_main_at, timestamp);
+            game.end_at = game.start_main_at + duration;
+            game.ready = true;
+            self.games.write_game(game_id, game);
+        }
         fn allocate_entity(ref self: ContractState, game_id: u32) -> u32 {
             let peers = self.lifecycle.require_active();
             let caller = get_caller_address();
@@ -476,6 +463,9 @@ pub mod SeasonDomain {
         ) -> Result<Span<felt252>, felt252> {
             self.validate_action(intent, envelope, game_id)?;
             let command = decode_command(intent.arguments.span(), *intent.command).map_err(|_error| 'INVALID_COMMAND')?;
+            if !self.games.game(game_id).ready && command != Command::SettleBlitzRoster {
+                return Err('ROSTER_NOT_READY');
+            }
             let result = dispatch(
                 peers,
                 game_id,
@@ -485,8 +475,8 @@ pub mod SeasonDomain {
             )
                 .map_err(|_error| 'GAMEPLAY_REJECTED')?;
             match command {
-                Command::CloseSeason | Command::MarkGameSettled | Command::ClaimBitcoinPhase(_) |
-                Command::RankPlayers(_) | Command::ResetRanking |
+                Command::SettleBlitzRoster | Command::CloseSeason | Command::MarkGameSettled |
+                Command::ClaimBitcoinPhase(_) | Command::RankPlayers(_) | Command::ResetRanking |
                 Command::DistributeFaithPrizes => {
                     let mut output = result;
                     let remaining: u64 = Serde::deserialize(ref output).expect('missing batch result');
@@ -775,10 +765,7 @@ pub mod SeasonDomain {
                 value.serialize(ref calldata);
                 (peers.settlement, selector!("settle_season"))
             },
-            Command::SettleBlitz(value) => {
-                value.serialize(ref calldata);
-                (peers.settlement, selector!("settle_blitz"))
-            },
+            Command::SettleBlitzRoster => (peers.settlement, selector!("settle_blitz_roster")),
             Command::ProvisionAndUpgradeRealm(value) => {
                 value.serialize(ref calldata);
                 (peers.structures, selector!("provision_and_upgrade_realm"))

@@ -10,9 +10,9 @@ pub mod SettlementDomain {
     use crate::names::{INamesDispatcher, INamesDispatcherTrait, SetAddressName};
     use crate::realms::{ISeasonPlacementDispatcher, ISeasonPlacementDispatcherTrait};
     use crate::settlement::{
-        CosmeticsKey, EntryKey, ISettlementCreationDispatcher, ISettlementCreationDispatcherTrait,
-        ISettlementPoolDispatcher, ISettlementPoolDispatcherTrait, PlayerCosmetics, PlayerEntry, RealmCreation,
-        RealmGrants, SettlementCreation, SettlementProgress, SettlementRules, SettlementState, VillageCreation,
+        EntryKey, ISettlementCreationDispatcher, ISettlementCreationDispatcherTrait, ISettlementPoolDispatcher,
+        ISettlementPoolDispatcherTrait, PlayerEntry, RealmCreation, RealmGrants, SettlementCreation, SettlementProgress,
+        SettlementRules, SettlementState, VillageCreation,
     };
     use crate::village::{SettleVillage, VillagePass, VillagePassKey, VillageRules, VillageState};
     component!(path: Lifecycle, storage: lifecycle, event: LifecycleEvent);
@@ -186,6 +186,9 @@ pub mod SettlementDomain {
     }
     #[abi(embed_v0)]
     impl SettlementViews of crate::settlement::ISettlementViews<ContractState> {
+        fn blitz_settlement_order(self: @ContractState, game_id: u32) -> Span<u8> {
+            self.settlements.blitz_order(game_id)
+        }
         fn realm_grants(self: @ContractState, game_id: u32) -> RealmGrants {
             self.settlements.grants(game_id)
         }
@@ -201,9 +204,6 @@ pub mod SettlementDomain {
         fn player_entry(self: @ContractState, key: EntryKey) -> Option<PlayerEntry> {
             self.settlements.entry(key)
         }
-        fn player_cosmetics(self: @ContractState, key: CosmeticsKey) -> PlayerCosmetics {
-            self.settlements.cosmetics(key)
-        }
     }
     #[abi(embed_v0)]
     impl SettlementEntry of crate::settlement::ISettlementEntry<ContractState> {
@@ -211,6 +211,10 @@ pub mod SettlementDomain {
             ref self: ContractState, key: EntryKey, entitlement: crate::settlement::EntryEntitlement,
         ) {
             assert!(key.game_id != 0, "game id zero is reserved");
+            let games = self.games();
+            if games.ownership_rules_ready(key.game_id) {
+                assert!(!games.rules(key.game_id).blitz_mode_on, "Blitz uses a fixed roster");
+            }
             let operator = self.ledger_operator();
             assert!(operator.is_non_zero() && get_caller_address() == operator, "only ledger operator");
             assert!(key.owner.is_non_zero(), "invalid entitlement owner");
@@ -222,32 +226,44 @@ pub mod SettlementDomain {
     }
     #[abi(embed_v0)]
     impl SettlementCommands of crate::settlement::ISettlementCommands<ContractState> {
-        fn settle_blitz(
-            ref self: ContractState,
-            game_id: u32,
-            actor: ContractAddress,
-            command: crate::settlement::SettleBlitz,
-            context: DomainContext,
-        ) {
+        fn settle_blitz_roster(
+            ref self: ContractState, game_id: u32, actor: ContractAddress, context: DomainContext,
+        ) -> u64 {
             let peers = self.lifecycle.require_active();
             assert!(get_caller_address() == peers.season, "only recorded settlement dispatch");
-            let owner = self.bound_owner(actor);
-            self.validate_registration(game_id, command.name, context.timestamp);
-            assert!(!self.settlements.entered_players.read((game_id, actor)), "player already settled");
-            let requires_entitlement = !self.games().game(game_id).dev_mode_on;
-            self.settlements.reserve_entry(EntryKey { game_id, owner: owner }, actor, requires_entitlement);
-            self
-                .settlements
-                .store_cosmetics(
-                    CosmeticsKey { game_id, player: actor }, owner, command.cosmetics_block_hash, command.cosmetics,
-                );
-            let coords = self.claim_realm_locations(game_id, context);
-            let first_realm = self
-                .create_settlement_realms(game_id, actor, coords, command.grant_starting_troops, context);
-            INamesDispatcher { contract_address: peers.structures }
-                .set_address_name(
-                    game_id, actor, SetAddressName { owned_structure_id: first_realm, name: command.name }, context,
-                );
+            assert!(actor == self.lifecycle.domain_state().authority, "only launch authority");
+            let game = self.games().game(game_id);
+            assert!(self.games().rules(game_id).blitz_mode_on, "not a Blitz game");
+            assert!(context.timestamp >= game.start_settling_at, "settling not started");
+            let roster = crate::registrar::IRegistrarDispatcherTrait::blitz_roster(
+                crate::registrar::IRegistrarDispatcher { contract_address: peers.registry }, game_id,
+            );
+            let progress = self.settlements.progress.read(game_id);
+            if progress.registered.into() == roster.len() {
+                return 0;
+            }
+            if progress.registered == 0 {
+                let mut root = context.raw_root;
+                let seed = crate::random::game_root(ref root, game_id, game.seed);
+                self.settlements.initialize_blitz_order(game_id, roster.len(), seed);
+            }
+            let order = self.settlements.blitz_order(game_id);
+            let player = *roster.at((*order.at(progress.registered.into())).into());
+            self.settlements.record_entry(EntryKey { game_id, owner: player.owner }, player.account);
+            let rules = self.settlements.rules(game_id);
+            let center = 2147483646 - self.games().rules(game_id).map_center_offset;
+            let coords = crate::settlement_grid::settlement_location(
+                crate::troops::Coord { alt: false, x: center, y: center },
+                rules.mode,
+                rules.reward_profile,
+                progress.registered.into(),
+            );
+            self.create_settlement_realms(game_id, player.account, coords, context);
+            let remaining: u64 = (roster.len() - Into::<u16, u32>::into(progress.registered) - 1).into();
+            if remaining == 0 {
+                self.games().start_blitz(game_id, context.timestamp);
+            }
+            remaining
         }
     }
     #[generate_trait]
@@ -293,31 +309,11 @@ pub mod SettlementDomain {
             let realm_id = entitlement.realm_id.try_into().expect('realm id exceeds u32');
             (realm_id, crate::realms::decode_entitlement(entitlement.metadata_1))
         }
-        fn validate_registration(self: @ContractState, game_id: u32, name: felt252, timestamp: u64) {
-            let game = self.games().game(game_id);
-            let rules = self.settlements.rules(game_id);
-            assert!(name != 0, "name cannot be empty");
-            assert!(game.dev_mode_on || timestamp >= rules.registration_start.into(), "registration not started");
-            assert!(game.dev_mode_on || timestamp < game.start_main_at, "registration time is over");
-            assert!(self.settlements.progress.read(game_id).registered < rules.registration_limit, "registration full");
-        }
-        fn claim_realm_locations(
-            self: @ContractState, game_id: u32, context: DomainContext,
-        ) -> Span<crate::troops::Coord> {
-            let pool = ISettlementPoolDispatcher { contract_address: self.lifecycle.require_active().map };
-            let rules = self.settlements.rules(game_id);
-            let required = crate::settlement_grid::reservation_count(rules.registration_limit, rules.mode);
-            assert!(pool.reserved_hyperstructures(game_id) == required, "incomplete hyperstructure reservations");
-            let mut raw_root = context.raw_root;
-            let seed = crate::random::game_root(ref raw_root, game_id, self.games().game(game_id).seed);
-            pool.claim_settlement(game_id, self.settlements.progress.read(game_id).registered, seed)
-        }
         fn create_settlement_realms(
             ref self: ContractState,
             game_id: u32,
             actor: ContractAddress,
             coords: Span<crate::troops::Coord>,
-            grant_troops: bool,
             context: DomainContext,
         ) -> u32 {
             let structures = ISettlementCreationDispatcher {
@@ -338,8 +334,8 @@ pub mod SettlementDomain {
                                 traits: crate::realms::RealmTraits {
                                     wonder: 1, order: 0, resources: self.settlements.grants(game_id).realm_resources,
                                 },
-                                grant_troops,
-                                activate_economy: false,
+                                grant_troops: true,
+                                activate_economy: true,
                             },
                         ),
                         context,

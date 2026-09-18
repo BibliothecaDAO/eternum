@@ -2,7 +2,6 @@ import { BuildingType, ID, ResourcesIds, RESOURCE_PRECISION, type Resource } fro
 import type { NativeFactStore } from "../client/native-fact-store";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { divideByPrecision, getBuildingCount, gramToKg, multiplyByPrecision } from "../utils";
-import { reportObservedChainTimestamp } from "../utils/timestamp";
 import { configManager } from "./config-manager";
 
 type Production = Pick<
@@ -21,33 +20,10 @@ export interface ResourceProductionData {
   timeRemainingSeconds: number;
 }
 
-// Rows indexed from preconfirmed blocks can carry a last_updated_at ahead of the
-// client's chain-time heartbeat; elapsed production floors at zero, never negative.
-// The floor silently discards real accrual, so a row ahead of the clock is also
-// reported as chain-time evidence (the clock re-anchors and the next read heals)
-// and a large discard — beyond normal block/poll jitter — warns loudly.
-const ELAPSED_FLOOR_WARN_THRESHOLD_SECONDS = 30;
-const ELAPSED_FLOOR_WARN_INTERVAL_MS = 60_000;
-let lastElapsedFloorWarnAtMs = 0;
-
+// A scheduled production start is not a chain-clock observation.
 const elapsedProductionTicks = (lastUpdatedAt: number, currentTick: number): number => {
-  const elapsed = currentTick - lastUpdatedAt;
-  if (!Number.isFinite(elapsed)) return 0;
-  if (elapsed > 0) return Math.floor(elapsed);
-
-  if (elapsed < 0) {
-    reportObservedChainTimestamp(lastUpdatedAt);
-    if (
-      elapsed < -ELAPSED_FLOOR_WARN_THRESHOLD_SECONDS &&
-      Date.now() - lastElapsedFloorWarnAtMs > ELAPSED_FLOOR_WARN_INTERVAL_MS
-    ) {
-      lastElapsedFloorWarnAtMs = Date.now();
-      console.warn(
-        `[ChainTime] production row is ${Math.round(-elapsed)}s ahead of the client clock — accrual display floored to zero (row last_updated_at=${lastUpdatedAt}, client tick=${currentTick})`,
-      );
-    }
-  }
-  return 0;
+  if (!Number.isFinite(lastUpdatedAt) || !Number.isFinite(currentTick)) throw new Error("Invalid production clock");
+  return Math.max(0, Math.floor(currentTick - lastUpdatedAt));
 };
 
 export class ResourceManager {
@@ -65,6 +41,7 @@ export class ResourceManager {
     return this.store.subscribe((changes) => {
       if (
         changes.some((change) => {
+          if (change.model === "GameRegistry") return (change.current ?? change.previous)?.game_id === this.gameId;
           if (
             change.model !== "ResourceBalance" &&
             change.model !== "ResourceProduction" &&
@@ -89,14 +66,27 @@ export class ResourceManager {
       throw new Error(`Invalid resource ${resourceId}`);
     if (!this.hasResources()) return undefined;
     const keys = { game_id: this.gameId, entity_id: this.entityId, resource_type: resourceId };
+    const production = this.productionForGameClock(this.store.get("ResourceProduction", keys));
     return {
       balance: this.store.get("ResourceBalance", keys)?.balance ?? 0n,
-      production: this.store.get("ResourceProduction", keys) ?? {
+      production: production ?? {
         building_count: 0,
         production_rate: 0n,
         output_amount_left: 0n,
         last_updated_at: 0,
       },
+    };
+  }
+
+  private productionForGameClock(production: Production | undefined): Production | undefined {
+    if (!production || production.building_count === 0) return production;
+    const rules = this.store.require("SliceRules", { game_id: this.gameId });
+    if (!rules.blitz_mode_on) return production;
+    const game = this.store.require("GameRegistry", { game_id: this.gameId });
+    return {
+      ...production,
+      last_updated_at: Math.max(production.last_updated_at, Number(game.start_main_at)),
+      production_rate: game.ready ? production.production_rate : 0n,
     };
   }
 
@@ -282,20 +272,21 @@ export class ResourceManager {
     lastUpdatedAt: number;
   }> {
     if (!this.hasResources()) return [];
-    return [...this.store.inGame("ResourceProduction", this.gameId)].flatMap((production) =>
-      production.entity_id === this.entityId &&
-      ResourceManager.hasActiveProduction(production, production.resource_type)
-        ? [
-            {
-              resourceId: production.resource_type as ResourcesIds,
-              productionRate: production.production_rate,
-              buildingCount: production.building_count,
-              outputAmountLeft: production.output_amount_left,
-              lastUpdatedAt: production.last_updated_at,
-            },
-          ]
-        : [],
-    );
+    return [...this.store.inGame("ResourceProduction", this.gameId)].flatMap((row) => {
+      if (row.entity_id !== this.entityId) return [];
+      const resourceId = row.resource_type as ResourcesIds;
+      const production = this.current(resourceId)!.production;
+      if (!ResourceManager.hasActiveProduction(production, resourceId)) return [];
+      return [
+        {
+          resourceId,
+          productionRate: production.production_rate,
+          buildingCount: production.building_count,
+          outputAmountLeft: production.output_amount_left,
+          lastUpdatedAt: production.last_updated_at,
+        },
+      ];
+    });
   }
 
   public static calculateResourceProductionData(

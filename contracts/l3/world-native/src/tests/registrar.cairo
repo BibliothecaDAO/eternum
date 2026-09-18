@@ -1,6 +1,10 @@
+use eternum_randomness_protocol::entrypoint::IRecordedExecutionViewsDispatcher;
 use snforge_std::{start_cheat_block_timestamp_global, start_cheat_caller_address, stop_cheat_caller_address};
+use crate::commands::{IResourceCommandsDispatcher, IResourceCommandsDispatcherTrait};
 use crate::game::{GameStatus, IGameDispatcher, IGameDispatcherTrait, status_at};
+use crate::guards::{GuardKey, IGuardsDispatcher, IGuardsDispatcherTrait};
 use crate::lifecycle::{IDomainDispatcher, IDomainDispatcherTrait, PeersTrait};
+use crate::map::{IMapDispatcher, IMapDispatcherTrait, TileKey, structure_occupant};
 use crate::presets::{
     EconomyPreset, PresetDefinition, ResourcePreset, SettlementPreset, StructurePreset, WithdrawalPreset,
 };
@@ -8,8 +12,14 @@ use crate::registrar::{
     CreateGameParams, IRegistrarDispatcher, IRegistrarDispatcherTrait, IRegistrarSafeDispatcher,
     IRegistrarSafeDispatcherTrait, RosterPlayer,
 };
-use crate::resources::ResourceRule;
-use crate::settlement::{ISettlementViewsDispatcher, ISettlementViewsDispatcherTrait, SettlementMode};
+use crate::resources::{IResourcesDispatcher, IResourcesDispatcherTrait, ResourceKey, ResourceRule, ResourceSlot};
+use crate::season::{ISeasonDispatcher, ISeasonDispatcherTrait};
+use crate::settlement::{
+    ISettlementCommandsDispatcher, ISettlementCommandsDispatcherTrait, ISettlementCommandsSafeDispatcher,
+    ISettlementCommandsSafeDispatcherTrait, ISettlementViewsDispatcher, ISettlementViewsDispatcherTrait, SettlementMode,
+};
+use crate::structures::{IStructuresDispatcher, IStructuresDispatcherTrait};
+use super::recorded_receipts::RecordedReceiptsTrait;
 
 fn setup() -> super::Deployment {
     let d = super::setup_with_domains(false, "StructuresDomain", "TroopsDomain");
@@ -69,9 +79,6 @@ fn definition(blitz: bool) -> PresetDefinition {
         },
         settlement: SettlementPreset {
             reward_profile: 1,
-            cosmetic_limit: 3,
-            cosmetic_collection: zero,
-            cosmetic_timelock: zero,
             realms: super::settlement::grants(),
             villages: super::village::village_rules(),
             spires: if blitz {
@@ -207,8 +214,8 @@ fn blitz_launch_initializes_domains_once_and_allocates_isolated_games() {
         assert_eq!(game.end_at, 400);
         assert_eq!(game.creator, super::authority());
         assert_eq!(status_at(game, 299), GameStatus::Registration);
-        assert_eq!(status_at(game, 300), GameStatus::Live);
-        assert_eq!(status_at(game, 400), GameStatus::Ended);
+        assert_eq!(status_at(game, 300), GameStatus::Registration);
+        assert_eq!(status_at(game, 400), GameStatus::Registration);
         assert_eq!(games.rules(expected).map_center_offset, crate::registrar::map_center_offset(expected, 42));
         let settlement = ISettlementViewsDispatcher { contract_address: d.peers.settlement };
         assert_eq!(settlement.realm_grants(expected), preset.settlement.realms);
@@ -432,4 +439,155 @@ fn launch_retries_return_the_same_game_and_conflicting_rosters_reject() {
     assert!(safe(d).create_game(CreateGameParams { duration_seconds: 101, ..request }, preset).is_err());
     assert_eq!(registry(d).blitz_roster(first), request.roster);
     assert_eq!(registry(d).next_game_id(), first + 1);
+}
+
+
+#[test]
+fn fixed_blitz_rosters_have_exact_spots_and_deterministic_unique_permutations() {
+    for count in array![1_u32, 13, 17, 24] {
+        let players = crate::settlement::shuffle_roster(count, 123456789);
+        assert!(players == crate::settlement::shuffle_roster(count, 123456789));
+        assert!(players.len() == count);
+        let mut seen: core::dict::Felt252Dict<bool> = Default::default();
+        let mut tiles: core::dict::Felt252Dict<bool> = Default::default();
+        for index in 0..count {
+            let player = *players.at(index);
+            assert!(player.into() < count && !seen.get(player.into()));
+            seen.insert(player.into(), true);
+            let coords = crate::settlement_grid::settlement_location(
+                crate::troops::Coord { alt: false, x: 1000, y: 1000 }, SettlementMode::Triple, 1, index,
+            );
+            assert!(coords.len() == 3);
+            for coord in coords {
+                let key = Into::<u32, felt252>::into(*coord.x) * 0x100000000 + Into::<u32, felt252>::into(*coord.y);
+                assert!(!tiles.get(key), "settlement spots overlap");
+                tiles.insert(key, true);
+            }
+        }
+    }
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn automatic_blitz_settlement_is_authorized_atomic_and_resumes_its_fixed_order() {
+    let d = setup();
+    let preset = definition(true);
+    registry(d).register_preset(1, preset);
+    let game_id = registry(d).create_game(CreateGameParams { roster: roster(2), ..params(true) }, preset);
+    let games = IGameDispatcher { contract_address: d.peers.season };
+    let commands = ISettlementCommandsDispatcher { contract_address: d.peers.settlement };
+    let safe = ISettlementCommandsSafeDispatcher { contract_address: d.peers.settlement };
+    let views = ISettlementViewsDispatcher { contract_address: d.peers.settlement };
+    let mut context = crate::commands::ExecutionContext { raw_root: 98765, timestamp: 205 };
+    assert!(!games.game(game_id).ready);
+    assert!(status_at(games.game(game_id), 99999) == GameStatus::Registration);
+    start_cheat_caller_address(d.peers.settlement, d.actor);
+    assert!(safe.settle_blitz_roster(game_id, super::authority(), context).is_err());
+    start_cheat_caller_address(d.peers.settlement, d.peers.season);
+    assert!(safe.settle_blitz_roster(game_id, d.actor, context).is_err());
+    assert!(
+        safe
+            .settle_blitz_roster(
+                game_id, super::authority(), crate::commands::ExecutionContext { timestamp: 199, ..context },
+            )
+            .is_err(),
+    );
+    assert!(views.blitz_settlement_order(game_id).is_empty());
+    let structures = IStructuresDispatcher { contract_address: d.peers.structures };
+    let resources = IResourcesDispatcher { contract_address: d.peers.resources };
+    let guards = IGuardsDispatcher { contract_address: d.peers.troops };
+    let mut fixed_order = array![].span();
+    for batch in 0_u32..2 {
+        if batch != 0 {
+            context.raw_root = 111 + batch.into();
+            context.timestamp = 1000 + batch.into();
+        }
+        assert!(commands.settle_blitz_roster(game_id, super::authority(), context) == (1 - batch).into());
+        let order = views.blitz_settlement_order(game_id);
+        if batch == 0 {
+            fixed_order = order;
+        } else {
+            assert!(order == fixed_order, "retry reshuffled roster");
+        }
+        let player = *roster(2).at((*order.at(batch)).into());
+        assert!(views.player_has_settled(game_id, player.account));
+        assert!(views.settlement_progress(game_id).registered.into() == batch + 1);
+        for realm in 0_u32..3 {
+            let center = 2147483646 - games.rules(game_id).map_center_offset;
+            let coord = *crate::settlement_grid::settlement_location(
+                crate::troops::Coord { alt: false, x: center, y: center }, SettlementMode::Triple, 1, batch,
+            )
+                .at(realm);
+            let entity_id = structure_occupant(
+                IMapDispatcher { contract_address: d.peers.map }
+                    .tile(TileKey { game_id, alt: false, col: coord.x, row: coord.y })
+                    .unwrap(),
+            )
+                .unwrap();
+            let key = ResourceKey { game_id, entity_id };
+            let structure = structures.structure(key).unwrap();
+            assert!(structure.owner == player.account && structure.base.starting_troops_granted);
+            let production = resources.resource_production(ResourceSlot { game_id, entity_id, resource_type: 23 });
+            assert!(production.building_count == 1 && production.production_rate == 10);
+            let guard = guards.guard(GuardKey { game_id, structure_id: entity_id, slot: 0 });
+            assert!(guard.troops.count == 1500 * crate::rules::RESOURCE_PRECISION);
+        }
+        assert!(games.game(game_id).ready == (batch == 1));
+    }
+    let game = games.game(game_id);
+    assert!(game.start_main_at == 1001 && game.end_at == 1101, "late settlement lost playing time");
+    assert!(status_at(game, 1001) == GameStatus::Live);
+    let center = 2147483646 - games.rules(game_id).map_center_offset;
+    let coord = *crate::settlement_grid::settlement_location(
+        crate::troops::Coord { alt: false, x: center, y: center }, SettlementMode::Triple, 1, 0,
+    )
+        .at(0);
+    let entity_id = structure_occupant(
+        IMapDispatcher { contract_address: d.peers.map }
+            .tile(TileKey { game_id, alt: false, col: coord.x, row: coord.y })
+            .unwrap(),
+    )
+        .unwrap();
+    let actor = structures.structure(ResourceKey { game_id, entity_id }).unwrap().owner;
+    let slot = ResourceSlot { game_id, entity_id, resource_type: 23 };
+    let balance = resources.resource_balance(slot);
+    let claims = IResourceCommandsDispatcher { contract_address: d.peers.resources };
+    start_cheat_caller_address(d.peers.resources, d.peers.season);
+    claims
+        .claim_production(game_id, actor, entity_id, crate::commands::ExecutionContext { timestamp: 1001, ..context });
+    assert_eq!(resources.resource_balance(slot), balance, "early realm accrued before main play");
+    claims
+        .claim_production(game_id, actor, entity_id, crate::commands::ExecutionContext { timestamp: 1002, ..context });
+    assert_eq!(resources.resource_balance(slot), balance + 10, "production did not start with the game");
+    let progress = views.settlement_progress(game_id);
+    assert!(commands.settle_blitz_roster(game_id, super::authority(), context) == 0);
+    assert!(views.settlement_progress(game_id) == progress && games.game(game_id) == game);
+}
+
+
+#[test]
+fn recorded_roster_batches_block_early_play_and_report_ticket_progress() {
+    let d = setup();
+    let preset = definition(true);
+    registry(d).register_preset(1, preset);
+    let game_id = registry(d).create_game(CreateGameParams { roster: roster(2), ..params(true) }, preset);
+    let d = super::bind_authority(d);
+    let command = crate::commands::Command::SettleBlitzRoster;
+    assert!(
+        !super::resource_commands::execute_in_game(d, game_id, crate::commands::Command::ClaimProduction(1), 205, 205),
+    );
+    let season = ISeasonDispatcher { contract_address: d.peers.season };
+    let receipts = IRecordedExecutionViewsDispatcher { contract_address: d.peers.season };
+    assert_eq!(receipts.recorded_outcome(season.execution_head().order).unwrap().reason, 'ROSTER_NOT_READY');
+    assert_eq!(season.next_nonce(game_id, d.actor), 1);
+    super::season_lifecycle::execute_batch_in_game(d, game_id, command, 205, 1);
+    assert!(!IGameDispatcher { contract_address: d.peers.season }.game(game_id).ready);
+    assert!(
+        !super::resource_commands::execute_in_game(d, game_id, crate::commands::Command::ClaimProduction(1), 206, 206),
+    );
+    assert_eq!(receipts.recorded_outcome(season.execution_head().order).unwrap().reason, 'ROSTER_NOT_READY');
+    assert_eq!(season.next_nonce(game_id, d.actor), 3);
+    super::season_lifecycle::execute_batch_in_game(d, game_id, command, 207, 0);
+    assert!(IGameDispatcher { contract_address: d.peers.season }.game(game_id).ready);
+    super::season_lifecycle::execute_batch_in_game(d, game_id, command, 208, 0);
 }

@@ -16,6 +16,7 @@ const EnvironmentSchema = Schema.Struct({
   CORS_ORIGIN: NonEmptyString,
   LAUNCHER_ALLOWLIST: NonEmptyString,
   RPC_URL: NonEmptyString,
+  ADMISSION_URL: NonEmptyString,
   HERALD_URL: NonEmptyString,
   NATIVE_WORLD_MANIFEST: NonEmptyString,
   DEPLOYER_ACCOUNT_ADDRESS: NonEmptyString,
@@ -33,6 +34,7 @@ export interface LaunchServiceConfig {
   allowAnyLauncher: boolean;
   launcherAllowlist: ReadonlySet<string>;
   rpcUrl: string;
+  admissionUrl: string;
   heraldUrl: string;
   manifestPath: string;
   accountAddress: string;
@@ -71,6 +73,7 @@ export const readLaunchServiceConfig = (
           allowAnyLauncher: launcherEntries.includes("*"),
           launcherAllowlist: new Set(launcherEntries.filter((entry) => entry !== "*").map(normalizeAddress)),
           rpcUrl: raw.RPC_URL,
+          admissionUrl: raw.ADMISSION_URL,
           heraldUrl: raw.HERALD_URL,
           manifestPath: path.resolve(REPO_ROOT, raw.NATIVE_WORLD_MANIFEST),
           accountAddress: normalizeAddress(raw.DEPLOYER_ACCOUNT_ADDRESS),

@@ -28,6 +28,7 @@ const makeSummary = (overrides: Partial<WorldSummary>): WorldSummary => ({
   worldId: "blitz",
   gameId: 7,
   alive: true,
+  ready: true,
   lastCheckedAt: 0,
   mode: "blitz",
   startSettlingAt: null,

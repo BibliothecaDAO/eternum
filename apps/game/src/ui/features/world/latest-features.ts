@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-18",
+    title: "Automatic Blitz settlement",
+    description:
+      "Assigned players receive three prepared realms and starting guards automatically. Play opens when the whole roster is ready.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-18",
     title: "Complete claims and season closure",
     description: "Mining claims and season closure continue through all required batches before reporting completion.",
     type: "fix",

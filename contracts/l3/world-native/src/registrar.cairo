@@ -86,6 +86,7 @@ fn build_game(params: CreateGameParams, creator: ContractAddress) -> crate::game
         preset_id: params.preset_id,
         creator,
         settled: false,
+        ready: params.roster.is_empty(),
         dev_mode_on: params.dev_mode_on,
         start_settling_at: params.start_settling_at,
         start_main_at: params.start_main_at,

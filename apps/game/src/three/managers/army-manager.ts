@@ -395,12 +395,6 @@ export class ArmyManager {
 
   private subscribeToGuildMembership(): void {
     this.unsubscribeGuildMembership = this.store?.subscribe((changes) => {
-      for (const change of changes) {
-        if (change.model === "PlayerCosmetics") {
-          const row = change.current ?? change.previous;
-          if (row?.game_id === configManager.getActiveGameId()) this.refreshCosmeticsForOwner(row.player);
-        }
-      }
       if (
         changes.some(
           (change) =>
@@ -1233,11 +1227,7 @@ export class ArmyManager {
     this.armyModel.assignModelToEntity(numericId, modelType);
 
     const cosmeticPresentation = resolveArmyCosmeticPresentation({
-      attributes:
-        this.store?.get("PlayerCosmetics", {
-          game_id: configManager.getActiveGameId(),
-          player: army.owner.address ?? 0n,
-        })?.attributes ?? [],
+      attributes: [],
       army,
       modelType,
       reResolveCosmetics,
@@ -1835,9 +1825,7 @@ export class ArmyManager {
     const baseModelType = this.armyModel.getModelTypeForEntity(numericEntityId, params.category, params.tier, biome);
 
     const cosmetic = resolveArmyCosmetic({
-      attributes:
-        this.store?.get("PlayerCosmetics", { game_id: configManager.getActiveGameId(), player: ownerAddress })
-          ?.attributes ?? [],
+      attributes: [],
       owner: ownerAddress,
       troopType: params.category,
       tier: params.tier,

@@ -35,7 +35,7 @@ python3 deploy/madara-rand/release/build.py /path/to/madara REVISION BUILDX_BUIL
 ```
 
 Use the image digest from that output with `deploy/madara-rand/node.yml` and an isolated compose project. The candidate
-configuration must supply the sequencing account, world address and schema, plus its private sequencing credential.
+configuration must supply the sequencing account, world address and private sequencing credential.
 The node persists its epoch secret in its own data volume. Pending assignments are volatile across restart; recorded
 nonces prevent duplicate gameplay effects. Keep WAL and fsync enabled for comparable runs. Never request fsync with
 WAL disabled.

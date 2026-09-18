@@ -1,3 +1,4 @@
+import preset from "../../../../contracts/l3/world-native/fixtures/preset-1.json";
 import { describe, expect, it, vi } from "vitest";
 import { NativeFactStore } from "../client/native-fact-store";
 import { ResourceManager } from "./resource-manager";
@@ -9,6 +10,23 @@ const upsert = (id: string, models: Record<string, unknown>): GameSyncEntityStor
 });
 const weight = (game = 1) => ({ game_id: game, entity_id: 7, capacity: 1000n, weight: 0n });
 const balance = (game = 1) => ({ game_id: game, entity_id: 7, resource_type: 23, balance: 9007199254740993n });
+const game = {
+  game_id: 1,
+  name: 1n,
+  series_id: 0n,
+  game_number_in_series: 0,
+  preset_id: 1,
+  creator: 1n,
+  settled: false,
+  ready: false,
+  dev_mode_on: false,
+  start_settling_at: 0n,
+  start_main_at: 200n,
+  end_at: 1100n,
+  end_grace_seconds: 0,
+  final_trial_id: 0n,
+  seed: 1n,
+};
 const production = {
   game_id: 1,
   entity_id: 7,
@@ -22,6 +40,9 @@ const production = {
 describe("native resource facts", () => {
   it("reads sparse resources and observes a transaction once, including deletion", () => {
     const store = new NativeFactStore();
+    store.applyEntityOperations([
+      upsert("0x100", { SliceRules: { ...preset.rules, game_id: 1, blitz_mode_on: false } }),
+    ]);
     const manager = new ResourceManager(store, 7, 1);
     store.applyEntityOperations([upsert("0x1", { ResourceWeight: weight() })]);
     const changed = vi.fn();
@@ -50,6 +71,9 @@ describe("native resource facts", () => {
 
   it("scopes reads and notifications to their game and requires a resource owner", () => {
     const store = new NativeFactStore();
+    store.applyEntityOperations([
+      upsert("0x100", { SliceRules: { ...preset.rules, game_id: 1, blitz_mode_on: false } }),
+    ]);
     const first = new ResourceManager(store, 7, 1);
     const second = new ResourceManager(store, 7, 2);
     const changed = vi.fn();
@@ -61,5 +85,21 @@ describe("native resource facts", () => {
     expect(first.hasResources()).toBe(false);
     expect(changed).toHaveBeenCalledTimes(1);
     expect(() => second.current(0)).toThrow("Invalid resource");
+  });
+  it("starts every Blitz producer at the final main clock after delayed roster preparation", () => {
+    const store = new NativeFactStore();
+    store.applyEntityOperations([
+      upsert("0x1", { ResourceWeight: weight(), ResourceProduction: { ...production, last_updated_at: 100 } }),
+      upsert("0x2", { SliceRules: { ...preset.rules, game_id: 1, blitz_mode_on: true }, GameRegistry: game }),
+    ]);
+    const manager = new ResourceManager(store, 7, 1);
+    const changed = vi.fn();
+    manager.subscribe(changed);
+    expect(manager.current(23)!.production.production_rate).toBe(0n);
+    expect(manager.getActiveProductions()).toEqual([]);
+    store.applyEntityOperations([upsert("0x2", { GameRegistry: { ...game, ready: true, start_main_at: 1000n } })]);
+    expect(changed).toHaveBeenCalledTimes(1);
+    expect(manager.current(23)!.production).toMatchObject({ last_updated_at: 1000, production_rate: 2n });
+    expect(manager.getActiveProductions()[0]).toMatchObject({ lastUpdatedAt: 1000, productionRate: 2n });
   });
 });

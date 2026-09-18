@@ -65,6 +65,7 @@ describe("native leaderboard", () => {
       start_main_at: 1n,
       end_at: 200n,
       settled: false,
+      ready: true,
       dev_mode_on: false,
       end_grace_seconds: 0,
       final_trial_id: 0n,

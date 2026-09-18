@@ -20,6 +20,7 @@ import {
 import {
   assertRegistrarAvailable,
   createRegistrarGame,
+  settleBlitzRoster,
   resolveRegistrarEnvironmentId,
   resolveBlitzRoster,
   findRegistrarGame,
@@ -167,14 +168,18 @@ async function prepareLaunch(request: LaunchGameRequest, store: LaunchRunStore):
   };
 }
 
-function createLaunchAccount(launch: PreparedLaunch): Account {
-  const credentials = resolveAccountCredentials({
+function launchCredentials(launch: PreparedLaunch) {
+  return resolveAccountCredentials({
     accountAddress: launch.request.accountAddress,
     privateKey: launch.request.privateKey,
     fallbackAccountAddress: launch.runtime.environment.accountAddress,
     fallbackPrivateKey: launch.runtime.environment.privateKey,
     context: `environment "${launch.runtime.environment.id}"`,
   });
+}
+
+function createLaunchAccount(launch: PreparedLaunch): Account {
+  const credentials = launchCredentials(launch);
   return new Account({
     provider: launch.runtime.provider,
     address: credentials.accountAddress,
@@ -381,9 +386,25 @@ async function waitForGameIndex(launch: PreparedLaunch): Promise<void> {
   applyGameIdentity(launch, row.gameId);
 }
 
+async function createAndSettleGame(launch: PreparedLaunch): Promise<void> {
+  const admissionUrl = launch.request.admissionUrl ?? process.env.ADMISSION_URL;
+  if (launch.config.blitz.mode.on && !admissionUrl) {
+    throw new Error("ADMISSION_URL is required for automatic Blitz settlement");
+  }
+  await createGame(launch);
+  if (!launch.config.blitz.mode.on) return;
+  await settleBlitzRoster(
+    launch.runtime.provider,
+    await resolveGameId(launch),
+    launchCredentials(launch),
+    launch.runtime.environment.id,
+    admissionUrl!,
+  );
+}
+
 async function executeLaunchStep(launch: PreparedLaunch, stepId: LaunchGameStepId): Promise<void> {
   if (stepId === "create-world") {
-    await createGame(launch);
+    await createAndSettleGame(launch);
     return;
   }
   if (stepId === "wait-for-factory-index") {
@@ -426,7 +447,7 @@ export async function launchGame(
     return finishDryRun(launch);
   }
   await assertLaunchChainTargets(launch);
-  await createGame(launch);
+  await createAndSettleGame(launch);
   await waitForGameIndex(launch);
   return finishLaunch(launch);
 }

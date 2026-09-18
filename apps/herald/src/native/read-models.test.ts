@@ -6,7 +6,7 @@ function gameEvent(game = "1", settled = "0", dev = "0") {
   return rowEvent(
     "GameRegistry",
     [game],
-    ["0x426c69747a", "0", "0", "1", "0x111", settled, dev, "10", "20", "200", "10", "0", "42"],
+    ["0x426c69747a", "0", "0", "1", "0x111", settled, "1", dev, "10", "20", "200", "10", "0", "42"],
   );
 }
 function world() {
@@ -18,8 +18,8 @@ function world() {
       gameEvent("2"),
       rulesEvent(),
       rulesEvent("2"),
-      rowEvent("SettlementRules", ["1"], ["5", "96", "0", "2", "0", "0", "0"]),
-      rowEvent("SettlementRules", ["2"], ["5", "2", "2", "2", "0", "0", "0"]),
+      rowEvent("SettlementRules", ["1"], ["5", "96", "0", "2"]),
+      rowEvent("SettlementRules", ["2"], ["5", "2", "2", "2"]),
       rowEvent("SettlementProgress", ["1"], ["2", "1"]),
       rowEvent("PlayerEntry", ["1", "0xaaa"], ["0x111"]),
       rowEvent("PlayerEntry", ["1", "0xbbb"], ["0x222"]),

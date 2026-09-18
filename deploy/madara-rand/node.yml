@@ -27,12 +27,9 @@ services:
       RANDOMNESS_DEPLOYMENT: ${RANDOMNESS_DEPLOYMENT:?Set the protocol deployment}
       RANDOMNESS_PRIVATE_KEY: ${RANDOMNESS_PRIVATE_KEY:?Set the local sequencing credential}
       RANDOMNESS_EPOCH_SECRET: /data/game-epoch-secret.json
-      RANDOMNESS_NATIVE_SCHEMA: /config/native-schema.json
-      RANDOMNESS_L2_RPC_URL: ${RANDOMNESS_L2_RPC_URL:-}
       RUST_LOG: info
     volumes:
       - ../madara-lab/chain-config.yaml:/config/chain-config.yaml:ro
-      - ${RANDOMNESS_SCHEMA_HOST_PATH:?Set the native deployment schema}:/config/native-schema.json:ro
       - node-data:/data
     ports:
       - "127.0.0.1:15050:9944"

@@ -46,9 +46,6 @@ export const createFakeGame = (signer: AccountInterface | null = PLAYER_SIGNER):
     registration_limit: 100,
     mode: "Triple",
     reward_profile: 1,
-    cosmetic_limit: 0,
-    cosmetic_collection: 0n,
-    cosmetic_timelock: 0n,
   });
   ClientConfigManager.instance().setStore(store);
   const projection = new WorldSpatialProjection({
@@ -182,6 +179,7 @@ export const seedGameRegistry = (
     preset_id: 1,
     creator: 0n,
     settled: input.status === "Ended",
+    ready: true,
     dev_mode_on: true,
     start_settling_at: 0n,
     start_main_at: BigInt(input.startMainAt),

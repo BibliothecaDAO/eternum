@@ -474,7 +474,7 @@ export class StructureManager {
             refreshAll = true;
             continue;
           }
-          if (change.model === "GuildMember" || change.model === "PlayerCosmetics") {
+          if (change.model === "GuildMember") {
             if ((change.current ?? change.previous)?.game_id === configManager.getActiveGameId()) refreshAll = true;
             continue;
           }
@@ -1080,9 +1080,7 @@ export class StructureManager {
     const defaultModelKey = typeof enumName === "string" ? enumName : String(input.structureType);
 
     return resolveStructureCosmetic({
-      attributes:
-        this.store?.get("PlayerCosmetics", { game_id: configManager.getActiveGameId(), player: input.owner })
-          ?.attributes ?? [],
+      attributes: [],
       owner: input.owner,
       structureType: input.structureType,
       stage: input.stage,

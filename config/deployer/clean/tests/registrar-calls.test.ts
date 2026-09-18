@@ -1,7 +1,9 @@
-import { describe, expect, test } from "bun:test";
+import type { RpcProvider } from "starknet";
+import { describe, expect, test, mock } from "bun:test";
 import schema from "../../../../contracts/l3/world-native/schema/schema.json";
 import {
   assertRegistrarAvailable,
+  settleBlitzRoster,
   resolveCreatedGameId,
   resolveRegistrarExecutionDetails,
   resolveRegistrarWorldAddress,
@@ -46,4 +48,19 @@ describe("native registrar", () => {
       expect(resolveCreatedGameId({ events: [{ ...event, data: ["1", "7", "2", "0"] }] }, manifest)).toBeUndefined();
     }
   });
+});
+
+test("a ready roster submits no settlement transactions on retry", async () => {
+  const provider = {
+    callContract: mock(async () => ["1", "0", "0", "1", "291", "0", "1", "0", "100", "200", "300", "0", "0", "1"]),
+  };
+  await settleBlitzRoster(
+    provider as unknown as RpcProvider,
+    7,
+    { accountAddress: "0x123", privateKey: "0x1234" },
+    manifest,
+    "http://unused.invalid",
+  );
+  expect(provider.callContract).toHaveBeenCalledTimes(1);
+  expect(provider.callContract).toHaveBeenCalledWith({ contractAddress: "0x123", entrypoint: "game", calldata: [7] });
 });

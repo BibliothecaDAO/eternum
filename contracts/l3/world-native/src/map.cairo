@@ -295,18 +295,17 @@ pub mod MapDomain {
             let rules = ISettlementViewsDispatcher { contract_address: settlement }.settlement_rules(game_id);
             self.settlements.claim_village(game_id, self.map_center(game_id), rules, registered, seed)
         }
-        fn claim_settlement(ref self: ContractState, game_id: u32, registered: u16, seed: u256) -> Span<Coord> {
-            let settlement = self.lifecycle.require_active().settlement;
-            assert!(get_caller_address() == settlement, "only settlement domain");
-            let rules = ISettlementViewsDispatcher { contract_address: settlement }.settlement_rules(game_id);
-            let center = self.map_center(game_id);
-            self.settlements.claim(game_id, center, rules, registered, seed)
-        }
     }
     #[abi(embed_v0)]
     impl Reservations of crate::settlement::IBlitzReservations<ContractState> {
         fn initialize_reservations(ref self: ContractState, game_id: u32) {
             assert!(get_caller_address() == self.lifecycle.require_active().registry, "only registrar domain");
+            if self.settlements.reserved_hyperstructures.read(game_id) != 0 {
+                return;
+            }
+            let rules = ISettlementViewsDispatcher { contract_address: self.lifecycle.require_active().settlement }
+                .settlement_rules(game_id);
+            self.settlements.reserve_blitz_locations(game_id, self.map_center(game_id), rules);
             self.reserve_sites(game_id, 255, starknet::get_block_timestamp());
         }
 

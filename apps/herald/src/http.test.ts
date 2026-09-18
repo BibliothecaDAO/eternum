@@ -37,6 +37,7 @@ const httpState: Parameters<typeof createHeraldRequestHandler>[0] = {
               name: "0x74657374",
               preset_id: "0x1",
               settled: false,
+              ready: true,
               dev_mode_on: false,
               start_settling_at: "0x1",
               start_main_at: "0x2",
@@ -236,4 +237,20 @@ it("derives directory phases from advancing chain time with no registry write", 
   expect(await status()).toBe("Live");
   timestamp = 3;
   expect(await status()).toBe("Ended");
+});
+
+it("keeps an incomplete roster in registration beyond its scheduled end", async () => {
+  const handler = createHeraldRequestHandler({
+    ...httpState,
+    fold: {
+      ...httpState.fold,
+      modelRows: (model) =>
+        httpState.fold
+          .modelRows(model)
+          .map((row) => (model === "GameRegistry" ? { ...row, value: { ...row.value, ready: false } } : row)),
+    },
+  });
+  const response = await handler(new Request("http://herald/madara/games"));
+  expect(response.status).toBe(200);
+  expect((await response.json()).games[0]).toMatchObject({ ready: false, status: "Registration" });
 });

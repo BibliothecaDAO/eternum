@@ -411,26 +411,6 @@
         },
         {
           "type": "function",
-          "name": "settlement_admission",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "actor",
-              "type": "core::starknet::contract_address::ContractAddress"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "world_native::settlement::SettlementAdmission"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
           "name": "set_authentication",
           "inputs": [
             {
@@ -677,6 +657,22 @@
             {
               "name": "rules",
               "type": "world_native::rules::SliceRules"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "start_blitz",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "timestamp",
+              "type": "core::integer::u64"
             }
           ],
           "outputs": [],
@@ -1204,30 +1200,6 @@
             }
           ],
           "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "claim_settlement",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "registered",
-              "type": "core::integer::u16"
-            },
-            {
-              "name": "seed",
-              "type": "core::integer::u256"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::array::Span::<world_native::troops::Coord>"
-            }
-          ],
-          "state_mutability": "external"
         },
         {
           "type": "function",
@@ -3680,6 +3652,22 @@
         },
         {
           "type": "function",
+          "name": "blitz_settlement_order",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::array::Span::<core::integer::u8>"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
           "name": "player_has_settled",
           "inputs": [
             {
@@ -3764,22 +3752,6 @@
         },
         {
           "type": "function",
-          "name": "player_cosmetics",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::settlement::CosmeticsKey"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "world_native::settlement::PlayerCosmetics"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
           "name": "register_entitlement",
           "inputs": [
             {
@@ -3812,7 +3784,7 @@
         },
         {
           "type": "function",
-          "name": "settle_blitz",
+          "name": "settle_blitz_roster",
           "inputs": [
             {
               "name": "game_id",
@@ -3823,15 +3795,15 @@
               "type": "core::starknet::contract_address::ContractAddress"
             },
             {
-              "name": "command",
-              "type": "world_native::settlement::SettleBlitz"
-            },
-            {
               "name": "context",
               "type": "world_native::commands::ExecutionContext"
             }
           ],
-          "outputs": [],
+          "outputs": [
+            {
+              "type": "core::integer::u64"
+            }
+          ],
           "state_mutability": "external"
         },
         {
@@ -10303,6 +10275,37 @@
       }
     },
     {
+      "name": "BlitzSettlementOrder",
+      "identity": "0x426c69747a536574746c656d656e744f72646572",
+      "owners": [
+        "settlement"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "players",
+          "type": "core::array::Span::<core::integer::u8>",
+          "id": "0x706c6179657273",
+          "feltLength": null
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": null,
+      "observation": {
+        "domain": "realm/blitz",
+        "fields": {
+          "players": "players"
+        }
+      }
+    },
+    {
       "name": "BlitzRoster",
       "identity": "0x426c69747a526f73746572",
       "owners": [
@@ -10485,36 +10488,17 @@
           "type": "core::integer::u8",
           "id": "0x7265776172645f70726f66696c65",
           "feltLength": 1
-        },
-        {
-          "name": "cosmetic_limit",
-          "type": "core::integer::u8",
-          "id": "0x636f736d657469635f6c696d6974",
-          "feltLength": 1
-        },
-        {
-          "name": "cosmetic_collection",
-          "type": "core::starknet::contract_address::ContractAddress",
-          "id": "0x636f736d657469635f636f6c6c656374696f6e",
-          "feltLength": 1
-        },
-        {
-          "name": "cosmetic_timelock",
-          "type": "core::starknet::contract_address::ContractAddress",
-          "id": "0x636f736d657469635f74696d656c6f636b",
-          "feltLength": 1
         }
       ],
       "keyLength": 1,
-      "valueLength": 7,
+      "valueLength": 4,
       "observation": {
         "domain": "realm/blitz",
         "fields": {
           "registrationOpens": "registration_start",
           "capacity": "registration_limit",
           "mode": "mode",
-          "profile": "reward_profile",
-          "cosmeticLimit": "cosmetic_limit"
+          "profile": "reward_profile"
         }
       }
     },
@@ -10820,42 +10804,6 @@
         "domain": "realm/blitz",
         "fields": {
           "player": "player"
-        }
-      }
-    },
-    {
-      "name": "PlayerCosmetics",
-      "identity": "0x506c61796572436f736d6574696373",
-      "owners": [
-        "settlement"
-      ],
-      "scope": "game",
-      "keys": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        },
-        {
-          "name": "player",
-          "type": "core::starknet::contract_address::ContractAddress",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "attributes",
-          "type": "core::array::Span::<core::integer::u128>",
-          "id": "0x61747472696275746573",
-          "feltLength": null
-        }
-      ],
-      "keyLength": 2,
-      "valueLength": null,
-      "observation": {
-        "domain": "realm/blitz",
-        "fields": {
-          "attributes": "attributes"
         }
       }
     },
@@ -12274,6 +12222,12 @@
           "feltLength": 1
         },
         {
+          "name": "ready",
+          "type": "core::bool",
+          "id": "0x7265616479",
+          "feltLength": 1
+        },
+        {
           "name": "dev_mode_on",
           "type": "core::bool",
           "id": "0x6465765f6d6f64655f6f6e",
@@ -12317,7 +12271,7 @@
         }
       ],
       "keyLength": 1,
-      "valueLength": 13
+      "valueLength": 14
     },
     {
       "name": "SliceRules",
@@ -13232,16 +13186,6 @@
         {
           "name": "snapshot",
           "type": "@core::array::Array::<world_native::resources::ResourceRule>"
-        }
-      ]
-    },
-    "core::array::Span::<world_native::settlement::AcceptedCosmetic>": {
-      "type": "struct",
-      "name": "core::array::Span::<world_native::settlement::AcceptedCosmetic>",
-      "members": [
-        {
-          "name": "snapshot",
-          "type": "@core::array::Array::<world_native::settlement::AcceptedCosmetic>"
         }
       ]
     },
@@ -14576,8 +14520,8 @@
           "type": "core::integer::u32"
         },
         {
-          "name": "SettleBlitz",
-          "type": "world_native::settlement::SettleBlitz"
+          "name": "SettleBlitzRoster",
+          "type": "()"
         },
         {
           "name": "ProvisionRealm",
@@ -15289,6 +15233,10 @@
         },
         {
           "name": "settled",
+          "type": "core::bool"
+        },
+        {
+          "name": "ready",
           "type": "core::bool"
         },
         {
@@ -16596,18 +16544,6 @@
           "type": "core::integer::u8"
         },
         {
-          "name": "cosmetic_limit",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "cosmetic_collection",
-          "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
-          "name": "cosmetic_timelock",
-          "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
           "name": "realms",
           "type": "world_native::settlement::RealmGrants"
         },
@@ -17785,38 +17721,6 @@
         }
       ]
     },
-    "world_native::settlement::AcceptedCosmetic": {
-      "type": "struct",
-      "name": "world_native::settlement::AcceptedCosmetic",
-      "members": [
-        {
-          "name": "token_id",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "owner",
-          "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
-          "name": "attributes",
-          "type": "core::integer::u128"
-        }
-      ]
-    },
-    "world_native::settlement::CosmeticsKey": {
-      "type": "struct",
-      "name": "world_native::settlement::CosmeticsKey",
-      "members": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "player",
-          "type": "core::starknet::contract_address::ContractAddress"
-        }
-      ]
-    },
     "world_native::settlement::EntryEntitlement": {
       "type": "struct",
       "name": "world_native::settlement::EntryEntitlement",
@@ -17854,16 +17758,6 @@
         {
           "name": "owner",
           "type": "core::starknet::contract_address::ContractAddress"
-        }
-      ]
-    },
-    "world_native::settlement::PlayerCosmetics": {
-      "type": "struct",
-      "name": "world_native::settlement::PlayerCosmetics",
-      "members": [
-        {
-          "name": "attributes",
-          "type": "core::array::Span::<core::integer::u128>"
         }
       ]
     },
@@ -17914,58 +17808,6 @@
         {
           "name": "realm_resources",
           "type": "core::array::Span::<core::integer::u8>"
-        }
-      ]
-    },
-    "world_native::settlement::SettleBlitz": {
-      "type": "struct",
-      "name": "world_native::settlement::SettleBlitz",
-      "members": [
-        {
-          "name": "name",
-          "type": "core::felt252"
-        },
-        {
-          "name": "cosmetics_block_hash",
-          "type": "core::felt252"
-        },
-        {
-          "name": "cosmetics_block_number",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "cosmetics",
-          "type": "core::array::Span::<world_native::settlement::AcceptedCosmetic>"
-        },
-        {
-          "name": "grant_starting_troops",
-          "type": "core::bool"
-        }
-      ]
-    },
-    "world_native::settlement::SettlementAdmission": {
-      "type": "struct",
-      "name": "world_native::settlement::SettlementAdmission",
-      "members": [
-        {
-          "name": "owner",
-          "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
-          "name": "collection",
-          "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
-          "name": "timelock",
-          "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
-          "name": "cosmetic_limit",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "game_end",
-          "type": "core::integer::u64"
         }
       ]
     },
@@ -18058,18 +17900,6 @@
         {
           "name": "reward_profile",
           "type": "core::integer::u8"
-        },
-        {
-          "name": "cosmetic_limit",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "cosmetic_collection",
-          "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
-          "name": "cosmetic_timelock",
-          "type": "core::starknet::contract_address::ContractAddress"
         }
       ]
     },
@@ -18854,5 +18684,5 @@
       ]
     }
   },
-  "identity": "505d71569d164a0a5b3bb09a3716977e04a0c83f23a75a7b50ee5ad07774ffaa"
+  "identity": "c23246ee079783b03c09431bfbc8bf2dd682d958406a7cb5343019d7c5bd1125"
 }

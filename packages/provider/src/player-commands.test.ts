@@ -181,11 +181,6 @@ const commandCases = [
   ["update_whitelist", { address: "0x123", whitelist: true }, ["SetGuildWhitelist"]],
   ["remove_guild_member", { player_address_to_remove: "0x123" }, ["RemoveGuildMember"]],
   ["disband_guild", { calls: [{ address: "0x123" }] }, ["RemoveGuildMember"]],
-  [
-    "settle_blitz",
-    { name: "Realm", cosmeticsBlockHash: 0, cosmeticsBlockNumber: 0, cosmetics: [], grantStartingTroops: true },
-    ["SettleBlitz"],
-  ],
   ["settle_season", { name: "Realm" }, ["SettleSeason"]],
   ["settle_village", { passId: 1, connectedRealmEntityId: 2 }, ["SettleVillage"]],
   [

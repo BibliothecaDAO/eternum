@@ -16,6 +16,7 @@ import type { GameChain as Chain } from "@realms-world/chain";
 import { useQueries } from "@tanstack/react-query";
 
 export interface WorldConfigMeta {
+  ready: boolean;
   mode: ResolvedGameMode;
   // The directory world this meta belongs to — downstream flows pick their
   // deployment (Herald, contract map) with it.
@@ -97,6 +98,7 @@ const emptyWorldConfigMeta = (): WorldConfigMeta => ({
   registrationStartAt: null,
   registrationEndAt: null,
   devModeOn: false,
+  ready: false,
   isPlayerRegistered: null,
   hasPlayerSettledRealm: null,
   settledPlayersCount: null,
@@ -106,6 +108,7 @@ const emptyWorldConfigMeta = (): WorldConfigMeta => ({
 
 const applyDirectoryGame = (meta: WorldConfigMeta, game: HeraldGameDirectoryEntry): void => {
   meta.gameId = game.game_id;
+  meta.ready = game.ready;
   meta.mode = game.mode ?? "unknown";
   meta.startSettlingAt = game.clock.start_settling_at;
   meta.startMainAt = game.clock.start_main_at;

@@ -167,7 +167,16 @@ pub mod ResourcesDomain {
         ) -> u128 {
             self.assert_resource_settlement_domain();
             let rule = self.rule(key.game_id, resource_type);
-            self.resources.grant_resource(key, resource_type, amount, rule.unit_weight, timestamp.try_into().unwrap())
+            self
+                .resources
+                .grant_resource(
+                    key,
+                    resource_type,
+                    amount,
+                    rule.unit_weight,
+                    timestamp.try_into().unwrap(),
+                    self.production_start(key.game_id),
+                )
         }
         fn spend_resource(ref self: ContractState, key: ResourceKey, resource_type: u8, amount: u128, timestamp: u64) {
             self.assert_resource_settlement_domain();
@@ -183,6 +192,7 @@ pub mod ResourcesDomain {
                     rate,
                     self.rule(key.game_id, resource_type).unit_weight,
                     timestamp.try_into().unwrap(),
+                    self.production_start(key.game_id),
                 );
         }
         fn change_structure_capacity(ref self: ContractState, key: ResourceKey, amount: u128, adding: bool) {
@@ -196,7 +206,15 @@ pub mod ResourcesDomain {
             let rule = self.rule(key.game_id, resource_type);
             self
                 .resources
-                .start_production(key, resource_type, rate, output, rule.unit_weight, timestamp.try_into().unwrap());
+                .start_production(
+                    key,
+                    resource_type,
+                    rate,
+                    output,
+                    rule.unit_weight,
+                    timestamp.try_into().unwrap(),
+                    self.production_start(key.game_id),
+                );
         }
     }
     #[abi(embed_v0)]
@@ -255,7 +273,16 @@ pub mod ResourcesDomain {
         ) {
             assert!(get_caller_address() == self.lifecycle.require_active().map, "only map domain");
             let rule = self.rule(key.game_id, resource_type);
-            self.resources.grant_resource(key, resource_type, amount, rule.unit_weight, timestamp.try_into().unwrap());
+            self
+                .resources
+                .grant_resource(
+                    key,
+                    resource_type,
+                    amount,
+                    rule.unit_weight,
+                    timestamp.try_into().unwrap(),
+                    self.production_start(key.game_id),
+                );
         }
     }
     #[abi(embed_v0)]
@@ -434,6 +461,7 @@ pub mod ResourcesDomain {
             let arrival = self.arrivals.read(key);
             let count = core::cmp::min(command.resource_count.into(), arrival.resources.len());
             let delivered = arrival.resources.slice(0, count);
+            let start_at = self.production_start(game_id);
             for resource in delivered {
                 let rule = self.rule(game_id, *resource.resource_type);
                 self
@@ -444,6 +472,7 @@ pub mod ResourcesDomain {
                         *resource.amount,
                         rule.unit_weight,
                         context.timestamp.try_into().unwrap(),
+                        start_at,
                     );
             }
             self.arrivals.remove_prefix(key, count);
@@ -616,12 +645,15 @@ pub mod ResourcesDomain {
             assert_playing(self.game_dispatcher().game(game_id), context.timestamp);
             let key = ResourceKey { game_id, entity_id: structure_id };
             assert!(self.structure_owner(key) == actor, "actor does not own structure");
+            let start_at = self.production_start(game_id);
             for resource_type in 1_u8..59 {
                 if resource_type < 39 || resource_type > 56 {
                     let rule = self.rule(game_id, resource_type);
                     self
                         .resources
-                        .settle_resource(key, resource_type, rule.unit_weight, context.timestamp.try_into().unwrap());
+                        .settle_resource(
+                            key, resource_type, rule.unit_weight, context.timestamp.try_into().unwrap(), start_at,
+                        );
                 }
             }
         }
@@ -698,6 +730,7 @@ pub mod ResourcesDomain {
                     output,
                     self.rule(key.game_id, resource_type).unit_weight,
                     timestamp.try_into().unwrap(),
+                    self.production_start(key.game_id),
                 );
             self
                 .emit_resource_story(
@@ -734,6 +767,14 @@ pub mod ResourcesDomain {
                 get_caller_address() == self.lifecycle.require_active().season, "only authenticated command domain",
             );
             crate::game::assert_main_with_grace(self.game_dispatcher().game(game_id), timestamp);
+        }
+        fn production_start(self: @ContractState, game_id: u32) -> u32 {
+            let games = self.game_dispatcher();
+            if games.rules(game_id).blitz_mode_on {
+                games.game(game_id).start_main_at.try_into().unwrap()
+            } else {
+                0
+            }
         }
         fn game_dispatcher(self: @ContractState) -> IGameDispatcher {
             IGameDispatcher { contract_address: self.lifecycle.require_active().season }
@@ -856,6 +897,7 @@ pub mod ResourcesDomain {
             timestamp: u64,
         ) -> u128 {
             let mut weight = 0;
+            let start_at = self.production_start(from.game_id);
             for resource in resources {
                 let rule = self.rule(from.game_id, *resource.resource_type);
                 weight += *resource.amount * rule.unit_weight;
@@ -867,6 +909,7 @@ pub mod ResourcesDomain {
                         *resource.amount,
                         rule.unit_weight,
                         timestamp.try_into().unwrap(),
+                        start_at,
                     );
             }
             weight
@@ -877,6 +920,7 @@ pub mod ResourcesDomain {
             crate::resources::assert_unique_resources(command.resources);
             let from = ResourceKey { game_id, entity_id: command.from_entity_id };
             let to = ResourceKey { game_id, entity_id: command.to_entity_id };
+            let start_at = self.production_start(game_id);
             for resource in command.resources {
                 let rule = self.rule(game_id, *resource.resource_type);
                 self
@@ -887,11 +931,17 @@ pub mod ResourcesDomain {
                         *resource.amount,
                         rule.unit_weight,
                         timestamp.try_into().unwrap(),
+                        start_at,
                     );
                 self
                     .resources
                     .grant_resource(
-                        to, *resource.resource_type, *resource.amount, rule.unit_weight, timestamp.try_into().unwrap(),
+                        to,
+                        *resource.resource_type,
+                        *resource.amount,
+                        rule.unit_weight,
+                        timestamp.try_into().unwrap(),
+                        start_at,
                     );
             }
             let recipient = self.structure_owner(to);
@@ -916,7 +966,16 @@ pub mod ResourcesDomain {
         }
         fn spend(ref self: ContractState, key: ResourceKey, resource_type: u8, amount: u128, timestamp: u64) {
             let rule = self.rule(key.game_id, resource_type);
-            self.resources.spend_resource(key, resource_type, amount, rule.unit_weight, timestamp.try_into().unwrap());
+            self
+                .resources
+                .spend_resource(
+                    key,
+                    resource_type,
+                    amount,
+                    rule.unit_weight,
+                    timestamp.try_into().unwrap(),
+                    self.production_start(key.game_id),
+                );
         }
         fn emit_resource_story(
             ref self: ContractState, key: ResourceKey, actor: ContractAddress, story: Story, timestamp: u64,

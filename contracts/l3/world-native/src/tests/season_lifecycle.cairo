@@ -239,14 +239,18 @@ fn nine_completed_hyperstructures() -> (super::Deployment, Array<crate::resource
 }
 
 pub fn execute_batch(d: super::Deployment, command: Command, timestamp: u64, expected: u64) {
+    execute_batch_in_game(d, 3, command, timestamp, expected);
+}
+
+pub fn execute_batch_in_game(d: super::Deployment, game_id: u32, command: Command, timestamp: u64, expected: u64) {
     let nonce = crate::season::ISeasonDispatcherTrait::next_nonce(
-        crate::season::ISeasonDispatcher { contract_address: d.peers.season }, 3, d.actor,
+        crate::season::ISeasonDispatcher { contract_address: d.peers.season }, game_id, d.actor,
     );
     let mut spy = snforge_std::spy_events();
-    assert!(execute(d, command, timestamp));
+    assert!(super::resource_commands::execute_in_game(d, game_id, command, timestamp, timestamp));
     let mut count = 0;
     for (_, event) in spy.get_events().emitted_by(d.peers.season).events.span() {
-        if event.keys.span() == array![selector!("BatchProgress"), 3].span() {
+        if event.keys.span() == array![selector!("BatchProgress"), game_id.into()].span() {
             assert_eq!(event.data.span(), array![d.actor.into(), nonce.into(), expected.into()].span());
             count += 1;
         }

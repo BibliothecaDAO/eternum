@@ -16,7 +16,7 @@ import {
   type Direction,
   type ID,
 } from "@bibliothecadao/types";
-import { shortString, type AccountInterface } from "starknet";
+import { type AccountInterface } from "starknet";
 
 import type { RunnerGame } from "./game";
 
@@ -40,15 +40,11 @@ const T1_TROOP_TYPES: readonly TroopType[] = [TroopType.Knight, TroopType.Paladi
 const MODEL_UPDATE_TIMEOUT_MS = 30_000;
 
 /**
- * Settles, provisions, and fields one explorer per structure, doing only what Herald shows is still missing: a runner
+ * Waits for its assigned realms, provisions, and fields one explorer per structure from Herald facts: a runner
  * that restarts mid-way resumes from the rows, not from a local checkpoint.
  */
-export async function ensureSettled(
-  game: RunnerGame,
-  signer: AccountInterface,
-  username: string,
-): Promise<SettledEmpire> {
-  const structures = await ensureSettlement(game, signer, username);
+export async function ensureSettled(game: RunnerGame, signer: AccountInterface): Promise<SettledEmpire> {
+  const structures = await ensureSettlement(game, signer);
   const spawns = await waitForStructureSpawns(game.client, structures);
   await ensureProvisioned(game, signer, structures);
   const missingExplorers = structures.filter((id) => game.client.views.explorers(id).length === 0);
@@ -58,17 +54,9 @@ export async function ensureSettled(
   return { structures, explorers };
 }
 
-const ensureSettlement = async (game: RunnerGame, signer: AccountInterface, username: string): Promise<ID[]> => {
+const ensureSettlement = async (game: RunnerGame, signer: AccountInterface): Promise<ID[]> => {
   const settled = settledStructureIds(game.client, signer.address);
   if (settled) return settled;
-  await game.client.setup.systemCalls.settle_blitz({
-    signer,
-    name: shortString.encodeShortString(username),
-    cosmeticsBlockHash: "0x0",
-    cosmeticsBlockNumber: 0,
-    cosmetics: [],
-    grantStartingTroops: true,
-  });
   return waitForWorldState(
     game.client,
     () => settledStructureIds(game.client, signer.address),
@@ -114,6 +102,7 @@ const ensureExplorers = async (
 // Native facts
 
 const settledStructureIds = (client: GameClient, player: string): ID[] | undefined => {
+  if (!client.setup.store.get("GameRegistry", { game_id: client.gameId })?.ready) return undefined;
   const entered = [...client.setup.store.inGame("PlayerEntry", client.gameId)].some(
     (entry) => entry.player === BigInt(player),
   );
@@ -190,5 +179,3 @@ const chooseOutwardDirection = (coord: Coord): Direction => {
     .map((hex) => ({ direction: hex.direction, distance: distanceFromCenter(hex) }))
     .sort((left, right) => right.distance - left.distance || left.direction - right.direction)[0]!.direction;
 };
-
-export const defaultUsername = (signerAddress: string): string => `agent-${signerAddress.slice(-6)}`;
