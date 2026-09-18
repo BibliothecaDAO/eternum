@@ -19,8 +19,14 @@ interface BlockStats {
   closeBlockMs: MetricSummary;
   dbWriteMs: { max: number | null };
   merklizationMs: { max: number | null };
+  executionAmplification: {
+    attempts: number | null;
+    committed: number | null;
+    intervals: number;
+    resets: number;
+    attemptsPerCommitted: number | null;
+  };
   mempool: {
-    capacity: number | null;
     lastObservedReadyTransactions: number | null;
     lastObservedTransactions: number | null;
     maxReadyTransactions: number | null;

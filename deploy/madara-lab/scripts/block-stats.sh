@@ -10,12 +10,16 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONTAINER="${MADARA_CONTAINER:-madara-lab}"
 DOCKER_ARGS=(logs "$CONTAINER")
 PYTHON_ARGS=()
+if [[ -n "${MADARA_METRICS_FILE:-}" ]]; then
+  PYTHON_ARGS+=(--metrics "$MADARA_METRICS_FILE")
+fi
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --since|--until)
       [[ $# -ge 2 ]] || { echo "missing value for $1" >&2; exit 2; }
       DOCKER_ARGS+=("$1" "$2")
+      PYTHON_ARGS+=("$1" "$2")
       shift 2
       ;;
     --json)
@@ -28,6 +32,7 @@ while [[ $# -gt 0 ]]; do
         exit 2
       fi
       DOCKER_ARGS+=(--since "$1")
+      PYTHON_ARGS+=(--since "$1")
       shift
       ;;
   esac

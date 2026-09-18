@@ -1,3 +1,6 @@
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { statusSubscription } from "./test-observations";
 import type { HarnessProvider } from "./provider";
 import { afterEach, describe, expect, it, mock, spyOn } from "bun:test";
@@ -354,14 +357,12 @@ describe("Madara harness reporting", () => {
   });
 
   it("parses block statistics as structured nearest-rank evidence", async () => {
-    const rows = [blockRow(10, 1, 10), mempoolRow(7, 5), blockRow(11, 3, 30), mempoolRow(2, 1)];
-    const process = Bun.spawn(["python3", `${import.meta.dir}/../scripts/block-stats.py`, "--json"], {
-      stdin: new Blob([rows.map((row) => JSON.stringify(row)).join("\n")]),
-      stdout: "pipe",
-    });
-    const output = await new Response(process.stdout).json();
-    expect(await process.exited).toBe(0);
+    const output = await readBlockStats(
+      [blockRow(10, 1, 10), blockRow(11, 3, 30)],
+      [metricsRow(1, 7, 5, 100, 90), metricsRow(2, 2, 1, 120, 100)],
+    );
     expect(output).toMatchObject({
+      executionAmplification: { attempts: 20, committed: 10, attemptsPerCommitted: 2, resets: 0 },
       blocks: { count: 2, busy: 2, first: 10, last: 11 },
       transactions: { executed: 4, reverted: 0, rejected: 0 },
       transactionsPerBusyBlock: { p50: 1, max: 3 },
@@ -376,6 +377,26 @@ describe("Madara harness reporting", () => {
         mempoolMaxTransactions: 7,
       },
     });
+  });
+  it("separates counter resets and never divides lifetime totals or an empty interval", async () => {
+    const reset = await readBlockStats(
+      [],
+      [
+        metricsRow(1, 0, 0, 100, 90),
+        metricsRow(2, 0, 0, 105, 95),
+        metricsRow(3, 0, 0, 2, 1, 2),
+        metricsRow(4, 0, 0, 8, 3, 2),
+      ],
+    );
+    expect(reset.executionAmplification).toEqual({
+      intervals: 2,
+      resets: 1,
+      attempts: 11,
+      committed: 7,
+      attemptsPerCommitted: 11 / 7,
+    });
+    const idle = await readBlockStats([], [metricsRow(1, 0, 0, 100, 90), metricsRow(2, 0, 0, 100, 90)]);
+    expect(idle.executionAmplification.attemptsPerCommitted).toBeNull();
   });
 });
 
@@ -630,10 +651,49 @@ function blockRow(blockNumber: number, transactions: number, blockProductionMs: 
   };
 }
 
-function mempoolRow(transactions: number, ready: number) {
+function metricsRow(time: number, transactions: number, ready: number, attempts: number, committed: number, start = 1) {
+  const metric = (name: string, value: number, counter = false) => ({
+    name,
+    [counter ? "sum" : "gauge"]: {
+      dataPoints: [{ asInt: String(value), timeUnixNano: String(time), startTimeUnixNano: String(start) }],
+    },
+  });
   return {
-    message: `Inserted 1 transaction to the mempool [${transactions}/10000 transaction(s), ${transactions} account(s), ${ready} ready]`,
+    resourceMetrics: [
+      {
+        scopeMetrics: [
+          {
+            metrics: [
+              metric("mempool_current_size", transactions),
+              metric("mempool_ready_transactions", ready),
+              metric("blockifier_execution_attempts_total", attempts, true),
+              metric("blockifier_committed_transactions_total", committed, true),
+            ],
+          },
+        ],
+      },
+    ],
   };
+}
+
+async function readBlockStats(rows: unknown[], metrics: unknown[]) {
+  const directory = await mkdtemp(join(tmpdir(), "node-metrics-"));
+  try {
+    const metricsPath = join(directory, "metrics.jsonl");
+    await writeFile(metricsPath, metrics.map((row) => JSON.stringify(row)).join("\n"));
+    const child = Bun.spawn(
+      ["python3", `${import.meta.dir}/../scripts/block-stats.py`, "--json", "--metrics", metricsPath],
+      {
+        stdin: new Blob([rows.map((row) => JSON.stringify(row)).join("\n")]),
+        stdout: "pipe",
+      },
+    );
+    const output = await new Response(child.stdout).json();
+    expect(await child.exited).toBe(0);
+    return output;
+  } finally {
+    await rm(directory, { recursive: true });
+  }
 }
 
 afterEach(() => mock.restore());
