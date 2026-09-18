@@ -1,10 +1,12 @@
 import { isGameEnvironmentId, type GameEnvironmentId } from "../../../config/shared/game-environments";
-import { Effect, Result, Schema } from "effect";
-import { Hono, type Context, type MiddlewareHandler } from "hono";
+import { Effect, Schema } from "effect";
+import { Hono, type Context } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import type { LaunchServiceConfig } from "./config";
-import type { IdentityResolver } from "./auth";
+import { requireIdentity, requireLauncher, type IdentityResolver, type LaunchAppEnv } from "./auth";
+import { createSlotRoutes } from "./slot-routes";
+import type { SlotStore } from "./slots";
 import { toFactoryRunRecord } from "./model";
 import {
   CreateGameRequestSchema,
@@ -15,46 +17,12 @@ import {
 } from "./schemas";
 import type { LaunchServiceStore } from "./store";
 
-type AppEnv = {
-  Variables: {
-    launcherAddress?: string;
-  };
-};
-
 interface LaunchAppDependencies {
   config: Pick<LaunchServiceConfig, "allowedOrigins" | "allowAnyLauncher" | "launcherAllowlist">;
   identity: IdentityResolver;
   store: LaunchServiceStore;
+  slots: SlotStore;
 }
-
-const isAllowedOrigin = (origin: string | undefined, origins: ReadonlySet<string>): origin is string =>
-  Boolean(origin && origins.has(origin));
-
-const requireLauncher =
-  (dependencies: LaunchAppDependencies): MiddlewareHandler<AppEnv> =>
-  async (context, next) => {
-    if (context.req.method === "GET" || context.req.method === "OPTIONS") {
-      await next();
-      return;
-    }
-
-    if (!isAllowedOrigin(context.req.header("origin"), dependencies.config.allowedOrigins)) {
-      return context.json({ error: "Launch origin is not allowed." }, 403);
-    }
-
-    const cookie = context.req.header("cookie");
-    if (!cookie) return context.json({ error: "Authenticated Realms session required." }, 401);
-
-    const resolved = await Effect.runPromise(Effect.result(dependencies.identity.resolve(cookie)));
-    if (Result.isFailure(resolved)) return context.json({ error: "Identity service unavailable." }, 503);
-    if (!resolved.success) return context.json({ error: "Authenticated Realms session required." }, 401);
-    if (!dependencies.config.allowAnyLauncher && !dependencies.config.launcherAllowlist.has(resolved.success.address)) {
-      return context.json({ error: "This identity is not allowed to launch games." }, 403);
-    }
-
-    context.set("launcherAddress", resolved.success.address);
-    await next();
-  };
 
 const decodeBody = async <A>(context: Context, schema: Schema.ConstraintDecoder<A, never>): Promise<A> => {
   const payload = await context.req.json();
@@ -107,7 +75,7 @@ const cancelRun = async (context: Context, store: LaunchServiceStore, kind: Laun
 };
 
 export const createLaunchApp = (dependencies: LaunchAppDependencies) => {
-  const app = new Hono<AppEnv>();
+  const app = new Hono<LaunchAppEnv>();
   app.use("*", logger());
   app.use(
     "/api/*",
@@ -118,7 +86,9 @@ export const createLaunchApp = (dependencies: LaunchAppDependencies) => {
       credentials: true,
     }),
   );
-  app.use("/api/factory/*", requireLauncher(dependencies));
+  app.use("/api/*", requireIdentity(dependencies.identity, dependencies.config));
+  app.use("/api/factory/*", requireLauncher(dependencies.config));
+  app.route("/api/slots", createSlotRoutes(dependencies.slots, dependencies.config));
 
   app.get("/health", async (context) => {
     try {

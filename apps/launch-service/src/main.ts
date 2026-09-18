@@ -6,6 +6,7 @@ import { createLaunchApp } from "./app";
 import { createIdentityResolver } from "./auth";
 import { readLaunchServiceConfig } from "./config";
 import { createLaunchServiceLayer } from "./layers";
+import { PostgresSlotStore } from "./slot-store";
 import { PostgresLaunchStore } from "./store";
 import { launchWorkerLoop } from "./worker";
 
@@ -35,11 +36,12 @@ const program = Effect.scoped(
       (database) => Effect.promise(() => database.close()),
     );
 
+    const slots = new PostgresSlotStore(store.pool);
     const identity = createIdentityResolver(config.identityUrl);
     const services = createLaunchServiceLayer(config, store, identity);
-    yield* Effect.forkScoped(launchWorkerLoop(config.leaseMs, config.pollMs).pipe(Effect.provide(services)));
+    yield* Effect.forkScoped(launchWorkerLoop(config.leaseMs, config.pollMs, slots).pipe(Effect.provide(services)));
 
-    const app = createLaunchApp({ config, identity, store });
+    const app = createLaunchApp({ config, identity, store, slots });
     const server = yield* Effect.acquireRelease(
       Effect.sync(() =>
         Bun.serve({

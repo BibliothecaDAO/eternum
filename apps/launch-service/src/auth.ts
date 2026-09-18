@@ -1,4 +1,6 @@
-import { Context, Effect, Layer, Schema } from "effect";
+import { Context, Effect, Layer, Result, Schema } from "effect";
+import type { MiddlewareHandler } from "hono";
+import type { LaunchServiceConfig } from "./config";
 import { normalizeAddress } from "./address";
 import { BoundaryDecodeError, IdentityUnavailable } from "./errors";
 
@@ -9,6 +11,35 @@ export interface LauncherIdentity {
 export interface IdentityResolver {
   resolve(cookie: string): Effect.Effect<LauncherIdentity | null, IdentityUnavailable | BoundaryDecodeError>;
 }
+
+export type LaunchAppEnv = { Variables: { launcherAddress: string } };
+export type LaunchAccess = Pick<LaunchServiceConfig, "allowedOrigins" | "allowAnyLauncher" | "launcherAllowlist">;
+
+export const requireIdentity =
+  (identity: IdentityResolver, config: LaunchAccess): MiddlewareHandler<LaunchAppEnv> =>
+  async (context, next) => {
+    if (context.req.method === "GET" || context.req.method === "OPTIONS") return next();
+    const origin = context.req.header("origin");
+    if (!origin || !config.allowedOrigins.has(origin))
+      return context.json({ error: "Launch origin is not allowed." }, 403);
+    const cookie = context.req.header("cookie");
+    if (!cookie) return context.json({ error: "Authenticated Realms session required." }, 401);
+    const result = await Effect.runPromise(Effect.result(identity.resolve(cookie)));
+    if (Result.isFailure(result)) return context.json({ error: "Identity service unavailable." }, 503);
+    if (!result.success) return context.json({ error: "Authenticated Realms session required." }, 401);
+    context.set("launcherAddress", result.success.address);
+    return next();
+  };
+
+export const requireLauncher =
+  (config: LaunchAccess): MiddlewareHandler<LaunchAppEnv> =>
+  async (context, next) => {
+    if (context.req.method === "GET" || context.req.method === "OPTIONS") return next();
+    if (!config.allowAnyLauncher && !config.launcherAllowlist.has(context.get("launcherAddress"))) {
+      return context.json({ error: "This identity is not allowed to launch games." }, 403);
+    }
+    return next();
+  };
 
 export class VerifiedIdentity extends Context.Service<VerifiedIdentity, IdentityResolver>()(
   "launch/VerifiedIdentity",

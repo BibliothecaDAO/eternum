@@ -1,3 +1,4 @@
+import type { SlotStore } from "./slots";
 import { Duration, Effect, Result } from "effect";
 import { LaunchExecutor } from "./executor";
 import { LaunchExecutionFailure } from "./errors";
@@ -61,9 +62,10 @@ export const processNextLaunch = (leaseMs: number) =>
     return true;
   });
 
-export const launchWorkerLoop = (leaseMs: number, pollMs: number) =>
+export const launchWorkerLoop = (leaseMs: number, pollMs: number, slots: SlotStore) =>
   Effect.forever(
-    processNextLaunch(leaseMs).pipe(
+    databaseOperation("freeze playtest roster", () => slots.freezeNextDue()).pipe(
+      Effect.andThen(processNextLaunch(leaseMs)),
       Effect.catchCause((cause) => Effect.logError("launch_worker_iteration_failed", { cause: String(cause) })),
       Effect.andThen(Effect.sleep(Duration.millis(pollMs))),
     ),

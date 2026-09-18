@@ -1,8 +1,9 @@
 import { Effect } from "effect";
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 import { createLaunchApp } from "./app";
 import type { IdentityResolver } from "./auth";
 import { InMemoryLaunchStore } from "./test-store";
+import type { SlotStore } from "./slots";
 
 const ALLOWED_ORIGIN = "https://play.realms.party";
 const ALLOWED_ADDRESS = "0x123";
@@ -11,7 +12,20 @@ const identity = (address: string | null): IdentityResolver => ({
   resolve: () => Effect.succeed(address ? { address } : null),
 });
 
-const createApp = (resolver: IdentityResolver, store = new InMemoryLaunchStore(), allowAnyLauncher = false) => ({
+const slotStore = (): SlotStore => ({
+  create: vi.fn(),
+  list: vi.fn().mockResolvedValue([]),
+  register: vi.fn(),
+  freeze: vi.fn(),
+  freezeNextDue: vi.fn(),
+});
+
+const createApp = (
+  resolver: IdentityResolver,
+  store = new InMemoryLaunchStore(),
+  allowAnyLauncher = false,
+  slots = slotStore(),
+) => ({
   app: createLaunchApp({
     config: {
       allowedOrigins: new Set([ALLOWED_ORIGIN]),
@@ -20,8 +34,70 @@ const createApp = (resolver: IdentityResolver, store = new InMemoryLaunchStore()
     },
     identity: resolver,
     store,
+    slots,
   }),
   store,
+  slots,
+});
+
+describe("free slot registration", () => {
+  const registerRequest = () =>
+    new Request("http://launch.test/api/slots/friday/register", {
+      method: "POST",
+      headers: {
+        origin: ALLOWED_ORIGIN,
+        cookie: "better-auth.session_token=valid",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ owner: "0xdead", account: "0xbeef" }),
+    });
+
+  test("binds registration to the verified identity, without requiring launcher privileges", async () => {
+    const { app, slots } = createApp(identity("0x456"));
+    const response = await app.request(registerRequest());
+    expect(response.status).toBe(200);
+    expect(slots.register).toHaveBeenCalledTimes(1);
+    expect(slots.register).toHaveBeenCalledWith("friday", "0x456");
+  });
+
+  test("does not register unauthenticated or cross-origin requests", async () => {
+    const { app, slots } = createApp(identity(null));
+    expect((await app.request(registerRequest())).status).toBe(401);
+    const request = registerRequest();
+    request.headers.set("origin", "https://untrusted.example");
+    expect((await app.request(request)).status).toBe(403);
+    expect(slots.register).not.toHaveBeenCalled();
+  });
+
+  test("only launchers can create or close slots", async () => {
+    const { app, slots } = createApp(identity("0x456"));
+    for (const path of ["/api/slots", "/api/slots/friday/close"]) {
+      const response = await app.request(
+        new Request(`http://launch.test${path}`, {
+          method: "POST",
+          headers: registerRequest().headers,
+          body: JSON.stringify({ name: "friday", closesAt: "2099-01-01T00:00:00Z" }),
+        }),
+      );
+      expect(response.status).toBe(403);
+    }
+    expect(slots.create).not.toHaveBeenCalled();
+    expect(slots.freeze).not.toHaveBeenCalled();
+  });
+
+  test("slot reads need no wallet and malformed schedules do not reach storage", async () => {
+    const { app, slots } = createApp(identity(ALLOWED_ADDRESS));
+    expect(await (await app.request("http://launch.test/api/slots")).json()).toEqual({ slots: [] });
+    const response = await app.request(
+      new Request("http://launch.test/api/slots", {
+        method: "POST",
+        headers: registerRequest().headers,
+        body: JSON.stringify({ name: "friday", closesAt: "not a date" }),
+      }),
+    );
+    expect(response.status).toBe(400);
+    expect(slots.create).not.toHaveBeenCalled();
+  });
 });
 
 const launchRequest = () =>

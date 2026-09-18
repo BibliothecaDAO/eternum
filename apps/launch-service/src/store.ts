@@ -16,6 +16,7 @@ import { applyDurableLaunchDefaults, type LaunchJobRequest, type LaunchKind } fr
 const migrationUrls = [
   new URL("../migrations/0001_launch_runs.sql", import.meta.url),
   new URL("../migrations/0002_launch_environments.sql", import.meta.url),
+  new URL("../migrations/0003_playtest_slots.sql", import.meta.url),
 ];
 
 interface LaunchRunRow extends QueryResultRow {
