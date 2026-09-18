@@ -1,8 +1,9 @@
 #!/usr/bin/env bun
+import type { NativeCommand } from "../../packages/provider/src/native-command";
 import assert from "node:assert/strict";
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
-import { CallData, CairoOption, CairoOptionVariant, RpcProvider } from "starknet";
+import { CallData, RpcProvider } from "starknet";
 import { createMadaraAccount } from "../../config/deployer/clean/shared/madara-account";
 import { waitForSuccess } from "../../config/deployer/clean/shared/declare";
 import { nativeDomainAbi } from "../../config/deployer/clean/world/native/manifest";
@@ -65,9 +66,9 @@ async function explorer(id: number) {
   return found;
 }
 
-async function execute(command: string, args: object) {
+async function execute(command: NativeCommand) {
   const admission = await admissionFor(provider, fixture);
-  const { action, ...request } = signedRequest(fixture, admission, commandArguments(fixture, command, args));
+  const { action, ...request } = signedRequest(fixture, admission, commandArguments(fixture, command));
   const response = await fetch("http://127.0.0.1:15081/actions", {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -78,18 +79,18 @@ async function execute(command: string, args: object) {
   const accepted = await response.json();
   assert.equal(BigInt(accepted.action), BigInt(action));
   const result = await waitForOutcome(provider, fixture, "http://127.0.0.1:15081/actions", action);
-  actions.push({ action, order: result.order, command });
+  actions.push({ action, order: result.order, command: command.kind });
   writeFileSync(actionsPath, JSON.stringify(actions, null, 2) + "\n");
-  assert.equal(BigInt(result.status), 1n, `${command} rejected with ${result.reason}; preserve ticket`);
+  assert.equal(BigInt(result.status), 1n, `${command.kind} rejected with ${result.reason}; preserve ticket`);
 }
 
 async function settle(realm: number) {
   let found = await home(realm);
   if (!found) {
-    await execute("SettleSeason", {
+    await execute({ kind: "SettleSeason", value: {
       name: "0x72656865617273616c",
-      selected_realm: new CairoOption(CairoOptionVariant.Some, realm),
-    });
+      selected_realm: { kind: "Some", value: realm },
+    } });
     found = await home(realm);
   }
   assert(found, "Successful settlement did not produce a realm");
@@ -111,7 +112,7 @@ async function provisionResources(entity: number) {
     const required = BigInt(units) * 1_000_000_000n;
     return current < required ? [{ resource_type, amount: (required - current).toString() }] : [];
   });
-  if (grants.length) await execute("MintDevelopmentResources", { entity_id: entity, resources: grants });
+  if (grants.length) await execute({ kind: "MintDevelopmentResources", value: { entity_id: entity, resources: grants } });
 }
 
 function accessSpire(coord: Coord) {
@@ -143,7 +144,7 @@ for (let index = 0; index < fixture.provision.realmCount; index++) {
   await provisionResources(realm);
   assert(settled.troop_explorers.length <= 1, "Unexpected fixture explorer count");
   if (!settled.troop_explorers.length) {
-    await execute("CreateExplorer", { structure_id: realm, category: 0, tier: 0, amount: "1000000000", direction: 0 });
+    await execute({ kind: "CreateExplorer", value: { structure_id: realm, category: 0, tier: 0, amount: "1000000000", direction: 0 } });
     const created = await home(index + 1);
     assert(created, "Prepared realm disappeared during explorer creation");
     settled = created;
@@ -153,7 +154,7 @@ for (let index = 0; index < fixture.provision.realmCount; index++) {
   const troop = await explorer(id);
   if (fixture.provision.layers?.[index] === "ethereal" && !troop.coord.alt) {
     await provisionAccess(troop.coord);
-    await execute("ToggleAlternate", { explorer_id: id, spire_direction: 2 });
+    await execute({ kind: "ToggleAlternate", value: { explorer_id: id, spire_direction: 2 } });
     assert((await explorer(id)).coord.alt, "Alternate entry did not change layer");
   }
   explorers.push(id);
