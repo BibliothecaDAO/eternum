@@ -1,17 +1,12 @@
 #!/usr/bin/env python3
-"""Summarize Madara ``close_block_complete`` JSON log lines from stdin."""
+"""Summarize structured block logs and the node's OTLP metric export."""
 
 import argparse
+from datetime import datetime, timezone
 import json
 import math
 import re
 import sys
-
-
-MEMPOOL_SUMMARY = re.compile(
-    r"\[(?P<transactions>\d+)/(?P<capacity>\d+) transaction\(s\), "
-    r"(?P<accounts>\d+) account\(s\), (?P<ready>\d+) ready\]"
-)
 
 
 def percentile(values, percentile_value):
@@ -24,7 +19,6 @@ def percentile(values, percentile_value):
 
 def read_log():
     rows = []
-    mempool_samples = []
     for line in sys.stdin:
         try:
             row = json.loads(line)
@@ -32,12 +26,87 @@ def read_log():
             continue
         if row.get("message") == "close_block_complete":
             rows.append(row)
-        mempool_match = MEMPOOL_SUMMARY.search(str(row.get("message", "")))
-        if mempool_match:
-            mempool_samples.append(
-                {key: int(value) for key, value in mempool_match.groupdict().items()}
-            )
-    return rows, mempool_samples
+    return rows
+
+
+def time_bound(value):
+    if value is None:
+        return None
+    relative = re.fullmatch(r"(\d+)(s|m|h)", value)
+    if relative:
+        seconds = int(relative[1]) * {"s": 1, "m": 60, "h": 3600}[relative[2]]
+        return int((datetime.now(timezone.utc).timestamp() - seconds) * 1e9)
+    return int(datetime.fromisoformat(value.replace("Z", "+00:00")).timestamp() * 1e9)
+
+
+def read_metrics(path, since, until):
+    """Read the collector's OTLP JSON file, retaining the node's metric identities."""
+    samples = []
+    if path is None:
+        return []
+    since, until = time_bound(since), time_bound(until)
+    with open(path) as stream:
+        for line in stream:
+            for resource in json.loads(line).get("resourceMetrics", []):
+                sample = read_node_sample(resource, since, until)
+                if sample:
+                    samples.append(sample)
+    return sorted(samples, key=lambda sample: sample["timestamp"])
+
+
+def read_node_sample(resource, since, until):
+    names = {
+        "mempool_current_size": "transactions",
+        "mempool_ready_transactions": "ready",
+        "blockifier_execution_attempts_total": "attempts",
+        "blockifier_committed_transactions_total": "committed",
+    }
+    sample = {}
+    for scope in resource.get("scopeMetrics", []):
+        for metric in scope.get("metrics", []):
+            name = names.get(metric["name"])
+            if name is None:
+                continue
+            points = metric.get("gauge", metric.get("sum", {})).get("dataPoints", [])
+            for point in points:
+                timestamp = int(point["timeUnixNano"])
+                if ((since is not None and timestamp < since)
+                        or (until is not None and timestamp > until)):
+                    continue
+                sample["timestamp"] = max(sample.get("timestamp", 0), timestamp)
+                if name in sample:
+                    raise ValueError("Metrics input contains multiple node series")
+                sample[name] = int(point["asInt"])
+                if name in ("attempts", "committed"):
+                    sample[f"{name}_start"] = point["startTimeUnixNano"]
+    return sample
+
+
+def execution_amplification(samples):
+    previous = None
+    attempts = committed = intervals = resets = 0
+    for sample in samples:
+        if not all(key in sample for key in ("attempts", "committed")):
+            continue
+        if previous is not None:
+            if any(
+                sample[f"{key}_start"] != previous[f"{key}_start"]
+                or sample[key] < previous[key]
+                for key in ("attempts", "committed")
+            ):
+                resets += 1
+            else:
+                attempts += sample["attempts"] - previous["attempts"]
+                committed += sample["committed"] - previous["committed"]
+                intervals += 1
+        previous = sample
+    return {
+        "intervals": intervals,
+        "resets": resets,
+        "attempts": attempts if intervals else None,
+        "committed": committed if intervals else None,
+        "attemptsPerCommitted": attempts / committed if committed else None,
+    }
 
 
 def metric(values, include_p50=True, include_p95=True):
@@ -50,10 +119,10 @@ def metric(values, include_p50=True, include_p95=True):
 
 
 def summarize_mempool(samples):
+    samples = [sample for sample in samples if "transactions" in sample and "ready" in sample]
     if not samples:
         return {
             "samples": 0,
-            "capacity": None,
             "maxTransactions": None,
             "maxReadyTransactions": None,
             "lastObservedTransactions": None,
@@ -61,7 +130,6 @@ def summarize_mempool(samples):
         }
     return {
         "samples": len(samples),
-        "capacity": max(sample["capacity"] for sample in samples),
         "maxTransactions": max(sample["transactions"] for sample in samples),
         "maxReadyTransactions": max(sample["ready"] for sample in samples),
         "lastObservedTransactions": samples[-1]["transactions"],
@@ -87,9 +155,9 @@ def summarize_slowest_block(rows, mempool):
     }
 
 
-def summarize(rows, mempool_samples):
+def summarize(rows, node_metrics):
     busy = [row for row in rows if row["txs_executed"] > 0]
-    mempool = summarize_mempool(mempool_samples)
+    mempool = summarize_mempool(node_metrics)
     summary = {
         "blocks": {
             "count": len(rows),
@@ -125,6 +193,7 @@ def summarize(rows, mempool_samples):
             include_p95=False,
         ),
         "mempool": mempool,
+        "executionAmplification": execution_amplification(node_metrics),
     }
     summary["slowestBlock"] = summarize_slowest_block(busy or rows, mempool)
     return summary
@@ -178,9 +247,13 @@ def print_text(summary):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--json", action="store_true")
+    parser.add_argument("--metrics", help="Single-node OTLP JSON metrics exported by the collector")
+    parser.add_argument("--since")
+    parser.add_argument("--until")
     args = parser.parse_args()
-    rows, mempool_samples = read_log()
-    summary = summarize(rows, mempool_samples)
+    rows = read_log()
+    node_metrics = read_metrics(args.metrics, args.since, args.until)
+    summary = summarize(rows, node_metrics)
     if args.json:
         print(json.dumps(summary, separators=(",", ":")))
         return
