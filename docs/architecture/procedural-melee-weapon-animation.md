@@ -4,8 +4,8 @@
 
 Knights and mounted Paladins use one deterministic melee action pipeline. A loadout selects the visible weapon and
 offhand, the weapon selects an attack style, the attack style drives a shared upper-body pose solver, and one contact
-edge drives presentation effects. Cairo and RECS remain authoritative for whether an attack is legal and what damage it
-causes.
+edge drives presentation effects. Cairo and native store remain authoritative for whether an attack is legal and what
+damage it causes.
 
 The implementation is available in both development surfaces:
 
@@ -30,7 +30,7 @@ indexed or provisional battle
   -> arrow volley or melee impact
   -> optional promoted articulated actor attack
 
-Cairo / RECS battle result -----------------------> gameplay truth
+Cairo / native store battle result -----------------------> gameplay truth
 ```
 
 Presentation never writes damage, cooldown, troop count, or battle state.

@@ -5,7 +5,7 @@ Status: research and implementation proposal
 Date: 2026-08-22
 
 Scope: Three.js procedural animation, Jolt WASM collision/reaction, world-map presentation, gym tooling, and the
-existing Dojo/RECS authority model. No production code is changed by this document.
+existing native fact-store authority model. No production code is changed by this document.
 
 ## Executive decision
 
@@ -32,11 +32,11 @@ The system should have three deliberately separate responsibilities:
 1. **`ProceduralArcherController`** owns shot state and close-LOD upper-body pose.
 2. **`ArrowProjectileSystem`** owns bounded, pooled, instanced visual arrows and swept collision.
 3. **`RangedCombatPresentationCoordinator`** converts provisional attack intent, indexed battle events, and
-   authoritative RECS changes into idempotent presentation commands.
+   authoritative native store changes into idempotent presentation commands.
 
 Arrows are cosmetic witnesses of combat, not combat entities. The Cairo system decides range, damage, stamina, winner,
 and state changes; the client may predict and replay a volley but must never apply damage from a local arrow hit. This
-follows this repository's entity/event guardrail: current facts come from RECS entities, while events accelerate
+follows this repository's entity/event guardrail: current facts come from native store entities, while events accelerate
 transient flourishes ([repository AGENTS.md](../../AGENTS.md),
 [model-manifest.ts](../../packages/core/src/sync/model-manifest.ts)). It also follows the proven networking division
 described by Valve and GDC production talks: responsive local weapon presentation can be predicted while the authority
@@ -119,7 +119,7 @@ provisional world-map attack FX:
 - Worldmap consumes the indexed event for combat relationships, direction indicators, camera follow, and notifications,
   not damage ([worldmap.tsx](../../apps/game/src/three/scenes/worldmap.tsx)).
 - The authoritative `ExplorerTroops` entity update changes troop counts. `ArmyManager` derives the count delta from the
-  RECS component and plays floating damage/heal FX; removing a zero-count army drives defeat FX
+  native store component and plays floating damage/heal FX; removing a zero-count army drives defeat FX
   ([army-manager.ts](../../apps/game/src/three/managers/army-manager.ts)).
 
 This is already the correct truth hierarchy. The projectile work should extend the provisional and event-driven
@@ -143,7 +143,7 @@ presentation paths, not invent a parallel combat store.
        ├── logical swept hit proxies          └── optional Jolt impulse
        └── optional Jolt narrow-phase query
 
- ExplorerTroops / Structure RECS entity updates ─► authoritative counts,
+ ExplorerTroops / Structure native store entity updates ─► authoritative counts,
  positions, removal, defeat, and reconciliation (never written by arrows)
 ```
 
@@ -169,7 +169,7 @@ interface RangedVolleyPresentation {
 ```
 
 The coordinator resolves source/target positions and visual style once, then passes an immutable snapshot to the pose
-and projectile systems. The projectile system never reaches into RECS and never calls gameplay actions.
+and projectile systems. The projectile system never reaches into native store and never calls gameplay actions.
 
 ## A believable longbow shot cycle
 
@@ -510,7 +510,7 @@ reproduce the same visual path in one client build, but no gameplay code should 
 Jolt's own documentation says determinism requires identical mutation order/binary, cross-platform determinism needs a
 special build option, query callback ordering can vary, and callers may need to sort results
 ([Jolt determinism notes](https://github.com/jrouwe/JoltPhysics/blob/master/Docs/Architecture.md)). The npm binary's
-build flags are not a contract of Eternum gameplay. Onchain Cairo/RECS state remains the only outcome authority.
+build flags are not a contract of Eternum gameplay. Onchain Cairo/native store state remains the only outcome authority.
 
 ## Continuous collision and hit queries
 
@@ -584,8 +584,8 @@ Resolve visual response from authoritative context plus material/incidence:
   piercing.
 - **Reaction:** play a procedural flinch on a live animated actor or apply a bounded impulse-at-point to an actor
   already transitioning to ragdoll.
-- **Death:** trigger only when authoritative RECS removal/count-zero says the represented army is defeated; a locally
-  detected arrow hit must not start a gameplay death.
+- **Death:** trigger only when authoritative native store removal/count-zero says the represented army is defeated; a
+  locally detected arrow hit must not start a gameplay death.
 
 For a promoted ragdoll, attach a stuck arrow to the corresponding rigid part transform. For an animated skinned target,
 attach to a known bone/part proxy rather than a raw skinned triangle; Three.js skinning applies multiple bone weights
@@ -682,7 +682,7 @@ immediately commands the local draw/volley. Bind cleanup to intent outcome:
 
 On `BattleEvent`:
 
-1. resolve/cached-read attacker category and tier from RECS/army presentation;
+1. resolve/cached-read attacker category and tier from native store/army presentation;
 2. if the attacker is a ranged-family army or guard, build a replay command;
 3. match it to a recent provisional `(attackerId, targetId)` command and consume without duplicating the volley;
 4. otherwise launch a remote volley seeded from an event identity;
@@ -696,8 +696,8 @@ expose a stable event key/hashed entity or transaction identity and the coordina
 risk rather than pretending it is unique.
 
 `BattleEvent` has no troop category, tier, damage amount, projectile count, or exact source/target transforms. Resolve
-those from current/cached RECS presentations; if they are unavailable, skip the arrow and retain generic battle FX.
-Never fabricate a ranged weapon for an unresolved event.
+those from current/cached native store presentations; if they are unavailable, skip the arrow and retain generic battle
+FX. Never fabricate a ranged weapon for an unresolved event.
 
 ### Snapshot fallback
 
@@ -710,7 +710,7 @@ correct and the transient volley may be absent—exactly the intended entity/eve
 ### What not to synchronize
 
 - no arrow model in Cairo;
-- no projectile rows in RECS;
+- no projectile rows in native store;
 - no per-frame position replication;
 - no Jolt state hash used for combat;
 - no client-side hit report submitted as damage;
@@ -933,13 +933,13 @@ Minimum focused tests:
 - `projectile-hit-query.test.ts`: fast thin target, earliest fraction, shooter filter, ground, ragdoll metadata.
 - `arrow-projectile-pool.test.ts`: capacity, overflow, swap-remove, style bucket, reset/dispose, no stale owner IDs.
 - `ranged-combat-presentation-coordinator.test.ts`: provisional, rejection, indexed remote replay, dedupe, old replay,
-  missing category, no RECS writes.
+  missing category, no native store writes.
 - extended gym smoke: one complete shot plus Jolt reaction.
 - extended 100-unit benchmark smoke: bounded projectiles, physics health, renderer health, performance telemetry.
 
 Source-level guards should assert the architecture, not implementation trivia: one coordinator owns live arrows;
-projectile code does not import gameplay transaction writers or mutate RECS; Worldmap disposes the coordinator; all
-Emscripten query temporaries/collectors are destroyed.
+projectile code does not import gameplay transaction writers or mutate native store; Worldmap disposes the coordinator;
+all Emscripten query temporaries/collectors are destroyed.
 
 ## Risks and explicit non-goals
 
@@ -955,8 +955,8 @@ Emscripten query temporaries/collectors are destroyed.
   close/selected actors pay for skeletal IK.
 - **No one-mesh bow deformation guess in production:** use the static Hunter's Bow first, then an authored
   socket/deformation contract.
-- **No event-only truth:** dropped/late `BattleEvent` may omit a volley, but RECS count/removal still yields correct
-  state and fallback FX.
+- **No event-only truth:** dropped/late `BattleEvent` may omit a volley, but native store count/removal still yields
+  correct state and fallback FX.
 
 ## Recommended first playable slice
 
@@ -968,7 +968,7 @@ Implement Stages 1–4 with a narrow scope:
 3. One pooled instanced arrow style supports 256 arrows; no trails or drag in live mode.
 4. Provisional local attack fires immediately; matching `BattleEvent` dedupes; remote T1 archer events replay when
    category can be resolved.
-5. RECS count diffs/removal remain unchanged.
+5. native store count diffs/removal remain unchanged.
 6. The 100-unit benchmark adds a 25-archer volley scenario before any fantasy shader pass.
 
 That slice proves the hard boundaries—pose, ownership, continuous hit presentation, authority, pooling, and performance.

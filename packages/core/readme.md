@@ -1,55 +1,22 @@
 # Eternum SDK
 
-The Eternum SDK is a core package that provides essential functionality for building applications on Starknet & Dojo. It
-serves as the foundation for the Eternum ecosystem, offering a set of utilities, managers, and data structures to enable
-seamless integration with the blockchain.
+`@bibliothecadao/eternum` owns the shared game client, native fact store, synchronization runtime and gameplay managers.
+Browser and bot callers use the same client and command path.
 
-## Features
+`createGameClient` verifies the deployment's schema identity, creates the provider and store, attaches Herald, and loads
+the immutable game configuration. Recorded intents go through admission; transaction outcomes are matched to the
+individual ticket even when several tickets share a transaction.
 
-- **EternumProvider**: A robust provider implementation for interacting with the Eternum protocol
-- **Data Structures**: Core data types and constants used throughout the Eternum ecosystem
-- **Utility Functions**: Helper functions for common operations including:
-  - Hex map utilities for coordinate-based operations
-  - Resource arrival calculations and management
-- **Managers**: Specialized managers for handling different aspects of the game
+Herald snapshots and ordered diffs are the only writers of current facts. `NativeFactStore` applies each transaction
+atomically; its typed rows, game/owner indexes and change feed serve React and the spatial projection. Events drive
+transient effects and immutable history, never a second current-state store.
 
-## Installation
+The `game-client` export contains world discovery and store helpers. `game-sync` contains the transport, runtime and
+spatial projection. Generated facts and bindings come from `contracts/l3/world-native/schema`.
 
-```bash
-pnpm add @bibliothecadao/eternum
+From the repository root:
+
+```sh
+pnpm run build:packages
+pnpm --dir packages/core exec vitest run
 ```
-
-## Usage
-
-```typescript
-import { EternumProvider } from "@bibliothecadao/eternum";
-
-// Initialize the provider
-const provider = new EternumProvider({
-  // configuration options
-});
-
-// Use the provider to interact with the protocol
-```
-
-## Dependencies
-
-- `@dojoengine/core`: Core Dojo engine functionality
-- `@bibliothecadao/dojo`: Dojo integration
-- `@bibliothecadao/provider`: Provider implementation
-- `@bibliothecadao/types`: Type definitions
-- `starknet`: Starknet integration
-
-## Development
-
-```bash
-# Install dependencies
-pnpm install
-
-# Build the package
-pnpm build
-```
-
-## License
-
-MIT

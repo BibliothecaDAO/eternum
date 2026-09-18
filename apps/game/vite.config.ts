@@ -157,10 +157,6 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
           replacement: path.resolve(__dirname, "../../config/deployer"),
         },
         {
-          find: "@contracts",
-          replacement: path.resolve(__dirname, "../../contracts/utils/utils"),
-        },
-        {
           find: "@pm",
           replacement: path.resolve(__dirname, "./src/pm"),
         },

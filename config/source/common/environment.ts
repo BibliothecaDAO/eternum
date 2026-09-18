@@ -1,4 +1,4 @@
-import { getSeasonAddresses } from "@contracts";
+import { getSeasonAddresses } from "../../../contracts/utils/utils";
 import type { GameChain } from "@realms-world/chain";
 import type { ConfigPatch } from "./merge-config";
 

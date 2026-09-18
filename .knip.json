@@ -184,9 +184,6 @@
     "packages/db/src/int8range.ts": [
       "exports"
     ],
-    "packages/react/src/hooks/context/dojo-context.ts": [
-      "types"
-    ],
     "packages/react/src/hooks/helpers/use-realm.ts": [
       "exports"
     ],
@@ -403,9 +400,6 @@
     "packages/provider/src/retry.ts": [
       "exports"
     ],
-    "packages/provider/src/vrf.ts": [
-      "exports"
-    ],
     "packages/react/src/hooks/helpers/use-quests.ts": [
       "exports"
     ],
@@ -459,10 +453,6 @@
     ],
     "packages/types/src/constants/utils.ts": [
       "exports"
-    ],
-    "packages/types/src/dojo/create-system-calls.ts": [
-      "exports",
-      "types"
     ],
     "packages/types/src/types/common.ts": [
       "types"
@@ -531,9 +521,6 @@
     "apps/game/src/ui/features/cosmetics/components/index.ts": [
       "files"
     ],
-    "apps/game/src/ui/features/cosmetics/providers/landing-dojo-provider.tsx": [
-      "files"
-    ],
     "apps/game/src/ui/features/cosmetics/chest-opening/components/chest-card.tsx": [
       "files"
     ],
@@ -591,9 +578,6 @@
     "apps/game/src/ui/features/cosmetics/chest-opening/utils/index.ts": [
       "files"
     ],
-    "apps/game/src/dojo/connection-health-monitor.ts": [
-      "exports"
-    ],
     "apps/game/src/runtime/world/factory-resolver.ts": [
       "exports"
     ],
@@ -619,9 +603,6 @@
     "apps/game/src/ui/features/cosmetics/chest-opening/utils/cosmetics.ts": [
       "exports",
       "types"
-    ],
-    "apps/game/src/ui/features/cosmetics/lib/use-torii-cosmetics.ts": [
-      "exports"
     ],
     "apps/game/src/ui/features/cosmetics/chest-opening/services/index.ts": [
       "exports"

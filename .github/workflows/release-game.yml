@@ -149,7 +149,7 @@ jobs:
           RAW_CHANGES=$(cat /tmp/raw-changes.txt)
 
           # Build the prompt
-          PROMPT="You are writing release notes for Eternum, an onchain game built on Starknet/Dojo. Write concise, human-readable release notes for version v${NEW_VERSION}.
+          PROMPT="You are writing release notes for Eternum, an onchain game built on native Cairo on Starknet. Write concise, human-readable release notes for version v${NEW_VERSION}.
 
           Here are the raw PR titles and commits since the last release (${LATEST_TAG}):
 

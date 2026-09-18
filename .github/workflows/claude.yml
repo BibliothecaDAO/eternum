@@ -69,13 +69,13 @@ jobs:
           custom_instructions: |
             # Eternum Project Assistant
 
-            You are an AI assistant for Eternum, a blockchain strategy game (Cairo/Dojo on Starknet).
+            You are reviewing Eternum, a strategy game built with native Cairo on Starknet.
 
             ## Key Context
             - Players manage realms, resources, armies, and trade using $LORDS tokens on a hex map
-            - Tech: Cairo + Dojo (contracts), React + TypeScript + Vite + Three.js (frontend), Torii (indexing), pnpm monorepo
-            - Packages: @bibliothecadao/core, provider, react, torii, types, dojo
-            - Environments: Local (Katana), Sepolia, Mainnet, Appchain (self-hosted katana)
+            - Tech: native Cairo (contracts), React + TypeScript + Vite + Three.js (frontend), Herald (indexing), pnpm monorepo
+            - Packages: @bibliothecadao/eternum, provider, react, types
+            - Environments: isolated Madara development and native appchain worlds
 
             ## Git Workflow (MANDATORY)
             - Always branch from `next` (never work directly on `next`)
@@ -92,6 +92,6 @@ jobs:
 
             ## Code Standards
             - TypeScript: strict typing, no `any`, functional React components
-            - Cairo: Dojo patterns, comprehensive tests, economic security focus
+            - Cairo: native domain patterns, comprehensive tests, economic security focus
             - Performance: optimize for real-time gaming
             - Always check for breaking cross-package changes

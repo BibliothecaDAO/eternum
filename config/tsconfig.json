@@ -7,9 +7,6 @@
     "jsx": "react-jsx",
     "allowJs": true,
     "baseUrl": ".",
-    "paths": {
-      "@contracts": ["../contracts/utils/utils"]
-    },
 
     /* Bundler mode */
     "moduleResolution": "bundler",

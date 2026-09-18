@@ -1,4 +1,4 @@
-import { getSeasonAddresses } from "@contracts";
+import { getSeasonAddresses } from "../../../../../../contracts/utils/utils";
 import type { GameChain as Chain } from "@realms-world/chain";
 import type { FactoryLaunchChain } from "./types";
 
