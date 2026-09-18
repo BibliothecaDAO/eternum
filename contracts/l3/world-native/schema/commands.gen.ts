@@ -10,7 +10,6 @@ export interface NativeCommandPayloads {
   TransferStructureOwnership: { readonly entity_id: BigNumberish; readonly new_owner: BigNumberish };
   SetAddressName: { readonly owned_structure_id: BigNumberish; readonly name: BigNumberish };
   LevelUp: BigNumberish;
-  ReserveHyperstructures: BigNumberish;
   SettleBlitz: { readonly name: BigNumberish; readonly cosmetics_block_hash: BigNumberish; readonly cosmetics_block_number: BigNumberish; readonly cosmetics: readonly ({ readonly token_id: BigNumberish; readonly owner: BigNumberish; readonly attributes: BigNumberish })[]; readonly grant_starting_troops: boolean };
   ProvisionRealm: BigNumberish;
   CreateReservedHyperstructure: { readonly alt: boolean; readonly x: BigNumberish; readonly y: BigNumberish };

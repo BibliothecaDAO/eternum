@@ -524,9 +524,6 @@ pub trait ISettlementConfiguration<T> {
 #[starknet::interface]
 pub trait IBlitzReservations<T> {
     fn initialize_reservations(ref self: T, game_id: u32);
-    fn reserve_hyperstructures(
-        ref self: T, game_id: u32, actor: ContractAddress, count: u8, context: crate::commands::ExecutionContext,
-    );
     fn release_hyperstructure(ref self: T, game_id: u32, coord: Coord);
 }
 
