@@ -47,6 +47,7 @@ export interface TrackedTransaction {
   acceptedOnL2At?: string;
   acceptedOnL2Block?: number;
   acceptedOnL2Ms?: number;
+  admissionToVisibleMs?: number;
   actionIndex?: number;
   botId: number;
   error?: string;
@@ -69,6 +70,7 @@ export interface TrackedTransaction {
   submitMs?: number;
   tick?: number;
   transactionHash?: string;
+  visibleAt?: string;
 }
 
 export interface HarnessBot {
@@ -952,7 +954,14 @@ export async function trackTransaction(options: TrackTransactionOptions): Promis
 
   Object.assign(
     record,
-    await waitForConfirmation(options, submission, transactionHash, Date.parse(record.submittedAt!), rpc),
+    await waitForConfirmation(
+      options,
+      submission,
+      transactionHash,
+      Date.parse(record.submitStartedAt),
+      Date.parse(record.submittedAt!),
+      rpc,
+    ),
   );
   record.rpc = snapshotRpcMetrics(rpc);
   return record;
@@ -963,6 +972,7 @@ async function waitForConfirmation(
   options: TrackTransactionOptions,
   submission: HarnessSubmission,
   transactionHash: string,
+  submitStartedAtMs: number,
   submittedAtMs: number,
   rpc: RpcMetrics,
 ): Promise<Partial<TrackedTransaction>> {
@@ -981,9 +991,14 @@ async function waitForConfirmation(
       timeoutMs,
     );
   });
+  let visibility: Partial<TrackedTransaction> = {};
   const confirmed =
     submission.confirmed?.then(
-      () => undefined,
+      () => {
+        const visibleAtMs = Date.now();
+        visibility = { visibleAt: toIso(visibleAtMs), admissionToVisibleMs: visibleAtMs - submitStartedAtMs };
+        return undefined;
+      },
       (error: unknown) => errorMessage(error),
     ) ?? Promise.resolve(undefined);
   const measured = waitForReceiptLifecycle(
@@ -1003,7 +1018,7 @@ async function waitForConfirmation(
     if (result.outcome !== "completed") return result;
     const failure = await confirmed;
     return failure === undefined
-      ? result
+      ? { ...result, ...visibility }
       : { ...result, outcome: "driver_failed" as const, error: `Herald confirmation failed: ${failure}` };
   });
   try {

@@ -1,5 +1,5 @@
 import { statusSubscription } from "./test-observations";
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it, spyOn } from "bun:test";
 import type { HarnessProvider } from "./provider";
 import { EventEmitter } from "node:events";
 import type { GameClient } from "@bibliothecadao/eternum";
@@ -25,6 +25,42 @@ const track = (confirmed: Promise<unknown> | undefined, provider = accepted) =>
   });
 
 describe("transaction confirmation deadline", () => {
+  it("includes admission wait and Herald application in visible latency", async () => {
+    let clock = 1_000;
+    const now = spyOn(Date, "now").mockImplementation(() => clock);
+    let applied!: () => void;
+    const confirmed = new Promise<void>((resolve) => {
+      applied = resolve;
+    });
+    const provider = {
+      subscribeTransactionStatus: async () => {
+        clock = 1_500;
+        applied();
+        return statusSubscription({ finality_status: "ACCEPTED_ON_L2" });
+      },
+      getTransactionReceipt: async () => ({ block_number: 42 }),
+    } as unknown as HarnessProvider;
+    try {
+      const result = await trackTransaction({
+        botId: 1,
+        gameId: 1,
+        kind: "explore",
+        stage: "workload",
+        provider,
+        send: async () => {
+          clock = 1_300;
+          return { transactionHash: "0x123", confirmed };
+        },
+      });
+      expect(result.outcome).toBe("completed");
+      expect(result.submitMs).toBe(300);
+      expect(result.preConfirmedMs).toBe(200);
+      expect(result.admissionToVisibleMs).toBe(500);
+      expect(result.visibleAt).toBe(new Date(1_500).toISOString());
+    } finally {
+      now.mockRestore();
+    }
+  });
   it("bounds a missing Herald update while retaining L2 measurements", async () => {
     const result = await track(never);
     expect(result.outcome).toBe("confirmation_timeout");
@@ -41,7 +77,9 @@ describe("transaction confirmation deadline", () => {
     expect(result.error).toContain("disconnected");
   });
   it("accepts setup sends without a Herald barrier and completed action barriers", async () => {
-    expect((await track(undefined)).outcome).toBe("completed");
+    const setup = await track(undefined);
+    expect(setup.outcome).toBe("completed");
+    expect(setup.admissionToVisibleMs).toBeUndefined();
     expect((await track(Promise.resolve())).outcome).toBe("completed");
   });
 });
