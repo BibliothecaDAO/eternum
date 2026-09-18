@@ -1,4 +1,6 @@
-ARG MADARA_IMAGE
-FROM ${MADARA_IMAGE}
-COPY herald /bin/herald
-ENTRYPOINT ["tini", "--", "/bin/herald"]
+ARG BUN_IMAGE
+FROM ${BUN_IMAGE}
+WORKDIR /app
+COPY --chown=bun:bun herald.js ./herald.js
+USER bun
+ENTRYPOINT ["bun", "/app/herald.js"]
