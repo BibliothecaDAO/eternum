@@ -56,7 +56,7 @@ export const declare = async (filepath, contract_name) => {
 
 export const deploy = async (name, class_hash, constructorCalldata) => {
   // Deploy contract
-  // Use old UDC contract because new one isnt available on slot/katana
+  // Use the UDC version available on the configured deployment chain
   const UDC = {
     ADDRESS: "0x041a78e741e5af2fec34b695679bc6891742439f7afb8484ecd7766661ad02bf",
     ENTRYPOINT: "deployContract",

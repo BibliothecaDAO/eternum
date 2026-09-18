@@ -22,8 +22,8 @@ const ARTIFACT_DIRECTORY = resolve(CONTRACT_DIRECTORY, "target/dev");
 const OUTPUT_PATH = resolve(LAB_DIRECTORY, ".lab/gameplay-contracts.json");
 
 const RPC_URL = requiredEnvironment("RPC_URL");
-const DEPLOYER_ADDRESS = requiredEnvironment("NATIVE_ACCOUNT_ADDRESS");
-const DEPLOYER_PRIVATE_KEY = requiredEnvironment("NATIVE_PRIVATE_KEY");
+const DEPLOYER_ADDRESS = requiredEnvironment("DEPLOYER_ACCOUNT_ADDRESS");
+const DEPLOYER_PRIVATE_KEY = requiredEnvironment("DEPLOYER_PRIVATE_KEY");
 const BINDING_AUTHORITY_ADDRESS = requiredEnvironment("BINDING_AUTHORITY_ADDRESS");
 
 function requiredEnvironment(name: string): string {

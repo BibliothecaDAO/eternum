@@ -42,7 +42,7 @@ import { BootstrapLoadingPanel } from "@/ui/layouts/bootstrap-loading/bootstrap-
 import { markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
 
 import { ResourcesIds, StructureType } from "@bibliothecadao/types";
-import { getSeasonAddresses } from "@contracts";
+import { getSeasonAddresses } from "../../../../../../../contracts/utils/utils";
 import type { GameChain as Chain } from "@realms-world/chain";
 import { Account } from "starknet";
 import {

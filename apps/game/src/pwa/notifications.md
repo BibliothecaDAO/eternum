@@ -31,13 +31,11 @@ after two minutes. Game entry always uses the normal bootstrap. Clicks focus an 
 navigating it, or open a separate entry flow; an existing game's transactions are never interrupted by forced
 navigation.
 
-Shared logical identity groups paired battle and delayed-transfer records using the first of their adjacent UUIDs. The
-current Cairo emitters allocate the sender/attacker record first. The locked
-[Dojo 1.8.0 UUID implementation](https://github.com/dojoengine/dojo/blob/v1.8.0/crates/dojo/core/src/world/world_contract.cairo#L984)
-increments its counter once per call; emitting the record does not advance it. Behavioral fixtures cover mirrored
-records and distinct actions; policy inventory is checked against the generated StoryEvent manifest. Distinct actions in
-one transaction retain distinct IDs. Ambiguous perspectives are rejected rather than guessed. Feed battle grouping and
-audio cues use the same identity as notification delivery.
+Shared logical identity groups paired battle and delayed-transfer records by their action identity. The native emitters
+and notification rules must agree on perspective and ordering; behavior tests cover mirrored records and distinct
+actions. Policy inventory is checked against the compiled native Story enum. Distinct actions in one transaction retain
+distinct IDs. Ambiguous perspectives are rejected rather than guessed. Feed battle grouping and audio cues use the same
+identity as notification delivery.
 
 IndexedDB stores one enabled owner/token and at most 4,096 unexpired delivery IDs. Enablement rotates the token.
 Disablement checks the owner and closes its displayed notices. A serialized worker queue accepts at most 64 pending

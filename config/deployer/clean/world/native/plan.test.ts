@@ -56,7 +56,7 @@ function fixture() {
 }
 
 describe("native deployment planning", () => {
-  test("a different seed cannot overwrite a Dojo release manifest", () => {
+  test("a different seed cannot overwrite a non-native release manifest", () => {
     expect(() =>
       loadNativeWorld({
         artifacts: "missing",
@@ -64,9 +64,9 @@ describe("native deployment planning", () => {
         seed: "native-new",
         authority: "0x99",
         authentication,
-        previous: { world: { seed: "old-dojo" } } as never,
+        previous: { world: { seed: "old-release" } } as never,
       }),
-    ).toThrow("Cannot replace a Dojo world");
+    ).toThrow("Cannot replace a non-native world");
   });
   test("an unchanged deployment submits zero transactions", async () => {
     const { local, rpc } = fixture();

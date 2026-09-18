@@ -22,8 +22,8 @@ Useful options:
 
 - `NATIVE_WORLD_MANIFEST` and `ADMISSION_URL`
 - `RPC_URL` or `--rpc-url`
-- `NATIVE_ACCOUNT_ADDRESS` or `--account-address`
-- `NATIVE_PRIVATE_KEY` or `--private-key`
+- `DEPLOYER_ACCOUNT_ADDRESS` or `--account-address`
+- `DEPLOYER_PRIVATE_KEY` or `--private-key`
 - `DEV_MODE_ON=true|false` or `--dev-mode-on true|false`
 - `SINGLE_REALM_MODE=true|false` or `--single-realm-mode true|false`
 - `TWO_PLAYER_MODE=true|false` or `--two-player-mode true|false`

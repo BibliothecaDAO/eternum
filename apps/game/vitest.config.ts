@@ -52,7 +52,6 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
       "@config": path.resolve(__dirname, "../../config/utils/utils"),
       "@config-deployer": path.resolve(__dirname, "../../config/deployer"),
-      "@contracts": path.resolve(__dirname, "../../contracts/utils/utils"),
       "@bibliothecadao/ammv2-sdk": path.resolve(__dirname, "../../packages/ammv2-sdk/src/index.ts"),
       // Subpath alias must precede the package root: alias matching is
       // prefix-based, so the root entry would otherwise swallow it.

@@ -18,9 +18,9 @@ const STRK = "0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d
 const root = resolve(import.meta.dir, "../../../..");
 const output = resolve(authorityFile);
 const provider = new RpcProvider({ nodeUrl: rpcUrl });
-const adminAddress = process.env.NATIVE_ACCOUNT_ADDRESS;
-const adminKey = process.env.NATIVE_PRIVATE_KEY;
-if (!adminAddress || !adminKey) throw new Error("NATIVE_ACCOUNT_ADDRESS and NATIVE_PRIVATE_KEY are required");
+const adminAddress = process.env.DEPLOYER_ACCOUNT_ADDRESS;
+const adminKey = process.env.DEPLOYER_PRIVATE_KEY;
+if (!adminAddress || !adminKey) throw new Error("DEPLOYER_ACCOUNT_ADDRESS and DEPLOYER_PRIVATE_KEY are required");
 const admin = createMadaraAccount(provider, adminAddress, adminKey);
 const transactions: string[] = [];
 const seed = process.argv[2];

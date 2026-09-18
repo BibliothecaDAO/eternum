@@ -100,8 +100,8 @@ export async function registerEnvironmentPreset(options: RegisterPresetOptions):
       : []),
   ]);
   const credentials = resolveAccountCredentials({
-    accountAddress: process.env.NATIVE_ACCOUNT_ADDRESS,
-    privateKey: process.env.NATIVE_PRIVATE_KEY,
+    accountAddress: process.env.DEPLOYER_ACCOUNT_ADDRESS,
+    privateKey: process.env.DEPLOYER_PRIVATE_KEY,
     context: `${options.environmentId} preset registration`,
   });
   const account = new Account({

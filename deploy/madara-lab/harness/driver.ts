@@ -1167,7 +1167,7 @@ async function waitForExplorers(game: HarnessGame, structures: StructureState[])
   );
 }
 
-/** Every item resolved, or nothing yet: the shape a RECS wait needs for a set of rows that land independently. */
+/** Every item resolved, or nothing yet: the shape a native store wait needs for a set of rows that land independently. */
 function collectAll<T, R>(items: readonly T[], read: (item: T) => R | undefined): R[] | undefined {
   const collected: R[] = [];
   for (const item of items) {

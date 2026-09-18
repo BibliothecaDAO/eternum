@@ -11,7 +11,7 @@ Required environment:
 - `LAUNCHER_ALLOWLIST` — comma-separated Starknet owner addresses, or `*` to let any verified session launch (still
   origin- and session-gated; used on the dev testnet)
 - `RPC_URL`, `HERALD_URL`, `NATIVE_WORLD_MANIFEST`, `ADMISSION_URL`
-- `NATIVE_ACCOUNT_ADDRESS`, `NATIVE_PRIVATE_KEY` — registrar writer
+- `DEPLOYER_ACCOUNT_ADDRESS`, `DEPLOYER_PRIVATE_KEY` — registrar writer
 
 `bun run src/main.ts` serves port 3006 and claims durable jobs. `bun run src/rotation.ts` is the systemd oneshot used by
 the rotation timer. Both use the same Postgres run store; no launch summary is written to the local filesystem.

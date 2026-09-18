@@ -124,8 +124,8 @@ matches the graphics literature's treatment of fixed footplant constraints and f
 division of a stride into stance and swing. [Kovar et al. 2002](https://pages.cs.wisc.edu/~kovar/footskateCleanup.pdf),
 [Umberger, _Stance and swing phase costs in human walking_, Journal of the Royal Society Interface 2010](https://doi.org/10.1098/rsif.2010.0084)
 
-Each actor needs a small persistent state object. It should not be stored in React or RECS; it is transient renderer
-state owned beside `phase` and `elapsedSeconds` in each runtime actor.
+Each actor needs a small persistent state object. It should not be stored in React or native store; it is transient
+renderer state owned beside `phase` and `elapsedSeconds` in each runtime actor.
 
 ```ts
 interface LocomotionState<FootId extends string> {

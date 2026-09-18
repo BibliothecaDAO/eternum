@@ -37,8 +37,8 @@ async function main() {
 async function runAdministrativeCommand(args: CliArgs) {
   if (!args.manifest || !args["rpc-url"] || !args["game-id"])
     throw new Error("Administrative commands require --manifest (or NATIVE_WORLD_MANIFEST), --rpc-url and --game-id");
-  const accountAddress = process.env.NATIVE_ACCOUNT_ADDRESS;
-  const privateKey = process.env.NATIVE_PRIVATE_KEY;
+  const accountAddress = process.env.DEPLOYER_ACCOUNT_ADDRESS;
+  const privateKey = process.env.DEPLOYER_PRIVATE_KEY;
   const admissionUrl = process.env.ADMISSION_URL;
   if (!accountAddress || !privateKey || !admissionUrl)
     throw new Error("Native credentials and ADMISSION_URL are required");

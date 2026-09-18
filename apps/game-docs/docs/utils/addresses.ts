@@ -1,5 +1,5 @@
 import { env } from "@/../env";
-import { getSeasonAddresses } from "@contracts/utils";
+import { getSeasonAddresses } from "../../../../contracts/utils/utils";
 
 export const getResourceAddresses = () => {
   const addresses = getSeasonAddresses(env.VITE_PUBLIC_CHAIN).resources;

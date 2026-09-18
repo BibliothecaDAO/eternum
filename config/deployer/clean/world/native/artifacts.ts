@@ -13,7 +13,8 @@ export function loadNativeWorld(input: {
   authentication: NativeAuthentication;
   previous?: NativeWorldManifest;
 }): NativeWorld {
-  if (input.previous && !input.previous.native) throw new Error("Cannot replace a Dojo world with native domains");
+  if (input.previous && !input.previous.native)
+    throw new Error("Cannot replace a non-native world with native domains");
   const schema = JSON.parse(readFileSync(input.schemaPath, "utf8")) as NativeSchema;
   if (schemaIdentity(schema) !== schema.identity) throw new Error("Native schema identity mismatch");
   const previous = input.previous?.world.seed === input.seed ? input.previous : undefined;
