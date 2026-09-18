@@ -110,5 +110,4 @@ describe("Blitz balance profiles", () => {
       probabilityBps: 200,
     });
   });
-
 });
