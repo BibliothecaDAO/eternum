@@ -75,7 +75,7 @@ function evaluateRenderer(renderer, requestedMode, missing) {
 }
 
 function evaluateTerrainPresentation(observation, expected, backend, failures, missing) {
-  if (!(observation.renderDiagnostics?.gauges?.worldBiomeSurfaceInstances > 0)) {
+  if (!(observation.visibleTerrainCells > 0)) {
     missing.push("no populated authoritative terrain was observed");
   }
   const presentation = observation.renderDiagnostics?.terrainPresentation;

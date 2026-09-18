@@ -18,6 +18,15 @@ describe("production worldmap terrain verification", () => {
     expect(evaluateWorldmapTerrainObservation(observation(), expected)).toMatchObject({ status: "pass", reasons: [] });
   });
 
+  it.each([null, 0])("requires visible terrain cells even when presentation coverage is complete (%s)", (count) => {
+    const input = observation();
+    input.visibleTerrainCells = count;
+    expect(evaluateWorldmapTerrainObservation(input, expected)).toMatchObject({
+      status: "inconclusive",
+      reasons: ["no populated authoritative terrain was observed"],
+    });
+  });
+
   it.each(["geometry", "props", "fog"])("never accepts missing %s writes", (kind) => {
     const input = observation();
     input.renderDiagnostics.terrainPresentation.current.coverage[kind] = false;
@@ -177,8 +186,8 @@ function observation() {
       { event: "visual_window_resolved", details: { activePageKeys: ["-12,-12"] } },
       { event: "terrain_composite_rebuilt" },
     ],
+    visibleTerrainCells: 40,
     renderDiagnostics: {
-      gauges: { worldBiomeSurfaceInstances: 10 },
       terrainPresentation: {
         contractVersion: 2,
         current: {

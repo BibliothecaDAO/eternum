@@ -70,6 +70,7 @@ const captureScript = `(async () => {
     },
     renderer: window.__rendererDiagnostics ?? null,
     renderDiagnostics,
+    visibleTerrainCells: worldmap?.proceduralTerrain?.getVisibleCellCount?.() ?? null,
     chunkDiagnostics: window.getWorldmapChunkDiagnostics?.() ?? null,
     trace,
     visualWindow: worldmap?.visualTerrainWindow
