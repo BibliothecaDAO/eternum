@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "cairoVersion": "2.13.1",
+  "cairoVersion": "2.17.0",
   "encoding": "cairo-serde",
   "modelIdentity": "short-string",
   "memberIdentity": "short-string",
@@ -18745,5 +18745,5 @@
       ]
     }
   },
-  "identity": "13df814cbd0179ddaaa2a66abd4a6d4b9c8830bc713ec386066f25134e1481ae"
+  "identity": "5cb878140b1c188d37b1f8671c03e2de9e2dcce6d9d27cbbf6db9639e283be83"
 }

@@ -407,7 +407,7 @@ fn accepted_execution_after_a_day_matches_immediate_execution() {
                     ),
             "delay changed recorded context",
         );
-        let actual = outcome(address);
+        let actual = outcome(address).span();
         if let Some(previous) = expected {
             assert!(actual == previous, "delay changed gameplay outcome");
         }
