@@ -1,8 +1,7 @@
 import { Effect } from "effect";
-
-import type { DirectoryGame } from "@/services/herald";
-import { LedgerClient, type LedgerReadError } from "@/services/ledger";
-import type { AppEffect } from "./hooks";
+import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { HeraldClient, type DirectoryGame } from "@/services/herald";
+import { BoundaryDecodeError } from "@/services/platform/errors";
 
 export interface MatchRow {
   readonly gameId: number;
@@ -10,56 +9,44 @@ export interface MatchRow {
   readonly endAt: number;
   readonly rank: number;
   readonly players: number;
-  readonly lordsDelta: bigint;
-  readonly mmrDelta: bigint;
-  readonly chests: number;
+  readonly points: bigint;
 }
 
-const isFinished = (game: DirectoryGame) => game.status === "Ended" || game.status === "Settled";
-
-/**
- * A player's recent finished games, composed from herald's directory (which
- * games exist) and ledger reads (whether they entered, and what came of it).
- */
-export const matchHistory = (
-  owner: string,
-  games: readonly DirectoryGame[],
-  limit = 10,
-): AppEffect<MatchRow[], LedgerReadError> =>
+/** Immutable finalized results, with identity resolved through each game's frozen roster. */
+export const matchHistory = (owner: string, games: readonly DirectoryGame[], limit = 10) =>
   Effect.gen(function* () {
-    const ledger = yield* LedgerClient;
+    if (limit <= 0) return [];
+    const herald = yield* HeraldClient;
     const finished = [...games]
-      .filter(isFinished)
+      .filter((game) => game.mode === "blitz" && game.status === "Settled")
       .sort((a, b) => b.clock.end_at - a.clock.end_at)
       .slice(0, limit);
-    if (finished.length === 0) return [];
-
-    const registrations = yield* ledger.registrations(
-      finished.map((game) => game.game_id),
-      owner,
-    );
-    const entered = finished.filter((game) => registrations.get(game.game_id)?.registered);
-
-    const rows = yield* Effect.all(
-      entered.map((game) =>
-        ledger.playerResult(game.game_id, owner).pipe(
-          Effect.map((result): MatchRow | null =>
-            result.rank === 0
-              ? null
-              : {
-                  gameId: game.game_id,
-                  gameName: game.name,
-                  endAt: game.clock.end_at,
-                  rank: result.rank,
-                  players: game.player_count,
-                  lordsDelta: result.payout - (registrations.get(game.game_id)?.paid ?? 0n),
-                  mmrDelta: result.mmrAfter - result.mmrBefore,
-                  chests: result.chests,
-                },
-          ),
-        ),
-      ),
-      { concurrency: "unbounded" },
-    );
-    return rows.filter((row): row is MatchRow => row !== null);
+    const rows: MatchRow[] = [];
+    for (const game of finished) {
+      const facts = yield* herald.gameFacts(game.game_id);
+      const row = yield* Effect.try({
+        try: () => playerMatch(facts, game, owner),
+        catch: (cause) => new BoundaryDecodeError({ boundary: `herald:game:${game.game_id}`, cause }),
+      });
+      if (row) rows.push(row);
+    }
+    return rows;
   });
+
+function playerMatch(facts: NativeFactStore, game: DirectoryGame, owner: string): MatchRow | null {
+  const roster = facts.require("BlitzRoster", { game_id: game.game_id });
+  const player = roster.players.find((entry) => entry.owner === BigInt(owner));
+  if (!player) return null;
+  const result = facts.get("BlitzResult", { game_id: game.game_id });
+  if (!result?.complete) return null;
+  const entry = result.players.find((entry) => entry.player === player.account);
+  if (!entry) throw new Error("Final result omits a roster player");
+  return {
+    gameId: game.game_id,
+    gameName: game.name,
+    endAt: game.clock.end_at,
+    rank: entry.rank,
+    players: result.players.length,
+    points: entry.points,
+  };
+}

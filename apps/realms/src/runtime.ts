@@ -2,7 +2,7 @@ import { Layer, ManagedRuntime } from "effect";
 
 import { HeraldClient } from "./services/herald";
 import { IdentityApi } from "./services/identity";
-import { LedgerClient } from "./services/ledger";
+import { PlaytestClient } from "./services/playtest";
 import { MmrClient } from "./services/mmr";
 import { Rpc } from "./services/platform/rpc";
 import { Wallet } from "./services/platform/wallet";
@@ -12,7 +12,7 @@ const MainLayer = Layer.mergeAll(
   Rpc.layer,
   Wallet.layer,
   HeraldClient.layer,
-  LedgerClient.layer,
+  PlaytestClient.layer,
   MmrClient.layer,
   IdentityApi.layer,
 );

@@ -7,6 +7,7 @@ import { Schema } from "effect";
  */
 const ClientEnv = Schema.Struct({
   VITE_BASE_URL: Schema.NonEmptyString,
+  VITE_PUBLIC_LAUNCH_SERVICE_URL: Schema.NonEmptyString,
   VITE_PUBLIC_GAME_ORIGIN: Schema.NonEmptyString,
   VITE_PUBLIC_IDENTITY_RPC_URL: Schema.NonEmptyString,
   VITE_PUBLIC_HERALD_URL: Schema.NonEmptyString,

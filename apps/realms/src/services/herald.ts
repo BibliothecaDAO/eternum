@@ -1,8 +1,9 @@
 import { Context, Effect, Layer, Schema } from "effect";
+import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 
 import { env } from "@/env";
 import { decodeBoundary } from "./platform/decode";
-import type { BoundaryDecodeError } from "./platform/errors";
+import { BoundaryDecodeError } from "./platform/errors";
 import { HeraldUnreachable } from "./platform/errors";
 import { requestJson } from "./platform/http";
 
@@ -53,6 +54,25 @@ const Health = Schema.Struct({
 });
 type HeraldHealth = typeof Health.Type;
 
+const Snapshot = Schema.Struct({
+  models: Schema.Array(
+    Schema.Struct({
+      model: Schema.String,
+      rows: Schema.Array(Schema.Struct({ key: Schema.String, value: Schema.Record(Schema.String, Schema.Unknown) })),
+    }),
+  ),
+});
+
+function decodeGameFacts(snapshot: typeof Snapshot.Type, gameId: number): NativeFactStore {
+  const store = new NativeFactStore();
+  const entities = snapshot.models.flatMap(({ model, rows }) =>
+    rows.map((row) => ({ hashed_keys: row.key, models: { [model]: row.value } })),
+  );
+  store.applyEntityOperations([{ type: "upsert", entities }]);
+  store.require("GameRegistry", { game_id: gameId });
+  return store;
+}
+
 const makeHeraldClient = () => {
   const heraldGet = <A>(path: string, schema: Schema.ConstraintDecoder<A, never>) =>
     requestJson(`${env.VITE_PUBLIC_HERALD_URL}${path}`).pipe(
@@ -71,7 +91,20 @@ const makeHeraldClient = () => {
 
   const health: Effect.Effect<HeraldHealth, HeraldUnreachable | BoundaryDecodeError> = heraldGet("/health", Health);
 
-  return { directory, health };
+  const gameFacts = (gameId: number) =>
+    heraldGet(
+      `/${env.VITE_PUBLIC_HERALD_CHAIN}/games/${gameId}/snapshot?models=GameRegistry,BlitzRoster,BlitzResult`,
+      Snapshot,
+    ).pipe(
+      Effect.flatMap((snapshot) =>
+        Effect.try({
+          try: () => decodeGameFacts(snapshot, gameId),
+          catch: (cause) => new BoundaryDecodeError({ boundary: `herald:game:${gameId}`, cause }),
+        }),
+      ),
+    );
+
+  return { directory, health, gameFacts };
 };
 
 type HeraldClientShape = ReturnType<typeof makeHeraldClient>;
