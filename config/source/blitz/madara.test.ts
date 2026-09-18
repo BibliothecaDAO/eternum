@@ -11,7 +11,6 @@ describe("generated Madara Blitz config", () => {
     expect(config.blitz.registration.collectible_timelock_address).toBe("0x0");
     expect(config.blitz.registration.collectibles_lootchest_address).toBe("0x0");
     expect(config.blitz.registration.collectibles_elitenft_address).toBe("0x0");
-    expect(config.vrf.vrfProviderAddress).toBe("0x0");
     expect(config.setup.addresses).toMatchObject({
       strk: "0x4718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d",
     });

@@ -1,7 +1,7 @@
 import {
   type BiomeType,
   type ContractAddress,
-  type DojoAccount,
+  type GameplayAccount,
   getLayerNeighborHexes,
   getLayeredAttackDistance,
   getNeighborHexes,
@@ -385,7 +385,7 @@ export class ArmyActionManager {
     )?.direction;
   };
 
-  private readonly _exploreHex = async (signer: DojoAccount, path: ActionPath[], currentArmiesTick: number) => {
+  private readonly _exploreHex = async (signer: GameplayAccount, path: ActionPath[], currentArmiesTick: number) => {
     const direction = this._findDirection(path.map((p) => p.hex));
     if (direction === undefined || direction === null) {
       return Promise.reject(new Error("Invalid direction"));

@@ -34,7 +34,6 @@ export const buildWorldProfile = async (chain: GameChain, name: string, worldId?
     name,
     chain,
     worldId: world.id,
-    namespace: world.namespace,
     heraldBaseUrl: world.heraldBaseUrl,
     rpcUrl: normalizeRpcUrl(world.rpcUrl),
     worldAddress: world.worldAddress,

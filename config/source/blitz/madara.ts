@@ -10,7 +10,4 @@ export const madaraBlitzConfig: ConfigPatch = {
       collectibles_elitenft_address: "0x0",
     },
   },
-  vrf: {
-    vrfProviderAddress: "0x0",
-  },
 };

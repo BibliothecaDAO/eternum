@@ -235,10 +235,6 @@ export const getTxMessage = (type: TransactionType): string => {
     case TransactionType.APPLY_RELIC:
       return "Applied relic";
 
-    // VRF
-    case TransactionType.REQUEST_RANDOM:
-      return "Requested randomness";
-
     // Config (Admin)
     case TransactionType.INITIALIZE:
       return "Initialized configuration";
@@ -253,7 +249,6 @@ export const getTxMessage = (type: TransactionType): string => {
     case TransactionType.SET_BLITZ_PREVIOUS_GAME:
     case TransactionType.SET_TRAVEL_FOOD_COST_CONFIG:
     case TransactionType.SET_SEASON_CONFIG:
-    case TransactionType.SET_VRF_CONFIG:
     case TransactionType.SET_RESOURCE_BRIDGE_FEE_SPLIT_CONFIG:
     case TransactionType.SET_CAPACITY_CONFIG:
     case TransactionType.SET_DONKEY_SPEED_CONFIG:
@@ -487,10 +482,6 @@ export const getTxIcon = (type: TransactionType): string => {
     case TransactionType.APPLY_RELIC:
       return "🔮";
 
-    // VRF
-    case TransactionType.REQUEST_RANDOM:
-      return "🎲";
-
     // Config (Admin)
     case TransactionType.INITIALIZE:
     case TransactionType.GRANT_ROLE:
@@ -503,7 +494,6 @@ export const getTxIcon = (type: TransactionType): string => {
     case TransactionType.SET_BLITZ_PREVIOUS_GAME:
     case TransactionType.SET_TRAVEL_FOOD_COST_CONFIG:
     case TransactionType.SET_SEASON_CONFIG:
-    case TransactionType.SET_VRF_CONFIG:
     case TransactionType.SET_RESOURCE_BRIDGE_FEE_SPLIT_CONFIG:
     case TransactionType.SET_CAPACITY_CONFIG:
     case TransactionType.SET_DONKEY_SPEED_CONFIG:

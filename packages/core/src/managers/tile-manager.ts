@@ -1,5 +1,5 @@
 import {
-  type DojoAccount,
+  type GameplayAccount,
   BUILDINGS_CENTER,
   BuildingType,
   Direction,
@@ -136,7 +136,7 @@ export class TileManager {
   };
 
   placeBuilding = async (
-    signer: DojoAccount,
+    signer: GameplayAccount,
     structureEntityId: ID,
     buildingType: BuildingType,
     hexCoords: HexPosition,
@@ -167,7 +167,7 @@ export class TileManager {
     }
   };
 
-  destroyBuilding = async (signer: DojoAccount, structureEntityId: ID, col: number, row: number) => {
+  destroyBuilding = async (signer: GameplayAccount, structureEntityId: ID, col: number, row: number) => {
     await this.systemCalls.destroy_building({
       signer,
       entity_id: structureEntityId,
@@ -175,7 +175,7 @@ export class TileManager {
     });
   };
 
-  pauseProduction = async (signer: DojoAccount, structureEntityId: ID, col: number, row: number) => {
+  pauseProduction = async (signer: GameplayAccount, structureEntityId: ID, col: number, row: number) => {
     await this.systemCalls.pause_production({
       signer,
       entity_id: structureEntityId,
@@ -183,7 +183,7 @@ export class TileManager {
     });
   };
 
-  resumeProduction = async (signer: DojoAccount, structureEntityId: ID, col: number, row: number) => {
+  resumeProduction = async (signer: GameplayAccount, structureEntityId: ID, col: number, row: number) => {
     await this.systemCalls.resume_production({
       signer,
       entity_id: structureEntityId,

@@ -63,7 +63,6 @@ const createHarness = (overrides: Partial<CreateGameClientInput> = {}) => {
       rpcUrl: "http://127.0.0.1:1",
       heraldBaseUrl: "http://herald.test",
       admissionUrl: "http://admission.test",
-      namespace: "s2",
       worldAddress: "0x1",
       contractsBySelector: {},
       playerAccountClassHash: "0x2",

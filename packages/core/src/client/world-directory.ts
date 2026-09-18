@@ -1,7 +1,6 @@
 import type { GameChain as Chain } from "@realms-world/chain";
 import { resolveEndpoint } from "@realms-world/chain";
 
-import { namespaceForChain, type GameNamespace } from "./game-scope";
 import { normalizeSelector } from "./normalize";
 
 /**
@@ -22,7 +21,6 @@ export interface WorldDeployment {
   rpcUrl: string;
   heraldBaseUrl: string;
   admissionUrl: string;
-  namespace: GameNamespace;
   worldAddress: string;
   /** Normalized selector -> address from the world's committed manifest. */
   contractsBySelector: Record<string, string>;
@@ -31,7 +29,7 @@ export interface WorldDeployment {
   bindingAuthorityAddress: string;
 }
 
-/** The slice of a Dojo manifest a world deployment is built from. */
+/** The native manifest fields a world deployment is built from. */
 export interface CommittedManifest {
   world: { address: string };
   contracts: { selector: string; address: string }[];
@@ -66,7 +64,6 @@ export const buildWorldDeployment = (input: WorldDeploymentInput): WorldDeployme
     name: `Admission URL for world "${input.id}"`,
     browserFacing: input.browserFacing,
   }),
-  namespace: namespaceForChain(input.chain),
   worldAddress: input.manifest.world.address,
   contractsBySelector: indexContractsBySelector(input.manifest),
   playerAccountClassHash: input.playerAccountClassHash,

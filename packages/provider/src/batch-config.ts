@@ -5,7 +5,7 @@ import { TransactionType } from "./types";
  * Transactions in the same category can be batched together.
  */
 export enum TransactionCostCategory {
-  HIGH = "HIGH", // VRF, combat, complex operations - max 6
+  HIGH = "HIGH", // Combat, complex operations - max 6
   MEDIUM = "MEDIUM", // State writes, resource transfers - max 5
   LOW = "LOW", // Simple state changes - max 10
 }
@@ -32,10 +32,10 @@ export const DEFAULT_CATEGORY = TransactionCostCategory.HIGH;
  */
 export const TRANSACTION_COST_CATEGORY: Partial<Record<TransactionType, TransactionCostCategory>> = {
   // ============================================
-  // HIGH COST (3) - VRF, Combat, Complex Operations
+  // HIGH COST (3) - Combat, Complex Operations
   // ============================================
 
-  // Exploration (uses VRF)
+  // Exploration
   [TransactionType.EXPLORE]: TransactionCostCategory.HIGH,
   [TransactionType.EXPLORER_EXTRACT_REWARD]: TransactionCostCategory.HIGH,
 
@@ -52,8 +52,6 @@ export const TRANSACTION_COST_CATEGORY: Partial<Record<TransactionType, Transact
   [TransactionType.BATTLE_LEAVE]: TransactionCostCategory.HIGH,
   [TransactionType.BATTLE_CLAIM]: TransactionCostCategory.HIGH,
 
-  // VRF operations
-  [TransactionType.REQUEST_RANDOM]: TransactionCostCategory.HIGH,
   [TransactionType.OPEN_CHEST]: TransactionCostCategory.HIGH,
   [TransactionType.BURN_RESEARCH_FOR_RELIC]: TransactionCostCategory.HIGH,
   [TransactionType.APPLY_RELIC]: TransactionCostCategory.HIGH,
@@ -213,7 +211,6 @@ export const TRANSACTION_COST_CATEGORY: Partial<Record<TransactionType, Transact
   [TransactionType.SET_BLITZ_PREVIOUS_GAME]: TransactionCostCategory.LOW,
   [TransactionType.SET_TRAVEL_FOOD_COST_CONFIG]: TransactionCostCategory.LOW,
   [TransactionType.SET_SEASON_CONFIG]: TransactionCostCategory.LOW,
-  [TransactionType.SET_VRF_CONFIG]: TransactionCostCategory.LOW,
   [TransactionType.SET_RESOURCE_BRIDGE_FEE_SPLIT_CONFIG]: TransactionCostCategory.LOW,
   [TransactionType.SET_CAPACITY_CONFIG]: TransactionCostCategory.LOW,
   [TransactionType.SET_DONKEY_SPEED_CONFIG]: TransactionCostCategory.LOW,

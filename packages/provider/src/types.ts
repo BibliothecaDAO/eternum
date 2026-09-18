@@ -202,9 +202,6 @@ export enum TransactionType {
   BURN_RESEARCH_FOR_RELIC = "burn_research_for_relic",
   APPLY_RELIC = "apply_relic",
 
-  // VRF
-  REQUEST_RANDOM = "request_random",
-
   // Config (Admin)
   INITIALIZE = "initialize",
   GRANT_ROLE = "grant_role",
@@ -217,7 +214,6 @@ export enum TransactionType {
   SET_BLITZ_PREVIOUS_GAME = "set_blitz_previous_game",
   SET_TRAVEL_FOOD_COST_CONFIG = "set_travel_food_cost_config",
   SET_SEASON_CONFIG = "set_season_config",
-  SET_VRF_CONFIG = "set_vrf_config",
   SET_RESOURCE_BRIDGE_FEE_SPLIT_CONFIG = "set_resource_bridge_fee_split_config",
   SET_CAPACITY_CONFIG = "set_capacity_config",
   SET_DONKEY_SPEED_CONFIG = "set_donkey_speed_config",
