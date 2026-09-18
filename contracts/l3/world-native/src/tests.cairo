@@ -683,6 +683,8 @@ mod faith_prizes;
 
 mod guilds;
 
+mod random_vectors;
+
 mod recorded_receipts;
 
 mod season_lifecycle;

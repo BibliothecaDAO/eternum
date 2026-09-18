@@ -22,18 +22,13 @@ services:
       - --gateway-port=8080
       - --enable-native-execution=true
       - --native-compilation-mode=async
-    environment: &randomness
+    environment:
       RANDOMNESS_ACCOUNT: ${RANDOMNESS_ACCOUNT:?Set the sequencing account}
       RANDOMNESS_DEPLOYMENT: ${RANDOMNESS_DEPLOYMENT:?Set the protocol deployment}
-      RANDOMNESS_EPOCH: ${RANDOMNESS_EPOCH:?Set the fenced authority epoch}
-      RANDOMNESS_JOURNAL_PRIMARY: ${RANDOMNESS_JOURNAL_PRIMARY:?Set the primary connection}
-      RANDOMNESS_JOURNAL_STANDBY: ${RANDOMNESS_JOURNAL_STANDBY:?Set the standby connection}
       RANDOMNESS_PRIVATE_KEY: ${RANDOMNESS_PRIVATE_KEY:?Set the local sequencing credential}
-      RANDOMNESS_PLACEMENT: ${RANDOMNESS_PLACEMENT:?Select embedded or sidecar}
-      RANDOMNESS_RPC_URL: http://madara:9944
+      RANDOMNESS_EPOCH_SECRET: /data/game-epoch-secret.json
       RANDOMNESS_NATIVE_SCHEMA: /config/native-schema.json
       RANDOMNESS_L2_RPC_URL: ${RANDOMNESS_L2_RPC_URL:-}
-      RANDOMNESS_HTTP_BIND: 0.0.0.0:8081
       RUST_LOG: info
     volumes:
       - ../madara-lab/chain-config.yaml:/config/chain-config.yaml:ro
@@ -43,7 +38,6 @@ services:
       - "127.0.0.1:15050:9944"
       - "127.0.0.1:15051:9943"
       - "127.0.0.1:15062:8080"
-      - "127.0.0.1:15080:8081"
     healthcheck:
       test:
         [
@@ -54,16 +48,5 @@ services:
       interval: 2s
       timeout: 4s
       retries: 30
-  randomness-sidecar:
-    image: ${MADARA_IMAGE:?Set MADARA_IMAGE from the local release artifact}
-    profiles: [sidecar]
-    entrypoint: [tini, --, /bin/randomness-sidecar]
-    environment: *randomness
-    volumes:
-      - ${RANDOMNESS_SCHEMA_HOST_PATH:?Set the native deployment schema}:/config/native-schema.json:ro
-    ports: ["127.0.0.1:15081:8081"]
-    depends_on:
-      madara:
-        condition: service_healthy
 volumes:
   node-data:

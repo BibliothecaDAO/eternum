@@ -32,7 +32,7 @@ pub mod SeasonDomain {
     use core::poseidon::poseidon_hash_span;
     use eternum_randomness_protocol::entrypoint::{
         Admission, ExecutionContext, IRecordedExecution, IRecordedExecutionFailure, IRecordedExecutionViews,
-        accepted_context_matches, authenticate_submission, timestamp_in_bounds,
+        RecordedAction, accepted_context_matches, authenticate_submission, timestamp_in_bounds,
     };
     use eternum_randomness_protocol::{Envelope, Intent, action_identity, decode_envelope};
     use starknet::storage::{
@@ -250,11 +250,12 @@ pub mod SeasonDomain {
 
     #[abi(embed_v0)]
     impl Execute of IRecordedExecution<ContractState> {
+        #[inline(never)]
         fn execute(ref self: ContractState, intent: Intent, context: ExecutionContext, r: felt252, s: felt252) {
             let peers = self.lifecycle.require_active();
             let envelope = decode_envelope(context.envelope.span()).expect('malformed envelope');
-            self.authenticate_ticket(@intent, @context, @envelope);
-            let consumed = match self.authenticate_action(@intent, @context, @envelope, r, s) {
+            self.authenticate_ticket(@intent, @envelope);
+            let consumed = match self.authenticate_action(@intent, @envelope, r, s) {
                 Ok(()) => self.consume_action_nonce(@intent),
                 Err(reason) => Err(reason),
             };
@@ -264,6 +265,15 @@ pub mod SeasonDomain {
             };
             self.recording.record(@intent, @envelope, consumed.is_ok(), outcome);
         }
+        fn execute_batch(ref self: ContractState, actions: Array<RecordedAction>) {
+            assert!(
+                !actions.is_empty() && actions.len() <= eternum_randomness_protocol::entrypoint::MAX_EXECUTION_BATCH,
+                "invalid execution batch size",
+            );
+            for action in actions {
+                self.execute(action.intent, action.context, action.r, action.s);
+            }
+        }
     }
 
     #[abi(embed_v0)]
@@ -272,9 +282,9 @@ pub mod SeasonDomain {
             ref self: ContractState, intent: Intent, context: ExecutionContext, r: felt252, s: felt252,
         ) {
             let envelope = decode_envelope(context.envelope.span()).expect('malformed envelope');
-            self.authenticate_ticket(@intent, @context, @envelope);
+            self.authenticate_ticket(@intent, @envelope);
             // A transport failure cannot authorize consumption of an unauthenticated action.
-            self.authenticate_action(@intent, @context, @envelope, r, s).expect('unauthenticated action');
+            self.authenticate_action(@intent, @envelope, r, s).expect('unauthenticated action');
             assert!(accepted_context_matches(@intent, @envelope), "invalid acceptance");
             let consumed = self.consume_action_nonce(@intent).is_ok();
             self.recording.record(@intent, @envelope, consumed, Err('EXECUTION_FAILED'));
@@ -293,7 +303,6 @@ pub mod SeasonDomain {
                 execution_config: self.execution_config(),
                 nonce: self.nonces.read((game_id, actor)),
                 order: head.order + 1,
-                preceding_state: head.state,
                 timestamp: starknet::get_block_timestamp(),
             }
         }
@@ -448,12 +457,11 @@ pub mod SeasonDomain {
             }
             Ok(IGameplayKeyDispatcher { contract_address: actor }.get_public_key())
         }
-        fn authenticate_ticket(self: @ContractState, intent: @Intent, context: @ExecutionContext, envelope: @Envelope) {
-            authenticate_submission(self.authentication.read().submitter, *context.authority_epoch, *envelope.l2_gas);
+        fn authenticate_ticket(self: @ContractState, intent: @Intent, envelope: @Envelope) {
+            authenticate_submission(self.authentication.read().submitter);
             let head = self.recording.head.read();
             assert!(*envelope.action == action_identity(intent), "altered action");
             assert!(*envelope.order == head.order + 1, "out of order");
-            assert!(*envelope.preceding_state == head.state, "state predecessor mismatch");
             assert!(*envelope.execution_config == self.execution_config(), "execution config mismatch");
             assert!(timestamp_in_bounds(*envelope.timestamp, starknet::get_block_timestamp()), "future execution time");
             assert!(*envelope.timestamp >= head.timestamp, "backwards execution time");
@@ -509,12 +517,7 @@ pub mod SeasonDomain {
             Ok((game_id, actor))
         }
         fn authenticate_action(
-            self: @ContractState,
-            intent: @Intent,
-            context: @ExecutionContext,
-            envelope: @Envelope,
-            r: felt252,
-            s: felt252,
+            self: @ContractState, intent: @Intent, envelope: @Envelope, r: felt252, s: felt252,
         ) -> Result<(), felt252> {
             if *intent.chain != get_tx_info().unbox().chain_id {
                 return Err('FOREIGN_CHAIN');
@@ -527,8 +530,7 @@ pub mod SeasonDomain {
                 return Err('INVALID_ACTOR');
             }
             let public_key = self.try_registered_key(actor)?;
-            if *context.accepted_public_key != public_key
-                || !check_ecdsa_signature(*envelope.action, public_key, r, s) {
+            if !check_ecdsa_signature(*envelope.action, public_key, r, s) {
                 return Err('INVALID_SIGNATURE');
             }
             Ok(())

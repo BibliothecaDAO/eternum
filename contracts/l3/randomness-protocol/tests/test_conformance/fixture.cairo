@@ -7,6 +7,9 @@ pub use eternum_randomness_protocol::entrypoint::{
     IRecordedExecutionDispatcher, IRecordedExecutionDispatcherTrait, IRecordedExecutionSafeDispatcher,
     IRecordedExecutionSafeDispatcherTrait,
 };
+use eternum_randomness_protocol::epochs::{
+    IRandomnessEpochsDispatcher, IRandomnessEpochsDispatcherTrait, epoch_commitment,
+};
 pub use eternum_randomness_protocol::stub::{IFixtureDispatcher, IFixtureDispatcherTrait};
 use eternum_randomness_protocol::{Envelope, Intent, action_identity, encode_envelope};
 use snforge_std::signature::stark_curve::{StarkCurveKeyPair, StarkCurveKeyPairImpl, StarkCurveSignerImpl};
@@ -41,6 +44,9 @@ pub fn setup() -> ContractAddress {
     );
     start_cheat_chain_id(address, 'TEST');
     start_cheat_block_timestamp(address, 1100);
+    snforge_std::cheat_caller_address(account, account, snforge_std::CheatSpan::TargetCalls(1));
+    IRandomnessEpochsDispatcher { contract_address: account }.open_randomness_epoch(epoch_commitment(123456), 10);
+    start_cheat_caller_address(account, 222.try_into().unwrap());
     address
 }
 pub fn intent(address: ContractAddress) -> Intent {
@@ -62,15 +68,13 @@ pub fn envelope(action: @Intent) -> Envelope {
     Envelope {
         action: action_identity(action),
         order: 1,
-        preceding_state: 0,
         timestamp: 1005,
         execution_config: 987,
-        l2_gas: 1200000000,
         root: 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff,
     }
 }
 pub fn context(envelope: @Envelope) -> ExecutionContext {
-    ExecutionContext { envelope: encode_envelope(envelope), authority_epoch: 1, accepted_public_key: pair().public_key }
+    ExecutionContext { envelope: encode_envelope(envelope) }
 }
 
 pub fn terminal_arguments(ref action: Intent) {

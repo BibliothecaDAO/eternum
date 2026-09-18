@@ -2,6 +2,18 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { Account, RpcProvider, ec, hash, constants, stark } from "starknet";
 import { submitOrderedKeyRotation } from "./key-rotation";
 
+const transport = vi.hoisted(() => ({ request: vi.fn(), disconnect: vi.fn() }));
+vi.mock("starknet", async (original) => ({
+  ...(await original<typeof import("starknet")>()),
+  WebSocketChannel: class {
+    on(name: string, callback: () => void) {
+      if (name === "open") queueMicrotask(callback);
+    }
+    sendReceive = transport.request;
+    disconnect = transport.disconnect;
+  },
+}));
+
 const bounds = {
   l1_gas: { max_amount: 100n, max_price_per_unit: 10n },
   l2_gas: { max_amount: 1_000_000n, max_price_per_unit: 20n },
@@ -25,26 +37,26 @@ function setup() {
 afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
+  transport.request.mockReset();
+  transport.disconnect.mockReset();
 });
 
 describe("ordered gameplay key rotation", () => {
   it("signs one authority transaction and waits for the admission service to execute it", async () => {
     const { authority, provider, direct } = setup();
-    let release!: (value: Response) => void;
-    const request = vi.fn().mockImplementation(
+    let release!: (value: string) => void;
+    const request = transport.request.mockImplementation(
       () =>
-        new Promise<Response>((resolve) => {
+        new Promise<string>((resolve) => {
           release = resolve;
         }),
     );
-    vi.stubGlobal("fetch", request);
     const rotation = submitOrderedKeyRotation(authority, provider, call, "http://127.0.0.1:15181");
     await vi.waitFor(() => expect(request).toHaveBeenCalledOnce());
     expect(provider.waitForTransaction).not.toHaveBeenCalled();
     expect(direct).not.toHaveBeenCalled();
-    const [url, options] = request.mock.calls[0]!;
-    expect(url.toString()).toBe("http://127.0.0.1:15181/key-rotations");
-    const transaction = JSON.parse(options.body);
+    const [method, [transaction]] = request.mock.calls[0]!;
+    expect(method).toBe("game_rotateGameplayKey");
     expect(transaction.calldata.every((felt: string) => /^0x[0-9a-f]+$/i.test(felt))).toBe(true);
     expect(transaction.calldata.map(BigInt)).toEqual([
       1n,
@@ -69,18 +81,22 @@ describe("ordered gameplay key rotation", () => {
     });
     const signature = new ec.starkCurve.Signature(BigInt(transaction.signature[0]), BigInt(transaction.signature[1]));
     expect(ec.starkCurve.verify(signature, identity, ec.starkCurve.getPublicKey(secret))).toBe(true);
-    release(Response.json("0x77"));
+    release("0x77");
     await expect(rotation).resolves.toBe("0x77");
     expect(provider.waitForTransaction).toHaveBeenCalledWith("0x77");
+    expect(transport.disconnect).toHaveBeenCalledOnce();
   });
 
-  it.each([400, 503])("fails loudly on admission refusal %s without direct submission", async (status) => {
-    const { authority, provider, direct } = setup();
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, { status })));
-    await expect(submitOrderedKeyRotation(authority, provider, call, "http://127.0.0.1:15181")).rejects.toThrow(
-      `Ordered key rotation failed (${status})`,
-    );
-    expect(direct).not.toHaveBeenCalled();
-    expect(provider.waitForTransaction).not.toHaveBeenCalled();
-  });
+  it.each(["invalid authority signature", "game admission unavailable"])(
+    "fails loudly on refusal %s without direct submission",
+    async (reason) => {
+      const { authority, provider, direct } = setup();
+      transport.request.mockRejectedValue(new Error(reason));
+      await expect(submitOrderedKeyRotation(authority, provider, call, "http://127.0.0.1:15181")).rejects.toThrow(
+        reason,
+      );
+      expect(direct).not.toHaveBeenCalled();
+      expect(provider.waitForTransaction).not.toHaveBeenCalled();
+    },
+  );
 });

@@ -40,11 +40,10 @@ pub struct ExecutionRecorded {
     pub reason: felt252,
 }
 
-pub fn following_state(envelope: @Envelope, event: ExecutionRecorded) -> felt252 {
+pub fn following_state(previous_state: felt252, envelope: @Envelope, event: ExecutionRecorded) -> felt252 {
     poseidon_hash_span(
         array![
-            *envelope.preceding_state, envelope_binding(envelope), event.status.into(), event.reason,
-            event.nonce_consumed.into(),
+            previous_state, envelope_binding(envelope), event.status.into(), event.reason, event.nonce_consumed.into(),
         ]
             .span(),
     )
@@ -52,7 +51,7 @@ pub fn following_state(envelope: @Envelope, event: ExecutionRecorded) -> felt252
 
 #[starknet::component]
 pub mod RecordedState {
-    use starknet::storage::StoragePointerWriteAccess;
+    use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
     use crate::{Envelope, Intent};
     use super::{ExecutionHead, ExecutionRecorded, HeadPacking, following_state};
 
@@ -91,7 +90,9 @@ pub mod RecordedState {
                 .head
                 .write(
                     ExecutionHead {
-                        order: *envelope.order, timestamp: *envelope.timestamp, state: following_state(envelope, event),
+                        order: *envelope.order,
+                        timestamp: *envelope.timestamp,
+                        state: following_state(self.head.read().state, envelope, event),
                     },
                 );
             self.emit(event);

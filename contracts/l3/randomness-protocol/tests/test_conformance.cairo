@@ -4,8 +4,11 @@ use eternum_randomness_protocol::authority::{
     ISequencingAuthorityDispatcherTrait,
 };
 use eternum_randomness_protocol::entrypoint::{
-    IRecordedExecutionViewsDispatcher, IRecordedExecutionViewsDispatcherTrait, accepted_context_matches,
+    IRecordedExecutionViewsDispatcher, IRecordedExecutionViewsDispatcherTrait, RecordedAction, accepted_context_matches,
     timestamp_in_bounds,
+};
+use eternum_randomness_protocol::epochs::{
+    IRandomnessEpochsDispatcher, IRandomnessEpochsDispatcherTrait, epoch_commitment, epoch_root,
 };
 use eternum_randomness_protocol::recording::following_state;
 use receipts::RecordedReceiptsTrait;
@@ -21,10 +24,8 @@ use snforge_std::signature::stark_curve::{StarkCurveKeyPair, StarkCurveKeyPairIm
 use snforge_std::signature::{KeyPairTrait, SignerTrait};
 use snforge_std::{
     start_cheat_account_contract_address, start_cheat_block_timestamp, start_cheat_block_timestamp_global,
-    start_cheat_caller_address, start_cheat_resource_bounds, start_cheat_signature, start_cheat_transaction_hash,
-    start_cheat_transaction_version,
+    start_cheat_caller_address, start_cheat_signature, start_cheat_transaction_hash, start_cheat_transaction_version,
 };
-use starknet::ResourcesBounds;
 use starknet::account::Call;
 
 #[test]
@@ -43,7 +44,6 @@ fn definitive_failure_is_recorded_and_the_next_ticket_executes() {
     next.nonce = 1;
     let mut next_context = envelope(@next);
     next_context.order = 2;
-    next_context.preceding_state = views.get_head().state;
     let (r, s) = pair().sign(action_identity(@next)).unwrap();
     IRecordedExecutionDispatcher { contract_address: address }.execute(next, context(@next_context), r, s);
     assert!(views.get_head().order == 2 && views.get_admission(7, 456).nonce == 2, "successor blocked");
@@ -64,7 +64,6 @@ fn failure_recording_rejects_forgery_and_preserves_a_stale_nonce() {
         let action = intent(address);
         let mut recorded = envelope(@action);
         recorded.order = order;
-        recorded.preceding_state = views.get_head().state;
         let (r, s) = pair().sign(action_identity(@action)).unwrap();
         reject_execution(address, action, context(@recorded), r, s).unwrap();
         let failed = views.recorded_outcome(order).unwrap();
@@ -82,14 +81,13 @@ struct ContextVector {
     valid_until: u64,
     order: u64,
     last_order: u64,
-    l2_gas: u64,
     accepted: bool,
     executable: bool,
 }
 
 #[test]
 fn cross_language_context_boundaries() {
-    let input = read_txt(@FileTrait::new("tests/fixtures/context-v1.txt"));
+    let input = read_txt(@FileTrait::new("tests/fixtures/context-v2.txt"));
     let mut fields = input.span();
     let vectors: Array<ContextVector> = Serde::deserialize(ref fields).unwrap();
     assert!(fields.is_empty(), "trailing context vector");
@@ -101,7 +99,6 @@ fn cross_language_context_boundaries() {
         let mut recorded = envelope(@action);
         recorded.timestamp = vector.recorded;
         recorded.order = vector.order;
-        recorded.l2_gas = vector.l2_gas;
         assert!(accepted_context_matches(@action, @recorded) == vector.accepted, "acceptance boundary");
         assert!(
             timestamp_in_bounds(vector.recorded, vector.block_time) == vector.executable, "future timestamp boundary",
@@ -112,43 +109,36 @@ fn cross_language_context_boundaries() {
 #[test]
 #[feature("safe_dispatcher")]
 fn malformed_transport_consumes_nothing_and_invalid_action_signature_is_terminal() {
-    for case in 0_u32..6 {
+    for case in 0_u32..5 {
         let address = setup();
         let action = intent(address);
         let recorded = envelope(@action);
         let (mut r, s) = pair().sign(action_identity(@action)).unwrap();
         let mut witness = context(@recorded);
         match case {
-            0 => { witness.authority_epoch = 2; },
-            1 => { witness.accepted_public_key = 1; },
-            2 => { r = 1; },
-            3 => {
-                witness.envelope = array!['ETERNUM_ENTROPY', 1];
-                witness.envelope.append_span(encode_envelope(@recorded).span().slice(2, 8));
-            },
-            4 => { witness.envelope.append(0); },
-            _ => {
+            0 => { r = 1; },
+            1 => {
                 witness.envelope = array!['ETERNUM_ENTROPY', 2];
-                witness.envelope.append_span(encode_envelope(@recorded).span().slice(2, 5));
-                witness.envelope.append(0);
-                witness.envelope.append_span(encode_envelope(@recorded).span().slice(8, 2));
+                witness.envelope.append_span(encode_envelope(@recorded).span().slice(2, 6));
+            },
+            2 => { witness.envelope.append(0); },
+            3 => { witness.envelope = array!['ETERNUM_ENTROPY', 3, recorded.action]; },
+            _ => {
+                witness.envelope = array!['ETERNUM_ENTROPY', 3, recorded.action, 0];
+                witness.envelope.append_span(encode_envelope(@recorded).span().slice(4, 4));
             },
         }
         let result = IRecordedExecutionSafeDispatcher { contract_address: address }.execute(action, witness, r, s);
-        if case == 1 || case == 2 {
+        let views = IRecordedExecutionViewsDispatcher { contract_address: address };
+        if case == 0 {
             assert!(result.is_ok(), "authenticated invalid signature blocked order");
-            let views = IRecordedExecutionViewsDispatcher { contract_address: address };
             let rejected = views.recorded_outcome(1).unwrap();
             assert!(rejected.status == 2 && rejected.reason == 'INVALID_SIGNATURE', "missing signature reason");
             assert!(
                 views.get_admission(7, 456).nonce == 0 && !rejected.nonce_consumed, "forgery consumed player nonce",
             );
         } else {
-            assert!(result.is_err(), "malformed witness accepted");
-            assert!(
-                IRecordedExecutionViewsDispatcher { contract_address: address }.recorded_outcome(1).is_none(),
-                "malformed witness consumed order",
-            );
+            assert!(result.is_err() && views.get_head().order == 0, "malformed witness consumed order");
         }
     }
 }
@@ -169,6 +159,7 @@ fn delayed_execution_uses_recorded_time_after_intent_expiry_and_rejects_duplicat
             && time == 1005
             && head
                 .state == following_state(
+                    0,
                     @recorded,
                     IRecordedExecutionViewsDispatcher { contract_address: address }.recorded_outcome(order).unwrap(),
                 ),
@@ -193,7 +184,7 @@ fn invalid_transport_is_non_consuming_and_invalid_acceptance_is_terminal() {
         match case {
             0 => { recorded.action = 0; },
             1 => { recorded.order = 2; },
-            2 => { recorded.preceding_state = 1; },
+            2 => { recorded.order = 11; },
             3 => { recorded.execution_config = 1; },
             4 => { recorded.timestamp = 999; },
             5 => { recorded.timestamp = 1011; },
@@ -242,36 +233,50 @@ fn rejects_changed_signed_fields_and_foreign_identities() {
 #[test]
 #[feature("safe_dispatcher")]
 fn simulation_context_cannot_bypass_transaction_authorization() {
-    for case in 0_u32..6 {
+    for case in 0_u32..5 {
         let address = setup();
-        let action = intent(address);
-        let recorded = envelope(@action);
-        let (r, s) = pair().sign(action_identity(@action)).unwrap();
+        let account = IFixtureDispatcher { contract_address: address }.authority();
+        let signer: StarkCurveKeyPair = KeyPairTrait::from_secret_key(54321);
+        let (r, s) = signer.sign(999).unwrap();
+        start_cheat_caller_address(account, 0.try_into().unwrap());
+        start_cheat_account_contract_address(account, account);
+        start_cheat_transaction_version(account, 3);
+        start_cheat_transaction_hash(account, 999);
+        start_cheat_signature(account, array![r, s].span());
         match case {
-            0 => { start_cheat_signature(address, array![].span()); },
+            0 => { start_cheat_signature(account, array![].span()); },
             1 => {
                 let (forged_r, forged_s) = pair().sign(999).unwrap();
-                start_cheat_signature(address, array![forged_r, forged_s].span());
+                start_cheat_signature(account, array![forged_r, forged_s].span());
             },
-            2 => { start_cheat_transaction_hash(address, 998); },
-            3 => { start_cheat_transaction_version(address, 0x100000000000000000000000000000003); },
-            4 => { start_cheat_account_contract_address(address, 456.try_into().unwrap()); },
-            _ => {
-                start_cheat_resource_bounds(
-                    address,
-                    array![ResourcesBounds { resource: 'L2_GAS', max_amount: 0, max_price_per_unit: 0 }].span(),
-                );
-            },
+            2 => { start_cheat_transaction_hash(account, 998); },
+            3 => { start_cheat_transaction_version(account, 0x100000000000000000000000000000003); },
+            _ => { start_cheat_account_contract_address(account, 456.try_into().unwrap()); },
         }
+        let calls = array![
+            Call { to: address, selector: selector!("execute"), calldata: signed_calldata(address).span() },
+        ];
         assert!(
-            IRecordedExecutionSafeDispatcher { contract_address: address }
-                .execute(action, context(@recorded), r, s)
-                .is_err(),
+            ISequencingAccountSafeDispatcher { contract_address: account }.__execute__(calls).is_err(),
             "preview context accepted",
         );
-        let order = IRecordedExecutionViewsDispatcher { contract_address: address }.get_head().order;
-        assert!(order == 0, "preview changed state");
+        assert!(
+            IRecordedExecutionViewsDispatcher { contract_address: address }.get_head().order == 0,
+            "preview changed state",
+        );
     }
+}
+
+fn signed_calldata(address: starknet::ContractAddress) -> Array<felt252> {
+    let action = intent(address);
+    let recorded = envelope(@action);
+    let (r, s) = pair().sign(action_identity(@action)).unwrap();
+    let mut calldata = array![];
+    action.serialize(ref calldata);
+    context(@recorded).serialize(ref calldata);
+    calldata.append(r);
+    calldata.append(s);
+    calldata
 }
 
 #[test]
@@ -311,34 +316,30 @@ fn authority_rejects_multicalls_callbacks_and_foreign_targets() {
 fn pending_binding_survives_authority_credential_rotation() {
     let address = setup();
     let account = IFixtureDispatcher { contract_address: address }.authority();
-    let action = intent(address);
-    let recorded = envelope(@action);
-    let (r, s) = pair().sign(action_identity(@action)).unwrap();
+    let recorded = envelope(@intent(address));
     let replacement: StarkCurveKeyPair = KeyPairTrait::from_secret_key(67890);
-    ISequencingAuthorityDispatcher { contract_address: account }.rotate(replacement.public_key, 2);
+    ISequencingAuthorityDispatcher { contract_address: account }.rotate(replacement.public_key);
+    start_cheat_caller_address(account, 0.try_into().unwrap());
+    start_cheat_account_contract_address(account, account);
+    start_cheat_transaction_version(account, 3);
+    start_cheat_transaction_hash(account, 1000);
+    let original: StarkCurveKeyPair = KeyPairTrait::from_secret_key(54321);
+    let (old_r, old_s) = original.sign(1000).unwrap();
+    start_cheat_signature(account, array![old_r, old_s].span());
+    let call = Call { to: address, selector: selector!("execute"), calldata: signed_calldata(address).span() };
     assert!(
-        IRecordedExecutionSafeDispatcher { contract_address: address }
-            .execute(intent(address), context(@recorded), r, s)
-            .is_err(),
+        ISequencingAccountSafeDispatcher { contract_address: account }.__execute__(array![call]).is_err(),
         "stale authority accepted",
     );
-    let mut witness = context(@recorded);
-    witness.authority_epoch = 2;
     let (new_r, new_s) = replacement.sign(1000).unwrap();
-    start_cheat_transaction_hash(address, 1000);
-    start_cheat_signature(address, array![new_r, new_s].span());
-    IRecordedExecutionDispatcher { contract_address: address }.execute(action, witness, r, s);
-    let head = IRecordedExecutionViewsDispatcher { contract_address: address }.get_head();
-    let order = head.order;
-    let timestamp = head.timestamp;
+    start_cheat_signature(account, array![new_r, new_s].span());
+    ISequencingAccountSafeDispatcher { contract_address: account }.__execute__(array![call]).unwrap();
+    let views = IRecordedExecutionViewsDispatcher { contract_address: address };
+    let head = views.get_head();
     assert!(
-        order == 1
-            && timestamp == recorded.timestamp
-            && head
-                .state == following_state(
-                    @recorded,
-                    IRecordedExecutionViewsDispatcher { contract_address: address }.recorded_outcome(order).unwrap(),
-                ),
+        head.order == 1
+            && head.timestamp == recorded.timestamp
+            && head.state == following_state(0, @recorded, views.recorded_outcome(1).unwrap()),
         "rotation changed binding",
     );
 }
@@ -365,7 +366,7 @@ fn losses_and_terminal_rejections_consume_the_original_nonce() {
         assert!(
             IRecordedExecutionViewsDispatcher { contract_address: address }
                 .get_head()
-                .state == following_state(@recorded, result),
+                .state == following_state(0, @recorded, result),
             "terminal binding",
         );
         let next = IRecordedExecutionViewsDispatcher { contract_address: address }.get_admission(7, 456);
@@ -402,6 +403,7 @@ fn accepted_execution_after_a_day_matches_immediate_execution() {
                 && timestamp == recorded.timestamp
                 && head
                     .state == following_state(
+                        0,
                         @recorded,
                         IRecordedExecutionViewsDispatcher { contract_address: address }
                             .recorded_outcome(order)
@@ -437,11 +439,11 @@ fn outage_recovery_consumes_the_accepted_prefix_before_fresh_work() {
     successor.valid_from = next.timestamp;
     successor.valid_until = next.timestamp + 10;
     terminal_arguments(ref successor);
+    let previous_state = views.get_head().state;
     let mut fresh = envelope(@successor);
     fresh.timestamp = next.timestamp;
     fresh.root = recorded.root ^ 1;
     fresh.order = next.order;
-    fresh.preceding_state = next.preceding_state;
     let (r, s) = pair().sign(action_identity(@successor)).unwrap();
     IRecordedExecutionDispatcher { contract_address: address }.execute(successor, context(@fresh), r, s);
     let head = IRecordedExecutionViewsDispatcher { contract_address: address }.get_head();
@@ -452,6 +454,7 @@ fn outage_recovery_consumes_the_accepted_prefix_before_fresh_work() {
             && timestamp == fresh.timestamp
             && head
                 .state == following_state(
+                    previous_state,
                     @fresh,
                     IRecordedExecutionViewsDispatcher { contract_address: address }.recorded_outcome(order).unwrap(),
                 ),
@@ -499,7 +502,7 @@ fn invalid_action_keys_and_nonces_cannot_block_a_valid_successor(case: u32) {
     assert!(
         IRecordedExecutionViewsDispatcher { contract_address: address }
             .get_head()
-            .state == following_state(@recorded, result),
+            .state == following_state(0, @recorded, result),
         "terminal ticket changed",
     );
     let next = views.get_admission(7, 456);
@@ -513,7 +516,6 @@ fn invalid_action_keys_and_nonces_cannot_block_a_valid_successor(case: u32) {
     successor.nonce = next.nonce;
     let mut following = envelope(@successor);
     following.order = next.order;
-    following.preceding_state = next.preceding_state;
     let (r, s) = pair().sign(action_identity(@successor)).unwrap();
     IRecordedExecutionDispatcher { contract_address: address }.execute(successor, context(@following), r, s);
     assert!(views.recorded_outcome(2).unwrap().status == 1, "valid successor failed");
@@ -563,7 +565,6 @@ fn stale_nonce_after_consumption_does_not_invalidate_the_next_action() {
     let stale = intent(address);
     let mut recorded = envelope(@stale);
     recorded.order = next.order;
-    recorded.preceding_state = next.preceding_state;
     let (r, s) = pair().sign(action_identity(@stale)).unwrap();
     IRecordedExecutionDispatcher { contract_address: address }.execute(stale, context(@recorded), r, s);
     assert!(views.recorded_outcome(2).unwrap().reason == 'STALE_NONCE', "stale nonce reason missing");
@@ -573,7 +574,6 @@ fn stale_nonce_after_consumption_does_not_invalidate_the_next_action() {
     successor.nonce = 1;
     let mut recorded = envelope(@successor);
     recorded.order = next.order;
-    recorded.preceding_state = next.preceding_state;
     let (r, s) = pair().sign(action_identity(@successor)).unwrap();
     IRecordedExecutionDispatcher { contract_address: address }.execute(successor, context(@recorded), r, s);
     assert!(views.recorded_outcome(3).unwrap().status == 1, "successor invalidated by stale ticket");
@@ -586,8 +586,7 @@ fn submitter_cannot_substitute_a_gameplay_key() {
     let recorded = envelope(@action);
     let attacker: StarkCurveKeyPair = KeyPairTrait::from_secret_key(777);
     let (r, s) = attacker.sign(action_identity(@action)).unwrap();
-    let mut witness = context(@recorded);
-    witness.accepted_public_key = attacker.public_key;
+    let witness = context(@recorded);
     IRecordedExecutionDispatcher { contract_address: address }.execute(action, witness, r, s);
     let views = IRecordedExecutionViewsDispatcher { contract_address: address };
     let rejected = views.recorded_outcome(1).unwrap();
@@ -612,7 +611,6 @@ fn recorded_time_never_moves_backwards_and_equal_time_is_valid() {
     terminal_arguments(ref action);
     let mut backwards = envelope(@action);
     backwards.order = next.order;
-    backwards.preceding_state = next.preceding_state;
     backwards.timestamp = recorded.timestamp - 1;
     let (r, s) = pair().sign(action_identity(@action)).unwrap();
     assert!(
@@ -643,13 +641,15 @@ fn unauthenticated_action_leaves_nonce_for_successor(case: u32) {
         action.deployment = 1;
     }
     recorded.action = action_identity(@action);
-    let (mut r, s) = pair().sign(action_identity(@action)).unwrap();
-    let mut witness = context(@recorded);
+    let signing_pair = if case == 1 {
+        KeyPairTrait::from_secret_key(777)
+    } else {
+        pair()
+    };
+    let (mut r, s) = signing_pair.sign(action_identity(@action)).unwrap();
+    let witness = context(@recorded);
     if case == 0 {
         r = 1;
-    }
-    if case == 1 {
-        witness.accepted_public_key = 1;
     }
     IRecordedExecutionDispatcher { contract_address: address }.execute(action, witness, r, s);
     let views = IRecordedExecutionViewsDispatcher { contract_address: address };
@@ -667,7 +667,6 @@ fn unauthenticated_action_leaves_nonce_for_successor(case: u32) {
     let successor = intent(address);
     let mut following = envelope(@successor);
     following.order = next.order;
-    following.preceding_state = next.preceding_state;
     let (r, s) = pair().sign(action_identity(@successor)).unwrap();
     IRecordedExecutionDispatcher { contract_address: address }.execute(successor, context(@following), r, s);
     let succeeded = views.recorded_outcome(2).unwrap();
@@ -693,4 +692,183 @@ fn foreign_chain_leaves_nonce_for_a_valid_successor() {
 #[test]
 fn foreign_deployment_leaves_nonce_for_a_valid_successor() {
     unauthenticated_action_leaves_nonce_for_successor(3);
+}
+
+
+#[feature("safe_dispatcher")]
+fn sequencing_call(
+    address: starknet::ContractAddress, selector: felt252, calldata: Array<felt252>,
+) -> Result<Array<Span<felt252>>, Array<felt252>> {
+    let account = IFixtureDispatcher { contract_address: address }.authority();
+    let signer: StarkCurveKeyPair = KeyPairTrait::from_secret_key(54321);
+    let (r, s) = signer.sign(999).unwrap();
+    snforge_std::cheat_caller_address(account, 0.try_into().unwrap(), snforge_std::CheatSpan::TargetCalls(1));
+    start_cheat_account_contract_address(account, account);
+    start_cheat_transaction_version(account, 3);
+    start_cheat_transaction_hash(account, 999);
+    start_cheat_signature(account, array![r, s].span());
+    ISequencingAccountSafeDispatcher { contract_address: account }
+        .__execute__(
+            array![
+                Call {
+                    to: if selector == selector!("open_randomness_epoch")
+                        || selector == selector!("reveal_randomness_epoch") {
+                        account
+                    } else {
+                        address
+                    },
+                    selector,
+                    calldata: calldata.span(),
+                },
+            ],
+        )
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn batch_records_each_outcome_and_only_authenticated_current_nonces() {
+    let address = setup();
+    let mut actions = array![];
+    let mut envelopes = array![];
+    for order in 1_u64..5 {
+        let mut action = intent(address);
+        action.nonce = if order <= 2 {
+            0
+        } else {
+            1
+        };
+        // A forged first action cannot make the valid second action stale.
+        // The third is an authenticated gameplay rejection; the fourth is stale.
+        if order >= 3 {
+            terminal_arguments(ref action);
+        }
+        let mut recorded = envelope(@action);
+        recorded.order = order;
+        let (r, s) = pair().sign(action_identity(@action)).unwrap();
+        actions
+            .append(
+                RecordedAction { intent: action, context: context(@recorded), r: if order == 1 {
+                    1
+                } else {
+                    r
+                }, s },
+            );
+        envelopes.append(recorded);
+    }
+    let mut calldata = array![];
+    actions.serialize(ref calldata);
+    sequencing_call(address, selector!("execute_batch"), calldata).unwrap();
+    let views = IRecordedExecutionViewsDispatcher { contract_address: address };
+    let mut state = 0;
+    for recorded in envelopes {
+        let result = views.recorded_outcome(recorded.order).unwrap();
+        let consumed = recorded.order == 2 || recorded.order == 3;
+        assert!(result.nonce_consumed == consumed, "wrong per-ticket nonce consumption");
+        assert!(result.status == if recorded.order == 2 {
+            1
+        } else {
+            2
+        }, "wrong per-ticket status");
+        if recorded.order == 1 {
+            assert!(result.reason == 'INVALID_SIGNATURE', "forged signature reason");
+        }
+        if recorded.order == 4 {
+            assert!(result.reason == 'STALE_NONCE', "stale nonce reason");
+        }
+        state = following_state(state, @recorded, result);
+    }
+    let head = views.get_head();
+    assert!(head.order == 4 && head.state == state, "batch omitted intermediate heads");
+    assert!(views.get_admission(7, 456).nonce == 2, "batch consumed wrong player nonce");
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn out_of_order_batch_rolls_back_every_ticket() {
+    let address = setup();
+    let mut actions = array![];
+    for order in array![1_u64, 3] {
+        let mut action = intent(address);
+        action.nonce = if order == 1 {
+            0
+        } else {
+            1
+        };
+        terminal_arguments(ref action);
+        let mut recorded = envelope(@action);
+        recorded.order = order;
+        let (r, s) = pair().sign(action_identity(@action)).unwrap();
+        actions.append(RecordedAction { intent: action, context: context(@recorded), r, s });
+    }
+    let mut calldata = array![];
+    actions.serialize(ref calldata);
+    assert!(sequencing_call(address, selector!("execute_batch"), calldata).is_err(), "out of order batch accepted");
+    let views = IRecordedExecutionViewsDispatcher { contract_address: address };
+    assert!(views.get_head().order == 0 && views.get_admission(7, 456).nonce == 0, "partial batch effects escaped");
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn epoch_reveal_reproduces_roots_and_never_allows_a_revealed_secret_again() {
+    let address = setup();
+    let account = IFixtureDispatcher { contract_address: address }.authority();
+    let epochs = IRandomnessEpochsDispatcher { contract_address: account };
+    let secret: u256 = 123456;
+    assert!(
+        sequencing_call(address, selector!("reveal_randomness_epoch"), array![secret.low.into(), secret.high.into()])
+            .is_err(),
+        "early epoch reveal accepted",
+    );
+    assert!(
+        sequencing_call(address, selector!("open_randomness_epoch"), array![epoch_commitment(654321), 20]).is_err(),
+        "unrevealed epoch replaced",
+    );
+    let mut actions = array![];
+    let mut envelopes = array![];
+    for order in 1_u64..11 {
+        let mut action = intent(address);
+        action.nonce = order - 1;
+        terminal_arguments(ref action);
+        let mut recorded = envelope(@action);
+        recorded.order = order;
+        recorded.root = epoch_root(secret, order);
+        let (r, s) = pair().sign(action_identity(@action)).unwrap();
+        actions.append(RecordedAction { intent: action, context: context(@recorded), r, s });
+        envelopes.append(recorded);
+    }
+    let mut calldata = array![];
+    actions.serialize(ref calldata);
+    sequencing_call(address, selector!("execute_batch"), calldata).unwrap();
+    assert!(
+        sequencing_call(address, selector!("reveal_randomness_epoch"), array![1, 0]).is_err(), "wrong secret accepted",
+    );
+    sequencing_call(address, selector!("reveal_randomness_epoch"), array![secret.low.into(), secret.high.into()])
+        .unwrap();
+    let epoch = epochs.get_randomness_epoch(1);
+    let revealed = epoch.revealed_secret.unwrap();
+    assert!(
+        epoch.first_order == 1 && epoch.last_order == 10 && epoch.commitment == epoch_commitment(revealed),
+        "epoch commitment changed",
+    );
+    let views = IRecordedExecutionViewsDispatcher { contract_address: address };
+    let mut state = 0;
+    for recorded in envelopes {
+        assert!(recorded.root == epoch_root(revealed, recorded.order), "recorded root cannot be reproduced");
+        state = following_state(state, @recorded, views.recorded_outcome(recorded.order).unwrap());
+    }
+    assert!(views.get_head().state == state && views.get_head().order == 10, "recorded roots not bound in head");
+    assert!(
+        sequencing_call(address, selector!("open_randomness_epoch"), array![epoch.commitment, 20]).is_err(),
+        "revealed secret reused",
+    );
+    sequencing_call(address, selector!("open_randomness_epoch"), array![epoch_commitment(654321), 20]).unwrap();
+    let next = epochs.get_randomness_epoch(2);
+    assert!(
+        epochs.current_randomness_epoch() == 2
+            && next.first_order == 11
+            && next.last_order == 20
+            && next.revealed_secret.is_none(),
+        "epoch transition lost order",
+    );
+    assert!(epochs.get_randomness_epoch(1).revealed_secret == Some(secret), "historical reveal lost");
 }

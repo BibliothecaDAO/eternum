@@ -9,6 +9,9 @@ use eternum_randomness_protocol::entrypoint::{
     IRecordedExecutionSafeDispatcher, IRecordedExecutionSafeDispatcherTrait, IRecordedExecutionViewsDispatcher,
     IRecordedExecutionViewsSafeDispatcher, IRecordedExecutionViewsSafeDispatcherTrait,
 };
+use eternum_randomness_protocol::epochs::{
+    IRandomnessEpochsDispatcher, IRandomnessEpochsDispatcherTrait, epoch_commitment,
+};
 use eternum_randomness_protocol::{Envelope, Intent, action_identity, encode_envelope};
 use snforge_std::fs::{FileTrait, read_txt};
 use snforge_std::signature::stark_curve::{StarkCurveKeyPair, StarkCurveKeyPairImpl, StarkCurveSignerImpl};
@@ -114,16 +117,11 @@ pub fn make_context(season: ContractAddress, action: FixtureAction, context: Dom
     let envelope = Envelope {
         action: action_identity(@make_intent(season, action)),
         order: head.order + 1,
-        preceding_state: head.state,
         timestamp: context.timestamp,
         execution_config: poseidon_hash_span(values.span()),
-        l2_gas: 1200000000,
         root: context.raw_root,
     };
-    let player: StarkCurveKeyPair = KeyPairTrait::from_secret_key(12345);
-    ExecutionContext {
-        envelope: encode_envelope(@envelope), authority_epoch: 1, accepted_public_key: player.public_key,
-    }
+    ExecutionContext { envelope: encode_envelope(@envelope) }
 }
 #[generate_trait]
 pub impl FixtureSeason of FixtureSeasonTrait {
@@ -163,6 +161,8 @@ fn definitive_execution_failure_consumes_only_its_ticket_then_successor_executes
     let authority = super::submitter();
     snforge_std::start_cheat_caller_address(authority, super::authority());
     ISequencingAuthorityDispatcher { contract_address: authority }.configure(d.peers.season);
+    snforge_std::start_cheat_caller_address(authority, authority);
+    IRandomnessEpochsDispatcher { contract_address: authority }.open_randomness_epoch(epoch_commitment(123456), 100);
     snforge_std::start_cheat_caller_address(authority, 0.try_into().unwrap());
     configure_submitter(authority, authority);
     let mut calldata = array![];

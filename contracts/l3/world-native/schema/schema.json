@@ -549,6 +549,18 @@
         },
         {
           "type": "function",
+          "name": "execute_batch",
+          "inputs": [
+            {
+              "name": "actions",
+              "type": "core::array::Array::<eternum_randomness_protocol::entrypoint::RecordedAction>"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
           "name": "reject_execution",
           "inputs": [
             {
@@ -13535,10 +13547,6 @@
           "type": "core::integer::u64"
         },
         {
-          "name": "preceding_state",
-          "type": "core::felt252"
-        },
-        {
           "name": "timestamp",
           "type": "core::integer::u64"
         }
@@ -13551,13 +13559,27 @@
         {
           "name": "envelope",
           "type": "core::array::Array::<core::felt252>"
+        }
+      ]
+    },
+    "eternum_randomness_protocol::entrypoint::RecordedAction": {
+      "type": "struct",
+      "name": "eternum_randomness_protocol::entrypoint::RecordedAction",
+      "members": [
+        {
+          "name": "intent",
+          "type": "eternum_randomness_protocol::Intent"
         },
         {
-          "name": "authority_epoch",
-          "type": "core::integer::u64"
+          "name": "context",
+          "type": "eternum_randomness_protocol::entrypoint::ExecutionContext"
         },
         {
-          "name": "accepted_public_key",
+          "name": "r",
+          "type": "core::felt252"
+        },
+        {
+          "name": "s",
           "type": "core::felt252"
         }
       ]
@@ -18745,5 +18767,5 @@
       ]
     }
   },
-  "identity": "5cb878140b1c188d37b1f8671c03e2de9e2dcce6d9d27cbbf6db9639e283be83"
+  "identity": "b3d4d554dc0878684a9bed1f134c4e90e20e7c40b29b073126b7f77c74de34b7"
 }

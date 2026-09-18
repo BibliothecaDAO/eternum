@@ -133,6 +133,7 @@ const startSync = async (
     store: setupResult.store,
     socketFactory: input.socketFactory,
   });
+  session.onDispose = input.native.submitIntent.dispose;
   await runtime.startSession(session);
   setupResult.network.provider.setNativeSubmission(
     nativeSubmission(input.native, setupResult.store, input.gameId, input.world.worldAddress, async (actor) => {

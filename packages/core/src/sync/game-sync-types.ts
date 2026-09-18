@@ -113,6 +113,7 @@ export interface GameSyncRuntimeMetrics {
 }
 
 export interface GameSyncSessionStart {
+  onDispose?: () => void;
   transport: GameSyncTransport;
   store: GameSyncStore;
   snapshotModels: readonly string[];

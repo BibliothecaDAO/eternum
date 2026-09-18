@@ -7,15 +7,18 @@ export function transactionGameIds(manifest: NativeManifest, calldata: string[] 
   if (!calldata?.length) return [];
   const schema = manifest.native.schemas[manifest.native.activeSchema];
   const commands = schema.domains.season.entrypoints.filter((entry) =>
-    entry.inputs.some((member) => member.name === "intent"),
+    entry.inputs.some((member) => member.name === "intent" || member.name === "actions"),
   );
   const games = new Set<string>();
   for (const call of accountCalls(calldata)) {
     if (BigInt(call.address) !== BigInt(manifest.world.address)) continue;
     const command = commands.find((entry) => BigInt(call.selector) === BigInt(hash.getSelectorFromName(entry.name)));
     if (!command) continue;
-    const { intent } = decodeMembers(schema, command.inputs, call.calldata);
-    games.add(String(BigInt((intent as Record<string, bigint>).game_id)));
+    const decoded = decodeMembers(schema, command.inputs, call.calldata);
+    const actions = command.name === "execute_batch" ? (decoded.actions as Record<string, unknown>[]) : [decoded];
+    for (const action of actions) {
+      games.add(String(BigInt((action.intent as Record<string, bigint>).game_id)));
+    }
   }
   return [...games];
 }
