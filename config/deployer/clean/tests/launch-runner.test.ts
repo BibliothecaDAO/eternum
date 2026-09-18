@@ -40,6 +40,8 @@ mock.module("../config/config-loader", () => ({
 mock.module("../registrar/calls", () => ({
   assertRegistrarAvailable: assertRegistrarAvailableMock,
   createRegistrarGame: createRegistrarGameMock,
+  findRegistrarGame: findGameRegistryByNameMock,
+  resolveBlitzRoster: async () => [{ owner: "0xabc", account: "0xdef" }],
   resolveRegistrarEnvironmentId: (environmentId: string) => environmentId,
   resolveRegistrarWorldAddress: () => "0xworld",
 }));
@@ -273,6 +275,7 @@ function buildRequest() {
 function buildLaunchConfig() {
   return {
     season: { durationSeconds: 3_600 },
+    blitz: { mode: { on: true } },
     dev: { mode: { on: false } },
     settlement: { single_realm_mode: false, two_player_mode: false },
   };

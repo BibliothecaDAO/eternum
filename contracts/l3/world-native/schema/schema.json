@@ -7861,6 +7861,38 @@
         },
         {
           "type": "function",
+          "name": "game_id_by_name",
+          "inputs": [
+            {
+              "name": "name",
+              "type": "core::felt252"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::integer::u32"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "blitz_roster",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::array::Span::<world_native::registrar::RosterPlayer>"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
           "name": "create_game",
           "inputs": [
             {
@@ -10267,6 +10299,37 @@
           "wonder": "wonder",
           "order": "order",
           "resources": "resources"
+        }
+      }
+    },
+    {
+      "name": "BlitzRoster",
+      "identity": "0x426c69747a526f73746572",
+      "owners": [
+        "registry"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "players",
+          "type": "core::array::Span::<world_native::registrar::RosterPlayer>",
+          "id": "0x706c6179657273",
+          "feltLength": null
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": null,
+      "observation": {
+        "domain": "realm/blitz",
+        "fields": {
+          "players": "players"
         }
       }
     },
@@ -13129,6 +13192,16 @@
         {
           "name": "snapshot",
           "type": "@core::array::Array::<world_native::production::RecipeConfig>"
+        }
+      ]
+    },
+    "core::array::Span::<world_native::registrar::RosterPlayer>": {
+      "type": "struct",
+      "name": "core::array::Span::<world_native::registrar::RosterPlayer>",
+      "members": [
+        {
+          "name": "snapshot",
+          "type": "@core::array::Array::<world_native::registrar::RosterPlayer>"
         }
       ]
     },
@@ -16807,8 +16880,8 @@
           "type": "world_native::settlement::SettlementMode"
         },
         {
-          "name": "registration_limit",
-          "type": "core::integer::u16"
+          "name": "roster",
+          "type": "core::array::Span::<world_native::registrar::RosterPlayer>"
         },
         {
           "name": "registration_start",
@@ -16825,6 +16898,20 @@
         {
           "name": "seed",
           "type": "core::felt252"
+        }
+      ]
+    },
+    "world_native::registrar::RosterPlayer": {
+      "type": "struct",
+      "name": "world_native::registrar::RosterPlayer",
+      "members": [
+        {
+          "name": "owner",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "account",
+          "type": "core::starknet::contract_address::ContractAddress"
         }
       ]
     },
@@ -18767,5 +18854,5 @@
       ]
     }
   },
-  "identity": "b3d4d554dc0878684a9bed1f134c4e90e20e7c40b29b073126b7f77c74de34b7"
+  "identity": "505d71569d164a0a5b3bb09a3716977e04a0c83f23a75a7b50ee5ad07774ffaa"
 }

@@ -2,7 +2,7 @@ import { nativeDomainAbi } from "../world/native/manifest";
 import type { NativeWorldManifest } from "../world/native/types";
 import type { buildNativePreset } from "../config/native-preset";
 import { resolveGameTransactionResourceBounds } from "@bibliothecadao/eternum";
-import { Account, CallData, type Call, type RawArgs } from "starknet";
+import { Account, CallData, shortString, type Call, type RawArgs, RpcProvider } from "starknet";
 import { resolveDeploymentEnvironment } from "../environment";
 import { openLedgerGame, type LedgerTarget } from "../ledger/calls";
 import { loadRepoJsonFile } from "../shared/repo";
@@ -197,6 +197,83 @@ function resolveNativeCreatedGameId(receipt: unknown, manifest: NativeWorldManif
     if (BigInt(data[0] ?? 0) !== 1n || Number(BigInt(data[2] ?? -1)) !== data.length - 3) continue;
     return parseGameId(data[1]);
   }
+}
+
+export async function findRegistrarGame(
+  provider: RpcProvider,
+  name: string,
+  target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID,
+): Promise<{ gameId: number } | null> {
+  const { manifest } = resolveRegistrarContext(target);
+  const [id] = await provider.callContract({
+    contractAddress: manifest.native.domains.registry.address,
+    entrypoint: "game_id_by_name",
+    calldata: [shortString.encodeShortString(name)],
+  });
+  if (id === undefined) throw new Error("Registrar returned no game identity");
+  const value = BigInt(id);
+  if (value < 0n || value > 0xffffffffn) throw new Error("Registrar returned an invalid game identity");
+  return value === 0n ? null : { gameId: Number(value) };
+}
+
+export function createRosterVerifier(rpcUrl: string, manifestPath: string) {
+  const provider = new RpcProvider({ nodeUrl: rpcUrl });
+  const manifest = loadRepoJsonFile<RegistrarManifest>(manifestPath);
+  return async (owner: string): Promise<void> => {
+    await resolveBlitzRoster(provider, [owner], manifest);
+  };
+}
+
+export async function resolveBlitzRoster(
+  provider: RpcProvider,
+  owners: readonly string[],
+  target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID,
+) {
+  if (owners.length < 1 || owners.length > 24) throw new Error("Blitz requires 1 to 24 registered identities");
+  const normalized = owners.map((owner) => {
+    if (!/^0x[0-9a-f]+$/i.test(owner) || BigInt(owner) === 0n) throw new Error("Invalid roster identity");
+    return `0x${BigInt(owner).toString(16)}`;
+  });
+  if (new Set(normalized).size !== normalized.length) throw new Error("Duplicate roster identity");
+  const { manifest } = resolveRegistrarContext(target);
+  const block = await provider.getBlockNumber();
+  const authentication = await provider.callContract(
+    {
+      contractAddress: manifest.native.domains.season.address,
+      entrypoint: "authentication",
+      calldata: [],
+    },
+    block,
+  );
+  const decoded = new CallData(nativeDomainAbi(manifest, "season")).parse("authentication", authentication) as {
+    registry: bigint;
+  };
+  const registry = `0x${BigInt(decoded.registry).toString(16)}`;
+  if (BigInt(registry) === 0n) throw new Error("World has no PlayerRegistry");
+  return Promise.all(normalized.map((owner) => readRosterPlayer(provider, registry, owner, block)));
+}
+
+async function readRosterPlayer(provider: RpcProvider, registry: string, owner: string, block: number) {
+  const [account] = await provider.callContract(
+    {
+      contractAddress: registry,
+      entrypoint: "account_of",
+      calldata: [owner],
+    },
+    block,
+  );
+  if (account === undefined || BigInt(account) === 0n) throw new Error(`Identity ${owner} has no gameplay account`);
+  const [boundOwner] = await provider.callContract(
+    {
+      contractAddress: registry,
+      entrypoint: "owner_of",
+      calldata: [account],
+    },
+    block,
+  );
+  if (boundOwner === undefined || BigInt(boundOwner) !== BigInt(owner))
+    throw new Error(`Registry binding mismatch for ${owner}`);
+  return { owner, account: `0x${BigInt(account).toString(16)}` };
 }
 
 export function resolveRegistrarWorldAddress(target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID): string {

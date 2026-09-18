@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "b3d4d554dc0878684a9bed1f134c4e90e20e7c40b29b073126b7f77c74de34b7";
+export const nativeFactSchemaIdentity = "505d71569d164a0a5b3bb09a3716977e04a0c83f23a75a7b50ee5ad07774ffaa";
 export interface NativeRows {
   Preset: { readonly preset_id: number; readonly commitment: bigint };
   Series: { readonly series_id: bigint; readonly owner: bigint; readonly created_games: number };
@@ -43,6 +43,7 @@ export interface NativeRows {
   MineKindConfig: { readonly game_id: number; readonly kind: number; readonly resource_type: number; readonly building_category: number; readonly production_rate: bigint; readonly cap_min: bigint; readonly cap_steps: number };
   MinePool: { readonly game_id: number; readonly weights: readonly ({ readonly kind: number; readonly weight: number })[] };
   RealmTraits: { readonly realm_id: number; readonly wonder: number; readonly order: number; readonly resources: readonly (number)[] };
+  BlitzRoster: { readonly game_id: number; readonly players: readonly ({ readonly owner: bigint; readonly account: bigint })[] };
   RealmCatalogue: { readonly address: bigint; readonly initialized: number; readonly digest: bigint };
   RealmGrants: { readonly game_id: number; readonly resources: readonly ({ readonly resource_type: number; readonly amount: bigint })[]; readonly starting_troops: readonly ("Knight" | "Paladin" | "Crossbowman")[]; readonly realm_resources: readonly (number)[] };
   HyperstructureReservations: { readonly game_id: number; readonly placed: number };
@@ -137,6 +138,7 @@ export interface NativeKeys {
   MineKindConfig: { readonly game_id: number; readonly kind: number };
   MinePool: { readonly game_id: number };
   RealmTraits: { readonly realm_id: number };
+  BlitzRoster: { readonly game_id: number };
   RealmCatalogue: { readonly address: bigint };
   RealmGrants: { readonly game_id: number };
   HyperstructureReservations: { readonly game_id: number };
@@ -792,6 +794,21 @@ export const nativeFactModels = {
       "order": "u8",
       "resources": [
         "u8"
+      ]
+    }
+  },
+  "BlitzRoster": {
+    "keys": [
+      "game_id"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "players": [
+        {
+          "owner": "felt",
+          "account": "felt"
+        }
       ]
     }
   },

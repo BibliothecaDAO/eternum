@@ -124,7 +124,7 @@ fn configure_settlement(
     let settlement = preset.settlement;
     let rules = crate::settlement::SettlementRules {
         registration_start: params.registration_start,
-        registration_limit: params.registration_limit,
+        registration_limit: params.roster.len().try_into().unwrap(),
         mode: if preset.rules.blitz_mode_on {
             params.mode
         } else {

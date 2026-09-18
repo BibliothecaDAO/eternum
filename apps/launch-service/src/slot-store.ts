@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import type { Pool, PoolClient } from "pg";
 import { normalizeAddress } from "./address";
 import { SlotConflict, SlotNotFound, splitPlaytestRoster, type PlaytestSlot, type SlotStore } from "./slots";
@@ -36,6 +37,27 @@ async function lockSlot(client: PoolClient, name: string) {
     [name],
   );
   return result.rows[0]!;
+}
+
+async function queueSlotGames(client: PoolClient, slot: PlaytestSlot, groups: PlaytestSlot["registrations"][]) {
+  for (const [index, players] of groups.entries()) {
+    const gameName = `${slot.name}-${index + 1}`;
+    const request = {
+      environment: "madara.blitz",
+      version: "2",
+      gameName,
+      gameStartTime: slot.closesAt,
+      devModeOn: false,
+      twoPlayerMode: false,
+      singleRealmMode: false,
+      rosterOwners: players.map(({ owner }) => owner),
+    };
+    await client.query(
+      `INSERT INTO launch_runs (id, kind, environment, name, request, status)
+       VALUES ($1, 'game', 'madara.blitz', $2, $3::jsonb, 'queued')`,
+      [randomUUID(), gameName, JSON.stringify(request)],
+    );
+  }
 }
 
 export class PostgresSlotStore implements SlotStore {
@@ -86,7 +108,8 @@ export class PostgresSlotStore implements SlotStore {
       if (locked.frozen_at) return readSlot(client, name);
       if (!locked.closed) throw new SlotConflict("Registration is still open");
       const slot = await readSlot(client, name);
-      const assignments = splitPlaytestRoster(slot.registrations).flatMap((group, index) =>
+      const groups = splitPlaytestRoster(slot.registrations);
+      const assignments = groups.flatMap((group, index) =>
         group.map(({ owner }) => ({ owner, game_number: index + 1 })),
       );
       await client.query(
@@ -96,6 +119,7 @@ export class PostgresSlotStore implements SlotStore {
         [name, JSON.stringify(assignments)],
       );
       await client.query("UPDATE playtest_slots SET frozen_at = clock_timestamp() WHERE name = $1", [name]);
+      await queueSlotGames(client, slot, groups);
       return readSlot(client, name);
     });
   }

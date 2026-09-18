@@ -25,6 +25,7 @@ const createApp = (
   store = new InMemoryLaunchStore(),
   allowAnyLauncher = false,
   slots = slotStore(),
+  verifyPlayer = vi.fn(async (_owner: string) => {}),
 ) => ({
   app: createLaunchApp({
     config: {
@@ -35,9 +36,11 @@ const createApp = (
     identity: resolver,
     store,
     slots,
+    verifyPlayer,
   }),
   store,
   slots,
+  verifyPlayer,
 });
 
 describe("free slot registration", () => {
@@ -53,11 +56,27 @@ describe("free slot registration", () => {
     });
 
   test("binds registration to the verified identity, without requiring launcher privileges", async () => {
-    const { app, slots } = createApp(identity("0x456"));
+    const { app, slots, verifyPlayer } = createApp(identity("0x456"));
     const response = await app.request(registerRequest());
     expect(response.status).toBe(200);
     expect(slots.register).toHaveBeenCalledTimes(1);
     expect(slots.register).toHaveBeenCalledWith("friday", "0x456");
+    expect(verifyPlayer).toHaveBeenCalledWith("0x456");
+  });
+
+  test("does not freeze an unbound identity into the roster", async () => {
+    const slots = slotStore();
+    const { app } = createApp(
+      identity("0x456"),
+      new InMemoryLaunchStore(),
+      false,
+      slots,
+      vi.fn(async () => {
+        throw new Error("Identity has no gameplay account");
+      }),
+    );
+    expect((await app.request(registerRequest())).status).toBe(503);
+    expect(slots.register).not.toHaveBeenCalled();
   });
 
   test("does not register unauthenticated or cross-origin requests", async () => {
