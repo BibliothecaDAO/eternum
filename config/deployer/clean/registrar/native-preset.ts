@@ -71,8 +71,6 @@ export function buildNativeGameParams(
   return {
     name: common.name,
     preset_id: common.preset_id,
-    series_id: common.series_id,
-    game_number_in_series: common.game_number_in_series,
     start_settling_at: common.start_settling_at,
     start_main_at: common.start_main_at,
     duration_seconds: common.duration_seconds,

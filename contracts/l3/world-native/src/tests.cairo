@@ -671,7 +671,7 @@ fn realm_upgrade_changes_only_its_display_and_rejects_foreign_occupants() {
 
 mod artificer;
 
-mod blitz_prizes;
+mod blitz_results;
 
 mod building_commands;
 mod camps;

@@ -1,3 +1,4 @@
+import { WorldFold } from "../world-fold";
 import { describe, expect, it } from "vitest";
 import { buildNativeDirectory, buildNativeLeaderboard } from "./read-models";
 import { receipt, rowEvent, rulesEvent, setup } from "./fixtures";
@@ -6,7 +7,7 @@ function gameEvent(game = "1", settled = "0", dev = "0") {
   return rowEvent(
     "GameRegistry",
     [game],
-    ["0x426c69747a", "0", "0", "1", "0x111", settled, "1", dev, "10", "20", "200", "10", "0", "42"],
+    ["0x426c69747a", "1", "0x111", settled, "1", dev, "10", "20", "200", "10", "42"],
   );
 }
 function world() {
@@ -137,4 +138,26 @@ describe("native directory and leaderboard", () => {
       "Missing native SliceRules",
     );
   });
+});
+
+it("waits for the complete result before freezing and restores tied standings from a checkpoint", () => {
+  const { fold, native, decoder } = world();
+  native.applyReceipt(fold, receipt([gameEvent("1", "1")]), 12, 0);
+  expect(fold.finalizedGameIds()).not.toContain("1");
+  native.applyReceipt(fold, receipt([rowEvent("BlitzResult", ["1"], ["1", "0x111", "9500000", "1", "0", "0"])]), 13, 0);
+  expect(fold.finalizedGameIds()).not.toContain("1");
+  native.applyReceipt(
+    fold,
+    receipt([rowEvent("BlitzResult", ["1"], ["2", "0x111", "9500000", "1", "0x222", "9500000", "1", "1", "123"])]),
+    14,
+    0,
+  );
+  expect(fold.finalizedGameIds()).toEqual(["1"]);
+  const restored = WorldFold.restore(decoder.registry, fold.checkpoint());
+  expect(restored.finalizedGameIds()).toEqual(["1"]);
+  const result = buildNativeLeaderboard((name) => restored.modelRows(name), "1", 500, null);
+  expect(result.entries.map(({ address, rank, totalPoints }) => ({ address, rank, totalPoints }))).toEqual([
+    { address: "0x111", rank: 1, totalPoints: 9.5 },
+    { address: "0x222", rank: 1, totalPoints: 9.5 },
+  ]);
 });

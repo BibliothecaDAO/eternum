@@ -4,11 +4,7 @@ import { readFile } from "node:fs/promises";
 import { Context, Effect, Layer } from "effect";
 import { Pool, type PoolClient, type QueryResultRow } from "pg";
 import type { LaunchRunStore } from "../../../config/deployer/clean/launch/run-store";
-import type {
-  LaunchGameSummary,
-  LaunchRotationSummary,
-  LaunchSeriesSummary,
-} from "../../../config/deployer/clean/types";
+import type { LaunchGameSummary } from "../../../config/deployer/clean/types";
 import { DatabaseFailure } from "./errors";
 import { launchName, type ClaimedLaunchRun, type LaunchRun, type LaunchSummary } from "./model";
 import { applyDurableLaunchDefaults, type LaunchJobRequest, type LaunchKind } from "./schemas";
@@ -17,6 +13,7 @@ const migrationUrls = [
   new URL("../migrations/0001_launch_runs.sql", import.meta.url),
   new URL("../migrations/0002_launch_environments.sql", import.meta.url),
   new URL("../migrations/0003_playtest_slots.sql", import.meta.url),
+  new URL("../migrations/0004_native_results.sql", import.meta.url),
 ];
 
 interface LaunchRunRow extends QueryResultRow {
@@ -47,7 +44,6 @@ export interface LaunchServiceStore extends LaunchRunStore {
   complete(runId: string, leaseToken: string, summary: LaunchSummary): Promise<LaunchRun>;
   retry(runId: string, leaseToken: string, errorMessage: string, retryDelayMs: number): Promise<void>;
   fail(runId: string, leaseToken: string, errorMessage: string): Promise<void>;
-  cancel(kind: LaunchKind, environment: GameEnvironmentId, name: string): Promise<boolean>;
   delete(kind: LaunchKind, environment: GameEnvironmentId, name: string): Promise<boolean>;
 }
 
@@ -71,15 +67,11 @@ const toRun = (row: LaunchRunRow): LaunchRun => ({
 });
 
 const summaryName = (summary: LaunchSummary): string => {
-  if ("gameName" in summary) return summary.gameName;
-  if ("rotationName" in summary) return summary.rotationName;
-  return summary.seriesName;
+  return summary.gameName;
 };
 
 const summaryKind = (summary: LaunchSummary): LaunchKind => {
-  if ("gameName" in summary) return "game";
-  if ("rotationName" in summary) return "rotation";
-  return "series";
+  return "resultCommitment" in summary ? "result" : "game";
 };
 
 export class PostgresLaunchStore implements LaunchServiceStore {
@@ -190,15 +182,44 @@ export class PostgresLaunchStore implements LaunchServiceStore {
   }
 
   async complete(runId: string, leaseToken: string, summary: LaunchSummary): Promise<LaunchRun> {
-    const storedSummary = { ...summary, outputPath: `postgres://launch_runs/${runId}/summary` };
-    const result = await this.pool.query<LaunchRunRow>(
-      `UPDATE launch_runs SET status = 'complete', summary = $3::jsonb, claimed_until = NULL,
-         lease_token = NULL, error_message = NULL, completed_at = now(), updated_at = now()
-       WHERE id = $1 AND lease_token = $2 AND status = 'running' RETURNING *`,
-      [runId, leaseToken, JSON.stringify(storedSummary)],
+    const client = await this.pool.connect();
+    try {
+      await client.query("BEGIN");
+      const storedSummary = { ...summary, outputPath: `postgres://launch_runs/${runId}/summary` };
+      const result = await client.query<LaunchRunRow>(
+        `UPDATE launch_runs SET status = 'complete', summary = $3::jsonb, claimed_until = NULL,
+           lease_token = NULL, error_message = NULL, completed_at = now(), updated_at = now()
+         WHERE id = $1 AND lease_token = $2 AND status = 'running' RETURNING *`,
+        [runId, leaseToken, JSON.stringify(storedSummary)],
+      );
+      if (!result.rows[0]) throw new Error(`Launch lease for ${runId} was lost before completion`);
+      await this.queueResult(client, summary);
+      await client.query("COMMIT");
+      return toRun(result.rows[0]);
+    } catch (error) {
+      await rollback(client);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  private async queueResult(client: PoolClient, summary: LaunchSummary): Promise<void> {
+    if (!("startTime" in summary) || summary.gameType !== "blitz" || summary.dryRun) return;
+    if (!summary.gameId || !summary.finalizeAt) throw new Error("Settled Blitz game has no finalization schedule");
+    const request = { environment: summary.environment, gameName: summary.gameName, gameId: summary.gameId };
+    await client.query(
+      `INSERT INTO launch_runs (id, kind, environment, name, request, status, available_at)
+       VALUES ($1, 'result', $2, $3, $4::jsonb, 'queued', $5)
+       ON CONFLICT (kind, environment, name) DO NOTHING`,
+      [
+        randomUUID(),
+        summary.environment,
+        summary.gameName,
+        JSON.stringify(request),
+        new Date(summary.finalizeAt * 1_000),
+      ],
     );
-    if (!result.rows[0]) throw new Error(`Launch lease for ${runId} was lost before completion`);
-    return toRun(result.rows[0]);
   }
 
   async retry(runId: string, leaseToken: string, errorMessage: string, retryDelayMs: number): Promise<void> {
@@ -219,15 +240,6 @@ export class PostgresLaunchStore implements LaunchServiceStore {
     );
   }
 
-  async cancel(kind: LaunchKind, environment: GameEnvironmentId, name: string): Promise<boolean> {
-    const result = await this.pool.query(
-      `UPDATE launch_runs SET status = 'cancelled', claimed_until = NULL, lease_token = NULL, updated_at = now()
-       WHERE kind = $1 AND environment = $2 AND name = $3 AND status <> 'running'`,
-      [kind, environment, name],
-    );
-    return result.rowCount === 1;
-  }
-
   async delete(kind: LaunchKind, environment: GameEnvironmentId, name: string): Promise<boolean> {
     const result = await this.pool.query(
       "DELETE FROM launch_runs WHERE kind = $1 AND environment = $2 AND name = $3 AND status <> 'running'",
@@ -242,25 +254,6 @@ export class PostgresLaunchStore implements LaunchServiceStore {
 
   async saveGame(summary: LaunchGameSummary): Promise<LaunchGameSummary> {
     return this.saveSummary(summary) as Promise<LaunchGameSummary>;
-  }
-
-  loadSeries(environment: LaunchSeriesSummary["environment"], seriesName: string): Promise<LaunchSeriesSummary | null> {
-    return this.loadSummary("series", environment, seriesName) as Promise<LaunchSeriesSummary | null>;
-  }
-
-  async saveSeries(summary: LaunchSeriesSummary): Promise<LaunchSeriesSummary> {
-    return this.saveSummary(summary) as Promise<LaunchSeriesSummary>;
-  }
-
-  loadRotation(
-    environment: LaunchRotationSummary["environment"],
-    rotationName: string,
-  ): Promise<LaunchRotationSummary | null> {
-    return this.loadSummary("rotation", environment, rotationName) as Promise<LaunchRotationSummary | null>;
-  }
-
-  async saveRotation(summary: LaunchRotationSummary): Promise<LaunchRotationSummary> {
-    return this.saveSummary(summary) as Promise<LaunchRotationSummary>;
   }
 
   private async loadSummary(kind: LaunchKind, environment: string, name: string): Promise<LaunchSummary | null> {
@@ -287,22 +280,7 @@ export class PostgresLaunchStore implements LaunchServiceStore {
       ]);
       return stored;
     }
-    const parentId = kind === "game" ? await this.findParentRunId(summary.environment, name) : null;
-    if (!parentId) throw new Error(`No queued launch owns summary ${name}`);
-    return { ...summary, outputPath: `postgres://launch_runs/${parentId}/summary` };
-  }
-
-  // A rotation or series child has no row of its own. Its parent's games list is
-  // its record: the series runner folds the summary returned here into that list
-  // and persists the parent right after, and Herald answers whether the game
-  // exists on chain when the child step runs again.
-  private async findParentRunId(environment: string, gameName: string): Promise<string | null> {
-    const result = await this.pool.query<{ id: string }>(
-      `SELECT id FROM launch_runs
-       WHERE kind IN ('series', 'rotation') AND environment = $1 AND summary->'games' @> $2::jsonb`,
-      [environment, JSON.stringify([{ gameName }])],
-    );
-    return result.rows[0]?.id ?? null;
+    throw new Error(`No queued launch owns summary ${name}`);
   }
 }
 

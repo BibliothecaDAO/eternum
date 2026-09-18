@@ -111,9 +111,24 @@ export function buildNativeLeaderboard(
   const rows = (model: string) => gameRows(modelRows(model), gameId);
   const game = required(modelRows("GameRegistry"), gameId, "GameRegistry");
   const rules = required(modelRows("SliceRules"), gameId, "SliceRules");
+  const result = rows("BlitzResult")[0];
+  if (result?.complete === true) return finalStandings(gameId, result, history);
   const points = registeredPlayerPoints(rows("PlayerEntry"), rows("PlayerPoints"));
   addUnclaimedSharePoints(points, rows("HyperstructureShares"), game, rules, timestamp);
   return rankPlayers(gameId, points, history);
+}
+
+function finalStandings(gameId: string, result: Row, history: HeraldLeaderboard | null): HeraldLeaderboard {
+  const activity = new Map(history?.entries.map((entry) => [address(entry.address), entry.activityBreakdown]));
+  return {
+    game_id: integer(gameId).toString(),
+    entries: (result.players as Row[]).map((player) => ({
+      address: address(player.player),
+      totalPoints: Number(integer(player.points)) / 1_000_000,
+      rank: number(player.rank),
+      activityBreakdown: activity.get(address(player.player)) ?? createEmptyActivityBreakdown(),
+    })),
+  };
 }
 
 function registeredPlayerPoints(entries: Row[], registered: Row[]): Map<string, bigint> {

@@ -191,8 +191,6 @@ fn provision_game(peers: Peers, actor: ContractAddress, administrator: ContractA
             7,
             GameRegistry {
                 name: 'conformance',
-                series_id: 0,
-                game_number_in_series: 0,
                 preset_id: 1,
                 creator: administrator,
                 settled: false,
@@ -202,7 +200,6 @@ fn provision_game(peers: Peers, actor: ContractAddress, administrator: ContractA
                 start_main_at: 0,
                 end_at: 999999,
                 end_grace_seconds: 0,
-                final_trial_id: 0,
                 seed: 1,
             },
             rules,

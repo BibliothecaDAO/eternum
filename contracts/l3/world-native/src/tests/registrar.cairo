@@ -150,8 +150,6 @@ fn params(blitz: bool) -> CreateGameParams {
     CreateGameParams {
         name: 'native',
         preset_id: 1,
-        series_id: 0,
-        game_number_in_series: 0,
         start_settling_at: 200,
         start_main_at: 300,
         duration_seconds: 100,
@@ -262,25 +260,6 @@ fn eternum_launch_initializes_spires_and_never_uses_entry_capacity() {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn series_enforces_registered_identity_order_and_capacity() {
-    let d = setup();
-    let preset = definition(true);
-    registry(d).register_preset(1, preset);
-    registry(d)
-        .register_series(
-            7, d.actor, crate::series_chests::SeriesRules { num_games: 1, total_chests: 10, cap_ratio_bps: 10000 },
-        );
-    let first = CreateGameParams { series_id: 7, game_number_in_series: 1, ..params(true) };
-    assert!(safe(d).create_game(CreateGameParams { game_number_in_series: 2, ..first }, preset).is_err());
-    assert_eq!(registry(d).create_game(first, preset), 1);
-    assert_eq!(registry(d).series(7).unwrap().created_games, 1);
-    assert_eq!(registry(d).series(7).unwrap().owner, d.actor);
-    assert!(safe(d).create_game(CreateGameParams { game_number_in_series: 2, ..first }, preset).is_err());
-    assert_eq!(registry(d).next_game_id(), 2);
-}
-
-#[test]
-#[feature("safe_dispatcher")]
 fn invalid_schedules_modes_and_registration_limits_never_allocate() {
     let d = setup();
     let preset = definition(true);
@@ -293,7 +272,6 @@ fn invalid_schedules_modes_and_registration_limits_never_allocate() {
         CreateGameParams { roster: roster(25), ..params(true) },
         CreateGameParams { roster: array![].span(), ..params(true) },
         CreateGameParams { mode: SettlementMode::Duel, ..params(true) },
-        CreateGameParams { game_number_in_series: 1, ..params(true) },
     ] {
         assert!(safe(d).create_game(input, preset).is_err());
     }
@@ -302,26 +280,21 @@ fn invalid_schedules_modes_and_registration_limits_never_allocate() {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn a_late_configuration_failure_rolls_back_all_domains_and_the_series_allocation() {
+fn a_late_configuration_failure_rolls_back_all_domains_and_game_allocation() {
     let d = setup();
     let mut preset = definition(true);
     preset.economy.banks.lp_fee_denom = 0;
     registry(d).register_preset(1, preset);
-    registry(d)
-        .register_series(
-            7, d.actor, crate::series_chests::SeriesRules { num_games: 2, total_chests: 10, cap_ratio_bps: 10000 },
-        );
     let (caller, _) = super::deploy("RollbackFixture", @array![]);
     assert!(
         !super::fixtures::IRollbackFixtureDispatcherTrait::attempt_game(
             super::fixtures::IRollbackFixtureDispatcher { contract_address: caller },
             d.peers.registry,
-            CreateGameParams { series_id: 7, game_number_in_series: 1, ..params(true) },
+            params(true),
             preset,
         ),
     );
     assert_eq!(registry(d).next_game_id(), 1);
-    assert_eq!(registry(d).series(7).unwrap().created_games, 0);
     assert!(
         crate::game::IGameSafeDispatcherTrait::game(
             crate::game::IGameSafeDispatcher { contract_address: d.peers.season }, 1,
@@ -344,7 +317,8 @@ fn settlement_uses_recorded_time_after_grace_and_rejections_consume_tickets() {
     assert!(super::resource_commands::execute_recorded_at(d, command, boundary + 1, 5000));
     assert!(games.game(3).settled);
     assert_eq!(status_at(games.game(3), boundary + 1), GameStatus::Settled);
-    super::resource_commands::assert_terminal_rejection(d, command, boundary + 2);
+    assert!(super::resource_commands::execute(d, command, boundary + 2));
+    assert_eq!(status_at(games.game(3), boundary + 2), GameStatus::Settled);
 }
 
 #[test]

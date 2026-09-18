@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "c23246ee079783b03c09431bfbc8bf2dd682d958406a7cb5343019d7c5bd1125",
+  "schemaIdentity": "2db222be1b50ba6f69b985c3c2bd24b88fd95970c1e98627a49ef4c707c6ea7e",
   "commandAbi": [
     {
       "type": "impl",
@@ -128,69 +128,6 @@
             }
           ],
           "state_mutability": "external"
-        }
-      ]
-    },
-    {
-      "type": "impl",
-      "name": "PrizeSeason",
-      "interface_name": "world_native::blitz_prizes::IPrizeSeason"
-    },
-    {
-      "type": "interface",
-      "name": "world_native::blitz_prizes::IPrizeSeason",
-      "items": [
-        {
-          "type": "function",
-          "name": "checkpoint_prize_points",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "timestamp",
-              "type": "core::integer::u64"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::integer::u32"
-            }
-          ],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "finalize_ranking",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "trial_id",
-              "type": "core::integer::u128"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "prize_recipient",
-          "inputs": [
-            {
-              "name": "player",
-              "type": "core::starknet::contract_address::ContractAddress"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::starknet::contract_address::ContractAddress"
-            }
-          ],
-          "state_mutability": "view"
         }
       ]
     },
@@ -945,29 +882,43 @@
     },
     {
       "type": "struct",
-      "name": "core::array::Span::<core::starknet::contract_address::ContractAddress>",
+      "name": "world_native::blitz_results::PlayerResult",
       "members": [
         {
-          "name": "snapshot",
-          "type": "@core::array::Array::<core::starknet::contract_address::ContractAddress>"
+          "name": "player",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "points",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "rank",
+          "type": "core::integer::u8"
         }
       ]
     },
     {
       "type": "struct",
-      "name": "world_native::blitz_prizes::RankPlayers",
+      "name": "core::array::Span::<world_native::blitz_results::PlayerResult>",
       "members": [
         {
-          "name": "trial_id",
-          "type": "core::integer::u128"
-        },
+          "name": "snapshot",
+          "type": "@core::array::Array::<world_native::blitz_results::PlayerResult>"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::blitz_results::RecordBlitzResults",
+      "members": [
         {
-          "name": "committed",
-          "type": "core::integer::u16"
+          "name": "start",
+          "type": "core::integer::u8"
         },
         {
           "name": "players",
-          "type": "core::array::Span::<core::starknet::contract_address::ContractAddress>"
+          "type": "core::array::Span::<world_native::blitz_results::PlayerResult>"
         }
       ]
     },
@@ -1530,16 +1481,8 @@
           "type": "world_native::faith::ClaimPlayer"
         },
         {
-          "name": "AllocateGameChests",
-          "type": "()"
-        },
-        {
-          "name": "RankPlayers",
-          "type": "world_native::blitz_prizes::RankPlayers"
-        },
-        {
-          "name": "ResetRanking",
-          "type": "()"
+          "name": "RecordBlitzResults",
+          "type": "world_native::blitz_results::RecordBlitzResults"
         },
         {
           "name": "CraftRelic",
@@ -2477,14 +2420,6 @@
           "type": "core::felt252"
         },
         {
-          "name": "series_id",
-          "type": "core::felt252"
-        },
-        {
-          "name": "game_number_in_series",
-          "type": "core::integer::u16"
-        },
-        {
           "name": "preset_id",
           "type": "core::integer::u32"
         },
@@ -2519,10 +2454,6 @@
         {
           "name": "end_grace_seconds",
           "type": "core::integer::u32"
-        },
-        {
-          "name": "final_trial_id",
-          "type": "core::integer::u128"
         },
         {
           "name": "seed",
@@ -3592,36 +3523,6 @@
       ]
     },
     {
-      "type": "struct",
-      "name": "world_native::blitz_prizes::PrizeResult",
-      "members": [
-        {
-          "name": "trial_id",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "index",
-          "type": "core::integer::u16"
-        },
-        {
-          "name": "player",
-          "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
-          "name": "owner",
-          "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
-          "name": "rank",
-          "type": "core::integer::u16"
-        },
-        {
-          "name": "chests",
-          "type": "core::integer::u16"
-        }
-      ]
-    },
-    {
       "type": "enum",
       "name": "world_native::geometry::Direction",
       "variants": [
@@ -3788,12 +3689,8 @@
           "type": "world_native::faith::Pledge"
         },
         {
-          "name": "PrizeDistributionFinal",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "PrizeResult",
-          "type": "world_native::blitz_prizes::PrizeResult"
+          "name": "BlitzFinalized",
+          "type": "core::felt252"
         },
         {
           "name": "RelicCrafted",
@@ -3965,10 +3862,6 @@
       "scope": "deployment"
     },
     {
-      "name": "Series",
-      "scope": "deployment"
-    },
-    {
       "name": "GameSequence",
       "scope": "deployment"
     },
@@ -4001,23 +3894,7 @@
       "scope": "game"
     },
     {
-      "name": "SeriesChestRules",
-      "scope": "deployment"
-    },
-    {
-      "name": "SeriesChestState",
-      "scope": "deployment"
-    },
-    {
-      "name": "GameChestReward",
-      "scope": "game"
-    },
-    {
-      "name": "RankingTrial",
-      "scope": "game"
-    },
-    {
-      "name": "PlayerRank",
+      "name": "BlitzResult",
       "scope": "game"
     },
     {

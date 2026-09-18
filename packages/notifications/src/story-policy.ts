@@ -18,8 +18,7 @@ const STORY_RULES = {
   SeasonEnded: { level: "all", recipients: "owner" },
   FaithPledged: { level: "all", recipients: "owner" },
   FaithRemoved: { level: "all", recipients: "owner" },
-  PrizeDistributionFinal: { level: "all", recipients: "owner" },
-  PrizeResult: { level: "all", recipients: "owner" },
+  BlitzFinalized: { level: "all", recipients: "owner" },
   RelicCrafted: { level: "all", recipients: "owner" },
 
   BattleEvent: { level: "important", recipients: "nativeBattle" },
@@ -45,7 +44,6 @@ const STORY_RULES = {
   GuardDeleteStory: { level: "all", recipients: "owner" },
   TroopsTransferred: { level: "all", recipients: "owner" },
   PointsRegisteredStory: { excluded: "Leaderboard activity" },
-  PrizeDistributionFinalStory: { excluded: "Trial distribution does not identify season recipients" },
   FaithPledgedStory: { excluded: "Recipient and notification UX deferred" },
   FaithRemovedStory: { excluded: "Recipient and notification UX deferred" },
   FaithPointsClaimedStory: { excluded: "Recipient and notification UX deferred" },

@@ -29,7 +29,6 @@ const levels = {
   ],
   excluded: [
     "PointsRegisteredStory",
-    "PrizeDistributionFinalStory",
     "FaithPledgedStory",
     "FaithRemovedStory",
     "FaithPointsClaimedStory",
@@ -71,8 +70,7 @@ it("covers every native story and tests every cumulative level", () => {
       "SeasonEnded",
       "FaithPledged",
       "FaithRemoved",
-      "PrizeDistributionFinal",
-      "PrizeResult",
+      "BlitzFinalized",
       "RelicCrafted",
       "TroopsTransferred",
     ],

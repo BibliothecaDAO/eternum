@@ -179,7 +179,7 @@ export default defineConfig({
         },
         { text: "World Structures", link: "/blitz/world-structures" },
         { text: "Victory", link: "/blitz/victory" },
-        { text: "Prize Pool", link: "/blitz/prize-pool" },
+        { text: "Game Results", link: "/blitz/prize-pool" },
         { text: "MMR", link: "/blitz/mmr" },
         { text: "Achievements", link: "/blitz/achievements" },
       ],

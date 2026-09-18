@@ -1,17 +1,12 @@
+import { finalizeGame } from "./results";
 import { Context, Effect, Layer } from "effect";
 import { launchGame } from "../../../config/deployer/clean/launch/runner";
-import { launchRotation } from "../../../config/deployer/clean/launch/rotation-runner";
 import type { LaunchRunStore } from "../../../config/deployer/clean/launch/run-store";
-import { launchSeries } from "../../../config/deployer/clean/launch/series-runner";
-import type {
-  LaunchGameRequest,
-  LaunchRotationRequest,
-  LaunchSeriesRequest,
-} from "../../../config/deployer/clean/types";
+import type { LaunchGameRequest } from "../../../config/deployer/clean/types";
 import type { LaunchServiceConfig } from "./config";
 import { LaunchExecutionFailure } from "./errors";
 import type { LaunchRun, LaunchSummary } from "./model";
-import type { CreateGameRequest, CreateRotationRequest, CreateSeriesRequest } from "./schemas";
+import type { CreateGameRequest } from "./schemas";
 
 interface RpcTarget {
   url: string;
@@ -43,11 +38,7 @@ const requirePersistedStartTime = (request: CreateGameRequest): string => {
   return request.gameStartTime;
 };
 
-const sharedRequest = (
-  request: CreateGameRequest | CreateSeriesRequest | CreateRotationRequest,
-  rpc: RpcTarget,
-  registrar: RegistrarCredentials,
-) => ({
+const sharedRequest = (request: CreateGameRequest, rpc: RpcTarget, registrar: RegistrarCredentials) => ({
   environmentId: request.environment,
   rpcUrl: rpc.url,
   accountAddress: registrar.accountAddress,
@@ -75,38 +66,6 @@ const buildGameRequest = (
   startTime: requirePersistedStartTime(request),
 });
 
-const buildSeriesRequest = (
-  request: CreateSeriesRequest,
-  rpc: RpcTarget,
-  registrar: RegistrarCredentials,
-): LaunchSeriesRequest => ({
-  ...sharedRequest(request, rpc, registrar),
-  launchKind: "series",
-  seriesName: request.seriesName,
-  games: request.games.map((game) => ({ ...game })),
-  autoRetryEnabled: true,
-  autoRetryIntervalMinutes: request.autoRetryIntervalMinutes,
-});
-
-const buildRotationRequest = (
-  request: CreateRotationRequest,
-  rpc: RpcTarget,
-  registrar: RegistrarCredentials,
-): LaunchRotationRequest => ({
-  ...sharedRequest(request, rpc, registrar),
-  launchKind: "rotation",
-  rotationName: request.rotationName,
-  firstGameStartTime: request.firstGameStartTime,
-  gameIntervalMinutes: request.gameIntervalMinutes,
-  maxGames: request.maxGames,
-  advanceWindowGames: request.advanceWindowGames,
-  evaluationIntervalMinutes: request.evaluationIntervalMinutes,
-  weeklyCadence: request.weeklyCadence?.map((entry) => ({ ...entry })),
-  biomeClimateOverridesByGameNumber: request.biomeClimateOverridesByGameNumber,
-  autoRetryEnabled: true,
-  autoRetryIntervalMinutes: request.autoRetryIntervalMinutes,
-});
-
 const executeRun = async (
   run: LaunchRun,
   store: LaunchRunStore,
@@ -118,14 +77,11 @@ const executeRun = async (
   process.env.HERALD_URL = herald.url;
   process.env.NATIVE_WORLD_MANIFEST = registrar.manifestPath;
 
-  if (run.kind === "game" && "gameName" in run.request) {
+  if (run.kind === "game" && !("gameId" in run.request)) {
     return launchGame(buildGameRequest(run.request, rpc, registrar), store);
   }
-  if (run.kind === "series" && "seriesName" in run.request) {
-    return launchSeries(buildSeriesRequest(run.request, rpc, registrar), store);
-  }
-  if (run.kind === "rotation" && "rotationName" in run.request) {
-    return launchRotation(buildRotationRequest(run.request, rpc, registrar), store);
+  if (run.kind === "result" && "gameId" in run.request) {
+    return finalizeGame(run.request, rpc, registrar);
   }
   throw new Error(`Stored request does not match ${run.kind} launch ${run.id}`);
 };

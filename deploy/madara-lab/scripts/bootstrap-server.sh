@@ -107,13 +107,11 @@ install_units() {
   install -m 0644 "$LAB_DIR/systemd/realms-identity.service" /etc/systemd/system/realms-identity.service
   install -m 0644 "$LAB_DIR/systemd/realms-chat.service" /etc/systemd/system/realms-chat.service
   install -m 0644 "$LAB_DIR/systemd/realms-launch.service" /etc/systemd/system/realms-launch.service
-  install -m 0644 "$LAB_DIR/systemd/realms-launch-rotation.service" /etc/systemd/system/realms-launch-rotation.service
-  install -m 0644 "$LAB_DIR/systemd/realms-launch-rotation.timer" /etc/systemd/system/realms-launch-rotation.timer
   systemctl daemon-reload
   if systemctl list-unit-files web.service --no-legend | grep -q '^web.service'; then
     systemctl disable --now web.service >/dev/null
   fi
-  systemctl enable herald realms-identity realms-chat realms-launch realms-launch-rotation.timer >/dev/null
+  systemctl enable herald realms-identity realms-chat realms-launch >/dev/null
 }
 
 harden() {

@@ -13,10 +13,11 @@ export function resolveGameEndHeadline(
   const endedByClock = game && game.end_at > 0n && BigInt(nowSeconds) >= game.end_at;
   if (!seasonWinner && !endedByClock) return null;
 
+  const result = store.get("BlitzResult", { game_id: gameId });
   const winners = seasonWinner
     ? [seasonWinner]
-    : game?.final_trial_id
-      ? [...store.inGame("PlayerRank", gameId)]
+    : result?.complete
+      ? result.players
           .filter((row) => row.rank === 1)
           .map((row) => row.player)
           .sort((left, right) => (left < right ? -1 : left > right ? 1 : 0))

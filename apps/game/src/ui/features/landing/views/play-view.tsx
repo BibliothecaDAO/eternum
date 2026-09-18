@@ -1,3 +1,4 @@
+import { PlaytestSlots } from "../components/playtest-slots";
 import { useIdentitySession, useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { env } from "@/../env";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -699,6 +700,7 @@ const PlayTabContent = ({
   return (
     <div className={cn("flex flex-col gap-4", disabled && "opacity-50 pointer-events-none")}>
       <ModeCoexistenceHero modeFilter={modeFilter} onModeFilterChange={onModeFilterChange} />
+      {resolvedMode === "blitz" && <PlaytestSlots />}
 
       <RegisteredActiveGamesBar
         mode={resolvedMode}

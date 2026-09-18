@@ -5,8 +5,6 @@ use crate::presets::PresetDefinition;
 pub struct CreateGameParams {
     pub name: felt252,
     pub preset_id: u32,
-    pub series_id: felt252,
-    pub game_number_in_series: u16,
     pub start_settling_at: u64,
     pub start_main_at: u64,
     pub duration_seconds: u64,
@@ -25,19 +23,10 @@ pub struct RosterPlayer {
     pub account: ContractAddress,
 }
 
-#[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
-pub struct Series {
-    pub owner: ContractAddress,
-    pub created_games: u16,
-}
 #[starknet::interface]
 pub trait IRegistrar<T> {
     fn register_preset(ref self: T, preset_id: u32, definition: PresetDefinition);
     fn preset_commitment(self: @T, preset_id: u32) -> felt252;
-    fn register_series(
-        ref self: T, series_id: felt252, owner: ContractAddress, rules: crate::series_chests::SeriesRules,
-    );
-    fn series(self: @T, series_id: felt252) -> Option<Series>;
     fn next_game_id(self: @T) -> u32;
     fn game_id_by_name(self: @T, name: felt252) -> u32;
     fn blitz_roster(self: @T, game_id: u32) -> Span<RosterPlayer>;
@@ -67,9 +56,6 @@ pub fn validate_params(params: CreateGameParams, blitz: bool) {
         assert!(params.roster.is_empty(), "Eternum does not use a fixed roster");
         assert!(params.mode != crate::settlement::SettlementMode::Duel, "Eternum does not use Duel settlement");
     }
-    if params.series_id == 0 {
-        assert!(params.game_number_in_series == 0, "standalone game has a series number");
-    }
 }
 pub fn map_center_offset(game_id: u32, seed: felt252) -> u32 {
     const STEPS: u32 = (2147483646 / 2) / 10;
@@ -81,8 +67,6 @@ pub fn map_center_offset(game_id: u32, seed: felt252) -> u32 {
 fn build_game(params: CreateGameParams, creator: ContractAddress) -> crate::game::GameRegistry {
     crate::game::GameRegistry {
         name: params.name,
-        series_id: params.series_id,
-        game_number_in_series: params.game_number_in_series,
         preset_id: params.preset_id,
         creator,
         settled: false,
@@ -92,7 +76,6 @@ fn build_game(params: CreateGameParams, creator: ContractAddress) -> crate::game
         start_main_at: params.start_main_at,
         end_at: params.start_main_at + params.duration_seconds,
         end_grace_seconds: params.end_grace_seconds,
-        final_trial_id: 0,
         seed: params.seed,
     }
 }
@@ -110,19 +93,16 @@ pub mod RegistrarState {
     use starknet::storage::{
         Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess, StoragePointerWriteAccess,
     };
-    use starknet::{ContractAddress, get_caller_address, get_contract_address};
-    use crate::blitz_prizes::{IBlitzPrizesDispatcher, IBlitzPrizesDispatcherTrait};
+    use starknet::{get_caller_address, get_contract_address};
     use crate::events::RowSet;
     use crate::game::{IGameDispatcher, IGameDispatcherTrait};
     use crate::lifecycle::Lifecycle;
     use crate::lifecycle::Lifecycle::InternalTrait as LifeInternal;
     use crate::presets::PresetDefinition;
-    use crate::series_chests::SeriesRules;
-    use super::{CreateGameParams, RosterPlayer, Series, build_game, game_rules};
+    use super::{CreateGameParams, RosterPlayer, build_game, game_rules};
     #[storage]
     pub struct Storage {
         pub presets: Map<u32, felt252>,
-        pub series: Map<felt252, Option<Series>>,
         pub next_game: u32,
         pub launch_ids: Map<felt252, u32>,
         pub launch_commitments: Map<felt252, felt252>,
@@ -171,19 +151,6 @@ pub mod RegistrarState {
         fn preset_commitment(self: @ComponentState<TContractState>, preset_id: u32) -> felt252 {
             self.presets.read(preset_id)
         }
-        fn register_series(
-            ref self: ComponentState<TContractState>, series_id: felt252, owner: ContractAddress, rules: SeriesRules,
-        ) {
-            get_dep_component!(@self, Life).assert_authority();
-            assert!(series_id != 0 && owner != 0.try_into().unwrap(), "invalid series identity");
-            assert!(self.series.read(series_id).is_none(), "series already registered");
-            IBlitzPrizesDispatcher { contract_address: get_dep_component!(@self, Life).require_active().prizes }
-                .configure_series_chests(series_id, rules);
-            self.write_series(series_id, Series { owner, created_games: 0 });
-        }
-        fn series(self: @ComponentState<TContractState>, series_id: felt252) -> Option<Series> {
-            self.series.read(series_id)
-        }
         fn next_game_id(self: @ComponentState<TContractState>) -> u32 {
             self.next_game.read()
         }
@@ -215,7 +182,6 @@ pub mod RegistrarState {
             }
             let game_id = self.next_game.read();
             assert!(game_id != 0 && game_id < 0xffffffff, "game identity space exhausted");
-            self.reserve_series(params);
             self.register_roster(game_id, params.roster);
             let game = build_game(params, get_caller_address());
             let rules = game_rules(game_id, params, definition.rules);
@@ -286,26 +252,6 @@ pub mod RegistrarState {
                         version: 1, model: 'BlitzRoster', keys: array![game_id.into()].span(), values: values.span(),
                     },
                 );
-        }
-        fn reserve_series(ref self: ComponentState<TContractState>, params: CreateGameParams) {
-            if params.series_id == 0 {
-                return;
-            }
-            let mut series = self.series.read(params.series_id).expect('series not registered');
-            let rules = IBlitzPrizesDispatcher {
-                contract_address: get_dep_component!(@self, Life).require_active().prizes,
-            }
-                .series_chest_rules(params.series_id);
-            assert!(Into::<u16, u32>::into(series.created_games) < rules.num_games, "series is full");
-            assert!(params.game_number_in_series == series.created_games + 1, "series games must be created in order");
-            series.created_games += 1;
-            self.write_series(params.series_id, series);
-        }
-        fn write_series(ref self: ComponentState<TContractState>, series_id: felt252, value: Series) {
-            self.series.write(series_id, Some(value));
-            let mut values = array![];
-            value.serialize(ref values);
-            self.emit(RowSet { version: 1, model: 'Series', keys: array![series_id].span(), values: values.span() });
         }
         fn write_next_game(ref self: ComponentState<TContractState>, next: u32) {
             self.next_game.write(next);

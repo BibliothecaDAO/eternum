@@ -9,7 +9,7 @@ import { openLedgerGame, type LedgerTarget } from "../ledger/calls";
 import { loadRepoJsonFile } from "../shared/repo";
 import type { DeploymentEnvironmentId } from "../types";
 
-type RegistrarEntrypoint = "register_preset" | "register_series" | "create_game";
+type RegistrarEntrypoint = "register_preset" | "create_game";
 
 interface ManifestAbiEntry {
   type?: string;
@@ -293,36 +293,8 @@ export function resolveRegistrarEnvironmentId(environmentId: DeploymentEnvironme
 
 export function assertRegistrarAvailable(target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID): void {
   const context = resolveRegistrarContext(target);
-  const requiredEntrypoints: RegistrarEntrypoint[] = ["register_preset", "register_series", "create_game"];
+  const requiredEntrypoints: RegistrarEntrypoint[] = ["register_preset", "create_game"];
   requiredEntrypoints.forEach((entrypoint) => requireRegistrarContract(context, entrypoint));
-}
-
-export async function registerSeries(
-  account: Account,
-  params: {
-    seriesId: string;
-    owner: string;
-    numGames: number;
-    totalChests?: bigint | number;
-    capRatioBps?: bigint | number;
-  },
-  target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID,
-): Promise<RegistrarTransactionResult> {
-  return executeRegistrarCall(
-    account,
-    buildRegistrarCall(
-      "register_series",
-      CallData.compile([
-        params.seriesId,
-        params.owner,
-        params.numGames,
-        params.totalChests ?? 0,
-        params.capRatioBps ?? 10_000,
-      ] as never),
-      target,
-    ),
-    target,
-  );
 }
 
 export async function createRegistrarGame(
@@ -352,7 +324,7 @@ export async function createRegistrarGame(
 }
 
 export function isRegistrarAlreadyRegisteredError(error: unknown): boolean {
-  return /(preset|series) already registered/i.test(error instanceof Error ? error.message : String(error));
+  return /preset already registered/i.test(error instanceof Error ? error.message : String(error));
 }
 
 export async function settleBlitzRoster(
@@ -361,12 +333,16 @@ export async function settleBlitzRoster(
   credentials: { accountAddress: string; privateKey: string },
   target: RegistrarTarget,
   admissionUrl: string,
-): Promise<void> {
+): Promise<number> {
   const { manifest } = resolveRegistrarContext(target);
   const season = manifest.native.domains.season.address;
-  const result = await provider.callContract({ contractAddress: season, entrypoint: "game", calldata: [gameId] });
-  const game = new CallData(nativeDomainAbi(manifest, "season")).parse("game", result) as { ready: boolean };
-  if (game.ready) return;
+  const read = async () =>
+    new CallData(nativeDomainAbi(manifest, "season")).parse(
+      "game",
+      await provider.callContract({ contractAddress: season, entrypoint: "game", calldata: [gameId] }, "latest"),
+    ) as { ready: boolean; end_at: bigint; end_grace_seconds: bigint };
+  let game = await read();
+  if (game.ready) return Number(game.end_at + game.end_grace_seconds);
   await completeNativeAdminCommand({
     provider,
     manifest,
@@ -375,4 +351,7 @@ export async function settleBlitzRoster(
     ...credentials,
     command: { kind: "SettleBlitzRoster", value: undefined },
   });
+  game = await read();
+  if (!game.ready) throw new Error("Roster settlement did not make the game ready");
+  return Number(game.end_at + game.end_grace_seconds);
 }

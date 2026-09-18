@@ -154,6 +154,9 @@ pub mod SeasonDomain {
             assert!(actor == self.lifecycle.domain_state().authority, "only domain authority");
             crate::commands::assert_context_time(context.timestamp);
             let mut game = self.games.game(game_id);
+            if game.settled {
+                return 0;
+            }
             assert!(
                 crate::game::status_at(game, context.timestamp) == crate::game::GameStatus::Ended, "game has not ended",
             );
@@ -168,28 +171,6 @@ pub mod SeasonDomain {
             game.settled = true;
             self.games.write_game(game_id, game);
             0
-        }
-    }
-
-    #[abi(embed_v0)]
-    impl PrizeSeason of crate::blitz_prizes::IPrizeSeason<ContractState> {
-        fn checkpoint_prize_points(ref self: ContractState, game_id: u32, timestamp: u64) -> u32 {
-            let peers = self.lifecycle.require_active();
-            assert!(get_caller_address() == peers.prizes, "only prizes domain");
-            self.settle_final_points(game_id, timestamp)
-        }
-        fn finalize_ranking(ref self: ContractState, game_id: u32, trial_id: u128) {
-            assert!(get_caller_address() == self.lifecycle.require_active().prizes, "only prizes domain");
-            let mut game = self.games.game(game_id);
-            assert!(game.final_trial_id == 0 && trial_id != 0 && trial_id != 1000, "invalid final ranking");
-            game.final_trial_id = trial_id;
-            self.games.write_game(game_id, game);
-        }
-        fn prize_recipient(self: @ContractState, player: ContractAddress) -> ContractAddress {
-            let owner = IPlayerRegistryDispatcher { contract_address: self.authentication.read().registry }
-                .owner_of(player);
-            assert!(owner != 0.try_into().unwrap(), "unregistered prize recipient");
-            owner
         }
     }
 
@@ -476,7 +457,7 @@ pub mod SeasonDomain {
                 .map_err(|_error| 'GAMEPLAY_REJECTED')?;
             match command {
                 Command::SettleBlitzRoster | Command::CloseSeason | Command::MarkGameSettled |
-                Command::ClaimBitcoinPhase(_) | Command::RankPlayers(_) | Command::ResetRanking |
+                Command::ClaimBitcoinPhase(_) | Command::RecordBlitzResults(_) |
                 Command::DistributeFaithPrizes => {
                     let mut output = result;
                     let remaining: u64 = Serde::deserialize(ref output).expect('missing batch result');
@@ -617,11 +598,9 @@ pub mod SeasonDomain {
                 value.serialize(ref calldata);
                 (peers.economy, selector!("craft_relic"))
             },
-            Command::AllocateGameChests => (peers.prizes, selector!("allocate_game_chests")),
-            Command::ResetRanking => (peers.prizes, selector!("reset_ranking")),
-            Command::RankPlayers(value) => {
+            Command::RecordBlitzResults(value) => {
                 value.serialize(ref calldata);
-                (peers.prizes, selector!("rank_players"))
+                (peers.prizes, selector!("record_blitz_results"))
             },
             Command::DistributeFaithPrizes => (peers.prizes, selector!("distribute_faith_prizes")),
             Command::ClaimFaithPrize(value) => {

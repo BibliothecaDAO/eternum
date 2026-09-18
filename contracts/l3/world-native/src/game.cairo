@@ -12,8 +12,6 @@ pub enum GameStatus {
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct GameRegistry {
     pub name: felt252,
-    pub series_id: felt252,
-    pub game_number_in_series: u16,
     pub preset_id: u32,
     pub creator: ContractAddress,
     pub settled: bool,
@@ -23,7 +21,6 @@ pub struct GameRegistry {
     pub start_main_at: u64,
     pub end_at: u64,
     pub end_grace_seconds: u32,
-    pub final_trial_id: u128,
     pub seed: felt252,
 }
 

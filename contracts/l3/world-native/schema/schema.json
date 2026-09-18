@@ -359,58 +359,6 @@
         },
         {
           "type": "function",
-          "name": "checkpoint_prize_points",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "timestamp",
-              "type": "core::integer::u64"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::integer::u32"
-            }
-          ],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "finalize_ranking",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "trial_id",
-              "type": "core::integer::u128"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "prize_recipient",
-          "inputs": [
-            {
-              "name": "player",
-              "type": "core::starknet::contract_address::ContractAddress"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::starknet::contract_address::ContractAddress"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
           "name": "set_authentication",
           "inputs": [
             {
@@ -6325,30 +6273,6 @@
           ]
         },
         {
-          "name": "RowDeleted",
-          "prefix": [
-            "0x3928dc11165e890253f789440484151979481b14f31e18bdb3efce1debf3f99",
-            "0x34ee03e4825cf92d0335b5828e3389af6c145ecff05fce078c3753d871cc7f5"
-          ],
-          "members": [
-            {
-              "name": "version",
-              "type": "core::integer::u8",
-              "kind": "key"
-            },
-            {
-              "name": "model",
-              "type": "core::felt252",
-              "kind": "key"
-            },
-            {
-              "name": "keys",
-              "type": "core::array::Span::<core::felt252>",
-              "kind": "data"
-            }
-          ]
-        },
-        {
           "name": "StoryEvent",
           "prefix": [
             "0x3928dc11165e890253f789440484151979481b14f31e18bdb3efce1debf3f99",
@@ -7264,55 +7188,7 @@
         },
         {
           "type": "function",
-          "name": "configure_series_chests",
-          "inputs": [
-            {
-              "name": "series_id",
-              "type": "core::felt252"
-            },
-            {
-              "name": "rules",
-              "type": "world_native::series_chests::SeriesRules"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "series_chest_rules",
-          "inputs": [
-            {
-              "name": "series_id",
-              "type": "core::felt252"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "world_native::series_chests::SeriesRules"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "series_chest_state",
-          "inputs": [
-            {
-              "name": "series_id",
-              "type": "core::felt252"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "world_native::series_chests::SeriesState"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "game_chests",
+          "name": "blitz_result",
           "inputs": [
             {
               "name": "game_id",
@@ -7321,90 +7197,14 @@
           ],
           "outputs": [
             {
-              "type": "core::option::Option::<world_native::blitz_prizes::GameChests>"
+              "type": "world_native::blitz_results::BlitzResult"
             }
           ],
           "state_mutability": "view"
         },
         {
           "type": "function",
-          "name": "ranking_trial",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "world_native::blitz_prizes::RankingTrial"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "player_rank",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "player",
-              "type": "core::starknet::contract_address::ContractAddress"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::option::Option::<world_native::blitz_prizes::PlayerRank>"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "ranked_players",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "rank",
-              "type": "core::integer::u16"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::array::Span::<core::starknet::contract_address::ContractAddress>"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "allocate_game_chests",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "actor",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "context",
-              "type": "world_native::commands::ExecutionContext"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "rank_players",
+          "name": "record_blitz_results",
           "inputs": [
             {
               "name": "game_id",
@@ -7416,31 +7216,7 @@
             },
             {
               "name": "command",
-              "type": "world_native::blitz_prizes::RankPlayers"
-            },
-            {
-              "name": "context",
-              "type": "world_native::commands::ExecutionContext"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::integer::u64"
-            }
-          ],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "reset_ranking",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "actor",
-              "type": "core::starknet::contract_address::ContractAddress"
+              "type": "world_native::blitz_results::RecordBlitzResults"
             },
             {
               "name": "context",
@@ -7780,42 +7556,6 @@
           "outputs": [
             {
               "type": "core::felt252"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "register_series",
-          "inputs": [
-            {
-              "name": "series_id",
-              "type": "core::felt252"
-            },
-            {
-              "name": "owner",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "rules",
-              "type": "world_native::series_chests::SeriesRules"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "series",
-          "inputs": [
-            {
-              "name": "series_id",
-              "type": "core::felt252"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::option::Option::<world_native::registrar::Series>"
             }
           ],
           "state_mutability": "view"
@@ -8616,37 +8356,6 @@
       "valueLength": 1
     },
     {
-      "name": "Series",
-      "identity": "0x536572696573",
-      "owners": [
-        "registry"
-      ],
-      "scope": "deployment",
-      "keys": [
-        {
-          "name": "series_id",
-          "type": "core::felt252",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "owner",
-          "type": "core::starknet::contract_address::ContractAddress",
-          "id": "0x6f776e6572",
-          "feltLength": 1
-        },
-        {
-          "name": "created_games",
-          "type": "core::integer::u16",
-          "id": "0x637265617465645f67616d6573",
-          "feltLength": 1
-        }
-      ],
-      "keyLength": 1,
-      "valueLength": 2
-    },
-    {
       "name": "GameSequence",
       "identity": "0x47616d6553657175656e6365",
       "owners": [
@@ -8909,136 +8618,8 @@
       "valueLength": 1
     },
     {
-      "name": "SeriesChestRules",
-      "identity": "0x536572696573436865737452756c6573",
-      "owners": [
-        "prizes"
-      ],
-      "scope": "deployment",
-      "keys": [
-        {
-          "name": "series_id",
-          "type": "core::felt252",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "num_games",
-          "type": "core::integer::u32",
-          "id": "0x6e756d5f67616d6573",
-          "feltLength": 1
-        },
-        {
-          "name": "total_chests",
-          "type": "core::integer::u128",
-          "id": "0x746f74616c5f636865737473",
-          "feltLength": 1
-        },
-        {
-          "name": "cap_ratio_bps",
-          "type": "core::integer::u128",
-          "id": "0x6361705f726174696f5f627073",
-          "feltLength": 1
-        }
-      ],
-      "keyLength": 1,
-      "valueLength": 3
-    },
-    {
-      "name": "SeriesChestState",
-      "identity": "0x53657269657343686573745374617465",
-      "owners": [
-        "prizes"
-      ],
-      "scope": "deployment",
-      "keys": [
-        {
-          "name": "series_id",
-          "type": "core::felt252",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "game_index",
-          "type": "core::integer::u32",
-          "id": "0x67616d655f696e646578",
-          "feltLength": 1
-        },
-        {
-          "name": "ema_players_scaled",
-          "type": "core::integer::u128",
-          "id": "0x656d615f706c61796572735f7363616c6564",
-          "feltLength": 1
-        },
-        {
-          "name": "recent_first",
-          "type": "core::integer::u128",
-          "id": "0x726563656e745f6669727374",
-          "feltLength": 1
-        },
-        {
-          "name": "recent_second",
-          "type": "core::integer::u128",
-          "id": "0x726563656e745f7365636f6e64",
-          "feltLength": 1
-        },
-        {
-          "name": "recent_third",
-          "type": "core::integer::u128",
-          "id": "0x726563656e745f7468697264",
-          "feltLength": 1
-        },
-        {
-          "name": "recent_count",
-          "type": "core::integer::u8",
-          "id": "0x726563656e745f636f756e74",
-          "feltLength": 1
-        },
-        {
-          "name": "anchor_first",
-          "type": "core::integer::u128",
-          "id": "0x616e63686f725f6669727374",
-          "feltLength": 1
-        },
-        {
-          "name": "anchor_second",
-          "type": "core::integer::u128",
-          "id": "0x616e63686f725f7365636f6e64",
-          "feltLength": 1
-        },
-        {
-          "name": "anchor_count",
-          "type": "core::integer::u8",
-          "id": "0x616e63686f725f636f756e74",
-          "feltLength": 1
-        },
-        {
-          "name": "last_rate_bps",
-          "type": "core::integer::u128",
-          "id": "0x6c6173745f726174655f627073",
-          "feltLength": 1
-        },
-        {
-          "name": "soft_supply",
-          "type": "core::integer::u128",
-          "id": "0x736f66745f737570706c79",
-          "feltLength": 1
-        },
-        {
-          "name": "overspend_remaining",
-          "type": "core::integer::u128",
-          "id": "0x6f7665727370656e645f72656d61696e696e67",
-          "feltLength": 1
-        }
-      ],
-      "keyLength": 1,
-      "valueLength": 12
-    },
-    {
-      "name": "GameChestReward",
-      "identity": "0x47616d654368657374526577617264",
+      "name": "BlitzResult",
+      "identity": "0x426c69747a526573756c74",
       "owners": [
         "prizes"
       ],
@@ -9052,124 +8633,29 @@
       ],
       "members": [
         {
-          "name": "allocated",
-          "type": "core::integer::u16",
-          "id": "0x616c6c6f6361746564",
-          "feltLength": 1
+          "name": "players",
+          "type": "core::array::Span::<world_native::blitz_results::PlayerResult>",
+          "id": "0x706c6179657273",
+          "feltLength": null
         },
         {
-          "name": "distributed",
-          "type": "core::integer::u16",
-          "id": "0x6469737472696275746564",
-          "feltLength": 1
-        }
-      ],
-      "keyLength": 1,
-      "valueLength": 2
-    },
-    {
-      "name": "RankingTrial",
-      "identity": "0x52616e6b696e67547269616c",
-      "owners": [
-        "prizes"
-      ],
-      "scope": "game",
-      "keys": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "trial_id",
-          "type": "core::integer::u128",
-          "id": "0x747269616c5f6964",
-          "feltLength": 1
-        },
-        {
-          "name": "committed",
-          "type": "core::integer::u16",
-          "id": "0x636f6d6d6974746564",
-          "feltLength": 1
-        },
-        {
-          "name": "processed",
-          "type": "core::integer::u16",
-          "id": "0x70726f636573736564",
-          "feltLength": 1
-        },
-        {
-          "name": "last_rank",
-          "type": "core::integer::u16",
-          "id": "0x6c6173745f72616e6b",
-          "feltLength": 1
-        },
-        {
-          "name": "last_points",
-          "type": "core::integer::u128",
-          "id": "0x6c6173745f706f696e7473",
-          "feltLength": 1
-        },
-        {
-          "name": "total_points",
-          "type": "core::integer::u128",
-          "id": "0x746f74616c5f706f696e7473",
-          "feltLength": 1
-        }
-      ],
-      "keyLength": 1,
-      "valueLength": 6,
-      "absence": {
-        "value": "empty",
-        "meaning": "No ranking trial or player rank has been recorded."
-      }
-    },
-    {
-      "name": "PlayerRank",
-      "identity": "0x506c6179657252616e6b",
-      "owners": [
-        "prizes"
-      ],
-      "scope": "game",
-      "keys": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        },
-        {
-          "name": "player",
-          "type": "core::starknet::contract_address::ContractAddress",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "rank",
-          "type": "core::integer::u16",
-          "id": "0x72616e6b",
-          "feltLength": 1
-        },
-        {
-          "name": "chests",
-          "type": "core::integer::u16",
-          "id": "0x636865737473",
-          "feltLength": 1
-        },
-        {
-          "name": "elite",
+          "name": "complete",
           "type": "core::bool",
-          "id": "0x656c697465",
+          "id": "0x636f6d706c657465",
+          "feltLength": 1
+        },
+        {
+          "name": "commitment",
+          "type": "core::felt252",
+          "id": "0x636f6d6d69746d656e74",
           "feltLength": 1
         }
       ],
-      "keyLength": 2,
-      "valueLength": 3,
+      "keyLength": 1,
+      "valueLength": null,
       "absence": {
         "value": "empty",
-        "meaning": "No ranking trial or player rank has been recorded."
+        "meaning": "No result batch has been recorded for this game."
       }
     },
     {
@@ -12192,18 +11678,6 @@
           "feltLength": 1
         },
         {
-          "name": "series_id",
-          "type": "core::felt252",
-          "id": "0x7365726965735f6964",
-          "feltLength": 1
-        },
-        {
-          "name": "game_number_in_series",
-          "type": "core::integer::u16",
-          "id": "0x67616d655f6e756d6265725f696e5f736572696573",
-          "feltLength": 1
-        },
-        {
           "name": "preset_id",
           "type": "core::integer::u32",
           "id": "0x7072657365745f6964",
@@ -12258,12 +11732,6 @@
           "feltLength": 1
         },
         {
-          "name": "final_trial_id",
-          "type": "core::integer::u128",
-          "id": "0x66696e616c5f747269616c5f6964",
-          "feltLength": 1
-        },
-        {
           "name": "seed",
           "type": "core::felt252",
           "id": "0x73656564",
@@ -12271,7 +11739,7 @@
         }
       ],
       "keyLength": 1,
-      "valueLength": 14
+      "valueLength": 11
     },
     {
       "name": "SliceRules",
@@ -13049,13 +12517,13 @@
         }
       ]
     },
-    "core::array::Span::<core::starknet::contract_address::ContractAddress>": {
+    "core::array::Span::<world_native::blitz_results::PlayerResult>": {
       "type": "struct",
-      "name": "core::array::Span::<core::starknet::contract_address::ContractAddress>",
+      "name": "core::array::Span::<world_native::blitz_results::PlayerResult>",
       "members": [
         {
           "name": "snapshot",
-          "type": "@core::array::Array::<core::starknet::contract_address::ContractAddress>"
+          "type": "@core::array::Array::<world_native::blitz_results::PlayerResult>"
         }
       ]
     },
@@ -13315,34 +12783,6 @@
         }
       ]
     },
-    "core::option::Option::<world_native::blitz_prizes::GameChests>": {
-      "type": "enum",
-      "name": "core::option::Option::<world_native::blitz_prizes::GameChests>",
-      "variants": [
-        {
-          "name": "Some",
-          "type": "world_native::blitz_prizes::GameChests"
-        },
-        {
-          "name": "None",
-          "type": "()"
-        }
-      ]
-    },
-    "core::option::Option::<world_native::blitz_prizes::PlayerRank>": {
-      "type": "enum",
-      "name": "core::option::Option::<world_native::blitz_prizes::PlayerRank>",
-      "variants": [
-        {
-          "name": "Some",
-          "type": "world_native::blitz_prizes::PlayerRank"
-        },
-        {
-          "name": "None",
-          "type": "()"
-        }
-      ]
-    },
     "core::option::Option::<world_native::buildings::Building>": {
       "type": "enum",
       "name": "core::option::Option::<world_native::buildings::Building>",
@@ -13406,20 +12846,6 @@
         {
           "name": "Some",
           "type": "world_native::presets::WithdrawalPreset"
-        },
-        {
-          "name": "None",
-          "type": "()"
-        }
-      ]
-    },
-    "core::option::Option::<world_native::registrar::Series>": {
-      "type": "enum",
-      "name": "core::option::Option::<world_native::registrar::Series>",
-      "variants": [
-        {
-          "name": "Some",
-          "type": "world_native::registrar::Series"
         },
         {
           "name": "None",
@@ -13993,113 +13419,53 @@
         }
       ]
     },
-    "world_native::blitz_prizes::GameChests": {
+    "world_native::blitz_results::BlitzResult": {
       "type": "struct",
-      "name": "world_native::blitz_prizes::GameChests",
+      "name": "world_native::blitz_results::BlitzResult",
       "members": [
         {
-          "name": "allocated",
-          "type": "core::integer::u16"
+          "name": "players",
+          "type": "core::array::Span::<world_native::blitz_results::PlayerResult>"
         },
         {
-          "name": "distributed",
-          "type": "core::integer::u16"
-        }
-      ]
-    },
-    "world_native::blitz_prizes::PlayerRank": {
-      "type": "struct",
-      "name": "world_native::blitz_prizes::PlayerRank",
-      "members": [
-        {
-          "name": "rank",
-          "type": "core::integer::u16"
-        },
-        {
-          "name": "chests",
-          "type": "core::integer::u16"
-        },
-        {
-          "name": "elite",
+          "name": "complete",
           "type": "core::bool"
+        },
+        {
+          "name": "commitment",
+          "type": "core::felt252"
         }
       ]
     },
-    "world_native::blitz_prizes::PrizeResult": {
+    "world_native::blitz_results::PlayerResult": {
       "type": "struct",
-      "name": "world_native::blitz_prizes::PrizeResult",
+      "name": "world_native::blitz_results::PlayerResult",
       "members": [
-        {
-          "name": "trial_id",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "index",
-          "type": "core::integer::u16"
-        },
         {
           "name": "player",
           "type": "core::starknet::contract_address::ContractAddress"
         },
         {
-          "name": "owner",
-          "type": "core::starknet::contract_address::ContractAddress"
+          "name": "points",
+          "type": "core::integer::u128"
         },
         {
           "name": "rank",
-          "type": "core::integer::u16"
-        },
-        {
-          "name": "chests",
-          "type": "core::integer::u16"
+          "type": "core::integer::u8"
         }
       ]
     },
-    "world_native::blitz_prizes::RankingTrial": {
+    "world_native::blitz_results::RecordBlitzResults": {
       "type": "struct",
-      "name": "world_native::blitz_prizes::RankingTrial",
+      "name": "world_native::blitz_results::RecordBlitzResults",
       "members": [
         {
-          "name": "trial_id",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "committed",
-          "type": "core::integer::u16"
-        },
-        {
-          "name": "processed",
-          "type": "core::integer::u16"
-        },
-        {
-          "name": "last_rank",
-          "type": "core::integer::u16"
-        },
-        {
-          "name": "last_points",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "total_points",
-          "type": "core::integer::u128"
-        }
-      ]
-    },
-    "world_native::blitz_prizes::RankPlayers": {
-      "type": "struct",
-      "name": "world_native::blitz_prizes::RankPlayers",
-      "members": [
-        {
-          "name": "trial_id",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "committed",
-          "type": "core::integer::u16"
+          "name": "start",
+          "type": "core::integer::u8"
         },
         {
           "name": "players",
-          "type": "core::array::Span::<core::starknet::contract_address::ContractAddress>"
+          "type": "core::array::Span::<world_native::blitz_results::PlayerResult>"
         }
       ]
     },
@@ -14736,16 +14102,8 @@
           "type": "world_native::faith::ClaimPlayer"
         },
         {
-          "name": "AllocateGameChests",
-          "type": "()"
-        },
-        {
-          "name": "RankPlayers",
-          "type": "world_native::blitz_prizes::RankPlayers"
-        },
-        {
-          "name": "ResetRanking",
-          "type": "()"
+          "name": "RecordBlitzResults",
+          "type": "world_native::blitz_results::RecordBlitzResults"
         },
         {
           "name": "CraftRelic",
@@ -15216,14 +14574,6 @@
           "type": "core::felt252"
         },
         {
-          "name": "series_id",
-          "type": "core::felt252"
-        },
-        {
-          "name": "game_number_in_series",
-          "type": "core::integer::u16"
-        },
-        {
           "name": "preset_id",
           "type": "core::integer::u32"
         },
@@ -15258,10 +14608,6 @@
         {
           "name": "end_grace_seconds",
           "type": "core::integer::u32"
-        },
-        {
-          "name": "final_trial_id",
-          "type": "core::integer::u128"
         },
         {
           "name": "seed",
@@ -16348,12 +15694,8 @@
           "type": "world_native::faith::Pledge"
         },
         {
-          "name": "PrizeDistributionFinal",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "PrizeResult",
-          "type": "world_native::blitz_prizes::PrizeResult"
+          "name": "BlitzFinalized",
+          "type": "core::felt252"
         },
         {
           "name": "RelicCrafted",
@@ -16784,14 +16126,6 @@
           "type": "core::integer::u32"
         },
         {
-          "name": "series_id",
-          "type": "core::felt252"
-        },
-        {
-          "name": "game_number_in_series",
-          "type": "core::integer::u16"
-        },
-        {
           "name": "start_settling_at",
           "type": "core::integer::u64"
         },
@@ -16848,20 +16182,6 @@
         {
           "name": "account",
           "type": "core::starknet::contract_address::ContractAddress"
-        }
-      ]
-    },
-    "world_native::registrar::Series": {
-      "type": "struct",
-      "name": "world_native::registrar::Series",
-      "members": [
-        {
-          "name": "owner",
-          "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
-          "name": "created_games",
-          "type": "core::integer::u16"
         }
       ]
     },
@@ -17646,78 +16966,6 @@
         {
           "name": "account_class",
           "type": "core::starknet::class_hash::ClassHash"
-        }
-      ]
-    },
-    "world_native::series_chests::SeriesRules": {
-      "type": "struct",
-      "name": "world_native::series_chests::SeriesRules",
-      "members": [
-        {
-          "name": "num_games",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "total_chests",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "cap_ratio_bps",
-          "type": "core::integer::u128"
-        }
-      ]
-    },
-    "world_native::series_chests::SeriesState": {
-      "type": "struct",
-      "name": "world_native::series_chests::SeriesState",
-      "members": [
-        {
-          "name": "game_index",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "ema_players_scaled",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "recent_first",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "recent_second",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "recent_third",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "recent_count",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "anchor_first",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "anchor_second",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "anchor_count",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "last_rate_bps",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "soft_supply",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "overspend_remaining",
-          "type": "core::integer::u128"
         }
       ]
     },
@@ -18684,5 +17932,5 @@
       ]
     }
   },
-  "identity": "c23246ee079783b03c09431bfbc8bf2dd682d958406a7cb5343019d7c5bd1125"
+  "identity": "2db222be1b50ba6f69b985c3c2bd24b88fd95970c1e98627a49ef4c707c6ea7e"
 }

@@ -23,7 +23,7 @@ function wireHistory() {
   const game = rowEvent(
     "GameRegistry",
     ["1"],
-    ["0x706172697479", "0", "0", "1", "0x111", "0", "1", "0", "1800", "1800", "999999", "0", "0", "1"],
+    ["0x706172697479", "1", "0x111", "0", "1", "0", "1800", "1800", "999999", "0", "1"],
   );
   return [
     block(10, [game, rulesEvent(), rowEvent("SettlementRules", ["1"], ["1800", "96", "0", "1"]), ...events]),

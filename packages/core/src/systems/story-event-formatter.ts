@@ -457,14 +457,6 @@ const formatters: Record<string, StoryFormatter> = {
       icon: "prize",
     };
   },
-  PrizeDistributionFinalStory: (_, payload) => {
-    const trialId = formatNumber(payload.trial_id);
-    return {
-      title: "Prize trial complete",
-      description: trialId ? `Trial ${trialId} finalized.` : "Distribution cycle finalized.",
-      icon: "prize",
-    };
-  },
 };
 
 export function buildStoryEventPresentation(

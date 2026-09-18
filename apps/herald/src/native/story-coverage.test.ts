@@ -119,11 +119,7 @@ const stories: Record<string, { fields: number[]; expected: unknown }> = {
     expected: { structure_id: 3n, wonder_id: 9n, owner_rate: 2000n, pledger_rate: 8000n },
   },
   FaithRemoved: { fields: [3, 9], expected: { structure_id: 3n, wonder_id: 9n } },
-  PrizeDistributionFinal: { fields: [11], expected: 11n },
-  PrizeResult: {
-    fields: [11, 2, 17, 34, 3, 4],
-    expected: { trial_id: 11n, index: 2n, player: 17n, owner: 34n, rank: 3n, chests: 4n },
-  },
+  BlitzFinalized: { fields: [11], expected: 11n },
   RelicCrafted: { fields: [4], expected: 4n },
   ExplorerCreateStory: {
     fields: [7, 3, 1, 2, 100, 4],

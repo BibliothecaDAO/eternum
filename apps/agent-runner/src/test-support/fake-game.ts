@@ -174,8 +174,6 @@ export const seedGameRegistry = (
   writeFact(store, "GameRegistry", [GAME_ID], {
     game_id: GAME_ID,
     name: 0n,
-    series_id: 0n,
-    game_number_in_series: 0,
     preset_id: 1,
     creator: 0n,
     settled: input.status === "Ended",
@@ -185,7 +183,6 @@ export const seedGameRegistry = (
     start_main_at: BigInt(input.startMainAt),
     end_at: BigInt(input.endAt),
     end_grace_seconds: 0,
-    final_trial_id: 0n,
     seed: 0n,
   });
 };

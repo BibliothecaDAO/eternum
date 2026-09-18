@@ -8,6 +8,7 @@ export interface PlaytestSlot {
   name: string;
   closesAt: string;
   frozenAt: string | null;
+  closed: boolean;
   registrations: SlotRegistration[];
 }
 

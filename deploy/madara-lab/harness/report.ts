@@ -4,7 +4,6 @@ import type { SeasonFinalizationEvidence } from "./season-lifecycle";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { HarnessAccount } from "./account-factory";
-import type { LedgerHarnessEvidence } from "./ledger-mode";
 import {
   createRpcMetrics,
   type MeasuredRpcMethod,
@@ -90,7 +89,6 @@ export interface HarnessReportInput {
   setupTransactions: TrackedTransaction[];
   heraldUrl: string;
   workload: WorkloadResult;
-  valuePlane?: LedgerHarnessEvidence;
   seasonFinalizations?: SeasonFinalizationEvidence[];
   layerRoundTrips?: LayerRoundTripEvidence[];
 }
@@ -236,7 +234,6 @@ function buildHarnessManifest(
       executionModel: "single_process",
       instances: input.games,
     },
-    valuePlane: input.valuePlane ?? { mode: "open-entry" },
     seasonFinalizations: input.seasonFinalizations ?? [],
     layerRoundTrips: input.layerRoundTrips ?? [],
     workload: {

@@ -48,59 +48,32 @@ meta: {}
 file: docs/pages/blitz/game-entry.mdx
 meta: {
   "title": "Game Entry",
-  "description": "How to enter and compete in Blitz"
+  "description": "Join a free Regular Blitz slot"
 }
 
 # Game Entry
 
-While an Eternum season is a single game instance that unfolds over several weeks, Blitz games are frequently hosted to
-allow players to jump into the action at a time that suits them. Competitive Blitz tournaments, composed of Warrior and
-Elite bracket games are organized into 'series' that are hosted in the development period between Eternum seasons.
-Recruit and Gladiator bracket games are hosted continuously on a rotating timetable.
+Sign in with your Realms identity and register for a free Blitz slot before registration closes. Your gameplay account
+is prepared through the existing sign-in flow. Registration requires no token payment or season pass.
 
-Unlike Eternum, Blitz does not require ownership of Realms NFTs or Season Passes for entry. Entry requirements and
-stakes are determined by the bracket that players choose to compete in. Both human and AI agent players are welcome to
-participate, competing under the same onchain rules.
+When registration closes, the roster is fixed and split into balanced Regular Blitz games of up to 24 players. For
+example, 25 players form games of 13 and 12. Each player belongs to one game; registration order determines grouping.
 
-## Bracket System
+## Automatic settlement
 
-Blitz gameplay is structured around multiple brackets with varying stakes and entry requirements, catering to different
-playstyles and competitiveness levels.
+The game shuffles its fixed roster and settles three realms per player, with provisions and a starting Delta guard.
+There is no manual settlement race. Play starts only after every player's realms are ready; everyone gets the same
+scheduled game duration. Realm names come from their realm IDs.
 
-🍻 **Recruit Bracket - No Stakes**
+Your slot shows your assigned game. Enter through your game card once it is ready. A one-player slot creates a
+one-player game; an empty slot creates no game. Duel is outside this playtest flow.
 
-Free-to-enter bracket for introduction, playtesting and practice, allowing players to experience Blitz gameplay with no
-stakes. Recruit games run multiple times per day on a rotating schedule to encourage participation from players in all
-time zones.
+## Results
 
-💰 **Gladiator Bracket - $LORDS Stakes**
+At the end, the game finishes hyperstructure point settlement and records every player's final victory points and rank.
+Ties share a competition rank: scores of 100, 100 and 50 rank 1, 1 and 3. Players with zero VP tie last.
 
-Competitive games with $LORDS stakes. Players pay a $LORDS entry fee, contributing to a shared prize pool which is split
-between top-ranking Lords by score at the end of the game. All players have a chance to earn additional Loot Chest
-rewards. Games run daily on a rotating schedule.
-
-🏅 **Warrior Bracket - Series Games**
-
-These games form the bulk of a competitive Blitz Series. Players pay a $LORDS entry fee, contributing to a shared prize
-pool which is split between top-ranking Lords by score at the end of the game. All players have a chance at earning
-additional rewards in the form of Blitz Rewards Chests. The highest placing players can also win tradable NFT invites to
-the Elite bracket. Games run according to the series schedule, but primarily during prime time for key timezones (USA,
-Europe, Asia-Pacific).
-
-🏆 **Elite Bracket - Series Finals**
-
-Representing the highest level of Blitz gameplay, Elite bracket games are considered the 'finals' of a Blitz Series.
-Entry requires an NFT invite from Warrior bracket (no additional $LORDS cost). These games offer large, DAO-funded prize
-pools along with coveted Elite Blitz Rewards Chests. A limited number of Elite games are run at the end of a Blitz
-series.
-
-## Realm Control Mechanics
-
-Each Lord starts the game in control of three equally capable Realms. As in Eternum, Realms in Blitz can be conquered by
-other Lords, encouraging constant vigilance and strategic interaction. Lords must carefully balance their military
-forces, territorial positioning, and resource management to survive and thrive within the intense 60-minute game
-duration. There is no progression beyond the conclusion of the game, and each game instance starts with a refreshed
-world state.
+These free playtests award no chests, token payouts or MMR changes.
 
 
 
@@ -348,249 +321,22 @@ Once committed, the update cannot be run again for that match.
 
 file: docs/pages/blitz/prize-pool.mdx
 meta: {
-  "title": "Prize Pool & Distribution",
-  "description": "How $LORDS prizes are calculated and distributed in Blitz"
+  "title": "Game Results",
+  "description": "Final ranks and victory points in free Blitz playtests"
 }
 
-import "@/styles.css";
+# Game Results
 
-# Prize Pool & Distribution
+Free Blitz slots have no entry fee or prize pool. After the game ends, hyperstructure points are settled in bounded
+batches and the final result records every roster member's rank and victory points.
 
-Blitz distributes **$LORDS** to players at the end of every game based on their final rank. The system adapts to lobby
-size, the ratio of entry fees to sponsored prizes, and how many players actually score — so payouts stay fair whether
-there are 2 or 24 players in a match.
+Equal scores share a competition rank. A tie for first takes ranks 1 and 1; the next player is rank 3. Players who
+finish with zero points share last place, including registered players who never acted.
 
-## Prize Pool Composition
+The result becomes final only when the complete roster has been recorded. Interrupted finalization resumes from its
+recorded progress. The leaderboard and game review show these native results.
 
-The total prize pool comes from two sources:
-
-<div style={{ width: "100%", maxWidth: "100%" }}>
-  <table
-    style={{
-    width: "100%",
-    tableLayout: "fixed",
-    borderCollapse: "collapse",
-    backgroundColor: "rgba(7, 10, 12, 0.82)",
-    border: "1px solid rgba(201, 169, 96, 0.18)",
-    borderRadius: "8px",
-    overflow: "hidden",
-    fontSize: "0.85rem",
-  }}
-  >
-    <thead style={{ backgroundColor: "rgba(22, 27, 32, 0.86)" }}>
-      <tr>
-        <th
-          style={{
-          width: "25%",
-          padding: "0.6rem 1rem",
-          textAlign: "left",
-          fontWeight: 700,
-          color: "#c9a960",
-          borderBottom: "1px solid rgba(201, 169, 96, 0.28)",
-          whiteSpace: "nowrap",
-          fontSize: "0.85rem",
-        }}
-        >
-          Source
-        </th>
-
-        <th
-          style={{
-          width: "75%",
-          padding: "0.6rem 1rem",
-          textAlign: "left",
-          fontWeight: 700,
-          color: "#c9a960",
-          borderBottom: "1px solid rgba(201, 169, 96, 0.28)",
-          fontSize: "0.85rem",
-        }}
-        >
-          Description
-        </th>
-      </tr>
-    </thead>
-
-    <tbody>
-      <tr>
-        <td
-          style={{
-          padding: "0.6rem 1rem",
-          textAlign: "left",
-          color: "#ece0bd",
-          borderBottom: "1px solid rgba(201, 169, 96, 0.18)",
-          whiteSpace: "nowrap",
-          fontSize: "0.85rem",
-        }}
-        >
-          <strong>Entry fees (F)</strong>
-        </td>
-
-        <td
-          style={{
-          padding: "0.6rem 1rem",
-          textAlign: "left",
-          color: "#ece0bd",
-          borderBottom: "1px solid rgba(201, 169, 96, 0.18)",
-          fontSize: "0.85rem",
-        }}
-        >
-          Each player pays a $LORDS entry fee when registering for the game
-        </td>
-      </tr>
-
-      <tr>
-        <td
-          style={{
-          padding: "0.6rem 1rem",
-          textAlign: "left",
-          color: "#ece0bd",
-          whiteSpace: "nowrap",
-          fontSize: "0.85rem",
-        }}
-        >
-          <strong>Sponsorship (S)</strong>
-        </td>
-
-        <td style={{ padding: "0.6rem 1rem", textAlign: "left", color: "#ece0bd", fontSize: "0.85rem" }}>
-          Additional $LORDS added by the game host or external sponsors
-        </td>
-      </tr>
-    </tbody>
-  </table>
-</div>
-
-**Total Prize Pool = F + S**
-
-### Fee Split
-
-Before the prize pool is formed, the collected entry fees are split:
-
-* **70%** → prize pool (distributed to winning players)
-* **15%** → [Lordship Protocol](https://realms.world) (veLORDS ecosystem support)
-* **15%** → development fund (core team operations)
-
-Any sponsored amount is added **on top** of the 70% player share, so sponsorship always increases the prize pool without
-reducing the ecosystem or development allocations.
-
-> **Example:** 106 players × 250 $LORDS entry = 26,500 $LORDS collected. After the 70/15/15 split, 18,550 $LORDS goes to
-> the prize pool. Add 15,000 $LORDS in sponsorship → **33,550 $LORDS total prize pool**.
-
-## Who Wins?
-
-Not every player receives a prize. The number of **winners** is calculated dynamically based on several factors:
-
-1. **Registered player count (N)** — total players who entered
-2. **Scoring players (C)** — players who finished with points > 0
-3. **Entry-fee-to-pool ratio** — how much of the pool is sponsored vs. player-funded
-4. **A small-lobby adjustment** — prevents tiny games from paying out to nearly everyone
-
-### Winner Count Formula
-
-The system computes a **base winner ratio** `rb` that sets a floor for how many players can win:
-
-```
-rb(N) = 1 − (1.03 × min(1, N/1000)^0.13)
-```
-
-This ratio is clamped between **2%** and **60%** of the lobby. Larger lobbies push `rb` lower (fewer proportional
-winners), while small lobbies keep it higher.
-
-A **sponsorship factor** `A` then expands the winner pool when sponsors contribute:
-
-```
-A = 1 − (F / P)^0.5
-```
-
-Where `F` is total entry fees (after the 70/15/15 split) and `P` is the full prize pool. More sponsorship → higher `A` →
-more winners.
-
-A **small-game weight** `gw` further adjusts for lobby size:
-
-```
-gw = 0.05 + 0.95 × (20 / (N + 20))²
-```
-
-These combine into a final winner ratio `r`:
-
-```
-r = clamp(rb + 3.3 × A × gw × (rcap − rb), 0.02, rcap)
-```
-
-Where `rcap = 0.5 + 0.5 × A`. The winner count `W` is then:
-
-```
-W = min(ceil(N × r), C)
-```
-
-The winner count can never exceed the number of players who actually scored.
-
-## Prize Calculation
-
-Once the winner count is known, prizes are distributed using a **geometric decay** model. Higher-ranked players receive
-proportionally more, with the curve controlled by a single parameter `s`.
-
-### The Decay Parameter (s)
-
-```
-s(N) = 0.3 + 0.64 × (1 − N^(−0.7))
-```
-
-* Small lobbies → lower `s` → steeper curve (1st place gets a larger share)
-* Large lobbies → higher `s` → flatter curve (prizes spread more evenly)
-
-`s` approaches but never exceeds \~0.94 even at very large player counts.
-
-### Rank Weights
-
-Each winning position `i` (starting from 1) receives a weight:
-
-```
-weight(i) = s^(i − 1)
-
-  1st → 1,  2nd → s,  3rd → s²,  4th → s³,  …  Wth → s^(W−1)
-```
-
-The total weight sum is the geometric series:
-
-```
-Σ = (s^W − 1) / (s − 1)
-```
-
-### Individual Prize
-
-Each winner's prize is their normalized weight times the prize pool:
-
-```
-prize(i) = (weight(i) / Σ) × P
-```
-
-Players ranked beyond position `W` receive **0 $LORDS**. If multiple players share the same rank (tied scores), their
-combined prize for that rank range is split equally among them.
-
-## NFT Rewards
-
-In addition to $LORDS, players may receive NFT rewards:
-
-### Loot Chests
-
-* **Game Reward Chests** — any player who finishes with **≥ 500 Victory Points** automatically receives a Loot Chest NFT
-  upon claiming their prize, regardless of whether they are in the winner pool.
-* **Series Chests** — additional Loot Chests are allocated across a game series and distributed proportionally based on
-  each player's registered points relative to the total. The number of series chests grows as more games are played in
-  the series.
-
-See [Loot Chests](/overview/chests/loot-chests) for details on chest contents.
-
-## Claiming Prizes
-
-Prize distribution is **permissionless** — anyone can submit the ranked player list to trigger payouts. The process:
-
-1. The game ends and points registration closes
-2. A caller submits the ordered player list (highest score first) along with a trial ID
-3. The contract verifies ordering, calculates prizes, and finalizes rankings
-4. Players (or anyone on their behalf) call the claim function to transfer $LORDS and mint any earned NFTs
-
-If only **one player** registered for a game, they receive a full refund of their entry fee with no fee split applied.
+There are no chest awards, MMR updates or token payouts in the current free playtest flow.
 
 
 

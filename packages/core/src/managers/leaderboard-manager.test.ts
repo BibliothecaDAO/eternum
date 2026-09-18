@@ -58,8 +58,6 @@ describe("native leaderboard", () => {
       game_id: 23,
       preset_id: 1,
       name: 1n,
-      series_id: 0n,
-      game_number_in_series: 0,
       creator: 1n,
       start_settling_at: 1n,
       start_main_at: 1n,
@@ -68,7 +66,6 @@ describe("native leaderboard", () => {
       ready: true,
       dev_mode_on: false,
       end_grace_seconds: 0,
-      final_trial_id: 0n,
       seed: 1n,
     });
     configManager.setStore(store);

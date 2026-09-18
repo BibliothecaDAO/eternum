@@ -64,9 +64,7 @@ export interface NativeCommandPayloads {
   FundFaithPrizes: BigNumberish;
   DistributeFaithPrizes: undefined;
   ClaimFaithPrize: { readonly player: BigNumberish; readonly wonder_id: BigNumberish };
-  AllocateGameChests: undefined;
-  RankPlayers: { readonly trial_id: BigNumberish; readonly committed: BigNumberish; readonly players: readonly (BigNumberish)[] };
-  ResetRanking: undefined;
+  RecordBlitzResults: { readonly start: BigNumberish; readonly players: readonly ({ readonly player: BigNumberish; readonly points: BigNumberish; readonly rank: BigNumberish })[] };
   CraftRelic: BigNumberish;
   CreateGuild: { readonly owned_structure_id: BigNumberish; readonly public: boolean; readonly name: BigNumberish };
   JoinGuild: { readonly owned_structure_id: BigNumberish; readonly guild_id: BigNumberish };

@@ -34,6 +34,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-09-19",
+    title: "Free Blitz Slots and Results",
+    description:
+      "Register for a free slot, join your assigned game with prepared realms, and see final ranks and victory points after the whole roster is scored.",
+    type: "feature",
+  },
+  {
     date: "2026-09-18",
     title: "Automatic Blitz settlement",
     description:

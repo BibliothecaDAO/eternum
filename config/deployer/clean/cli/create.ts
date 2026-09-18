@@ -26,8 +26,6 @@ function usage(): void {
       "  BLITZ_REGISTRATION_OVERRIDES_JSON=<json> / --blitz-registration-overrides-json <json>",
       "  --mode <batched|sequential>",
       `  --version <felt>              default: ${DEFAULT_MADARA_PRESET_ID}`,
-      "  --series-name <value>",
-      "  --series-game-number <number>",
       "  --dry-run",
       "",
       "Examples:",

@@ -1,6 +1,5 @@
 import { Effect, Layer } from "effect";
 import { describe, expect, test } from "vitest";
-import type { LaunchRotationSummary } from "../../../config/deployer/clean/types";
 import { LaunchExecutor } from "./executor";
 import { databaseLayer } from "./store";
 import { InMemoryLaunchStore } from "./test-store";
@@ -12,61 +11,6 @@ const request = {
 };
 
 describe("durable launch worker", () => {
-  test("keeps repeated rotation ticks to one durable job", async () => {
-    const store = new InMemoryLaunchStore();
-    const rotation = {
-      environment: "madara.blitz" as const,
-      rotationName: "daily-blitz",
-      firstGameStartTime: "2026-09-01T17:00:00.000Z",
-      gameIntervalMinutes: 60,
-      maxGames: 8,
-      evaluationIntervalMinutes: 30,
-    };
-
-    await store.enqueue("rotation", rotation);
-    await store.enqueue("rotation", rotation);
-
-    expect(store.runs.size).toBe(1);
-  });
-
-  test("persists a rotation child game through its parent instead of demanding its own run", async () => {
-    const store = new InMemoryLaunchStore();
-    const parent = await store.enqueue("rotation", {
-      environment: "madara.blitz",
-      rotationName: "daily-blitz",
-      firstGameStartTime: "2026-09-01T17:00:00.000Z",
-      gameIntervalMinutes: 60,
-      maxGames: 8,
-      evaluationIntervalMinutes: 30,
-    });
-    await store.saveRotation({
-      environment: "madara.blitz",
-      rotationName: "daily-blitz",
-      seriesName: "daily-blitz",
-      games: [{ gameName: "daily-blitz-0001" }],
-    } as unknown as LaunchRotationSummary);
-    const child = {
-      environment: "madara.blitz" as const,
-      chain: "madara" as const,
-      gameType: "blitz" as const,
-      gameName: "daily-blitz-0001",
-      startTime: 1,
-      startTimeIso: "1970-01-01T00:00:01.000Z",
-      rpcUrl: "http://rpc.test",
-      configMode: "batched" as const,
-      configSteps: [],
-      dryRun: false,
-      gameId: 19,
-    };
-
-    await expect(store.saveGame(child)).resolves.toMatchObject({
-      gameId: 19,
-      outputPath: `memory://launch_runs/${parent.id}/summary`,
-    });
-    await expect(store.saveGame({ ...child, gameName: "orphan-0001" })).rejects.toThrow("No run owns orphan-0001");
-    expect(store.runs.size).toBe(1);
-  });
-
   test("reclaims an expired lease without creating a second run", async () => {
     const store = new InMemoryLaunchStore();
     const queued = await store.enqueue("game", request);
