@@ -95,13 +95,10 @@ export interface WorkloadResult {
 
 /** The harness's own route memory for an explorer; its position and stamina are read from the shared store when needed. */
 interface ExplorerState {
-  atFrontier: boolean;
-  blockedDirections: Map<string, Set<number>>;
   explorerId: ID;
   lastUsedAt: number;
   outwardDirection: number;
-  pathDirections: number[];
-  structureId: ID;
+  lastDirection?: number;
 }
 
 interface StructureState {
@@ -111,7 +108,6 @@ interface StructureState {
 }
 
 interface ExplorerPriority {
-  atFrontier: boolean;
   lastUsedAt: number;
 }
 
@@ -353,7 +349,7 @@ export async function prepareHarnessBots({
   return bots;
 }
 
-/** Realm placement reveals only its own tile; measured travel needs an explored route origin. */
+/** Measured travel starts from a revealed route origin. */
 async function prepareExplorerRoute(
   bot: HarnessBot,
   explorer: ExplorerState,
@@ -373,8 +369,6 @@ async function prepareExplorerRoute(
         .exploredHexes.get(coord.x - center.x)
         ?.has(coord.y - center.y)
     ) {
-      explorer.pathDirections = [];
-      explorer.atFrontier = true;
       return;
     }
     const chainTicks = await readChainTicks(game, provider, rpc);
@@ -582,14 +576,8 @@ export function oppositeDirection(direction: number): number {
   return (direction + 3) % 6;
 }
 
-export function prioritizeExplorer<T extends ExplorerPriority>(
-  candidates: T[],
-  kind: "move" | "explore",
-): T | undefined {
-  return [...candidates].sort((left, right) => {
-    const frontierPriority = kind === "move" ? Number(left.atFrontier) - Number(right.atFrontier) : 0;
-    return frontierPriority || left.lastUsedAt - right.lastUsedAt;
-  })[0];
+export function prioritizeExplorer<T extends ExplorerPriority>(candidates: T[]): T | undefined {
+  return [...candidates].sort((left, right) => left.lastUsedAt - right.lastUsedAt)[0];
 }
 
 async function settleBot({
@@ -805,7 +793,9 @@ async function runExplorerAction({
       () => `Explorer ${selectedExplorer.explorerId}`,
     );
     pathReservations.complete(reservation, after.coord);
-    applyExplorerUpdate(selectedExplorer, kind, plan.direction, before.coord, after.coord);
+    if (after.coord.x !== before.coord.x || after.coord.y !== before.coord.y) {
+      selectedExplorer.lastDirection = plan.direction;
+    }
   } catch (error) {
     pathReservations.complete(reservation, plan.target);
     transaction.outcome = "driver_failed";
@@ -826,15 +816,12 @@ function planExplorerAction(
   game: HarnessGame,
   pathReservations: PathReservations,
 ): ExplorerActionPlan {
-  const routeReady = bot.explorers.filter((explorer) =>
-    kind === "explore" ? explorer.atFrontier : explorer.pathDirections.length > 0,
-  );
   const indexes = game.armyPathIndexes();
   const wantedActionType = kind === "explore" ? ActionType.Explore : ActionType.Move;
-  const remaining = [...routeReady];
+  const remaining = [...bot.explorers];
   let staminaShort = false;
   while (remaining.length > 0) {
-    const explorer = prioritizeExplorer(remaining, kind)!;
+    const explorer = prioritizeExplorer(remaining)!;
     remaining.splice(remaining.indexOf(explorer), 1);
     const from = requireExplorer(game, explorer.explorerId).coord;
     const paths = bot.actions.armyPaths({
@@ -844,8 +831,7 @@ function planExplorerAction(
       currentArmiesTick: chainTicks.armies,
       playerAddress: ContractAddress(bot.address),
     });
-    const directions =
-      kind === "explore" ? chooseExploreDirections(explorer, from, bot.structures) : [chooseMoveDirection(explorer)];
+    const directions = chooseDirections(explorer, kind, from, bot.structures);
     for (const direction of directions) {
       const target = neighbor(from, direction);
       if (!pathReservations.canReserve(explorer.explorerId, target)) continue;
@@ -865,21 +851,25 @@ function planExplorerAction(
   const routeState = bot.explorers
     .map((explorer) => {
       const at = coordKey(requireExplorer(game, explorer.explorerId).coord);
-      const blocked = [...(explorer.blockedDirections.get(at) ?? [])].join(",");
-      return `${explorer.explorerId}@${at} path=${explorer.pathDirections.length} blocked=${blocked}`;
+      return `${explorer.explorerId}@${at}`;
     })
     .join("; ");
   throw new HarnessPathingError(`No collision-free ${kind} route is available for bot ${bot.botId}: ${routeState}`);
 }
 
-function chooseExploreDirections(explorer: ExplorerState, from: Coord, structures: StructureState[]): number[] {
-  const blocked = explorer.blockedDirections.get(coordKey(from)) ?? new Set<number>();
-  const previousDirection = explorer.pathDirections.at(-1);
-  const preferredDirection = previousDirection ?? explorer.outwardDirection;
+function chooseDirections(
+  explorer: ExplorerState,
+  kind: "move" | "explore",
+  from: Coord,
+  structures: StructureState[],
+): number[] {
+  const previousDirection = explorer.lastDirection;
+  const preferredDirection =
+    kind === "move" && previousDirection !== undefined
+      ? oppositeDirection(previousDirection)
+      : (previousDirection ?? explorer.outwardDirection);
   const center = resolveSettlementCenter(structures);
   return [0, 1, 2, 3, 4, 5]
-    .filter((direction) => !blocked.has(direction))
-    .filter((direction) => previousDirection === undefined || direction !== oppositeDirection(previousDirection))
     .map((direction) => ({
       direction,
       preferred: direction === preferredDirection,
@@ -893,33 +883,6 @@ function chooseExploreDirections(explorer: ExplorerState, from: Coord, structure
       );
     })
     .map(({ direction }) => direction);
-}
-
-function chooseMoveDirection(explorer: ExplorerState): number {
-  const pathDirection = explorer.pathDirections.at(-1);
-  if (pathDirection === undefined) throw new Error(`Explorer ${explorer.explorerId} has no discovered path to travel`);
-  return explorer.atFrontier ? oppositeDirection(pathDirection) : pathDirection;
-}
-
-function applyExplorerUpdate(
-  explorer: ExplorerState,
-  kind: "move" | "explore",
-  direction: number,
-  previousCoord: Coord,
-  updatedCoord: Coord,
-): void {
-  const moved = updatedCoord.x !== previousCoord.x || updatedCoord.y !== previousCoord.y;
-  if (kind === "explore" && moved) {
-    explorer.pathDirections.push(direction);
-    explorer.atFrontier = true;
-  }
-  if (kind === "explore" && !moved) {
-    const blocked = explorer.blockedDirections.get(coordKey(previousCoord)) ?? new Set<number>();
-    blocked.add(direction);
-    explorer.blockedDirections.set(coordKey(previousCoord), blocked);
-    explorer.atFrontier = true;
-  }
-  if (kind === "move") explorer.atFrontier = !explorer.atFrontier;
 }
 
 async function waitForExplorerStaminaRestored(
@@ -1185,13 +1148,9 @@ function collectAll<T, R>(items: readonly T[], read: (item: T) => R | undefined)
 
 function buildExplorerState(structure: StructureState, explorerId: ID): ExplorerState {
   return {
-    atFrontier: true,
-    blockedDirections: new Map(),
     explorerId,
     lastUsedAt: -1,
     outwardDirection: structure.direction,
-    pathDirections: [],
-    structureId: structure.structureId,
   };
 }
 

@@ -76,19 +76,15 @@ describe("Madara harness workload", () => {
     expect(oppositeDirection(5)).toBe(2);
   });
 
-  it("keeps an explorer at the frontier throughout the acceptance workload", () => {
-    const explorers = [0, 1, 2].map((id) => ({ atFrontier: true, id, lastUsedAt: -1 }));
-
-    for (let tick = 0; tick < 40; tick += 1) {
-      const kind = resolveActionKind(tick);
-      if (kind === "produce") continue;
-
-      const candidates = kind === "explore" ? explorers.filter(({ atFrontier }) => atFrontier) : explorers;
-      const selected = prioritizeExplorer(candidates, kind);
-      expect(selected, `tick ${tick.toString()} ${kind}`).toBeDefined();
-      selected!.lastUsedAt = tick;
-      if (kind === "move") selected!.atFrontier = !selected!.atFrontier;
+  it("rotates among all explorers instead of reserving a remembered frontier", () => {
+    const explorers = [0, 1, 2].map((id) => ({ id, lastUsedAt: -1 }));
+    const selectedIds: number[] = [];
+    for (let tick = 0; tick < 6; tick += 1) {
+      const selected = prioritizeExplorer(explorers)!;
+      selectedIds.push(selected.id);
+      selected.lastUsedAt = tick;
     }
+    expect(selectedIds).toEqual([0, 1, 2, 0, 1, 2]);
   });
 
   it("separates game-rule exhaustion from harness pathing", () => {
@@ -163,7 +159,7 @@ describe("Madara harness workload", () => {
     expect(productionAt).toEqual([1_000_000, 1_060_000, 1_120_000]);
     expect(buildings).toBe(6);
     expect(workload.actions.filter((action) => action.kind === "explore")).toHaveLength(3);
-    expect(workload.actions.every((action) => action.outcome === "completed")).toBe(true);
+    expect(workload.actions.filter((action) => action.outcome !== "completed")).toEqual([]);
     expect(workload.profile).toBe("build-order");
     expect(summarizeCompletedMix(workload.actions)).toEqual({
       "build-wheat": 6,
@@ -246,8 +242,69 @@ describe("Madara harness workload", () => {
     ]);
     expect(world.moves.every((move) => move.explorerId === 1 && move.path.length === 2)).toBe(true);
     expect(workload.actions[4]?.productionDelta).toMatchObject({ laborDelta: "-1", woodOutputDelta: "1" });
-    expect(bot.explorers[0]).toMatchObject({ atFrontier: true, pathDirections: [0, 0, 0] });
+    expect(bot.explorers[0]).toMatchObject({ lastDirection: 0 });
     expect(world.game.explorer(1)?.coord).toEqual({ x: 4, y: 1 });
+  });
+
+  it("takes another legal neighbour when the preferred return tile is blocked", async () => {
+    spyOn(configManager, "getMapCenter").mockReturnValue(0);
+    const world = fakeWorld();
+    const pathsFromStore = world.actions.armyPaths;
+    world.actions.armyPaths = (input) => {
+      const paths = pathsFromStore(input);
+      const from = world.game.explorer(input.explorerId)!.coord;
+      if (from.x === 4 && from.y === 1) {
+        const blocked = neighbor(from, 3);
+        paths.getPaths().delete(ActionPaths.posKey({ col: blocked.x, row: blocked.y }));
+        const alternative = neighbor(from, 1);
+        paths.set(ActionPaths.posKey({ col: alternative.x, row: alternative.y }), [
+          { hex: { col: from.x, row: from.y }, actionType: ActionType.Move },
+          { hex: { col: alternative.x, row: alternative.y }, actionType: ActionType.Move },
+        ]);
+      }
+      return paths;
+    };
+    const workload = await runWorkload({
+      bots: [readyHarnessBot(world)],
+      game: world.game,
+      intervalSeconds: 0.01,
+      minutes: 0.001,
+      provider: confirmingProvider(),
+    });
+    expect(workload.actions.filter((action) => action.outcome !== "completed")).toEqual([]);
+    expect(world.moves[3]?.path.at(-1)?.hex).toEqual({ col: 4, row: 2 });
+  });
+
+  it("moves a fresh explorer with no remembered exploration route", async () => {
+    spyOn(configManager, "getMapCenter").mockReturnValue(0);
+    const world = fakeWorld([2, { coord: { x: 10, y: 10 }, staminaAmount: 120n, staminaUpdatedTick: 1n }]);
+    const bot = readyHarnessBot(world);
+    bot.explorers.push({ ...bot.explorers[0]!, explorerId: 2 });
+    const pathsFromStore = world.actions.armyPaths;
+    world.actions.armyPaths = (input) => {
+      const paths = pathsFromStore(input);
+      for (const [key, path] of paths.getPaths()) {
+        if (input.explorerId === 2) {
+          path.at(-1)!.actionType = ActionType.Move;
+        } else if (ActionPaths.getActionType(path) === ActionType.Move) {
+          paths.getPaths().delete(key);
+        }
+      }
+      return paths;
+    };
+    const workload = await runWorkload({
+      bots: [bot],
+      game: world.game,
+      intervalSeconds: 0.01,
+      minutes: 0.001,
+      provider: confirmingProvider(),
+    });
+    expect(workload.actions.filter((action) => action.outcome !== "completed")).toEqual([]);
+    expect(
+      world.moves
+        .filter((move) => ActionPaths.getActionType(move.path) === ActionType.Move)
+        .map((move) => move.explorerId),
+    ).toEqual([2, 2]);
   });
 
   it("classifies revert reasons without treating human tile contention as a threshold failure", () => {
@@ -437,13 +494,9 @@ function readyHarnessBot(world: FakeWorld): HarnessBot {
     botId: 1,
     explorers: [
       {
-        atFrontier: true,
-        blockedDirections: new Map(),
         explorerId: 1,
         lastUsedAt: -1,
         outwardDirection: 0,
-        pathDirections: [],
-        structureId: 1,
       },
     ],
     gameId: 1,
@@ -459,10 +512,11 @@ interface FakeWorld {
 }
 
 /** One explorer at (1, 1) with full stamina on an unexplored map; every action lands in the shared store as it is submitted. */
-function fakeWorld(): FakeWorld {
+function fakeWorld(extraExplorer?: [number, ExplorerRow]): FakeWorld {
   const explorers = new Map<number, ExplorerRow>([
     [1, { coord: { x: 1, y: 1 }, staminaAmount: 120n, staminaUpdatedTick: 1n }],
   ]);
+  if (extraExplorer) explorers.set(...extraExplorer);
   const production = new Map<number, ProductionState>([[1, { laborBalance: 100n, woodOutput: 4n }]]);
   const explored = new Set<string>(["1:1"]);
   const listeners = new Set<() => void>();
