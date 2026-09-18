@@ -19,7 +19,7 @@ export async function closeHarnessSeason(options: {
   accounts: HarnessAccount[];
   client: GameClient;
   game: HarnessGame;
-  provider: RpcProvider;
+  provider: HarnessProvider;
 }): Promise<SeasonFinalizationEvidence> {
   const { client, game } = options;
   const { store } = client.setup;
@@ -49,10 +49,11 @@ export async function closeHarnessSeason(options: {
       provider: options.provider,
       kind: "season_close",
       stage: "setup",
-      send: () => game.submit(signer, () => {
-        applied = client.setup.systemCalls.end_game({ signer });
-        return applied;
-      }),
+      send: () =>
+        game.submit(signer, () => {
+          applied = client.setup.systemCalls.end_game({ signer });
+          return applied;
+        }),
     });
     if (tracked.outcome !== "completed") throw new Error(`Season close failed: ${tracked.error ?? tracked.outcome}`);
     if (!applied) throw new Error("Season close did not submit a command");

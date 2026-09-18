@@ -1,9 +1,10 @@
+import { statusSubscription } from "./test-observations";
+import type { HarnessProvider } from "./provider";
 import { afterEach, describe, expect, it, mock, spyOn } from "bun:test";
 import { ActionPaths, ActionType, configManager, type GameActions } from "@bibliothecadao/eternum";
-import type { Account, RpcProvider } from "starknet";
+import type { Account } from "starknet";
 import { mapWithConcurrency } from "./account-factory";
 import {
-  RECEIPT_POLL_INTERVAL_MS,
   chooseOutwardDirection,
   classifyWorkloadFailure,
   classifyWorkloadRevertReason,
@@ -61,10 +62,6 @@ describe("Madara harness workload", () => {
     expect(summarizeRequestedMix(actions)).toEqual({ explore: 24, move: 40, produce: 16 });
   });
 
-  it("polls receipts below the previous 250 ms measurement floor", () => {
-    expect(RECEIPT_POLL_INTERVAL_MS).toBe(50);
-  });
-
   it("reads implicit account nonces from the pre-confirmed block", () => {
     expect(createHarnessProvider("http://rpc.test").channel.blockIdentifier).toBe(BlockTag.PRE_CONFIRMED);
   });
@@ -105,7 +102,7 @@ describe("Madara harness workload", () => {
         if (blockReads === 1) return { timestamp: 60 };
         throw new Error("The socket connection was closed unexpectedly");
       },
-    } as unknown as RpcProvider;
+    } as unknown as HarnessProvider;
     spyOn(configManager, "getMapCenter").mockReturnValue(0);
     const world = fakeWorld();
     const workload = await runWorkload({
@@ -603,13 +600,14 @@ function fakeWorld(extraExplorer?: [number, ExplorerRow]): FakeWorld {
   return { actions, game, moves };
 }
 
-/** Every hash is accepted on L2 in block 5 as soon as it is polled. */
-function confirmingProvider(): RpcProvider {
+/** Every hash is accepted on L2 in block 5 as soon as it is observed. */
+function confirmingProvider(): HarnessProvider {
   return {
     getBlock: async () => ({ timestamp: 60 }),
-    getTransactionStatus: async () => ({ finality_status: "ACCEPTED_ON_L2", execution_status: "SUCCEEDED" }),
+    subscribeTransactionStatus: async () =>
+      statusSubscription({ finality_status: "ACCEPTED_ON_L2", execution_status: "SUCCEEDED" }),
     getTransactionReceipt: async () => ({ block_number: 5 }),
-  } as unknown as RpcProvider;
+  } as unknown as HarnessProvider;
 }
 
 function blockRow(blockNumber: number, transactions: number, blockProductionMs: number) {

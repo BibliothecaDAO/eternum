@@ -7,12 +7,13 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import type { GameClient } from "@bibliothecadao/eternum";
 import type { CommittedManifest } from "@bibliothecadao/eternum/game-client";
-import { Account, BlockTag, ec, logger, RpcProvider } from "starknet";
+import { Account, ec, logger, RpcProvider } from "starknet";
 import { assertChainId, assertProviderChain } from "../../../packages/chain/chain-guard.js";
 import { launchGame } from "../../../config/deployer/clean/launch/runner";
 import { createHarnessAccounts } from "./account-factory";
 import { connectHarnessGameClient, type HarnessGameplayContracts } from "./game-client";
 import { createHarnessGame, type HarnessGame } from "./harness-game";
+import { HarnessProvider } from "./provider";
 import { prepareHarnessBots, runWorkload, type HarnessGameType, type TrackedTransaction } from "./driver";
 import {
   bindLedgerGameplayAccounts,
@@ -291,11 +292,11 @@ async function main(): Promise<void> {
     if (!report.passed) process.exitCode = 1;
   } finally {
     client.dispose();
+    provider.dispose();
   }
 }
 
-export const createHarnessProvider = (rpcUrl: string): RpcProvider =>
-  new RpcProvider({ blockIdentifier: BlockTag.PRE_CONFIRMED, nodeUrl: rpcUrl });
+export const createHarnessProvider = (rpcUrl: string): HarnessProvider => new HarnessProvider(rpcUrl);
 
 async function resolveHarnessGame(
   options: HarnessCliOptions,
@@ -366,7 +367,7 @@ async function prepareGameRun({
   ledgerEnvironment?: LedgerEnvironment;
   ledgerIdentities?: LedgerBotIdentity[];
   options: HarnessCliOptions;
-  provider: RpcProvider;
+  provider: HarnessProvider;
   setupTransactions: TrackedTransaction[];
   signingKeys: Map<bigint, string>;
   client: GameClient;
@@ -513,7 +514,7 @@ async function finalizeValuePlaneRun({
   run: PreparedGameRun;
   ledgerEnvironment?: LedgerEnvironment;
   options: HarnessCliOptions;
-  provider: RpcProvider;
+  provider: HarnessProvider;
   client: GameClient;
   harnessGame: HarnessGame;
 }): Promise<LedgerHarnessEvidence | undefined> {

@@ -1,5 +1,6 @@
+import { statusSubscription } from "./test-observations";
 import { describe, expect, it } from "bun:test";
-import type { RpcProvider } from "starknet";
+import type { HarnessProvider } from "./provider";
 import { EventEmitter } from "node:events";
 import type { GameClient } from "@bibliothecadao/eternum";
 import type { Account } from "starknet";
@@ -8,9 +9,9 @@ import { trackTransaction } from "./driver";
 
 const never = new Promise(() => {});
 const accepted = {
-  getTransactionStatus: async () => ({ finality_status: "ACCEPTED_ON_L2" }),
+  subscribeTransactionStatus: async () => statusSubscription({ finality_status: "ACCEPTED_ON_L2" }),
   getTransactionReceipt: async () => ({ block_number: 42 }),
-} as unknown as RpcProvider;
+} as unknown as HarnessProvider;
 
 const track = (confirmed: Promise<unknown> | undefined, provider = accepted) =>
   trackTransaction({
@@ -31,7 +32,7 @@ describe("transaction confirmation deadline", () => {
     expect(result.error).toContain("Herald");
   });
   it("bounds a stalled receipt request", async () => {
-    const result = await track(never, { getTransactionStatus: () => never } as unknown as RpcProvider);
+    const result = await track(never, { subscribeTransactionStatus: () => never } as unknown as HarnessProvider);
     expect(result.outcome).toBe("confirmation_timeout");
   });
   it("reports a failed Herald barrier even when the chain accepted the action", async () => {

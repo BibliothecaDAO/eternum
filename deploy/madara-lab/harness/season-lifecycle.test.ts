@@ -1,3 +1,4 @@
+import { statusSubscription } from "./test-observations";
 import { afterEach, expect, mock, spyOn, test } from "bun:test";
 import { configManager, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { closeHarnessSeason } from "./season-lifecycle";
@@ -47,7 +48,8 @@ function fixture(target: number, dev = false, batches = 1) {
         waitFor: async (read: () => unknown) => read(),
       },
       provider: {
-        getTransactionStatus: async () => ({ finality_status: "ACCEPTED_ON_L2", execution_status: "SUCCEEDED" }),
+        subscribeTransactionStatus: async () =>
+          statusSubscription({ finality_status: "ACCEPTED_ON_L2", execution_status: "SUCCEEDED" }),
         getTransactionReceipt: async () => ({ block_number: 1 }),
       },
       accounts: [{ botId: 1, address: "0x1", account: { address: "0x1" } }],
