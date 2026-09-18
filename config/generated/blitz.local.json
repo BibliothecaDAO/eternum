@@ -1679,9 +1679,6 @@
     "ammStartingLiquidity": {},
     "lordsLiquidityPerResource": 0
   },
-  "vrf": {
-    "vrfProviderAddress": "0x0"
-  },
   "setup": {
     "chain": "local",
     "addresses": {

@@ -59,9 +59,6 @@ const envSchema = z
       .transform((v) => v === "true")
       .optional(),
 
-    // VRF
-    VITE_PUBLIC_VRF_PROVIDER_ADDRESS: z.string().startsWith("0x").optional().default("0x0"),
-
     // Social
     VITE_SOCIAL_LINK: optionalUrlOrEmpty.default(""),
 

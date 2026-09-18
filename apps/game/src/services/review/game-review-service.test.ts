@@ -36,7 +36,6 @@ vi.mock("@/runtime/world/world-directory", () => ({
           chain: "appchain",
           heraldBaseUrl: "https://herald.blitz.test",
           rpcUrl: "https://rpc.blitz.test",
-          namespace: "s2",
           worldAddress: "0x123",
           contractsBySelector: {},
         }

@@ -94,9 +94,9 @@ export async function createGameClient(input: CreateGameClientInput): Promise<Ga
 }
 
 /** setActiveGame disposes the previous game's runtime, so it must run before this game's session starts. */
-const selectGame = ({ world, gameId, presetId }: CreateGameClientInput): void => {
+const selectGame = ({ gameId, presetId }: CreateGameClientInput): void => {
   configManager.setActiveGame(gameId, presetId);
-  setGameScope(world.namespace, gameId);
+  setGameScope(gameId);
 };
 
 const bootstrapWorld = async (input: CreateGameClientInput): Promise<GameClientSetup> => {
@@ -105,7 +105,6 @@ const bootstrapWorld = async (input: CreateGameClientInput): Promise<GameClientS
     throw new Error("Native client bindings do not match the deployment");
   const provider = new EternumProvider(input.networkConfig.manifest, input.networkConfig.rpcUrl, undefined, {
     executionResourceBounds: input.setupEnvironment.executionResourceBounds,
-    namespace: input.world.namespace,
     gameId: input.gameId,
   });
   return {

@@ -2260,9 +2260,6 @@
   "artificer": {
     "research_cost_for_relic": 50000
   },
-  "vrf": {
-    "vrfProviderAddress": "0x0"
-  },
   "setup": {
     "chain": "local",
     "addresses": {

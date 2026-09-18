@@ -10,7 +10,7 @@ export type { NativeCommand, NativeCommandPayloads } from "./native-command";
 /**
  * Provider class for interacting with the Eternum game contracts
  *
- * @param katana - The katana manifest containing contract addresses and ABIs
+ * @param manifest - The native manifest containing contract addresses and ABIs
  * @param url - Optional RPC URL for the provider
  */
 import { encodeNativeCommand, type NativeCommand, type NativeCommandPayloads } from "./native-command";
@@ -56,7 +56,6 @@ export type NativeSubmission = (
 ) => Promise<{ transaction_hash: string; ticket: NativeTicketIdentity }>;
 type SubmittedTransaction = { transaction_hash: string; ticket?: NativeTicketIdentity };
 
-export const NAMESPACE = "s1_eternum";
 export {
   CATEGORY_BATCH_LIMITS,
   getTransactionCategory,
@@ -243,9 +242,7 @@ export class EternumProvider extends EventEmitter {
   private transactionSubmitGuard?: TransactionSubmitGuard;
   private transactionStreamWaiter?: TransactionStreamWaiter;
   private transactionStreamSubmitObserver?: (transactionHash: string) => void;
-  /** Model/contract-tag namespace: "s2" on appchain worlds, "s1_eternum" on legacy worlds. */
-  readonly namespace: string;
-  /** Active game on an s2 appchain world; 0 on legacy worlds (no calldata rewrite). */
+  /** Active game within the persistent world. */
   private readonly gameId: number;
   /** Fixed bounds for a fee-free chain; undefined keeps the normal estimation path. */
   private readonly executionResourceBounds?: ResourceBoundsBN;
@@ -253,26 +250,24 @@ export class EternumProvider extends EventEmitter {
   /**
    * Create a new EternumProvider instance
    *
-   * @param katana - The katana manifest containing contract info
+   * @param manifest - The native manifest containing contract info
    * @param url - Optional RPC URL
-   * @param scope - s2 world scope and optional fixed execution bounds
+   * @param scope - Game scope and optional fixed execution bounds
    */
   constructor(
-    katana: Manifest,
+    manifest: Manifest,
     url?: string,
     retryConfig?: RetryConfig,
     scope?: {
-      namespace?: string;
       gameId?: number;
       executionResourceBounds?: ResourceBoundsBN;
       transactionStreamWaiter?: TransactionStreamWaiter;
     },
   ) {
     super();
-    this.manifest = katana;
+    this.manifest = manifest;
     this.provider = new RpcProvider({ nodeUrl: url });
     this.retryConfig = retryConfig;
-    this.namespace = scope?.namespace ?? NAMESPACE;
     this.gameId = scope?.gameId ?? 0;
     this.executionResourceBounds = scope?.executionResourceBounds;
     this.transactionStreamWaiter = scope?.transactionStreamWaiter;
@@ -286,7 +281,7 @@ export class EternumProvider extends EventEmitter {
     );
   }
 
-  public execute(signer: AccountInterface, calls: AllowArray<Call>, _namespace?: string, details?: UniversalDetails) {
+  public execute(signer: AccountInterface, calls: AllowArray<Call>, details?: UniversalDetails) {
     return signer.execute(calls, details);
   }
 
@@ -592,7 +587,7 @@ export class EternumProvider extends EventEmitter {
     if (this.retryConfig && this.retryConfig.maxRetries > 0) {
       let currentExecutionDetails = executionDetails;
       return await withRetry(
-        () => this.execute(signer as any, transactionDetails, this.namespace ?? NAMESPACE, currentExecutionDetails),
+        () => this.execute(signer as any, transactionDetails, currentExecutionDetails),
         this.retryConfig,
         async (error, attempt) => {
           if (this.shouldRefreshExecutionDetailsAfterSubmitError(error)) {
@@ -607,7 +602,7 @@ export class EternumProvider extends EventEmitter {
       );
     }
 
-    return await this.execute(signer as any, transactionDetails, this.namespace ?? NAMESPACE, executionDetails);
+    return await this.execute(signer as any, transactionDetails, executionDetails);
   }
 
   private getSignerAddress(signer: Account | AccountInterface): string | undefined {

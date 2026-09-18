@@ -15,7 +15,6 @@ export interface EnvironmentContext {
   addresses: EnvironmentAddresses;
   startMainAt: number;
   startSettlingAt: number;
-  vrfProviderAddress: string;
 }
 
 export function resolveConfiguredAddress(address: string | undefined | null, name: string): string {
@@ -31,7 +30,6 @@ export function resolveEnvironmentContext(chain: GameChain): EnvironmentContext 
     addresses: getSeasonAddresses(chain) as unknown as EnvironmentAddresses,
     startSettlingAt: Number(process.env.CONFIG_START_SETTLING_AT) || 0,
     startMainAt: Number(process.env.CONFIG_START_MAIN_AT) || 0,
-    vrfProviderAddress: process.env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS || "0x0",
   };
 }
 
@@ -40,9 +38,6 @@ export function buildEnvironmentContextConfig(context: EnvironmentContext): Conf
     season: {
       startSettlingAt: context.startSettlingAt,
       startMainAt: context.startMainAt,
-    },
-    vrf: {
-      vrfProviderAddress: context.vrfProviderAddress,
     },
     setup: {
       chain: context.chain,

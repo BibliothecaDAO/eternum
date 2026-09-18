@@ -1,4 +1,3 @@
-export * from "./entry";
 export * from "./game-scope";
 export * from "./game-registry";
 export * from "./herald-http";

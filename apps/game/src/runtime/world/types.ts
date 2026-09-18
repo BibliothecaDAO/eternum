@@ -4,7 +4,6 @@ export interface GameProfile {
   name: string; // human-readable game name (e.g., s2smoke1) — profile identity key
   chain: Chain;
   worldId?: string; // world-directory key ("blitz" | "eternum") the game lives in
-  namespace?: string; // the world's model namespace; absent on stale stored profiles -> derived from chain
   heraldBaseUrl: string; // shared persistent-world Herald endpoint
   rpcUrl?: string; // configured chain RPC
   worldAddress: string; // persistent s2 world from the manifest

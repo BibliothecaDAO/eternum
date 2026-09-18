@@ -99,7 +99,7 @@ export type HyperstructureInfo = {
   access: string;
 };
 
-export type DojoAccount = Account | AccountInterface;
+export type GameplayAccount = Account | AccountInterface;
 
 export type ArmyInfo = {
   entityId: ID;
@@ -499,9 +499,6 @@ export interface Config {
     season_pool_fee_recipient: string;
     realm_fee_dpt_percent: number;
     realm_fee_wtdr_percent: number;
-  };
-  vrf: {
-    vrfProviderAddress: string;
   };
   buildings: {
     buildingCapacity: Partial<{ [key in BuildingType]: number }>;

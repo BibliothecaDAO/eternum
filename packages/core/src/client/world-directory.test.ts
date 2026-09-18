@@ -31,7 +31,6 @@ const buildBlitzWorld = () =>
 describe("buildWorldDeployment", () => {
   it("indexes manifest contracts by normalized selector and derives the namespace", () => {
     const world = buildBlitzWorld();
-    expect(world.namespace).toBe("s2");
     expect(world.worldAddress).toBe("0xw0r1d");
     expect(world.contractsBySelector).toEqual({ [`0x${"abc".padStart(64, "0")}`]: "0x1" });
     expect(world.heraldBaseUrl).toBe("https://herald.realms.test");

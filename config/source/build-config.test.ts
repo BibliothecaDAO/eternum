@@ -106,7 +106,6 @@ describe("buildConfig", () => {
     expect(madaraBlitz.blitz.registration.collectible_timelock_address).toBe("0x0");
     expect(madaraBlitz.blitz.registration.collectibles_lootchest_address).toBe("0x0");
     expect(madaraBlitz.blitz.registration.collectibles_elitenft_address).toBe("0x0");
-    expect(madaraBlitz.vrf.vrfProviderAddress).toBe("0x0");
   });
 
   test("applies the official Blitz profiles only for exact official durations", async () => {

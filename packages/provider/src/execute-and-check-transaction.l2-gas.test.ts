@@ -71,7 +71,7 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     await provider.executeAndCheckTransaction(signer, call);
 
     expect(signer.estimateInvokeFee).toHaveBeenCalledWith(call, { version: 3, tip: 0 });
-    expect(provider.execute.mock.calls[0][3]).toMatchObject({
+    expect(provider.execute.mock.calls[0][2]).toMatchObject({
       version: 3,
       tip: 0,
       resourceBounds: makeResourceBounds(150n),
@@ -92,7 +92,7 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     await provider.executeAndCheckTransaction(signer, call);
 
     expect(signer.estimateInvokeFee).not.toHaveBeenCalled();
-    expect(provider.execute.mock.calls[0][3]).toEqual({ version: 3, tip: 0, resourceBounds });
+    expect(provider.execute.mock.calls[0][2]).toEqual({ version: 3, tip: 0, resourceBounds });
   });
 
   it("reads the explorer id after scoped game calldata", () => {
@@ -124,7 +124,7 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     await provider.executeAndCheckTransaction(signer, call);
 
     expect(signer.estimateInvokeFee).toHaveBeenCalledTimes(1);
-    const txDetails = provider.execute.mock.calls[0][3];
+    const txDetails = provider.execute.mock.calls[0][2];
     expect(txDetails.version).toBe(3);
     expect(txDetails.resourceBounds.l2_gas.max_amount).toBe(1_200_000_000n);
   });
@@ -750,7 +750,7 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
       statusReceipt: "PENDING",
       transaction_hash: "0xabc",
     });
-    expect(provider.execute).toHaveBeenCalledWith(signer, call, "s1_eternum", { version: 3, tip: 0 });
+    expect(provider.execute).toHaveBeenCalledWith(signer, call, { version: 3, tip: 0 });
   });
 
   it("reuses cached explore resource bounds on subsequent submissions", async () => {
@@ -792,9 +792,9 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     expect(signer.estimateInvokeFee).toHaveBeenCalledTimes(1);
     expect(provider.execute).toHaveBeenCalledTimes(2);
     expect(signer.estimateInvokeFee).toHaveBeenCalledWith(calls, { version: 3, tip: 0 });
-    expect(provider.execute.mock.calls[0][3].tip).toBe(0);
-    expect(provider.execute.mock.calls[1][3].tip).toBe(0);
-    expect(provider.execute.mock.calls[0][3]).toMatchObject(provider.execute.mock.calls[1][3]);
+    expect(provider.execute.mock.calls[0][2].tip).toBe(0);
+    expect(provider.execute.mock.calls[1][2].tip).toBe(0);
+    expect(provider.execute.mock.calls[0][2]).toMatchObject(provider.execute.mock.calls[1][2]);
   });
 
   it("does not reuse cached explore resource bounds across distinct explore payloads", async () => {
@@ -856,8 +856,8 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     });
 
     expect(signer.estimateInvokeFee).toHaveBeenCalledTimes(2);
-    expect(provider.execute.mock.calls[0][3].resourceBounds.l2_gas.max_amount).toBe(15n);
-    expect(provider.execute.mock.calls[1][3].resourceBounds.l2_gas.max_amount).toBe(30n);
+    expect(provider.execute.mock.calls[0][2].resourceBounds.l2_gas.max_amount).toBe(15n);
+    expect(provider.execute.mock.calls[1][2].resourceBounds.l2_gas.max_amount).toBe(30n);
   });
 
   it("refreshes cached explore resource bounds after a nonce retry", async () => {
@@ -909,8 +909,8 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     });
 
     expect(signer.estimateInvokeFee).toHaveBeenCalledTimes(2);
-    expect(provider.execute.mock.calls[0][3].resourceBounds.l2_gas.max_amount).toBe(15n);
-    expect(provider.execute.mock.calls[1][3].resourceBounds.l2_gas.max_amount).toBe(30n);
+    expect(provider.execute.mock.calls[0][2].resourceBounds.l2_gas.max_amount).toBe(15n);
+    expect(provider.execute.mock.calls[1][2].resourceBounds.l2_gas.max_amount).toBe(30n);
   });
 
   it("invalidates cached explore resource bounds after a fee-related submit failure", async () => {
@@ -965,6 +965,6 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     });
 
     expect(signer.estimateInvokeFee).toHaveBeenCalledTimes(2);
-    expect(provider.execute.mock.calls[0][3].resourceBounds.l2_gas.max_amount).toBe(30n);
+    expect(provider.execute.mock.calls[0][2].resourceBounds.l2_gas.max_amount).toBe(30n);
   });
 });

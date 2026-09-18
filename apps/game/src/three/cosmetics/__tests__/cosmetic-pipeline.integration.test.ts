@@ -33,7 +33,6 @@ vi.mock("../asset-cache", () => ({
   ensureCosmeticAsset: () => undefined,
 }));
 
-import { buildBlitzSettleCalls } from "@bibliothecadao/eternum/game-client";
 import { buildDevPreviewWorldKey, createWorldPreviewEntryController } from "@/hooks/use-world-preview-entry";
 import { useDevPreviewEntryStore } from "@/hooks/store/use-dev-preview-entry-store";
 import { resolveCosmeticsLoadoutScopeKeyForChain } from "@/ui/features/cosmetics/lib/loadout-scope";
@@ -51,7 +50,7 @@ describe("cosmetic pipeline integration", () => {
     useDevPreviewEntryStore.getState().clearAllPreviewEntries();
   });
 
-  it("flows from pending loadout to settle calldata to applied army skin", () => {
+  it("applies the pending loadout to the army skin", () => {
     playerCosmeticsStore.setPendingBlitzLoadout("blitz:mainnet:alpha", "0x123", {
       tokenIds: ["0xabc"],
       selectedBySlot: {
@@ -60,21 +59,6 @@ describe("cosmetic pipeline integration", () => {
           cosmeticIds: ["army:Knight:T3:legacy"],
         },
       },
-    });
-
-    const calls = buildBlitzSettleCalls({
-      blitzSystemsAddress: "0x1",
-      signerAddress: "0x456",
-      usernameFelt: "0x2",
-      cosmeticTokenIds: ["0xabc"],
-      grantStartingTroops: true,
-    });
-
-    const settleCall = calls.find((call) => call.entrypoint === "settle");
-
-    expect(settleCall).toMatchObject({
-      entrypoint: "settle",
-      calldata: ["2", "1", "2748", "1"],
     });
 
     playerCosmeticsStore.markAppliedBlitzLoadout("blitz:mainnet:alpha", "0x123");
