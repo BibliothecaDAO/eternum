@@ -9,14 +9,14 @@ import { buildNativeGameParams, buildNativePresetRegistration, registerNativePre
 import { createRegistrarGame } from "../registrar/calls";
 import { createMadaraAccount } from "../shared/madara-account";
 import { waitForSuccess } from "../shared/declare";
-import { fixtureAdmin } from "../../../../deploy/madara-rand/fixture-admin";
 import {
   admissionFor,
   commandArguments,
   readFixture,
   signedRequest,
-  waitForOutcome,
 } from "../../../../deploy/madara-rand/native-intent";
+import { createNativeTicketSubmission } from "../../../../packages/provider/src/native-ticket";
+import { nativeExecutionOutcomes } from "../../../../packages/provider/src/native-batch";
 import { NativeDecoder } from "../../../../apps/herald/src/native/decoder";
 
 const fixturePath = process.env.NATIVE_PRESET_LAB_FIXTURE;
@@ -33,7 +33,11 @@ test.skipIf(!fixturePath)(
     const fixture = readFixture(fixturePath!);
     const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
     const provider = new RpcProvider({ nodeUrl: fixture.rpc });
-    const admin = fixtureAdmin(provider);
+    const admin = createMadaraAccount(
+      provider,
+      "0x055be462e718c4166d656d11f89e341115b8bc82389c3762a10eade04fcb225d",
+      "0x077e56c6dc32d40a67f6f7e6625c8dc5e570abe49c0a24e9202e4ae906abcc07",
+    );
     const actor = createMadaraAccount(provider, fixture.actor, "0x3039");
     const registry = manifest.native.domains.registry.address;
     const bridge = manifest.native.domains.bridge.address;
@@ -63,106 +67,105 @@ test.skipIf(!fixturePath)(
     if (!created.gameId) throw new Error("Registrar returned no game id");
     fixture.game = `0x${BigInt(created.gameId).toString(16)}`;
     const decoder = new NativeDecoder(manifest);
-    const execute = async (command: NativeCommand) => {
-      const admission = await admissionFor(provider, fixture);
-      const { action, ...request } = signedRequest(fixture, admission, commandArguments(fixture, command));
-      const response = await fetch(`${admissionUrl}/actions`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(request),
-        signal: AbortSignal.timeout(60_000),
+    const submit = createNativeTicketSubmission(admissionUrl);
+    try {
+      const execute = async (command: NativeCommand) => {
+        const admission = await admissionFor(provider, fixture);
+        const { action: _action, ...request } = signedRequest(fixture, admission, commandArguments(fixture, command));
+        const { transaction_hash: transactionHash, order } = await submit(request);
+        await waitForSuccess(admin, transactionHash);
+        const receipt = await provider.getTransactionReceipt(transactionHash);
+        if (!("events" in receipt)) throw new Error("Missing receipt events");
+        const outcomes = nativeExecutionOutcomes(receipt.events, fixture.execution.address);
+        const outcome = outcomes.find((item) => BigInt(item.order) === order);
+        expect(outcome?.status).toBe("SUCCEEDED");
+        if (!("events" in receipt)) throw new Error("Missing receipt events");
+        console.log(JSON.stringify({ action: command.kind, game: fixture.game, transactionHash: transactionHash }));
+        return receipt.events
+          .filter((event) => decoder.owns(event.from_address))
+          .map((event, index) =>
+            decoder.decode({
+              ...event,
+              block_number: "block_number" in receipt ? receipt.block_number : null,
+              transaction_hash: transactionHash,
+              transaction_index: 0,
+              event_index: index,
+            }),
+          );
+      };
+      const rows = await execute({
+        kind: "SettleSeason",
+        value: {
+          name: "0x627269646765",
+          selected_realm: { kind: "Some", value: 3 },
+        },
       });
-      if (!response.ok) throw new Error(await response.text());
-      const outcome = await waitForOutcome(provider, fixture, `${admissionUrl}/actions`, action);
-      await waitForSuccess(admin, outcome.transactionHash);
-      expect(BigInt(outcome.status)).toBe(1n);
-      const receipt = await provider.getTransactionReceipt(outcome.transactionHash);
-      if (!("events" in receipt)) throw new Error("Missing receipt events");
-      console.log(
-        JSON.stringify({ action: command.kind, game: fixture.game, transactionHash: outcome.transactionHash }),
-      );
-      return receipt.events
-        .filter((event) => decoder.owns(event.from_address))
-        .map((event, index) =>
-          decoder.decode({
-            ...event,
-            block_number: "block_number" in receipt ? receipt.block_number : null,
-            transaction_hash: outcome.transactionHash,
-            transaction_index: 0,
-            event_index: index,
-          }),
-        );
-    };
-    const rows = await execute({
-      kind: "SettleSeason",
-      value: {
-        name: "0x627269646765",
-        selected_realm: { kind: "Some", value: 3 },
-      },
-    });
-    const home = rows.find((row) => row.kind === "set" && row.model.name === "Structure");
-    if (!home || home.kind !== "set") throw new Error("Settlement emitted no structure");
-    const structureId = Number(home.key.entity_id);
-    const registered = await provider.callContract({
-      contractAddress: bridge,
-      entrypoint: "resource_token",
-      calldata: [fixture.game, ResourcesIds.Stone],
-    });
-    expect(BigInt(registered[0])).toBe(BigInt(stoneToken));
-    const funding = await admin.execute({
-      contractAddress: stoneToken,
-      entrypoint: "transfer",
-      calldata: CallData.compile({ recipient: fixture.actor, amount: uint256.bnToUint256(10n ** 18n) }),
-    });
-    await waitForSuccess(admin, funding.transaction_hash);
-    const approval = await actor.execute({
-      contractAddress: stoneToken,
-      entrypoint: "approve",
-      calldata: CallData.compile({ spender: bridge, amount: uint256.bnToUint256(10n ** 18n) }),
-    });
-    await waitForSuccess(admin, approval.transaction_hash);
-    const depositRows = await execute({
-      kind: "DepositResource",
-      value: {
-        structure_id: structureId,
-        resource_type: ResourcesIds.Stone,
-        amount: 10n ** 18n,
-        client_fee_recipient: "0x0",
-      },
-    });
-    // At zero completed hyperstructures: retain 25%, charge three platform fees of 2.5%; realms pay no village fee.
-    expect(
-      depositRows.some(
-        (row) =>
-          row.kind === "set" &&
-          row.model.name === "ResourceArrival" &&
-          (row.value.resources as { resource_type: number; amount: bigint }[]).some(
-            (resource) =>
-              Number(resource.resource_type) === ResourcesIds.Stone && BigInt(resource.amount) === 231_250_000n,
-          ),
-      ),
-    ).toBe(true);
-    const recipient = "0x777";
-    const balance = async () => {
-      const [low, high] = await provider.callContract({
+      const home = rows.find((row) => row.kind === "set" && row.model.name === "Structure");
+      if (!home || home.kind !== "set") throw new Error("Settlement emitted no structure");
+      const structureId = Number(home.key.entity_id);
+      const registered = await provider.callContract({
+        contractAddress: bridge,
+        entrypoint: "resource_token",
+        calldata: [fixture.game, ResourcesIds.Stone],
+      });
+      expect(BigInt(registered[0])).toBe(BigInt(stoneToken));
+      const funding = await admin.execute({
         contractAddress: stoneToken,
-        entrypoint: "balanceOf",
-        calldata: [recipient],
+        entrypoint: "transfer",
+        calldata: CallData.compile({ recipient: fixture.actor, amount: uint256.bnToUint256(10n ** 18n) }),
       });
-      return uint256.uint256ToBN({ low, high });
-    };
-    const before = await balance();
-    await execute({
-      kind: "WithdrawResource",
-      value: {
-        structure_id: structureId,
-        resource_type: ResourcesIds.Stone,
-        amount: 100_000_000n,
-        recipient,
-        client_fee_recipient: "0x0",
-      },
-    });
-    expect((await balance()) - before).toBe(23_125_000_000_000_000n);
+      await waitForSuccess(admin, funding.transaction_hash);
+      const approval = await actor.execute({
+        contractAddress: stoneToken,
+        entrypoint: "approve",
+        calldata: CallData.compile({ spender: bridge, amount: uint256.bnToUint256(10n ** 18n) }),
+      });
+      await waitForSuccess(admin, approval.transaction_hash);
+      const depositRows = await execute({
+        kind: "DepositResource",
+        value: {
+          structure_id: structureId,
+          resource_type: ResourcesIds.Stone,
+          amount: 10n ** 18n,
+          client_fee_recipient: "0x0",
+        },
+      });
+      // At zero completed hyperstructures: retain 25%, charge three platform fees of 2.5%; realms pay no village fee.
+      expect(
+        depositRows.some(
+          (row) =>
+            row.kind === "set" &&
+            row.model.name === "ResourceArrival" &&
+            (row.value.resources as { resource_type: number; amount: bigint }[]).some(
+              (resource) =>
+                Number(resource.resource_type) === ResourcesIds.Stone && BigInt(resource.amount) === 231_250_000n,
+            ),
+        ),
+      ).toBe(true);
+      const recipient = "0x777";
+      const balance = async () => {
+        const [low, high] = await provider.callContract({
+          contractAddress: stoneToken,
+          entrypoint: "balanceOf",
+          calldata: [recipient],
+        });
+        return uint256.uint256ToBN({ low, high });
+      };
+      const before = await balance();
+      await execute({
+        kind: "WithdrawResource",
+        value: {
+          structure_id: structureId,
+          resource_type: ResourcesIds.Stone,
+          amount: 100_000_000n,
+          recipient,
+          client_fee_recipient: "0x0",
+        },
+      });
+      expect((await balance()) - before).toBe(23_125_000_000_000_000n);
+    } finally {
+      submit.dispose();
+    }
   },
   120_000,
 );

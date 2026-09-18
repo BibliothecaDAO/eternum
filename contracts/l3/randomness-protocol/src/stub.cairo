@@ -12,8 +12,8 @@ pub mod RecordedExecutionStub {
     use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
     use starknet::{ContractAddress, get_block_timestamp, get_contract_address, get_tx_info};
     use crate::entrypoint::{
-        Admission, ExecutionContext, IRecordedExecution, IRecordedExecutionFailure, accepted_context_matches,
-        authenticate_submission, timestamp_in_bounds,
+        Admission, ExecutionContext, IRecordedExecution, IRecordedExecutionFailure, RecordedAction,
+        accepted_context_matches, authenticate_submission, timestamp_in_bounds,
     };
     use crate::recording::{ExecutionHead, HeadPacking, RecordedState};
     use crate::{Intent, action_identity, decode_envelope};
@@ -47,10 +47,11 @@ pub mod RecordedExecutionStub {
 
     #[abi(embed_v0)]
     impl Execute of IRecordedExecution<ContractState> {
+        #[inline(never)]
         fn execute(ref self: ContractState, intent: Intent, context: ExecutionContext, r: felt252, s: felt252) {
             let envelope = decode_envelope(context.envelope.span()).expect('malformed envelope');
-            self.authenticate_ticket(@intent, @context, @envelope);
-            let authentication = self.authenticate_action(@intent, @context, @envelope, r, s);
+            self.authenticate_ticket(@intent, @envelope);
+            let authentication = self.authenticate_action(@intent, @envelope, r, s);
             let reason = match authentication {
                 Ok(()) => self.validate_action(@intent, @envelope).err(),
                 Err(reason) => Some(reason),
@@ -65,6 +66,15 @@ pub mod RecordedExecutionStub {
             };
             self.recording.record(@intent, @envelope, consumed, outcome);
         }
+        fn execute_batch(ref self: ContractState, actions: Array<RecordedAction>) {
+            assert!(
+                !actions.is_empty() && actions.len() <= crate::entrypoint::MAX_EXECUTION_BATCH,
+                "invalid execution batch size",
+            );
+            for action in actions {
+                self.execute(action.intent, action.context, action.r, action.s);
+            }
+        }
     }
 
     #[abi(embed_v0)]
@@ -73,8 +83,8 @@ pub mod RecordedExecutionStub {
             ref self: ContractState, intent: Intent, context: ExecutionContext, r: felt252, s: felt252,
         ) {
             let envelope = decode_envelope(context.envelope.span()).expect('malformed envelope');
-            self.authenticate_ticket(@intent, @context, @envelope);
-            self.authenticate_action(@intent, @context, @envelope, r, s).expect('unauthenticated action');
+            self.authenticate_ticket(@intent, @envelope);
+            self.authenticate_action(@intent, @envelope, r, s).expect('unauthenticated action');
             assert!(accepted_context_matches(@intent, @envelope), "invalid acceptance");
             let consumed = self.consume_nonce(@intent);
             self.recording.record(@intent, @envelope, consumed, Err('EXECUTION_FAILED'));
@@ -83,15 +93,12 @@ pub mod RecordedExecutionStub {
 
     #[generate_trait]
     impl Internal of InternalTrait {
-        fn authenticate_ticket(
-            self: @ContractState, intent: @Intent, context: @ExecutionContext, envelope: @crate::Envelope,
-        ) {
-            authenticate_submission(self.submitter.read(), *context.authority_epoch, *envelope.l2_gas);
+        fn authenticate_ticket(self: @ContractState, intent: @Intent, envelope: @crate::Envelope) {
+            authenticate_submission(self.submitter.read());
             let action = action_identity(intent);
             assert!(*envelope.action == action, "altered action");
             let head = self.recording.head.read();
             assert!(*envelope.order == head.order + 1, "out of order");
-            assert!(*envelope.preceding_state == head.state, "state predecessor mismatch");
             assert!(*envelope.execution_config == 987, "execution config mismatch");
             assert!(timestamp_in_bounds(*envelope.timestamp, get_block_timestamp()), "future execution time");
             assert!(*envelope.timestamp >= head.timestamp, "backwards execution time");
@@ -107,12 +114,7 @@ pub mod RecordedExecutionStub {
             consumed
         }
         fn authenticate_action(
-            self: @ContractState,
-            intent: @Intent,
-            context: @ExecutionContext,
-            envelope: @crate::Envelope,
-            r: felt252,
-            s: felt252,
+            self: @ContractState, intent: @Intent, envelope: @crate::Envelope, r: felt252, s: felt252,
         ) -> Result<(), felt252> {
             if *intent.chain != get_tx_info().unbox().chain_id {
                 return Err('FOREIGN_CHAIN');
@@ -123,8 +125,7 @@ pub mod RecordedExecutionStub {
             if *intent.actor != self.actor.read() {
                 return Err('INVALID_ACTOR');
             }
-            if *context.accepted_public_key != self.public_key.read()
-                || !check_ecdsa_signature(*envelope.action, self.public_key.read(), r, s) {
+            if !check_ecdsa_signature(*envelope.action, self.public_key.read(), r, s) {
                 return Err('INVALID_SIGNATURE');
             }
             Ok(())
@@ -163,7 +164,6 @@ pub mod RecordedExecutionStub {
                 execution_config: 987,
                 nonce: self.nonce.read(),
                 order: head.order + 1,
-                preceding_state: head.state,
                 timestamp: get_block_timestamp(),
             }
         }

@@ -4,9 +4,9 @@ import schema from "../../../../../contracts/l3/world-native/schema/schema.json"
 import { completeNativeAdminCommand, executeNativeAdminCommand } from "./command";
 import type { NativeWorldManifest } from "./types";
 
-const originalFetch = globalThis.fetch;
+const servers: Array<ReturnType<typeof Bun.serve>> = [];
 afterEach(() => {
-  globalThis.fetch = originalFetch;
+  for (const server of servers.splice(0)) server.stop(true);
 });
 function setup(outcome?: string[]) {
   const receipt = {
@@ -21,27 +21,53 @@ function setup(outcome?: string[]) {
   };
   const provider = {
     getChainId: mock(async () => "0x1"),
-    callContract: mock(async () => ["1", "2", "4", "3", "5", "6", "1000"]),
+    callContract: mock(async () => ["1", "2", "4", "3", "5", "1000"]),
     waitForTransaction: mock(async () => receipt),
   };
-  let action = "";
   const requests: unknown[] = [];
-  globalThis.fetch = mock(async (_url: unknown, options?: RequestInit) => {
-    if (options?.method === "POST") {
-      const signed = JSON.parse(String(options.body));
-      requests.push(signed);
-      action = hash.computePoseidonHashOnElements(signed.intent);
-      expect(
-        ec.starkCurve.verify(
-          new ec.starkCurve.Signature(BigInt(signed.r), BigInt(signed.s)),
-          action,
-          ec.starkCurve.getPublicKey("0x1234"),
-        ),
-      ).toBe(true);
-      return Response.json({ action, order: 7 + requests.length });
-    }
-    return Response.json({ action, order: 7 + requests.length, transaction_hash: "0x55" });
-  }) as unknown as typeof fetch;
+  const server = Bun.serve({
+    port: 0,
+    fetch(request, server) {
+      return server.upgrade(request) ? undefined : new Response("WebSocket required", { status: 400 });
+    },
+    websocket: {
+      message(socket, message) {
+        const request = JSON.parse(String(message));
+        expect(request.method).toBe("game_subscribeAction");
+        const [signed] = request.params;
+        requests.push(signed);
+        const action = hash.computePoseidonHashOnElements(signed.intent);
+        expect(
+          ec.starkCurve.verify(
+            new ec.starkCurve.Signature(BigInt(signed.r), BigInt(signed.s)),
+            action,
+            ec.starkCurve.getPublicKey("0x1234"),
+          ),
+        ).toBe(true);
+        const subscription = String(requests.length);
+        socket.send(JSON.stringify({ jsonrpc: "2.0", id: request.id, result: subscription }));
+        socket.send(
+          JSON.stringify({
+            jsonrpc: "2.0",
+            method: "game_action",
+            params: {
+              subscription,
+              result: {
+                action,
+                status: "recorded",
+                order: 7 + requests.length,
+                transaction_hash: "0x55",
+                succeeded: true,
+                nonce_consumed: true,
+                reason: "0x0",
+              },
+            },
+          }),
+        );
+      },
+    },
+  });
+  servers.push(server);
   const manifest = {
     native: {
       domains: { season: { address: "0x77" } },
@@ -52,7 +78,7 @@ function setup(outcome?: string[]) {
   const input = {
     provider: provider as unknown as RpcProvider,
     manifest,
-    admissionUrl: "http://127.0.0.1:1",
+    admissionUrl: `http://127.0.0.1:${server.port}/rpc/v0_10_2`,
     gameId: 7,
     accountAddress: "0x123",
     privateKey: "0x1234",
@@ -75,7 +101,7 @@ describe("native administrative command", () => {
   it("completes administrative batches only after the final recorded count", async () => {
     const { input, receipt, provider, requests } = setup();
     let calls = 0;
-    provider.callContract.mockImplementation(async () => ["1", "2", "4", String(3 + calls), "5", "6", "1000"]);
+    provider.callContract.mockImplementation(async () => ["1", "2", "4", String(3 + calls), "5", "1000"]);
     provider.waitForTransaction.mockImplementation(async () => {
       receipt.events[0].data[1] = String(3 + calls);
       receipt.events[0].data[2] = calls === 0 ? "1" : "0";
@@ -94,7 +120,7 @@ describe("native administrative command", () => {
   it("stops administrative work that cannot advance", async () => {
     const { input, receipt, requests, provider } = setup();
     let calls = 0;
-    provider.callContract.mockImplementation(async () => ["1", "2", "4", String(3 + calls), "5", "6", "1000"]);
+    provider.callContract.mockImplementation(async () => ["1", "2", "4", String(3 + calls), "5", "1000"]);
     provider.waitForTransaction.mockImplementation(async () => {
       receipt.events[0].data = ["291", String(3 + calls), "1"];
       receipt.events[1].data[2] = String(3 + calls);

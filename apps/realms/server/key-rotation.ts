@@ -1,6 +1,6 @@
-import { Account, RpcProvider, num, stark, type Call } from "starknet";
+import { Account, RpcProvider, WebSocketChannel, num, stark, type Call } from "starknet";
 
-/** Submit the authority-signed rotation through the same queue as accepted gameplay. */
+/** Wait for this player's pending gameplay before submitting the signed rotation. */
 export async function submitOrderedKeyRotation(
   authority: Account,
   provider: RpcProvider,
@@ -28,17 +28,28 @@ export async function submitOrderedKeyRotation(
     nonce_data_availability_mode: "L1",
     fee_data_availability_mode: "L1",
   };
-  const response = await fetch(new URL("key-rotations", `${admissionUrl.replace(/\/$/, "")}/`), {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(transaction),
-    signal: AbortSignal.timeout(120_000),
-  });
-  if (!response.ok) throw new Error(`Ordered key rotation failed (${response.status})`);
-  const hash: unknown = await response.json();
-  if (typeof hash !== "string" || !/^0x[0-9a-f]+$/i.test(hash)) throw new Error("Malformed key rotation receipt");
-  await provider.waitForTransaction(hash);
-  return hash;
+  const url = new URL(admissionUrl);
+  url.protocol = url.protocol === "https:" || url.protocol === "wss:" ? "wss:" : "ws:";
+  const channel = new WebSocketChannel({ nodeUrl: url.toString(), autoReconnect: false, requestTimeout: 120_000 });
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const timeout = setTimeout(() => reject(new Error("Ordered key rotation connection timed out")), 10_000);
+      channel.on("open", () => {
+        clearTimeout(timeout);
+        resolve();
+      });
+      channel.on("error", () => {
+        clearTimeout(timeout);
+        reject(new Error("Ordered key rotation connection failed"));
+      });
+    });
+    const hash: unknown = await channel.sendReceive("game_rotateGameplayKey", [transaction]);
+    if (typeof hash !== "string" || !/^0x[0-9a-f]+$/i.test(hash)) throw new Error("Malformed key rotation receipt");
+    await provider.waitForTransaction(hash);
+    return hash;
+  } finally {
+    channel.disconnect();
+  }
 }
 
 function encodeCalldata(value: unknown): string[] {

@@ -130,10 +130,8 @@ fn accepted(season: ContractAddress, command: Command, timestamp: u64) -> (Inten
     let envelope = Envelope {
         action: action_identity(@action),
         order: admission.order,
-        preceding_state: admission.preceding_state,
         timestamp,
         execution_config: admission.execution_config,
-        l2_gas: 1200000000,
         root: 987654321,
     };
     (action, envelope)

@@ -1,4 +1,0 @@
-services:
-  randomness-sidecar:
-    environment:
-      RANDOMNESS_RPC_URL: ${RANDOMNESS_REHEARSAL_RPC:?Set the isolated fault proxy}

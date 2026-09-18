@@ -39,10 +39,18 @@ def main():
     expected = Interface(expected_path)
     native = Interface(sys.argv[1])
     comparisons = []
-    for name in ('execute', 'reject_execution', 'get_admission', 'get_head'):
+    for name in ('execute', 'execute_batch', 'reject_execution', 'get_admission', 'get_head'):
         required = expected.function(name)
         actual = native.function(name)
         comparisons.append({'function': name, 'matches': required == actual, 'required': required, 'actual': actual})
+    account_expected = Interface(expected_path.with_name('eternum_randomness_protocol_SequencingAccount.contract_class.json'))
+    account_native = Interface(Path(sys.argv[1]).with_name('world_native_SequencingAccount.contract_class.json'))
+    for name in ('open_randomness_epoch', 'reveal_randomness_epoch', 'current_randomness_epoch', 'get_randomness_epoch',
+                 'get_public_key', 'configure', 'rotate', '__validate__', '__execute__'):
+        required = account_expected.function(name)
+        actual = account_native.function(name)
+        comparisons.append({'function': f'authority.{name}', 'matches': required == actual,
+                            'required': required, 'actual': actual})
     alternate = [function['name'] for function in native.functions if function['name'] == 'execute_root']
     comparisons.append({'function': 'execute_root', 'matches': not alternate, 'required': 'absent', 'actual': alternate})
     report = {'scope': 'compiled ABI conformance only; behavioral and deployed gates remain required',

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check recorded execution against the protocol, native gameplay and original derivation."""
+"""Check recorded execution, native gameplay and the shared derivation vectors."""
 
 import hashlib
 import json
@@ -50,8 +50,6 @@ def source_roots(protocol, rust, madara):
         roots[f"madara/{relative}"] = madara / relative
     for relative in ["src", "tests", "vendor", "scripts", "schema", "Scarb.toml", "Scarb.lock", ".tool-versions"]:
         roots[f"native/{relative}"] = native / relative
-    for relative in ["src/utils/random.cairo", "tests/randomness_protocol.cairo", "Scarb.toml", "Scarb.lock"]:
-        roots[f"game/{relative}"] = protocol.parent / "game" / relative
     for relative in ["package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml", "apps/herald/src/model-registry.ts",
                      "apps/herald/src/store-layout.ts", "apps/herald/src/types.ts", "packages/core/package.json",
                      "packages/core/tsup.config.ts", "packages/core/src/sync/model-manifest.ts"]:
@@ -74,8 +72,8 @@ def main():
     require_clean_sources(madara, rust_roots)
     require_clean_sources(protocol, cairo_roots)
     sources = collect_sources(roots)
-    fixture = protocol / "tests/fixtures/v2.txt"
-    for name in ["v2.txt", "context-v1.txt"]:
+    fixture = protocol / "tests/fixtures/v3.txt"
+    for name in ["v3.txt", "context-v2.txt"]:
         if (protocol / "tests/fixtures" / name).read_bytes() != (rust / "tests/fixtures" / name).read_bytes():
             raise SystemExit(f"Rust and Cairo fixtures differ: {name}")
     gates = [
@@ -93,8 +91,6 @@ def main():
         run_gate("native-abi", [sys.executable, str(protocol / "check-entrypoint.py"),
                                str(native / "target/dev/world_native_SeasonDomain.contract_class.json"),
                                str(output / "native-abi.json")], protocol, output),
-        run_gate("current-game", ["snforge", "test", "recorded_roots_preserve_current_game_derivation"],
-                 protocol.parent / "game", output),
     ]
     if sources != collect_sources(roots):
         raise SystemExit("Sources changed while collecting evidence")

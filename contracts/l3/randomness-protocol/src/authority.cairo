@@ -4,9 +4,8 @@ use starknet::account::Call;
 #[starknet::interface]
 pub trait ISequencingAuthority<T> {
     fn get_public_key(self: @T) -> felt252;
-    fn authority_epoch(self: @T) -> u64;
     fn configure(ref self: T, deployment: ContractAddress);
-    fn rotate(ref self: T, public_key: felt252, epoch: u64);
+    fn rotate(ref self: T, public_key: felt252);
 }
 
 #[starknet::interface]
@@ -18,6 +17,12 @@ pub trait ISequencingAccount<T> {
 #[starknet::contract(account)]
 pub mod SequencingAccount {
     use core::ecdsa::check_ecdsa_signature;
+    use crate::entrypoint::{
+        IRecordedExecutionViewsDispatcher, IRecordedExecutionViewsDispatcherTrait, MAX_EXECUTION_BATCH,
+    };
+    use crate::epochs::{EpochState, IRandomnessEpochs, RandomnessEpoch};
+    component!(path: EpochState, storage: epochs, event: EpochEvent);
+    impl EpochInternal = EpochState::InternalImpl<ContractState>;
     use core::num::traits::Zero;
     use starknet::account::Call;
     use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
@@ -27,8 +32,35 @@ pub mod SequencingAccount {
     struct Storage {
         administrator: ContractAddress,
         public_key: felt252,
-        epoch: u64,
         deployment: ContractAddress,
+        #[substorage(v0)]
+        epochs: EpochState::Storage,
+    }
+
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    enum Event {
+        EpochEvent: EpochState::Event,
+    }
+
+    #[abi(embed_v0)]
+    impl RandomnessEpochs of IRandomnessEpochs<ContractState> {
+        fn open_randomness_epoch(ref self: ContractState, commitment: felt252, last_order: u64) {
+            assert!(get_caller_address() == get_contract_address(), "only sequencing account");
+            let order = self.execution_order();
+            self.epochs.open(commitment, last_order, order);
+        }
+        fn reveal_randomness_epoch(ref self: ContractState, secret: u256) {
+            assert!(get_caller_address() == get_contract_address(), "only sequencing account");
+            let order = self.execution_order();
+            self.epochs.reveal(secret, order);
+        }
+        fn current_randomness_epoch(self: @ContractState) -> u64 {
+            self.epochs.current.read()
+        }
+        fn get_randomness_epoch(self: @ContractState, epoch: u64) -> RandomnessEpoch {
+            self.epochs.epoch(epoch)
+        }
     }
 
     #[constructor]
@@ -36,7 +68,6 @@ pub mod SequencingAccount {
         assert!(administrator.is_non_zero() && public_key != 0, "invalid authority");
         self.administrator.write(administrator);
         self.public_key.write(public_key);
-        self.epoch.write(1);
     }
 
     #[abi(embed_v0)]
@@ -44,19 +75,15 @@ pub mod SequencingAccount {
         fn get_public_key(self: @ContractState) -> felt252 {
             self.public_key.read()
         }
-        fn authority_epoch(self: @ContractState) -> u64 {
-            self.epoch.read()
-        }
         fn configure(ref self: ContractState, deployment: ContractAddress) {
             assert!(get_caller_address() == self.administrator.read(), "only authority administrator");
             assert!(self.deployment.read().is_zero() && deployment.is_non_zero(), "deployment already configured");
             self.deployment.write(deployment);
         }
-        fn rotate(ref self: ContractState, public_key: felt252, epoch: u64) {
+        fn rotate(ref self: ContractState, public_key: felt252) {
             assert!(get_caller_address() == self.administrator.read(), "only authority administrator");
-            assert!(public_key != 0 && epoch == self.epoch.read() + 1, "invalid authority rotation");
+            assert!(public_key != 0, "invalid authority key");
             self.public_key.write(public_key);
-            self.epoch.write(epoch);
         }
     }
 
@@ -70,22 +97,40 @@ pub mod SequencingAccount {
             // Simulation can skip account validation. Execution must authenticate independently.
             self.require_signed_execution(@calls);
             let call = calls.at(0);
+            if *call.to == self.deployment.read() {
+                let count: u64 = if *call.selector == selector!("execute_batch") {
+                    let count: u32 = (*call.calldata.at(0)).try_into().expect('invalid batch count');
+                    assert!(count > 0 && count <= MAX_EXECUTION_BATCH, "invalid execution batch size");
+                    count.into()
+                } else {
+                    1
+                };
+                self.epochs.require_order(self.execution_order() + count);
+            }
             array![starknet::syscalls::call_contract_syscall(*call.to, *call.selector, *call.calldata).unwrap_syscall()]
         }
     }
 
     #[generate_trait]
     impl Internal of InternalTrait {
+        fn execution_order(self: @ContractState) -> u64 {
+            IRecordedExecutionViewsDispatcher { contract_address: self.deployment.read() }.get_head().order
+        }
         fn require_signed_execution(self: @ContractState, calls: @Array<Call>) {
             let tx = get_tx_info().unbox();
             assert!(tx.version == 3, "queries and legacy transactions forbidden");
             assert!(get_caller_address().is_zero(), "nested authority execution forbidden");
             assert!(tx.account_contract_address == get_contract_address(), "foreign transaction account");
-            assert!(calls.len() == 1, "one recorded action required");
+            assert!(calls.len() == 1, "one sequencing call required");
             let call = calls.at(0);
             assert!(
-                *call.to == self.deployment.read()
-                    && (*call.selector == selector!("execute") || *call.selector == selector!("reject_execution")),
+                (*call.to == self.deployment.read()
+                    && (*call.selector == selector!("execute")
+                        || *call.selector == selector!("execute_batch")
+                        || *call.selector == selector!("reject_execution")))
+                    || (*call.to == get_contract_address()
+                        && (*call.selector == selector!("open_randomness_epoch")
+                            || *call.selector == selector!("reveal_randomness_epoch"))),
                 "foreign authority call",
             );
             assert!(tx.signature.len() == 2, "invalid authority signature length");

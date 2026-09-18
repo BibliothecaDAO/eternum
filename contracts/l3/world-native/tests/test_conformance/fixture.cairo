@@ -1,3 +1,6 @@
+use eternum_randomness_protocol::epochs::{
+    IRandomnessEpochsDispatcher, IRandomnessEpochsDispatcherTrait, epoch_commitment,
+};
 use world_native::hyperstructures::{IHyperstructuresDispatcher, IHyperstructuresDispatcherTrait};
 use world_native::resources::{IResourcesDispatcher, IResourcesDispatcherTrait, ResourceRule};
 use super::receipts::RecordedReceiptsTrait;
@@ -60,13 +63,14 @@ fn submit(
 ) -> Result<(), Array<felt252>> {
     // Route through the actual authority account so callbacks from gameplay domains keep their caller.
     let account = ISeasonDispatcher { contract_address: season }.authentication().submitter;
-    let epoch = ISequencingAuthorityDispatcher { contract_address: account }.authority_epoch();
-    let key = if epoch == 1 {
+    let public_key = ISequencingAuthorityDispatcher { contract_address: account }.get_public_key();
+    let original: StarkCurveKeyPair = KeyPairTrait::from_secret_key(54321);
+    let key = if public_key == original.public_key {
         54321
     } else {
         67890
     };
-    let hash = if epoch == 1 {
+    let hash = if public_key == original.public_key {
         999
     } else {
         1000
@@ -153,6 +157,9 @@ pub fn setup() -> ContractAddress {
     ISequencingAuthorityDispatcher { contract_address: account }.configure(season);
     snforge_std::store(snforge_std::test_address(), selector!("conformance_fixture"), array![season.into()].span());
     configure_execution(season);
+    snforge_std::cheat_caller_address(account, account, snforge_std::CheatSpan::TargetCalls(1));
+    IRandomnessEpochsDispatcher { contract_address: account }.open_randomness_epoch(epoch_commitment(123456), 10);
+    start_cheat_caller_address(account, 222.try_into().unwrap());
     season
 }
 fn configure_execution(season: ContractAddress) {
@@ -304,15 +311,13 @@ pub fn envelope(action: @Intent) -> Envelope {
     Envelope {
         action: action_identity(action),
         order: 1,
-        preceding_state: 0,
         timestamp: 1005,
         execution_config,
-        l2_gas: 1200000000,
         root: 0x8000000000000000000000000000000000000000000000000000000000000000,
     }
 }
 pub fn context(envelope: @Envelope) -> ExecutionContext {
-    ExecutionContext { envelope: encode_envelope(envelope), authority_epoch: 1, accepted_public_key: pair().public_key }
+    ExecutionContext { envelope: encode_envelope(envelope) }
 }
 pub fn terminal_arguments(ref action: Intent) {
     let command = Command::Explore(Explore { explorer_id: 2, direction: 6 });
@@ -412,7 +417,6 @@ fn accepted_malformed_commands_are_terminal_and_cannot_stall_the_stream() {
         valid.nonce = next.nonce;
         let mut successor = envelope(@valid);
         successor.order = next.order;
-        successor.preceding_state = next.preceding_state;
         let (r, s) = pair().sign(action_identity(@valid)).unwrap();
         IRecordedExecutionDispatcher { contract_address: address }.execute(valid, context(@successor), r, s);
         assert!(views.recorded_outcome(2).unwrap().status == 1, "valid successor must execute");

@@ -11,7 +11,9 @@ export interface NativeClientConnection {
   /** Signs with the connected player's existing gameplay key. */
   signIntent(actor: AccountInterface, digest: string): Promise<{ r: bigint; s: bigint; publicKey: bigint }>;
   /** Acceptance time and entropy are assigned only by the sequencing service. */
-  submitIntent(action: SignedNativeIntent): Promise<{ transaction_hash: string; order: bigint }>;
+  submitIntent: ((action: SignedNativeIntent) => Promise<{ transaction_hash: string; order: bigint }>) & {
+    dispose?: () => void;
+  };
 }
 
 export function nativeSubmission(

@@ -53,13 +53,7 @@ export async function executeNativeAdminCommand(
   if (!Number.isSafeInteger(input.gameId) || input.gameId <= 0) throw new Error("Native command requires a game id");
   const season = input.manifest.native.domains.season.address;
   const { intent, nonce } = await buildAdminIntent(input, season);
-  const signature = ec.starkCurve.sign(hash.computePoseidonHashOnElements(intent), input.privateKey);
-  const accepted = await createNativeTicketSubmission(input.admissionUrl)({
-    intent,
-    r: `0x${signature.r.toString(16)}`,
-    s: `0x${signature.s.toString(16)}`,
-    public_key: ec.starkCurve.getStarkKey(input.privateKey),
-  });
+  const accepted = await submitAdminIntent(input, intent);
   const receipt = await input.provider.waitForTransaction(accepted.transaction_hash);
   if (!("events" in receipt)) throw new Error("Native command receipt has no events");
   const outcome = requireNativeExecutionOutcome(nativeExecutionOutcomes(receipt.events, season), {
@@ -75,6 +69,21 @@ export async function executeNativeAdminCommand(
   return { transactionHash: accepted.transaction_hash, ...(remaining !== undefined ? { remaining } : {}) };
 }
 
+async function submitAdminIntent(input: AdminCommandInput, intent: string[]) {
+  const signature = ec.starkCurve.sign(hash.computePoseidonHashOnElements(intent), input.privateKey);
+  const submit = createNativeTicketSubmission(input.admissionUrl);
+  try {
+    return await submit({
+      intent,
+      r: `0x${signature.r.toString(16)}`,
+      s: `0x${signature.s.toString(16)}`,
+      public_key: ec.starkCurve.getStarkKey(input.privateKey),
+    });
+  } finally {
+    submit.dispose();
+  }
+}
+
 async function buildAdminIntent(input: AdminCommandInput, season: string) {
   const [chain, admission] = await Promise.all([
     input.provider.getChainId(),
@@ -83,8 +92,8 @@ async function buildAdminIntent(input: AdminCommandInput, season: string) {
       "pre_confirmed",
     ),
   ]);
-  if (admission.length !== 7) throw new Error("Unexpected native admission view");
-  const [, rules, , nonce, , , timestamp] = admission;
+  if (admission.length !== 6) throw new Error("Unexpected native admission view");
+  const [, rules, , nonce, , timestamp] = admission;
   const intent = frameNativeIntent({
     chain,
     deployment: season,

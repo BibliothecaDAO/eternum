@@ -1,5 +1,5 @@
 import { WorldFold } from "../world-fold";
-import { CallData, hash, shortString } from "starknet";
+import { CallData, hash, shortString, type RawArgs } from "starknet";
 import { describe, expect, it, vi } from "vitest";
 import { LiveWorld } from "../live-world";
 import type { MadaraRpc } from "../madara-rpc";
@@ -23,10 +23,8 @@ function executionEvent(status: number, nonceConsumed = true, nonce = 0, order =
   };
 }
 
-function call(game: number, entrypoint = "execute") {
-  const abi = [...Object.values(schema.types), ...schema.domains.season.entrypoints];
-  const codec = new CallData(abi);
-  const calldata = codec.compile(entrypoint, {
+function action(game: number) {
+  return {
     intent: {
       chain: 1,
       deployment: manifest.world.address,
@@ -40,14 +38,34 @@ function call(game: number, entrypoint = "execute") {
       command: 1,
       arguments: [2, 1],
     },
-    context: { envelope: [], authority_epoch: 1, accepted_public_key: 1 },
+    context: { envelope: [] },
     r: 1,
     s: 2,
-  });
+  };
+}
+
+function encodedCall(entrypoint: string, args: RawArgs) {
+  const abi = [...Object.values(schema.types), ...schema.domains.season.entrypoints];
+  const calldata = new CallData(abi).compile(entrypoint, args);
   return [manifest.world.address, hash.getSelectorFromName(entrypoint), String(calldata.length), ...calldata];
 }
 
+function call(game: number, entrypoint = "execute") {
+  return encodedCall(entrypoint, action(game));
+}
+
+function batchCall(games: number[]) {
+  return encodedCall("execute_batch", { actions: games.map(action) });
+}
+
 describe("native transaction receipt routing", () => {
+  it("routes every game in one compiled execution batch and rejects malformed batches", () => {
+    const batch = batchCall([1, 2, 1, 3]);
+    expect(transactionGameIds(manifest, ["1", ...batch])).toEqual(["1", "2", "3"]);
+    const truncated = batch.slice(0, -1);
+    truncated[2] = String(Number(truncated[2]) - 1);
+    expect(() => transactionGameIds(manifest, ["1", ...truncated])).toThrow();
+  });
   it("uses the authenticated intent's game for every action call", () => {
     const calldata = ["3", ...call(1), ...call(2, "execute"), ...call(1)];
     expect(transactionGameIds(manifest, calldata)).toEqual(["1", "2"]);
@@ -178,7 +196,7 @@ describe("native transaction receipt routing", () => {
       finality_status: "PRE_CONFIRMED",
       transaction_hash: "0xabc",
       sender_address: "0x999",
-      calldata: ["2", ...call(1), ...call(2)],
+      calldata: ["1", ...batchCall([1, 1, 2])],
     });
     live.acceptReceipt({ ...receipt([executionEvent(1), rejected, otherGame], "0xabc"), finality_status });
     const transaction = messages.filter((message) => message.type === "tx").at(-1);

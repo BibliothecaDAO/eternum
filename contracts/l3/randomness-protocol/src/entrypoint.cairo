@@ -1,18 +1,26 @@
 use starknet::ContractAddress;
-use crate::authority::{ISequencingAuthorityDispatcher, ISequencingAuthorityDispatcherTrait};
 use crate::{Envelope, Intent};
 
-/// Authority witnesses are outside the immutable action and envelope identities.
+pub const MAX_EXECUTION_BATCH: u32 = 64;
+
+/// Canonical recorded context supplied by the sequencing account.
 #[derive(Drop, Serde)]
 pub struct ExecutionContext {
     pub envelope: Array<felt252>,
-    pub authority_epoch: u64,
-    pub accepted_public_key: felt252,
+}
+
+#[derive(Drop, Serde)]
+pub struct RecordedAction {
+    pub intent: Intent,
+    pub context: ExecutionContext,
+    pub r: felt252,
+    pub s: felt252,
 }
 
 #[starknet::interface]
 pub trait IRecordedExecution<T> {
     fn execute(ref self: T, intent: Intent, context: ExecutionContext, r: felt252, s: felt252);
+    fn execute_batch(ref self: T, actions: Array<RecordedAction>);
 }
 
 /// The sequencing authority attests to a definitive execution failure of this exact ticket.
@@ -28,7 +36,6 @@ pub struct Admission {
     pub execution_config: felt252,
     pub nonce: u64,
     pub order: u64,
-    pub preceding_state: felt252,
     pub timestamp: u64,
 }
 
@@ -38,32 +45,13 @@ pub trait IRecordedExecutionViews<T> {
     fn get_head(self: @T) -> crate::recording::ExecutionHead;
 }
 
-pub fn authenticate_submission(authority: ContractAddress, epoch: u64, l2_gas: u64) {
-    let tx = starknet::get_tx_info().unbox();
+pub fn authenticate_submission(authority: ContractAddress) {
     assert!(starknet::get_caller_address() == authority, "only sequencing submitter");
-    assert!(tx.version == 3 && tx.account_contract_address == authority, "invalid transaction context");
-    let account = ISequencingAuthorityDispatcher { contract_address: authority };
-    assert!(epoch == account.authority_epoch(), "stale authority");
-    assert!(tx.signature.len() == 2, "invalid authority signature length");
-    assert!(
-        core::ecdsa::check_ecdsa_signature(
-            tx.transaction_hash, account.get_public_key(), *tx.signature.at(0), *tx.signature.at(1),
-        ),
-        "invalid authority signature",
-    );
-    let mut bounded = false;
-    for bound in tx.resource_bounds {
-        if *bound.resource == 'L2_GAS' {
-            bounded = *bound.max_amount == l2_gas && l2_gas > 0;
-        }
-    }
-    assert!(bounded, "recorded resource bounds mismatch");
 }
 
 /// Expiry is checked against acceptance time, including after restart.
 pub fn accepted_context_matches(intent: @Intent, envelope: @Envelope) -> bool {
     *envelope.order > 0
-        && *envelope.l2_gas > 0
         && *envelope.timestamp >= *intent.valid_from
         && *envelope.timestamp <= *intent.valid_until
         && *envelope.order <= *intent.last_order

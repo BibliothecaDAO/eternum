@@ -217,6 +217,7 @@ export class GameSyncRuntime {
     this.cancelWriterImmediately();
     // A subscribe that never resolved has no writer to cancel; only the transport can stop its reconnects.
     this.session?.transport.dispose?.();
+    this.session?.onDispose?.();
     this.sliceAppliedListeners.clear();
     this.disposeWorldSpatialProjection();
     this.ingestQueue?.dispose();
