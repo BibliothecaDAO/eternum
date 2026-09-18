@@ -1,3 +1,4 @@
+import type { NativeExecutionOutcome } from "@bibliothecadao/provider";
 import type { GameSyncModelDefinition } from "@bibliothecadao/eternum/game-sync-models";
 
 export type Felt = string;
@@ -35,7 +36,7 @@ export interface RpcReceipt {
   finality_status: string;
   execution_status?: string;
   revert_reason?: string;
-  batch_remaining?: string;
+  executions?: NativeExecutionOutcome[];
   events: RpcEvent[];
 }
 

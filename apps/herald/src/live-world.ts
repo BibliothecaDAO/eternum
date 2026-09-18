@@ -195,7 +195,7 @@ export class LiveWorld {
       }
       return;
     }
-    // A terminal rejection consumes its ticket rows; only the action status is reverted.
+    // Ticket rejections do not change the enclosing transaction or its other outcomes.
     this.publishReceiptStatus(actionReceipt);
   }
 
@@ -452,7 +452,9 @@ export class LiveWorld {
           block: receipt.block_number ?? null,
           hash,
           revert_reason: receipt.revert_reason,
-          ...(receipt.batch_remaining !== undefined ? { batch_remaining: receipt.batch_remaining } : {}),
+          ...(receipt.executions !== undefined
+            ? { executions: receipt.executions.filter((outcome) => BigInt(outcome.gameId) === BigInt(gameId)) }
+            : {}),
           status,
         });
       if (receipt.finality_status !== "PRE_CONFIRMED") this.input.historyStore?.recordTransaction(gameId, receipt);

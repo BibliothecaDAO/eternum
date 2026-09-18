@@ -1,29 +1,81 @@
-import { hash, type GetTransactionReceiptResponse } from "starknet";
+import { hash, shortString, type GetTransactionReceiptResponse } from "starknet";
 
-import type { BatchTransactionReceipt } from "@bibliothecadao/types";
+import type { BatchTransactionReceipt, NativeExecutionOutcome, NativeTicketIdentity } from "@bibliothecadao/types";
 
 const batchProgressSelector = BigInt(hash.getSelectorFromName("BatchProgress"));
 const executionRecordedSelector = BigInt(hash.getSelectorFromName("ExecutionRecorded"));
 
 type Event = { from_address: string; keys: string[]; data: string[] };
 
-/** Batch events report work left after a successful command, never another copy of game state. */
-export function nativeBatchRemaining(events: readonly Event[], season: string): string | undefined {
+/** Every accepted ticket has its own outcome, even when several share a transaction. */
+export function nativeExecutionOutcomes(events: readonly Event[], season: string): NativeExecutionOutcome[] {
   const own = events.filter((event) => BigInt(event.from_address) === BigInt(season));
-  const progress = own.filter((event) => BigInt(event.keys[0] ?? "0") === batchProgressSelector);
-  if (progress.length === 0) return undefined;
-  if (progress.length !== 1) throw new Error("Ambiguous native batch result");
-  const event = progress[0];
+  const outcomes = own
+    .filter((event) => BigInt(event.keys.at(-1) ?? "0") === executionRecordedSelector)
+    .map(decodeExecution);
+  if (new Set(outcomes.map((outcome) => outcome.order)).size !== outcomes.length)
+    throw new Error("Duplicate native execution order");
+  for (const event of own.filter((event) => BigInt(event.keys[0] ?? "0") === batchProgressSelector)) {
+    attachBatchProgress(outcomes, event);
+  }
+  return outcomes;
+}
+
+function decodeExecution(event: Event): NativeExecutionOutcome {
+  if (event.data.length !== 7) throw new Error("Malformed native execution outcome");
+  const [game, actor, nonce, consumed, order, status, reason] = event.data.map(BigInt);
+  if (
+    nonce < 0n ||
+    nonce >= 2n ** 64n ||
+    order <= 0n ||
+    order >= 2n ** 64n ||
+    (consumed !== 0n && consumed !== 1n) ||
+    (status !== 1n && status !== 2n)
+  )
+    throw new Error("Invalid native execution outcome");
+  return {
+    gameId: game.toString(),
+    actor: actor.toString(),
+    nonce: nonce.toString(),
+    order: order.toString(),
+    nonceConsumed: consumed === 1n,
+    status: status === 1n ? "SUCCEEDED" : "REVERTED",
+    reason: reason === 0n ? "" : shortString.decodeShortString(`0x${reason.toString(16)}`),
+  };
+}
+
+function attachBatchProgress(outcomes: NativeExecutionOutcome[], event: Event): void {
   if (event.keys.length !== 2 || event.data.length !== 3) throw new Error("Malformed native batch result");
   const [game, actor, nonce, remaining] = [event.keys[1], ...event.data].map(BigInt);
   if (game < 1n || game >= 2n ** 32n || nonce < 0n || nonce >= 2n ** 64n || remaining < 0n || remaining >= 2n ** 64n)
     throw new Error("Invalid native batch result");
-  const recorded = own.filter((value) => BigInt(value.keys.at(-1) ?? "0") === executionRecordedSelector);
-  if (recorded.length !== 1 || recorded[0].data.length !== 7) throw new Error("Missing native batch outcome");
-  const [recordedGame, recordedActor, recordedNonce, consumed, , status] = recorded[0].data.map(BigInt);
-  if (game !== recordedGame || actor !== recordedActor || nonce !== recordedNonce || consumed !== 1n || status !== 1n)
-    throw new Error("Native batch result does not match its successful ticket");
-  return remaining.toString();
+  const matching = outcomes.filter(
+    (outcome) =>
+      BigInt(outcome.gameId) === game &&
+      BigInt(outcome.actor) === actor &&
+      BigInt(outcome.nonce) === nonce &&
+      outcome.nonceConsumed &&
+      outcome.status === "SUCCEEDED",
+  );
+  if (matching.length !== 1) throw new Error("Native batch result does not match its successful ticket");
+  if (matching[0].batchRemaining !== undefined) throw new Error("Ambiguous native batch result");
+  matching[0].batchRemaining = remaining.toString();
+}
+
+export function requireNativeExecutionOutcome(
+  outcomes: readonly NativeExecutionOutcome[] | undefined,
+  ticket: NativeTicketIdentity,
+): NativeExecutionOutcome {
+  const matching = outcomes?.filter((outcome) => BigInt(outcome.order) === BigInt(ticket.order));
+  if (!matching || matching.length !== 1) throw new Error("Missing or ambiguous native ticket outcome");
+  const outcome = matching[0];
+  if (
+    BigInt(outcome.gameId) !== BigInt(ticket.gameId) ||
+    BigInt(outcome.actor) !== BigInt(ticket.actor) ||
+    BigInt(outcome.nonce) !== BigInt(ticket.nonce)
+  )
+    throw new Error("Native ticket outcome identity mismatch");
+  return outcome;
 }
 
 export function requireBatchReceipt(receipt: GetTransactionReceiptResponse): BatchTransactionReceipt {

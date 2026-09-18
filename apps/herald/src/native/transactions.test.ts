@@ -92,7 +92,7 @@ describe("native transaction receipt routing", () => {
     live.acceptReceipt(receipt([progress, executionEvent(1)], "0x123"));
     expect(messages.filter((message) => message.type === "tx").at(-1)).toMatchObject({
       hash: "0x123",
-      batch_remaining: "9",
+      executions: [expect.objectContaining({ order: "1", status: "SUCCEEDED", batchRemaining: "9" })],
     });
   });
   it.each(["PRE_CONFIRMED", "ACCEPTED_ON_L2"])(
@@ -125,7 +125,10 @@ describe("native transaction receipt routing", () => {
         calldata: ["1", ...call(1)],
       });
       const transactions = messages.filter((message) => message.type === "tx");
-      expect(JSON.stringify(transactions)).toContain("REVERTED");
+      expect(transactions.at(-1)).toMatchObject({
+        status: finality_status,
+        executions: [expect.objectContaining({ status: "REVERTED" })],
+      });
       expect(JSON.stringify(transactions)).toContain("GAMEPLAY_REJECTED");
       expect(rejected.execution_status).toBe("SUCCEEDED");
       native.applyReceipt(fold, rejected, 10, 0);
@@ -136,8 +139,8 @@ describe("native transaction receipt routing", () => {
         expect(historyStore.recordTransaction).toHaveBeenCalledWith(
           "1",
           expect.objectContaining({
-            execution_status: "REVERTED",
-            revert_reason: "Native action rejected: GAMEPLAY_REJECTED",
+            execution_status: "SUCCEEDED",
+            executions: [expect.objectContaining({ status: "REVERTED", reason: "GAMEPLAY_REJECTED" })],
           }),
         );
       } else expect(historyStore.recordTransaction).not.toHaveBeenCalled();
@@ -147,7 +150,46 @@ describe("native transaction receipt routing", () => {
   it("preserves a successful recorded action's finality", () => {
     const { native, fold } = setup();
     const succeeded = receipt([executionEvent(1)]);
-    expect(native.actionReceipt(fold, succeeded)).toBe(succeeded);
+    expect(native.actionReceipt(fold, succeeded)).toMatchObject({
+      ...succeeded,
+      executions: [expect.objectContaining({ order: "1", status: "SUCCEEDED" })],
+    });
+  });
+
+  it.each(["PRE_CONFIRMED", "ACCEPTED_ON_L2"])("publishes mixed ticket outcomes per game at %s", (finality_status) => {
+    const { native, decoder, fold } = setup();
+    const messages: Record<string, unknown>[] = [];
+    const live = new LiveWorld({
+      native,
+      registry: decoder.registry,
+      chain: "madara",
+      checkpointEveryBlocks: 100,
+      checkpointStore: { save: vi.fn() },
+      confirmedBlock: 9,
+      confirmedFold: fold,
+      rpc: {} as MadaraRpc,
+    });
+    const connection = live.attach("1", { send: (value) => messages.push(JSON.parse(value)) });
+    live.resume(connection, { type: "resume", epoch: "old", seq: 0 });
+    const rejected = executionEvent(2, false, 0, 2);
+    const otherGame = executionEvent(1, true, 0, 3);
+    otherGame.data[0] = "2";
+    live.acceptTransaction({
+      finality_status: "PRE_CONFIRMED",
+      transaction_hash: "0xabc",
+      sender_address: "0x999",
+      calldata: ["2", ...call(1), ...call(2)],
+    });
+    live.acceptReceipt({ ...receipt([executionEvent(1), rejected, otherGame], "0xabc"), finality_status });
+    const transaction = messages.filter((message) => message.type === "tx").at(-1);
+    expect(transaction).toMatchObject({
+      status: finality_status,
+      executions: [
+        expect.objectContaining({ gameId: "1", order: "1", status: "SUCCEEDED", nonceConsumed: true }),
+        expect.objectContaining({ gameId: "1", order: "2", status: "REVERTED", nonceConsumed: false }),
+      ],
+    });
+    expect(native.receiptFailures).toBe(0);
   });
 
   it("supplies an explicit initial nonce from complete history without replacing an executed nonce", () => {

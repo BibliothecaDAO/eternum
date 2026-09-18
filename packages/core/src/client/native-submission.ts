@@ -11,7 +11,7 @@ export interface NativeClientConnection {
   /** Signs with the connected player's existing gameplay key. */
   signIntent(actor: AccountInterface, digest: string): Promise<{ r: bigint; s: bigint; publicKey: bigint }>;
   /** Acceptance time and entropy are assigned only by the sequencing service. */
-  submitIntent(action: SignedNativeIntent): Promise<{ transaction_hash: string }>;
+  submitIntent(action: SignedNativeIntent): Promise<{ transaction_hash: string; order: bigint }>;
 }
 
 export function nativeSubmission(
@@ -54,12 +54,21 @@ export function nativeSubmission(
       arguments: arguments_,
     });
     const signature = await input.signIntent(actor, hash.computePoseidonHashOnElements(encoded));
-    return input.submitIntent({
+    const submitted = await input.submitIntent({
       intent: encoded,
       r: `0x${signature.r.toString(16)}`,
       s: `0x${signature.s.toString(16)}`,
       public_key: `0x${signature.publicKey.toString(16)}`,
     });
+    return {
+      transaction_hash: submitted.transaction_hash,
+      ticket: {
+        gameId: String(gameId),
+        actor: actor.address,
+        nonce: nonce.toString(),
+        order: submitted.order.toString(),
+      },
+    };
   };
 }
 

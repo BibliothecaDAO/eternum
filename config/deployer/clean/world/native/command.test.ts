@@ -106,11 +106,21 @@ describe("native administrative command", () => {
   });
   it("rejects a receipt for another ticket", async () => {
     const { input } = setup(["7", "291", "3", "1", "9", "1", "0"]);
-    await expect(executeNativeAdminCommand(input)).rejects.toThrow("does not match");
+    await expect(executeNativeAdminCommand(input)).rejects.toThrow("Missing or ambiguous");
   });
   it("reports the recorded rejection reason", async () => {
-    const { input } = setup(["7", "291", "3", "1", "8", "2", "77"]);
-    await expect(executeNativeAdminCommand(input)).rejects.toThrow("Native command rejected: 77");
+    const { input, receipt } = setup(["7", "291", "3", "1", "8", "2", "0x52454a4543544544"]);
+    receipt.events.shift();
+    await expect(executeNativeAdminCommand(input)).rejects.toThrow("Native command rejected: REJECTED");
+  });
+  it("selects its ticket when another command in the transaction failed", async () => {
+    const { input, receipt } = setup();
+    receipt.events.unshift({
+      from_address: "0x77",
+      keys: [hash.getSelectorFromName("ExecutionRecorded")],
+      data: ["7", "292", "0", "1", "7", "2", "0x52454a4543544544"],
+    });
+    expect(await executeNativeAdminCommand(input)).toEqual({ transactionHash: "0x55", remaining: "0" });
   });
   it("refuses a player command before reading admission", async () => {
     const { input, provider } = setup();

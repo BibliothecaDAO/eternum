@@ -1,3 +1,4 @@
+import type { NativeExecutionOutcome } from "@bibliothecadao/types";
 /**
  * Details about a single transaction type within a batch.
  * Used to display breakdown of batched transactions in the UI.
@@ -51,6 +52,7 @@ export interface TransactionSubmitGuardContext extends TransactionLifecycleMeta 
 export type TransactionSubmitGuard = (context: TransactionSubmitGuardContext) => Promise<void> | void;
 
 interface TransactionStreamStatus {
+  executions?: NativeExecutionOutcome[];
   block: number | null;
   hash: string;
   batchRemaining?: string;

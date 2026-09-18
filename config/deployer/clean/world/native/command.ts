@@ -1,5 +1,9 @@
-import { completeNativeBatches, nativeBatchRemaining } from "../../../../../packages/provider/src/native-batch";
-import { ec, hash, RpcProvider, type GetTransactionReceiptResponse } from "starknet";
+import {
+  completeNativeBatches,
+  nativeExecutionOutcomes,
+  requireNativeExecutionOutcome,
+} from "../../../../../packages/provider/src/native-batch";
+import { ec, hash, RpcProvider } from "starknet";
 import {
   encodeNativeCommand,
   frameNativeIntent,
@@ -57,8 +61,15 @@ export async function executeNativeAdminCommand(
     public_key: ec.starkCurve.getStarkKey(input.privateKey),
   });
   const receipt = await input.provider.waitForTransaction(accepted.transaction_hash);
-  assertCommandOutcome(receipt, season, input.gameId, input.accountAddress, nonce, accepted.order);
-  const remaining = nativeBatchRemaining("events" in receipt ? receipt.events : [], season);
+  if (!("events" in receipt)) throw new Error("Native command receipt has no events");
+  const outcome = requireNativeExecutionOutcome(nativeExecutionOutcomes(receipt.events, season), {
+    gameId: String(input.gameId),
+    actor: input.accountAddress,
+    nonce: nonce.toString(),
+    order: accepted.order.toString(),
+  });
+  if (outcome.status === "REVERTED") throw new Error(`Native command rejected: ${outcome.reason}`);
+  const remaining = outcome.batchRemaining;
   if ((repeatableBatches.has(input.command.kind) || input.command.kind === "RankPlayers") && remaining === undefined)
     throw new Error("Native administrative batch has no remaining count");
   return { transactionHash: accepted.transaction_hash, ...(remaining !== undefined ? { remaining } : {}) };
@@ -87,32 +98,4 @@ async function buildAdminIntent(input: AdminCommandInput, season: string) {
     arguments: encodeNativeCommand(nativeDomainAbi(input.manifest, "season"), input.command),
   });
   return { intent, nonce: BigInt(nonce) };
-}
-
-function assertCommandOutcome(
-  receipt: GetTransactionReceiptResponse,
-  season: string,
-  gameId: number,
-  actor: string,
-  nonce: bigint,
-  order: bigint,
-): void {
-  if (!("events" in receipt)) throw new Error("Native command receipt has no events");
-  const selector = BigInt(hash.getSelectorFromName("ExecutionRecorded"));
-  const outcomes = receipt.events.filter(
-    (event) =>
-      BigInt(event.from_address) === BigInt(season) && event.keys.length > 0 && BigInt(event.keys.at(-1)!) === selector,
-  );
-  const outcome = outcomes[0]?.data;
-  if (
-    outcomes.length !== 1 ||
-    !outcome ||
-    outcome.length !== 7 ||
-    BigInt(outcome[0]) !== BigInt(gameId) ||
-    BigInt(outcome[1]) !== BigInt(actor) ||
-    BigInt(outcome[2]) !== nonce ||
-    BigInt(outcome[4]) !== order
-  )
-    throw new Error("Native command receipt does not match its accepted ticket");
-  if (BigInt(outcome[5]) !== 1n) throw new Error(`Native command rejected: ${outcome[6]}`);
 }
