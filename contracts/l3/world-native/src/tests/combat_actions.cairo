@@ -635,3 +635,25 @@ fn a_destroyed_raider_never_collects_loot_even_when_the_roll_wins() {
     }
     assert!(saw_winning_roll, "fixture must exercise a winning raid roll");
 }
+
+#[test]
+fn guard_targeting_preserves_highest_occupied_functional_slot_first() {
+    let (d, _, target, attacker, _) = setup(false);
+    limit_guards(d, target, 4);
+    set_guard(d, target, 0, 1000);
+    set_guard(d, target, 2, 1);
+    let delta = guard(d, target, 0);
+    assert!(
+        execute(
+            d,
+            Command::BattleGuard(crate::commands::Battle { attacker_id: attacker, defender_id: target.entity_id }),
+            80,
+        ),
+    );
+    assert_eq!(guard(d, target, 0), delta);
+    assert_eq!(guard(d, target, 2).troops.count, 0);
+    assert_eq!(
+        IStructuresDispatcher { contract_address: d.peers.structures }.structure(target).unwrap().owner,
+        999.try_into().unwrap(),
+    );
+}
