@@ -435,7 +435,7 @@ fn registered_account_with_unapproved_class_is_rejected_before_key_read() {
     start_cheat_block_timestamp(season, 100);
     recorded::create_games(season, authority());
     let error = recorded::admission(season, actor).unwrap_err();
-    assert_eq!(error.span(), array!['unregistered actor'].span());
+    assert_eq!(error.span(), array!['unregistered actor', 'ENTRYPOINT_FAILED'].span());
     assert_eq!(ISeasonDispatcher { contract_address: season }.next_nonce(1, actor), 0);
 }
 

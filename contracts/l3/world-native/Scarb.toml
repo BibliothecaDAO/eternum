@@ -10,7 +10,7 @@ eternum_randomness_protocol = { path = "../randomness-protocol" }
 eternum_cubit = { path = "vendor/cubit" }
 
 [dev-dependencies]
-snforge_std = "=0.52.0"
+snforge_std = "=0.58.1"
 assert_macros = "=2.13.1"
 
 [lib]
