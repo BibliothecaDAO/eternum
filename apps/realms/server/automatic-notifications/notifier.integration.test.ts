@@ -262,6 +262,24 @@ describe.skipIf(!url)("automatic notifications through PostgreSQL", () => {
     expect(await Effect.runPromise(outbox.eligible(lease!, now))).toBeNull();
   });
 
+  it("suppresses a foreground device both at enqueue and immediately before delivery", async () => {
+    await tick();
+    await Effect.runPromise(subscriptions.setGameForeground("0x1", deviceIds[0]!, true, now));
+    head = 11;
+    events = [battle(100), battle(101, "0xb", 22)];
+    const foregroundTick = await tick();
+    expect(foregroundTick.accepted).toBe(1);
+    expect(sent.mock.calls.map((call) => call[1].notification.owner)).toEqual(["0x2"]);
+
+    await Effect.runPromise(subscriptions.setGameForeground("0x1", deviceIds[0]!, false, now));
+    expect(
+      await Effect.runPromise(outbox.commit(source.key, endOfStoryBlock(11), endOfStoryBlock(12), [candidate()], now)),
+    ).toBe(1);
+    const [lease] = await Effect.runPromise(outbox.claim(source.key, now));
+    await Effect.runPromise(subscriptions.setGameForeground("0x1", deviceIds[0]!, true, now));
+    expect(await Effect.runPromise(outbox.eligible(lease!, now))).toBeNull();
+  });
+
   it("commits a page once when independent consumers race the same checkpoint", async () => {
     await tick();
     const other = createNotificationOutbox(drizzle(database.pool, { schema }));

@@ -18,6 +18,7 @@ import { HUD_PILL_BUTTON } from "@/ui/design-system/atoms/overlay-surface";
 export function PushNotificationSettings({ owner }: { owner: string | null }) {
   const [config, setConfig] = useState<PushConfiguration | null>(null);
   const [device, setDevice] = useState<PushNotificationDevice | null>(null);
+  const [directMessagesEnabled, setDirectMessagesEnabled] = useState(false);
   const [busy, setBusy] = useState(false);
   const actionPending = useRef(false);
   const refreshVersion = useRef(0);
@@ -40,6 +41,7 @@ export function PushNotificationSettings({ owner }: { owner: string | null }) {
         if (current?.owner === owner && current.state === "active" && next.enabled) {
           const status = await identityClient.getPushSubscriptionStatus(owner, current.id);
           if (!status.registered) throw new Error("This background registration expired. Disable it and enable again.");
+          if (isCurrent()) setDirectMessagesEnabled(status.directMessages === true);
         }
         if (isCurrent()) {
           setConfig(next);
@@ -69,9 +71,16 @@ export function PushNotificationSettings({ owner }: { owner: string | null }) {
     try {
       if (action === "enable") {
         if (!config?.enabled) throw new Error("Background tests are unavailable.");
-        await enablePushNotifications(owner, config.publicKey, config.automatic ?? null);
+        await enablePushNotifications(
+          owner,
+          config.publicKey,
+          config.automatic ?? null,
+          config.directMessages === true,
+        );
+        setDirectMessagesEnabled(config.directMessages === true);
       } else if (action === "disable") {
         await disablePushNotifications(device?.owner ?? owner);
+        setDirectMessagesEnabled(false);
       } else {
         const world = getActiveWorld();
         if (!world) throw new Error("Enter a game before sending a test.");
@@ -101,17 +110,21 @@ export function PushNotificationSettings({ owner }: { owner: string | null }) {
       </p>
     ) : null;
   const automatic = config?.enabled ? config.automatic : null;
+  const directMessages = config?.enabled === true && config.directMessages === true;
+  const backgroundAlerts = Boolean(automatic || directMessages);
+  const needsGameAlerts = Boolean(
+    automatic &&
+    (!device?.automatic?.acknowledged ||
+      automaticPushSourceKey(device.automatic) !== automaticPushSourceKey(automatic)),
+  );
+  const needsDirectMessages = directMessages && !directMessagesEnabled;
   return (
     <section aria-label="Background notifications" className="space-y-2">
       <p className={HUD_BODY}>
         Background notifications:{" "}
         {device?.state === "active" && device.owner === owner ? "Enabled" : device ? "Cleanup required" : "Off"}.
       </p>
-      <p className={HUD_BODY}>
-        {automatic
-          ? "Receive confirmed game activity with the game closed, using your account notification level."
-          : "Preview: server-sent tests can arrive with the game closed. Automatic game alerts still require an open page."}
-      </p>
+      <p className={HUD_BODY}>{backgroundNotificationDescription(Boolean(automatic), directMessages)}</p>
       {capability && <p className={HUD_BODY}>{capability}</p>}
       {!owner ? (
         <p className={HUD_BODY}>Sign in to enable background notifications.</p>
@@ -127,26 +140,26 @@ export function PushNotificationSettings({ owner }: { owner: string | null }) {
           >
             {device
               ? "Disable background notifications"
-              : automatic
+              : backgroundAlerts
                 ? "Enable background notifications"
                 : "Enable background tests"}
           </button>
-          {automatic &&
-            device?.state === "active" &&
-            device.owner === owner &&
-            (!device.automatic?.acknowledged ||
-              automaticPushSourceKey(device.automatic) !== automaticPushSourceKey(automatic)) && (
-              <button
-                type="button"
-                className={HUD_PILL_BUTTON}
-                disabled={busy || !!capability}
-                onClick={() => {
-                  void run("enable");
-                }}
-              >
-                Enable game alerts
-              </button>
-            )}
+          {(needsGameAlerts || needsDirectMessages) && device?.state === "active" && device.owner === owner && (
+            <button
+              type="button"
+              className={HUD_PILL_BUTTON}
+              disabled={busy || !!capability}
+              onClick={() => {
+                void run("enable");
+              }}
+            >
+              {needsGameAlerts && needsDirectMessages
+                ? "Enable game and direct-message alerts"
+                : needsDirectMessages
+                  ? "Enable direct-message alerts"
+                  : "Enable game alerts"}
+            </button>
+          )}
           {device?.state === "active" && device.owner === owner && (
             <button
               type="button"
@@ -173,4 +186,12 @@ export function PushNotificationSettings({ owner }: { owner: string | null }) {
       )}
     </section>
   );
+}
+
+function backgroundNotificationDescription(gameAlerts: boolean, directMessages: boolean): string {
+  if (gameAlerts && directMessages)
+    return "Receive confirmed game activity and new direct messages with the game closed, using your account notification level.";
+  if (gameAlerts) return "Receive confirmed game activity with the game closed, using your account notification level.";
+  if (directMessages) return "Receive new direct messages with the game closed, using your account notification level.";
+  return "Preview: server-sent tests can arrive with the game closed. Automatic game alerts still require an open page.";
 }

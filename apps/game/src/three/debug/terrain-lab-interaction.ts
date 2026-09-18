@@ -117,7 +117,8 @@ export class TerrainLabInteraction {
     for (const [key, model] of this.models) {
       if ((key.startsWith("/") || key === HYPERSTRUCTURE_MODEL_PATH) && model.group.visible) {
         if (model instanceof RewardTileModel) model.updatePresentation(0, this.camera.position);
-        model.updateAnimations(delta, { cameraPosition: this.camera.position });
+        if (model instanceof SpireModel) model.updateAnimations(delta, { camera: this.camera });
+        else model.updateAnimations(delta, { cameraPosition: this.camera.position });
       }
     }
     if (!this.army) return;
