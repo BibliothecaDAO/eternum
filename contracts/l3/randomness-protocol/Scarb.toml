@@ -22,3 +22,6 @@ test = "bash ../test-native.sh"
 [tool.fmt]
 sort-module-level-items = true
 max-line-length = 120
+
+[tool.scarb]
+allow-prebuilt-plugins = ["snforge_std"]
