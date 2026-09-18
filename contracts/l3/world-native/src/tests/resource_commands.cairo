@@ -206,7 +206,7 @@ fn resource_mutations_reject_players_and_the_wrong_domain() {
     );
 }
 
-pub fn set_fixture<T, +starknet::storage_access::Store<T>, +Drop<T>>(
+pub fn set_fixture<T, +starknet::storage_access::Store<T>, +Drop<T>, +Copy<T>>(
     address: starknet::ContractAddress, name: felt252, keys: Span<felt252>, value: T,
 ) {
     let base = starknet::storage_access::storage_base_address_from_felt252(snforge_std::map_entry_address(name, keys));

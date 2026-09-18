@@ -138,7 +138,7 @@ function eventLayouts(abi) {
 
 const schema = {
   version: 2,
-  cairoVersion: "2.13.1",
+  cairoVersion: "2.17.0",
   encoding: "cairo-serde",
   modelIdentity: "short-string",
   memberIdentity: "short-string",

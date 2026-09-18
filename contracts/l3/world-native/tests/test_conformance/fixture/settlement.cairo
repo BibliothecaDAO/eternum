@@ -174,7 +174,7 @@ fn settled_facts(season: ContractAddress) -> Array<felt252> {
 
 #[test]
 fn accepted_settlement_keeps_recorded_cosmetics_and_time_after_game_end() {
-    let mut immediate = array![];
+    let mut immediate = array![].span();
     for clock in array![1100_u64, 100000].span() {
         let season = prepare();
         let (action, envelope) = accepted(season, command(123.try_into().unwrap()), 1005);
@@ -194,9 +194,9 @@ fn accepted_settlement_keeps_recorded_cosmetics_and_time_after_game_end() {
         );
         let facts = settled_facts(season);
         if immediate.is_empty() {
-            immediate = facts;
+            immediate = facts.span();
         } else {
-            assert!(facts == immediate, "delayed settlement changed facts");
+            assert!(facts.span() == immediate, "delayed settlement changed facts");
         }
     }
 }
@@ -372,7 +372,7 @@ fn provisioning_accepts_stone_and_rejects_lords_without_partial_grants() {
 
 #[test]
 fn reserved_hyperstructure_uses_recorded_time_after_an_outage() {
-    let mut immediate = array![];
+    let mut immediate = array![].span();
     for clock in array![1201_u64, 100000].span() {
         let season = prepare();
         let rules = IGameDispatcher { contract_address: season }.rules(8);
@@ -392,9 +392,9 @@ fn reserved_hyperstructure_uses_recorded_time_after_an_outage() {
         hyper.serialize(ref facts);
         structures.structure(key).unwrap().serialize(ref facts);
         if immediate.is_empty() {
-            immediate = facts;
+            immediate = facts.span();
         } else {
-            assert!(immediate == facts, "materialization changed after delay");
+            assert!(immediate == facts.span(), "materialization changed after delay");
         }
         execute(season, Command::CreateReservedHyperstructure(coord), 1201);
         assert!(results.recorded_outcome(2).unwrap().status == 2);
