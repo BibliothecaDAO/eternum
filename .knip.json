@@ -110,6 +110,9 @@
         "@bibliothecadao/eternum": [
           "../../packages/core/src/index.ts"
         ],
+        "@bibliothecadao/eternum/automation": [
+          "../../packages/core/src/automation/index.ts"
+        ],
         "@bibliothecadao/eternum/game-entity-keys": [
           "../../packages/core/src/managers/game-entity-keys.ts"
         ],
