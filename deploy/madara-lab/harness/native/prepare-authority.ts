@@ -9,12 +9,15 @@ import {
   waitForSuccess,
 } from "../../../../config/deployer/clean/shared/declare";
 
-// Public local fixture credential; roots are supplied through the recorded envelope.
-const SIGNING_KEY = "0xd431";
+const SIGNING_KEY = process.env.RANDOMNESS_PRIVATE_KEY;
+const rpcUrl = process.env.RPC_URL;
+const authorityFile = process.env.NATIVE_AUTHORITY_FILE;
+if (!SIGNING_KEY || !rpcUrl || !authorityFile)
+  throw new Error("RANDOMNESS_PRIVATE_KEY, RPC_URL and NATIVE_AUTHORITY_FILE are required");
 const STRK = "0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d";
 const root = resolve(import.meta.dir, "../../../..");
-const output = resolve(root, "deploy/madara-lab/.lab/native-sequencer.json");
-const provider = new RpcProvider({ nodeUrl: "http://127.0.0.1:5050/rpc/v0_10_2" });
+const output = resolve(authorityFile);
+const provider = new RpcProvider({ nodeUrl: rpcUrl });
 const adminAddress = process.env.NATIVE_ACCOUNT_ADDRESS;
 const adminKey = process.env.NATIVE_PRIVATE_KEY;
 if (!adminAddress || !adminKey) throw new Error("NATIVE_ACCOUNT_ADDRESS and NATIVE_PRIVATE_KEY are required");
