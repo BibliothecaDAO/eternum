@@ -151,12 +151,12 @@ fn mine(deployment: super::Deployment, x: u32) -> ResourceKey {
 }
 
 fn capture(deployment: super::Deployment, mine: ResourceKey, owner: starknet::ContractAddress, timestamp: u64) {
-    set_owner(deployment, mine, owner);
     start_cheat_caller_address(deployment.peers.prizes, deployment.peers.structures);
     crate::bitcoin::IBitcoinFundingDispatcherTrait::bitcoin_mine_captured(
         crate::bitcoin::IBitcoinFundingDispatcher { contract_address: deployment.peers.prizes }, mine, timestamp,
     );
     stop_cheat_caller_address(deployment.peers.prizes);
+    set_owner(deployment, mine, owner);
 }
 
 fn close_and_bind(deployment: super::Deployment, phase: u64) {
@@ -882,4 +882,121 @@ fn measured_claim(
     let before = core::testing::get_available_gas();
     calls.claim_bitcoin_phase(3, actor, command, context);
     before - core::testing::get_available_gas()
+}
+
+#[test]
+fn capture_carries_unpaid_closed_prizes_once_and_old_claims_cannot_pay_them() {
+    let (d, home, _) = setup();
+    let mine = mine(d, 2000100);
+    capture(d, mine, d.actor, 30);
+    assert!(execute(d, contribute(home, 100), 40));
+    close_and_bind(d, 4);
+    capture(d, mine, 0x777.try_into().unwrap(), 51);
+    let view = IBitcoinViewsDispatcher { contract_address: d.peers.prizes };
+    assert_eq!(view.bitcoin_mine(mine).unsplit_carry, 1000);
+    assert_eq!(view.bitcoin_mine(mine).next_phase, 6);
+    assert!(execute(d, claim(4, array![mine.entity_id].span()), 51));
+    assert_eq!(sat(d, home) + sat(d, mine), 0);
+    capture(d, mine, d.actor, 52);
+    assert_eq!(view.bitcoin_mine(mine).unsplit_carry, 1000);
+    assert!(execute(d, contribute(home, 100), 60));
+    close_and_bind(d, 6);
+    assert!(execute(d, claim(6, array![mine.entity_id].span()), 70));
+    assert_eq!(sat(d, home), 1600);
+    assert_eq!(sat(d, mine), 400);
+    assert_eq!(view.bitcoin_mine(mine).unsplit_carry, 0);
+    assert!(execute(d, claim(6, array![mine.entity_id].span()), 71));
+    assert_eq!(sat(d, home) + sat(d, mine), 2000);
+}
+
+#[test]
+fn capture_excludes_paid_phases_from_the_unpaid_prefix() {
+    let (d, home, _) = setup();
+    let mine = mine(d, 2000100);
+    capture(d, mine, d.actor, 30);
+    for phase in 4_u64..6 {
+        assert!(execute(d, contribute(home, 100), phase * 10));
+        close_and_bind(d, phase);
+        if phase == 4 {
+            assert!(execute(d, claim(4, array![mine.entity_id].span()), 50));
+        }
+    }
+    capture(d, mine, 0x777.try_into().unwrap(), 60);
+    let view = IBitcoinViewsDispatcher { contract_address: d.peers.prizes };
+    assert_eq!(sat(d, home) + sat(d, mine), 1000);
+    assert_eq!(view.bitcoin_mine(mine).unsplit_carry, 1000);
+    assert!(execute(d, claim(5, array![mine.entity_id].span()), 61));
+    assert_eq!(sat(d, home) + sat(d, mine), 1000);
+    assert!(execute(d, contribute(home, 100), 70));
+    close_and_bind(d, 7);
+    assert!(execute(d, claim(7, array![mine.entity_id].span()), 80));
+    assert_eq!(sat(d, home) + sat(d, mine), 3000);
+}
+
+#[test]
+fn capture_carries_more_than_eight_unpaid_phases_without_a_scan() {
+    let (d, _, _) = setup();
+    let mine = mine(d, 2000100);
+    capture(d, mine, d.actor, 30);
+    for phase in 4_u64..14 {
+        assert!(execute(d, Command::CloseBitcoinPhase(phase), (phase + 1) * 10));
+    }
+    capture(d, mine, 0x777.try_into().unwrap(), 140);
+    let view = IBitcoinViewsDispatcher { contract_address: d.peers.prizes };
+    assert_eq!(view.bitcoin_mine(mine).unsplit_carry, 10000);
+    assert_eq!(view.bitcoin_mine(mine).next_phase, 15);
+    capture(d, mine, d.actor, 141);
+    assert_eq!(view.bitcoin_mine(mine).unsplit_carry, 10000);
+}
+
+#[test]
+fn capture_with_no_closed_eligible_phase_creates_no_carry() {
+    let (d, _, _) = setup();
+    let mine = mine(d, 2000100);
+    capture(d, mine, d.actor, 30);
+    capture(d, mine, 0x777.try_into().unwrap(), 31);
+    let view = IBitcoinViewsDispatcher { contract_address: d.peers.prizes };
+    assert_eq!(view.bitcoin_mine(mine).unsplit_carry, 0);
+    assert_eq!(view.bitcoin_mine(mine).next_phase, 4);
+}
+
+#[test]
+fn capture_preserves_already_split_winner_carry_without_a_second_owner_cut() {
+    let (d, first, second) = setup();
+    let mine = mine(d, 2000100);
+    let other = 0x777.try_into().unwrap();
+    capture(d, mine, d.actor, 30);
+    assert!(execute(d, contribute(first, 100), 40));
+    set_owner(d, first, other);
+    close_and_bind(d, 4);
+    assert!(execute(d, claim(4, array![mine.entity_id].span()), 50));
+    assert_eq!(sat(d, mine), 200);
+    assert!(execute(d, Command::CloseBitcoinPhase(5), 59));
+    capture(d, mine, other, 60);
+    let view = IBitcoinViewsDispatcher { contract_address: d.peers.prizes };
+    assert_eq!(view.bitcoin_mine(mine).winner_carry, 800);
+    assert_eq!(view.bitcoin_mine(mine).unsplit_carry, 1000);
+    assert!(execute(d, contribute(second, 100), 70));
+    close_and_bind(d, 7);
+    assert!(execute(d, claim(7, array![mine.entity_id].span()), 80));
+    assert_eq!(sat(d, second), 2400);
+    assert_eq!(sat(d, mine), 600);
+    assert_eq!(view.bitcoin_mine(mine).winner_carry, 0);
+    assert_eq!(view.bitcoin_mine(mine).unsplit_carry, 0);
+}
+
+#[test]
+fn capture_at_the_inclusive_phase_end_carries_that_closed_phase() {
+    let (d, home, _) = setup();
+    let mine = mine(d, 2000100);
+    capture(d, mine, d.actor, 30);
+    assert!(execute(d, contribute(home, 100), 40));
+    assert!(execute(d, Command::CloseBitcoinPhase(4), 49));
+    assert!(execute(d, Command::BindBitcoinPhase(4), 49));
+    capture(d, mine, 0x777.try_into().unwrap(), 49);
+    let view = IBitcoinViewsDispatcher { contract_address: d.peers.prizes };
+    assert_eq!(view.bitcoin_mine(mine).unsplit_carry, 1000);
+    assert_eq!(view.bitcoin_mine(mine).next_phase, 5);
+    assert!(execute(d, claim(4, array![mine.entity_id].span()), 49));
+    assert_eq!(sat(d, home) + sat(d, mine), 0);
 }
