@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
-import { CairoOption, CairoOptionVariant, CallData, RpcProvider, uint256 } from "starknet";
+import { CallData, RpcProvider, uint256 } from "starknet";
+import type { NativeCommand } from "../../../../packages/provider/src/native-command";
 import { buildNativePreset } from "../config/native-preset";
 import { loadEnvironmentConfiguration } from "../config/config-loader";
 import { buildNativeGameParams, buildNativePresetRegistration, registerNativePreset } from "../registrar/native-preset";
@@ -60,9 +61,9 @@ test.skipIf(!fixturePath)(
     if (!created.gameId) throw new Error("Registrar returned no game id");
     fixture.game = `0x${BigInt(created.gameId).toString(16)}`;
     const decoder = new NativeDecoder(manifest);
-    const execute = async (variant: string, value: object) => {
+    const execute = async (command: NativeCommand) => {
       const admission = await admissionFor(provider, fixture);
-      const { action, ...request } = signedRequest(fixture, admission, commandArguments(fixture, variant, value));
+      const { action, ...request } = signedRequest(fixture, admission, commandArguments(fixture, command));
       const response = await fetch(`${admissionUrl}/actions`, {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -75,7 +76,9 @@ test.skipIf(!fixturePath)(
       expect(BigInt(outcome.status)).toBe(1n);
       const receipt = await provider.getTransactionReceipt(outcome.transactionHash);
       if (!("events" in receipt)) throw new Error("Missing receipt events");
-      console.log(JSON.stringify({ action: variant, game: fixture.game, transactionHash: outcome.transactionHash }));
+      console.log(
+        JSON.stringify({ action: command.kind, game: fixture.game, transactionHash: outcome.transactionHash }),
+      );
       return receipt.events
         .filter((event) => decoder.owns(event.from_address))
         .map((event, index) =>
@@ -88,9 +91,12 @@ test.skipIf(!fixturePath)(
           }),
         );
     };
-    const rows = await execute("SettleSeason", {
-      name: "0x627269646765",
-      selected_realm: new CairoOption(CairoOptionVariant.Some, 3),
+    const rows = await execute({
+      kind: "SettleSeason",
+      value: {
+        name: "0x627269646765",
+        selected_realm: { kind: "Some", value: 3 },
+      },
     });
     const home = rows.find((row) => row.kind === "set" && row.model.name === "Structure");
     if (!home || home.kind !== "set") throw new Error("Settlement emitted no structure");
@@ -113,11 +119,14 @@ test.skipIf(!fixturePath)(
       calldata: CallData.compile({ spender: bridge, amount: uint256.bnToUint256(10n ** 18n) }),
     });
     await waitForSuccess(admin, approval.transaction_hash);
-    const depositRows = await execute("DepositResource", {
-      structure_id: structureId,
-      resource_type: 2,
-      amount: uint256.bnToUint256(10n ** 18n),
-      client_fee_recipient: "0x0",
+    const depositRows = await execute({
+      kind: "DepositResource",
+      value: {
+        structure_id: structureId,
+        resource_type: 2,
+        amount: uint256.bnToUint256(10n ** 18n),
+        client_fee_recipient: "0x0",
+      },
     });
     // At zero completed hyperstructures: retain 25%, charge three platform fees of 2.5%; realms pay no village fee.
     expect(
@@ -140,12 +149,15 @@ test.skipIf(!fixturePath)(
       return uint256.uint256ToBN({ low, high });
     };
     const before = await balance();
-    await execute("WithdrawResource", {
-      structure_id: structureId,
-      resource_type: 2,
-      amount: 100_000_000n,
-      recipient,
-      client_fee_recipient: "0x0",
+    await execute({
+      kind: "WithdrawResource",
+      value: {
+        structure_id: structureId,
+        resource_type: 2,
+        amount: 100_000_000n,
+        recipient,
+        client_fee_recipient: "0x0",
+      },
     });
     expect((await balance()) - before).toBe(23_125_000_000_000_000n);
   },
