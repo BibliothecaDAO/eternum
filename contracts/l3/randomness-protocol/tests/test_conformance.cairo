@@ -140,7 +140,9 @@ fn malformed_transport_consumes_nothing_and_invalid_action_signature_is_terminal
             let views = IRecordedExecutionViewsDispatcher { contract_address: address };
             let rejected = views.recorded_outcome(1).unwrap();
             assert!(rejected.status == 2 && rejected.reason == 'INVALID_SIGNATURE', "missing signature reason");
-            assert!(views.get_admission(7, 456).nonce == 1, "signature rejection did not consume nonce");
+            assert!(
+                views.get_admission(7, 456).nonce == 0 && !rejected.nonce_consumed, "forgery consumed player nonce",
+            );
         } else {
             assert!(result.is_err(), "malformed witness accepted");
             assert!(
@@ -590,7 +592,9 @@ fn submitter_cannot_substitute_a_gameplay_key() {
     let views = IRecordedExecutionViewsDispatcher { contract_address: address };
     let rejected = views.recorded_outcome(1).unwrap();
     assert!(rejected.status == 2 && rejected.reason == 'INVALID_SIGNATURE', "substituted key authorized gameplay");
-    assert!(views.get_admission(7, 456).nonce == 1, "terminal rejection did not consume current nonce");
+    assert!(
+        views.get_admission(7, 456).nonce == 0 && !rejected.nonce_consumed, "substituted key consumed player nonce",
+    );
 }
 
 #[test]
@@ -626,4 +630,67 @@ fn recorded_time_never_moves_backwards_and_equal_time_is_valid() {
     IRecordedExecutionDispatcher { contract_address: address }.execute(retry, context(@backwards), r, s);
     assert!(views.recorded_outcome(2).unwrap().status == 2, "equal recorded timestamp did not execute terminal action");
     assert!(views.get_admission(7, 456).nonce == 2, "equal recorded timestamp did not consume nonce");
+}
+
+fn unauthenticated_action_leaves_nonce_for_successor(case: u32) {
+    let address = setup();
+    let mut action = intent(address);
+    let mut recorded = envelope(@action);
+    if case == 2 {
+        action.chain = 'OTHER';
+    }
+    if case == 3 {
+        action.deployment = 1;
+    }
+    recorded.action = action_identity(@action);
+    let (mut r, s) = pair().sign(action_identity(@action)).unwrap();
+    let mut witness = context(@recorded);
+    if case == 0 {
+        r = 1;
+    }
+    if case == 1 {
+        witness.accepted_public_key = 1;
+    }
+    IRecordedExecutionDispatcher { contract_address: address }.execute(action, witness, r, s);
+    let views = IRecordedExecutionViewsDispatcher { contract_address: address };
+    let rejected = views.recorded_outcome(1).unwrap();
+    let reason = if case == 2 {
+        'FOREIGN_CHAIN'
+    } else if case == 3 {
+        'FOREIGN_DEPLOYMENT'
+    } else {
+        'INVALID_SIGNATURE'
+    };
+    assert!(rejected.status == 2 && rejected.reason == reason && !rejected.nonce_consumed, "authentication outcome");
+    let next = views.get_admission(7, 456);
+    assert!(next.nonce == 0 && next.order == 2, "authentication changed player nonce or blocked order");
+    let successor = intent(address);
+    let mut following = envelope(@successor);
+    following.order = next.order;
+    following.preceding_state = next.preceding_state;
+    let (r, s) = pair().sign(action_identity(@successor)).unwrap();
+    IRecordedExecutionDispatcher { contract_address: address }.execute(successor, context(@following), r, s);
+    let succeeded = views.recorded_outcome(2).unwrap();
+    assert!(succeeded.status == 1 && succeeded.nonce_consumed, "valid successor did not execute");
+    assert!(views.get_admission(7, 456).nonce == 1, "valid successor did not consume its nonce");
+}
+
+#[test]
+fn forged_signature_leaves_nonce_for_a_valid_successor() {
+    unauthenticated_action_leaves_nonce_for_successor(0);
+}
+
+#[test]
+fn wrong_gameplay_key_leaves_nonce_for_a_valid_successor() {
+    unauthenticated_action_leaves_nonce_for_successor(1);
+}
+
+#[test]
+fn foreign_chain_leaves_nonce_for_a_valid_successor() {
+    unauthenticated_action_leaves_nonce_for_successor(2);
+}
+
+#[test]
+fn foreign_deployment_leaves_nonce_for_a_valid_successor() {
+    unauthenticated_action_leaves_nonce_for_successor(3);
 }

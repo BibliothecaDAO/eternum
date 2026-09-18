@@ -207,14 +207,17 @@ fn forged_signature_actor_game_and_replayed_intent_are_rejected() {
     forged.game_id = 2;
     gateway.execute(forged, context(), r, s).unwrap();
     assert_eq!(results.recorded_outcome(3).unwrap().reason, 'INVALID_SIGNATURE');
-    let mut successor = action;
-    successor.nonce = 1;
+    assert!(!results.recorded_outcome(1).unwrap().nonce_consumed);
+    assert!(!results.recorded_outcome(2).unwrap().nonce_consumed);
+    assert!(!results.recorded_outcome(3).unwrap().nonce_consumed);
+    assert_eq!(ISeasonDispatcher { contract_address: deployment.peers.season }.next_nonce(1, deployment.actor), 0);
+    let successor = action;
     let (r, s) = signature(deployment, successor);
     gateway.execute(successor, context(), r, s).unwrap();
     assert_eq!(results.recorded_outcome(4).unwrap().status, 1);
     gateway.execute(successor, context(), r, s).unwrap();
     assert_eq!(results.recorded_outcome(5).unwrap().reason, 'STALE_NONCE');
-    assert_eq!(ISeasonDispatcher { contract_address: deployment.peers.season }.next_nonce(1, deployment.actor), 2);
+    assert_eq!(ISeasonDispatcher { contract_address: deployment.peers.season }.next_nonce(1, deployment.actor), 1);
 }
 
 #[test]
@@ -375,7 +378,8 @@ fn signatures_are_bound_to_deployment_command_nonce_and_deadline() {
     gateway.execute(changed, context(), r, s).unwrap();
     assert_eq!(results.recorded_outcome(2).unwrap().reason, 'INVALID_SIGNATURE');
     changed = action;
-    changed.nonce = 2;
+    assert!(!results.recorded_outcome(1).unwrap().nonce_consumed);
+    assert!(!results.recorded_outcome(2).unwrap().nonce_consumed);
     changed.deadline = 99;
     let (expired_r, expired_s) = signature(first, changed);
     gateway.execute(changed, context(), expired_r, expired_s).unwrap();
@@ -387,7 +391,7 @@ fn signatures_are_bound_to_deployment_command_nonce_and_deadline() {
             .hash_intent(action) != ISeasonDispatcher { contract_address: first.peers.season }
             .hash_intent(action),
     );
-    assert_eq!(ISeasonDispatcher { contract_address: first.peers.season }.next_nonce(1, first.actor), 3);
+    assert_eq!(ISeasonDispatcher { contract_address: first.peers.season }.next_nonce(1, first.actor), 1);
 }
 
 #[test]
