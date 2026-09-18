@@ -20,21 +20,13 @@ export type LaunchSeriesStepId = SeriesLaunchStepId;
 export type LaunchRotationStepId = RotationLaunchStepId;
 export type SeriesLaunchChildStepStatus = "pending" | "running" | "succeeded" | "failed";
 
-export interface WorldDeployment {
-  namespace: string;
-  manifestPath: string;
-  registrarAddress?: string;
-}
-
 export interface DeploymentEnvironment {
   id: DeploymentEnvironmentId;
   chain: DeploymentChain;
   gameType: DeploymentGameType;
-  toriiEnv: DeploymentChain;
   configPath: string;
   accountAddress?: string;
   privateKey?: string;
-  world: WorldDeployment;
 }
 
 export interface LedgerLaunchOptions {

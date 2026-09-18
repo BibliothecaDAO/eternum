@@ -9,7 +9,6 @@ import {
   ResourceTier,
   StructureType,
 } from "../constants";
-import type { Manifest } from "./manifest";
 
 export interface RelicEffect {
   end_tick: number;
@@ -596,7 +595,6 @@ export interface Config {
   setup?: {
     chain: string;
     addresses: SeasonAddresses;
-    manifest: Manifest;
   };
 }
 

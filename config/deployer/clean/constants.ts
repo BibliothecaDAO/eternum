@@ -20,19 +20,12 @@ export const DEPLOYMENT_ENVIRONMENTS: Record<DeploymentEnvironmentId, Deployment
     id: "madara.blitz",
     chain: "madara",
     gameType: "blitz",
-    toriiEnv: "madara",
     configPath: "config/generated/blitz.madara.json",
-    world: {
-      namespace: "s2",
-      manifestPath: "contracts/l3/game/manifest_madara.json",
-    },
   },
   "madara.eternum": {
     id: "madara.eternum",
     chain: "madara",
     gameType: "eternum",
-    toriiEnv: "madara",
     configPath: "config/generated/eternum.madara.json",
-    world: { namespace: "s2", manifestPath: "contracts/l3/game/manifest_madara.json" },
   },
 };
