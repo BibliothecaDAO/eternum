@@ -58,11 +58,9 @@ pub struct PrizeResult {
 }
 #[starknet::component]
 pub mod BlitzPrizeState {
-    use core::num::traits::Zero;
     use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
     use starknet::{ContractAddress, get_caller_address, get_tx_info};
     use crate::commands::ExecutionContext;
-    use crate::entry::{ILedgerOperatorDispatcher, ILedgerOperatorDispatcherTrait};
     use crate::events::{RowDeleted, RowSet};
     use crate::game::{GameRegistry, IGameDispatcher, IGameDispatcherTrait};
     use crate::lifecycle::Lifecycle::{DomainImpl, InternalTrait as LifeInternal};
@@ -259,11 +257,6 @@ pub mod BlitzPrizeState {
         fn settlements(self: @ComponentState<TContractState>) -> ISettlementViewsDispatcher {
             ISettlementViewsDispatcher { contract_address: get_dep_component!(self, Life).require_active().settlement }
         }
-        fn uses_ledger(self: @ComponentState<TContractState>) -> bool {
-            ILedgerOperatorDispatcher { contract_address: get_dep_component!(self, Life).require_active().registry }
-                .ledger_operator()
-                .is_non_zero()
-        }
         fn authorize(self: @ComponentState<TContractState>, game_id: u32, timestamp: u64) -> GameRegistry {
             assert!(
                 get_caller_address() == get_dep_component!(self, Life).require_active().season,
@@ -369,10 +362,10 @@ pub mod BlitzPrizeState {
                 };
                 let elite = rank - 1 + count <= core::cmp::min(trial.committed / 2, 66);
                 self.write_rank(game_id, player, PlayerRank { rank, chests: reward, elite });
-                let owner = if self.uses_ledger() {
-                    self.season().prize_recipient(player)
-                } else {
+                let owner = if self.games().game(game_id).dev_mode_on {
                     player
+                } else {
+                    self.season().prize_recipient(player)
                 };
                 self
                     .story(

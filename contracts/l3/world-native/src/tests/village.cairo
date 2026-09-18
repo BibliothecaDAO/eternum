@@ -349,3 +349,91 @@ fn season_settlement_random_draw_reserves_realm_and_provisions_its_economy() {
         8000,
     );
 }
+
+#[test]
+fn real_season_entitlement_with_missing_operator_and_missing_pass() {
+    assert_season_entitlement_mode(false, false, false);
+}
+#[test]
+fn real_season_entitlement_with_missing_operator_and_present_pass() {
+    assert_season_entitlement_mode(false, false, true);
+}
+#[test]
+fn real_season_entitlement_with_configured_operator_and_missing_pass() {
+    assert_season_entitlement_mode(false, true, false);
+}
+#[test]
+fn real_season_entitlement_with_configured_operator_and_present_pass() {
+    assert_season_entitlement_mode(false, true, true);
+}
+#[test]
+fn dev_season_entitlement_with_missing_operator_and_missing_pass() {
+    assert_season_entitlement_mode(true, false, false);
+}
+#[test]
+fn dev_season_entitlement_with_missing_operator_and_present_pass() {
+    assert_season_entitlement_mode(true, false, true);
+}
+#[test]
+fn dev_season_entitlement_with_configured_operator_and_missing_pass() {
+    assert_season_entitlement_mode(true, true, false);
+}
+#[test]
+fn dev_season_entitlement_with_configured_operator_and_present_pass() {
+    assert_season_entitlement_mode(true, true, true);
+}
+fn assert_season_entitlement_mode(dev: bool, has_operator: bool, has_entitlement: bool) {
+    let (d, _) = setup(dev);
+    let owner = crate::season::IPlayerRegistryDispatcherTrait::owner_of(
+        crate::season::IPlayerRegistryDispatcher {
+            contract_address: ISeasonDispatcher { contract_address: d.peers.season }.authentication().registry,
+        },
+        d.actor,
+    );
+    if has_entitlement {
+        super::resource_commands::set_fixture(
+            d.peers.settlement,
+            selector!("entitlements"),
+            array![3, owner.into()].span(),
+            Some(
+                crate::settlement::EntryEntitlement {
+                    realm_id: 7, metadata_1: 0x0103070402020302010009, metadata_2: 0, metadata_3: 0, pass_kind: 1,
+                },
+            ),
+        );
+    }
+    super::entry::set_operator(d, if has_operator {
+        authority()
+    } else {
+        0.try_into().unwrap()
+    });
+    super::resource_commands::set_fixture(d.peers.settlement, selector!("catalogue_count"), array![].span(), 8000_u32);
+    super::resource_commands::set_fixture(d.peers.settlement, selector!("traits"), array![2239].span(), 0x9000002_u32);
+    let mut spy = spy_events();
+    assert_eq!(
+        run(
+            d,
+            Command::SettleSeason(crate::realms::SettleSeason { name: 'Season player', selected_realm: Option::None }),
+            100,
+        ),
+        dev || has_entitlement,
+    );
+    let mut created = false;
+    for (_, event) in spy.get_events().emitted_by(d.peers.structures).events.span() {
+        if event.keys.len() >= 3
+            && *event.keys.at(event.keys.len() - 3) == selector!("RowSet")
+            && *event.keys.at(event.keys.len() - 1) == 'Structure' {
+            let mut data = event.data.span();
+            let _: Span<felt252> = Serde::deserialize(ref data).unwrap();
+            let mut values: Span<felt252> = Serde::deserialize(ref data).unwrap();
+            let record: crate::structures::Structure = Serde::deserialize(ref values).unwrap();
+            assert_eq!(record.metadata.realm_id, if dev {
+                2239
+            } else {
+                7
+            });
+            created = true;
+        }
+    }
+    assert_eq!(created, dev || has_entitlement);
+}
