@@ -107,9 +107,16 @@ it("keeps an empty stockpile's blocker separate from usage and Deploy visible bu
   expect(findButton("Deploy").disabled).toBe(true);
 });
 
-it("names the guard slot it was opened from", async () => {
-  await act(async () => root.render(<ArmyDeploymentPicker structureId={42} isExplorer={false} initialGuardSlot={1} />));
-  expect(container.textContent).toContain("Deploy guard · slot 3");
+it.each([
+  [0, 1],
+  [1, 2],
+  [2, 3],
+  [3, 4],
+])("names contract guard slot %i as display slot %i", async (slot, displayed) => {
+  await act(async () =>
+    root.render(<ArmyDeploymentPicker structureId={42} isExplorer={false} initialGuardSlot={slot} />),
+  );
+  expect(container.textContent).toContain(`Deploy guard · slot ${displayed}`);
   await act(async () => root.render(<ArmyDeploymentPicker structureId={42} isExplorer />));
   expect(container.textContent).toContain("Deploy field army");
 });
