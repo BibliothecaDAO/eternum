@@ -118,6 +118,9 @@ const official60BlitzVictoryPointConfig = {
 };
 
 export const official60BlitzProfile: BlitzBalanceProfile = {
+  mines: {
+    kinds: { 1: { productionRate: 10 } },
+  },
   season: {
     durationSeconds: OFFICIAL_60_BLITZ_DURATION_SECONDS,
   },

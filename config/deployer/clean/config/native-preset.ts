@@ -1,7 +1,6 @@
+import { resolveBlitzProfileId } from "../../../source/native";
 import { RESOURCE_PRECISION, ResourcesIds, type Config } from "@bibliothecadao/types";
 import { CairoCustomEnum, CairoOption, CairoOptionVariant } from "starknet";
-import { nativeBalance } from "../../../source/native";
-import { applyBlitzBalanceProfile } from "../../../source/blitz";
 import {
   buildBiomeClimateConfig,
   buildCapacityConfig,
@@ -10,9 +9,7 @@ import {
   buildTroopDamageConfig,
   buildTroopLimitConfig,
   buildTroopStaminaConfig,
-  resolveBlitzProfileId,
 } from "../registrar/preset";
-import { loadEnvironmentConfiguration } from "./config-loader";
 import {
   blitzRealmResources,
   eternumExplorationRewards,
@@ -69,9 +66,9 @@ function buildRules(config: Config) {
     },
     bitcoin_mine_config: {
       enabled: bitcoinEnabled,
-      prize_per_phase: bitcoinEnabled ? scaled(nativeBalance.bitcoin.prizePerPhase) : 0n,
-      min_labor_per_contribution: scaled(nativeBalance.bitcoin.minimumLabor),
-      owner_cut_bps: nativeBalance.bitcoin.ownerCutBps,
+      prize_per_phase: bitcoinEnabled ? scaled(config.bitcoin!.prizePerPhase) : 0n,
+      min_labor_per_contribution: scaled(config.bitcoin!.minimumLabor),
+      owner_cut_bps: config.bitcoin!.ownerCutBps,
     },
     victory_points_grant_config: {
       hyp_points_per_second: config.victoryPoints.hyperstructurePointsPerCycle,
@@ -139,37 +136,20 @@ function buildResources(config: Config) {
 }
 
 function buildMines(config: Config) {
-  const regularFast = applyBlitzBalanceProfile(loadEnvironmentConfiguration("madara.blitz"), "official-60");
-  const eternum = loadEnvironmentConfiguration("madara.eternum");
-  const essenceRate = config.blitz.mode.on
-    ? required(config.resources.productionByComplexRecipeOutputs, 38, "essence rate")
-    : required(regularFast.resources.productionByComplexRecipeOutputs, 38, "regular-fast essence rate") / 4;
-  // Mines use the non-realm production rate (half the factory output).
   return {
-    mine_kinds: [
-      {
-        kind: 1,
+    mine_kinds: Object.entries(config.mines!.kinds).map(
+      ([kind, { resourceType, buildingCategory, productionRate, capMinimum, capSteps }]) => ({
+        kind: Number(kind),
         config: {
-          resource_type: 38,
-          building_category: 39,
-          production_rate: scaled(essenceRate) / 2n,
-          cap_min: scaled(36000),
-          cap_steps: 1,
+          resource_type: resourceType,
+          building_category: buildingCategory,
+          production_rate: scaled(productionRate, config.resources.resourcePrecision),
+          cap_min: scaled(capMinimum, config.resources.resourcePrecision),
+          cap_steps: capSteps,
         },
-      },
-      {
-        kind: 2,
-        config: {
-          resource_type: 24,
-          building_category: 26,
-          production_rate:
-            scaled(required(eternum.resources.productionByComplexRecipeOutputs, 24, "fragment rate")) / 2n,
-          cap_min: scaled(300000),
-          cap_steps: 10,
-        },
-      },
-    ],
-    surface_mines: nativeBalance.mineWeights[config.blitz.mode.on ? "blitz" : "eternum"].map((entry) => ({ ...entry })),
+      }),
+    ),
+    surface_mines: config.mines!.surfacePool.map((entry) => ({ ...entry })),
   };
 }
 
@@ -241,7 +221,6 @@ function buildSettlement(config: Config) {
 }
 
 function buildEconomy(config: Config, tokens: Array<{ resource_type: number; token: string }>) {
-  const bridge = config.bridge;
   return {
     trade: { max_count: config.trade.maxCount },
     banks: {
@@ -261,34 +240,40 @@ function buildEconomy(config: Config, tokens: Array<{ resource_type: number; tok
     },
     relics: relicRules.map((rule) => ({ ...rule })),
     research_cost: config.artificer!.research_cost_for_relic,
-    withdrawals: config.blitz.mode.on
-      ? new CairoOption(CairoOptionVariant.None)
-      : new CairoOption(CairoOptionVariant.Some, {
-          deposits: {
-            paused: false,
-            realm_fee_bps: bridge.realm_fee_dpt_percent,
-            velords_fee_bps: bridge.velords_fee_on_dpt_percent,
-            season_fee_bps: bridge.season_pool_fee_on_dpt_percent,
-            client_fee_bps: bridge.client_fee_on_dpt_percent,
-          },
-          rules: {
-            paused: false,
-            bank_fee_bps: bridge.realm_fee_wtdr_percent,
-            velords_fee_bps: bridge.velords_fee_on_wtdr_percent,
-            season_fee_bps: bridge.season_pool_fee_on_wtdr_percent,
-            client_fee_bps: bridge.client_fee_on_wtdr_percent,
-            velords_recipient: bridge.velords_fee_recipient,
-            season_recipient: bridge.season_pool_fee_recipient,
-            retention: withdrawalRetention.map((rule) => ({ ...rule })),
-          },
-          tokens,
-        }),
+    withdrawals: new CairoOption<ReturnType<typeof buildWithdrawals>>(
+      config.blitz.mode.on ? CairoOptionVariant.None : CairoOptionVariant.Some,
+      config.blitz.mode.on ? undefined : buildWithdrawals(config, tokens),
+    ),
   };
 }
 
-export function buildNativePreset(config: Config, tokens?: Array<{ resource_type: number; token: string }>) {
+function buildWithdrawals(config: Config, tokens: Array<{ resource_type: number; token: string }>) {
+  const bridge = config.bridge;
+  return {
+    deposits: {
+      paused: false,
+      realm_fee_bps: bridge.realm_fee_dpt_percent,
+      velords_fee_bps: bridge.velords_fee_on_dpt_percent,
+      season_fee_bps: bridge.season_pool_fee_on_dpt_percent,
+      client_fee_bps: bridge.client_fee_on_dpt_percent,
+    },
+    rules: {
+      paused: false,
+      bank_fee_bps: bridge.realm_fee_wtdr_percent,
+      velords_fee_bps: bridge.velords_fee_on_wtdr_percent,
+      season_fee_bps: bridge.season_pool_fee_on_wtdr_percent,
+      client_fee_bps: bridge.client_fee_on_wtdr_percent,
+      velords_recipient: bridge.velords_fee_recipient,
+      season_recipient: bridge.season_pool_fee_recipient,
+      retention: withdrawalRetention.map((rule) => ({ ...rule })),
+    },
+    tokens,
+  };
+}
+
+export function buildNativePreset(config: Config) {
   validateRequiredNativeConfig(config);
-  const bridgeTokens = config.blitz.mode.on ? [] : resolveBridgeTokens(config, tokens);
+  const bridgeTokens = config.blitz.mode.on ? [] : resolveBridgeTokens(config);
   return {
     rules: buildRules(config),
     resources: buildResources(config),
@@ -308,7 +293,50 @@ export function buildNativePreset(config: Config, tokens?: Array<{ resource_type
   };
 }
 
+function validateMineConfig(config: Config): void {
+  if (
+    !config.mines ||
+    !config.mines.kinds ||
+    typeof config.mines.kinds !== "object" ||
+    Array.isArray(config.mines.kinds) ||
+    !Array.isArray(config.mines.surfacePool)
+  )
+    throw new Error("Mine balance config is required");
+  const kinds = new Set<number>();
+  for (const [key, mine] of Object.entries(config.mines.kinds)) {
+    const kind = Number(key);
+    for (const [value, max] of [
+      [kind, 255],
+      [mine.resourceType, 58],
+      [mine.buildingCategory, 40],
+      [mine.capSteps, 0xffffffff],
+    ]) {
+      if (!Number.isSafeInteger(value) || value < 1 || value > max) throw new Error("Invalid mine kind configuration");
+    }
+    if (kinds.has(kind)) throw new Error(`Duplicate mine kind ${kind}`);
+    kinds.add(kind);
+    scaled(mine.productionRate, config.resources.resourcePrecision);
+    if (scaled(mine.capMinimum, config.resources.resourcePrecision) === 0n)
+      throw new Error("Mine cap must be positive");
+  }
+  const pooled = new Set<number>();
+  for (const { kind, weight } of config.mines.surfacePool) {
+    if (!kinds.has(kind) || pooled.has(kind) || !Number.isSafeInteger(weight) || weight <= 0 || weight > 0xffffffff)
+      throw new Error("Invalid mine pool entry");
+    pooled.add(kind);
+  }
+  if (config.exploration.shardsMinesWinProbability > 0 && pooled.size === 0)
+    throw new Error("Enabled mine discovery requires a pool");
+}
+
 function validateRequiredNativeConfig(config: Config): void {
+  validateMineConfig(config);
+  if (!config.bitcoin) throw new Error("Bitcoin balance config is required");
+  for (const field of ["prizePerPhase", "minimumLabor", "ownerCutBps"] as const) {
+    if (!Number.isSafeInteger(config.bitcoin[field]) || config.bitcoin[field] < 0)
+      throw new Error(`Invalid Bitcoin ${field}`);
+  }
+  if (config.bitcoin.ownerCutBps > 10000) throw new Error("Invalid Bitcoin owner cut");
   if (!config.faith || typeof config.faith.enabled !== "boolean") throw new Error("Native faith config is required");
   for (const field of [
     "wonder_base_fp_per_sec",
@@ -325,12 +353,12 @@ function validateRequiredNativeConfig(config: Config): void {
     throw new Error("Native research cost is required and must be nonnegative");
 }
 
-function resolveBridgeTokens(config: Config, supplied?: Array<{ resource_type: number; token: string }>) {
+function resolveBridgeTokens(config: Config) {
   const addresses = config.setup?.addresses;
   const configured = addresses?.resources;
-  if (!supplied && (!configured || typeof configured !== "object" || Array.isArray(configured)))
+  if (!configured || typeof configured !== "object" || Array.isArray(configured))
     throw new Error("Eternum bridge resource tokens are required");
-  const tokens = supplied ?? [
+  const tokens = [
     ...Object.values(configured!).map(([resource, token]) => ({
       resource_type: Number(resource),
       token: String(token),

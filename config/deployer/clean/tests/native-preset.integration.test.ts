@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { CallData, RpcProvider, uint256 } from "starknet";
+import { ResourcesIds } from "@bibliothecadao/types";
 import type { NativeCommand } from "../../../../packages/provider/src/native-command";
 import { buildNativePreset } from "../config/native-preset";
 import { loadEnvironmentConfiguration } from "../config/config-loader";
@@ -19,16 +20,16 @@ import {
 import { NativeDecoder } from "../../../../apps/herald/src/native/decoder";
 
 const fixturePath = process.env.NATIVE_PRESET_LAB_FIXTURE;
-const STRK = "0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d";
 
-// This gate creates an isolated game using the actual registrar/deployer definition on the laptop chain.
+// This gate creates an isolated game using the actual registrar/deployer definition on the isolated candidate chain.
 test.skipIf(!fixturePath)(
   "deployer Eternum preset registers tokens and executes a deposit and withdrawal",
   async () => {
     const manifestPath = process.env.NATIVE_WORLD_MANIFEST;
     const admissionUrl = process.env.ADMISSION_URL;
     if (!manifestPath || !admissionUrl) throw new Error("Native lab manifest and admission URL are required");
-    if (new URL(admissionUrl).hostname !== "127.0.0.1") throw new Error("Preset integration is laptop only");
+    if (new URL(admissionUrl).hostname !== "127.0.0.1")
+      throw new Error("Preset integration requires a loopback admission service");
     const fixture = readFixture(fixturePath!);
     const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
     const provider = new RpcProvider({ nodeUrl: fixture.rpc });
@@ -37,12 +38,13 @@ test.skipIf(!fixturePath)(
     const registry = manifest.native.domains.registry.address;
     const bridge = manifest.native.domains.bridge.address;
     const config = loadEnvironmentConfiguration("madara.eternum");
-    config.faith!.reward_token = STRK;
-    config.setup!.addresses.resources = { Stone: [2, STRK] };
-    config.setup!.addresses.lords = STRK;
+    const definition = buildNativePreset(config);
+    const stoneToken = definition.economy.withdrawals
+      .unwrap()
+      ?.tokens.find(({ resource_type }) => resource_type === ResourcesIds.Stone)?.token;
+    if (!stoneToken) throw new Error("Configured Stone token is required");
     const [next] = await provider.callContract({ contractAddress: registry, entrypoint: "next_game_id" });
     const presetId = 1000 + Number(BigInt(next));
-    const definition = buildNativePreset(config);
     await registerNativePreset(actor, presetId, buildNativePresetRegistration(config, presetId, manifestPath));
     const block = await provider.getBlock("latest");
     const params = buildNativeGameParams(config, {
@@ -104,17 +106,17 @@ test.skipIf(!fixturePath)(
     const registered = await provider.callContract({
       contractAddress: bridge,
       entrypoint: "resource_token",
-      calldata: [fixture.game, 2],
+      calldata: [fixture.game, ResourcesIds.Stone],
     });
-    expect(BigInt(registered[0])).toBe(BigInt(STRK));
+    expect(BigInt(registered[0])).toBe(BigInt(stoneToken));
     const funding = await admin.execute({
-      contractAddress: STRK,
+      contractAddress: stoneToken,
       entrypoint: "transfer",
       calldata: CallData.compile({ recipient: fixture.actor, amount: uint256.bnToUint256(10n ** 18n) }),
     });
     await waitForSuccess(admin, funding.transaction_hash);
     const approval = await actor.execute({
-      contractAddress: STRK,
+      contractAddress: stoneToken,
       entrypoint: "approve",
       calldata: CallData.compile({ spender: bridge, amount: uint256.bnToUint256(10n ** 18n) }),
     });
@@ -123,8 +125,8 @@ test.skipIf(!fixturePath)(
       kind: "DepositResource",
       value: {
         structure_id: structureId,
-        resource_type: 2,
-        amount: uint256.bnToUint256(10n ** 18n),
+        resource_type: ResourcesIds.Stone,
+        amount: 10n ** 18n,
         client_fee_recipient: "0x0",
       },
     });
@@ -135,14 +137,15 @@ test.skipIf(!fixturePath)(
           row.kind === "set" &&
           row.model.name === "ResourceArrival" &&
           (row.value.resources as { resource_type: number; amount: bigint }[]).some(
-            (resource) => Number(resource.resource_type) === 2 && BigInt(resource.amount) === 231_250_000n,
+            (resource) =>
+              Number(resource.resource_type) === ResourcesIds.Stone && BigInt(resource.amount) === 231_250_000n,
           ),
       ),
     ).toBe(true);
     const recipient = "0x777";
     const balance = async () => {
       const [low, high] = await provider.callContract({
-        contractAddress: STRK,
+        contractAddress: stoneToken,
         entrypoint: "balanceOf",
         calldata: [recipient],
       });
@@ -153,7 +156,7 @@ test.skipIf(!fixturePath)(
       kind: "WithdrawResource",
       value: {
         structure_id: structureId,
-        resource_type: 2,
+        resource_type: ResourcesIds.Stone,
         amount: 100_000_000n,
         recipient,
         client_fee_recipient: "0x0",

@@ -5,8 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { CallData, type Account } from "starknet";
 import schema from "../../../../contracts/l3/world-native/schema/schema.json";
-import { applyBlitzBalanceProfile } from "../../../source/blitz";
-import { loadEnvironmentConfiguration } from "../config/config-loader";
+import madaraAddresses from "../../../../contracts/common/addresses/madara.json";
 import { buildNativePreset } from "../config/native-preset";
 import {
   buildNativePresetRegistration,
@@ -35,18 +34,7 @@ writeFileSync(
 afterAll(() => rmSync(directory, { recursive: true }));
 
 function configuration(preset: number) {
-  const config =
-    preset === 1
-      ? loadEnvironmentConfiguration("madara.eternum")
-      : applyBlitzBalanceProfile(
-          loadEnvironmentConfiguration("madara.blitz"),
-          preset === 2 ? "official-60" : "official-90",
-        );
-  if (preset === 1) {
-    config.faith!.reward_token = "0xabc";
-    config.setup!.addresses.resources = { Stone: [2, "0xdef"] };
-    config.setup!.addresses.lords = "0xabc";
-  }
+  const config = loadNativePresetConfiguration(preset === 1 ? "madara.eternum" : "madara.blitz", preset);
   return config;
 }
 
@@ -93,6 +81,54 @@ describe("native immutable balance presets", () => {
     ]);
     expect(fast.resources.surface_mines).toEqual([{ kind: 1, weight: 1 }]);
     expect(eternum.rules.bitcoin_mine_config.owner_cut_bps).toBe(2000);
+  });
+
+  test("native balances and mine ladders come only from the selected sheet", () => {
+    const config = configuration(1);
+    config.bitcoin = { prizePerPhase: 7, minimumLabor: 123, ownerCutBps: 1500 };
+    config.mines!.kinds[1] = {
+      resourceType: 38,
+      buildingCategory: 39,
+      productionRate: 9,
+      capMinimum: 400,
+      capSteps: 3,
+    };
+    config.mines!.surfacePool = [{ kind: 1, weight: 4 }];
+    const definition = buildNativePreset(config);
+    expect(definition.rules.bitcoin_mine_config).toEqual({
+      enabled: true,
+      prize_per_phase: 7_000000000n,
+      min_labor_per_contribution: 123_000000000n,
+      owner_cut_bps: 1500,
+    });
+    expect(definition.resources.mine_kinds[0].config).toEqual({
+      resource_type: 38,
+      building_category: 39,
+      production_rate: 9_000000000n,
+      cap_min: 400_000000000n,
+      cap_steps: 3,
+    });
+    expect(definition.resources.surface_mines).toEqual([{ kind: 1, weight: 4 }]);
+  });
+
+  test("missing balances and malformed mine pools fail before registration", () => {
+    const config = configuration(1);
+    delete config.bitcoin;
+    expect(() => buildNativePreset(config)).toThrow("Bitcoin balance config");
+    config.bitcoin = configuration(1).bitcoin;
+    delete config.mines;
+    expect(() => buildNativePreset(config)).toThrow("Mine balance config");
+    config.mines = configuration(1).mines;
+    config.mines!.surfacePool = [{ kind: 99, weight: 1 }];
+    expect(() => buildNativePreset(config)).toThrow("Invalid mine pool");
+    config.mines!.surfacePool = [];
+    expect(() => buildNativePreset(config)).toThrow("requires a pool");
+  });
+
+  test("explicit balance profiles must match the selected preset", () => {
+    expect(() => loadNativePresetConfiguration("madara.blitz", 2, "official-90")).toThrow("does not match preset 2");
+    expect(() => loadNativePresetConfiguration("madara.eternum", 1, "official-60")).toThrow("does not match preset 1");
+    expect(loadNativePresetConfiguration("madara.blitz", 2, "official-60").mines!.kinds[1].productionRate).toBe(10);
   });
 
   test("large resource amounts retain bigint precision and missing balance entries fail", () => {
@@ -206,28 +242,51 @@ test("every native preset selects its declared game and balance profile", () => 
 
 test("Eternum registers its configured bridge tokens and Blitz has no bridge", () => {
   const preset = buildNativePreset(configuration(1));
-  expect(preset.economy.withdrawals.unwrap().tokens).toEqual([
-    { resource_type: 2, token: "0xdef" },
-    { resource_type: 37, token: "0xabc" },
-  ]);
+  expect(preset.economy.withdrawals.unwrap()?.tokens).toEqual(
+    [
+      ...Object.values(madaraAddresses.resources).map(([resource_type, token]) => ({
+        resource_type: Number(resource_type),
+        token: String(token),
+      })),
+      { resource_type: 37, token: madaraAddresses.lords },
+    ].sort((a, b) => Number(a.resource_type) - Number(b.resource_type)),
+  );
+  expect(preset.faith_reward_token).toBe(madaraAddresses.lords);
   expect(buildNativePreset(configuration(2)).economy.withdrawals.isNone()).toBe(true);
-  for (const mutation of [
-    (config: ReturnType<typeof configuration>) => {
-      delete config.faith;
-    },
-    (config: ReturnType<typeof configuration>) => {
-      config.faith!.reward_token = "0x0";
-    },
-    (config: ReturnType<typeof configuration>) => {
-      delete config.artificer;
-    },
-    (config: ReturnType<typeof configuration>) => {
-      config.setup!.addresses.resources = {};
-      config.setup!.addresses.lords = "0x0";
-    },
-  ]) {
+  for (const [mutation, error] of [
+    [
+      (config) => {
+        delete config.faith;
+      },
+      "Native faith config is required",
+    ],
+    [
+      (config) => {
+        config.faith!.reward_token = "0x0";
+      },
+      "reward token",
+    ],
+    [
+      (config) => {
+        delete config.artificer;
+      },
+      "Native research cost",
+    ],
+    [
+      (config) => {
+        delete (config.setup!.addresses as { resources?: unknown }).resources;
+      },
+      "Eternum bridge resource tokens",
+    ],
+    [
+      (config) => {
+        config.setup!.addresses.lords = "0x0";
+      },
+      "Missing bridge token for resource 37",
+    ],
+  ] as Array<[(config: ReturnType<typeof configuration>) => void, string]>) {
     const config = configuration(1);
     mutation(config);
-    expect(() => buildNativePreset(config)).toThrow();
+    expect(() => buildNativePreset(config)).toThrow(error);
   }
 });
