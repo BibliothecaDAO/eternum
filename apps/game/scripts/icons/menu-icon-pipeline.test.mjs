@@ -1,8 +1,10 @@
 // @vitest-environment node
-import { mkdtemp, readFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+import sharp from "sharp";
 import { describe, expect, it } from "vitest";
 
 import { buildMenuIcons } from "./build-menu-icons.mjs";
@@ -30,16 +32,23 @@ describe("menu icon pipeline", () => {
     });
   });
 
-  it("rebuilds the published menu set byte-for-byte from approved masters", async () => {
+  it("rebuilds the published menu set pixel-for-pixel from approved masters", async () => {
     const outputDirectory = await mkdtemp(join(tmpdir(), "eternum-menu-icons-"));
     const manifest = await loadMenuIconManifest();
 
     await buildMenuIcons({ inputDirectory: APPROVED_MENU_ICON_DIRECTORY, outputDirectory });
     await expect(verifyMenuIcons({ imageDirectory: outputDirectory })).resolves.toMatchObject({ count: 9 });
     for (const icon of manifest.icons) {
-      await expect(readFile(join(outputDirectory, icon.target))).resolves.toEqual(
-        await readFile(join(PUBLISHED_MENU_ICON_DIRECTORY, icon.target)),
-      );
+      const generated = await readIconPixels(join(outputDirectory, icon.target));
+      const published = await readIconPixels(join(PUBLISHED_MENU_ICON_DIRECTORY, icon.target));
+      expect(generated.info).toEqual(published.info);
+      expect(generated.sha256).toBe(published.sha256);
     }
   });
 });
+
+async function readIconPixels(path) {
+  // libvips may encode identical PNG pixels into different byte streams across platforms.
+  const { data, info } = await sharp(path).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  return { info, sha256: createHash("sha256").update(data).digest("hex") };
+}
