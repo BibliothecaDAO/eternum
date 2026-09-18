@@ -8,7 +8,6 @@
   "scripts": {
     "start": "pnpm run start:amm-indexer",
     "start:amm-indexer": "pnpm --dir ./apps/amm-indexer start",
-    "start:operator": "pnpm --dir ./apps/operator start",
     "build": "pnpm --dir ./apps/game build",
     "build:docs": "pnpm --dir ./apps/game-docs build",
     "build:packages": "pnpm --dir ./packages/chain build && pnpm --dir ./packages/notifications build && pnpm --dir ./packages/identity build && pnpm --dir ./packages/types build && pnpm --dir ./packages/ammv2-sdk build && pnpm --dir ./packages/provider build && pnpm --dir ./packages/core build && pnpm --dir ./packages/react build",
@@ -17,11 +16,7 @@
     "dev:webgpu": "pnpm --dir ./apps/game dev:webgpu",
     "dev:docs": "pnpm --dir ./apps/game-docs dev",
     "preview": "pnpm --dir ./apps/game preview",
-    "game:migrate:madara": "deploy/madara-lab/scripts/deploy-world.sh",
-    "config:deploy:madara:blitz": "pnpm run build:packages && deploy/madara-lab/scripts/bootstrap-game.sh",
     "config:sync:madara:blitz": "pnpm --dir ./config run sync:madara:blitz",
-    "prefactory:deploy:madara:blitz": "pnpm run game:migrate:madara && pnpm run manifest:copy-abis:madara && pnpm run config:sync:madara:blitz",
-    "contract:start:madara": "docker compose -f deploy/madara-lab/docker-compose.yml up -d --wait madara caddy && pnpm run game:migrate:madara && pnpm run config:deploy:madara:blitz",
     "config:sync:appchain": "pnpm --dir ./config run sync:appchain",
     "config:sync:appchain:blitz": "pnpm --dir ./config run sync:appchain:blitz",
     "config:sync:appchain:eternum": "pnpm --dir ./config run sync:appchain:eternum",
@@ -93,7 +88,6 @@
     "lab:probe-account": "bun deploy/madara-lab/scripts/probe-deploy-account.ts",
     "lab:probe-ws": "node deploy/madara-lab/scripts/probe-ws-subscriber.mjs",
     "lab:probe-herald": "node deploy/madara-lab/scripts/probe-herald-client.mjs",
-    "lab:probe-bounds": "bun deploy/madara-lab/scripts/probe-resource-bounds.ts",
     "lab:probe-sandbox-proxy": "bun deploy/madara-lab/scripts/probe-sandbox-proxy.ts",
     "summary:weekly": "node scripts/generate-weekly-summary.js",
     "summary:monthly": "DAYS_TO_ANALYZE=30 OUTPUT_PATH=monthly-summary.md node scripts/generate-weekly-summary.js",
@@ -101,11 +95,7 @@
     "images:analyze": "node scripts/analyze-images.js",
     "images:compress": "node scripts/compress-images-with-sharp.js",
     "images:compress:dry-run": "node scripts/compress-images-with-sharp.js --dry-run",
-    "images:compress:webp": "node scripts/compress-images-with-sharp.js --webp",
-    "manifest:copy-abis": "node scripts/copy-abis.mjs",
-    "manifest:copy-abis:madara": "node scripts/copy-abis.mjs madara",
-    "manifest:copy-abis:appchain:blitz": "node scripts/copy-abis.mjs appchain-blitz",
-    "manifest:copy-abis:appchain:eternum": "node scripts/copy-abis.mjs appchain-eternum"
+    "images:compress:webp": "node scripts/compress-images-with-sharp.js --webp"
   },
   "dependencies": {
     "@bibliothecadao/provider": "workspace:*",
