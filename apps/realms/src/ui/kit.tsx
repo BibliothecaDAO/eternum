@@ -98,6 +98,8 @@ export function describeError(error: unknown): string {
   switch (tag) {
     case "ValuePlaneNotDeployed":
       return "The mainnet ledger is not deployed yet — value facts return once it lands.";
+    case "LaunchUnavailable":
+      return "Registration is unavailable. Refresh the slot list and try again.";
     case "HeraldUnreachable":
       return "Herald is unreachable, so live game facts are paused. Retrying.";
     case "IdentityUnreachable":
