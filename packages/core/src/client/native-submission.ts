@@ -22,6 +22,7 @@ export function nativeSubmission(
   prepareNonce?: (actor: string) => Promise<void>,
 ): NativeSubmission {
   const codec = new CallData(input.bindings.commandAbi);
+  const readNonce = createNonceReader(store, gameId, prepareNonce);
   return async (actor, calls) => {
     const batch = Array.isArray(calls) ? calls : [calls];
     if (batch.length !== 1) throw new Error("Native execution accepts one command per action");
@@ -35,15 +36,14 @@ export function nativeSubmission(
     );
     if (!commands || commands.variants[Number(arguments_[0])]?.name !== call.entrypoint)
       throw new Error("Native command discriminant mismatch");
-    if (!store.get("ActionNonce", { game_id: gameId, actor: BigInt(actor.address) }))
-      await prepareNonce?.(actor.address);
+    const nonce = await readNonce(actor.address);
     const timestamp = Math.floor(Date.now() / 1_000);
     const encoded = frameNativeIntent({
       chain: input.chainId,
       deployment: season,
       gameId,
       actor: actor.address,
-      nonce: nextNonce(store, gameId, actor.address),
+      nonce,
       rules: nativeTaggedHash(
         "ETERNUM_RULES",
         codec.compile("rules_commitment", { rules: store.require("SliceRules", { game_id: gameId }) }),
@@ -65,4 +65,28 @@ export function nativeSubmission(
 
 function nextNonce(store: NativeFactStore, gameId: number, actor: string): bigint {
   return store.require("ActionNonce", { game_id: gameId, actor: BigInt(actor) }).next_nonce;
+}
+
+/** Only missing actor snapshots share a transport; signing and submission remain concurrent. */
+function createNonceReader(
+  store: NativeFactStore,
+  gameId: number,
+  prepareNonce?: (actor: string) => Promise<void>,
+): (actor: string) => bigint | Promise<bigint> {
+  let pendingSnapshot = Promise.resolve();
+  return (actor) => {
+    const known = store.get("ActionNonce", { game_id: gameId, actor: BigInt(actor) });
+    if (known) return known.next_nonce;
+    const nonce = pendingSnapshot.then(async () => {
+      if (!store.get("ActionNonce", { game_id: gameId, actor: BigInt(actor) })) await prepareNonce?.(actor);
+      // Capture the intent's nonce before another actor can replace this snapshot.
+      return nextNonce(store, gameId, actor);
+    });
+    // A failed snapshot rejects its caller without blocking other players.
+    pendingSnapshot = nonce.then(
+      () => {},
+      () => {},
+    );
+    return nonce;
+  };
 }

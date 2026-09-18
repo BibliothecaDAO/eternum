@@ -105,7 +105,7 @@ export function parseHarnessArgs(args: string[]): HarnessCliOptions {
   const bots = positiveInteger(values.bots ?? "96", "bots");
   const minutes = positiveNumber(values.minutes ?? "10", "minutes");
   const intervalSeconds = positiveNumber(values["interval-seconds"] ?? "15", "interval-seconds");
-  const setupConcurrency = positiveInteger(values["setup-concurrency"] ?? "1", "setup-concurrency");
+  const setupConcurrency = positiveInteger(values["setup-concurrency"] ?? "6", "setup-concurrency");
   const gameId = values["game-id"] === undefined ? undefined : positiveInteger(values["game-id"], "game-id");
   const ledger = values.ledger === "true";
   const workload = values.workload ?? (values["game-type"] === "eternum" ? "cadence" : "build-order");
@@ -607,7 +607,7 @@ Usage: bun deploy/madara-lab/harness/run.ts [options]
   --game-type <blitz|eternum>     default: blitz
   --minutes <minutes>            default: 10
   --interval-seconds <seconds>   default: 15
-  --setup-concurrency <count>    default: 1 (initial actor snapshots are serialized)
+  --setup-concurrency <count>    default: 6
   --workload <build-order|cadence> default: build-order for Blitz, cadence for Eternum
   --game-id <id>                 use an existing game instead of creating one
   --game-name <name>             name for a new game or report label for --game-id
