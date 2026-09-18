@@ -32,7 +32,7 @@ madara_cpu=null; madara_mem_mib=null; image=null; native=null; native_classes=nu
 if docker inspect "$CONTAINER" >/dev/null 2>&1; then
   read -r madara_cpu madara_mem_bytes < <(docker stats --no-stream --format '{{.CPUPerc}} {{.MemUsage}}' "$CONTAINER" \
     | awk '{gsub(/%/,"",$1); print $1, $2}')
-  madara_mem_mib=$(docker stats --no-stream --format '{{.MemUsage}}' "$CONTAINER" | awk '{print $1}' | sed 's/[A-Za-z]*//g')
+  madara_mem_mib=$(numfmt --from=iec-i --suffix=B "$madara_mem_bytes" | awk '{printf "%.3f", $1 / 1048576}')
   image=$(docker inspect "$CONTAINER" --format '{{index .Config.Image}}')
   native=$(docker inspect "$CONTAINER" --format '{{range .Args}}{{println .}}{{end}}' \
     | sed -n 's/^--enable-native-execution=//p' | head -1)
