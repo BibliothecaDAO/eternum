@@ -4,18 +4,8 @@
 import json
 from pathlib import Path
 import shutil
-import subprocess
 import sys
-import tarfile
-from build_tools import digest, read, run
-
-
-def prepare_source(repository, revision, source):
-    with subprocess.Popen(['git', 'archive', revision], cwd=repository, stdout=subprocess.PIPE) as archive:
-        with tarfile.open(fileobj=archive.stdout, mode='r|') as bundle:
-            bundle.extractall(source, filter='data')
-        if archive.wait() != 0:
-            raise SystemExit('could not archive the selected source revision')
+from build_tools import digest, prepare_source, read, run
 
 
 def build_workspace(source, output):
