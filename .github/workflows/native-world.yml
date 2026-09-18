@@ -5,6 +5,7 @@ on:
   push:
     branches: [next]
     paths:
+      - "contracts/l3/test-native.sh"
       - "contracts/l3/world-native/**"
       - "contracts/l3/randomness-protocol/**"
       - "apps/herald/src/model-registry.ts"
@@ -70,11 +71,7 @@ jobs:
             "$RUNNER_TEMP/recorded-entrypoint.json"
       - name: Test all native rules and recorded execution
         working-directory: contracts/l3/world-native
-        run: |
-          set -euo pipefail
-          for partition in {1..8}; do
-            /usr/bin/time -v snforge test --max-threads 1 --partition "$partition/8"
-          done
+        run: /usr/bin/time -v scarb test
       - name: Reject schema drift
         run: bun contracts/l3/world-native/scripts/generate-schema.mjs --check
 
@@ -95,7 +92,7 @@ jobs:
         run: |
           scarb fmt --check
           scarb build
-          /usr/bin/time -v snforge test --max-threads 1
+          /usr/bin/time -v scarb test
 
   native-deployer:
     runs-on: ubuntu-latest

@@ -21,7 +21,7 @@ casm = true
 build-external-contracts = ["eternum_randomness_protocol::authority::SequencingAccount"]
 
 [scripts]
-test = "snforge test"
+test = "bash ../test-native.sh"
 schema = "scarb build && bun scripts/generate-schema.mjs"
 
 [tool.fmt]
