@@ -52,6 +52,7 @@ fn prepare_with_resources(grant_override: Option<Span<world_native::resources::R
     season
 }
 
+#[feature("safe_dispatcher")]
 fn prepare_without_entitlement(
     grant_override: Option<Span<world_native::resources::ResourceAmount>>,
 ) -> ContractAddress {
@@ -103,7 +104,9 @@ fn prepare_without_entitlement(
 
     stop_cheat_caller_address(peers.resources);
     stop_cheat_caller_address(peers.structures);
-    execute(season, Command::ReserveHyperstructures(255), 1005);
+    start_cheat_caller_address(peers.map, peers.registry);
+    IBlitzReservationsSafeDispatcher { contract_address: peers.map }.initialize_reservations(8).unwrap();
+    stop_cheat_caller_address(peers.map);
     season
 }
 
@@ -177,7 +180,7 @@ fn accepted_settlement_keeps_recorded_cosmetics_and_time_after_game_end() {
         let (action, envelope) = accepted(season, command(123.try_into().unwrap()), 1005);
         start_cheat_block_timestamp_global(*clock);
         submit(season, action, envelope);
-        let result = IRecordedExecutionViewsDispatcher { contract_address: season }.recorded_outcome(2).unwrap();
+        let result = IRecordedExecutionViewsDispatcher { contract_address: season }.recorded_outcome(1).unwrap();
         assert!(result.status == 1, "accepted settlement failed");
         let views = ISettlementViewsDispatcher {
             contract_address: IDomainDispatcher { contract_address: season }.domain_state().peers.settlement,
@@ -214,7 +217,7 @@ fn settlement_uses_the_bound_wallet_and_cannot_spend_another_owners_entitlement(
     execute(season, command(123.try_into().unwrap()), 1005);
     let views = ISettlementViewsDispatcher { contract_address: peers.settlement };
     let results = IRecordedExecutionViewsDispatcher { contract_address: season };
-    assert!(results.recorded_outcome(2).unwrap().status == 2, "another wallet's entitlement authorized entry");
+    assert!(results.recorded_outcome(1).unwrap().status == 2, "another wallet's entitlement authorized entry");
     assert!(views.player_entry(victim).is_none(), "victim entry consumed");
     assert!(views.settlement_progress(8).registered == 0, "rejected entry allocated realms");
     let own = EntryKey { game_id: 8, owner: 123.try_into().unwrap() };
@@ -222,7 +225,7 @@ fn settlement_uses_the_bound_wallet_and_cannot_spend_another_owners_entitlement(
     ledger.register_entitlement(own, entitlement);
     stop_cheat_caller_address(peers.settlement);
     execute(season, command(123.try_into().unwrap()), 1005);
-    assert!(results.recorded_outcome(3).unwrap().status == 1, "bound wallet could not enter");
+    assert!(results.recorded_outcome(2).unwrap().status == 1, "bound wallet could not enter");
     assert!(views.player_entry(own).unwrap().player == 456.try_into().unwrap());
     assert!(views.player_entry(victim).is_none(), "bound entry changed another wallet");
 }
@@ -238,7 +241,7 @@ fn cosmetic_snapshot_identity_is_bound_to_the_signed_command() {
     assert!(command_commitment(command(123.try_into().unwrap())) != command_commitment(altered));
     assert!(command_commitment(altered) != command_commitment(altered_height));
     execute(season, Command::SettleBlitz(SettleBlitz { cosmetics_block_hash: 0, ..original }), 1005);
-    assert!(IRecordedExecutionViewsDispatcher { contract_address: season }.recorded_outcome(2).unwrap().status == 2);
+    assert!(IRecordedExecutionViewsDispatcher { contract_address: season }.recorded_outcome(1).unwrap().status == 2);
     assert!(
         ISettlementViewsDispatcher {
             contract_address: IDomainDispatcher { contract_address: season }.domain_state().peers.settlement,
@@ -263,18 +266,18 @@ fn rejected_settlement_rolls_back_entry_and_leaves_later_ticket_executable() {
     );
     execute(season, invalid, 1005);
     let results = IRecordedExecutionViewsDispatcher { contract_address: season };
-    assert!(results.recorded_outcome(2).unwrap().status == 2);
+    assert!(results.recorded_outcome(1).unwrap().status == 2);
     let views = ISettlementViewsDispatcher {
         contract_address: IDomainDispatcher { contract_address: season }.domain_state().peers.settlement,
     };
     assert!(views.player_entry(EntryKey { game_id: 8, owner: 123.try_into().unwrap() }).is_none());
     assert!(views.settlement_progress(8).registered == 0);
     execute(season, command(123.try_into().unwrap()), 1005);
-    assert!(results.recorded_outcome(3).unwrap().status == 1);
+    assert!(results.recorded_outcome(2).unwrap().status == 1);
     execute(season, command(123.try_into().unwrap()), 1005);
-    assert!(results.recorded_outcome(4).unwrap().status == 2);
+    assert!(results.recorded_outcome(3).unwrap().status == 2);
     assert!(views.settlement_progress(8).registered == 1);
-    assert!(ISeasonDispatcher { contract_address: season }.next_nonce(8, 456.try_into().unwrap()) == 4);
+    assert!(ISeasonDispatcher { contract_address: season }.next_nonce(8, 456.try_into().unwrap()) == 3);
 }
 
 #[test]
@@ -313,7 +316,7 @@ fn delayed_provisioning_starts_labor_once_without_regranting_starting_troops() {
     start_cheat_block_timestamp_global(100000);
     submit(season, action, envelope);
     let results = IRecordedExecutionViewsDispatcher { contract_address: season };
-    assert!(results.recorded_outcome(3).unwrap().status == 1, "recorded provisioning rejected after outage");
+    assert!(results.recorded_outcome(2).unwrap().status == 1, "recorded provisioning rejected after outage");
     assert!(guards.guard(guard_key) == before_guard);
     assert!(resource_store.resource_balance(slot) == troop_balance);
     let labor = world_native::resources::ResourceSlot { resource_type: 23, ..slot };
@@ -321,7 +324,7 @@ fn delayed_provisioning_starts_labor_once_without_regranting_starting_troops() {
     assert!(production.building_count == 1);
     assert!(production.production_rate > 0);
     execute(season, Command::ProvisionRealm(1), 1201);
-    assert!(results.recorded_outcome(4).unwrap().status == 2);
+    assert!(results.recorded_outcome(3).unwrap().status == 2);
     assert!(resource_store.resource_production(labor) == production);
     assert!(resource_store.resource_balance(slot) == troop_balance);
 }
@@ -345,7 +348,7 @@ fn provisioning_accepts_stone_and_rejects_lords_without_partial_grants() {
         let balance = resource_store.resource_balance(slot);
         start_cheat_block_timestamp_global(1300);
         execute(season, Command::ProvisionRealm(1), 1201);
-        let result = IRecordedExecutionViewsDispatcher { contract_address: season }.recorded_outcome(3).unwrap();
+        let result = IRecordedExecutionViewsDispatcher { contract_address: season }.recorded_outcome(2).unwrap();
         if *resource_type == world_native::resources::LORDS {
             assert!(result.status == 2, "LORDS grant accepted");
             assert!(resource_store.resource_balance(slot) == balance);
@@ -379,7 +382,7 @@ fn reserved_hyperstructure_uses_recorded_time_after_an_outage() {
         start_cheat_block_timestamp_global(*clock);
         submit(season, action, envelope);
         let results = IRecordedExecutionViewsDispatcher { contract_address: season };
-        assert!(results.recorded_outcome(2).unwrap().status == 1, "recorded materialization failed");
+        assert!(results.recorded_outcome(1).unwrap().status == 1, "recorded materialization failed");
         let peers = IDomainDispatcher { contract_address: season }.domain_state().peers;
         let structures = IStructuresDispatcher { contract_address: peers.structures };
         let key = ResourceKey { game_id: 8, entity_id: 1 };
@@ -394,7 +397,7 @@ fn reserved_hyperstructure_uses_recorded_time_after_an_outage() {
             assert!(immediate == facts, "materialization changed after delay");
         }
         execute(season, Command::CreateReservedHyperstructure(coord), 1201);
-        assert!(results.recorded_outcome(3).unwrap().status == 2);
+        assert!(results.recorded_outcome(2).unwrap().status == 2);
         assert!(IHyperstructuresDispatcher { contract_address: peers.economy }.hyperstructure(key).unwrap() == hyper);
     }
 }
@@ -514,7 +517,7 @@ fn provision_and_upgrade_is_one_atomic_recorded_action() {
         let production_before = resources.resource_production(labor);
         start_cheat_block_timestamp_global(100000);
         execute(season, Command::ProvisionAndUpgradeRealm(1), 1201);
-        let result = IRecordedExecutionViewsDispatcher { contract_address: season }.recorded_outcome(3).unwrap();
+        let result = IRecordedExecutionViewsDispatcher { contract_address: season }.recorded_outcome(2).unwrap();
         if *cost == 100 {
             assert!(result.status == 1);
             assert!(structures.structure(key).unwrap().base.level == 1);
@@ -526,6 +529,6 @@ fn provision_and_upgrade_is_one_atomic_recorded_action() {
             assert!(resources.resource_balance(stone) == stone_before);
             assert!(resources.resource_production(labor) == production_before);
         }
-        assert!(ISeasonDispatcher { contract_address: season }.next_nonce(8, 456.try_into().unwrap()) == 3);
+        assert!(ISeasonDispatcher { contract_address: season }.next_nonce(8, 456.try_into().unwrap()) == 2);
     }
 }

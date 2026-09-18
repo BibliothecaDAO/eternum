@@ -14,7 +14,6 @@ const administrativeCommands = new Set<NativeCommand["kind"]>([
   "SetFaithBlacklist",
   "CreateBanks",
   "MarkGameSettled",
-  "ReserveHyperstructures",
   "RankPlayers",
   "ResetRanking",
   "AllocateGameChests",

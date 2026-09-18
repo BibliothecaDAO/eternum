@@ -35,30 +35,26 @@ export const BANDITS_NAME = "The Vanguard";
 // Short-string felt used by set_mercenaries_name_config onchain.
 export const MERCENARIES_NAME_FELT = encodeAsciiFelt(BANDITS_NAME);
 
-/**
- * Guard slot IDs - consistent with Cairo contract GuardSlot enum
- * Guards are attacked in order: Alpha (0) -> Bravo (1) -> Charlie (2) -> Delta (3)
- */
+// Native guard IDs; each structure unlocks a contiguous prefix.
 export enum GuardSlot {
-  Alpha,
-  Bravo,
-  Charlie,
-  Delta,
+  Delta = 0,
+  Gamma = 1,
+  Beta = 2,
+  Alpha = 3,
 }
+
+export const GUARD_SLOT_ORDER: GuardSlot[] = [GuardSlot.Delta, GuardSlot.Gamma, GuardSlot.Beta, GuardSlot.Alpha];
 
 export const DISPLAYED_SLOT_NUMBER_MAP: Record<GuardSlot, number> = {
   [GuardSlot.Delta]: 1,
-  [GuardSlot.Charlie]: 2,
-  [GuardSlot.Bravo]: 3,
+  [GuardSlot.Gamma]: 2,
+  [GuardSlot.Beta]: 3,
   [GuardSlot.Alpha]: 4,
 };
 
-/**
- * Guard slot names mapped to their IDs
- */
 export const GUARD_SLOT_NAMES: Record<GuardSlot, string> = {
   [GuardSlot.Delta]: "Inner Wall",
-  [GuardSlot.Charlie]: "Castle Wall",
-  [GuardSlot.Bravo]: "Outer Wall",
+  [GuardSlot.Gamma]: "Castle Wall",
+  [GuardSlot.Beta]: "Outer Wall",
   [GuardSlot.Alpha]: "Watchtower",
 };

@@ -781,7 +781,7 @@ pub mod TroopsDomain {
                             category,
                             tier,
                             amount: command.amount,
-                            spawn_direction: command.direction,
+                            spawn_direction: command.direction.try_into().expect('invalid direction'),
                         },
                     ),
                     context.timestamp,

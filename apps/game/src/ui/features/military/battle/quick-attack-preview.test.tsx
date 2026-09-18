@@ -174,10 +174,11 @@ vi.mock("@bibliothecadao/types", () => ({
   },
   getLayeredAttackDistance: () => mocks.targetDistance,
   getTroopAttackRange: () => 1,
+  GUARD_SLOT_ORDER: [0, 1, 2, 3],
   GuardSlot: {
     Delta: 0,
-    Charlie: 1,
-    Bravo: 2,
+    Gamma: 1,
+    Beta: 2,
     Alpha: 3,
   },
   StructureType: {

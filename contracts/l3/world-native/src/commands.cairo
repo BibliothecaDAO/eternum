@@ -44,7 +44,6 @@ pub enum Command {
     TransferStructureOwnership: crate::ownership::TransferOwnership,
     SetAddressName: crate::names::SetAddressName,
     LevelUp: u32,
-    ReserveHyperstructures: u8,
     SettleBlitz: crate::settlement::SettleBlitz,
     ProvisionRealm: u32,
     CreateReservedHyperstructure: crate::troops::Coord,
@@ -155,6 +154,8 @@ pub fn decode_command(arguments: Span<felt252>, commitment: felt252) -> Result<C
 fn command_items(command: Command) -> u32 {
     match command {
         Command::Move(value) => value.directions.len(),
+        Command::Battle(value) => value.steal_resources.len(),
+        Command::Raid(value) => value.steal_resources.len(),
         Command::SettleBlitz(value) => value.cosmetics.len(),
         Command::ApproveResources(value) => value.resources.len(),
         Command::BurnStructureResources(value) => value.resources.len(),

@@ -1,7 +1,9 @@
+import { resolve } from "node:path";
+import bindings from "../../contracts/l3/world-native/schema/bindings.json";
 import { expect, test } from "bun:test";
 import { hash, shortString, type RpcProvider } from "starknet";
-import { frameNativeIntent } from "../../packages/provider/src/native-command";
-import { recoveryProgress, type NativeFixture } from "./native-intent";
+import { encodeNativeCommand, frameNativeIntent, type NativeCommand } from "../../packages/provider/src/native-command";
+import { commandArguments, recoveryProgress, type NativeFixture } from "./native-intent";
 
 const encode = (fields: (string | number | bigint)[]) =>
   fields.map((value) => BigInt(value).toString(16).padStart(64, "0")).join("");
@@ -120,4 +122,17 @@ test("recovery rejects a mismatched receipt or binding", async () => {
       { ...ticket, binding: encode([123]) },
     ),
   ).rejects.toThrow();
+});
+
+test("fixture commands use the shared compiled ABI encoder, including nested options", () => {
+  const native = { ...fixture, nativeSource: resolve(import.meta.dir, "../..") };
+  const commands: NativeCommand[] = [
+    { kind: "Explore", value: { explorer_id: 17, direction: 2 } },
+    { kind: "SettleSeason", value: { name: "0x123", selected_realm: { kind: "Some", value: 7 } } },
+    { kind: "CloseSeason", value: undefined },
+  ];
+  for (const command of commands) {
+    expect(commandArguments(native, command)).toEqual(encodeNativeCommand(bindings.commandAbi, command));
+  }
+  expect(() => commandArguments(native, { kind: "Explore", value: { explorer_id: 17 } } as NativeCommand)).toThrow("Fields do not match");
 });

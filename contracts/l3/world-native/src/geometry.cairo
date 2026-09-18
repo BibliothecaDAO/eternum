@@ -1,6 +1,30 @@
 use crate::map::TileKey;
 use crate::troops::Coord;
 
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub enum Direction {
+    East,
+    NorthEast,
+    NorthWest,
+    West,
+    SouthWest,
+    SouthEast,
+}
+
+pub impl DirectionTryInto of TryInto<u8, Direction> {
+    fn try_into(self: u8) -> Option<Direction> {
+        match self {
+            0 => Some(Direction::East),
+            1 => Some(Direction::NorthEast),
+            2 => Some(Direction::NorthWest),
+            3 => Some(Direction::West),
+            4 => Some(Direction::SouthWest),
+            5 => Some(Direction::SouthEast),
+            _ => None,
+        }
+    }
+}
+
 pub fn tile_key(game_id: u32, coord: Coord) -> TileKey {
     TileKey { game_id, alt: coord.alt, col: coord.x, row: coord.y }
 }

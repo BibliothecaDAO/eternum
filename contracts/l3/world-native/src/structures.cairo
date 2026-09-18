@@ -923,7 +923,6 @@ pub mod StructuresDomain {
             let record = self.structures.record(key);
             let owner = self.structures.record(ResourceKey { game_id: key.game_id, entity_id: capturing_home }).owner;
             assert!(owner != 0.try_into().unwrap(), "capturing home is unowned");
-            self.change_owner(key, owner, timestamp);
             if record.base.category == 8 {
                 crate::bitcoin::IBitcoinFundingDispatcherTrait::bitcoin_mine_captured(
                     crate::bitcoin::IBitcoinFundingDispatcher {
@@ -933,6 +932,7 @@ pub mod StructuresDomain {
                     timestamp,
                 );
             }
+            self.change_owner(key, owner, timestamp);
             let points = if record.owner == 0.try_into().unwrap() {
                 self.game_dispatcher().register_capture(key.game_id, owner, record.base.category)
             } else {
@@ -1196,8 +1196,8 @@ pub mod StructuresDomain {
                                 crate::ownership::GuardAddStory {
                                     structure_id: key.entity_id,
                                     slot: 0,
-                                    category: category.into(),
-                                    tier: 0,
+                                    category,
+                                    tier: crate::troops::TroopTier::T1,
                                     amount: guards,
                                 },
                             ),

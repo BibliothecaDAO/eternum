@@ -280,18 +280,14 @@ fn a_share_change_past_the_attempt_cutoff_is_not_checkpointed_backwards() {
 }
 
 #[test]
-fn another_player_can_finish_an_attempt_and_is_checked_for_the_win() {
+fn another_player_can_finish_an_attempt_without_changing_its_initiator() {
     let (d, _) = nine_completed_hyperstructures();
     let other = super::bind_authority(d);
     configure(d, 1);
     assert!(execute(d, Command::CloseSeason, 100));
     assert!(execute(other, Command::CloseSeason, 110));
-    assert_eq!(games(d).game(3).end_at, 200);
+    assert_eq!(games(d).game(3).end_at, 110);
     assert_eq!(games(d).player_points(3, other.actor), 0);
-    // The unsuccessful attempt ended: this call starts a new cutoff at 120.
-    assert!(execute(d, Command::CloseSeason, 120));
-    assert!(execute(d, Command::CloseSeason, 130));
-    assert_eq!(games(d).game(3).end_at, 130);
 }
 
 #[test]
@@ -349,4 +345,18 @@ fn checkpoint_member_event_uses_the_declared_short_string_identity() {
         }
     }
     assert!(found);
+}
+
+#[test]
+fn a_winning_final_submitter_cannot_replace_an_ineligible_close_initiator() {
+    let (d, _) = nine_completed_hyperstructures();
+    let other = super::bind_authority(d);
+    configure(d, 1);
+    assert!(execute(other, Command::CloseSeason, 100));
+    assert!(execute(d, Command::CloseSeason, 110));
+    assert_eq!(games(d).game(3).end_at, 200);
+    assert_eq!(games(d).player_points(3, other.actor), 0);
+    assert!(execute(d, Command::CloseSeason, 120));
+    assert!(execute(other, Command::CloseSeason, 130));
+    assert_eq!(games(d).game(3).end_at, 130);
 }

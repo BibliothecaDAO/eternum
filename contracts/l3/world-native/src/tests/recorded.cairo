@@ -280,3 +280,61 @@ fn command_item_bound_counts_items_not_their_serialized_fields() {
     command.serialize(ref fields);
     assert!(crate::commands::decode_command(fields.span(), command_commitment(command)).is_err());
 }
+
+#[test]
+fn nested_loot_lists_obey_the_shared_command_limit() {
+    let mut loot = array![];
+    for resource_type in 1_u8..66 {
+        loot.append(crate::resources::ResourceAmount { resource_type, amount: 1 });
+        if resource_type < 64 {
+            continue;
+        }
+        let battle = Command::Battle(
+            crate::combat_actions::AttackExplorer { attacker_id: 1, defender_id: 2, steal_resources: loot.span() },
+        );
+        let raid = Command::Raid(
+            crate::combat_actions::Raid { explorer_id: 1, structure_id: 2, steal_resources: loot.span() },
+        );
+        for command in array![battle, raid] {
+            let mut arguments = array![];
+            command.serialize(ref arguments);
+            let decoded = crate::commands::decode_command(arguments.span(), command_commitment(command));
+            if resource_type == 64 {
+                assert_eq!(decoded.unwrap(), command);
+            } else {
+                assert_eq!(decoded.unwrap_err(), array!['command items limit']);
+            }
+        }
+    }
+}
+
+#[test]
+fn oversized_battle_loot_is_terminal_before_gameplay_and_next_ticket_executes() {
+    assert_oversized_loot_terminal(false);
+}
+
+#[test]
+fn oversized_raid_loot_is_terminal_before_gameplay_and_next_ticket_executes() {
+    assert_oversized_loot_terminal(true);
+}
+
+fn assert_oversized_loot_terminal(raid: bool) {
+    let mut loot = array![];
+    for resource_type in 1_u8..66 {
+        loot.append(crate::resources::ResourceAmount { resource_type, amount: 1 });
+    }
+    let command = if raid {
+        Command::Raid(crate::combat_actions::Raid { explorer_id: 1, structure_id: 2, steal_resources: loot.span() })
+    } else {
+        Command::Battle(
+            crate::combat_actions::AttackExplorer { attacker_id: 1, defender_id: 2, steal_resources: loot.span() },
+        )
+    };
+    let d = super::setup(true);
+    super::execute(d, FixtureAction { command, ..super::intent(d, 1) });
+    let view = IRecordedExecutionViewsDispatcher { contract_address: d.peers.season };
+    assert_eq!(view.recorded_outcome(1).unwrap().reason, 'INVALID_COMMAND');
+    assert_eq!(IFixtureDispatcher { contract_address: d.peers.troops }.received_root(), 0);
+    super::execute(d, FixtureAction { nonce: 1, ..super::intent(d, 1) });
+    assert_eq!(view.recorded_outcome(2).unwrap().status, 1);
+}

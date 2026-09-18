@@ -106,8 +106,23 @@ pub mod PrizesDomain {
         }
         fn bitcoin_mine_captured(ref self: ContractState, key: ResourceKey, timestamp: u64) {
             assert!(get_caller_address() == self.lifecycle.require_active().structures, "only structures domain");
-            let interval = self.games().rules(key.game_id).tick_config.bitcoin_phase_in_seconds;
-            self.bitcoin.capture_mine(key, timestamp / interval + 1);
+            let rules = self.games().rules(key.game_id);
+            let mine = IStructuresDispatcher { contract_address: self.lifecycle.require_active().structures }
+                .structure(key)
+                .expect('missing Bitcoin mine');
+            let prize = if mine.owner == 0.try_into().unwrap() {
+                0
+            } else {
+                rules.bitcoin_mine_config.prize_per_phase
+            };
+            let interval = rules.tick_config.bitcoin_phase_in_seconds;
+            let phase = timestamp / interval;
+            let closed_before = if timestamp % interval == interval - 1 {
+                phase + 1
+            } else {
+                phase
+            };
+            self.bitcoin.capture_mine(key, phase + 1, closed_before, prize);
         }
     }
     #[abi(embed_v0)]

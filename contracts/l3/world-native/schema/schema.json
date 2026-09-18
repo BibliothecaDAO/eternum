@@ -1195,30 +1195,6 @@
         },
         {
           "type": "function",
-          "name": "reserve_hyperstructures",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "actor",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "count",
-              "type": "core::integer::u8"
-            },
-            {
-              "name": "context",
-              "type": "world_native::commands::ExecutionContext"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
           "name": "release_hyperstructure",
           "inputs": [
             {
@@ -14418,10 +14394,6 @@
           "type": "core::integer::u32"
         },
         {
-          "name": "ReserveHyperstructures",
-          "type": "core::integer::u8"
-        },
-        {
           "name": "SettleBlitz",
           "type": "world_native::settlement::SettleBlitz"
         },
@@ -15189,6 +15161,36 @@
         },
         {
           "name": "Hyperstructure",
+          "type": "()"
+        }
+      ]
+    },
+    "world_native::geometry::Direction": {
+      "type": "enum",
+      "name": "world_native::geometry::Direction",
+      "variants": [
+        {
+          "name": "East",
+          "type": "()"
+        },
+        {
+          "name": "NorthEast",
+          "type": "()"
+        },
+        {
+          "name": "NorthWest",
+          "type": "()"
+        },
+        {
+          "name": "West",
+          "type": "()"
+        },
+        {
+          "name": "SouthWest",
+          "type": "()"
+        },
+        {
+          "name": "SouthEast",
           "type": "()"
         }
       ]
@@ -16031,11 +16033,11 @@
         },
         {
           "name": "category",
-          "type": "core::integer::u8"
+          "type": "world_native::troops::TroopType"
         },
         {
           "name": "tier",
-          "type": "core::integer::u8"
+          "type": "world_native::troops::TroopTier"
         },
         {
           "name": "amount",
@@ -18215,7 +18217,7 @@
         },
         {
           "name": "spawn_direction",
-          "type": "core::integer::u8"
+          "type": "world_native::geometry::Direction"
         }
       ]
     },
@@ -18656,5 +18658,5 @@
       ]
     }
   },
-  "identity": "b87199a38b170f17d01ec3e227e6fa67fa131d96e03374d254ea57cc3ec6d810"
+  "identity": "e75211e4b947beacb96424336cddec780629d90860927e4933495f46e8749fe3"
 }

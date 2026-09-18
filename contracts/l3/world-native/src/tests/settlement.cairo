@@ -10,7 +10,7 @@ use crate::settlement::{
     ISettlementPoolSafeDispatcher, ISettlementPoolSafeDispatcherTrait, ISettlementViewsDispatcher,
     ISettlementViewsDispatcherTrait, SettleBlitz, SettlementMode, SettlementRules,
 };
-use super::{Deployment, authority, context, execute, intent, recorded, setup, submitter};
+use super::{Deployment, authority, context, recorded, setup};
 
 pub fn grants() -> crate::settlement::RealmGrants {
     let data = read_txt(@FileTrait::new("tests/fixtures/settlement.txt"));
@@ -88,7 +88,7 @@ fn settlement_pool_claim_requires_season_and_keeps_games_separate() {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn reservations_use_recorded_actions_and_stop_at_completion() {
+fn only_game_creation_initializes_reservations_and_repeated_initialization_is_idempotent() {
     let deployment = setup(true);
     let games = IGameDispatcher { contract_address: deployment.peers.season };
     let mut game_rules = recorded::rules();
@@ -100,15 +100,13 @@ fn reservations_use_recorded_actions_and_stop_at_completion() {
     let map = deployment.peers.map;
     let safe = IBlitzReservationsSafeDispatcher { contract_address: map };
     start_cheat_caller_address(map, deployment.actor);
-    assert!(safe.reserve_hyperstructures(3, deployment.actor, 3, context()).is_err());
-    stop_cheat_caller_address(map);
-    start_cheat_caller_address(deployment.peers.season, submitter());
-    let command = crate::commands::Command::ReserveHyperstructures(255);
-    execute(deployment, recorded::FixtureAction { command, rules: game_rules, ..intent(deployment, 3) });
+    assert!(safe.initialize_reservations(3).is_err());
+    start_cheat_caller_address(map, deployment.peers.registry);
+    safe.initialize_reservations(3).unwrap();
     let pool = ISettlementPoolDispatcher { contract_address: map };
     assert!(pool.reserved_hyperstructures(3) == 3);
     assert!(pool.reserved_hyperstructures(1) == 0);
-    execute(deployment, recorded::FixtureAction { command, rules: game_rules, nonce: 1, ..intent(deployment, 3) });
+    safe.initialize_reservations(3).unwrap();
     assert!(pool.reserved_hyperstructures(3) == 3);
     let center = 2147483646 - game_rules.map_center_offset;
     let key = crate::map::TileKey { game_id: 3, alt: false, col: center, row: center };

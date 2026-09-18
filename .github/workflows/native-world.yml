@@ -2,19 +2,6 @@ name: native-world
 
 on:
   pull_request:
-    paths:
-      - "contracts/l3/world-native/**"
-      - "contracts/l3/randomness-protocol/**"
-      - "apps/herald/src/model-registry.ts"
-      - "config/deployer/clean/**"
-      - "config/source/**"
-      - "deploy/madara-lab/scripts/validate-native-target*"
-      - "deploy/madara-lab/scripts/deploy-box*"
-      - "deploy/madara-rand/native-intent*.ts"
-      - "scripts/generate-realm-metadata.py"
-      - "packages/core/src/data/full-realms.json"
-      - ".github/workflows/native-world.yml"
-      - "pnpm-lock.yaml"
   push:
     branches: [next]
     paths:
@@ -27,7 +14,7 @@ on:
       - "deploy/madara-lab/scripts/deploy-box*"
       - "deploy/madara-rand/native-intent*.ts"
       - "scripts/generate-realm-metadata.py"
-      - "packages/core/src/data/full-realms.json"
+      - "packages/**"
       - ".github/workflows/native-world.yml"
       - "pnpm-lock.yaml"
 
@@ -64,6 +51,17 @@ jobs:
       - name: Build native contracts
         working-directory: contracts/l3/world-native
         run: scarb build
+      - name: Enforce class size headroom
+        run: |
+          node --test contracts/l3/world-native/scripts/check-class-sizes.test.mjs
+          node contracts/l3/world-native/scripts/check-class-sizes.mjs > "$RUNNER_TEMP/native-class-sizes.json"
+      - name: Upload class size report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-class-sizes
+          path: ${{ runner.temp }}/native-class-sizes.json
+          if-no-files-found: error
       - name: Check recorded entrypoint ABI
         run: |
           (cd contracts/l3/randomness-protocol && scarb build)
@@ -126,3 +124,35 @@ jobs:
         run: |
           node --test deploy/madara-lab/scripts/validate-native-target.test.mjs
           python3 -m unittest discover -s deploy/madara-lab/scripts -p test_deploy_box.py -v
+
+  native-provider:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build provider dependencies
+        run: pnpm --filter @bibliothecadao/provider... run build
+      - name: Test native command provider
+        run: pnpm --dir packages/provider exec vitest run
+
+  native-validation:
+    if: always()
+    needs: [native-world, randomness-protocol, native-deployer, native-provider]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every native validation job to pass
+        env:
+          JOB_RESULTS: ${{ toJSON(needs) }}
+        run: |
+          node --input-type=module <<'JS'
+          const jobs = Object.entries(JSON.parse(process.env.JOB_RESULTS)).map(([name, job]) => ({ name, result: job.result }));
+          console.log(JSON.stringify({ jobs, passed: jobs.every(({ result }) => result === "success") }));
+          if (jobs.some(({ result }) => result !== "success")) process.exit(1);
+          JS
