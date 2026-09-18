@@ -80,7 +80,7 @@ pub mod GuardState {
                 self.save(GuardKey { game_id: key.game_id, structure_id: key.entity_id, slot }, Default::default());
             }
         }
-        // Delta is slot zero; the outermost functional guard is attacked first.
+        // Attack the highest occupied functional slot first; Delta is slot zero.
         fn next(self: @ComponentState<TContractState>, key: ResourceKey, maximum: u8) -> Option<GuardKey> {
             assert!(maximum > 0 && maximum <= 4, "invalid guard slot limit");
             let mut slot = maximum;

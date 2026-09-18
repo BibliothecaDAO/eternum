@@ -146,9 +146,22 @@ pub mod BitcoinState {
             );
             self.write_mine(key, MineFunding { eligible_from: next_phase, next_phase, ..Default::default() });
         }
-        fn capture_mine(ref self: ComponentState<TContractState>, key: ResourceKey, eligible_from: u64) {
+        fn capture_mine(
+            ref self: ComponentState<TContractState>,
+            key: ResourceKey,
+            eligible_from: u64,
+            closed_before: u64,
+            prize_per_phase: u128,
+        ) {
             let mut funding = self.mine(key);
             assert!(eligible_from >= funding.eligible_from, "Bitcoin capture time decreased");
+            // Completed claims advance next_phase atomically, including forfeited winner shares.
+            // Only the unpaid closed prefix receives a new unsplit credit; a phase still open at capture is not yet
+            // owed.
+            if funding.next_phase < closed_before {
+                let unpaid: u128 = (closed_before - funding.next_phase).into();
+                funding.unsplit_carry += unpaid * prize_per_phase;
+            }
             funding.eligible_from = eligible_from;
             funding.next_phase = core::cmp::max(funding.next_phase, eligible_from);
             self.write_mine(key, funding);

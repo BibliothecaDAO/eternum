@@ -21,13 +21,16 @@ const CONTRACT_DIRECTORY = resolve(REPOSITORY_ROOT, "contracts/l3/player-account
 const ARTIFACT_DIRECTORY = resolve(CONTRACT_DIRECTORY, "target/dev");
 const OUTPUT_PATH = resolve(LAB_DIRECTORY, ".lab/gameplay-contracts.json");
 
-const RPC_URL = process.env.RPC_URL || "http://127.0.0.1:5050/rpc/v0_9_0";
-const DEPLOYER_ADDRESS =
-  process.env.NATIVE_ACCOUNT_ADDRESS || "0x055be462e718c4166d656d11f89e341115b8bc82389c3762a10eade04fcb225d";
-const DEPLOYER_PRIVATE_KEY =
-  process.env.NATIVE_PRIVATE_KEY || "0x077e56c6dc32d40a67f6f7e6625c8dc5e570abe49c0a24e9202e4ae906abcc07";
-const BINDING_AUTHORITY_ADDRESS =
-  process.env.BINDING_AUTHORITY_ADDRESS || "0x008a1719e7ca19f3d91e8ef50a48fc456575f645497a1d55f30e3781f786afe4";
+const RPC_URL = requiredEnvironment("RPC_URL");
+const DEPLOYER_ADDRESS = requiredEnvironment("NATIVE_ACCOUNT_ADDRESS");
+const DEPLOYER_PRIVATE_KEY = requiredEnvironment("NATIVE_PRIVATE_KEY");
+const BINDING_AUTHORITY_ADDRESS = requiredEnvironment("BINDING_AUTHORITY_ADDRESS");
+
+function requiredEnvironment(name: string): string {
+  const value = process.env[name]?.trim();
+  if (!value) throw new Error(`${name} is required`);
+  return value;
+}
 
 const PLAYER_ACCOUNT_ARTIFACT = "realms_player_account_RealmsPlayerAccount.contract_class.json";
 const PLAYER_REGISTRY_ARTIFACT = "realms_player_account_PlayerRegistry.contract_class.json";

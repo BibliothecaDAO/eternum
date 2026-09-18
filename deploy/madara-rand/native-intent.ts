@@ -1,8 +1,8 @@
-import { frameNativeIntent } from "../../packages/provider/src/native-command";
+import { encodeNativeCommand, frameNativeIntent, type NativeCommand } from "../../packages/provider/src/native-command";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { CallData, CairoCustomEnum, ec, hash, RpcProvider, shortString } from "starknet";
+import { ec, hash, RpcProvider, shortString } from "starknet";
 
 export interface NativeFixture {
   scope: string;
@@ -34,13 +34,11 @@ export function readFixture(path: string): NativeFixture {
   return fixture;
 }
 
-export function commandArguments(fixture: NativeFixture, variant: string, value: object): string[] {
+export function commandArguments(fixture: NativeFixture, command: NativeCommand): string[] {
   const bindings = JSON.parse(
     readFileSync(resolve(fixture.nativeSource, "contracts/l3/world-native/schema/bindings.json"), "utf8"),
   );
-  return new CallData(bindings.commandAbi).compile("command_commitment", {
-    command: new CairoCustomEnum({ [variant]: value }),
-  });
+  return encodeNativeCommand(bindings.commandAbi, command);
 }
 
 export async function admissionFor(provider: RpcProvider, fixture: NativeFixture) {
@@ -80,7 +78,7 @@ export function exploreArguments(fixture: NativeFixture, nonce: string) {
   const index = Number(BigInt(nonce) - BigInt(fixture.firstExploreNonce));
   const explorer = fixture.explorers[index];
   assert(explorer !== undefined, "Fresh explorer pool exhausted; preserve this deployment and prepare a new fixture");
-  return commandArguments(fixture, "Explore", { explorer_id: explorer, direction: 0 });
+  return commandArguments(fixture, { kind: "Explore", value: { explorer_id: explorer, direction: 0 } });
 }
 
 export async function waitForOutcome(provider: RpcProvider, fixture: NativeFixture, endpoint: string, action: string) {

@@ -68,6 +68,7 @@ pub mod SeasonDomain {
         games: GameState::Storage,
         #[substorage(v0)]
         recording: RecordedState::Storage,
+        close_initiators: Map<u32, Option<ContractAddress>>,
     }
 
     #[event]
@@ -115,17 +116,28 @@ pub mod SeasonDomain {
             assert!(!self.games.rules(game_id).blitz_mode_on, "season closure requires Eternum");
             let threshold = self.season_win_threshold(game_id);
             assert!(threshold != 0, "season win threshold is zero");
+            let initiator = match self.close_initiators.read(game_id) {
+                Some(initiator) => initiator,
+                None => {
+                    self.close_initiators.write(game_id, Some(actor));
+                    actor
+                },
+            };
             let complete = crate::hyperstructures::IHyperstructuresDispatcherTrait::settle_completed_hyperstructures(
                 crate::hyperstructures::IHyperstructuresDispatcher { contract_address: peers.economy },
                 game_id,
                 context.timestamp,
             );
-            if !complete || self.games.player_points.read((game_id, actor)) < threshold {
+            if !complete {
+                return;
+            }
+            self.close_initiators.write(game_id, None);
+            if self.games.player_points.read((game_id, initiator)) < threshold {
                 return;
             }
             game.end_at = context.timestamp;
             self.games.write_game(game_id, game);
-            self.record_season_end(game_id, actor, context.timestamp);
+            self.record_season_end(game_id, initiator, context.timestamp);
         }
     }
 
@@ -755,10 +767,6 @@ pub mod SeasonDomain {
             Command::CreateReservedHyperstructure(value) => {
                 value.serialize(ref calldata);
                 (peers.structures, selector!("create_reserved_hyperstructure"))
-            },
-            Command::ReserveHyperstructures(value) => {
-                value.serialize(ref calldata);
-                (peers.map, selector!("reserve_hyperstructures"))
             },
             Command::LevelUp(value) => {
                 value.serialize(ref calldata);

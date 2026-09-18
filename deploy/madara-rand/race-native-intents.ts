@@ -42,7 +42,7 @@ const explorer = Number(exploreArguments(fixture, following[3])[1]);
 const { action, ...rejectedRequest } = signedRequest(
   fixture,
   following,
-  commandArguments(fixture, "Explore", { explorer_id: explorer, direction: 6 }),
+  commandArguments(fixture, { kind: "Explore", value: { explorer_id: explorer, direction: 6 } }),
 );
 const acknowledgement = await submit(rejectedRequest);
 assert.equal(acknowledgement.status, 200, acknowledgement.body);

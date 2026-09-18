@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-18",
+    title: "Guard slots match the battlefield",
+    description:
+      "Starting guards now appear in the first defense slot. Recruitment, slot icons and battle stories use the same numbering.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-18",
     title: "Faith, Armies and Resource Bridge",
     type: "feature",
     description:
