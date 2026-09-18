@@ -1,8 +1,29 @@
 import type { NativeRelease, NativeSchema } from "../../../../../apps/herald/src/native/schema";
 import type { ClassArtifact } from "../../shared/declare";
-import type { WorldManifest } from "../types";
+import type { Abi } from "starknet";
 
-export type NativeWorldManifest = WorldManifest & { native: NativeRelease };
+export interface NativeWorldManifest {
+  native: NativeRelease;
+  world: { address: string; class_hash: string; seed: string; name: string; entrypoints: string[]; abi: Abi };
+  contracts: Array<{
+    address: string;
+    class_hash: string;
+    init_calldata: string[];
+    tag: string;
+    selector: string;
+    systems: string[];
+  }>;
+  libraries: Array<{ class_hash: string; tag: string; selector: string; systems: string[]; version: string }>;
+  models: Array<{
+    class_hash: string;
+    tag: string;
+    selector: string;
+    members: Array<{ name: string; type: string; key: boolean }>;
+  }>;
+  events: NativeWorldManifest["models"];
+  external_contracts: never[];
+  abis: Abi;
+}
 export interface NativeAuthentication {
   submitter: string;
   registry: string;

@@ -39,6 +39,39 @@ function configuration(preset: number) {
 }
 
 describe("native immutable balance presets", () => {
+  // Official reward ladders, retained from the pinned gameplay rules.
+  test.each([
+    {
+      id: 2,
+      expected: [
+        [38, 150, 3500],
+        [38, 300, 2500],
+        [38, 600, 1500],
+        [23, 500, 1500],
+        [23, 1000, 500],
+        [25, 500, 500],
+      ],
+    },
+    {
+      id: 3,
+      expected: [
+        [38, 100, 3000],
+        [38, 250, 2000],
+        [38, 500, 1500],
+        [23, 250, 1500],
+        [23, 500, 800],
+        [25, 100, 600],
+        [26, 1000, 200],
+        [29, 1000, 200],
+        [32, 1000, 200],
+      ],
+    },
+  ])("preset $id preserves the official exploration reward ladder", ({ id, expected }) => {
+    const definition = buildNativePreset(configuration(id));
+    expect(definition.exploration.map(({ resource_type, amount, weight }) => [resource_type, amount, weight])).toEqual(
+      expected,
+    );
+  });
   test("domain ABIs keep the two create_game call shapes separate", () => {
     const manifest = { native: { activeSchema: schema.identity, schemas: { [schema.identity]: schema } } };
     const registryAbi = nativeDomainAbi(manifest as never, "registry");

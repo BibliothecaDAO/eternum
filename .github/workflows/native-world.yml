@@ -115,6 +115,8 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Build shared packages
         run: pnpm run build:packages
+      - name: Check canonical realm metadata
+        run: python3 scripts/generate-realm-metadata.py --check
       - name: Test native deployment and registrar
         run: |
           for file in config/deployer/clean/world/native/*.test.ts config/deployer/clean/tests/*.test.ts; do

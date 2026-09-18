@@ -4,7 +4,7 @@ import { RpcProvider } from "starknet";
 import { assertProviderChain } from "@realms-world/chain";
 import type { CliArgs } from "../../cli/args";
 import { createMadaraAccount } from "../../shared/madara-account";
-import { writeWorldOutputs } from "../manifest";
+import { writeWorldOutputs } from "./write";
 import { loadNativeWorld } from "./artifacts";
 import { buildNativeManifest } from "./manifest";
 import { deployNativeWorld } from "./deploy";
