@@ -1,4 +1,4 @@
-import { PROCESS_INTERVAL_MS } from "@/ui/features/infrastructure/automation/model/automation-processor";
+import { PROCESS_INTERVAL_MS } from "@bibliothecadao/eternum/automation";
 
 /**
  * Earliest wall-clock time (ms) at which the next production pass is allowed.

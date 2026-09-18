@@ -3,7 +3,7 @@ import { getGameModeConfig } from "@/config/game-modes";
 import { ContextMenuAction } from "@/types/context-menu";
 import type { ReactNode } from "react";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { resolveConstructionBuildability } from "@/ui/features/settlement/construction/construction-buildability";
+import { resolveConstructionBuildability } from "@bibliothecadao/eternum/automation";
 import type { GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
 import { getRealmInfo } from "@bibliothecadao/eternum";
 import {

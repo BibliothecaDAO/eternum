@@ -33,7 +33,7 @@ vi.mock("./construction-groups", () => ({
   getConstructionBuildingGroups: () => [{ label: "Economic", buildings: [1] }],
   resolveBuildingRequirements: () => [{ resource: 1, amount: 10, current: 25 }],
 }));
-vi.mock("./construction-buildability", () => ({
+vi.mock("@bibliothecadao/eternum/automation", () => ({
   resolveConstructionBuildability: () =>
     mocks.canSubmit ? { canSubmit: true } : { canSubmit: false, reason: "Insufficient resources to build." },
 }));

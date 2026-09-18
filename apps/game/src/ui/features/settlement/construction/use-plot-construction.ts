@@ -8,7 +8,7 @@ import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { requireActiveGameClient } from "@/sync/active-game-client";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { resolveConstructionBuildability } from "./construction-buildability";
+import { resolveConstructionBuildability } from "@bibliothecadao/eternum/automation";
 import { getConstructionBuildingGroups, resolveBuildingRequirements } from "./construction-groups";
 
 export interface PlotConstructionTarget {

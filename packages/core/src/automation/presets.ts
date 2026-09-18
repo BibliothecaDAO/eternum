@@ -4,8 +4,8 @@ import {
   type RealmAutomationConfig,
   type RealmEntityType,
   type ResourceAutomationPercentages,
-} from "@/hooks/store/use-automation-store";
-import { configManager } from "@bibliothecadao/eternum";
+} from "./types";
+import { configManager } from "../index";
 import { ResourcesIds } from "@bibliothecadao/types";
 
 const SMART_T1_RESOURCES: ResourcesIds[] = [ResourcesIds.Wood, ResourcesIds.Copper, ResourcesIds.Coal];

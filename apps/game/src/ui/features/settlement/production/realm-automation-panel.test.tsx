@@ -13,7 +13,6 @@ vi.mock("@bibliothecadao/eternum", () => ({
   },
   aggregateConsumptionPerSecond: () => new Map(),
 }));
-vi.mock("@/ui/features/infrastructure/automation/model/automation-processor", () => ({ PROCESS_INTERVAL_MS: 1000 }));
 vi.mock("@/ui/design-system/molecules/resource-icon", () => ({ ResourceIcon: () => null }));
 vi.mock("@/ui/design-system/atoms/button", () => ({
   default: ({ children, onClick, disabled }: any) => (

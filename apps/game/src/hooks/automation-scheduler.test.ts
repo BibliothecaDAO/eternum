@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
-import { PROCESS_INTERVAL_MS } from "@/ui/features/infrastructure/automation/model/automation-processor";
+import { PROCESS_INTERVAL_MS } from "@bibliothecadao/eternum/automation";
 import {
   computeNextEligibleMs,
   computePostPassSchedulerUpdate,

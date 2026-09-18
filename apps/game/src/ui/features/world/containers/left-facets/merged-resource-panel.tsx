@@ -8,7 +8,7 @@ import { ProductionStatusBadge } from "@/ui/shared";
 import { formatInventoryAmount } from "@/ui/features/world/components/entities/compact-entity-inventory";
 import type { StructureProductionSummary } from "@/ui/features/world/components/entities/structure-production-summary";
 import { formatTimeRemaining } from "@/ui/features/economy/resources/entity-resource-table/utils";
-import { resolveConstructionBuildability } from "@/ui/features/settlement/construction/construction-buildability";
+import { resolveConstructionBuildability } from "@bibliothecadao/eternum/automation";
 import {
   buildRealmBuilding,
   resolveRealmHasAvailableBuildingTile,

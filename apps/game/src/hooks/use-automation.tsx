@@ -7,7 +7,7 @@ import {
   PROCESS_INTERVAL_MS,
   type RealmProductionPlan,
   type RealmResourceSnapshot,
-} from "@/ui/features/infrastructure/automation/model/automation-processor";
+} from "@bibliothecadao/eternum/automation";
 import { isSignerTransientError } from "@/ui/features/infrastructure/automation/model/automation-runner";
 import { computeAutomationConfigSignature } from "@/utils/automation-signature";
 import { verboseLog } from "@/utils/dev-mode";
@@ -27,7 +27,7 @@ import {
   type RealmAutomationExecutionSummary,
 } from "./store/use-automation-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { calculatePresetAllocations, getAutomationOverallocation } from "@/utils/automation-presets";
+import { calculatePresetAllocations, getAutomationOverallocation } from "@bibliothecadao/eternum/automation";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useGame } from "@bibliothecadao/react";
 import { getAutomationProjectionTick, getBlockTimestamp, configManager } from "@bibliothecadao/eternum";

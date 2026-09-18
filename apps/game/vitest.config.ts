@@ -60,6 +60,7 @@ export default defineConfig({
         __dirname,
         "../../packages/core/src/managers/game-entity-keys.ts",
       ),
+      "@bibliothecadao/eternum/automation": path.resolve(__dirname, "../../packages/core/src/automation/index.ts"),
       "@bibliothecadao/eternum/game-sync": path.resolve(__dirname, "../../packages/core/src/sync/index.ts"),
       "@bibliothecadao/eternum/game-client": path.resolve(__dirname, "../../packages/core/src/client/index.ts"),
       "@bibliothecadao/eternum/biome": path.resolve(__dirname, "../../packages/core/src/utils/biome/biome.ts"),

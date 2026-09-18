@@ -20,7 +20,7 @@ import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { HintSection } from "@/ui/features/progression/hints/hint-modal";
 import { ProductionStatusBadge } from "@/ui/shared";
 import { adjustWonderLordsCost, currencyIntlFormat, getEntityIdFromKeys } from "@/ui/utils/utils";
-import { resolveConstructionBuildability } from "./construction-buildability";
+import { resolveConstructionBuildability } from "@bibliothecadao/eternum/automation";
 import { resolveBuildingRequirements } from "./construction-groups";
 import { RequirementChips, type ResourceRequirement } from "@/ui/design-system/molecules/requirement-chips";
 import { buildRealmBuilding, resolveRealmHasAvailableBuildingTile } from "./realm-build-actions";

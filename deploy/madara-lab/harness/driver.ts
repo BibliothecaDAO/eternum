@@ -1,3 +1,5 @@
+import { PROCESS_INTERVAL_MS } from "@bibliothecadao/eternum/automation";
+import type { BuildOrderWorkload } from "./build-order";
 import { setTimeout as sleep } from "node:timers/promises";
 import { type Account, type RpcProvider } from "starknet";
 import { type ActionPath, ActionPaths, ActionType, type GameActions } from "@bibliothecadao/eternum";
@@ -81,6 +83,7 @@ export interface HarnessBot {
 }
 
 export interface WorkloadResult {
+  profile?: "build-order" | "cadence";
   actions: TrackedTransaction[];
   endedAt: string;
   plannedActions: number;
@@ -123,6 +126,7 @@ interface PrepareHarnessBotsOptions {
 }
 
 interface RunWorkloadOptions {
+  buildOrder?: BuildOrderWorkload;
   bots: HarnessBot[];
   game: HarnessGame;
   intervalSeconds: number;
@@ -404,6 +408,7 @@ export async function runWorkload({
   minutes,
   onTick,
   provider,
+  buildOrder,
 }: RunWorkloadOptions): Promise<WorkloadResult> {
   const ticks = resolveWorkloadTicks(minutes, intervalSeconds);
   const overheadRpc = createRpcMetrics();
@@ -412,6 +417,7 @@ export async function runWorkload({
   const workloadStartedAtMs = Date.now();
   const actions: TrackedTransaction[] = [];
   const botQueues = new Map(bots.map((bot) => [bot.botId, Promise.resolve()]));
+  const nextAutomation = new Map(bots.map((bot) => [bot.botId, workloadStartedAtMs]));
   const botSpacingMs = (intervalSeconds * 1_000) / bots.length;
   const pathReservations = new PathReservations(bots, game);
 
@@ -424,6 +430,20 @@ export async function runWorkload({
       botQueues.set(
         bot.botId,
         previous.then(async () => {
+          if (buildOrder) {
+            const due = Date.now() >= nextAutomation.get(bot.botId)!;
+            if (due) nextAutomation.set(bot.botId, Date.now() + PROCESS_INTERVAL_MS);
+            const steps = await runBuildOrderTurn({ bot, game, provider, buildOrder, due, scheduledAtMs, tick });
+            actions.push(...steps);
+            for (const structure of bot.structures) {
+              for (const explorerId of buildOrder.explorers(structure.structureId)) {
+                if (!bot.explorers.some((explorer) => explorer.explorerId === explorerId)) {
+                  bot.explorers.push(buildExplorerState(structure, explorerId));
+                }
+              }
+            }
+          }
+          if (buildOrder && resolveActionKind(tick) === "produce") return;
           const rpc = createRpcMetrics();
           const action = await runBotAction({
             actionIndex,
@@ -445,9 +465,10 @@ export async function runWorkload({
   }
 
   await Promise.all(botQueues.values());
-  actions.sort((left, right) => (left.actionIndex ?? 0) - (right.actionIndex ?? 0));
+  actions.sort((left, right) => left.submitStartedAt.localeCompare(right.submitStartedAt));
 
   return {
+    profile: buildOrder ? "build-order" : "cadence",
     actions,
     endedAt: new Date().toISOString(),
     overheadRpc,
@@ -456,6 +477,63 @@ export async function runWorkload({
     startedAt: new Date(workloadStartedAtMs).toISOString(),
     ticks,
   };
+}
+
+async function runBuildOrderTurn({
+  bot,
+  game,
+  provider,
+  buildOrder,
+  due,
+  scheduledAtMs,
+  tick,
+}: {
+  bot: HarnessBot;
+  game: HarnessGame;
+  provider: RpcProvider;
+  buildOrder: BuildOrderWorkload;
+  due: boolean;
+  scheduledAtMs: number;
+  tick: number;
+}): Promise<TrackedTransaction[]> {
+  const transactions: TrackedTransaction[] = [];
+  for (const structure of bot.structures) {
+    for (const step of (due ? ["automate", "build"] : ["build"]) as Array<"automate" | "build">) {
+      let planned;
+      try {
+        planned = buildOrder[step](bot.account, structure.structureId);
+      } catch (error) {
+        transactions.push(
+          driverFailure({
+            actionIndex: tick,
+            botId: bot.botId,
+            gameId: bot.gameId,
+            kind: "produce",
+            error,
+            rpc: createRpcMetrics(),
+            scheduledAtMs,
+            tick,
+          }),
+        );
+        return transactions;
+      }
+      if (!planned) continue;
+      const transaction = await trackTransaction({
+        botId: bot.botId,
+        gameId: bot.gameId,
+        kind: planned.kind,
+        provider,
+        scheduledAtMs,
+        tick,
+        stage: "workload",
+        send: () => game.submit(bot.account, planned.run),
+      });
+      classifyTransactionFailure(transaction);
+      transactions.push(transaction);
+      if (transaction.outcome !== "completed") return transactions;
+    }
+  }
+  return transactions;
 }
 
 export function resolveActionKind(tick: number): WorkloadActionKind {

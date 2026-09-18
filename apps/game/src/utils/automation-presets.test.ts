@@ -8,7 +8,7 @@ import {
   inferRealmPreset,
   REALM_PRESETS,
   resolveProductionPercentages,
-} from "./automation-presets";
+} from "@bibliothecadao/eternum/automation";
 
 beforeEach(() => {
   vi.spyOn(configManager, "getBlitzConfig").mockReturnValue({ blitz_mode_on: false } as any);

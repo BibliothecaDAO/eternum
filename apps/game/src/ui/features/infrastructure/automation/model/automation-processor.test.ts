@@ -5,7 +5,7 @@ import {
   buildAutomationSkipMessage,
   buildRealmProductionPlan,
   type RealmResourceSnapshot,
-} from "./automation-processor";
+} from "@bibliothecadao/eternum/automation";
 import type { RealmAutomationConfig, ResourceAutomationPercentages } from "@/hooks/store/use-automation-store";
 
 const { configManagerMock } = vi.hoisted(() => ({

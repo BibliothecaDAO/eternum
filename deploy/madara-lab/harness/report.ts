@@ -1,3 +1,4 @@
+import { PROCESS_INTERVAL_MS } from "@bibliothecadao/eternum/automation";
 import type { LayerRoundTripEvidence } from "./layer-round-trip";
 import type { SeasonFinalizationEvidence } from "./season-lifecycle";
 import { mkdir, writeFile } from "node:fs/promises";
@@ -10,7 +11,6 @@ import {
   type MeasuredRpcMethod,
   type RpcMetrics,
   type TrackedTransaction,
-  type WorkloadActionKind,
   type WorkloadResult,
 } from "./driver";
 
@@ -171,6 +171,12 @@ function analyzeHarnessResult(input: HarnessReportInput) {
     thresholdEligibleActions: thresholdEligibleActions >= input.minimumThresholdActions,
     preConfirmedP95: passesLatency(percentiles.preConfirmedMs.p95, PRECONFIRMED_P95_LIMIT_MS),
     setup: setupFailures.length === 0,
+    playerProgress:
+      input.workload.profile !== "build-order" ||
+      summarizePlayerProgress(
+        input.accounts.map(({ botId }) => botId),
+        actions,
+      ).every((player) => player.progressed),
     layerRoundTrips: input.layerRoundTrips?.every((result) => result.status === "passed") ?? true,
     seasonsClosed: input.seasonFinalizations?.every((result) => result.status === "closed") ?? true,
     zeroBlockingFailures: blockingFailures.length === 0,
@@ -228,6 +234,12 @@ function buildHarnessManifest(
     seasonFinalizations: input.seasonFinalizations ?? [],
     layerRoundTrips: input.layerRoundTrips ?? [],
     workload: {
+      profile: input.workload.profile ?? "cadence",
+      automationIntervalMs: input.workload.profile === "build-order" ? PROCESS_INTERVAL_MS : null,
+      perPlayer: summarizePlayerProgress(
+        input.accounts.map(({ botId }) => botId),
+        analysis.actions,
+      ),
       bots: input.botCount,
       minutes: input.minutes,
       intervalSeconds: input.intervalSeconds,
@@ -345,15 +357,13 @@ export function percentile(values: readonly number[], percentileValue: number): 
   return sorted[index]!;
 }
 
-export function summarizeRequestedMix(
-  actions: readonly Pick<TrackedTransaction, "kind">[],
-): Record<WorkloadActionKind, number> {
+export function summarizeRequestedMix(actions: readonly Pick<TrackedTransaction, "kind">[]): Record<string, number> {
   return summarizeKinds(actions);
 }
 
 export function summarizeCompletedMix(
   actions: readonly Pick<TrackedTransaction, "kind" | "outcome">[],
-): Record<WorkloadActionKind, number> {
+): Record<string, number> {
   return summarizeKinds(actions.filter(({ outcome }) => outcome === "completed"));
 }
 
@@ -405,12 +415,35 @@ function summarizeRpcLoad(
   };
 }
 
-function summarizeKinds(actions: readonly Pick<TrackedTransaction, "kind">[]): Record<WorkloadActionKind, number> {
-  const counts: Record<WorkloadActionKind, number> = { move: 0, explore: 0, produce: 0 };
+function summarizeKinds(actions: readonly Pick<TrackedTransaction, "kind">[]): Record<string, number> {
+  const counts: Record<string, number> = { move: 0, explore: 0, produce: 0 };
   for (const action of actions) {
-    if (action.kind in counts) counts[action.kind as WorkloadActionKind] += 1;
+    counts[action.kind] = (counts[action.kind] ?? 0) + 1;
   }
   return counts;
+}
+
+export function summarizePlayerProgress(botIds: number[], actions: readonly TrackedTransaction[]) {
+  return botIds.map((botId) => {
+    const playerActions = actions.filter((action) => action.botId === botId);
+    const completed: Record<string, number> = {};
+    let lastCompletedAt: string | null = null;
+    for (const action of playerActions) {
+      if (action.outcome !== "completed") continue;
+      completed[action.kind] = (completed[action.kind] ?? 0) + 1;
+      if (action.acceptedOnL2At && (!lastCompletedAt || action.acceptedOnL2At > lastCompletedAt)) {
+        lastCompletedAt = action.acceptedOnL2At;
+      }
+    }
+    const built = Object.keys(completed).some((kind) => kind.startsWith("build-") || kind === "upgrade");
+    return {
+      botId,
+      completed,
+      progressed: built && (completed.explore ?? 0) > 0 && (completed["automate-production"] ?? 0) > 0,
+      failed: playerActions.filter((action) => action.outcome !== "completed").length,
+      lastCompletedAt,
+    };
+  });
 }
 
 function summarizePercentiles(actions: TrackedTransaction[]): PercentileSummary {

@@ -21,6 +21,7 @@ import {
   isThresholdBlockingFailure,
   percentile,
   summarizeCompletedMix,
+  summarizePlayerProgress,
   summarizeRequestedMix,
   summarizeRevertReasons,
   summarizeRpcMetrics,
@@ -125,6 +126,76 @@ describe("Madara harness workload", () => {
       outcome: "driver_failed",
       rpc: { getBlock: { calls: 1 } },
     });
+  });
+
+  it("runs Smart production once per minute alongside fresh build orders and exploration", async () => {
+    spyOn(configManager, "getMapCenter").mockReturnValue(0);
+    let now = 1_000_000;
+    spyOn(Date, "now").mockImplementation(() => now);
+    const world = fakeWorld();
+    const productionAt: number[] = [];
+    let buildings = 0;
+    const workload = await runWorkload({
+      bots: [readyHarnessBot(world)],
+      game: world.game,
+      intervalSeconds: 0.01,
+      minutes: 0.001,
+      provider: confirmingProvider(),
+      buildOrder: {
+        automate: () => {
+          productionAt.push(now);
+          return { kind: "automate-production", run: async () => {} };
+        },
+        build: () => {
+          const expected = buildings;
+          return {
+            kind: "build-wheat",
+            run: async () => {
+              expect(buildings).toBe(expected);
+              buildings += 1;
+              now += 30_000;
+            },
+          };
+        },
+        explorers: () => [1],
+      },
+    });
+    expect(productionAt).toEqual([1_000_000, 1_060_000, 1_120_000]);
+    expect(buildings).toBe(6);
+    expect(workload.actions.filter((action) => action.kind === "explore")).toHaveLength(3);
+    expect(workload.actions.every((action) => action.outcome === "completed")).toBe(true);
+    expect(workload.profile).toBe("build-order");
+    expect(summarizeCompletedMix(workload.actions)).toEqual({
+      "build-wheat": 6,
+      "automate-production": 3,
+      explore: 3,
+      move: 2,
+      produce: 0,
+    });
+    expect(summarizePlayerProgress([1, 2], workload.actions)).toMatchObject([
+      {
+        botId: 1,
+        completed: { "build-wheat": 6, "automate-production": 3, explore: 3, move: 2 },
+        failed: 0,
+        progressed: true,
+      },
+      { botId: 2, completed: {}, failed: 0, lastCompletedAt: null, progressed: false },
+    ]);
+  });
+
+  it("does not fabricate successful build actions when production or recommendations are unavailable", async () => {
+    spyOn(configManager, "getMapCenter").mockReturnValue(0);
+    const world = fakeWorld();
+    const workload = await runWorkload({
+      bots: [readyHarnessBot(world)],
+      game: world.game,
+      intervalSeconds: 1,
+      minutes: 0.001,
+      provider: confirmingProvider(),
+      buildOrder: { automate: () => undefined, build: () => undefined, explorers: () => [1] },
+    });
+    expect(workload.actions.map((action) => action.kind)).toEqual(["explore"]);
+    expect(summarizePlayerProgress([1], workload.actions)[0]?.progressed).toBe(false);
   });
 
   it("waits for setup stamina to regenerate before measuring the workload", async () => {
@@ -262,7 +333,14 @@ describe("Madara harness CLI and concurrency", () => {
   });
 
   it("holds one game per process", () => {
-    expect(parseHarnessArgs([])).toMatchObject({ bots: 96, intervalSeconds: 15 });
+    expect(parseHarnessArgs([])).toMatchObject({
+      bots: 96,
+      intervalSeconds: 15,
+      workload: "build-order",
+      setupConcurrency: 1,
+    });
+    expect(parseHarnessArgs(["--workload", "cadence"]).workload).toBe("cadence");
+    expect(() => parseHarnessArgs(["--workload", "unknown"])).toThrow("--workload");
     expect(() => parseHarnessArgs(["--games", "2"])).toThrow("one game per process");
   });
 
