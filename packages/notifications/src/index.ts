@@ -4,3 +4,4 @@ export * from "./delivery";
 export * from "./push";
 export * from "./story-notification";
 export * from "./automatic-source";
+export * from "./direct-message-notification";

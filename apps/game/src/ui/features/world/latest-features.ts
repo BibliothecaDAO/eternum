@@ -144,6 +144,55 @@ const allLatestFeatures: LatestFeature[] = [
     type: "fix",
   },
   {
+    date: "2026-09-18",
+    title: "Illustrated Mobile HUD",
+    description:
+      "Replaced the compact HUD's labeled generic symbols with spacious illustrated Eternum controls for Empire, Map, Log, Chat and Details.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-16",
+    title: "Game-World Menu Icons",
+    description:
+      "Reworked key menus with illustrated tools, war gear, caravans, maps and artifacts that stay clear at compact HUD sizes and feel native to Eternum's world.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-15",
+    title: "Direct Message Alert Controls",
+    description:
+      "Enable raven alerts for existing devices from Settings. Battle alerts report the correct outcome, and enabling alerts keeps them quiet while you play.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-15",
+    title: "Ravens and Richer Alerts",
+    description:
+      "Notifications now describe battles, caravans, construction, exploration and troop movements in the voice of the realm. New direct messages can also arrive as privacy-safe raven alerts while you are away.",
+    type: "feature",
+  },
+  {
+    date: "2026-09-15",
+    title: "Quiet Foreground Alerts",
+    description:
+      "Background push alerts now stay quiet while you are actively playing; confirmed activity continues to appear in the in-game feed, and device alerts resume after you leave.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-15",
+    title: "Clearer Mobile Map Controls",
+    description:
+      "Improved the portrait game header with a stable settings position and a simpler one-tap map layer switch, keeping every control within reach on narrow screens.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-15",
+    title: "Ethereal Spire Portals",
+    description:
+      "Spires rise above dark basalt steps with floating shards and swirling neon portals, making passages between layers easier to recognise.",
+    type: "improvement",
+  },
+  {
     date: "2026-09-14",
     title: "World selection validation",
     description: "Game entry and registration report an unavailable world instead of selecting another deployment.",

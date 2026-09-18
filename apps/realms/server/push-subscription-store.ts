@@ -1,12 +1,16 @@
 import { createHash } from "node:crypto";
 import { Context, Data, Effect, Layer } from "effect";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, isNotNull, isNull, lte, or, sql } from "drizzle-orm";
 import { notificationPushSubscriptions as subscriptions } from "@realms-world/db";
 import { db, type Database } from "@realms-world/db/client";
 import { automaticPushSourceKey, parseAutomaticPushSource, type PushRegistration } from "@bibliothecadao/notifications";
 
+const PUSH_FOREGROUND_LEASE_MS = 60_000;
+
 const tokenHash = (token: string) => createHash("sha256").update(token).digest("hex");
-export function createPushSubscriptionStore(database: Pick<Database, "transaction" | "select" | "delete"> = db) {
+export function createPushSubscriptionStore(
+  database: Pick<Database, "transaction" | "select" | "update" | "delete"> = db,
+) {
   const storeEffect = <T>(work: () => Promise<T>) =>
     Effect.tryPromise({ try: work, catch: () => new PushStorageError() });
   return {
@@ -19,6 +23,19 @@ export function createPushSubscriptionStore(database: Pick<Database, "transactio
           .where(and(eq(subscriptions.id, id), eq(subscriptions.owner, owner)));
         return row ?? null;
       }),
+    findDirectMessageDevices: (owner: string, now = Date.now()) =>
+      storeEffect(() =>
+        database
+          .select()
+          .from(subscriptions)
+          .where(
+            and(
+              eq(subscriptions.owner, owner),
+              isNotNull(subscriptions.directMessagesEnabledAt),
+              or(isNull(subscriptions.gameForegroundUntil), lte(subscriptions.gameForegroundUntil, new Date(now))),
+            ),
+          ),
+      ),
     revoke: (id: string, token: string) =>
       storeEffect(async () => {
         await database
@@ -28,6 +45,15 @@ export function createPushSubscriptionStore(database: Pick<Database, "transactio
     expire: (owner: string, id: string) =>
       storeEffect(async () => {
         await database.delete(subscriptions).where(and(eq(subscriptions.id, id), eq(subscriptions.owner, owner)));
+      }),
+    setGameForeground: (owner: string, id: string, foreground: boolean, now = Date.now()) =>
+      storeEffect(async () => {
+        const rows = await database
+          .update(subscriptions)
+          .set({ gameForegroundUntil: foreground ? new Date(now + PUSH_FOREGROUND_LEASE_MS) : null })
+          .where(and(eq(subscriptions.id, id), eq(subscriptions.owner, owner)))
+          .returning({ id: subscriptions.id });
+        return rows.length > 0;
       }),
   };
 }
@@ -46,7 +72,15 @@ async function registerSubscription(database: Pick<Database, "transaction">, inp
       )
         await tx
           .update(subscriptions)
-          .set({ gameAlertsEnabledAt: new Date(), gameAlertsSource: registration.gameAlertsSource })
+          .set({
+            gameAlertsEnabledAt: new Date(),
+            gameAlertsSource: registration.gameAlertsSource,
+          })
+          .where(eq(subscriptions.id, input.id));
+      if (input.directMessages && !existing.directMessagesEnabledAt)
+        await tx
+          .update(subscriptions)
+          .set({ directMessagesEnabledAt: new Date() })
           .where(eq(subscriptions.id, input.id));
       return "registered" as const;
     }
@@ -69,6 +103,7 @@ function buildSubscriptionRow(input: PushRegistration) {
     auth: input.subscription.keys.auth,
     revocationHash: tokenHash(input.token),
     gameAlertsEnabledAt: input.gameAlerts ? new Date() : null,
+    directMessagesEnabledAt: input.directMessages ? new Date() : null,
     gameAlertsSource: input.gameAlerts ? automaticPushSourceKey(parseAutomaticPushSource(input.source)) : null,
   };
 }

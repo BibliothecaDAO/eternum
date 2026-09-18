@@ -22,6 +22,7 @@ const ServerEnv = Schema.Struct({
   WEB_PUSH_VAPID_PUBLIC_KEY: Schema.optional(Schema.String),
   WEB_PUSH_VAPID_PRIVATE_KEY: Schema.optional(Schema.String),
   WEB_PUSH_VAPID_SUBJECT: Schema.optional(Schema.String),
+  CHAT_NOTIFICATION_SECRET: Schema.optional(Schema.String),
   REALMS_SERVER_PORT: Schema.optional(Schema.NumberFromString),
 });
 

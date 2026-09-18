@@ -1,136 +1,187 @@
-import { BufferGeometry, InstancedBufferAttribute, Matrix4, Mesh, MeshStandardMaterial } from "three";
+import { AnimationMixer, Box3, Camera, Group, Matrix4, Mesh, Sphere } from "three";
 import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
-import { MeshBasicNodeMaterial } from "three/webgpu";
-import {
-  attribute,
-  color,
-  mix,
-  mx_noise_float,
-  normalLocal,
-  normalView,
-  positionGeometry,
-  positionLocal,
-  positionViewDirection,
-  smoothstep,
-  uniform,
-  vec3,
-} from "three/tsl";
 import InstancedModel from "../managers/instanced-model";
+import type { AnimationVisibilityContext } from "../types/animation";
 import { queueInstanceUpdate } from "../utils/instance-update-ranges";
-import { MaterialPool } from "../utils/material-pool";
-import { placedModelPhase, placedModelTime } from "../utils/placed-model-phase";
-import { spireOrbitAngle } from "./spire-motion";
+import { placedModelPhase } from "../utils/placed-model-phase";
+import { isPortalSurface, sortSpirePortals, SpirePortalMaterials } from "./spire-portal";
+import { SpireVeins } from "./spire-veins";
 
 interface SpirePlacement {
   matrix: Matrix4;
   phase: number;
+  portal: ReturnType<SpirePortalMaterials["create"]>;
 }
 
-/** Four shared draws: fixed masonry, orbiting masonry, refined channels and the spherical portal. */
+function prepareSpire(gltf: GLTF) {
+  // The loader cache remains immutable, including its animated transforms.
+  const evaluator = gltf.scene.clone(true);
+  const solids: Mesh[] = [];
+  const portals: Mesh[] = [];
+  evaluator.traverse((node) => {
+    if (!(node instanceof Mesh)) return;
+    // A multi-material glTF primitive inherits semantic extras from its mesh group.
+    for (let parent = node.parent; !node.userData.spirePart && parent; parent = parent.parent)
+      if (parent.userData.spirePart) node.userData.spirePart = parent.userData.spirePart;
+    (isPortalSurface(node) ? portals : solids).push(node);
+  });
+  const flat = new Group();
+  for (const source of solids) flat.add(new Mesh(source.geometry, source.material));
+  const core = portals.find((mesh) => mesh.userData.trueSphereRadius > 0);
+  if (!core) throw new Error("Spire asset is missing its spherical portal metadata");
+  if (gltf.animations.length !== 1 || gltf.animations[0].duration <= 0)
+    throw new Error("Spire asset requires its authored animation loop");
+  return { evaluator, solids, portals, core, flat };
+}
+
+/** Shared stone draws and authored hierarchy motion; translucent portals compose independently per placement. */
 export class SpireModel extends InstancedModel {
   private readonly placements = new Map<number, SpirePlacement>();
-  private readonly orbitMeshes = new Set<Mesh>();
-  private readonly portalClock = uniform(0);
-  private readonly portalPhases: InstancedBufferAttribute;
-  private readonly orbitMatrix = new Matrix4();
+  private readonly prepared: ReturnType<typeof prepareSpire>;
+  private readonly clipMixer: AnimationMixer;
+  private readonly portalMaterials: SpirePortalMaterials;
+  private readonly veins: SpireVeins;
   private readonly composed = new Matrix4();
-  private readonly portalGeometries: Array<{ mesh: Mesh; original: BufferGeometry }> = [];
+  private readonly clipDuration: number;
+  private readonly sweptBounds: Sphere[];
   private seconds = 0;
   private disposed = false;
+  readonly labelHeight: number;
 
-  constructor(gltf: GLTF, capacity: number) {
-    super(gltf, capacity, false, "Spire", "cache");
+  constructor(
+    gltf: GLTF,
+    private readonly placementCapacity: number,
+  ) {
+    const prepared = prepareSpire(gltf);
+    // InstancedModel handles pooled solid materials/buffers. Its morph-only animation path must not bind this clip.
+    super({ scene: prepared.flat, animations: [] }, placementCapacity, false, "Spire", "cache");
+    this.prepared = prepared;
     this.setContactShadowsEnabled(false);
-    this.portalPhases = new InstancedBufferAttribute(new Float32Array(Math.max(2, capacity)), 1);
-    const parts = new Map<string, string>();
-    gltf.scene.traverse((node) => {
-      if (node instanceof Mesh) parts.set(node.geometry.uuid, node.userData.spirePart);
+    this.clipMixer = new AnimationMixer(prepared.evaluator);
+    this.clipMixer.clipAction(gltf.animations[0]).play();
+    this.clipDuration = gltf.animations[0].duration;
+    this.sweptBounds = this.measureSweptBounds();
+    this.portalMaterials = new SpirePortalMaterials(prepared.core.userData.trueSphereRadius);
+    prepared.evaluator.updateMatrixWorld(true);
+    this.labelHeight = new Box3().setFromObject(prepared.evaluator).max.y + 0.25;
+    this.group.name = "Spires";
+    this.instancedMeshes.forEach((mesh, index) => {
+      mesh.name = prepared.solids[index].name;
+      mesh.userData.spirePart = prepared.solids[index].userData.spirePart;
+      mesh.frustumCulled = true;
     });
-    for (const mesh of this.instancedMeshes) {
-      if (parts.get(mesh.geometry.uuid) === "orbit") this.orbitMeshes.add(mesh);
-      if (parts.get(mesh.geometry.uuid) === "portal") this.preparePortal(mesh);
-    }
+    this.veins = new SpireVeins(this.instancedMeshes, this.group);
   }
 
   override setMatrixAt(index: number, matrix: Matrix4): void {
-    if (index < 0 || index >= this.portalPhases.count) return;
-    super.setMatrixAt(index, matrix);
-    if (matrix.elements[15] === 0 || matrix.determinant() === 0) {
+    if (index < 0 || index >= this.placementCapacity) return;
+    if (matrix.determinant() === 0) {
+      const removed = this.placements.get(index);
+      if (removed) this.group.remove(removed.portal.group);
       this.placements.delete(index);
+      super.setMatrixAt(index, matrix);
       return;
     }
-    const placement = this.placements.get(index) ?? { matrix: new Matrix4(), phase: 0 };
+    let placement = this.placements.get(index);
+    if (!placement) {
+      placement = { matrix: matrix.clone(), phase: 0, portal: this.portalMaterials.create(this.prepared.portals) };
+      this.placements.set(index, placement);
+      this.group.add(placement.portal.group);
+    }
     placement.matrix.copy(matrix);
     placement.phase = placedModelPhase(matrix.elements[12], matrix.elements[14]);
-    this.placements.set(index, placement);
-    this.portalPhases.setX(index, placement.phase);
-    queueInstanceUpdate(this.portalPhases, index, 1);
-    this.writeObeliskPose(index, placement);
+    placement.portal.group.matrixAutoUpdate = false;
+    placement.portal.group.matrix.copy(matrix);
+    placement.portal.group.matrixWorldNeedsUpdate = true;
+    this.writePose(index, placement);
+  }
+
+  override removeInstance(index: number): void {
+    this.setMatrixAt(index, new Matrix4().makeScale(0, 0, 0));
+    this.needsUpdate();
   }
 
   override setCount(count: number): void {
-    for (const index of this.placements.keys()) if (index >= count) this.placements.delete(index);
-    super.setCount(count);
+    const resolved = Math.max(0, Math.min(count, this.placementCapacity));
+    for (const [index, placement] of this.placements) {
+      if (index < resolved) continue;
+      this.group.remove(placement.portal.group);
+      this.placements.delete(index);
+    }
+    super.setCount(resolved);
   }
 
-  override updateAnimations(delta: number): void {
-    this.seconds += Math.max(0, delta);
+  override updateAnimations(delta: number, context?: AnimationVisibilityContext & { camera?: Camera }): void {
+    this.seconds += Number.isFinite(delta) ? Math.max(0, delta) : 0;
     if (!this.getCount() || !this.group.visible) return;
-    this.portalClock.value = this.seconds;
-    for (const [index, placement] of this.placements) this.writeObeliskPose(index, placement);
+    for (const [index, placement] of this.placements) this.writePose(index, placement);
+    if (context?.camera)
+      sortSpirePortals(
+        Array.from(this.placements.values(), (placement) => placement.portal.group),
+        context.camera,
+      );
   }
 
   override dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
-    for (const { mesh, original } of this.portalGeometries) {
-      mesh.geometry.dispose();
-      mesh.geometry = original;
-    }
+    this.clipMixer.stopAllAction();
+    this.clipMixer.uncacheRoot(this.prepared.evaluator);
+    this.portalMaterials.dispose();
+    this.veins.dispose();
     this.placements.clear();
     super.dispose();
   }
 
-  private writeObeliskPose(index: number, placement: SpirePlacement): void {
-    const localTime = placedModelTime(this.seconds, placement.phase);
-    this.orbitMatrix.makeRotationY(spireOrbitAngle(localTime));
-    this.orbitMatrix.elements[13] = Math.sin(localTime * 1.2) * 0.025;
-    this.composed.multiplyMatrices(placement.matrix, this.orbitMatrix);
-    for (const mesh of this.instancedMeshes) {
-      if (!this.orbitMeshes.has(mesh)) continue;
-      const offset = index * 16;
-      if (
-        this.composed.elements.every(
-          (value, component) => Math.fround(value) === mesh.instanceMatrix.array[offset + component],
-        )
-      )
-        continue;
-      mesh.setMatrixAt(index, this.composed);
-      queueInstanceUpdate(mesh.instanceMatrix, index, 1);
-    }
+  override needsUpdate(): void {
+    super.needsUpdate();
+    if (!this.sweptBounds) return;
+    const transformed = new Sphere();
+    this.instancedMeshes.forEach((mesh, part) => {
+      const bounds = new Sphere().makeEmpty();
+      for (const placement of this.placements.values())
+        bounds.union(transformed.copy(this.sweptBounds[part]).applyMatrix4(placement.matrix));
+      mesh.boundingSphere = bounds;
+    });
+    this.veins?.updateBoundsAndCount();
   }
 
-  private preparePortal(mesh: Mesh): void {
-    const previous = mesh.material as MeshStandardMaterial;
-    const original = mesh.geometry;
-    mesh.geometry = original.clone();
-    mesh.geometry.setAttribute("portalPhase", this.portalPhases);
-    this.portalGeometries.push({ mesh, original });
-    const material = new MeshBasicNodeMaterial();
-    material.name = "Raw essence sphere";
-    const phase = attribute<"float">("portalPhase", "float");
-    const clock = this.portalClock.mul(phase.mul(0.2).add(0.9)).add(phase.mul(13));
-    const flow = mx_noise_float(positionGeometry.mul(7).add(vec3(0, clock.mul(0.18), 0))).abs();
-    const wisps = smoothstep(0.02, 0.17, flow).oneMinus();
-    const rim = normalView.dot(positionViewDirection).abs().oneMinus().pow(2);
-    const essence = color(previous.color);
-    material.colorNode = mix(essence.mul(0.16), essence.mul(1.6), rim).add(essence.mul(wisps).mul(0.9));
-    // Brief local bulges follow each portal's clock without disturbing the approved interior flow.
-    const surgeField = mx_noise_float(normalLocal.mul(4.5).add(vec3(clock.mul(0.7), 0, clock.mul(0.3))));
-    const surge = smoothstep(0.1, 0.38, surgeField).pow(2).mul(clock.mul(1.7).sin().max(0)).mul(0.075);
-    material.positionNode = positionLocal.add(normalLocal.mul(surge));
-    mesh.material = material;
-    mesh.castShadow = false;
-    MaterialPool.getInstance().releaseMaterial(previous);
+  private measureSweptBounds(): Sphere[] {
+    const boxes = this.prepared.solids.map(() => new Box3());
+    const transformed = new Box3();
+    // Include every authored 30 Hz sample, then a small interpolation margin for compressed clips.
+    const samples = Math.ceil(this.clipDuration * 30);
+    for (const mesh of this.prepared.solids) mesh.geometry.computeBoundingBox();
+    for (let sample = 0; sample <= samples; sample++) {
+      this.clipMixer.setTime((sample / samples) * this.clipDuration);
+      this.prepared.evaluator.updateMatrixWorld(true);
+      this.prepared.solids.forEach((mesh, index) => {
+        boxes[index].union(transformed.copy(mesh.geometry.boundingBox!).applyMatrix4(mesh.matrixWorld));
+      });
+    }
+    this.clipMixer.setTime(0);
+    this.prepared.evaluator.updateMatrixWorld(true);
+    return boxes.map((box) => box.expandByScalar(0.01).getBoundingSphere(new Sphere()));
+  }
+
+  private writePose(index: number, placement: SpirePlacement): void {
+    // Each placement keeps a stable phase without changing the authored eight-second speed or hidden wisp resets.
+    this.clipMixer.setTime(this.seconds + placement.phase * this.clipDuration);
+    this.prepared.evaluator.updateMatrixWorld(true);
+    this.instancedMeshes.forEach((mesh, part) => {
+      this.composed.multiplyMatrices(placement.matrix, this.prepared.solids[part].matrixWorld);
+      mesh.setMatrixAt(index, this.composed);
+      queueInstanceUpdate(mesh.instanceMatrix, index, 1);
+    });
+    placement.portal.surfaces.forEach((mesh, part) => {
+      mesh.matrix.copy(this.prepared.portals[part].matrixWorld);
+      mesh.matrixWorldNeedsUpdate = true;
+    });
+    this.group.updateWorldMatrix(true, false);
+    placement.portal.state.inverseCore
+      .copy(this.group.matrixWorld)
+      .multiply(placement.matrix)
+      .multiply(this.prepared.core.matrixWorld)
+      .invert();
   }
 }

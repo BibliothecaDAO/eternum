@@ -1,6 +1,11 @@
 import { GAME_CHAIN_NAMES } from "@realms-world/chain";
 import { expect, it } from "vitest";
-import { logicalStoryIdentity, notificationMatchesGame, parseNotificationPayload } from "./delivery";
+import {
+  isNotificationGameClient,
+  logicalStoryIdentity,
+  notificationMatchesGame,
+  parseNotificationPayload,
+} from "./delivery";
 
 const now = 100_000;
 const notification = {
@@ -27,6 +32,7 @@ it("accepts bounded display envelopes and rejects expired, foreign, oversized or
     { expiresAt: now + 120_001 },
     { title: "x".repeat(81) },
     { body: "bad\ntext" },
+    { tag: "" },
     { state: {} },
     { owner: 0 },
   ]) {
@@ -75,7 +81,15 @@ it("matches the intended game without changing another tab's route", () => {
   ).toBe(false);
 });
 
+it("recognizes only same-origin game scenes as foreground notification clients", () => {
+  expect(isNotificationGameClient("https://game.test/play/madara/game-1/map?col=3", "https://game.test")).toBe(true);
+  expect(isNotificationGameClient("https://game.test/", "https://game.test")).toBe(false);
+  expect(isNotificationGameClient("https://foreign.test/play/madara/game-1/map", "https://game.test")).toBe(false);
+  expect(isNotificationGameClient("https://game.test/play/unknown/game-1/map", "https://game.test")).toBe(false);
+});
+
 it("accepts every centrally configured game chain and rejects unknown chains", () => {
+  expect(parseNotificationPayload({ ...notification, target: "/" }, now).target).toBe("/");
   for (const chain of Object.keys(GAME_CHAIN_NAMES)) {
     expect(parseNotificationPayload({ ...notification, target: `/enter/${chain}/game-1` }, now).target).toBe(
       `/enter/${chain}/game-1`,

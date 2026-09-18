@@ -70,12 +70,15 @@ and provider TTL retain the original event's two-minute expiry; retries never ma
 records are pruned and expired history events advance without notifying. Backlog/transport latency can therefore expire
 alerts.
 
-Automatic push owns OS delivery for the acknowledged source on opted-in devices, including while their page is open.
-Other chains/worlds retain local delivery, and pending activation does not suppress it. The page still renders its
-activity feed but does not claim those OS notifications first. Preview-only devices retain local delivery. Provider
-retries use a stable collapse topic, and the worker's durable claims suppress repeats across worker restarts. Claims
-precede native display, so the existing best-effort limitation remains: a crash after claiming can lose an alert. Do not
-promise exactly-once OS banners.
+Automatic push owns OS delivery for the acknowledged source on opted-in devices. A visible game window refreshes a
+one-minute foreground lease on its device subscription; active leases are excluded both while enqueueing and in the
+final eligibility check. Hiding or leaving the game clears the lease when possible, and expiry restores delivery after a
+crash or lost connection. This server-side gate avoids sending a Web Push that the service worker would have to consume
+silently, preserving the platform's user-visible-push contract. Other chains/worlds retain local delivery, and pending
+activation does not suppress it. Preview-only devices retain local delivery. Provider retries use a stable collapse
+topic, and the worker's durable claims suppress repeats across worker restarts. Claims precede native display, so the
+existing best-effort limitation remains: a crash after claiming can lose an alert. Do not promise exactly-once OS
+banners.
 
 ## Operations and verification
 
@@ -91,12 +94,12 @@ Users can disable background notifications on a device to restore local OS deliv
 worker shuts down with the identity process; it is not a separate unmanaged timer or service.
 
 Automated PostgreSQL tests cover initial attach, paired recipient fan-out, ended-game drain, restart, checkpoint-write
-rollback, concurrent claims, lease fencing, Off/revocation after enqueue, retry, permanent rejection and expiry. Herald
-integration tests cover page boundaries inside a block and preserve the existing deployed checkpoint. Client tests cover
-explicit upgrade consent, compatibility, automatic-capability claims and local/push ownership. Additional regressions
-cover consent timestamps, queue capacity recovery, competing checkpoint commits, runtime health/shutdown and
-logout/disable while setup holds a network lock. Local revocation does not wait for that lock; remote cleanup remains
-serialized and registration-scoped. Push API requests time out after ten seconds.
+rollback, concurrent claims, lease fencing, foreground suppression, Off/revocation after enqueue, retry, permanent
+rejection and expiry. Herald integration tests cover page boundaries inside a block and preserve the existing deployed
+checkpoint. Client tests cover explicit upgrade consent, compatibility, automatic-capability claims and local/push
+ownership. Additional regressions cover consent timestamps, queue capacity recovery, competing checkpoint commits,
+runtime health/shutdown and logout/disable while setup holds a network lock. Local revocation does not wait for that
+lock; remote cleanup remains serialized and registration-scoped. Push API requests time out after ten seconds.
 
 Before production enablement, verify a real confirmed battle on the deployed source, production identity cookies, and
 actual Android/iOS banners/clicks with the game closed. Also check Safari's visible-push behavior under

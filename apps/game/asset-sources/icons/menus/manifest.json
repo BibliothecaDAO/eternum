@@ -1,0 +1,83 @@
+{
+  "version": 1,
+  "output": {
+    "size": 256,
+    "subjectSize": 220,
+    "maxBytes": 131072,
+    "format": "png"
+  },
+  "icons": [
+    {
+      "slug": "build",
+      "name": "Build",
+      "target": "construction.png",
+      "consumers": ["BuildingThumbs.construction"],
+      "subject": "Mason's mallet, stone block and trowel",
+      "accent": "limestone"
+    },
+    {
+      "slug": "production",
+      "name": "Production",
+      "target": "production.png",
+      "consumers": ["BuildingThumbs.production"],
+      "subject": "Hammer, glowing ingot and anvil",
+      "accent": "ember"
+    },
+    {
+      "slug": "military",
+      "name": "Military",
+      "target": "military.png",
+      "consumers": ["BuildingThumbs.military"],
+      "subject": "Battered shield, sword and spear",
+      "accent": "crimson"
+    },
+    {
+      "slug": "transfer",
+      "name": "Transfer",
+      "target": "transfer.png",
+      "consumers": ["BuildingThumbs.transfer"],
+      "subject": "Loaded medieval handcart",
+      "accent": "teal binding"
+    },
+    {
+      "slug": "trade",
+      "name": "Trade",
+      "target": "trade.png",
+      "consumers": ["BuildingThumbs.scale", "BuildingThumbs.predictionMarket"],
+      "subject": "Merchant scales with coin and gemstone",
+      "accent": "sapphire"
+    },
+    {
+      "slug": "settings",
+      "name": "Settings",
+      "target": "settings.png",
+      "consumers": ["BuildingThumbs.settings"],
+      "subject": "Artificer's tuning mechanism and winding key",
+      "accent": "teal enamel"
+    },
+    {
+      "slug": "automation",
+      "name": "Automation",
+      "target": "robot.png",
+      "consumers": ["BuildingThumbs.automation"],
+      "subject": "Clockwork golem head",
+      "accent": "emerald runes"
+    },
+    {
+      "slug": "world",
+      "name": "World Map",
+      "target": "world.png",
+      "consumers": ["BuildingThumbs.worldStructures", "BuildingThumbs.worldMap"],
+      "subject": "Campaign map and compass",
+      "accent": "crimson wax"
+    },
+    {
+      "slug": "guild",
+      "name": "Guild",
+      "target": "guild.png",
+      "consumers": ["BuildingThumbs.guild"],
+      "subject": "Heraldic war banner and crossed lances",
+      "accent": "crimson cloth"
+    }
+  ]
+}

@@ -2,6 +2,7 @@ import {
   notificationMatchesSource,
   automaticPushSourceKey,
   notificationMatchesGame,
+  isNotificationGameClient,
   parseNotificationPayload,
   parsePushEnvelope,
   isPushDeviceId,
@@ -82,8 +83,10 @@ async function runNotificationCommand(
   source: Client,
   input: { owner: string; action: string; payload?: unknown; token?: string; id?: string; source?: unknown },
 ) {
-  if (input.action === "push-capabilities") return { automaticGameAlerts: true };
+  if (input.action === "push-capabilities")
+    return { automaticGameAlerts: true, directMessageAlerts: true, gameForegroundLease: true };
   if (input.action === "push-status") return (await readPushNotificationDevice()) ?? null;
+  if (input.action === "game-foreground-status") return hasVisibleGameClient(worker);
   if (input.action === "prepare-push") return preparePushNotificationDevice(input.owner);
   if (input.action === "revoke-push") {
     const revoked = await revokePushNotificationDevice(input.owner, input.id);
@@ -141,20 +144,26 @@ async function runNotificationCommand(
     input.action !== "test" &&
     clients.some(
       (client) =>
-        client.focused &&
         client.visibilityState === "visible" &&
         notificationMatchesGame(client.url, payload.target, worker.location.origin),
     )
   )
-    return "focused";
+    return "foreground";
   await worker.registration.showNotification(payload.title, {
     body: payload.body,
-    tag: payload.id,
+    tag: payload.tag ?? payload.id,
     data: payload,
     icon: "/images/game-pwa-192x192.png",
     badge: "/images/game-pwa-192x192.png",
   });
   return "shown";
+}
+
+async function hasVisibleGameClient(worker: ServiceWorkerGlobalScope): Promise<boolean> {
+  const clients = await worker.clients.matchAll({ type: "window", includeUncontrolled: true });
+  return clients.some(
+    (client) => client.visibilityState === "visible" && isNotificationGameClient(client.url, worker.location.origin),
+  );
 }
 
 async function openNotificationGame(worker: ServiceWorkerGlobalScope, value: unknown): Promise<void> {
@@ -175,7 +184,9 @@ async function openNotificationGame(worker: ServiceWorkerGlobalScope, value: unk
       return;
     const clients = await worker.clients.matchAll({ type: "window", includeUncontrolled: true });
     const matching = clients.find((client) =>
-      notificationMatchesGame(client.url, payload.target, worker.location.origin),
+      push?.kind === "direct-message"
+        ? isDirectMessageClient(client.url, worker.location.origin)
+        : notificationMatchesGame(client.url, payload.target, worker.location.origin),
     );
     if (matching) {
       await matching.focus();
@@ -186,6 +197,11 @@ async function openNotificationGame(worker: ServiceWorkerGlobalScope, value: unk
   } catch {
     // A notification can outlive its payload or the account that enabled it. Invalid/expired clicks do nothing.
   }
+}
+
+function isDirectMessageClient(clientUrl: string, origin: string): boolean {
+  const client = new URL(clientUrl);
+  return client.origin === origin && (client.pathname === "/" || isNotificationGameClient(clientUrl, origin));
 }
 
 async function receivePushNotification(worker: ServiceWorkerGlobalScope, event: PushEvent): Promise<void> {
@@ -223,7 +239,7 @@ async function receivePushNotification(worker: ServiceWorkerGlobalScope, event: 
     return;
   await worker.registration.showNotification(payload.title, {
     body: payload.body,
-    tag: payload.id,
+    tag: payload.tag ?? payload.id,
     data: { ...envelope, owner: payload.owner },
     icon: "/images/game-pwa-192x192.png",
     badge: "/images/game-pwa-192x192.png",

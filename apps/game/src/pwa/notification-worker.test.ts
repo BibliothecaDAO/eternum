@@ -119,13 +119,19 @@ it("serializes racing tabs and only displays the winning durable claim", async (
     expect.objectContaining({ tag: "story:1", data: payload }),
   );
 });
-it("claims focused activity too, so a later blur cannot turn a duplicate into an OS alert", async () => {
+it("claims visible activity without trusting focus, so a later hide cannot turn a duplicate into an OS alert", async () => {
   const h = harness();
-  h.client.focused = true;
   h.client.visibilityState = "visible";
-  expect((await h.send()).value).toBe("focused");
+  expect((await h.send()).value).toBe("foreground");
   expect(database.claim).toHaveBeenCalledOnce();
   expect(h.registration.showNotification).not.toHaveBeenCalled();
+});
+it("reports a visible game client without relying on its focus flag", async () => {
+  const h = harness();
+  h.client.visibilityState = "visible";
+  expect((await h.send("game-foreground-status")).value).toBe(true);
+  h.client.url = "https://game.test/";
+  expect((await h.send("game-foreground-status")).value).toBe(false);
 });
 it("keeps local alerts during the push-test preview but rejects a different game", async () => {
   const h = harness();
@@ -169,7 +175,7 @@ it("disabling delivery closes only that account's displayed notifications", asyn
 });
 
 const subscriptionId = "11111111-1111-4111-8111-111111111111";
-it("receives server push with no page clients and routes its click through normal game entry", async () => {
+it("receives server push with no page clients, preserves its collapse tag and routes its click through normal entry", async () => {
   const h = harness();
   h.clients.matchAll.mockResolvedValue([]);
   database.pushRead.mockResolvedValue({
@@ -179,9 +185,13 @@ it("receives server push with no page clients and routes its click through norma
     state: "active",
     enabledAt: now - 1000,
   });
-  const envelope = { version: 1, subscriptionId, notification: payload };
+  const envelope = { version: 1, subscriptionId, notification: { ...payload, tag: "thread:one" } };
   await h.push(envelope);
   expect(h.registration.showNotification).toHaveBeenCalledOnce();
+  expect(h.registration.showNotification).toHaveBeenCalledWith(
+    "Battle",
+    expect.objectContaining({ tag: "thread:one" }),
+  );
   expect(database.claim).toHaveBeenCalledWith(
     expect.objectContaining({ subscriptionId, token: "push-token" }),
     expect.any(Number),
@@ -199,6 +209,19 @@ it.each(["revoking", "preparing"])("rejects server push and clicks for a %s regi
   expect(h.clients.openWindow).not.toHaveBeenCalled();
   expect(h.client.focus).not.toHaveBeenCalled();
 });
+it("focuses an existing game when a direct-message notification is opened", async () => {
+  const h = harness();
+  database.pushRead.mockResolvedValue({ owner: "0x1", id: subscriptionId, state: "active" });
+  await h.click({
+    version: 1,
+    kind: "direct-message",
+    subscriptionId,
+    owner: "0x1",
+    notification: { ...payload, target: "/" },
+  });
+  expect(h.client.focus).toHaveBeenCalledOnce();
+  expect(h.clients.openWindow).not.toHaveBeenCalled();
+});
 it("rejects expired or account-mismatched server envelopes", async () => {
   const h = harness();
   database.pushRead.mockResolvedValue({ owner: "0x2", id: subscriptionId, state: "active" });
@@ -207,7 +230,7 @@ it("rejects expired or account-mismatched server envelopes", async () => {
   expect(h.registration.showNotification).not.toHaveBeenCalled();
 });
 
-it("lets automatic push own delivery without a local claim swallowing the server alert", async () => {
+it("keeps an already-sent automatic push user-visible without a local claim swallowing it", async () => {
   const h = harness();
   database.pushRead.mockResolvedValue({
     owner: "0x1",

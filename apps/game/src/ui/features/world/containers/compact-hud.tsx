@@ -1,10 +1,9 @@
-import { LeftView } from "@/types";
-import { resolveLeftViewSurface } from "./left-view-policy";
 import type { CompactLane } from "@/hooks/helpers/use-compact-hud";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
-import X from "lucide-react/dist/esm/icons/x";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { LeftView } from "@/types";
+import { BuildingThumbs } from "@/ui/config";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { EventLogPanel } from "@/ui/features/event-feed/event-log-panel";
@@ -18,12 +17,6 @@ import {
 import { MinimapPanel, useSelectedTileDetails } from "@/ui/features/world/components/bottom-right-panel";
 import { useRealtimeChatSelector } from "@/ui/features/social";
 import { canIssueOrders } from "@/utils/can-issue-orders";
-import type { LucideIcon } from "lucide-react";
-import Castle from "lucide-react/dist/esm/icons/castle";
-import Crosshair from "lucide-react/dist/esm/icons/crosshair";
-import MapIcon from "lucide-react/dist/esm/icons/map";
-import MessageSquare from "lucide-react/dist/esm/icons/message-square";
-import ScrollText from "lucide-react/dist/esm/icons/scroll-text";
 import {
   type CSSProperties,
   memo,
@@ -39,12 +32,22 @@ import { EmpireCockpit } from "./left-facets/empire-cockpit";
 import { ActionTile } from "./left-facets/structure-actions-panel";
 import { StructureListColumn } from "./left-facets/structure-list-column";
 import { useStructureActions } from "./left-facets/use-structure-actions";
+import { resolveLeftViewSurface } from "./left-view-policy";
 import { SpectatorStandingsBody } from "./spectator-standings";
 
 type CompactTab = "empire" | "map" | "log" | "chat" | "details";
 
 /** Tabs whose content is the bottom sheet; the log is its own popover and chat is the chat window. */
 const SHEET_TABS: ReadonlySet<CompactTab> = new Set(["empire", "map", "details"]);
+
+const COMPACT_TAB_IMAGES = {
+  empire: BuildingThumbs.home,
+  standings: BuildingThumbs.trophy,
+  map: BuildingThumbs.worldMap,
+  log: BuildingThumbs.latestUpdates,
+  chat: BuildingThumbs.discord,
+  details: BuildingThumbs.compass,
+} as const;
 
 /** Safe-area insets, never less than the shell's own padding so a phone without a notch keeps its gutters. */
 const SAFE_BOTTOM = "max(env(safe-area-inset-bottom), 0.5rem)";
@@ -115,11 +118,15 @@ export const CompactHud = memo(({ lane }: { lane: CompactLane }) => {
   if (showBlankOverlay) return null;
 
   const tabs: TabSpec[] = [
-    { id: "empire", label: ordersAllowed ? "Empire" : "Standings", icon: Castle },
-    { id: "map", label: "Map", icon: MapIcon },
-    { id: "log", label: "Log", icon: ScrollText, badge: unread, ref: logTab },
-    { id: "chat", label: "Chat", icon: MessageSquare, badge: chatUnread },
-    { id: "details", label: "Details", icon: Crosshair },
+    {
+      id: "empire",
+      label: ordersAllowed ? "Empire" : "Standings",
+      image: ordersAllowed ? COMPACT_TAB_IMAGES.empire : COMPACT_TAB_IMAGES.standings,
+    },
+    { id: "map", label: "Map", image: COMPACT_TAB_IMAGES.map },
+    { id: "log", label: "Log", image: COMPACT_TAB_IMAGES.log, badge: unread, ref: logTab },
+    { id: "chat", label: "Chat", image: COMPACT_TAB_IMAGES.chat, badge: chatUnread },
+    { id: "details", label: "Details", image: COMPACT_TAB_IMAGES.details },
   ];
   const layout = LANE_LAYOUT[lane];
 
@@ -160,7 +167,9 @@ export const CompactHud = memo(({ lane }: { lane: CompactLane }) => {
                   onClick={closeAndFocusTab}
                   className="flex h-11 w-11 items-center justify-center rounded-lg text-gold/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold active:bg-gold/15"
                 >
-                  <X aria-hidden="true" className="h-5 w-5" />
+                  <span aria-hidden="true" className="text-2xl font-light leading-none">
+                    ×
+                  </span>
                 </button>
               </header>
               <div className="min-h-0 overflow-y-auto overscroll-contain p-2 touch-pan-y">
@@ -221,7 +230,7 @@ const StructureActionStrip = ({ lane }: { lane: CompactLane }) => {
 interface TabSpec {
   id: CompactTab;
   label: string;
-  icon: LucideIcon;
+  image: string;
   badge?: number;
   ref?: RefObject<HTMLButtonElement>;
 }
@@ -235,7 +244,6 @@ const TabButton = ({
   active: boolean;
   onToggle: (tab: CompactTab) => void;
 }) => {
-  const Icon = tab.icon;
   return (
     <button
       ref={tab.ref}
@@ -245,13 +253,12 @@ const TabButton = ({
       aria-controls={active && SHEET_TABS.has(tab.id) ? "compact-hud-sheet" : undefined}
       onClick={() => onToggle(tab.id)}
       className={cn(
-        "relative flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-lg px-1 py-2 font-sans text-[11px] font-medium normal-case tracking-normal transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold active:bg-gold/15",
+        "relative flex min-h-14 min-w-0 flex-1 items-center justify-center rounded-lg p-2 transition-[background-color,color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold active:scale-[0.97] active:bg-gold/15",
         active ? "bg-gold/15 text-gold" : "text-gold/75",
       )}
     >
-      <Icon aria-hidden="true" className="h-5 w-5" />
-      <span className="truncate">{tab.label}</span>
-      {tab.badge !== undefined && (
+      <img src={tab.image} alt="" aria-hidden="true" className="h-9 w-9 object-contain" />
+      {tab.badge !== undefined && tab.badge > 0 && (
         <span className="absolute right-1/4 top-0">
           <UnreadFeedBadge count={tab.badge} />
         </span>
@@ -273,7 +280,7 @@ const SheetContent = ({
   if (tab === "details" && tileDetails === null)
     return (
       <div className="flex flex-col items-center gap-2 px-4 py-6 text-center font-sans text-sm text-gold/80">
-        <Crosshair aria-hidden="true" className="h-6 w-6 text-gold" />
+        <img src={COMPACT_TAB_IMAGES.details} alt="" aria-hidden="true" className="h-7 w-7 object-contain" />
         <p>Tap a tile on the map to inspect its army, structure, or terrain.</p>
       </div>
     );
