@@ -24,7 +24,7 @@ export interface LayerRoundTripEvidence {
 interface RoundTripOptions {
   bots: HarnessBot[];
   gameId: number;
-  provider: RpcProvider;
+  provider: HarnessProvider;
   client: GameClient;
   game: HarnessGame;
 }

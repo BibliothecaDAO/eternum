@@ -1,7 +1,8 @@
 import { PROCESS_INTERVAL_MS } from "@bibliothecadao/eternum/automation";
 import type { BuildOrderWorkload } from "./build-order";
 import { setTimeout as sleep } from "node:timers/promises";
-import { type Account, type RpcProvider } from "starknet";
+import { type Account } from "starknet";
+import type { HarnessProvider } from "./provider";
 import { type ActionPath, ActionPaths, ActionType, type GameActions } from "@bibliothecadao/eternum";
 import { ContractAddress, TroopTier, type ID, type TroopType } from "@bibliothecadao/types";
 import { mapWithConcurrency, type HarnessAccount } from "./account-factory";
@@ -116,7 +117,7 @@ interface PrepareHarnessBotsOptions {
   accounts: HarnessAccount[];
   beforeProvision?: () => Promise<void>;
   game: HarnessGame;
-  provider: RpcProvider;
+  provider: HarnessProvider;
   setupConcurrency?: number;
   setupTransactions: TrackedTransaction[];
 }
@@ -128,7 +129,7 @@ interface RunWorkloadOptions {
   intervalSeconds: number;
   minutes: number;
   onTick?: (completedTicks: number, totalTicks: number) => void;
-  provider: RpcProvider;
+  provider: HarnessProvider;
 }
 
 interface ExplorerActionPlan {
@@ -152,7 +153,7 @@ interface TrackTransactionOptions {
   exploreRequested?: boolean;
   gameId: number;
   kind: string;
-  provider: RpcProvider;
+  provider: HarnessProvider;
   rpc?: RpcMetrics;
   scheduledAtMs?: number;
   /** Sends the transaction and resolves with its hash once the chain accepted it. */
@@ -168,7 +169,6 @@ const ETERNUM_STRUCTURES_PER_BOT = 1;
 
 const settlementStructureCount = (gameType: HarnessGameType) =>
   gameType === "eternum" ? ETERNUM_STRUCTURES_PER_BOT : BLITZ_STRUCTURES_PER_BOT;
-export const RECEIPT_POLL_INTERVAL_MS = 50;
 const TRANSACTION_TIMEOUT_MS = 30_000;
 const SETUP_TRANSACTION_TIMEOUT_MS = 120_000;
 const MODEL_UPDATE_TIMEOUT_MS = 30_000;
@@ -354,7 +354,7 @@ async function prepareExplorerRoute(
   bot: HarnessBot,
   explorer: ExplorerState,
   game: HarnessGame,
-  provider: RpcProvider,
+  provider: HarnessProvider,
   pathReservations: PathReservations,
   setupTransactions: TrackedTransaction[],
 ): Promise<void> {
@@ -484,7 +484,7 @@ async function runBuildOrderTurn({
 }: {
   bot: HarnessBot;
   game: HarnessGame;
-  provider: RpcProvider;
+  provider: HarnessProvider;
   buildOrder: BuildOrderWorkload;
   due: boolean;
   scheduledAtMs: number;
@@ -589,7 +589,7 @@ async function settleBot({
   gameType: HarnessGameType;
   harnessAccount: HarnessAccount;
   game: HarnessGame;
-  provider: RpcProvider;
+  provider: HarnessProvider;
 }): Promise<TrackedTransaction> {
   const name = `bot-${harnessAccount.botId.toString().padStart(3, "0")}`;
   return trackTransaction({
@@ -613,7 +613,7 @@ async function provisionBot({
 }: {
   harnessAccount: HarnessAccount;
   game: HarnessGame;
-  provider: RpcProvider;
+  provider: HarnessProvider;
   structureId: ID;
 }): Promise<TrackedTransaction> {
   return trackTransaction({
@@ -637,7 +637,7 @@ async function createBotExplorer({
   actions: GameActions;
   harnessAccount: HarnessAccount;
   game: HarnessGame;
-  provider: RpcProvider;
+  provider: HarnessProvider;
   structure: StructureState;
   troopTypes: Map<ID, TroopType>;
 }): Promise<TrackedTransaction> {
@@ -668,7 +668,7 @@ interface RunBotActionOptions {
   game: HarnessGame;
   kind: WorkloadActionKind;
   pathReservations: PathReservations;
-  provider: RpcProvider;
+  provider: HarnessProvider;
   rpc: RpcMetrics;
   scheduledAtMs: number;
   tick: number;
@@ -887,7 +887,7 @@ function chooseDirections(
 
 async function waitForExplorerStaminaRestored(
   game: HarnessGame,
-  provider: RpcProvider,
+  provider: HarnessProvider,
   bots: HarnessBot[],
   rpc: RpcMetrics,
 ): Promise<number> {
@@ -908,7 +908,7 @@ async function waitForExplorerStaminaRestored(
   throw new Error("Explorers did not restore their configured stamina capacity within 360 seconds of chain time");
 }
 
-async function readChainTicks(game: HarnessGame, provider: RpcProvider, rpc: RpcMetrics): Promise<ChainTicks> {
+async function readChainTicks(game: HarnessGame, provider: HarnessProvider, rpc: RpcMetrics): Promise<ChainTicks> {
   const block = await measureRpc(rpc, "getBlock", () => provider.getBlock("latest"));
   return game.ticksAt(Number(block.timestamp));
 }
@@ -993,10 +993,12 @@ async function waitForConfirmation(
     timeoutMs,
     rpc,
     stop.signal,
-  ).then((result) => {
-    lifecycle = result;
-    return result;
-  });
+  )
+    .catch((error: unknown): Partial<TrackedTransaction> => ({ outcome: "driver_failed", error: errorMessage(error) }))
+    .then((result) => {
+      lifecycle = result;
+      return result;
+    });
   const complete = measured.then(async (result) => {
     if (result.outcome !== "completed") return result;
     const failure = await confirmed;
@@ -1013,79 +1015,94 @@ async function waitForConfirmation(
 }
 
 async function waitForReceiptLifecycle(
-  provider: RpcProvider,
+  provider: HarnessProvider,
   transactionHash: string,
   submittedAtMs: number,
   timeoutMs: number,
   rpc: RpcMetrics,
   signal: AbortSignal,
 ): Promise<Partial<TrackedTransaction>> {
-  const deadline = Date.now() + timeoutMs;
   let preConfirmedAtMs: number | undefined;
   let lastStatus: string | undefined;
-
-  while (!signal.aborted && Date.now() <= deadline) {
-    try {
-      const status = (await measureRpc(rpc, "getTransactionStatus", () =>
-        provider.getTransactionStatus(transactionHash),
-      )) as {
-        execution_status?: string;
-        finality_status?: string;
-        failure_reason?: string;
-      };
+  let finished = false;
+  const subscription = await provider.subscribeTransactionStatus(transactionHash);
+  const unsubscribe = () => {
+    void subscription.unsubscribe().catch(() => {});
+  };
+  if (signal.aborted) {
+    unsubscribe();
+    return { outcome: "confirmation_timeout" };
+  }
+  return new Promise<Partial<TrackedTransaction>>((resolve) => {
+    const finish = (result: Partial<TrackedTransaction>) => {
+      subscription.channel.off("open", catchUp);
+      signal.removeEventListener("abort", abort);
+      unsubscribe();
+      resolve(result);
+    };
+    const abort = () => {
+      finished = true;
+      finish({
+        outcome: "confirmation_timeout",
+        finalityStatus: lastStatus,
+        error: `Transaction did not reach ACCEPTED_ON_L2 within ${timeoutMs / 1_000} seconds`,
+      });
+    };
+    signal.addEventListener("abort", abort, { once: true });
+    const observe = (status: { finality_status: string; execution_status?: string; failure_reason?: string }) => {
+      if (finished) return;
       lastStatus = status.finality_status;
       const observedAtMs = Date.now();
-
-      if (status.execution_status === "REVERTED") {
-        return {
+      if (status.execution_status === "REVERTED" || status.finality_status === "REJECTED") {
+        finished = true;
+        finish({
           error: status.failure_reason ?? JSON.stringify(status),
           finalityStatus: lastStatus,
-          outcome: "reverted",
-        };
+          outcome: status.execution_status === "REVERTED" ? "reverted" : "rejected",
+        });
+        return;
       }
-      if (status.finality_status === "REJECTED") {
-        return {
-          error: status.failure_reason ?? JSON.stringify(status),
-          finalityStatus: lastStatus,
-          outcome: "rejected",
-        };
+      if (["PRE_CONFIRMED", "ACCEPTED_ON_L2", "ACCEPTED_ON_L1"].includes(lastStatus)) {
+        preConfirmedAtMs ??= observedAtMs;
       }
-      if (
-        preConfirmedAtMs === undefined &&
-        ["PRE_CONFIRMED", "ACCEPTED_ON_L2", "ACCEPTED_ON_L1"].includes(status.finality_status ?? "")
-      ) {
-        preConfirmedAtMs = observedAtMs;
-      }
-      if (["ACCEPTED_ON_L2", "ACCEPTED_ON_L1"].includes(status.finality_status ?? "")) {
-        const receipt = (await measureRpc(rpc, "getTransactionReceipt", () =>
-          provider.getTransactionReceipt(transactionHash),
-        )) as { block_number?: number };
-        if (!Number.isSafeInteger(receipt.block_number)) {
-          throw new Error(`Accepted transaction ${transactionHash} has no block number`);
-        }
-        return {
-          acceptedOnL2At: toIso(observedAtMs),
-          acceptedOnL2Block: receipt.block_number,
-          acceptedOnL2Ms: observedAtMs - submittedAtMs,
-          finalityStatus: status.finality_status,
-          outcome: "completed",
-          preConfirmedAt: toIso(preConfirmedAtMs ?? observedAtMs),
-          preConfirmedMs: (preConfirmedAtMs ?? observedAtMs) - submittedAtMs,
-        };
-      }
-    } catch {
-      // A just-submitted transaction is temporarily unknown to the RPC.
-    }
-    await sleep(RECEIPT_POLL_INTERVAL_MS);
-  }
-
-  return {
-    error: `Transaction did not reach ACCEPTED_ON_L2 within ${timeoutMs / 1_000} seconds`,
-    finalityStatus: lastStatus,
-    outcome: "confirmation_timeout",
-    preConfirmedAt: preConfirmedAtMs === undefined ? undefined : toIso(preConfirmedAtMs),
-    preConfirmedMs: preConfirmedAtMs === undefined ? undefined : preConfirmedAtMs - submittedAtMs,
-  };
+      if (!["ACCEPTED_ON_L2", "ACCEPTED_ON_L1"].includes(lastStatus)) return;
+      finished = true;
+      void measureRpc(rpc, "getTransactionReceipt", () => provider.getTransactionReceipt(transactionHash))
+        .then((receipt) => {
+          if (!("block_number" in receipt) || !Number.isSafeInteger(receipt.block_number)) {
+            throw new Error(`Accepted transaction ${transactionHash} has no block number`);
+          }
+          finish({
+            acceptedOnL2At: toIso(observedAtMs),
+            acceptedOnL2Block: receipt.block_number,
+            acceptedOnL2Ms: observedAtMs - submittedAtMs,
+            finalityStatus: lastStatus,
+            outcome: "completed",
+            preConfirmedAt: toIso(preConfirmedAtMs ?? observedAtMs),
+            preConfirmedMs: (preConfirmedAtMs ?? observedAtMs) - submittedAtMs,
+          });
+        })
+        .catch((error: unknown) => finish({ outcome: "driver_failed", error: errorMessage(error) }));
+    };
+    let observedSocket: unknown;
+    const catchUp = () => {
+      if (finished || observedSocket === subscription.channel.websocket) return;
+      observedSocket = subscription.channel.websocket;
+      void measureRpc(rpc, "getTransactionStatus", () => provider.getTransactionStatus(transactionHash))
+        .then((status) => {
+          if (!finished) observe(status);
+        })
+        .catch((error: unknown) => {
+          if (!finished) {
+            finished = true;
+            finish({ outcome: "driver_failed", error: errorMessage(error) });
+          }
+        });
+    };
+    subscription.channel.on("open", catchUp);
+    subscription.on(({ status }) => observe(status));
+    catchUp();
+  });
 }
 
 async function waitForSettlement(game: HarnessGame, address: string, gameType: HarnessGameType): Promise<ID[]> {

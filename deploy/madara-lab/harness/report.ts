@@ -6,7 +6,6 @@ import path from "node:path";
 import type { HarnessAccount } from "./account-factory";
 import type { LedgerHarnessEvidence } from "./ledger-mode";
 import {
-  RECEIPT_POLL_INTERVAL_MS,
   createRpcMetrics,
   type MeasuredRpcMethod,
   type RpcMetrics,
@@ -243,7 +242,7 @@ function buildHarnessManifest(
       bots: input.botCount,
       minutes: input.minutes,
       intervalSeconds: input.intervalSeconds,
-      receiptPollIntervalMs: RECEIPT_POLL_INTERVAL_MS,
+      receiptObservation: "shared-node-subscription",
       requestedMix: analysis.requestedMix,
       actualMix: analysis.actualMix,
       ticks: input.workload.ticks,

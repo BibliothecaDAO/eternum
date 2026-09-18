@@ -1,6 +1,8 @@
+import { statusSubscription } from "./test-observations";
+import type { HarnessProvider } from "./provider";
 import { ETHEREAL_STRIDE, getLayeredAttackDistance } from "@bibliothecadao/types";
 import { describe, expect, it } from "bun:test";
-import type { Account, Call, RpcProvider } from "starknet";
+import type { Account, Call } from "starknet";
 import { neighbor, type HarnessBot } from "./driver";
 import { runLayerRoundTrip } from "./layer-round-trip";
 
@@ -107,18 +109,19 @@ function fixture(
   } as unknown as Account;
   const provider = {
     getBlock: async () => ({ timestamp: 6000 }),
-    getTransactionStatus: async () => ({
-      finality_status: "ACCEPTED_ON_L2",
-      execution_status:
-        options.rejectExit &&
-        explorer.alt &&
-        lastEntrypoint === "toggle_alternate" &&
-        calls.filter((c) => c.entrypoint === "toggle_alternate").length > 1
-          ? "REVERTED"
-          : "SUCCEEDED",
-    }),
+    subscribeTransactionStatus: async () =>
+      statusSubscription({
+        finality_status: "ACCEPTED_ON_L2",
+        execution_status:
+          options.rejectExit &&
+          explorer.alt &&
+          lastEntrypoint === "toggle_alternate" &&
+          calls.filter((c) => c.entrypoint === "toggle_alternate").length > 1
+            ? "REVERTED"
+            : "SUCCEEDED",
+      }),
     getTransactionReceipt: async () => ({ block_number: block }),
-  } as unknown as RpcProvider;
+  } as unknown as HarnessProvider;
   const bot = {
     account,
     address: account.address,
