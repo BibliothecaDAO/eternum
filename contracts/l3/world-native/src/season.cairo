@@ -79,6 +79,7 @@ pub mod SeasonDomain {
         GameEvent: GameState::Event,
         RecordingEvent: RecordedState::Event,
         StoryEvent: crate::ownership::StoryEvent,
+        BatchProgress: crate::commands::BatchProgress,
     }
 
     #[constructor]
@@ -107,7 +108,7 @@ pub mod SeasonDomain {
         fn season_win_threshold(self: @ContractState, game_id: u32) -> u128 {
             self.games.win_thresholds.read(game_id).expect('missing season win threshold')
         }
-        fn close_season(ref self: ContractState, game_id: u32, actor: ContractAddress, context: DomainContext) {
+        fn close_season(ref self: ContractState, game_id: u32, actor: ContractAddress, context: DomainContext) -> u64 {
             let peers = self.lifecycle.require_active();
             assert!(get_caller_address() == get_contract_address(), "only authenticated command domain");
             crate::commands::assert_context_time(context.timestamp);
@@ -123,27 +124,30 @@ pub mod SeasonDomain {
                     actor
                 },
             };
-            let complete = crate::hyperstructures::IHyperstructuresDispatcherTrait::settle_completed_hyperstructures(
+            let remaining = crate::hyperstructures::IHyperstructuresDispatcherTrait::settle_completed_hyperstructures(
                 crate::hyperstructures::IHyperstructuresDispatcher { contract_address: peers.economy },
                 game_id,
                 context.timestamp,
             );
-            if !complete {
-                return;
+            if remaining != 0 {
+                return remaining.into();
             }
             self.close_initiators.write(game_id, None);
             if self.games.player_points.read((game_id, initiator)) < threshold {
-                return;
+                return 0;
             }
             game.end_at = context.timestamp;
             self.games.write_game(game_id, game);
             self.record_season_end(game_id, initiator, context.timestamp);
+            0
         }
     }
 
     #[abi(embed_v0)]
     impl GameSettlement of crate::registrar::IGameSettlement<ContractState> {
-        fn mark_game_settled(ref self: ContractState, game_id: u32, actor: ContractAddress, context: DomainContext) {
+        fn mark_game_settled(
+            ref self: ContractState, game_id: u32, actor: ContractAddress, context: DomainContext,
+        ) -> u64 {
             assert!(
                 get_caller_address() == self.lifecycle.require_active().season, "only authenticated command domain",
             );
@@ -157,17 +161,19 @@ pub mod SeasonDomain {
                 context.timestamp > game.end_at + game.end_grace_seconds.into(),
                 "game settlement grace period is active",
             );
-            if !self.settle_final_points(game_id, context.timestamp) {
-                return;
+            let remaining = self.settle_final_points(game_id, context.timestamp);
+            if remaining != 0 {
+                return remaining.into();
             }
             game.settled = true;
             self.games.write_game(game_id, game);
+            0
         }
     }
 
     #[abi(embed_v0)]
     impl PrizeSeason of crate::blitz_prizes::IPrizeSeason<ContractState> {
-        fn checkpoint_prize_points(ref self: ContractState, game_id: u32, timestamp: u64) -> bool {
+        fn checkpoint_prize_points(ref self: ContractState, game_id: u32, timestamp: u64) -> u32 {
             let peers = self.lifecycle.require_active();
             assert!(get_caller_address() == peers.prizes, "only prizes domain");
             self.settle_final_points(game_id, timestamp)
@@ -375,7 +381,7 @@ pub mod SeasonDomain {
     #[generate_trait]
     impl Internal of InternalTrait {
         #[inline(never)]
-        fn settle_final_points(ref self: ContractState, game_id: u32, timestamp: u64) -> bool {
+        fn settle_final_points(ref self: ContractState, game_id: u32, timestamp: u64) -> u32 {
             crate::hyperstructures::IHyperstructuresDispatcherTrait::settle_final_hyperstructures(
                 crate::hyperstructures::IHyperstructuresDispatcher {
                     contract_address: self.lifecycle.require_active().economy,
@@ -466,14 +472,26 @@ pub mod SeasonDomain {
         ) -> Result<Span<felt252>, felt252> {
             self.validate_action(intent, context, envelope, game_id, r, s)?;
             let command = decode_command(intent.arguments.span(), *intent.command).map_err(|_error| 'INVALID_COMMAND')?;
-            dispatch(
+            let result = dispatch(
                 peers,
                 game_id,
                 actor,
                 command,
                 DomainContext { raw_root: *envelope.root, timestamp: *envelope.timestamp },
             )
-                .map_err(|_error| 'GAMEPLAY_REJECTED')
+                .map_err(|_error| 'GAMEPLAY_REJECTED')?;
+            match command {
+                Command::CloseSeason | Command::MarkGameSettled | Command::ClaimBitcoinPhase(_) |
+                Command::RankPlayers(_) | Command::ResetRanking |
+                Command::DistributeFaithPrizes => {
+                    let mut output = result;
+                    let remaining: u64 = Serde::deserialize(ref output).expect('missing batch result');
+                    assert!(output.is_empty(), "invalid batch result");
+                    self.emit(crate::commands::BatchProgress { game_id, actor, nonce: *intent.nonce, remaining });
+                },
+                _ => {},
+            }
+            Ok(result)
         }
         fn consume_action_nonce(ref self: ContractState, intent: @Intent) -> Result<(u32, ContractAddress), felt252> {
             let game_id: u32 = (*intent.game_id).try_into().ok_or('INVALID_GAME')?;

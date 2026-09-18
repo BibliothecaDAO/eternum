@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-import { executeNativeAdminCommand } from "../world/native/command";
+import { completeNativeAdminCommand } from "../world/native/command";
 import type { NativeCommand } from "../../../../packages/provider/src/native-command";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -44,7 +44,7 @@ async function runAdministrativeCommand(args: CliArgs) {
     throw new Error("Native credentials and ADMISSION_URL are required");
   const provider = new RpcProvider({ nodeUrl: args["rpc-url"] });
   await assertProviderChain(provider, "madara", "--rpc-url");
-  const transactionHash = await executeNativeAdminCommand({
+  const result = await completeNativeAdminCommand({
     provider,
     manifest: JSON.parse(readFileSync(args.manifest, "utf8")),
     gameId: Number(args["game-id"]),
@@ -53,7 +53,7 @@ async function runAdministrativeCommand(args: CliArgs) {
     admissionUrl,
     command: JSON.parse(readFileSync(args.command, "utf8")) as NativeCommand,
   });
-  console.log(JSON.stringify({ event: "native_admin_command", transactionHash }));
+  console.log(JSON.stringify({ event: "native_admin_command", ...result }));
 }
 
 main().catch((error: unknown) => {

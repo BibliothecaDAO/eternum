@@ -319,7 +319,7 @@ pub mod FaithState {
         impl Life: Lifecycle::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of PrizeSettlementTrait<TContractState> {
-        fn settle_faith_wonders(ref self: ComponentState<TContractState>, game_id: u32, timestamp: u64) -> bool {
+        fn settle_faith_wonders(ref self: ComponentState<TContractState>, game_id: u32, timestamp: u64) -> u32 {
             let game = self.authorize_prizes(game_id, timestamp);
             let (start, mut high_score, mut winners) = self.prize_checkpoint.read(game_id);
             let count = self.faith_wonder_count.read(game_id);
@@ -337,7 +337,7 @@ pub mod FaithState {
                 }
             }
             self.prize_checkpoint.write(game_id, (end, high_score, winners));
-            end == count
+            count - end
         }
         fn faith_winner_count(self: @ComponentState<TContractState>, game_id: u32, wonder_id: u32) -> u32 {
             let (cursor, high_score, winners) = self.prize_checkpoint.read(game_id);

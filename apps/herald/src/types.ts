@@ -35,6 +35,7 @@ export interface RpcReceipt {
   finality_status: string;
   execution_status?: string;
   revert_reason?: string;
+  batch_remaining?: string;
   events: RpcEvent[];
 }
 

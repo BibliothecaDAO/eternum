@@ -85,7 +85,7 @@ pub trait IBitcoinCommands<T> {
         actor: ContractAddress,
         command: ClaimPhase,
         context: crate::commands::ExecutionContext,
-    );
+    ) -> u64;
     fn contribute_bitcoin_labor(
         ref self: T,
         game_id: u32,

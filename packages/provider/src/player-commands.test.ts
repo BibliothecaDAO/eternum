@@ -16,7 +16,9 @@ function setup() {
     { gameId: 7 },
   );
   provider.setNativeSubmission(vi.fn(), bindings.commandAbi as Abi, () => 9);
-  const enqueue = vi.spyOn(provider.promiseQueue, "enqueue").mockResolvedValue({ transaction_hash: "0x55" } as any);
+  const enqueue = vi
+    .spyOn(provider.promiseQueue, "enqueue")
+    .mockResolvedValue({ transaction_hash: "0x55", batch_remaining: "0" } as any);
   const signer = {
     address: "0x123",
     execute: vi.fn().mockResolvedValue({ transaction_hash: "0x44" }),

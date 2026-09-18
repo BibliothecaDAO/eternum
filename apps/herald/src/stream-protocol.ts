@@ -30,6 +30,7 @@ export type HeraldStreamMessage =
       status: string;
       block: number | null;
       revert_reason?: string;
+      batch_remaining?: string;
     })
   | (StreamMessageBase & { type: "head"; block: number; timestamp: number; preconfirmed: boolean });
 

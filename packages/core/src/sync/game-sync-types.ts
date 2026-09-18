@@ -74,6 +74,7 @@ export interface GameSyncHead {
 export interface GameSyncTransaction {
   block: number | null;
   hash: string;
+  batchRemaining?: string;
   revertReason?: string;
   status: string;
 }

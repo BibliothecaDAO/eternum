@@ -388,13 +388,16 @@ describe("HeraldGameSyncTransport", () => {
       seq: 2,
       status: "PRE_CONFIRMED",
       type: "tx",
+      batch_remaining: "9",
     });
     socket.receive({ block: 13, epoch: "epoch-a", seq: 3, timestamp: 100, type: "head" });
 
     expect(harness.events).toEqual([
       { hashed_keys: "0xbeef", models: { BattleEvent: { game_id: "0x36", timestamp: "0x7" } } },
     ]);
-    expect(harness.transactions).toEqual([{ block: null, hash: "0xabc", status: "PRE_CONFIRMED" }]);
+    expect(harness.transactions).toEqual([
+      { block: null, hash: "0xabc", status: "PRE_CONFIRMED", batchRemaining: "9" },
+    ]);
     expect(harness.heads).toEqual([{ block: 13, preconfirmed: false, timestamp: 100 }]);
   });
 

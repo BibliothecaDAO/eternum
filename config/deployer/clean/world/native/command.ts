@@ -1,3 +1,4 @@
+import { completeNativeBatches, nativeBatchRemaining } from "../../../../../packages/provider/src/native-batch";
 import { ec, hash, RpcProvider, type GetTransactionReceiptResponse } from "starknet";
 import {
   encodeNativeCommand,
@@ -19,6 +20,8 @@ const administrativeCommands = new Set<NativeCommand["kind"]>([
   "AllocateGameChests",
 ]);
 
+const repeatableBatches = new Set<NativeCommand["kind"]>(["DistributeFaithPrizes", "MarkGameSettled", "ResetRanking"]);
+
 type AdminCommandInput = {
   provider: RpcProvider;
   manifest: NativeWorldManifest;
@@ -29,7 +32,19 @@ type AdminCommandInput = {
   command: NativeCommand;
 };
 
-export async function executeNativeAdminCommand(input: AdminCommandInput): Promise<string> {
+export async function completeNativeAdminCommand(input: AdminCommandInput) {
+  if (!repeatableBatches.has(input.command.kind)) return executeNativeAdminCommand(input);
+  const result = await completeNativeBatches(async () => {
+    const result = await executeNativeAdminCommand(input);
+    if (result.remaining === undefined) throw new Error("Native administrative batch has no remaining count");
+    return { ...result, remaining: BigInt(result.remaining) };
+  });
+  return { ...result, remaining: result.remaining.toString() };
+}
+
+export async function executeNativeAdminCommand(
+  input: AdminCommandInput,
+): Promise<{ transactionHash: string; remaining?: string }> {
   if (!administrativeCommands.has(input.command.kind)) throw new Error("Not an administrative command");
   if (!Number.isSafeInteger(input.gameId) || input.gameId <= 0) throw new Error("Native command requires a game id");
   const season = input.manifest.native.domains.season.address;
@@ -43,7 +58,10 @@ export async function executeNativeAdminCommand(input: AdminCommandInput): Promi
   });
   const receipt = await input.provider.waitForTransaction(accepted.transaction_hash);
   assertCommandOutcome(receipt, season, input.gameId, input.accountAddress, nonce, accepted.order);
-  return accepted.transaction_hash;
+  const remaining = nativeBatchRemaining("events" in receipt ? receipt.events : [], season);
+  if ((repeatableBatches.has(input.command.kind) || input.command.kind === "RankPlayers") && remaining === undefined)
+    throw new Error("Native administrative batch has no remaining count");
+  return { transactionHash: accepted.transaction_hash, ...(remaining !== undefined ? { remaining } : {}) };
 }
 
 async function buildAdminIntent(input: AdminCommandInput, season: string) {

@@ -51,6 +51,7 @@ type HeraldMessage =
       status: string;
       block: number | null;
       revert_reason?: string;
+      batch_remaining?: string;
     })
   | (HeraldMessageBase & { type: "head"; block: number; timestamp: number; preconfirmed?: boolean });
 
@@ -442,6 +443,7 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
       block: message.block,
       hash: message.hash,
       status: message.status,
+      ...(message.batch_remaining !== undefined ? { batchRemaining: message.batch_remaining } : {}),
       ...(message.revert_reason ? { revertReason: message.revert_reason } : {}),
     };
     this.handlers?.onTransaction?.(transaction);

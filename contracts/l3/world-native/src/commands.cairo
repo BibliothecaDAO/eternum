@@ -33,6 +33,15 @@ pub struct ToggleAlternate {
     pub spire_direction: u8,
 }
 
+#[derive(Drop, starknet::Event)]
+pub struct BatchProgress {
+    #[key]
+    pub game_id: u32,
+    pub actor: ContractAddress,
+    pub nonce: u64,
+    pub remaining: u64,
+}
+
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub enum Command {
     CreateExplorer: CreateExplorer,

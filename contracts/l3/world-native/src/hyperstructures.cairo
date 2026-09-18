@@ -72,8 +72,8 @@ pub trait IHyperstructures<T> {
     fn hyperstructure_shares(self: @T, key: ResourceKey) -> ShareAllocation;
     fn hyperstructure_count(self: @T, game_id: u32) -> u32;
     fn completed_hyperstructure_count(self: @T, game_id: u32) -> u32;
-    fn settle_completed_hyperstructures(ref self: T, game_id: u32, timestamp: u64) -> bool;
-    fn settle_final_hyperstructures(ref self: T, game_id: u32, timestamp: u64) -> bool;
+    fn settle_completed_hyperstructures(ref self: T, game_id: u32, timestamp: u64) -> u32;
+    fn settle_final_hyperstructures(ref self: T, game_id: u32, timestamp: u64) -> u32;
     fn record_hyperstructure(ref self: T, key: ResourceKey, seed: felt252, completed: bool);
     fn initialize_hyperstructure(ref self: T, game_id: u32, actor: ContractAddress, id: u32, context: ExecutionContext);
     fn contribute_hyperstructure(
@@ -340,7 +340,7 @@ pub mod HyperstructureState {
         }
         fn settle_completed_hyperstructures(
             ref self: ComponentState<TContractState>, game_id: u32, timestamp: u64,
-        ) -> bool {
+        ) -> u32 {
             assert!(get_caller_address() == self.peers().season, "only authenticated command domain");
             crate::commands::assert_context_time(timestamp);
             self.games().game(game_id);
@@ -354,11 +354,9 @@ pub mod HyperstructureState {
             } else {
                 Some((cutoff, end, count))
             });
-            end == count
+            count - end
         }
-        fn settle_final_hyperstructures(
-            ref self: ComponentState<TContractState>, game_id: u32, timestamp: u64,
-        ) -> bool {
+        fn settle_final_hyperstructures(ref self: ComponentState<TContractState>, game_id: u32, timestamp: u64) -> u32 {
             assert!(get_caller_address() == self.peers().season, "only authenticated command domain");
             crate::commands::assert_context_time(timestamp);
             let game = self.games().game(game_id);
@@ -367,7 +365,7 @@ pub mod HyperstructureState {
             let start = self.final_checkpoint_cursor.read(game_id);
             let end = self.checkpoint_batch(game_id, game.end_at, start, count);
             self.final_checkpoint_cursor.write(game_id, end);
-            end == count
+            count - end
         }
     }
     #[generate_trait]

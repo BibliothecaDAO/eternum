@@ -53,6 +53,7 @@ export type TransactionSubmitGuard = (context: TransactionSubmitGuardContext) =>
 interface TransactionStreamStatus {
   block: number | null;
   hash: string;
+  batchRemaining?: string;
   revertReason?: string;
   status: string;
 }

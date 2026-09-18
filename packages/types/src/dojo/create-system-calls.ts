@@ -7,6 +7,8 @@ export type SystemCallAuthHandler = {
   onError?: (error: Error) => void;
 };
 
+export type BatchTransactionReceipt = GetTransactionReceiptResponse & { remaining: bigint };
+
 export type SystemCalls = ReturnType<typeof createSystemCalls>;
 
 export function createSystemCalls({ provider, authHandler }: { provider: any; authHandler?: SystemCallAuthHandler }) {
@@ -44,7 +46,7 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
 
   const bitcoin_mine_claim_phase_reward = async (
     props: SystemProps.BitcoinMineClaimPhaseRewardProps,
-  ): Promise<GetTransactionReceiptResponse> => provider.bitcoin_mine_claim_phase_reward(props);
+  ): Promise<BatchTransactionReceipt> => provider.bitcoin_mine_claim_phase_reward(props);
 
   const create_order = async (props: SystemProps.CreateOrderProps): Promise<GetTransactionReceiptResponse> => {
     return await provider.create_order(props);
@@ -160,7 +162,7 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.set_access(props);
   };
 
-  const end_game = async (props: SystemProps.EndGameProps): Promise<GetTransactionReceiptResponse> => {
+  const end_game = async (props: SystemProps.EndGameProps): Promise<BatchTransactionReceipt> => {
     return await provider.end_game(props);
   };
 

@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "e75211e4b947beacb96424336cddec780629d90860927e4933495f46e8749fe3",
+  "schemaIdentity": "13df814cbd0179ddaaa2a66abd4a6d4b9c8830bc713ec386066f25134e1481ae",
   "commandAbi": [
     {
       "type": "impl",
@@ -87,7 +87,11 @@
               "type": "world_native::commands::ExecutionContext"
             }
           ],
-          "outputs": [],
+          "outputs": [
+            {
+              "type": "core::integer::u64"
+            }
+          ],
           "state_mutability": "external"
         }
       ]
@@ -118,7 +122,11 @@
               "type": "world_native::commands::ExecutionContext"
             }
           ],
-          "outputs": [],
+          "outputs": [
+            {
+              "type": "core::integer::u64"
+            }
+          ],
           "state_mutability": "external"
         }
       ]
@@ -127,20 +135,6 @@
       "type": "impl",
       "name": "PrizeSeason",
       "interface_name": "world_native::blitz_prizes::IPrizeSeason"
-    },
-    {
-      "type": "enum",
-      "name": "core::bool",
-      "variants": [
-        {
-          "name": "False",
-          "type": "()"
-        },
-        {
-          "name": "True",
-          "type": "()"
-        }
-      ]
     },
     {
       "type": "interface",
@@ -161,7 +155,7 @@
           ],
           "outputs": [
             {
-              "type": "core::bool"
+              "type": "core::integer::u32"
             }
           ],
           "state_mutability": "external"
@@ -435,6 +429,20 @@
         {
           "name": "snapshot",
           "type": "@core::array::Array::<world_native::settlement::AcceptedCosmetic>"
+        }
+      ]
+    },
+    {
+      "type": "enum",
+      "name": "core::bool",
+      "variants": [
+        {
+          "name": "False",
+          "type": "()"
+        },
+        {
+          "name": "True",
+          "type": "()"
         }
       ]
     },
@@ -3931,6 +3939,33 @@
     },
     {
       "type": "event",
+      "name": "world_native::commands::BatchProgress",
+      "kind": "struct",
+      "members": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "kind": "key"
+        },
+        {
+          "name": "actor",
+          "type": "core::starknet::contract_address::ContractAddress",
+          "kind": "data"
+        },
+        {
+          "name": "nonce",
+          "type": "core::integer::u64",
+          "kind": "data"
+        },
+        {
+          "name": "remaining",
+          "type": "core::integer::u64",
+          "kind": "data"
+        }
+      ]
+    },
+    {
+      "type": "event",
       "name": "world_native::season::SeasonDomain::Event",
       "kind": "enum",
       "variants": [
@@ -3958,11 +3993,20 @@
           "name": "StoryEvent",
           "type": "world_native::ownership::StoryEvent",
           "kind": "nested"
+        },
+        {
+          "name": "BatchProgress",
+          "type": "world_native::commands::BatchProgress",
+          "kind": "nested"
         }
       ]
     }
   ],
   "events": [
+    {
+      "name": "BatchProgress",
+      "scope": "game"
+    },
     {
       "name": "ExecutionRecorded",
       "scope": "deployment"

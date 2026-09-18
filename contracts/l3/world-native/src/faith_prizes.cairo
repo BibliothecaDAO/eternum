@@ -13,7 +13,7 @@ pub trait IFaithPrizes<T> {
     fn faith_prize_pool(self: @T, game_id: u32) -> PrizePool;
     fn faith_prize_claimed(self: @T, key: PlayerFaithKey) -> bool;
     fn fund_faith_prizes(ref self: T, game_id: u32, actor: ContractAddress, amount: u128, context: ExecutionContext);
-    fn distribute_faith_prizes(ref self: T, game_id: u32, actor: ContractAddress, context: ExecutionContext);
+    fn distribute_faith_prizes(ref self: T, game_id: u32, actor: ContractAddress, context: ExecutionContext) -> u64;
     fn claim_faith_prize(
         ref self: T, game_id: u32, actor: ContractAddress, command: ClaimPlayer, context: ExecutionContext,
     );

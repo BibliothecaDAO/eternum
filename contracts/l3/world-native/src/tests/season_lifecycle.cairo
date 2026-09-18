@@ -238,16 +238,40 @@ fn nine_completed_hyperstructures() -> (super::Deployment, Array<crate::resource
     (d, keys)
 }
 
+pub fn execute_batch(d: super::Deployment, command: Command, timestamp: u64, expected: u64) {
+    let nonce = crate::season::ISeasonDispatcherTrait::next_nonce(
+        crate::season::ISeasonDispatcher { contract_address: d.peers.season }, 3, d.actor,
+    );
+    let mut spy = snforge_std::spy_events();
+    assert!(execute(d, command, timestamp));
+    let mut count = 0;
+    for (_, event) in spy.get_events().emitted_by(d.peers.season).events.span() {
+        if event.keys.span() == array![selector!("BatchProgress"), 3].span() {
+            assert_eq!(event.data.span(), array![d.actor.into(), nonce.into(), expected.into()].span());
+            count += 1;
+        }
+    }
+    assert_eq!(count, 1);
+}
+
+#[test]
+fn empty_checkpoint_work_reports_zero_without_claiming_a_win() {
+    let (d, _, _) = setup_with_rules(super::recorded::rules());
+    configure(d, 1);
+    execute_batch(d, Command::CloseSeason, 100, 0);
+    assert_eq!(games(d).game(3).end_at, 200);
+}
+
 #[test]
 fn close_batches_keep_one_cutoff_and_check_the_threshold_after_the_last_batch() {
     let (d, keys) = nine_completed_hyperstructures();
     let before = games(d).player_points(3, d.actor);
     configure(d, before + 450000);
-    assert!(execute(d, Command::CloseSeason, 100));
+    execute_batch(d, Command::CloseSeason, 100, 1);
     assert_eq!(games(d).game(3).end_at, 200);
     assert_eq!(games(d).player_points(3, d.actor), before + 400000);
     assert_eq!(hypers(d).hyperstructure_shares(*keys.at(8)).start_at, 50);
-    assert!(execute(d, Command::CloseSeason, 110));
+    execute_batch(d, Command::CloseSeason, 110, 0);
     assert_eq!(games(d).game(3).end_at, 110);
     assert_eq!(games(d).player_points(3, d.actor), before + 450000);
     assert_eq!(hypers(d).hyperstructure_shares(*keys.at(8)).start_at, 100);
@@ -295,17 +319,17 @@ fn ended_game_checkpoints_are_bounded_and_stop_at_the_game_end() {
     let (d, keys) = nine_completed_hyperstructures();
     let before = games(d).player_points(3, d.actor);
     snforge_std::start_cheat_block_timestamp_global(1000);
-    assert!(!final_checkpoint(d));
+    assert_eq!(final_checkpoint(d), 1);
     assert_eq!(games(d).player_points(3, d.actor), before + 8 * 150000);
     assert_eq!(hypers(d).hyperstructure_shares(*keys.at(8)).start_at, 50);
-    assert!(final_checkpoint(d));
+    assert_eq!(final_checkpoint(d), 0);
     assert_eq!(games(d).player_points(3, d.actor), before + 9 * 150000);
     assert_eq!(hypers(d).hyperstructure_shares(*keys.at(8)).start_at, 200);
-    assert!(final_checkpoint(d));
+    assert_eq!(final_checkpoint(d), 0);
     assert_eq!(games(d).player_points(3, d.actor), before + 9 * 150000);
 }
 
-fn final_checkpoint(d: super::Deployment) -> bool {
+fn final_checkpoint(d: super::Deployment) -> u32 {
     snforge_std::cheat_caller_address(d.peers.season, d.peers.prizes, snforge_std::CheatSpan::TargetCalls(1));
     crate::blitz_prizes::IPrizeSeasonDispatcherTrait::checkpoint_prize_points(
         crate::blitz_prizes::IPrizeSeasonDispatcher { contract_address: d.peers.season }, 3, 1000,
@@ -318,11 +342,11 @@ fn game_finalization_waits_for_the_last_hyperstructure_checkpoint_batch() {
     let deployment = super::bind_authority(deployment);
     let game = games(deployment).game(3);
     let timestamp = game.end_at + game.end_grace_seconds.into() + 1;
-    assert!(execute(deployment, Command::MarkGameSettled, timestamp));
+    execute_batch(deployment, Command::MarkGameSettled, timestamp, 1);
     assert!(!games(deployment).game(3).settled);
     assert_eq!(hypers(deployment).hyperstructure_shares(*keys.at(7)).start_at, game.end_at);
     assert_eq!(hypers(deployment).hyperstructure_shares(*keys.at(8)).start_at, 50);
-    assert!(execute(deployment, Command::MarkGameSettled, timestamp + 1));
+    execute_batch(deployment, Command::MarkGameSettled, timestamp + 1, 0);
     assert!(games(deployment).game(3).settled);
     assert_eq!(hypers(deployment).hyperstructure_shares(*keys.at(8)).start_at, game.end_at);
 }

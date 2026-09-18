@@ -37,12 +37,14 @@ pub trait IBlitzPrizes<T> {
     fn player_rank(self: @T, game_id: u32, player: ContractAddress) -> Option<PlayerRank>;
     fn ranked_players(self: @T, game_id: u32, rank: u16) -> Span<ContractAddress>;
     fn allocate_game_chests(ref self: T, game_id: u32, actor: ContractAddress, context: ExecutionContext);
-    fn rank_players(ref self: T, game_id: u32, actor: ContractAddress, command: RankPlayers, context: ExecutionContext);
-    fn reset_ranking(ref self: T, game_id: u32, actor: ContractAddress, context: ExecutionContext);
+    fn rank_players(
+        ref self: T, game_id: u32, actor: ContractAddress, command: RankPlayers, context: ExecutionContext,
+    ) -> u64;
+    fn reset_ranking(ref self: T, game_id: u32, actor: ContractAddress, context: ExecutionContext) -> u64;
 }
 #[starknet::interface]
 pub trait IPrizeSeason<T> {
-    fn checkpoint_prize_points(ref self: T, game_id: u32, timestamp: u64) -> bool;
+    fn checkpoint_prize_points(ref self: T, game_id: u32, timestamp: u64) -> u32;
     fn finalize_ranking(ref self: T, game_id: u32, trial_id: u128);
     fn prize_recipient(self: @T, player: ContractAddress) -> ContractAddress;
 }
@@ -162,7 +164,7 @@ pub mod BlitzPrizeState {
             actor: ContractAddress,
             command: RankPlayers,
             context: ExecutionContext,
-        ) {
+        ) -> u64 {
             let game = self.authorize(game_id, context.timestamp);
             self.require_admin(actor);
             self.require_ended(game, context.timestamp);
@@ -173,7 +175,7 @@ pub mod BlitzPrizeState {
             if trial.trial_id != 0 && trial.processed == trial.committed {
                 assert!(command.trial_id == trial.trial_id && command.players.is_empty(), "ranking already complete");
                 self.finalize(game_id, game, trial, actor, context.timestamp);
-                return;
+                return (trial.committed - self.award_cursor.read(game_id)).into();
             }
             assert!(!command.players.is_empty(), "players list is empty");
             if trial.trial_id == 0 {
@@ -181,8 +183,9 @@ pub mod BlitzPrizeState {
                 assert!(
                     command.committed > 0 && command.committed == registered, "roster does not match registrations",
                 );
-                if !self.season().checkpoint_prize_points(game_id, context.timestamp) {
-                    return;
+                let checkpoints = self.season().checkpoint_prize_points(game_id, context.timestamp);
+                if checkpoints != 0 {
+                    return Into::<u32, u64>::into(checkpoints) + 2 * Into::<u16, u64>::into(command.committed);
                 }
                 trial.trial_id = command.trial_id;
                 trial.committed = command.committed;
@@ -200,10 +203,12 @@ pub mod BlitzPrizeState {
                 self.finalize(game_id, game, trial, actor, context.timestamp);
             }
             self.write_trial(game_id, trial);
+            Into::<u16, u64>::into(trial.committed - trial.processed)
+                + Into::<u16, u64>::into(trial.committed - self.award_cursor.read(game_id))
         }
         fn reset_ranking(
             ref self: ComponentState<TContractState>, game_id: u32, actor: ContractAddress, context: ExecutionContext,
-        ) {
+        ) -> u64 {
             let game = self.authorize(game_id, context.timestamp);
             self.require_admin(actor);
             assert!(game.final_trial_id == 0, "finalized rankings are immutable");
@@ -227,7 +232,7 @@ pub mod BlitzPrizeState {
             if start != 0 {
                 trial.processed = start;
                 self.write_trial(game_id, trial);
-                return;
+                return start.into();
             }
             self.resetting.write(game_id, false);
             self
@@ -239,6 +244,7 @@ pub mod BlitzPrizeState {
                     },
                 );
             self.emit(RowDeleted { version: 1, model: 'RankingTrial', keys: array![game_id.into()].span() });
+            0
         }
     }
     #[generate_trait]

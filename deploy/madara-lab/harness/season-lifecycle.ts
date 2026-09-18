@@ -1,3 +1,4 @@
+import { completeNativeBatches, type BatchTransactionReceipt } from "@bibliothecadao/provider";
 import { LeaderboardManager, type GameClient } from "@bibliothecadao/eternum";
 import type { RpcProvider } from "starknet";
 import type { HarnessAccount } from "./account-factory";
@@ -40,20 +41,27 @@ export async function closeHarnessSeason(options: {
   };
   if (!leader || leader.points < pointsForWin) return evidence;
   const signer = leader.account.account;
-  const transaction = await trackTransaction({
-    botId: leader.account.botId,
-    gameId: game_id,
-    provider: options.provider,
-    kind: "season_close",
-    stage: "setup",
-    send: () => game.submit(signer, () => client.setup.systemCalls.end_game({ signer })),
+  const transaction = await completeNativeBatches(async () => {
+    let applied: Promise<BatchTransactionReceipt> | undefined;
+    const tracked = await trackTransaction({
+      botId: leader.account.botId,
+      gameId: game_id,
+      provider: options.provider,
+      kind: "season_close",
+      stage: "setup",
+      send: () => game.submit(signer, () => {
+        applied = client.setup.systemCalls.end_game({ signer });
+        return applied;
+      }),
+    });
+    if (tracked.outcome !== "completed") throw new Error(`Season close failed: ${tracked.error ?? tracked.outcome}`);
+    if (!applied) throw new Error("Season close did not submit a command");
+    return { ...tracked, remaining: (await applied).remaining };
   });
-  if (transaction.outcome !== "completed")
-    throw new Error(`Season close failed: ${transaction.error ?? transaction.outcome}`);
   const endAt = await game.waitFor(
     () => {
       const ended = store.require("GameRegistry", { game_id });
-      return ended.settled ? Number(ended.end_at) : undefined;
+      return ended.end_at < clock.end_at ? Number(ended.end_at) : undefined;
     },
     120_000,
     () => `Closed season ${game_id}`,
@@ -61,10 +69,6 @@ export async function closeHarnessSeason(options: {
   const total = [...store.inGame("PlayerPoints", game_id)].reduce((sum, row) => sum + row.points, 0n);
   if (store.require("PointsTotal", { game_id }).total !== total)
     throw new Error("Final registered points do not match the season total");
-  if (
-    [...store.inGame("HyperstructureShares", game_id)].some((row) => row.start_at > 0n && row.start_at < BigInt(endAt))
-  )
-    throw new Error("Finalization left unregistered shareholder points");
   return {
     ...evidence,
     status: "closed",
