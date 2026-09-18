@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { decodeHyperstructureShares } from "./hyperstructure-shareholders";
 
 describe("decodeHyperstructureShares", () => {
-  it("decodes tuple arrays stored in RECS", () => {
+  it("decodes tuple arrays stored in native store", () => {
     expect(
       decodeHyperstructureShares([
         ["0xa", "0x1388"],

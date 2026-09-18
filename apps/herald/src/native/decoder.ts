@@ -110,10 +110,7 @@ export class NativeDecoder {
 function definition(name: string, scope: "game" | "deployment"): GameSyncModelDefinition {
   return {
     name,
-    channels: ["gamewide-entity"],
-    availability: "all",
-    s2Scope: scope === "game" ? "game" : "chain",
-    recovery: "convergent-snapshot",
+    scope,
     deletion: "component",
   };
 }
@@ -184,10 +181,7 @@ function decodeEvent(
     kind: "event",
     model: {
       name: layout.name,
-      channels: ["global-event"],
-      availability: "all",
-      s2Scope: projection.scope === "game" ? "game" : "chain",
-      recovery: "event-deduped",
+      scope: projection.scope,
       deletion: "event-ephemeral",
     },
     entityId: normalizeFelt(hash.computePoseidonHashOnElements([position.transactionHash, position.eventIndex])),

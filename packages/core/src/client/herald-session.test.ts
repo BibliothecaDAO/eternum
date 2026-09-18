@@ -1,3 +1,6 @@
+import type { NativeWorldBindings } from "@bibliothecadao/types";
+import bindings from "../../../../contracts/l3/world-native/schema/bindings.json";
+import { nativeModelDefinition } from "./native-models";
 // @vitest-environment node
 
 import { describe, expect, it, vi } from "vitest";
@@ -12,6 +15,7 @@ import {
 
 const createSession = (overrides: Partial<CreateHeraldGameSyncSessionInput> = {}) =>
   createHeraldGameSyncSession({
+    modelDefinition: nativeModelDefinition(bindings as unknown as NativeWorldBindings),
     baseUrl: "https://herald.realms.test",
     chain: "madara",
     entityModels: [],

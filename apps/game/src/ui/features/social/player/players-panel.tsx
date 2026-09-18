@@ -94,7 +94,7 @@ export const PlayersPanel = ({
         // Finalized games rank by the on-chain final standings. Live games rank
         // by Herald’s prepared history total — the same source as the breakdown
         // columns, so POINTS is always the sum of what the row displays (owner
-        // ruling). The RECS standing is only the pre-fetch fallback.
+        // ruling). The native store standing is only the pre-fetch fallback.
         const liveRank = standing?.rank ?? player.rank;
         const livePoints = standing?.points ?? player.points;
         const rank = isFinalized ? (standing?.rank ?? Number.MAX_SAFE_INTEGER) : liveRank;

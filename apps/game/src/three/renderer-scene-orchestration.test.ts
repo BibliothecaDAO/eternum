@@ -45,7 +45,7 @@ describe("prepareGameRendererScenes", () => {
     prepareGameRendererScenes({
       applySceneRegistry,
       controls: { id: "controls" } as never,
-      dojo: { id: "dojo" } as never,
+      game: { id: "game" } as never,
       effectsBridgeRuntime: effectsBridgeRuntime as never,
       inputSurface: document.createElement("canvas"),
       mouse: { id: "mouse" } as never,

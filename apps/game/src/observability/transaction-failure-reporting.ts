@@ -13,7 +13,7 @@ import { extractReadableErrorMessage } from "@/utils/error-message";
 import { resolveUserIdentity, resolveWalletIdentityMode } from "./wallet-identity";
 
 export type ClientTransactionSurface =
-  | "dojo_provider"
+  | "game_provider"
   | "registration"
   | "settlement"
   | "amm"

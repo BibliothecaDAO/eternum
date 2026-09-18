@@ -1,5 +1,5 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import { getNativeManifest } from "@/runtime/world/native-manifest";
+import { getNativeManifest, nativeBindings } from "@/runtime/world/native-manifest";
 import { createBrowserScheduler } from "@/sync/browser-scheduler";
 import { getCachedRpcProvider } from "@/utils/cached-rpc-provider";
 import {
@@ -8,9 +8,7 @@ import {
   getStoredGameplayKey,
   resolveGameTransactionResourceBounds,
 } from "@bibliothecadao/eternum";
-import type { NativeWorldBindings } from "@bibliothecadao/types";
 import { ec } from "starknet";
-import bindings from "../../../../contracts/l3/world-native/schema/bindings.json";
 
 type BrowserGameInput = Pick<
   Parameters<typeof createGameClient>[0],
@@ -24,7 +22,7 @@ export async function createBrowserGameClient(input: BrowserGameInput) {
     ...input,
     networkConfig: { manifest: getNativeManifest(), rpcUrl: input.world.rpcUrl },
     native: {
-      bindings: bindings as unknown as NativeWorldBindings,
+      bindings: nativeBindings,
       chainId,
       signIntent: async (actor, digest) => {
         const { account, owner } = useAccountStore.getState();

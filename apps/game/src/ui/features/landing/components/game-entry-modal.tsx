@@ -2,7 +2,7 @@
  * GameEntryModal - Combined loading + settlement modal for seamless game entry
  *
  * This modal shows:
- * 1. Loading phase - Bootstrap progress (world config, Dojo setup, sync)
+ * 1. Loading phase - Bootstrap progress (world config, native setup, sync)
  * 2. Settlement phase - If user is registered but hasn't settled
  * 3. Auto-transitions to game when ready
  */

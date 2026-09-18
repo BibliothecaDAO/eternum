@@ -18,11 +18,11 @@ export const Leaderboard = ({
   hyperstructureEntityId: ID;
   setSelectedTab: (tab: number) => void;
 }) => {
-  const dojo = useGame();
+  const game = useGame();
   const {
     account: { account },
     setup: { store },
-  } = dojo;
+  } = game;
   // The coarse clock is the refresh signal: the standings below are recomputed on every render.
   useCoarseNowSeconds(LEADERBOARD_AUTO_REFRESH_INTERVAL_MS / 1000);
 

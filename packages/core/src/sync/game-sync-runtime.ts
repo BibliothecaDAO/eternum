@@ -79,7 +79,7 @@ const createEmptyMetrics = (): GameSyncRuntimeMetrics => ({
   totalReplayedEventUpdates: 0,
 });
 
-/** Owns the session-scoped stream, snapshot hydration, and ordered RECS writes. */
+/** Owns the session-scoped stream, snapshot hydration, and ordered native store writes. */
 export class GameSyncRuntime {
   private generation = 0;
   private writer: GameSyncWriter | null = null;
@@ -196,7 +196,7 @@ export class GameSyncRuntime {
   }
 
   /**
-   * Fires once per applied ingest slice, after the spatial projection flushed. Store bridges derive from RECS here,
+   * Fires once per applied ingest slice, after the spatial projection flushed. Store bridges derive from native store here,
    * so a slice that touched a thousand rows costs the overlay one recompute, not a thousand.
    */
   public subscribeSliceApplied(listener: () => void): () => void {

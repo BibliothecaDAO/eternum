@@ -48,7 +48,7 @@ export interface GameClientObserver {
 }
 
 export interface CreateHeraldGameSyncSessionInput {
-  modelDefinition?: (name: string) => GameSyncModelDefinition;
+  modelDefinition: (name: string) => GameSyncModelDefinition;
   baseUrl: string;
   chain: GameChain;
   entityModels: readonly string[];

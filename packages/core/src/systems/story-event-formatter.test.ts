@@ -199,7 +199,7 @@ it("shows the confirmed d20 bonuses and tolerates older stories without rolls", 
   expect(buildStoryEventPresentation(story("BattleStory", {})).description).toBeUndefined();
 });
 
-it("formats native battle sides and positive Ethereal rolls without a Dojo-shaped projection", () => {
+it("formats native battle sides and positive Ethereal rolls without a legacy row projection", () => {
   const presentation = buildStoryEventPresentation(
     story("BattleEvent", {
       attacker_id: 20,

@@ -167,10 +167,6 @@ describe("worldmap-render-diagnostics", () => {
     incrementWorldmapRenderCounter("armyAuthoritativeSweepConfirmedDead");
     incrementWorldmapRenderCounter("armyAuthoritativeSweepReapplied");
     incrementWorldmapRenderCounter("armyAuthoritativeSweepFailed");
-    incrementWorldmapRenderCounter("armyRecsSweepRemovedDeadZero");
-    incrementWorldmapRenderCounter("armyRecsSweepRemovedDeadMissing");
-    incrementWorldmapRenderCounter("armyRecsSweepSnappedPosition");
-    incrementWorldmapRenderCounter("armyRecsSweepRestoredAlive");
     incrementWorldmapRenderCounter("armyRenderIntegrityHealOrphanSlot");
     incrementWorldmapRenderCounter("armyRenderIntegrityHealVisibleUndrawn");
 
@@ -179,10 +175,6 @@ describe("worldmap-render-diagnostics", () => {
     expect(snapshot.counters).toHaveProperty("armyAuthoritativeSweepConfirmedDead", 1);
     expect(snapshot.counters).toHaveProperty("armyAuthoritativeSweepReapplied", 1);
     expect(snapshot.counters).toHaveProperty("armyAuthoritativeSweepFailed", 1);
-    expect(snapshot.counters).toHaveProperty("armyRecsSweepRemovedDeadZero", 1);
-    expect(snapshot.counters).toHaveProperty("armyRecsSweepRemovedDeadMissing", 1);
-    expect(snapshot.counters).toHaveProperty("armyRecsSweepSnappedPosition", 1);
-    expect(snapshot.counters).toHaveProperty("armyRecsSweepRestoredAlive", 1);
     expect(snapshot.counters).toHaveProperty("armyRenderIntegrityHealOrphanSlot", 1);
     expect(snapshot.counters).toHaveProperty("armyRenderIntegrityHealVisibleUndrawn", 1);
   });

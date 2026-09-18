@@ -304,7 +304,7 @@ export class ArmyManager {
     compactLabelRenderer: CompactEntityLabelScope,
     labelsGroup?: Group,
     hexagonScene?: HexagonScene,
-    dojoContext?: SetupResult,
+    gameContext?: SetupResult,
     visibilityManager?: CentralizedVisibilityManager,
     chunkStride?: number,
     private readonly chunkWorkScheduler?: FrameBudgetWorkScheduler,
@@ -337,7 +337,7 @@ export class ArmyManager {
     this.hexagonScene = hexagonScene;
     this.fxManager = new FXManager(scene, 1);
     this.attachmentManager = new CosmeticAttachmentManager(scene);
-    this.store = dojoContext?.store as NativeFactStore | undefined;
+    this.store = gameContext?.store as NativeFactStore | undefined;
     this.unsubscribeArmyProjection = worldSpatialProjection.subscribeArmies((changes) => {
       this.handleArmyProjectionChanges(projectionChangesForLayer(changes, activeMapLayer()));
     });
@@ -1790,7 +1790,7 @@ export class ArmyManager {
 
     const initialStaminaPresentation = this.resolveArmyStaminaSnapshot(params.entityId);
     finalCurrentStamina = initialStaminaPresentation?.current ?? finalCurrentStamina;
-    // The projection can spawn a label before RECS holds the troops; the next chain-time advance resolves it.
+    // The projection can spawn a label before native store holds the troops; the next chain-time advance resolves it.
     if (!initialStaminaPresentation) this.staminaUnresolved.add(params.entityId);
     else this.staminaUnresolved.delete(params.entityId);
 
@@ -1893,7 +1893,7 @@ export class ArmyManager {
   }
 
   /**
-   * Apply a pre-computed movement plan. The projected RECS position is already
+   * Apply a pre-computed movement plan. The projected native store position is already
    * authoritative for presentation; this method owns only the visual tween.
    */
   private async applyMovementPlan(plan: ArmyMovementPlan): Promise<boolean> {

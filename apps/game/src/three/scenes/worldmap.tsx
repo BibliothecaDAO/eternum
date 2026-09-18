@@ -960,7 +960,7 @@ export default class WorldmapScene extends WarpTravel {
   private layerRevision = 0;
   private storeSubscriptions: Array<() => void> = [];
 
-  dojo: SetupResult;
+  game: SetupResult;
 
   private pinnedRenderAreas: Set<string> = new Set();
 
@@ -985,7 +985,7 @@ export default class WorldmapScene extends WarpTravel {
   private hoverLabelRecovery!: WorldmapHoverLabelRecovery;
 
   constructor(
-    dojoContext: SetupResult,
+    gameContext: SetupResult,
     raycaster: Raycaster,
     controls: MapControls,
     mouse: Vector2,
@@ -993,14 +993,14 @@ export default class WorldmapScene extends WarpTravel {
     private readonly markLabelsDirty: () => void = () => {},
     private readonly compilePipelines: PipelineCompiler = async () => {},
   ) {
-    super(SceneName.WorldMap, controls, dojoContext, mouse, raycaster, sceneManager);
+    super(SceneName.WorldMap, controls, gameContext, mouse, raycaster, sceneManager);
 
-    this.dojo = dojoContext;
+    this.game = gameContext;
     this.hoverLabelRaycaster = raycaster;
     this.logWorldmapSceneConstruction();
     this.registerWorldmapRecoveryHandle();
-    this.initializeWorldmapSceneServices(dojoContext);
-    this.bindTransactionFailureLifecycle(dojoContext);
+    this.initializeWorldmapSceneServices(gameContext);
+    this.bindTransactionFailureLifecycle(gameContext);
     this.initializeWorldmapManagers();
     this.configureWorldmapRecoveryLifecycle();
     this.initializeWorldmapSupportManagers();
@@ -1045,7 +1045,7 @@ export default class WorldmapScene extends WarpTravel {
     return false;
   }
 
-  private initializeWorldmapSceneServices(dojoContext: SetupResult): void {
+  private initializeWorldmapSceneServices(gameContext: SetupResult): void {
     this.fxManager = new FXManager(this.scene, 1);
     this.proceduralTerrain = new WorldmapProceduralTerrain();
     this.refreshTerrainPropOccupancy();
@@ -1089,7 +1089,7 @@ export default class WorldmapScene extends WarpTravel {
     }
   }
 
-  private bindTransactionFailureLifecycle(dojoContext: SetupResult): void {
+  private bindTransactionFailureLifecycle(gameContext: SetupResult): void {
     this.handleTransactionProgress = (payload: { stage?: string; type?: string; explorerId?: number | string }) => {
       if (payload?.type !== "explore") return;
 
@@ -1109,7 +1109,7 @@ export default class WorldmapScene extends WarpTravel {
       }
     };
 
-    dojoContext.network?.provider?.on("transactionProgress", this.handleTransactionProgress);
+    gameContext.network?.provider?.on("transactionProgress", this.handleTransactionProgress);
   }
 
   override applyRenderVisualProfile(features: RenderVisualProfile): void {
@@ -1144,7 +1144,7 @@ export default class WorldmapScene extends WarpTravel {
       this.compactEntityLabelRenderer.createScope("army"),
       this.armyLabelsGroup,
       this,
-      this.dojo,
+      this.game,
       this.visibilityManager,
       this.chunkSize,
       this.chunkWorkQueue,
@@ -1185,7 +1185,7 @@ export default class WorldmapScene extends WarpTravel {
       this.structureLabelsGroup,
       this,
       this.fxManager,
-      this.dojo,
+      this.game,
       this.visibilityManager,
       this.chunkSize,
       this.chunkWorkQueue,
@@ -1326,7 +1326,7 @@ export default class WorldmapScene extends WarpTravel {
       },
       projection: this.worldSpatialProjection,
       requestRefresh: () => this.scheduleTerrainEcologyRefresh(),
-      store: this.dojo.store,
+      store: this.game.store,
     });
     const unsubscribeArmies = this.worldSpatialProjection.subscribeArmies((published) => {
       this.followSelectedArmyLayer(published);
@@ -1619,7 +1619,7 @@ export default class WorldmapScene extends WarpTravel {
 
   /** Top-10 by the live leaderboard; recomputed only when a label-priority refresh asks for it. */
   private resolveTopOwnerAddresses(): ReadonlySet<string> {
-    const leaderboard = LeaderboardManager.instance(this.dojo.store);
+    const leaderboard = LeaderboardManager.instance(this.game.store);
     const top = new Set<string>();
     leaderboard.playersByRank.slice(0, TOP_OWNER_LABEL_COUNT).forEach(([address]: [bigint, number]) => {
       const key = normalizeOwnerAddress(address);
@@ -1639,7 +1639,7 @@ export default class WorldmapScene extends WarpTravel {
     this.registerRelicChestWorldUpdateSubscriptions();
   }
 
-  // A flourish only, for crates inside the loaded chunk: the relics themselves land in RECS on the explorer,
+  // A flourish only, for crates inside the loaded chunk: the relics themselves land in native store on the explorer,
   // and the feed row (the UI's) covers every opening in the world.
   private registerRelicChestWorldUpdateSubscriptions(): void {
     this.addWorldUpdateSubscription(
@@ -1682,7 +1682,7 @@ export default class WorldmapScene extends WarpTravel {
     this.interactionAdapter = createWorldmapInteractionAdapter({
       state: this.state,
       selectedHexManager: this.selectedHexManager,
-      store: this.dojo.store,
+      store: this.game.store,
     });
     this.interactiveHexManager.applyHoverPalette(resolveHoverVisualPalette({ hasSelection: false }));
     this.interactiveHexManager.setSurfaceVisibility(false);
@@ -2027,11 +2027,11 @@ export default class WorldmapScene extends WarpTravel {
   private getEntityOwnerAddress(entityId: ID): ContractAddress | undefined {
     if (this.worldSpatialProjection.getArmy(entityId)) return this.getArmyOwnerAddress(entityId);
 
-    return this.dojo.store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: entityId })?.owner;
+    return this.game.store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: entityId })?.owner;
   }
 
   private getArmyOwnerAddress(entityId: ID): ContractAddress {
-    const explorer = this.dojo.store.require("ExplorerTroops", {
+    const explorer = this.game.store.require("ExplorerTroops", {
       game_id: configManager.getActiveGameId(),
       explorer_id: entityId,
     });
@@ -2040,7 +2040,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private getArmyOwnerStructureId(entityId: ID): ID | null {
-    const explorer = this.dojo.store.get("ExplorerTroops", {
+    const explorer = this.game.store.get("ExplorerTroops", {
       game_id: configManager.getActiveGameId(),
       explorer_id: entityId,
     });
@@ -2072,7 +2072,7 @@ export default class WorldmapScene extends WarpTravel {
 
   private getStructureOwnerAddress(entityId: ID): ContractAddress {
     return ContractAddress(
-      this.dojo.store.require("Structure", {
+      this.game.store.require("Structure", {
         game_id: configManager.getActiveGameId(),
         entity_id: entityId,
       }).owner,
@@ -2283,7 +2283,7 @@ export default class WorldmapScene extends WarpTravel {
       const didSubmit = await submitActiveWorldBlitzHyperstructureCreation({
         account,
         hexCoords,
-        systemCalls: this.dojo.systemCalls,
+        systemCalls: this.game.systemCalls,
       });
 
       if (!didSubmit) {
@@ -2894,7 +2894,7 @@ export default class WorldmapScene extends WarpTravel {
     const traversalAction = resolveSpireTraversalAction({
       attackerHex: { col: attacker.hexCoords.col, row: attacker.hexCoords.row },
       attackerAlt: attacker.hexCoords.alt,
-      getTile: (alt, col, row) => getTileAt(this.dojo.store, alt, col, row),
+      getTile: (alt, col, row) => getTileAt(this.game.store, alt, col, row),
     });
 
     if (traversalAction.kind === "attack") {
@@ -3073,14 +3073,14 @@ export default class WorldmapScene extends WarpTravel {
 
     this.showSelectedStructure(selectedEntityId, hexCoords);
 
-    const structureData = this.dojo.store.get("Structure", {
+    const structureData = this.game.store.get("Structure", {
       game_id: configManager.getActiveGameId(),
       entity_id: selectedEntityId,
     });
     const attackRange = structureData
       ? Math.max(
           0,
-          ...getGuardsByStructure(structureData, this.dojo.store)
+          ...getGuardsByStructure(structureData, this.game.store)
             .filter((guard) => Number(guard.troops.count) > 0)
             .map((guard) => getTroopAttackRange(guard.troops.category)),
         )
@@ -3233,7 +3233,7 @@ export default class WorldmapScene extends WarpTravel {
 
   private resolveLiveExplorerTroopsForMovementStamina(entityId: ID) {
     return (
-      this.dojo.store.get("ExplorerTroops", { game_id: configManager.getActiveGameId(), explorer_id: entityId })
+      this.game.store.get("ExplorerTroops", { game_id: configManager.getActiveGameId(), explorer_id: entityId })
         ?.troops ?? null
     );
   }
@@ -3373,10 +3373,10 @@ export default class WorldmapScene extends WarpTravel {
 
     const { currentDefaultTick, currentArmiesTick } = getBlockTimestamp();
     const armyPosition = this.getArmyDisplayPosition(selectedEntityId);
-    // Action paths plan from RECS ExplorerTroops — the same coord the submit
+    // Action paths plan from native store ExplorerTroops — the same coord the submit
     // freshness guard checks. The visual display position may lag it mid-tween
     // and is presentation only, never planning input.
-    const explorerTroopsCoord = this.dojo.store.get("ExplorerTroops", {
+    const explorerTroopsCoord = this.game.store.get("ExplorerTroops", {
       game_id: configManager.getActiveGameId(),
       explorer_id: selectedEntityId,
     })?.coord;
@@ -3538,7 +3538,7 @@ export default class WorldmapScene extends WarpTravel {
     const account = useAccountStore.getState().account;
     if (!account) return;
     const targetHex = actionPath[actionPath.length - 1].hex;
-    void openRelicCrate({ systemCalls: this.dojo.systemCalls, account, explorerId: selectedEntityId, hex: targetHex });
+    void openRelicCrate({ systemCalls: this.game.systemCalls, account, explorerId: selectedEntityId, hex: targetHex });
   }
 
   private keepMovementDestinationSelected(targetHex: HexPosition): void {
@@ -3669,10 +3669,10 @@ export default class WorldmapScene extends WarpTravel {
       attachManagerLabels: () => this.attachWorldmapManagerLabels(),
       registerStoreSubscriptions: () => {
         this.registerStoreSubscriptions();
-        // World-update (RECS→scene) listeners are disposed on every switch-off but were
+        // World-update (native store→scene) listeners are disposed on every switch-off but were
         // only registered in the constructor, leaving the map permanently deaf after any
         // scene switch (armies never re-appear: unlike tiles/structures they have no
-        // scene-local repair path). Re-arming here also replays existing RECS entities
+        // scene-local repair path). Re-arming here also replays existing native store entities
         // (runOnInit), so re-entry re-adds anything missed while the listeners were dead.
         this.registerWorldUpdateSubscriptions();
       },
@@ -5724,7 +5724,7 @@ export default class WorldmapScene extends WarpTravel {
     return collectWorldmapTerrainEcologyAnchors({
       cells,
       getStructureFacts: (entityId) => {
-        const component = this.dojo.store.get("Structure", {
+        const component = this.game.store.get("Structure", {
           game_id: configManager.getActiveGameId(),
           entity_id: entityId,
         });
@@ -7853,7 +7853,7 @@ export default class WorldmapScene extends WarpTravel {
     this.pendingArmyMovementVisualLifecycleDisposers.clear();
     this.pendingExploreLatencyActions.clear();
     if (this.handleTransactionProgress) {
-      this.dojo.network?.provider?.off("transactionProgress", this.handleTransactionProgress);
+      this.game.network?.provider?.off("transactionProgress", this.handleTransactionProgress);
     }
     this.unregisterWorldmapRecoveryHandle?.();
     this.unregisterWorldmapRecoveryHandle = null;

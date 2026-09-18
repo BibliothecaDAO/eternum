@@ -42,7 +42,7 @@ const buildTroops = (overrides: { amount: bigint; updatedTick: bigint }): Troops
 });
 
 describe("movement stamina affordability", () => {
-  it("allows movement when live RECS stamina is sufficient", () => {
+  it("allows movement when live native store stamina is sufficient", () => {
     const result = resolveMovementStamina({
       entityId: 123 as ID,
       currentArmiesTick: 100,
@@ -55,7 +55,7 @@ describe("movement stamina affordability", () => {
     expect(result.source).toBe("live");
   });
 
-  it("rejects movement when live RECS stamina is insufficient", () => {
+  it("rejects movement when live native store stamina is insufficient", () => {
     const result = resolveMovementStamina({
       entityId: 456 as ID,
       currentArmiesTick: 101,

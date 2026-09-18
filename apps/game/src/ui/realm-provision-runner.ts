@@ -2,7 +2,7 @@ import { hasGameEnded } from "@bibliothecadao/eternum/game-sync";
 /**
  * Provisions every owned realm that the chain still reports unprovisioned, once the main phase has started. The
  * chain's own definition of "provisioned" is a labor building on the realm, so the candidates read that count from
- * RECS; the runner keeps only the realms it has already confirmed, so a slow diff never sends a second call.
+ * native store; the runner keeps only the realms it has already confirmed, so a slow diff never sends a second call.
  *
  * A failed batch waits a growing number of heads before the next attempt (doubling, capped) and, after enough
  * failures, leaves its realms alone until the next reload.

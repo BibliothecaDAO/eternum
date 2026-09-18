@@ -21,7 +21,7 @@ import PlusIcon from "lucide-react/dist/esm/icons/plus";
 import Pickaxe from "lucide-react/dist/esm/icons/pickaxe";
 
 export const Castle = () => {
-  const dojo = useGame();
+  const game = useGame();
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const openSurface = usePopoverStore((state) => state.openSurface);
   const [showMissingResources, setShowMissingResources] = useState(false);
@@ -50,7 +50,7 @@ export const Castle = () => {
   };
 
   if (!structure) return null;
-  const isOwner = structure.owner === ContractAddress(dojo.account.account.address);
+  const isOwner = structure.owner === ContractAddress(game.account.account.address);
 
   return (
     structure && (

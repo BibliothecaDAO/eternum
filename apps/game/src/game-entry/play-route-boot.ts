@@ -67,7 +67,7 @@ export type PlayRouteBootPhase =
   | "normalize_route"
   | "await_account"
   | "select_world"
-  | "setup_dojo"
+  | "setup_game"
   | "initial_sync"
   | "seed_entry_state"
   | "init_renderer"
@@ -101,7 +101,7 @@ interface PlayRouteBootControllerState extends PlayRouteBootSnapshot {
 const createPendingTasks = (): BootstrapTask[] => [
   { id: "world", label: "Selecting world", status: "pending" },
   { id: "manifest", label: "Loading game config", status: "pending" },
-  { id: "dojo", label: "Connecting to world", status: "pending" },
+  { id: "game", label: "Connecting to world", status: "pending" },
   { id: "sync", label: "Syncing game state", status: "pending" },
   { id: "renderer", label: "Preparing graphics", status: "pending" },
 ];
@@ -186,7 +186,7 @@ const resolveBootPhase = ({
   }
 
   if (bootstrapStatus === "loading") {
-    return "setup_dojo";
+    return "setup_game";
   }
 
   if (!readiness.worldmapReady) {

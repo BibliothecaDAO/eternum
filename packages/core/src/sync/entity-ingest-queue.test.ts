@@ -52,7 +52,7 @@ describe("EntityIngestQueue", () => {
     };
     const queue = new EntityIngestQueue({ scheduler, store, now: () => 0 });
 
-    // A provision-style burst: torii delivers one member per update.
+    // A provision-style burst: the snapshot arrives in small chunks.
     queue.enqueueEntity({ hashed_keys: "realm", models: { Resource: { LABOR_BALANCE: 10n } } });
     queue.enqueueEntity({ hashed_keys: "realm", models: { Resource: { WHEAT_BALANCE: 20n } } });
     queue.enqueueEntity({ hashed_keys: "realm", models: { Resource: { WOOD_BALANCE: 30n, WHEAT_BALANCE: 25n } } });
@@ -75,11 +75,11 @@ describe("EntityIngestQueue", () => {
     ]);
   });
 
-  it("rejects recovery drains when a RECS batch fails", async () => {
+  it("rejects recovery drains when a native store batch fails", async () => {
     const scheduler = createManualGameSyncScheduler();
     const store: GameSyncStore = {
       applyEntityOperations: vi.fn(() => {
-        throw new Error("RECS write failed");
+        throw new Error("native store write failed");
       }),
       applyEvent: vi.fn(),
       listModelEntityIds: () => [],
@@ -90,8 +90,8 @@ describe("EntityIngestQueue", () => {
     const drained = queue.drain();
     scheduler.flushNext();
 
-    await expect(drained).rejects.toThrow("RECS write failed");
-    await expect(queue.drain()).rejects.toThrow("RECS write failed");
+    await expect(drained).rejects.toThrow("native store write failed");
+    await expect(queue.drain()).rejects.toThrow("native store write failed");
   });
 
   it("keeps a typical logical update burst in one store write", async () => {

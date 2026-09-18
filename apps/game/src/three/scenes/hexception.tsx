@@ -221,13 +221,13 @@ export default class HexceptionScene extends HexagonScene {
 
   constructor(
     controls: MapControls,
-    dojo: SetupResult,
+    game: SetupResult,
     mouse: Vector2,
     raycaster: Raycaster,
     sceneManager: SceneManager,
     private readonly compilePipelines: PipelineCompiler = async () => {},
   ) {
-    super(SceneName.Hexception, controls, dojo, mouse, raycaster, sceneManager);
+    super(SceneName.Hexception, controls, game, mouse, raycaster, sceneManager);
 
     this.proceduralTerrain = new ProceduralTerrain();
     this.scene.add(this.proceduralTerrain.object3d);
@@ -238,7 +238,7 @@ export default class HexceptionScene extends HexagonScene {
     this.applyAmbienceAppearance();
     this.storeUnsubscribes.push(useWorldAppearanceStore.subscribe(() => this.applyAmbienceAppearance()));
     this.storeUnsubscribes.push(
-      this.dojo.store.subscribe((changes) => {
+      this.game.store.subscribe((changes) => {
         if (
           changes.some(
             (change) =>
@@ -380,7 +380,7 @@ export default class HexceptionScene extends HexagonScene {
     );
 
     // Re-render the hex grid when the loading overlay dismisses.
-    // Buildings may not be in RECS when the scene first sets up;
+    // Buildings may not be in native store when the scene first sets up;
     // once showBlankOverlay becomes false, structures are synced.
     this.storeUnsubscribes.push(
       useUIStore.subscribe(
@@ -794,12 +794,12 @@ export default class HexceptionScene extends HexagonScene {
 
       const useSimpleCost = this.mode.id !== "blitz" && this.state.useSimpleCost;
       const structureEntityId = useUIStore.getState().structureEntityId;
-      const realm = getRealmInfo(structureEntityId, this.dojo.store);
+      const realm = getRealmInfo(structureEntityId, this.game.store);
       const buildability = resolveConstructionBuildability({
         entityId: structureEntityId,
         buildingType: buildingType.type,
         useSimpleCost,
-        store: this.dojo.store,
+        store: this.game.store,
         realm,
         mode: this.mode,
         targetSpot: normalizedCoords,
@@ -872,7 +872,7 @@ export default class HexceptionScene extends HexagonScene {
     if (!this.isEntered || !canIssueOrders()) return false;
     const entityId = useUIStore.getState().structureEntityId;
     const account = useAccountStore.getState().account;
-    const realm = getRealmInfo(entityId, this.dojo.store);
+    const realm = getRealmInfo(entityId, this.game.store);
     if (!account || !realm || realm.owner !== BigInt(account.address)) return false;
     if (spot.col === BUILDINGS_CENTER[0] && spot.row === BUILDINGS_CENTER[1]) return false;
     if (this.tileManager.isHexOccupied(spot)) return false;
@@ -957,7 +957,7 @@ export default class HexceptionScene extends HexagonScene {
 
     if (producedResource) {
       const productionManager = this.state.structureEntityId
-        ? new ResourceManager(this.dojo.store, this.state.structureEntityId)
+        ? new ResourceManager(this.game.store, this.state.structureEntityId)
         : undefined;
       const productionEndsAt = productionManager?.getProductionEndsAt(producedResource as ResourcesIds);
       const currentTick = getBlockTimestamp().currentDefaultTick;
@@ -1075,9 +1075,9 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   private selectRouteStructure(position: HexPosition): void {
-    const tile = getTileAt(this.dojo.store, DEFAULT_COORD_ALT, position.col, position.row);
+    const tile = getTileAt(this.game.store, DEFAULT_COORD_ALT, position.col, position.row);
     const structure = tile?.occupier_is_structure
-      ? this.dojo.store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: tile.occupier_id })
+      ? this.game.store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: tile.occupier_id })
       : undefined;
     if (!structure) throw new Error(`No structure is available at local route ${position.col},${position.row}`);
     useUIStore.getState().setStructureEntityId(structure.entity_id, { worldMapPosition: position });
@@ -1103,7 +1103,7 @@ export default class HexceptionScene extends HexagonScene {
     if (structureType === StructureType.Realm || structureType === StructureType.Village) {
       this.structureStage = this.tileManager.getRealmLevel(this.state.structureEntityId);
     } else if (structureType === StructureType.Hyperstructure) {
-      this.structureStage = getStructureStage(structureType, useUIStore.getState().structureEntityId, this.dojo.store);
+      this.structureStage = getStructureStage(structureType, useUIStore.getState().structureEntityId, this.game.store);
     }
   }
 
@@ -1121,7 +1121,7 @@ export default class HexceptionScene extends HexagonScene {
       reportMissingIdentity: () => {
         console.warn("[Hexception] Building update lacked inner coordinates; running full grid reconciliation.");
       },
-      resolveBuilding: (position) => this.resolveBuildingFromRecs(position),
+      resolveBuilding: (position) => this.resolveBuildingFromStore(position),
       update,
     });
   }
@@ -1185,7 +1185,7 @@ export default class HexceptionScene extends HexagonScene {
     return realmGeneration === this.activeRealmGeneration;
   }
 
-  private resolveBuildingFromRecs(position: HexPosition): HexceptionBuilding | undefined {
+  private resolveBuildingFromStore(position: HexPosition): HexceptionBuilding | undefined {
     const building = this.tileManager
       .existingBuildings()
       .find((candidate) => candidate.col === position.col && candidate.row === position.row);
@@ -1486,7 +1486,7 @@ export default class HexceptionScene extends HexagonScene {
     if (!this.hyperstructureModel || this.tileManager.structureType() !== StructureType.Hyperstructure) return;
     this.hyperstructureModel.setConstructionAt(
       0,
-      readHyperstructureConstruction(this.dojo.store, Number(this.state.structureEntityId)),
+      readHyperstructureConstruction(this.game.store, Number(this.state.structureEntityId)),
     );
   }
 
@@ -1710,8 +1710,8 @@ export default class HexceptionScene extends HexagonScene {
   private centerBuildingCategory(structureType: StructureType): BuildingType {
     if (structureType !== StructureType.Mine) return structureTypeToBuildingType[structureType];
     const game_id = configManager.getActiveGameId();
-    const structure = this.dojo.store.require("Structure", { game_id, entity_id: this.state.structureEntityId });
-    return this.dojo.store.require("MineKindConfig", { game_id, kind: structure.metadata.mine_kind }).building_category;
+    const structure = this.game.store.require("Structure", { game_id, entity_id: this.state.structureEntityId });
+    return this.game.store.require("MineKindConfig", { game_id, kind: structure.metadata.mine_kind }).building_category;
   }
 
   computeMainHexMatrices = (
@@ -1821,7 +1821,7 @@ export default class HexceptionScene extends HexagonScene {
 
   private updateSettlementPresentations(deltaTime: number): void {
     if (!this.isEntered) return;
-    const structure = this.dojo.store.get("Structure", {
+    const structure = this.game.store.get("Structure", {
       game_id: configManager.getActiveGameId(),
       entity_id: this.state.structureEntityId,
     });

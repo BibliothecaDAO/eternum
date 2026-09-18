@@ -23,12 +23,12 @@ export abstract class WarpTravel extends HexagonScene {
   constructor(
     sceneName: SceneName,
     controls: MapControls,
-    dojo: SetupResult,
+    game: SetupResult,
     mouse: Vector2,
     raycaster: Raycaster,
     sceneManager: SceneManager,
   ) {
-    super(sceneName, controls, dojo, mouse, raycaster, sceneManager);
+    super(sceneName, controls, game, mouse, raycaster, sceneManager);
     this.bootstrapSceneOwnership();
   }
 

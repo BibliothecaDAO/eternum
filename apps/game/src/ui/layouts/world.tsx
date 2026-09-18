@@ -24,7 +24,7 @@ import { BlockTimestampPoller } from "../shared/components/block-timestamp-polle
 import { ChainTimePoller } from "../shared/components/chain-time-poller";
 import { ActionRunners } from "../action-runners";
 import { RelicCrateOpenings } from "../features/military/chest/relic-crate-openings";
-import { RecsStoreBridge } from "./recs-store-bridge";
+import { NativeStoreBridge } from "./native-store-bridge";
 import { FLIGHT_TRACE_ENABLED, traceFlightCommit } from "@/three/flight-trace";
 import { Profiler } from "react";
 import { PlayOverlayManager } from "./play-overlay-manager";
@@ -76,7 +76,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
  */
 const BackgroundSystems = () => (
   <>
-    <RecsStoreBridge />
+    <NativeStoreBridge />
     <LeaderboardActivitySync />
     <ActionRunners />
     <RelicCrateOpenings />

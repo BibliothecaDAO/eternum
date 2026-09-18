@@ -47,7 +47,7 @@ describe("explorer stamina source selection", () => {
     expect(getTroopsStaminaUpdatedTick(null)).toBe(0n);
   });
 
-  it("returns live RECS troops when no pending movement exists", () => {
+  it("returns live native store troops when no pending movement exists", () => {
     const liveTroops = buildTroops(6n, 25n);
 
     expect(selectFreshestTroopsSnapshot({ liveTroops: liveTroops as never })).toBe(liveTroops);

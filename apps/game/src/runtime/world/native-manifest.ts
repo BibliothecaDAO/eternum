@@ -1,4 +1,7 @@
-import type { Manifest } from "@bibliothecadao/types";
+import bindings from "../../../../../contracts/l3/world-native/schema/bindings.json";
+import type { Manifest, NativeWorldBindings } from "@bibliothecadao/types";
+
+export const nativeBindings = bindings as unknown as NativeWorldBindings;
 
 declare const __NATIVE_WORLD_MANIFEST__: Manifest;
 

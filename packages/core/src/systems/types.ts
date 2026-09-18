@@ -28,14 +28,14 @@ export interface ActiveProduction {
   buildingType: BuildingType;
 }
 
-// Spatial identity and live RECS presentation facts consumed by map renderers.
+// Spatial identity and live native store presentation facts consumed by map renderers.
 export type ExplorerTroopsTileSystemUpdate = {
   entityId: ID;
   hexCoords: HexPosition;
   troopType: TroopType;
   troopTier: TroopTier;
   removed?: boolean;
-  // Live presentation facts derived from RECS
+  // Live presentation facts derived from native store
   ownerName: string;
   guildName: string;
   troopCount?: number | undefined;
@@ -90,7 +90,7 @@ export type StructureTileSystemUpdate = {
   isAlly: boolean;
   owner: { address: bigint | undefined; ownerName: string; guildName: string };
   hasWonder: boolean;
-  // Live presentation facts derived from RECS
+  // Live presentation facts derived from native store
   guardArmies?: GuardArmy[];
   activeProductions?: ActiveProduction[];
   hyperstructureRealmCount?: number;

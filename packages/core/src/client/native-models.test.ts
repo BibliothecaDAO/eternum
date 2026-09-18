@@ -5,6 +5,18 @@ import { HeraldGameSyncTransport, type HeraldSocket } from "../sync/herald-game-
 import { nativeModelDefinition } from "./native-models";
 
 describe("native event routing", () => {
+  it("uses schema scope for game rows and deployment identities", () => {
+    const definition = nativeModelDefinition(bindings as unknown as NativeWorldBindings);
+    expect(definition("AddressName")).toEqual({ name: "AddressName", scope: "deployment", deletion: "component" });
+    expect(definition("TileOpt")).toEqual({ name: "TileOpt", scope: "game", deletion: "component" });
+    expect(definition("ExecutionRecorded")).toEqual({
+      name: "ExecutionRecorded",
+      scope: "deployment",
+      deletion: "event-ephemeral",
+    });
+    expect(() => definition("UnknownModel")).toThrow("absent from the native deployment schema");
+  });
+
   it("delivers battle ephemera, persistent tiles and the following transaction without reconnecting", async () => {
     const socket: HeraldSocket = {
       onopen: null,

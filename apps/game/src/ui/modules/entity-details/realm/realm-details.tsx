@@ -44,7 +44,7 @@ const SectionRow = ({ label, children }: { label: string; children: React.ReactN
 
 const RealmVillageDetails = () => {
   const ordersAllowed = useUIStore(canIssueOrders);
-  const dojo = useGame();
+  const game = useGame();
   const currentBlockTimestamp = useCurrentBlockTimestamp();
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const setTooltip = useTooltipStore((state) => state.setTooltip);
@@ -52,8 +52,8 @@ const RealmVillageDetails = () => {
   const revision = useNativeRevision(["Structure", "Guard", "GuildMember"]);
 
   const structure = useMemo(
-    () => getStructure(structureEntityId, ContractAddress(dojo.account.account.address), dojo.setup.store),
-    [structureEntityId, dojo.account.account.address, dojo.setup.store, revision],
+    () => getStructure(structureEntityId, ContractAddress(game.account.account.address), game.setup.store),
+    [structureEntityId, game.account.account.address, game.setup.store, revision],
   );
 
   const isRealm = useMemo(() => {
@@ -123,8 +123,8 @@ const RealmVillageDetails = () => {
         {ordersAllowed && isVillageLike && structure.isMine && !structure.structure.base.starting_troops_granted && (
           <Button
             onClick={() =>
-              void dojo.setup.systemCalls
-                .receive_army_grant({ signer: dojo.account.account, village_id: structureEntityId })
+              void game.setup.systemCalls
+                .receive_army_grant({ signer: game.account.account, village_id: structureEntityId })
                 .catch((error: unknown) => toast.error(extractReadableErrorMessage(error)))
             }
           >
