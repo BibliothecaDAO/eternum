@@ -337,7 +337,7 @@ describe("Madara harness CLI and concurrency", () => {
       bots: 96,
       intervalSeconds: 15,
       workload: "build-order",
-      setupConcurrency: 1,
+      setupConcurrency: 6,
     });
     expect(parseHarnessArgs(["--workload", "cadence"]).workload).toBe("cadence");
     expect(() => parseHarnessArgs(["--workload", "unknown"])).toThrow("--workload");

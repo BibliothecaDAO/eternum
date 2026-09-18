@@ -100,4 +100,76 @@ describe("native bindings in the shared game client", () => {
     expect(prepare).toHaveBeenCalledWith("0x222");
     expect(signIntent).toHaveBeenCalledOnce();
   });
+  it("coordinates missing actor snapshots without blocking known actors or waiting for signatures", async () => {
+    const { store, write } = await fixture();
+    write("SliceRules", [1n], { ...preset.rules, game_id: 1 });
+    let releaseSnapshot!: () => void;
+    let releaseSignature!: () => void;
+    const snapshot = new Promise<void>((resolve) => {
+      releaseSnapshot = resolve;
+    });
+    const signature = new Promise<void>((resolve) => {
+      releaseSignature = resolve;
+    });
+    const prepare = vi.fn(async (actor: string) => {
+      if (actor === "0x222") await snapshot;
+      if (actor === "0x333") {
+        store.applyEntityOperations([
+          {
+            type: "remove-components",
+            entityId: hash.computePoseidonHashOnElements([1n, 0x222n]),
+            models: ["ActionNonce"],
+          },
+        ]);
+      }
+      write("ActionNonce", [1n, BigInt(actor)], { game_id: 1, actor, next_nonce: actor === "0x222" ? "0" : "7" });
+    });
+    const signIntent = vi.fn(async (actor: AccountInterface) => {
+      if (actor.address === "0x222") await signature;
+      return { r: 1n, s: 2n, publicKey: 3n };
+    });
+    const submitIntent = vi.fn(async (_action: SignedNativeIntent) => ({ transaction_hash: "0x99" }));
+    const send = nativeSubmission({ bindings, chainId: "0x1", signIntent, submitIntent }, store, 1, "0x101", prepare);
+    const call = {
+      contractAddress: "0x101",
+      entrypoint: "CloseBitcoinPhase",
+      calldata: ["1", ...encodeNativeCommand(bindings.commandAbi, { kind: "CloseBitcoinPhase", value: 42n })],
+    };
+    const first = send({ address: "0x222" } as AccountInterface, call);
+    const second = send({ address: "0x333" } as AccountInterface, call);
+    await send({ address: "0x111" } as AccountInterface, call);
+    expect(prepare.mock.calls).toEqual([["0x222"]]);
+    expect(submitIntent).toHaveBeenCalledOnce();
+    releaseSnapshot();
+    await second;
+    expect(prepare.mock.calls).toEqual([["0x222"], ["0x333"]]);
+    expect(submitIntent).toHaveBeenCalledTimes(2);
+    expect(store.get("ActionNonce", { game_id: 1, actor: 0x222n })).toBeUndefined();
+    releaseSignature();
+    await first;
+    expect(submitIntent.mock.calls.map(([action]) => action.intent.map(BigInt)[6])).toEqual([0n, 7n, 0n]);
+  });
+
+  it("releases snapshot coordination after a failed actor snapshot", async () => {
+    const { store, write } = await fixture();
+    write("SliceRules", [1n], { ...preset.rules, game_id: 1 });
+    const prepare = vi.fn(async (actor: string) => {
+      if (actor === "0x222") throw new Error("Gameplay nonce from Herald timed out");
+      write("ActionNonce", [1n, BigInt(actor)], { game_id: 1, actor, next_nonce: "0" });
+    });
+    const signIntent = vi.fn(async () => ({ r: 1n, s: 2n, publicKey: 3n }));
+    const submitIntent = vi.fn(async () => ({ transaction_hash: "0x99" }));
+    const send = nativeSubmission({ bindings, chainId: "0x1", signIntent, submitIntent }, store, 1, "0x101", prepare);
+    const call = {
+      contractAddress: "0x101",
+      entrypoint: "CloseBitcoinPhase",
+      calldata: ["1", ...encodeNativeCommand(bindings.commandAbi, { kind: "CloseBitcoinPhase", value: 42n })],
+    };
+    const failed = expect(send({ address: "0x222" } as AccountInterface, call)).rejects.toThrow("timed out");
+    await send({ address: "0x333" } as AccountInterface, call);
+    await failed;
+    expect(prepare.mock.calls).toEqual([["0x222"], ["0x333"]]);
+    expect(signIntent).toHaveBeenCalledOnce();
+    expect(submitIntent).toHaveBeenCalledOnce();
+  });
 });
