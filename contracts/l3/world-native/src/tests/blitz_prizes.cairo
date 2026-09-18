@@ -57,6 +57,13 @@ fn setup(scores: Span<u128>, series: bool) -> super::Deployment {
     let mut total = 0_u128;
     for index in 0..scores.len() {
         let account = player(100 + index);
+        super::fixtures::IRegistryFixtureDispatcherTrait::add_binding(
+            super::fixtures::IRegistryFixtureDispatcher {
+                contract_address: ISeasonDispatcher { contract_address: d.peers.season }.authentication().registry,
+            },
+            account,
+            account,
+        );
         set_fixture(d.peers.settlement, selector!("entered_players"), array![3, account.into()].span(), true);
         set_fixture(d.peers.season, selector!("player_points"), array![3, account.into()].span(), *scores.at(index));
         total += *scores.at(index);
