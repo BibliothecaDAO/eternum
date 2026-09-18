@@ -876,11 +876,13 @@ function formatResourceAmount(amount: unknown): string | undefined {
 }
 
 function formatSlotLabel(value: unknown): string | undefined {
-  const label = formatEnum(value);
-  if (label) return `Slot ${DISPLAYED_SLOT_NUMBER_MAP[GuardSlot[label as keyof typeof GuardSlot]]}`;
   const numeric = toNumber(value);
-  if (numeric !== null) return `Slot ${DISPLAYED_SLOT_NUMBER_MAP[numeric as keyof typeof DISPLAYED_SLOT_NUMBER_MAP]}`;
-  return undefined;
+  const label = formatEnum(value);
+  const slot = numeric ?? (label ? GuardSlot[label as keyof typeof GuardSlot] : undefined);
+  if (slot === undefined) return undefined;
+  const displayed = DISPLAYED_SLOT_NUMBER_MAP[slot as GuardSlot];
+  if (displayed === undefined) throw new Error(`Invalid guard slot: ${String(value)}`);
+  return `Slot ${displayed}`;
 }
 
 function formatDirection(value: unknown): string | undefined {
