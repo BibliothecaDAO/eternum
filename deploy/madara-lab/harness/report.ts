@@ -97,6 +97,7 @@ export interface HarnessReportInput {
 
 interface PercentileSummary {
   acceptedOnL2Ms: LatencyPercentiles;
+  admissionToVisibleMs: LatencyPercentiles;
   preConfirmedMs: LatencyPercentiles;
   submitDelayMs: LatencyPercentiles;
   submitMs: LatencyPercentiles;
@@ -216,7 +217,7 @@ function buildHarnessManifest(
   createdAt: string,
 ) {
   return {
-    schemaVersion: 6,
+    schemaVersion: 7,
     runId,
     createdAt,
     passed: analysis.passed,
@@ -454,6 +455,7 @@ export function summarizePlayerProgress(botIds: number[], actions: readonly Trac
 function summarizePercentiles(actions: TrackedTransaction[]): PercentileSummary {
   return {
     acceptedOnL2Ms: latencyPercentiles(actions, "acceptedOnL2Ms"),
+    admissionToVisibleMs: latencyPercentiles(actions, "admissionToVisibleMs"),
     preConfirmedMs: latencyPercentiles(actions, "preConfirmedMs"),
     submitDelayMs: latencyPercentiles(actions, "submitDelayMs"),
     submitMs: latencyPercentiles(actions, "submitMs"),
@@ -462,7 +464,7 @@ function summarizePercentiles(actions: TrackedTransaction[]): PercentileSummary 
 
 function latencyPercentiles(
   actions: TrackedTransaction[],
-  field: "acceptedOnL2Ms" | "preConfirmedMs" | "submitDelayMs" | "submitMs",
+  field: "acceptedOnL2Ms" | "admissionToVisibleMs" | "preConfirmedMs" | "submitDelayMs" | "submitMs",
 ): LatencyPercentiles {
   const values = actions.flatMap((action) => (action[field] === undefined ? [] : [action[field]]));
   return { p50: percentile(values, 50), p95: percentile(values, 95), p99: percentile(values, 99) };
