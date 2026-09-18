@@ -68,14 +68,13 @@ jobs:
           python3 contracts/l3/randomness-protocol/check-entrypoint.py \
             contracts/l3/world-native/target/dev/world_native_SeasonDomain.contract_class.json \
             "$RUNNER_TEMP/recorded-entrypoint.json"
-      - name: Test native domain rules
+      - name: Test all native rules and recorded execution
         working-directory: contracts/l3/world-native
         run: |
-          /usr/bin/time -v taskset -c 0-1 snforge test world_native::
-      - name: Test native recorded execution
-        working-directory: contracts/l3/world-native
-        run: |
-          /usr/bin/time -v taskset -c 0-1 snforge test world_native_tests::
+          set -euo pipefail
+          for partition in {1..8}; do
+            /usr/bin/time -v snforge test --max-threads 1 --partition "$partition/8"
+          done
       - name: Reject schema drift
         run: bun contracts/l3/world-native/scripts/generate-schema.mjs --check
 
@@ -96,7 +95,7 @@ jobs:
         run: |
           scarb fmt --check
           scarb build
-          snforge test
+          /usr/bin/time -v snforge test --max-threads 1
 
   native-deployer:
     runs-on: ubuntu-latest
