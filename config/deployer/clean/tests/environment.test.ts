@@ -2,17 +2,14 @@ import { describe, expect, test } from "bun:test";
 import { isEternumDeploymentEnvironment, resolveDeploymentEnvironment } from "../environment";
 
 describe("resolveDeploymentEnvironment", () => {
-  test("resolves the madara registrar from its deployment manifest", () => {
+  test("resolves the Madara Blitz balance environment", () => {
     const environment = resolveDeploymentEnvironment("madara.blitz");
 
     expect(environment.chain).toBe("madara");
     expect(environment.gameType).toBe("blitz");
     expect(environment.accountAddress).toBeUndefined();
     expect(environment.privateKey).toBeUndefined();
-    expect(environment.world).toEqual({
-      namespace: "s2",
-      manifestPath: "contracts/l3/game/manifest_madara.json",
-    });
+    expect(environment.configPath).toBe("config/generated/blitz.madara.json");
   });
 
   test("rejects unsupported environments", () => {

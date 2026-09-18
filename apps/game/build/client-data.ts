@@ -25,9 +25,6 @@ export function clientDataPlugin(nativeManifestPath?: string): Plugin {
       if (/\/config\/generated\/(blitz\.(madara|appchain)|eternum\.appchain)\.json$/.test(file)) {
         return { code: JSON.stringify(runtimeConfig(JSON.parse(source))), map: null };
       }
-      if (/\/contracts\/l3\/game\/manifest_(madara|appchain_blitz|appchain_eternum)\.json$/.test(file)) {
-        return { code: JSON.stringify(runtimeManifest(JSON.parse(source))), map: null };
-      }
       return null;
     },
   };
