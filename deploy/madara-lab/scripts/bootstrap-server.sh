@@ -65,22 +65,14 @@ create_realms_user() {
 }
 
 install_user_toolchain() {
-  # bun runs herald; asdf holds scarb for deploy-world.sh. Both live in the realms user's home.
-  log "bun + asdf (scarb) for the realms user"
-  sudo -u realms -H bash -s <<'EOS'
+  log "bun and the repository's native contract toolchain for the realms user"
+  sudo -u realms -H bash -s -- "$REPO_DIR" <<'EOS'
 set -euo pipefail
 # Start in a directory realms owns: sudo keeps the caller's CWD (/root or /home/ubuntu), which realms
 # cannot read, and asdf.sh's cd-back then fails. HOME is realms' own and always accessible.
 cd "$HOME"
 if [ ! -x "$HOME/.bun/bin/bun" ]; then curl -fsSL https://bun.sh/install | bash; fi
-if [ ! -d "$HOME/.asdf" ]; then
-  git clone --depth 1 https://github.com/asdf-vm/asdf.git "$HOME/.asdf" --branch v0.15.0
-  printf '\n. "$HOME/.asdf/asdf.sh"\nexport PATH="$HOME/.bun/bin:$PATH"\n' >> "$HOME/.bashrc"
-fi
-. "$HOME/.asdf/asdf.sh"
-# deploy-world.sh uses Scarb to build and Bun to deploy.
-asdf plugin add scarb https://github.com/software-mansion/asdf-scarb.git 2>/dev/null || true
-asdf install scarb 2.13.1
+bash "$1/deploy/madara-lab/scripts/install-native-tools.sh" "$HOME/.local/share/eternum-native-tools"
 EOS
 }
 
@@ -145,8 +137,8 @@ main() {
   install_docker
   install_node_toolchain
   create_realms_user
-  install_user_toolchain
   checkout_repo
+  install_user_toolchain
   render_tunnel_config
   install_units
   harden
