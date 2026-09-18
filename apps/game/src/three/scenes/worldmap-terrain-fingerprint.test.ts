@@ -76,4 +76,11 @@ describe("createWorldmapTerrainFingerprint", () => {
   it("returns a stable digest for empty input", () => {
     expect(createWorldmapTerrainFingerprint([])).toBe(createWorldmapTerrainFingerprint([]));
   });
+
+  it("invalidates a surface spire's cached terrain without changing the gameplay biome", () => {
+    const cell = { col: 1, row: 1, biomeKey: "Grassland", occupied: true };
+    expect(createWorldmapTerrainFingerprint([cell])).not.toBe(
+      createWorldmapTerrainFingerprint([{ ...cell, surfacePresentation: "ethereal" }]),
+    );
+  });
 });

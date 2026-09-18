@@ -19,6 +19,7 @@ import { gltfLoader } from "../utils/utils";
 export class SpireManager {
   private readonly dummy = new Object3D();
   private readonly subscriptions: Array<() => void>;
+  private placements: Array<{ tile: TileSpatialRenderable; label: CSS2DObject }> = [];
   private model: SpireModel | null = null;
   private loading: Promise<void> | null = null;
   private capacity = 0;
@@ -60,6 +61,26 @@ export class SpireManager {
     this.model?.updateAnimations(delta, { camera });
   }
 
+  /** Terrain pages can arrive after the asset; move existing instances and labels onto the new surface. */
+  public refreshTerrainPlacement(): void {
+    if (!this.model || this.destroyed) return;
+    let changed = false;
+    this.placements.forEach(({ tile, label }, index) => {
+      const position = this.getSpirePosition(tile);
+      const labelHeight = position.y + this.model!.labelHeight;
+      if (label.position.y === labelHeight) return;
+      this.dummy.position.copy(position);
+      this.dummy.updateMatrix();
+      this.model!.setMatrixAt(index, this.dummy.matrix);
+      label.position.y = labelHeight;
+      changed = true;
+    });
+    if (changed) {
+      this.model.needsUpdate();
+      this.markLabelsDirty();
+    }
+  }
+
   public destroy(): void {
     this.destroyed = true;
     this.subscriptions.forEach((unsubscribe) => unsubscribe());
@@ -89,11 +110,7 @@ export class SpireManager {
   }
 
   private placeSpire(tile: TileSpatialRenderable, index: number): void {
-    const position = getWorldPositionForHex({
-      col: tile.hexCoords.col - FELT_CENTER(),
-      row: tile.hexCoords.row - FELT_CENTER(),
-    });
-    placePositionOnTerrain(position, this.terrain);
+    const position = this.getSpirePosition(tile);
     this.dummy.position.copy(position);
     this.dummy.updateMatrix();
     this.model!.setMatrixAt(index, this.dummy.matrix);
@@ -105,6 +122,15 @@ export class SpireManager {
     label.position.copy(position);
     label.position.y += this.model!.labelHeight;
     this.labels.add(label);
+    this.placements.push({ tile, label });
+  }
+
+  private getSpirePosition(tile: TileSpatialRenderable) {
+    const position = getWorldPositionForHex({
+      col: tile.hexCoords.col - FELT_CENTER(),
+      row: tile.hexCoords.row - FELT_CENTER(),
+    });
+    return placePositionOnTerrain(position, this.terrain);
   }
 
   private async loadModel(capacity: number): Promise<void> {
@@ -131,6 +157,7 @@ export class SpireManager {
 
   private clearLabels(): void {
     this.markLabelsDirty();
+    this.placements = [];
     for (const child of [...this.labels.children]) {
       if (child instanceof CSS2DObject) child.element.remove();
       this.labels.remove(child);

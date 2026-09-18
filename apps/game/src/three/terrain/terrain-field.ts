@@ -3,6 +3,8 @@ import { BiomeType, BiomeTypeToId } from "@bibliothecadao/types/terrain";
 import { Color } from "three/src/math/Color.js";
 
 import { TERRAIN_FOG_GROUND_HEIGHT } from "./terrain-fog-style";
+import { sampleBasaltSurface } from "./terrain-basalt";
+import { isEtherealTerrainCell } from "./terrain-surface-presentation";
 import { TerrainNoise } from "./terrain-noise";
 import { TERRAIN_BIOME_ART_DIRECTIONS, type TerrainBiomeArtDirection } from "./terrain-biome-art-direction";
 import {
@@ -269,6 +271,10 @@ export class TerrainField {
 
   sampleSurface(worldX: number, worldZ: number): TerrainSurfaceSample {
     const owner = findNearestTerrainHex(worldX, worldZ);
+    const cell = this.getCell(owner.col, owner.row);
+    if (cell?.explored && isEtherealTerrainCell(this.request, cell)) {
+      return { ...sampleBasaltSurface(worldX, worldZ, cell.occupied), biome: cell.biome };
+    }
     if (this.getCell(owner.col, owner.row)?.explored === false) {
       return { biome: null, height: TERRAIN_FOG_GROUND_HEIGHT, normal: [0, 1, 0] };
     }

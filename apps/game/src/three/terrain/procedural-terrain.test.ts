@@ -1,15 +1,15 @@
 import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
 import { NEUTRAL_BIOME_CLIMATE } from "@bibliothecadao/eternum";
 import { BiomeType, StructureType } from "@bibliothecadao/types";
-import { CompressedArrayTexture, Group, InstancedMesh, Mesh, RGBA_S3TC_DXT5_Format } from "three";
+import { Group, InstancedMesh, Mesh, PerspectiveCamera, Scene } from "three";
 import { describe, expect, it, vi } from "vitest";
 
 import { terrainHexToWorld } from "./terrain-coordinates";
 import { TerrainField } from "./terrain-field";
+import { BASALT_DETAIL_TILE_LIMIT } from "./terrain-basalt";
 import { TerrainFogField } from "./terrain-fog-field";
 import { ProceduralTerrain } from "./procedural-terrain";
 import { TerrainPropPools } from "./terrain-prop-pools";
-import * as groundTextures from "./terrain-ground-textures";
 import type { TerrainCellInput } from "./terrain-types";
 
 vi.mock("./terrain-prop-asset-cache", async () => {
@@ -18,59 +18,97 @@ vi.mock("./terrain-prop-asset-cache", async () => {
 });
 
 describe("ProceduralTerrain", () => {
-  it("requires texture readiness before changing to Ethereal presentation", () => {
+  it("shares basalt templates and bounds detail work across page boundaries and camera transitions", () => {
     const terrain = new ProceduralTerrain();
-    expect(() => terrain.setSurfacePresentation("ethereal")).toThrow("Load ground textures");
+    const pages = [-1, 0].flatMap((pageRow) =>
+      [-1, 0].map((pageCol) =>
+        terrain.preparePage({
+          ...request(BiomeType.Grassland, false),
+          surfacePresentation: "ethereal",
+          pageKey: `basalt:${pageCol}:${pageRow}`,
+          cells: Array.from({ length: 144 }, (_, index) => ({
+            biome: BiomeType.Grassland,
+            previewBiome: BiomeType.Grassland,
+            explored: true,
+            occupied: index % 17 === 0,
+            col: pageCol * 12 + (index % 12),
+            row: pageRow * 12 + Math.floor(index / 12),
+          })),
+        }),
+      ),
+    );
+    terrain.present(pages);
+    const meshes: InstancedMesh[] = [];
+    terrain.object3d.traverse((object) => {
+      if (object instanceof InstancedMesh && object.userData.basaltInstances) meshes.push(object);
+    });
+    const far = meshes.filter((mesh) => mesh.name === "procedural-terrain-basalt");
+    const near = meshes.filter((mesh) => mesh.name === "procedural-terrain-basalt-detail");
+    expect(new Set(meshes.map((mesh) => mesh.geometry)).size).toBeLessThanOrEqual(18);
+    expect(far.every((mesh) => near.every((detail) => mesh.renderOrder < detail.renderOrder))).toBe(true);
+    const sharedDisposals = [...new Set(meshes.map((mesh) => mesh.geometry))].map((geometry) =>
+      vi.spyOn(geometry, "dispose"),
+    );
+    const camera = new PerspectiveCamera();
+    const draw = (height: number) => {
+      camera.position.set(0, height, height);
+      camera.lookAt(0, 0, 0);
+      camera.updateMatrixWorld();
+      for (const mesh of far)
+        mesh.onBeforeRender(
+          // The shared instancing helper reads the backend on the first draw; a WebGL-shaped stub keeps it native.
+          {} as Parameters<Mesh["onBeforeRender"]>[0],
+          new Scene(),
+          camera,
+          mesh.geometry,
+          Array.isArray(mesh.material) ? mesh.material[0] : mesh.material,
+          null!,
+        );
+      expect(meshes.reduce((sum, mesh) => sum + mesh.count, 0)).toBe(576);
+    };
+    draw(35);
+    expect(near.reduce((sum, mesh) => sum + mesh.count, 0)).toBe(0);
+    expect(terrain.summarize(pages).triangles).toBeLessThan(20_000);
+    draw(10);
+    const detailCount = near.reduce((sum, mesh) => sum + mesh.count, 0);
+    expect(detailCount).toBeGreaterThan(0);
+    expect(detailCount).toBeLessThanOrEqual(BASALT_DETAIL_TILE_LIMIT);
+    expect(terrain.summarize(pages).triangles).toBeLessThan(150_000);
+    expect(terrain.summarize(pages).geometryBytes).toBeLessThan(6 * 1024 * 1024);
+    draw(35);
+    expect(near.reduce((sum, mesh) => sum + mesh.count, 0)).toBe(0);
+    terrain.present([pages[0]]);
+    expect(sharedDisposals.every((spy) => spy.mock.calls.length === 0)).toBe(true);
     terrain.dispose();
+    expect(sharedDisposals.every((spy) => spy.mock.calls.length === 1)).toBe(true);
   });
 
-  it("reuses one ground mesh when switching layers and restores terrestrial decoration", async () => {
-    const handle = {
-      textures: {
-        albedoHeight: new CompressedArrayTexture([], 1, 1, 8, RGBA_S3TC_DXT5_Format),
-        normalMaterial: new CompressedArrayTexture([], 1, 1, 8, RGBA_S3TC_DXT5_Format),
-        bytes: 0,
-        layerCount: 8,
-      },
-      release: vi.fn(),
-    };
-    const acquire = vi.spyOn(groundTextures, "acquireTerrainGroundTextures").mockResolvedValue(handle);
+  it("builds basalt without world textures and retains its material across quality changes", async () => {
     const terrain = new ProceduralTerrain();
-    await Promise.all([terrain.loadGroundTextures(), terrain.loadProps()]);
-    terrain.present([terrain.preparePage(forestRequest())]);
-    const ground = terrain.object3d.getObjectByName("procedural-terrain-land") as Mesh;
-    const geometry = ground.geometry;
-    const worldMaterial = ground.material;
-    const pools = terrain.object3d.getObjectByName("terrain-prop-pools")!;
-    const wildlife = terrain.object3d.getObjectByName("terrain-wildlife")!;
-    const beforeSurface = terrain.sampleSurface(0, 0);
-
     terrain.setSurfacePresentation("ethereal");
-    const etherealMaterial = ground.material;
-    expect(etherealMaterial).not.toBe(worldMaterial);
-    expect(ground.geometry).toBe(geometry);
-    expect(terrain.sampleSurface(0, 0)).toEqual(beforeSurface);
-    expect(pools.visible).toBe(false);
-    expect(wildlife.visible).toBe(false);
+    const prepared = terrain.preparePage({ ...forestRequest(), surfacePresentation: "ethereal" });
+    terrain.present([prepared]);
+    const basalt = terrain.object3d.getObjectByName("procedural-terrain-basalt") as Mesh;
+    const borders = terrain.object3d.getObjectByName("procedural-terrain-borders") as Mesh;
+    expect(basalt).toBeDefined();
+    expect(borders).toBeDefined();
+    expect(terrain.object3d.getObjectByName("procedural-terrain-land")).toBeUndefined();
+    expect(prepared.propInstances).toHaveLength(0);
+    const material = basalt.material;
+    const dispose = vi.spyOn(Array.isArray(material) ? material[0] : material, "dispose");
     terrain.setQualityTier("overview");
     terrain.setQualityTier("detail");
-    expect(ground.material).toBe(etherealMaterial);
-    expect(pools.visible).toBe(false);
-    expect(wildlife.visible).toBe(false);
-
+    expect(basalt.material).toBe(material);
+    const basaltGeometryDispose = vi.spyOn(basalt.geometry, "dispose");
+    const borderGeometryDispose = vi.spyOn(borders.geometry, "dispose");
     terrain.setSurfacePresentation("world");
-    expect(ground.material).toBe(worldMaterial);
-    expect(pools.visible).toBe(true);
-    expect(wildlife.visible).toBe(true);
-    terrain.setSurfacePresentation("ethereal");
-    expect(ground.material).toBe(etherealMaterial);
-    const dispose = vi.spyOn(Array.isArray(etherealMaterial) ? etherealMaterial[0] : etherealMaterial, "dispose");
+    terrain.present([terrain.preparePage(forestRequest())]);
+    expect(basaltGeometryDispose).not.toHaveBeenCalled();
+    expect(borderGeometryDispose).toHaveBeenCalledOnce();
+    expect(terrain.object3d.getObjectByName("procedural-terrain-land")).toBeDefined();
     terrain.dispose();
     expect(dispose).toHaveBeenCalledOnce();
-    expect(handle.release).toHaveBeenCalledOnce();
-    handle.textures.albedoHeight.dispose();
-    handle.textures.normalMaterial.dispose();
-    acquire.mockRestore();
+    expect(basaltGeometryDispose).toHaveBeenCalledOnce();
   });
 
   it("atomically presents, reuses, replaces, and disposes page geometry", () => {

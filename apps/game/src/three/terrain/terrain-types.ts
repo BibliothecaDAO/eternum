@@ -2,9 +2,10 @@ import type { BiomeClimateConfig } from "@bibliothecadao/eternum";
 import type { BiomeType, StructureType } from "@bibliothecadao/types";
 import type { TerrainPropArchetypeId } from "./terrain-prop-catalog";
 
-export const PROCEDURAL_TERRAIN_STYLE_VERSION = 25;
+export const PROCEDURAL_TERRAIN_STYLE_VERSION = 27;
 
 export interface TerrainCellInput {
+  surfacePresentation?: "ethereal";
   biome: BiomeType | null;
   col: number;
   explored: boolean;
@@ -35,6 +36,7 @@ export interface TerrainSettlementAnchor {
 }
 
 export interface TerrainPageRequest {
+  surfacePresentation?: "world" | "ethereal";
   cells: readonly TerrainCellInput[];
   climate: BiomeClimateConfig;
   /** A level tile surface at the fog plane, without landforms or frontier walls. */
@@ -114,6 +116,9 @@ export interface TerrainPageDiagnostics {
 }
 
 export interface PreparedTerrainPage {
+  /** Four floats per explored tile: world X, world Z, shared lattice phase, occupied flag. */
+  basaltInstances?: Float32Array | null;
+  borderBuffers?: TerrainGeometryBuffers | null;
   buffers: TerrainGeometryBuffers;
   diagnostics: TerrainPageDiagnostics;
   fingerprint: string;

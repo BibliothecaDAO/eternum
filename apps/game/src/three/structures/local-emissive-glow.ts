@@ -5,24 +5,45 @@ import { MeshBasicNodeMaterial } from "three/webgpu";
 import { createInstancedMeshWithSharedMatrices } from "../utils/create-instanced-mesh";
 import { MaterialPool } from "../utils/material-pool";
 
-const HALO_WIDTH = 0.012;
+export interface GlowOptions {
+  name?: string;
+  width?: number;
+  intensity?: number;
+  opacity?: number;
+  brightness?: number;
+}
+
+/** Authored materials that carry local light diffusion, keyed by the material name the exporter writes. */
+export const LOCAL_GLOW_MATERIALS: Readonly<Record<string, GlowOptions>> = {
+  "Satoshi gold / pixel core": {
+    name: "Bitcoin pixel light",
+    width: 0.006,
+    intensity: 0.78,
+    opacity: 0.1,
+    brightness: 0.7,
+  },
+};
 
 /** Local light diffusion for the game's renderer, which deliberately runs without screen-space bloom. */
-export class SpireVeins {
+export class LocalEmissiveGlow {
   private readonly group = new Group();
   private readonly halos: Array<{ source: InstancedMesh; mesh: InstancedMesh }> = [];
   private readonly geometries = new Map<BufferGeometry, BufferGeometry>();
   private readonly materials = new Map<MeshStandardMaterial, MeshBasicNodeMaterial>();
 
-  constructor(meshes: InstancedMesh[], group: Group) {
-    this.group.name = "Spire vein light";
+  constructor(
+    meshes: InstancedMesh[],
+    group: Group,
+    private readonly options: GlowOptions = {},
+  ) {
+    this.group.name = options.name ?? "Spire vein light";
     // Light behind the portal must be composed before its translucent core, while opaque veins still occlude normally.
     this.group.renderOrder = Number.MIN_SAFE_INTEGER;
     group.add(this.group);
     for (const source of meshes) {
       const authored = source.material;
       if (!(authored instanceof MeshStandardMaterial) || authored.emissive.getHex() === 0) continue;
-      this.preserveVeinHue(source, authored);
+      this.preserveEmissiveHue(source, authored);
       const halo = createInstancedMeshWithSharedMatrices(
         this.haloGeometry(source.geometry),
         this.haloMaterial(authored),
@@ -41,16 +62,17 @@ export class SpireVeins {
   updateBoundsAndCount(): void {
     for (const { source, mesh } of this.halos) {
       mesh.count = source.count;
+      mesh.frustumCulled = source.frustumCulled;
       if (source.boundingSphere) {
         mesh.boundingSphere ??= new Sphere();
         mesh.boundingSphere.copy(source.boundingSphere);
-        mesh.boundingSphere.radius += HALO_WIDTH;
+        mesh.boundingSphere.radius += this.options.width ?? 0.012;
       }
     }
   }
 
   dispose(): void {
-    // A halo owns no GPU buffer: its matrices belong to the source, and its geometry and material are released below.
+    // Followers borrow immutable source buffers; releasing their shared attributes would invalidate the source draw.
     for (const { mesh } of this.halos) mesh.removeFromParent();
     for (const geometry of this.geometries.values()) geometry.dispose();
     for (const material of this.materials.values()) material.dispose();
@@ -60,11 +82,11 @@ export class SpireVeins {
     this.materials.clear();
   }
 
-  private preserveVeinHue(mesh: InstancedMesh, authored: MeshStandardMaterial): void {
+  private preserveEmissiveHue(mesh: InstancedMesh, authored: MeshStandardMaterial): void {
     const display = authored.clone();
-    // ACES turns the authored strength-10, subpixel veins white. Keep their RGB/PBR data and a saturated display core.
+    // Keep the authored color saturated under the shared ACES scene lighting.
     display.toneMapped = false;
-    display.emissiveIntensity = 1.5;
+    display.emissiveIntensity = this.options.intensity ?? 1.5;
     const pool = MaterialPool.getInstance();
     mesh.material = pool.getStandardMaterial(display);
     pool.releaseMaterial(authored);
@@ -76,7 +98,7 @@ export class SpireVeins {
     const positions = source.clone();
     for (const attribute of Object.keys(positions.attributes))
       if (attribute !== "position") positions.deleteAttribute(attribute);
-    // Smooth only the light shell; the authored five-sided tubes and their faceted normals remain untouched.
+    // Smooth the light shell while preserving the authored mesh and its faceted normals.
     geometry = mergeVertices(positions);
     positions.dispose();
     geometry.computeVertexNormals();
@@ -94,9 +116,13 @@ export class SpireVeins {
       toneMapped: false,
     });
     material.name = `${source.name} / diffuse light`;
-    material.colorNode = color(source.emissive).mul(1.2);
-    material.positionNode = positionLocal.add(normalLocal.mul(HALO_WIDTH));
-    material.opacityNode = normalView.dot(positionViewDirection).abs().pow(1.5).mul(0.65);
+    material.colorNode = color(source.emissive).mul(this.options.brightness ?? 1.2);
+    material.positionNode = positionLocal.add(normalLocal.mul(this.options.width ?? 0.012));
+    material.opacityNode = normalView
+      .dot(positionViewDirection)
+      .abs()
+      .pow(1.5)
+      .mul(this.options.opacity ?? 0.65);
     this.materials.set(source, material);
     return material;
   }

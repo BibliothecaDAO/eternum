@@ -3,6 +3,7 @@ interface TerrainFingerprintEntry {
   row: number;
   biomeKey: string;
   occupied?: boolean;
+  surfacePresentation?: "ethereal";
 }
 
 const FNV_OFFSET_BASIS = 0x811c9dc5;
@@ -41,7 +42,9 @@ export function createWorldmapTerrainFingerprint(entries: Iterable<TerrainFinger
   let xor = 0;
 
   for (const entry of entries) {
-    const entryHash = fnv1a(`${entry.col},${entry.row}:${entry.biomeKey}:${entry.occupied ? 1 : 0}`);
+    const entryHash = fnv1a(
+      `${entry.col},${entry.row}:${entry.biomeKey}:${entry.occupied ? 1 : 0}:${entry.surfacePresentation ?? "world"}`,
+    );
     count += 1;
     sum = (sum + entryHash) >>> 0;
     xor = (xor ^ entryHash) >>> 0;
