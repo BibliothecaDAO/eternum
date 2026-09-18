@@ -1,9 +1,15 @@
-import { assertRegistrarAvailable, createRegistrarGame, resolveCreatedGameId } from "../registrar/calls";
+import {
+  assertRegistrarAvailable,
+  createRegistrarGame,
+  resolveCreatedGameId,
+  resolveBlitzRoster,
+  findRegistrarGame,
+} from "../registrar/calls";
 import { afterAll, describe, expect, test, mock } from "bun:test";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { CallData, type Account } from "starknet";
+import { CallData, type Account, type RpcProvider } from "starknet";
 import schema from "../../../../contracts/l3/world-native/schema/schema.json";
 import madaraAddresses from "../../../../contracts/common/addresses/madara.json";
 import { buildNativePreset } from "../config/native-preset";
@@ -211,59 +217,58 @@ describe("native immutable balance presets", () => {
   });
 });
 
-test.each([1, 2, 3])(
-  "native launch encodes preset %i and resolves its game from the season emitter",
-  async (presetId) => {
-    const config = configuration(presetId);
-    const definition = buildNativePreset(config);
-    const params = buildNativeGameParams(config, {
+test.each([1, 2])("native launch encodes preset %i and resolves its game from the season emitter", async (presetId) => {
+  const config = configuration(presetId);
+  const definition = buildNativePreset(config);
+  const params = buildNativeGameParams(
+    config,
+    {
       gameName: "native-launch",
       presetId,
       startMainAt: 2000000000,
       durationSeconds: 3600,
-      devModeOn: true,
+      devModeOn: presetId === 1,
       singleRealmMode: presetId === 1,
       twoPlayerMode: presetId === 3,
       useMapOverride: false,
-    });
-    const manifest = {
-      world: { address: "0x456" },
-      native: {
-        domains: { registry: { address: "0x123" }, season: { address: "0x456" } },
-        activeSchema: schema.identity,
-        schemas: { [schema.identity]: schema },
-      },
-    };
-    const layout = schema.domains.season.events.filter((event) => event.name === "RowSet").at(-1)!;
-    const model = schema.models.find((model) => model.name === "GameRegistry")!;
-    const event = { from_address: "0x456", keys: [...layout.prefix, "1", model.identity], data: ["1", "7", "1", "0"] };
-    const receipt = { execution_status: "SUCCEEDED", events: [event] };
-    const execute = mock(async (_call: unknown, _details: unknown) => ({ transaction_hash: "0x789" }));
-    const account = { execute, waitForTransaction: async () => receipt } as unknown as Account;
-    assertRegistrarAvailable(manifest as never);
-    const created = await createRegistrarGame(account, params, manifest as never, undefined, definition);
-    expect(created.gameId).toBe(7);
-    expect(created.transactionHash).toBe("0x789");
-    expect(execute.mock.calls[0][0]).toEqual({
-      contractAddress: "0x123",
-      entrypoint: "create_game",
-      calldata: codec.compile("create_game", { params, definition }),
-    });
-    expect(params.registration_limit).toBe(presetId === 1 ? 0 : presetId === 3 ? 2 : 96);
-    expect(resolveCreatedGameId({ events: [{ ...event, from_address: "0x999" }] }, manifest as never)).toBeUndefined();
-    for (const layout of schema.domains.season.events.filter((event) => event.name === "RowSet")) {
-      expect(
-        resolveCreatedGameId(
-          { events: [{ ...event, keys: [...layout.prefix, "1", model.identity] }] },
-          manifest as never,
-        ),
-      ).toBe(7);
-    }
-    await expect(createRegistrarGame(account, params, manifest as never)).rejects.toThrow(
-      "immutable preset definition",
-    );
-  },
-);
+    },
+    presetId === 1 ? [] : [{ owner: "0xabc", account: "0xdef" }],
+  );
+  const manifest = {
+    world: { address: "0x456" },
+    native: {
+      domains: { registry: { address: "0x123" }, season: { address: "0x456" } },
+      activeSchema: schema.identity,
+      schemas: { [schema.identity]: schema },
+    },
+  };
+  const layout = schema.domains.season.events.filter((event) => event.name === "RowSet").at(-1)!;
+  const model = schema.models.find((model) => model.name === "GameRegistry")!;
+  const event = { from_address: "0x456", keys: [...layout.prefix, "1", model.identity], data: ["1", "7", "1", "0"] };
+  const receipt = { execution_status: "SUCCEEDED", events: [event] };
+  const execute = mock(async (_call: unknown, _details: unknown) => ({ transaction_hash: "0x789" }));
+  const account = { execute, waitForTransaction: async () => receipt } as unknown as Account;
+  assertRegistrarAvailable(manifest as never);
+  const created = await createRegistrarGame(account, params, manifest as never, undefined, definition);
+  expect(created.gameId).toBe(7);
+  expect(created.transactionHash).toBe("0x789");
+  expect(execute.mock.calls[0][0]).toEqual({
+    contractAddress: "0x123",
+    entrypoint: "create_game",
+    calldata: codec.compile("create_game", { params, definition }),
+  });
+  expect(params.roster).toEqual(presetId === 1 ? [] : [{ owner: "0xabc", account: "0xdef" }]);
+  expect(resolveCreatedGameId({ events: [{ ...event, from_address: "0x999" }] }, manifest as never)).toBeUndefined();
+  for (const layout of schema.domains.season.events.filter((event) => event.name === "RowSet")) {
+    expect(
+      resolveCreatedGameId(
+        { events: [{ ...event, keys: [...layout.prefix, "1", model.identity] }] },
+        manifest as never,
+      ),
+    ).toBe(7);
+  }
+  await expect(createRegistrarGame(account, params, manifest as never)).rejects.toThrow("immutable preset definition");
+});
 
 test("every native preset selects its declared game and balance profile", () => {
   expect(loadNativePresetConfiguration("madara.eternum", 1).blitz.mode.on).toBe(false);
@@ -322,4 +327,69 @@ test("Eternum registers its configured bridge tokens and Blitz has no bridge", (
     mutation(config);
     expect(() => buildNativePreset(config)).toThrow(error);
   }
+});
+
+describe("fixed Regular Blitz rosters", () => {
+  const target = {
+    native: {
+      domains: { registry: { address: "0x123" }, season: { address: "0x456" } },
+      activeSchema: schema.identity,
+      schemas: { [schema.identity]: schema },
+    },
+  };
+  const input = {
+    gameName: "free-slot-1",
+    presetId: 2,
+    startMainAt: 2000000000,
+    durationSeconds: 3600,
+    devModeOn: false,
+    singleRealmMode: false,
+    twoPlayerMode: false,
+    useMapOverride: false,
+  };
+  test("creation requires the frozen roster and never enables Duel or dev mode", () => {
+    const config = configuration(2);
+    const players = [{ owner: "0xabc", account: "0xdef" }];
+    expect(() => buildNativeGameParams(config, input)).toThrow("fixed roster");
+    expect(() => buildNativeGameParams(config, input, Array(25).fill(players[0]))).toThrow("fixed roster");
+    expect(() => buildNativeGameParams(config, { ...input, twoPlayerMode: true }, players)).toThrow("Regular Blitz");
+    expect(() => buildNativeGameParams(config, { ...input, devModeOn: true }, players)).toThrow("development mode");
+    expect(buildNativeGameParams(config, input, players).roster).toEqual(players);
+  });
+  test("binding resolution uses one confirmed block and preserves registration order", async () => {
+    const callContract = mock(
+      async ({ entrypoint, calldata }: { entrypoint: string; calldata: string[] }, block: number) => {
+        expect(block).toBe(42);
+        if (entrypoint === "authentication") return ["0x10", "0x20", "0x30"];
+        if (entrypoint === "account_of") return [BigInt(calldata[0]) === 1n ? "0x101" : "0x102"];
+        if (entrypoint === "owner_of") return [BigInt(calldata[0]) === 0x101n ? "0x1" : "0x2"];
+        throw new Error("Unexpected view");
+      },
+    );
+    const provider = { getBlockNumber: async () => 42, callContract } as unknown as RpcProvider;
+    expect(await resolveBlitzRoster(provider, ["0x02", "0x1"], target as never)).toEqual([
+      { owner: "0x2", account: "0x102" },
+      { owner: "0x1", account: "0x101" },
+    ]);
+    expect(callContract).toHaveBeenCalledTimes(5);
+    await expect(resolveBlitzRoster(provider, ["0x01", "0x1"], target as never)).rejects.toThrow("Duplicate");
+    expect(callContract).toHaveBeenCalledTimes(5);
+  });
+  test.each(["0x0", "0x999"])("an unbound or mismatched account %s fails loudly", async (bound) => {
+    const provider = {
+      getBlockNumber: async () => 42,
+      callContract: async ({ entrypoint }: { entrypoint: string }) => {
+        if (entrypoint === "authentication") return ["0x10", "0x20", "0x30"];
+        if (entrypoint === "account_of") return [bound];
+        return ["0x777"];
+      },
+    } as unknown as RpcProvider;
+    await expect(resolveBlitzRoster(provider, ["0x1"], target as never)).rejects.toThrow();
+  });
+  test("creation recovery reads the registrar without waiting for Herald", async () => {
+    const callContract = mock(async () => ["0x7"]);
+    const provider = { callContract } as unknown as RpcProvider;
+    expect(await findRegistrarGame(provider, "free-slot-1", target as never)).toEqual({ gameId: 7 });
+    expect(callContract.mock.calls).toHaveLength(1);
+  });
 });

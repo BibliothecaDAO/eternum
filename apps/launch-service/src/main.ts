@@ -1,5 +1,6 @@
 import "dotenv/config";
 
+import { createRosterVerifier } from "../../../config/deployer/clean/registrar/calls";
 import nodeProcess from "node:process";
 import { Effect } from "effect";
 import { createLaunchApp } from "./app";
@@ -41,7 +42,13 @@ const program = Effect.scoped(
     const services = createLaunchServiceLayer(config, store, identity);
     yield* Effect.forkScoped(launchWorkerLoop(config.leaseMs, config.pollMs, slots).pipe(Effect.provide(services)));
 
-    const app = createLaunchApp({ config, identity, store, slots });
+    const app = createLaunchApp({
+      config,
+      identity,
+      store,
+      slots,
+      verifyPlayer: createRosterVerifier(config.rpcUrl, config.manifestPath),
+    });
     const server = yield* Effect.acquireRelease(
       Effect.sync(() =>
         Bun.serve({

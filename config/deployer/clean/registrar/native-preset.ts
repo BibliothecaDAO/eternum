@@ -57,7 +57,16 @@ export async function registerNativePreset(
   return receipt.transaction_hash;
 }
 
-export function buildNativeGameParams(config: Config, input: CreateGamePayloadInput) {
+export function buildNativeGameParams(
+  config: Config,
+  input: CreateGamePayloadInput,
+  roster: readonly { owner: string; account: string }[] = [],
+) {
+  if (config.blitz.mode.on) {
+    if (input.twoPlayerMode || input.singleRealmMode) throw new Error("Free slots require Regular Blitz");
+    if (input.devModeOn) throw new Error("Free Blitz does not use development mode");
+    if (roster.length < 1 || roster.length > 24) throw new Error("Blitz requires a fixed roster of 1 to 24 players");
+  } else if (roster.length) throw new Error("Eternum does not use a fixed roster");
   const common = buildCreateGameParams(config, input);
   return {
     name: common.name,
@@ -70,7 +79,7 @@ export function buildNativeGameParams(config: Config, input: CreateGamePayloadIn
     end_grace_seconds: common.end_grace_seconds,
     dev_mode_on: common.dev_mode_on,
     mode: new CairoCustomEnum({ [input.twoPlayerMode ? "Duel" : common.single_realm_mode ? "Single" : "Triple"]: {} }),
-    registration_limit: config.blitz.mode.on ? common.registration_count_max : 0,
+    roster,
     registration_start: common.registration_start_at,
     biome_climate: common.biome_climate_config,
     map_override: new CairoOption(

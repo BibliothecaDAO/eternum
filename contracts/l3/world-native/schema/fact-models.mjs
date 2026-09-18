@@ -195,6 +195,9 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
       method("settlement", "realm_traits").inputs,
       struct("realms::RealmTraits"),
     ),
+    model("BlitzRoster", ["registry"], "game", method("registry", "blitz_roster").inputs, [
+      { name: "players", type: "core::array::Span::<world_native::registrar::RosterPlayer>" },
+    ]),
     model("RealmCatalogue", ["settlement"], "deployment", domainKey, struct("realms::RealmCatalogue"), "address"),
     model(
       "RealmGrants",
@@ -513,6 +516,7 @@ const behaviouralFacts = {
   },
   VillagePass: { domain: "village", fields: { owner: "owner", consumedBy: "village_id" } },
   VillagePool: { domain: "village", fields: { availableLocations: "available" } },
+  BlitzRoster: { domain: "realm/blitz", fields: { players: "players" } },
   PlayerEntry: { domain: "realm/blitz", fields: { player: "player" } },
   PlayerCosmetics: { domain: "realm/blitz", fields: { attributes: "attributes" } },
   UpgradeLimits: { domain: "structure", fields: { realmMaximum: "realm_max", villageMaximum: "village_max" } },

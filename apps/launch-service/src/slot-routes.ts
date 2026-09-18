@@ -8,7 +8,11 @@ const SlotRequest = Schema.Struct({
   closesAt: Schema.NonEmptyString,
 });
 
-export function createSlotRoutes(store: SlotStore, config: LaunchAccess) {
+export function createSlotRoutes(
+  store: SlotStore,
+  config: LaunchAccess,
+  verifyPlayer: (owner: string) => Promise<void>,
+) {
   const app = new Hono<LaunchAppEnv>();
   app.onError((error, context) => {
     if (error instanceof SlotNotFound) return context.json({ error: error.message }, 404);
@@ -27,9 +31,11 @@ export function createSlotRoutes(store: SlotStore, config: LaunchAccess) {
     }
     return context.json(await store.create(request.name, new Date(request.closesAt).toISOString()), 201);
   });
-  app.post("/:name/register", async (context) =>
-    context.json(await store.register(context.req.param("name"), context.get("launcherAddress"))),
-  );
+  app.post("/:name/register", async (context) => {
+    const owner = context.get("launcherAddress");
+    await verifyPlayer(owner);
+    return context.json(await store.register(context.req.param("name"), owner));
+  });
   app.post("/:name/close", requireLauncher(config), async (context) =>
     context.json(await store.freeze(context.req.param("name"))),
   );

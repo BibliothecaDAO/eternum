@@ -22,6 +22,7 @@ interface LaunchAppDependencies {
   identity: IdentityResolver;
   store: LaunchServiceStore;
   slots: SlotStore;
+  verifyPlayer: (owner: string) => Promise<void>;
 }
 
 const decodeBody = async <A>(context: Context, schema: Schema.ConstraintDecoder<A, never>): Promise<A> => {
@@ -88,7 +89,7 @@ export const createLaunchApp = (dependencies: LaunchAppDependencies) => {
   );
   app.use("/api/*", requireIdentity(dependencies.identity, dependencies.config));
   app.use("/api/factory/*", requireLauncher(dependencies.config));
-  app.route("/api/slots", createSlotRoutes(dependencies.slots, dependencies.config));
+  app.route("/api/slots", createSlotRoutes(dependencies.slots, dependencies.config, dependencies.verifyPlayer));
 
   app.get("/health", async (context) => {
     try {

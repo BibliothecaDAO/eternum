@@ -69,6 +69,7 @@ const buildGameRequest = (
   ...sharedRequest(request, rpc, registrar),
   launchKind: "game",
   gameName: request.gameName,
+  rosterOwners: request.rosterOwners,
   startTime: requirePersistedStartTime(request),
 });
 

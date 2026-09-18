@@ -21,9 +21,11 @@ import {
   assertRegistrarAvailable,
   createRegistrarGame,
   resolveRegistrarEnvironmentId,
+  resolveBlitzRoster,
+  findRegistrarGame,
   resolveRegistrarWorldAddress,
 } from "../registrar/calls";
-import { findGameRegistryByName, waitForGameRegistryById } from "../registrar/game-registry";
+import { waitForGameRegistryById } from "../registrar/game-registry";
 import { resolveAccountCredentials } from "../shared/credentials";
 import { requireRpcUrl } from "../shared/rpc";
 import type {
@@ -241,21 +243,30 @@ async function ensureSponsoredLedgerPool(launch: PreparedLaunch, gameId: number)
   );
 }
 
-function buildRegistrarGameParams(launch: PreparedLaunch) {
-  return buildNativeGameParams(launch.config, {
-    gameName: launch.request.gameName,
-    presetId: launch.runtime.presetId,
-    seriesName: launch.request.seriesName,
-    seriesGameNumber: launch.request.seriesGameNumber,
-    startMainAt: launch.runtime.startTime,
-    durationSeconds: launch.config.season.durationSeconds,
-    devModeOn: launch.config.dev.mode.on,
-    singleRealmMode: launch.config.settlement.single_realm_mode,
-    twoPlayerMode: launch.config.settlement.two_player_mode ?? false,
-    useMapOverride: Boolean(
-      launch.request.mapConfigOverrides && Object.keys(launch.request.mapConfigOverrides).length > 0,
-    ),
-  });
+async function buildRegistrarGameParams(launch: PreparedLaunch) {
+  const owners = launch.request.rosterOwners ?? [];
+  const roster = launch.config.blitz.mode.on
+    ? await resolveBlitzRoster(launch.runtime.provider, owners, launch.runtime.environment.id)
+    : [];
+  if (!launch.config.blitz.mode.on && owners.length) throw new Error("Eternum does not use a fixed roster");
+  return buildNativeGameParams(
+    launch.config,
+    {
+      gameName: launch.request.gameName,
+      presetId: launch.runtime.presetId,
+      seriesName: launch.request.seriesName,
+      seriesGameNumber: launch.request.seriesGameNumber,
+      startMainAt: launch.runtime.startTime,
+      durationSeconds: launch.config.season.durationSeconds,
+      devModeOn: launch.config.dev.mode.on,
+      singleRealmMode: launch.config.settlement.single_realm_mode,
+      twoPlayerMode: launch.config.settlement.two_player_mode ?? false,
+      useMapOverride: Boolean(
+        launch.request.mapConfigOverrides && Object.keys(launch.request.mapConfigOverrides).length > 0,
+      ),
+    },
+    roster,
+  );
 }
 
 function applyGameIdentity(launch: PreparedLaunch, gameId: number): void {
@@ -266,7 +277,7 @@ function applyGameIdentity(launch: PreparedLaunch, gameId: number): void {
 
 async function findExistingGame(launch: PreparedLaunch) {
   try {
-    return await findGameRegistryByName(launch.request.gameName, { chain: launch.runtime.environment.chain });
+    return await findRegistrarGame(launch.runtime.provider, launch.request.gameName, launch.runtime.environment.id);
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error);
     throw new Error(
@@ -308,12 +319,13 @@ async function createGame(launch: PreparedLaunch): Promise<void> {
   }
 
   const ledger = createLedgerGameTarget(launch);
+  const params = await buildRegistrarGameParams(launch);
   const result = await launch.runtime.progress.run(
     "create_game",
     () =>
       createRegistrarGame(
         createLaunchAccount(launch),
-        buildRegistrarGameParams(launch),
+        params,
         environmentId,
         ledger,
         buildNativePreset(loadNativePresetConfiguration(environmentId, launch.runtime.presetId)),
@@ -338,7 +350,7 @@ async function resolveGameId(launch: PreparedLaunch): Promise<number> {
   }
   const existingGame = await findExistingGame(launch);
   if (!existingGame) {
-    throw new Error(`No game id is recorded or present in Herald for "${launch.request.gameName}"`);
+    throw new Error(`No game id is recorded or present in the registrar for "${launch.request.gameName}"`);
   }
   applyGameIdentity(launch, existingGame.gameId);
   return existingGame.gameId;

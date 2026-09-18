@@ -13,12 +13,18 @@ pub struct CreateGameParams {
     pub end_grace_seconds: u32,
     pub dev_mode_on: bool,
     pub mode: crate::settlement::SettlementMode,
-    pub registration_limit: u16,
+    pub roster: Span<RosterPlayer>,
     pub registration_start: u32,
     pub biome_climate: crate::rules::BiomeClimateConfig,
     pub map_override: Option<crate::rules::MapConfig>,
     pub seed: felt252,
 }
+#[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
+pub struct RosterPlayer {
+    pub owner: ContractAddress,
+    pub account: ContractAddress,
+}
+
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct Series {
     pub owner: ContractAddress,
@@ -33,6 +39,8 @@ pub trait IRegistrar<T> {
     );
     fn series(self: @T, series_id: felt252) -> Option<Series>;
     fn next_game_id(self: @T) -> u32;
+    fn game_id_by_name(self: @T, name: felt252) -> u32;
+    fn blitz_roster(self: @T, game_id: u32) -> Span<RosterPlayer>;
     fn create_game(ref self: T, params: CreateGameParams, definition: PresetDefinition) -> u32;
 }
 #[starknet::interface]
@@ -52,14 +60,11 @@ pub fn validate_params(params: CreateGameParams, blitz: bool) {
         "registration must open before settling",
     );
     if blitz {
-        assert!(
-            params.registration_limit > 0 && params.registration_limit <= 96, "invalid Blitz registration capacity",
-        );
-        if params.mode == crate::settlement::SettlementMode::Duel {
-            assert!(params.registration_limit == 2, "Duel requires two registrations");
-        }
+        assert!(params.roster.len() > 0 && params.roster.len() <= 24, "invalid Blitz roster size");
+        assert!(params.mode == crate::settlement::SettlementMode::Triple, "Regular Blitz required");
+        assert!(!params.dev_mode_on, "free Blitz does not use development mode");
     } else {
-        assert!(params.registration_limit == 0, "Eternum does not use Blitz registration capacity");
+        assert!(params.roster.is_empty(), "Eternum does not use a fixed roster");
         assert!(params.mode != crate::settlement::SettlementMode::Duel, "Eternum does not use Duel settlement");
     }
     if params.series_id == 0 {
@@ -112,12 +117,16 @@ pub mod RegistrarState {
     use crate::lifecycle::Lifecycle::InternalTrait as LifeInternal;
     use crate::presets::PresetDefinition;
     use crate::series_chests::SeriesRules;
-    use super::{CreateGameParams, Series, build_game, game_rules};
+    use super::{CreateGameParams, RosterPlayer, Series, build_game, game_rules};
     #[storage]
     pub struct Storage {
         pub presets: Map<u32, felt252>,
         pub series: Map<felt252, Option<Series>>,
         pub next_game: u32,
+        pub launch_ids: Map<felt252, u32>,
+        pub launch_commitments: Map<felt252, felt252>,
+        pub roster_sizes: Map<u32, u32>,
+        pub roster_players: Map<(u32, u32), RosterPlayer>,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -177,19 +186,42 @@ pub mod RegistrarState {
         fn next_game_id(self: @ComponentState<TContractState>) -> u32 {
             self.next_game.read()
         }
+        fn game_id_by_name(self: @ComponentState<TContractState>, name: felt252) -> u32 {
+            self.launch_ids.read(name)
+        }
+        fn blitz_roster(self: @ComponentState<TContractState>, game_id: u32) -> Span<RosterPlayer> {
+            let count = self.roster_sizes.read(game_id);
+            assert!(count != 0, "game has no Blitz roster");
+            let mut players = array![];
+            for index in 0..count {
+                players.append(self.roster_players.read((game_id, index)));
+            }
+            players.span()
+        }
         fn create_game(
             ref self: ComponentState<TContractState>, params: CreateGameParams, definition: PresetDefinition,
         ) -> u32 {
             get_dep_component!(@self, Life).assert_authority();
             let peers = get_dep_component!(@self, Life).require_active();
             self.validate_game(params, definition);
+            let mut encoded = array![];
+            params.serialize(ref encoded);
+            let commitment = core::poseidon::poseidon_hash_span(encoded.span());
+            let previous = self.launch_ids.read(params.name);
+            if previous != 0 {
+                assert!(self.launch_commitments.read(params.name) == commitment, "conflicting game launch");
+                return previous;
+            }
             let game_id = self.next_game.read();
             assert!(game_id != 0 && game_id < 0xffffffff, "game identity space exhausted");
             self.reserve_series(params);
+            self.register_roster(game_id, params.roster);
             let game = build_game(params, get_caller_address());
             let rules = game_rules(game_id, params, definition.rules);
             IGameDispatcher { contract_address: peers.season }.create_game(game_id, game, rules);
             crate::presets::initialize_game(peers, game_id, definition, params);
+            self.launch_ids.write(params.name, game_id);
+            self.launch_commitments.write(params.name, commitment);
             self.write_next_game(game_id + 1);
             game_id
         }
@@ -212,6 +244,47 @@ pub mod RegistrarState {
             let commitment = self.presets.read(params.preset_id);
             assert!(commitment != 0, "preset is not registered");
             assert!(commitment == crate::presets::commitment(definition), "preset definition mismatch");
+        }
+        fn register_roster(ref self: ComponentState<TContractState>, game_id: u32, players: Span<RosterPlayer>) {
+            if players.is_empty() {
+                return;
+            }
+            let season = crate::season::ISeasonDispatcher {
+                contract_address: get_dep_component!(@self, Life).require_active().season,
+            };
+            let registry = crate::season::IPlayerRegistryDispatcher {
+                contract_address: crate::season::ISeasonDispatcherTrait::authentication(season).registry,
+            };
+            let mut owners: core::dict::Felt252Dict<bool> = Default::default();
+            let mut accounts: core::dict::Felt252Dict<bool> = Default::default();
+            for index in 0..players.len() {
+                let player = *players.at(index);
+                assert!(
+                    player.owner != 0.try_into().unwrap() && player.account != 0.try_into().unwrap(),
+                    "unbound roster player",
+                );
+                assert!(
+                    !owners.get(player.owner.into()) && !accounts.get(player.account.into()), "duplicate roster player",
+                );
+                owners.insert(player.owner.into(), true);
+                accounts.insert(player.account.into(), true);
+                assert!(
+                    crate::season::IPlayerRegistryDispatcherTrait::account_of(registry, player.owner) == player.account
+                        && crate::season::IPlayerRegistryDispatcherTrait::owner_of(registry, player.account) == player
+                            .owner,
+                    "roster binding mismatch",
+                );
+                self.roster_players.write((game_id, index), player);
+            }
+            self.roster_sizes.write(game_id, players.len());
+            let mut values = array![];
+            players.serialize(ref values);
+            self
+                .emit(
+                    RowSet {
+                        version: 1, model: 'BlitzRoster', keys: array![game_id.into()].span(), values: values.span(),
+                    },
+                );
         }
         fn reserve_series(ref self: ComponentState<TContractState>, params: CreateGameParams) {
             if params.series_id == 0 {

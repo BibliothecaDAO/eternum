@@ -49,11 +49,28 @@ test.skipIf(!databaseUrl)("registration and frozen groups survive concurrency an
       ...Array(13).fill(1),
       ...Array(12).fill(2),
     ]);
+    const queued = await database.list("madara.blitz", "game");
+    expect(queued).toHaveLength(2);
+    expect(queued.map(({ name }) => name).sort()).toEqual(["friday-1", "friday-2"]);
+    for (const run of queued) {
+      expect(run.request).toMatchObject({
+        version: "2",
+        devModeOn: false,
+        twoPlayerMode: false,
+        singleRealmMode: false,
+      });
+      expect(run.status).toBe("queued");
+      expect("rosterOwners" in run.request && run.request.rosterOwners).toEqual(
+        first.registrations.filter(({ gameNumber }) => run.name === `friday-${gameNumber}`).map(({ owner }) => owner),
+      );
+    }
     await database.close();
     restarted = new Pool({ connectionString: url.toString() });
     const resumed = new PostgresSlotStore(restarted);
     expect(await resumed.freeze("friday")).toEqual(first);
     expect(await resumed.list()).toEqual([first]);
+    const saved = await restarted.query("SELECT id FROM launch_runs ORDER BY id");
+    expect(saved.rows.map(({ id }) => id)).toEqual(queued.map(({ id }) => id).sort());
     await expect(resumed.register("friday", "0x1")).rejects.toThrow("closed");
   } finally {
     if (restarted) await restarted.end();
