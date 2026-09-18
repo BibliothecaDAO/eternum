@@ -27,3 +27,6 @@ schema = "scarb build && bun scripts/generate-schema.mjs"
 [tool.fmt]
 max-line-length = 120
 sort-module-level-items = true
+
+[tool.scarb]
+allow-prebuilt-plugins = ["snforge_std"]

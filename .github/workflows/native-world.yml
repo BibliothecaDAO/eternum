@@ -36,6 +36,9 @@ jobs:
       - uses: foundry-rs/setup-snfoundry@v3
         with:
           tool-versions: contracts/l3/world-native/.tool-versions
+      - uses: software-mansion/setup-universal-sierra-compiler@v1
+        with:
+          tool-versions: contracts/l3/world-native/.tool-versions
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
@@ -85,6 +88,9 @@ jobs:
           tool-versions: contracts/l3/world-native/.tool-versions
           scarb-lock: contracts/l3/randomness-protocol/Scarb.lock
       - uses: foundry-rs/setup-snfoundry@v3
+        with:
+          tool-versions: contracts/l3/world-native/.tool-versions
+      - uses: software-mansion/setup-universal-sierra-compiler@v1
         with:
           tool-versions: contracts/l3/world-native/.tool-versions
       - name: Build and test recorded execution protocol
