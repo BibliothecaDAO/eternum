@@ -50,8 +50,12 @@ pub mod RecordedExecutionStub {
         fn execute(ref self: ContractState, intent: Intent, context: ExecutionContext, r: felt252, s: felt252) {
             let envelope = decode_envelope(context.envelope.span()).expect('malformed envelope');
             self.authenticate_ticket(@intent, @context, @envelope);
-            let reason = self.validate_action(@intent, @context, @envelope, r, s).err();
-            let consumed = self.consume_nonce(@intent);
+            let authentication = self.authenticate_action(@intent, @context, @envelope, r, s);
+            let reason = match authentication {
+                Ok(()) => self.validate_action(@intent, @envelope).err(),
+                Err(reason) => Some(reason),
+            };
+            let consumed = authentication.is_ok() && self.consume_nonce(@intent);
             let outcome = match reason {
                 Some(code) => Err(code),
                 None => {
@@ -70,12 +74,7 @@ pub mod RecordedExecutionStub {
         ) {
             let envelope = decode_envelope(context.envelope.span()).expect('malformed envelope');
             self.authenticate_ticket(@intent, @context, @envelope);
-            assert!(intent.actor == self.actor.read(), "invalid actor");
-            assert!(
-                context.accepted_public_key == self.public_key.read()
-                    && check_ecdsa_signature(envelope.action, self.public_key.read(), r, s),
-                "invalid player signature",
-            );
+            self.authenticate_action(@intent, @context, @envelope, r, s).expect('unauthenticated action');
             assert!(accepted_context_matches(@intent, @envelope), "invalid acceptance");
             let consumed = self.consume_nonce(@intent);
             self.recording.record(@intent, @envelope, consumed, Err('EXECUTION_FAILED'));
@@ -107,7 +106,7 @@ pub mod RecordedExecutionStub {
             }
             consumed
         }
-        fn validate_action(
+        fn authenticate_action(
             self: @ContractState,
             intent: @Intent,
             context: @ExecutionContext,
@@ -115,11 +114,24 @@ pub mod RecordedExecutionStub {
             r: felt252,
             s: felt252,
         ) -> Result<(), felt252> {
-            if *intent.game_id != 7 {
-                return Err('INVALID_GAME');
+            if *intent.chain != get_tx_info().unbox().chain_id {
+                return Err('FOREIGN_CHAIN');
+            }
+            if *intent.deployment != get_contract_address().into() {
+                return Err('FOREIGN_DEPLOYMENT');
             }
             if *intent.actor != self.actor.read() {
                 return Err('INVALID_ACTOR');
+            }
+            if *context.accepted_public_key != self.public_key.read()
+                || !check_ecdsa_signature(*envelope.action, self.public_key.read(), r, s) {
+                return Err('INVALID_SIGNATURE');
+            }
+            Ok(())
+        }
+        fn validate_action(self: @ContractState, intent: @Intent, envelope: @crate::Envelope) -> Result<(), felt252> {
+            if *intent.game_id != 7 {
+                return Err('INVALID_GAME');
             }
             if *intent.nonce != self.nonce.read() {
                 return Err('STALE_NONCE');
@@ -127,18 +139,8 @@ pub mod RecordedExecutionStub {
             if *intent.nonce == 0xffffffffffffffff {
                 return Err('NONCE_EXHAUSTED');
             }
-            if *intent.chain != get_tx_info().unbox().chain_id {
-                return Err('FOREIGN_CHAIN');
-            }
-            if *intent.deployment != get_contract_address().into() {
-                return Err('FOREIGN_DEPLOYMENT');
-            }
             if *intent.rules != 789 {
                 return Err('INVALID_RULES');
-            }
-            if *context.accepted_public_key != self.public_key.read()
-                || !check_ecdsa_signature(*envelope.action, self.public_key.read(), r, s) {
-                return Err('INVALID_SIGNATURE');
             }
             if !accepted_context_matches(intent, envelope) {
                 return Err('INVALID_ACCEPTANCE');

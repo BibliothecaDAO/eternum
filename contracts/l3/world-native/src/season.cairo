@@ -254,9 +254,12 @@ pub mod SeasonDomain {
             let peers = self.lifecycle.require_active();
             let envelope = decode_envelope(context.envelope.span()).expect('malformed envelope');
             self.authenticate_ticket(@intent, @context, @envelope);
-            let consumed = self.consume_action_nonce(@intent);
+            let consumed = match self.authenticate_action(@intent, @context, @envelope, r, s) {
+                Ok(()) => self.consume_action_nonce(@intent),
+                Err(reason) => Err(reason),
+            };
             let outcome = match consumed {
-                Ok((game_id, actor)) => self.execute_action(peers, @intent, @context, @envelope, game_id, actor, r, s),
+                Ok((game_id, actor)) => self.execute_action(peers, @intent, @envelope, game_id, actor),
                 Err(reason) => Err(reason),
             };
             self.recording.record(@intent, @envelope, consumed.is_ok(), outcome);
@@ -271,11 +274,7 @@ pub mod SeasonDomain {
             let envelope = decode_envelope(context.envelope.span()).expect('malformed envelope');
             self.authenticate_ticket(@intent, @context, @envelope);
             // A transport failure cannot authorize consumption of an unauthenticated action.
-            let public_key = self.registered_key(intent.actor.try_into().expect('invalid actor'));
-            assert!(
-                context.accepted_public_key == public_key && check_ecdsa_signature(envelope.action, public_key, r, s),
-                "invalid player signature",
-            );
+            self.authenticate_action(@intent, @context, @envelope, r, s).expect('unauthenticated action');
             assert!(accepted_context_matches(@intent, @envelope), "invalid acceptance");
             let consumed = self.consume_action_nonce(@intent).is_ok();
             self.recording.record(@intent, @envelope, consumed, Err('EXECUTION_FAILED'));
@@ -463,14 +462,11 @@ pub mod SeasonDomain {
             ref self: ContractState,
             peers: Peers,
             intent: @Intent,
-            context: @ExecutionContext,
             envelope: @Envelope,
             game_id: u32,
             actor: ContractAddress,
-            r: felt252,
-            s: felt252,
         ) -> Result<Span<felt252>, felt252> {
-            self.validate_action(intent, context, envelope, game_id, r, s)?;
+            self.validate_action(intent, envelope, game_id)?;
             let command = decode_command(intent.arguments.span(), *intent.command).map_err(|_error| 'INVALID_COMMAND')?;
             let result = dispatch(
                 peers,
@@ -512,12 +508,11 @@ pub mod SeasonDomain {
             self.consume_nonce(game_id, actor, *intent.nonce);
             Ok((game_id, actor))
         }
-        fn validate_action(
+        fn authenticate_action(
             self: @ContractState,
             intent: @Intent,
             context: @ExecutionContext,
             envelope: @Envelope,
-            game_id: u32,
             r: felt252,
             s: felt252,
         ) -> Result<(), felt252> {
@@ -527,17 +522,25 @@ pub mod SeasonDomain {
             if *intent.deployment != get_contract_address().into() {
                 return Err('FOREIGN_DEPLOYMENT');
             }
+            let actor: ContractAddress = (*intent.actor).try_into().ok_or('INVALID_ACTOR')?;
+            if actor.is_zero() {
+                return Err('INVALID_ACTOR');
+            }
+            let public_key = self.try_registered_key(actor)?;
+            if *context.accepted_public_key != public_key
+                || !check_ecdsa_signature(*envelope.action, public_key, r, s) {
+                return Err('INVALID_SIGNATURE');
+            }
+            Ok(())
+        }
+        fn validate_action(
+            self: @ContractState, intent: @Intent, envelope: @Envelope, game_id: u32,
+        ) -> Result<(), felt252> {
             if !self.games.exists.read(game_id) {
                 return Err('INVALID_GAME');
             }
             if *intent.rules != self.rules_identity(game_id) {
                 return Err('INVALID_RULES');
-            }
-            let actor: ContractAddress = (*intent.actor).try_into().ok_or('INVALID_ACTOR')?;
-            let public_key = self.try_registered_key(actor)?;
-            if *context.accepted_public_key != public_key
-                || !check_ecdsa_signature(*envelope.action, public_key, r, s) {
-                return Err('INVALID_SIGNATURE');
             }
             if !accepted_context_matches(intent, envelope) {
                 return Err('INVALID_ACCEPTANCE');

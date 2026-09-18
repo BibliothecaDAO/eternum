@@ -83,9 +83,10 @@ are allowed. Expiry is checked against recorded acceptance time, once. An accept
 and context however late it runs. Execution lag above 300 seconds is a leader-side operational alert, never a rejection.
 
 An authenticated next-order ticket with an invalid action records a terminal reason and advances order. Its actor nonce
-advances only when the game and actor are representable and the submitted nonce equals the current nonce with a
-representable successor. A stale nonce never consumes another action's nonce. Admission rejects stale or exhausted
-nonces before sampling. Game losses are successful gameplay transitions.
+advances only after the signing chain/deployment and registered gameplay signature authenticate, when the game and actor
+are representable and the submitted nonce equals the current nonce with a representable successor. A stale nonce never
+consumes another action's nonce. Admission rejects stale or exhausted nonces before sampling. Game losses are successful
+gameplay transitions.
 
 Malformed envelopes, mismatched action identities, invalid order or preceding state, invalid configuration, future or
 backwards timestamps, and failed sequencing authentication establish no ticket and consume nothing.
