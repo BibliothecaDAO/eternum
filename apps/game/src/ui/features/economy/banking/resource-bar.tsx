@@ -38,12 +38,12 @@ export const ResourceBar = memo(
     onBlur?: () => void; // New prop
     max?: number;
   }) => {
-    const dojo = useGame();
+    const game = useGame();
     useNativeRevision(["ResourceBalance", "ResourceProduction", "ResourceWeight", "Market", "Liquidity", "Structure"]);
     const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
 
     const selectedResourceBalance = divideByPrecision(
-      getBalance(entityId, Number(resourceId), currentDefaultTick, dojo.setup.store).balance,
+      getBalance(entityId, Number(resourceId), currentDefaultTick, game.setup.store).balance,
     );
     const [searchInput, setSearchInput] = useState("");
     const [open, setOpen] = useState(false);
@@ -153,7 +153,7 @@ export const ResourceBar = memo(
                 <ResourceCost
                   resourceId={resource.id}
                   amount={divideByPrecision(
-                    getBalance(entityId, resource.id, currentDefaultTick, dojo.setup.store).balance,
+                    getBalance(entityId, resource.id, currentDefaultTick, game.setup.store).balance,
                   )}
                   className="border-0 bg-transparent"
                 />

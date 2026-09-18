@@ -1,3 +1,6 @@
+import type { NativeWorldBindings } from "@bibliothecadao/types";
+import bindings from "../../../../contracts/l3/world-native/schema/bindings.json";
+import { nativeModelDefinition } from "../client/native-models";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { HeraldGameSyncTransport, type HeraldSocket } from "./herald-game-sync-transport";
@@ -48,6 +51,7 @@ const streamHarness = () => {
     onTransaction: (transaction) => transactions.push(transaction),
   };
   const transport = new HeraldGameSyncTransport({
+    modelDefinition: nativeModelDefinition(bindings as unknown as NativeWorldBindings),
     reconnectMs: 200,
     socketFactory: (url) => {
       urls.push(url);
@@ -249,7 +253,7 @@ describe("HeraldGameSyncTransport", () => {
     socket.receive(diff("epoch-a", 3, "0x1", 2, false));
     socket.receive(diff("epoch-a", 4, "0x1", 1, true));
 
-    // The reset carries no rows and the confirmed diff repeats the pending value: neither reaches RECS.
+    // The reset carries no rows and the confirmed diff repeats the pending value: neither reaches native store.
     expect(harness.entities).toEqual([
       { hashed_keys: "0x1", models: { ExplorerTroops: { game_id: "0x36", value: 2 } } },
       { hashed_keys: "0x1", models: { ExplorerTroops: { game_id: "0x36", value: 1 } } },

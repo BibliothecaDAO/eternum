@@ -5,7 +5,7 @@ import type { GameSyncHead, GameSyncSnapshotProgress } from "@bibliothecadao/ete
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { acceptGameSyncStoryEvent, resetGameSyncStoryEvents } from "@/hooks/store/use-story-events-store";
-import { recordClientActionDiffReceived, recordClientActionRecsApplied } from "@/observability/client-action-latency";
+import { recordClientActionDiffReceived, recordClientActionStoreApplied } from "@/observability/client-action-latency";
 import { dispatchLocalStoryNotification } from "@/pwa/local-story-notifications";
 import { publishSyncMetrics } from "@/observability/sync-metrics";
 import { markGameEntryMilestone, recordGameEntryDuration } from "@/ui/layouts/game-entry-timeline";
@@ -72,7 +72,7 @@ export const createGameSyncObserver = (input: GameSyncObserverInput): GameClient
   },
   onStoryEventsReset: resetGameSyncStoryEvents,
   onDiffReceived: recordClientActionDiffReceived,
-  onEntitiesApplied: recordClientActionRecsApplied,
+  onEntitiesApplied: recordClientActionStoreApplied,
   onMetrics: DEV_MODE_ENABLED ? publishSyncMetrics : undefined,
   onSnapshotProgress: (progress) => input.reportProgress(snapshotProgressPercentage(progress)),
   onSnapshotPhaseStarted: (phase) => markGameEntryMilestone(`${snapshotPhaseMilestone(phase)}-started`),

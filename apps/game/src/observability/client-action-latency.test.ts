@@ -6,7 +6,7 @@ import {
   recordClientActionPreConfirmed,
   recordClientActionDiffReceived,
   recordClientActionPhase,
-  recordClientActionRecsApplied,
+  recordClientActionStoreApplied,
   recordClientActionRendered,
   recordClientActionSubmitted,
   snapshotClientActionLatency,
@@ -26,13 +26,13 @@ describe("client action latency", () => {
       .mockReturnValueOnce(60);
   });
 
-  it("records submit, stream, RECS, and rendered action phases", () => {
+  it("records submit, stream, native store, and rendered action phases", () => {
     const actionId = beginClientActionLatency({ operation: "explore_reveal", surface: "worldmap" });
     recordClientActionPhase(actionId, "calls_built");
     recordClientActionSubmitted(actionId, "0x0abc");
     recordClientActionPreConfirmed("0xabc");
     recordClientActionDiffReceived("0xabc");
-    recordClientActionRecsApplied("0xabc");
+    recordClientActionStoreApplied("0xabc");
     recordClientActionRendered(actionId);
 
     expect(snapshotClientActionLatency()).toEqual([
@@ -46,7 +46,7 @@ describe("client action latency", () => {
           submitted: 30,
           pre_confirmed: 40,
           diff_received: 45,
-          recs_applied: 50,
+          store_applied: 50,
           rendered: 60,
         },
       }),

@@ -35,16 +35,15 @@ const CONSOLE_FAILURE_PATTERNS = [
 const GAME_CLIENT_MODULE_URL = `/@fs${fileURLToPath(new URL("../../../../packages/core/dist/client/index.js", import.meta.url))}`;
 
 const captureScript = `(async () => {
-  const [{ getScopedGameId }, { getActiveWorld }, { useWorldSlicesStore }] =
+  const [{ getScopedGameId }, { getActiveWorld }] =
     await Promise.all([
       import('${GAME_CLIENT_MODULE_URL}'),
-      import('/src/runtime/world/store.ts'),
-      import('/src/hooks/store/use-world-slices-store.ts')
+      import('/src/runtime/world/store.ts')
     ]);
   const gameRenderer = window.__gameRenderer;
   const worldmap = gameRenderer?.worldmapScene;
-  const provider = gameRenderer?.dojo?.network?.provider;
-  const contractComponents = gameRenderer?.dojo?.network?.contractComponents;
+  const provider = gameRenderer?.game?.network?.provider;
+  const store = gameRenderer?.game?.store;
   const trace = (window.getWorldmapChunkTrace?.() ?? []).slice(-256);
   const latestComposite = trace.findLast?.((entry) => entry.event === 'terrain_composite_rebuilt');
   const terrainCoverage = worldmap?.proceduralTerrain?.getPresentationCoverage?.() ?? null;
@@ -58,15 +57,10 @@ const captureScript = `(async () => {
     gameIdentity: {
       pathname: location.pathname,
       gameId: provider?.gameId ?? getScopedGameId(),
-      namespace: provider?.namespace ?? getActiveWorld()?.namespace,
       worldAddress: provider?.getWorldAddress?.() ?? activeWorld?.worldAddress ?? null,
       worldName: activeWorld?.name ?? null,
-      tileRows: contractComponents?.TileOpt
-        ? Array.from(contractComponents.TileOpt.entities?.() ?? []).length
-        : renderDiagnostics?.gauges?.worldBiomeSurfaceInstances ?? null,
-      structureRows: contractComponents?.Structure
-        ? Array.from(contractComponents.Structure.entities?.() ?? []).length
-        : useWorldSlicesStore.getState().structures.length
+      tileRows: store ? Array.from(store.inGame('TileOpt', getScopedGameId())).length : null,
+      structureRows: store ? Array.from(store.inGame('Structure', getScopedGameId())).length : null
     },
     device: {
       userAgent: navigator.userAgent,

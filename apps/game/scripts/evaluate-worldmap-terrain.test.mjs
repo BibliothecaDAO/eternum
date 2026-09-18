@@ -68,12 +68,11 @@ describe("production worldmap terrain verification", () => {
     });
   });
 
-  it("requires active game identity and populated authoritative RECS rows", () => {
+  it("requires active game identity and populated authoritative native store rows", () => {
     const input = observation();
     input.gameIdentity = {
       pathname: expected.pathname,
       gameId: null,
-      namespace: null,
       structureRows: 0,
       tileRows: 0,
       worldAddress: null,
@@ -166,7 +165,6 @@ function observation() {
     errors: [],
     gameIdentity: {
       gameId: 21,
-      namespace: "s2",
       pathname: expected.pathname,
       structureRows: 2,
       tileRows: 10,

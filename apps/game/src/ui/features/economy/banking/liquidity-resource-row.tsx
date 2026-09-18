@@ -30,7 +30,7 @@ export const LiquidityResourceRow = ({
   resourceId,
   isFirst,
 }: LiquidityResourceRowProps) => {
-  const dojoContext = useGame();
+  const gameContext = useGame();
   const [isLoading, setIsLoading] = useState(false);
   const [canCarry, setCanCarry] = useState(false);
   const [openConfirmation, setOpenConfirmation] = useState(false);
@@ -40,13 +40,13 @@ export const LiquidityResourceRow = ({
   const market = useNativeRow("Market", { game_id: configManager.getActiveGameId(), resource_type: resourceId });
   const liquidity = useNativeRow("Liquidity", {
     game_id: configManager.getActiveGameId(),
-    owner: BigInt(dojoContext.account.account.address),
+    owner: BigInt(gameContext.account.account.address),
     resource_type: resourceId,
   });
 
   const marketManager = useMemo(
-    () => new MarketManager(dojoContext.setup.store, ContractAddress(dojoContext.account.account.address), resourceId),
-    [dojoContext, resourceId, market, liquidity],
+    () => new MarketManager(gameContext.setup.store, ContractAddress(gameContext.account.account.address), resourceId),
+    [gameContext, resourceId, market, liquidity],
   );
 
   const resource = useMemo(() => resources.find((r) => r.id === resourceId), [resourceId]);
@@ -76,7 +76,7 @@ export const LiquidityResourceRow = ({
       setIsLoading(true);
       const { withdrawShares } = calculateWithdrawAmounts(percentage);
 
-      const closestBank = getClosestBank(entityId, dojoContext.setup.store);
+      const closestBank = getClosestBank(entityId, gameContext.setup.store);
 
       if (!closestBank) return;
 
@@ -85,15 +85,15 @@ export const LiquidityResourceRow = ({
         entity_id: entityId,
         resource_type: BigInt(resourceId),
         shares: withdrawShares,
-        signer: dojoContext.account.account,
+        signer: gameContext.account.account,
       };
 
-      dojoContext.setup.systemCalls.remove_liquidity(calldata).finally(() => {
+      gameContext.setup.systemCalls.remove_liquidity(calldata).finally(() => {
         setIsLoading(false);
         setOpenConfirmation(false);
       });
     },
-    [dojoContext, entityId, resourceId, marketManager],
+    [gameContext, entityId, resourceId, marketManager],
   );
 
   const calculateWithdrawAmounts = useCallback(
@@ -119,7 +119,7 @@ export const LiquidityResourceRow = ({
     const { lords, resource } = calculateWithdrawAmounts(withdrawalPercentage);
 
     const isVillageAndMilitaryResource =
-      dojoContext.setup.store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: entityId })?.base
+      gameContext.setup.store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: entityId })?.base
         .category === StructureType.Village && isMilitaryResource(resourceId);
 
     const travelResources = [
@@ -127,7 +127,7 @@ export const LiquidityResourceRow = ({
       { amount: divideByPrecision(resource), resourceId: resourceId },
     ];
 
-    const closestBank = getClosestBank(entityId, dojoContext.setup.store);
+    const closestBank = getClosestBank(entityId, gameContext.setup.store);
 
     if (!closestBank) return null;
 

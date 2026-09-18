@@ -4,6 +4,7 @@ export * from "./herald-http";
 export * from "./herald-session";
 export * from "./normalize";
 export * from "./native-fact-store";
+export { nativeModelDefinition } from "./native-models";
 export * from "./submit";
 export * from "./world-directory";
 

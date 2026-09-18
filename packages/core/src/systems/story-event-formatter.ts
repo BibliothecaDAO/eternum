@@ -578,7 +578,7 @@ function readExplorer(explorerId: unknown, components?: NativeFactStore) {
   }
 }
 
-/** The structure's name alone, undefined when RECS has no row: a story never prints a raw entity id. */
+/** The structure's name alone, undefined when native store has no row: a story never prints a raw entity id. */
 function describeStructureName(structureId: unknown, components?: NativeFactStore): string | undefined {
   const structure = readStructure(structureId, components);
   return structure ? structureDisplayName(structure) : undefined;

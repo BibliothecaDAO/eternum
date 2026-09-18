@@ -200,7 +200,7 @@ function createStructureManagerSubject() {
   const unsubscribeAccountStore = vi.fn();
   const unsubscribeVisibility = vi.fn();
   const unsubscribeProjection = vi.fn();
-  const unsubscribeRecs = vi.fn();
+  const unsubscribeStore = vi.fn();
   const removeCameraViewListener = vi.fn();
   const clearAttachmentManager = vi.fn();
   const releaseLabel = vi.fn();
@@ -218,7 +218,7 @@ function createStructureManagerSubject() {
 
   subject.isDestroyed = false;
   subject.unsubscribeProjection = unsubscribeProjection;
-  subject.recsUnsubscribes = [unsubscribeRecs];
+  subject.storeUnsubscribes = [unsubscribeStore];
   subject.unsubscribeAccountStore = unsubscribeAccountStore;
   subject.unsubscribeVisibility = unsubscribeVisibility;
   subject.hexagonScene = { removeCameraViewListener };
@@ -293,7 +293,7 @@ function createStructureManagerSubject() {
     unsubscribeAccountStore,
     unsubscribeVisibility,
     unsubscribeProjection,
-    unsubscribeRecs,
+    unsubscribeStore,
     removeCameraViewListener,
     clearAttachmentManager,
     releaseLabel,
@@ -468,7 +468,7 @@ describe("StructureManager structure info cache", () => {
         return vi.fn();
       },
     };
-    subject.recsUnsubscribes = [];
+    subject.storeUnsubscribes = [];
     subject.entityIdLabels = new Map();
     subject.visibleStructureWindow = undefined;
     subject.worldSpatialProjection = {
@@ -698,7 +698,7 @@ describe("StructureManager destroy lifecycle", () => {
     expect(fixture.unsubscribeAccountStore).toHaveBeenCalledTimes(1);
     expect(fixture.unsubscribeVisibility).toHaveBeenCalledTimes(1);
     expect(fixture.unsubscribeProjection).toHaveBeenCalledTimes(1);
-    expect(fixture.unsubscribeRecs).toHaveBeenCalledTimes(1);
+    expect(fixture.unsubscribeStore).toHaveBeenCalledTimes(1);
     expect(fixture.removeCameraViewListener).toHaveBeenCalledTimes(1);
     expect(fixture.clearIntervalSpy).toHaveBeenCalledTimes(1);
     expect(fixture.subject.timedLabelInterval).toBeNull();

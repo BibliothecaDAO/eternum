@@ -181,7 +181,7 @@ describe("GameSyncRuntime recovery", () => {
   });
 
   it("stops the live session and reports one actionable error when an atomic batch cannot apply", async () => {
-    const failure = new Error("RECS write failed");
+    const failure = new Error("native store write failed");
     const store = createMemoryStore().store;
     store.applyEntityOperations = () => {
       throw failure;

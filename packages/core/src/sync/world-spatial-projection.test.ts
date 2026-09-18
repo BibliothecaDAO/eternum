@@ -300,7 +300,7 @@ describe("WorldSpatialProjection", () => {
   });
 
   it.each(["destination-first", "origin-first"] as const)(
-    "converges to the current RECS position when the %s update lands first",
+    "converges to the current native store position when the %s update lands first",
     (updateOrder) => {
       const { projection, removeTile, source, writeTile } = createHarness();
       writeTile("destination", { col: 20, row: 21, occupierId: 0, occupierType: TileOccupier.None });

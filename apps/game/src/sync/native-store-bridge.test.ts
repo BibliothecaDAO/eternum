@@ -5,7 +5,7 @@ import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import preset from "../../../../contracts/l3/world-native/fixtures/preset-1.json";
 import { hash } from "starknet";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { installRecsStoreBridge } from "./recs-store-bridge";
+import { installNativeStoreBridge } from "./native-store-bridge";
 
 const structure = (entityId: number, gameId = 1) => ({
   game_id: gameId,
@@ -82,7 +82,7 @@ const createHarness = () => {
     game,
     applySlice: () => sliceApplied?.(),
     hasSliceListener: () => sliceApplied !== null,
-    install: () => installRecsStoreBridge({ store, runtime: runtime as never }),
+    install: () => installNativeStoreBridge({ store, runtime: runtime as never }),
     writeStructures,
   };
 };

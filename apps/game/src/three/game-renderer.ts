@@ -84,7 +84,7 @@ export default class GameRenderer {
   private lastFrameTime: number = 0;
   private animationFrameHandle: number | null = null;
   private isAnimationLoopRunning = false;
-  private dojo: SetupResult;
+  private game: SetupResult;
   private sceneManager!: SceneManager;
   private cleanupIntervals: NodeJS.Timeout[] = [];
   private guiFolders: TrackableGuiFolder[] = [];
@@ -95,8 +95,8 @@ export default class GameRenderer {
   private rendererFrameFailureCircuit?: RendererFrameFailureCircuit;
   private readonly handleWindowResize = () => this.onWindowResize();
 
-  constructor(dojoContext: SetupResult) {
-    this.dojo = dojoContext;
+  constructor(gameContext: SetupResult) {
+    this.game = gameContext;
 
     const runtimeAssembly = createGameRendererRuntimeAssembly({
       addWindowListener: (type, listener) => window.addEventListener(type, listener),
@@ -282,7 +282,7 @@ export default class GameRenderer {
     prepareGameRendererScenes({
       applySceneRegistry: (registry) => this.assignRendererSceneRegistry(registry),
       controls: this.controls,
-      dojo: this.dojo,
+      game: this.game,
       effectsBridgeRuntime: this.supportRuntimeRegistry.ensureEffectsBridge(),
       inputSurface: this.renderer.domElement,
       compilePipelines: this.pipelineCompiler,

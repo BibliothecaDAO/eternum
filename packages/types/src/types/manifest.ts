@@ -1,6 +1,6 @@
 /**
  * Minimal shared manifest shape used by provider/client packages.
- * Additional keys are preserved to support dojo manifest evolution.
+ * Additional keys are preserved to support native release metadata.
  */
 export interface ManifestContract {
   tag: string;

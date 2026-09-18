@@ -1,4 +1,5 @@
-import { resolveWorldIdForGame } from "@bibliothecadao/eternum/game-client";
+import { nativeBindings } from "@/runtime/world/native-manifest";
+import { resolveWorldIdForGame, nativeModelDefinition } from "@bibliothecadao/eternum/game-client";
 import { requireWorldById } from "@/runtime/world/world-directory";
 import { buildHeraldGameStreamUrl } from "@bibliothecadao/eternum/game-client";
 import type { GameChain as Chain } from "@realms-world/chain";
@@ -159,6 +160,7 @@ export const waitForSelectedWorldEntityState = async <T>(
 ): Promise<T> => {
   const target = await resolveEntitySubscriptionTarget(input);
   const transport = new HeraldGameSyncTransport({
+    modelDefinition: nativeModelDefinition(nativeBindings),
     url: buildHeraldGameStreamUrl(target.heraldBaseUrl, target.chain, target.gameId),
   });
   const watchedModels = new Set(input.modelNames);

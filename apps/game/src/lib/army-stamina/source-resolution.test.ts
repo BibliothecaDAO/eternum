@@ -22,7 +22,7 @@ const liveTroops: Troops = {
 };
 
 describe("selectFreshestTroopsSnapshot", () => {
-  it("reads the sole live RECS source", () => {
+  it("reads the sole live native store source", () => {
     expect(selectFreshestTroopsSnapshot({ entityId: 1234, liveTroops })).toBe(liveTroops);
     expect(selectFreshestTroopsSnapshot({ entityId: 1234, liveTroops: null })).toBeNull();
   });

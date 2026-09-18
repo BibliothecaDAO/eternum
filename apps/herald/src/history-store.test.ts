@@ -20,11 +20,8 @@ const event = {
   kind: "event",
   model: {
     name: "PointsAwarded",
-    availability: "all",
-    channels: ["global-event"],
     deletion: "event-ephemeral",
-    recovery: "event-deduped",
-    s2Scope: "game",
+    scope: "game",
   },
   key: { game_id: "0x1c" },
   value,

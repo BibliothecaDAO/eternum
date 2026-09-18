@@ -319,7 +319,7 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     });
   });
 
-  it("extracts the innermost katana failure reason frame", async () => {
+  it("extracts the innermost RPC failure reason frame", async () => {
     const provider = makeProvider();
     provider.execute = vi.fn().mockRejectedValue({
       shortMessage: "Transaction execution error",

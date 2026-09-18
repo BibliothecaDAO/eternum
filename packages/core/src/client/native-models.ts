@@ -11,10 +11,7 @@ export function nativeModelDefinition(bindings: NativeWorldBindings): (name: str
     if (!model) throw new Error(`Model ${name} is absent from the native deployment schema`);
     return {
       name,
-      channels: [event ? "global-event" : "gamewide-entity"],
-      availability: "all",
-      s2Scope: model.scope === "game" ? "game" : "chain",
-      recovery: event ? "event-deduped" : "convergent-snapshot",
+      scope: model.scope,
       deletion: event ? "event-ephemeral" : "component",
     };
   };

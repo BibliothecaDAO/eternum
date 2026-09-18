@@ -145,7 +145,7 @@ type ResourceProductionStatus = {
 };
 
 export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?: string; entityId: number }) => {
-  const dojo = useGame();
+  const game = useGame();
   useNativeRevision(["ResourceBalance", "ResourceProduction", "ResourceWeight", "Building"]);
   const lane = useCompactLane();
   const [summaryOpen, setSummaryOpen] = useState(false);
@@ -171,7 +171,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
     entity_id: entityId,
   });
   const resourceData = useResourceManager(entityId);
-  const realm = getRealmInfo(entityId, dojo.setup.store);
+  const realm = getRealmInfo(entityId, game.setup.store);
   const currentTime = useNowMs();
   const currentTimeRef = useRef(currentTime);
   currentTimeRef.current = currentTime;
@@ -533,7 +533,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         entityId,
         buildingType: buildingId,
         useSimpleCost,
-        store: dojo.setup.store,
+        store: game.setup.store,
         realm,
         mode,
         hasAvailableBuildingTile,
@@ -544,7 +544,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         disabledReason: buildability.reason,
       };
     },
-    [dojo.setup.store, entityId, hasAvailableBuildingTile, mode, realm, useSimpleCost],
+    [game.setup.store, entityId, hasAvailableBuildingTile, mode, realm, useSimpleCost],
   );
   const allowedBuildingTypes = useMemo(
     () =>
@@ -615,7 +615,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                           entityId,
                           buildingType: building,
                           useSimpleCost,
-                          store: dojo.setup.store,
+                          store: game.setup.store,
                           realm,
                           mode,
                           hasAvailableBuildingTile,
@@ -638,7 +638,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                             buildingId={building}
                             requirements={resolveBuildingRequirements(
                               entityId,
-                              dojo.setup.store,
+                              game.setup.store,
                               building,
                               useSimpleCost,
                               currentDefaultTick,
@@ -705,7 +705,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                           entityId,
                           buildingType: building,
                           useSimpleCost,
-                          store: dojo.setup.store,
+                          store: game.setup.store,
                           realm,
                           mode,
                           hasAvailableBuildingTile,
@@ -726,7 +726,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                             buildingId={building}
                             requirements={resolveBuildingRequirements(
                               entityId,
-                              dojo.setup.store,
+                              game.setup.store,
                               building,
                               useSimpleCost,
                               currentDefaultTick,
@@ -810,7 +810,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                   entityId,
                   buildingType: building,
                   useSimpleCost,
-                  store: dojo.setup.store,
+                  store: game.setup.store,
                   realm,
                   mode,
                   hasAvailableBuildingTile,
@@ -844,7 +844,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                     buildingId={building}
                     requirements={resolveBuildingRequirements(
                       entityId,
-                      dojo.setup.store,
+                      game.setup.store,
                       building,
                       useSimpleCost,
                       currentDefaultTick,
@@ -958,7 +958,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                               entityId,
                               buildingType: building,
                               useSimpleCost,
-                              store: dojo.setup.store,
+                              store: game.setup.store,
                               realm,
                               mode,
                               hasAvailableBuildingTile,
@@ -985,7 +985,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                                 buildingId={building}
                                 requirements={resolveBuildingRequirements(
                                   entityId,
-                                  dojo.setup.store,
+                                  game.setup.store,
                                   building,
                                   useSimpleCost,
                                   currentDefaultTick,
@@ -1453,7 +1453,7 @@ const ResourceInfo = ({
   hintModal?: boolean;
   useSimpleCost?: boolean;
 }) => {
-  const dojo = useGame();
+  const game = useGame();
   useNativeRevision(["ResourceBalance", "ResourceProduction", "ResourceWeight", "Building"]);
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
   let cost = useSimpleCost
@@ -1474,8 +1474,8 @@ const ResourceInfo = ({
   );
 
   const buildingCost = useMemo(() => {
-    return getBuildingCosts(entityId ?? 0, dojo.setup.store, buildingId, useSimpleCost) ?? [];
-  }, [entityId, dojo.setup.store, buildingId, structureBuildings, useSimpleCost]);
+    return getBuildingCosts(entityId ?? 0, game.setup.store, buildingId, useSimpleCost) ?? [];
+  }, [entityId, game.setup.store, buildingId, structureBuildings, useSimpleCost]);
 
   const buildingPopCapacityConfig = configManager.getBuildingCategoryConfig(buildingId);
   const population = buildingPopCapacityConfig.population_cost;
@@ -1544,7 +1544,7 @@ const ResourceInfo = ({
                 entityId || 0,
                 cost[Number(resourceId)].resource,
                 currentDefaultTick,
-                dojo.setup.store,
+                game.setup.store,
               );
               return (
                 <ResourceCost
@@ -1572,7 +1572,7 @@ const ResourceInfo = ({
                 entityId || 0,
                 buildingCost[Number(resourceId)].resource,
                 currentDefaultTick,
-                dojo.setup.store,
+                game.setup.store,
               );
               return (
                 <ResourceCost
@@ -1622,14 +1622,14 @@ const BuildingInfo = ({
   isPaused?: boolean;
   useSimpleCost?: boolean;
 }) => {
-  const dojo = useGame();
+  const game = useGame();
   useNativeRevision(["ResourceBalance", "ResourceProduction", "ResourceWeight", "Building"]);
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
 
   const resourceProduced = configManager.getResourceBuildingProduced(buildingId);
   const resourceProducedName = resourceProduced ? findResourceById(resourceProduced)?.trait : undefined;
 
-  const buildingCost = getBuildingCosts(entityId ?? 0, dojo.setup.store, buildingId, useSimpleCost) || [];
+  const buildingCost = getBuildingCosts(entityId ?? 0, game.setup.store, buildingId, useSimpleCost) || [];
 
   const buildingPopCapacityConfig = configManager.getBuildingCategoryConfig(buildingId);
   const population = buildingPopCapacityConfig.population_cost;
@@ -1717,7 +1717,7 @@ const BuildingInfo = ({
           <div className="grid grid-cols-2 gap-2">
             {ongoingCost.map((costItem, index) => {
               if (!costItem || costItem.resource === undefined) return null; // Add check for undefined
-              const balance = getBalance(entityId || 0, costItem.resource, currentDefaultTick, dojo.setup.store);
+              const balance = getBalance(entityId || 0, costItem.resource, currentDefaultTick, game.setup.store);
               return (
                 <ResourceCost
                   key={`ongoing-cost-${index}`}
@@ -1748,7 +1748,7 @@ const BuildingInfo = ({
                 entityId || 0,
                 buildingCost[Number(resourceId)].resource,
                 currentDefaultTick,
-                dojo.setup.store,
+                game.setup.store,
               );
               return (
                 <ResourceCost

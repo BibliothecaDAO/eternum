@@ -272,7 +272,7 @@ export const OrderRow = memo(
     updateBalance: boolean;
     setUpdateBalance: (value: boolean) => void;
   }) => {
-    const dojo = useGame();
+    const game = useGame();
 
     const playTradeExecuteSound = useUISound("ui.trade_execute");
 
@@ -370,8 +370,8 @@ export const OrderRow = memo(
 
         const v = !isBuy ? calculatedResourceAmount : calculatedLords;
         const takerBuysCount = Math.ceil(v / offer.makerGivesMinResourceAmount);
-        await dojo.setup.systemCalls.accept_order({
-          signer: dojo.account.account,
+        await game.setup.systemCalls.accept_order({
+          signer: game.account.account,
           taker_id: entityId,
           trade_id: offer.tradeId,
           taker_buys_count: takerBuysCount,
@@ -388,8 +388,8 @@ export const OrderRow = memo(
     const onCancel = async () => {
       try {
         setLoading(true);
-        await dojo.setup.systemCalls.cancel_order({
-          signer: dojo.account.account,
+        await game.setup.systemCalls.cancel_order({
+          signer: game.account.account,
           trade_id: offer.tradeId,
         });
       } catch (error) {
@@ -446,7 +446,7 @@ export const OrderRow = memo(
             donkeysNeeded={donkeysNeeded}
             donkeyBalance={donkeyBalance}
             isVillageAndMilitaryResource={
-              dojo.setup.store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: entityId })?.base
+              game.setup.store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: entityId })?.base
                 .category === StructureType.Village &&
               (isMilitaryResource(offer.makerGets[0].resourceId) || isMilitaryResource(offer.takerGets[0].resourceId))
             }

@@ -16,12 +16,12 @@ interface EndSeasonButtonProps {
 }
 
 export const EndSeasonButton = ({ className }: EndSeasonButtonProps) => {
-  const dojo = useGame();
+  const game = useGame();
   const revision = useNativeRevision(["PlayerPoints"]);
   const {
     setup,
     account: { account },
-  } = dojo;
+  } = game;
 
   const [isLoading, setIsLoading] = useState(false);
   const [showCongratsPopup, setShowCongratsPopup] = useState(false);

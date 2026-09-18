@@ -253,7 +253,7 @@ describe("GameRoute", () => {
       account: { address: "0x123" } as { address: string } | null,
       retry: vi.fn(),
       isReconnectRequired: false,
-      currentTask: "dojo",
+      currentTask: "game",
       tasks: [],
       bootToken: 0,
       reconnectError: null,

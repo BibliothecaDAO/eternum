@@ -23,7 +23,7 @@ export const MarketResourceSidebar = ({
   resourceAskOffers: MarketInterface[];
   resourceBidOffers: MarketInterface[];
 }) => {
-  const dojo = useGame();
+  const game = useGame();
   const mode = useGameModeConfig();
   const revision = useNativeRevision(["Market"]);
   const [search, setSearch] = useState("");
@@ -39,10 +39,10 @@ export const MarketResourceSidebar = ({
   const ammPrices = useMemo(() => {
     const prices = new Map<number, number>();
     for (const resourceId of tradableResources) {
-      prices.set(resourceId, new MarketManager(dojo.setup.store, 0n, resourceId).getMarketPrice() || 0);
+      prices.set(resourceId, new MarketManager(game.setup.store, 0n, resourceId).getMarketPrice() || 0);
     }
     return prices;
-  }, [tradableResources, dojo.setup.store, revision]);
+  }, [tradableResources, game.setup.store, revision]);
 
   // Indexed once per offer set instead of once per row.
   const bestPrices = useMemo(

@@ -311,7 +311,7 @@ export const TransferResourcesContainer = ({
     try {
       setLoading(true);
 
-      // Re-check every requested amount against the latest RECS balance at
+      // Re-check every requested amount against the latest native store balance at
       // submit time. A source spend received while this panel is open must not
       // leave stale calldata behind in local selection state.
       let remainingCapacityKg = explorerCapacity

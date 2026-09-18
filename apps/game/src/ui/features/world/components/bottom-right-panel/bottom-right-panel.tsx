@@ -479,7 +479,7 @@ const LocalTilePanel = () => {
   // every cost entry + at least one open building tile inside the realm
   // radius. Computed inline (no hook) so it stays below the early returns
   // without breaking hook order rules. resolveRealmHasAvailableBuildingTile
-  // is the same helper the Build modal uses; it reads from RECS so it's
+  // is the same helper the Build modal uses; it reads from native store so it's
   // cheap to call once per render.
   const hasAvailableTile = (() => {
     if (!structureEntityId || !selectedStructure) return false;

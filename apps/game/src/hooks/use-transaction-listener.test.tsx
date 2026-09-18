@@ -151,7 +151,7 @@ describe("useTransactionListener", () => {
     expect(observabilityMocks.reportClientTransactionFailure).toHaveBeenCalledWith(
       expect.objectContaining({
         context: expect.objectContaining({
-          surface: "dojo_provider",
+          surface: "game_provider",
           stage: "revert",
           transactionHash: "0xfail",
         }),
@@ -186,7 +186,7 @@ describe("useTransactionListener", () => {
     expect(observabilityMocks.reportClientTransactionFailure).toHaveBeenCalledWith(
       expect.objectContaining({
         context: expect.objectContaining({
-          surface: "dojo_provider",
+          surface: "game_provider",
           stage: "submit",
           transactionHash: undefined,
           failureKind: "submission_timeout_no_hash",

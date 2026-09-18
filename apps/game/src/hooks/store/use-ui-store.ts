@@ -123,7 +123,7 @@ interface UIStore {
   suggestedArmyDeploymentStructureId: number | null;
   setSuggestedArmyDeploymentStructureId: (structureId: number | null) => void;
   // Bumped whenever a military mutation lands (create / disband) so the deploy
-  // map can re-fetch tile occupancy. Plain RECS-side state isn't enough — the
+  // map can re-fetch tile occupancy. Plain native store-side state isn't enough — the
   militaryMapVersion: number;
   bumpMilitaryMapVersion: () => void;
   // labor

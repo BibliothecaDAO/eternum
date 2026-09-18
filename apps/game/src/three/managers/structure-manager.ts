@@ -215,7 +215,7 @@ interface VisibleStructurePassScratch {
   dirtyModels: Set<StructureModel>;
 }
 
-// A running battle cooldown (troop_guards.*.battle_cooldown_end in RECS) is the structure's
+// A running battle cooldown (troop_guards.*.battle_cooldown_end in native store) is the structure's
 // "under attack" fact: its guards fought and the penalty timer is still counting down.
 function isStructureUnderAttack(structure: StructureInfo): boolean {
   return (structure.battleTimerLeft ?? 0) > 0;
@@ -268,7 +268,7 @@ export class StructureManager {
   private unsubscribeAccountStore?: () => void;
   private unsubscribePlayers?: () => void;
   private readonly unsubscribeProjection: () => void;
-  private readonly recsUnsubscribes: Array<() => void> = [];
+  private readonly storeUnsubscribes: Array<() => void> = [];
   private readonly incomingTroopArrivalsByStructure = new Map<ID, IncomingTroopArrival[]>();
   private readonly battleDirectionsByStructure = new Map<
     ID,
@@ -334,7 +334,7 @@ export class StructureManager {
     labelsGroup?: Group,
     hexagonScene?: HexagonScene,
     fxManager?: FXManager,
-    dojoContext?: SetupResult,
+    gameContext?: SetupResult,
     visibilityManager?: CentralizedVisibilityManager,
     chunkStride?: number,
     private readonly chunkWorkScheduler?: FrameBudgetWorkScheduler,
@@ -352,7 +352,7 @@ export class StructureManager {
     this.labelsGroup.visible = this.contentLadder.textLabels !== "none";
     this.fxManager = fxManager || new FXManager(scene);
     this.attachmentManager = new CosmeticAttachmentManager(scene);
-    this.store = dojoContext?.store as NativeFactStore | undefined;
+    this.store = gameContext?.store as NativeFactStore | undefined;
     this.visibilityManager = visibilityManager;
     if (this.visibilityManager) {
       this.frustumVisibilityDirty = true;
@@ -465,7 +465,7 @@ export class StructureManager {
 
   private subscribeToStructurePresentationComponents(): void {
     if (!this.store) return;
-    this.recsUnsubscribes.push(
+    this.storeUnsubscribes.push(
       this.store.subscribe((changes) => {
         const touched = new Set<number>();
         let refreshAll = false;
@@ -824,7 +824,7 @@ export class StructureManager {
     }
     this.isDestroyed = true;
     this.unsubscribeProjection();
-    this.recsUnsubscribes.splice(0).forEach((unsubscribe) => unsubscribe());
+    this.storeUnsubscribes.splice(0).forEach((unsubscribe) => unsubscribe());
 
     if (this.unsubscribeAccountStore) {
       this.unsubscribeAccountStore();

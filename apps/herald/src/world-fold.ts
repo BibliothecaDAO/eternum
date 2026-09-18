@@ -99,7 +99,7 @@ export class WorldFold {
     this.parent = parent;
     registry.persistent.forEach(({ definition }) => {
       this.rowsByModel.set(definition.name, new Map());
-      if (definition.s2Scope === "game") this.entityIdsByGameByModel.set(definition.name, new Map());
+      if (definition.scope === "game") this.entityIdsByGameByModel.set(definition.name, new Map());
     });
   }
 
@@ -143,7 +143,7 @@ export class WorldFold {
 
     const existing = this.storedRow(event.model.name, event.entityId);
     if (event.kind === "delete" && !existing) return undefined;
-    const gameId = event.model.s2Scope === "game" ? this.eventGameId(event, existing) : undefined;
+    const gameId = event.model.scope === "game" ? this.eventGameId(event, existing) : undefined;
 
     if (event.kind === "set") {
       rows.set(event.entityId, { key: event.key, value: event.value });
@@ -257,7 +257,7 @@ export class WorldFold {
     const definitions = this.snapshotDefinitions(requestedModels);
     const models = definitions.map((definition) => {
       const rows =
-        definition.s2Scope === "chain"
+        definition.scope === "deployment"
           ? this.materializedRows(definition.name)
           : this.materializedGameRows(definition.name, gameId);
       const gameRows = [...rows.entries()]
@@ -287,7 +287,7 @@ export class WorldFold {
   }
 
   private eventGameId(event: DecodedWorldEvent, existing?: StoredModelRow): string | undefined {
-    if (event.model.s2Scope === "chain") return undefined;
+    if (event.model.scope === "deployment") return undefined;
     if (event.kind === "set" || event.kind === "event") return scalarGameId(event.key, event.model.name);
     if (!existing) {
       throw new Error(`${event.kind} for ${event.model.name}:${event.entityId} has no preceding RowSet`);

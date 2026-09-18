@@ -782,7 +782,7 @@ export const TransferTroopsContainer = ({
     try {
       setLoading(true);
 
-      // maxTroops is derived from live RECS rows. Re-apply it at submit time so
+      // maxTroops is derived from live native store rows. Re-apply it at submit time so
       // a concurrent spend cannot leave stale troop calldata in this panel.
       if (effectiveTroopAmount <= 0) return;
       const troopAmountWithPrecision = multiplyByPrecision(effectiveTroopAmount);

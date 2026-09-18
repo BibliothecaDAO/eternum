@@ -40,7 +40,7 @@ type Slice =
   | "settlement"
   | "structures";
 
-interface RecsStoreBridgeInput {
+interface NativeStoreBridgeInput {
   store: NativeFactStore;
   runtime: GameSyncRuntime;
 }
@@ -48,7 +48,7 @@ interface RecsStoreBridgeInput {
 const NO_ACCOUNT = "0x0";
 
 /** `?dev` mirror: how often the bridge derived, and which trigger asked for it. */
-interface RecsStoreBridgeMetrics {
+interface NativeStoreBridgeMetrics {
   derives: number;
   sliceTriggers: number;
   storeTriggers: number;
@@ -56,10 +56,10 @@ interface RecsStoreBridgeMetrics {
 }
 
 interface BridgeMetricsWindow {
-  __eternumBridgeMetrics?: RecsStoreBridgeMetrics;
+  __eternumBridgeMetrics?: NativeStoreBridgeMetrics;
 }
 
-const publishBridgeMetrics = (metrics: RecsStoreBridgeMetrics): void => {
+const publishBridgeMetrics = (metrics: NativeStoreBridgeMetrics): void => {
   if (!DEV_MODE_ENABLED || typeof window === "undefined") return;
   (window as typeof window & BridgeMetricsWindow).__eternumBridgeMetrics = { ...metrics };
 };
@@ -164,9 +164,9 @@ const readSeasonClock = (): Partial<AppStore> => {
 };
 
 /** Derived UI views publish after an atomic native transaction or a completed ambient slice. */
-export const installRecsStoreBridge = ({ store, runtime }: RecsStoreBridgeInput): (() => void) => {
+export const installNativeStoreBridge = ({ store, runtime }: NativeStoreBridgeInput): (() => void) => {
   const dirty = new Set<Slice>();
-  const metrics: RecsStoreBridgeMetrics = { accountTriggers: 0, derives: 0, sliceTriggers: 0, storeTriggers: 0 };
+  const metrics: NativeStoreBridgeMetrics = { accountTriggers: 0, derives: 0, sliceTriggers: 0, storeTriggers: 0 };
   const account = () => useAccountStore.getState().account?.address ?? NO_ACCOUNT;
 
   const sources: Partial<Record<NativeModelName, Slice[]>> = {

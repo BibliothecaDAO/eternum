@@ -40,7 +40,7 @@ describe("createGameRendererSceneRegistry", () => {
 
     const registry = createGameRendererSceneRegistry({
       controls: { id: "controls" } as never,
-      dojo: { id: "dojo" } as never,
+      game: { id: "game" } as never,
       inputSurface: document.createElement("canvas"),
       mouse: { id: "mouse" } as never,
       raycaster: { id: "raycaster" } as never,

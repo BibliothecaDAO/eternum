@@ -1,5 +1,5 @@
 import type { NativeExecutionOutcome } from "@bibliothecadao/types";
-import { getGameSyncModel, type GameSyncModelDefinition } from "./model-manifest";
+import type { GameSyncModelDefinition } from "./model-manifest";
 import type {
   GameSyncSnapshotPage,
   GameSyncEntity,
@@ -80,7 +80,7 @@ interface EntityDelivery {
 type StoredRow = HeraldSet;
 
 export interface HeraldGameSyncTransportOptions {
-  modelDefinition?: (name: string) => GameSyncModelDefinition;
+  modelDefinition: (name: string) => GameSyncModelDefinition;
   reconnectMs?: number;
   socketFactory?: (url: string) => HeraldSocket;
   url: string;
@@ -125,7 +125,7 @@ const toRemoval = ({ key, model }: HeraldDelete): GameSyncEntity => ({
   models: { [model]: {} },
 });
 
-/** Herald rows are JSON records; two deliveries of the same value are one fact, not two RECS writes. */
+/** Herald rows are JSON records; two deliveries of the same value are one fact, not two native store writes. */
 const isSameRowValue = (left: unknown, right: unknown): boolean => {
   if (left === right) return true;
   if (typeof left !== "object" || typeof right !== "object" || left === null || right === null) return false;
@@ -388,7 +388,7 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
     const entities: GameSyncEntity[] = [];
     const events: HeraldSet[] = [];
     const updates = new Map<string, StoredRow | null>();
-    const definition = this.options.modelDefinition ?? getGameSyncModel;
+    const definition = this.options.modelDefinition;
     for (const change of message.set) {
       if (definition(change.model).deletion === "event-ephemeral") {
         events.push(change);

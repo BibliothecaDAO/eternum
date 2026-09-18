@@ -10,7 +10,7 @@ export type ClientActionLatencyPhase =
   | "submitted"
   | "pre_confirmed"
   | "diff_received"
-  | "recs_applied"
+  | "store_applied"
   | "rendered";
 
 export interface ClientActionLatencyMeasurement {
@@ -130,8 +130,8 @@ export function recordClientActionDiffReceived(transactionHash: string): void {
   recordTransactionPhase(transactionHash, "diff_received");
 }
 
-export function recordClientActionRecsApplied(transactionHash: string): void {
-  recordTransactionPhase(transactionHash, "recs_applied");
+export function recordClientActionStoreApplied(transactionHash: string): void {
+  recordTransactionPhase(transactionHash, "store_applied");
 }
 
 function recordTransactionPhase(transactionHash: string, phase: ClientActionLatencyPhase): void {

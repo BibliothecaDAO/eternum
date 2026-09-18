@@ -16,7 +16,7 @@ describe("structure-status", () => {
     expect(formatUsedBuildingTilesLabel(7, 60)).toBe("7/60");
   });
 
-  it("counts occupied building tiles from RECS rows and skips the center keep tile", () => {
+  it("counts occupied building tiles from native store rows and skips the center keep tile", () => {
     expect(
       countOccupiedBuildingTilesByStructure({
         trackedStructureIds: new Set([7, 8]),

@@ -63,8 +63,8 @@ export const MergedResourcePanel = memo(
     isMine = false,
     activeRelicIds,
   }: MergedResourcePanelProps) => {
-    const dojo = useGame();
-    const store = dojo.setup.store;
+    const game = useGame();
+    const store = game.setup.store;
     const mode = useGameModeConfig();
     const currentDefaultTick = useCurrentDefaultTick();
     const requestedSimpleCost = useUIStore((state) => state.useSimpleCost);

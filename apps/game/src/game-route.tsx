@@ -1,7 +1,7 @@
 import { MusicRouterProvider } from "@/audio";
 import { getGameModeId } from "@/config/game-modes";
 /**
- * Game route module - lazy loaded to avoid pulling heavy deps (World, Dojo, Three.js, etc.)
+ * Game route module - lazy loaded to avoid pulling heavy deps (World, native contracts, Three.js, etc.)
  * into the landing page bundle.
  */
 import { ChunkTransitionIndicator, ErrorBoundary, WorldLoading } from "@/ui/shared";
