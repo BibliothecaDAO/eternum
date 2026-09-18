@@ -305,17 +305,6 @@ pub mod MapDomain {
     }
     #[abi(embed_v0)]
     impl Reservations of crate::settlement::IBlitzReservations<ContractState> {
-        fn reserve_hyperstructures(
-            ref self: ContractState,
-            game_id: u32,
-            actor: ContractAddress,
-            count: u8,
-            context: crate::commands::ExecutionContext,
-        ) {
-            let season = self.lifecycle.require_active().season;
-            assert!(get_caller_address() == season, "only season domain");
-            self.reserve_sites(game_id, count, context.timestamp);
-        }
         fn initialize_reservations(ref self: ContractState, game_id: u32) {
             assert!(get_caller_address() == self.lifecycle.require_active().registry, "only registrar domain");
             self.reserve_sites(game_id, 255, starknet::get_block_timestamp());

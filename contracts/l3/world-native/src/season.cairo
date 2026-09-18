@@ -768,10 +768,6 @@ pub mod SeasonDomain {
                 value.serialize(ref calldata);
                 (peers.structures, selector!("create_reserved_hyperstructure"))
             },
-            Command::ReserveHyperstructures(value) => {
-                value.serialize(ref calldata);
-                (peers.map, selector!("reserve_hyperstructures"))
-            },
             Command::LevelUp(value) => {
                 value.serialize(ref calldata);
                 (peers.structures, selector!("level_up"))

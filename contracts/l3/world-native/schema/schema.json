@@ -1195,30 +1195,6 @@
         },
         {
           "type": "function",
-          "name": "reserve_hyperstructures",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "actor",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "count",
-              "type": "core::integer::u8"
-            },
-            {
-              "name": "context",
-              "type": "world_native::commands::ExecutionContext"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
           "name": "release_hyperstructure",
           "inputs": [
             {
@@ -14418,10 +14394,6 @@
           "type": "core::integer::u32"
         },
         {
-          "name": "ReserveHyperstructures",
-          "type": "core::integer::u8"
-        },
-        {
           "name": "SettleBlitz",
           "type": "world_native::settlement::SettleBlitz"
         },
@@ -18656,5 +18628,5 @@
       ]
     }
   },
-  "identity": "b87199a38b170f17d01ec3e227e6fa67fa131d96e03374d254ea57cc3ec6d810"
+  "identity": "d6ee3a142410e6699345f9118166ffd1449d1f2d9a4fee3baeadccdcaf74f134"
 }
