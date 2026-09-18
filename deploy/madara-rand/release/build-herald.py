@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Build native Herald from a pinned archive without changing its checkout."""
+"""Build Herald's real workspace graph from one pinned source revision."""
 
-import io
 import json
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 import tarfile
@@ -11,63 +11,64 @@ from build_tools import digest, read, run
 
 
 def prepare_source(repository, revision, source):
-    paths = ['apps/herald', 'packages/core/src', 'packages/types/src', 'pnpm-lock.yaml']
-    archive = subprocess.check_output(['git', 'archive', revision, *paths], cwd=repository)
-    with tarfile.open(fileobj=io.BytesIO(archive)) as bundle:
-        bundle.extractall(source, filter='data')
-    if (source / 'pnpm-lock.yaml').read_bytes() != (repository / 'pnpm-lock.yaml').read_bytes():
-        raise SystemExit('installed dependency lock differs from the pinned native revision')
-    (source / 'node_modules').symlink_to(repository / 'node_modules', target_is_directory=True)
-    (source / 'apps/herald/node_modules').symlink_to(repository / 'apps/herald/node_modules', target_is_directory=True)
-    (source / 'revision.json').write_text(json.dumps({'revision': revision}) + '\n')
-    # Use the public core exports consumed by Herald, without building the browser entrypoints.
-    (source / 'herald-game-sync.ts').write_text('\n'.join([
-        'export { hasGameEnded } from "./packages/core/src/sync/game-lifecycle";',
-        'export { calculateUnregisteredShareholderPoints } from "./packages/core/src/sync/shareholder-points";',
-        'export { createEmptyActivityBreakdown, readPointsRegistration } from "./packages/core/src/sync/leaderboard-activity";',
-        'export { parseStoryHistoryCursor, endOfStoryBlock } from "./packages/core/src/sync/story-history-cursor";', '',
-    ]))
-    aliases = {
-        '@bibliothecadao/eternum/game-sync-models': [str(source / 'packages/core/src/sync/model-manifest.ts')],
-        '@bibliothecadao/eternum/game-sync': [str(source / 'herald-game-sync.ts')],
-        '@bibliothecadao/types': [str(source / 'packages/types/src/types/common.ts')],
-    }
-    (source / 'herald-build-tsconfig.json').write_text(json.dumps({'compilerOptions': {'paths': aliases}}, indent=2) + '\n')
+    with subprocess.Popen(['git', 'archive', revision], cwd=repository, stdout=subprocess.PIPE) as archive:
+        with tarfile.open(fileobj=archive.stdout, mode='r|') as bundle:
+            bundle.extractall(source, filter='data')
+        if archive.wait() != 0:
+            raise SystemExit('could not archive the selected source revision')
+
+
+def build_workspace(source, output):
+    run(['pnpm', 'install', '--frozen-lockfile'], output / 'install.log', source)
+    run(['pnpm', '--filter', '@bibliothecadao/herald...', 'run', 'build'], output / 'workspace-build.log', source)
+    command = ['bun', 'build', 'apps/herald/src/server.ts', '--target=bun',
+               f'--metafile={output / "modules.json"}', '--outfile', str(output / 'herald.js')]
+    run(command, output / 'bundle.log', source)
+    modules = json.loads((output / 'modules.json').read_text())
+    for name in modules['inputs']:
+        if not (source / name).resolve().is_relative_to(source.resolve()):
+            raise SystemExit(f'bundle input escapes pinned checkout: {name}')
+    return command
+
+
+def build_image(source, output, revision, runtime):
+    context = output / 'runtime'
+    context.mkdir()
+    shutil.copyfile(output / 'herald.js', context / 'herald.js')
+    tag = f'athanor-herald:{revision}'
+    dockerfile = source / 'deploy/madara-rand/release/Herald.Dockerfile'
+    run(['docker', 'build', '-f', str(dockerfile), '--build-arg', f'BUN_IMAGE={runtime}',
+         '-t', tag, str(context)], output / 'image-build.log', source)
+    return json.loads(read(['docker', 'image', 'inspect', tag]))[0]['Id']
 
 
 def main():
     if len(sys.argv) != 4:
-        raise SystemExit('usage: build-herald.py NATIVE_REVISION MADARA_RELEASE OUTPUT_DIRECTORY')
-    release = Path(__file__).resolve().parent
-    repository = release.parents[2]
+        raise SystemExit('usage: build-herald.py NATIVE_REVISION BUN_RUNTIME_DIGEST OUTPUT_DIRECTORY')
+    repository = Path(__file__).resolve().parents[3]
     revision = read(['git', 'rev-parse', '--verify', f'{sys.argv[1]}^{{commit}}'], repository)
-    madara_release = Path(sys.argv[2]).resolve()
-    image = json.loads((madara_release / 'manifest.json').read_text())['image']
-    if not image.startswith('127.0.0.1:15000/madara-rand@sha256:'):
-        raise SystemExit('expected the local patched node digest')
+    runtime = sys.argv[2]
+    if '@sha256:' not in runtime:
+        raise SystemExit('pin the Bun runtime image by digest')
+    bun_version = read(['bun', '--version'])
+    runtime_version = read(['docker', 'run', '--rm', '--network', 'none', '--entrypoint', 'bun', runtime, '--version'])
+    if runtime_version != bun_version:
+        raise SystemExit(f'Bun runtime {runtime_version} differs from build tool {bun_version}')
     output = Path(sys.argv[3]).resolve()
     output.mkdir(parents=True, exist_ok=False)
     source = output / 'source'
     source.mkdir()
     prepare_source(repository, revision, source)
-    command = ['bun', 'build', '--tsconfig-override', 'herald-build-tsconfig.json', 'apps/herald/src/server.ts',
-               '--compile', f'--metafile={output / "modules.json"}', '--outfile', str(output / 'herald')]
-    run(command, output / 'compile.log', source)
-    tag = f'127.0.0.1:15000/randomness-herald:{revision}'
-    run(['docker', 'build', '-f', str(release / 'Herald.Dockerfile'), '--build-arg', f'MADARA_IMAGE={image}',
-         '-t', tag, str(output)], output / 'image-build.log', repository)
-    run(['docker', 'push', tag], output / 'image-push.log', repository)
-    digests = json.loads(read(['docker', 'image', 'inspect', tag]))[0]['RepoDigests']
-    image_digest = next(value for value in digests if value.startswith('127.0.0.1:15000/randomness-herald@sha256:'))
-    manifest = {'schema': 1, 'scope': 'isolated native Herald build', 'native_revision': revision,
-                'madara_image': image, 'image': image_digest, 'bun_version': read(['bun', '--version']), 'command': command,
-                'binary_sha256': digest(output / 'herald'),
+    command = build_workspace(source, output)
+    image = build_image(source, output, revision, runtime)
+    manifest = {'schema': 2, 'native_revision': revision, 'image': image, 'runtime_image': runtime,
+                'bun_version': bun_version, 'command': command,
+                'bundle_sha256': digest(output / 'herald.js'),
                 'module_graph_sha256': digest(output / 'modules.json'),
-                'dependency_lock_sha256': digest(repository / 'pnpm-lock.yaml'),
-                'native_source_lock_sha256': digest(source / 'pnpm-lock.yaml')}
+                'dependency_lock_sha256': digest(source / 'pnpm-lock.yaml')}
     (output / 'manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
-    (output / 'image.env').write_text(f'HERALD_IMAGE={image_digest}\n')
-    print(json.dumps({'manifest': str(output / 'manifest.json'), 'image': image_digest}))
+    (output / 'image.env').write_text(f'HERALD_IMAGE={image}\n')
+    print(json.dumps({'manifest': str(output / 'manifest.json'), 'image': image}))
 
 
 if __name__ == '__main__':
