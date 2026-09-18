@@ -29,6 +29,10 @@
     "./biome": {
       "types": "./dist/utils/biome/biome.d.ts",
       "import": "./dist/utils/biome/biome.js"
+    },
+    "./automation": {
+      "types": "./dist/automation/index.d.ts",
+      "import": "./dist/automation/index.js"
     }
   },
   "main": "./dist/index.js",

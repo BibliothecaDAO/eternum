@@ -1,4 +1,4 @@
-import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import type { NativeFactStore } from "../client/index";
 import {
   AUTOMATION_INPUT_BUDGET_PERCENT,
   DONKEY_DEFAULT_RESOURCE_PERCENT,
@@ -7,10 +7,9 @@ import {
   RealmAutomationExecutionSummary,
   type ResourceAutomationPercentages,
   isAutomationResourceBlocked,
-} from "@/hooks/store/use-automation-store";
-import { resolveProductionPercentages, calculatePresetAllocations } from "@/utils/automation-presets";
-import { verboseLog } from "@/utils/dev-mode";
-import { configManager, divideByPrecision, ResourceManager } from "@bibliothecadao/eternum";
+} from "./types";
+import { resolveProductionPercentages, calculatePresetAllocations } from "./presets";
+import { configManager, divideByPrecision, ResourceManager } from "../index";
 import { ResourcesIds } from "@bibliothecadao/types";
 
 export const PROCESS_INTERVAL_MS = 60 * 1000;
@@ -188,7 +187,7 @@ const buildResourceDependencyOrder = (
     const missing = resourceIds.filter((id) => !order.includes(id));
     // The cycle is a property of the production config, so it re-detects on
     // every evaluation — warn once per distinct cycle, not once per tick
-    // (one session logged the identical line 111 times).
+    // (one run logged the identical line 111 times).
     const cycleSignature = [...missing].sort((a, b) => a - b).join(",");
     if (!warnedDependencyCycles.has(cycleSignature)) {
       warnedDependencyCycles.add(cycleSignature);
@@ -617,15 +616,6 @@ export const buildRealmProductionPlan = ({
       const outputPerCycle = laborConfig?.resourceOutputPerInputResources ?? 0;
 
       if (!laborConfig || !inputResources.length || outputPerCycle <= 0) {
-        verboseLog("[Automation] Missing labor recipe configuration", {
-          realmId: realmConfig.realmId,
-          realmName: realmConfig.realmName,
-          entityType,
-          resourceId,
-          hasLaborConfig: Boolean(laborConfig),
-          inputResourceCount: inputResources.length,
-          outputPerCycle,
-        });
         skipped.push({
           resourceId,
           reason: "Missing labor recipe configuration",
@@ -691,18 +681,6 @@ export const buildRealmProductionPlan = ({
         }
 
         if (!Number.isFinite(maxCycles) || maxCycles <= 0) {
-          verboseLog("[Automation] Labor recipe insufficient inputs", {
-            realmId: realmConfig.realmId,
-            realmName: realmConfig.realmName,
-            entityType,
-            resourceId,
-            laborToResourceTargetPercent: laborToResource,
-            evaluatedLaborInputs: laborDebug,
-            laborConfigInputCount: inputResources.length,
-            laborConfigRaw: inputResources,
-            availableBudgets: Array.from(availableBudget.entries()),
-            totalAvailableResources: Array.from(totalAvailable.entries()),
-          });
           skipped.push({
             resourceId,
             reason: "Insufficient labor recipe inputs",
@@ -717,16 +695,6 @@ export const buildRealmProductionPlan = ({
           for (const entry of inputsConsumed) {
             if (!reserveAmount(entry.resourceId, entry.amount)) {
               allocationSucceeded = false;
-              verboseLog("[Automation] Labor recipe reserve failure", {
-                realmId: realmConfig.realmId,
-                realmName: realmConfig.realmName,
-                entityType,
-                resourceId,
-                attemptedInput: entry,
-                remainingBudget: availableBudget.get(entry.resourceId),
-                maxCycles,
-                inputsConsumed,
-              });
               break;
             }
           }

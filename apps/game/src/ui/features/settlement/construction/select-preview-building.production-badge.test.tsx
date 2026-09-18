@@ -117,7 +117,7 @@ vi.mock("@/ui/features/economy/resources/entity-resource-table/utils", () => ({
   formatTimeRemaining: (seconds: number) => `${seconds}s`,
 }));
 
-vi.mock("./construction-buildability", () => ({
+vi.mock("@bibliothecadao/eternum/automation", () => ({
   resolveConstructionBuildability: () => ({ canSubmit: true, reason: undefined }),
 }));
 

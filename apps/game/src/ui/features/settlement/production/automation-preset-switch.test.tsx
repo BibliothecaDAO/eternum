@@ -4,7 +4,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({ allowed: true }));
 vi.mock("@/hooks/store/use-ui-store", () => ({ useUIStore: (select: any) => select({}) }));
 vi.mock("@/utils/can-issue-orders", () => ({ canIssueOrders: () => mocks.allowed }));
-vi.mock("@/utils/automation-presets", () => ({ inferRealmPreset: (realm: any) => realm?.presetId ?? "smart" }));
+vi.mock("@bibliothecadao/eternum/automation", () => ({ inferRealmPreset: (realm: any) => realm?.presetId ?? "smart" }));
 import { useAutomationStore } from "@/hooks/store/use-automation-store";
 import { AutomationPresetSwitch } from "./automation-preset-switch";
 let root: Root, container: HTMLDivElement;

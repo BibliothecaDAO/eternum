@@ -6,7 +6,7 @@ import {
   isAutomationResourceBlocked,
   useAutomationStore,
 } from "@/hooks/store/use-automation-store";
-import { PROCESS_INTERVAL_MS } from "@/ui/features/infrastructure/automation/model/automation-processor";
+import { PROCESS_INTERVAL_MS } from "@bibliothecadao/eternum/automation";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import Button from "@/ui/design-system/atoms/button";
 import { aggregateConsumptionPerSecond, configManager } from "@bibliothecadao/eternum";
@@ -20,7 +20,7 @@ import {
   RealmPresetId,
   calculatePresetAllocations,
   inferRealmPreset,
-} from "@/utils/automation-presets";
+} from "@bibliothecadao/eternum/automation";
 
 type RealmAutomationPanelProps = {
   realmEntityId: string;

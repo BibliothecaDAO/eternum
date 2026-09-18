@@ -80,7 +80,7 @@ import { HexceptionAmbienceSystem } from "@/three/systems/hexception-ambience-sy
 import { IS_FLAT_MODE } from "@/ui/config";
 
 import { ProductionModal } from "@/ui/features/settlement";
-import { resolveConstructionBuildability } from "@/ui/features/settlement/construction/construction-buildability";
+import { resolveConstructionBuildability } from "@bibliothecadao/eternum/automation";
 import { requireActiveGameClient } from "@/sync/active-game-client";
 import type { GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
 import {

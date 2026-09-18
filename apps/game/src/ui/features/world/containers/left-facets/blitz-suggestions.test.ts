@@ -6,7 +6,7 @@ import {
   buildBlitzRealmSuggestions,
   type BlitzBuildingCounts,
   type BlitzRealmSuggestionInput,
-} from "./blitz-suggestions";
+} from "@bibliothecadao/eternum/automation";
 
 const buildability: BlitzRealmSuggestionInput["buildability"] = {
   copper: { canBuild: true },

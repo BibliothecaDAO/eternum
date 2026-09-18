@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+import { createBuildOrderWorkload } from "./build-order";
 import { runLayerRoundTrip } from "./layer-round-trip";
 import { closeHarnessSeason } from "./season-lifecycle";
 import { defaultPresetForEnvironment } from "../../../config/deployer/clean/constants";
@@ -29,6 +30,7 @@ import { readLedgerSweepManifest, sweepLedgerBalances, writeLedgerSweepReceipt }
 import { collectHarnessEvidenceBeforeRun, finishHarnessEvidence, writeHarnessReport } from "./report";
 
 interface HarnessCliOptions {
+  workload: "build-order" | "cadence";
   gameType: HarnessGameType;
   bots: number;
   gameId?: number;
@@ -103,11 +105,15 @@ export function parseHarnessArgs(args: string[]): HarnessCliOptions {
   const bots = positiveInteger(values.bots ?? "96", "bots");
   const minutes = positiveNumber(values.minutes ?? "10", "minutes");
   const intervalSeconds = positiveNumber(values["interval-seconds"] ?? "15", "interval-seconds");
-  const setupConcurrency = positiveInteger(values["setup-concurrency"] ?? "6", "setup-concurrency");
+  const setupConcurrency = positiveInteger(values["setup-concurrency"] ?? "1", "setup-concurrency");
   const gameId = values["game-id"] === undefined ? undefined : positiveInteger(values["game-id"], "game-id");
   const ledger = values.ledger === "true";
+  const workload = values.workload ?? (values["game-type"] === "eternum" ? "cadence" : "build-order");
+  if (workload !== "build-order" && workload !== "cadence")
+    throw new Error("--workload must be build-order or cadence");
   const gameType = values["game-type"] ?? "blitz";
   if (gameType !== "blitz" && gameType !== "eternum") throw new Error("--game-type must be blitz or eternum");
+  if (gameType === "eternum" && workload === "build-order") throw new Error("Build-order workload requires Blitz");
   if (ledger && gameType === "eternum") throw new Error("The ledger harness currently registers Blitz passes only");
   const sweepOnlyManifestPath = values["sweep-only"];
   const ledgerStartDelaySeconds = positiveInteger(
@@ -136,6 +142,7 @@ export function parseHarnessArgs(args: string[]): HarnessCliOptions {
 
   return {
     gameType,
+    workload,
     bots,
     gameId,
     gameName: values["game-name"],
@@ -221,6 +228,7 @@ async function main(): Promise<void> {
     );
     const workload = await runWorkload({
       bots: run.bots,
+      buildOrder: options.workload === "build-order" ? createBuildOrderWorkload(client, harnessGame) : undefined,
       game: harnessGame,
       intervalSeconds: options.intervalSeconds,
       minutes: options.minutes,
@@ -599,7 +607,8 @@ Usage: bun deploy/madara-lab/harness/run.ts [options]
   --game-type <blitz|eternum>     default: blitz
   --minutes <minutes>            default: 10
   --interval-seconds <seconds>   default: 15
-  --setup-concurrency <count>    default: 6
+  --setup-concurrency <count>    default: 1 (initial actor snapshots are serialized)
+  --workload <build-order|cadence> default: build-order for Blitz, cadence for Eternum
   --game-id <id>                 use an existing game instead of creating one
   --game-name <name>             name for a new game or report label for --game-id
   --rpc-url <url>                default: ${DEFAULT_RPC_URL}

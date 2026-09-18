@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { hash } from "starknet";
 import { BuildingType, ResourcesIds, StructureType } from "@bibliothecadao/types";
-import { resolveConstructionBuildability } from "./construction-buildability";
+import { resolveConstructionBuildability } from "@bibliothecadao/eternum/automation";
 
 const {
   getBalance,

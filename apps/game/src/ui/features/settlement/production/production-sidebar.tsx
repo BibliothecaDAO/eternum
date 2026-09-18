@@ -10,7 +10,7 @@ import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import Button from "@/ui/design-system/atoms/button";
 import { isVillageLikeStructureCategory } from "@/ui/lib/structure-capabilities";
-import { REALM_PRESETS, RealmPresetId } from "@/utils/automation-presets";
+import { REALM_PRESETS, RealmPresetId } from "@bibliothecadao/eternum/automation";
 import { useAutomationStore } from "@/hooks/store/use-automation-store";
 import { ProductionStatusBadge } from "@/ui/shared";
 import { formatTimeRemaining } from "../../economy/resources/entity-resource-table/utils";

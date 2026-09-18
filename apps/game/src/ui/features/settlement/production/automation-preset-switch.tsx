@@ -1,7 +1,7 @@
 import { useAutomationStore, type RealmEntityType } from "@/hooks/store/use-automation-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { canIssueOrders } from "@/utils/can-issue-orders";
-import { inferRealmPreset, type RealmPresetId } from "@/utils/automation-presets";
+import { inferRealmPreset, type RealmPresetId } from "@bibliothecadao/eternum/automation";
 
 const PRESETS = [
   { id: "smart", label: "Smart" },

@@ -1,11 +1,4 @@
-import type { GameModeConfig } from "@/config/game-modes";
-import {
-  configManager,
-  divideByPrecision,
-  getBalance,
-  getBlockTimestamp,
-  getBuildingCosts,
-} from "@bibliothecadao/eternum";
+import { configManager, divideByPrecision, getBalance, getBlockTimestamp, getBuildingCosts } from "../index";
 import {
   BUILDINGS_CENTER,
   BuildingType,
@@ -14,7 +7,7 @@ import {
   ResourcesIds,
   StructureType,
 } from "@bibliothecadao/types";
-import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import type { NativeFactStore } from "../client/index";
 
 type ConstructionSpot = {
   col: number;
@@ -35,7 +28,7 @@ type ConstructionTileManager = {
   getRealmLevel?: (entityId: number) => number | bigint;
 };
 
-type ConstructionMode = Pick<GameModeConfig, "rules">;
+type ConstructionMode = { rules: { isBuildingTypeAllowed(type: string): boolean } };
 
 type ConstructionBuildabilityCode =
   | "missing_realm"
