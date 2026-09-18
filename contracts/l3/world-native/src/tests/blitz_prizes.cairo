@@ -304,22 +304,37 @@ fn constant_attendance_retains_the_original_rate_and_series_budget() {
 }
 
 #[test]
-fn ledger_rank_results_use_the_bound_wallet_after_operator_rotation() {
-    assert_prize_recipient(true);
+fn real_prize_recipient_with_missing_operator() {
+    assert_prize_recipient(false, false);
 }
 #[test]
-fn open_entry_rank_results_belong_to_the_gameplay_account() {
-    assert_prize_recipient(false);
+fn real_prize_recipient_with_configured_operator() {
+    assert_prize_recipient(false, true);
 }
-fn assert_prize_recipient(uses_ledger: bool) {
+#[test]
+fn dev_prize_recipient_with_missing_operator() {
+    assert_prize_recipient(true, false);
+}
+#[test]
+fn dev_prize_recipient_with_configured_operator() {
+    assert_prize_recipient(true, true);
+}
+fn assert_prize_recipient(dev: bool, has_operator: bool) {
     let d = setup(array![100].span(), false);
     set_fixture(d.peers.season, selector!("player_points"), array![3, 100].span(), 0_u128);
     set_fixture(d.peers.season, selector!("player_points"), array![3, d.actor.into()].span(), 100_u128);
     set_fixture(d.peers.settlement, selector!("entered_players"), array![3, d.actor.into()].span(), true);
-    if uses_ledger {
-        super::entry::set_operator(d, player(123));
-        super::entry::set_operator(d, player(456));
-    }
+    set_fixture(
+        d.peers.season,
+        selector!("games"),
+        array![3].span(),
+        crate::game::GameRegistry { dev_mode_on: dev, ..games(d).game(3) },
+    );
+    super::entry::set_operator(d, player(if has_operator {
+        456
+    } else {
+        0
+    }));
     let mut spy = spy_events();
     assert!(rank(d, array![0x111_u32].span(), 1, 1).is_ok());
     let events = spy.get_events().emitted_by(d.peers.prizes);
@@ -330,10 +345,10 @@ fn assert_prize_recipient(uses_ledger: bool) {
             let story: crate::ownership::Story = Serde::deserialize(ref data).unwrap();
             if let crate::ownership::Story::PrizeResult(result) = story {
                 assert_eq!(result.player, d.actor);
-                assert_eq!(result.owner, if uses_ledger {
-                    player(0x444)
-                } else {
+                assert_eq!(result.owner, if dev {
                     d.actor
+                } else {
+                    player(0x444)
                 });
                 found = true;
             }

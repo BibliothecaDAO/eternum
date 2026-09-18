@@ -277,7 +277,7 @@ pub mod SettlementDomain {
             if let Some(realm_id) = selected {
                 return (realm_id, self.realms.traits(realm_id));
             }
-            if self.ledger_operator().is_zero() {
+            if self.games().game(key.game_id).dev_mode_on {
                 let remaining = crate::realms::CANONICAL_REALM_COUNT - settled.into();
                 assert!(remaining > 0, "all canonical realms allocated");
                 let index = crate::random::range(seed, 71419, remaining.into()).try_into().unwrap();
