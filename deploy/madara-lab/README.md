@@ -10,12 +10,19 @@ Branch: `feat/madara-lab`. Brief: `docs/plans/realms-phase-1-brief.md`. Directio
 ## Prerequisites
 
 - Docker with Compose v2 (`docker compose`), ~2 GB free for images and the chain volume.
-- `scarb 2.13.1`, the repository-pinned `snforge`, `pnpm`, `jq`, `bun`, and `mkcert`. Run
+- The Scarb and Foundry versions in `contracts/l3/world-native/.tool-versions`, plus `pnpm`, `jq`, `bun`, and `mkcert`. Run
   `pnpm install --frozen-lockfile` and `pnpm run build:packages` from the repository root before deploying.
   World deployment uses our starknet.js deployer; Sozo is not required.
 - The lab hosts in `/etc/hosts` (once, with sudo):
   `127.0.0.1 realms.test play.realms.test rpc.realms.test herald.realms.test identity-rpc.realms.test`.
 - Nothing from Cartridge: no Slot, no Controller, no paymaster, no hosted VRF.
+
+Install the native tools separately from other stacks, then select them for this shell:
+
+```bash
+bash deploy/madara-lab/scripts/install-native-tools.sh "$HOME/.local/share/eternum-native-tools"
+source "$HOME/.local/share/eternum-native-tools/env"
+```
 
 ## Bring the chain up
 
@@ -621,12 +628,14 @@ curl -fsSLO https://raw.githubusercontent.com/BibliothecaDAO/eternum/next/deploy
 LAB_DOMAIN=lab.example.com TUNNEL_ID=<uuid> bash bootstrap-server.sh
 ```
 
-It installs Docker, node 22 + pnpm, bun and asdf (scarb 2.13.1, sozo 1.8.7) for a `realms` user, checks the repo
+It installs Docker, node 22 + pnpm, bun and the native workspace's Scarb and Foundry tools for a `realms` user, checks the repo
 out at `/opt/realms/eternum`, renders `.lab/cloudflared/config.yml` from `cloudflared/config.yml.template`, installs
 the `herald` and `realms-identity` units, and closes every port but SSH (`ufw`). Then, as `realms`:
 
 ```bash
 cd /opt/realms/eternum
+source "$HOME/.local/share/eternum-native-tools/env"
+export PATH="$HOME/.bun/bin:$PATH"
 # Create the root .env from the identity brief: local DATABASE_URL with DATABASE_SSL=false,
 # public identity/game/herald URLs, and the lab BINDING_AUTHORITY_* pair — never a mainnet key.
 # The launch service additionally needs RPC_URL, DOJO_ACCOUNT_ADDRESS, DOJO_PRIVATE_KEY,
