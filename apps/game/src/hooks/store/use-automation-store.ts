@@ -14,16 +14,13 @@ import type {
 export {
   isAutomationResourceBlocked,
   MAX_RESOURCE_ALLOCATION_PERCENT,
-  AUTOMATION_INPUT_BUDGET_PERCENT,
   DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES,
   DONKEY_DEFAULT_RESOURCE_PERCENT,
 } from "@bibliothecadao/eternum/automation";
 export type {
   RealmEntityType,
   ResourceAutomationPercentages,
-  RealmProductionEntry,
   RealmAutomationExecutionSummary,
-  AutomationExecutionStatus,
   RealmExecutionStatus,
   RealmAutomationConfig,
 } from "@bibliothecadao/eternum/automation";
