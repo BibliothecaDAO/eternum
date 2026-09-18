@@ -54,7 +54,7 @@ describe("native bindings in the shared game client", () => {
     const { store, write } = await fixture();
     write("ActionNonce", [1n, 0x111n], { game_id: 1, actor: "0x111", next_nonce: "3" });
     write("SliceRules", [1n], { ...preset.rules, game_id: 1 });
-    const submitIntent = vi.fn(async (_action: SignedNativeIntent) => ({ transaction_hash: "0x99" }));
+    const submitIntent = vi.fn(async (_action: SignedNativeIntent) => ({ transaction_hash: "0x99", order: 7n }));
     const signIntent = vi.fn(async (_actor: AccountInterface, _digest: string) => ({ r: 1n, s: 2n, publicKey: 3n }));
     const send = nativeSubmission({ bindings, chainId: "0x1", signIntent, submitIntent }, store, 1, "0x101");
     const call = {
@@ -65,7 +65,10 @@ describe("native bindings in the shared game client", () => {
         ...encodeNativeCommand(bindings.commandAbi, { kind: "Explore", value: { explorer_id: 7, direction: 2 } }),
       ],
     };
-    await send({ address: "0x111" } as AccountInterface, call);
+    expect(await send({ address: "0x111" } as AccountInterface, call)).toEqual({
+      transaction_hash: "0x99",
+      ticket: { gameId: "1", actor: "0x111", nonce: "3", order: "7" },
+    });
     const encoded = submitIntent.mock.calls[0][0].intent.map(BigInt);
     expect(encoded[6]).toBe(3n);
     expect(encoded.slice(12)).toEqual([3n, 1n, 7n, 2n]);
@@ -84,7 +87,7 @@ describe("native bindings in the shared game client", () => {
     write("SliceRules", [1n], { ...preset.rules, game_id: 1 });
     const actor = { address: "0x222" } as AccountInterface;
     const signIntent = vi.fn(async (_actor: AccountInterface, _digest: string) => ({ r: 1n, s: 2n, publicKey: 3n }));
-    const submitIntent = vi.fn(async () => ({ transaction_hash: "0x99" }));
+    const submitIntent = vi.fn(async () => ({ transaction_hash: "0x99", order: 7n }));
     const connection = { bindings, chainId: "0x1", signIntent, submitIntent };
     const call = {
       contractAddress: "0x101",
@@ -128,7 +131,7 @@ describe("native bindings in the shared game client", () => {
       if (actor.address === "0x222") await signature;
       return { r: 1n, s: 2n, publicKey: 3n };
     });
-    const submitIntent = vi.fn(async (_action: SignedNativeIntent) => ({ transaction_hash: "0x99" }));
+    const submitIntent = vi.fn(async (_action: SignedNativeIntent) => ({ transaction_hash: "0x99", order: 7n }));
     const send = nativeSubmission({ bindings, chainId: "0x1", signIntent, submitIntent }, store, 1, "0x101", prepare);
     const call = {
       contractAddress: "0x101",
@@ -158,7 +161,7 @@ describe("native bindings in the shared game client", () => {
       write("ActionNonce", [1n, BigInt(actor)], { game_id: 1, actor, next_nonce: "0" });
     });
     const signIntent = vi.fn(async () => ({ r: 1n, s: 2n, publicKey: 3n }));
-    const submitIntent = vi.fn(async () => ({ transaction_hash: "0x99" }));
+    const submitIntent = vi.fn(async () => ({ transaction_hash: "0x99", order: 7n }));
     const send = nativeSubmission({ bindings, chainId: "0x1", signIntent, submitIntent }, store, 1, "0x101", prepare);
     const call = {
       contractAddress: "0x101",

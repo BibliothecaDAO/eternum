@@ -430,6 +430,68 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     expect(findTransactionFailedPayload(provider)?.error).toBeInstanceOf(Error);
   });
 
+  it("resolves each player's ticket independently when a batch includes a rejection", async () => {
+    const provider = makeProvider();
+    const tickets = [
+      { gameId: "7", actor: "0x111", nonce: "3", order: "8" },
+      { gameId: "7", actor: "0x222", nonce: "5", order: "9" },
+      { gameId: "7", actor: "0x333", nonce: "1", order: "10" },
+    ];
+    provider.nativeSubmission = vi.fn(async (actor: { address: string }) => ({
+      transaction_hash: "0xabc",
+      ticket: tickets.find((ticket) => ticket.actor === actor.address),
+    }));
+    provider.transactionStreamWaiter.mockResolvedValue({
+      hash: "0xabc",
+      block: null,
+      status: "PRE_CONFIRMED",
+      executions: tickets.map((ticket, index) => ({
+        ...ticket,
+        nonceConsumed: true,
+        status: index === 1 ? "REVERTED" : "SUCCEEDED",
+        reason: index === 1 ? "GAMEPLAY_REJECTED" : "",
+        ...(index === 0 ? { batchRemaining: "9" } : index === 2 ? { batchRemaining: "0" } : {}),
+      })),
+    });
+    provider.waitForTransactionWithCheckInternal =
+      EternumProvider.prototype["waitForTransactionWithCheckInternal"].bind(provider);
+    provider.waitForTransactionWithTimeout = EternumProvider.prototype["waitForTransactionWithTimeout"].bind(provider);
+    const results = await Promise.allSettled(
+      tickets.map((ticket) =>
+        provider.executeAndCheckTransaction(
+          { address: ticket.actor },
+          { contractAddress: "0x1", entrypoint: "CloseSeason", calldata: [] },
+        ),
+      ),
+    );
+    expect(results[0]).toMatchObject({
+      status: "fulfilled",
+      value: { transaction_hash: "0xabc", batch_remaining: "9" },
+    });
+    expect(results[1]).toMatchObject({
+      status: "rejected",
+      reason: expect.objectContaining({ message: expect.stringContaining("GAMEPLAY_REJECTED") }),
+    });
+    expect(results[2]).toMatchObject({
+      status: "fulfilled",
+      value: { transaction_hash: "0xabc", batch_remaining: "0" },
+    });
+    expect(provider.pendingActorExecutionLocks.size).toBe(0);
+  });
+
+  it("keeps ticket identity when a submission completes after its timeout", async () => {
+    const provider = makeProvider();
+    const ticket = { gameId: "7", actor: "0x111", nonce: "3", order: "8" };
+    provider.observeLateSubmittedTransaction(Promise.resolve({ transaction_hash: "0xabc", ticket }), {});
+    await vi.waitFor(() =>
+      expect(provider.waitForTransactionWithCheckInternal).toHaveBeenCalledWith(
+        "0xabc",
+        expect.objectContaining({ recoveredFromSubmissionTimeout: true }),
+        ticket,
+      ),
+    );
+  });
+
   it("marks asynchronous post-timeout confirmation failures as background confirmation", async () => {
     const provider = makeProvider();
     let rejectWait!: (error: unknown) => void;

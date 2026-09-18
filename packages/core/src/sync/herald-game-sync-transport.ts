@@ -1,3 +1,4 @@
+import type { NativeExecutionOutcome } from "@bibliothecadao/types";
 import { getGameSyncModel, type GameSyncModelDefinition } from "./model-manifest";
 import type {
   GameSyncSnapshotPage,
@@ -51,7 +52,7 @@ type HeraldMessage =
       status: string;
       block: number | null;
       revert_reason?: string;
-      batch_remaining?: string;
+      executions?: NativeExecutionOutcome[];
     })
   | (HeraldMessageBase & { type: "head"; block: number; timestamp: number; preconfirmed?: boolean });
 
@@ -443,7 +444,7 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
       block: message.block,
       hash: message.hash,
       status: message.status,
-      ...(message.batch_remaining !== undefined ? { batchRemaining: message.batch_remaining } : {}),
+      ...(message.executions !== undefined ? { executions: message.executions } : {}),
       ...(message.revert_reason ? { revertReason: message.revert_reason } : {}),
     };
     this.handlers?.onTransaction?.(transaction);

@@ -1,5 +1,7 @@
-export { completeNativeBatches, nativeBatchRemaining } from "./native-batch";
-export type { BatchTransactionReceipt } from "@bibliothecadao/types";
+import { requireNativeExecutionOutcome } from "./native-batch";
+import type { NativeTicketIdentity } from "@bibliothecadao/types";
+export { completeNativeBatches, nativeExecutionOutcomes } from "./native-batch";
+export type { BatchTransactionReceipt, NativeExecutionOutcome } from "@bibliothecadao/types";
 import { requireBatchReceipt } from "./native-batch";
 export { createNativeTicketSubmission } from "./native-ticket";
 export type { SignedNativeIntent } from "./native-ticket";
@@ -51,7 +53,9 @@ import {
 export type NativeSubmission = (
   signer: AccountInterface,
   calls: AllowArray<Call>,
-) => Promise<{ transaction_hash: string }>;
+) => Promise<{ transaction_hash: string; ticket: NativeTicketIdentity }>;
+type SubmittedTransaction = { transaction_hash: string; ticket?: NativeTicketIdentity };
+
 export const NAMESPACE = "s1_eternum";
 export {
   CATEGORY_BATCH_LIMITS,
@@ -583,7 +587,7 @@ export class EternumProvider extends EventEmitter {
     transactionDetails: AllowArray<Call>,
     executionDetails: UniversalDetails,
     options?: { executionDetailsCacheKey?: string },
-  ): Promise<{ transaction_hash: string }> {
+  ): Promise<SubmittedTransaction> {
     if (this.nativeSubmission) return this.nativeSubmission(signer, transactionDetails);
     if (this.retryConfig && this.retryConfig.maxRetries > 0) {
       let currentExecutionDetails = executionDetails;
@@ -631,8 +635,8 @@ export class EternumProvider extends EventEmitter {
   }
 
   private async waitForTransactionSubmission(
-    submitPromise: Promise<{ transaction_hash: string }>,
-  ): Promise<{ transaction_hash: string }> {
+    submitPromise: Promise<SubmittedTransaction>,
+  ): Promise<SubmittedTransaction> {
     return await this.withTimeout(
       submitPromise,
       this.TRANSACTION_SUBMIT_TIMEOUT_MS,
@@ -708,7 +712,7 @@ export class EternumProvider extends EventEmitter {
   }
 
   private observeLateSubmittedTransaction(
-    submitPromise: Promise<{ transaction_hash: string }>,
+    submitPromise: Promise<SubmittedTransaction>,
     transactionMeta: TransactionLifecycleMeta,
     releaseActorExecutionLock?: () => void,
   ): void {
@@ -727,7 +731,11 @@ export class EternumProvider extends EventEmitter {
         this.emitTransactionPending(tx.transaction_hash, recoveredTransactionMeta);
         if (!this.transactionStreamWaiter) return;
 
-        return this.waitForTransactionWithCheckInternal(tx.transaction_hash, recoveredTransactionMetaWithHash)
+        return this.waitForTransactionWithCheckInternal(
+          tx.transaction_hash,
+          recoveredTransactionMetaWithHash,
+          tx.ticket,
+        )
           .then((receipt) => {
             this.emit("transactionComplete", {
               details: receipt,
@@ -825,7 +833,7 @@ export class EternumProvider extends EventEmitter {
     }
 
     let tx;
-    let submitPromise: Promise<{ transaction_hash: string }> | undefined;
+    let submitPromise: Promise<SubmittedTransaction> | undefined;
     try {
       // Resolved inside the try so a preflight abort (the estimate proved a
       // deterministic revert) rides the same failure emission and actor-lock
@@ -897,7 +905,11 @@ export class EternumProvider extends EventEmitter {
         transaction_hash: tx.transaction_hash,
       } as unknown as GetTransactionReceiptResponse;
     }
-    const streamReceipt = this.waitForTransactionWithCheckInternal(tx.transaction_hash, transactionMetaWithHash);
+    const streamReceipt = this.waitForTransactionWithCheckInternal(
+      tx.transaction_hash,
+      transactionMetaWithHash,
+      tx.ticket,
+    );
     const waitPromiseWithoutLockRelease = this.nativeSubmission
       ? this.withTimeout(
           streamReceipt,
@@ -1015,6 +1027,7 @@ export class EternumProvider extends EventEmitter {
   private async waitForTransactionWithCheckInternal(
     transactionHash: string,
     _transactionMeta?: TransactionLifecycleMeta,
+    ticket?: NativeTicketIdentity,
   ): Promise<GetTransactionReceiptResponse> {
     if (!this.transactionStreamWaiter) {
       return {
@@ -1023,9 +1036,19 @@ export class EternumProvider extends EventEmitter {
       } as unknown as GetTransactionReceiptResponse;
     }
 
-    const transaction = await this.transactionStreamWaiter(transactionHash).catch((error) => {
+    let transaction = await this.transactionStreamWaiter(transactionHash).catch((error) => {
       throw attachTransactionFailureStage(error, "confirmation");
     });
+
+    if (ticket && transaction.status !== "REVERTED") {
+      const outcome = requireNativeExecutionOutcome(transaction.executions, ticket);
+      transaction = {
+        ...transaction,
+        status: outcome.status === "REVERTED" ? "REVERTED" : transaction.status,
+        revertReason: outcome.status === "REVERTED" ? `Native action rejected: ${outcome.reason}` : undefined,
+        batchRemaining: outcome.batchRemaining,
+      };
+    }
 
     if (transaction.status === "REVERTED") {
       const rawRevertReason = transaction.revertReason;

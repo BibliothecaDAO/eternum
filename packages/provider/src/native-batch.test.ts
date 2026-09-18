@@ -1,6 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 import { hash, type GetTransactionReceiptResponse } from "starknet";
-import { completeNativeBatches, nativeBatchRemaining, requireBatchReceipt } from "./native-batch";
+import {
+  completeNativeBatches,
+  nativeExecutionOutcomes,
+  requireNativeExecutionOutcome,
+  requireBatchReceipt,
+} from "./native-batch";
 
 function events(remaining = "1") {
   return [
@@ -14,24 +19,54 @@ function events(remaining = "1") {
 }
 
 describe("recorded batch results", () => {
+  const ticket = { gameId: "7", actor: "0x123", nonce: "3", order: "8" };
   it("keeps zero and large counts exact and ignores foreign emitters", () => {
-    expect(nativeBatchRemaining(events("0"), "0x77")).toBe("0");
-    expect(nativeBatchRemaining(events("9007199254740993"), "0x77")).toBe("9007199254740993");
-    expect(nativeBatchRemaining(events(), "0x88")).toBeUndefined();
-    expect(nativeBatchRemaining([events()[1]], "0x77")).toBeUndefined();
+    expect(nativeExecutionOutcomes(events("0"), "0x77")[0].batchRemaining).toBe("0");
+    expect(nativeExecutionOutcomes(events("9007199254740993"), "0x77")[0].batchRemaining).toBe("9007199254740993");
+    expect(nativeExecutionOutcomes(events(), "0x88")).toEqual([]);
+    expect(nativeExecutionOutcomes([events()[1]], "0x77")[0].batchRemaining).toBeUndefined();
   });
   it.each([0, 1, 2, 3, 5])("rejects a result mismatching recorded field %i", (field) => {
     const raw = events();
     raw[1].data[field] = "0";
-    expect(() => nativeBatchRemaining(raw, "0x77")).toThrow("does not match");
+    expect(() => nativeExecutionOutcomes(raw, "0x77")).toThrow();
   });
   it("rejects ambiguous and malformed results", () => {
     const raw = events();
-    expect(() => nativeBatchRemaining([...raw, raw[0]], "0x77")).toThrow("Ambiguous");
-    expect(() => nativeBatchRemaining([raw[0]], "0x77")).toThrow("Missing");
+    expect(() => nativeExecutionOutcomes([...raw, raw[0]], "0x77")).toThrow("Ambiguous");
+    expect(() => nativeExecutionOutcomes([...raw, raw[1]], "0x77")).toThrow("Duplicate");
+    expect(() => nativeExecutionOutcomes([raw[0]], "0x77")).toThrow("does not match");
     raw[0].data.push("9");
-    expect(() => nativeBatchRemaining(raw, "0x77")).toThrow("Malformed");
-    expect(() => nativeBatchRemaining(events(String(2n ** 64n)), "0x77")).toThrow("Invalid");
+    expect(() => nativeExecutionOutcomes(raw, "0x77")).toThrow("Malformed");
+    expect(() => nativeExecutionOutcomes(events(String(2n ** 64n)), "0x77")).toThrow("Invalid");
+  });
+  it("keeps outcomes and progress independent for tickets sharing a receipt", () => {
+    const second = events("4");
+    second[0].data[0] = "292";
+    second[1].data[1] = "292";
+    second[1].data[4] = "9";
+    const rejected = events()[1];
+    rejected.data = ["7", "293", "3", "0", "10", "2", "0x5354414c455f4e4f4e4345"];
+    const outcomes = nativeExecutionOutcomes([...events("9"), rejected, ...second], "0x77");
+    expect(requireNativeExecutionOutcome(outcomes, ticket)).toMatchObject({ status: "SUCCEEDED", batchRemaining: "9" });
+    expect(requireNativeExecutionOutcome(outcomes, { ...ticket, actor: "292", order: "9" })).toMatchObject({
+      status: "SUCCEEDED",
+      batchRemaining: "4",
+    });
+    expect(requireNativeExecutionOutcome(outcomes, { ...ticket, actor: "293", order: "10" })).toMatchObject({
+      status: "REVERTED",
+      reason: "STALE_NONCE",
+      nonceConsumed: false,
+    });
+  });
+  it("requires the accepted order, game, actor and nonce to match", () => {
+    const outcomes = nativeExecutionOutcomes(events(), "0x77");
+    expect(() => requireNativeExecutionOutcome(undefined, ticket)).toThrow("Missing");
+    expect(() => requireNativeExecutionOutcome([...outcomes, ...outcomes], ticket)).toThrow("ambiguous");
+    expect(() => requireNativeExecutionOutcome(outcomes, { ...ticket, order: "9" })).toThrow("Missing");
+    for (const field of ["gameId", "actor", "nonce"] as const) {
+      expect(() => requireNativeExecutionOutcome(outcomes, { ...ticket, [field]: "99" })).toThrow("identity mismatch");
+    }
   });
   it("never treats a transaction hash as batch completion", () => {
     expect(() => requireBatchReceipt({ transaction_hash: "0x44" } as GetTransactionReceiptResponse)).toThrow(

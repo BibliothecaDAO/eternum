@@ -3,6 +3,20 @@ import { ResourcesIds } from "../constants";
 import { BuildingType } from "../constants/structures";
 import { Resource } from "./common";
 
+export interface NativeTicketIdentity {
+  gameId: string;
+  actor: string;
+  nonce: string;
+  order: string;
+}
+
+export interface NativeExecutionOutcome extends NativeTicketIdentity {
+  nonceConsumed: boolean;
+  status: "SUCCEEDED" | "REVERTED";
+  reason: string;
+  batchRemaining?: string;
+}
+
 export interface SystemSigner {
   signer: AccountInterface | Account;
 }

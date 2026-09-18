@@ -1,5 +1,4 @@
-import { nativeBatchRemaining } from "@bibliothecadao/provider";
-import { shortString } from "starknet";
+import { nativeExecutionOutcomes } from "@bibliothecadao/provider";
 import { transactionGameIds } from "./transactions";
 import type { MadaraRpc } from "../madara-rpc";
 import { normalizeFelt } from "../model-registry";
@@ -62,21 +61,9 @@ export class NativeIngestion {
   }
 
   actionReceipt(fold: WorldFold, receipt: RpcReceipt): RpcReceipt {
-    const events = this.validateReceipt(fold.overlay(), receipt, receipt.block_number ?? null, 0);
-    const rejection = events.find(
-      (event) =>
-        event.kind === "event" && event.model.name === "ExecutionRecorded" && BigInt(String(event.value.status)) === 2n,
-    );
-    if (!rejection || rejection.kind !== "event") {
-      const remaining = nativeBatchRemaining(receipt.events, this.decoder.manifest.world.address);
-      return remaining === undefined ? receipt : { ...receipt, batch_remaining: remaining };
-    }
-    const code = normalizeFelt(String(rejection.value.reason));
-    return {
-      ...receipt,
-      execution_status: "REVERTED",
-      revert_reason: `Native action rejected: ${shortString.decodeShortString(code)}`,
-    };
+    this.validateReceipt(fold.overlay(), receipt, receipt.block_number ?? null, 0);
+    if (receipt.execution_status === "REVERTED") return receipt;
+    return { ...receipt, executions: nativeExecutionOutcomes(receipt.events, this.decoder.manifest.world.address) };
   }
 
   async replay(input: {
