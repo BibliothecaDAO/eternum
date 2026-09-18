@@ -15165,6 +15165,36 @@
         }
       ]
     },
+    "world_native::geometry::Direction": {
+      "type": "enum",
+      "name": "world_native::geometry::Direction",
+      "variants": [
+        {
+          "name": "East",
+          "type": "()"
+        },
+        {
+          "name": "NorthEast",
+          "type": "()"
+        },
+        {
+          "name": "NorthWest",
+          "type": "()"
+        },
+        {
+          "name": "West",
+          "type": "()"
+        },
+        {
+          "name": "SouthWest",
+          "type": "()"
+        },
+        {
+          "name": "SouthEast",
+          "type": "()"
+        }
+      ]
+    },
     "world_native::guards::Guard": {
       "type": "struct",
       "name": "world_native::guards::Guard",
@@ -16003,11 +16033,11 @@
         },
         {
           "name": "category",
-          "type": "core::integer::u8"
+          "type": "world_native::troops::TroopType"
         },
         {
           "name": "tier",
-          "type": "core::integer::u8"
+          "type": "world_native::troops::TroopTier"
         },
         {
           "name": "amount",
@@ -18187,7 +18217,7 @@
         },
         {
           "name": "spawn_direction",
-          "type": "core::integer::u8"
+          "type": "world_native::geometry::Direction"
         }
       ]
     },
@@ -18628,5 +18658,5 @@
       ]
     }
   },
-  "identity": "d6ee3a142410e6699345f9118166ffd1449d1f2d9a4fee3baeadccdcaf74f134"
+  "identity": "e75211e4b947beacb96424336cddec780629d90860927e4933495f46e8749fe3"
 }

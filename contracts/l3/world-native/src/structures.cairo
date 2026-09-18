@@ -1196,8 +1196,8 @@ pub mod StructuresDomain {
                                 crate::ownership::GuardAddStory {
                                     structure_id: key.entity_id,
                                     slot: 0,
-                                    category: category.into(),
-                                    tier: 0,
+                                    category,
+                                    tier: crate::troops::TroopTier::T1,
                                     amount: guards,
                                 },
                             ),

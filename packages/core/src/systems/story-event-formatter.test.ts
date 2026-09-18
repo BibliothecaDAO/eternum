@@ -241,15 +241,15 @@ it("renders native troop transfer participants after the source explorer has dis
   );
   expect(result.title).toBe("Troops reassigned");
   expect(result.description).toContain("Route: Army");
-  expect(result.description).toContain("Slot 1");
+  expect(result.description).toContain("Delta");
   expect(result.description).toContain("Transferred: 2");
 });
 
 it.each([
-  [0, "Delta", "Slot 1"],
-  [1, "Gamma", "Slot 2"],
-  [2, "Beta", "Slot 3"],
-  [3, "Alpha", "Slot 4"],
+  [0, "Delta", "Delta"],
+  [1, "Gamma", "Gamma"],
+  [2, "Beta", "Beta"],
+  [3, "Alpha", "Alpha"],
 ])("renders slot %i consistently for numeric and named stories", (slot, name, label) => {
   for (const value of [slot, name]) {
     const result = buildStoryEventPresentation(

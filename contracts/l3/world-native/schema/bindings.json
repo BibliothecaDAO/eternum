@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "d6ee3a142410e6699345f9118166ffd1449d1f2d9a4fee3baeadccdcaf74f134",
+  "schemaIdentity": "e75211e4b947beacb96424336cddec780629d90860927e4933495f46e8749fe3",
   "commandAbi": [
     {
       "type": "impl",
@@ -3188,11 +3188,11 @@
         },
         {
           "name": "category",
-          "type": "core::integer::u8"
+          "type": "world_native::troops::TroopType"
         },
         {
           "name": "tier",
-          "type": "core::integer::u8"
+          "type": "world_native::troops::TroopTier"
         },
         {
           "name": "amount",
@@ -3683,6 +3683,36 @@
       ]
     },
     {
+      "type": "enum",
+      "name": "world_native::geometry::Direction",
+      "variants": [
+        {
+          "name": "East",
+          "type": "()"
+        },
+        {
+          "name": "NorthEast",
+          "type": "()"
+        },
+        {
+          "name": "NorthWest",
+          "type": "()"
+        },
+        {
+          "name": "West",
+          "type": "()"
+        },
+        {
+          "name": "SouthWest",
+          "type": "()"
+        },
+        {
+          "name": "SouthEast",
+          "type": "()"
+        }
+      ]
+    },
+    {
       "type": "struct",
       "name": "world_native::troop_management::ExplorerCreated",
       "members": [
@@ -3708,7 +3738,7 @@
         },
         {
           "name": "spawn_direction",
-          "type": "core::integer::u8"
+          "type": "world_native::geometry::Direction"
         }
       ]
     },
