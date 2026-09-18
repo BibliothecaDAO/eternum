@@ -86,6 +86,11 @@ const blitzSettlementConfig: ConfigPatch = {
 
 export const blitzBaseConfig: ConfigPatch = mergeConfigPatches(
   buildCommonBaseConfig(),
+  {
+    mines: {
+      surfacePool: [{ kind: 1, weight: 1 }],
+    },
+  },
   blitzExplorationConfig,
   blitzResourceConfig,
   blitzTroopConfig,

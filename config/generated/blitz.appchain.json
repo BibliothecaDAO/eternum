@@ -3,12 +3,34 @@
       "message": "This file was generated from the composed config source and should not be edited manually",
       "configuration": {
   "spireTravelEssenceCost": 0,
-  "agent": {
-    "controller_address": "0x0277eE04e3f82D4E805Ab0e2044C53fB6d61ABd00a2a7f44B78410e9b43E1344",
-    "max_lifetime_count": 10000,
-    "max_current_count": 1000,
-    "min_spawn_lords_amount": 10,
-    "max_spawn_lords_amount": 35
+  "bitcoin": {
+    "prizePerPhase": 1,
+    "minimumLabor": 100,
+    "ownerCutBps": 2000
+  },
+  "mines": {
+    "kinds": {
+      "1": {
+        "resourceType": 38,
+        "buildingCategory": 39,
+        "productionRate": 5,
+        "capMinimum": 36000,
+        "capSteps": 1
+      },
+      "2": {
+        "resourceType": 24,
+        "buildingCategory": 26,
+        "productionRate": 1.5,
+        "capMinimum": 300000,
+        "capSteps": 10
+      }
+    },
+    "surfacePool": [
+      {
+        "kind": 1,
+        "weight": 1
+      }
+    ]
   },
   "village": {
     "village_mint_initial_recipient": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
@@ -104,8 +126,6 @@
     "reward": 750,
     "shardsMinesFailProbability": 49000,
     "shardsMinesWinProbability": 1000,
-    "agentFindProbability": 0,
-    "agentFindFailProbability": 100,
     "campFindProbability": 1500,
     "campFindFailProbability": 48500,
     "bitcoinMineWinProbability": 0,
@@ -175,13 +195,8 @@
       "on": true
     },
     "registration": {
-      "fee_token": "0x4718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d",
-      "fee_recipient": "0x040DB150844Dc372928b3B47e23CB6E240E2c99ddC5381680aFd73d777Cbd6C8",
-      "fee_amount": "0",
       "registration_count_max": 24,
       "registration_delay_seconds": 20,
-      "entry_token_class_hash": "0x0",
-      "entry_token_ipfs_cid": "Qm123idkmaybe",
       "collectible_cosmetics_max_items": 5,
       "collectible_cosmetics_address": "0x0",
       "collectible_timelock_address": "0x0",
@@ -943,11 +958,7 @@
       "t3DamageMultiplier": "166020696663385964544",
       "damageRaidPercentNum": 1000,
       "damageBiomeBonusNum": 3000,
-      "damageScalingFactor": "36893488147419103232",
-      "damageBetaSmall": "4611686018427387904",
-      "damageBetaLarge": "2213609288845146193",
-      "damageC0": "1844674407370955161600000",
-      "damageDelta": "922337203685477580800000"
+      "damageScalingFactor": "36893488147419103232"
     },
     "stamina": {
       "staminaGainPerTick": 30,
@@ -969,8 +980,6 @@
       "guardResurrectionDelay": 600,
       "mercenariesTroopLowerBound": 800,
       "mercenariesTroopUpperBound": 1600,
-      "agentTroopLowerBound": 500,
-      "agentTroopUpperBound": 15000,
       "settlementDeploymentCap": 3000,
       "cityDeploymentCap": 15000,
       "kingdomDeploymentCap": 45000,
@@ -1679,16 +1688,16 @@
     "pointsForTileExploration": "10000000",
     "pointsForRelicDiscovery": "1000000000"
   },
-  "mmr": {
-    "enabled": true,
-    "mmr_token_address": "0x0",
-    "distribution_mean": 1500,
-    "spread_factor": 450,
-    "max_delta": 45,
-    "k_factor": 50,
-    "lobby_split_weight_scaled": 2500,
-    "mean_regression_scaled": 150,
-    "min_players": 6
+  "faith": {
+    "enabled": false,
+    "wonder_base_fp_per_sec": 0,
+    "realm_fp_per_sec": 0,
+    "village_fp_per_sec": 0,
+    "owner_share_percent": 0,
+    "reward_token": "0x0"
+  },
+  "artificer": {
+    "research_cost_for_relic": 0
   },
   "trade": {
     "maxCount": 0
@@ -1719,6 +1728,7 @@
       "realms": "0x0",
       "lords": "0x0",
       "strk": "0x4718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d",
+      "factoryDeployer": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
       "villagePass": "0x0",
       "marketplace": "0x0",
       "lootChests": "0x0",
@@ -11665,6 +11675,7 @@
               "type": "core::integer::u16"
             },
             {
+              "name": "holy_site_fp_per_sec",
               "type": "core::integer::u16"
             },
             {
@@ -11806,9 +11817,11 @@
               "type": "core::integer::u16"
             },
             {
+              "name": "holysite_win_probability",
               "type": "core::integer::u16"
             },
             {
+              "name": "holysite_fail_probability",
               "type": "core::integer::u16"
             },
             {
@@ -12560,6 +12573,7 @@
               "type": "core::integer::u64"
             },
             {
+              "name": "holysite_capacity",
               "type": "core::integer::u64"
             },
             {
@@ -24983,17 +24997,6 @@
         }
       ]
     }
-  },
-  "faith": {
-    "enabled": false,
-    "wonder_base_fp_per_sec": 0,
-    "realm_fp_per_sec": 0,
-    "village_fp_per_sec": 0,
-    "owner_share_percent": 0,
-    "reward_token": "0x0"
-  },
-  "artificer": {
-    "research_cost_for_relic": 0
   }
 }
     }

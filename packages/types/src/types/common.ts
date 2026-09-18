@@ -562,6 +562,24 @@ export interface Config {
   factory: {
     address: string;
   };
+  bitcoin?: {
+    prizePerPhase: number;
+    minimumLabor: number;
+    ownerCutBps: number;
+  };
+  mines?: {
+    kinds: Record<
+      number,
+      {
+        resourceType: number;
+        buildingCategory: number;
+        productionRate: number;
+        capMinimum: number;
+        capSteps: number;
+      }
+    >;
+    surfacePool: Array<{ kind: number; weight: number }>;
+  };
   faith?: {
     enabled: boolean;
     wonder_base_fp_per_sec: number;

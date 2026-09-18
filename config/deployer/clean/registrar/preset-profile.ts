@@ -1,8 +1,11 @@
+import { nativePresets } from "../../../source/native";
 import type { BlitzBalanceProfileId } from "../../../source/blitz";
 import { resolveDeploymentEnvironment } from "../environment";
 import type { DeploymentEnvironmentId } from "../types";
 
-export const BALANCE_PROFILE_IDS: BlitzBalanceProfileId[] = ["official-60", "official-90"];
+export const BALANCE_PROFILE_IDS: BlitzBalanceProfileId[] = Object.values(nativePresets).flatMap(({ profile }) =>
+  profile ? [profile] : [],
+);
 
 export function validatePresetBalanceProfile(
   environmentId: DeploymentEnvironmentId,

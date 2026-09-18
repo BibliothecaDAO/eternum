@@ -43,6 +43,13 @@ const VILLAGE_TOKEN_MINT_RECIPIENT = "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ec
 export function buildCommonBaseConfig(): ConfigPatch {
   return {
     spireTravelEssenceCost: 0,
+    bitcoin: { prizePerPhase: 1, minimumLabor: 100, ownerCutBps: 2000 },
+    mines: {
+      kinds: {
+        1: { resourceType: 38, buildingCategory: 39, productionRate: 5, capMinimum: 36000, capSteps: 1 },
+        2: { resourceType: 24, buildingCategory: 26, productionRate: 1.5, capMinimum: 300000, capSteps: 10 },
+      },
+    },
 
     village: {
       village_mint_initial_recipient: VILLAGE_TOKEN_MINT_RECIPIENT,

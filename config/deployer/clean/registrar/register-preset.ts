@@ -1,7 +1,6 @@
 import { Account, RpcProvider } from "starknet";
 import { assertProviderChain } from "@realms-world/chain";
-import { applyBlitzBalanceProfile, type BlitzBalanceProfileId } from "../../../source/blitz";
-import { loadEnvironmentConfiguration } from "../config/config-loader";
+import type { BlitzBalanceProfileId } from "../../../source/blitz";
 import { DEPLOYMENT_ENVIRONMENTS } from "../constants";
 import { isDeploymentEnvironmentId, resolveDeploymentEnvironment } from "../environment";
 import { createLedgerAdminAccount, registerLedgerPreset, type LedgerTarget } from "../ledger/calls";
@@ -9,8 +8,8 @@ import { buildLedgerEconomicPreset, buildRegisterLedgerPresetCalldata } from "..
 import { resolveAccountCredentials } from "../shared/credentials";
 import { requireRpcUrl } from "../shared/rpc";
 import type { DeploymentEnvironmentId } from "../types";
-import { BALANCE_PROFILE_IDS, validatePresetBalanceProfile } from "./preset-profile";
-import { buildNativePresetRegistration, registerNativePreset } from "./native-preset";
+import { validatePresetBalanceProfile } from "./preset-profile";
+import { buildNativePresetRegistration, registerNativePreset, loadNativePresetConfiguration } from "./native-preset";
 
 interface RegisterPresetOptions {
   presetId: number;
@@ -55,15 +54,6 @@ function parseOptions(): RegisterPresetOptions {
   };
 }
 
-// The stored environment JSON is the raw base sheet: balance profiles
-// (official-60 "Regular Fast", official-90) are applied at preset registration,
-// not baked into the stored config. A preset registered without the profile
-// silently ships base balance under a profile-flavored label (preset 4 bug).
-function loadPresetConfiguration(environmentId: DeploymentEnvironmentId, balanceProfile?: BlitzBalanceProfileId) {
-  const config = loadEnvironmentConfiguration(environmentId);
-  return balanceProfile ? applyBlitzBalanceProfile(config, balanceProfile) : config;
-}
-
 function stringify(value: unknown): string {
   return JSON.stringify(value, (_key, entry) => (typeof entry === "bigint" ? entry.toString() : entry), 2);
 }
@@ -79,10 +69,7 @@ function resolveOptionalLedgerTarget(options: RegisterPresetOptions): LedgerTarg
 }
 
 export async function registerEnvironmentPreset(options: RegisterPresetOptions): Promise<void> {
-  const config = loadPresetConfiguration(options.environmentId, options.balanceProfile);
-  if (config.blitz.mode.on && !options.balanceProfile) {
-    throw new Error("Native Blitz registration requires an explicit --balance-profile");
-  }
+  const config = loadNativePresetConfiguration(options.environmentId, options.presetId, options.balanceProfile);
   const registration = buildRegistration(config, options);
   const { calldata } = registration;
   const ledgerPreset = buildLedgerEconomicPreset(resolveDeploymentEnvironment(options.environmentId).gameType, {
@@ -90,7 +77,7 @@ export async function registerEnvironmentPreset(options: RegisterPresetOptions):
   });
   const summary = {
     presetId: options.presetId,
-    balanceProfile: options.balanceProfile ?? null,
+    balanceProfile: config.blitz.mode.on ? config.blitz.exploration.rewardProfileId : null,
     calldataLength: calldata.length,
     ...registration.summary,
     sponsored: options.sponsored,
@@ -143,7 +130,7 @@ export async function registerEnvironmentPreset(options: RegisterPresetOptions):
   );
 }
 
-function buildRegistration(config: ReturnType<typeof loadPresetConfiguration>, options: RegisterPresetOptions) {
+function buildRegistration(config: ReturnType<typeof loadNativePresetConfiguration>, options: RegisterPresetOptions) {
   const native = buildNativePresetRegistration(config, options.presetId, options.nativeManifest);
   return {
     native,

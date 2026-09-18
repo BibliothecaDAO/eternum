@@ -53,6 +53,15 @@ const eternumSettlementConfig: ConfigPatch = {
 
 export const eternumBaseConfig: ConfigPatch = mergeConfigPatches(
   buildCommonBaseConfig(),
+  {
+    mines: {
+      kinds: { 1: { productionRate: 2.5 } },
+      surfacePool: [
+        { kind: 1, weight: 1 },
+        { kind: 2, weight: 1 },
+      ],
+    },
+  },
   eternumExplorationConfig,
   eternumResourceConfig,
   eternumTroopConfig,

@@ -15,11 +15,6 @@ export interface CreateGamePayloadInput {
   useMapOverride: boolean;
 }
 
-const BLITZ_PROFILE_IDS = {
-  "official-60": 1,
-  "official-90": 2,
-} as const;
-
 function scaleAmount(amount: number, precision: number): number {
   return amount * precision;
 }
@@ -124,14 +119,6 @@ export function buildBiomeClimateConfig(config: Config) {
     elevation_seed: config.biomeClimate.elevationSeed,
     moisture_seed: config.biomeClimate.moistureSeed,
   };
-}
-
-export function resolveBlitzProfileId(config: Config): number {
-  const profileId = BLITZ_PROFILE_IDS[config.blitz.exploration.rewardProfileId];
-  if (!profileId) {
-    throw new Error(`Unsupported Blitz reward profile "${config.blitz.exploration.rewardProfileId}"`);
-  }
-  return profileId;
 }
 
 function resolveRegistrationSchedule(startMainAt: number) {
