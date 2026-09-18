@@ -9,7 +9,7 @@ on:
       - "packages/identity/**"
       - "packages/db/**"
       - "apps/realms/**"
-      - "contracts/l3/game/manifest_madara.json"
+      - "contracts/l3/world-native/schema/**"
       - "pnpm-lock.yaml"
       - "pnpm-workspace.yaml"
       - ".github/workflows/test-notifications.yml"

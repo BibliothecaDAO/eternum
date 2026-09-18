@@ -43,6 +43,7 @@ const STORY_RULES = {
   GuardExplorerSwapStory: { level: "all", recipients: "owner" },
   GuardAddStory: { level: "all", recipients: "owner" },
   GuardDeleteStory: { level: "all", recipients: "owner" },
+  TroopsTransferred: { level: "all", recipients: "owner" },
   PointsRegisteredStory: { excluded: "Leaderboard activity" },
   PrizeDistributionFinalStory: { excluded: "Trial distribution does not identify season recipients" },
   FaithPledgedStory: { excluded: "Recipient and notification UX deferred" },
