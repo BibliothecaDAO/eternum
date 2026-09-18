@@ -75,7 +75,6 @@ export default defineConfig({
       "@bibliothecadao/react": path.resolve(__dirname, "../../packages/react/src/index.ts"),
       "@bibliothecadao/types/terrain": path.resolve(__dirname, "../../packages/types/src/terrain.ts"),
       "@bibliothecadao/types": path.resolve(__dirname, "../../packages/types/src/index.ts"),
-      "@manifests": path.resolve(__dirname, "../../contracts/l3/game"),
       "@pm": path.resolve(__dirname, "./src/pm"),
       "@videos": path.resolve(__dirname, "./src/assets/videos"),
     },

@@ -4,7 +4,6 @@ on:
   pull_request:
     paths-ignore:
       - "contracts/common/**"
-      - "contracts/l3/game/**"
       - "contracts/l2/season_pass/**"
       - "contracts/l2/village_pass/**"
       - "contracts/utils/**"

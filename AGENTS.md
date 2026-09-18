@@ -8,20 +8,21 @@ More specific files may add local rules, but they should not lower the quality b
 
 ## What this repo is
 
-Eternum is a fully onchain strategy game built with Dojo (Cairo). One codebase serves multiple game worlds and formats —
-**Blitz** (short, timed matches) and **Eternum** (long format). Games are rows keyed by `game_id` inside a persistent
-world, created through the factory (GameRegistry) with immutable balance presets — not separate deployments.
+Eternum is a fully onchain strategy game built with native Cairo contracts. One codebase serves multiple game worlds and
+formats — **Blitz** (short, timed matches) and **Eternum** (long format). Games are rows keyed by `game_id` inside a
+persistent world, created through the factory (GameRegistry) with immutable balance presets — not separate deployments.
 
-The data pipeline, end to end: Cairo contracts (`contracts/l3/game`) define the world (realms, buildings, resources,
-armies, exploration, battles, relics, hyperstructures, victory points) → transactions execute on a Starknet sequencer →
-Herald folds confirmed blocks, maintains the pre-confirmed overlay, and streams snapshots plus ordered diffs → the
-client's sync runtime ingests updates into RECS, the single authoritative store → three.js scenes (`WorldmapScene`,
-`HexceptionScene`) and the React UI render from it. The acting UI may show a local pending indicator; shared provisional
-state comes only from Herald's pre-confirmed overlay.
+The data pipeline, end to end: Cairo contracts (`contracts/l3/world-native`) define the world (realms, buildings,
+resources, armies, exploration, battles, relics, hyperstructures, victory points) → authenticated intents execute
+through embedded recorded randomness on the Madara sequencer → Herald folds confirmed blocks, maintains the pre-
+confirmed overlay, and streams snapshots plus ordered diffs → the client's sync runtime ingests updates into the native
+fact store, the single authoritative store → three.js scenes (`WorldmapScene`, `HexceptionScene`) and the React UI
+render from it. The acting UI may show a local pending indicator; shared provisional state comes only from Herald's
+pre-confirmed overlay.
 
 Key directories: `apps/game` (the game client — has its own `AGENTS.md`), `packages/core` (game logic and sync runtime),
-`packages/*` (Dojo/RECS bindings, shared types), `contracts/*` (Cairo), `deploy/madara-lab` (self-hosted chain infra —
-read its README before touching it), `docs/plans` (implementation briefs: each item states its evidence, the fix, and a
+`packages/*` (native bindings, shared types), `contracts/*` (Cairo), `deploy/madara-lab` (self-hosted chain infra — read
+its README before touching it), `docs/plans` (implementation briefs: each item states its evidence, the fix, and a
 verifiable gate).
 
 ## Engineering Principles
@@ -56,11 +57,12 @@ When changing workflows, deployer code, shared runtime packages, or observabilit
 Every client bug class in the Aug 2026 playtests traced to a violation of one of these rules. They apply to `apps/game`
 and `packages/*`.
 
-1. **One truth, per fact.** Current game facts live in RECS only: Herald's confirmed snapshot and ordered diffs are
-   written into RECS — never held in a side store, react-query cache, or scene-local map as the primary copy. Immutable
-   history and query-derived aggregates that are not current entity truth (story logs, battle logs, swaps, token
-   transfers) may be SQL read models, but SQL must never provide an alternative or fallback version of a fact that is
-   also present in RECS. Do not add new direct-fetch read paths for live state; when touching one, delete it.
+1. **One truth, per fact.** Current game facts live in the native fact store only: Herald's confirmed snapshot and
+   ordered diffs are written into the native fact store — never held in a side store, react-query cache, or scene- local
+   map as the primary copy. Immutable history and query-derived aggregates that are not current entity truth (story
+   logs, battle logs, swaps, token transfers) may be SQL read models, but SQL must never provide an alternative or
+   fallback version of a fact that is also present in the native fact store. Do not add new direct-fetch read paths for
+   live state; when touching one, delete it.
 2. **Entities are state; events are ephemera.** Anything persistent renders from Herald's snapshot plus entity diffs.
    Event messages drive only transient flourishes (toasts, FX triggers), and every event-driven feature must recover
    through the snapshot, replay ring, or immutable history sink. Event delivery is an accelerator, not the source of
@@ -71,8 +73,9 @@ and `packages/*`.
 4. **No silent defaults.** A config or keyed lookup that misses must be loud in dev. Never let a silent fallback return
    a zero that gameplay math consumes.
 5. **Pre-confirmation is shared; click feedback is local.** Herald owns the one pre-confirmed overlay and resets it at
-   each confirmed head. The client never predicts or overrides RECS rows. An acting surface may keep local pending UI
-   state for its own click, but that state must not become an alternative game fact or a bespoke reconciliation channel.
+   each confirmed head. The client never predicts or overrides native fact-store rows. An acting surface may keep local
+   pending UI state for its own click, but that state must not become an alternative game fact or a bespoke
+   reconciliation channel.
 6. **Wired or deleted.** If it is exported, something imports it; if it is config, something reads it. Do not land a
    capability without its call site. The one exception is an asset variant kept for a later cosmetic: its generator or
    source may stay unwired if it writes to its own path, its output is not committed, and the family's `SOURCE.md` names
