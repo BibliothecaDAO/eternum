@@ -63,6 +63,14 @@ describe("Madara harness workload", () => {
     await expect(waiting).rejects.toThrow("without a matching result");
   });
 
+  it("preserves a worker's setup failure in the roster result", async () => {
+    const worker = new EventEmitter();
+    const waiting = waitForGameWorkers([worker as Worker], []);
+    worker.emit("message", { type: "failure", error: "Game 1 has ended" });
+    worker.emit("exit", 1);
+    await expect(waiting).rejects.toThrow("Game 1 has ended");
+  });
+
   it.each([false, true])("creates only missing explorers when preparing the roster (resumed=%s)", async (resumed) => {
     const { game, actions } = fakeWorld();
     const settle = spyOn(game, "settle");
