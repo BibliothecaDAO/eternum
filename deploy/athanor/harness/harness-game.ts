@@ -1,3 +1,4 @@
+import { requireNativeExecutionOutcome } from "@bibliothecadao/provider";
 import {
   buildArmyPathIndexes,
   configManager,
@@ -13,7 +14,7 @@ import {
   waitForWorldState,
 } from "@bibliothecadao/eternum";
 import { shortString, type Account } from "starknet";
-import { ResourcesIds, StructureType, TroopType, type ID } from "@bibliothecadao/types";
+import { ResourcesIds, StructureType, TroopType, type ID, type NativeTicketIdentity } from "@bibliothecadao/types";
 
 export interface Coord {
   x: number;
@@ -43,6 +44,7 @@ export interface HarnessSubmission {
 }
 
 interface SubmittedEvent {
+  ticket?: NativeTicketIdentity;
   signerAddress?: string;
   transactionHash: string;
 }
@@ -67,7 +69,6 @@ export interface HarnessGame {
   production(structureId: ID): ProductionState | undefined;
   armyPathIndexes(): ArmyPathIndexes;
   settle(signer: Account, owner: string, name: string, gameType: "blitz" | "eternum"): Promise<unknown>;
-  provision(signer: Account, structureId: ID): Promise<unknown>;
   produceWood(signer: Account, structureId: ID): Promise<unknown>;
   /** Runs a client action and resolves with its hash as soon as the chain accepted it; one at a time per signer. */
   submit(signer: Account, act: () => Promise<unknown>): Promise<HarnessSubmission>;
@@ -144,7 +145,6 @@ export function createHarnessGame(client: GameClient): HarnessGame {
     },
     armyPathIndexes: () => buildArmyPathIndexes(client),
     settle: (signer, _owner, name) => systemCalls.settle_season({ signer, name: shortString.encodeShortString(name) }),
-    provision: (signer, structureId) => systemCalls.provision_realm({ signer, realm_entity_id: structureId }),
     produceWood: (signer, structureId) => {
       const produce = configManager.getBlitzConfig().blitz_mode_on
         ? systemCalls.burn_resource_for_resource_production
@@ -185,9 +185,15 @@ const captureSubmission = (
     const onSubmitted = (event: SubmittedEvent) => {
       if (!event.signerAddress || normalizeAddress(event.signerAddress) !== signer) return;
       settle();
+      if (!event.ticket) return reject(new Error("Native submission has no ticket identity"));
+      const ticket = event.ticket;
       resolve({
         transactionHash: event.transactionHash,
-        confirmed: client.runtime.waitForTransaction(event.transactionHash),
+        confirmed: client.runtime.waitForTransaction(event.transactionHash).then((transaction) => {
+          if (transaction.status === "REVERTED") throw new Error(transaction.revertReason ?? "Transaction reverted");
+          const outcome = requireNativeExecutionOutcome(transaction.executions, ticket);
+          if (outcome.status === "REVERTED") throw new Error(`Native action rejected: ${outcome.reason}`);
+        }),
       });
     };
     provider.on("transactionSubmitted", onSubmitted);

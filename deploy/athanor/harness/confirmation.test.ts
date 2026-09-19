@@ -98,17 +98,29 @@ describe("shared client submission barrier", () => {
       runtime: {
         waitForTransaction: (hash: string) => {
           hashes.push(hash);
-          return barrier;
+          return barrier.then(() => ({
+            status: "ACCEPTED_ON_L2",
+            executions: [{ gameId: "1", actor: "0xabc", nonce: "0", order: "1", status: "SUCCEEDED", reason: "" }],
+          }));
         },
       },
     } as unknown as GameClient;
     const game = createHarnessGame(client);
     const submission = await game.submit({ address: "0xabc" } as Account, async () => {
-      provider.emit("transactionSubmitted", { signerAddress: "0xabc", transactionHash: "0x123" });
+      provider.emit("transactionSubmitted", {
+        signerAddress: "0xabc",
+        transactionHash: "0x123",
+        ticket: { gameId: "1", actor: "0xabc", nonce: "0", order: "1" },
+      });
       return { statusReceipt: "PENDING", transaction_hash: "0x123" };
     });
     expect(hashes).toEqual(["0x123"]);
-    expect(submission.confirmed).toBe(barrier);
+    let completed = false;
+    void submission.confirmed!.then(() => {
+      completed = true;
+    });
+    await Promise.resolve();
+    expect(completed).toBe(false);
     applied();
     await submission.confirmed;
   });

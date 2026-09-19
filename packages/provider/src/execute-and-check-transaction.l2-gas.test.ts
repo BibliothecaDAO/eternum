@@ -464,6 +464,16 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
         ),
       ),
     );
+    for (const ticket of tickets) {
+      expect(provider.emit).toHaveBeenCalledWith(
+        "transactionSubmitted",
+        expect.objectContaining({
+          transactionHash: "0xabc",
+          signerAddress: ticket.actor,
+          ticket,
+        }),
+      );
+    }
     expect(results[0]).toMatchObject({
       status: "fulfilled",
       value: { transaction_hash: "0xabc", batch_remaining: "9" },

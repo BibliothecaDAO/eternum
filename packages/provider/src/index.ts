@@ -1,6 +1,6 @@
 import { requireNativeExecutionOutcome } from "./native-batch";
 import type { NativeTicketIdentity } from "@bibliothecadao/types";
-export { completeNativeBatches, nativeExecutionOutcomes } from "./native-batch";
+export { completeNativeBatches, nativeExecutionOutcomes, requireNativeExecutionOutcome } from "./native-batch";
 export type { BatchTransactionReceipt, NativeExecutionOutcome } from "@bibliothecadao/types";
 import { requireBatchReceipt } from "./native-batch";
 export { createNativeTicketSubmission } from "./native-ticket";
@@ -691,11 +691,16 @@ export class EternumProvider extends EventEmitter {
     this.emit("transactionFailed", payload);
   }
 
-  private emitTransactionSubmitted(transactionHash: string, transactionMeta: TransactionLifecycleMeta): void {
+  private emitTransactionSubmitted(
+    transactionHash: string,
+    transactionMeta: TransactionLifecycleMeta,
+    ticket?: NativeTicketIdentity,
+  ): void {
     this.transactionStreamSubmitObserver?.(transactionHash);
     this.emit("transactionSubmitted", {
       transactionHash,
       ...transactionMeta,
+      ...(ticket ? { ticket } : {}),
     });
   }
 
@@ -722,7 +727,7 @@ export class EternumProvider extends EventEmitter {
           transactionHash: tx.transaction_hash,
         };
 
-        this.emitTransactionSubmitted(tx.transaction_hash, recoveredTransactionMeta);
+        this.emitTransactionSubmitted(tx.transaction_hash, recoveredTransactionMeta, tx.ticket);
         this.emitTransactionPending(tx.transaction_hash, recoveredTransactionMeta);
         if (!this.transactionStreamWaiter) return;
 
@@ -884,7 +889,7 @@ export class EternumProvider extends EventEmitter {
     }
 
     // Emit immediately so UI can show pending state
-    this.emitTransactionSubmitted(tx.transaction_hash, transactionMeta);
+    this.emitTransactionSubmitted(tx.transaction_hash, transactionMeta, tx.ticket);
 
     const waitForConfirmation = options?.waitForConfirmation ?? true;
     const transactionMetaWithHash = {
