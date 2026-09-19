@@ -10,6 +10,8 @@ afterEach(() => {
 });
 function setup(outcome?: string[]) {
   const receipt = {
+    block_number: 42,
+    execution_status: "SUCCEEDED",
     events: [
       { from_address: "0x77", keys: [hash.getSelectorFromName("BatchProgress"), "7"], data: ["291", "3", "0"] },
       {
@@ -22,7 +24,8 @@ function setup(outcome?: string[]) {
   const provider = {
     getChainId: mock(async () => "0x1"),
     callContract: mock(async () => ["1", "2", "4", "3", "5", "1000"]),
-    waitForTransaction: mock(async () => receipt),
+    getTransactionStatus: mock(async () => ({ finality_status: "ACCEPTED_ON_L2" })),
+    getTransactionReceipt: mock(async () => receipt),
   };
   const requests: unknown[] = [];
   const server = Bun.serve({
@@ -33,6 +36,12 @@ function setup(outcome?: string[]) {
     websocket: {
       message(socket, message) {
         const request = JSON.parse(String(message));
+        if (request.method === "starknet_subscribeTransactionStatus") {
+          expect(request.params.transaction_hash).toBe("0x55");
+          socket.subscribe("confirmation");
+          socket.send(JSON.stringify({ jsonrpc: "2.0", id: request.id, result: "confirmation" }));
+          return;
+        }
         expect(request.method).toBe("game_subscribeAction");
         const [signed] = request.params;
         requests.push(signed);
@@ -84,14 +93,64 @@ function setup(outcome?: string[]) {
     privateKey: "0x1234",
     command: { kind: "MarkGameSettled", value: undefined } as const,
   };
-  return { input, provider, requests, receipt };
+  return { input, provider, requests, receipt, server };
 }
 describe("native administrative command", () => {
   it("signs the compiled command and confirms its accepted outcome", async () => {
     const { input, provider, requests } = setup();
     expect(await executeNativeAdminCommand(input)).toEqual({ transactionHash: "0x55", remaining: "0" });
     expect(requests).toHaveLength(1);
-    expect(provider.waitForTransaction).toHaveBeenCalledWith("0x55");
+    expect(provider.getTransactionReceipt).toHaveBeenCalledWith("0x55");
+  });
+  it("waits for node confirmation without polling the receipt", async () => {
+    const { input, provider, server } = setup();
+    let readStatus!: () => void;
+    const caughtUp = new Promise<void>((resolve) => {
+      readStatus = resolve;
+    });
+    provider.getTransactionStatus.mockImplementation(async () => {
+      readStatus();
+      return { finality_status: "PRE_CONFIRMED" };
+    });
+    const completed = executeNativeAdminCommand(input);
+    await caughtUp;
+    expect(provider.getTransactionReceipt).not.toHaveBeenCalled();
+    server.publish(
+      "confirmation",
+      JSON.stringify({
+        jsonrpc: "2.0",
+        method: "starknet_subscriptionTransactionStatus",
+        params: {
+          subscription_id: "confirmation",
+          result: {
+            transaction_hash: "0x55",
+            status: { finality_status: "ACCEPTED_ON_L2", execution_status: "SUCCEEDED" },
+          },
+        },
+      }),
+    );
+    expect(await completed).toEqual({ transactionHash: "0x55", remaining: "0" });
+    expect(provider.getTransactionStatus).toHaveBeenCalledTimes(1);
+    expect(provider.getTransactionReceipt).toHaveBeenCalledTimes(1);
+  });
+  it("does not treat a pre-confirmed receipt as durable completion", async () => {
+    const { input, provider, receipt } = setup();
+    provider.getTransactionReceipt.mockImplementation(async () => {
+      const { block_number: _, ...preConfirmed } = receipt;
+      return preConfirmed as typeof receipt;
+    });
+    await expect(executeNativeAdminCommand(input)).rejects.toThrow("no confirmed block");
+  });
+  it("rejects an included transaction revert", async () => {
+    const { input, receipt } = setup();
+    receipt.execution_status = "REVERTED";
+    await expect(executeNativeAdminCommand(input)).rejects.toThrow("transaction reverted");
+  });
+  it("reports a refused transaction without fetching a receipt", async () => {
+    const { input, provider } = setup();
+    provider.getTransactionStatus.mockImplementation(async () => ({ finality_status: "REJECTED" }));
+    await expect(executeNativeAdminCommand(input)).rejects.toThrow("rejected: REJECTED");
+    expect(provider.getTransactionReceipt).not.toHaveBeenCalled();
   });
   it("returns the remaining count for an incomplete administrative batch", async () => {
     const { input, receipt } = setup();
@@ -102,7 +161,7 @@ describe("native administrative command", () => {
     const { input, receipt, provider, requests } = setup();
     let calls = 0;
     provider.callContract.mockImplementation(async () => ["1", "2", "4", String(3 + calls), "5", "1000"]);
-    provider.waitForTransaction.mockImplementation(async () => {
+    provider.getTransactionReceipt.mockImplementation(async () => {
       receipt.events[0].data[1] = String(3 + calls);
       receipt.events[0].data[2] = calls === 0 ? "1" : "0";
       receipt.events[1].data[2] = String(3 + calls);
@@ -123,7 +182,7 @@ describe("native administrative command", () => {
     const { input, receipt, requests, provider } = setup();
     let calls = 0;
     provider.callContract.mockImplementation(async () => ["1", "2", "4", String(3 + calls), "5", "1000"]);
-    provider.waitForTransaction.mockImplementation(async () => {
+    provider.getTransactionReceipt.mockImplementation(async () => {
       receipt.events[0].data = ["291", String(3 + calls), "1"];
       receipt.events[1].data[2] = String(3 + calls);
       receipt.events[1].data[4] = String(8 + calls++);
