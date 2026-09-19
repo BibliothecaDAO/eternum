@@ -20,6 +20,7 @@ import candidate_guard
 
 ROOT = Path(__file__).resolve().parents[3]
 POSTGRES_IMAGE = "postgres@sha256:18cfe3ef5e6815560c98237d6216d1e5119702fb0f3894c8785dd58b8bbe5d73"
+METRICS_IMAGE = "otel/opentelemetry-collector-contrib@sha256:fd328de2552466ad78385e1b1289c3f2402b1c45f265b252aab1955b42845ac1"
 DOCKER = ["sudo", "-n", "docker"]
 
 
@@ -50,7 +51,7 @@ def validate_configuration(config, allowed_cpus):
     if not isinstance(config["node_memory_mib"], int) or not 1024 <= config["node_memory_mib"] <= 28672:
         raise ValueError("node memory must fit the native slice budget")
     # These options belong to the shard lifecycle, never to a performance lever.
-    owned = ("--base-path", "--chain-config", "--rpc", "--name", "--db", "--devnet", "--l1", "--no-charge")
+    owned = ("--base-path", "--chain-config", "--rpc", "--name", "--db", "--devnet", "--l1", "--no-charge", "--otel")
     for flag in config["node_flags"]:
         if not isinstance(flag, str) or not flag.startswith("--") or flag.startswith(owned):
             raise ValueError(f"node flag overrides shard ownership: {flag}")
@@ -90,11 +91,18 @@ def compose_configuration(config, directory):
     node_command = [
         f"--name={project}", "--devnet", "--base-path=/data", "--db-fsync", "--db-wal",
         "--chain-config-path=/config/chain-config.yaml", "--rpc-external", "--rpc-cors=all",
-        "--rpc-port=9944", "--no-charge-fee", "--l1-sync-disabled", *config["node_flags"],
+        "--rpc-port=9944", "--no-charge-fee", "--l1-sync-disabled",
+        "--otel-collector-endpoint=http://metrics:4317", "--otel-export-metrics=true", *config["node_flags"],
     ]
     return {
         "name": project,
         "services": {
+            "metrics": {
+                **budget, "image": METRICS_IMAGE, "mem_limit": "256m", "memswap_limit": "256m",
+                "user": f"{os.getuid()}:{os.getgid()}", "command": ["--config=/config/collector.json"],
+                "volumes": [f"{directory / 'collector.json'}:/config/collector.json:ro",
+                            f"{directory / 'metrics'}:/data"],
+            },
             "madara": {
                 **budget, "image": config["madara_image"], "entrypoint": ["tini", "--", "/bin/madara"],
                 "command": node_command, "env_file": [str(directory / "node.env")],
@@ -190,10 +198,17 @@ def deployment_environment(config, directory):
         "NATIVE_AUTHORITY_FILE": str(directory / "authority.json"),
         "NATIVE_WORLD_MANIFEST": str(directory / "native-world.json"),
         "GAMEPLAY_CONTRACTS_PATH": str(directory / "gameplay-contracts.json"),
+        "MADARA_METRICS_FILE": str(directory / "metrics" / "metrics.jsonl"),
     }
 
 
 def prepare_runtime_files(directory, environment):
+    (directory / "metrics").mkdir(mode=0o700)
+    write_json(directory / "collector.json", {
+        "receivers": {"otlp": {"protocols": {"grpc": {"endpoint": "0.0.0.0:4317"}}}},
+        "exporters": {"file": {"path": "/data/metrics.jsonl", "rotation": {"max_megabytes": 100, "max_backups": 2}}},
+        "service": {"pipelines": {"metrics": {"receivers": ["otlp"], "exporters": ["file"]}}},
+    })
     # The node waits for the game deployment while ordinary declaration remains available.
     node_environment = {
         "RANDOMNESS_ACCOUNT": "0x0", "RANDOMNESS_DEPLOYMENT": "0x0",
@@ -218,6 +233,7 @@ def save_harness_environment(directory, environment):
         "DEPLOYER_ACCOUNT_ADDRESS", "DEPLOYER_PRIVATE_KEY", "RPC_URL", "ADMISSION_URL", "HERALD_URL",
         "BINDING_AUTHORITY_ADDRESS", "BINDING_AUTHORITY_PRIVATE_KEY", "RANDOMNESS_PRIVATE_KEY",
         "NATIVE_AUTHORITY_FILE", "NATIVE_WORLD_MANIFEST", "GAMEPLAY_CONTRACTS_PATH",
+        "MADARA_METRICS_FILE",
         "COMPOSE_PROJECT_NAME", "CHAIN_CONFIG_PATH",
     )
     write_private_environment(directory / "harness.env", {key: environment[key] for key in keys})
@@ -226,6 +242,9 @@ def save_harness_environment(directory, environment):
 def deployment_manifest(config, compose, directory, manifest, rpc_rtt, herald_rtt):
     return {
         **config, "project": compose["name"], "revision": read(["git", "rev-parse", "HEAD"]),
+        "metrics_image": METRICS_IMAGE,
+        "slice_limits": {name: Path(f"/sys/fs/cgroup/athanor.slice/{name}").read_text().strip()
+                         for name in ("cpu.max", "memory.max", "memory.high", "memory.swap.max")},
         "chain_config_sha256": hashlib.sha256((directory / "chain-config.yaml").read_bytes()).hexdigest(),
         "node_command": compose["services"]["madara"]["command"], "rpc_url": f"http://127.0.0.1:{config['port_base']}/rpc/v0_10_2",
         "herald_url": f"http://127.0.0.1:{config['port_base'] + 1}", "rtt_ms": {"rpc": rpc_rtt, "herald": herald_rtt},
@@ -248,7 +267,7 @@ def start_shard(config, directory):
     compose = compose_configuration(config, directory)
     write_json(directory / "compose.json", compose)
     command = [*DOCKER, "compose", "-f", str(directory / "compose.json")]
-    run([*command, "up", "-d", "madara", "postgres"], directory, "bootstrap-start")
+    run([*command, "up", "-d", "metrics", "madara", "postgres"], directory, "bootstrap-start")
     wait_for_endpoint(environment["RPC_URL"], rpc=True)
     authority = deploy_world(config, directory, environment)
     manifest = json.loads((directory / "native-world.json").read_text())

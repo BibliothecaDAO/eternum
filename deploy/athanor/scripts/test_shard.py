@@ -49,6 +49,10 @@ class ShardTest(unittest.TestCase):
         self.assertEqual(a["volumes"], {"chain": {}, "postgres": {}})
         self.assertIn("--db-wal", a["services"]["madara"]["command"])
         self.assertIn("--db-fsync", a["services"]["madara"]["command"])
+        self.assertIn("--otel-collector-endpoint=http://metrics:4317", a["services"]["madara"]["command"])
+        self.assertEqual(a["services"]["metrics"]["image"], shard.METRICS_IMAGE)
+        self.assertNotIn("ports", a["services"]["metrics"])
+        self.assertNotEqual(a["services"]["metrics"]["volumes"], b["services"]["metrics"]["volumes"])
 
     def test_existing_containers_or_volumes_are_never_reused(self):
         for replies in (["container"], ["", "volume"]):
@@ -70,6 +74,21 @@ class ShardTest(unittest.TestCase):
             self.assertNotIn("UNRELATED_SECRET", values)
             self.assertEqual(values["RPC_URL"], "http://127.0.0.1:28050/rpc/v0_10_2")
             self.assertEqual(values["GAMEPLAY_CONTRACTS_PATH"], str(directory / "gameplay-contracts.json"))
+            self.assertEqual(values["MADARA_METRICS_FILE"], str(directory / "metrics" / "metrics.jsonl"))
+
+    def test_collector_output_is_the_harness_metrics_input(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            environment = {"RANDOMNESS_PRIVATE_KEY": "0x1"}
+            shard.prepare_runtime_files(directory, environment)
+            config = json.loads((directory / "collector.json").read_text())
+            self.assertEqual(config["service"]["pipelines"]["metrics"], {
+                "receivers": ["otlp"], "exporters": ["file"],
+            })
+            self.assertEqual(config["exporters"]["file"]["path"], "/data/metrics.jsonl")
+            self.assertEqual((directory / "metrics").stat().st_mode & 0o777, 0o700)
+            volumes = shard.compose_configuration(configuration(), directory)["services"]["metrics"]["volumes"]
+            self.assertIn(f"{directory / 'metrics'}:/data", volumes)
 
     def test_environment_rejects_line_injection(self):
         with tempfile.TemporaryDirectory() as temporary, self.assertRaises(ValueError):
