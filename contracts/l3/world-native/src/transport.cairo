@@ -4,7 +4,9 @@ use crate::troops::Coord;
 
 pub const DONKEY: u8 = 25;
 
-pub fn travel_time(from: Coord, to: Coord, resources: Span<ResourceAmount>, speed: SpeedConfig, pickup: bool) -> u64 {
+pub fn travel_time(
+    from: Coord, to: Coord, resources: Span<ResourceAmount>, speed: SpeedConfig, round_trip: bool,
+) -> u64 {
     assert!(from.x != 0 || from.y != 0, "sender is not stationary");
     assert!(to.x != 0 || to.y != 0, "recipient is not stationary");
     assert!(from != to, "structures share a location");
@@ -17,7 +19,7 @@ pub fn travel_time(from: Coord, to: Coord, resources: Span<ResourceAmount>, spee
         }
     }
     let one_way: u64 = (crate::geometry::distance(from, to) * seconds_per_km.into()).try_into().unwrap();
-    if pickup {
+    if round_trip {
         one_way * 2
     } else {
         one_way

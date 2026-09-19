@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "cd91d63a4ca89483f1a2ba09c15872c3ebc4ff6f8c5e50aad436243c97806eb5",
+  "schemaIdentity": "5276d6802286616bfeafe8b2c5eb65b8323263040d4d1c0e712a5dda7050bf29",
   "commandAbi": [
     {
       "type": "impl",
@@ -355,24 +355,6 @@
         {
           "name": "connected_realm_entity_id",
           "type": "core::integer::u32"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "world_native::resources::ResourceApproval",
-      "members": [
-        {
-          "name": "owner_entity_id",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "approved_entity_id",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "resources",
-          "type": "core::array::Span::<world_native::resources::ResourceAmount>"
         }
       ]
     },
@@ -1285,10 +1267,6 @@
           "type": "core::integer::u32"
         },
         {
-          "name": "ApproveResources",
-          "type": "world_native::resources::ResourceApproval"
-        },
-        {
           "name": "BurnStructureResources",
           "type": "world_native::resources::ResourceBurn"
         },
@@ -1314,10 +1292,6 @@
         },
         {
           "name": "SendResources",
-          "type": "world_native::resources::ResourceTransfer"
-        },
-        {
-          "name": "PickupResources",
           "type": "world_native::resources::ResourceTransfer"
         },
         {
@@ -4087,10 +4061,6 @@
     },
     {
       "name": "ResourceArrival",
-      "scope": "game"
-    },
-    {
-      "name": "ResourceAllowance",
       "scope": "game"
     },
     {

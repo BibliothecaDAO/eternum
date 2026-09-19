@@ -107,12 +107,6 @@ export interface SendResourcesMultipleProps extends SystemSigner {
   }[];
 }
 
-export interface PickupResourcesProps extends SystemSigner {
-  recipient_entity_id: BigNumberish;
-  owner_entity_id: BigNumberish;
-  resources: ResourceCosts[];
-}
-
 export interface ArrivalsOffloadProps extends SystemSigner {
   structureId: BigNumberish;
   day: BigNumberish;

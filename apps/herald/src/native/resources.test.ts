@@ -64,20 +64,6 @@ describe("native resource facts", () => {
       expect(fold.retainedRowCount()).toBe(0);
     }
   });
-
-  it("keeps full-width allowances and removes revoked approvals", () => {
-    const { native, fold } = setup();
-    const keys = ["1", "7", "8", "2"];
-    native.applyReceipt(
-      fold,
-      receipt([resourceEvent("ResourceAllowance", keys, [(2n ** 128n - 1n).toString()])]),
-      10,
-      0,
-    );
-    expect(BigInt(fold.modelRows("ResourceAllowance")[0].value.amount as string)).toBe(2n ** 128n - 1n);
-    native.applyReceipt(fold, receipt([resourceEvent("ResourceAllowance", keys)]), 11, 0);
-    expect(fold.modelRows("ResourceAllowance")).toEqual([]);
-  });
 });
 
 describe("native production facts", () => {

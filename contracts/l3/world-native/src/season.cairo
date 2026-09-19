@@ -785,10 +785,6 @@ pub mod SeasonDomain {
                 value.serialize(ref calldata);
                 (peers.structures, selector!("resume_building_production"))
             },
-            Command::ApproveResources(value) => {
-                value.serialize(ref calldata);
-                (peers.resources, selector!("approve_resources"))
-            },
             Command::BurnStructureResources(value) => {
                 value.serialize(ref calldata);
                 (peers.resources, selector!("burn_structure_resources"))
@@ -808,10 +804,6 @@ pub mod SeasonDomain {
             Command::SendResources(value) => {
                 value.serialize(ref calldata);
                 (peers.resources, selector!("send_resources"))
-            },
-            Command::PickupResources(value) => {
-                value.serialize(ref calldata);
-                (peers.resources, selector!("pickup_resources"))
             },
             Command::TransferExplorerResourcesToStructure(value) => {
                 value.serialize(ref calldata);
