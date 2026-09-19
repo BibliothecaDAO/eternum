@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-19",
+    title: "Transfer Eternum Structure Ownership",
+    description:
+      "Transfer an owned Eternum structure from its owner panel, with recipient validation and confirmation. Villages cannot be transferred.",
+    type: "feature",
+  },
+  {
+    date: "2026-09-19",
     title: "Dismiss Structure Guards",
     description: "Dismiss an occupied guard from its deployment picker, with confirmation before its troops are lost.",
     type: "feature",
