@@ -14,12 +14,6 @@ pub struct ResourceAmount {
     pub amount: u128,
 }
 
-#[derive(Copy, Drop, Serde, Debug, PartialEq)]
-pub struct ResourceApproval {
-    pub owner_entity_id: u32,
-    pub approved_entity_id: u32,
-    pub resources: Span<ResourceAmount>,
-}
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct ResourceBurn {
@@ -44,18 +38,6 @@ pub fn assert_unique_resources(resources: Span<ResourceAmount>) {
     }
 }
 
-#[derive(Copy, Drop, Serde, Debug, PartialEq)]
-pub struct AllowanceKey {
-    pub game_id: u32,
-    pub owner_entity_id: u32,
-    pub approved_entity_id: u32,
-    pub resource_type: u8,
-}
-
-#[starknet::interface]
-pub trait IResourceAllowance<T> {
-    fn resource_allowance(self: @T, key: AllowanceKey) -> u128;
-}
 
 #[derive(Copy, Drop, Serde, Default, PartialEq, Debug)]
 pub struct Production {
@@ -128,8 +110,8 @@ pub mod ResourceState {
     use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
     use crate::events::{RowDeleted, RowSet};
     use super::{
-        AllowanceKey, Production, ResourceKey, SettledResource, Weight, add, assert_production, assert_resource,
-        has_production, settle, spend,
+        Production, ResourceKey, SettledResource, Weight, add, assert_production, assert_resource, has_production,
+        settle, spend,
     };
     #[storage]
     pub struct Storage {
@@ -137,7 +119,6 @@ pub mod ResourceState {
         pub productions: Map<(u32, u32, u8), Production>,
         pub weights: Map<(u32, u32), Weight>,
         pub resource_exists: Map<(u32, u32), bool>,
-        pub allowances: Map<(u32, u32, u32, u8), u128>,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -147,32 +128,6 @@ pub mod ResourceState {
     }
     #[generate_trait]
     pub impl InternalImpl<TContractState, +HasComponent<TContractState>> of InternalTrait<TContractState> {
-        fn allowance(self: @ComponentState<TContractState>, key: AllowanceKey) -> u128 {
-            self.allowances.read((key.game_id, key.owner_entity_id, key.approved_entity_id, key.resource_type))
-        }
-        fn approve(ref self: ComponentState<TContractState>, key: AllowanceKey, amount: u128) {
-            if self.allowance(key) == amount {
-                return;
-            }
-            self
-                .allowances
-                .write((key.game_id, key.owner_entity_id, key.approved_entity_id, key.resource_type), amount);
-            let mut keys = array![];
-            key.serialize(ref keys);
-            if amount == 0 {
-                self.emit(RowDeleted { version: 1, model: 'ResourceAllowance', keys: keys.span() });
-            } else {
-                self
-                    .emit(
-                        RowSet {
-                            version: 1,
-                            model: 'ResourceAllowance',
-                            keys: keys.span(),
-                            values: array![amount.into()].span(),
-                        },
-                    );
-            }
-        }
         fn burn_resource(
             ref self: ComponentState<TContractState>,
             key: ResourceKey,

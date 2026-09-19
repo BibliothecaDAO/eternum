@@ -6,9 +6,8 @@ use crate::arrivals::{ArrivalKey, has_arrived};
 use crate::commands::{Command, ExecutionContext, IResourceCommandsSafeDispatcher, IResourceCommandsSafeDispatcherTrait};
 use crate::game::{IGameDispatcher, IGameDispatcherTrait};
 use crate::resources::{
-    AllowanceKey, IResourceAllowanceDispatcher, IResourceAllowanceDispatcherTrait, IResourcesDispatcher,
-    IResourcesDispatcherTrait, IResourcesSafeDispatcher, IResourcesSafeDispatcherTrait, ResourceAmount,
-    ResourceApproval, ResourceBurn, ResourceKey, ResourceRule, ResourceSlot,
+    IResourcesDispatcher, IResourcesDispatcherTrait, IResourcesSafeDispatcher, IResourcesSafeDispatcherTrait,
+    ResourceAmount, ResourceBurn, ResourceKey, ResourceRule, ResourceSlot,
 };
 use crate::season::{ISeasonDispatcher, ISeasonDispatcherTrait};
 use crate::settlement::{
@@ -155,30 +154,6 @@ fn explicit_burn_does_not_harvest_and_rejection_keeps_the_stream_moving() {
     assert_eq!(ISeasonDispatcher { contract_address: deployment.peers.season }.next_nonce(3, deployment.actor), 3);
 }
 
-#[test]
-fn approvals_overwrite_and_revoke_through_the_inclusive_grace_deadline() {
-    let (deployment, source, destination) = setup();
-    let approval = ResourceApproval {
-        owner_entity_id: source.entity_id, approved_entity_id: destination.entity_id, resources: amount(1, 50),
-    };
-    let key = AllowanceKey {
-        game_id: 3, owner_entity_id: source.entity_id, approved_entity_id: destination.entity_id, resource_type: 1,
-    };
-    let resources = IResourceAllowanceDispatcher { contract_address: deployment.peers.resources };
-    assert!(!execute(deployment, Command::ApproveResources(approval), 19));
-    assert!(execute(deployment, Command::ApproveResources(approval), 20));
-    assert_eq!(resources.resource_allowance(key), 50);
-    assert!(
-        execute(deployment, Command::ApproveResources(ResourceApproval { resources: amount(1, 0), ..approval }), 30),
-    );
-    assert_eq!(resources.resource_allowance(key), 0);
-    assert!(execute(deployment, Command::ApproveResources(approval), 210));
-    assert!(
-        !execute(deployment, Command::ApproveResources(ResourceApproval { resources: amount(1, 7), ..approval }), 211),
-    );
-    assert_eq!(resources.resource_allowance(key), 50);
-    assert_eq!(resources.resource_allowance(AllowanceKey { game_id: 2, ..key }), 0);
-}
 
 #[test]
 #[feature("safe_dispatcher")]
@@ -552,7 +527,7 @@ fn every_transfer_rejects_duplicates_without_changing_facts_and_consumes_the_tic
         from_entity_id: from.entity_id, to_entity_id: to.entity_id, resources: duplicate,
     };
     for command in array![
-        Command::SendResources(transfer), Command::PickupResources(transfer),
+        Command::SendResources(transfer),
         Command::TransferStructureResourcesToExplorer(
             crate::resources::ResourceTransfer { to_entity_id: explorer.entity_id, ..transfer },
         ),
@@ -591,7 +566,7 @@ fn every_transfer_rejects_duplicates_without_changing_facts_and_consumes_the_tic
 }
 
 #[test]
-fn sending_and_pickup_preserve_arrival_order_allowances_and_donkey_costs() {
+fn sending_queues_arrivals_and_spends_only_the_senders_donkeys() {
     let (deployment, from, to) = setup();
     let precision = crate::rules::RESOURCE_PRECISION;
     grant(deployment, from, 25, 10 * precision);
@@ -612,38 +587,6 @@ fn sending_and_pickup_preserve_arrival_order_allowances_and_donkey_costs() {
         resources.resource_balance(ResourceSlot { game_id: 3, entity_id: to.entity_id, resource_type: 25 }),
         10 * precision,
     );
-    let approval = ResourceApproval {
-        owner_entity_id: from.entity_id, approved_entity_id: to.entity_id, resources: amount(1, 15),
-    };
-    assert!(execute(deployment, Command::ApproveResources(approval), 40));
-    assert!(execute(deployment, Command::PickupResources(transfer), 40));
-    let allowance = AllowanceKey {
-        game_id: 3, owner_entity_id: from.entity_id, approved_entity_id: to.entity_id, resource_type: 1,
-    };
-    let approvals = IResourceAllowanceDispatcher { contract_address: deployment.peers.resources };
-    assert_eq!(approvals.resource_allowance(allowance), 5);
-    let return_slot = ArrivalKey { slot: 2, ..key };
-    assert_eq!(resources.resource_arrival(return_slot).resources, amount(1, 10));
-    assert_eq!(
-        resources.resource_balance(ResourceSlot { game_id: 3, entity_id: to.entity_id, resource_type: 25 }),
-        9 * precision,
-    );
-    let before = resource_facts(deployment, from);
-    assert_terminal_rejection(deployment, Command::PickupResources(transfer), 40);
-    assert_eq!(resource_facts(deployment, from), before);
-    assert_eq!(approvals.resource_allowance(allowance), 5);
-    assert!(
-        execute(
-            deployment,
-            Command::ApproveResources(
-                ResourceApproval { resources: amount(1, 0xffffffffffffffffffffffffffffffff), ..approval },
-            ),
-            40,
-        ),
-    );
-    assert!(execute(deployment, Command::PickupResources(transfer), 40));
-    assert_eq!(approvals.resource_allowance(allowance), 0xffffffffffffffffffffffffffffffff);
-    assert_eq!(resources.resource_arrival(return_slot).resources, amount(1, 20));
 }
 
 #[test]
@@ -822,28 +765,18 @@ fn delayed_village_troops_ignore_the_connection_and_keep_transport_ownership_rul
 }
 
 #[test]
-fn duplicate_ids_in_approvals_burns_and_weight_repair_reject_without_mutating_balances() {
-    let (d, source, target) = setup();
+fn duplicate_ids_in_burns_and_weight_repair_reject_without_mutating_balances() {
+    let (d, source, _) = setup();
     let before = resource_facts(d, source);
     let resources = array![
         ResourceAmount { resource_type: 1, amount: 10 }, ResourceAmount { resource_type: 1, amount: 20 },
     ]
         .span();
     for command in array![
-        Command::ApproveResources(
-            ResourceApproval { owner_entity_id: source.entity_id, approved_entity_id: target.entity_id, resources },
-        ),
         Command::BurnStructureResources(ResourceBurn { entity_id: source.entity_id, resources }),
         Command::RegularizeResourceWeights(array![source.entity_id, source.entity_id].span()),
     ] {
         assert_terminal_rejection(d, command, 40);
         assert_eq!(resource_facts(d, source), before);
     }
-    let allowance = crate::resources::IResourceAllowanceDispatcher { contract_address: d.peers.resources }
-        .resource_allowance(
-            AllowanceKey {
-                game_id: 3, owner_entity_id: source.entity_id, approved_entity_id: target.entity_id, resource_type: 1,
-            },
-        );
-    assert_eq!(allowance, 0);
 }

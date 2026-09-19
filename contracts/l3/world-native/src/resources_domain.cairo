@@ -393,21 +393,7 @@ pub mod ResourcesDomain {
             crate::resources::assert_unique_resources(command.resources);
             let from = ResourceKey { game_id, entity_id: command.from_entity_id };
             assert!(self.structure_owner(from) == actor, "actor does not own sender");
-            self.transfer_delayed(game_id, command, false, context.timestamp);
-        }
-        fn pickup_resources(
-            ref self: ContractState,
-            game_id: u32,
-            actor: ContractAddress,
-            command: crate::resources::ResourceTransfer,
-            context: ExecutionContext,
-        ) {
-            self.assert_resource_command(game_id, context.timestamp);
-            crate::resources::assert_unique_resources(command.resources);
-            let to = ResourceKey { game_id, entity_id: command.to_entity_id };
-            assert!(self.structure_owner(to) == actor, "actor does not own recipient");
-            self.consume_allowances(game_id, command);
-            self.transfer_delayed(game_id, command, true, context.timestamp);
+            self.transfer_delayed(game_id, command, context.timestamp);
         }
         fn transfer_explorer_resources_to_structure(
             ref self: ContractState,
@@ -485,35 +471,6 @@ pub mod ResourcesDomain {
                             crate::ownership::ResourceAmountsStory { resources: delivered },
                         ),
                         context.timestamp,
-                    );
-            }
-        }
-        fn approve_resources(
-            ref self: ContractState,
-            game_id: u32,
-            actor: ContractAddress,
-            command: crate::resources::ResourceApproval,
-            context: ExecutionContext,
-        ) {
-            self.assert_resource_command(game_id, context.timestamp);
-            assert!(command.owner_entity_id != command.approved_entity_id, "self approval");
-            assert!(!command.resources.is_empty(), "no resource to approve");
-            crate::resources::assert_unique_resources(command.resources);
-            let owner = ResourceKey { game_id, entity_id: command.owner_entity_id };
-            let recipient = ResourceKey { game_id, entity_id: command.approved_entity_id };
-            assert!(self.structure_owner(owner) == actor, "actor does not own structure");
-            assert!(self.structure_owner(recipient) != 0.try_into().unwrap(), "recipient has no owner");
-            for resource in command.resources {
-                self
-                    .resources
-                    .approve(
-                        crate::resources::AllowanceKey {
-                            game_id,
-                            owner_entity_id: command.owner_entity_id,
-                            approved_entity_id: command.approved_entity_id,
-                            resource_type: *resource.resource_type,
-                        },
-                        *resource.amount,
                     );
             }
         }
@@ -636,12 +593,6 @@ pub mod ResourcesDomain {
                     self.resources.write_weight(key, weight);
                 }
             }
-        }
-    }
-    #[abi(embed_v0)]
-    impl ResourceAllowance of crate::resources::IResourceAllowance<ContractState> {
-        fn resource_allowance(self: @ContractState, key: crate::resources::AllowanceKey) -> u128 {
-            self.resources.allowance(key)
         }
     }
     #[generate_trait]
@@ -801,27 +752,8 @@ pub mod ResourcesDomain {
                 self.resources.burn_resource(key, *resource.resource_type, *resource.amount, rule.unit_weight);
             }
         }
-        fn consume_allowances(ref self: ContractState, game_id: u32, command: crate::resources::ResourceTransfer) {
-            for resource in command.resources {
-                let key = crate::resources::AllowanceKey {
-                    game_id,
-                    owner_entity_id: command.from_entity_id,
-                    approved_entity_id: command.to_entity_id,
-                    resource_type: *resource.resource_type,
-                };
-                let allowance = self.resources.allowance(key);
-                assert!(allowance >= *resource.amount, "insufficient approval");
-                if allowance != 0xffffffffffffffffffffffffffffffff {
-                    self.resources.approve(key, allowance - *resource.amount);
-                }
-            }
-        }
         fn transfer_delayed(
-            ref self: ContractState,
-            game_id: u32,
-            command: crate::resources::ResourceTransfer,
-            pickup: bool,
-            timestamp: u64,
+            ref self: ContractState, game_id: u32, command: crate::resources::ResourceTransfer, timestamp: u64,
         ) {
             assert!(command.from_entity_id != 0 && command.to_entity_id != 0, "missing transfer structure");
             assert!(command.from_entity_id != command.to_entity_id, "self transfer");
@@ -841,16 +773,11 @@ pub mod ResourcesDomain {
                 crate::structures::structure_coord(destination.base),
                 command.resources,
                 rules.speed_config,
-                pickup,
+                false,
             );
             let weight = self.spend_shipment(from, command.resources, timestamp);
-            let donkey_provider = if pickup {
-                to
-            } else {
-                from
-            };
             let donkeys = crate::transport::donkeys_needed(weight, rules.capacity_config.donkey_capacity.into());
-            self.spend(donkey_provider, crate::transport::DONKEY, donkeys, timestamp);
+            self.spend(from, crate::transport::DONKEY, donkeys, timestamp);
             let arrival = crate::arrivals::arrival_key(
                 game_id, to.entity_id, rules.tick_config.delivery_tick_in_seconds, timestamp, travel_time,
             );

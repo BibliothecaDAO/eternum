@@ -48,8 +48,6 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
     if (row.name === "FaithfulStructure")
       row.absence = { value: "empty", meaning: "The structure has no faith allegiance." };
     if (row.name === "FaithBlacklist") row.absence = { value: "false", meaning: "The identifier is not blacklisted." };
-    if (row.name === "ResourceAllowance")
-      row.absence = { value: "zero", meaning: "No approval for this owner, recipient and resource." };
     if (row.name === "ProductionBonus")
       row.absence = { value: "zero", meaning: "No production bonus has been granted to this structure." };
     if (row.name === "ResourceArrival")
@@ -263,9 +261,6 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
     ),
     model("ResourceWeight", ["resources"], "game", struct("resources::ResourceKey"), struct("resources::Weight")),
     model("ResourceArrival", ["resources"], "game", struct("arrivals::ArrivalKey"), struct("arrivals::Arrival")),
-    model("ResourceAllowance", ["resources"], "game", struct("resources::AllowanceKey"), [
-      { name: "amount", type: method("resources", "resource_allowance").outputs[0].type },
-    ]),
     model(
       "BuildingRule",
       ["structures"],
@@ -454,7 +449,6 @@ const behaviouralFacts = {
     },
   },
   ResourceWeight: { domain: "resources", fields: { capacity: "capacity", weight: "weight" } },
-  ResourceAllowance: { domain: "resources", fields: { amount: "amount" } },
   ResourceArrival: { domain: "resources", fields: { resources: "resources" } },
   EntryEntitlement: {
     domain: "blitz-settlement",

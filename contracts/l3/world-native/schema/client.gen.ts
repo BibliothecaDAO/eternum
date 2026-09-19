@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "cd91d63a4ca89483f1a2ba09c15872c3ebc4ff6f8c5e50aad436243c97806eb5";
+export const nativeFactSchemaIdentity = "5276d6802286616bfeafe8b2c5eb65b8323263040d4d1c0e712a5dda7050bf29";
 export interface NativeRows {
   Preset: { readonly preset_id: number; readonly commitment: bigint };
   GameSequence: { readonly address: bigint; readonly next_game_id: number };
@@ -61,7 +61,6 @@ export interface NativeRows {
   ProductionReady: { readonly game_id: number; readonly ready: boolean };
   ResourceWeight: { readonly game_id: number; readonly entity_id: number; readonly capacity: bigint; readonly weight: bigint };
   ResourceArrival: { readonly game_id: number; readonly entity_id: number; readonly day: bigint; readonly slot: number; readonly resources: readonly ({ readonly resource_type: number; readonly amount: bigint })[] };
-  ResourceAllowance: { readonly game_id: number; readonly owner_entity_id: number; readonly approved_entity_id: number; readonly resource_type: number; readonly amount: bigint };
   BuildingRule: { readonly game_id: number; readonly category: number; readonly population_cost: number; readonly capacity_grant: number; readonly simple_cost: readonly ({ readonly resource_type: number; readonly amount: bigint })[]; readonly complex_cost: readonly ({ readonly resource_type: number; readonly amount: bigint })[] };
   BuildingRulesReady: { readonly game_id: number; readonly ready: boolean };
   Building: { readonly game_id: number; readonly alt: boolean; readonly outer_col: number; readonly outer_row: number; readonly inner_col: number; readonly inner_row: number; readonly category: number; readonly outer_entity_id: number; readonly paused: boolean };
@@ -151,7 +150,6 @@ export interface NativeKeys {
   ProductionReady: { readonly game_id: number };
   ResourceWeight: { readonly game_id: number; readonly entity_id: number };
   ResourceArrival: { readonly game_id: number; readonly entity_id: number; readonly day: bigint; readonly slot: number };
-  ResourceAllowance: { readonly game_id: number; readonly owner_entity_id: number; readonly approved_entity_id: number; readonly resource_type: number };
   BuildingRule: { readonly game_id: number; readonly category: number };
   BuildingRulesReady: { readonly game_id: number };
   Building: { readonly game_id: number; readonly alt: boolean; readonly outer_col: number; readonly outer_row: number; readonly inner_col: number; readonly inner_row: number };
@@ -1146,22 +1144,6 @@ export const nativeFactModels = {
           "amount": "u128"
         }
       ]
-    }
-  },
-  "ResourceAllowance": {
-    "keys": [
-      "game_id",
-      "owner_entity_id",
-      "approved_entity_id",
-      "resource_type"
-    ],
-    "scope": "game",
-    "fields": {
-      "game_id": "u32",
-      "owner_entity_id": "u32",
-      "approved_entity_id": "u32",
-      "resource_type": "u8",
-      "amount": "u128"
     }
   },
   "BuildingRule": {

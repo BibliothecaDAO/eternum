@@ -4715,30 +4715,6 @@
         },
         {
           "type": "function",
-          "name": "pickup_resources",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "actor",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "command",
-              "type": "world_native::resources::ResourceTransfer"
-            },
-            {
-              "name": "context",
-              "type": "world_native::commands::ExecutionContext"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
           "name": "transfer_explorer_resources_to_structure",
           "inputs": [
             {
@@ -4776,30 +4752,6 @@
             {
               "name": "command",
               "type": "world_native::arrivals::OffloadArrival"
-            },
-            {
-              "name": "context",
-              "type": "world_native::commands::ExecutionContext"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "approve_resources",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "actor",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "command",
-              "type": "world_native::resources::ResourceApproval"
             },
             {
               "name": "context",
@@ -4928,22 +4880,6 @@
           ],
           "outputs": [],
           "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "resource_allowance",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::resources::AllowanceKey"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::integer::u128"
-            }
-          ],
-          "state_mutability": "view"
         },
         {
           "type": "function",
@@ -10808,56 +10744,6 @@
       }
     },
     {
-      "name": "ResourceAllowance",
-      "identity": "0x5265736f75726365416c6c6f77616e6365",
-      "owners": [
-        "resources"
-      ],
-      "scope": "game",
-      "keys": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        },
-        {
-          "name": "owner_entity_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        },
-        {
-          "name": "approved_entity_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        },
-        {
-          "name": "resource_type",
-          "type": "core::integer::u8",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "amount",
-          "type": "core::integer::u128",
-          "id": "0x616d6f756e74",
-          "feltLength": 1
-        }
-      ],
-      "keyLength": 4,
-      "valueLength": 1,
-      "absence": {
-        "value": "zero",
-        "meaning": "No approval for this owner, recipient and resource."
-      },
-      "observation": {
-        "domain": "resources",
-        "fields": {
-          "amount": "amount"
-        }
-      }
-    },
-    {
       "name": "BuildingRule",
       "identity": "0x4275696c64696e6752756c65",
       "owners": [
@@ -13882,10 +13768,6 @@
           "type": "core::integer::u32"
         },
         {
-          "name": "ApproveResources",
-          "type": "world_native::resources::ResourceApproval"
-        },
-        {
           "name": "BurnStructureResources",
           "type": "world_native::resources::ResourceBurn"
         },
@@ -13911,10 +13793,6 @@
         },
         {
           "name": "SendResources",
-          "type": "world_native::resources::ResourceTransfer"
-        },
-        {
-          "name": "PickupResources",
           "type": "world_native::resources::ResourceTransfer"
         },
         {
@@ -16251,28 +16129,6 @@
         }
       ]
     },
-    "world_native::resources::AllowanceKey": {
-      "type": "struct",
-      "name": "world_native::resources::AllowanceKey",
-      "members": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "owner_entity_id",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "approved_entity_id",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "resource_type",
-          "type": "core::integer::u8"
-        }
-      ]
-    },
     "world_native::resources::Production": {
       "type": "struct",
       "name": "world_native::resources::Production",
@@ -16306,24 +16162,6 @@
         {
           "name": "amount",
           "type": "core::integer::u128"
-        }
-      ]
-    },
-    "world_native::resources::ResourceApproval": {
-      "type": "struct",
-      "name": "world_native::resources::ResourceApproval",
-      "members": [
-        {
-          "name": "owner_entity_id",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "approved_entity_id",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "resources",
-          "type": "core::array::Span::<world_native::resources::ResourceAmount>"
         }
       ]
     },
@@ -17900,5 +17738,5 @@
       ]
     }
   },
-  "identity": "cd91d63a4ca89483f1a2ba09c15872c3ebc4ff6f8c5e50aad436243c97806eb5"
+  "identity": "5276d6802286616bfeafe8b2c5eb65b8323263040d4d1c0e712a5dda7050bf29"
 }

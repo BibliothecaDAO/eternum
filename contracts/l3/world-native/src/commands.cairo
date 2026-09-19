@@ -58,7 +58,6 @@ pub enum Command {
     SettleSeason: crate::realms::SettleSeason,
     SettleVillage: crate::village::SettleVillage,
     ReceiveVillageArmy: u32,
-    ApproveResources: crate::resources::ResourceApproval,
     BurnStructureResources: crate::resources::ResourceBurn,
     RegularizeResourceWeights: Span<u32>,
     BurnExplorerResources: crate::resources::ResourceBurn,
@@ -66,7 +65,6 @@ pub enum Command {
     TransferStructureResourcesToExplorer: crate::resources::ResourceTransfer,
     OffloadArrival: crate::arrivals::OffloadArrival,
     SendResources: crate::resources::ResourceTransfer,
-    PickupResources: crate::resources::ResourceTransfer,
     TransferExplorerResourcesToStructure: crate::resources::ResourceTransfer,
     BurnResourceForLaborProduction: crate::production::RefillProduction,
     BurnLaborForResourceProduction: crate::production::RefillProduction,
@@ -161,13 +159,11 @@ fn command_items(command: Command) -> u32 {
         Command::Move(value) => value.directions.len(),
         Command::Battle(value) => value.steal_resources.len(),
         Command::Raid(value) => value.steal_resources.len(),
-        Command::ApproveResources(value) => value.resources.len(),
         Command::BurnStructureResources(value) => value.resources.len(),
         Command::BurnExplorerResources(value) => value.resources.len(),
         Command::TransferExplorerResources(value) => value.resources.len(),
         Command::TransferStructureResourcesToExplorer(value) => value.resources.len(),
         Command::SendResources(value) => value.resources.len(),
-        Command::PickupResources(value) => value.resources.len(),
         Command::TransferExplorerResourcesToStructure(value) => value.resources.len(),
         Command::ClaimBitcoinPhase(value) => value.mine_ids.len(),
         Command::ContributeHyperstructure(value) => value.resources.len(),
@@ -214,13 +210,6 @@ pub trait IResourceCommands<T> {
         command: crate::resources::ResourceTransfer,
         context: ExecutionContext,
     );
-    fn pickup_resources(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        command: crate::resources::ResourceTransfer,
-        context: ExecutionContext,
-    );
     fn transfer_explorer_resources_to_structure(
         ref self: T,
         game_id: u32,
@@ -233,13 +222,6 @@ pub trait IResourceCommands<T> {
         game_id: u32,
         actor: ContractAddress,
         command: crate::arrivals::OffloadArrival,
-        context: ExecutionContext,
-    );
-    fn approve_resources(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        command: crate::resources::ResourceApproval,
         context: ExecutionContext,
     );
     fn burn_structure_resources(
