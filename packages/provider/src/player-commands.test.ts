@@ -45,6 +45,22 @@ function setup() {
   return { provider, calls: createSystemCalls({ provider }), enqueue, signer, wait, decoded };
 }
 describe("player command callers", () => {
+  it("preserves exact contribution units through the compiled command ABI", async () => {
+    const { calls, signer, decoded } = setup();
+    const amount = 9_007_199_254_740_993n;
+    await calls.contribute_to_construction({
+      signer,
+      hyperstructure_entity_id: 9,
+      contributor_entity_id: 4,
+      contributions: [{ resource: 1, amount }],
+    });
+    expect(decoded()).toEqual({
+      hyperstructure_id: 9n,
+      from_structure_id: 4n,
+      resources: [{ resource_type: 1n, amount }],
+    });
+  });
+
   const cases = [
     ["claim_wonder_points", { value: 11 }, "ClaimWonderPoints", 11n],
     [

@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-19",
+    title: "Eternum Hyperstructure Construction",
+    description:
+      "Start construction, contribute resources from your structures, and choose who can contribute from the hyperstructure's tile panel.",
+    type: "feature",
+  },
+  {
+    date: "2026-09-19",
     title: "Free Blitz Slots and Results",
     description:
       "Register for a free slot, join your assigned game with prepared realms, and see final ranks and victory points after the whole roster is scored.",

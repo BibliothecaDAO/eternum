@@ -13,6 +13,7 @@ import { HUD_BODY, HUD_BODY_MUTED, HUD_HEADLINE } from "@/ui/design-system/atoms
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { InfoBubble } from "../collapsible-bubble";
 import { HyperstructureVPDisplay } from "@/ui/features/world/components/hyperstructures/hyperstructure-vp-display";
+import { HyperstructureConstruction } from "@/ui/features/world/components/hyperstructures/hyperstructure-construction";
 import { useGameModeConfig, useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
 import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -232,6 +233,10 @@ const StructureBannerEntityDetailContent = memo(
               </div>
             )}
           </InfoBubble>
+        )}
+
+        {isEternumMode && isHyperstructure && (
+          <HyperstructureConstruction key={structureEntityId} entityId={structureEntityId} />
         )}
 
         {relicEffects.length > 0 && (
