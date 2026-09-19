@@ -6,9 +6,7 @@ import { getTileAt } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import type { ID } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
-import ArrowRightLeft from "lucide-react/dist/esm/icons/arrow-right-left";
-import ShieldAlert from "lucide-react/dist/esm/icons/shield-alert";
-import Sparkles from "lucide-react/dist/esm/icons/sparkles";
+import { ArrowRightLeft, ShieldAlert, Portal } from "@/ui/design-system/atoms/game-icons";
 import { resolveSpireCrossing } from "./spire-crossing";
 
 export const SpireTravelModal = ({
@@ -38,11 +36,11 @@ export const SpireTravelModal = ({
   };
 
   return (
-    <SurfaceFrame title="Spire" icon={Sparkles} onClose={closeSurface} className="w-[560px]" bodyClassName="p-5">
+    <SurfaceFrame title="Spire" icon={Portal} onClose={closeSurface} className="w-[560px]" bodyClassName="p-5">
       <div className="flex flex-col gap-4 text-gold/90">
         {crossing.kind === "clear" ? (
           <div className="flex items-start gap-3 rounded border border-cyan-300/25 bg-cyan-500/10 p-3">
-            <Sparkles className="mt-0.5 h-4 w-4 text-cyan-200" />
+            <Portal className="mt-0.5 h-4 w-4 text-cyan-200" />
             <div className="flex flex-col gap-1">
               <p className="text-sm font-semibold text-cyan-100">Your hex on {sideName} is clear</p>
               <p className="text-xs text-gold/70">

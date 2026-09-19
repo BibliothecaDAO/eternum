@@ -15,9 +15,7 @@ import { armyHasTroops, getArmyRelicEffects, getEntityIdFromKeys, StaminaManager
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import { ActorType, ArmyInfo, RelicRecipientType, TroopTier, TroopType } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
-import ArrowLeftRight from "lucide-react/dist/esm/icons/arrow-left-right";
-import ArrowRight from "lucide-react/dist/esm/icons/arrow-right";
-import CirclePlus from "lucide-react/dist/esm/icons/circle-plus";
+import { ArrowLeftRight, ArrowRight, CirclePlus } from "@/ui/design-system/atoms/game-icons";
 import React, { useCallback, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ArmyManagementCard } from "./army-management-card";
@@ -43,7 +41,7 @@ export const NavigateToPositionIcon = ({
     <CircleButton
       image="/image-icons/compass.png"
       size="md"
-      className={` fill-gold hover:fill-gold/50 transition-all duration-300 ${className}`}
+      className={`  hover:opacity-50 transition-all duration-300 ${className}`}
       onClick={() => {
         const { x, y } = position.getNormalized();
         setNavigationTarget({
@@ -178,7 +176,7 @@ const ArmyChip = ({
                   <div className="flex items-center gap-2 flex-shrink-0">
                     {isHome && (
                       <CirclePlus
-                        className={`w-5 h-5 hover:fill-gold/50 hover:scale-110 transition-all duration-300 cursor-pointer ${
+                        className={`w-5 h-5 hover:opacity-50 hover:scale-110 transition-all duration-300 cursor-pointer ${
                           army.troops.count === 0n ? "animate-pulse" : ""
                         } ${army ? "defensive-army-edit-selector" : "attacking-army-edit-selector"}`}
                         onClick={() => {
@@ -193,7 +191,7 @@ const ArmyChip = ({
                       <React.Fragment>
                         {(isHome || hasAdjacentOwnedStructure) && (
                           <ArrowLeftRight
-                            className={`w-5 h-5 fill-gold hover:fill-gold/50 hover:scale-110 transition-all duration-300 cursor-pointer ${
+                            className={`w-5 h-5  hover:opacity-50 hover:scale-110 transition-all duration-300 cursor-pointer ${
                               army ? "defensive-army-swap-selector" : "attacking-army-swap-selector"
                             }`}
                             onClick={(event) => {

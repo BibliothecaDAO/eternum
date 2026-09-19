@@ -31,12 +31,7 @@ import {
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
-import Castle from "lucide-react/dist/esm/icons/castle";
-import Crown from "lucide-react/dist/esm/icons/crown";
-import Pickaxe from "lucide-react/dist/esm/icons/pickaxe";
-import Sparkles from "lucide-react/dist/esm/icons/sparkles";
-import Star from "lucide-react/dist/esm/icons/star";
-import Tent from "lucide-react/dist/esm/icons/tent";
+import { Castle, Crown, Pickaxe, Hyperstructure, Star, Tent } from "@/ui/design-system/atoms/game-icons";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
 import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
@@ -70,7 +65,7 @@ const getStructureIcon = (category: StructureType, villageIconKey: VillageIconKe
     case StructureType.FragmentMine:
       return Pickaxe;
     case StructureType.Hyperstructure:
-      return Sparkles;
+      return Hyperstructure;
     default:
       return Castle;
   }
@@ -975,7 +970,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
                   onClick={() => toggleDestinationSelection(entityId)}
                 >
                   <div className="flex min-w-0 items-center gap-2">
-                    {isFavorite && <Star className="h-4 w-4 shrink-0 fill-current text-gold" aria-hidden />}
+                    {isFavorite && <Star className="h-4 w-4 shrink-0  text-gold" aria-hidden />}
                     <Icon className="h-4 w-4 shrink-0 text-gold" aria-hidden />
                     <div className="truncate text-sm font-semibold">{name}</div>
                   </div>

@@ -1,3 +1,4 @@
+import { Loader2 } from "@/ui/design-system/atoms/game-icons";
 import { useUISound } from "@/audio";
 import React from "react";
 
@@ -85,7 +86,7 @@ const Button: React.FC<ButtonProps> = ({
     >
       {isLoading ? (
         <div className="w-full inset-0 flex flex-col items-center justify-center h-full">
-          <div className="w-4 h-4 border-t-2 border-b-2 border-gold rounded-full animate-spin"></div>
+          <Loader2 className="w-4 h-4 animate-spin" />
         </div>
       ) : (
         children

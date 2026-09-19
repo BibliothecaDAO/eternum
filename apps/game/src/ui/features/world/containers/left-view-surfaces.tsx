@@ -13,7 +13,7 @@ import { setEntityNameLocalStorage } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { type ID } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
-import PackageIcon from "lucide-react/dist/esm/icons/package";
+import { Package as PackageIcon } from "@/ui/design-system/atoms/game-icons";
 import { memo, useCallback } from "react";
 import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 

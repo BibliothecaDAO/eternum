@@ -15,9 +15,7 @@ import { getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress, BANDITS_NAME, PlayerInfo } from "@bibliothecadao/types";
 import { getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
-import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
-import ChevronUp from "lucide-react/dist/esm/icons/chevron-up";
-import Search from "lucide-react/dist/esm/icons/search";
+import { ChevronDown, ChevronUp, Search } from "@/ui/design-system/atoms/game-icons";
 import { KeyboardEvent, useEffect, useMemo, useState } from "react";
 import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 

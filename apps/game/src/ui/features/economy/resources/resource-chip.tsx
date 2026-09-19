@@ -1,3 +1,4 @@
+import { ArrowLeftRight, Factory, FlaskConical, Sparkles } from "@/ui/design-system/atoms/game-icons";
 import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { surfaceAnchorFrom } from "@/ui/design-system/molecules/popover";
@@ -27,9 +28,6 @@ import {
   StructureType,
   TickIds,
 } from "@bibliothecadao/types";
-import Factory from "lucide-react/dist/esm/icons/factory";
-import FlaskConical from "lucide-react/dist/esm/icons/flask-conical";
-import Sparkles from "lucide-react/dist/esm/icons/sparkles";
 import { getComponentValue } from "@dojoengine/recs";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
@@ -331,20 +329,7 @@ export const ResourceChip = ({
               disabled={disableButtons}
               className={actionButton}
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
-                />
-              </svg>
+              <ArrowLeftRight className="h-4 w-4" />
             </button>
           )}
         />

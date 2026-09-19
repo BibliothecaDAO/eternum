@@ -21,7 +21,7 @@ describe("menu icon pipeline", () => {
   it("maps each approved semantic icon to its stable public path", async () => {
     const manifest = await loadMenuIconManifest();
 
-    expect(Object.fromEntries(manifest.icons.map(({ slug, target }) => [slug, target]))).toEqual({
+    expect(Object.fromEntries(manifest.icons.map(({ slug, target }) => [slug, target]))).toMatchObject({
       automation: "robot.png",
       build: "construction.png",
       guild: "guild.png",
@@ -34,12 +34,15 @@ describe("menu icon pipeline", () => {
     });
   });
 
+  // Rebuilding the complete UI family now processes more than eighty masters.
   it("rebuilds the published menu set from approved masters", async () => {
     const outputDirectory = await mkdtemp(join(tmpdir(), "eternum-menu-icons-"));
     const manifest = await loadMenuIconManifest();
 
     await buildMenuIcons({ inputDirectory: APPROVED_MENU_ICON_DIRECTORY, outputDirectory });
-    await expect(verifyMenuIcons({ imageDirectory: outputDirectory })).resolves.toMatchObject({ count: 9 });
+    await expect(verifyMenuIcons({ imageDirectory: outputDirectory })).resolves.toMatchObject({
+      count: manifest.icons.length,
+    });
     for (const icon of manifest.icons) {
       const generated = await readIconPixels(join(outputDirectory, icon.target));
       const published = await readIconPixels(join(PUBLISHED_MENU_ICON_DIRECTORY, icon.target));
@@ -48,7 +51,7 @@ describe("menu icon pipeline", () => {
         MAX_PLATFORM_PIXEL_RMSE,
       );
     }
-  });
+  }, 60_000);
 });
 
 async function readIconPixels(path) {

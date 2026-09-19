@@ -6,9 +6,7 @@ import { divideByPrecision, formatTime } from "@bibliothecadao/eternum";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useArrivalsByStructure } from "@bibliothecadao/react";
 import { ResourcesIds, Structure } from "@bibliothecadao/types";
-import Loader2 from "lucide-react/dist/esm/icons/loader-2";
-import Clock3 from "lucide-react/dist/esm/icons/clock-3";
-import Check from "lucide-react/dist/esm/icons/check";
+import { Loader2, Clock3, Check } from "@/ui/design-system/atoms/game-icons";
 import { memo, useMemo } from "react";
 
 type ArrivalSummaryResource = {

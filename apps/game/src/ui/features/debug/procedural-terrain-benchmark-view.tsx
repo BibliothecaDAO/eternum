@@ -1,4 +1,4 @@
-import { Gauge, Play, RefreshCw } from "lucide-react";
+import { Gauge, Play, RefreshCw } from "@/ui/design-system/atoms/game-icons";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 

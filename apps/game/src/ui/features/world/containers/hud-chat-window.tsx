@@ -11,7 +11,7 @@ import {
 } from "@/ui/features/social";
 import { configManager } from "@bibliothecadao/eternum";
 import { GLOBAL_CHAT_CHANNEL_ID } from "@bibliothecadao/types";
-import MessageSquare from "lucide-react/dist/esm/icons/message-square";
+import { MessageSquare } from "@/ui/design-system/atoms/game-icons";
 import { useEffect, useMemo, useRef } from "react";
 import { env } from "../../../../../env";
 import { CHAT_SHORTCUT } from "./chat-shortcut";

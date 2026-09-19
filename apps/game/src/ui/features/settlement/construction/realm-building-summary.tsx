@@ -7,7 +7,7 @@ import {
   isEconomyBuilding,
   ResourcesIds,
 } from "@bibliothecadao/types";
-import Plus from "lucide-react/dist/esm/icons/plus";
+import { Plus } from "@/ui/design-system/atoms/game-icons";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 
 // Paladins (Stable) → Knights (Barracks) → Crossbowmen (Archery). Player

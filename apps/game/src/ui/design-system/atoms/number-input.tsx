@@ -1,5 +1,4 @@
-import { ReactComponent as ArrowLeft } from "@/assets/icons/common/arrow-left.svg";
-import { ReactComponent as ArrowRight } from "@/assets/icons/common/arrow-right.svg";
+import { ArrowLeft, ArrowRight } from "@/ui/design-system/atoms/game-icons";
 import { useUISound } from "@/audio";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { useEffect, useState } from "react";
@@ -67,7 +66,7 @@ export const NumberInput = ({
             }
           }}
         >
-          <ArrowLeft className="fill-gold " width={"6px"} height={"8px"} />
+          <ArrowLeft className="h-3 w-3" />
         </button>
       )}
       <input
@@ -130,7 +129,7 @@ export const NumberInput = ({
             }
           }}
         >
-          <ArrowRight className="fill-gold" width={"6px"} height={"8px"} />
+          <ArrowRight className="h-3 w-3" />
         </button>
       )}
     </div>

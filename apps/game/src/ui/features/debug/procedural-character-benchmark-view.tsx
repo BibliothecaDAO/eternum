@@ -1,4 +1,15 @@
-import { Activity, Dices, Gauge, Pause, Play, RotateCcw, Skull, StepForward, Users } from "lucide-react";
+import {
+  Loader2,
+  Activity,
+  Dices,
+  Gauge,
+  Pause,
+  Play,
+  RotateCcw,
+  Skull,
+  StepForward,
+  Users,
+} from "@/ui/design-system/atoms/game-icons";
 import { useCallback, useEffect, useRef, useState, type MutableRefObject, type ReactNode, type RefObject } from "react";
 import { Link } from "react-router-dom";
 
@@ -624,7 +635,7 @@ const BenchmarkViewport = ({
     {(!ready || stats.loadingActors) && !rendererError && (
       <div className="pointer-events-none absolute inset-0 z-30 grid place-items-center bg-[#070b12]/88 backdrop-blur-sm">
         <div className="flex flex-col items-center gap-3 text-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-cyan-300/20 border-t-cyan-200" />
+          <Loader2 className="h-8 w-8 animate-spin" />
           <div>
             <p className="text-sm font-semibold text-white">
               {worldGym ? "Growing biomes and articulated crowd" : "Building articulated crowd"}
@@ -727,7 +738,7 @@ const ControlSection = ({
   defaultOpen?: boolean;
 }) => (
   <details open={defaultOpen} className="border border-white/10 bg-black/20">
-    <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-2.5 text-xs font-semibold uppercase tracking-[0.16em] text-slate-300 [&_svg]:h-3.5 [&_svg]:w-3.5 [&_svg]:text-cyan-300">
+    <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-2.5 text-xs font-semibold uppercase tracking-[0.16em] text-slate-300 [&_img]:h-3.5 [&_img]:w-3.5 [&_img]:text-cyan-300">
       {icon}
       {title}
     </summary>
@@ -874,7 +885,7 @@ const BenchmarkAction = ({
     onClick={onClick}
     disabled={disabled}
     className={cn(
-      "flex h-9 items-center gap-2 border px-3 text-xs font-semibold uppercase tracking-wider transition [&_svg]:h-3.5 [&_svg]:w-3.5",
+      "flex h-9 items-center gap-2 border px-3 text-xs font-semibold uppercase tracking-wider transition [&_img]:h-3.5 [&_img]:w-3.5",
       primary
         ? "border-red-300/45 bg-red-400/15 text-red-100 hover:bg-red-400/25"
         : "border-white/10 bg-white/[0.025] text-slate-300 hover:bg-white/[0.08] hover:text-white",

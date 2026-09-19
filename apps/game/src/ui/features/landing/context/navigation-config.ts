@@ -1,4 +1,5 @@
-import { Bug, FlaskConical, Home, type LucideIcon } from "lucide-react";
+import type { GameIcon } from "@/ui/design-system/atoms/game-icon";
+import { Bug, FlaskConical, Home } from "@/ui/design-system/atoms/game-icons";
 
 type SectionId = "home" | "debug" | "lab";
 
@@ -15,7 +16,7 @@ interface SubMenuItem {
 interface SectionConfig {
   id: SectionId;
   label: string;
-  icon: LucideIcon;
+  icon: GameIcon;
   /** Base route path for this section */
   basePath: string;
   subMenu: SubMenuItem[];

@@ -29,8 +29,7 @@ import {
   TroopTier,
   TroopType,
 } from "@bibliothecadao/types";
-import AlertTriangle from "lucide-react/dist/esm/icons/alert-triangle";
-import ArrowLeftRight from "lucide-react/dist/esm/icons/arrow-left-right";
+import { AlertTriangle, ArrowLeftRight } from "@/ui/design-system/atoms/game-icons";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getStructureDefenseSlotLimit, getUnlockedGuardSlots, MAX_GUARD_SLOT_COUNT } from "../utils/defense-slot-utils";
 import { getGuardStaminaSnapshot } from "../utils/guard-stamina";

@@ -3,8 +3,7 @@ import type { ContextMenuAction } from "@/types/context-menu";
 import { HUD_BODY, HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
-import ChevronLeft from "lucide-react/dist/esm/icons/chevron-left";
-import ChevronRight from "lucide-react/dist/esm/icons/chevron-right";
+import { ChevronLeft, ChevronRight } from "@/ui/design-system/atoms/game-icons";
 import { useEffect, useRef } from "react";
 
 const MENU_WIDTH_PX = 240;

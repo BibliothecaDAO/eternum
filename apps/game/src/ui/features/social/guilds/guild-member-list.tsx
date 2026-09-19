@@ -1,5 +1,4 @@
-import { ReactComponent as Trash } from "@/assets/icons/common/trashcan.svg";
-import { ReactComponent as Crown } from "@/assets/icons/crown.svg";
+import { Trash, Crown } from "@/ui/design-system/atoms/game-icons";
 import { ContractAddress, GuildMemberInfo } from "@bibliothecadao/types";
 import clsx from "clsx";
 import { useMemo } from "react";
@@ -73,7 +72,7 @@ const GuildMemberRow = ({
           viewPlayerInfo(ContractAddress(guildMember.address));
         }}
       >
-        {guildMember.isGuildMaster && <Crown className="h-4 w-4 shrink-0 fill-gold" />}
+        {guildMember.isGuildMaster && <Crown className="h-4 w-4 shrink-0 " />}
         <span className="truncate text-sm font-semibold text-gold">{guildMember.name}</span>
         {guildMember.isUser && (
           <span className="shrink-0 rounded-full border border-amber-200/50 bg-amber-200/20 px-2 py-0.5 text-[0.55rem] font-semibold uppercase tracking-[0.16em] text-amber-200">
@@ -85,7 +84,7 @@ const GuildMemberRow = ({
       {kickButtonEnabled && (
         <Trash
           onClick={() => removeGuildMember(guildMember.address)}
-          className={clsx("h-5 w-5 fill-red/70 transition-all duration-200 hover:scale-110 hover:fill-red/90", {
+          className={clsx("h-5 w-5 opacity-70 transition-all duration-200 hover:scale-110 hover:opacity-100", {
             "pointer-events-none opacity-50": isLoading,
             "cursor-pointer": !isLoading,
           })}

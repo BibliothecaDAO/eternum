@@ -5,7 +5,7 @@ import { TERRAIN_LAB_BUILDINGS } from "@/three/debug/terrain-lab-buildings";
 import { HYPERSTRUCTURE_MODEL_PATH } from "@/three/structures/hyperstructure-design";
 import { VILLAGE_MODEL_PATH, isRealmModelPath } from "@/three/constants/scene-constants";
 import { SETTLEMENT_RELATIONSHIPS, type SettlementRelationship } from "@/three/structures/settlement-appearance";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw } from "@/ui/design-system/atoms/game-icons";
 import { useEffect, useRef, useState, type RefObject } from "react";
 import { useSearchParams } from "react-router-dom";
 

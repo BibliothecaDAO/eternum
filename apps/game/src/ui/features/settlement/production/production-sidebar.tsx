@@ -9,7 +9,7 @@ import { HasValue, runQuery } from "@dojoengine/recs";
 import clsx from "clsx";
 import { HUD_BODY, HUD_HEADLINE, HUD_LABEL, HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
-import SparklesIcon from "lucide-react/dist/esm/icons/sparkles";
+import { Hyperstructure as WonderIcon } from "@/ui/design-system/atoms/game-icons";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import Button from "@/ui/design-system/atoms/button";
 import { isVillageLikeStructureCategory } from "@/ui/lib/structure-capabilities";
@@ -195,7 +195,7 @@ const SidebarRealm = ({
                     className="bg-gold/20 p-1 rounded"
                     title={`Wonder Bonus: +${((wonderBonus - 1) * 100).toFixed(2)}%`}
                   >
-                    <SparklesIcon className="w-4 h-4 text-gold" />
+                    <WonderIcon className="w-4 h-4 text-gold" />
                   </div>
                 )}
                 {activeRelics.length > 0 && (

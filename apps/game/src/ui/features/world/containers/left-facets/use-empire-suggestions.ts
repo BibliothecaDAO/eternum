@@ -24,14 +24,16 @@ import {
   TroopType,
 } from "@bibliothecadao/types";
 import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
-import type { LucideIcon } from "lucide-react";
-import ArrowUpCircle from "lucide-react/dist/esm/icons/arrow-up-circle";
-import Building2 from "lucide-react/dist/esm/icons/building-2";
-import Compass from "lucide-react/dist/esm/icons/compass";
-import HomeIcon from "lucide-react/dist/esm/icons/home";
-import Shield from "lucide-react/dist/esm/icons/shield";
-import Sparkles from "lucide-react/dist/esm/icons/sparkles";
-import Wheat from "lucide-react/dist/esm/icons/wheat";
+import type { GameIcon } from "@/ui/design-system/atoms/game-icon";
+import {
+  ArrowUpCircle,
+  Building2,
+  Compass,
+  Home as HomeIcon,
+  Shield,
+  Users,
+  Wheat,
+} from "@/ui/design-system/atoms/game-icons";
 import { useMemo } from "react";
 import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 import {
@@ -45,7 +47,7 @@ import {
 } from "./blitz-suggestions";
 
 export interface EmpireSuggestion extends Omit<BlitzSuggestionDraft, "priority"> {
-  icon: LucideIcon;
+  icon: GameIcon;
 }
 
 type RawUpgradeCost = {
@@ -70,7 +72,7 @@ type BuildabilityContext = {
   hasAvailableBuildingTile: boolean;
 };
 
-const ACTION_ICONS: Record<EmpireSuggestionAction, LucideIcon> = {
+const ACTION_ICONS: Record<EmpireSuggestionAction, GameIcon> = {
   "build-copper": Building2,
   "build-coal": Building2,
   "build-first": Building2,
@@ -80,7 +82,7 @@ const ACTION_ICONS: Record<EmpireSuggestionAction, LucideIcon> = {
   "build-wood": Building2,
   "build-worker-hut": HomeIcon,
   "deploy-explorer": Compass,
-  "expand-population": Sparkles,
+  "expand-population": Users,
   garrison: Shield,
   upgrade: ArrowUpCircle,
 };

@@ -1,5 +1,5 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import Copy from "lucide-react/dist/esm/icons/copy";
+import { Copy } from "@/ui/design-system/atoms/game-icons";
 
 import { resolveFactoryDeveloperContractSuggestionLabel } from "../developer/contract-targets";
 import { useFactoryV2DeveloperLookup } from "../hooks/use-factory-v2-developer-lookup";

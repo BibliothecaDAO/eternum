@@ -1,7 +1,7 @@
 import { CosmeticItem } from "@/ui/features/cosmetics/config/cosmetics.data";
 import { isDevPreviewSyntheticTokenId } from "@/ui/features/cosmetics/lib/dev-preview-cosmetics";
 import { useCosmeticLoadoutStore } from "@/ui/features/cosmetics/model";
-import ExternalLink from "lucide-react/dist/esm/icons/external-link";
+import { ExternalLink } from "@/ui/design-system/atoms/game-icons";
 
 const TRADE_BASE_URL = "https://empire.realms.world/trade/cosmetics";
 

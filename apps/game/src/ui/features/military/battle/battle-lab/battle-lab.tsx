@@ -17,7 +17,7 @@ import {
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ActorType, BiomeType, ContractAddress, getLayeredAttackDistance, ID } from "@bibliothecadao/types";
-import Swords from "lucide-react/dist/esm/icons/swords";
+import { Swords } from "@/ui/design-system/atoms/game-icons";
 import { useEffect, useMemo, useState } from "react";
 
 import {

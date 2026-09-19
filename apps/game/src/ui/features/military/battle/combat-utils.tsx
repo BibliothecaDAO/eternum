@@ -1,6 +1,5 @@
 import { TroopTier, TroopType } from "@bibliothecadao/types";
-import Map from "lucide-react/dist/esm/icons/map";
-import Zap from "lucide-react/dist/esm/icons/zap";
+import { Map, Zap } from "@/ui/design-system/atoms/game-icons";
 
 const formatStaminaModifier = (modifier: number, isAttacker: boolean) => {
   const percentage = ((modifier - 1) * 100).toFixed(0);
