@@ -1,6 +1,6 @@
 import { completeNativeBatches, type BatchTransactionReceipt } from "@bibliothecadao/provider";
 import { LeaderboardManager, type GameClient } from "@bibliothecadao/eternum";
-import type { RpcProvider } from "starknet";
+import type { HarnessProvider } from "./provider";
 import type { HarnessAccount } from "./account-factory";
 import type { HarnessGame } from "./harness-game";
 import { trackTransaction } from "./driver";

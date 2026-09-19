@@ -450,13 +450,13 @@ function startGameWorker(options: HarnessCliOptions, game: PreparedGame, file: s
   });
 }
 
-async function waitForGameWorkers(workers: Worker[], reports: GameWorkerReport[]): Promise<void> {
+export async function waitForGameWorkers(workers: Worker[], reports: GameWorkerReport[]): Promise<void> {
   const ready = new Set<Worker>();
   await Promise.all(
     workers.map(
       (worker) =>
         new Promise<void>((resolve, reject) => {
-          let reported = false;
+          let reported: GameWorkerReport | undefined;
           worker.on("message", (message) => {
             if (message.type === "ready" && !ready.has(worker)) {
               ready.add(worker);
@@ -465,15 +465,15 @@ async function waitForGameWorkers(workers: Worker[], reports: GameWorkerReport[]
                 for (const player of workers) player.postMessage({ type: "start", startAt });
               }
             } else if (message.type === "result" && !reported) {
-              reported = true;
+              reported = message;
               reports.push(message);
             }
           });
           worker.once("error", reject);
           worker.once("exit", (code) =>
-            code === 0 && reported
+            reported && code === (reported.passed ? 0 : 1)
               ? resolve()
-              : reject(new Error(`Game worker exited ${code} without a passing result`)),
+              : reject(new Error(`Game worker exited ${code} without a matching result`)),
           );
         }),
     ),

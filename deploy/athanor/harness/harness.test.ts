@@ -34,8 +34,35 @@ import {
 } from "./report";
 import { createHarnessProvider, parseHarnessArgs } from "./run";
 import { BlockTag } from "starknet";
+import { EventEmitter } from "node:events";
+import type { Worker } from "node:worker_threads";
+import { waitForGameWorkers } from "./run";
 
 describe("Madara harness workload", () => {
+  it("collects other game reports after a worker reports a failed coverage gate", async () => {
+    const workers = [new EventEmitter(), new EventEmitter()];
+    const reports: Parameters<typeof waitForGameWorkers>[1] = [];
+    let complete = false;
+    const waiting = waitForGameWorkers(workers as Worker[], reports).then(() => {
+      complete = true;
+    });
+    workers[0].emit("message", { type: "result", passed: false, path: "failed.json", pid: 1, threadId: 1 });
+    workers[0].emit("exit", 1);
+    await Promise.resolve();
+    expect(complete).toBe(false);
+    workers[1].emit("message", { type: "result", passed: true, path: "passed.json", pid: 1, threadId: 2 });
+    workers[1].emit("exit", 0);
+    await waiting;
+    expect(reports.map(({ passed }) => passed)).toEqual([false, true]);
+  });
+
+  it("fails if a worker exits without writing its report", async () => {
+    const worker = new EventEmitter();
+    const waiting = waitForGameWorkers([worker as Worker], []);
+    worker.emit("exit", 0);
+    await expect(waiting).rejects.toThrow("without a matching result");
+  });
+
   it("uses the provisioned Blitz roster and submits only its three explorer creations", async () => {
     const { game, actions } = fakeWorld();
     const settle = spyOn(game, "settle");
