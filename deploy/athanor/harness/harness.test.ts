@@ -36,26 +36,39 @@ import { createHarnessProvider, parseHarnessArgs } from "./run";
 import { BlockTag } from "starknet";
 
 describe("Madara harness workload", () => {
-  it("uses the launched Blitz roster without submitting individual settlements", async () => {
-    const { game } = fakeWorld();
+  it("uses the provisioned Blitz roster and submits only its three explorer creations", async () => {
+    const { game, actions } = fakeWorld();
     const settle = spyOn(game, "settle");
+    const create = mock(async () => {});
+    actions.createExplorerArmy = create;
+    game.settlementStructureIds = () => [1, 2, 3];
+    game.structureCoord = (id) => ({ x: id, y: 0 });
+    game.startingTroopType = () => 1;
+    game.explorerOf = (id) => id + 10;
+    game.explorer = (id) => ({ coord: { x: id - 10, y: 0 }, staminaAmount: 120n, staminaUpdatedTick: 1n });
+    game.armyPathIndexes = () =>
+      ({
+        structureHexes: new Map(),
+        armyHexes: new Map(),
+        chestHexes: new Map(),
+        exploredHexes: new Map([1, 2, 3].map((x) => [x, new Map([[0, {}]])])),
+      }) as ReturnType<HarnessGame["armyPathIndexes"]>;
     const setupTransactions: TrackedTransaction[] = [];
-    const beforeProvision = mock(async () => {
-      throw new Error("provision boundary");
+    const bots = await prepareHarnessBots({
+      gameType: "blitz",
+      game,
+      accounts: [{ botId: 1, address: "0x1", account: { address: "0x1" } }] as HarnessAccount[],
+      provider: confirmingProvider(),
+      setupTransactions,
     });
-    await expect(
-      prepareHarnessBots({
-        gameType: "blitz",
-        game,
-        accounts: [{ botId: 1 }] as HarnessAccount[],
-        provider: confirmingProvider(),
-        setupTransactions,
-        beforeProvision,
-      }),
-    ).rejects.toThrow("provision boundary");
-    expect(beforeProvision).toHaveBeenCalledTimes(1);
     expect(settle).not.toHaveBeenCalled();
-    expect(setupTransactions).toEqual([]);
+    expect(create).toHaveBeenCalledTimes(3);
+    expect(setupTransactions.map(({ kind, outcome }) => [kind, outcome])).toEqual([
+      ["create-explorer", "completed"],
+      ["create-explorer", "completed"],
+      ["create-explorer", "completed"],
+    ]);
+    expect(bots[0].explorers.map(({ explorerId }) => explorerId)).toEqual([11, 12, 13]);
   });
 
   it("selects Eternum and rejects deferred ledger options", () => {
@@ -575,7 +588,6 @@ function fakeWorld(extraExplorer?: [number, ExplorerRow]): FakeWorld {
       chestHexes: new Map(),
     }),
     settle: async () => {},
-    provision: async () => {},
     produceWood: async (_signer, structureId) => {
       const current = production.get(structureId)!;
       production.set(structureId, { laborBalance: current.laborBalance - 1n, woodOutput: current.woodOutput + 1n });

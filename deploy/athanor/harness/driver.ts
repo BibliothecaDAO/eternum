@@ -117,7 +117,6 @@ interface ExplorerPriority {
 interface PrepareHarnessBotsOptions {
   gameType?: HarnessGameType;
   accounts: HarnessAccount[];
-  beforeProvision?: () => Promise<void>;
   game: HarnessGame;
   provider: HarnessProvider;
   setupConcurrency?: number;
@@ -290,7 +289,6 @@ const STEADY_ACTION_PATTERN: readonly WorkloadActionKind[] = [
 export async function prepareHarnessBots({
   gameType = "blitz",
   accounts,
-  beforeProvision,
   game,
   provider,
   setupConcurrency = DEFAULT_SETUP_CONCURRENCY,
@@ -304,19 +302,9 @@ export async function prepareHarnessBots({
     });
   }
 
-  await beforeProvision?.();
-
   const bots = await mapWithConcurrency(accounts, setupConcurrency, async (harnessAccount) => {
     const structureIds = await waitForSettlement(game, harnessAccount.address, gameType);
     const structures = await waitForStructures(game, structureIds);
-
-    if (gameType === "blitz") {
-      for (const structureId of structureIds) {
-        const provision = await provisionBot({ harnessAccount, game, provider, structureId });
-        setupTransactions.push(provision);
-        assertCompleted(provision);
-      }
-    }
 
     const troopTypes = await waitForStartingTroopTypes(game, structureIds);
     const actions = game.actionsFor(harnessAccount.account);
@@ -606,27 +594,6 @@ async function settleEternumBot({
       game.submit(harnessAccount.account, () =>
         game.settle(harnessAccount.account, harnessAccount.owner, name, "eternum"),
       ),
-    stage: "setup",
-  });
-}
-
-async function provisionBot({
-  harnessAccount,
-  game,
-  provider,
-  structureId,
-}: {
-  harnessAccount: HarnessAccount;
-  game: HarnessGame;
-  provider: HarnessProvider;
-  structureId: ID;
-}): Promise<TrackedTransaction> {
-  return trackTransaction({
-    botId: harnessAccount.botId,
-    gameId: game.gameId,
-    kind: "provision",
-    provider,
-    send: () => game.submit(harnessAccount.account, () => game.provision(harnessAccount.account, structureId)),
     stage: "setup",
   });
 }
