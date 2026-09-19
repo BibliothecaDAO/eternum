@@ -23,6 +23,11 @@ vi.mock("@/hooks/store/use-ui-store", () => ({
 vi.mock("@/utils/spectator-session", () => ({ isExplicitSpectateSession: () => mocks.explicit }));
 vi.mock("@/hooks/store/use-popover-store", () => ({ usePopoverStore: { getState: () => ({ close: mocks.close }) } }));
 vi.mock("./unified-army-creation-modal/use-army-creation", () => ({ useArmyCreation: () => mocks.form }));
+vi.mock("./guard-dismissal", () => ({
+  GuardDismissal: ({ structureId, slot }: { structureId: number; slot: number }) => (
+    <div data-guard-dismissal={`${structureId}:${slot}`} />
+  ),
+}));
 import { ArmyDeploymentPicker } from "./army-deployment-picker";
 
 let root: Root;
@@ -117,8 +122,10 @@ it.each([
     root.render(<ArmyDeploymentPicker structureId={42} isExplorer={false} initialGuardSlot={slot} />),
   );
   expect(container.textContent).toContain(`Deploy guard · slot ${displayed}`);
+  expect(container.querySelector("[data-guard-dismissal]")?.getAttribute("data-guard-dismissal")).toBe(`42:${slot}`);
   await act(async () => root.render(<ArmyDeploymentPicker structureId={42} isExplorer />));
   expect(container.textContent).toContain("Deploy field army");
+  expect(container.querySelector("[data-guard-dismissal]")).toBeNull();
 });
 
 describe("spectator gating", () => {

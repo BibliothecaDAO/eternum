@@ -35,6 +35,12 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-19",
+    title: "Dismiss Structure Guards",
+    description: "Dismiss an occupied guard from its deployment picker, with confirmation before its troops are lost.",
+    type: "feature",
+  },
+  {
+    date: "2026-09-19",
     title: "Eternum Hyperstructure Construction",
     description:
       "Start construction, contribute resources from your structures, and choose who can contribute from the hyperstructure's tile panel.",
