@@ -3,7 +3,6 @@ import type { BigNumberish } from "starknet";
 export interface NativeCommandPayloads {
   CreateExplorer: { readonly structure_id: BigNumberish; readonly category: BigNumberish; readonly tier: BigNumberish; readonly amount: BigNumberish; readonly direction: BigNumberish };
   Explore: { readonly explorer_id: BigNumberish; readonly direction: BigNumberish };
-  ClaimProduction: BigNumberish;
   Battle: { readonly attacker_id: BigNumberish; readonly defender_id: BigNumberish; readonly steal_resources: readonly ({ readonly resource_type: BigNumberish; readonly amount: BigNumberish })[] };
   Move: { readonly explorer_id: BigNumberish; readonly directions: readonly (BigNumberish)[] };
   ToggleAlternate: { readonly explorer_id: BigNumberish; readonly spire_direction: BigNumberish };
@@ -52,7 +51,6 @@ export interface NativeCommandPayloads {
   SetConstructionAccess: { readonly hyperstructure_id: BigNumberish; readonly access: { readonly kind: "Public"; readonly value: undefined } | { readonly kind: "Private"; readonly value: undefined } | { readonly kind: "GuildOnly"; readonly value: undefined } };
   OpenRelicChest: { readonly explorer_id: BigNumberish; readonly coord: { readonly alt: boolean; readonly x: BigNumberish; readonly y: BigNumberish } };
   ApplyRelic: { readonly entity_id: BigNumberish; readonly relic_id: BigNumberish; readonly recipient: { readonly kind: "Explorer"; readonly value: undefined } | { readonly kind: "StructureProduction"; readonly value: undefined } | { readonly kind: "StructureGuard"; readonly value: undefined } };
-  ExtractExplorationReward: BigNumberish;
   CloseSeason: undefined;
   PledgeFaith: { readonly structure_id: BigNumberish; readonly wonder_id: BigNumberish };
   RemoveFaith: BigNumberish;

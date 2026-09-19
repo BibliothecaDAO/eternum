@@ -1,6 +1,5 @@
 use eternum_randomness_protocol::entrypoint::IRecordedExecutionViewsDispatcher;
 use snforge_std::{start_cheat_block_timestamp_global, start_cheat_caller_address, stop_cheat_caller_address};
-use crate::commands::{IResourceCommandsDispatcher, IResourceCommandsDispatcherTrait};
 use crate::game::{GameStatus, IGameDispatcher, IGameDispatcherTrait, status_at};
 use crate::guards::{GuardKey, IGuardsDispatcher, IGuardsDispatcherTrait};
 use crate::lifecycle::{IDomainDispatcher, IDomainDispatcherTrait, PeersTrait};
@@ -522,17 +521,14 @@ fn automatic_blitz_settlement_is_authorized_atomic_and_resumes_its_fixed_order()
             .unwrap(),
     )
         .unwrap();
-    let actor = structures.structure(ResourceKey { game_id, entity_id }).unwrap().owner;
     let slot = ResourceSlot { game_id, entity_id, resource_type: 23 };
     let balance = resources.resource_balance(slot);
-    let claims = IResourceCommandsDispatcher { contract_address: d.peers.resources };
-    start_cheat_caller_address(d.peers.resources, d.peers.season);
-    claims
-        .claim_production(game_id, actor, entity_id, crate::commands::ExecutionContext { timestamp: 1001, ..context });
+    start_cheat_caller_address(d.peers.resources, d.peers.structures);
+    resources.spend_resource(ResourceKey { game_id, entity_id }, 23, 0, 1001);
     assert_eq!(resources.resource_balance(slot), balance, "early realm accrued before main play");
-    claims
-        .claim_production(game_id, actor, entity_id, crate::commands::ExecutionContext { timestamp: 1002, ..context });
-    assert_eq!(resources.resource_balance(slot), balance + 10, "production did not start with the game");
+    resources.spend_resource(ResourceKey { game_id, entity_id }, 23, 1, 1002);
+    assert_eq!(resources.resource_balance(slot), balance + 10 - 1, "production did not start with the game");
+    stop_cheat_caller_address(d.peers.resources);
     let progress = views.settlement_progress(game_id);
     assert!(commands.settle_blitz_roster(game_id, super::authority(), context) == 0);
     assert!(views.settlement_progress(game_id) == progress && games.game(game_id) == game);
@@ -547,18 +543,14 @@ fn recorded_roster_batches_block_early_play_and_report_ticket_progress() {
     let game_id = registry(d).create_game(CreateGameParams { roster: roster(2), ..params(true) }, preset);
     let d = super::bind_authority(d);
     let command = crate::commands::Command::SettleBlitzRoster;
-    assert!(
-        !super::resource_commands::execute_in_game(d, game_id, crate::commands::Command::ClaimProduction(1), 205, 205),
-    );
+    assert!(!super::resource_commands::execute_in_game(d, game_id, crate::commands::Command::CloseSeason, 205, 205));
     let season = ISeasonDispatcher { contract_address: d.peers.season };
     let receipts = IRecordedExecutionViewsDispatcher { contract_address: d.peers.season };
     assert_eq!(receipts.recorded_outcome(season.execution_head().order).unwrap().reason, 'ROSTER_NOT_READY');
     assert_eq!(season.next_nonce(game_id, d.actor), 1);
     super::season_lifecycle::execute_batch_in_game(d, game_id, command, 205, 1);
     assert!(!IGameDispatcher { contract_address: d.peers.season }.game(game_id).ready);
-    assert!(
-        !super::resource_commands::execute_in_game(d, game_id, crate::commands::Command::ClaimProduction(1), 206, 206),
-    );
+    assert!(!super::resource_commands::execute_in_game(d, game_id, crate::commands::Command::CloseSeason, 206, 206));
     assert_eq!(receipts.recorded_outcome(season.execution_head().order).unwrap().reason, 'ROSTER_NOT_READY');
     assert_eq!(season.next_nonce(game_id, d.actor), 3);
     super::season_lifecycle::execute_batch_in_game(d, game_id, command, 207, 0);

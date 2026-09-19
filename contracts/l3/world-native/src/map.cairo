@@ -434,10 +434,7 @@ pub mod MapDomain {
             context: crate::commands::ExecutionContext,
         ) {
             let peers = self.lifecycle.require_active();
-            assert!(
-                get_caller_address() == peers.season || get_caller_address() == peers.troops,
-                "only authenticated command domain",
-            );
+            assert!(get_caller_address() == peers.troops, "only movement domain");
             crate::commands::assert_context_time(context.timestamp);
             let games = IGameDispatcher { contract_address: peers.season };
             let game = games.game(game_id);

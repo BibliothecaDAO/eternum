@@ -370,7 +370,7 @@ fn signatures_are_bound_to_deployment_command_nonce_and_deadline() {
     let gateway = ISeasonSafeDispatcher { contract_address: first.peers.season };
     let results = IRecordedExecutionViewsDispatcher { contract_address: first.peers.season };
     let mut changed = action;
-    changed.command = Command::ClaimProduction(7);
+    changed.command = Command::CloseSeason;
     gateway.execute(changed, context(), r, s).unwrap();
     assert_eq!(results.recorded_outcome(1).unwrap().reason, 'INVALID_SIGNATURE');
     changed = action;

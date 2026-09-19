@@ -680,10 +680,6 @@ pub mod SeasonDomain {
                 value.serialize(ref calldata);
                 (peers.economy, selector!("set_construction_access"))
             },
-            Command::ExtractExplorationReward(value) => {
-                value.serialize(ref calldata);
-                (peers.map, selector!("extract_exploration_reward"))
-            },
             Command::OpenRelicChest(value) => {
                 value.serialize(ref calldata);
                 (peers.economy, selector!("open_relic_chest"))
@@ -760,10 +756,6 @@ pub mod SeasonDomain {
             Command::LevelUp(value) => {
                 value.serialize(ref calldata);
                 (peers.structures, selector!("level_up"))
-            },
-            Command::ClaimProduction(value) => {
-                value.serialize(ref calldata);
-                (peers.resources, selector!("claim_production"))
             },
             Command::BurnResourceForLaborProduction(value) => {
                 value.serialize(ref calldata);

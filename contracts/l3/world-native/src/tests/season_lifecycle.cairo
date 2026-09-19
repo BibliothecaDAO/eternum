@@ -91,8 +91,9 @@ fn season_close_requires_started_eternum_and_timed_games_stop_at_their_clock() {
     let (blitz, home, _) = setup_with_rules(rules);
     configure(blitz, 1);
     assert_terminal_rejection(blitz, Command::CloseSeason, 100);
-    assert!(execute(blitz, Command::ClaimProduction(home.entity_id), 199));
-    assert_terminal_rejection(blitz, Command::ClaimProduction(home.entity_id), 200);
+    let name = Command::SetEntityName(crate::names::SetEntityName { entity_id: home.entity_id, name: 'Last turn' });
+    assert!(execute(blitz, name, 199));
+    assert_terminal_rejection(blitz, name, 200);
 }
 
 #[test]
