@@ -307,9 +307,10 @@ export async function prepareHarnessBots({
     const structureIds = await waitForSettlement(game, harnessAccount.address, gameType);
     const structures = await waitForStructures(game, structureIds);
 
-    const troopTypes = await waitForStartingTroopTypes(game, structureIds);
+    const unprepared = structures.filter((structure) => game.explorersOf(structure.structureId).length === 0);
+    const troopTypes = await waitForStartingTroopTypes(game, unprepared.map((structure) => structure.structureId));
     const actions = game.actionsFor(harnessAccount.account);
-    for (const structure of structures) {
+    for (const structure of unprepared) {
       const createExplorer = await createBotExplorer({
         actions,
         harnessAccount,
@@ -1120,9 +1121,9 @@ async function waitForExplorers(game: HarnessGame, structures: StructureState[])
   return game.waitFor(
     () =>
       collectAll(structures, (structure) => {
-        const explorerId = game.explorerOf(structure.structureId);
-        return explorerId === undefined ? undefined : buildExplorerState(structure, explorerId);
-      }),
+        const ids = game.explorersOf(structure.structureId);
+        return ids.length === 0 ? undefined : ids.map((id) => buildExplorerState(structure, id));
+      })?.flat(),
     MODEL_UPDATE_TIMEOUT_MS,
     () => `Explorers of structures ${structures.map(({ structureId }) => structureId).join(", ")}`,
   );

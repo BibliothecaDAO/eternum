@@ -62,7 +62,7 @@ export interface HarnessGame {
   structureCoord(structureId: ID): Coord | undefined;
   /** The T1 troop type the structure holds enough of to field one harness explorer. */
   startingTroopType(structureId: ID): TroopType | undefined;
-  explorerOf(structureId: ID): ID | undefined;
+  explorersOf(structureId: ID): ID[];
   explorer(explorerId: ID): ExplorerRow | undefined;
   explorerStamina(explorerId: ID, armiesTick: number): number;
   explorerMaxStamina(explorerId: ID): number;
@@ -115,10 +115,7 @@ export function createHarnessGame(client: GameClient): HarnessGame {
       if (funded < 0) return undefined;
       return T1_TROOP_TYPES[funded];
     },
-    explorerOf: (structureId) => {
-      const explorers = client.views.explorers(structureId);
-      return explorers.length === 1 ? explorers[0]!.entityId : undefined;
-    },
+    explorersOf: (structureId) => client.views.explorers(structureId).map((explorer) => explorer.entityId),
     explorer: (explorerId) => {
       const row = store.get("ExplorerTroops", { game_id, explorer_id: explorerId });
       if (!row) return undefined;
