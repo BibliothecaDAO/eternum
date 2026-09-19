@@ -54,9 +54,10 @@ execution and compilation mode. The runner refuses existing project state and CP
 
 Supply `DEPLOYER_ACCOUNT_ADDRESS` and `DEPLOYER_PRIVATE_KEY` from the isolated devnet. The runner creates private
 credentials and volumes, deploys identity, binds a gameplay operator and deploys the native world under it, registers
-the Regular Blitz preset and starts Herald. The run directory holds its compose configuration, manifest, logs and
-private `harness.env`. It starts no live services. Failed runs retain their volumes for inspection; choose a fresh shard
-id for a new run.
+the Regular Blitz preset and starts Herald. Each shard exports upstream node metrics through its own pinned OTLP
+collector into its private run directory; `harness.env` points the existing block reporter at that output. The run
+directory holds its compose configuration, manifest, logs and private `harness.env`. It starts no live services. Failed
+runs retain their volumes for inspection; choose a fresh shard id for a new run.
 
 For ordered trials, use `scripts/shard.py --matrix MATRIX_JSON RUN_DIRECTORY`. The matrix contains `configurations` (an
 ordered list of shard configurations), `workload` (`games`, `accounts_per_game`, `minutes`, `interval_seconds`,
