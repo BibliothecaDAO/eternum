@@ -458,7 +458,9 @@ export async function waitForGameWorkers(workers: Worker[], reports: GameWorkerR
         new Promise<void>((resolve, reject) => {
           let reported: GameWorkerReport | undefined;
           worker.on("message", (message) => {
-            if (message.type === "ready" && !ready.has(worker)) {
+            if (message.type === "failure") {
+              reject(new Error(message.error));
+            } else if (message.type === "ready" && !ready.has(worker)) {
               ready.add(worker);
               if (ready.size === workers.length) {
                 const startAt = Date.now() + 1_000;
@@ -538,6 +540,7 @@ Usage: bun deploy/athanor/harness/run.ts [options]
 
 if (import.meta.main || (!isMainThread && workerData?.harness)) {
   await main().catch((error: unknown) => {
+    parentPort?.postMessage({ type: "failure", error: error instanceof Error ? error.message : String(error) });
     console.error(error instanceof Error ? error.stack || error.message : String(error));
     process.exit(1);
   });
