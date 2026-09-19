@@ -63,22 +63,28 @@ describe("Madara harness workload", () => {
     await expect(waiting).rejects.toThrow("without a matching result");
   });
 
-  it("uses the provisioned Blitz roster and submits only its three explorer creations", async () => {
+  it.each([false, true])("creates only missing explorers when preparing the roster (resumed=%s)", async (resumed) => {
     const { game, actions } = fakeWorld();
     const settle = spyOn(game, "settle");
-    const create = mock(async () => {});
+    const existing = new Map<number, number[]>(resumed ? [[1, [11, 21]]] : []);
+    const create = mock(async ({ structureId }: { structureId: number }) => {
+      existing.set(structureId, [structureId + 10]);
+    });
     actions.createExplorerArmy = create;
     game.settlementStructureIds = () => [1, 2, 3];
     game.structureCoord = (id) => ({ x: id, y: 0 });
-    game.startingTroopType = () => 1;
-    game.explorerOf = (id) => id + 10;
+    game.startingTroopType = (id) => {
+      if (existing.has(id)) throw new Error("Existing explorers do not need a new troop balance");
+      return 1;
+    };
+    game.explorersOf = (id) => existing.get(id) ?? [];
     game.explorer = (id) => ({ coord: { x: id - 10, y: 0 }, staminaAmount: 120n, staminaUpdatedTick: 1n });
     game.armyPathIndexes = () =>
       ({
         structureHexes: new Map(),
         armyHexes: new Map(),
         chestHexes: new Map(),
-        exploredHexes: new Map([1, 2, 3].map((x) => [x, new Map([[0, {}]])])),
+        exploredHexes: new Map([1, 2, 3, 11].map((x) => [x, new Map([[0, {}]])])),
       }) as ReturnType<HarnessGame["armyPathIndexes"]>;
     const setupTransactions: TrackedTransaction[] = [];
     const bots = await prepareHarnessBots({
@@ -89,13 +95,11 @@ describe("Madara harness workload", () => {
       setupTransactions,
     });
     expect(settle).not.toHaveBeenCalled();
-    expect(create).toHaveBeenCalledTimes(3);
-    expect(setupTransactions.map(({ kind, outcome }) => [kind, outcome])).toEqual([
-      ["create-explorer", "completed"],
-      ["create-explorer", "completed"],
-      ["create-explorer", "completed"],
-    ]);
-    expect(bots[0].explorers.map(({ explorerId }) => explorerId)).toEqual([11, 12, 13]);
+    expect(create).toHaveBeenCalledTimes(resumed ? 2 : 3);
+    expect(setupTransactions.map(({ kind, outcome }) => [kind, outcome])).toEqual(
+      Array.from({ length: resumed ? 2 : 3 }, () => ["create-explorer", "completed"]),
+    );
+    expect(bots[0].explorers.map(({ explorerId }) => explorerId)).toEqual(resumed ? [11, 21, 12, 13] : [11, 12, 13]);
   });
 
   it("selects Eternum and rejects deferred ledger options", () => {
@@ -603,7 +607,7 @@ function fakeWorld(extraExplorer?: [number, ExplorerRow]): FakeWorld {
     waitUntilPlaying: async () => {},
     structureCoord: () => undefined,
     startingTroopType: () => undefined,
-    explorerOf: () => undefined,
+    explorersOf: () => [],
     explorer: (explorerId) => explorers.get(explorerId),
     explorerStamina: (explorerId) => Number(explorers.get(explorerId)!.staminaAmount),
     explorerMaxStamina: () => 120,
