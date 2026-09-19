@@ -3,7 +3,7 @@ import { buildNativePreset } from "../config/native-preset";
 import { setTimeout as sleep } from "node:timers/promises";
 import { Account, RpcProvider, shortString } from "starknet";
 import { assertProviderChain } from "@realms-world/chain";
-import { applyDeploymentConfigOverrides, loadEnvironmentConfiguration } from "../config/config-loader";
+import { applyDeploymentConfigOverrides } from "../config/config-loader";
 import {
   DEFAULT_APPCHAIN_GAME_INDEX_POLL_MS,
   DEFAULT_APPCHAIN_GAME_INDEX_TIMEOUT_MS,
@@ -101,7 +101,7 @@ function createRuntime(request: LaunchGameRequest): LaunchRuntime {
 }
 
 function resolveLaunchConfig(runtime: LaunchRuntime, request: LaunchGameRequest): LaunchConfig {
-  return applyDeploymentConfigOverrides(loadEnvironmentConfiguration(runtime.environment.id), {
+  return applyDeploymentConfigOverrides(loadNativePresetConfiguration(runtime.environment.id, runtime.presetId), {
     startMainAt: runtime.startTime,
     factoryAddress: "",
     devModeOn: request.devModeOn,

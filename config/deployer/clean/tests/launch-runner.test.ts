@@ -60,9 +60,10 @@ mock.module("../registrar/game-registry", () => ({
   waitForGameRegistryById: waitForGameRegistryByIdMock,
 }));
 
+const { loadNativePresetConfiguration } = await import("../registrar/native-preset");
 mock.module("../registrar/native-preset", () => ({
   buildNativeGameParams: buildCreateGameParamsMock,
-  loadNativePresetConfiguration: () => buildLaunchConfig(),
+  loadNativePresetConfiguration,
 }));
 mock.module("../config/native-preset", () => ({ buildNativePreset: (config: unknown) => config }));
 
@@ -103,6 +104,25 @@ beforeEach(() => {
 });
 
 describe("registrar game launch", () => {
+  test.each([
+    ["2", 3_600],
+    ["3", 5_400],
+  ])("preset %s supplies its own duration instead of the environment default", async (version, durationSeconds) => {
+    const summary = await launchGame({ ...buildRequest(), version });
+
+    expect(summary.durationSeconds).toBe(durationSeconds);
+    expect(buildCreateGameParamsMock).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ presetId: Number(version), durationSeconds }),
+      expect.anything(),
+    );
+  });
+
+  test("rejects an unknown preset before creating a game", async () => {
+    await expect(launchGame({ ...buildRequest(), version: "99" })).rejects.toThrow("No native preset definition");
+    expect(createRegistrarGameMock).not.toHaveBeenCalled();
+  });
+
   test("refuses a mainnet RPC before an L3 command can submit", async () => {
     await expect(
       launchGame({
@@ -299,7 +319,7 @@ function buildRequest() {
 
 function buildLaunchConfig() {
   return {
-    season: { durationSeconds: 3_600 },
+    season: { durationSeconds: 7_200 },
     blitz: { mode: { on: true } },
     dev: { mode: { on: false } },
     settlement: { single_realm_mode: false, two_player_mode: false },
