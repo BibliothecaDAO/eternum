@@ -44,6 +44,7 @@ const quickBlitz = {
   name: "quickblitz",
   preset_id: 1,
   status: "Live",
+  ready: true,
   dev_mode_on: true,
   mode: "blitz",
   clock: {

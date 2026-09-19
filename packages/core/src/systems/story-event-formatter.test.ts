@@ -1,7 +1,7 @@
-import { createWorld, defineComponent, setComponent, Type, type Component, type Entity } from "@dojoengine/recs";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
-import type { ClientComponents } from "@bibliothecadao/types";
+import { hash } from "starknet";
+import { NativeFactStore } from "../client/native-fact-store";
+import explorerFixture from "../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 // The package index first, so the config singleton the utils read through it is evaluated before any story runs.
 import { configManager } from "..";
 import { buildStoryEventPresentation } from "./story-event-formatter";
@@ -11,45 +11,55 @@ vi.stubGlobal("localStorage", { getItem: () => null });
 beforeEach(() => {
   // The formatter reads the map centre and the blitz flag off the config singleton, which no test initialises.
   vi.spyOn(configManager, "getMapCenter").mockReturnValue(2147483647);
-  vi.spyOn(configManager, "getBlitzConfig").mockReturnValue(undefined as never);
+  vi.spyOn(configManager, "getBlitzConfig").mockReturnValue({
+    blitz_mode_on: false,
+    blitz_settlement_config: { single_realm_mode: true, two_player_mode: false },
+    blitz_exploration_config: { reward_profile_id: 1 },
+  });
+  vi.spyOn(configManager, "getActiveGameId").mockReturnValue(1);
 });
 
 type Event = Parameters<typeof buildStoryEventPresentation>[0];
 
-/** A fake component set: only the rows a story reads, keyed the way the game keys them. */
-const buildComponents = () => {
-  const world = createWorld();
-  const Structure = defineComponent(world, {
-    entity_id: Type.Number,
-    owner: Type.BigInt,
-    base: { category: Type.Number, level: Type.Number, coord_x: Type.Number, coord_y: Type.Number },
-    metadata: { realm_id: Type.Number, has_wonder: Type.Boolean, village_realm: Type.Number },
-  });
-  const ExplorerTroops = defineComponent(world, {
-    explorer_id: Type.Number,
-    owner: Type.Number,
-    troops: { category: Type.String, tier: Type.String },
-  });
-  const AddressName = defineComponent(world, { name: Type.BigInt });
-  const key = (id: number): Entity => getEntityIdFromKeys([BigInt(id)]);
+const buildStore = () => {
+  const store = new NativeFactStore();
+  const write = (model: string, id: number, value: Record<string, unknown>) =>
+    store.applyEntityOperations([
+      {
+        type: "upsert",
+        entities: [{ hashed_keys: hash.computePoseidonHashOnElements([1, id]), models: { [model]: value } }],
+      },
+    ]);
   const setStructure = (id: number, realmId: number, level: number) =>
-    setComponent(Structure as Component, key(id), {
+    write("Structure", id, {
+      game_id: 1,
       entity_id: id,
       owner: 0x123n,
-      base: { category: 1, level, coord_x: 2147483650, coord_y: 2147483660 },
-      metadata: { realm_id: realmId, has_wonder: false, village_realm: 0 },
+      base: {
+        category: 1,
+        level,
+        coord_x: 2147483650,
+        coord_y: 2147483660,
+        alt: false,
+        created_at: 0,
+        troop_explorer_count: 0,
+        troop_max_guard_count: 4,
+        troop_max_explorer_count: 4,
+        starting_troops_granted: true,
+      },
+      metadata: { realm_id: realmId, order: 0, has_wonder: false, village_realm: 0, mine_kind: 0 },
+      troop_explorers: [],
+      resources_packed: 0n,
     });
   const setExplorer = (id: number, owner: number, tier: string) =>
-    setComponent(ExplorerTroops as Component, key(id), {
+    write("ExplorerTroops", id, {
+      ...explorerFixture.expected.value,
+      game_id: 1,
       explorer_id: id,
       owner,
-      troops: { category: "Knight", tier },
+      troops: { ...explorerFixture.expected.value.troops, tier },
     });
-  return {
-    components: { Structure, ExplorerTroops, AddressName } as unknown as ClientComponents,
-    setStructure,
-    setExplorer,
-  };
+  return { store, setStructure, setExplorer };
 };
 
 const story = (storyType: string, storyPayload: Record<string, unknown>, entityId: number | null = null): Event =>
@@ -76,12 +86,12 @@ it("uses the winning owner structure from Herald even when survivors format with
 });
 
 it("names an explorer by its home realm and tier, and its origin by the structure", () => {
-  const { components, setStructure, setExplorer } = buildComponents();
+  const { store, setStructure, setExplorer } = buildStore();
   setStructure(164316, 1, 2);
   setExplorer(164347, 164316, "T2");
   const presentation = buildStoryEventPresentation(
     story("ExplorerMoveStory", { explorer_id: 164347, explorer_structure_id: 164316, explore: true }, 164316),
-    components,
+    store,
   );
   const realmName = presentation.title.replace(" T2 army moved", "");
   expect(realmName).not.toMatch(/^\s*$|Explorer|\d{5}/);
@@ -91,20 +101,20 @@ it("names an explorer by its home realm and tier, and its origin by the structur
 });
 
 it("falls back to the home structure from the payload when the explorer row is gone, never an id", () => {
-  const { components, setStructure } = buildComponents();
+  const { store, setStructure } = buildStore();
   setStructure(164316, 1, 1);
-  const retired = buildStoryEventPresentation(story("ExplorerDeleteStory", { explorer_id: 164347 }), components);
+  const retired = buildStoryEventPresentation(story("ExplorerDeleteStory", { explorer_id: 164347 }), store);
   expect(retired.description).toBe("Army disbanded.");
   const moved = buildStoryEventPresentation(
     story("ExplorerMoveStory", { explorer_id: 164347, explorer_structure_id: 164316 }),
-    components,
+    store,
   );
   expect(moved.title).toMatch(/^\S.* army moved$/);
   expect(moved.title).not.toMatch(/\d{5}/);
 });
 
 it("describes battle sides and transfer routes through the same resolvers", () => {
-  const { components, setStructure, setExplorer } = buildComponents();
+  const { store, setStructure, setExplorer } = buildStore();
   setStructure(10, 3, 1);
   setStructure(11, 4, 1);
   setExplorer(20, 10, "T1");
@@ -120,23 +130,23 @@ it("describes battle sides and transfer routes through the same resolvers", () =
       defender_troops_before: 100,
       defender_troops_lost: 100,
     }),
-    components,
+    store,
   );
   expect(battle.description).toMatch(/Attacker \[[^\]]+\]:  \S.* T1 army/);
   expect(battle.description).not.toMatch(/Army \d|Entity #/);
   const transfer = buildStoryEventPresentation(
     story("ResourceTransferStory", { from_entity_id: 10, to_entity_id: 20, resources: [] }),
-    components,
+    store,
   );
   expect(transfer.description).toMatch(/^Route: \S.* → \S.* T1 army/);
 });
 
 it("keeps an unknown story to its owner and subject without ids or hashes", () => {
-  const { components, setStructure } = buildComponents();
+  const { store, setStructure } = buildStore();
   setStructure(7, 5, 1);
   const presentation = buildStoryEventPresentation(
     { ...story("MysteryStory", {}, 7), txHash: "0xdeadbeef" } as Event,
-    components,
+    store,
   );
   expect(presentation.title).toBe("MysteryStory event");
   expect(presentation.description).not.toMatch(/Entity #|Tx:|0xdeadbeef/);
@@ -187,4 +197,69 @@ it("shows the confirmed d20 bonuses and tolerates older stories without rolls", 
   expect(description).toContain("Attacker d20: 1 (+1% damage)");
   expect(description).toContain("Defender d20: 20 (+20% damage)");
   expect(buildStoryEventPresentation(story("BattleStory", {})).description).toBeUndefined();
+});
+
+it("formats native battle sides and positive Ethereal rolls without a legacy row projection", () => {
+  const presentation = buildStoryEventPresentation(
+    story("BattleEvent", {
+      attacker_id: 20,
+      defender_id: 21,
+      attacker_owner: 10,
+      defender_owner: 11,
+      winner_id: 10,
+      attacker: {
+        player: "0x123",
+        category: "Crossbowman",
+        tier: "T2",
+        before: "10000000000",
+        after: "9000000000",
+        roll: 20,
+      },
+      defender: { player: "0x456", category: "Knight", tier: "T1", before: "10000000000", after: "0", roll: 1 },
+    }),
+  );
+  expect(presentation.title).toBe("Battle resolved");
+  expect(presentation.description).toContain("Winner: Attacker");
+  expect(presentation.description).toContain("Attacker d20: 20 (+20% damage)");
+  expect(presentation.description).toContain("Defender d20: 1 (+1% damage)");
+});
+
+it("renders native troop transfer participants after the source explorer has disappeared", () => {
+  const { store, setStructure } = buildStore();
+  setStructure(12, 1, 0);
+  const result = buildStoryEventPresentation(
+    story(
+      "TroopsTransferred",
+      {
+        source: { Explorer: "0x9" },
+        target: { Guard: { structure_id: "0xc", slot: "0x0" } },
+        amount: "0x77359400",
+      },
+      9,
+    ),
+    store,
+  );
+  expect(result.title).toBe("Troops reassigned");
+  expect(result.description).toContain("Route: Army");
+  expect(result.description).toContain("Delta");
+  expect(result.description).toContain("Transferred: 2");
+});
+
+it.each([
+  [0, "Delta", "Delta"],
+  [1, "Gamma", "Gamma"],
+  [2, "Beta", "Beta"],
+  [3, "Alpha", "Alpha"],
+])("renders slot %i consistently for numeric and named stories", (slot, name, label) => {
+  for (const value of [slot, name]) {
+    const result = buildStoryEventPresentation(
+      story("TroopsTransferred", {
+        source: { Explorer: "0x9" },
+        target: { Guard: { structure_id: "0xc", slot: value } },
+        amount: "0x77359400",
+      }),
+    );
+    expect(result.description).toContain(label);
+    expect(result.description).not.toContain("undefined");
+  }
 });

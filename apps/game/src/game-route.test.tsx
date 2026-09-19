@@ -8,14 +8,19 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const usePlayRouteBootControllerMock = vi.fn();
 const worldMountedMock = vi.hoisted(() => vi.fn());
 
+vi.mock("@/audio", () => ({
+  MusicRouterProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
+vi.mock("@/config/game-modes", () => ({ getGameModeId: () => "blitz" }));
+
 vi.mock("./game-entry/play-route-boot", () => ({
   usePlayRouteBootController: (...args: unknown[]) => usePlayRouteBootControllerMock(...args),
 }));
 
 vi.mock("./game-entry/play-scene-handoff", () => ({ PlaySceneHandoff: () => null }));
 
-vi.mock("./hooks/context/dojo-context", () => ({
-  DojoProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+vi.mock("./hooks/context/game-context", () => ({
+  GameProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
 vi.mock("./hooks/use-transaction-listener", () => ({
@@ -226,7 +231,7 @@ describe("GameRoute", () => {
     expect(container.textContent).not.toContain("Sign in to Continue");
   });
 
-  it("keys the ready app by the active boot token so route rebootstrap remounts DojoProvider", () => {
+  it("keys the ready app by the active boot token so route rebootstrap remounts GameProvider", () => {
     const source = readFileSync(resolve(process.cwd(), "src/game-route.tsx"), "utf8");
 
     expect(source).toContain("bootToken");
@@ -248,7 +253,7 @@ describe("GameRoute", () => {
       account: { address: "0x123" } as { address: string } | null,
       retry: vi.fn(),
       isReconnectRequired: false,
-      currentTask: "dojo",
+      currentTask: "game",
       tasks: [],
       bootToken: 0,
       reconnectError: null,

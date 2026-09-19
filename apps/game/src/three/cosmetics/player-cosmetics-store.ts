@@ -1,9 +1,6 @@
-import type { ClientComponents, ContractAddress } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
-import { buildSelectionFromCosmeticIds, resolveEligibleCosmeticIds } from "./ownership";
+import type { ContractAddress } from "@bibliothecadao/types";
+import { buildSelectionFromCosmeticIds } from "./ownership";
 import { BlitzGameLoadoutDraft, PlayerCosmeticsSnapshot, PlayerCosmeticSelection } from "./types";
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 
 const DEFAULT_VERSION = 1;
 
@@ -19,15 +16,6 @@ const toBigInt = (value: ContractAddress | string | bigint): bigint => {
 };
 
 const toHexString = (value: bigint): string => `0x${value.toString(16)}`;
-
-const normalizeOwnedAttrs = (attrs: Iterable<bigint> | undefined): string[] => {
-  if (!attrs) return [];
-  const tokens: string[] = [];
-  for (const value of attrs) {
-    tokens.push(toHexString(value));
-  }
-  return tokens;
-};
 
 const createEmptySelection = (): PlayerCosmeticSelection => ({
   armies: {},
@@ -50,7 +38,7 @@ const createEmptySnapshot = (owner: string): PlayerCosmeticsSnapshot => ({
 });
 
 /**
- * Simple in-memory store seeded from the recs component. Phase 2 will connect real data.
+ * Local loadout selections and inventory for the cosmetics picker.
  */
 class PlayerCosmeticsStore {
   private snapshots = new Map<string, PlayerCosmeticsSnapshot>();
@@ -171,44 +159,6 @@ class PlayerCosmeticsStore {
       },
       selection: buildSelectionFromCosmeticIds(selectedCosmeticIds),
     });
-  }
-
-  hydrateFromBlitzComponent(
-    components: ClientComponents,
-    owner: ContractAddress | string | bigint,
-  ): PlayerCosmeticsSnapshot | undefined {
-    const ownerBigInt = toBigInt(owner);
-    const ownerKey = toHexString(ownerBigInt);
-    const entityId = gameEntityKey([ownerBigInt]);
-
-    const value = getComponentValue(components.BlitzCosmeticAttrsRegister, entityId);
-    if (!value) {
-      return undefined;
-    }
-
-    const ownedAttrs = normalizeOwnedAttrs(value.attrs as Iterable<bigint> | undefined);
-    const eligibleCosmeticIds = resolveEligibleCosmeticIds(ownedAttrs);
-    const previous = this.snapshots.get(ownerKey) ?? createEmptySnapshot(ownerKey);
-
-    const snapshot: PlayerCosmeticsSnapshot = {
-      ...previous,
-      ownership: {
-        owner: ownerKey,
-        version: DEFAULT_VERSION,
-        ownedAttrs,
-        eligibleCosmeticIds,
-      },
-      selection:
-        Object.keys(previous.selection.armies ?? {}).length > 0 ||
-        Object.keys(previous.selection.structures ?? {}).length > 0 ||
-        (previous.selection.globalAttachments?.length ?? 0) > 0
-          ? previous.selection
-          : buildSelectionFromCosmeticIds(eligibleCosmeticIds),
-    };
-
-    this.snapshots.set(ownerKey, snapshot);
-    this.emitChange(ownerKey);
-    return snapshot;
   }
 
   clear() {

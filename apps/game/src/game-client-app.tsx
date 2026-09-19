@@ -62,37 +62,42 @@ export const GameClientApp = () => {
 
 const GameClientRoutes = ({ backgroundImage }: { backgroundImage: string }) => (
   <StarknetProvider>
-    <MusicRouterProvider>
-      <Routes>
-        <Route path="/" element={renderLoadingRoute(<LandingLayout />)}>
-          <Route index element={renderLoadingRoute(<LandingHomeRoute />)} />
-          <Route path="enter/:chain/:world" element={renderLoadingRoute(<LandingEntryRoute />)} />
-          <Route path="learn" element={renderLoadingRoute(<LandingLearnRoute />)} />
-          <Route path="news" element={renderLoadingRoute(<LandingNewsRoute />)} />
-          <Route path="factory" element={renderLoadingRoute(<LandingFactoryRoute />)} />
-          <Route path="profile" element={<Navigate to="/" replace />} />
-          {/* Markets/Agora/Leaderboard are retired until their data planes
+    <Routes>
+      <Route
+        path="/"
+        element={renderLoadingRoute(
+          <MusicRouterProvider>
+            <LandingLayout />
+          </MusicRouterProvider>,
+        )}
+      >
+        <Route index element={renderLoadingRoute(<LandingHomeRoute />)} />
+        <Route path="enter/:chain/:world" element={renderLoadingRoute(<LandingEntryRoute />)} />
+        <Route path="learn" element={renderLoadingRoute(<LandingLearnRoute />)} />
+        <Route path="news" element={renderLoadingRoute(<LandingNewsRoute />)} />
+        <Route path="factory" element={renderLoadingRoute(<LandingFactoryRoute />)} />
+        <Route path="profile" element={<Navigate to="/" replace />} />
+        {/* Markets/Agora/Leaderboard are retired until their data planes
               exist on this deployment (W6). Direct links go home. */}
-          <Route path="markets" element={<Navigate to="/" replace />} />
-          <Route path="amm" element={<Navigate to="/" replace />} />
-          <Route path="leaderboard" element={<Navigate to="/" replace />} />
-        </Route>
+        <Route path="markets" element={<Navigate to="/" replace />} />
+        <Route path="amm" element={<Navigate to="/" replace />} />
+        <Route path="leaderboard" element={<Navigate to="/" replace />} />
+      </Route>
 
-        <Route path="/play/:chain/:world/:scene" element={<GameRouteShell backgroundImage={backgroundImage} />} />
-        <Route path="/play/*" element={<GameRouteShell backgroundImage={backgroundImage} />} />
+      <Route path="/play/:chain/:world/:scene" element={<GameRouteShell backgroundImage={backgroundImage} />} />
+      <Route path="/play/*" element={<GameRouteShell backgroundImage={backgroundImage} />} />
 
-        <Route
-          path="/factory/v2"
-          element={
-            <Suspense fallback={<LoadingScreen />}>
-              <FactoryV2Page />
-            </Suspense>
-          }
-        />
+      <Route
+        path="/factory/v2"
+        element={
+          <Suspense fallback={<LoadingScreen />}>
+            <FactoryV2Page />
+          </Suspense>
+        }
+      />
 
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </MusicRouterProvider>
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   </StarknetProvider>
 );
 

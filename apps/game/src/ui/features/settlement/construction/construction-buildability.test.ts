@@ -1,8 +1,10 @@
 // @vitest-environment node
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { hash } from "starknet";
 import { BuildingType, ResourcesIds, StructureType } from "@bibliothecadao/types";
-import { resolveConstructionBuildability } from "./construction-buildability";
+import { resolveConstructionBuildability } from "@bibliothecadao/eternum/automation";
 
 const {
   getBalance,
@@ -11,8 +13,6 @@ const {
   divideByPrecision,
   getBuildingCategoryConfig,
   getBasePopulationCapacity,
-  getComponentValue,
-  getEntityIdFromKeys,
 } = vi.hoisted(() => ({
   getBalance: vi.fn(),
   getBuildingCosts: vi.fn(),
@@ -20,8 +20,6 @@ const {
   divideByPrecision: vi.fn((value: bigint | number) => Number(value)),
   getBuildingCategoryConfig: vi.fn(),
   getBasePopulationCapacity: vi.fn(() => 0),
-  getComponentValue: vi.fn(),
-  getEntityIdFromKeys: vi.fn((keys: bigint[]) => keys.join(":")),
 }));
 
 vi.mock("@bibliothecadao/eternum", () => ({
@@ -30,19 +28,34 @@ vi.mock("@bibliothecadao/eternum", () => ({
   getBlockTimestamp,
   divideByPrecision,
   configManager: {
+    getActiveGameId: () => 1,
     getBuildingCategoryConfig,
     getBasePopulationCapacity,
   },
 }));
 
-vi.mock("@dojoengine/recs", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@dojoengine/recs")>()),
-  getComponentValue,
-}));
-
-vi.mock("@dojoengine/utils", () => ({
-  getEntityIdFromKeys,
-}));
+let store: NativeFactStore;
+const setPopulation = (current: number, max: number) =>
+  store.applyEntityOperations([
+    {
+      type: "upsert",
+      entities: [
+        {
+          hashed_keys: hash.computePoseidonHashOnElements([1, 101]),
+          models: {
+            StructureBuildings: {
+              game_id: 1,
+              entity_id: 101,
+              packed_counts_1: "0",
+              packed_counts_2: "0",
+              packed_counts_3: "0",
+              population: { current, max },
+            },
+          },
+        },
+      ],
+    },
+  ]);
 
 const allowAllMode = {
   rules: {
@@ -64,7 +77,7 @@ const buildabilityInput = (overrides: Partial<Parameters<typeof resolveConstruct
   entityId: 101,
   buildingType: BuildingType.ResourceWood,
   useSimpleCost: true,
-  components: {},
+  store,
   realm: buildableRealm,
   mode: allowAllMode,
   ...overrides,
@@ -77,7 +90,8 @@ describe("resolveConstructionBuildability", () => {
     getBalance.mockReturnValue({ balance: 20n });
     getBuildingCategoryConfig.mockReturnValue({ population_cost: 1, capacity_grant: 0 });
     getBasePopulationCapacity.mockReturnValue(0);
-    getComponentValue.mockReturnValue(undefined);
+    store = new NativeFactStore();
+    setPopulation(1, 10);
     allowAllMode.rules.isBuildingTypeAllowed.mockReturnValue(true);
   });
 
@@ -150,6 +164,7 @@ describe("resolveConstructionBuildability", () => {
   });
 
   it("rejects insufficient capacity and population", () => {
+    setPopulation(10, 10);
     const noCapacityResult = resolveConstructionBuildability(
       buildabilityInput({
         realm: { ...buildableRealm, hasCapacity: false },
@@ -157,6 +172,7 @@ describe("resolveConstructionBuildability", () => {
     );
 
     getBuildingCategoryConfig.mockReturnValueOnce({ population_cost: 2, capacity_grant: 0 });
+    setPopulation(9, 10);
     const noPopulationResult = resolveConstructionBuildability(
       buildabilityInput({
         realm: { ...buildableRealm, population: 9, capacity: 10, hasCapacity: true },
@@ -167,19 +183,11 @@ describe("resolveConstructionBuildability", () => {
     expect(noPopulationResult).toMatchObject({ canSubmit: false, code: "insufficient_population" });
   });
 
-  it("uses authoritative RECS population instead of stale realm input", () => {
-    getComponentValue.mockReturnValueOnce({
-      population: {
-        current: 10,
-        max: 10,
-      },
-    });
+  it("uses native population instead of stale realm input", () => {
+    setPopulation(10, 10);
 
     const result = resolveConstructionBuildability(
       buildabilityInput({
-        components: {
-          StructureBuildings: {},
-        },
         realm: { ...buildableRealm, population: 1, capacity: 10, hasCapacity: true },
       }),
     );
@@ -188,7 +196,6 @@ describe("resolveConstructionBuildability", () => {
       canSubmit: false,
       code: "insufficient_capacity",
     });
-    expect(getEntityIdFromKeys).toHaveBeenCalledWith([101n]);
   });
 
   it("rejects resource producers not supported by the structure resource set", () => {

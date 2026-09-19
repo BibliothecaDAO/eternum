@@ -8,5 +8,5 @@ export * from "./use-resource-arrivals";
 export * from "./use-resources";
 export * from "./use-stamina";
 export * from "./use-structures";
-export * from "./use-component-system";
 export * from "./use-trade";
+export * from "./use-native-facts";

@@ -3,6 +3,7 @@ name: herald
 on:
   pull_request:
     paths:
+      - "contracts/l3/world-native/schema/**"
       - "apps/herald/**"
       - "packages/**"
       - "pnpm-lock.yaml"

@@ -19,6 +19,7 @@ const buildBlitzWorld = () =>
       world: { address: "0xw0r1d" },
       contracts: [{ selector: "0xABC", address: "0x1" }],
     },
+    admissionUrl: "https://tickets.realms.test",
     heraldBaseUrl: "https://herald.realms.test/",
     rpcUrl: "https://rpc.realms.test/rpc/v0_9_0",
     browserFacing: false,
@@ -30,7 +31,6 @@ const buildBlitzWorld = () =>
 describe("buildWorldDeployment", () => {
   it("indexes manifest contracts by normalized selector and derives the namespace", () => {
     const world = buildBlitzWorld();
-    expect(world.namespace).toBe("s2");
     expect(world.worldAddress).toBe("0xw0r1d");
     expect(world.contractsBySelector).toEqual({ [`0x${"abc".padStart(64, "0")}`]: "0x1" });
     expect(world.heraldBaseUrl).toBe("https://herald.realms.test");
@@ -43,6 +43,7 @@ describe("buildWorldDeployment", () => {
         id: "blitz",
         chain: "madara",
         manifest: { world: { address: "0x0" }, contracts: [] },
+        admissionUrl: "https://tickets.realms.test",
         heraldBaseUrl: "https://herald.realms.test",
         rpcUrl: "",
         browserFacing: false,

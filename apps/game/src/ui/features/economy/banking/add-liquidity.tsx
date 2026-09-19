@@ -1,3 +1,4 @@
+import { configManager } from "@bibliothecadao/eternum";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
 import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
@@ -16,17 +17,23 @@ import {
   MarketManager,
   multiplyByPrecision,
 } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
+import { useGame, useNativeRevision } from "@bibliothecadao/react";
 import { ContractAddress, ID, resources, ResourcesIds, StructureType } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 
 const AddLiquidity = ({ entityId, listResourceId }: { entityId: ID; listResourceId: number }) => {
   const {
     account: { account },
-    setup: { components, systemCalls },
-  } = useDojo();
+    setup: { store, systemCalls },
+  } = useGame();
+  const revision = useNativeRevision([
+    "ResourceBalance",
+    "ResourceProduction",
+    "ResourceWeight",
+    "Market",
+    "Liquidity",
+    "Structure",
+  ]);
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
 
   const playerStructures = useUIStore((state) => state.playerStructures);
@@ -40,8 +47,8 @@ const AddLiquidity = ({ entityId, listResourceId }: { entityId: ID; listResource
   const [openConfirmation, setOpenConfirmation] = useState(false);
 
   const marketManager = useMemo(
-    () => new MarketManager(components, ContractAddress(account.address), resourceId),
-    [components, resourceId, account.address],
+    () => new MarketManager(store, ContractAddress(account.address), resourceId),
+    [store, resourceId, account.address, revision],
   );
 
   useEffect(() => {
@@ -64,8 +71,8 @@ const AddLiquidity = ({ entityId, listResourceId }: { entityId: ID; listResource
     }
   }, [resourceAmount]);
 
-  const lordsBalance = getBalance(entityId, Number(ResourcesIds.Lords), currentDefaultTick, components).balance;
-  const resourceBalance = getBalance(entityId, Number(resourceId), currentDefaultTick, components).balance;
+  const lordsBalance = getBalance(entityId, Number(ResourcesIds.Lords), currentDefaultTick, store).balance;
+  const resourceBalance = getBalance(entityId, Number(resourceId), currentDefaultTick, store).balance;
   const hasEnough =
     lordsBalance >= multiplyByPrecision(lordsAmount) && resourceBalance >= multiplyByPrecision(resourceAmount);
 
@@ -73,7 +80,7 @@ const AddLiquidity = ({ entityId, listResourceId }: { entityId: ID; listResource
   const canAdd = hasEnough && isNotZero;
 
   const onAddLiquidity = () => {
-    const closestBank = getClosestBank(entityId, components);
+    const closestBank = getClosestBank(entityId, store);
 
     if (!closestBank) return;
 
@@ -99,8 +106,8 @@ const AddLiquidity = ({ entityId, listResourceId }: { entityId: ID; listResource
 
   const renderConfirmationPopup = useCallback(() => {
     const isVillageAndMilitaryResource =
-      getComponentValue(components.Structure, gameEntityKey([BigInt(entityId)]))?.category === StructureType.Village &&
-      isMilitaryResource(resourceId);
+      store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: entityId })?.base.category ===
+        StructureType.Village && isMilitaryResource(resourceId);
 
     const resourcesToConfirm = [
       { amount: resourceAmount, resourceId: Number(resourceId) },

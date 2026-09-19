@@ -1,7 +1,7 @@
 {
   "name": "@bibliothecadao/eternum",
   "version": "0.2.0",
-  "description": "Eternum SDK for Starknet & Dojo",
+  "description": "Eternum SDK for native Starknet worlds",
   "license": "MIT",
   "author": "Loaf",
   "type": "module",
@@ -29,6 +29,10 @@
     "./biome": {
       "types": "./dist/utils/biome/biome.d.ts",
       "import": "./dist/utils/biome/biome.js"
+    },
+    "./automation": {
+      "types": "./dist/automation/index.d.ts",
+      "import": "./dist/automation/index.js"
     }
   },
   "main": "./dist/index.js",
@@ -41,8 +45,6 @@
   },
   "dependencies": {
     "@latticexyz/utils": "^2.0.0-next.12",
-    "@dojoengine/core": "catalog:game",
-    "@bibliothecadao/dojo": "workspace:*",
     "@bibliothecadao/provider": "workspace:*",
     "@bibliothecadao/types": "workspace:*",
     "@realms-world/chain": "workspace:*",

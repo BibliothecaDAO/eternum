@@ -2,7 +2,6 @@ import {
   type Building,
   type BuildingType,
   BuildingTypeToString,
-  type ClientComponents,
   type ContractAddress,
   getProducedResource,
   type ID,
@@ -11,28 +10,15 @@ import {
   StructureType,
   type SystemCalls,
 } from "@bibliothecadao/types";
-import {
-  type ComponentValue,
-  type Entity,
-  getComponentValue,
-  Has,
-  HasValue,
-  type QueryFragment,
-} from "@dojoengine/recs";
-
+import type { NativeRows } from "../../../../../contracts/l3/world-native/schema/client.gen";
+import type { NativeFactStore } from "../native-fact-store";
 import { configManager } from "../../managers/config-manager";
 import { TileManager } from "../../managers/tile-manager";
 import { getRealmInfo } from "../../utils/realm";
 import { getStructure } from "../../utils/structure";
-import { isDefined, readRows } from "./rows";
 
-export type StructureRow = ComponentValue<ClientComponents["Structure"]["schema"]>;
-export type HyperstructureRow = ComponentValue<ClientComponents["Hyperstructure"]["schema"]>;
-type BuildingRow = ComponentValue<ClientComponents["Building"]["schema"]>;
-
-// Structures
-
-/** TileManager's read half over a structure's local building slots; its write half is reached through actions. */
+export type StructureRow = NativeRows["Structure"];
+export type HyperstructureRow = NativeRows["Hyperstructure"];
 export type BuildingTiles = Pick<
   TileManager,
   | "getHexCoords"
@@ -45,100 +31,50 @@ export type BuildingTiles = Pick<
 >;
 
 export const readBuildingTiles = (
-  components: ClientComponents,
+  store: NativeFactStore,
   systemCalls: SystemCalls,
   structureEntityId: ID,
-): BuildingTiles => TileManager.forStructure(components, systemCalls, structureEntityId);
+): BuildingTiles => TileManager.forStructure(store, systemCalls, structureEntityId);
 
-export const structuresByOwnerQuery = (components: ClientComponents, owner: ContractAddress): QueryFragment[] => [
-  HasValue(components.Structure, { owner }),
-];
+export const readStructures = (store: NativeFactStore, owner: ContractAddress, viewer: ContractAddress): Structure[] =>
+  [...store.structuresOwnedBy(configManager.getActiveGameId(), owner)]
+    .map((row) => getStructure(row.entity_id, viewer, store)!)
+    .toSorted((a, b) => a.category - b.category || a.entityId - b.entityId);
 
-/** Grouped by category, then by entity id, the order the structure panels list them; isMine is relative to the viewer. */
-export const readStructures = (
-  components: ClientComponents,
-  entities: Entity[],
-  viewer: ContractAddress,
-): Structure[] =>
-  entities
-    .map((entity) => getStructure(entity, viewer, components))
-    .filter(isDefined)
-    .toSorted(byCategoryThenEntityId);
+export const readRealmInfos = (store: NativeFactStore, owner: ContractAddress, category: StructureType): RealmInfo[] =>
+  [...store.structuresOwnedBy(configManager.getActiveGameId(), owner)]
+    .filter((row) => row.base.category === category)
+    .map((row) => getRealmInfo(row.entity_id, store)!);
 
-const byCategoryThenEntityId = (left: Structure, right: Structure): number =>
-  left.structure.base.category - right.structure.base.category || Number(left.entityId) - Number(right.entityId);
+export const readStructureRows = (store: NativeFactStore, category: StructureType): StructureRow[] =>
+  [...store.inGame("Structure", configManager.getActiveGameId())].filter((row) => row.base.category === category);
 
-// Realms and villages
+export const readStructureIds = (store: NativeFactStore, owner: ContractAddress, category: StructureType): ID[] =>
+  [...store.structuresOwnedBy(configManager.getActiveGameId(), owner)]
+    .filter((row) => row.base.category === category)
+    .map((row) => row.entity_id);
 
-export const realmsByOwnerQuery = (components: ClientComponents, owner: ContractAddress): QueryFragment[] =>
-  ownedStructuresOfCategoryQuery(components, owner, StructureType.Realm);
-
-export const villagesByOwnerQuery = (components: ClientComponents, owner: ContractAddress): QueryFragment[] =>
-  ownedStructuresOfCategoryQuery(components, owner, StructureType.Village);
-
-const ownedStructuresOfCategoryQuery = (
-  components: ClientComponents,
-  owner: ContractAddress,
-  category: StructureType,
-): QueryFragment[] => [Has(components.Structure), HasValue(components.Structure, { owner, category })];
-
-export const readRealmInfos = (components: ClientComponents, entities: Entity[]): RealmInfo[] =>
-  entities.map((entity) => getRealmInfo(entity, components)).filter(isDefined);
-
-export const allRealmsQuery = (components: ClientComponents): QueryFragment[] => [
-  Has(components.Structure),
-  HasValue(components.Structure, { category: StructureType.Realm }),
-];
-
-export const readStructureRows = (components: ClientComponents, entities: Entity[]): StructureRow[] =>
-  readRows(components.Structure, entities);
-
-// Hyperstructures
-
-export const hyperstructuresByOwnerQuery = (components: ClientComponents, owner: ContractAddress): QueryFragment[] => [
-  HasValue(components.Structure, { owner, category: StructureType.Hyperstructure }),
-];
-
-export const readStructureIds = (components: ClientComponents, entities: Entity[]): ID[] =>
-  readStructureRows(components, entities).map((structure) => structure.entity_id);
-
-export const hyperstructureUpdatesQuery = (
-  components: ClientComponents,
-  hyperstructureEntityId: ID,
-): QueryFragment[] => [
-  Has(components.Hyperstructure),
-  HasValue(components.Hyperstructure, { hyperstructure_id: hyperstructureEntityId }),
-];
-
-export const readHyperstructureUpdates = (
-  components: ClientComponents,
-  entities: Entity[],
-): (HyperstructureRow | undefined)[] => entities.map((entity) => getComponentValue(components.Hyperstructure, entity));
-
-// Buildings
-
-/** The buildings on one structure's hex, keyed by the hex's outer coordinates. */
-export const buildingsAtQuery = (components: ClientComponents, outerCol: number, outerRow: number): QueryFragment[] => [
-  Has(components.Building),
-  HasValue(components.Building, { outer_col: outerCol, outer_row: outerRow }),
-];
-
-/** Producing buildings only, with their production recipe from the active game's config. */
-export const readBuildings = (components: ClientComponents, entities: Entity[]): Building[] =>
-  readRows(components.Building, entities).map(toProducingBuilding).filter(isDefined);
-
-const toProducingBuilding = (building: BuildingRow): Building | undefined => {
-  const category = building.category as BuildingType;
-  const producedResource = getProducedResource(category);
-  if (!producedResource) return undefined;
-  return {
-    name: BuildingTypeToString[category],
-    category,
-    paused: building.paused,
-    produced: configManager.complexSystemResourceOutput[producedResource],
-    consumed: configManager.complexSystemResourceInputs[producedResource],
-    bonusPercent: building.bonus_percent,
-    innerCol: building.inner_col,
-    innerRow: building.inner_row,
-  };
+export const readHyperstructureUpdates = (store: NativeFactStore, entityId: ID): HyperstructureRow[] => {
+  const row = store.get("Hyperstructure", { game_id: configManager.getActiveGameId(), entity_id: entityId });
+  return row ? [row] : [];
 };
+
+export const readBuildings = (store: NativeFactStore, outerCol: number, outerRow: number, alt = false): Building[] =>
+  [...store.inGame("Building", configManager.getActiveGameId())]
+    .filter((row) => row.alt === alt && row.outer_col === outerCol && row.outer_row === outerRow)
+    .flatMap((building) => {
+      const category = building.category as BuildingType;
+      const resource = getProducedResource(category);
+      if (!resource) return [];
+      return [
+        {
+          name: BuildingTypeToString[category],
+          category,
+          paused: building.paused,
+          produced: configManager.complexSystemResourceOutput[resource],
+          consumed: configManager.complexSystemResourceInputs[resource],
+          innerCol: building.inner_col,
+          innerRow: building.inner_row,
+        },
+      ];
+    });

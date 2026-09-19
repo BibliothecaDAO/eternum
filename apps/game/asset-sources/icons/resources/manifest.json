@@ -576,6 +576,16 @@
       "subject": "an open medieval research folio holding a small geometric arcane instrument",
       "accent": "aged parchment, dark walnut, antique brass and restrained violet ink",
       "distinction": "must not resemble the Essence vial"
+    },
+    {
+      "id": 58,
+      "enumKey": "SAT",
+      "slug": "sat",
+      "name": "SAT",
+      "family": "currency",
+      "subject": "a small copper-orange coin with a broad embossed Bitcoin symbol",
+      "accent": "warm copper orange with dark bronze edge shading",
+      "distinction": "Bitcoin prize currency; distinct from the black Lords coins"
     }
   ]
 }

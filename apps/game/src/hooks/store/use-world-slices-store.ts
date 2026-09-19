@@ -1,8 +1,8 @@
-import type { ClientComponents, GuildInfo, Player, ResourceArrivalInfo } from "@bibliothecadao/types";
-import type { ComponentValue } from "@dojoengine/recs";
+import type { GuildInfo, Player, ResourceArrivalInfo } from "@bibliothecadao/types";
+import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { create } from "zustand";
 
-type Row<Model extends keyof Omit<ClientComponents, "events">> = ComponentValue<ClientComponents[Model]["schema"]>;
+type Row<Model extends keyof NativeRows> = NativeRows[Model];
 
 export interface BuildingTile {
   innerCol: number;
@@ -10,15 +10,10 @@ export interface BuildingTile {
   outerEntityId: number;
 }
 
-export interface SeasonEndedRecord {
-  timestamp: number;
-  winnerAddress: bigint;
-}
-
 /**
- * Narrowed world slices, written only by the RECS → store bridge at most once per ingest slice. Components
+ * Narrowed world slices, written only by the native fact → view bridge at most once per ingest slice. Components
  * subscribe to a slice instead of to every row of a hot component. The revision counters are for consumers that
- * keep their own RECS reads (leaderboard, resource table, exploration dashboard): a change in the counter is the
+ * keep their own fact reads (leaderboard, resource table, exploration dashboard): a change in the counter is the
  * signal to recompute, and their memoization must depend on it and on nothing that changes per row.
  */
 export interface WorldSlicesStore {
@@ -33,7 +28,6 @@ export interface WorldSlicesStore {
   players: Player[];
   resourceArrivals: ResourceArrivalInfo[];
   resourcesRevision: number;
-  seasonEnded: SeasonEndedRecord | null;
   structures: Row<"Structure">[];
   wonderFaith: Row<"WonderFaith">[];
 }
@@ -50,7 +44,6 @@ export const useWorldSlicesStore = create<WorldSlicesStore>()(() => ({
   players: [],
   resourceArrivals: [],
   resourcesRevision: 0,
-  seasonEnded: null,
   structures: [],
   wonderFaith: [],
 }));

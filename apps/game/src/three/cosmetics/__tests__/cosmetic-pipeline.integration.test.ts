@@ -33,7 +33,6 @@ vi.mock("../asset-cache", () => ({
   ensureCosmeticAsset: () => undefined,
 }));
 
-import { buildBlitzSettleCalls } from "@bibliothecadao/eternum/game-client";
 import { buildDevPreviewWorldKey, createWorldPreviewEntryController } from "@/hooks/use-world-preview-entry";
 import { useDevPreviewEntryStore } from "@/hooks/store/use-dev-preview-entry-store";
 import { resolveCosmeticsLoadoutScopeKeyForChain } from "@/ui/features/cosmetics/lib/loadout-scope";
@@ -51,7 +50,7 @@ describe("cosmetic pipeline integration", () => {
     useDevPreviewEntryStore.getState().clearAllPreviewEntries();
   });
 
-  it("flows from pending loadout to settle calldata to applied army skin", () => {
+  it("applies the pending loadout to the army skin", () => {
     playerCosmeticsStore.setPendingBlitzLoadout("blitz:mainnet:alpha", "0x123", {
       tokenIds: ["0xabc"],
       selectedBySlot: {
@@ -62,24 +61,10 @@ describe("cosmetic pipeline integration", () => {
       },
     });
 
-    const calls = buildBlitzSettleCalls({
-      blitzSystemsAddress: "0x1",
-      signerAddress: "0x456",
-      usernameFelt: "0x2",
-      cosmeticTokenIds: ["0xabc"],
-      grantStartingTroops: true,
-    });
-
-    const settleCall = calls.find((call) => call.entrypoint === "settle");
-
-    expect(settleCall).toMatchObject({
-      entrypoint: "settle",
-      calldata: ["2", "1", "2748", "1"],
-    });
-
     playerCosmeticsStore.markAppliedBlitzLoadout("blitz:mainnet:alpha", "0x123");
 
     const result = resolveArmyCosmetic({
+      attributes: [0x107050201n, 0x4050301n],
       owner: "0x123",
       troopType: TroopType.Knight,
       tier: TroopTier.T3,
@@ -126,12 +111,14 @@ describe("cosmetic pipeline integration", () => {
     await controller.enterPreview();
 
     const army = resolveArmyCosmetic({
+      attributes: [0x107050201n, 0x4050301n],
       owner: "0x123",
       troopType: TroopType.Knight,
       tier: TroopTier.T3,
       defaultModelType: ModelType.Knight3,
     });
     const structure = resolveStructureCosmetic({
+      attributes: [0x3040101n, 0x2040401n],
       owner: "0x123",
       structureType: StructureType.Realm,
       stage: 2,
@@ -171,6 +158,7 @@ describe("cosmetic pipeline integration", () => {
 
     expect(
       resolveArmyCosmetic({
+        attributes: [0x107050201n, 0x4050301n],
         owner: "0x123",
         troopType: TroopType.Knight,
         tier: TroopTier.T3,
@@ -193,6 +181,7 @@ describe("cosmetic pipeline integration", () => {
     await controller.enterPreview();
 
     const reenteredArmy = resolveArmyCosmetic({
+      attributes: [],
       owner: "0x123",
       troopType: TroopType.Knight,
       tier: TroopTier.T3,
@@ -225,6 +214,7 @@ describe("cosmetic pipeline integration", () => {
     });
 
     const result = resolveStructureCosmetic({
+      attributes: [0x3040101n, 0x2040401n],
       owner: "0x999",
       structureType: StructureType.Realm,
       stage: 2,
@@ -238,12 +228,14 @@ describe("cosmetic pipeline integration", () => {
 
   it("keeps fallback semantics for owners without a custom loadout", () => {
     const army = resolveArmyCosmetic({
+      attributes: [0x107050201n, 0x4050301n],
       owner: "0x0",
       troopType: TroopType.Knight,
       tier: TroopTier.T1,
       defaultModelType: ModelType.Knight1,
     });
     const structure = resolveStructureCosmetic({
+      attributes: [0x3040101n, 0x2040401n],
       owner: "0x0",
       structureType: StructureType.Realm,
       defaultModelKey: "Realm",

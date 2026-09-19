@@ -58,3 +58,9 @@ export class NameInvalid extends Data.TaggedError("NameInvalid")<{
   readonly name: string;
   readonly reason: string;
 }> {}
+
+/** The playtest launch service refused or could not answer a request. */
+export class LaunchUnavailable extends Data.TaggedError("LaunchUnavailable")<{
+  readonly path: string;
+  readonly cause: unknown;
+}> {}

@@ -22,7 +22,7 @@ vi.mock("@bibliothecadao/eternum", () => ({
     constructor(public value: { x: number; y: number }) {}
   },
 }));
-vi.mock("@bibliothecadao/react", () => ({ useDojo: () => ({ setup: { components: {} } }) }));
+vi.mock("@bibliothecadao/react", () => ({ useGame: () => ({ setup: { components: {} } }) }));
 vi.mock("./use-feed-rows", () => ({ useFeedRows: () => mocks.feed }));
 vi.mock("./story-feed-row", () => ({ resolveStoryEventPosition: () => null }));
 vi.mock("./feed-row-line", async (importOriginal) => ({

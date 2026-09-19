@@ -202,27 +202,11 @@ export const getHexDistance = (
 ): number => {
   if (from.col === to.col && from.row === to.row) return 0;
 
-  const visited = new Set<string>([`${from.col},${from.row}`]);
-  let frontier = [{ col: from.col, row: from.row }];
-
-  for (let distance = 1; distance <= maxRadius; distance++) {
-    const nextFrontier: Array<{ col: number; row: number }> = [];
-
-    for (const hex of frontier) {
-      for (const neighbor of getNeighborHexes(hex.col, hex.row)) {
-        const key = `${neighbor.col},${neighbor.row}`;
-        if (visited.has(key)) continue;
-        if (neighbor.col === to.col && neighbor.row === to.row) return distance;
-
-        visited.add(key);
-        nextFrontier.push(neighbor);
-      }
-    }
-
-    frontier = nextFrontier;
-  }
-
-  return Infinity;
+  // Even rows are offset east. Axial coordinates give the exact cube distance.
+  const columnDelta = to.col - Math.ceil(to.row / 2) - (from.col - Math.ceil(from.row / 2));
+  const rowDelta = to.row - from.row;
+  const distance = Math.max(Math.abs(columnDelta), Math.abs(rowDelta), Math.abs(columnDelta + rowDelta));
+  return distance <= maxRadius ? distance : Infinity;
 };
 
 export const getNeighborOffsets = (row: number) => {

@@ -3,22 +3,22 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   createBuilding: vi.fn(),
-  getComponentValue: vi.fn(),
 }));
 
-vi.mock("@dojoengine/recs", () => ({ getComponentValue: mocks.getComponentValue }));
 vi.mock("..", () => ({
   DEFAULT_COORD_ALT: false,
   FELT_CENTER: () => 0,
   getTileAt: vi.fn(),
 }));
 
+import { NativeFactStore } from "../client/native-fact-store";
+import { configManager } from "./config-manager";
 import { TileManager } from "./tile-manager";
 
 describe("TileManager building placement", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.getComponentValue.mockReturnValue(undefined);
+    configManager.setActiveGame(1, 1);
   });
 
   afterEach(() => {
@@ -29,7 +29,7 @@ describe("TileManager building placement", () => {
     mocks.createBuilding
       .mockResolvedValueOnce({ transaction_hash: "0x1" })
       .mockResolvedValueOnce({ transaction_hash: "0x2" });
-    const tileManager = new TileManager({ Building: {} } as never, { create_building: mocks.createBuilding } as never, {
+    const tileManager = new TileManager(new NativeFactStore(), { create_building: mocks.createBuilding } as never, {
       col: 20,
       row: 30,
     });
@@ -58,7 +58,7 @@ describe("TileManager building placement", () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
     mocks.createBuilding.mockRejectedValueOnce(new Error("submit failed"));
     mocks.createBuilding.mockResolvedValueOnce({ transaction_hash: "0x2" });
-    const tileManager = new TileManager({ Building: {} } as never, { create_building: mocks.createBuilding } as never, {
+    const tileManager = new TileManager(new NativeFactStore(), { create_building: mocks.createBuilding } as never, {
       col: 40,
       row: 50,
     });

@@ -16,14 +16,14 @@ const EnvironmentSchema = Schema.Struct({
   CORS_ORIGIN: NonEmptyString,
   LAUNCHER_ALLOWLIST: NonEmptyString,
   RPC_URL: NonEmptyString,
+  ADMISSION_URL: NonEmptyString,
   HERALD_URL: NonEmptyString,
-  GAME_MANIFEST_PATH: NonEmptyString,
-  DOJO_ACCOUNT_ADDRESS: NonEmptyString,
-  DOJO_PRIVATE_KEY: NonEmptyString,
+  NATIVE_WORLD_MANIFEST: NonEmptyString,
+  DEPLOYER_ACCOUNT_ADDRESS: NonEmptyString,
+  DEPLOYER_PRIVATE_KEY: NonEmptyString,
   PORT: Schema.optional(Schema.String),
   LAUNCH_JOB_LEASE_MS: Schema.optional(Schema.String),
   LAUNCH_JOB_POLL_MS: Schema.optional(Schema.String),
-  LAUNCH_ROTATION_CONFIGS: Schema.optional(Schema.String),
 });
 
 export interface LaunchServiceConfig {
@@ -33,6 +33,7 @@ export interface LaunchServiceConfig {
   allowAnyLauncher: boolean;
   launcherAllowlist: ReadonlySet<string>;
   rpcUrl: string;
+  admissionUrl: string;
   heraldUrl: string;
   manifestPath: string;
   accountAddress: string;
@@ -40,7 +41,6 @@ export interface LaunchServiceConfig {
   port: number;
   leaseMs: number;
   pollMs: number;
-  rotationConfigs: readonly string[];
 }
 
 const positiveInteger = (value: string | undefined, fallback: number, name: string): number => {
@@ -71,20 +71,14 @@ export const readLaunchServiceConfig = (
           allowAnyLauncher: launcherEntries.includes("*"),
           launcherAllowlist: new Set(launcherEntries.filter((entry) => entry !== "*").map(normalizeAddress)),
           rpcUrl: raw.RPC_URL,
+          admissionUrl: raw.ADMISSION_URL,
           heraldUrl: raw.HERALD_URL,
-          manifestPath: path.resolve(REPO_ROOT, raw.GAME_MANIFEST_PATH),
-          accountAddress: normalizeAddress(raw.DOJO_ACCOUNT_ADDRESS),
-          privateKey: raw.DOJO_PRIVATE_KEY,
+          manifestPath: path.resolve(REPO_ROOT, raw.NATIVE_WORLD_MANIFEST),
+          accountAddress: normalizeAddress(raw.DEPLOYER_ACCOUNT_ADDRESS),
+          privateKey: raw.DEPLOYER_PRIVATE_KEY,
           port: positiveInteger(raw.PORT, 3006, "PORT"),
           leaseMs: positiveInteger(raw.LAUNCH_JOB_LEASE_MS, 120_000, "LAUNCH_JOB_LEASE_MS"),
           pollMs: positiveInteger(raw.LAUNCH_JOB_POLL_MS, 1_000, "LAUNCH_JOB_POLL_MS"),
-          rotationConfigs: (
-            raw.LAUNCH_ROTATION_CONFIGS ?? "config/deployer/clean/launch-configs/madara-blitz-daily.yaml"
-          )
-            .split(",")
-            .map((value) => value.trim())
-            .filter(Boolean)
-            .map((value) => path.resolve(REPO_ROOT, value)),
         };
       }),
     ),

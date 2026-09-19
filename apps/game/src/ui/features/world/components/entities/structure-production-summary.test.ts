@@ -41,7 +41,7 @@ describe("buildStructureProductionSummary", () => {
   });
 
   it("counts active and total production buildings from shared production data", () => {
-    mocks.balanceAndProduction.mockImplementation((_resources, resourceId: ResourcesIds) => ({
+    mocks.balanceAndProduction.mockImplementation((resourceId: ResourcesIds) => ({
       production: {
         building_count: resourceId === ResourcesIds.Wood ? 2 : 0,
       },
@@ -60,7 +60,7 @@ describe("buildStructureProductionSummary", () => {
         { category: 1, produced: { resource: ResourcesIds.Wood } },
         { category: 1, produced: { resource: ResourcesIds.Stone } },
       ],
-      resources: {} as never,
+      resources: { current: mocks.balanceAndProduction } as never,
       currentDefaultTick: 1234,
       calculatedAt: 5678,
     });
@@ -95,7 +95,7 @@ describe("buildStructureProductionSummary", () => {
   it("ignores labor and buildings without produced resources", () => {
     const summary = buildStructureProductionSummary({
       productionBuildings: [{ category: 1, produced: { resource: ResourcesIds.Labor } }, { category: 1 }],
-      resources: {} as never,
+      resources: { current: mocks.balanceAndProduction } as never,
       currentDefaultTick: 0,
       calculatedAt: 1,
     });

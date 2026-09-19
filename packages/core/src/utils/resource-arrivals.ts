@@ -1,14 +1,5 @@
-import {
-  ClientComponents,
-  ID,
-  Resource,
-  ResourceArrivalInfo,
-  ResourcesIds,
-  TickIds,
-  TroopTier,
-  TroopType,
-} from "@bibliothecadao/types";
-import { ComponentValue } from "@dojoengine/recs";
+import { ID, ResourceArrivalInfo, ResourcesIds, TickIds, TroopTier, TroopType } from "@bibliothecadao/types";
+import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { configManager } from "../managers/config-manager";
 import { isMilitaryResource } from "./resources";
 import { divideByPrecision } from "./utils";
@@ -118,57 +109,18 @@ export const summarizeIncomingTroopArrivals = (
   return arrivalsByStructure;
 };
 
-export const formatArrivals = (arrivals: ComponentValue<ClientComponents["ResourceArrival"]["schema"]>[]) => {
-  const deliveryTickSeconds = configManager.getTick(TickIds.Delivery);
-  const arrivalsInfo: ResourceArrivalInfo[] = [];
-  const lastSlotNumber = 48;
-
-  arrivals.forEach((arrival) => {
-    const structureEntityId = arrival.structure_id;
-    const day = arrival.day;
-
-    for (let slotNumber = 1; slotNumber <= lastSlotNumber; slotNumber++) {
-      const slotKey = `slot_${slotNumber}` as keyof typeof arrival;
-
-      const rawSlotResources = arrival[slotKey];
-      if (!rawSlotResources || (Array.isArray(rawSlotResources) && rawSlotResources.length === 0)) {
-        continue;
-      }
-
-      const resources: Resource[] = [];
-      if (Array.isArray(rawSlotResources)) {
-        for (const item of rawSlotResources) {
-          if (Array.isArray(item) && item.length >= 2) {
-            const resourceId = Number(item[0]);
-            const amount = Number(item[1]);
-
-            if (amount >= 0) {
-              resources.push({
-                resourceId: resourceId as ResourcesIds,
-                amount,
-              });
-            }
-          }
-        }
-      }
-
-      if (resources.length === 0) {
-        continue;
-      }
-
-      const dayInSeconds = BigInt(day) * BigInt(deliveryTickSeconds) * BigInt(lastSlotNumber);
-      const slotInSeconds = BigInt(slotNumber) * BigInt(deliveryTickSeconds);
-      const arrivesAt = dayInSeconds + slotInSeconds;
-
-      arrivalsInfo.push({
-        structureEntityId,
-        resources,
-        arrivesAt,
-        day,
-        slot: BigInt(slotNumber),
-      });
-    }
-  });
-
-  return arrivalsInfo;
+export const formatArrivals = (arrivals: Iterable<NativeRows["ResourceArrival"]>): ResourceArrivalInfo[] => {
+  const deliveryTickSeconds = BigInt(configManager.getTick(TickIds.Delivery));
+  return [...arrivals]
+    .filter((arrival) => arrival.resources.length > 0)
+    .map((arrival) => ({
+      structureEntityId: arrival.entity_id,
+      resources: arrival.resources.map(({ resource_type, amount }) => ({
+        resourceId: resource_type as ResourcesIds,
+        amount: Number(amount),
+      })),
+      arrivesAt: (arrival.day * 48n + BigInt(arrival.slot)) * deliveryTickSeconds,
+      day: arrival.day,
+      slot: BigInt(arrival.slot),
+    }));
 };

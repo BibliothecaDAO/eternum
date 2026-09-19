@@ -3,7 +3,7 @@ import { HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
 import { resolveBestPrices } from "./best-prices";
 import { MarketResourceRow } from "./market-resource-row";
 import { MarketManager } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
+import { useGame, useNativeRevision } from "@bibliothecadao/react";
 import { findResourceById, ID, MarketInterface, ResourcesIds } from "@bibliothecadao/types";
 import { useMemo, useState } from "react";
 
@@ -23,8 +23,9 @@ export const MarketResourceSidebar = ({
   resourceAskOffers: MarketInterface[];
   resourceBidOffers: MarketInterface[];
 }) => {
-  const dojo = useDojo();
+  const game = useGame();
   const mode = useGameModeConfig();
+  const revision = useNativeRevision(["Market"]);
   const [search, setSearch] = useState("");
 
   const tradableResources = useMemo(
@@ -38,10 +39,10 @@ export const MarketResourceSidebar = ({
   const ammPrices = useMemo(() => {
     const prices = new Map<number, number>();
     for (const resourceId of tradableResources) {
-      prices.set(resourceId, new MarketManager(dojo.setup.components, 0n, resourceId).getMarketPrice() || 0);
+      prices.set(resourceId, new MarketManager(game.setup.store, 0n, resourceId).getMarketPrice() || 0);
     }
     return prices;
-  }, [tradableResources, dojo.setup.components]);
+  }, [tradableResources, game.setup.store, revision]);
 
   // Indexed once per offer set instead of once per row.
   const bestPrices = useMemo(

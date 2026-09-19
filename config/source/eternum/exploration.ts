@@ -5,8 +5,6 @@ export const eternumExplorationConfig: ConfigPatch = {
     reward: 750,
     shardsMinesFailProbability: 49_000,
     shardsMinesWinProbability: 1_000,
-    agentFindProbability: 0,
-    agentFindFailProbability: 100,
     campFindProbability: 1_500,
     campFindFailProbability: 48_500,
     bitcoinMineWinProbability: 200,

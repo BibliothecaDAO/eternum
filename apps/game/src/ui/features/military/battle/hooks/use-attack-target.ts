@@ -1,28 +1,18 @@
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
-import { useGameEntityComponentValue } from "@/hooks/helpers/use-game-entity-component-value";
+import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import {
   DEFAULT_COORD_ALT,
+  configManager,
+  getExplorerOwner,
   getArmyRelicEffects,
   getGuardsByStructure,
   getStructureArmyRelicEffects,
   getStructureRelicEffects,
-  ResourceManager,
   StaminaManager,
   tileOptToTile,
 } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
-import {
-  ContractAddress,
-  STEALABLE_RESOURCES,
-  type ClientComponents,
-  type ID,
-  type RelicEffectWithEndTick,
-  type StructureType,
-  type TileOpt,
-} from "@bibliothecadao/types";
-import { useComponentValue } from "@dojoengine/react";
-import type { ComponentValue } from "@dojoengine/recs";
+import { useGame, useNativeRow, useNativeRevision, useResourceManager } from "@bibliothecadao/react";
+import { STEALABLE_RESOURCES, type ID, type RelicEffectWithEndTick, type StructureType } from "@bibliothecadao/types";
 import { useMemo } from "react";
 
 import { getStructureDefenseSlotLimit, MAX_GUARD_SLOT_COUNT } from "../../utils/defense-slot-utils";
@@ -44,12 +34,12 @@ interface UseAttackTargetResult {
   isLoading: boolean;
 }
 
-type StructureValue = ComponentValue<ClientComponents["Structure"]["schema"]>;
+type StructureValue = NativeRows["Structure"];
 
 const resolveStructureGuardSlotLimit = (structure: StructureValue) => {
   const limits: number[] = [];
   const derivedLimit = getStructureDefenseSlotLimit(
-    structure.category as StructureType | undefined,
+    structure.base.category as StructureType | undefined,
     structure.base?.level,
   );
   if (typeof derivedLimit === "number" && Number.isFinite(derivedLimit)) {
@@ -74,36 +64,62 @@ export const useAttackTargetData = (
   targetAlt: boolean = DEFAULT_COORD_ALT,
 ): UseAttackTargetResult => {
   const {
-    setup: { components },
-  } = useDojo();
+    setup: { store },
+  } = useGame();
 
-  const targetTileEntity = useMemo(
-    () => gameEntityKey([BigInt(targetAlt ? 1 : 0), BigInt(targetHex.x), BigInt(targetHex.y)]),
-    [targetAlt, targetHex.x, targetHex.y],
-  );
-  const targetTileOpt = useComponentValue(components.TileOpt, targetTileEntity);
-  const targetTile = useMemo(
-    () => (targetTileOpt ? tileOptToTile(targetTileOpt as unknown as TileOpt) : undefined),
-    [targetTileOpt],
-  );
+  const targetTileOpt = useNativeRow("TileOpt", {
+    game_id: configManager.getActiveGameId(),
+    alt: targetAlt,
+    col: targetHex.x,
+    row: targetHex.y,
+  });
+  const guardsRevision = useNativeRevision(["Guard", "Structure"]);
+  const targetTile = useMemo(() => (targetTileOpt ? tileOptToTile(targetTileOpt) : undefined), [targetTileOpt]);
 
   const { currentArmiesTick, currentBlockTimestamp } = useBlockTimestamp();
-  const attackerStructure = useGameEntityComponentValue(components.Structure, attackerEntityId);
-  const attackerExplorer = useGameEntityComponentValue(components.ExplorerTroops, attackerEntityId);
-  const attackerProductionBoost = useGameEntityComponentValue(components.ProductionBoostBonus, attackerEntityId);
+  const attackerStructure = useNativeRow(
+    "Structure",
+    attackerEntityId !== undefined
+      ? { game_id: configManager.getActiveGameId(), entity_id: attackerEntityId }
+      : undefined,
+  );
+  const attackerExplorer = useNativeRow(
+    "ExplorerTroops",
+    attackerEntityId !== undefined
+      ? { game_id: configManager.getActiveGameId(), explorer_id: attackerEntityId }
+      : undefined,
+  );
+  const attackerProductionBoost = useNativeRow(
+    "ProductionBonus",
+    attackerEntityId !== undefined
+      ? { game_id: configManager.getActiveGameId(), entity_id: attackerEntityId }
+      : undefined,
+  );
   const targetEntityId = targetTile?.occupier_id;
-  const targetStructure = useGameEntityComponentValue(components.Structure, targetEntityId);
-  const targetExplorer = useGameEntityComponentValue(components.ExplorerTroops, targetEntityId);
-  const targetResource = useGameEntityComponentValue(components.Resource, targetEntityId);
-  const targetProductionBoost = useGameEntityComponentValue(components.ProductionBoostBonus, targetEntityId);
-  const targetOwnerStructure = useGameEntityComponentValue(components.Structure, targetExplorer?.owner);
+  const targetStructure = useNativeRow(
+    "Structure",
+    targetEntityId !== undefined ? { game_id: configManager.getActiveGameId(), entity_id: targetEntityId } : undefined,
+  );
+  const targetExplorer = useNativeRow(
+    "ExplorerTroops",
+    targetEntityId !== undefined
+      ? { game_id: configManager.getActiveGameId(), explorer_id: targetEntityId }
+      : undefined,
+  );
+  const targetResource = useResourceManager(targetEntityId ?? 0);
+  const targetProductionBoost = useNativeRow(
+    "ProductionBonus",
+    targetEntityId !== undefined ? { game_id: configManager.getActiveGameId(), entity_id: targetEntityId } : undefined,
+  );
 
   const attackerRelicEffects = useMemo(() => {
     if (attackerStructure) {
       const structureRelicEffects = attackerProductionBoost
         ? getStructureRelicEffects(attackerProductionBoost, currentArmiesTick)
         : [];
-      const structureArmyRelicEffects = getStructureArmyRelicEffects(attackerStructure, currentArmiesTick);
+      const structureArmyRelicEffects = getGuardsByStructure(attackerStructure, store).flatMap((guard) =>
+        getStructureArmyRelicEffects(guard, currentArmiesTick),
+      );
 
       return [...structureRelicEffects, ...structureArmyRelicEffects];
     }
@@ -113,14 +129,14 @@ export const useAttackTargetData = (
     }
 
     return [];
-  }, [attackerExplorer, attackerProductionBoost, attackerStructure, currentArmiesTick]);
+  }, [store, guardsRevision, attackerExplorer, attackerProductionBoost, attackerStructure, currentArmiesTick]);
 
   const target = useMemo<AttackTarget | null>(() => {
     if (!targetTile || !targetEntityId) return null;
 
     if (targetTile.occupier_is_structure) {
       if (!targetStructure) return null;
-      const guards = getGuardsByStructure(targetStructure)
+      const guards = getGuardsByStructure(targetStructure, store)
         .filter((guard) => guard.troops.count > 0n)
         .toSorted((a, b) => a.slot - b.slot);
 
@@ -131,7 +147,7 @@ export const useAttackTargetData = (
         })),
         id: targetEntityId,
         targetType: TargetType.Structure,
-        structureCategory: targetStructure.category,
+        structureCategory: targetStructure.base.category,
         structureLevel: Number(targetStructure.base?.level ?? 0),
         guardSlotLimit: resolveStructureGuardSlotLimit(targetStructure),
         hex: { x: targetTile.col, y: targetTile.row },
@@ -151,14 +167,16 @@ export const useAttackTargetData = (
       targetType: TargetType.Army,
       structureCategory: null,
       hex: { x: targetTile.col, y: targetTile.row },
-      addressOwner: targetOwnerStructure ? ContractAddress(targetOwnerStructure.owner) : null,
+      addressOwner: getExplorerOwner(store, targetExplorer),
     };
-  }, [currentArmiesTick, targetEntityId, targetExplorer, targetOwnerStructure, targetStructure, targetTile]);
+  }, [store, guardsRevision, currentArmiesTick, targetEntityId, targetExplorer, targetStructure, targetTile]);
 
   const targetRelicEffects = useMemo<RelicEffectWithEndTick[]>(() => {
     if (targetTile?.occupier_is_structure) {
       if (!targetStructure) return [];
-      const structureRelicEffects = getStructureArmyRelicEffects(targetStructure, currentArmiesTick);
+      const structureRelicEffects = getGuardsByStructure(targetStructure, store).flatMap((guard) =>
+        getStructureArmyRelicEffects(guard, currentArmiesTick),
+      );
       if (!targetProductionBoost) {
         return structureRelicEffects;
       }
@@ -167,17 +185,25 @@ export const useAttackTargetData = (
     }
 
     return targetExplorer ? getArmyRelicEffects(targetExplorer.troops, currentArmiesTick) : [];
-  }, [currentArmiesTick, targetExplorer, targetProductionBoost, targetStructure, targetTile?.occupier_is_structure]);
+  }, [
+    store,
+    guardsRevision,
+    currentArmiesTick,
+    targetExplorer,
+    targetProductionBoost,
+    targetStructure,
+    targetTile?.occupier_is_structure,
+  ]);
 
   const targetResources = useMemo<Array<{ resourceId: number; amount: number }>>(() => {
-    if (!targetResource) return [];
+    if (!targetResource.hasResources()) return [];
 
     if (targetTile?.occupier_is_structure) {
       const oneMinuteAgo = currentBlockTimestamp - 60;
-      return orderResourcesByPriority(ResourceManager.getResourceBalancesWithProduction(targetResource, oneMinuteAgo));
+      return orderResourcesByPriority(targetResource.balances(oneMinuteAgo));
     }
 
-    return orderResourcesByPriority(ResourceManager.getResourceBalances(targetResource));
+    return orderResourcesByPriority(targetResource.balances());
   }, [currentBlockTimestamp, targetResource, targetTile?.occupier_is_structure]);
 
   const isLoading = Boolean(targetEntityId && (targetTile?.occupier_is_structure ? !targetStructure : !targetExplorer));

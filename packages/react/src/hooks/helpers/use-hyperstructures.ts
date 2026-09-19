@@ -1,32 +1,24 @@
-import {
-  hyperstructuresByOwnerQuery,
-  hyperstructureUpdatesQuery,
-  readHyperstructureUpdates,
-  readStructureIds,
-} from "@bibliothecadao/eternum";
-import { ContractAddress, type ID } from "@bibliothecadao/types";
-import { useEntityQuery } from "@dojoengine/react";
-import { useDojo } from "../context";
+import { readHyperstructureUpdates, readStructureIds } from "@bibliothecadao/eternum";
+import { StructureType, type ID } from "@bibliothecadao/types";
+import { useMemo } from "react";
+import { useGame } from "../context";
+import { useNativeRevision } from "./use-native-facts";
 
 export const useOwnedHyperstructuresEntityIds = (): ID[] => {
   const {
+    setup: { store },
     account: { account },
-    setup: { components },
-  } = useDojo();
-
-  const hyperstructureEntities = useEntityQuery(
-    hyperstructuresByOwnerQuery(components, ContractAddress(account.address)),
+  } = useGame();
+  const revision = useNativeRevision(["Structure"]);
+  return useMemo(
+    () => readStructureIds(store, BigInt(account.address), StructureType.Hyperstructure),
+    [store, account.address, revision],
   );
-
-  return readStructureIds(components, hyperstructureEntities);
 };
-
-export const useHyperstructureUpdates = (hyperstructureEntityId: ID) => {
+export const useHyperstructureUpdates = (entityId: ID) => {
   const {
-    setup: { components },
-  } = useDojo();
-
-  const updateEntities = useEntityQuery(hyperstructureUpdatesQuery(components, hyperstructureEntityId));
-
-  return readHyperstructureUpdates(components, updateEntities);
+    setup: { store },
+  } = useGame();
+  const revision = useNativeRevision(["Hyperstructure"]);
+  return useMemo(() => readHyperstructureUpdates(store, entityId), [store, entityId, revision]);
 };

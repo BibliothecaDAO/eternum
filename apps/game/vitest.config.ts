@@ -22,6 +22,7 @@ export default defineConfig({
       VITE_PUBLIC_FEE_TOKEN_ADDRESS: "0x0000000000000000000000000000000000000001",
       VITE_PUBLIC_NODE_URL: "https://rpc.realms.test/rpc/v0_9_0",
       VITE_PUBLIC_HERALD_URL: "https://herald.realms.test",
+      VITE_PUBLIC_ADMISSION_URL: "https://tickets.realms.test",
       VITE_PUBLIC_IDENTITY_ORIGIN: "https://realms.test",
       VITE_PUBLIC_IDENTITY_RPC_URL: "https://identity-rpc.realms.test",
     },
@@ -51,7 +52,6 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
       "@config": path.resolve(__dirname, "../../config/utils/utils"),
       "@config-deployer": path.resolve(__dirname, "../../config/deployer"),
-      "@contracts": path.resolve(__dirname, "../../contracts/utils/utils"),
       "@bibliothecadao/ammv2-sdk": path.resolve(__dirname, "../../packages/ammv2-sdk/src/index.ts"),
       // Subpath alias must precede the package root: alias matching is
       // prefix-based, so the root entry would otherwise swallow it.
@@ -59,6 +59,7 @@ export default defineConfig({
         __dirname,
         "../../packages/core/src/managers/game-entity-keys.ts",
       ),
+      "@bibliothecadao/eternum/automation": path.resolve(__dirname, "../../packages/core/src/automation/index.ts"),
       "@bibliothecadao/eternum/game-sync": path.resolve(__dirname, "../../packages/core/src/sync/index.ts"),
       "@bibliothecadao/eternum/game-client": path.resolve(__dirname, "../../packages/core/src/client/index.ts"),
       "@bibliothecadao/eternum/biome": path.resolve(__dirname, "../../packages/core/src/utils/biome/biome.ts"),
@@ -73,7 +74,6 @@ export default defineConfig({
       "@bibliothecadao/react": path.resolve(__dirname, "../../packages/react/src/index.ts"),
       "@bibliothecadao/types/terrain": path.resolve(__dirname, "../../packages/types/src/terrain.ts"),
       "@bibliothecadao/types": path.resolve(__dirname, "../../packages/types/src/index.ts"),
-      "@manifests": path.resolve(__dirname, "../../contracts/l3/game"),
       "@pm": path.resolve(__dirname, "./src/pm"),
       "@videos": path.resolve(__dirname, "./src/assets/videos"),
     },

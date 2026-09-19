@@ -5,7 +5,6 @@
   "type": "module",
   "scripts": {
     "start": "bun run src/main.ts",
-    "rotation:tick": "bun run src/rotation.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run"
   },

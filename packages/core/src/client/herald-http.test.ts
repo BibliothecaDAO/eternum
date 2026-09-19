@@ -66,3 +66,36 @@ it("requests battle-only history from Herald rather than a mixed story page", as
   expect(url.pathname).toBe("/herald/madara/games/28/history");
   expect(Object.fromEntries(url.searchParams)).toEqual({ model: "StoryEvent", story: "BattleStory", limit: "350" });
 });
+
+it("shares a directory stream, notifies each consumer, and closes after the last unsubscribe", async () => {
+  const sources: { url: string; onmessage: (() => void) | null; close: ReturnType<typeof vi.fn> }[] = [];
+  class Source {
+    onmessage = null;
+    close = vi.fn();
+    constructor(public url: string) {
+      sources.push(this);
+    }
+  }
+  vi.stubGlobal("EventSource", Source);
+  const { subscribeHeraldDirectory } = await import("./herald-http");
+  const deployment = { id: "test", chain: "madara", heraldBaseUrl: "https://herald.test/prefix" } as Parameters<
+    typeof subscribeHeraldDirectory
+  >[0];
+  const first = vi.fn();
+  const second = vi.fn();
+  const stopFirst = subscribeHeraldDirectory(deployment, first);
+  const stopSecond = subscribeHeraldDirectory(deployment, second);
+  expect(sources).toHaveLength(1);
+  expect(sources[0].url).toBe("https://herald.test/prefix/madara/games/updates");
+  sources[0].onmessage!();
+  expect(first).toHaveBeenCalledOnce();
+  expect(second).toHaveBeenCalledOnce();
+  stopFirst();
+  sources[0].onmessage!();
+  expect(first).toHaveBeenCalledOnce();
+  expect(second).toHaveBeenCalledTimes(2);
+  expect(sources[0].close).not.toHaveBeenCalled();
+  stopSecond();
+  expect(sources[0].close).toHaveBeenCalledOnce();
+  vi.unstubAllGlobals();
+});

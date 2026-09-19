@@ -19,7 +19,7 @@ const decodeInteger = (value: unknown, field: string): bigint => {
   }
 };
 
-// RECS stores the tuple as an array; Herald rows keep starknet.js' numeric-key record.
+// native store stores the tuple as an array; Herald rows keep starknet.js' numeric-key record.
 const shareholderTupleMembers = (value: unknown): unknown[] => {
   if (Array.isArray(value)) return value;
   try {

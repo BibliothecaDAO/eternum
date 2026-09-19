@@ -3,6 +3,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { ResourcesIds } from "@bibliothecadao/types";
 const mocks = vi.hoisted(() => ({
+  blitz: false,
   allowed: true,
   balance: 100,
   raw: vi.fn(),
@@ -15,13 +16,11 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@/hooks/store/use-ui-store", () => ({ useUIStore: (select: any) => select({}) }));
 vi.mock("@/utils/can-issue-orders", () => ({ canIssueOrders: () => mocks.allowed }));
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({ useCurrentDefaultTick: () => 1 }));
-vi.mock("@bibliothecadao/eternum/game-client", () => ({ gameEntityKey: () => "realm" }));
-vi.mock("@dojoengine/react", () => ({ useComponentValue: () => undefined }));
 vi.mock("@bibliothecadao/react", () => ({
-  useDojo: () => ({
+  useGame: () => ({
+    account: { account: { address: "0x1" } },
     setup: {
-      account: { account: { address: "0x1" } },
-      components: {},
+      store: {},
       systemCalls: {
         burn_resource_for_resource_production: mocks.raw,
         burn_labor_for_resource_production: mocks.labor,
@@ -32,6 +31,7 @@ vi.mock("@bibliothecadao/react", () => ({
 }));
 vi.mock("@bibliothecadao/eternum", () => ({
   configManager: {
+    getBlitzConfig: () => ({ blitz_mode_on: mocks.blitz }),
     getLaborConfig: () => ({
       resourceOutputPerInputResources: 2,
       laborBurnPerResourceOutput: 1,
@@ -63,7 +63,7 @@ let root: Root, container: HTMLDivElement;
 beforeEach(() => {
   (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
   vi.clearAllMocks();
-  Object.assign(mocks, { allowed: true, balance: 100, amount: 10, rawMode: true });
+  Object.assign(mocks, { blitz: false, allowed: true, balance: 100, amount: 10, rawMode: true });
   container = document.createElement("div");
   root = createRoot(container);
 });
@@ -112,4 +112,15 @@ it("guards a submit when spectator intent changes after render", async () => {
   mocks.allowed = false;
   await act(async () => container.querySelectorAll("button")[2].click());
   expect(mocks.raw).not.toHaveBeenCalled();
+});
+
+it("only offers resource production in Blitz even with a previous Labor selection", async () => {
+  mocks.blitz = true;
+  mocks.rawMode = false;
+  await render();
+  const buttons = [...container.querySelectorAll("button")];
+  expect(buttons.map((button) => button.textContent)).toEqual(["Start Production"]);
+  await act(async () => buttons[0].click());
+  expect(mocks.raw).toHaveBeenCalled();
+  expect(mocks.labor).not.toHaveBeenCalled();
 });

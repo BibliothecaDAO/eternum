@@ -9,13 +9,11 @@ import { LogisticsView } from "@/ui/features/world/containers/logistics-view";
 import { MilitaryModal } from "@/ui/features/world/containers/military-modal";
 import { StructureEditPopup } from "@/ui/features/world/components/structure-edit-popup";
 import { useStructureGroups } from "@/ui/features/world/containers/top-header/structure-groups";
-import { setEntityNameLocalStorage } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
+import { setEntityNameLocalStorage, configManager } from "@bibliothecadao/eternum";
+import { useNativeRow } from "@bibliothecadao/react";
 import { type ID } from "@bibliothecadao/types";
-import { useComponentValue } from "@dojoengine/react";
 import PackageIcon from "lucide-react/dist/esm/icons/package";
 import { memo, useCallback } from "react";
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 
 /**
  * The view surfaces — `leftNavigationView` is their open state; each is one popover panel whose frame (header
@@ -97,7 +95,6 @@ const ActiveViewSurface = () => {
 };
 
 const StructureEditSurface = () => {
-  const { setup } = useDojo();
   const mode = useGameModeConfig();
   const { structureGroups, updateStructureGroup } = useStructureGroups();
   const pendingRenameStructureEntityId = useUIStore((state) => state.pendingRenameStructureEntityId);
@@ -113,9 +110,11 @@ const StructureEditSurface = () => {
     [bumpStructureNameVersion, setPendingRenameStructureEntityId],
   );
 
-  const pendingRenameStructure = useComponentValue(
-    setup.components.Structure,
-    pendingRenameStructureEntityId ? gameEntityKey([BigInt(pendingRenameStructureEntityId)]) : undefined,
+  const pendingRenameStructure = useNativeRow(
+    "Structure",
+    pendingRenameStructureEntityId === null
+      ? undefined
+      : { game_id: configManager.getActiveGameId(), entity_id: pendingRenameStructureEntityId },
   );
   const pendingRenameMetadata = pendingRenameStructure ? mode.structure.getName(pendingRenameStructure) : null;
   const editingStructureId = pendingRenameStructureEntityId !== null ? Number(pendingRenameStructureEntityId) : null;

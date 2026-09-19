@@ -8,7 +8,7 @@ import { formatNumber } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 
 import { divideByPrecision, getBalance } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
+import { useGame, useNativeRevision } from "@bibliothecadao/react";
 import { ID, Resources, ResourcesIds, findResourceById, findResourceIdByTrait } from "@bibliothecadao/types";
 import { memo, useEffect, useRef, useState } from "react";
 
@@ -38,20 +38,17 @@ export const ResourceBar = memo(
     onBlur?: () => void; // New prop
     max?: number;
   }) => {
-    const dojo = useDojo();
+    const game = useGame();
+    useNativeRevision(["ResourceBalance", "ResourceProduction", "ResourceWeight", "Market", "Liquidity", "Structure"]);
     const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
 
-    const [selectedResourceBalance, setSelectedResourceBalance] = useState(0);
+    const selectedResourceBalance = divideByPrecision(
+      getBalance(entityId, Number(resourceId), currentDefaultTick, game.setup.store).balance,
+    );
     const [searchInput, setSearchInput] = useState("");
     const [open, setOpen] = useState(false);
 
     const inputRef = useRef<HTMLInputElement>(null);
-
-    useEffect(() => {
-      setSelectedResourceBalance(
-        divideByPrecision(getBalance(entityId, Number(resourceId), currentDefaultTick, dojo.setup.components).balance),
-      );
-    }, [resourceId, getBalance, entityId]);
 
     const handleResourceChange = (trait: string) => {
       const newResourceId = findResourceIdByTrait(trait);
@@ -156,7 +153,7 @@ export const ResourceBar = memo(
                 <ResourceCost
                   resourceId={resource.id}
                   amount={divideByPrecision(
-                    getBalance(entityId, resource.id, currentDefaultTick, dojo.setup.components).balance,
+                    getBalance(entityId, resource.id, currentDefaultTick, game.setup.store).balance,
                   )}
                   className="border-0 bg-transparent"
                 />

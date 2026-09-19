@@ -1,4 +1,3 @@
-import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { FELT_CENTER } from "@/ui/config";
 import { requireBiomeColor, resolveBiomeTypeFromId } from "@/three/managers/biome-colors";
@@ -9,7 +8,7 @@ import {
   isTileOccupierReservedHyperstructure,
   isTileOccupierStructure,
 } from "@bibliothecadao/eternum";
-import { HexPosition, StructureType, TileOccupier } from "@bibliothecadao/types";
+import { HexPosition, StructureType, TileOccupier, getMinePresentation } from "@bibliothecadao/types";
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent, type WheelEvent } from "react";
 
 export interface MinimapTile {
@@ -19,9 +18,11 @@ export interface MinimapTile {
   occupier_id?: string;
   occupier_type?: number;
   occupier_is_structure?: boolean;
+  mineKind?: number;
 }
 
 export const normalizeMinimapTile = (tile: MinimapTile): MinimapTile => ({
+  mineKind: tile.mineKind,
   col: Number(tile.col),
   row: Number(tile.row),
   biome: tile.biome !== undefined ? Number(tile.biome) : undefined,
@@ -211,7 +212,6 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
   const playerStructures = useUIStore((state) => state.playerStructures);
   const selectableArmies = useUIStore((state) => state.selectableArmies);
   const cameraDistance = useUIStore((state) => state.cameraDistance);
-  const mode = useGameModeConfig();
 
   const ownedStructureIds = useMemo(() => {
     return new Set(
@@ -451,11 +451,12 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
         if (!info) return null;
 
         switch (info.type) {
-          case StructureType.FragmentMine:
+          case StructureType.Mine:
+            return tile.mineKind === undefined
+              ? null
+              : ({ iconSrc: getMinePresentation(tile.mineKind).icon } satisfies TileMarker);
           case StructureType.BitcoinMine:
-            return {
-              iconSrc: mode.assets.labels.fragmentMine,
-            } satisfies TileMarker;
+            return { iconSrc: LABEL_ICONS.fragmentMine } satisfies TileMarker;
           case StructureType.Village:
           case StructureType.Camp:
             return {
@@ -490,7 +491,7 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
 
       return null;
     },
-    [ownedStructureIds, ownedExplorerIds, mode],
+    [ownedStructureIds, ownedExplorerIds],
   );
 
   const tileElements = useMemo(

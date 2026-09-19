@@ -1,12 +1,20 @@
+import { configManager } from "@bibliothecadao/eternum";
 // @vitest-environment jsdom
 
 import { Position } from "@bibliothecadao/eternum";
 import { BuildingType, StructureType, TroopTier, TroopType } from "@bibliothecadao/types";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { CameraView } from "../../scenes/camera-view";
 import type { StructureInfo } from "../../types";
 import { createArmyLabel, createChestLabel, createStructureLabel } from "./label-factory";
 import type { ArmyLabelData } from "./army-label-type";
+
+vi.spyOn(configManager, "getMapCenter").mockReturnValue(2010831280);
+vi.spyOn(configManager, "getBlitzConfig").mockReturnValue({
+  blitz_mode_on: false,
+  blitz_settlement_config: { single_realm_mode: true, two_player_mode: false },
+  blitz_exploration_config: { reward_profile_id: 1 },
+});
 
 const army = {
   entityId: 101,
@@ -16,7 +24,6 @@ const army = {
   color: "#ffffff",
   category: TroopType.Knight,
   tier: TroopTier.T2,
-  isDaydreamsAgent: false,
   troopCount: 1500,
   currentStamina: 75,
   maxStamina: 100,

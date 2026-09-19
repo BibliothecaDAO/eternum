@@ -15,7 +15,7 @@ import {
   getAddressName,
   getGuildFromPlayerAddress,
 } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
+import { useGame } from "@bibliothecadao/react";
 import { ActorType, BiomeType, ContractAddress, getLayeredAttackDistance, ID } from "@bibliothecadao/types";
 import Swords from "lucide-react/dist/esm/icons/swords";
 import { useEffect, useMemo, useState } from "react";
@@ -76,9 +76,9 @@ export const BattleLab = ({
     account: { account },
     setup: {
       systemCalls: { attack_explorer_vs_explorer, attack_explorer_vs_guard, attack_guard_vs_explorer },
-      components,
+      store,
     },
-  } = useDojo();
+  } = useGame();
 
   const gameMode = useGameModeConfig();
   const accountName = usePlayerDisplayName(account.address);
@@ -262,7 +262,6 @@ export const BattleLab = ({
         if (state.selectedGuardSlot === null) throw new Error("No structure guard is selected");
         await attack_guard_vs_explorer({
           signer: account,
-          ethereal: snapshot.defenderAlt,
           structure_id: attackerEntityId,
           structure_guard_slot: state.selectedGuardSlot,
           explorer_id: target.id || 0,
@@ -270,7 +269,6 @@ export const BattleLab = ({
       } else if (target.targetType === TargetType.Army) {
         await attack_explorer_vs_explorer({
           signer: account,
-          ethereal: snapshot.defenderAlt,
           aggressor_id: attackerEntityId,
           defender_id: target.id || 0,
           steal_resources: targetResources,
@@ -278,7 +276,6 @@ export const BattleLab = ({
       } else {
         await attack_explorer_vs_guard({
           signer: account,
-          ethereal: snapshot.defenderAlt,
           explorer_id: attackerEntityId,
           structure_id: target.id || 0,
         });
@@ -294,15 +291,15 @@ export const BattleLab = ({
 
   const tweet = useMemo(() => {
     if (mode !== "live" || !hasAttacker || !state.hasDefender || !target) return undefined;
-    const attackerGuild = getGuildFromPlayerAddress(ContractAddress(account.address), components)?.name;
+    const attackerGuild = getGuildFromPlayerAddress(ContractAddress(account.address), store)?.name;
     const defenderGuild = target.addressOwner
-      ? getGuildFromPlayerAddress(ContractAddress(target.addressOwner), components)?.name
+      ? getGuildFromPlayerAddress(ContractAddress(target.addressOwner), store)?.name
       : undefined;
     return formatSocialText(twitterTemplates.combat, {
       attackerNameText: `${accountName || getPlayerDisplayName(account.address)} ${attackerGuild ? `from ${attackerGuild} tribe` : ""}`,
       attackerTroopsText: `${Math.floor(state.attacker.troopCount)} ${state.attacker.tier} ${state.attacker.troopType}`,
       defenderTroopsText: `${Math.floor(state.defender.troopCount)} ${state.defender.tier} ${state.defender.troopType}`,
-      defenderNameText: `${target.addressOwner ? getAddressName(target.addressOwner, components) : "@daydreamsagents"} ${defenderGuild ? `from ${defenderGuild}` : ""}`,
+      defenderNameText: `${target.addressOwner ? getAddressName(target.addressOwner, store) : "Bandits"} ${defenderGuild ? `from ${defenderGuild}` : ""}`,
       url: env.VITE_SOCIAL_LINK,
     });
   }, [
@@ -312,7 +309,7 @@ export const BattleLab = ({
     target,
     account.address,
     accountName,
-    components,
+    store,
     state.attacker,
     state.defender,
   ]);

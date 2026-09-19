@@ -1,12 +1,6 @@
 import { useCurrentArmiesTick } from "@/hooks/helpers/use-block-timestamp";
-import {
-  Biome,
-  divideByPrecision,
-  getEntityIdFromKeys,
-  getGuardsByStructure,
-  StaminaManager,
-} from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
+import { Biome, configManager, divideByPrecision, getGuardsByStructure, StaminaManager } from "@bibliothecadao/eternum";
+import { useGame, useNativeRevision } from "@bibliothecadao/react";
 import {
   BiomeType,
   DISPLAYED_SLOT_NUMBER_MAP,
@@ -16,14 +10,12 @@ import {
   TroopTier,
   TroopType,
 } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
 import { useMemo } from "react";
 
 import { getGuardStaminaSnapshot } from "../../utils/guard-stamina";
 import { useAttackTargetData } from "../hooks/use-attack-target";
 import { AttackTarget } from "../types";
 import type { GuardOption, LiveSnapshot, WorkingArmy } from "./battle-lab.types";
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 
 const toResourceIds = (effects: RelicEffectWithEndTick[]): ResourcesIds[] =>
   effects.map((effect) => Number(effect.id)) as ResourcesIds[];
@@ -49,11 +41,9 @@ export const useBattleLabLiveData = (
   alt = false,
 ): BattleLabLiveData => {
   const {
-    setup: {
-      components,
-      components: { Structure, ExplorerTroops },
-    },
-  } = useDojo();
+    setup: { store },
+  } = useGame();
+  const revision = useNativeRevision(["Structure", "Guard", "ExplorerTroops"]);
   const currentArmiesTick = useCurrentArmiesTick();
 
   const { attackerRelicEffects, targetRelicEffects, target, targetResources, isLoading } = useAttackTargetData(
@@ -68,7 +58,7 @@ export const useBattleLabLiveData = (
   const snapshot = useMemo<LiveSnapshot | null>(() => {
     if (!enabled) return null;
 
-    const structure = getComponentValue(Structure, gameEntityKey([BigInt(attackerEntityId)]));
+    const structure = store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: attackerEntityId });
     const biome = alt ? BiomeType.Underground : Biome.getBiome(targetHex.x, targetHex.y);
 
     // Attacker: structure (guard slots) vs explorer army.
@@ -78,7 +68,7 @@ export const useBattleLabLiveData = (
 
     if (structure) {
       attackerType = "structure";
-      guards = getGuardsByStructure(structure)
+      guards = getGuardsByStructure(structure, store)
         .filter((guard) => guard.troops.count > 0n)
         .toSorted((a, b) => a.slot - b.slot)
         .map((guard) => {
@@ -95,9 +85,12 @@ export const useBattleLabLiveData = (
           return { slot: guard.slot, label: `Slot ${slotNumber}`, army };
         });
     } else {
-      const army = getComponentValue(ExplorerTroops, gameEntityKey([BigInt(attackerEntityId)]));
+      const army = store.get("ExplorerTroops", {
+        game_id: configManager.getActiveGameId(),
+        explorer_id: attackerEntityId,
+      });
       if (army) {
-        const stamina = new StaminaManager(components, attackerEntityId).getStamina(currentArmiesTick).amount;
+        const stamina = StaminaManager.getStamina(army.troops, currentArmiesTick).amount;
         armyAttacker = {
           stamina: Number(stamina),
           troopCount: divideByPrecision(Number(army.troops.count)),
@@ -141,9 +134,8 @@ export const useBattleLabLiveData = (
   }, [
     alt,
     enabled,
-    Structure,
-    ExplorerTroops,
-    components,
+    revision,
+    store,
     attackerEntityId,
     targetHex.x,
     targetHex.y,

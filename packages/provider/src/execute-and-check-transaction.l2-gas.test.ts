@@ -30,7 +30,7 @@ const makeProvider = () => {
     .fn()
     .mockResolvedValue({ status: "confirmed", receipt: { isReverted: () => false } });
   provider.pendingTransactionSpans = new Map();
-  provider.pendingVrfExecutionLocks = new Map();
+  provider.pendingActorExecutionLocks = new Map();
   provider.cachedExploreExecutionDetails = new Map();
   provider.transactionStreamWaiter = vi.fn().mockResolvedValue({
     block: null,
@@ -71,7 +71,7 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     await provider.executeAndCheckTransaction(signer, call);
 
     expect(signer.estimateInvokeFee).toHaveBeenCalledWith(call, { version: 3, tip: 0 });
-    expect(provider.execute.mock.calls[0][3]).toMatchObject({
+    expect(provider.execute.mock.calls[0][2]).toMatchObject({
       version: 3,
       tip: 0,
       resourceBounds: makeResourceBounds(150n),
@@ -92,7 +92,7 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     await provider.executeAndCheckTransaction(signer, call);
 
     expect(signer.estimateInvokeFee).not.toHaveBeenCalled();
-    expect(provider.execute.mock.calls[0][3]).toEqual({ version: 3, tip: 0, resourceBounds });
+    expect(provider.execute.mock.calls[0][2]).toEqual({ version: 3, tip: 0, resourceBounds });
   });
 
   it("reads the explorer id after scoped game calldata", () => {
@@ -102,8 +102,8 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     expect(
       provider.getExploreTransactionExplorerId({
         contractAddress: "0x1",
-        entrypoint: "explorer_move",
-        calldata: [61, 259562, 1, 4, 1],
+        entrypoint: "Explore",
+        calldata: [61, 1, 259562, 4],
       }),
     ).toBe(`0x${BigInt(259562).toString(16)}`);
   });
@@ -124,7 +124,7 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     await provider.executeAndCheckTransaction(signer, call);
 
     expect(signer.estimateInvokeFee).toHaveBeenCalledTimes(1);
-    const txDetails = provider.execute.mock.calls[0][3];
+    const txDetails = provider.execute.mock.calls[0][2];
     expect(txDetails.version).toBe(3);
     expect(txDetails.resourceBounds.l2_gas.max_amount).toBe(1_200_000_000n);
   });
@@ -153,194 +153,53 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     });
   });
 
-  it("serializes non-explore VRF submissions for the same signer/source when waitForConfirmation is false", async () => {
+  it("serializes all native actions per player until the stream barrier without blocking another player", async () => {
     const provider = makeProvider();
-    provider.VRF_PROVIDER_ADDRESS = "0x999";
-
-    let resolveFirstWait!: (value: any) => void;
-    const firstWaitPromise = new Promise<any>((resolve) => {
-      resolveFirstWait = resolve;
+    let release!: (value: unknown) => void;
+    const barrier = new Promise((resolve) => {
+      release = resolve;
     });
+    provider.nativeSubmission = vi.fn().mockImplementation(async (signer: { address: string }, call: Call) => ({
+      transaction_hash: signer.address === "0xabc" ? (call.entrypoint === "first" ? "0x1" : "0x2") : "0x3",
+    }));
+    provider.waitForTransactionWithCheckInternal = vi
+      .fn()
+      .mockImplementation((hash: string) => (hash === "0x1" ? barrier : Promise.resolve({ isReverted: () => false })));
+    const firstSigner = { address: "0xabc" };
+    const options = { waitForConfirmation: false };
+    const call = (entrypoint: string): Call => ({ contractAddress: "0x123", entrypoint, calldata: [] });
+    await provider.executeAndCheckTransaction(firstSigner, call("first"), undefined, options);
+    const next = provider.executeAndCheckTransaction(firstSigner, call("second"), undefined, options);
+    await provider.executeAndCheckTransaction({ address: "0xdef" }, call("other"), undefined, options);
+    expect(provider.nativeSubmission).toHaveBeenCalledTimes(2);
+    expect(provider.nativeSubmission.mock.calls.map(([signer]: any[]) => signer.address)).toEqual(["0xabc", "0xdef"]);
+    release({ isReverted: () => false });
+    await next;
+    expect(provider.nativeSubmission).toHaveBeenCalledTimes(3);
+  });
 
-    provider.execute = vi
+  it("releases a native command barrier and reports a stalled Herald before the next command", async () => {
+    vi.useFakeTimers();
+    const provider = makeProvider();
+    provider.TRANSACTION_CONFIRM_TIMEOUT_MS = 100;
+    provider.nativeSubmission = vi
       .fn()
       .mockResolvedValueOnce({ transaction_hash: "0x1" })
       .mockResolvedValueOnce({ transaction_hash: "0x2" });
-    provider.waitForTransactionWithCheckInternal = vi.fn().mockImplementation((transactionHash: string) => {
-      if (transactionHash === "0x1") {
-        return firstWaitPromise;
-      }
-      return Promise.resolve({ isReverted: () => false });
-    });
-
-    const signer = {
-      address: "0xabc",
-      estimateInvokeFee: vi.fn().mockResolvedValue({
-        resourceBounds: makeResourceBounds(1_000_000_000n),
-      }),
-    };
-    const calls: Call[] = [
-      {
-        contractAddress: "0x999",
-        entrypoint: "request_random",
-        calldata: ["0x123", 0, "0xabc"],
-      },
-      {
-        contractAddress: "0x123",
-        entrypoint: "open_chest",
-        calldata: [],
-      },
-    ];
-
-    const firstResult = await provider.executeAndCheckTransaction(signer, calls, undefined, {
-      waitForConfirmation: false,
-    });
-    expect(firstResult).toMatchObject({
-      statusReceipt: "PENDING",
-      transaction_hash: "0x1",
-    });
-    expect(provider.execute).toHaveBeenCalledTimes(1);
-
-    const secondPromise = provider.executeAndCheckTransaction(signer, calls, undefined, {
-      waitForConfirmation: false,
-    });
-
-    await Promise.resolve();
-    await Promise.resolve();
-    expect(provider.execute).toHaveBeenCalledTimes(1);
-
-    resolveFirstWait({ isReverted: () => false });
-
-    const secondResult = await secondPromise;
-    expect(secondResult).toMatchObject({
-      statusReceipt: "PENDING",
-      transaction_hash: "0x2",
-    });
-    expect(provider.execute).toHaveBeenCalledTimes(2);
-  });
-
-  it("serializes same-explorer VRF explore submissions while confirmation is pending", async () => {
-    const provider = makeProvider();
-    provider.VRF_PROVIDER_ADDRESS = "0x999";
-
-    let resolveFirstWait!: (value: any) => void;
-    const firstWaitPromise = new Promise<any>((resolve) => {
-      resolveFirstWait = resolve;
-    });
-
-    provider.execute = vi
+    provider.waitForTransactionWithCheckInternal = vi
       .fn()
-      .mockResolvedValueOnce({ transaction_hash: "0x1" })
-      .mockResolvedValueOnce({ transaction_hash: "0x2" });
-    provider.waitForTransactionWithCheckInternal = vi.fn().mockImplementation((transactionHash: string) => {
-      if (transactionHash === "0x1") {
-        return firstWaitPromise;
-      }
-      return Promise.resolve({ isReverted: () => false });
-    });
-
-    const signer = {
-      address: "0xabc",
-      estimateInvokeFee: vi.fn().mockResolvedValue({
-        resourceBounds: makeResourceBounds(1_000_000_000n),
-      }),
-    };
-    const calls: Call[] = [
-      {
-        contractAddress: "0x999",
-        entrypoint: "request_random",
-        calldata: ["0x123", 1, "0xfeed"],
-      },
-      {
-        contractAddress: "0x123",
-        entrypoint: "explorer_move",
-        calldata: [42, [0], 1],
-      },
-      {
-        contractAddress: "0x123",
-        entrypoint: "explorer_extract_reward",
-        calldata: [42],
-      },
-    ];
-
-    const firstResult = await provider.executeAndCheckTransaction(signer, calls, undefined, {
-      waitForConfirmation: false,
-      transactionType: TransactionType.EXPLORE,
-    });
-    expect(firstResult).toMatchObject({
-      statusReceipt: "PENDING",
-      transaction_hash: "0x1",
-    });
-    expect(provider.execute).toHaveBeenCalledTimes(1);
-    provider.cachedExploreExecutionDetails.clear();
-
-    const secondPromise = provider.executeAndCheckTransaction(signer, calls, undefined, {
-      waitForConfirmation: false,
-      transactionType: TransactionType.EXPLORE,
-    });
-
-    const estimatedBeforeConfirmation = await vi
-      .waitFor(
-        () => {
-          expect(signer.estimateInvokeFee).toHaveBeenCalledTimes(2);
-        },
-        { timeout: 100, interval: 1 },
-      )
-      .then(
-        () => true,
-        () => false,
-      );
-    expect(estimatedBeforeConfirmation).toBe(true);
-
-    await Promise.resolve();
-    await Promise.resolve();
-    expect(provider.execute).toHaveBeenCalledTimes(1);
-
-    resolveFirstWait({ isReverted: () => false });
-
-    const secondResult = await secondPromise;
-    expect(secondResult).toMatchObject({
-      statusReceipt: "PENDING",
-      transaction_hash: "0x2",
-    });
-    expect(provider.execute).toHaveBeenCalledTimes(2);
-  });
-
-  it("rejects explicit multicalls with multiple VRF request_random calls", async () => {
-    const provider = makeProvider();
-    provider.VRF_PROVIDER_ADDRESS = "0x999";
-
-    const signer = {
-      address: "0xabc",
-      estimateInvokeFee: vi.fn().mockResolvedValue({
-        resourceBounds: makeResourceBounds(1_000_000_000n),
-      }),
-    };
-    const calls: Call[] = [
-      {
-        contractAddress: "0x999",
-        entrypoint: "request_random",
-        calldata: ["0x123", 1, "0x1"],
-      },
-      {
-        contractAddress: "0x123",
-        entrypoint: "open_chest",
-        calldata: [],
-      },
-      {
-        contractAddress: "0x999",
-        entrypoint: "request_random",
-        calldata: ["0x123", 1, "0x2"],
-      },
-      {
-        contractAddress: "0x123",
-        entrypoint: "open_chest",
-        calldata: [],
-      },
-    ];
-
-    await expect(provider.executeAndCheckTransaction(signer, calls)).rejects.toThrow(/multiple VRF request_random/i);
-    expect(provider.execute).not.toHaveBeenCalled();
+      .mockImplementationOnce(() => new Promise(() => {}))
+      .mockResolvedValueOnce({ isReverted: () => false });
+    const signer = { address: "0xabc" };
+    const call = { contractAddress: "0x123", entrypoint: "move", calldata: [] };
+    await provider.executeAndCheckTransaction(signer, call, undefined, { waitForConfirmation: false });
+    const next = provider.executeAndCheckTransaction(signer, call, undefined, { waitForConfirmation: false });
+    expect(provider.nativeSubmission).toHaveBeenCalledOnce();
+    await vi.advanceTimersByTimeAsync(101);
+    await next;
+    expect(provider.nativeSubmission).toHaveBeenCalledTimes(2);
+    expect(findTransactionFailedPayload(provider)?.message).toContain("Herald did not apply transaction 0x1");
+    expect(provider.pendingActorExecutionLocks.size).toBe(0);
   });
 
   it("emits readable submission failures for object-shaped errors", async () => {
@@ -403,91 +262,6 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     });
   });
 
-  it("keeps the default-details fallback for VRF multicalls whose estimate reverts", async () => {
-    const provider = makeProvider();
-    provider.VRF_PROVIDER_ADDRESS = "0x999";
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
-    const estimateError = {
-      message: "Transaction execution error",
-      data: {
-        execution_error: "Execution failed. Failure reason: 0x0 ('Randomness not fulfilled').",
-      },
-    };
-
-    const signer = {
-      address: "0xabc",
-      estimateInvokeFee: vi.fn().mockRejectedValue(estimateError),
-    };
-    const calls: Call[] = [
-      {
-        contractAddress: "0x999",
-        entrypoint: "request_random",
-        calldata: ["0x123", 0, "0xabc"],
-      },
-      {
-        contractAddress: "0x123",
-        entrypoint: "open_chest",
-        calldata: [],
-      },
-    ];
-
-    // consume_random can revert at estimate time (no submit_random yet) and
-    // still succeed at execution once the VRF server front-runs it.
-    const result = await provider.executeAndCheckTransaction(signer, calls, undefined, {
-      waitForConfirmation: false,
-    });
-
-    expect(result).toMatchObject({ statusReceipt: "PENDING", transaction_hash: "0xabc" });
-    expect(signer.estimateInvokeFee).toHaveBeenCalledWith(calls, { version: 3, tip: 0 });
-    expect(provider.execute.mock.calls[0][3]).toEqual({ version: 3, tip: 0 });
-    expect(warn).toHaveBeenCalledWith(
-      "[provider] Failed to estimate invoke fee, using default v3 tx details: Randomness not fulfilled",
-    );
-    expect(provider.lastEstimateError.error).toBe(estimateError);
-  });
-
-  it("prefers a recent fee-estimate error when the submit error is uninformative", async () => {
-    const provider = makeProvider();
-    provider.VRF_PROVIDER_ADDRESS = "0x999";
-    const estimateError = {
-      message: "Transaction execution error",
-      data: {
-        execution_error:
-          "Execution failed. Failure reason: 0x506f70756c6174696f6e2065786365656473206361706163697479 ('Population exceeds capacity').",
-      },
-    };
-    provider.execute = vi.fn().mockRejectedValue({});
-
-    const signer = {
-      address: "0xabc",
-      estimateInvokeFee: vi.fn().mockRejectedValue(estimateError),
-    };
-    const calls: Call[] = [
-      {
-        contractAddress: "0x999",
-        entrypoint: "request_random",
-        calldata: ["0x123", 0, "0xabc"],
-      },
-      {
-        contractAddress: "0x123",
-        entrypoint: "open_chest",
-        calldata: [],
-      },
-    ];
-
-    // The estimate error is thrown to callers, not only stashed in the
-    // payload: downstream revert classifiers key on its trace.
-    await expect(provider.executeAndCheckTransaction(signer, calls)).rejects.toBe(estimateError);
-
-    // VRF exemption: estimate failure must not block submission — execute ran.
-    expect(provider.execute).toHaveBeenCalledTimes(1);
-    expect(findTransactionFailedPayload(provider)).toMatchObject({
-      message: "Transaction failed to submit: Unknown error",
-      stage: "submit",
-    });
-    expect(findTransactionFailedPayload(provider)?.error).toBe(estimateError);
-  });
-
   it("prefers nested revert reason over generic short rpc messages", async () => {
     const provider = makeProvider();
     provider.execute = vi.fn().mockRejectedValue({
@@ -545,7 +319,7 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     });
   });
 
-  it("extracts the innermost katana failure reason frame", async () => {
+  it("extracts the innermost RPC failure reason frame", async () => {
     const provider = makeProvider();
     provider.execute = vi.fn().mockRejectedValue({
       shortMessage: "Transaction execution error",
@@ -654,6 +428,78 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
       revertReason: "Execution reverted: realm occupied",
     });
     expect(findTransactionFailedPayload(provider)?.error).toBeInstanceOf(Error);
+  });
+
+  it("resolves each player's ticket independently when a batch includes a rejection", async () => {
+    const provider = makeProvider();
+    const tickets = [
+      { gameId: "7", actor: "0x111", nonce: "3", order: "8" },
+      { gameId: "7", actor: "0x222", nonce: "5", order: "9" },
+      { gameId: "7", actor: "0x333", nonce: "1", order: "10" },
+    ];
+    provider.nativeSubmission = vi.fn(async (actor: { address: string }) => ({
+      transaction_hash: "0xabc",
+      ticket: tickets.find((ticket) => ticket.actor === actor.address),
+    }));
+    provider.transactionStreamWaiter.mockResolvedValue({
+      hash: "0xabc",
+      block: null,
+      status: "PRE_CONFIRMED",
+      executions: tickets.map((ticket, index) => ({
+        ...ticket,
+        nonceConsumed: true,
+        status: index === 1 ? "REVERTED" : "SUCCEEDED",
+        reason: index === 1 ? "GAMEPLAY_REJECTED" : "",
+        ...(index === 0 ? { batchRemaining: "9" } : index === 2 ? { batchRemaining: "0" } : {}),
+      })),
+    });
+    provider.waitForTransactionWithCheckInternal =
+      EternumProvider.prototype["waitForTransactionWithCheckInternal"].bind(provider);
+    provider.waitForTransactionWithTimeout = EternumProvider.prototype["waitForTransactionWithTimeout"].bind(provider);
+    const results = await Promise.allSettled(
+      tickets.map((ticket) =>
+        provider.executeAndCheckTransaction(
+          { address: ticket.actor },
+          { contractAddress: "0x1", entrypoint: "CloseSeason", calldata: [] },
+        ),
+      ),
+    );
+    for (const ticket of tickets) {
+      expect(provider.emit).toHaveBeenCalledWith(
+        "transactionSubmitted",
+        expect.objectContaining({
+          transactionHash: "0xabc",
+          signerAddress: ticket.actor,
+          ticket,
+        }),
+      );
+    }
+    expect(results[0]).toMatchObject({
+      status: "fulfilled",
+      value: { transaction_hash: "0xabc", batch_remaining: "9" },
+    });
+    expect(results[1]).toMatchObject({
+      status: "rejected",
+      reason: expect.objectContaining({ message: expect.stringContaining("GAMEPLAY_REJECTED") }),
+    });
+    expect(results[2]).toMatchObject({
+      status: "fulfilled",
+      value: { transaction_hash: "0xabc", batch_remaining: "0" },
+    });
+    expect(provider.pendingActorExecutionLocks.size).toBe(0);
+  });
+
+  it("keeps ticket identity when a submission completes after its timeout", async () => {
+    const provider = makeProvider();
+    const ticket = { gameId: "7", actor: "0x111", nonce: "3", order: "8" };
+    provider.observeLateSubmittedTransaction(Promise.resolve({ transaction_hash: "0xabc", ticket }), {});
+    await vi.waitFor(() =>
+      expect(provider.waitForTransactionWithCheckInternal).toHaveBeenCalledWith(
+        "0xabc",
+        expect.objectContaining({ recoveredFromSubmissionTimeout: true }),
+        ticket,
+      ),
+    );
   });
 
   it("marks asynchronous post-timeout confirmation failures as background confirmation", async () => {
@@ -844,105 +690,6 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     );
   });
 
-  it("keeps the VRF submission lock until a timed-out submission reaches a terminal state", async () => {
-    vi.useFakeTimers();
-    const provider = makeProvider();
-    provider.TRANSACTION_SUBMIT_TIMEOUT_MS = 50;
-    provider.VRF_PROVIDER_ADDRESS = "0x999";
-
-    let resolveFirstExecute!: (value: { transaction_hash: string }) => void;
-    let resolveFirstWait!: (value: any) => void;
-    const firstWaitPromise = new Promise<any>((resolve) => {
-      resolveFirstWait = resolve;
-    });
-
-    provider.execute = vi
-      .fn()
-      .mockImplementationOnce(
-        () =>
-          new Promise<{ transaction_hash: string }>((resolve) => {
-            resolveFirstExecute = resolve;
-          }),
-      )
-      .mockResolvedValueOnce({ transaction_hash: "0x2" });
-    provider.waitForTransactionWithCheckInternal = vi.fn().mockImplementation((transactionHash: string) => {
-      if (transactionHash === "0x1") {
-        return firstWaitPromise;
-      }
-      return Promise.resolve({ isReverted: () => false });
-    });
-
-    const signer = {
-      address: "0xabc",
-      estimateInvokeFee: vi.fn().mockResolvedValue({
-        resourceBounds: makeResourceBounds(1_000_000_000n),
-      }),
-    };
-    const calls: Call[] = [
-      {
-        contractAddress: "0x999",
-        entrypoint: "request_random",
-        calldata: ["0x123", 0, "0xabc"],
-      },
-      {
-        contractAddress: "0x123",
-        entrypoint: "open_chest",
-        calldata: [],
-      },
-    ];
-
-    const firstResult = provider.executeAndCheckTransaction(signer, calls, undefined, {
-      waitForConfirmation: false,
-    });
-    const timedOutResult = firstResult.then(
-      () => null,
-      (error: unknown) => error,
-    );
-
-    await vi.advanceTimersByTimeAsync(50);
-    await expect(timedOutResult).resolves.toBeInstanceOf(Error);
-
-    const secondResult = provider.executeAndCheckTransaction(signer, calls, undefined, {
-      waitForConfirmation: false,
-    });
-
-    const releasedBeforeLateHash = await vi
-      .waitFor(
-        () => {
-          expect(provider.execute).toHaveBeenCalledTimes(2);
-        },
-        { timeout: 25, interval: 1 },
-      )
-      .then(
-        () => true,
-        () => false,
-      );
-    expect(releasedBeforeLateHash).toBe(false);
-
-    resolveFirstExecute({ transaction_hash: "0x1" });
-
-    const releasedBeforeTerminalState = await vi
-      .waitFor(
-        () => {
-          expect(provider.execute).toHaveBeenCalledTimes(2);
-        },
-        { timeout: 25, interval: 1 },
-      )
-      .then(
-        () => true,
-        () => false,
-      );
-    expect(releasedBeforeTerminalState).toBe(false);
-
-    resolveFirstWait({ isReverted: () => false });
-
-    await expect(secondResult).resolves.toMatchObject({
-      statusReceipt: "PENDING",
-      transaction_hash: "0x2",
-    });
-    expect(provider.execute).toHaveBeenCalledTimes(2);
-  });
-
   it("waits for a registered pre-submit guard before calling execute", async () => {
     const provider = makeProvider();
     let releaseGuard!: () => void;
@@ -1013,12 +760,11 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
       statusReceipt: "PENDING",
       transaction_hash: "0xabc",
     });
-    expect(provider.execute).toHaveBeenCalledWith(signer, call, "s1_eternum", { version: 3, tip: 0 });
+    expect(provider.execute).toHaveBeenCalledWith(signer, call, { version: 3, tip: 0 });
   });
 
   it("reuses cached explore resource bounds on subsequent submissions", async () => {
     const provider = makeProvider();
-    provider.VRF_PROVIDER_ADDRESS = "0x999";
 
     const signer = {
       address: "0xabc",
@@ -1056,14 +802,13 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     expect(signer.estimateInvokeFee).toHaveBeenCalledTimes(1);
     expect(provider.execute).toHaveBeenCalledTimes(2);
     expect(signer.estimateInvokeFee).toHaveBeenCalledWith(calls, { version: 3, tip: 0 });
-    expect(provider.execute.mock.calls[0][3].tip).toBe(0);
-    expect(provider.execute.mock.calls[1][3].tip).toBe(0);
-    expect(provider.execute.mock.calls[0][3]).toMatchObject(provider.execute.mock.calls[1][3]);
+    expect(provider.execute.mock.calls[0][2].tip).toBe(0);
+    expect(provider.execute.mock.calls[1][2].tip).toBe(0);
+    expect(provider.execute.mock.calls[0][2]).toMatchObject(provider.execute.mock.calls[1][2]);
   });
 
   it("does not reuse cached explore resource bounds across distinct explore payloads", async () => {
     const provider = makeProvider();
-    provider.VRF_PROVIDER_ADDRESS = "0x999";
 
     const signer = {
       address: "0xabc",
@@ -1121,13 +866,12 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     });
 
     expect(signer.estimateInvokeFee).toHaveBeenCalledTimes(2);
-    expect(provider.execute.mock.calls[0][3].resourceBounds.l2_gas.max_amount).toBe(15n);
-    expect(provider.execute.mock.calls[1][3].resourceBounds.l2_gas.max_amount).toBe(30n);
+    expect(provider.execute.mock.calls[0][2].resourceBounds.l2_gas.max_amount).toBe(15n);
+    expect(provider.execute.mock.calls[1][2].resourceBounds.l2_gas.max_amount).toBe(30n);
   });
 
   it("refreshes cached explore resource bounds after a nonce retry", async () => {
     const provider = makeProvider();
-    provider.VRF_PROVIDER_ADDRESS = "0x999";
     provider.retryConfig = {
       maxRetries: 1,
       baseDelayMs: 0,
@@ -1175,13 +919,12 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     });
 
     expect(signer.estimateInvokeFee).toHaveBeenCalledTimes(2);
-    expect(provider.execute.mock.calls[0][3].resourceBounds.l2_gas.max_amount).toBe(15n);
-    expect(provider.execute.mock.calls[1][3].resourceBounds.l2_gas.max_amount).toBe(30n);
+    expect(provider.execute.mock.calls[0][2].resourceBounds.l2_gas.max_amount).toBe(15n);
+    expect(provider.execute.mock.calls[1][2].resourceBounds.l2_gas.max_amount).toBe(30n);
   });
 
   it("invalidates cached explore resource bounds after a fee-related submit failure", async () => {
     const provider = makeProvider();
-    provider.VRF_PROVIDER_ADDRESS = "0x999";
 
     const signer = {
       address: "0xabc",
@@ -1232,6 +975,6 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     });
 
     expect(signer.estimateInvokeFee).toHaveBeenCalledTimes(2);
-    expect(provider.execute.mock.calls[0][3].resourceBounds.l2_gas.max_amount).toBe(30n);
+    expect(provider.execute.mock.calls[0][2].resourceBounds.l2_gas.max_amount).toBe(30n);
   });
 });

@@ -3,6 +3,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { BuildingType } from "@bibliothecadao/types";
 const mocks = vi.hoisted(() => ({
+  mode: "eternum",
   allowed: true,
   current: true,
   canSubmit: true,
@@ -11,9 +12,9 @@ const mocks = vi.hoisted(() => ({
   owner: 1n,
 }));
 vi.mock("@bibliothecadao/react", () => ({
-  useDojo: () => ({ setup: { components: {} }, account: { account: { address: "0x1" } } }),
+  useNativeRevision: () => 0,
+  useGame: () => ({ setup: { store: {} }, account: { account: { address: "0x1" } } }),
 }));
-vi.mock("@dojoengine/react", () => ({ useComponentValue: () => undefined }));
 vi.mock("@bibliothecadao/eternum", () => ({
   getRealmInfo: () => ({ owner: mocks.owner, resources: [] }),
   getBuildingCosts: () => [{ resource: 1, amount: 10 }],
@@ -23,20 +24,16 @@ vi.mock("@/hooks/store/use-ui-store", () => ({
   useUIStore: (select: any) => select({ useSimpleCost: true, setUseSimpleCost: vi.fn() }),
 }));
 vi.mock("@/hooks/store/use-popover-store", () => ({ usePopoverStore: { getState: () => ({ close: mocks.close }) } }));
-vi.mock("@bibliothecadao/eternum/game-client", () => ({
-  gameEntityKey: () => "entity",
-  buildingEntityKey: () => "building",
-}));
 vi.mock("@/utils/can-issue-orders", () => ({ canIssueOrders: () => mocks.allowed }));
 vi.mock("@/sync/active-game-client", () => ({
   requireActiveGameClient: () => ({ actions: { placeBuilding: mocks.place } }),
 }));
-vi.mock("@/config/game-modes/use-game-mode-config", () => ({ useGameModeConfig: () => ({}) }));
+vi.mock("@/config/game-modes/use-game-mode-config", () => ({ useGameModeConfig: () => ({ id: mocks.mode }) }));
 vi.mock("./construction-groups", () => ({
   getConstructionBuildingGroups: () => [{ label: "Economic", buildings: [1] }],
   resolveBuildingRequirements: () => [{ resource: 1, amount: 10, current: 25 }],
 }));
-vi.mock("./construction-buildability", () => ({
+vi.mock("@bibliothecadao/eternum/automation", () => ({
   resolveConstructionBuildability: () =>
     mocks.canSubmit ? { canSubmit: true } : { canSubmit: false, reason: "Insufficient resources to build." },
 }));
@@ -54,7 +51,7 @@ function Harness() {
 beforeEach(async () => {
   (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
   vi.clearAllMocks();
-  Object.assign(mocks, { allowed: true, current: true, canSubmit: true, owner: 1n });
+  Object.assign(mocks, { mode: "eternum", allowed: true, current: true, canSubmit: true, owner: 1n });
   container = document.createElement("div");
   root = createRoot(container);
   await act(async () => root.render(<Harness />));
@@ -86,4 +83,13 @@ it("submits the selected plot once and closes on success", async () => {
     useSimpleCost: true,
   });
   expect(mocks.close).toHaveBeenCalledWith("plot-construction");
+});
+
+it("uses resource construction costs in Blitz despite a stored Simple selection", async () => {
+  mocks.mode = "blitz";
+  await act(async () => root.render(<Harness />));
+  expect(form.allowSimpleCost).toBe(false);
+  expect(form.useSimpleCost).toBe(false);
+  await act(async () => form.build(1 as BuildingType));
+  expect(mocks.place).toHaveBeenCalledWith(expect.objectContaining({ useSimpleCost: false }));
 });

@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import { BoxGeometry, MeshBasicMaterial, Scene } from "three";
+import { BoxGeometry, MeshBasicMaterial, Scene, Group, Mesh, Vector3, Euler } from "three";
 import { BiomeType, TroopTier, TroopType } from "@bibliothecadao/types";
 import { ModelType } from "@/three/types/army";
+import { gltfLoader } from "@/three/utils/utils";
 import { ArmyModel } from "./army-model";
 
 vi.hoisted(() => {
@@ -13,7 +14,6 @@ vi.hoisted(() => {
 });
 
 vi.mock("@/ui/config", () => ({ FELT_CENTER: 0, IS_FLAT_MODE: false }));
-vi.mock("@/utils/agent", () => ({ getCharacterModel: vi.fn(() => null) }));
 vi.mock("@/three/utils/utils", () => ({ gltfLoader: { load: vi.fn() } }));
 vi.mock("../utils", () => ({ getHexForWorldPosition: vi.fn(() => ({ col: 0, row: 0 })) }));
 vi.mock("../utils/contact-shadow", () => ({
@@ -49,4 +49,22 @@ describe("ArmyModel ship selection", () => {
     );
     expect(subject.getModelTypeForEntity(5, TroopType.Knight, TroopTier.T1, BiomeType.Beach)).toBe(ModelType.Knight1);
   });
+});
+
+it("loads ship geometry bow-first for movement, including straight west", async () => {
+  const ship = new Group();
+  const hull = new BoxGeometry(1, 1, 2).translate(0, 0, -2);
+  ship.add(new Mesh(hull, new MeshBasicMaterial()), new Mesh(hull, new MeshBasicMaterial()));
+  vi.mocked(gltfLoader.load).mockImplementation((_url, loaded) => {
+    loaded({ scene: ship, animations: [] } as any);
+    return undefined as any;
+  });
+  const army = new ArmyModel(new Scene());
+  await army.preloadModels([ModelType.ShipKnight1]);
+  hull.computeBoundingBox();
+  const bow = hull.boundingBox!.getCenter(new Vector3());
+  expect(bow.z).toBeCloseTo(0.6);
+  bow.applyEuler(new Euler(0, -Math.PI / 2, 0));
+  expect(bow.x).toBeCloseTo(-0.6);
+  expect(bow.z).toBeCloseTo(0);
 });

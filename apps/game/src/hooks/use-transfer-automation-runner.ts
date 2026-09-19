@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
-import { useDojo } from "@bibliothecadao/react";
+import { useGame } from "@bibliothecadao/react";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import {
   configManager,
@@ -44,9 +44,9 @@ const recordPlannedDebits = (
 
 export const useTransferAutomationRunner = () => {
   const {
-    setup: { components, systemCalls },
+    setup: { store, systemCalls },
     account: { account },
-  } = useDojo();
+  } = useGame();
   const mode = useGameModeConfig();
 
   const entries = useTransferAutomationStore((s) => s.entries);
@@ -88,13 +88,13 @@ export const useTransferAutomationRunner = () => {
   );
 
   useEffect(() => {
-    if (!components) {
+    if (!store) {
       return;
     }
     const season = configManager.getSeasonConfig();
     const gameId = `${season.startSettlingAt}-${season.startMainAt}-${season.endAt}`;
     pruneForGame(gameId);
-  }, [components, pruneForGame]);
+  }, [store, pruneForGame]);
 
   const scheduleNextCheck = useCallback(() => {
     if (isSeasonOver()) {
@@ -124,7 +124,7 @@ export const useTransferAutomationRunner = () => {
         scheduleNextCheck();
         return;
       }
-      if (!components) {
+      if (!store) {
         scheduleNextCheck();
         return;
       }
@@ -162,13 +162,13 @@ export const useTransferAutomationRunner = () => {
               continue;
             }
 
-            if (!isEntityOwnedByAccount(components, sourceId, account.address)) {
+            if (!isEntityOwnedByAccount(store, sourceId, account.address)) {
               toast.warning("Scheduled transfer skipped: source structure is no longer owned.");
               scheduleNext(entry.id, nowMs);
               continue;
             }
 
-            if (!isEntityOwnedByAccount(components, destId, account.address)) {
+            if (!isEntityOwnedByAccount(store, destId, account.address)) {
               toast.warning("Scheduled transfer skipped: destination structure is no longer owned.");
               scheduleNext(entry.id, nowMs);
               continue;
@@ -178,7 +178,7 @@ export const useTransferAutomationRunner = () => {
             const hasMilitary = entry.resourceIds.some((rid) => isMilitaryResource(rid));
             if (hasMilitary) {
               const validTransfer = canTransferMilitaryInventoryBetweenStructureIds({
-                components,
+                store,
                 modeId: mode.id,
                 sourceEntityId: sourceId,
                 destinationEntityId: destId,
@@ -194,7 +194,7 @@ export const useTransferAutomationRunner = () => {
               }
             }
 
-            const rm = new ResourceManager(components, sourceId);
+            const rm = new ResourceManager(store, sourceId);
             const donkeyBalHuman = availableBalance(rm, conservativeTick, sourceId, ResourcesIds.Donkey, plannedDebits);
 
             const transferList = planTransferAmounts(entry, (resourceId) =>
@@ -244,7 +244,7 @@ export const useTransferAutomationRunner = () => {
       }
     };
   }, [
-    components,
+    store,
     account,
     isSeasonOver,
     mode.id,

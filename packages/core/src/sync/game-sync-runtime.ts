@@ -43,6 +43,25 @@ const resolveEventTimestamp = (model: string, value: unknown): string => {
   return String(timestamp);
 };
 
+const eventIdentity = (model: string, event: GameSyncEntity, value: unknown): string => {
+  if (isRecord(value) && "event_position" in value) {
+    const position = value.event_position;
+    if (
+      !isRecord(position) ||
+      typeof position.transaction_hash !== "string" ||
+      !/^0x[0-9a-f]+$/i.test(position.transaction_hash) ||
+      !Number.isSafeInteger(position.event_index) ||
+      Number(position.event_index) < 0
+    ) {
+      throw new Error(`Game sync event ${model} has an invalid event position`);
+    }
+    return `${model}:${BigInt(position.transaction_hash)}:${position.event_index}`;
+  }
+  // Historical story keys already identify the event; confirmation may correct its timestamp.
+  if (model === "StoryEvent" || model.endsWith("-StoryEvent")) return `${model}:${event.hashed_keys}`;
+  return `${model}:${event.hashed_keys}:${resolveEventTimestamp(model, value)}`;
+};
+
 const createEmptyMetrics = (): GameSyncRuntimeMetrics => ({
   appliedBatchCount: 0,
   eventGapFillReplayCount: 0,
@@ -60,7 +79,7 @@ const createEmptyMetrics = (): GameSyncRuntimeMetrics => ({
   totalReplayedEventUpdates: 0,
 });
 
-/** Owns the session-scoped stream, snapshot hydration, and ordered RECS writes. */
+/** Owns the session-scoped stream, snapshot hydration, and ordered native store writes. */
 export class GameSyncRuntime {
   private generation = 0;
   private writer: GameSyncWriter | null = null;
@@ -177,7 +196,7 @@ export class GameSyncRuntime {
   }
 
   /**
-   * Fires once per applied ingest slice, after the spatial projection flushed. Store bridges derive from RECS here,
+   * Fires once per applied ingest slice, after the spatial projection flushed. Store bridges derive from native store here,
    * so a slice that touched a thousand rows costs the overlay one recompute, not a thousand.
    */
   public subscribeSliceApplied(listener: () => void): () => void {
@@ -198,6 +217,7 @@ export class GameSyncRuntime {
     this.cancelWriterImmediately();
     // A subscribe that never resolved has no writer to cancel; only the transport can stop its reconnects.
     this.session?.transport.dispose?.();
+    this.session?.onDispose?.();
     this.sliceAppliedListeners.clear();
     this.disposeWorldSpatialProjection();
     this.ingestQueue?.dispose();
@@ -216,6 +236,7 @@ export class GameSyncRuntime {
     const generation = this.beginRun("subscribing");
     const recoveryStartedAt = this.now();
     const bufferedUpdates: BufferedEntityUpdate[] = [];
+    const bufferedTransactions: GameSyncTransaction[] = [];
     const existingEntitiesByModel = this.captureExistingEntities(session);
     const seenEntitiesByModel = new Map(session.snapshotModels.map((model) => [model, new Set<string>()]));
     this.snapshotAppliedOperations = 0;
@@ -281,7 +302,17 @@ export class GameSyncRuntime {
         },
         onTransaction: (transaction) => {
           if (!this.isCurrentGeneration(generation)) return;
-          this.acceptTransaction(transaction);
+          if (this.status !== "running") {
+            bufferedTransactions.push(transaction);
+            return;
+          }
+          // A status follows its rows on the wire, but their scheduled store write may still be pending.
+          void this.ingestQueue
+            ?.drain()
+            .then(() => {
+              if (this.isCurrentGeneration(generation)) this.acceptTransaction(transaction);
+            })
+            .catch((error) => this.stopAfterLiveBatchFailure(generation, error));
         },
       });
       this.adoptWriter(generation, writer);
@@ -296,6 +327,7 @@ export class GameSyncRuntime {
       await this.replayBufferedUpdates(generation, bufferedUpdates);
       this.assertCurrentGeneration(generation);
       this.status = "running";
+      bufferedTransactions.forEach((transaction) => this.acceptTransaction(transaction));
       this.metrics.lastRecoveryDurationMs = this.now() - recoveryStartedAt;
       this.publishMetrics();
     } catch (error) {
@@ -381,12 +413,7 @@ export class GameSyncRuntime {
     if (!session) return;
 
     Object.entries(event.models).forEach(([model, value]) => {
-      const timestamp = resolveEventTimestamp(model, value);
-      // StoryEvent keys include a uuid and transaction hash; confirmation may correct the provisional timestamp.
-      const identity =
-        model === "StoryEvent" || model.endsWith("-StoryEvent")
-          ? `${model}:${event.hashed_keys}`
-          : `${model}:${event.hashed_keys}:${timestamp}`;
+      const identity = eventIdentity(model, event, value);
       const previous = this.recentEventIdentities.get(identity);
       const rank = eventConfirmationRank(confirmation);
       if (previous !== undefined && rank <= previous) return;

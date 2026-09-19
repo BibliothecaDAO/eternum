@@ -52,9 +52,9 @@ prepare retained render pages; it does not fetch current game truth.
 
 ## World state and chunking
 
-Current game facts live in RECS. `WorldSpatialProjection` derives render-ready spatial indexes from RECS and is owned by
-the game-sync runtime. The world map reads that projection for visible tiles, structures, armies, and chests. Scene
-managers own presentation resources only; they are not alternative state stores.
+Current game facts live in the native fact store. `WorldSpatialProjection` derives render-ready spatial indexes from the
+native fact store and is owned by the game-sync runtime. The world map reads that projection for visible tiles,
+structures, armies, and chests. Scene managers own presentation resources only; they are not alternative state stores.
 
 Chunk geometry and retention policy live in the `worldmap-chunk-*` and `warp-travel-*` modules. A camera crossing:
 

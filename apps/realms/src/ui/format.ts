@@ -1,8 +1,3 @@
-const LORDS_DECIMALS = 10n ** 18n;
-
-/** Whole-LORDS display with thousands separators; sub-LORDS dust is truncated. */
-export const formatLords = (raw: bigint): string => (raw / LORDS_DECIMALS).toLocaleString("en-US");
-
 export const shortAddress = (address: string): string =>
   address.length > 12 ? `${address.slice(0, 6)}…${address.slice(-4)}` : address;
 

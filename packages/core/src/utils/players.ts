@@ -1,5 +1,6 @@
-import { type ClientComponents, type ContractAddress, type Player, type PlayerInfo } from "@bibliothecadao/types";
-import { HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
+import { type ContractAddress, type Player, type PlayerInfo } from "@bibliothecadao/types";
+import type { NativeFactStore } from "../client/native-fact-store";
+import { configManager } from "../managers/config-manager";
 import { displayPlayerName } from "./entities";
 import { getGuild } from "./guild";
 
@@ -17,17 +18,16 @@ export const getPlayerInfo = (
       villages: number;
     }
   >,
-  components: ClientComponents,
+  store: NativeFactStore,
 ): PlayerInfo[] => {
-  const { GuildMember, Structure } = components;
+  const game_id = configManager.getActiveGameId();
 
   const playerInfo = players
     .map((player) => {
-      // todo: fix this
-      const isAlive = runQuery([HasValue(Structure, { owner: player.address })]).size > 0;
+      const isAlive = !store.structuresOwnedBy(game_id, player.address).next().done;
 
-      const guildMember = getComponentValue(GuildMember, player.entity);
-      const guild = getGuild(guildMember?.guild_id ?? 0n, player.address, components);
+      const guildMember = store.get("GuildMember", { game_id, actor: player.address });
+      const guild = getGuild(guildMember?.guild_id ?? 0n, player.address, store);
 
       return {
         entity: player.entity,

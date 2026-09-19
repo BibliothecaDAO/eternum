@@ -2,10 +2,10 @@ import { randomUUID } from "node:crypto";
 import { Pool } from "pg";
 import { describe, expect, it, vi } from "vitest";
 import { HistoryStore } from "./history-store";
-import { backfillHistory } from "./history-backfill";
-import { WorldEventDecodeMonitor } from "./world-event-decoder";
+import { backfillNativeHistory } from "./native/load";
+import { createNativeHistoryCodec } from "./native/history";
+import { schema as nativeSchema, setup } from "./native/fixtures";
 import type { MadaraRpc } from "./madara-rpc";
-import type { ModelRegistry } from "./model-registry";
 
 const databaseUrl = process.env.HERALD_TEST_DATABASE_URL;
 describe.skipIf(!databaseUrl)("existing history progress", () => {
@@ -15,24 +15,18 @@ describe.skipIf(!databaseUrl)("existing history progress", () => {
     await admin.query(`CREATE SCHEMA ${schema}`);
     const url = new URL(databaseUrl!);
     url.searchParams.set("options", `-c search_path=${schema}`);
-    let store = new HistoryStore(url.toString(), "madara", "0x123");
+    let store = new HistoryStore(url.toString(), "madara", "0x123", createNativeHistoryCodec(nativeSchema));
     try {
       await store.initialize();
       await admin.query(
         `INSERT INTO ${schema}.herald_history_progress (chain, world_address, complete_through_block) VALUES ('madara', '0x123', 500001)`,
       );
       await store.close();
-      store = new HistoryStore(url.toString(), "madara", "0x123");
+      store = new HistoryStore(url.toString(), "madara", "0x123", createNativeHistoryCodec(nativeSchema));
       await store.initialize();
-      const getEvents = vi.fn(async function* () {});
-      await backfillHistory({
-        historyStore: store,
-        rpc: { getEvents } as unknown as MadaraRpc,
-        registry: { worldAddress: "0x123", events: [] } as unknown as ModelRegistry,
-        decodeMonitor: new WorldEventDecodeMonitor(),
-        toBlock: 500001,
-      });
-      expect(getEvents).not.toHaveBeenCalled();
+      const getBlockWithReceipts = vi.fn();
+      await backfillNativeHistory(setup().native, { getBlockWithReceipts } as unknown as MadaraRpc, store, 500001);
+      expect(getBlockWithReceipts).not.toHaveBeenCalled();
       expect(await store.historyProgress()).toBe(500001);
       store.markLeaderboardReady();
       expect(store.leaderboard("7")).not.toBeNull();
@@ -55,7 +49,7 @@ describe.skipIf(!databaseUrl)("confirmed story cursor", () => {
     await admin.query(`CREATE SCHEMA ${schema}`);
     const url = new URL(databaseUrl!);
     url.searchParams.set("options", `-c search_path=${schema}`);
-    const store = new HistoryStore(url.toString(), "madara", "0x123");
+    const store = new HistoryStore(url.toString(), "madara", "0x123", createNativeHistoryCodec(nativeSchema));
     try {
       await store.initialize();
       await store.appendEvents([], 10);
@@ -90,6 +84,86 @@ describe.skipIf(!databaseUrl)("confirmed story cursor", () => {
     } finally {
       await store.close();
       await admin.query(`DROP SCHEMA ${schema} CASCADE`);
+      await admin.end();
+    }
+  });
+});
+
+describe.skipIf(!databaseUrl)("native confirmed history", () => {
+  it("rebuilds native activity, combat history and review across restart without mirroring state", async () => {
+    const { createNativeHistoryCodec } = await import("./native/history");
+    const { setup, receipt, rowEvent, battleEvent, schema: nativeSchema, manifest } = await import("./native/fixtures");
+    const nativeHistoryCodec = createNativeHistoryCodec(nativeSchema);
+    const admin = new Pool({ connectionString: databaseUrl });
+    const namespace = `native_history_${randomUUID().replaceAll("-", "")}`;
+    await admin.query(`CREATE SCHEMA ${namespace}`);
+    const url = new URL(databaseUrl!);
+    url.searchParams.set("options", `-c search_path=${namespace}`);
+    let store = new HistoryStore(url.toString(), "madara", manifest.world.address, nativeHistoryCodec);
+    try {
+      await store.initialize();
+      await store.appendEvents([], 9);
+      store.markLeaderboardReady();
+      const cursor = (await store.queryStoryCursor(null, 2)).next_cursor;
+      const { native, fold } = setup();
+      const award = nativeSchema.domains.season.events.find(({ name }) => name === "PointsAwarded")!;
+      const result = native.applyReceipt(
+        fold,
+        receipt([
+          rowEvent("PlayerPoints", ["1", "0x111"], ["5000000"]),
+          { from_address: manifest.world.address, keys: [...award.prefix, "1", "1", "0x111"], data: ["0", "5000000"] },
+          battleEvent(),
+        ]),
+        10,
+        0,
+      );
+      await store.appendEvents(result.events, 10);
+      await store.appendEvents(result.events, 10);
+      const before = store.leaderboard("1");
+      expect(before?.entries[0].activityBreakdown.exploration).toEqual({ count: 1, points: 5 });
+      expect((await store.queryStoryCursor(cursor, 10)).items.map(({ model }) => model)).toEqual([
+        "PointsAwarded",
+        "BattleEvent",
+      ]);
+      const snapshot = fold.reviewSnapshot(1, 10);
+      await store.freezeReviewSnapshot(snapshot.game_id, () => snapshot);
+      await store.close();
+      store = new HistoryStore(url.toString(), "madara", manifest.world.address, nativeHistoryCodec);
+      await store.initialize();
+      store.markLeaderboardReady();
+      expect(store.leaderboard("1")).toEqual(before);
+      expect(await store.reviewSnapshot("1")).toEqual(snapshot);
+      const repeated = vi.fn(() => {
+        throw new Error("Finalized review must not be rebuilt");
+      });
+      for (let head = 11; head < 20; head++) await store.freezeReviewSnapshot("1", repeated);
+      expect(repeated).not.toHaveBeenCalled();
+      const battles = await store.queryEvents({ gameId: "1", model: "BattleEvent", limit: 10, offset: 0 });
+      expect(battles.total).toBe(1);
+      for (const [owner, entityId] of [
+        ["0x111", "7"],
+        ["0x222", "8"],
+      ]) {
+        const filtered = await store.queryEvents({
+          gameId: "1",
+          model: "BattleEvent",
+          owner,
+          entityId,
+          limit: 10,
+          offset: 0,
+        });
+        expect(filtered.total).toBe(1);
+      }
+      expect(
+        (await store.queryEvents({ gameId: "1", model: "BattleEvent", owner: "0x999", limit: 10, offset: 0 })).total,
+      ).toBe(0);
+      expect(battles.items[0].value).toMatchObject({
+        attacker: { player: "0x111", before: "0x64", after: "0x5a" },
+        defender: { player: "0x222", after: "0x0" },
+      });
+    } finally {
+      await store.close();
+      await admin.query(`DROP SCHEMA ${namespace} CASCADE`);
       await admin.end();
     }
   });

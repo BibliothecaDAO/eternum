@@ -8,14 +8,14 @@ import { ProductionStatusBadge } from "@/ui/shared";
 import { formatInventoryAmount } from "@/ui/features/world/components/entities/compact-entity-inventory";
 import type { StructureProductionSummary } from "@/ui/features/world/components/entities/structure-production-summary";
 import { formatTimeRemaining } from "@/ui/features/economy/resources/entity-resource-table/utils";
-import { resolveConstructionBuildability } from "@/ui/features/settlement/construction/construction-buildability";
+import { resolveConstructionBuildability } from "@bibliothecadao/eternum/automation";
 import {
   buildRealmBuilding,
   resolveRealmHasAvailableBuildingTile,
 } from "@/ui/features/settlement/construction/realm-build-actions";
 import { CompactEntityInventory } from "@/ui/features/world/components/entities/compact-entity-inventory";
 import { divideByPrecision, getRealmInfo, ResourceManager } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
+import { useGame } from "@bibliothecadao/react";
 import {
   BuildingType,
   EntityType,
@@ -25,11 +25,7 @@ import {
   RelicRecipientType,
   ResourcesIds,
 } from "@bibliothecadao/types";
-import type { ClientComponents } from "@bibliothecadao/types";
-import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
-import type { ComponentValue } from "@dojoengine/recs";
 import Plus from "lucide-react/dist/esm/icons/plus";
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 
 type ProductionItem = StructureProductionSummary["items"][number];
 
@@ -37,7 +33,7 @@ const ACCRUAL_SWEEP_INTERVAL_MS = 60_000;
 
 interface MergedResourcePanelProps {
   structureEntityId: ID;
-  resources?: ComponentValue<ClientComponents["Resource"]["schema"]> | null;
+  resources?: ResourceManager | null;
   productionSummary: StructureProductionSummary;
   /** Show the build "+" action. Only meaningful for owned structures. */
   canBuild?: boolean;
@@ -67,19 +63,17 @@ export const MergedResourcePanel = memo(
     isMine = false,
     activeRelicIds,
   }: MergedResourcePanelProps) => {
-    const dojo = useDojo();
-    const components = dojo.setup.components;
+    const game = useGame();
+    const store = game.setup.store;
     const mode = useGameModeConfig();
     const currentDefaultTick = useCurrentDefaultTick();
-    const useSimpleCost = useUIStore((state) => state.useSimpleCost);
+    const requestedSimpleCost = useUIStore((state) => state.useSimpleCost);
+    const useSimpleCost = mode.id !== "blitz" && requestedSimpleCost;
 
     const entityId = Number(structureEntityId);
     const realm = useMemo(
-      () =>
-        Number.isFinite(entityId) && entityId > 0
-          ? getRealmInfo(gameEntityKey([BigInt(entityId)]), components)
-          : undefined,
-      [entityId, components],
+      () => (Number.isFinite(entityId) && entityId > 0 ? getRealmInfo(entityId, store) : undefined),
+      [entityId, store],
     );
 
     // 1s tick so production timers/rings decay live (same pattern as the
@@ -107,7 +101,7 @@ export const MergedResourcePanel = memo(
     const balanceMap = useMemo(() => {
       const map = new Map<number, number>();
       if (!resources) return map;
-      const balances = ResourceManager.getResourceBalancesWithProduction(resources, currentDefaultTick);
+      const balances = resources.balances(currentDefaultTick);
       for (const balance of balances) {
         map.set(Number(balance.resourceId), divideByPrecision(Number(balance.amount)));
       }
@@ -202,7 +196,7 @@ export const MergedResourcePanel = memo(
             entityId,
             buildingType: building,
             useSimpleCost,
-            components,
+            store,
             realm,
             mode,
             hasAvailableBuildingTile,
@@ -261,7 +255,7 @@ export const MergedResourcePanel = memo(
       [
         balanceMap,
         canBuild,
-        components,
+        store,
         currentTime,
         entityId,
         handleAutoBuild,

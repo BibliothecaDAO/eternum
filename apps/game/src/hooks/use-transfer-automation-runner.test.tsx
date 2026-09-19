@@ -24,9 +24,9 @@ const mocks = vi.hoisted(() => {
 const balanceKey = (entityId: number, resourceId: number) => `${entityId}:${resourceId}`;
 
 vi.mock("@bibliothecadao/react", () => ({
-  useDojo: () => ({
+  useGame: () => ({
     setup: {
-      components: { Resource: { key: "Resource" } },
+      store: {},
       systemCalls: {
         send_resources_multiple: mocks.sendResourcesMultiple,
       },

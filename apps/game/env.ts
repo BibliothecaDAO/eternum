@@ -20,6 +20,7 @@ const envSchema = z
     // No implicit defaults: endpoints are chain-specific and must come from the
     // active `.env.<chain>.<game>` file.
     VITE_PUBLIC_HERALD_URL: z.string().url(),
+    VITE_PUBLIC_ADMISSION_URL: z.string().url(),
     VITE_PUBLIC_NODE_URL: optionalUrlOrEmpty.default(""),
     VITE_PUBLIC_IDENTITY_ORIGIN: z.string().url(),
     VITE_PUBLIC_IDENTITY_RPC_URL: z.string().url(),
@@ -57,9 +58,6 @@ const envSchema = z
       .string()
       .transform((v) => v === "true")
       .optional(),
-
-    // VRF
-    VITE_PUBLIC_VRF_PROVIDER_ADDRESS: z.string().startsWith("0x").optional().default("0x0"),
 
     // Social
     VITE_SOCIAL_LINK: optionalUrlOrEmpty.default(""),

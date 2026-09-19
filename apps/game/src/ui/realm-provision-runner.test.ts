@@ -72,7 +72,7 @@ describe("realm provision runner", () => {
     expect(submit).toHaveBeenCalledWith([1, 3]);
   });
 
-  it("does not resend a confirmed realm before RECS catches up", async () => {
+  it("does not resend a confirmed realm before native store catches up", async () => {
     const { runner, submit, store } = harness();
     await runner.onConfirmedHead();
     // The diff has not landed yet: the realms still read unprovisioned, but nothing is sent again.

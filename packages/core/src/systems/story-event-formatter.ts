@@ -1,19 +1,17 @@
 import {
   BuildingType,
   BuildingTypeToString,
-  ClientComponents,
   ContractAddress,
-  DISPLAYED_SLOT_NUMBER_MAP,
   GuardSlot,
   RESOURCE_PRECISION,
   resources,
 } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
+import type { NativeFactStore } from "../client/native-fact-store";
 import { getAddressName, getStructureName } from "../utils/entities";
 import { Position } from "./position";
 import { getIsBlitz } from "../utils/utils";
 import { StoryEventSystemUpdate } from "./types";
-import { gameEntityKey } from "../managers/config-manager";
+import { configManager } from "../managers/config-manager";
 
 type StoryEventIcon =
   | "realm"
@@ -40,7 +38,7 @@ export type PlayerNameResolver = (address: string) => string | null;
 type StoryFormatter = (
   event: StoryEventSystemUpdate,
   payload: Record<string, unknown>,
-  components?: ClientComponents,
+  components?: NativeFactStore,
   resolvePlayerName?: PlayerNameResolver,
 ) => StoryEventPresentation;
 
@@ -166,6 +164,48 @@ const formatters: Record<string, StoryFormatter> = {
       icon: "resource",
     };
   },
+  BattleEvent: (event, payload, store, resolvePlayerName) => {
+    const attacker = payload.attacker as Record<string, unknown>;
+    const defender = payload.defender as Record<string, unknown>;
+    const attackerName = nameOwner(attacker.player, store, resolvePlayerName);
+    const defenderName = nameOwner(defender.player, store, resolvePlayerName);
+    const winner = Number(payload.winner_id);
+    const victor =
+      winner > 0 && winner === Number(payload.attacker_owner)
+        ? `Attacker [${attackerName}]`
+        : winner > 0 && winner === Number(payload.defender_owner)
+          ? `Defender [${defenderName}]`
+          : BigInt(String(attacker.after)) === 0n && BigInt(String(defender.after)) === 0n
+            ? "Mutual Annihilation"
+            : "Draw";
+    const side = (label: string, value: Record<string, unknown>) => [
+      `${label} forces: ${formatTroopDescriptor(value.category, value.tier)} [ ${formatUnitAmount(value.before)} ]`,
+      `${label} losses: ${formatResourceAmount(BigInt(String(value.before)) - BigInt(String(value.after)))}`,
+      `${label} Troops Left: ${formatResourceAmount(value.after)} Troops`,
+      Number(value.roll) > 0 ? `${label} d20: ${Number(value.roll)} (+${Number(value.roll)}% damage)` : undefined,
+    ];
+    return {
+      title: "Battle resolved",
+      description: joinPieces([
+        `Attacker [${attackerName}]: ${describeEntity(payload.attacker_id, store) ?? "Army"}`,
+        `Defender [${defenderName}]: ${describeEntity(payload.defender_id, store) ?? "Army"}`,
+        ...side("Attacker", attacker),
+        ...side("Defender", defender),
+        `Winner: ${victor}`,
+      ]),
+      icon: "battle",
+    };
+  },
+  RaidEvent: (_, payload) => ({
+    title: payload.success ? "Raid successful" : "Raid repelled",
+    description: payload.success ? formatResourceList(payload.requested_loot) : "No resources captured.",
+    icon: "battle",
+  }),
+  BankLiquidity: (_, payload) => ({
+    title: payload.add ? "Liquidity added" : "Liquidity withdrawn",
+    description: `${getResourceName(Number(payload.resource_type))} / Lords`,
+    icon: "resource",
+  }),
   BattleStory: (event, payload, components, resolvePlayerName) => {
     const battleType = formatEnum(payload.battle_type) ?? "Battle";
     const attacker = describeEntity(payload.attacker_id, components);
@@ -343,6 +383,14 @@ const formatters: Record<string, StoryFormatter> = {
       icon: "troop",
     };
   },
+  TroopsTransferred: (event, payload, components) => ({
+    title: "Troops reassigned",
+    description: joinPieces([
+      `Route: ${describeArmy(payload.source, event, components)} → ${describeArmy(payload.target, event, components)}`,
+      `Transferred: ${formatResourceAmount(payload.amount)}`,
+    ]),
+    icon: "troop",
+  }),
   ExplorerExplorerSwapStory: (_, payload, components) => {
     const fromRef = describeExplorer(payload.from_explorer_id, components);
     const toRef = describeExplorer(payload.to_explorer_id, components);
@@ -409,19 +457,11 @@ const formatters: Record<string, StoryFormatter> = {
       icon: "prize",
     };
   },
-  PrizeDistributionFinalStory: (_, payload) => {
-    const trialId = formatNumber(payload.trial_id);
-    return {
-      title: "Prize trial complete",
-      description: trialId ? `Trial ${trialId} finalized.` : "Distribution cycle finalized.",
-      icon: "prize",
-    };
-  },
 };
 
 export function buildStoryEventPresentation(
   event: StoryEventSystemUpdate,
-  components?: ClientComponents,
+  components?: NativeFactStore,
   resolvePlayerName?: PlayerNameResolver,
 ): StoryEventPresentation {
   const payload = event.storyPayload ?? {};
@@ -438,7 +478,7 @@ export function buildStoryEventPresentation(
 
 function fallbackPresentation(
   event: StoryEventSystemUpdate,
-  components?: ClientComponents,
+  components?: NativeFactStore,
   resolvePlayerName?: PlayerNameResolver,
 ): StoryEventPresentation {
   const type = event.storyType || "Unknown";
@@ -470,9 +510,21 @@ function describeBuildingStatus(payload: Record<string, unknown>): string {
   return "Updated";
 }
 
+function describeArmy(value: unknown, event: StoryEventSystemUpdate, components?: NativeFactStore): string {
+  if (!value || typeof value !== "object") throw new Error("Missing troop transfer participant");
+  const army = value as Record<string, unknown>;
+  if (army.Explorer !== undefined) return describeExplorer(army.Explorer, components);
+  if (!army.Guard || typeof army.Guard !== "object") throw new Error("Unknown troop transfer participant");
+  const guard = army.Guard as Record<string, unknown>;
+  const structure =
+    describeStructureDetails(event, components, undefined, undefined, guard.structure_id) ??
+    `Structure ${formatNumber(guard.structure_id)}`;
+  return `${structure} · ${formatSlotLabel(guard.slot)}`;
+}
+
 function describeStructureDetails(
   event: StoryEventSystemUpdate,
-  components?: ClientComponents,
+  components?: NativeFactStore,
   fallbackCategory?: unknown,
   fallbackCoord?: unknown,
   structureOverride?: unknown,
@@ -495,28 +547,31 @@ function describeStructureDetails(
 
 type StructureRow = NonNullable<ReturnType<typeof readStructure>>;
 
-function readStructure(structureId: unknown, components?: ClientComponents) {
+function readStructure(structureId: unknown, components?: NativeFactStore) {
   const entityId = toBigIntSafe(structureId);
   if (!components || entityId === null) return undefined;
   try {
-    return getComponentValue(components.Structure, gameEntityKey([entityId]));
+    return components.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: Number(entityId) });
   } catch {
     return undefined;
   }
 }
 
-function readExplorer(explorerId: unknown, components?: ClientComponents) {
+function readExplorer(explorerId: unknown, components?: NativeFactStore) {
   const entityId = toBigIntSafe(explorerId);
   if (!components || entityId === null) return undefined;
   try {
-    return getComponentValue(components.ExplorerTroops, gameEntityKey([entityId]));
+    return components.get("ExplorerTroops", {
+      game_id: configManager.getActiveGameId(),
+      explorer_id: Number(entityId),
+    });
   } catch {
     return undefined;
   }
 }
 
-/** The structure's name alone, undefined when RECS has no row: a story never prints a raw entity id. */
-function describeStructureName(structureId: unknown, components?: ClientComponents): string | undefined {
+/** The structure's name alone, undefined when native store has no row: a story never prints a raw entity id. */
+function describeStructureName(structureId: unknown, components?: NativeFactStore): string | undefined {
   const structure = readStructure(structureId, components);
   return structure ? structureDisplayName(structure) : undefined;
 }
@@ -529,7 +584,7 @@ function structureDisplayName(structure: StructureRow): string {
  * The explorer as a player reads it: its home structure's name and its tier ("Stormhold T2 army"). A retired
  * explorer has no row, so the home structure from the payload stands in; with nothing to read it is "Army".
  */
-function describeExplorer(explorerId: unknown, components?: ClientComponents, homeStructureId?: unknown): string {
+function describeExplorer(explorerId: unknown, components?: NativeFactStore, homeStructureId?: unknown): string {
   const explorer = readExplorer(explorerId, components);
   const home = describeStructureName(explorer?.owner ?? homeStructureId, components);
   const tier = formatEnum(explorer?.troops?.tier);
@@ -538,7 +593,7 @@ function describeExplorer(explorerId: unknown, components?: ClientComponents, ho
 }
 
 /** A structure by name, else an explorer by home and tier, else nothing. */
-function describeEntity(entityId: unknown, components?: ClientComponents): string | undefined {
+function describeEntity(entityId: unknown, components?: NativeFactStore): string | undefined {
   const structureName = describeStructureName(entityId, components);
   if (structureName) return structureName;
   return readExplorer(entityId, components) ? describeExplorer(entityId, components) : undefined;
@@ -812,11 +867,13 @@ function formatResourceAmount(amount: unknown): string | undefined {
 }
 
 function formatSlotLabel(value: unknown): string | undefined {
-  const label = formatEnum(value);
-  if (label) return `Slot ${DISPLAYED_SLOT_NUMBER_MAP[GuardSlot[label as keyof typeof GuardSlot]]}`;
   const numeric = toNumber(value);
-  if (numeric !== null) return `Slot ${DISPLAYED_SLOT_NUMBER_MAP[numeric as keyof typeof DISPLAYED_SLOT_NUMBER_MAP]}`;
-  return undefined;
+  const label = formatEnum(value);
+  const slot = numeric ?? (label ? GuardSlot[label as keyof typeof GuardSlot] : undefined);
+  if (slot === undefined) return undefined;
+  const name = GuardSlot[slot as GuardSlot];
+  if (name === undefined) throw new Error(`Invalid guard slot: ${String(value)}`);
+  return name;
 }
 
 function formatDirection(value: unknown): string | undefined {
@@ -848,7 +905,7 @@ function formatTravelTime(seconds: unknown): string | undefined {
   return `${numeric.toLocaleString()} ticks`;
 }
 
-function formatRoute(fromEntity: unknown, toEntity: unknown, components?: ClientComponents): string | undefined {
+function formatRoute(fromEntity: unknown, toEntity: unknown, components?: NativeFactStore): string | undefined {
   const fromRef = describeEntity(fromEntity, components);
   const toRef = describeEntity(toEntity, components);
   if (!fromRef || !toRef) return undefined;
@@ -863,7 +920,7 @@ function formatRoute(fromEntity: unknown, toEntity: unknown, components?: Client
  */
 function nameOwner(
   owner: unknown,
-  components?: ClientComponents,
+  components?: NativeFactStore,
   resolvePlayerName?: PlayerNameResolver,
 ): string | undefined {
   if (owner === undefined || owner === null) return undefined;
@@ -883,7 +940,7 @@ const isZeroAddress = (address: string): boolean => {
   }
 };
 
-const safeChainName = (address: string, components: ClientComponents): string | undefined => {
+const safeChainName = (address: string, components: NativeFactStore): string | undefined => {
   try {
     return getAddressName(address as unknown as ContractAddress, components);
   } catch {

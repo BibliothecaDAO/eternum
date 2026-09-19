@@ -10,16 +10,16 @@ const HOME = { x: 100, y: 100 };
 const FAR_AWAY = { x: 160, y: 160 };
 
 afterEach(() => {
-  ClientConfigManager.instance().setActiveGame(0, 0);
+  ClientConfigManager.instance().setActiveGame(28, 0);
 });
 
 const settledGame = () => {
   const game = createFakeGame();
-  seedGameRegistry(game.components, { status: "Live", startMainAt: 0, endAt: 0 });
-  seedStructure(game.components, { entityId: 12, owner: PLAYER, x: HOME.x, y: HOME.y });
-  seedStructure(game.components, { entityId: 13, owner: RIVAL, x: FAR_AWAY.x, y: FAR_AWAY.y });
+  seedGameRegistry(game.store, { status: "Live", startMainAt: 0, endAt: 0 });
+  seedStructure(game.store, { entityId: 12, owner: PLAYER, x: HOME.x, y: HOME.y });
+  seedStructure(game.store, { entityId: 13, owner: RIVAL, x: FAR_AWAY.x, y: FAR_AWAY.y });
   const spawn = getNeighborHexes(HOME.x, HOME.y)[0]!;
-  seedExplorer(game.components, { explorerId: 101, owner: 12, x: spawn.col, y: spawn.row });
+  seedExplorer(game.store, { explorerId: 101, owner: 12, x: spawn.col, y: spawn.row });
   return game;
 };
 
@@ -41,19 +41,19 @@ describe("delta gate", () => {
     const game = settledGame();
     const before = observeWorld(game);
 
-    seedExplorer(game.components, { explorerId: 201, owner: 13, x: HOME.x + 2, y: HOME.y + 1 });
+    seedExplorer(game.store, { explorerId: 201, owner: 13, x: HOME.x + 2, y: HOME.y + 1 });
     const appeared = summariseDelta(before, observeWorld(game));
     expect(appeared.hostilesAppeared).toEqual([201]);
     expect(isActionable(appeared, "world-delta")).toBe(true);
 
     const seen = observeWorld(game);
-    seedExplorer(game.components, { explorerId: 201, owner: 13, x: HOME.x + 1, y: HOME.y + 1 });
+    seedExplorer(game.store, { explorerId: 201, owner: 13, x: HOME.x + 1, y: HOME.y + 1 });
     const moved = summariseDelta(seen, observeWorld(game));
     expect(moved.hostilesMoved).toEqual([201]);
     expect(isActionable(moved, "world-delta")).toBe(true);
 
     const close = observeWorld(game);
-    seedExplorer(game.components, { explorerId: 201, owner: 13, x: FAR_AWAY.x, y: FAR_AWAY.y });
+    seedExplorer(game.store, { explorerId: 201, owner: 13, x: FAR_AWAY.x, y: FAR_AWAY.y });
     const left = summariseDelta(close, observeWorld(game));
     expect(left.hostilesLeft).toEqual([201]);
     expect(isActionable(left, "world-delta")).toBe(false);
@@ -63,7 +63,7 @@ describe("delta gate", () => {
     const game = settledGame();
     const before = observeWorld(game);
 
-    seedExplorer(game.components, { explorerId: 102, owner: 12, x: HOME.x - 1, y: HOME.y });
+    seedExplorer(game.store, { explorerId: 102, owner: 12, x: HOME.x - 1, y: HOME.y });
     const delta = summariseDelta(before, observeWorld(game));
 
     expect(delta.hostilesAppeared).toEqual([]);
@@ -74,11 +74,11 @@ describe("delta gate", () => {
     const game = settledGame();
     const before = observeWorld(game);
 
-    seedExplorer(game.components, { explorerId: 101, owner: 12, x: HOME.x + 3, y: HOME.y });
+    seedExplorer(game.store, { explorerId: 101, owner: 12, x: HOME.x + 3, y: HOME.y });
     expect(summariseDelta(before, observeWorld(game)).ownArmies).toEqual([101]);
 
     const afterMove = observeWorld(game);
-    seedStructure(game.components, { entityId: 12, owner: PLAYER, x: HOME.x, y: HOME.y, level: 2 });
+    seedStructure(game.store, { entityId: 12, owner: PLAYER, x: HOME.x, y: HOME.y, level: 2 });
     expect(summariseDelta(afterMove, observeWorld(game)).ownStructures).toEqual([12]);
   });
 
@@ -86,7 +86,7 @@ describe("delta gate", () => {
     const game = settledGame();
     const before = observeWorld(game);
 
-    seedGameRegistry(game.components, { status: "Ended", startMainAt: 0, endAt: 0 });
+    seedGameRegistry(game.store, { status: "Ended", startMainAt: 0, endAt: 0 });
     const delta = summariseDelta(before, observeWorld(game));
 
     expect(delta.phase).toEqual({ from: "live", to: "ended" });

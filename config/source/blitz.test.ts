@@ -1,4 +1,3 @@
-import { readFileSync } from "node:fs";
 import { BuildingType, RealmLevels, ResourcesIds } from "@bibliothecadao/types";
 import { describe, expect, test } from "bun:test";
 import {
@@ -28,37 +27,6 @@ function findBlitzExplorationReward(
   amount: number,
 ) {
   return rewards.find((reward) => reward.rewardId === rewardId && reward.amount === amount);
-}
-
-function extractContractRewardRows(functionName: string) {
-  const contractSource = readFileSync(
-    new URL("../../contracts/l3/game/src/systems/utils/blitz_exploration.cairo", import.meta.url),
-    "utf8",
-  );
-  const functionMatch = contractSource.match(
-    new RegExp(`fn ${functionName}\\([^)]*\\) -> Span<\\(u8, u128, u128\\)> \\{([\\s\\S]*?)\\n    \\}`, "m"),
-  );
-
-  if (!functionMatch) {
-    throw new Error(`Could not find ${functionName} in blitz_exploration.cairo`);
-  }
-
-  const resourceIdByContractName = {
-    ESSENCE: ResourcesIds.Essence,
-    LABOR: ResourcesIds.Labor,
-    DONKEY: ResourcesIds.Donkey,
-    KNIGHT_T1: ResourcesIds.Knight,
-    CROSSBOWMAN_T1: ResourcesIds.Crossbowman,
-    PALADIN_T1: ResourcesIds.Paladin,
-  } as const;
-
-  return Array.from(functionMatch[1].matchAll(/\(ResourceTypes::([A-Z0-9_]+), ([0-9_]+), ([0-9_]+)\)/g)).map(
-    ([, rewardName, amount, probabilityBps]) => ({
-      rewardId: resourceIdByContractName[rewardName as keyof typeof resourceIdByContractName],
-      amount: Number(amount.replaceAll("_", "")),
-      probabilityBps: Number(probabilityBps.replaceAll("_", "")),
-    }),
-  );
 }
 
 describe("Blitz balance profiles", () => {
@@ -141,17 +109,5 @@ describe("Blitz balance profiles", () => {
       amount: 1_000,
       probabilityBps: 200,
     });
-  });
-
-  test("keeps the TypeScript official reward tables aligned with the baked Cairo tables", () => {
-    const official60Config = applyBlitzBalanceProfile(getConfigFromNetwork("appchain", "blitz"), "official-60");
-    const official90Config = applyBlitzBalanceProfile(getConfigFromNetwork("appchain", "blitz"), "official-90");
-
-    expect(official60Config.blitz.exploration.rewards).toEqual(
-      extractContractRewardRows("get_official_60_blitz_exploration_rewards"),
-    );
-    expect(official90Config.blitz.exploration.rewards).toEqual(
-      extractContractRewardRows("get_official_90_blitz_exploration_rewards"),
-    );
   });
 });

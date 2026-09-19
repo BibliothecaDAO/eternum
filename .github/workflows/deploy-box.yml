@@ -1,7 +1,7 @@
 name: Deploy Box
 
 # Keeps the lab box's host services (herald, identity, launch, chat) on `next`. Every push to `next`
-# that touches one of them runs deploy/madara-lab/scripts/deploy-box.sh over SSH; the script decides
+# that touches one of them runs deploy/athanor/scripts/deploy-box.sh over SSH; the script decides
 # which units to restart and prints one JSON result line, surfaced in the step summary.
 # Needs: secret BOX_SSH_PRIVATE_KEY (a key in ubuntu's authorized_keys on the box) and variables
 # BOX_SSH_HOST (the box IP) and BOX_SSH_HOST_KEY (its `ssh-keyscan -t ed25519` line).
@@ -19,8 +19,8 @@ on:
       - "pnpm-lock.yaml"
       - "pnpm-workspace.yaml"
       - "patches/**"
-      - "deploy/madara-lab/scripts/deploy-box*"
-      - "deploy/madara-lab/scripts/test_deploy_box.py"
+      - "deploy/athanor/scripts/deploy-box*"
+      - "deploy/athanor/scripts/test_deploy_box.py"
       - ".github/workflows/deploy-box.yml"
   workflow_dispatch:
 
@@ -30,8 +30,6 @@ permissions:
 concurrency:
   group: deploy-box
   cancel-in-progress: false
-  # Keep the active deployment and replace an older pending run with the latest push.
-  queue: single
 
 jobs:
   deploy:
@@ -39,6 +37,9 @@ jobs:
     timeout-minutes: 30
     env:
       BOX_SSH_HOST: ${{ vars.BOX_SSH_HOST }}
+      NATIVE_WORLD_MANIFEST: /tmp/native-world.json
+      NATIVE_WORLD_MANIFEST_URL: ${{ vars.NATIVE_WORLD_MANIFEST_URL }}
+      ADMISSION_URL: ${{ vars.ADMISSION_URL }}
     steps:
       - name: Validate box access configuration
         env:
@@ -60,7 +61,13 @@ jobs:
           bun-version: "1.4.0"
 
       - name: Check deployment recipe
-        run: python3 -m unittest discover -s deploy/madara-lab/scripts -p test_deploy_box.py -v
+        run: python3 -m unittest discover -s deploy/athanor/scripts -p "test_*.py" -v
+
+      - name: Validate native deployment target
+        run: |
+          test -n "$NATIVE_WORLD_MANIFEST_URL" && test -n "$ADMISSION_URL"
+          curl --fail --silent --show-error --location "$NATIVE_WORLD_MANIFEST_URL" -o "$NATIVE_WORLD_MANIFEST"
+          node deploy/athanor/scripts/validate-native-target.mjs
 
       - name: Prepare SSH
         env:
@@ -76,7 +83,8 @@ jobs:
       - name: Redeploy host services from next
         run: |
           set -o pipefail
-          scp -i ~/.ssh/box -o BatchMode=yes deploy/madara-lab/scripts/deploy-box.sh "ubuntu@$BOX_SSH_HOST:/tmp/deploy-box.sh"
+          scp -i ~/.ssh/box -o BatchMode=yes deploy/athanor/scripts/validate-native-target.mjs "ubuntu@$BOX_SSH_HOST:/tmp/validate-native-target.mjs"
+          scp -i ~/.ssh/box -o BatchMode=yes deploy/athanor/scripts/deploy-box.sh "ubuntu@$BOX_SSH_HOST:/tmp/deploy-box.sh"
           ssh -i ~/.ssh/box -o BatchMode=yes "ubuntu@$BOX_SSH_HOST" "sudo DEPLOY_BRANCH=next bash /tmp/deploy-box.sh" 2>&1 | tee deploy-box.log
 
       - name: Publish deploy result

@@ -29,7 +29,7 @@ type Row = Record<string, unknown>;
 interface ReviewFinalizationMeta {
   registeredPlayers: string[];
   registrationCount: number;
-  finalTrialId: bigint | null;
+  resultCommitment: bigint | null;
   rankingFinalized: boolean;
   devModeOn: boolean;
   seasonEndAt: number | null;
@@ -76,14 +76,6 @@ export type GameReviewMapSnapshot =
     }
   | { available: false; reason: string };
 
-export interface GameReviewRewards {
-  scoreSubmitted: boolean;
-  isRanked: boolean;
-  chests: number;
-  eliteTicketEarned: boolean;
-  eliteTicketReason: string;
-}
-
 export interface GameReviewData {
   worldName: string;
   chain: Chain;
@@ -94,7 +86,6 @@ export interface GameReviewData {
   stats: GameReviewStats;
   mapSnapshot: GameReviewMapSnapshot;
   finalization: ReviewFinalizationMeta;
-  rewards: GameReviewRewards | null;
 }
 
 interface ReviewSource {
@@ -137,12 +128,6 @@ const uniqueAddresses = (values: readonly unknown[]): string[] => {
     if (parsed) result.add(parsed);
   });
   return [...result];
-};
-
-const sameFelt = (left: unknown, right: unknown): boolean => {
-  const leftValue = toBigInt(left);
-  const rightValue = toBigInt(right);
-  return leftValue !== null && rightValue !== null && leftValue === rightValue;
 };
 
 const story = (event: HeraldHistoryEvent, variant: string): Row | null => {
@@ -193,18 +178,15 @@ const loadReviewSource = async (worldName: string): Promise<ReviewSource> => {
 
 const buildFinalization = (source: ReviewSource): ReviewFinalizationMeta => {
   const registry = modelRows(source.snapshot, "GameRegistry")[0] ?? {};
-  const config = modelRows(source.snapshot, "WorldConfig")[0] ?? {};
-  const registration = record(config.blitz_registration_config);
-  const registeredPlayers = uniqueAddresses(modelRows(source.snapshot, "BlitzSettlement").map((row) => row.player));
-  const configuredRegistrations = Math.max(0, toNumber(registration.registration_count));
-  const finalTrialId = toBigInt(registry.final_trial_id);
+  const result = modelRows(source.snapshot, "BlitzResult")[0];
+  const registeredPlayers = uniqueAddresses(modelRows(source.snapshot, "PlayerEntry").map((row) => row.player));
   const seasonEndAtValue = toNumber(registry.end_at);
   const seasonEndAt = seasonEndAtValue > 0 ? seasonEndAtValue : null;
   return {
     registeredPlayers,
-    registrationCount: configuredRegistrations || registeredPlayers.length,
-    finalTrialId,
-    rankingFinalized: finalTrialId !== null && finalTrialId > 0n,
+    registrationCount: registeredPlayers.length,
+    resultCommitment: result?.complete === true ? toBigInt(result.commitment) : null,
+    rankingFinalized: result?.complete === true,
     devModeOn: toBoolean(registry.dev_mode_on),
     seasonEndAt,
   };
@@ -306,52 +288,6 @@ const highestExploredTiles = (rows: LandingLeaderboardEntry[]): GameReviewValueM
   return top ? { playerAddress: top.address, value: top.exploredTiles ?? 0 } : null;
 };
 
-const buildEliteTicketReason = (eligible: boolean, rank: number, totalPlayers: number): string => {
-  const cutoff = totalPlayers <= 132 ? Math.floor(totalPlayers / 2) : 66;
-  return eligible
-    ? `Eligible: rank #${rank} is within the top ${cutoff} ranks.`
-    : `Not eligible: elite ticket cutoff is rank #${cutoff} (you are #${rank}).`;
-};
-
-const buildReviewRewards = (
-  source: ReviewSource,
-  playerAddress: string,
-  finalization: ReviewFinalizationMeta,
-  personalScore: LandingLeaderboardEntry | null,
-): GameReviewRewards => {
-  if (!finalization.rankingFinalized || finalization.finalTrialId === null) {
-    return {
-      scoreSubmitted: false,
-      isRanked: false,
-      chests: 0,
-      eliteTicketEarned: false,
-      eliteTicketReason: "Elite ticket eligibility is available once the game operator finalizes results.",
-    };
-  }
-  const rankRow = modelRows(source.snapshot, "PlayerRank").find((row) => sameFelt(row.player, playerAddress));
-  const rank = Math.max(0, toNumber(rankRow?.rank) || personalScore?.rank || 0);
-  if (rank <= 0) {
-    return {
-      scoreSubmitted: true,
-      isRanked: false,
-      chests: 0,
-      eliteTicketEarned: false,
-      eliteTicketReason: "Player is not ranked in the final results.",
-    };
-  }
-  const prize = modelRows(source.snapshot, "RankPrize").find((row) => toNumber(row.rank) === rank) ?? {};
-  const trial =
-    modelRows(source.snapshot, "PlayersRankTrial").find((row) => sameFelt(row.nonce, finalization.finalTrialId)) ?? {};
-  const eliteTicketEarned = toBoolean(prize.grant_elite_nft);
-  return {
-    scoreSubmitted: true,
-    isRanked: true,
-    chests: Math.max(0, toNumber(rankRow?.chests)),
-    eliteTicketEarned,
-    eliteTicketReason: buildEliteTicketReason(eliteTicketEarned, rank, toNumber(trial.total_player_count_committed)),
-  };
-};
-
 export const fetchGameReviewData = async (input: {
   worldName: string;
   chain: Chain;
@@ -392,6 +328,5 @@ export const fetchGameReviewData = async (input: {
     stats,
     mapSnapshot: buildMapSnapshot(source.snapshot),
     finalization,
-    rewards: playerAddress ? buildReviewRewards(source, playerAddress, finalization, personalScore) : null,
   };
 };

@@ -8,6 +8,7 @@ const make = (name: string, overrides: Partial<WorldSummary>): WorldSummary => (
   name,
   chain: "madara",
   alive: true,
+  ready: true,
   lastCheckedAt: 0,
   mode: null,
   startSettlingAt: null,
@@ -107,6 +108,11 @@ describe("partitionWorlds", () => {
     expect(partition.ended.map((s) => s.name)).toEqual(["ended"]);
     expect(partition.offline.map((s) => s.name)).toEqual(["offline"]);
     expect(partition.unknown.map((s) => s.name)).toEqual(["unknown"]);
+  });
+
+  it("keeps an unfinished roster upcoming after the scheduled clock expires", () => {
+    const summary = make("preparing", { ready: false, startMainAt: now - 200, endAt: now - 100 });
+    expectExactly(partitionWorlds([summary], now), { upcoming: ["preparing"] });
   });
 
   it("handles empty input", () => {

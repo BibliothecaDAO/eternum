@@ -1,3 +1,4 @@
+import type { NativeExecutionOutcome } from "@bibliothecadao/types";
 import type { GameSyncScheduler } from "./scheduler";
 
 export interface GameSyncEntity {
@@ -72,6 +73,7 @@ export interface GameSyncHead {
 }
 
 export interface GameSyncTransaction {
+  executions?: NativeExecutionOutcome[];
   block: number | null;
   hash: string;
   revertReason?: string;
@@ -111,6 +113,7 @@ export interface GameSyncRuntimeMetrics {
 }
 
 export interface GameSyncSessionStart {
+  onDispose?: () => void;
   transport: GameSyncTransport;
   store: GameSyncStore;
   snapshotModels: readonly string[];

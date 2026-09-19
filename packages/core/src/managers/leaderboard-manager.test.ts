@@ -1,131 +1,110 @@
-import { setBlockTimestampSource } from "../utils/timestamp";
-// @vitest-environment node
-
-import { ContractAddress, createClientComponents, defineContractComponents } from "@bibliothecadao/types";
-import { createWorld, setComponent, removeComponent, getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { ClientConfigManager } from "./config-manager";
+import { afterEach, describe, expect, it } from "vitest";
+import { NativeFactStore } from "../client/native-fact-store";
+import { configManager } from "./config-manager";
 import { LeaderboardManager } from "./leaderboard-manager";
+import { setBlockTimestampSource } from "../utils/timestamp";
+import preset from "../../../../contracts/l3/world-native/fixtures/preset-1.json";
+import { hash } from "starknet";
 
 const PLAYER = 0x3e1a40b7n;
-const POINTS_PRECISION = 1_000_000n;
-
-afterEach(() => {
-  ClientConfigManager.instance().setActiveGame(0, 0);
-  setBlockTimestampSource(null);
-  vi.restoreAllMocks();
-});
-
-describe("LeaderboardManager game scoping", () => {
-  it("reads registered points from the active game's row, not another game's row for the same address", () => {
-    const components = createTestComponents();
-    // Seed the current game first, then an older game's row for the same
-    // address, so an unscoped address-keyed pass would let the old row win.
-    seedRegisteredPoints(components, 23, PLAYER, 17_332n);
-    seedRegisteredPoints(components, 15, PLAYER, 5_275n);
-    const manager = new LeaderboardManager(components);
-
-    ClientConfigManager.instance().setActiveGame(23, 0);
-    expect(manager.getPlayerRegisteredPoints(ContractAddress(PLAYER))).toBe(17_332);
-
-    ClientConfigManager.instance().setActiveGame(15, 0);
-    expect(manager.getPlayerRegisteredPoints(ContractAddress(PLAYER))).toBe(5_275);
+const upsert = (store: NativeFactStore, keys: number[], model: string, value: Record<string, unknown>) =>
+  store.applyEntityOperations([
+    {
+      type: "upsert",
+      entities: [{ hashed_keys: hash.computePoseidonHashOnElements(keys), models: { [model]: value } }],
+    },
+  ]);
+const points = (store: NativeFactStore, game: number, amount: bigint) =>
+  upsert(store, [game, Number(PLAYER)], "PlayerPoints", {
+    game_id: game,
+    address: PLAYER,
+    points: amount * 1_000_000n,
   });
 
-  it("builds the points map from active-game rows only", () => {
-    const components = createTestComponents();
-    seedRegisteredPoints(components, 23, PLAYER, 17_332n);
-    seedRegisteredPoints(components, 15, PLAYER, 5_275n);
-    ClientConfigManager.instance().setActiveGame(23, 0);
-    const manager = new LeaderboardManager(components);
-
-    const pointsPerPlayer = (manager as unknown as { getPlayerPoints: () => Map<ContractAddress, number> })[
-      "getPlayerPoints"
-    ]();
-
-    expect(pointsPerPlayer.get(ContractAddress(PLAYER))).toBe(17_332);
+afterEach(() => setBlockTimestampSource(null));
+describe("native leaderboard", () => {
+  it("scopes registered points and rankings by game", () => {
+    const store = new NativeFactStore();
+    points(store, 23, 17332n);
+    points(store, 15, 5275n);
+    const manager = new LeaderboardManager(store);
+    configManager.setActiveGame(23, 1);
+    expect(manager.getPlayerRegisteredPoints(PLAYER)).toBe(17332);
+    expect(manager.playersByRank).toEqual([[PLAYER, 17332]]);
+    configManager.setActiveGame(15, 1);
+    expect(manager.getPlayerRegisteredPoints(PLAYER)).toBe(5275);
+    expect(() => configManager.setActiveGame(0, 1)).toThrow("positive game");
   });
 
-  it("keeps legacy single-game worlds (no active game id) unfiltered", () => {
-    const components = createTestComponents();
-    seedRegisteredPoints(components, 0, PLAYER, 1_460n);
-    ClientConfigManager.instance().setActiveGame(0, 0);
-    const manager = new LeaderboardManager(components);
-
-    expect(manager.getPlayerRegisteredPoints(ContractAddress(PLAYER))).toBe(1_460);
+  it("rebinds the singleton to the current store without keeping standings from a previous world", () => {
+    configManager.setActiveGame(23, 1);
+    const first = new NativeFactStore();
+    const second = new NativeFactStore();
+    points(first, 23, 10n);
+    points(second, 23, 20n);
+    expect(LeaderboardManager.instance(first).pointsPerPlayer.get(PLAYER)).toBe(10);
+    expect(LeaderboardManager.instance(second).pointsPerPlayer.get(PLAYER)).toBe(20);
   });
-});
 
-function createTestComponents() {
-  const world = createWorld();
-  return createClientComponents({ contractComponents: defineContractComponents(world) });
-}
-
-function seedRegisteredPoints(
-  components: ReturnType<typeof createTestComponents>,
-  gameId: number,
-  address: bigint,
-  points: bigint,
-) {
-  setComponent(components.PlayerRegisteredPoints, getEntityIdFromKeys([BigInt(gameId), address]), {
-    game_id: gameId,
-    address,
-    registered_points: points * POINTS_PRECISION,
+  it("replaces elapsed shares with registered points in one transaction and caps accrual at game end", () => {
+    configManager.setActiveGame(23, 1);
+    const store = new NativeFactStore();
+    upsert(store, [23], "SliceRules", {
+      ...preset.rules,
+      game_id: 23,
+      victory_points_grant_config: { ...preset.rules.victory_points_grant_config, hyp_points_per_second: 1000000 },
+    });
+    upsert(store, [23], "GameRegistry", {
+      game_id: 23,
+      preset_id: 1,
+      name: 1n,
+      creator: 1n,
+      start_settling_at: 1n,
+      start_main_at: 1n,
+      end_at: 200n,
+      settled: false,
+      ready: true,
+      dev_mode_on: false,
+      end_grace_seconds: 0,
+      seed: 1n,
+    });
+    configManager.setStore(store);
+    const shares = {
+      game_id: 23,
+      entity_id: 7,
+      start_at: 100n,
+      multiplier: 2,
+      shareholders: [{ player: PLAYER, bps: 10000 }],
+    };
+    upsert(store, [23, 7], "HyperstructureShares", shares);
+    setBlockTimestampSource(() => 150);
+    const manager = new LeaderboardManager(store);
+    expect(manager.pointsPerPlayer.get(PLAYER)).toBe(100);
+    const observed: number[] = [];
+    store.subscribe(() => observed.push(manager.pointsPerPlayer.get(PLAYER)!));
+    store.applyEntityOperations([
+      {
+        type: "upsert",
+        entities: [
+          {
+            hashed_keys: hash.computePoseidonHashOnElements([23, 7]),
+            models: { HyperstructureShares: { ...shares, start_at: 150n } },
+          },
+          {
+            hashed_keys: hash.computePoseidonHashOnElements([23, Number(PLAYER)]),
+            models: { PlayerPoints: { game_id: 23, address: PLAYER, points: 100000000n } },
+          },
+        ],
+      },
+    ]);
+    expect(observed).toEqual([100]);
+    expect(manager.getPlayerHyperstructureUnregisteredShareholderPoints(PLAYER)).toBe(0);
+    setBlockTimestampSource(() => 250);
+    expect(manager.pointsPerPlayer.get(PLAYER)).toBe(200);
+    expect(manager.getCurrentCoOwners(7)).toEqual({
+      coOwners: [{ address: PLAYER, percentage: 10000 }],
+      timestamp: 150,
+    });
+    expect(manager.getPlayerShares(PLAYER, 7)).toBe(1);
   });
-}
-
-it("replaces elapsed shares with registered points immediately after a checkpoint", () => {
-  const components = createTestComponents();
-  const config = ClientConfigManager.instance();
-  config.setActiveGame(23, 0);
-  vi.spyOn(config, "getHyperstructureConfig").mockReturnValue({ pointsPerCycle: 1 } as ReturnType<
-    typeof config.getHyperstructureConfig
-  >);
-  vi.spyOn(config, "getSeasonConfig").mockReturnValue({ endAt: 200 } as ReturnType<typeof config.getSeasonConfig>);
-  vi.spyOn(config, "getDevModeConfig").mockReturnValue({ dev_mode_on: false });
-  setBlockTimestampSource(() => 150);
-  const entity = getEntityIdFromKeys([23n, 7n]);
-  setComponent(components.Hyperstructure, entity, {
-    game_id: 23,
-    hyperstructure_id: 7,
-    initialized: true,
-    completed: true,
-    access: "Public",
-    randomness: 0n,
-    points_multiplier: 2,
-  });
-  const shares = {
-    game_id: 23,
-    hyperstructure_id: 7,
-    start_at: 100n,
-    shareholders: [[PLAYER, 10000n]] as unknown as number[],
-  };
-  setComponent(components.HyperstructureShareholders, entity, shares);
-  const manager = new LeaderboardManager(components);
-  manager.updatePoints();
-  const readConfig = vi.spyOn(config, "getHyperstructureConfig");
-  readConfig.mockClear();
-  for (let index = 0; index < 20; index++) {
-    expect(manager.getPlayerHyperstructureUnregisteredShareholderPoints(ContractAddress(PLAYER))).toBe(100);
-  }
-  expect(readConfig).not.toHaveBeenCalled();
-  expect(manager.getPlayerHyperstructurePointsBreakdown(ContractAddress(PLAYER))[0].totalPoints).toBe(100);
-  seedRegisteredPoints(components, 23, PLAYER, 100n);
-  setComponent(components.HyperstructureShareholders, entity, { ...shares, start_at: 150n });
-  manager.updatePoints();
-  expect(manager.getPlayerHyperstructureUnregisteredShareholderPoints(ContractAddress(PLAYER))).toBe(0);
-  expect(manager.getPlayerRegisteredPoints(ContractAddress(PLAYER))).toBe(100);
-
-  const hyperstructure = getComponentValue(components.Hyperstructure, entity)!;
-  removeComponent(components.Hyperstructure, entity);
-  setComponent(components.HyperstructureShareholders, entity, shares);
-  const warning = vi.spyOn(console, "warn").mockImplementation(() => {});
-  expect(() => manager.updatePoints()).not.toThrow();
-  expect(warning).toHaveBeenCalledWith("LeaderboardManager: waiting for hyperstructure row", {
-    entity: String(entity),
-  });
-  setComponent(components.Hyperstructure, entity, hyperstructure);
-  manager.updatePoints();
-  expect(manager.getPlayerHyperstructureUnregisteredShareholderPoints(ContractAddress(PLAYER))).toBe(100);
 });

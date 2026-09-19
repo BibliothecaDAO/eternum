@@ -58,11 +58,6 @@ vi.mock("@bibliothecadao/types", () => {
   });
 });
 
-vi.mock("@dojoengine/recs", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@dojoengine/recs")>()),
-  getComponentValue: vi.fn(),
-}));
-
 vi.mock("starknet", () => ({
   shortString: {
     decodeShortString: vi.fn(() => ""),

@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { StructureType } from "@bibliothecadao/types";
 import {
-  resolveArmyToArmyTransferRestriction,
   canTransferMilitaryInventoryBetweenStructures,
   canTransferMilitaryInventoryFromStructure,
   isVillageLikeStructureCategory,
@@ -25,6 +24,7 @@ const createStructure = ({
   realmId?: number;
 }): StructureCapabilityTarget => ({
   category,
+  owner: 1n,
   entity_id: entityId,
   base: {
     category,
@@ -60,7 +60,7 @@ describe("resolveStructureUiCapabilities", () => {
   it("keeps fragment mines and hyperstructures defense-only", () => {
     const fragmentMine = resolveStructureUiCapabilities(
       createStructure({
-        category: StructureType.FragmentMine,
+        category: StructureType.Mine,
         entityId: 9,
         guardArmySlots: 1,
       }),
@@ -112,55 +112,10 @@ describe("Blitz military transfer rules", () => {
       false,
     );
   });
-
-  it("blocks explorer to explorer troop transfers across different realms", () => {
-    const sameRealmCamp = createStructure({
-      category: StructureType.Camp,
-      entityId: 31,
-      fieldArmySlots: 1,
-      guardArmySlots: 1,
-      realmId: 30,
-    });
-    const sameRealmHyperstructure = createStructure({
-      category: StructureType.Hyperstructure,
-      entityId: 32,
-      guardArmySlots: 4,
-      realmId: 30,
-    });
-    const otherRealmCamp = createStructure({
-      category: StructureType.Camp,
-      entityId: 41,
-      fieldArmySlots: 1,
-      guardArmySlots: 1,
-      realmId: 40,
-    });
-
-    expect(
-      resolveArmyToArmyTransferRestriction({
-        modeId: "blitz",
-        source: sameRealmCamp,
-        destination: sameRealmHyperstructure,
-      }),
-    ).toBeNull();
-    expect(
-      resolveArmyToArmyTransferRestriction({
-        modeId: "blitz",
-        source: sameRealmCamp,
-        destination: otherRealmCamp,
-      }),
-    ).toBe("you can only transfer between armies from the same realm");
-    expect(
-      resolveArmyToArmyTransferRestriction({
-        modeId: "eternum",
-        source: sameRealmCamp,
-        destination: otherRealmCamp,
-      }),
-    ).toBeNull();
-  });
 });
 
 describe("Eternum military transfer rules", () => {
-  it("keeps village-connected transfer restrictions outside Blitz", () => {
+  it("does not use village lineage for delayed transfers", () => {
     const realm = createStructure({
       category: StructureType.Realm,
       entityId: 21,
@@ -196,12 +151,12 @@ describe("Eternum military transfer rules", () => {
         source: connectedVillage,
         destination: otherRealm,
       }),
-    ).toBe(false);
+    ).toBe(true);
   });
 
   it("treats camps as village-like structures in Blitz UI grouping", () => {
     expect(isVillageLikeStructureCategory(StructureType.Camp)).toBe(true);
     expect(isVillageLikeStructureCategory(StructureType.Village)).toBe(true);
-    expect(isVillageLikeStructureCategory(StructureType.FragmentMine)).toBe(false);
+    expect(isVillageLikeStructureCategory(StructureType.Mine)).toBe(false);
   });
 });

@@ -1,4 +1,4 @@
-import { getGameManifest } from "@contracts";
+import { getNativeManifest } from "@/runtime/world/native-manifest";
 import type { GameChain as Chain } from "@realms-world/chain";
 
 import {
@@ -18,8 +18,9 @@ const buildAppWorld = (chain: Chain, id: "blitz" | "eternum"): WorldDeployment =
   buildWorldDeployment({
     id,
     chain,
-    manifest: getGameManifest(chain, id) as unknown as CommittedManifest,
+    manifest: getNativeManifest() as unknown as CommittedManifest,
     heraldBaseUrl: env.VITE_PUBLIC_HERALD_URL,
+    admissionUrl: env.VITE_PUBLIC_ADMISSION_URL,
     rpcUrl: env.VITE_PUBLIC_NODE_URL,
     browserFacing: true,
     playerAccountClassHash: env.VITE_PUBLIC_PLAYER_ACCOUNT_CLASS_HASH,

@@ -3,13 +3,11 @@ import { useCoarseNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { SortButton, SortInterface } from "@/ui/design-system/atoms/sort-button";
 import { SortPanel } from "@/ui/design-system/molecules/sort-panel";
 import { currencyIntlFormat, displayAddress, getEntityIdFromKeys } from "@/ui/utils/utils";
-import { getAddressName, LeaderboardManager, toHexString } from "@bibliothecadao/eternum";
-import { useDojo, useHyperstructureUpdates } from "@bibliothecadao/react";
+import { configManager, getAddressName, LeaderboardManager, toHexString } from "@bibliothecadao/eternum";
+import { useGame, useNativeRow, useNativeRevision, useHyperstructureUpdates } from "@bibliothecadao/react";
 import { ContractAddress, ID } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
 import { useMemo, useState } from "react";
 import { playerAvatarUrl } from "@/hooks/use-player-profile";
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 
 const LEADERBOARD_AUTO_REFRESH_INTERVAL_MS = 30_000;
 
@@ -20,33 +18,16 @@ export const Leaderboard = ({
   hyperstructureEntityId: ID;
   setSelectedTab: (tab: number) => void;
 }) => {
-  const dojo = useDojo();
+  const game = useGame();
   const {
     account: { account },
-    setup: { components },
-  } = dojo;
+    setup: { store },
+  } = game;
   // The coarse clock is the refresh signal: the standings below are recomputed on every render.
   useCoarseNowSeconds(LEADERBOARD_AUTO_REFRESH_INTERVAL_MS / 1000);
 
-  const playerPointsLeaderboard = (() => {
-    const leaderboardManager = LeaderboardManager.instance(dojo.setup.components);
-    const cachedPlayersByRank = leaderboardManager.playersByRank;
-
-    // Calculate real-time points for each player including unregistered shareholder points
-    const playersWithRealTimePoints = cachedPlayersByRank.map(([address]) => {
-      // Get only registered points to avoid double-counting
-      const registeredPoints = leaderboardManager.getPlayerRegisteredPoints(address);
-      const unregisteredShareholderPoints =
-        leaderboardManager.getPlayerHyperstructureUnregisteredShareholderPoints(address);
-      const totalPoints = registeredPoints + unregisteredShareholderPoints;
-
-      return [address, totalPoints] as [ContractAddress, number];
-    });
-
-    // Sort by real-time total points
-    return playersWithRealTimePoints.toSorted(([, pointsA], [, pointsB]) => pointsB - pointsA);
-  })();
-
+  useNativeRevision(["PlayerPoints", "HyperstructureShares", "AddressName"]);
+  const playerPointsLeaderboard = LeaderboardManager.instance(store).playersByRank;
   const hyperstructure = useHyperstructureUpdates(hyperstructureEntityId);
 
   const sortingParams = useMemo(() => {
@@ -62,11 +43,11 @@ export const Leaderboard = ({
     sort: "none",
   });
 
-  const isOwner = useMemo(() => {
-    const owner = getComponentValue(components.Structure, gameEntityKey([BigInt(hyperstructureEntityId)]))?.owner;
-    if (!owner) return false;
-    return ContractAddress(owner) === ContractAddress(account.address);
-  }, [hyperstructureEntityId, components.Structure, account.address]);
+  const structure = useNativeRow("Structure", {
+    game_id: configManager.getActiveGameId(),
+    entity_id: hyperstructureEntityId,
+  });
+  const isOwner = structure?.owner === ContractAddress(account.address);
 
   return hyperstructure ? (
     <>
@@ -88,7 +69,7 @@ export const Leaderboard = ({
         ))}
       </SortPanel>
       {playerPointsLeaderboard.map(([address, points], index) => {
-        const playerName = getAddressName(address, components) || "Player not found";
+        const playerName = getAddressName(address, store) || "Player not found";
         const playerAddress = toHexString(address);
         const avatarUrl = playerAvatarUrl(playerAddress);
 

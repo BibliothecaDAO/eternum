@@ -106,6 +106,7 @@ export interface PlayerCosmeticsSnapshot {
 }
 
 export interface ArmyCosmeticParams {
+  attributes: readonly bigint[];
   owner: string | bigint | undefined;
   troopType: TroopType;
   tier: TroopTier;
@@ -113,6 +114,7 @@ export interface ArmyCosmeticParams {
 }
 
 export interface StructureCosmeticParams {
+  attributes: readonly bigint[];
   owner: string | bigint | undefined;
   structureType: StructureType;
   stage?: number;

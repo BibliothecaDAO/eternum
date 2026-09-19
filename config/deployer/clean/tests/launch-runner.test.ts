@@ -7,6 +7,7 @@ let existingGame: { gameId: number; gameName: string } | null = null;
 let loadedSummary: LaunchGameSummary | null = null;
 let findGameError: Error | null = null;
 
+const settleBlitzRosterMock = mock(async () => undefined);
 const assertRegistrarAvailableMock = mock(() => undefined);
 const createRegistrarGameMock = mock(async (...args: unknown[]) => ({
   transactionHash: "0xcreate",
@@ -31,6 +32,7 @@ const waitForGameRegistryByIdMock = mock(async ({ gameId }: { gameId: number }) 
 const writeLaunchSummaryMock = mock(() => ".context/game-launch/madara-blitz-bltz-test.json");
 const buildCreateGameParamsMock = mock((_: unknown, params: unknown) => params);
 const originalGetChainId = RpcProvider.prototype.getChainId;
+const originalGetBlock = RpcProvider.prototype.getBlock;
 
 mock.module("../config/config-loader", () => ({
   loadEnvironmentConfiguration: () => buildLaunchConfig(),
@@ -40,6 +42,9 @@ mock.module("../config/config-loader", () => ({
 mock.module("../registrar/calls", () => ({
   assertRegistrarAvailable: assertRegistrarAvailableMock,
   createRegistrarGame: createRegistrarGameMock,
+  settleBlitzRoster: settleBlitzRosterMock,
+  findRegistrarGame: findGameRegistryByNameMock,
+  resolveBlitzRoster: async () => [{ owner: "0xabc", account: "0xdef" }],
   resolveRegistrarEnvironmentId: (environmentId: string) => environmentId,
   resolveRegistrarWorldAddress: () => "0xworld",
 }));
@@ -56,9 +61,12 @@ mock.module("../registrar/game-registry", () => ({
   waitForGameRegistryById: waitForGameRegistryByIdMock,
 }));
 
-mock.module("../registrar/preset", () => ({
-  buildCreateGameParams: buildCreateGameParamsMock,
+const { loadNativePresetConfiguration } = await import("../registrar/native-preset");
+mock.module("../registrar/native-preset", () => ({
+  buildNativeGameParams: buildCreateGameParamsMock,
+  loadNativePresetConfiguration,
 }));
+mock.module("../config/native-preset", () => ({ buildNativePreset: (config: unknown) => config }));
 
 mock.module("../launch/io", () => ({
   loadLaunchSummaryIfPresent: () => loadedSummary,
@@ -69,16 +77,20 @@ const { launchGame, runLaunchStep } = await import("../launch/runner");
 
 afterAll(() => {
   RpcProvider.prototype.getChainId = originalGetChainId;
+  RpcProvider.prototype.getBlock = originalGetBlock;
   mock.restore();
 });
 
 beforeEach(() => {
+  RpcProvider.prototype.getBlock = mock(async () => ({ timestamp: 1_999_990_000 })) as RpcProvider["getBlock"];
   RpcProvider.prototype.getChainId = async function () {
     const nodeUrl = (this as RpcProvider & { channel: { nodeUrl: string } }).channel.nodeUrl;
     return expectedChainId(nodeUrl.includes("mainnet.example") ? "mainnet" : "madara") as Awaited<
       ReturnType<RpcProvider["getChainId"]>
     >;
   };
+  process.env.ADMISSION_URL = "http://admission.example";
+  settleBlitzRosterMock.mockClear();
   existingGame = null;
   loadedSummary = null;
   findGameError = null;
@@ -95,6 +107,25 @@ beforeEach(() => {
 });
 
 describe("registrar game launch", () => {
+  test.each([
+    ["2", 3_600],
+    ["3", 5_400],
+  ])("preset %s supplies its own duration instead of the environment default", async (version, durationSeconds) => {
+    const summary = await launchGame({ ...buildRequest(), version });
+
+    expect(summary.durationSeconds).toBe(durationSeconds);
+    expect(buildCreateGameParamsMock).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ presetId: Number(version), durationSeconds, chainTimestamp: 1_999_990_000 }),
+      expect.anything(),
+    );
+  });
+
+  test("rejects an unknown preset before creating a game", async () => {
+    await expect(launchGame({ ...buildRequest(), version: "99" })).rejects.toThrow("No native preset definition");
+    expect(createRegistrarGameMock).not.toHaveBeenCalled();
+  });
+
   test("refuses a mainnet RPC before an L3 command can submit", async () => {
     await expect(
       launchGame({
@@ -115,6 +146,27 @@ describe("registrar game launch", () => {
       }),
     ).rejects.toThrow("LEDGER_RPC_URL is not Starknet mainnet");
     expect(createRegistrarGameMock).not.toHaveBeenCalled();
+  });
+
+  test("requires admission before creating a Blitz game", async () => {
+    delete process.env.ADMISSION_URL;
+    await expect(launchGame(buildRequest())).rejects.toThrow("ADMISSION_URL is required");
+    expect(createRegistrarGameMock).not.toHaveBeenCalled();
+  });
+
+  test("resumes roster preparation without creating another game", async () => {
+    settleBlitzRosterMock.mockRejectedValueOnce(new Error("admission disconnected"));
+    await expect(launchGame(buildRequest())).rejects.toThrow("admission disconnected");
+    existingGame = { gameId: 7, gameName: "bltz-test" };
+    await launchGame(buildRequest());
+    expect(createRegistrarGameMock).toHaveBeenCalledTimes(1);
+    expect(settleBlitzRosterMock).toHaveBeenCalledTimes(2);
+    expect(waitForGameRegistryByIdMock).toHaveBeenCalledTimes(1);
+  });
+
+  test("the create-world step also prepares the roster", async () => {
+    await runLaunchStep({ ...buildRequest(), stepId: "create-world" });
+    expect(settleBlitzRosterMock).toHaveBeenCalledTimes(1);
   });
 
   test("creates one game and waits for its GameRegistry row", async () => {
@@ -147,6 +199,7 @@ describe("registrar game launch", () => {
       expect.anything(),
       "madara.blitz",
       undefined,
+      expect.objectContaining({ season: { durationSeconds: 3600 } }),
     );
     expect(createLedgerOperatorAccountMock).not.toHaveBeenCalled();
     expect(openLedgerGameMock).not.toHaveBeenCalled();
@@ -170,7 +223,7 @@ describe("registrar game launch", () => {
         expect.objectContaining({ address: "0xoperator" }),
         { address: "0xledger", rpcUrl: "https://mainnet.example/rpc" },
         19,
-        8,
+        2,
         4_070_908_800,
         4_070_912_400,
       );
@@ -269,7 +322,8 @@ function buildRequest() {
 
 function buildLaunchConfig() {
   return {
-    season: { durationSeconds: 3_600 },
+    season: { durationSeconds: 7_200 },
+    blitz: { mode: { on: true } },
     dev: { mode: { on: false } },
     settlement: { single_realm_mode: false, two_player_mode: false },
   };

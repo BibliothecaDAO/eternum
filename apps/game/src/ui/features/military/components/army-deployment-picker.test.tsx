@@ -1,3 +1,4 @@
+import { configManager } from "@bibliothecadao/eternum";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -22,6 +23,11 @@ vi.mock("@/hooks/store/use-ui-store", () => ({
 vi.mock("@/utils/spectator-session", () => ({ isExplicitSpectateSession: () => mocks.explicit }));
 vi.mock("@/hooks/store/use-popover-store", () => ({ usePopoverStore: { getState: () => ({ close: mocks.close }) } }));
 vi.mock("./unified-army-creation-modal/use-army-creation", () => ({ useArmyCreation: () => mocks.form }));
+vi.mock("./guard-dismissal", () => ({
+  GuardDismissal: ({ structureId, slot }: { structureId: number; slot: number }) => (
+    <div data-guard-dismissal={`${structureId}:${slot}`} />
+  ),
+}));
 import { ArmyDeploymentPicker } from "./army-deployment-picker";
 
 let root: Root;
@@ -31,6 +37,7 @@ const findButton = (label: string) =>
   [...container.querySelectorAll("button")].find((button) => button.textContent === label)!;
 
 beforeEach(() => {
+  vi.spyOn(configManager, "isGameOver").mockReturnValue(false);
   (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
   mocks.isSpectating = false;
   mocks.explicit = false;
@@ -105,11 +112,20 @@ it("keeps an empty stockpile's blocker separate from usage and Deploy visible bu
   expect(findButton("Deploy").disabled).toBe(true);
 });
 
-it("names the guard slot it was opened from", async () => {
-  await act(async () => root.render(<ArmyDeploymentPicker structureId={42} isExplorer={false} initialGuardSlot={1} />));
-  expect(container.textContent).toContain("Deploy guard · slot 3");
+it.each([
+  [0, 1],
+  [1, 2],
+  [2, 3],
+  [3, 4],
+])("names contract guard slot %i as display slot %i", async (slot, displayed) => {
+  await act(async () =>
+    root.render(<ArmyDeploymentPicker structureId={42} isExplorer={false} initialGuardSlot={slot} />),
+  );
+  expect(container.textContent).toContain(`Deploy guard · slot ${displayed}`);
+  expect(container.querySelector("[data-guard-dismissal]")?.getAttribute("data-guard-dismissal")).toBe(`42:${slot}`);
   await act(async () => root.render(<ArmyDeploymentPicker structureId={42} isExplorer />));
   expect(container.textContent).toContain("Deploy field army");
+  expect(container.querySelector("[data-guard-dismissal]")).toBeNull();
 });
 
 describe("spectator gating", () => {

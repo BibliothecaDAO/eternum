@@ -1,30 +1,25 @@
+import { NativeReceiptRejected, type NativeIngestion } from "./native/ingestion";
 import { normalizeFelt, type ModelRegistry } from "./model-registry";
 import type { CheckpointStore } from "./checkpoint-store";
 import { DiffLatencyMonitor } from "./diff-latency";
 import { GameStreamHub, type GameStreamSession, type SnapshotOverlayDiff, type StreamSocket } from "./game-stream";
 import { MadaraRpc } from "./madara-rpc";
 import { collapseChanges, OverlayLedger } from "./overlay-ledger";
-import { replayWorldEvents } from "./snapshot-builder";
 import type { ResumeRequest } from "./stream-protocol";
 import type {
-  DecodedWorldEvent,
   FoldChange,
   FoldDelete,
   FoldSet,
   GameSnapshot,
-  RawWorldEvent,
-  RpcBlockWithReceipts,
   RpcHead,
   RpcReceipt,
-  RpcSubscribedEvent,
   RpcSubscribedTransaction,
   RpcTransaction,
 } from "./types";
-import type { WorldEventDecodeMonitor } from "./world-event-decoder";
 import { WorldFold } from "./world-fold";
 import type { HistoryStore } from "./history-store";
 
-interface LiveWorldInput {
+export interface LiveWorldInput {
   chain: string;
   checkpointEveryBlocks: number;
   checkpointStore: Pick<CheckpointStore, "save">;
@@ -34,7 +29,6 @@ interface LiveWorldInput {
   registry: ModelRegistry;
   rpc: MadaraRpc;
   hub?: GameStreamHub;
-  decodeMonitor: WorldEventDecodeMonitor;
   diffLatency?: DiffLatencyMonitor;
   historyStore?: HistoryStore;
 }
@@ -42,14 +36,6 @@ interface LiveWorldInput {
 interface GameChanges {
   del: FoldDelete[];
   set: FoldSet[];
-}
-
-interface PendingPreconfirmedTransaction {
-  changes: FoldChange[];
-  eventIndexes: Set<number>;
-  expectedEventIndexes?: Set<number>;
-  startedAt: number;
-  transactionHash: string;
 }
 
 interface OverlayTransaction {
@@ -72,34 +58,59 @@ const setBoundedTransactionEntry = <Value>(map: Map<string, Value>, key: string,
 };
 
 export class LiveWorld {
-  public readonly hub: GameStreamHub;
-  private confirmedFold: WorldFold;
-  private overlayFold: WorldFold;
-  private confirmedBlockValue: number;
-  private preconfirmedBlockValue: number | null = null;
-  private lastClockTimestamp = 0;
-  private lastCheckpointBlock: number;
-  private checkpointFailure?: Error;
-  private checkpointInFlight = false;
-  private checkpointWrite = Promise.resolve();
-  private readonly knownGames = new Set<string>();
-  private readonly overlayEvents = new Set<string>();
-  private readonly preconfirmedReceiptEvents = new Map<string, Set<number>>();
-  private readonly transactionSenders = new Map<string, string | null>();
-  private readonly pendingReceipts = new Map<string, RpcReceipt[]>();
-  private readonly overlayTransactions: OverlayTransaction[] = [];
-  private readonly overlayLedger = new OverlayLedger();
-  private readonly diffLatency: DiffLatencyMonitor;
-  private pendingPreconfirmed?: PendingPreconfirmedTransaction;
-  private pendingPreconfirmedFlush?: ReturnType<typeof setImmediate>;
+  private readonly changeListeners = new Set<(models: ReadonlySet<string>) => void>();
 
-  constructor(private readonly input: LiveWorldInput) {
+  public readonly hub: GameStreamHub;
+
+  private confirmedFold: WorldFold;
+
+  private overlayFold: WorldFold;
+
+  private confirmedBlockValue: number;
+
+  private preconfirmedBlockValue: number | null = null;
+
+  private lastClockTimestamp = 0;
+
+  private lastCheckpointBlock: number;
+
+  private checkpointFailure?: Error;
+
+  private checkpointInFlight = false;
+
+  private checkpointWrite = Promise.resolve();
+
+  private readonly knownGames = new Set<string>();
+
+  private readonly overlayEvents = new Set<string>();
+
+  private readonly transactionSenders = new Map<string, string | null>();
+
+  private readonly pendingReceipts = new Map<string, RpcReceipt[]>();
+
+  private readonly overlayTransactions: OverlayTransaction[] = [];
+
+  private readonly overlayLedger = new OverlayLedger();
+
+  private readonly diffLatency: DiffLatencyMonitor;
+
+  private readonly transactionGames = new Map<string, string[]>();
+
+  private readonly native: NativeIngestion;
+
+  constructor(private readonly input: LiveWorldInput & { native: NativeIngestion }) {
+    this.native = input.native;
     this.hub = input.hub ?? new GameStreamHub();
     this.diffLatency = input.diffLatency ?? new DiffLatencyMonitor();
     this.confirmedFold = input.confirmedFold;
     this.overlayFold = input.confirmedFold.overlay();
     this.confirmedBlockValue = input.confirmedBlock;
     this.lastCheckpointBlock = input.checkpointBlock ?? input.confirmedBlock;
+  }
+
+  public subscribeConfirmedChanges(listener: (models: ReadonlySet<string>) => void): () => void {
+    this.changeListeners.add(listener);
+    return () => this.changeListeners.delete(listener);
   }
 
   public get confirmedBlock(): number {
@@ -114,35 +125,35 @@ export class LiveWorld {
     return this.preconfirmedBlockValue;
   }
 
-  public snapshot(gameId: string, models?: readonly string[]): GameSnapshot {
-    return this.confirmedFold.snapshot(gameId, this.confirmedBlockValue, models);
+  public snapshot(gameId: string, models?: readonly string[], actor?: string): GameSnapshot {
+    return this.confirmedFold.snapshot(gameId, this.confirmedBlockValue, models, actor);
   }
 
   public modelRows(model: string) {
     return this.confirmedFold.modelRows(model);
   }
 
-  public async freezeEndedReviewSnapshots(confirmedTimestamp: number): Promise<void> {
+  public async freezeFinalizedReviewSnapshots(): Promise<void> {
     if (!this.input.historyStore) return;
     await Promise.all(
       this.confirmedFold
-        .endedGameIds(confirmedTimestamp)
+        .finalizedGameIds()
         .map((gameId) =>
-          this.input.historyStore!.freezeReviewSnapshot(
+          this.input.historyStore!.freezeReviewSnapshot(gameId, () =>
             this.confirmedFold.reviewSnapshot(gameId, this.confirmedBlockValue),
           ),
         ),
     );
   }
 
-  public attach(gameId: string, socket: StreamSocket): GameStreamSession {
+  public attach(gameId: string, socket: StreamSocket, actor?: string): GameStreamSession {
     this.knownGames.add(gameId);
     return this.hub.attach({
       confirmedBlock: this.confirmedBlockValue,
       gameId,
       overlay: () => this.snapshotOverlay(gameId),
       preconfirmedBlock: this.preconfirmedBlockValue,
-      snapshot: () => this.snapshot(gameId),
+      snapshot: () => this.snapshot(gameId, undefined, actor),
       socket,
     });
   }
@@ -155,11 +166,52 @@ export class LiveWorld {
     this.hub.detach(session);
   }
 
-  /**
-   * The sequencer clock: the pre-confirmed block's timestamp, published whenever it moves. Clients project
-   * production at the newest chain-written time, so this keeps a MAX within a poll of what the chain accepts.
-   */
+  public acceptTransaction(message: RpcSubscribedTransaction): void {
+    const transaction = message.transaction ?? message;
+    const transactionHash = message.transaction_hash ?? transaction.transaction_hash;
+    if (!transactionHash) throw new Error("Subscribed transaction has no transaction hash");
+    this.recordTransactionSender(transactionHash, transaction);
+  }
+
+  public async checkpoint(): Promise<void> {
+    await this.checkpointWrite;
+    if (this.checkpointFailure) throw this.checkpointFailure;
+    await this.input.checkpointStore.save(this.input.chain, this.confirmedBlockValue, this.confirmedFold);
+    this.lastCheckpointBlock = this.confirmedBlockValue;
+  }
+
+  public acceptReceipt(receipt: RpcReceipt): void {
+    if (this.native.halted) return;
+    if (receipt.finality_status === "PRE_CONFIRMED" && !this.applyOverlayReceipt(receipt, null, 0)) return;
+    let actionReceipt: RpcReceipt;
+    try {
+      actionReceipt = this.native.actionReceipt(this.overlayFold, receipt);
+    } catch (error) {
+      const confirmed = receipt.finality_status !== "PRE_CONFIRMED";
+      this.native.rejectReceipt(receipt, receipt.block_number ?? null, error, confirmed);
+      if (confirmed) {
+        this.resetOverlay();
+        this.publishOverlayReverts();
+      }
+      return;
+    }
+    // Ticket rejections do not change the enclosing transaction or its other outcomes.
+    this.publishReceiptStatus(actionReceipt);
+  }
+
   public async publishChainClock(): Promise<void> {
+    if (!this.native.halted) await this.publishClock();
+  }
+
+  public async acceptSubscribedHead(head: RpcHead): Promise<void> {
+    await this.reconcileOrHalt(() => this.applySubscribedHead(head));
+  }
+
+  public async reconcileAfterSubscribe(): Promise<void> {
+    await this.reconcileOrHalt(() => this.reconcileCurrentHead());
+  }
+
+  private async publishClock(): Promise<void> {
     if (this.knownGames.size === 0) return;
     const header = await this.input.rpc.getPreconfirmedHeader();
     if (header.timestamp <= this.lastClockTimestamp) return;
@@ -167,36 +219,13 @@ export class LiveWorld {
     for (const gameId of this.knownGames) this.hub.publishHead(gameId, header.block_number, header.timestamp, true);
   }
 
-  public async acceptSubscribedHead(head: RpcHead): Promise<void> {
+  private async applySubscribedHead(head: RpcHead): Promise<void> {
     if (head.block_number <= this.confirmedBlockValue) return;
     await this.reconcileHead(head);
   }
 
-  public acceptPreconfirmedEvent(event: RpcSubscribedEvent): void {
-    if (event.finality_status !== "PRE_CONFIRMED") return;
-
-    const transactionHash = normalizeFelt(event.transaction_hash);
-    if (this.pendingPreconfirmed?.transactionHash !== transactionHash) this.flushPreconfirmedTransaction();
-
-    const rawEvent = this.rawSubscribedEvent(event);
-    this.pendingPreconfirmed ??= {
-      changes: [],
-      eventIndexes: new Set(),
-      expectedEventIndexes: this.preconfirmedReceiptEvents.get(transactionHash),
-      startedAt: performance.now(),
-      transactionHash,
-    };
-    this.preconfirmedReceiptEvents.delete(transactionHash);
-    this.pendingPreconfirmed.eventIndexes.add(rawEvent.event_index);
-
-    const change = this.applyOverlayEvent(rawEvent);
-    if (change) this.pendingPreconfirmed.changes.push(change);
-    this.flushCompletePreconfirmedTransaction();
-  }
-
-  public acceptReceipt(receipt: RpcReceipt): void {
+  private publishReceiptStatus(receipt: RpcReceipt): void {
     const transactionHash = normalizeFelt(receipt.transaction_hash);
-    this.acceptPreconfirmedReceipt(transactionHash, receipt);
     if (!this.transactionSenders.has(transactionHash)) {
       const pending = this.pendingReceipts.get(transactionHash) ?? [];
       pending.push(receipt);
@@ -207,54 +236,10 @@ export class LiveWorld {
     this.publishTransactionReceipt(transactionHash, this.transactionSenders.get(transactionHash), receipt);
   }
 
-  public acceptTransaction(message: RpcSubscribedTransaction): void {
-    const transaction = message.transaction ?? message;
-    const transactionHash = message.transaction_hash ?? transaction.transaction_hash;
-    if (!transactionHash) throw new Error("Subscribed transaction has no transaction hash");
-    this.recordTransactionSender(transactionHash, transaction);
-  }
-
-  private publishTransactionReceipt(
-    transactionHash: string,
-    sender: string | null | undefined,
-    receipt: RpcReceipt,
-  ): void {
-    if (sender) {
-      const status = receipt.execution_status === "REVERTED" ? "REVERTED" : receipt.finality_status;
-      const gameIds = new Set([...this.knownGames, ...this.confirmedFold.gameIds()]);
-      for (const gameId of gameIds) {
-        if (!this.overlayFold.gameplayAccounts(gameId).has(sender)) continue;
-        if (this.knownGames.has(gameId)) {
-          this.hub.publishTransaction(gameId, {
-            block: receipt.block_number ?? null,
-            hash: transactionHash,
-            revert_reason: receipt.revert_reason,
-            status,
-          });
-        }
-        if (receipt.finality_status !== "PRE_CONFIRMED") {
-          this.input.historyStore?.recordTransaction(gameId, receipt);
-        }
-      }
-    }
-
-    if (receipt.finality_status !== "PRE_CONFIRMED") {
-      this.transactionSenders.delete(transactionHash);
-      this.pendingReceipts.delete(transactionHash);
-    }
-  }
-
-  public async reconcileAfterSubscribe(): Promise<void> {
+  private async reconcileCurrentHead(): Promise<void> {
     const blockNumber = await this.input.rpc.blockNumber();
     const block = await this.input.rpc.getBlockWithReceipts(blockNumber);
     await this.reconcileHead({ block_number: block.block_number, timestamp: block.timestamp });
-  }
-
-  public async checkpoint(): Promise<void> {
-    await this.checkpointWrite;
-    if (this.checkpointFailure) throw this.checkpointFailure;
-    await this.input.checkpointStore.save(this.input.chain, this.confirmedBlockValue, this.confirmedFold);
-    this.lastCheckpointBlock = this.confirmedBlockValue;
   }
 
   private async reconcileHead(head: RpcHead): Promise<void> {
@@ -262,11 +247,16 @@ export class LiveWorld {
     if (head.block_number < this.confirmedBlockValue) return;
     const startedAt = performance.now();
 
-    this.flushPreconfirmedTransaction();
-
-    const confirmedChanges = await this.applyConfirmedThrough(head.block_number);
-    await this.freezeEndedReviewSnapshots(head.timestamp);
-    for (const [block, changes] of confirmedChanges) this.broadcastConfirmedChanges(changes, block);
+    const confirmed = await this.applyConfirmedThrough(head.block_number);
+    await this.freezeFinalizedReviewSnapshots();
+    for (const [block, changes] of confirmed.changes) this.broadcastConfirmedChanges(changes, block);
+    // Subscriptions can miss a receipt during reconnect or fall behind a confirmed head.
+    // Replay publishes outcomes after their authoritative rows, so client barriers recover too.
+    for (const { receipt, transaction } of confirmed.transactions) {
+      this.pendingReceipts.delete(normalizeFelt(receipt.transaction_hash));
+      this.recordTransactionSender(receipt.transaction_hash, transaction);
+      this.publishReceiptStatus(receipt);
+    }
     this.resetOverlay();
     await this.rebuildOverlay();
     this.publishOverlayReverts();
@@ -276,114 +266,26 @@ export class LiveWorld {
     this.checkpointIfDue();
   }
 
-  private async applyConfirmedThrough(targetBlock: number): Promise<Map<number, FoldChange[]>> {
-    if (targetBlock === this.confirmedBlockValue) return new Map();
-    const changes = new Map<number, FoldChange[]>();
-    const historyEvents: DecodedWorldEvent[] = [];
-    await replayWorldEvents({
-      applyAtomically: true,
-      fold: this.confirmedFold,
-      fromBlock: this.confirmedBlockValue + 1,
-      onChange: (event, change) => {
-        if (event.kind === "event") historyEvents.push(event);
-        if (!change) return;
-        const block = event.position.blockNumber;
-        if (block === null) throw new Error("Confirmed getEvents result has a null block number");
-        const blockChanges = changes.get(block) ?? [];
-        blockChanges.push(change);
-        changes.set(block, blockChanges);
-      },
-      decodeMonitor: this.input.decodeMonitor,
-      registry: this.input.registry,
-      rpc: this.input.rpc,
-      toBlock: targetBlock,
-    });
-    await this.input.historyStore?.appendEvents(historyEvents, targetBlock);
-    this.confirmedBlockValue = targetBlock;
-    return changes;
-  }
-
   private broadcastConfirmedChanges(changes: FoldChange[], block: number): void {
     const published = this.overlayLedger.settleConfirmed(collapseChanges(changes));
     this.broadcastChanges(published, block, false);
+    if (this.changeListeners.size && changes.length) {
+      const models = new Set(changes.map((change) => (change.set ?? change.del)!.model));
+      for (const listener of this.changeListeners) listener(models);
+    }
   }
 
   private resetOverlay(): void {
     this.overlayFold = this.confirmedFold.overlay();
     this.overlayEvents.clear();
-    this.preconfirmedReceiptEvents.clear();
     this.overlayTransactions.length = 0;
     this.overlayLedger.reset();
     for (const gameId of this.knownGames) this.hub.publishOverlayReset(gameId, this.confirmedBlockValue);
   }
 
-  /** Subscribers keep overlay rows across a reset, so rows the rebuilt block dropped go back to confirmed state. */
   private publishOverlayReverts(): void {
     const reverts = this.overlayLedger.settleReverts((model, key) => this.confirmedFold.currentRow(model, key));
     this.broadcastChanges(reverts, this.preconfirmedBlockValue, true);
-  }
-
-  private async rebuildOverlay(): Promise<void> {
-    const block = await this.input.rpc.getBlockWithReceipts("pre_confirmed");
-    this.preconfirmedBlockValue = block.block_number;
-    block.transactions.forEach(({ receipt, transaction }) => {
-      this.recordTransactionSender(receipt.transaction_hash, transaction);
-    });
-    for (const events of this.worldEventTransactionsFromBlock(block)) {
-      const changes = events.flatMap((event) => {
-        const change = this.applyOverlayEvent(event);
-        return change ? [change] : [];
-      });
-      this.publishOverlayTransaction({
-        block: block.block_number,
-        changes,
-        transactionHash: normalizeFelt(events[0]!.transaction_hash),
-      });
-    }
-  }
-
-  private applyOverlayEvent(rawEvent: RawWorldEvent): FoldChange | undefined {
-    const identity = `${normalizeFelt(rawEvent.transaction_hash)}:${rawEvent.event_index}`;
-    if (this.overlayEvents.has(identity)) return undefined;
-    this.overlayEvents.add(identity);
-    const event = this.input.decodeMonitor.decode(this.input.registry, rawEvent);
-    return event ? this.overlayFold.apply(event) : undefined;
-  }
-
-  private worldEventTransactionsFromBlock(block: RpcBlockWithReceipts): RawWorldEvent[][] {
-    return block.transactions.flatMap(({ receipt }, transactionIndex) => {
-      const events = receipt.events.flatMap((event, eventIndex) => {
-        if (BigInt(event.from_address) !== BigInt(this.input.registry.worldAddress)) return [];
-        return [
-          {
-            block_number: null,
-            data: event.data,
-            event_index: eventIndex,
-            keys: event.keys,
-            transaction_hash: receipt.transaction_hash,
-            transaction_index: transactionIndex,
-          },
-        ];
-      });
-      return events.length > 0 ? [events] : [];
-    });
-  }
-
-  private rawSubscribedEvent(event: RpcSubscribedEvent): RawWorldEvent {
-    if (BigInt(event.from_address) !== BigInt(this.input.registry.worldAddress)) {
-      throw new Error(`Received subscribed event from unexpected address ${event.from_address}`);
-    }
-    if (!Number.isSafeInteger(event.event_index) || event.event_index < 0) {
-      throw new Error(`Subscribed event ${event.transaction_hash} has invalid event_index ${event.event_index}`);
-    }
-    return {
-      block_number: event.block_number,
-      data: event.data,
-      event_index: event.event_index,
-      keys: event.keys,
-      transaction_hash: event.transaction_hash,
-      transaction_index: event.transaction_index ?? 0,
-    };
   }
 
   private broadcastChanges(
@@ -426,22 +328,6 @@ export class LiveWorld {
     }
   }
 
-  private flushPreconfirmedTransaction(): void {
-    if (this.pendingPreconfirmedFlush) clearImmediate(this.pendingPreconfirmedFlush);
-    this.pendingPreconfirmedFlush = undefined;
-    const pending = this.pendingPreconfirmed;
-    this.pendingPreconfirmed = undefined;
-    if (!pending) return;
-    this.preconfirmedReceiptEvents.delete(pending.transactionHash);
-    this.publishOverlayTransaction({
-      block: null,
-      changes: pending.changes,
-      transactionHash: pending.transactionHash,
-    });
-    if (pending.changes.length > 0) this.diffLatency.record("preconfirmed", performance.now() - pending.startedAt);
-  }
-
-  /** The whole transaction feeds late subscribers' overlay; the wire carries only the rows whose value changes. */
   private publishOverlayTransaction(transaction: OverlayTransaction): void {
     const changes = collapseChanges(transaction.changes);
     if (changes.length === 0) return;
@@ -459,38 +345,7 @@ export class LiveWorld {
     });
   }
 
-  private acceptPreconfirmedReceipt(transactionHash: string, receipt: RpcReceipt): void {
-    if (receipt.finality_status !== "PRE_CONFIRMED") return;
-    const eventIndexes = this.worldEventIndexes(receipt);
-    if (eventIndexes.size === 0) return;
-    if (this.pendingPreconfirmed?.transactionHash === transactionHash) {
-      this.pendingPreconfirmed.expectedEventIndexes = eventIndexes;
-      this.flushCompletePreconfirmedTransaction();
-      return;
-    }
-    setBoundedTransactionEntry(this.preconfirmedReceiptEvents, transactionHash, eventIndexes);
-  }
-
-  private worldEventIndexes(receipt: RpcReceipt): Set<number> {
-    const eventIndexes = new Set<number>();
-    receipt.events.forEach((event, eventIndex) => {
-      if (BigInt(event.from_address) !== BigInt(this.input.registry.worldAddress)) return;
-      const modelSelector = event.keys[1];
-      if (modelSelector && this.input.registry.bySelector.has(normalizeFelt(modelSelector))) {
-        eventIndexes.add(eventIndex);
-      }
-    });
-    return eventIndexes;
-  }
-
-  private flushCompletePreconfirmedTransaction(): void {
-    const pending = this.pendingPreconfirmed;
-    if (!pending?.expectedEventIndexes) return;
-    if ([...pending.expectedEventIndexes].some((eventIndex) => !pending.eventIndexes.has(eventIndex))) return;
-    this.pendingPreconfirmedFlush ??= setImmediate(() => this.flushPreconfirmedTransaction());
-  }
-
-  private recordTransactionSender(
+  private recordSenderAndPublishPending(
     transactionHashValue: string,
     transaction: Pick<RpcTransaction, "contract_address" | "sender_address">,
   ): void {
@@ -527,5 +382,94 @@ export class LiveWorld {
       .finally(() => {
         this.checkpointInFlight = false;
       });
+  }
+
+  private async reconcileOrHalt(reconcile: () => Promise<void>): Promise<void> {
+    if (this.native.halted) return;
+    try {
+      await reconcile();
+    } catch (error) {
+      if (!(error instanceof NativeReceiptRejected)) throw error;
+      this.resetOverlay();
+      this.publishOverlayReverts();
+    }
+  }
+
+  private async applyConfirmedThrough(target: number) {
+    const result = await this.native.replay({
+      fold: this.confirmedFold,
+      rpc: this.input.rpc,
+      fromBlock: this.confirmedBlockValue + 1,
+      toBlock: target,
+    });
+    await this.input.historyStore?.appendEvents(
+      result.events.filter((event) => event.kind === "event"),
+      target,
+    );
+    this.confirmedBlockValue = target;
+    return result;
+  }
+
+  private async rebuildOverlay(): Promise<void> {
+    const block = await this.input.rpc.getBlockWithReceipts("pre_confirmed");
+    this.preconfirmedBlockValue = block.block_number;
+    for (const { receipt, transaction } of block.transactions)
+      this.recordTransactionSender(receipt.transaction_hash, transaction);
+    for (const { receipt, transactionIndex } of this.native.receipts(block))
+      this.applyOverlayReceipt(receipt, block.block_number, transactionIndex);
+  }
+
+  private applyOverlayReceipt(receipt: RpcReceipt, block: number | null, index: number): boolean {
+    const identity = `receipt:${normalizeFelt(receipt.transaction_hash)}`;
+    if (this.overlayEvents.has(identity)) return true;
+    let result: ReturnType<NativeIngestion["applyReceipt"]>;
+    try {
+      result = this.native.applyReceipt(this.overlayFold, receipt, block, index);
+    } catch (error) {
+      this.native.rejectReceipt(receipt, block, error, false);
+      return false;
+    }
+    this.overlayEvents.add(identity);
+    this.publishOverlayTransaction({
+      block,
+      changes: result.changes.flatMap(({ change }) => (change ? [change] : [])),
+      transactionHash: normalizeFelt(receipt.transaction_hash),
+    });
+    return true;
+  }
+
+  private recordTransactionSender(
+    hash: string,
+    transaction: Pick<RpcTransaction, "contract_address" | "sender_address" | "calldata">,
+  ): void {
+    const identity = normalizeFelt(hash);
+    try {
+      setBoundedTransactionEntry(this.transactionGames, identity, this.native.transactionGameIds(transaction));
+    } catch (error) {
+      this.native.rejectRouting(identity, error);
+    }
+    this.recordSenderAndPublishPending(hash, transaction);
+  }
+
+  private publishTransactionReceipt(hash: string, _sender: string | null | undefined, receipt: RpcReceipt): void {
+    const status = receipt.execution_status === "REVERTED" ? "REVERTED" : receipt.finality_status;
+    for (const gameId of this.transactionGames.get(hash) ?? []) {
+      if (this.knownGames.has(gameId))
+        this.hub.publishTransaction(gameId, {
+          block: receipt.block_number ?? null,
+          hash,
+          revert_reason: receipt.revert_reason,
+          ...(receipt.executions !== undefined
+            ? { executions: receipt.executions.filter((outcome) => BigInt(outcome.gameId) === BigInt(gameId)) }
+            : {}),
+          status,
+        });
+      if (receipt.finality_status !== "PRE_CONFIRMED") this.input.historyStore?.recordTransaction(gameId, receipt);
+    }
+    if (receipt.finality_status !== "PRE_CONFIRMED") {
+      this.transactionGames.delete(hash);
+      this.transactionSenders.delete(hash);
+      this.pendingReceipts.delete(hash);
+    }
   }
 }

@@ -3,7 +3,6 @@ import {
   Direction,
   ETHEREAL_STRIDE,
   getLayerNeighborHexes,
-  packTileSeed,
   getDirectionBetweenAdjacentHexes,
   getHexesWithinRadius,
   getNeighborHexes,
@@ -18,20 +17,6 @@ import { ArmyActionManager } from "./army-action-manager";
 import { configManager } from "./config-manager";
 import { StaminaManager } from "./stamina-manager";
 import { ActionPaths, ActionType } from "../utils/action-paths";
-
-vi.mock("@dojoengine/recs", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@dojoengine/recs")>()),
-  getComponentValue: (component: unknown, entity: unknown) => {
-    if (component instanceof Map) {
-      return component.get(entity);
-    }
-    return undefined;
-  },
-}));
-
-vi.mock("@dojoengine/utils", () => ({
-  getEntityIdFromKeys: (keys: bigint[]) => keys.map((key) => key.toString()).join(":"),
-}));
 
 const TEST_ENTITY_ID = 1;
 const TEST_FELT_CENTER = 100;
@@ -76,6 +61,7 @@ function buildTileOptData(input: {
 }
 
 function createTestSetup(systemCalls: Record<string, unknown> = {}) {
+  vi.spyOn(configManager, "getMapCenter").mockReturnValue(TEST_FELT_CENTER);
   const oldFeltStart = { col: TEST_FELT_CENTER, row: TEST_FELT_CENTER };
   const exploredHexes = new Map<number, Map<number, BiomeType>>();
 
@@ -99,16 +85,15 @@ function createTestSetup(systemCalls: Record<string, unknown> = {}) {
         },
       ],
     ]),
-    Resource: createOptimisticResourceComponent({
-      "77": buildResourceBalances({
-        WHEAT_BALANCE: precise(100),
-        FISH_BALANCE: precise(100),
-      }),
-    }),
     TileOpt: new Map(),
   } as any;
 
-  const manager = new ArmyActionManager(components, systemCalls as any, TEST_ENTITY_ID as any);
+  const read = (model: string, keys: { explorer_id?: number; alt?: boolean; col?: number; row?: number }) => {
+    if (model === "ExplorerTroops") return components.ExplorerTroops.get(String(keys.explorer_id));
+    if (model === "TileOpt") return components.TileOpt.get(toTileEntityKey(keys.alt!, keys.col!, keys.row!));
+    return undefined;
+  };
+  const manager = new ArmyActionManager({ get: read, require: read } as any, systemCalls as any, TEST_ENTITY_ID as any);
   vi.spyOn(manager, "getFood").mockReturnValue({ wheat: 999, fish: 999 });
 
   return {
@@ -120,62 +105,6 @@ function createTestSetup(systemCalls: Record<string, unknown> = {}) {
     armyHexes: new Map<number, Map<number, HexEntityInfo>>(),
     chestHexes: new Map<number, Map<number, HexEntityInfo>>(),
   };
-}
-
-function createOptimisticResourceComponent(resourcesByEntity: Record<string, Record<string, unknown>>) {
-  const originalValues = new Map(Object.entries(resourcesByEntity).map(([entity, value]) => [entity, { ...value }]));
-  const component = new Map(Object.entries(resourcesByEntity).map(([entity, value]) => [entity, { ...value }]));
-  const overrides = new Map<string, { entity: string; value: Record<string, unknown> }>();
-  const overridesByEntity = new Map<string, string[]>();
-
-  return Object.assign(component, {
-    addOverride: (overrideId: string, update: { entity: string; value: Record<string, unknown> }) => {
-      overrides.set(overrideId, update);
-      const entityOverrides = overridesByEntity.get(update.entity) ?? [];
-      entityOverrides.push(overrideId);
-      overridesByEntity.set(update.entity, entityOverrides);
-      applyLatestOverride(component, originalValues, overrides, overridesByEntity, update.entity);
-    },
-    removeOverride: (overrideId: string) => {
-      const override = overrides.get(overrideId);
-      if (!override) return;
-      overrides.delete(overrideId);
-      const entityOverrides = overridesByEntity.get(override.entity)?.filter((id) => id !== overrideId) ?? [];
-      if (entityOverrides.length > 0) {
-        overridesByEntity.set(override.entity, entityOverrides);
-      } else {
-        overridesByEntity.delete(override.entity);
-      }
-      applyLatestOverride(component, originalValues, overrides, overridesByEntity, override.entity);
-    },
-  });
-}
-
-function applyLatestOverride(
-  component: Map<string, Record<string, unknown>>,
-  originalValues: Map<string, Record<string, unknown>>,
-  overrides: Map<string, { entity: string; value: Record<string, unknown> }>,
-  overridesByEntity: Map<string, string[]>,
-  entity: string,
-) {
-  const latestOverrideId = overridesByEntity.get(entity)?.at(-1);
-  const originalValue = originalValues.get(entity) ?? {};
-  const latestOverride = latestOverrideId ? overrides.get(latestOverrideId)?.value : undefined;
-  component.set(entity, latestOverride ? { ...originalValue, ...latestOverride } : { ...originalValue });
-}
-
-function buildResourceBalances(overrides: Record<string, bigint>) {
-  return {
-    entity_id: 77,
-    weight: { capacity: 0n, weight: 0n },
-    WHEAT_BALANCE: 0n,
-    FISH_BALANCE: 0n,
-    ...overrides,
-  };
-}
-
-function precise(amount: number) {
-  return BigInt(amount) * BigInt(RESOURCE_PRECISION);
 }
 
 describe("ArmyActionManager.findActionPaths origin precedence", () => {
@@ -546,7 +475,6 @@ describe("ArmyActionManager ethereal submissions", () => {
     expect(explorer_explore).toHaveBeenCalledWith(
       expect.objectContaining({
         directions: [destination.direction],
-        vrf_source_salt: packTileSeed({ alt, col: destination.col, row: destination.row }),
       }),
     );
   });

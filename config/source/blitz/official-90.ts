@@ -38,6 +38,7 @@ const official90BlitzExplorationRewards = [
 ] as const;
 
 export const official90BlitzProfile: BlitzBalanceProfile = {
+  mines: { kinds: { 1: { productionRate: 5 } } },
   season: {
     durationSeconds: OFFICIAL_90_BLITZ_DURATION_SECONDS,
   },

@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ResourcesIds } from "@bibliothecadao/types";
 import { configManager } from "@bibliothecadao/eternum";
 import {
@@ -7,12 +7,13 @@ import {
   getAutomationOverallocation,
   inferRealmPreset,
   REALM_PRESETS,
-} from "./automation-presets";
+  resolveProductionPercentages,
+} from "@bibliothecadao/eternum/automation";
 
-const snapshotInputs = () => ({
-  complex: { ...configManager.complexSystemResourceInputs },
-  simple: { ...configManager.simpleSystemResourceInputs },
+beforeEach(() => {
+  vi.spyOn(configManager, "getBlitzConfig").mockReturnValue({ blitz_mode_on: false } as any);
 });
+afterEach(() => vi.restoreAllMocks());
 
 describe("calculatePresetAllocations", () => {
   it("returns an empty map when no resources are provided", () => {
@@ -108,23 +109,19 @@ describe("calculatePresetAllocations", () => {
 });
 
 describe("getAutomationOverallocation", () => {
-  let snapshot: ReturnType<typeof snapshotInputs>;
-
   beforeEach(() => {
-    snapshot = snapshotInputs();
-    // Set up a tiny synthetic recipe table: Knight (complex) needs Wood+Coal.
-    configManager.complexSystemResourceInputs[ResourcesIds.Knight] = [
-      { resource: ResourcesIds.Wood, amount: 1 },
-      { resource: ResourcesIds.Coal, amount: 1 },
-    ];
-    configManager.complexSystemResourceInputs[ResourcesIds.Crossbowman] = [{ resource: ResourcesIds.Wood, amount: 1 }];
-    configManager.simpleSystemResourceInputs[ResourcesIds.Knight] = [{ resource: ResourcesIds.Copper, amount: 1 }];
+    vi.spyOn(configManager, "complexSystemResourceInputs", "get").mockReturnValue({
+      [ResourcesIds.Knight]: [
+        { resource: ResourcesIds.Wood, amount: 1 },
+        { resource: ResourcesIds.Coal, amount: 1 },
+      ],
+      [ResourcesIds.Crossbowman]: [{ resource: ResourcesIds.Wood, amount: 1 }],
+    });
+    vi.spyOn(configManager, "simpleSystemResourceInputs", "get").mockReturnValue({
+      [ResourcesIds.Knight]: [{ resource: ResourcesIds.Copper, amount: 1 }],
+    });
   });
-
-  afterEach(() => {
-    configManager.complexSystemResourceInputs = snapshot.complex;
-    configManager.simpleSystemResourceInputs = snapshot.simple;
-  });
+  afterEach(() => vi.restoreAllMocks());
 
   it("returns all false when no percentages are set", () => {
     expect(getAutomationOverallocation(undefined, "realm")).toEqual({ resourceOver: false, laborOver: false });
@@ -203,5 +200,17 @@ describe("REALM_PRESETS", () => {
     const ids = REALM_PRESETS.map((p) => p.id);
     expect(ids).toEqual(["smart", "custom", "idle"]);
     REALM_PRESETS.forEach((p) => expect(p.label.length).toBeGreaterThan(0));
+  });
+});
+
+it("uses resource-only Blitz defaults without converting custom Labor allocations", () => {
+  vi.mocked(configManager.getBlitzConfig).mockReturnValue({ blitz_mode_on: true } as any);
+  expect(calculatePresetAllocations([ResourcesIds.Wood], "smart").get(ResourcesIds.Wood)).toEqual({
+    resourceToResource: 5,
+    laborToResource: 0,
+  });
+  expect(resolveProductionPercentages({ resourceToResource: 10, laborToResource: 45 }, ResourcesIds.Wood)).toEqual({
+    resourceToResource: 10,
+    laborToResource: 0,
   });
 });

@@ -1,7 +1,9 @@
+import { buildNativeGameParams, loadNativePresetConfiguration } from "../registrar/native-preset";
+import { buildNativePreset } from "../config/native-preset";
 import { setTimeout as sleep } from "node:timers/promises";
 import { Account, RpcProvider, shortString } from "starknet";
 import { assertProviderChain } from "@realms-world/chain";
-import { applyDeploymentConfigOverrides, loadEnvironmentConfiguration } from "../config/config-loader";
+import { applyDeploymentConfigOverrides } from "../config/config-loader";
 import {
   DEFAULT_APPCHAIN_GAME_INDEX_POLL_MS,
   DEFAULT_APPCHAIN_GAME_INDEX_TIMEOUT_MS,
@@ -18,11 +20,13 @@ import {
 import {
   assertRegistrarAvailable,
   createRegistrarGame,
+  settleBlitzRoster,
   resolveRegistrarEnvironmentId,
+  resolveBlitzRoster,
+  findRegistrarGame,
   resolveRegistrarWorldAddress,
 } from "../registrar/calls";
-import { findGameRegistryByName, waitForGameRegistryById } from "../registrar/game-registry";
-import { buildCreateGameParams } from "../registrar/preset";
+import { waitForGameRegistryById } from "../registrar/game-registry";
 import { resolveAccountCredentials } from "../shared/credentials";
 import { requireRpcUrl } from "../shared/rpc";
 import type {
@@ -97,7 +101,7 @@ function createRuntime(request: LaunchGameRequest): LaunchRuntime {
 }
 
 function resolveLaunchConfig(runtime: LaunchRuntime, request: LaunchGameRequest): LaunchConfig {
-  return applyDeploymentConfigOverrides(loadEnvironmentConfiguration(runtime.environment.id), {
+  return applyDeploymentConfigOverrides(loadNativePresetConfiguration(runtime.environment.id, runtime.presetId), {
     startMainAt: runtime.startTime,
     factoryAddress: "",
     devModeOn: request.devModeOn,
@@ -164,14 +168,18 @@ async function prepareLaunch(request: LaunchGameRequest, store: LaunchRunStore):
   };
 }
 
-function createLaunchAccount(launch: PreparedLaunch): Account {
-  const credentials = resolveAccountCredentials({
+function launchCredentials(launch: PreparedLaunch) {
+  return resolveAccountCredentials({
     accountAddress: launch.request.accountAddress,
     privateKey: launch.request.privateKey,
     fallbackAccountAddress: launch.runtime.environment.accountAddress,
     fallbackPrivateKey: launch.runtime.environment.privateKey,
     context: `environment "${launch.runtime.environment.id}"`,
   });
+}
+
+function createLaunchAccount(launch: PreparedLaunch): Account {
+  const credentials = launchCredentials(launch);
   return new Account({
     provider: launch.runtime.provider,
     address: credentials.accountAddress,
@@ -240,21 +248,30 @@ async function ensureSponsoredLedgerPool(launch: PreparedLaunch, gameId: number)
   );
 }
 
-function buildRegistrarGameParams(launch: PreparedLaunch) {
-  return buildCreateGameParams(launch.config, {
-    gameName: launch.request.gameName,
-    presetId: launch.runtime.presetId,
-    seriesName: launch.request.seriesName,
-    seriesGameNumber: launch.request.seriesGameNumber,
-    startMainAt: launch.runtime.startTime,
-    durationSeconds: launch.config.season.durationSeconds,
-    devModeOn: launch.config.dev.mode.on,
-    singleRealmMode: launch.config.settlement.single_realm_mode,
-    twoPlayerMode: launch.config.settlement.two_player_mode ?? false,
-    useMapOverride: Boolean(
-      launch.request.mapConfigOverrides && Object.keys(launch.request.mapConfigOverrides).length > 0,
-    ),
-  });
+async function buildRegistrarGameParams(launch: PreparedLaunch) {
+  const owners = launch.request.rosterOwners ?? [];
+  const roster = launch.config.blitz.mode.on
+    ? await resolveBlitzRoster(launch.runtime.provider, owners, launch.runtime.environment.id)
+    : [];
+  if (!launch.config.blitz.mode.on && owners.length) throw new Error("Eternum does not use a fixed roster");
+  const block = await launch.runtime.provider.getBlock("latest");
+  return buildNativeGameParams(
+    launch.config,
+    {
+      gameName: launch.request.gameName,
+      presetId: launch.runtime.presetId,
+      startMainAt: launch.runtime.startTime,
+      chainTimestamp: block.timestamp,
+      durationSeconds: launch.config.season.durationSeconds,
+      devModeOn: launch.config.dev.mode.on,
+      singleRealmMode: launch.config.settlement.single_realm_mode,
+      twoPlayerMode: launch.config.settlement.two_player_mode ?? false,
+      useMapOverride: Boolean(
+        launch.request.mapConfigOverrides && Object.keys(launch.request.mapConfigOverrides).length > 0,
+      ),
+    },
+    roster,
+  );
 }
 
 function applyGameIdentity(launch: PreparedLaunch, gameId: number): void {
@@ -265,7 +282,7 @@ function applyGameIdentity(launch: PreparedLaunch, gameId: number): void {
 
 async function findExistingGame(launch: PreparedLaunch) {
   try {
-    return await findGameRegistryByName(launch.request.gameName, { chain: launch.runtime.environment.chain });
+    return await findRegistrarGame(launch.runtime.provider, launch.request.gameName, launch.runtime.environment.id);
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error);
     throw new Error(
@@ -307,9 +324,17 @@ async function createGame(launch: PreparedLaunch): Promise<void> {
   }
 
   const ledger = createLedgerGameTarget(launch);
+  const params = await buildRegistrarGameParams(launch);
   const result = await launch.runtime.progress.run(
     "create_game",
-    () => createRegistrarGame(createLaunchAccount(launch), buildRegistrarGameParams(launch), environmentId, ledger),
+    () =>
+      createRegistrarGame(
+        createLaunchAccount(launch),
+        params,
+        environmentId,
+        ledger,
+        buildNativePreset(loadNativePresetConfiguration(environmentId, launch.runtime.presetId)),
+      ),
     {
       start: `Creating "${launch.request.gameName}" through the persistent registrar`,
       success: (created, elapsedMs) =>
@@ -330,7 +355,7 @@ async function resolveGameId(launch: PreparedLaunch): Promise<number> {
   }
   const existingGame = await findExistingGame(launch);
   if (!existingGame) {
-    throw new Error(`No game id is recorded or present in Herald for "${launch.request.gameName}"`);
+    throw new Error(`No game id is recorded or present in the registrar for "${launch.request.gameName}"`);
   }
   applyGameIdentity(launch, existingGame.gameId);
   return existingGame.gameId;
@@ -361,9 +386,25 @@ async function waitForGameIndex(launch: PreparedLaunch): Promise<void> {
   applyGameIdentity(launch, row.gameId);
 }
 
+async function createAndSettleGame(launch: PreparedLaunch): Promise<void> {
+  const admissionUrl = launch.request.admissionUrl ?? process.env.ADMISSION_URL;
+  if (launch.config.blitz.mode.on && !admissionUrl) {
+    throw new Error("ADMISSION_URL is required for automatic Blitz settlement");
+  }
+  await createGame(launch);
+  if (!launch.config.blitz.mode.on) return;
+  launch.summary.finalizeAt = await settleBlitzRoster(
+    launch.runtime.provider,
+    await resolveGameId(launch),
+    launchCredentials(launch),
+    launch.runtime.environment.id,
+    admissionUrl!,
+  );
+}
+
 async function executeLaunchStep(launch: PreparedLaunch, stepId: LaunchGameStepId): Promise<void> {
   if (stepId === "create-world") {
-    await createGame(launch);
+    await createAndSettleGame(launch);
     return;
   }
   if (stepId === "wait-for-factory-index") {
@@ -406,7 +447,7 @@ export async function launchGame(
     return finishDryRun(launch);
   }
   await assertLaunchChainTargets(launch);
-  await createGame(launch);
+  await createAndSettleGame(launch);
   await waitForGameIndex(launch);
   return finishLaunch(launch);
 }

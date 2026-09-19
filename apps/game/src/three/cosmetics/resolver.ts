@@ -1,3 +1,4 @@
+import { buildSelectionFromCosmeticIds, resolveEligibleCosmeticIds } from "./ownership";
 import type { ModelType } from "../types/army";
 import { cosmeticDebugController, type DebugOverrideParams } from "./debug-controller";
 import { ensureCosmeticAsset } from "./asset-cache";
@@ -18,8 +19,6 @@ import {
   getCosmeticRegistry,
 } from "./registry";
 
-const DEFAULT_ATTACHMENTS: CosmeticAttachmentTemplate[] = [];
-
 const OWNER_ZERO = "0x0";
 
 const normalizeOwner = (owner: string | bigint | undefined): string => {
@@ -37,10 +36,6 @@ const normalizeOwner = (owner: string | bigint | undefined): string => {
     console.warn(`[Cosmetics] Unable to normalise owner address ${owner}; defaulting to ${OWNER_ZERO}`, error);
     return OWNER_ZERO;
   }
-};
-
-const findEntryForTarget = (target: string): CosmeticRegistryEntry | undefined => {
-  return getCosmeticRegistry().find((entry) => entry.appliesTo.includes(target));
 };
 
 const findFallbackEntry = (
@@ -128,7 +123,7 @@ const collectAttachmentEntries = (
       if (!entry || entry.category !== "attachment") {
         return undefined;
       }
-      if (eligibleCosmeticIds && eligibleCosmeticIds.length > 0 && !eligibleCosmeticIds.includes(id)) {
+      if (entry.ownershipKeys?.length && !eligibleCosmeticIds?.includes(id)) {
         return undefined;
       }
       if (!entry.appliesTo.some((value) => allowedTargets.includes(value))) {
@@ -148,8 +143,9 @@ export function resolveArmyCosmetic(params: ArmyCosmeticParams): CosmeticResolut
   const fallbackEntry = findFallbackEntry("army-skin", [target]);
 
   const snapshot = playerCosmeticsStore.getSnapshot(owner);
-  const eligibleCosmeticIds = snapshot?.ownership.eligibleCosmeticIds ?? [];
-  const armySelection = snapshot?.selection.armies?.[target];
+  const eligibleCosmeticIds = resolveEligibleCosmeticIds(params.attributes.map((value) => `0x${value.toString(16)}`));
+  const selection = snapshot?.selection ?? buildSelectionFromCosmeticIds(eligibleCosmeticIds);
+  const armySelection = selection.armies?.[target];
   const selectionSkinId = typeof armySelection === "string" ? armySelection : armySelection?.skin;
   const selectionAttachments =
     typeof armySelection === "object" && armySelection ? (armySelection.attachments ?? []) : [];
@@ -177,7 +173,7 @@ export function resolveArmyCosmetic(params: ArmyCosmeticParams): CosmeticResolut
   const allowedTargets = [target, formatArmyCosmeticFamily(params.troopType)];
   upsertAttachments(attachments, resolvedEntry?.attachments, resolvedEntry?.attachmentSlot);
 
-  const globalAttachments = snapshot?.selection.globalAttachments ?? (snapshot?.selection as any)?.attachments ?? [];
+  const globalAttachments = selection.globalAttachments ?? [];
 
   const attachmentEntries = [
     ...collectAttachmentEntries(globalAttachments, allowedTargets, eligibleCosmeticIds),
@@ -211,8 +207,9 @@ export function resolveStructureCosmetic(params: StructureCosmeticParams): Cosme
   ]);
 
   const snapshot = playerCosmeticsStore.getSnapshot(owner);
-  const eligibleCosmeticIds = snapshot?.ownership.eligibleCosmeticIds ?? [];
-  const structureSelection = snapshot?.selection.structures?.[target];
+  const eligibleCosmeticIds = resolveEligibleCosmeticIds(params.attributes.map((value) => `0x${value.toString(16)}`));
+  const selection = snapshot?.selection ?? buildSelectionFromCosmeticIds(eligibleCosmeticIds);
+  const structureSelection = selection.structures?.[target];
   const selectionSkinId = typeof structureSelection === "string" ? structureSelection : structureSelection?.skin;
   const selectionAttachments =
     typeof structureSelection === "object" && structureSelection ? (structureSelection.attachments ?? []) : [];
@@ -240,7 +237,7 @@ export function resolveStructureCosmetic(params: StructureCosmeticParams): Cosme
 
   upsertAttachments(attachments, resolvedEntry?.attachments, resolvedEntry?.attachmentSlot);
 
-  const globalAttachments = snapshot?.selection.globalAttachments ?? (snapshot?.selection as any)?.attachments ?? [];
+  const globalAttachments = selection.globalAttachments ?? [];
 
   const attachmentEntries = [
     ...collectAttachmentEntries(globalAttachments, allowedTargets, eligibleCosmeticIds),

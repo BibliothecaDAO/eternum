@@ -21,7 +21,7 @@ const createSession = (context: ResolvedEntryContext): BootstrappedEntrySession 
     name: context.worldName,
     chain: context.chain,
     heraldBaseUrl: "https://herald.realms.test",
-    rpcUrl: "https://api.realms.world/x/iron-age/katana/rpc/v0_9",
+    rpcUrl: "https://rpc.realms.test/rpc/v0_10_2",
     worldAddress: "0x1",
     contractsBySelector: {},
     fetchedAt: 0,

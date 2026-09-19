@@ -18,18 +18,16 @@
     "apps/amm-indexer/apibara.config.ts",
     "apps/amm-indexer/indexers/ammv2.indexer.ts",
     "apps/amm-indexer/indexers/factory-client.ts",
-    "deploy/madara-lab/scripts/deploy-s2-world.ts",
     "apps/indexer/drizzle.config.ts",
     "packages/db/drizzle.config.ts"
   ],
   "ignoreWorkspaces": [
-    "packages/ammv2-sdk",
-    "packages/dojo"
+    "packages/ammv2-sdk"
   ],
   "workspaces": {
     ".": {
       "entry": [
-        "deploy/madara-lab/scripts/deploy-box-plan.mjs"
+        "deploy/athanor/scripts/deploy-box-plan.mjs"
       ]
     },
     "apps/realms": {
@@ -58,9 +56,6 @@
       ],
       "includeEntryExports": true,
       "paths": {
-        "@bibliothecadao/dojo": [
-          "../dojo/src/index.ts"
-        ],
         "@bibliothecadao/provider": [
           "../provider/src/index.ts"
         ],
@@ -89,9 +84,6 @@
       ],
       "includeEntryExports": true,
       "paths": {
-        "@bibliothecadao/dojo": [
-          "../dojo/src/index.ts"
-        ],
         "@bibliothecadao/eternum": [
           "../core/src/index.ts"
         ],
@@ -108,11 +100,11 @@
     },
     "apps/game": {
       "paths": {
-        "@bibliothecadao/dojo": [
-          "../../packages/dojo/src/index.ts"
-        ],
         "@bibliothecadao/eternum": [
           "../../packages/core/src/index.ts"
+        ],
+        "@bibliothecadao/eternum/automation": [
+          "../../packages/core/src/automation/index.ts"
         ],
         "@bibliothecadao/eternum/game-entity-keys": [
           "../../packages/core/src/managers/game-entity-keys.ts"
@@ -191,9 +183,6 @@
     ],
     "packages/db/src/int8range.ts": [
       "exports"
-    ],
-    "packages/react/src/hooks/context/dojo-context.ts": [
-      "types"
     ],
     "packages/react/src/hooks/helpers/use-realm.ts": [
       "exports"
@@ -411,9 +400,6 @@
     "packages/provider/src/retry.ts": [
       "exports"
     ],
-    "packages/provider/src/vrf.ts": [
-      "exports"
-    ],
     "packages/react/src/hooks/helpers/use-quests.ts": [
       "exports"
     ],
@@ -467,10 +453,6 @@
     ],
     "packages/types/src/constants/utils.ts": [
       "exports"
-    ],
-    "packages/types/src/dojo/create-system-calls.ts": [
-      "exports",
-      "types"
     ],
     "packages/types/src/types/common.ts": [
       "types"
@@ -539,9 +521,6 @@
     "apps/game/src/ui/features/cosmetics/components/index.ts": [
       "files"
     ],
-    "apps/game/src/ui/features/cosmetics/providers/landing-dojo-provider.tsx": [
-      "files"
-    ],
     "apps/game/src/ui/features/cosmetics/chest-opening/components/chest-card.tsx": [
       "files"
     ],
@@ -599,9 +578,6 @@
     "apps/game/src/ui/features/cosmetics/chest-opening/utils/index.ts": [
       "files"
     ],
-    "apps/game/src/dojo/connection-health-monitor.ts": [
-      "exports"
-    ],
     "apps/game/src/runtime/world/factory-resolver.ts": [
       "exports"
     ],
@@ -627,9 +603,6 @@
     "apps/game/src/ui/features/cosmetics/chest-opening/utils/cosmetics.ts": [
       "exports",
       "types"
-    ],
-    "apps/game/src/ui/features/cosmetics/lib/use-torii-cosmetics.ts": [
-      "exports"
     ],
     "apps/game/src/ui/features/cosmetics/chest-opening/services/index.ts": [
       "exports"

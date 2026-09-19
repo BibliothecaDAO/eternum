@@ -1,8 +1,7 @@
 import {
   type BiomeType,
-  type ClientComponents,
   type ContractAddress,
-  type DojoAccount,
+  type GameplayAccount,
   getLayerNeighborHexes,
   getLayeredAttackDistance,
   getNeighborHexes,
@@ -10,39 +9,39 @@ import {
   type HexEntityInfo,
   type HexPosition,
   type ID,
-  packTileSeed,
   ResourcesIds,
   TileOccupier,
   type SystemCalls,
   type TroopType,
 } from "@bibliothecadao/types";
-import { type Entity, getComponentValue } from "@dojoengine/recs";
+import type { NativeFactStore } from "../client/native-fact-store";
 import type { Account, AccountInterface } from "starknet";
 import { divideByPrecision, FELT_CENTER, getTileAt } from "..";
 import { type ActionPath, ActionPaths, ActionType } from "../utils/action-paths";
-import { configManager, gameEntityKey } from "./config-manager";
+import { configManager } from "./config-manager";
 import { ResourceManager } from "./resource-manager";
 import { StaminaManager } from "./stamina-manager";
 import { computeExploreFoodCosts, computeTravelFoodCosts } from "./utils";
 
 export class ArmyActionManager {
-  private readonly entity: Entity;
   private readonly entityId: ID;
   private readonly staminaManager: StaminaManager;
   private readonly FELT_CENTER: number;
   constructor(
-    private readonly components: ClientComponents,
+    private readonly store: NativeFactStore,
     private readonly systemCalls: SystemCalls,
     entityId: ID,
   ) {
-    this.entity = gameEntityKey([BigInt(entityId)]);
     this.entityId = entityId;
-    this.staminaManager = new StaminaManager(this.components, entityId);
+    this.staminaManager = new StaminaManager(this.store, entityId);
     this.FELT_CENTER = FELT_CENTER();
   }
 
   private _getTroopType(): TroopType {
-    const entityArmy = getComponentValue(this.components.ExplorerTroops, this.entity);
+    const entityArmy = this.store.require("ExplorerTroops", {
+      game_id: configManager.getActiveGameId(),
+      explorer_id: this.entityId,
+    });
 
     return entityArmy?.troops.category as TroopType;
   }
@@ -50,11 +49,14 @@ export class ArmyActionManager {
   private _canExplore(currentDefaultTick: number, currentArmiesTick: number): boolean {
     const stamina = this.staminaManager.getStamina(currentArmiesTick);
 
-    if (Number(stamina.amount) < configManager.getExploreStaminaCost()) {
+    if (Number(stamina?.amount ?? 0n) < configManager.getExploreStaminaCost()) {
       return false;
     }
 
-    const entityArmy = getComponentValue(this.components.ExplorerTroops, this.entity);
+    const entityArmy = this.store.require("ExplorerTroops", {
+      game_id: configManager.getActiveGameId(),
+      explorer_id: this.entityId,
+    });
     const exploreFoodCosts = entityArmy
       ? computeExploreFoodCosts(entityArmy?.troops)
       : {
@@ -77,9 +79,12 @@ export class ArmyActionManager {
     const stamina = this.staminaManager.getStamina(currentArmiesTick);
     // Calculate minimum stamina cost across all biomes for this troop type
     const minTravelStaminaCost = configManager.getMinTravelStaminaCost();
-    const maxStaminaSteps = Math.floor(Number(stamina.amount) / minTravelStaminaCost);
+    const maxStaminaSteps = Math.floor(Number(stamina?.amount ?? 0n) / minTravelStaminaCost);
 
-    const entityArmy = getComponentValue(this.components.ExplorerTroops, this.entity);
+    const entityArmy = this.store.require("ExplorerTroops", {
+      game_id: configManager.getActiveGameId(),
+      explorer_id: this.entityId,
+    });
     const travelFoodCosts = entityArmy
       ? computeTravelFoodCosts(entityArmy.troops)
       : {
@@ -103,7 +108,10 @@ export class ArmyActionManager {
   };
 
   private readonly _getCurrentPosition = () => {
-    const position = getComponentValue(this.components.ExplorerTroops, this.entity)?.coord;
+    const position = this.store.require("ExplorerTroops", {
+      game_id: configManager.getActiveGameId(),
+      explorer_id: this.entityId,
+    })?.coord;
     if (!position) throw new Error("Explorer position is unavailable");
     return { col: position.x, row: position.y, alt: position.alt };
   };
@@ -128,7 +136,7 @@ export class ArmyActionManager {
   }
 
   private isWorldSpireHex(position: HexPosition): boolean {
-    const tile = getTileAt(this.components, this._getCurrentPosition().alt, position.col, position.row);
+    const tile = getTileAt(this.store, this._getCurrentPosition().alt, position.col, position.row);
     return tile?.occupier_type === TileOccupier.Spire;
   }
 
@@ -198,7 +206,7 @@ export class ArmyActionManager {
     currentArmiesTick: number,
     playerAddress: ContractAddress,
   ): ActionPaths {
-    const armyStamina = Number(this.staminaManager.getStamina(currentArmiesTick).amount);
+    const armyStamina = Number(this.staminaManager.getStamina(currentArmiesTick)?.amount ?? 0n);
 
     const troopType = this._getTroopType();
     // One truth: paths plan from the same ExplorerTroops coord the submit
@@ -377,7 +385,7 @@ export class ArmyActionManager {
     )?.direction;
   };
 
-  private readonly _exploreHex = async (signer: DojoAccount, path: ActionPath[], currentArmiesTick: number) => {
+  private readonly _exploreHex = async (signer: GameplayAccount, path: ActionPath[], currentArmiesTick: number) => {
     const direction = this._findDirection(path.map((p) => p.hex));
     if (direction === undefined || direction === null) {
       return Promise.reject(new Error("Invalid direction"));
@@ -387,14 +395,12 @@ export class ArmyActionManager {
       return Promise.reject(new Error("Missing destination tile for explore"));
     }
 
-    // Position-freshness guard. The vrf_source_salt below is baked into the
-    // multicall from `destinationHex`, but the chain's actual end tile is
-    // `explorer.coord + direction`. If the client's path[0] disagrees with the
-    // chain-visible coord, the salted request_random and the real consume will
-    // reference different tiles → "VrfProvider: not consumed". Reject upfront
-    // so the user retries with a fresh action path instead of eating a failed tx.
+    // A selected path must still start at the authoritative explorer position.
     const pathStart = path[0]?.hex;
-    const explorerTroops = getComponentValue(this.components.ExplorerTroops, this.entity);
+    const explorerTroops = this.store.require("ExplorerTroops", {
+      game_id: configManager.getActiveGameId(),
+      explorer_id: this.entityId,
+    });
     const chainCoord = explorerTroops?.coord as { x?: unknown; y?: unknown } | undefined;
     if (pathStart && chainCoord !== undefined && chainCoord.x !== undefined && chainCoord.y !== undefined) {
       const chainCol = Number(chainCoord.x);
@@ -411,15 +417,9 @@ export class ArmyActionManager {
       }
     }
 
-    const vrfSourceSalt = packTileSeed({
-      alt: this._getCurrentPosition().alt,
-      col: destinationHex.col,
-      row: destinationHex.row,
-    });
     return this.systemCalls.explorer_explore({
       explorer_id: this.entityId,
       directions: [direction],
-      vrf_source_salt: vrfSourceSalt,
       signer,
     });
   };
@@ -483,7 +483,10 @@ export class ArmyActionManager {
   };
 
   private _getOwnerResourceManager() {
-    const ownerId = getComponentValue(this.components.ExplorerTroops, this.entity)?.owner;
-    return ownerId ? new ResourceManager(this.components, ownerId) : null;
+    const ownerId = this.store.require("ExplorerTroops", {
+      game_id: configManager.getActiveGameId(),
+      explorer_id: this.entityId,
+    })?.owner;
+    return ownerId ? new ResourceManager(this.store, ownerId) : null;
   }
 }

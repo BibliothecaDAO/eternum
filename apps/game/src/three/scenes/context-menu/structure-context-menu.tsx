@@ -2,34 +2,28 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { playResourceSound } from "@/three/sound/utils";
 import { isAddressEqualToAccount } from "@/three/utils";
 import { LeftView } from "@/types";
-import { SetupResult } from "@bibliothecadao/dojo";
-import { gameEntityKey, getIsBlitz, getStructureName, Position } from "@bibliothecadao/eternum";
+import type { GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
+import { configManager, getIsBlitz, getStructureName, Position } from "@bibliothecadao/eternum";
 import { BuildingType, HexEntityInfo, HexPosition, ResourcesIds } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
 import { SceneName } from "../../types/common";
 import { navigateToStructure } from "../../utils/navigation";
 import { createConstructionMenu } from "./structure-construction-menu";
 
-type Components = SetupResult["components"];
+type Store = SetupResult["store"];
 
 interface OpenStructureContextMenuParams {
   event: MouseEvent;
   structure: HexEntityInfo;
   hexCoords: HexPosition;
-  components: Components;
+  store: Store;
 }
 
-const resolveStructureTitle = (structure: HexEntityInfo, components: Components) => {
-  const structureRow = getComponentValue(components.Structure, gameEntityKey([BigInt(structure.id)]));
+const resolveStructureTitle = (structure: HexEntityInfo, store: Store) => {
+  const structureRow = store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: structure.id });
   return structureRow ? getStructureName(structureRow, getIsBlitz()).name : `Structure ${structure.id}`;
 };
 
-export const openStructureContextMenu = ({
-  event,
-  structure,
-  hexCoords,
-  components,
-}: OpenStructureContextMenuParams) => {
+export const openStructureContextMenu = ({ event, structure, hexCoords, store }: OpenStructureContextMenuParams) => {
   const uiStore = useUIStore.getState();
   const idString = structure.id.toString();
   const isOwner = isAddressEqualToAccount(structure.owner);
@@ -77,14 +71,14 @@ export const openStructureContextMenu = ({
 
   const constructionAction = createConstructionMenu({
     structure,
-    components,
+    store,
     simpleCostEnabled: uiStore.useSimpleCost,
     selectConstructionBuilding,
   });
 
   uiStore.openContextMenu({
     id: `structure-${idString}`,
-    title: resolveStructureTitle(structure, components),
+    title: resolveStructureTitle(structure, store),
     subtitle: `(${hexCoords.col}, ${hexCoords.row})`,
     position: { x: event.clientX, y: event.clientY },
     scene: SceneName.WorldMap,

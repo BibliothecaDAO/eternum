@@ -6,7 +6,7 @@ const mocks = vi.hoisted(() => ({
   listeners: [] as Array<(opening: unknown) => void>,
   toastSuccess: vi.fn(),
 }));
-vi.mock("@bibliothecadao/react", () => ({ useDojo: () => ({ setup: {} }) }));
+vi.mock("@bibliothecadao/react", () => ({ useGame: () => ({ setup: {} }) }));
 vi.mock("@bibliothecadao/eternum", () => ({
   WorldUpdateListener: class {
     RelicChest = {

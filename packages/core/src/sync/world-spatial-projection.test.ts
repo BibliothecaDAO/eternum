@@ -1,5 +1,8 @@
 import { TileOccupier } from "@bibliothecadao/types";
-import { Type, createWorld, defineComponent, removeComponent, setComponent } from "@dojoengine/recs";
+import { hash } from "starknet";
+import { NativeFactStore } from "../client/native-fact-store";
+import explorerFixture from "../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
+import type { GameSyncEntityStoreOperation } from "./game-sync-types";
 import { describe, expect, it, vi } from "vitest";
 import {
   WorldSpatialProjection,
@@ -27,27 +30,44 @@ const encodeTile = (input: {
   BigInt(input.occupierIsStructure ? 1 : 0);
 
 const createHarness = () => {
-  const world = createWorld();
-  const tileOpt = defineComponent(world, {
-    game_id: Type.Number,
-    alt: Type.Boolean,
-    col: Type.Number,
-    row: Type.Number,
-    data: Type.BigInt,
-  });
-  const explorerTroops = defineComponent(world, {
-    explorer_id: Type.Number,
-    troops: {
-      category: Type.String,
-      tier: Type.String,
-      count: Type.BigInt,
-    },
-    coord: {
-      alt: Type.Boolean,
-      x: Type.Number,
-      y: Type.Number,
-    },
-  });
+  const facts = new NativeFactStore();
+  const aliases = new Map<string, string>();
+  let notify = true;
+  const source = {
+    entries: facts.entries.bind(facts),
+    subscribe: (listener: Parameters<NativeFactStore["subscribe"]>[0]) =>
+      facts.subscribe((changes) => {
+        if (notify) listener(changes);
+      }),
+  };
+  const apply = (operations: GameSyncEntityStoreOperation[], skip = false) => {
+    notify = !skip;
+    try {
+      facts.applyEntityOperations(operations);
+    } finally {
+      notify = true;
+    }
+  };
+  const write = (
+    model: "TileOpt" | "ExplorerTroops",
+    alias: string,
+    keys: (number | boolean)[],
+    row: object,
+    skip: boolean,
+  ) => {
+    const id = hash.computePoseidonHashOnElements(keys.map((value) => BigInt(value)));
+    const previous = aliases.get(`${model}:${alias}`);
+    const operations: GameSyncEntityStoreOperation[] = [];
+    if (previous && previous !== id)
+      operations.push({ type: "remove-components", entityId: previous, models: [model] });
+    operations.push({ type: "upsert", entities: [{ hashed_keys: id, models: { [model]: row } }] });
+    apply(operations, skip);
+    aliases.set(`${model}:${alias}`, id);
+  };
+  const remove = (model: "TileOpt" | "ExplorerTroops", alias: string, options?: { skipUpdateStream: boolean }) => {
+    const id = aliases.get(`${model}:${alias}`);
+    if (id) apply([{ type: "remove-components", entityId: id, models: [model] }], options?.skipUpdateStream);
+  };
   const writeTile = (
     entityId: string,
     input: {
@@ -61,20 +81,20 @@ const createHarness = () => {
       rewardExtracted?: boolean;
     },
     skipUpdateStream = false,
-  ) => {
-    setComponent(
-      tileOpt,
+  ) =>
+    write(
+      "TileOpt",
       entityId,
+      [13, input.alt ?? false, input.col, input.row],
       {
         game_id: 13,
         alt: input.alt ?? false,
         col: input.col,
         row: input.row,
-        data: encodeTile({ ...input, occupierType: input.occupierType ?? TileOccupier.Chest }),
+        data: encodeTile({ biome: 4, ...input, occupierType: input.occupierType ?? TileOccupier.Chest }),
       },
-      { skipUpdateStream },
+      skipUpdateStream,
     );
-  };
   const writeArmy = (
     entityId: string,
     input: {
@@ -87,37 +107,58 @@ const createHarness = () => {
       tier?: string;
     },
     skipUpdateStream = false,
-  ) => {
-    setComponent(
-      explorerTroops,
+  ) =>
+    write(
+      "ExplorerTroops",
       entityId,
+      [13, input.explorerId],
       {
+        game_id: 13,
         explorer_id: input.explorerId,
+        ...explorerFixture.expected.value,
         troops: {
+          ...explorerFixture.expected.value.troops,
           category: input.category ?? "Knight",
           tier: input.tier ?? "T1",
           count: input.count ?? 100n,
         },
         coord: { alt: input.alt ?? false, x: input.col, y: input.row },
       },
-      { skipUpdateStream },
+      skipUpdateStream,
     );
-  };
-
   return {
-    projection: new WorldSpatialProjection({
-      tileOptComponent: tileOpt,
-      explorerTroopsComponent: explorerTroops,
-      bucketSize: 8,
-    }),
-    explorerTroops,
-    tileOpt,
-    writeArmy,
+    source,
+    projection: new WorldSpatialProjection({ store: source, bucketSize: 4 }),
     writeTile,
+    writeArmy,
+    removeTile: (alias: string, options?: { skipUpdateStream: boolean }) => remove("TileOpt", alias, options),
+    removeArmy: (alias: string, options?: { skipUpdateStream: boolean }) => remove("ExplorerTroops", alias, options),
   };
 };
 
 describe("WorldSpatialProjection", () => {
+  it("keeps an unrevealed spawn out of terrain and path indexes without hiding its explorer", () => {
+    const { projection, writeTile, writeArmy } = createHarness();
+    writeTile("spawn", {
+      col: 100,
+      row: 200,
+      biome: 0,
+      occupierId: 7,
+      occupierType: TileOccupier.ExplorerKnightT1Regular,
+    });
+    writeArmy("explorer", { explorerId: 7, col: 100, row: 200 });
+    projection.start();
+    expect(projection.getTiles(false)).toEqual([]);
+    expect(projection.getArmies(false)).toHaveLength(1);
+    writeTile("spawn", { col: 100, row: 200, biome: 0, occupierId: 0, occupierType: TileOccupier.None });
+    expect(projection.getTiles(false)).toEqual([]);
+    writeTile("spawn", { col: 100, row: 200, biome: 4, occupierId: 0, occupierType: TileOccupier.None });
+    expect(projection.getTiles(false)).toHaveLength(1);
+    writeTile("spawn", { col: 100, row: 200, biome: 0, occupierId: 0, occupierType: TileOccupier.None });
+    expect(projection.getTiles(false)).toEqual([]);
+    projection.dispose();
+  });
+
   it("indexes live surface tiles for map-wide spatial reads", () => {
     const { projection, writeTile } = createHarness();
     writeTile("surface", {
@@ -151,7 +192,7 @@ describe("WorldSpatialProjection", () => {
     );
   });
 
-  it("rebuilds a surface-chest index from RECS and excludes non-renderable tiles", () => {
+  it("rebuilds a surface-chest index from native facts and excludes non-renderable tiles", () => {
     const { projection, writeTile } = createHarness();
     writeTile("chest", { col: 100, row: 200, occupierId: 7 });
     writeTile("ethereal-chest", { alt: true, col: 100, row: 200, occupierId: 8 });
@@ -259,18 +300,18 @@ describe("WorldSpatialProjection", () => {
   });
 
   it.each(["destination-first", "origin-first"] as const)(
-    "converges to the current RECS position when the %s update lands first",
+    "converges to the current native store position when the %s update lands first",
     (updateOrder) => {
-      const { projection, tileOpt, writeTile } = createHarness();
+      const { projection, removeTile, source, writeTile } = createHarness();
       writeTile("destination", { col: 20, row: 21, occupierId: 0, occupierType: TileOccupier.None });
       writeTile("origin", { col: 10, row: 11, occupierId: 7 });
       projection.start();
 
       if (updateOrder === "destination-first") {
         writeTile("destination", { col: 20, row: 21, occupierId: 7 });
-        removeComponent(tileOpt, "origin");
+        removeTile("origin");
       } else {
-        removeComponent(tileOpt, "origin");
+        removeTile("origin");
         writeTile("destination", { col: 20, row: 21, occupierId: 7 });
       }
 
@@ -322,11 +363,11 @@ describe("WorldSpatialProjection", () => {
   });
 
   it("restores missed updates and deletions from a full rebuild", () => {
-    const { projection, tileOpt, writeTile } = createHarness();
+    const { projection, removeTile, source, writeTile } = createHarness();
     writeTile("chest", { col: 10, row: 11, occupierId: 7 });
     projection.start();
 
-    removeComponent(tileOpt, "chest", { skipUpdateStream: true });
+    removeTile("chest", { skipUpdateStream: true });
     expect(projection.getChest(7)).toBeDefined();
 
     projection.rebuild();
@@ -335,11 +376,11 @@ describe("WorldSpatialProjection", () => {
   });
 
   it("does not return an offscreen deletion when its bounds are queried later", () => {
-    const { projection, tileOpt, writeTile } = createHarness();
+    const { projection, removeTile, source, writeTile } = createHarness();
     writeTile("offscreen-chest", { col: 200, row: 201, occupierId: 7 });
     projection.start();
 
-    removeComponent(tileOpt, "offscreen-chest");
+    removeTile("offscreen-chest");
 
     expect(projection.getChestsInBounds({ alt: false, minCol: 196, maxCol: 204, minRow: 196, maxRow: 204 })).toEqual(
       [],
@@ -383,7 +424,7 @@ describe("WorldSpatialProjection", () => {
   });
 
   it("publishes structure variant, move, and reserved-site removal changes", () => {
-    const { projection, tileOpt, writeTile } = createHarness();
+    const { projection, removeTile, source, writeTile } = createHarness();
     writeTile("realm", {
       col: 10,
       row: 11,
@@ -406,7 +447,7 @@ describe("WorldSpatialProjection", () => {
       occupierId: 7,
       occupierType: TileOccupier.RealmWonderLevel2,
     });
-    removeComponent(tileOpt, "reserved");
+    removeTile("reserved");
     projection.flush();
 
     expect(listener).toHaveBeenCalledOnce();
@@ -434,7 +475,7 @@ describe("WorldSpatialProjection", () => {
   });
 
   it("publishes army create, move, variant, and removal changes incrementally", () => {
-    const { projection, explorerTroops, writeArmy } = createHarness();
+    const { projection, removeArmy, source, writeArmy } = createHarness();
     projection.start();
     const listener = vi.fn();
     projection.subscribeArmies(listener);
@@ -443,7 +484,7 @@ describe("WorldSpatialProjection", () => {
     projection.flush();
     writeArmy("army", { explorerId: 7, col: 20, row: 21, category: "Crossbowman", tier: "T3" });
     projection.flush();
-    removeComponent(explorerTroops, "army");
+    removeArmy("army");
     projection.flush();
 
     expect(listener).toHaveBeenNthCalledWith(1, [
@@ -518,7 +559,7 @@ describe("WorldSpatialProjection", () => {
       col: 12,
       row: 13,
       occupierId: 77,
-      occupierType: TileOccupier.HyperstructureLevel1,
+      occupierType: TileOccupier.Hyperstructure,
     });
 
     expect(projection.getStructuresAtHex({ alt: false, col: 12, row: 13 })).toEqual([
@@ -550,14 +591,14 @@ describe("WorldSpatialProjection", () => {
   });
 
   it("updates a changed structure incrementally without rescanning TileOpt", () => {
-    const { projection, tileOpt, writeTile } = createHarness();
+    const { projection, removeTile, source, writeTile } = createHarness();
     writeTile("realm", {
       col: 10,
       row: 11,
       occupierId: 7,
       occupierType: TileOccupier.RealmRegularLevel1,
     });
-    const entitiesSpy = vi.spyOn(tileOpt, "entities");
+    const entitiesSpy = vi.spyOn(source, "entries");
     projection.start();
 
     writeTile("realm", {
@@ -567,7 +608,7 @@ describe("WorldSpatialProjection", () => {
       occupierType: TileOccupier.RealmWonderLevel2,
     });
 
-    expect(entitiesSpy).toHaveBeenCalledTimes(1);
+    expect(entitiesSpy.mock.calls.filter(([model]) => model === "TileOpt")).toHaveLength(1);
     expect(projection.getStructure(7)).toMatchObject({
       hexCoords: { alt: false, col: 20, row: 21 },
       occupierType: TileOccupier.RealmWonderLevel2,
@@ -575,11 +616,11 @@ describe("WorldSpatialProjection", () => {
   });
 
   it("restores missed army updates and deletions from a full rebuild", () => {
-    const { projection, explorerTroops, writeArmy } = createHarness();
+    const { projection, removeArmy, source, writeArmy } = createHarness();
     writeArmy("army", { explorerId: 7, col: 10, row: 11 });
     projection.start();
 
-    removeComponent(explorerTroops, "army", { skipUpdateStream: true });
+    removeArmy("army", { skipUpdateStream: true });
     expect(projection.getArmy(7)).toBeDefined();
 
     projection.rebuild();
@@ -636,16 +677,16 @@ describe("WorldSpatialProjection", () => {
   });
 
   it("publishes nothing for rows that end the slice where they started", () => {
-    const { projection, explorerTroops, tileOpt, writeArmy, writeTile } = createHarness();
+    const { projection, removeArmy, removeTile, source, writeArmy, writeTile } = createHarness();
     writeArmy("returning-army", { explorerId: 9, col: 30, row: 31 });
     projection.start();
     const listener = vi.fn();
     projection.subscribe(listener);
 
     writeTile("chest", { col: 10, row: 11, occupierId: 7 });
-    removeComponent(tileOpt, "chest");
+    removeTile("chest");
     writeArmy("army", { explorerId: 8, col: 20, row: 21 });
-    removeComponent(explorerTroops, "army");
+    removeArmy("army");
     writeArmy("returning-army", { explorerId: 9, col: 40, row: 41 });
     writeArmy("returning-army", { explorerId: 9, col: 30, row: 31 });
     projection.flush();

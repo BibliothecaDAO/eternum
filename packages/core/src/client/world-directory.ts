@@ -1,7 +1,6 @@
 import type { GameChain as Chain } from "@realms-world/chain";
 import { resolveEndpoint } from "@realms-world/chain";
 
-import { namespaceForChain, type GameNamespace } from "./game-scope";
 import { normalizeSelector } from "./normalize";
 
 /**
@@ -21,7 +20,7 @@ export interface WorldDeployment {
   chain: Chain;
   rpcUrl: string;
   heraldBaseUrl: string;
-  namespace: GameNamespace;
+  admissionUrl: string;
   worldAddress: string;
   /** Normalized selector -> address from the world's committed manifest. */
   contractsBySelector: Record<string, string>;
@@ -30,7 +29,7 @@ export interface WorldDeployment {
   bindingAuthorityAddress: string;
 }
 
-/** The slice of a Dojo manifest a world deployment is built from. */
+/** The native manifest fields a world deployment is built from. */
 export interface CommittedManifest {
   world: { address: string };
   contracts: { selector: string; address: string }[];
@@ -41,6 +40,7 @@ interface WorldDeploymentInput {
   chain: Chain;
   manifest: CommittedManifest;
   heraldBaseUrl: string;
+  admissionUrl: string;
   rpcUrl: string;
   /** Whether the endpoints must be reachable from a browser page (mixed-content rules apply). */
   browserFacing: boolean;
@@ -60,7 +60,10 @@ export const buildWorldDeployment = (input: WorldDeploymentInput): WorldDeployme
     name: `RPC URL for world "${input.id}"`,
     browserFacing: input.browserFacing,
   }),
-  namespace: namespaceForChain(input.chain),
+  admissionUrl: resolveEndpoint(input.admissionUrl, {
+    name: `Admission URL for world "${input.id}"`,
+    browserFacing: input.browserFacing,
+  }),
   worldAddress: input.manifest.world.address,
   contractsBySelector: indexContractsBySelector(input.manifest),
   playerAccountClassHash: input.playerAccountClassHash,

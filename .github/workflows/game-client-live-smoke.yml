@@ -24,6 +24,9 @@ jobs:
     permissions:
       contents: read
     env:
+      NATIVE_WORLD_MANIFEST: /tmp/native-world.json
+      NATIVE_WORLD_MANIFEST_URL: ${{ vars.NATIVE_WORLD_MANIFEST_URL }}
+      ADMISSION_URL: ${{ vars.ADMISSION_URL }}
       MANIFEST_PATH: game-client-headless-manifest.json
       HERALD_URL: https://herald.realms.party
       RPC_URL: https://rpc.realms.party
@@ -50,6 +53,12 @@ jobs:
       - name: Build packages
         run: pnpm run build:packages
 
+      - name: Read native release manifest
+        run: |
+          test -n "$NATIVE_WORLD_MANIFEST_URL" && test -n "$ADMISSION_URL"
+          curl --fail --silent --show-error --location "$NATIVE_WORLD_MANIFEST_URL" -o "$NATIVE_WORLD_MANIFEST"
+          node deploy/athanor/scripts/validate-native-target.mjs
+
       - name: Run headless game client against the first Live lab game
         # A failed live boot is the signal this workflow exists for; nothing downstream should soften it.
         continue-on-error: false
@@ -58,6 +67,7 @@ jobs:
           pnpm --silent smoke:game-client \
             --herald-url "$HERALD_URL" \
             --rpc-url "$RPC_URL" \
+            --admission-url "$ADMISSION_URL" \
             | tee "$MANIFEST_PATH"
 
       - name: Upload headless manifest
@@ -68,7 +78,7 @@ jobs:
           path: game-client-headless-manifest.json
           if-no-files-found: warn
 
-      - name: Verify the manifest reached running with entities in RECS
+      - name: Verify the manifest reached running with native entities
         run: |
           set -euo pipefail
           status="$(jq -r '.status' "$MANIFEST_PATH")"

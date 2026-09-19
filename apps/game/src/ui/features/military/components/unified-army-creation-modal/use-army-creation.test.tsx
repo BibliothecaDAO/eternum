@@ -23,15 +23,12 @@ const mocks = vi.hoisted(() => ({
   guards: [] as any[],
   tiles: [{ occupierId: 0, hexCoords: { col: 11, row: 10 } }],
 }));
-const components = { Structure: "Structure", Resource: "Resource" };
 const systemCalls = {};
 vi.mock("@bibliothecadao/react", () => ({
-  useDojo: () => ({ setup: { components, systemCalls }, account: { account: { address: "0x1" } } }),
+  useGame: () => ({ setup: { store: {}, systemCalls }, account: { account: { address: "0x1" } } }),
+  useNativeRow: (model: string) => (model === "Structure" ? mocks.structure : undefined),
+  useNativeRevision: () => mocks.resource.balance,
 }));
-vi.mock("@dojoengine/react", () => ({
-  useComponentValue: (component: string) => (component === "Structure" ? mocks.structure : mocks.resource),
-}));
-vi.mock("@bibliothecadao/eternum/game-client", () => ({ gameEntityKey: () => "structure" }));
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
   useCurrentArmiesTick: () => 1,
   useCurrentBlockTimestamp: () => 60,
@@ -50,10 +47,15 @@ vi.mock("@/sync/active-game-client", () => ({
 vi.mock("@bibliothecadao/eternum", async () => {
   const types = await import("@bibliothecadao/types");
   return {
-    configManager: { getMaxArmySize: () => 3000, getWorldStructureDefenseSlotsConfig: () => ({}) },
+    configManager: {
+      getActiveGameId: () => 1,
+      getMaxArmySize: () => 3000,
+      getWorldStructureDefenseSlotsConfig: () => ({}),
+    },
     divideByPrecision: (value: number) => Number(value),
     getBalance: () => ({ balance: mocks.resource.balance }),
     getGuardsByStructure: () => mocks.guards,
+    getGuardSlotCooldownRemaining: () => 0,
     getTroopResourceId: () => types.resources[0].id,
   };
 });
@@ -75,6 +77,8 @@ describe("shared army creation form", () => {
   beforeEach(() => {
     (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
     mocks.structure.base.category = StructureType.Realm;
+    mocks.structure.base.level = 0;
+    mocks.structure.base.troop_max_guard_count = 1;
     mocks.structure.base.troop_explorer_count = 0;
     mocks.resource = { balance: 2000 };
     mocks.needsBootstrap = false;
@@ -133,8 +137,31 @@ describe("shared army creation form", () => {
     await act(async () => form.handleTroopCountChange(2000));
     await act(async () => form.handleCreate());
     expect(mocks.addGuard).toHaveBeenCalledWith(
-      expect.objectContaining({ structureId: 42, troopCount: 2000, slot: GuardSlot.Delta }),
+      expect.objectContaining({ structureId: 42, troopCount: 2000, slot: 0 }),
     );
+  });
+
+  it.each([0, 1, 2, 3])("recruits into the highest unlocked slot at level %i", async (level) => {
+    mocks.structure.base.level = level;
+    mocks.structure.base.troop_max_guard_count = level + 1;
+    await act(async () => root.render(<Harness isExplorer={false} initialGuardSlot={level} />));
+    await act(async () => form.handleTroopCountChange(500));
+    await act(async () => form.handleCreate());
+    expect(mocks.addGuard).toHaveBeenCalledWith(expect.objectContaining({ slot: level, troopCount: 500 }));
+    mocks.addGuard.mockClear();
+    await act(async () => root.render(<Harness isExplorer={false} initialGuardSlot={level + 1} />));
+    expect(form.blockedReason).toBe("No free guard slot.");
+    await act(async () => form.handleCreate());
+    expect(mocks.addGuard).not.toHaveBeenCalled();
+  });
+
+  it("shows the starting guard in Delta at level zero", async () => {
+    mocks.guards = [
+      { slot: 0, troops: { category: TroopType.Knight, tier: TroopTier.T1, count: 100n }, destroyedTick: 0 },
+    ];
+    await act(async () => root.render(<Harness isExplorer={false} initialGuardSlot={0} />));
+    expect(form.guardsBySlot.get(GuardSlot.Delta)?.troops?.count).toBe(100);
+    expect([...form.guardsBySlot.keys()]).toEqual([0]);
   });
 
   it("opens with every count at zero and keeps Deploy blocked until the player picks a count", async () => {

@@ -3,8 +3,8 @@ import { getGameModeConfig } from "@/config/game-modes";
 import { ContextMenuAction } from "@/types/context-menu";
 import type { ReactNode } from "react";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { resolveConstructionBuildability } from "@/ui/features/settlement/construction/construction-buildability";
-import { SetupResult } from "@bibliothecadao/dojo";
+import { resolveConstructionBuildability } from "@bibliothecadao/eternum/automation";
+import type { GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
 import { getRealmInfo } from "@bibliothecadao/eternum";
 import {
   BuildingType,
@@ -13,14 +13,12 @@ import {
   findResourceById,
   getBuildingFromResource,
 } from "@bibliothecadao/types";
-import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 
-type Components = SetupResult["components"];
+type Store = SetupResult["store"];
 
 interface CreateConstructionMenuParams {
   structure: HexEntityInfo;
-  components: Components;
+  store: Store;
   simpleCostEnabled: boolean;
   selectConstructionBuilding: (building: BuildingType, view: LeftView, resource?: ResourcesIds) => void;
 }
@@ -94,22 +92,17 @@ const createTierIconComponent = (tierLabel: string): ReactNode => (
 
 export const createConstructionMenu = ({
   structure,
-  components,
-  simpleCostEnabled,
+  store,
+  simpleCostEnabled: requestedSimpleCost,
   selectConstructionBuilding,
 }: CreateConstructionMenuParams): ContextMenuAction => {
   const structureId = BigInt(structure.id);
   const idString = structureId.toString();
   const structureEntityId = Number(structureId);
   const mode = getGameModeConfig();
+  const simpleCostEnabled = mode.id !== "blitz" && requestedSimpleCost;
 
-  const realmInfo = (() => {
-    try {
-      return getRealmInfo(gameEntityKey([structureId]), components);
-    } catch {
-      return undefined;
-    }
-  })();
+  const realmInfo = getRealmInfo(structureEntityId, store);
 
   const makeBuildingAction = ({
     suffix,
@@ -165,7 +158,7 @@ export const createConstructionMenu = ({
       entityId: structureEntityId,
       buildingType: building,
       useSimpleCost: simpleCostEnabled,
-      components,
+      store,
       realm: realmInfo,
       mode,
     });

@@ -34,6 +34,163 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-09-19",
+    title: "Transfer Eternum Structure Ownership",
+    description:
+      "Transfer an owned Eternum structure from its owner panel, with recipient validation and confirmation. Villages cannot be transferred.",
+    type: "feature",
+  },
+  {
+    date: "2026-09-19",
+    title: "Dismiss Structure Guards",
+    description: "Dismiss an occupied guard from its deployment picker, with confirmation before its troops are lost.",
+    type: "feature",
+  },
+  {
+    date: "2026-09-19",
+    title: "Eternum Hyperstructure Construction",
+    description:
+      "Start construction, contribute resources from your structures, and choose who can contribute from the hyperstructure's tile panel.",
+    type: "feature",
+  },
+  {
+    date: "2026-09-19",
+    title: "Free Blitz Slots and Results",
+    description:
+      "Register for a free slot, join your assigned game with prepared realms, and see final ranks and victory points after the whole roster is scored.",
+    type: "feature",
+  },
+  {
+    date: "2026-09-18",
+    title: "Automatic Blitz settlement",
+    description:
+      "Assigned players receive three prepared realms and starting guards automatically. Play opens when the whole roster is ready.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-18",
+    title: "Complete claims and season closure",
+    description: "Mining claims and season closure continue through all required batches before reporting completion.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-18",
+    title: "Guard slots match the battlefield",
+    description:
+      "Starting guards now appear in the first defense slot. Recruitment, slot icons and battle stories use the same numbering.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-18",
+    title: "Faith, Armies and Resource Bridge",
+    type: "feature",
+    description:
+      "Claim faith points and prizes, receive your village army, and rename explorers. Eternum settlements can deposit and withdraw supported resources.",
+  },
+  {
+    date: "2026-09-18",
+    title: "Synchronized Player Actions",
+    description:
+      "Actions wait for your player state to synchronize. Structures no longer appear unclaimed while their ownership is loading.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-17",
+    title: "Complete Troop History",
+    description:
+      "Recruitment, disbanding and troop transfers appear in your game history, with the correct guard slot.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-17",
+    title: "Mining Claims Catch Up",
+    description:
+      "Claim ready mining phases together. Winner rewards return to the first contributing structure; the owner's share stays in the mine.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-17",
+    title: "Simpler Army and Structure Display",
+    description:
+      "Removed autonomous map agents and hyperstructure level variants. Player armies keep their normal ownership colors and troop models.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-17",
+    title: "Command sync recovery",
+    description:
+      "A stalled game update now reports an error and releases queued controls instead of blocking play until reload.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-17",
+    title: "Production and exploration fixes",
+    description:
+      "Blitz uses Resource production only. Build orders leave your map selection alone, ships sail bow-first, and surface exploration grants its reward in the same action.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-17",
+    title: "Clear game creation feedback",
+    description:
+      "Creating a game shows its progress and keeps any launch error beside the button, so you can fix it and retry without losing the form.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-17",
+    title: "Reliable game end effects",
+    description:
+      "Frozen terrain updates without a reload. A game-end banner announces the clock ending and names the winner or tied winners when the final result arrives.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-17",
+    title: "Wallet choice and live lobby",
+    description:
+      "Pick a wallet to connect and sign in in one flow, with wallet choices available after an error. Lobby countdowns advance every second and player counts refresh while the lobby is open.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-17",
+    title: "Settlement surroundings revealed",
+    description:
+      "New realms and villages reveal the six neighbouring terrain tiles when settled, without discoveries or exploration rewards.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-17",
+    title: "Responsive army selection",
+    description: "Army range checks stay responsive as more players and structures fill the map.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-17",
+    title: "Confirmed settlement before entry",
+    description: "Game entry waits for your settlement to appear and reports a rejected settlement before proceeding.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-17",
+    title: "Reliable game entry and updates",
+    description:
+      "The lobby opens before game rules load, and exploration rewards keep your next action ready without reconnecting.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-17",
+    title: "Independent village placement",
+    description:
+      "Villages use the settlement planner. Choose a connected realm for the army grant and bridge fee; villages no longer use one of six surrounding tiles.",
+    type: "feature",
+  },
+  {
+    date: "2026-09-17",
+    title: "Consistent reinforcement and production",
+    description:
+      "Reinforcement checks the target owner in every game mode. Production controls show the recorded resource, labor, and troop bonuses through their end ticks.",
+    type: "fix",
+  },
+  {
     date: "2026-09-18",
     title: "Illustrated Mobile HUD",
     description:

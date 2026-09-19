@@ -34,10 +34,6 @@ vi.mock("@/ui/config", () => ({
   IS_FLAT_MODE: false,
 }));
 
-vi.mock("@/utils/agent", () => ({
-  getCharacterModel: vi.fn(() => null),
-}));
-
 vi.mock("@/three/utils/utils", () => ({
   gltfLoader: {
     load: vi.fn(),

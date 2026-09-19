@@ -26,13 +26,14 @@ export interface StructureInfo {
   isAlly: boolean;
   owner: { address: bigint; ownerName: string; guildName: string };
   structureType: StructureType;
+  mineKind?: number;
   hasWonder: boolean;
   realmOrder?: number;
   cosmeticId?: string;
   cosmeticAssetPaths?: string[];
   usesFallbackCosmeticSkin?: boolean;
   attachments?: CosmeticAttachmentTemplate[];
-  // Live presentation facts derived from RECS
+  // Live presentation facts derived from native store
   guardArmies?: Array<{ slot: number; category: string | null; tier: number; count: number }>;
   activeProductions?: Array<{ buildingCount: number; buildingType: BuildingType }>;
   incomingTroopArrivals?: IncomingTroopArrival[];
@@ -52,12 +53,11 @@ export interface ArmyData {
   color: string;
   category: TroopType;
   tier: TroopTier;
-  isDaydreamsAgent: boolean;
   cosmeticId?: string;
   cosmeticAssetPaths?: string[];
   usesFallbackCosmeticSkin?: boolean;
   attachments?: CosmeticAttachmentTemplate[];
-  // Live presentation facts derived from RECS
+  // Live presentation facts derived from native store
   troopCount: number;
   currentStamina: number;
   maxStamina: number;

@@ -52,4 +52,4 @@ export const resumeProduction = async (client: ActionClient, input: BuildingSlot
   );
 
 const structureTiles = (client: ActionClient, structureId: ID): TileManager =>
-  TileManager.forStructure(client.setup.components, client.setup.systemCalls, structureId);
+  TileManager.forStructure(client.setup.store, client.setup.systemCalls, structureId);

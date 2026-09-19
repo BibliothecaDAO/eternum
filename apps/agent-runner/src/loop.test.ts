@@ -31,7 +31,7 @@ afterEach(async () => {
     await loop.done.catch(() => undefined);
   }
   vi.restoreAllMocks();
-  ClientConfigManager.instance().setActiveGame(0, 0);
+  ClientConfigManager.instance().setActiveGame(28, 0);
   await Promise.all(dataDirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })));
 });
 
@@ -62,10 +62,10 @@ const startLoop = async (input: {
   maxTicks?: number;
 }): Promise<LoopHarness> => {
   const game = createFakeGame();
-  seedGameRegistry(game.components, { status: "Live", startMainAt: 0, endAt: 0 });
-  seedStructure(game.components, { entityId: 12, owner: PLAYER, x: HOME.x, y: HOME.y });
+  seedGameRegistry(game.store, { status: "Live", startMainAt: 0, endAt: 0 });
+  seedStructure(game.store, { entityId: 12, owner: PLAYER, x: HOME.x, y: HOME.y });
   const spawn = getNeighborHexes(HOME.x, HOME.y)[0]!;
-  seedExplorer(game.components, { explorerId: 101, owner: 12, x: spawn.col, y: spawn.row });
+  seedExplorer(game.store, { explorerId: 101, owner: 12, x: spawn.col, y: spawn.row });
 
   const dataDir = await mkdtemp(path.join(tmpdir(), "agent-loop-"));
   dataDirs.push(dataDir);
@@ -188,14 +188,14 @@ describe("runAgentLoop", () => {
       { reason: "direction", actionable: true, delivery: "followed-up" },
     ]);
 
-    seedExplorer(loop.game.components, { explorerId: 201, owner: 13, x: HOME.x + 2, y: HOME.y + 1 });
+    seedExplorer(loop.game.store, { explorerId: 201, owner: 13, x: HOME.x + 2, y: HOME.y + 1 });
     loop.game.applySlice();
     await loop.clock.advance(QUIET_WINDOW_MS);
     await loop.untilTicks(3);
     expect(steer).toHaveBeenCalledTimes(1);
     expect(loop.tickLines().at(-1)).toMatchObject({ reason: "world-delta", actionable: true, delivery: "steered" });
 
-    seedExplorer(loop.game.components, { explorerId: 201, owner: 13, x: HOME.x + 1, y: HOME.y + 1 });
+    seedExplorer(loop.game.store, { explorerId: 201, owner: 13, x: HOME.x + 1, y: HOME.y + 1 });
     loop.game.applySlice();
     await loop.clock.advance(QUIET_WINDOW_MS);
     await loop.untilTicks(4);
@@ -233,7 +233,7 @@ describe("runAgentLoop", () => {
     const loop = await startLoop({});
     await loop.agent.waitForIdle();
 
-    seedGameRegistry(loop.game.components, { status: "Ended", startMainAt: 0, endAt: 0 });
+    seedGameRegistry(loop.game.store, { status: "Ended", startMainAt: 0, endAt: 0 });
     loop.game.applySlice();
     await loop.clock.advance(QUIET_WINDOW_MS);
 

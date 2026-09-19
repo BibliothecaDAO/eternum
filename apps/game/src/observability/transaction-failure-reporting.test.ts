@@ -135,7 +135,7 @@ describe("transaction failure reporting", () => {
     await reportClientTransactionFailure({
       error: new Error("Unable to send execute() call due to destroyed connection"),
       context: {
-        surface: "dojo_provider",
+        surface: "game_provider",
         operation: "claim_share_points",
         stage: "submit",
         walletAddress: "0x123",
@@ -149,7 +149,7 @@ describe("transaction failure reporting", () => {
     await reportClientTransactionFailure({
       error: new Error("Transaction submission timed out after 20s before a transaction hash was returned"),
       context: {
-        surface: "dojo_provider",
+        surface: "game_provider",
         operation: "claim_share_points",
         stage: "submit",
         walletAddress: "0x123",
@@ -186,13 +186,13 @@ describe("transaction failure reporting", () => {
     expect(disconnectContext.fingerprint).toEqual([
       "client-transaction-submission",
       "provider_connection_destroyed",
-      "dojo_provider",
+      "game_provider",
       "claim_share_points",
     ]);
     expect(timeoutContext.fingerprint).toEqual([
       "client-transaction-submission",
       "submission_timeout_no_hash",
-      "dojo_provider",
+      "game_provider",
       "claim_share_points",
     ]);
   });

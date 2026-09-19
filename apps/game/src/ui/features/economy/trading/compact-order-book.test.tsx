@@ -14,7 +14,6 @@ vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
   useCurrentDefaultTick: () => 0,
 }));
 vi.mock("@bibliothecadao/eternum/game-client", () => ({ gameEntityKey: () => "" }));
-vi.mock("@dojoengine/recs", () => ({ getComponentValue: () => undefined }));
 vi.mock("@bibliothecadao/eternum", () => ({
   calculateDonkeysNeeded: () => 0,
   divideByPrecision: (value: number) => value,
@@ -23,7 +22,7 @@ vi.mock("@bibliothecadao/eternum", () => ({
   multiplyByPrecision: (value: number) => value,
 }));
 vi.mock("@bibliothecadao/react", () => ({
-  useDojo: () => ({
+  useGame: () => ({
     account: { account: {} },
     setup: { components: { Structure: {} }, systemCalls: {} },
   }),

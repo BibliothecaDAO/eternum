@@ -16,10 +16,6 @@ const mocks = vi.hoisted(() => ({
   openSurface: vi.fn(),
   closeSurface: vi.fn(),
   updateSelectedEntityId: vi.fn(),
-  components: {
-    Structure: Symbol("Structure"),
-    ExplorerTroops: Symbol("ExplorerTroops"),
-  },
   attackerTroops: {
     count: 1000n,
     category: 1,
@@ -116,7 +112,8 @@ vi.mock("@/ui/design-system/molecules/resource-icon", () => ({
 }));
 
 vi.mock("@bibliothecadao/react", () => ({
-  useDojo: () => ({
+  useNativeRevision: () => 0,
+  useGame: () => ({
     account: {
       account: mocks.account,
     },
@@ -126,26 +123,9 @@ vi.mock("@bibliothecadao/react", () => ({
         attack_explorer_vs_guard: mocks.attackExplorerVsGuard,
         attack_guard_vs_explorer: mocks.attackGuardVsExplorer,
       },
-      components: mocks.components,
+      store: { get: (model: string) => (model === "ExplorerTroops" ? { troops: mocks.attackerTroops } : undefined) },
     },
   }),
-}));
-
-vi.mock("@dojoengine/recs", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@dojoengine/recs")>()),
-  getComponentValue: (component: symbol) => {
-    if (component === mocks.components.Structure) {
-      return undefined;
-    }
-
-    if (component === mocks.components.ExplorerTroops) {
-      return {
-        troops: mocks.attackerTroops,
-      };
-    }
-
-    return undefined;
-  },
 }));
 
 vi.mock("@bibliothecadao/eternum", () => ({
@@ -162,6 +142,7 @@ vi.mock("@bibliothecadao/eternum", () => ({
     }
   },
   configManager: {
+    getActiveGameId: () => 1,
     getBiome: () => "forest",
     getCombatConfig: () => ({
       stamina_attack_req: 50,
@@ -193,10 +174,11 @@ vi.mock("@bibliothecadao/types", () => ({
   },
   getLayeredAttackDistance: () => mocks.targetDistance,
   getTroopAttackRange: () => 1,
+  GUARD_SLOT_ORDER: [0, 1, 2, 3],
   GuardSlot: {
     Delta: 0,
-    Charlie: 1,
-    Bravo: 2,
+    Gamma: 1,
+    Beta: 2,
     Alpha: 3,
   },
   StructureType: {
@@ -291,7 +273,7 @@ describe("QuickAttackPreview", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = false;
   });
 
-  it("labels the ethereal +10% assumption and sends the defender layer with the attack", async () => {
+  it("labels the ethereal +10% preview and submits the selected combatants", async () => {
     mocks.attackerStamina = { amount: 50n, updated_tick: 1n };
     await act(async () => {
       root.render(
@@ -308,7 +290,9 @@ describe("QuickAttackPreview", () => {
       findPrimaryActionButton(container)?.click();
       await waitForAsyncWork();
     });
-    expect(mocks.attackExplorerVsGuard).toHaveBeenCalledWith(expect.objectContaining({ ethereal: true }));
+    expect(mocks.attackExplorerVsGuard).toHaveBeenCalledWith(
+      expect.objectContaining({ explorer_id: 1, structure_id: 2 }),
+    );
   });
 
   it("disables unguarded structure claims when stamina is below the required threshold", async () => {

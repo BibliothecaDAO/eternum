@@ -1,16 +1,13 @@
 import type { GameEnvironmentId } from "../../../config/shared/game-environments";
 import { randomUUID } from "node:crypto";
-import type {
-  LaunchGameSummary,
-  LaunchRotationSummary,
-  LaunchSeriesSummary,
-} from "../../../config/deployer/clean/types";
+import type { LaunchGameSummary } from "../../../config/deployer/clean/types";
 import { launchName, type ClaimedLaunchRun, type LaunchRun, type LaunchSummary } from "./model";
 import { applyDurableLaunchDefaults, type LaunchJobRequest, type LaunchKind } from "./schemas";
 import type { LaunchServiceStore } from "./store";
 
 export class InMemoryLaunchStore implements LaunchServiceStore {
   readonly runs = new Map<string, LaunchRun>();
+  readonly availableAt = new Map<string, number>();
 
   async initialize(): Promise<void> {}
   async close(): Promise<void> {}
@@ -56,7 +53,9 @@ export class InMemoryLaunchStore implements LaunchServiceStore {
       }
     }
     if (Array.from(this.runs.values()).some((run) => run.status === "running")) return null;
-    const entry = Array.from(this.runs.entries()).find(([, run]) => run.status === "queued");
+    const entry = Array.from(this.runs.entries()).find(
+      ([, run]) => run.status === "queued" && (this.availableAt.get(run.id) ?? 0) <= now,
+    );
     if (!entry) return null;
     const [key, run] = entry;
     const claimed: ClaimedLaunchRun = {
@@ -90,6 +89,19 @@ export class InMemoryLaunchStore implements LaunchServiceStore {
       completedAt: new Date().toISOString(),
     };
     this.runs.set(entry[0], completed);
+    if (
+      "finalizeAt" in summary &&
+      summary.finalizeAt &&
+      summary.gameId &&
+      !(await this.find("result", summary.environment, summary.gameName))
+    ) {
+      const result = await this.enqueue("result", {
+        environment: "madara.blitz",
+        gameName: summary.gameName,
+        gameId: summary.gameId,
+      });
+      this.availableAt.set(result.id, summary.finalizeAt * 1_000);
+    }
     return completed;
   }
 
@@ -115,14 +127,6 @@ export class InMemoryLaunchStore implements LaunchServiceStore {
     });
   }
 
-  async cancel(kind: LaunchKind, environment: GameEnvironmentId, name: string): Promise<boolean> {
-    const key = this.key(kind, environment, name);
-    const run = this.runs.get(key);
-    if (!run || run.status === "running") return false;
-    this.runs.set(key, { ...run, status: "cancelled" });
-    return true;
-  }
-
   async delete(kind: LaunchKind, environment: GameEnvironmentId, name: string): Promise<boolean> {
     const key = this.key(kind, environment, name);
     const run = this.runs.get(key);
@@ -131,7 +135,7 @@ export class InMemoryLaunchStore implements LaunchServiceStore {
 
   async loadGame(environment: LaunchGameSummary["environment"], gameName: string): Promise<LaunchGameSummary | null> {
     const summary = (await this.find("game", environment as GameEnvironmentId, gameName))?.summary;
-    return summary && "gameName" in summary ? summary : null;
+    return summary && "startTime" in summary ? summary : null;
   }
 
   async saveGame(summary: LaunchGameSummary): Promise<LaunchGameSummary> {
@@ -140,35 +144,7 @@ export class InMemoryLaunchStore implements LaunchServiceStore {
       await this.attachSummary("game", environment, summary.gameName, summary);
       return summary;
     }
-    const parent = this.findParentRun(environment, summary.gameName);
-    if (!parent) throw new Error(`No run owns ${summary.gameName}`);
-    return { ...summary, outputPath: `memory://launch_runs/${parent.id}/summary` };
-  }
-
-  async loadSeries(
-    environment: LaunchSeriesSummary["environment"],
-    seriesName: string,
-  ): Promise<LaunchSeriesSummary | null> {
-    const summary = (await this.find("series", environment as GameEnvironmentId, seriesName))?.summary;
-    return summary && "seriesName" in summary && !("rotationName" in summary) ? summary : null;
-  }
-
-  async saveSeries(summary: LaunchSeriesSummary): Promise<LaunchSeriesSummary> {
-    await this.attachSummary("series", summary.environment as GameEnvironmentId, summary.seriesName, summary);
-    return summary;
-  }
-
-  async loadRotation(
-    environment: LaunchRotationSummary["environment"],
-    rotationName: string,
-  ): Promise<LaunchRotationSummary | null> {
-    const summary = (await this.find("rotation", environment as GameEnvironmentId, rotationName))?.summary;
-    return summary && "rotationName" in summary ? summary : null;
-  }
-
-  async saveRotation(summary: LaunchRotationSummary): Promise<LaunchRotationSummary> {
-    await this.attachSummary("rotation", summary.environment as GameEnvironmentId, summary.rotationName, summary);
-    return summary;
+    throw new Error(`No run owns ${summary.gameName}`);
   }
 
   private async attachSummary(
@@ -181,17 +157,6 @@ export class InMemoryLaunchStore implements LaunchServiceStore {
     const run = this.runs.get(key);
     if (!run) throw new Error(`No run owns ${name}`);
     this.runs.set(key, { ...run, summary });
-  }
-
-  private findParentRun(environment: GameEnvironmentId, gameName: string): LaunchRun | undefined {
-    return Array.from(this.runs.values()).find(
-      (run) =>
-        run.environment === environment &&
-        run.kind !== "game" &&
-        run.summary !== undefined &&
-        "games" in run.summary &&
-        run.summary.games.some((game) => game.gameName === gameName),
-    );
   }
 
   private key(kind: LaunchKind, environment: string, name: string): string {

@@ -1,15 +1,19 @@
-import { readResourceManager, resourcesOfEntityQuery } from "@bibliothecadao/eternum";
-import { ID } from "@bibliothecadao/types";
-import { useEntityQuery } from "@dojoengine/react";
+import { readResourceManager } from "@bibliothecadao/eternum";
+import type { ID } from "@bibliothecadao/types";
 import { useMemo } from "react";
-import { useDojo } from "../context";
+import { useGame } from "../context";
+import { useNativeRevision } from "./use-native-facts";
 
 export const useResourceManager = (entityId: ID) => {
   const {
-    setup: { components },
-  } = useDojo();
-
-  const resource = useEntityQuery(resourcesOfEntityQuery(components, entityId));
-
-  return useMemo(() => readResourceManager(components, entityId), [entityId, resource]);
+    setup: { store },
+  } = useGame();
+  const revision = useNativeRevision([
+    "ResourceBalance",
+    "ResourceProduction",
+    "ResourceWeight",
+    "StructureBuildings",
+    "ProductionBonus",
+  ]);
+  return useMemo(() => readResourceManager(store, entityId), [store, entityId, revision]);
 };

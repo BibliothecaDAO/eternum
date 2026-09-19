@@ -5,7 +5,7 @@ import { Agent, type AgentTool, type StreamFn } from "@mariozechner/pi-agent-cor
 
 import { parseArgs, resolveConfig, resolveDataDir, RunnerConfigError, type RunnerConfig } from "./config";
 import { createFileDirectionSource, createScriptedDirectionSource, type DirectionSource } from "./directions";
-import { defaultUsername, ensureSettled, type SettledEmpire } from "./entry";
+import { ensureSettled, type SettledEmpire } from "./entry";
 import { createOfflineStreamFn, resolveOfflineScout } from "./fake-stream";
 import { connectRunnerGame, type RunnerGame } from "./game";
 import { logEvent } from "./log";
@@ -27,9 +27,7 @@ async function main(): Promise<number> {
   try {
     const dataDir = resolveDataDir(config, game.client.gameId);
     const signer = await resolveRunnerSigner(config, game.client, dataDir);
-    const empire = signer
-      ? await ensureSettled(game, signer, config.username ?? defaultUsername(signer.address))
-      : { structures: [], explorers: [] };
+    const empire = signer ? await ensureSettled(game, signer) : { structures: [], explorers: [] };
     const tools = createRunnerTools(game, dataDir);
     const model = resolveModel(config.modelProfile);
     const systemPrompt = createSystemPromptSource({

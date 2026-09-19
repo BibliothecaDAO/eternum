@@ -23,6 +23,7 @@ export async function fetchAppchainWorldsSummary(world: WorldDeployment): Promis
       lastCheckedAt: now,
       mode: game.mode,
       startSettlingAt: game.clock.start_settling_at,
+      ready: game.ready,
       startMainAt: game.clock.start_main_at,
       endAt: game.clock.end_at,
       devModeOn: game.dev_mode_on,

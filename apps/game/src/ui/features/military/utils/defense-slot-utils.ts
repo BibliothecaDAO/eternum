@@ -1,7 +1,5 @@
 import { configManager } from "@bibliothecadao/eternum";
-import { GuardSlot, StructureType } from "@bibliothecadao/types";
-
-const GUARD_SLOT_ORDER: GuardSlot[] = [GuardSlot.Delta, GuardSlot.Charlie, GuardSlot.Bravo, GuardSlot.Alpha];
+import { GUARD_SLOT_ORDER, StructureType } from "@bibliothecadao/types";
 
 export const MAX_GUARD_SLOT_COUNT = GUARD_SLOT_ORDER.length;
 
@@ -17,7 +15,7 @@ export const getStructureDefenseSlotLimit = (
   const level = levelRaw !== null && levelRaw !== undefined ? Number(levelRaw) : undefined;
 
   switch (category) {
-    case StructureType.FragmentMine:
+    case StructureType.Mine:
     case StructureType.Hyperstructure:
     case StructureType.Bank:
     case StructureType.Camp:

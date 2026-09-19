@@ -23,7 +23,7 @@ import { ShadowRefreshPolicy } from "@/three/shadow-refresh-policy";
 import { FLAT_TERRAIN_SURFACE, type TerrainSurface } from "@/three/terrain/terrain-surface";
 import { LeftView } from "@/types";
 import { IS_FLAT_MODE } from "@/ui/config";
-import { type SetupResult } from "@bibliothecadao/dojo";
+import type { GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
 import { WorldUpdateListener } from "@bibliothecadao/eternum";
 import { type HexPosition } from "@bibliothecadao/types";
 import gsap from "gsap";
@@ -141,7 +141,7 @@ export abstract class HexagonScene {
   constructor(
     protected sceneName: SceneName,
     protected controls: MapControls,
-    protected dojo: SetupResult,
+    protected game: SetupResult,
     private mouse: Vector2,
     private raycaster: Raycaster,
     protected sceneManager: SceneManager,
@@ -219,7 +219,7 @@ export abstract class HexagonScene {
     this.interactiveHexManager = new InteractiveHexManager(this.scene, {
       sampleSurface: (x, z) => this.getTerrainSurface().sampleSurface(x, z),
     });
-    this.worldUpdateListener = new WorldUpdateListener(this.dojo);
+    this.worldUpdateListener = new WorldUpdateListener(this.game);
     this.highlightHexManager = new HighlightHexManager(this.scene);
     this.thunderBoltManager = new ThunderBoltManager(
       this.scene,

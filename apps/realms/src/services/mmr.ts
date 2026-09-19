@@ -7,7 +7,7 @@ import { Rpc } from "./platform/rpc";
 
 type MmrReadError = ValuePlaneNotDeployed | RpcError | BoundaryDecodeError;
 
-export const MMR_TOKEN_DECIMALS = 10n ** 18n;
+const MMR_TOKEN_DECIMALS = 10n ** 18n;
 
 export const mmrToInteger = (raw: bigint): number => Number(raw / MMR_TOKEN_DECIMALS);
 

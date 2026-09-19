@@ -33,7 +33,11 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
     process.env.VITE_PUBLIC_GAME_VERSION ||
     undefined;
 
-  const plugins = [clientDataPlugin(), svgr({ dimensions: false, svgo: false, typescript: true }), react()];
+  const plugins = [
+    clientDataPlugin(appEnv.NATIVE_WORLD_MANIFEST),
+    svgr({ dimensions: false, svgo: false, typescript: true }),
+    react(),
+  ];
 
   if (shouldUseMkcert(isServe)) {
     plugins.unshift(mkcert() as any);
@@ -121,7 +125,7 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
 
   return {
     plugins: plugins as unknown as PluginOption[],
-    // The lab fronts the dev server with Caddy on https://play.realms.test (deploy/madara-lab/Caddyfile):
+    // The lab fronts the dev server with Caddy on https://play.realms.test (deploy/athanor/Caddyfile):
     // listen beyond loopback so the container reaches us. Let HMR follow the browser URL
     // so both the TLS proxy and direct localhost ports work.
     server: {
@@ -151,17 +155,6 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
         {
           find: "@config-deployer",
           replacement: path.resolve(__dirname, "../../config/deployer"),
-        },
-        {
-          find: "@contracts",
-          replacement: path.resolve(__dirname, "../../contracts/utils/utils"),
-        },
-        // The client is appchain-only: the legacy world manifests (~1.8 MB of
-        // JSON) must not ship in the bundle. getGameManifest's legacy arms are
-        // unreachable here; they resolve to an empty stub.
-        {
-          find: /^.*manifest_(mainnet|sepolia|local)\.json$/,
-          replacement: path.resolve(__dirname, "./src/runtime/empty-manifest.json"),
         },
         {
           find: "@pm",
@@ -201,16 +194,8 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
             // Three.js ecosystem - Separate chunk for 3D graphics
             three: ["three/webgpu"],
 
-            // Blockchain/Dojo ecosystem - Separate chunk for crypto functionality
-            blockchain: [
-              "@bibliothecadao/dojo",
-              "@bibliothecadao/eternum",
-              "@bibliothecadao/provider",
-              "@bibliothecadao/types",
-              "@dojoengine/core",
-              "@dojoengine/state",
-              "starknet",
-            ],
+            // Blockchain ecosystem - Separate chunk for crypto functionality
+            blockchain: ["@bibliothecadao/eternum", "@bibliothecadao/provider", "@bibliothecadao/types", "starknet"],
 
             // React ecosystem - Core framework chunk
             "react-vendor": ["react", "react-dom", "react-beautiful-dnd", "react-draggable"],

@@ -1,27 +1,26 @@
 import { readFile } from "node:fs/promises";
 import {
   createGameClient,
+  createNativeTicketSubmission,
   resolveGameTransactionResourceBounds,
   setChainProvenTimestampSource,
-  type CreateGameClientInput,
   type GameClient,
 } from "@bibliothecadao/eternum";
 import {
   buildWorldDeployment,
   fetchHeraldGameDirectory,
-  worldConfigKey,
   type CommittedManifest,
   type GameClientObserver,
   type WorldDeployment,
 } from "@bibliothecadao/eternum/game-client";
 import { createMicrotaskGameSyncScheduler } from "@bibliothecadao/eternum/game-sync";
 import type { GameSyncEntity, HeraldGameDirectoryEntry } from "@bibliothecadao/eternum/game-sync";
-import { type Config, ContractAddress } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
+import { type Manifest, type NativeWorldBindings, ContractAddress } from "@bibliothecadao/types";
+import { RpcProvider } from "starknet";
+import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
+import { signRunnerIntent } from "./signer";
 
-import blitzMadaraConfig from "../../../config/generated/blitz.madara.json";
-import eternumMadaraConfig from "../../../config/generated/eternum.madara.json";
-import type { RunnerChain, RunnerConfig, RunnerGameSelector } from "./config";
+import type { RunnerConfig, RunnerGameSelector } from "./config";
 import { logEvent } from "./log";
 
 /** A story event as the `events` focus shows it: model names and a clipped payload, never a row store. */
@@ -35,7 +34,6 @@ export interface RecentStoryEvent {
 export interface RunnerGame {
   client: GameClient;
   listing: HeraldGameDirectoryEntry;
-  systems: { blitzRealm: string };
   /** The connected signer's address, or zero while spectating. */
   viewer(): ContractAddress;
   recentEvents(): RecentStoryEvent[];
@@ -50,14 +48,6 @@ interface TaggedManifest extends CommittedManifest {
 
 // Every deployed lab world is the Blitz world; the id only labels the deployment.
 const WORLD_ID = "blitz";
-/**
- * The generated balance documents, imported directly: the runner ships these two files, not the config authoring
- * sources that `config/utils` drags in behind `getConfigFromNetwork`.
- */
-const GAME_CONFIGS: Record<RunnerChain, Record<"blitz" | "eternum", { configuration: unknown }>> = {
-  madara: { blitz: blitzMadaraConfig, eternum: eternumMadaraConfig },
-};
-const BLITZ_REALM_SYSTEMS_TAG = "s2-blitz_realm_systems";
 const RECENT_EVENT_LIMIT = 50;
 const EVENT_SUMMARY_LENGTH = 200;
 
@@ -66,24 +56,28 @@ export async function connectRunnerGame(config: RunnerConfig): Promise<RunnerGam
   const world = buildRunnerWorld(config, manifest);
   const listing = await resolveGameListing(world, config.game);
   const events = createStoryEventRing();
+  const chainId = await new RpcProvider({ nodeUrl: config.rpcUrl }).getChainId();
   const syncFailures = new Set<(error: Error) => void>();
   const client = await createGameClient({
     world,
     gameId: listing.game_id,
     presetId: listing.preset_id,
-    dojoConfig: { rpcUrl: config.rpcUrl, manifest },
+    networkConfig: { rpcUrl: config.rpcUrl, manifest: manifest as unknown as Manifest },
+    native: {
+      bindings: bindings as unknown as NativeWorldBindings,
+      chainId,
+      signIntent: (actor, digest) => signRunnerIntent(config, listing.game_id, actor, digest),
+      submitIntent: createNativeTicketSubmission(config.admissionUrl),
+    },
     setupEnvironment: {
-      vrfProviderAddress: "0x0",
       executionResourceBounds: resolveGameTransactionResourceBounds(config.chain),
     },
     scheduler: createMicrotaskGameSyncScheduler(),
     observer: createRunnerObserver(listing.game_id, events, syncFailures),
-    resolveGameConfig: resolveGameConfig(config),
   });
   return {
     client,
     listing,
-    systems: { blitzRealm: requireContract(manifest, BLITZ_REALM_SYSTEMS_TAG) },
     viewer: () => ContractAddress(client.signer?.address ?? 0n),
     recentEvents: events.list,
     onSyncFailed: (listener) => {
@@ -107,6 +101,7 @@ const buildRunnerWorld = (config: RunnerConfig, manifest: CommittedManifest): Wo
     chain: config.chain,
     manifest,
     heraldBaseUrl: config.heraldUrl,
+    admissionUrl: config.admissionUrl,
     rpcUrl: config.rpcUrl,
     browserFacing: false,
     playerAccountClassHash: config.playerAccountClassHash,
@@ -130,20 +125,6 @@ const resolveGameListing = async (
 
 const describeSelector = (selector: RunnerGameSelector): string =>
   "id" in selector ? `id ${selector.id}` : `named "${selector.name}"`;
-
-const requireContract = (manifest: TaggedManifest, tag: string): string => {
-  const contract = manifest.contracts.find((candidate) => candidate.tag === tag);
-  if (!contract) throw new Error(`World manifest has no contract tagged ${tag}`);
-  return contract.address;
-};
-
-/** The balance config the client's managers read; the mode flag is on WorldConfig once the snapshot landed. */
-const resolveGameConfig =
-  (config: RunnerConfig): CreateGameClientInput["resolveGameConfig"] =>
-  (setup) => {
-    const worldConfig = getComponentValue(setup.components.WorldConfig, worldConfigKey());
-    return GAME_CONFIGS[config.chain][worldConfig?.blitz_mode_on ? "blitz" : "eternum"].configuration as Config;
-  };
 
 /**
  * One JSON line per sync milestone, and two side effects the runner needs from the stream: confirmed heads anchor

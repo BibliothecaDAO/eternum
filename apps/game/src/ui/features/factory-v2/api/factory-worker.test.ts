@@ -1,45 +1,47 @@
-import { afterEach, describe, expect, test, vi } from "vitest";
-
-vi.mock("../../../../../env", () => ({
-  env: {
-    VITE_PUBLIC_LAUNCH_SERVICE_URL: "https://launch.test/",
-  },
-}));
-
-import { createFactoryRun, deleteFactoryRun, resolveFactoryEndpoint } from "./factory-worker";
-
-afterEach(() => {
-  vi.unstubAllGlobals();
+import { afterEach, expect, it, vi } from "vitest";
+import {
+  closePlaytestSlot,
+  createEternumGame,
+  createPlaytestSlot,
+  fetchFactoryRuns,
+  registerPlaytestSlot,
+  retryFactoryRun,
+} from "./factory-worker";
+vi.mock("../../../../../env", () => ({ env: { VITE_PUBLIC_LAUNCH_SERVICE_URL: "https://launch.test/" } }));
+afterEach(() => vi.unstubAllGlobals());
+it("sends free-slot and Eternum requests through the authenticated service", async () => {
+  const fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) });
+  vi.stubGlobal("fetch", fetch);
+  await createPlaytestSlot("evening", "2099-01-01T12:00:00Z");
+  await registerPlaytestSlot("evening");
+  await closePlaytestSlot("evening");
+  await createEternumGame("long-game", "2099-01-02T12:00:00Z");
+  expect(fetch.mock.calls.map(([url]) => url)).toEqual([
+    "https://launch.test/api/slots",
+    "https://launch.test/api/slots/evening/register",
+    "https://launch.test/api/slots/evening/close",
+    "https://launch.test/api/factory/runs",
+  ]);
+  expect(fetch.mock.calls.every(([, init]) => init.credentials === "include" && init.method === "POST")).toBe(true);
+  expect(JSON.parse(fetch.mock.calls[0][1].body)).toEqual({ name: "evening", closesAt: "2099-01-01T12:00:00Z" });
+  expect(JSON.parse(fetch.mock.calls[3][1].body)).toEqual({
+    environment: "madara.eternum",
+    gameName: "long-game",
+    gameStartTime: "2099-01-02T12:00:00Z",
+    version: "1",
+    devModeOn: false,
+  });
 });
-
-describe("factory launch endpoint routing", () => {
-  test("routes madara through the authenticated box service", async () => {
-    const fetch = vi.fn(async () => new Response("{}", { status: 202 }));
-    vi.stubGlobal("fetch", fetch);
-
-    await createFactoryRun({
-      environment: "madara.blitz",
-      gameName: "bltz-box-route",
-      gameStartTime: "2026-09-01T17:00:00.000Z",
-    });
-
-    expect(resolveFactoryEndpoint()).toEqual({
-      baseUrl: "https://launch.test",
-      credentials: "include",
-    });
-    expect(fetch).toHaveBeenCalledWith(
-      "https://launch.test/api/factory/runs",
-      expect.objectContaining({ credentials: "include", method: "POST" }),
-    );
-  });
-
-  test("uses session authorization instead of the serverless admin header on Madara", async () => {
-    const fetch = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => new Response("{}", { status: 200 }));
-    vi.stubGlobal("fetch", fetch);
-
-    await deleteFactoryRun({ environment: "madara.blitz", gameName: "bltz-box-route", adminSecret: "legacy" });
-
-    const headers = fetch.mock.calls[0]?.[1]?.headers as Headers;
-    expect(headers.has("x-factory-admin-secret")).toBe(false);
-  });
+it("retries finalization separately from creation and surfaces service errors", async () => {
+  const fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ runs: [] }) });
+  vi.stubGlobal("fetch", fetch);
+  await fetchFactoryRuns("madara.blitz");
+  await retryFactoryRun({ kind: "result", environment: "madara.blitz", gameName: "evening-1" } as Parameters<
+    typeof retryFactoryRun
+  >[0]);
+  expect(fetch.mock.calls[1][0]).toBe(
+    "https://launch.test/api/factory/results/madara.blitz/evening-1/actions/continue",
+  );
+  fetch.mockResolvedValue({ ok: false, status: 403, json: async () => ({ error: "Launcher permission required" }) });
+  await expect(createPlaytestSlot("evening", "2099-01-01T12:00:00Z")).rejects.toThrow("Launcher permission required");
 });

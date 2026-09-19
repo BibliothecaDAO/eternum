@@ -15,12 +15,6 @@ const buildMocks = vi.hoisted(() => ({ buildRealmBuilding: vi.fn(async () => tru
 
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-const components = {
-  Structure: { name: "Structure" },
-  StructureBuildings: { name: "StructureBuildings" },
-  Resource: { name: "Resource" },
-};
-
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
   useNowMs: () => 0,
   useNowSeconds: () => 0,
@@ -123,7 +117,7 @@ vi.mock("@/ui/features/economy/resources/entity-resource-table/utils", () => ({
   formatTimeRemaining: (seconds: number) => `${seconds}s`,
 }));
 
-vi.mock("./construction-buildability", () => ({
+vi.mock("@bibliothecadao/eternum/automation", () => ({
   resolveConstructionBuildability: () => ({ canSubmit: true, reason: undefined }),
 }));
 
@@ -133,36 +127,25 @@ vi.mock("./realm-build-actions", () => ({
 }));
 
 vi.mock("@bibliothecadao/react", () => ({
-  useDojo: () => ({
+  useNativeRevision: () => 0,
+  useNativeRow: (model: string) =>
+    model === "Structure"
+      ? { base: { level: 1 }, metadata: { has_wonder: false } }
+      : { packed_counts_1: 0n, packed_counts_2: 0n, packed_counts_3: 0n },
+  useResourceManager: () => ({
+    current: () => ({
+      balance: 0n,
+      production: { building_count: 4, production_rate: 1n, output_amount_left: 100n, last_updated_at: 0 },
+    }),
+  }),
+  useGame: () => ({
     account: { account: {} },
     setup: {
-      components,
+      store: { get: () => ({ metadata: { has_wonder: false } }) },
       systemCalls: {},
     },
   }),
   useQuery: () => ({ isMapView: routeMocks.isMapView }),
-}));
-
-vi.mock("@dojoengine/react", () => ({
-  useComponentValue: (component: { name: string }) => {
-    if (component.name === "Structure") {
-      return { base: { level: 1 }, metadata: { has_wonder: false } };
-    }
-    if (component.name === "StructureBuildings") {
-      return { packed_counts_1: 0n, packed_counts_2: 0n, packed_counts_3: 0n };
-    }
-    if (component.name === "Resource") {
-      return {
-        WHEAT_PRODUCTION: { building_count: 4, production_rate: 1n, output_amount_left: 100n, last_updated_at: 0 },
-      };
-    }
-    return undefined;
-  },
-}));
-
-vi.mock("@dojoengine/recs", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@dojoengine/recs")>()),
-  getComponentValue: () => ({ metadata: { has_wonder: false } }),
 }));
 
 vi.mock("@bibliothecadao/eternum", () => ({
@@ -170,6 +153,7 @@ vi.mock("@bibliothecadao/eternum", () => ({
     getBiome: () => 1,
   },
   configManager: {
+    getActiveGameId: () => 1,
     complexSystemResourceInputs: {},
     complexSystemResourceOutput: {},
     getBiome: () => 1,

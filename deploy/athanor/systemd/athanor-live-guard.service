@@ -1,0 +1,12 @@
+[Unit]
+Description=Pause native candidate load when live health degrades
+RequiresMountsFor=/opt/athanor
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /opt/athanor/eternum/deploy/athanor/scripts/candidate_guard.py /opt/athanor/config/live-budget.json
+ExecStopPost=/usr/bin/systemctl freeze athanor.slice
+MemoryMax=128M
+CPUQuota=5%
+StandardOutput=append:/opt/athanor/logs/live-guard.jsonl
+StandardError=append:/opt/athanor/logs/live-guard.jsonl

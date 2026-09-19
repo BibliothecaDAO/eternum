@@ -1,8 +1,11 @@
+import { configManager } from "@bibliothecadao/eternum";
 // @vitest-environment jsdom
 import { Group, Scene, Vector3 } from "three";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { TileOccupier } from "@bibliothecadao/types";
 import type { WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
+
+vi.spyOn(configManager, "getMapCenter").mockReturnValue(2010831280);
 
 const harness = vi.hoisted(() => ({ alt: false, onLayer: () => {}, load: vi.fn(), models: [] as any[] }));
 vi.mock("@/three/map-layer", () => ({ activeMapLayer: () => harness.alt }));

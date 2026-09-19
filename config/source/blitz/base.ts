@@ -9,15 +9,8 @@ import { blitzVictoryPointConfig } from "./points";
 import { blitzResourceConfig } from "./resources";
 import { blitzTroopConfig } from "./troop";
 
-type BlitzRegistrarConfigPatch = ConfigPatch & {
-  season?: {
-    endGraceSeconds?: number;
-  };
-};
-
 const BLITZ_REGISTRATION_COUNT_MAX = 24;
 const BLITZ_REGISTRATION_DELAY_SECONDS = 10;
-const BLITZ_END_GRACE_SECONDS = 60 * 60 * 24;
 const BLITZ_COLLECTIBLE_COSMETICS_MAX_ITEMS = 5;
 const BLITZ_DISABLED_BANK_NAME = "Disabled Bank";
 
@@ -38,9 +31,9 @@ const blitzModeConfig: ConfigPatch = {
   },
 };
 
-const blitzSeasonConfig: BlitzRegistrarConfigPatch = {
+const blitzSeasonConfig: ConfigPatch = {
   season: {
-    endGraceSeconds: BLITZ_END_GRACE_SECONDS,
+    endGraceSeconds: 0,
   },
 };
 
@@ -51,6 +44,15 @@ const blitzVillageConfig: ConfigPatch = {
 };
 
 const blitzTradeConfig: ConfigPatch = {
+  faith: {
+    enabled: false,
+    wonder_base_fp_per_sec: 0,
+    realm_fp_per_sec: 0,
+    village_fp_per_sec: 0,
+    owner_share_percent: 0,
+    reward_token: "0x0",
+  },
+  artificer: { research_cost_for_relic: 0 },
   trade: {
     maxCount: 0,
   },
@@ -77,6 +79,11 @@ const blitzSettlementConfig: ConfigPatch = {
 
 export const blitzBaseConfig: ConfigPatch = mergeConfigPatches(
   buildCommonBaseConfig(),
+  {
+    mines: {
+      surfacePool: [{ kind: 1, weight: 1 }],
+    },
+  },
   blitzExplorationConfig,
   blitzResourceConfig,
   blitzTroopConfig,

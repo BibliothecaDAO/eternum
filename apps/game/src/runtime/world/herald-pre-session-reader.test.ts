@@ -23,7 +23,7 @@ const structure = (overrides: Record<string, unknown>) => ({
   entity_id: "0x2a",
   owner: "0x123",
   base: { category: "0x1", coord_x: "0xa", coord_y: "0xb", level: "0x2" },
-  metadata: { has_wonder: false, realm_id: "0x9", villages_count: "0x1" },
+  metadata: { has_wonder: false, realm_id: "0x9", mine_kind: "0x0" },
   resources_packed: "0x456",
   ...overrides,
 });
@@ -68,36 +68,19 @@ describe("Herald pre-session reader", () => {
     ]);
   });
 
-  it("reads village placement slots from the confirmed snapshot", async () => {
+  it("recognizes entry after every realm has changed owner", async () => {
     vi.stubGlobal("fetch", mockFetch);
     mockFetch.mockResolvedValueOnce(
       respondWith(
-        model("AddressName", [{ address: "0x123", name: "0x41796c61" }]),
-        model("Structure", [
-          structure({}),
-          structure({ entity_id: "0x2b", base: { category: "0x5", coord_x: "0xc", coord_y: "0xd", level: "0x0" } }),
-        ]),
-        model("StructureVillageSlots", [
-          {
-            game_id: "0x7",
-            connected_realm_entity_id: "0x2a",
-            connected_realm_id: "0x9",
-            connected_realm_coord: { x: "0xa", y: "0xb" },
-            directions_left: ["East", { NorthWest: [] }],
-          },
-        ]),
+        model("PlayerEntry", [{ game_id: "0x7", owner: "0x456", player: "0x123" }]),
+        model("Structure", [structure({ owner: "0x999" })]),
       ),
     );
-
-    const slots = await createHeraldPreSessionReader(world, 7).fetchRealmVillageSlots();
-
-    expect(slots).toEqual([
-      {
-        connected_realm_coord: { col: 10, row: 11 },
-        connected_realm_entity_id: 42,
-        connected_realm_id: 9,
-        directions_left: [{ East: [] }, { NorthWest: [] }],
-      },
-    ]);
+    expect(await createHeraldPreSessionReader(world, 7).fetchSettlementSnapshot("0x123")).toEqual({
+      hasSettlementRecord: true,
+      hasSettledStructure: false,
+      settledCount: 0,
+    });
+    expect(String(mockFetch.mock.calls[0][0])).toContain("PlayerEntry");
   });
 });

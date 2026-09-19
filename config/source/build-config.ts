@@ -39,7 +39,7 @@ function resolveOptionalBlitzBalanceProfileId(options: BuildConfigOptions) {
 }
 
 export async function buildConfig(options: BuildConfigOptions): Promise<Config> {
-  const environmentContext = await resolveEnvironmentContext(options.chain, options.gameType);
+  const environmentContext = resolveEnvironmentContext(options.chain);
   const baseConfig = mergeConfigPatches<Config>(
     resolveBaseGameConfig(options.gameType),
     buildEnvironmentContextConfig(environmentContext),

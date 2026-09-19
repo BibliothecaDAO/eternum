@@ -1,4 +1,3 @@
-import ArrowUpRight from "lucide-react/dist/esm/icons/arrow-up-right";
 import ChevronLeft from "lucide-react/dist/esm/icons/chevron-left";
 
 export const FactoryV2Header = ({ onBack }: { onBack: () => void }) => {
@@ -10,15 +9,15 @@ export const FactoryV2Header = ({ onBack }: { onBack: () => void }) => {
             Create a game
           </h1>
           <p className="mx-auto mt-3 max-w-2xl text-[15px] leading-6 text-gold/50 md:text-sm">
-            Launch a new Eternum or Blitz world in a few steps. Pick your network, choose a preset, set the timing, and
-            hit launch. You can also check on running games from here.
+            Schedule a free Blitz slot or create an Eternum game. Follow creation, automatic settlement and final
+            results here.
           </p>
         </div>
 
         <div className="mx-auto flex max-w-md flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[12px] text-gold/40">
           <div className="flex items-center gap-1.5">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500/60" />
-            <span>Single game, series, or rotation</span>
+            <span>Free Blitz slots and Eternum games</span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="h-1.5 w-1.5 rounded-full bg-amber-500/60" />

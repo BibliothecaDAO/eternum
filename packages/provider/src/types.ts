@@ -1,3 +1,4 @@
+import type { NativeExecutionOutcome } from "@bibliothecadao/types";
 /**
  * Details about a single transaction type within a batch.
  * Used to display breakdown of batched transactions in the UI.
@@ -51,8 +52,10 @@ export interface TransactionSubmitGuardContext extends TransactionLifecycleMeta 
 export type TransactionSubmitGuard = (context: TransactionSubmitGuardContext) => Promise<void> | void;
 
 interface TransactionStreamStatus {
+  executions?: NativeExecutionOutcome[];
   block: number | null;
   hash: string;
+  batchRemaining?: string;
   revertReason?: string;
   status: string;
 }
@@ -60,6 +63,7 @@ interface TransactionStreamStatus {
 export type TransactionStreamWaiter = (transactionHash: string) => Promise<TransactionStreamStatus>;
 
 export enum TransactionType {
+  PROVISION_REALM = "provision_realm",
   BITCOIN_MINE_CONTRIBUTE_LABOR = "bitcoin_mine_contribute_labor",
   BITCOIN_MINE_CLAIM_PHASE_REWARD = "bitcoin_mine_claim_phase_reward",
   // Exploration & Movement
@@ -155,7 +159,6 @@ export enum TransactionType {
 
   // Structures & Ownership
   TRANSFER_STRUCTURE_OWNERSHIP = "transfer_structure_ownership",
-  TRANSFER_AGENT_OWNERSHIP = "transfer_agent_ownership",
   STRUCTURE_BURN = "structure_burn",
   SET_ENTITY_NAME = "set_entity_name",
   SET_ADDRESS_NAME = "set_address_name",
@@ -199,9 +202,6 @@ export enum TransactionType {
   BURN_RESEARCH_FOR_RELIC = "burn_research_for_relic",
   APPLY_RELIC = "apply_relic",
 
-  // VRF
-  REQUEST_RANDOM = "request_random",
-
   // Config (Admin)
   INITIALIZE = "initialize",
   GRANT_ROLE = "grant_role",
@@ -214,9 +214,7 @@ export enum TransactionType {
   SET_BLITZ_PREVIOUS_GAME = "set_blitz_previous_game",
   SET_TRAVEL_FOOD_COST_CONFIG = "set_travel_food_cost_config",
   SET_SEASON_CONFIG = "set_season_config",
-  SET_VRF_CONFIG = "set_vrf_config",
   SET_RESOURCE_BRIDGE_FEE_SPLIT_CONFIG = "set_resource_bridge_fee_split_config",
-  SET_AGENT_CONFIG = "set_agent_config",
   SET_CAPACITY_CONFIG = "set_capacity_config",
   SET_DONKEY_SPEED_CONFIG = "set_donkey_speed_config",
   SET_RESOURCE_WEIGHT_CONFIG = "set_resource_weight_config",

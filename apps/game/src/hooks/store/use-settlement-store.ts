@@ -2,7 +2,7 @@ import { Position } from "@bibliothecadao/eternum";
 
 import { getBanksLocations } from "@/ui/features/settlement/utils/settlement-utils";
 import type { SettlementLocation } from "@/ui/features/settlement/utils/settlement-types";
-import { ClientComponents } from "@bibliothecadao/types";
+import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { create } from "zustand";
 
 interface SettlementState {
@@ -16,7 +16,7 @@ interface SettlementState {
 interface SettlementActions {
   setSelectedLocation: (location: SettlementLocation | null) => void;
   setBankIcon: (icon: HTMLImageElement | null) => void;
-  fetchBankLocations: (components: ClientComponents) => void;
+  fetchBankLocations: (components: NativeFactStore) => void;
 }
 
 const useSettlementStore = create<SettlementState>((set) => ({

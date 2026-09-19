@@ -1,10 +1,9 @@
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
-import { getBlockTimestamp } from "@bibliothecadao/eternum";
+import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 
 import { divideByPrecision, ResourceManager } from "@bibliothecadao/eternum";
-import { ClientComponents, getRelicInfo, ID, isRelic, RelicRecipientType, ResourcesIds } from "@bibliothecadao/types";
-import { ComponentValue } from "@dojoengine/recs";
+import { getRelicInfo, ID, isRelic, RelicRecipientType, ResourcesIds } from "@bibliothecadao/types";
 import Sparkles from "lucide-react/dist/esm/icons/sparkles";
 import { useMemo, useState } from "react";
 import { RelicActivationPopup } from "./relic-activation-popup";
@@ -21,7 +20,7 @@ export const InventoryResources = ({
   recipientType,
   activateRelics = false,
 }: {
-  resources: ComponentValue<ClientComponents["Resource"]["schema"]>;
+  resources: ResourceManager;
   relicEffects: ResourcesIds[];
   max?: number;
   className?: string;
@@ -36,12 +35,10 @@ export const InventoryResources = ({
   const openSurface = usePopoverStore((state) => state.openSurface);
   const closeSurface = usePopoverStore((state) => state.closeSurface);
 
+  const currentDefaultTick = useCurrentDefaultTick();
   const { regularResources, relics } = useMemo(() => {
-    const { currentDefaultTick } = getBlockTimestamp();
     // Only include resources with amount > 0
-    const balances = ResourceManager.getResourceBalancesWithProduction(resources, currentDefaultTick).filter(
-      (resource) => resource.amount > 0,
-    );
+    const balances = resources.balances(currentDefaultTick).filter((resource) => resource.amount > 0);
 
     if (!activateRelics) {
       return {
@@ -65,7 +62,7 @@ export const InventoryResources = ({
       regularResources: regular.toSorted((a, b) => b.amount - a.amount),
       relics: relicList.toSorted((a, b) => b.amount - a.amount),
     };
-  }, [resources, activateRelics]);
+  }, [resources, activateRelics, currentDefaultTick]);
 
   const updatedMax = useMemo(() => {
     if (showAll) return Infinity;

@@ -1,6 +1,5 @@
 import { DEFAULT_ETERNUM_PRESET_ID, defaultPresetForEnvironment } from "../../../config/deployer/clean/constants";
 import { Schema } from "effect";
-import type { LaunchRotationWeekday } from "../../../config/deployer/clean/types";
 
 const NonEmptyString = Schema.NonEmptyString;
 const OptionalNumberRecord = Schema.optional(Schema.Record(Schema.String, Schema.Number));
@@ -21,47 +20,9 @@ const SharedOptions = {
 export const CreateGameRequestSchema = Schema.Struct({
   ...SharedOptions,
   gameName: NonEmptyString,
+  rosterOwners: Schema.optional(Schema.Array(Schema.String.pipe(Schema.check(Schema.isPattern(/^0x[0-9a-fA-F]+$/))))),
   gameStartTime: Schema.optional(NonEmptyString),
   workflowRef: Schema.optional(NonEmptyString),
-});
-
-const SeriesGameSchema = Schema.Struct({
-  gameName: NonEmptyString,
-  startTime: NonEmptyString,
-  seriesGameNumber: Schema.optional(Schema.Number),
-  biomeClimateOverrides: OptionalNumberRecord,
-});
-
-export const CreateSeriesRequestSchema = Schema.Struct({
-  ...SharedOptions,
-  seriesName: NonEmptyString,
-  workflowRef: Schema.optional(NonEmptyString),
-  games: Schema.Array(SeriesGameSchema),
-  autoRetryIntervalMinutes: Schema.optional(Schema.Number),
-});
-
-const WeeklyCadenceSchema = Schema.Struct({
-  gameNamePrefix: Schema.optional(NonEmptyString),
-  weekday: Schema.Literals(["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]),
-  utcTime: NonEmptyString,
-  biomeClimateOverrides: OptionalNumberRecord,
-  blitzRegistrationOverrides: OptionalNumberRecord,
-});
-
-export const CreateRotationRequestSchema = Schema.Struct({
-  ...SharedOptions,
-  rotationName: NonEmptyString,
-  workflowRef: Schema.optional(NonEmptyString),
-  firstGameStartTime: NonEmptyString,
-  gameIntervalMinutes: Schema.Number,
-  maxGames: Schema.Number,
-  advanceWindowGames: Schema.optional(Schema.Number),
-  evaluationIntervalMinutes: Schema.Number,
-  weeklyCadence: Schema.optional(Schema.Array(WeeklyCadenceSchema)),
-  biomeClimateOverridesByGameNumber: Schema.optional(
-    Schema.Record(Schema.String, Schema.Record(Schema.String, Schema.Number)),
-  ),
-  autoRetryIntervalMinutes: Schema.optional(Schema.Number),
 });
 
 interface SharedLaunchOptions {
@@ -77,49 +38,34 @@ interface SharedLaunchOptions {
 }
 
 export interface CreateGameRequest extends SharedLaunchOptions {
+  rosterOwners?: readonly string[];
   gameName: string;
   gameStartTime?: string;
   workflowRef?: string;
 }
-
-export interface CreateSeriesRequest extends SharedLaunchOptions {
-  seriesName: string;
-  workflowRef?: string;
-  games: ReadonlyArray<{
-    gameName: string;
-    startTime: string;
-    seriesGameNumber?: number;
-    biomeClimateOverrides?: Record<string, number>;
-  }>;
-  autoRetryIntervalMinutes?: number;
+export interface FinalizeGameRequest {
+  environment: "madara.blitz";
+  gameName: string;
+  gameId: number;
 }
 
-export interface CreateRotationRequest extends SharedLaunchOptions {
-  rotationName: string;
-  workflowRef?: string;
-  firstGameStartTime: string;
-  gameIntervalMinutes: number;
-  maxGames: number;
-  advanceWindowGames?: number;
-  evaluationIntervalMinutes: number;
-  weeklyCadence?: ReadonlyArray<{
-    gameNamePrefix?: string;
-    weekday: LaunchRotationWeekday;
-    utcTime: string;
-    biomeClimateOverrides?: Record<string, number>;
-    blitzRegistrationOverrides?: Record<string, number>;
-  }>;
-  biomeClimateOverridesByGameNumber?: Record<number, Record<string, number>>;
-  autoRetryIntervalMinutes?: number;
-}
-export type LaunchJobRequest = CreateGameRequest | CreateSeriesRequest | CreateRotationRequest;
-export type LaunchKind = "game" | "series" | "rotation";
+export type LaunchJobRequest = CreateGameRequest | FinalizeGameRequest;
+export type LaunchKind = "game" | "result";
 
-export const applyDurableLaunchDefaults = (
+export function applyDurableLaunchDefaults(kind: "game", request: CreateGameRequest, now?: number): CreateGameRequest;
+export function applyDurableLaunchDefaults(
+  kind: "result",
+  request: FinalizeGameRequest,
+  now?: number,
+): FinalizeGameRequest;
+export function applyDurableLaunchDefaults(kind: LaunchKind, request: LaunchJobRequest, now?: number): LaunchJobRequest;
+export function applyDurableLaunchDefaults(
   kind: LaunchKind,
   request: LaunchJobRequest,
   now = Date.now(),
-): LaunchJobRequest => {
+): LaunchJobRequest {
+  if (kind === "result") return request;
+  if (!("gameName" in request) || "gameId" in request) throw new Error("Invalid game request");
   const version = request.version ?? (defaultPresetForEnvironment(request.environment) as "1" | "2");
   if ((request.environment === "madara.eternum") !== (version === DEFAULT_ETERNUM_PRESET_ID)) {
     throw new Error("Preset does not match the requested game format");
@@ -129,4 +75,4 @@ export const applyDurableLaunchDefaults = (
     return { ...shared, gameStartTime: shared.gameStartTime ?? new Date(now + 15 * 60_000).toISOString() };
   }
   return shared;
-};
+}

@@ -4,7 +4,7 @@ import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { beforeEach, expect, it, vi } from "vitest";
 
-const state = vi.hoisted(() => ({ fetch: vi.fn(), head: 10, components: {}, gameId: 28, worldAddress: "0xabc" }));
+const state = vi.hoisted(() => ({ fetch: vi.fn(), head: 10, store: {}, gameId: 28, worldAddress: "0xabc" }));
 const scope = { chain: "madara", worldAddress: "0xabc", gameId: 28 };
 beforeEach(() => {
   state.gameId = 28;
@@ -24,7 +24,7 @@ vi.mock("@/runtime/world/world-directory", () => ({
   }),
   getDefaultWorld: vi.fn(),
 }));
-vi.mock("@bibliothecadao/react", () => ({ useDojo: () => ({ setup: { components: state.components } }) }));
+vi.mock("@bibliothecadao/react", () => ({ useGame: () => ({ setup: { store: state.store } }) }));
 vi.mock("@bibliothecadao/eternum", () => ({
   configManager: { getActiveGameId: () => state.gameId },
   buildStoryEventPresentation: () => ({ title: "Battle", description: "Battle" }),
@@ -180,5 +180,60 @@ it("keeps old battles after hundreds of routine stories and recovers confirmed b
     resetGameSyncStoryEvents();
     state.fetch.mockReset();
     state.head = 10;
+  }
+});
+
+it("replays native combat by receipt identity without merging repeated participants", async () => {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const root = createRoot(document.createElement("div"));
+  let events: ReturnType<typeof useStoryEvents>["data"] = [];
+  const value = { game_id: "28", attacker_id: "7", defender_id: "8", attacker: { player: "0x111" }, timestamp: "100" };
+  const event = (index: number) => ({
+    hashed_keys: `0x${index + 1}`,
+    models: { BattleEvent: { ...value, event_position: { transaction_hash: "0x123", event_index: index } } },
+  });
+  function Feed() {
+    events = useStoryEvents(10, "BattleEvent").data;
+    return null;
+  }
+  state.fetch.mockResolvedValue({
+    items: [0, 1].map((event_index) => ({
+      block_number: 12,
+      event_index,
+      game_id: "28",
+      model: "BattleEvent",
+      transaction_hash: "0x123",
+      transaction_index: 0,
+      value,
+    })),
+  });
+  resetGameSyncStoryEvents();
+  try {
+    await act(async () => {
+      acceptGameSyncStoryEvent(event(0), scope, { block: null, preconfirmed: true });
+      acceptGameSyncStoryEvent(event(1), scope, { block: null, preconfirmed: true });
+      root.render(
+        <QueryClientProvider client={client}>
+          <Feed />
+        </QueryClientProvider>,
+      );
+    });
+    await vi.waitFor(async () => {
+      await act(async () => {});
+      expect(events).toHaveLength(2);
+      expect(events.every((event) => event.confirmation?.preconfirmed === false)).toBe(true);
+    });
+    expect(state.fetch).toHaveBeenCalledWith(expect.anything(), 28, {
+      limit: 10,
+      model: "BattleEvent",
+      owner: undefined,
+    });
+    expect(new Set(events.map((event) => event.id)).size).toBe(2);
+    expect(events[0].owner).toBe("0x111");
+  } finally {
+    await act(async () => root.unmount());
+    client.clear();
+    resetGameSyncStoryEvents();
+    state.fetch.mockReset();
   }
 });

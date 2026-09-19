@@ -1,0 +1,51 @@
+{
+  "schemaIdentity": "5276d6802286616bfeafe8b2c5eb65b8323263040d4d1c0e712a5dda7050bf29",
+  "deployment": {
+    "season": "0x101",
+    "map": "0x102",
+    "troops": "0x100",
+    "structures": "0x104",
+    "settlement": "0x105",
+    "resources": "0x106",
+    "economy": "0x107",
+    "prizes": "0x108",
+    "registry": "0x109",
+    "combat": "0x10a",
+    "bridge": "0x10b"
+  },
+  "raw": {
+    "from_address": "0x100",
+    "keys": [
+      "0x180b36ec8d71b3255573975f1049032352bd6289f08164236e0da1770e7ec40",
+      "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724",
+      "0x1",
+      "0x4578706c6f72657254726f6f7073"
+    ],
+    "data": [
+      "0x2",
+      "0x1",
+      "0x7",
+      "0x12",
+      "0x7",
+      "0x0",
+      "0x0",
+      "0x0",
+      "0x0",
+      "0x0",
+      "0x0",
+      "0x0",
+      "0x0",
+      "0x0",
+      "0x0",
+      "0x0",
+      "0x0",
+      "0x0",
+      "0x0",
+      "0x0",
+      "0xc"
+    ]
+  },
+  "expected": {
+    "error": "malformed-row"
+  }
+}

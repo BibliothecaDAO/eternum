@@ -3,6 +3,7 @@ import { Account, RpcProvider, num } from "starknet";
 import { z } from "zod";
 
 import { serverEnv } from "./env";
+import { submitOrderedKeyRotation } from "./key-rotation";
 
 const createGameplayProvider = () =>
   new RpcProvider({
@@ -107,11 +108,20 @@ export async function rotateGameplayAccountKey({
   const gameplayAddress = await gameplayAccountOf(owner);
   if (!gameplayAddress) throw new Error(`Identity ${owner} has no gameplay account`);
 
-  const transactionHash = await executeAuthorityCall(config, {
-    contractAddress: gameplayAddress,
-    entrypoint: "rotate_public_key",
-    calldata: [publicKey],
-  });
+  const admissionUrl = requiredServerValue("ADMISSION_URL");
+  const transactionHash = await runSerializedAuthorityCall(() =>
+    submitOrderedKeyRotation(
+      new Account({
+        provider,
+        address: config.authorityAddress,
+        signer: config.authorityPrivateKey,
+        cairoVersion: "1",
+      }),
+      provider,
+      { contractAddress: gameplayAddress, entrypoint: "rotate_public_key", calldata: [publicKey] },
+      admissionUrl,
+    ),
+  );
 
   console.info("gameplay_account_key_rotated", {
     account: num.toHex(gameplayAddress),

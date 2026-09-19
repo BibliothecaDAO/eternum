@@ -60,6 +60,7 @@ vi.mock("@/hooks/use-player-avatar", () => ({
 
 vi.mock("@bibliothecadao/eternum", () => ({
   getAddressName: () => "Alice",
+  configManager: { getActiveGameId: () => 1 },
   toHexString: (value: string) => value,
   LeaderboardManager: {
     instance: vi.fn(() => leaderboardManagerMock),
@@ -67,9 +68,11 @@ vi.mock("@bibliothecadao/eternum", () => ({
 }));
 
 vi.mock("@bibliothecadao/react", () => ({
-  useDojo: () => ({
+  useNativeRevision: () => currentRegisteredPoints,
+  useNativeRow: () => ({ owner: "0xowner" }),
+  useGame: () => ({
     account: { account: { address: "0xowner" } },
-    setup: { components: { Structure: {} } },
+    setup: { store: {} },
   }),
   useHyperstructureUpdates: () => ({ id: "hyperstructure" }),
 }));
@@ -77,11 +80,6 @@ vi.mock("@bibliothecadao/react", () => ({
 vi.mock("@bibliothecadao/types", () => ({
   ContractAddress: (value: string) => value,
   ID: Number,
-}));
-
-vi.mock("@dojoengine/recs", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@dojoengine/recs")>()),
-  getComponentValue: () => ({ owner: "0xowner" }),
 }));
 
 describe("In-game Leaderboard", () => {

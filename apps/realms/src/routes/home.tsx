@@ -20,8 +20,8 @@ function Landing({ next, now }: { next: DirectoryGame | undefined; now: number }
           CONQUER THE REALMS
         </h1>
         <p className="mb-6 mt-3 max-w-[54ch] text-[15.5px] opacity-90">
-          Fully onchain strategy. Raise a realm, march your armies, and take the field against ninety-five rivals in
-          one-hour Blitz battles — or hold your ground for a whole Eternum season. Every march, every trade, every
+          Fully onchain strategy. Raise a realm, march your armies, and take the field against up to twenty-three rivals
+          in one-hour Blitz battles — or hold your ground for a whole Eternum season. Every march, every trade, every
           crown: on the chain, forever.
         </p>
         <div className="flex flex-wrap items-center gap-3">
@@ -56,7 +56,7 @@ function Landing({ next, now }: { next: DirectoryGame | undefined; now: number }
           <span className="relative z-10">
             <b className="block font-display text-[26px] tracking-[0.05em]">BLITZ</b>
             <small className="text-[12.5px] opacity-85">
-              96 lords · one hour · the top of the field takes the pool
+              Up to 24 players · free entry · compete for victory points
             </small>
           </span>
         </Link>

@@ -100,3 +100,14 @@ fn owner_cannot_rotate_the_key() {
     start_cheat_caller_address(account_address, owner());
     account.rotate_public_key(0x456);
 }
+
+#[test]
+fn inherited_key_setters_cannot_bypass_ordered_rotation() {
+    let (_, public_key, address) = deploy_account();
+    start_cheat_caller_address(address, address);
+    for selector in array![selector!("set_public_key"), selector!("setPublicKey")] {
+        let result = starknet::syscalls::call_contract_syscall(address, selector, array![0x456, 0].span());
+        assert!(result.is_err(), "unordered key mutation exposed");
+        assert!(public_key.get_public_key() == 0x123, "key changed outside rotation");
+    }
+}

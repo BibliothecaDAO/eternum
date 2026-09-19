@@ -2,7 +2,7 @@ import { TransitionManager } from "@/three/managers/transition-manager";
 import { SceneManager } from "@/three/scene-manager";
 import HexceptionScene from "@/three/scenes/hexception";
 import WorldmapScene from "@/three/scenes/worldmap";
-import type { SetupResult } from "@bibliothecadao/dojo";
+import type { GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
 import type { Raycaster, Vector2 } from "three";
 import type { MapControls } from "three/addons/controls/MapControls.js";
 import type { PipelineCompiler } from "./pipeline-compiler";
@@ -26,7 +26,7 @@ export interface RendererSceneRegistry<TTransitionManager, TSceneManager, THexce
 
 interface CreateRendererSceneRegistryInput<
   TControls,
-  TDojo,
+  TGame,
   TMouse,
   TRaycaster,
   TTransitionManager,
@@ -38,7 +38,7 @@ interface CreateRendererSceneRegistryInput<
   createHexceptionScene: (input: {
     compilePipelines: PipelineCompiler;
     controls: TControls;
-    dojo: TDojo;
+    game: TGame;
     mouse: TMouse;
     raycaster: TRaycaster;
     sceneManager: TSceneManager;
@@ -48,13 +48,13 @@ interface CreateRendererSceneRegistryInput<
   createWorldmapScene: (input: {
     compilePipelines: PipelineCompiler;
     controls: TControls;
-    dojo: TDojo;
+    game: TGame;
     markLabelsDirty: () => void;
     mouse: TMouse;
     raycaster: TRaycaster;
     sceneManager: TSceneManager;
   }) => TWorldmapScene;
-  dojo: TDojo;
+  game: TGame;
   compilePipelines?: PipelineCompiler;
   inputSurface: HTMLElement;
   markLabelsDirty?: () => void;
@@ -78,7 +78,7 @@ interface BootstrapRendererSceneRuntimeInput<
 
 function createRendererSceneRegistry<
   TControls,
-  TDojo,
+  TGame,
   TMouse,
   TRaycaster,
   TTransitionManager,
@@ -88,7 +88,7 @@ function createRendererSceneRegistry<
 >(
   input: CreateRendererSceneRegistryInput<
     TControls,
-    TDojo,
+    TGame,
     TMouse,
     TRaycaster,
     TTransitionManager,
@@ -102,7 +102,7 @@ function createRendererSceneRegistry<
   const hexceptionScene = input.createHexceptionScene({
     compilePipelines: input.compilePipelines ?? (async () => {}),
     controls: input.controls,
-    dojo: input.dojo,
+    game: input.game,
     mouse: input.mouse,
     raycaster: input.raycaster,
     sceneManager,
@@ -110,7 +110,7 @@ function createRendererSceneRegistry<
   const worldmapScene = input.createWorldmapScene({
     compilePipelines: input.compilePipelines ?? (async () => {}),
     controls: input.controls,
-    dojo: input.dojo,
+    game: input.game,
     markLabelsDirty: input.markLabelsDirty ?? (() => {}),
     mouse: input.mouse,
     raycaster: input.raycaster,
@@ -133,7 +133,7 @@ function createRendererSceneRegistry<
 export function createGameRendererSceneRegistry(input: {
   compilePipelines?: PipelineCompiler;
   controls: MapControls;
-  dojo: SetupResult;
+  game: SetupResult;
   inputSurface: HTMLElement;
   markLabelsDirty?: () => void;
   mouse: Vector2;
@@ -142,13 +142,13 @@ export function createGameRendererSceneRegistry(input: {
   return createRendererSceneRegistry({
     compilePipelines: input.compilePipelines,
     controls: input.controls,
-    createHexceptionScene: ({ compilePipelines, controls, dojo, mouse, raycaster, sceneManager }) =>
-      new HexceptionScene(controls, dojo, mouse, raycaster, sceneManager, compilePipelines),
+    createHexceptionScene: ({ compilePipelines, controls, game, mouse, raycaster, sceneManager }) =>
+      new HexceptionScene(controls, game, mouse, raycaster, sceneManager, compilePipelines),
     createSceneManager: (transitionManager) => new SceneManager(transitionManager),
     createTransitionManager: () => new TransitionManager(),
-    createWorldmapScene: ({ compilePipelines, controls, dojo, markLabelsDirty, mouse, raycaster, sceneManager }) =>
-      new WorldmapScene(dojo, raycaster, controls, mouse, sceneManager, markLabelsDirty, compilePipelines),
-    dojo: input.dojo,
+    createWorldmapScene: ({ compilePipelines, controls, game, markLabelsDirty, mouse, raycaster, sceneManager }) =>
+      new WorldmapScene(game, raycaster, controls, mouse, sceneManager, markLabelsDirty, compilePipelines),
+    game: input.game,
     inputSurface: input.inputSurface,
     markLabelsDirty: input.markLabelsDirty,
     mouse: input.mouse,

@@ -1,0 +1,452 @@
+use starknet::ContractAddress;
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
+pub struct DepositRules {
+    pub paused: bool,
+    pub realm_fee_bps: u16,
+    pub velords_fee_bps: u16,
+    pub season_fee_bps: u16,
+    pub client_fee_bps: u16,
+}
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct Deposit {
+    pub structure_id: u32,
+    pub resource_type: u8,
+    pub amount: u256,
+    pub client_fee_recipient: ContractAddress,
+}
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct Withdraw {
+    pub structure_id: u32,
+    pub recipient: ContractAddress,
+    pub resource_type: u8,
+    pub amount: u128,
+    pub client_fee_recipient: ContractAddress,
+}
+#[starknet::interface]
+pub trait IBridge<T> {
+    fn configure_deposits(ref self: T, game_id: u32, rules: DepositRules);
+    fn deposit_rules(self: @T, game_id: u32) -> DepositRules;
+    fn deposit_resource(
+        ref self: T, game_id: u32, actor: ContractAddress, command: Deposit, context: crate::commands::ExecutionContext,
+    );
+    fn withdraw_resource(
+        ref self: T,
+        game_id: u32,
+        actor: ContractAddress,
+        command: Withdraw,
+        context: crate::commands::ExecutionContext,
+    );
+}
+#[starknet::interface]
+pub trait IBankWithdrawal<T> {
+    fn withdraw_bank_resources(
+        ref self: T,
+        game_id: u32,
+        actor: ContractAddress,
+        bank_id: u32,
+        resource_type: u8,
+        amount: u128,
+        timestamp: u64,
+    );
+}
+#[starknet::interface]
+pub trait IDepositToken<T> {
+    fn transfer_from(ref self: T, sender: ContractAddress, recipient: ContractAddress, amount: u256) -> bool;
+}
+
+#[starknet::component]
+pub mod BridgeState {
+    use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
+    use starknet::{ContractAddress, get_caller_address, get_contract_address};
+    use crate::commands::ExecutionContext;
+    use crate::events::RowSet;
+    use crate::game::{IGameDispatcher, IGameDispatcherTrait};
+    use crate::hyperstructures::{IHyperstructuresDispatcher, IHyperstructuresDispatcherTrait};
+    use crate::lifecycle::Lifecycle;
+    use crate::lifecycle::Lifecycle::InternalTrait as LifeInternalTrait;
+    use crate::ownership::{ResourceTransferStory, Story, StoryEvent, TransferType};
+    use crate::resources::{IResourcesDispatcher, IResourcesDispatcherTrait, ResourceAmount, ResourceKey};
+    use crate::structures::{IStructuresDispatcher, IStructuresDispatcherTrait, Structure, structure_coord};
+    use crate::trade::{IEconomyDeliveryDispatcher, IEconomyDeliveryDispatcherTrait};
+    use crate::withdrawals::WithdrawalState::InternalTrait as WithdrawalInternalTrait;
+    use crate::withdrawals::{WithdrawalState, resource_amount, token_amount, transfer_or_mint};
+    use super::{Deposit, DepositRules, IDepositTokenDispatcher, IDepositTokenDispatcherTrait, Withdraw};
+
+    #[storage]
+    pub struct Storage {
+        pub deposits: Map<u32, Option<DepositRules>>,
+    }
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    pub enum Event {
+        RowSet: RowSet,
+        StoryEvent: StoryEvent,
+    }
+    #[embeddable_as(BridgeImpl)]
+    pub impl Bridge<
+        TContractState,
+        +HasComponent<TContractState>,
+        impl Life: Lifecycle::HasComponent<TContractState>,
+        impl Withdrawals: WithdrawalState::HasComponent<TContractState>,
+        +Drop<TContractState>,
+    > of super::IBridge<ComponentState<TContractState>> {
+        fn configure_deposits(ref self: ComponentState<TContractState>, game_id: u32, rules: DepositRules) {
+            get_dep_component!(@self, Life).assert_configurator();
+            self.games().game(game_id);
+            assert!(self.deposits.read(game_id).is_none(), "deposit rules already configured");
+            let total: u32 = rules.realm_fee_bps.into()
+                + rules.velords_fee_bps.into()
+                + rules.season_fee_bps.into()
+                + rules.client_fee_bps.into();
+            assert!(total <= 10000, "deposit fees exceed amount");
+            self.deposits.write(game_id, Some(rules));
+            let mut values = array![];
+            rules.serialize(ref values);
+            self
+                .emit(
+                    RowSet {
+                        version: 1, model: 'DepositRules', keys: array![game_id.into()].span(), values: values.span(),
+                    },
+                );
+        }
+        fn deposit_rules(self: @ComponentState<TContractState>, game_id: u32) -> DepositRules {
+            self.deposits.read(game_id).expect('missing deposit rules')
+        }
+        fn deposit_resource(
+            ref self: ComponentState<TContractState>,
+            game_id: u32,
+            actor: ContractAddress,
+            command: Deposit,
+            context: ExecutionContext,
+        ) {
+            let target = self.authorize(game_id, actor, command.structure_id, context.timestamp);
+            let rules = self.deposit_rules(game_id);
+            assert!(!rules.paused, "resource bridge deposit is paused");
+            let withdrawals = self.withdrawals();
+            let token = withdrawals.token(crate::market::MarketKey { game_id, resource_type: command.resource_type });
+            assert!(
+                target.base.category != 5 || !crate::resources::is_troop_resource(command.resource_type),
+                "troops cannot be bridged into villages",
+            );
+            assert!(
+                IDepositTokenDispatcher { contract_address: token }
+                    .transfer_from(actor, get_contract_address(), command.amount),
+                "bridge token transfer failed",
+            );
+            let amount = withdrawals
+                .retained_tokens(game_id, command.resource_type, command.amount, self.completed(game_id));
+            let fees = self
+                .platform_fees(
+                    game_id,
+                    token,
+                    amount,
+                    rules.velords_fee_bps,
+                    rules.season_fee_bps,
+                    rules.client_fee_bps,
+                    command.client_fee_recipient,
+                );
+            let realm_fee = self
+                .realm_fee(
+                    game_id,
+                    command.structure_id,
+                    target,
+                    command.resource_type,
+                    resource_amount(token, amount),
+                    rules.realm_fee_bps,
+                    false,
+                    context.timestamp,
+                );
+            let credited = resource_amount(token, amount - fees) - realm_fee;
+            self
+                .deliver(
+                    game_id,
+                    0,
+                    command.structure_id,
+                    ResourceAmount { resource_type: command.resource_type, amount: credited },
+                    0,
+                    true,
+                    context.timestamp,
+                );
+        }
+        fn withdraw_resource(
+            ref self: ComponentState<TContractState>,
+            game_id: u32,
+            actor: ContractAddress,
+            command: Withdraw,
+            context: ExecutionContext,
+        ) {
+            let source = self.authorize(game_id, actor, command.structure_id, context.timestamp);
+            let withdrawals = self.withdrawals();
+            let rules = withdrawals.rules(game_id);
+            assert!(!rules.paused, "resource bridge withdrawal is paused");
+            let token = withdrawals.token(crate::market::MarketKey { game_id, resource_type: command.resource_type });
+            self
+                .resources()
+                .spend_resource(
+                    ResourceKey { game_id, entity_id: command.structure_id },
+                    command.resource_type,
+                    command.amount,
+                    context.timestamp,
+                );
+            let amount = withdrawals
+                .retained_amount(game_id, command.resource_type, command.amount, self.completed(game_id));
+            let realm_fee = self
+                .realm_fee(
+                    game_id,
+                    command.structure_id,
+                    source,
+                    command.resource_type,
+                    amount,
+                    rules.bank_fee_bps,
+                    true,
+                    context.timestamp,
+                );
+            self.pay_withdrawal(game_id, command.recipient, token, amount, realm_fee, command.client_fee_recipient);
+        }
+    }
+    #[embeddable_as(BankWithdrawalImpl)]
+    pub impl BankWithdrawal<
+        TContractState,
+        +HasComponent<TContractState>,
+        impl Life: Lifecycle::HasComponent<TContractState>,
+        impl Withdrawals: WithdrawalState::HasComponent<TContractState>,
+        +Drop<TContractState>,
+    > of super::IBankWithdrawal<ComponentState<TContractState>> {
+        fn withdraw_bank_resources(
+            ref self: ComponentState<TContractState>,
+            game_id: u32,
+            actor: ContractAddress,
+            bank_id: u32,
+            resource_type: u8,
+            amount: u128,
+            timestamp: u64,
+        ) {
+            assert!(get_caller_address() == self.peers().economy, "only economy domain");
+            crate::commands::assert_context_time(timestamp);
+            self.withdraw_liquidity_token(game_id, actor, bank_id, resource_type, amount, timestamp);
+        }
+    }
+    #[generate_trait]
+    pub impl InternalImpl<
+        TContractState,
+        +HasComponent<TContractState>,
+        impl Life: Lifecycle::HasComponent<TContractState>,
+        impl Withdrawals: WithdrawalState::HasComponent<TContractState>,
+        +Drop<TContractState>,
+    > of InternalTrait<TContractState> {
+        fn peers(self: @ComponentState<TContractState>) -> crate::lifecycle::Peers {
+            get_dep_component!(self, Life).require_active()
+        }
+        fn withdrawals(self: @ComponentState<TContractState>) -> @WithdrawalState::ComponentState<TContractState> {
+            get_dep_component!(self, Withdrawals)
+        }
+        fn games(self: @ComponentState<TContractState>) -> IGameDispatcher {
+            IGameDispatcher { contract_address: self.peers().season }
+        }
+        fn resources(self: @ComponentState<TContractState>) -> IResourcesDispatcher {
+            IResourcesDispatcher { contract_address: self.peers().resources }
+        }
+        fn structure(self: @ComponentState<TContractState>, game_id: u32, entity_id: u32) -> Structure {
+            IStructuresDispatcher { contract_address: self.peers().structures }
+                .structure(ResourceKey { game_id, entity_id })
+                .expect('structure does not exist')
+        }
+        fn completed(self: @ComponentState<TContractState>, game_id: u32) -> u32 {
+            IHyperstructuresDispatcher { contract_address: self.peers().economy }
+                .completed_hyperstructure_count(game_id)
+        }
+        fn authorize(
+            self: @ComponentState<TContractState>, game_id: u32, actor: ContractAddress, entity_id: u32, timestamp: u64,
+        ) -> Structure {
+            assert!(get_caller_address() == self.peers().season, "only authenticated command domain");
+            crate::commands::assert_context_time(timestamp);
+            crate::game::assert_main_with_grace(self.games().game(game_id), timestamp);
+            let structure = self.structure(game_id, entity_id);
+            assert!(structure.owner == actor, "actor does not own structure");
+            assert!(
+                structure.base.category == 1 || structure.base.category == 5, "structure is not a realm or village",
+            );
+            structure
+        }
+        fn platform_fees(
+            self: @ComponentState<TContractState>,
+            game_id: u32,
+            token: ContractAddress,
+            amount: u256,
+            velords: u16,
+            season: u16,
+            client: u16,
+            client_recipient: ContractAddress,
+        ) -> u256 {
+            let rules = self.withdrawals().rules(game_id);
+            let velords_fee = amount * velords.into() / 10000;
+            let season_fee = amount * season.into() / 10000;
+            let client_fee = amount * client.into() / 10000;
+            assert!(velords_fee != 0 && season_fee != 0 && client_fee != 0, "amount too small to pay platform fees");
+            transfer_or_mint(token, rules.velords_recipient, velords_fee);
+            transfer_or_mint(token, rules.season_recipient, season_fee);
+            transfer_or_mint(
+                token,
+                if client_recipient == 0.try_into().unwrap() {
+                    rules.velords_recipient
+                } else {
+                    client_recipient
+                },
+                client_fee,
+            );
+            velords_fee + season_fee + client_fee
+        }
+        fn pay_withdrawal(
+            self: @ComponentState<TContractState>,
+            game_id: u32,
+            recipient: ContractAddress,
+            token: ContractAddress,
+            amount: u128,
+            resource_fee: u128,
+            client: ContractAddress,
+        ) {
+            let rules = self.withdrawals().rules(game_id);
+            let converted = token_amount(token, amount);
+            let fees = self
+                .platform_fees(
+                    game_id,
+                    token,
+                    converted,
+                    rules.velords_fee_bps,
+                    rules.season_fee_bps,
+                    rules.client_fee_bps,
+                    client,
+                );
+            transfer_or_mint(token, recipient, converted - token_amount(token, resource_fee) - fees);
+        }
+        fn withdraw_liquidity_token(
+            ref self: ComponentState<TContractState>,
+            game_id: u32,
+            actor: ContractAddress,
+            bank_id: u32,
+            resource_type: u8,
+            amount: u128,
+            timestamp: u64,
+        ) {
+            let withdrawals = self.withdrawals();
+            let rules = withdrawals.rules(game_id);
+            assert!(!rules.paused, "resource bridge withdrawal is paused");
+            let token = withdrawals.token(crate::market::MarketKey { game_id, resource_type });
+            let amount = withdrawals.retained_amount(game_id, resource_type, amount, self.completed(game_id));
+            let fee = amount * rules.bank_fee_bps.into() / 10000;
+            if rules.bank_fee_bps != 0 {
+                assert!(fee != 0, "amount too small to pay bank fees");
+                self.deliver(game_id, 0, bank_id, ResourceAmount { resource_type, amount: fee }, 0, true, timestamp);
+            }
+            self.pay_withdrawal(game_id, actor, token, amount, fee, 0.try_into().unwrap());
+        }
+        fn realm_fee(
+            ref self: ComponentState<TContractState>,
+            game_id: u32,
+            village_id: u32,
+            village: Structure,
+            resource_type: u8,
+            amount: u128,
+            rate: u16,
+            withdrawal: bool,
+            timestamp: u64,
+        ) -> u128 {
+            if village.base.category != 5 || rate == 0 {
+                return 0;
+            }
+            let fee = amount * rate.into() / 10000;
+            assert!(fee != 0, "amount too small to pay realm fees");
+            let realm_id = village.metadata.village_realm;
+            let realm = self.structure(game_id, realm_id);
+            assert!(realm.base.category == 1, "connected structure is not a realm");
+            let resource = ResourceAmount { resource_type, amount: fee };
+            let mut travel_time = 0;
+            if withdrawal {
+                let rules = self.games().rules(game_id);
+                assert!(
+                    !rules.blitz_mode_on || village.owner == realm.owner,
+                    "blitz delayed transfers require the same owner",
+                );
+                travel_time =
+                    crate::transport::travel_time(
+                        structure_coord(village.base),
+                        structure_coord(realm.base),
+                        array![resource].span(),
+                        rules.speed_config,
+                        false,
+                    );
+                let weight = fee * self.resources().resource_rule(game_id, resource_type).unit_weight;
+                let donkeys = crate::transport::donkeys_needed(weight, rules.capacity_config.donkey_capacity.into());
+                self
+                    .resources()
+                    .spend_resource(
+                        ResourceKey { game_id, entity_id: village_id }, crate::transport::DONKEY, donkeys, timestamp,
+                    );
+            }
+            self
+                .deliver(
+                    game_id,
+                    if withdrawal {
+                        village_id
+                    } else {
+                        0
+                    },
+                    realm_id,
+                    resource,
+                    travel_time,
+                    !withdrawal,
+                    timestamp,
+                );
+            fee
+        }
+        fn deliver(
+            ref self: ComponentState<TContractState>,
+            game_id: u32,
+            from_id: u32,
+            to_id: u32,
+            resource: ResourceAmount,
+            travel_time: u64,
+            is_mint: bool,
+            timestamp: u64,
+        ) {
+            IEconomyDeliveryDispatcher { contract_address: self.peers().resources }
+                .queue_economy_delivery(ResourceKey { game_id, entity_id: to_id }, resource, travel_time, timestamp);
+            let recipient = self.structure(game_id, to_id).owner;
+            let sender = if from_id == 0 {
+                0.try_into().unwrap()
+            } else {
+                self.structure(game_id, from_id).owner
+            };
+            let id = self.games().allocate_entity(game_id);
+            self
+                .emit(
+                    StoryEvent {
+                        version: 1,
+                        game_id,
+                        id,
+                        owner: Some(recipient),
+                        entity_id: Some(to_id),
+                        tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                        timestamp,
+                        story: Story::ResourceTransferStory(
+                            ResourceTransferStory {
+                                transfer_type: if is_mint {
+                                    TransferType::InstantArrivals
+                                } else {
+                                    TransferType::Delayed
+                                },
+                                from_entity_id: from_id,
+                                from_entity_owner_address: sender,
+                                to_entity_id: to_id,
+                                to_entity_owner_address: recipient,
+                                resources: array![resource].span(),
+                                is_mint,
+                                travel_time,
+                            },
+                        ),
+                    },
+                );
+        }
+    }
+}

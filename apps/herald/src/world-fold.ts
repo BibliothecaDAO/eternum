@@ -1,5 +1,5 @@
-import { hasGameEnded } from "@bibliothecadao/eternum/game-sync";
-import { toJsonValue, type ModelRegistry } from "./model-registry";
+import { hash } from "starknet";
+import { normalizeFelt, toJsonValue, type ModelRegistry } from "./model-registry";
 import type {
   DecodedRecord,
   DecodedWorldEvent,
@@ -16,11 +16,8 @@ interface StoredModelRow {
   value: DecodedRecord;
 }
 
-const LAST_BATTLE_MODEL = "LastBattle";
-
 const persistentModelNames = (registry: ModelRegistry): readonly string[] => [
   ...registry.persistent.map(({ definition }) => definition.name),
-  LAST_BATTLE_MODEL,
 ];
 
 const asJsonRecord = (value: DecodedRecord): DecodedRecord => {
@@ -65,6 +62,7 @@ const checkpointRow = ([entityId, row]: [string, StoredModelRow]): FoldCheckpoin
  * Returns the human-readable difference, or undefined when the sets match.
  */
 export const checkpointModelMismatch = (registry: ModelRegistry, checkpoint: FoldCheckpoint): string | undefined => {
+  if (registry.nativeSchemaIdentity !== checkpoint.native_schema_identity) return "native schema identity differs";
   const expectedModels = new Set(persistentModelNames(registry));
   const restoredModels = new Set(checkpoint.models.map(({ model }) => model));
   const missing = [...expectedModels].filter((model) => !restoredModels.has(model));
@@ -77,7 +75,7 @@ export const checkpointModelMismatch = (registry: ModelRegistry, checkpoint: Fol
 // carry the world's structures and explored tiles; those go first, the rest keep registry order.
 const SNAPSHOT_STREAMING_PRIORITY: readonly string[] = ["TileOpt", "Structure"];
 
-export const orderSnapshotModelsForStreaming = <TDefinition extends { name: string }>(
+const orderSnapshotModelsForStreaming = <TDefinition extends { name: string }>(
   definitions: readonly TDefinition[],
 ): TDefinition[] => {
   const rank = (name: string) => {
@@ -89,8 +87,11 @@ export const orderSnapshotModelsForStreaming = <TDefinition extends { name: stri
 
 export class WorldFold {
   private readonly registry: ModelRegistry;
+
   private readonly parent?: WorldFold;
+
   private readonly rowsByModel = new Map<string, Map<string, StoredModelRow | null>>();
+
   private readonly entityIdsByGameByModel = new Map<string, Map<string, Set<string>>>();
 
   constructor(registry: ModelRegistry, parent?: WorldFold) {
@@ -98,10 +99,8 @@ export class WorldFold {
     this.parent = parent;
     registry.persistent.forEach(({ definition }) => {
       this.rowsByModel.set(definition.name, new Map());
-      if (definition.s2Scope === "game") this.entityIdsByGameByModel.set(definition.name, new Map());
+      if (definition.scope === "game") this.entityIdsByGameByModel.set(definition.name, new Map());
     });
-    this.rowsByModel.set(LAST_BATTLE_MODEL, new Map());
-    this.entityIdsByGameByModel.set(LAST_BATTLE_MODEL, new Map());
   }
 
   public static restore(registry: ModelRegistry, checkpoint: FoldCheckpoint): WorldFold {
@@ -110,10 +109,10 @@ export class WorldFold {
       throw new Error(`Checkpoint world ${checkpoint.world_address} does not match ${registry.worldAddress}`);
     }
 
+    const fold = new this(registry);
     const mismatch = checkpointModelMismatch(registry, checkpoint);
     if (mismatch) throw new Error(`Checkpoint model mismatch; ${mismatch}`);
 
-    const fold = new WorldFold(registry);
     for (const model of checkpoint.models) {
       const rows = fold.rowsByModel.get(model.model)!;
       for (const row of model.rows) {
@@ -125,9 +124,9 @@ export class WorldFold {
     return fold;
   }
 
-  public apply(event: DecodedWorldEvent): FoldChange | undefined {
+  public apply(event: DecodedWorldEvent, onDerivedRow?: (change: FoldChange) => void): FoldChange | undefined {
     if (event.kind === "event") {
-      if (event.model.name === "BattleEvent") this.applyLastBattle(event);
+      this.applyEventRows(event).forEach((change) => onDerivedRow?.(change));
       return {
         event: true,
         gameId: this.eventGameId(event),
@@ -143,11 +142,8 @@ export class WorldFold {
     if (!rows) throw new Error(`Store event ${event.model.name} is not a persistent sync model`);
 
     const existing = this.storedRow(event.model.name, event.entityId);
-    // Dojo's erase_model emits StoreDelRecord whether or not the row was ever written (ResourceArrival
-    // is erased when an arrival day settles to zero, initialized or not), so a delete for a row this
-    // fold never held is chain-legal: nothing to remove, nothing to broadcast.
     if (event.kind === "delete" && !existing) return undefined;
-    const gameId = event.model.s2Scope === "game" ? this.eventGameId(event, existing) : undefined;
+    const gameId = event.model.scope === "game" ? this.eventGameId(event, existing) : undefined;
 
     if (event.kind === "set") {
       rows.set(event.entityId, { key: event.key, value: event.value });
@@ -155,7 +151,7 @@ export class WorldFold {
       if (this.parent) rows.set(event.entityId, null);
       else rows.delete(event.entityId);
     } else if (!existing) {
-      throw new Error(`${event.kind} for ${event.model.name}:${event.entityId} has no preceding StoreSetRecord`);
+      throw new Error(`${event.kind} for ${event.model.name}:${event.entityId} has no preceding RowSet`);
     } else if (event.kind === "update") {
       rows.set(event.entityId, { key: existing.key, value: event.value });
     } else {
@@ -171,7 +167,6 @@ export class WorldFold {
     return { gameId, set: this.currentRow(event.model.name, event.entityId)! };
   }
 
-  /** The row as a diff `set` would carry it, or undefined when neither this fold nor its parent holds it. */
   public currentRow(model: string, entityId: string): FoldSet | undefined {
     const row = this.storedRow(model, entityId);
     return row ? { key: entityId, model, value: asJsonRecord({ ...row.key, ...row.value }) } : undefined;
@@ -188,6 +183,7 @@ export class WorldFold {
         }),
       })),
       version: 1,
+      native_schema_identity: this.registry.nativeSchemaIdentity,
       world_address: this.registry.worldAddress,
     };
   }
@@ -196,16 +192,86 @@ export class WorldFold {
     return new WorldFold(this.registry, this);
   }
 
+  public reviewSnapshot(gameId: string | number | bigint, confirmedBlock: number): GameSnapshot {
+    return this.snapshot(gameId, confirmedBlock, persistentModelNames(this.registry));
+  }
+
+  public retainedRowCount(): number {
+    return persistentModelNames(this.registry).reduce((total, model) => total + this.materializedRows(model).size, 0);
+  }
+
+  public modelRows(model: string): FoldRow[] {
+    return [...this.materializedRows(model).entries()]
+      .map(([key, row]) => ({ key, value: asJsonRecord({ ...row.key, ...row.value }) }))
+      .sort(compareEntityKeys);
+  }
+
+  public gameIds(): readonly string[] {
+    if (!this.rowsByModel.has("GameRegistry")) return [];
+    return [...this.materializedRows("GameRegistry").values()]
+      .map((row) => scalarGameId(row.key, "GameRegistry"))
+      .sort((left, right) => Number(left) - Number(right));
+  }
+
   public snapshot(
+    gameId: string | number | bigint,
+    confirmedBlock: number,
+    models?: readonly string[],
+    actor?: string,
+  ): GameSnapshot {
+    const snapshot = this.snapshotRows(gameId, confirmedBlock, models);
+    if (actor === undefined) return snapshot;
+    const account = BigInt(actor);
+    if (account <= 0n || account >= (1n << 251n) - 256n) throw new Error("Invalid gameplay account");
+    const nonces = snapshot.models.find(({ model }) => model === "ActionNonce");
+    if (!nonces) throw new Error("Actor snapshot requires ActionNonce");
+    const key = normalizeFelt(hash.computePoseidonHashOnElements([gameId, account]));
+    if (!nonces.rows.some((row) => BigInt(row.key) === BigInt(key))) {
+      // Complete confirmed history establishes the initial nonce; the overlay follows this snapshot.
+      nonces.rows.push({ key, value: { game_id: BigInt(gameId).toString(), actor, next_nonce: "0" } });
+    }
+    return snapshot;
+  }
+
+  public finalizedGameIds(): readonly string[] {
+    const rules = new Map(
+      this.modelRows("SliceRules").map(({ value }) => [BigInt(value.game_id as string).toString(), value]),
+    );
+    const results = new Set(
+      this.modelRows("BlitzResult")
+        .filter(({ value }) => value.complete === true)
+        .map(({ value }) => BigInt(value.game_id as string).toString()),
+    );
+    return this.modelRows("GameRegistry")
+      .filter(({ value }) => {
+        if (value.settled !== true) return false;
+        const gameId = BigInt(value.game_id as string).toString();
+        const config = rules.get(gameId);
+        if (!config) throw new Error(`Finalized game ${gameId} has no rules`);
+        return config.blitz_mode_on !== true || results.has(gameId);
+      })
+      .map(({ value }) => BigInt(value.game_id as string).toString());
+  }
+
+  public gameplayAccounts(gameId: string | number | bigint): ReadonlySet<string> {
+    return new Set(
+      this.modelRows("PlayerEntry")
+        .filter(({ value }) => BigInt(value.game_id as string) === BigInt(gameId))
+        .map(({ value }) => `0x${BigInt(value.player as string).toString(16)}`),
+    );
+  }
+
+  private snapshotRows(
     gameIdInput: string | number | bigint,
     confirmedBlock: number,
     requestedModels?: readonly string[],
+    _actor?: string,
   ): GameSnapshot {
     const gameId = BigInt(gameIdInput);
     const definitions = this.snapshotDefinitions(requestedModels);
     const models = definitions.map((definition) => {
       const rows =
-        definition.s2Scope === "chain"
+        definition.scope === "deployment"
           ? this.materializedRows(definition.name)
           : this.materializedGameRows(definition.name, gameId);
       const gameRows = [...rows.entries()]
@@ -221,18 +287,8 @@ export class WorldFold {
     };
   }
 
-  public reviewSnapshot(gameId: string | number | bigint, confirmedBlock: number): GameSnapshot {
-    return this.snapshot(gameId, confirmedBlock, persistentModelNames(this.registry));
-  }
-
   private snapshotDefinitions(requestedModels?: readonly string[]) {
-    const definitions = [
-      ...this.registry.persistent.map(({ definition }) => definition),
-      {
-        name: LAST_BATTLE_MODEL,
-        s2Scope: "game" as const,
-      },
-    ];
+    const definitions = [...this.registry.persistent.map(({ definition }) => definition)];
     if (!requestedModels || requestedModels.length === 0) {
       return orderSnapshotModelsForStreaming(this.registry.persistent.map(({ definition }) => definition));
     }
@@ -244,81 +300,11 @@ export class WorldFold {
     return orderSnapshotModelsForStreaming(definitions.filter(({ name }) => requested.has(name)));
   }
 
-  public retainedRowCount(): number {
-    return persistentModelNames(this.registry).reduce((total, model) => total + this.materializedRows(model).size, 0);
-  }
-
-  public modelRows(model: string): FoldRow[] {
-    return [...this.materializedRows(model).entries()]
-      .map(([key, row]) => ({ key, value: asJsonRecord({ ...row.key, ...row.value }) }))
-      .sort(compareEntityKeys);
-  }
-
-  public gameplayAccounts(gameIdInput: string | number | bigint): ReadonlySet<string> {
-    if (!this.rowsByModel.has("BlitzSettlement")) return new Set();
-    const gameId = BigInt(gameIdInput);
-    return new Set(
-      [...this.materializedGameRows("BlitzSettlement", gameId).values()]
-        .map((row) => row.key.player)
-        .filter((player): player is string | number | bigint => ["string", "number", "bigint"].includes(typeof player))
-        .map((player) => `0x${BigInt(player).toString(16)}`),
-    );
-  }
-
-  public gameIds(): readonly string[] {
-    if (!this.rowsByModel.has("GameRegistry")) return [];
-    return [...this.materializedRows("GameRegistry").values()]
-      .map((row) => scalarGameId(row.key, "GameRegistry"))
-      .sort((left, right) => Number(left) - Number(right));
-  }
-
-  public endedGameIds(confirmedTimestamp: number): readonly string[] {
-    if (!this.rowsByModel.has("GameRegistry")) return [];
-    return [...this.materializedRows("GameRegistry").values()]
-      .filter((row) => hasGameEnded(String(row.value.status), Number(row.value.end_at), confirmedTimestamp))
-      .map((row) => scalarGameId(row.key, "GameRegistry"));
-  }
-
-  private applyLastBattle(event: Extract<DecodedWorldEvent, { kind: "event" }>): void {
-    const gameId = scalarGameId(event.key, event.model.name);
-    const attackerId = this.scalarBattleField(event.key.attacker_id, "attacker_id");
-    const defenderId = this.scalarBattleField(event.key.defender_id, "defender_id");
-    const timestamp = this.scalarBattleField(event.value.timestamp, "timestamp");
-
-    this.updateLastBattleParticipant(gameId, defenderId, {
-      latest_attacker_id: attackerId,
-      latest_attack_timestamp: timestamp,
-    });
-    this.updateLastBattleParticipant(gameId, attackerId, {
-      latest_defender_id: defenderId,
-      latest_defense_timestamp: timestamp,
-    });
-  }
-
-  private updateLastBattleParticipant(gameId: string, entityId: bigint, update: DecodedRecord): void {
-    const rows = this.rowsByModel.get(LAST_BATTLE_MODEL)!;
-    const storageKey = ((BigInt(gameId) << 128n) | entityId).toString();
-    const existing = rows.get(storageKey);
-    const row: StoredModelRow = {
-      key: { game_id: BigInt(gameId), entity_id: entityId },
-      value: { ...(existing?.value ?? {}), ...update },
-    };
-    rows.set(storageKey, row);
-    this.addEntityToGameIndex(LAST_BATTLE_MODEL, storageKey, row);
-  }
-
-  private scalarBattleField(value: unknown, field: string): bigint {
-    if (typeof value !== "bigint" && typeof value !== "number" && typeof value !== "string") {
-      throw new Error(`BattleEvent.${field} is not a scalar`);
-    }
-    return BigInt(value);
-  }
-
   private eventGameId(event: DecodedWorldEvent, existing?: StoredModelRow): string | undefined {
-    if (event.model.s2Scope === "chain") return undefined;
+    if (event.model.scope === "deployment") return undefined;
     if (event.kind === "set" || event.kind === "event") return scalarGameId(event.key, event.model.name);
     if (!existing) {
-      throw new Error(`${event.kind} for ${event.model.name}:${event.entityId} has no preceding StoreSetRecord`);
+      throw new Error(`${event.kind} for ${event.model.name}:${event.entityId} has no preceding RowSet`);
     }
     return scalarGameId(existing.key, event.model.name);
   }
@@ -392,5 +378,37 @@ export class WorldFold {
     if (!entityIds) return;
     entityIds.delete(entityId);
     if (entityIds.size === 0) games.delete(gameId);
+  }
+
+  private applyEventRows(event: Extract<DecodedWorldEvent, { kind: "event" }>): FoldChange[] {
+    if (event.model.name !== "ExecutionRecorded") return [];
+    const { game_id, actor, nonce, nonce_consumed, order, status, reason } = event.value;
+    const game = BigInt(String(game_id));
+    const account = BigInt(String(actor));
+    const submitted = BigInt(String(nonce));
+    const result = BigInt(String(status));
+    const code = BigInt(String(reason));
+    if (BigInt(String(order)) === 0n || !((result === 1n && code === 0n) || (result === 2n && code !== 0n)))
+      throw new Error("Invalid native execution outcome");
+    if (!nonce_consumed) return [];
+    if (
+      game === 0n ||
+      game >= 1n << 32n ||
+      account === 0n ||
+      account >= (1n << 251n) - 256n ||
+      submitted === (1n << 64n) - 1n
+    )
+      throw new Error("Invalid consumed native nonce");
+    const codec = this.registry.persistent.find((codec) => codec.definition.name === "ActionNonce");
+    if (!codec) throw new Error("Missing native nonce schema");
+    const change = this.apply({
+      kind: "set",
+      model: codec.definition,
+      entityId: normalizeFelt(hash.computePoseidonHashOnElements([game, account])),
+      position: event.position,
+      key: { game_id: game, actor: account },
+      value: { next_nonce: submitted + 1n },
+    });
+    return change ? [change] : [];
   }
 }

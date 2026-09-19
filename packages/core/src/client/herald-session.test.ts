@@ -1,6 +1,10 @@
+import type { NativeWorldBindings } from "@bibliothecadao/types";
+import bindings from "../../../../contracts/l3/world-native/schema/bindings.json";
+import { nativeModelDefinition } from "./native-models";
 // @vitest-environment node
 
 import { describe, expect, it, vi } from "vitest";
+import { NativeFactStore } from "./native-fact-store";
 
 import { createManualGameSyncScheduler } from "../sync/scheduler";
 import {
@@ -11,6 +15,7 @@ import {
 
 const createSession = (overrides: Partial<CreateHeraldGameSyncSessionInput> = {}) =>
   createHeraldGameSyncSession({
+    modelDefinition: nativeModelDefinition(bindings as unknown as NativeWorldBindings),
     baseUrl: "https://herald.realms.test",
     chain: "madara",
     entityModels: [],
@@ -18,7 +23,7 @@ const createSession = (overrides: Partial<CreateHeraldGameSyncSessionInput> = {}
     gameId: 54,
     worldAddress: "0x1",
     scheduler: createManualGameSyncScheduler(),
-    setup: { network: { contractComponents: {} } } as never,
+    store: new NativeFactStore(),
     ...overrides,
   });
 
@@ -59,7 +64,7 @@ describe("createHeraldGameSyncSession", () => {
       onDiffReceived: vi.fn(),
       onHead: vi.fn(),
       onLiveApplyFailed: vi.fn(),
-      onRecsApplied: vi.fn(),
+      onEntitiesApplied: vi.fn(),
       onStoryEvent: vi.fn(),
       onStoryEventsReset: vi.fn(),
     };
@@ -83,7 +88,7 @@ describe("createHeraldGameSyncSession", () => {
       confirmation,
     );
     expect(observer.onDiffReceived).toHaveBeenCalledWith("0xabc");
-    expect(observer.onRecsApplied).toHaveBeenCalledWith("0xabc");
+    expect(observer.onEntitiesApplied).toHaveBeenCalledWith("0xabc");
     expect(observer.onLiveApplyFailed).toHaveBeenCalledWith(expect.objectContaining({ message: "boom" }));
     expect(consoleError).toHaveBeenCalledWith("[GameSync] live entity apply failed: boom");
     consoleError.mockRestore();

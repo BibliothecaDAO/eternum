@@ -10,7 +10,7 @@ import {
   useStructureCategoryFilter,
 } from "@/ui/features/world/containers/left-facets/structure-category-filter";
 import { sortStructures } from "@/ui/features/world/containers/structure-list-utils";
-import { useDojo } from "@bibliothecadao/react";
+import { useGame } from "@bibliothecadao/react";
 import { type ID, StructureType } from "@bibliothecadao/types";
 import { memo, useMemo } from "react";
 import type { StructureWithMetadata } from "./top-header/structure-picker/chip";
@@ -62,8 +62,8 @@ export const StructureSidebar = memo(
   }: StructureSidebarProps) => {
     const lane = useCompactLane();
     const {
-      setup: { components },
-    } = useDojo();
+      setup: { store },
+    } = useGame();
     const playerStructures = useUIStore((state) => state.playerStructures);
     const structureNameVersion = useUIStore((state) => state.structureNameVersion);
     const leftListSort = useUIStore((state) => state.leftListSort);
@@ -71,7 +71,7 @@ export const StructureSidebar = memo(
 
     const allMetadata = useStructuresWithMetadata({
       structures: playerStructures,
-      components,
+      store,
       nameUpdateVersion: structureNameVersion,
     });
 

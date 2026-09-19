@@ -181,7 +181,7 @@ describe("GameSyncRuntime recovery", () => {
   });
 
   it("stops the live session and reports one actionable error when an atomic batch cannot apply", async () => {
-    const failure = new Error("RECS write failed");
+    const failure = new Error("native store write failed");
     const store = createMemoryStore().store;
     store.applyEntityOperations = () => {
       throw failure;
@@ -350,6 +350,28 @@ describe("GameSyncRuntime recovery", () => {
     expect(memory.events).toHaveLength(1);
   });
 
+  it("identifies timestamp-free native events by transaction position across confirmation and recovery", async () => {
+    const memory = createMemoryStore();
+    const harness = createSessionHarness({ store: memory.store });
+    harness.session.onEvent = vi.fn();
+    const runtime = new GameSyncRuntime();
+    await runtime.startSession(harness.session);
+    const award = (index: number, hash = "0x123") =>
+      entity("award", {
+        PointsAwarded: { points: "0x10", event_position: { transaction_hash: hash, event_index: index } },
+      });
+    harness.emitEvent(award(3), { block: null, preconfirmed: true });
+    harness.emitEvent(award(3, "0x0123"), { block: 12, preconfirmed: false });
+    harness.emitEvent(award(4), { block: 12, preconfirmed: false });
+    harness.emitEvent(award(3, "0x124"), { block: 12, preconfirmed: false });
+    await flushMicrotasks();
+    await runtime.recover();
+    harness.emitEvent(award(3), { block: 12, preconfirmed: false });
+    await flushMicrotasks();
+    expect(harness.session.onEvent).toHaveBeenCalledTimes(4);
+    expect(memory.events).toHaveLength(3);
+  });
+
   it("keeps delivering the diff when a session event handler throws", async () => {
     const memory = createMemoryStore();
     const harness = createSessionHarness({ store: memory.store });
@@ -435,6 +457,37 @@ describe("GameSyncRuntime lifecycle", () => {
     const reverted = runtime.waitForTransaction("0xdef");
     harness.emitTransaction({ block: null, hash: "0x0def", revertReason: "game rule", status: "REVERTED" });
     await expect(reverted).rejects.toThrow("game rule");
+  });
+
+  it("waits for scheduled rows before publishing a transaction status or releasing its waiters", async () => {
+    const memory = createMemoryStore();
+    const harness = createSessionHarness({ store: memory.store, transactionStatusChannel: true });
+    let flush: (() => void) | undefined;
+    harness.session.scheduler = {
+      schedule: (task) => {
+        flush = task;
+        return () => {};
+      },
+    };
+    const published = vi.fn();
+    harness.session.onTransaction = published;
+    const runtime = new GameSyncRuntime();
+    await runtime.startSession(harness.session);
+    const completed = vi.fn();
+    const wait = runtime.waitForTransaction("0xabc").then(completed);
+    harness.emitEntityBatch({
+      entities: [entity("player", { ActionNonce: { next_nonce: 2 } })],
+      preconfirmed: true,
+      transactionHash: "0xabc",
+    });
+    harness.emitTransaction({ block: null, hash: "0xabc", status: "PRE_CONFIRMED" });
+    await flushMicrotasks();
+    expect(completed).not.toHaveBeenCalled();
+    expect(published).not.toHaveBeenCalled();
+    flush!();
+    await wait;
+    expect(memory.rows.get("player")).toEqual({ ActionNonce: { next_nonce: 2 } });
+    expect(published).toHaveBeenCalledOnce();
   });
 
   it("refuses transaction waits when the transport has no status channel", async () => {

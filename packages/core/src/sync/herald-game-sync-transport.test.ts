@@ -1,3 +1,6 @@
+import type { NativeWorldBindings } from "@bibliothecadao/types";
+import bindings from "../../../../contracts/l3/world-native/schema/bindings.json";
+import { nativeModelDefinition } from "../client/native-models";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { HeraldGameSyncTransport, type HeraldSocket } from "./herald-game-sync-transport";
@@ -28,6 +31,7 @@ class FakeSocket implements HeraldSocket {
 
 const streamHarness = () => {
   const sockets: FakeSocket[] = [];
+  const urls: string[] = [];
   const entities: GameSyncEntity[] = [];
   const events: GameSyncEntity[] = [];
   const heads: Array<{ block: number; timestamp: number }> = [];
@@ -47,15 +51,17 @@ const streamHarness = () => {
     onTransaction: (transaction) => transactions.push(transaction),
   };
   const transport = new HeraldGameSyncTransport({
+    modelDefinition: nativeModelDefinition(bindings as unknown as NativeWorldBindings),
     reconnectMs: 200,
-    socketFactory: () => {
+    socketFactory: (url) => {
+      urls.push(url);
       const socket = new FakeSocket();
       sockets.push(socket);
       return socket;
     },
     url: "wss://herald.test/madara/games/54",
   });
-  return { entities, events, handlers, heads, snapshotProgress, sockets, transactions, transport };
+  return { entities, events, handlers, heads, snapshotProgress, sockets, transactions, transport, urls };
 };
 
 const hello = (epoch: string, seq: number) => ({
@@ -86,6 +92,27 @@ afterEach(() => {
 });
 
 describe("HeraldGameSyncTransport", () => {
+  it("requests a fresh actor snapshot once and keeps that actor on reconnect", async () => {
+    vi.useFakeTimers();
+    const harness = streamHarness();
+    const subscribed = harness.transport.subscribe(harness.handlers);
+    harness.sockets[0].receive(hello("epoch-a", 0));
+    const writer = await subscribed;
+    snapshot("epoch-a", 0, "0x1", 1).forEach((message) => harness.sockets[0].receive(message));
+    await harness.transport.fetchSnapshotPage();
+    harness.transport.selectActor("0x000111");
+    expect(harness.sockets[0].closed).toBe(true);
+    await vi.advanceTimersByTimeAsync(200);
+    expect(new URL(harness.urls[1]).searchParams.get("actor")).toBe("0x111");
+    harness.sockets[1].receive(hello("epoch-a", 5));
+    expect(harness.sockets[1].sent).toContainEqual({ type: "resume", epoch: "", seq: 0 });
+    harness.transport.selectActor("0x111");
+    expect(harness.sockets[1].closed).toBe(false);
+    harness.sockets[1].close();
+    await vi.advanceTimersByTimeAsync(200);
+    expect(harness.urls[2]).toBe(harness.urls[1]);
+    writer.cancel();
+  });
   it("preserves each story event's provisional or confirmed block metadata", async () => {
     const harness = streamHarness();
     harness.handlers.onEvent = vi.fn();
@@ -116,6 +143,55 @@ describe("HeraldGameSyncTransport", () => {
     });
     writer.cancel();
   });
+  it("does not cache part of a rejected diff before a fresh snapshot recovers it", async () => {
+    vi.useFakeTimers();
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const harness = streamHarness();
+    const subscribed = harness.transport.subscribe(harness.handlers);
+    const socket = harness.sockets[0]!;
+    socket.receive(hello("epoch-a", 0));
+    const writer = await subscribed;
+    snapshot("epoch-a", 0, "0x1", 1).forEach((message) => socket.receive(message));
+    await harness.transport.fetchSnapshotPage();
+    const update = diff("epoch-a", 1, "0x1", 2, true);
+    socket.receive({ ...update, set: [...update.set, { key: "0xbad", model: "UnknownModel", value: {} }] });
+    expect(harness.entities).toHaveLength(0);
+    expect(socket.closed).toBe(true);
+    await vi.advanceTimersByTimeAsync(200);
+    const recovered = harness.sockets[1]!;
+    recovered.receive(hello("epoch-a", 1));
+    snapshot("epoch-a", 1, "0x1", 2).forEach((message) => recovered.receive(message));
+    expect(harness.entities).toHaveLength(1);
+    expect(harness.entities[0]!.models.ExplorerTroops).toMatchObject({ value: 2 });
+    expect(error).toHaveBeenCalledOnce();
+    writer.cancel();
+    error.mockRestore();
+  });
+
+  it("delivers the whole row batch and transaction status when an ephemeral callback fails", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const harness = streamHarness();
+    harness.handlers.onEvent = () => {
+      throw new Error("presentation failed");
+    };
+    harness.handlers.onEntityBatch = (batch) => harness.entities.push(...batch.entities);
+    const subscribed = harness.transport.subscribe(harness.handlers);
+    const socket = harness.sockets[0]!;
+    socket.receive(hello("epoch-a", 0));
+    const writer = await subscribed;
+    snapshot("epoch-a", 0, "0x1", 1).forEach((message) => socket.receive(message));
+    await harness.transport.fetchSnapshotPage();
+    const update = diff("epoch-a", 1, "0x1", 2, true);
+    socket.receive({ ...update, set: [...update.set, { key: "0xstory", model: "StoryEvent", value: {} }] });
+    socket.receive({ type: "tx", epoch: "epoch-a", seq: 2, hash: "0x123", block: null, status: "PRE_CONFIRMED" });
+    expect(harness.entities).toHaveLength(1);
+    expect(harness.transactions).toHaveLength(1);
+    expect(socket.closed).toBe(false);
+    expect(error).toHaveBeenCalledOnce();
+    writer.cancel();
+    error.mockRestore();
+  });
+
   it("retries a stalled handshake without waiting for the browser's close event", async () => {
     vi.useFakeTimers();
     const warning = vi.spyOn(console, "warn").mockImplementation(() => {});
@@ -177,7 +253,7 @@ describe("HeraldGameSyncTransport", () => {
     socket.receive(diff("epoch-a", 3, "0x1", 2, false));
     socket.receive(diff("epoch-a", 4, "0x1", 1, true));
 
-    // The reset carries no rows and the confirmed diff repeats the pending value: neither reaches RECS.
+    // The reset carries no rows and the confirmed diff repeats the pending value: neither reaches native store.
     expect(harness.entities).toEqual([
       { hashed_keys: "0x1", models: { ExplorerTroops: { game_id: "0x36", value: 2 } } },
       { hashed_keys: "0x1", models: { ExplorerTroops: { game_id: "0x36", value: 1 } } },
@@ -316,13 +392,43 @@ describe("HeraldGameSyncTransport", () => {
       seq: 2,
       status: "PRE_CONFIRMED",
       type: "tx",
+      executions: [
+        {
+          gameId: "54",
+          actor: "291",
+          nonce: "3",
+          order: "8",
+          nonceConsumed: true,
+          status: "SUCCEEDED",
+          reason: "",
+          batchRemaining: "9",
+        },
+      ],
     });
     socket.receive({ block: 13, epoch: "epoch-a", seq: 3, timestamp: 100, type: "head" });
 
     expect(harness.events).toEqual([
       { hashed_keys: "0xbeef", models: { BattleEvent: { game_id: "0x36", timestamp: "0x7" } } },
     ]);
-    expect(harness.transactions).toEqual([{ block: null, hash: "0xabc", status: "PRE_CONFIRMED" }]);
+    expect(harness.transactions).toEqual([
+      {
+        block: null,
+        hash: "0xabc",
+        status: "PRE_CONFIRMED",
+        executions: [
+          {
+            gameId: "54",
+            actor: "291",
+            nonce: "3",
+            order: "8",
+            nonceConsumed: true,
+            status: "SUCCEEDED",
+            reason: "",
+            batchRemaining: "9",
+          },
+        ],
+      },
+    ]);
     expect(harness.heads).toEqual([{ block: 13, preconfirmed: false, timestamp: 100 }]);
   });
 

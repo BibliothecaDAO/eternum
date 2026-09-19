@@ -16,3 +16,5 @@ export * from "./client/game-client";
 export * from "./client/views";
 export * from "./client/actions";
 export * from "./client/wait-for-world-state";
+
+export { createNativeTicketSubmission } from "./client/native-submission";

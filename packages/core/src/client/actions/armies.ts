@@ -135,7 +135,7 @@ export const deleteExplorerArmy = async (client: ActionClient, input: DeleteExpl
   armyManager(client, input.structureId).deleteExplorerArmy(requireSigner(client), input.explorerId);
 
 const armyActionManager = (client: ActionClient, explorerId: ID): ArmyActionManager =>
-  new ArmyActionManager(client.setup.components, client.setup.systemCalls, explorerId);
+  new ArmyActionManager(client.setup.store, client.setup.systemCalls, explorerId);
 
 /** The army manager is bound to the structure the armies belong to. */
 const armyManager = (client: ActionClient, structureId: ID): ArmyManager =>

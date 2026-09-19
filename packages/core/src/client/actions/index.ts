@@ -40,7 +40,7 @@ export * from "./path-indexes";
  * pending indicators) stays with the caller.
  */
 export interface GameActions {
-  /** Every move, explore, attack, help, chest, and spire option open to an explorer from its RECS position. */
+  /** Every move, explore, attack, help, chest, and spire option open to an explorer from its native store position. */
   armyPaths(input: ArmyPathsInput): ActionPaths;
   /** The support and attack options a structure's guards have over the armies around it. */
   structurePaths(input: StructurePathsInput): ActionPaths;

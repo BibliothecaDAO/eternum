@@ -9,7 +9,7 @@ const packageRoot = path.join(__dirname, "..", "..", "..");
 const repoRoot = path.join(packageRoot, "..", "..", "..");
 const networkName = getSelectedNetworkName();
 const commonAddressesPath = path.join(repoRoot, "contracts", "common", "addresses", `${networkName}.json`);
-const labEnvironmentPath = path.join(repoRoot, "deploy", "madara-lab", ".env");
+const labEnvironmentPath = path.join(repoRoot, "deploy", "athanor", ".env");
 const addresses = loadJsonConfigFile(commonAddressesPath);
 
 function requireEnvironmentAddress(name) {

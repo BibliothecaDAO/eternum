@@ -4,10 +4,11 @@ import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { getRelativeTimeString } from "@/ui/utils/time-utils";
 import { currencyIntlFormat, formatNumber } from "@/ui/utils/utils";
 import { divideByPrecision, getAddressName } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
+import { useGame } from "@bibliothecadao/react";
 import { ContractAddress, Resource, ResourcesIds } from "@bibliothecadao/types";
 
 export interface TradeEvent {
+  id: string;
   type: "AMM Swap";
   event: {
     takerId: number;
@@ -34,8 +35,8 @@ export const TradeHistoryRowHeader = () => (
 
 export const TradeHistoryEvent = ({ trade }: { trade: TradeEvent }) => {
   const {
-    setup: { components },
-  } = useDojo();
+    setup: { store },
+  } = useGame();
 
   const resourceTaken = trade.event.resourceTaken;
   const resourceGiven = trade.event.resourceGiven;
@@ -46,7 +47,7 @@ export const TradeHistoryEvent = ({ trade }: { trade: TradeEvent }) => {
   const price = getLordsPricePerResource(resourceGiven, resourceTaken);
   const tradedResourceId =
     resourceTaken.resourceId === ResourcesIds.Lords ? resourceGiven.resourceId : resourceTaken.resourceId;
-  const taker = getAddressName(ContractAddress(trade.event.takerAddress), components);
+  const taker = getAddressName(ContractAddress(trade.event.takerAddress), store);
   const fullDateTime = `${trade.event.eventTime.toLocaleDateString()} ${trade.event.eventTime.toLocaleTimeString()}`;
 
   return (

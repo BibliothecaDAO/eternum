@@ -1,6 +1,6 @@
 import { parseStoryHistoryCursor } from "@bibliothecadao/eternum/game-sync";
-import { buildLiveLeaderboard } from "./live-leaderboard";
-import { buildGameDirectory } from "./game-directory";
+import { buildNativeDirectory, buildNativeLeaderboard } from "./native/read-models";
+import type { DirectoryInput } from "./game-directory";
 import type { FoldRow, GameSnapshot, ReplayMetrics } from "./types";
 import type { HistoryQuery, HistoryStore } from "./history-store";
 
@@ -9,7 +9,15 @@ interface SnapshotSource {
   snapshot: (gameId: string, confirmedBlock: number, models?: readonly string[]) => GameSnapshot;
 }
 
+interface WorldReadModels {
+  directory: (input: DirectoryInput) => ReturnType<typeof buildNativeDirectory>;
+  leaderboard: typeof buildNativeLeaderboard;
+}
+
 interface HeraldHttpState {
+  subscribeConfirmedChanges?: (listener: (models: ReadonlySet<string>) => void) => () => void;
+  readModels?: WorldReadModels;
+  ingestionFailure?: () => { block: number | null; transactionHash: string; error: string } | undefined;
   chain: string;
   worldAddress: string;
   confirmedBlock: () => number;
@@ -84,6 +92,7 @@ const historyQuery = (url: URL, gameId: string): HistoryQuery => ({
 });
 
 export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: Request) => Promise<Response>) => {
+  const readModels = state.readModels ?? { directory: buildNativeDirectory, leaderboard: buildNativeLeaderboard };
   const escapedChain = state.chain.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const directoryPath = `/${state.chain}/games`;
   const snapshotPath = new RegExp(`^/${escapedChain}/games/([0-9]+)/snapshot$`);
@@ -95,21 +104,30 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
   return async (request) => {
     const url = new URL(request.url);
     if (request.method === "OPTIONS") return new Response(null, { headers: PUBLIC_READ_HEADERS, status: 204 });
+    if (request.method === "GET" && url.pathname === `${directoryPath}/updates`) {
+      return streamDirectoryUpdates(request, state, readModels.directory);
+    }
     if (request.method === "GET" && url.pathname === "/health") {
-      return jsonResponse({
-        confirmed_block: state.confirmedBlock(),
-        decoded_models: state.decodedModelCount,
-        metrics: state.metrics,
-        service: "herald",
-        success: true,
-        undecodable_events: state.undecodableEventCount(),
-      });
+      const failure = state.ingestionFailure?.();
+      return jsonResponse(
+        {
+          ...(failure ? { ingestion_failure: failure } : {}),
+          confirmed_block: state.confirmedBlock(),
+          decoded_models: state.decodedModelCount,
+          metrics: state.metrics,
+          service: "herald",
+          success: !failure,
+          undecodable_events: state.undecodableEventCount(),
+        },
+        failure ? 503 : 200,
+      );
     }
 
     if (request.method === "GET" && url.pathname === directoryPath) {
       try {
         return jsonResponse({
-          ...buildGameDirectory({
+          ...readModels.directory({
+            timestamp: state.chainTimestamp(),
             chain: state.chain,
             confirmedBlock: state.confirmedBlock(),
             fold: state.fold,
@@ -130,7 +148,7 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
         const timestamp = state.chainTimestamp();
         if (timestamp <= 0) return jsonResponse({ error: "chain_clock_unavailable" }, 503);
         return jsonResponse(
-          buildLiveLeaderboard(state.fold.modelRows, gameId, timestamp, state.history?.leaderboard(gameId) ?? null),
+          readModels.leaderboard(state.fold.modelRows, gameId, timestamp, state.history?.leaderboard(gameId) ?? null),
         );
       } catch (error) {
         return jsonResponse({ error: error instanceof Error ? error.message : String(error) }, 503);
@@ -192,3 +210,67 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
     }
   };
 };
+
+function streamDirectoryUpdates(
+  request: Request,
+  state: HeraldHttpState,
+  buildDirectory: WorldReadModels["directory"],
+): Response {
+  if (!state.subscribeConfirmedChanges) return jsonResponse({ error: "directory_stream_unavailable" }, 503);
+  // The directory's actual row reads define its dependencies for either deployment codec.
+  const dependencies = new Set<string>();
+  try {
+    buildDirectory({
+      chain: state.chain,
+      timestamp: state.chainTimestamp(),
+      confirmedBlock: state.confirmedBlock(),
+      fold: {
+        modelRows: (model) => {
+          dependencies.add(model);
+          return state.fold.modelRows(model);
+        },
+      },
+    });
+  } catch (error) {
+    return jsonResponse({ error: String(error) }, 503);
+  }
+  return directoryUpdates(request, state.subscribeConfirmedChanges, dependencies);
+}
+
+function directoryUpdates(
+  request: Request,
+  subscribe: NonNullable<HeraldHttpState["subscribeConfirmedChanges"]>,
+  dependencies: ReadonlySet<string>,
+): Response {
+  const message = new TextEncoder().encode("data: changed\n\n");
+  let unsubscribe = () => {};
+  let close = () => {};
+  const cleanup = () => {
+    unsubscribe();
+    request.signal.removeEventListener("abort", close);
+  };
+  const stream = new ReadableStream<Uint8Array>({
+    start(controller) {
+      close = () => {
+        cleanup();
+        controller.close();
+      };
+      if (request.signal.aborted) return close();
+      request.signal.addEventListener("abort", close, { once: true });
+      unsubscribe = subscribe((models) => {
+        if ((controller.desiredSize ?? 0) <= 0) return;
+        if ([...models].some((model) => dependencies.has(model))) controller.enqueue(message);
+      });
+      // Every connection, including a reconnect, invalidates the previous directory snapshot.
+      controller.enqueue(message);
+    },
+    cancel: cleanup,
+  });
+  return new Response(stream, {
+    headers: {
+      ...PUBLIC_READ_HEADERS,
+      "content-type": "text/event-stream",
+      "x-accel-buffering": "no",
+    },
+  });
+}

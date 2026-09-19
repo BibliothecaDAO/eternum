@@ -1,12 +1,20 @@
+import { configManager } from "@bibliothecadao/eternum";
 import { Position } from "@bibliothecadao/eternum";
 import { StructureType, TroopTier, TroopType } from "@bibliothecadao/types";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { ArmyData, StructureInfo } from "../types";
 import {
   resolveArmyCompactEntityLabel,
   resolveCompactEntityLabelVariant,
   resolveStructureCompactEntityLabel,
 } from "./compact-entity-label-policy";
+
+vi.spyOn(configManager, "getMapCenter").mockReturnValue(2010831280);
+vi.spyOn(configManager, "getBlitzConfig").mockReturnValue({
+  blitz_mode_on: false,
+  blitz_settlement_config: { single_realm_mode: true, two_player_mode: false },
+  blitz_exploration_config: { reward_profile_id: 1 },
+});
 
 const baseArmy = {
   entityId: 101,
@@ -17,7 +25,6 @@ const baseArmy = {
   color: "#ffffff",
   category: TroopType.Knight,
   tier: TroopTier.T1,
-  isDaydreamsAgent: false,
   troopCount: 12,
   currentStamina: 8,
   maxStamina: 10,
@@ -65,6 +72,5 @@ describe("compact entity label policy", () => {
     expect(resolveCompactEntityLabelVariant({ isMine: true, isAlly: false })).toBe("mine");
     expect(resolveCompactEntityLabelVariant({ isMine: false, isAlly: true })).toBe("ally");
     expect(resolveCompactEntityLabelVariant({ isMine: false, isAlly: false })).toBe("enemy");
-    expect(resolveCompactEntityLabelVariant({ isMine: false, isAlly: false, isDaydreamsAgent: true })).toBe("agent");
   });
 });

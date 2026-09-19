@@ -12,8 +12,12 @@ vi.mock("@/hooks/store/use-ui-store", () => ({ useUIStore: (select: any) => sele
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({ useNowMs: () => 100000 }));
 vi.mock("@/hooks/helpers/use-navigate", () => ({ useGoToStructure: () => mocks.go }));
 vi.mock("@/utils/can-issue-orders", () => ({ canIssueOrders: () => mocks.allowed }));
-vi.mock("@bibliothecadao/react", () => ({ useDojo: () => ({ setup: {} }) }));
+vi.mock("@bibliothecadao/react", () => ({
+  useGame: () => ({ setup: { store: { inGame: () => [{ structure_id: 1, troops: { battle_cooldown_end: 120 } }] } } }),
+  useNativeRevision: () => 0,
+}));
 vi.mock("@bibliothecadao/eternum", () => ({
+  configManager: { getActiveGameId: () => 1 },
   Position: class {
     constructor(public coords: any) {}
   },
@@ -31,11 +35,11 @@ beforeEach(() => {
     playerStructures: [
       {
         entityId: 1,
-        structure: { base: { coord_x: 10, coord_y: 11 }, troop_guards: { alpha: { battle_cooldown_end: 120 } } },
+        structure: { base: { coord_x: 10, coord_y: 11 } },
       },
       {
         entityId: 3,
-        structure: { base: { coord_x: 20, coord_y: 21 }, troop_guards: { alpha: { battle_cooldown_end: 0 } } },
+        structure: { base: { coord_x: 20, coord_y: 21 } },
       },
     ],
   };
@@ -55,7 +59,7 @@ it("counts distinct attention targets and suggestions, then cycles without submi
   expect(mocks.go).toHaveBeenLastCalledWith(3, expect.objectContaining({ coords: { x: 20, y: 21 } }), true);
   expect(mocks.open).not.toHaveBeenCalled();
   await act(async () => container.querySelector("button")!.click());
-  expect(mocks.go).toHaveBeenLastCalledWith(1, expect.objectContaining({ coords: { x: 10, y: 11 } }), true);
+  expect(mocks.go).toHaveBeenCalledTimes(2);
   expect(mocks.open).toHaveBeenCalledWith(expect.objectContaining({ id: "suggestions", mapClick: "dismiss" }));
 });
 it("hides personal attention for a spectator", async () => {

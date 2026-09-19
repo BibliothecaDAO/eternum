@@ -7,6 +7,7 @@ export default defineConfig({
   // module instance would split the active-game-id mirror the helpers read.
   entry: [
     "src/index.ts",
+    "src/automation/index.ts",
     "src/utils/biome/biome.ts",
     "src/managers/game-entity-keys.ts",
     "src/client/index.ts",

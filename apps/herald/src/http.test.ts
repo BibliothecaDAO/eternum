@@ -15,7 +15,7 @@ const snapshot: GameSnapshot = {
   confirmed_block: 12,
   game_id: "7",
   models: [
-    { model: "WorldConfig", rows: [{ key: "0x1", value: { game_id: "0x7" } }] },
+    { model: "SliceRules", rows: [{ key: "0x1", value: { game_id: "0x7" } }] },
     { model: "Structure", rows: [] },
   ],
 };
@@ -36,7 +36,8 @@ const httpState: Parameters<typeof createHeraldRequestHandler>[0] = {
               game_id: "0x7",
               name: "0x74657374",
               preset_id: "0x1",
-              status: "Created",
+              settled: false,
+              ready: true,
               dev_mode_on: false,
               start_settling_at: "0x1",
               start_main_at: "0x2",
@@ -46,6 +47,15 @@ const httpState: Parameters<typeof createHeraldRequestHandler>[0] = {
           },
         ];
       }
+      if (model === "SliceRules")
+        return [
+          {
+            key: "0x7",
+            value: { game_id: "7", blitz_mode_on: true, victory_points_grant_config: { hyp_points_per_second: "1" } },
+          },
+        ];
+      if (model === "SettlementRules")
+        return [{ key: "0x7", value: { game_id: "7", registration_limit: "96", registration_start: "1" } }];
       return [];
     },
     snapshot: () => snapshot,
@@ -103,7 +113,7 @@ describe("herald HTTP", () => {
     expect(directoryResponse.headers.get("access-control-allow-origin")).toBe("*");
     await expect(directoryResponse.json()).resolves.toMatchObject({
       chain: "madara",
-      games: [{ game_id: 7, name: "test", status: "Created" }],
+      games: [{ game_id: 7, name: "test", status: "Ended" }],
     });
 
     expect((await handler(new Request("http://herald/madara/games", { method: "OPTIONS" }))).status).toBe(204);
@@ -184,4 +194,63 @@ it("serves the bounded story cursor only when history decoding is healthy", asyn
   expect((await healthy(new Request(endpoint + "?limit=0"))).status).toBe(400);
   expect((await healthy(new Request(endpoint + "?after=bad"))).status).toBe(400);
   expect((await handler(new Request(endpoint))).status).toBe(503);
+});
+
+it("streams directory invalidations atomically and reconnects from the current snapshot", async () => {
+  const listeners = new Set<(models: ReadonlySet<string>) => void>();
+  const handler = createHeraldRequestHandler({
+    ...httpState,
+    subscribeConfirmedChanges: (listener) => {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+  });
+  const response = await handler(new Request("http://herald/madara/games/updates"));
+  expect(response.headers.get("content-type")).toBe("text/event-stream");
+  const reader = response.body!.getReader();
+  const decode = (data: Uint8Array | undefined) => new TextDecoder().decode(data);
+  expect(decode((await reader.read()).value)).toBe("data: changed\n\n");
+  for (const listener of listeners) listener(new Set(["ExplorerTroops"]));
+  for (const listener of listeners) listener(new Set(["Structure", "GameRegistry"]));
+  expect(decode((await reader.read()).value)).toBe("data: changed\n\n");
+  await reader.cancel();
+  expect(listeners.size).toBe(0);
+  const reconnected = await handler(new Request("http://herald/madara/games/updates"));
+  const resumed = reconnected.body!.getReader();
+  expect(decode((await resumed.read()).value)).toBe("data: changed\n\n");
+  await resumed.cancel();
+  expect(listeners.size).toBe(0);
+});
+
+it("derives directory phases from advancing chain time with no registry write", async () => {
+  let timestamp = 1;
+  const handler = createHeraldRequestHandler({ ...httpState, chainTimestamp: () => timestamp });
+  const status = async () => {
+    const response = await handler(new Request("http://herald/madara/games"));
+    expect(response.status).toBe(200);
+    return (await response.json()).games[0].status;
+  };
+  expect(await status()).toBe("Registration");
+  timestamp = 2;
+  expect(await status()).toBe("Live");
+  timestamp = 3;
+  expect(await status()).toBe("Ended");
+});
+
+it("keeps an incomplete roster in registration beyond its scheduled end", async () => {
+  const handler = createHeraldRequestHandler({
+    ...httpState,
+    fold: {
+      ...httpState.fold,
+      modelRows: (model) =>
+        httpState.fold
+          .modelRows(model)
+          .map((row) => (model === "GameRegistry" ? { ...row, value: { ...row.value, ready: false } } : row)),
+    },
+  });
+  const response = await handler(new Request("http://herald/madara/games"));
+  expect(response.status).toBe(200);
+  expect((await response.json()).games[0]).toMatchObject({ ready: false, status: "Registration" });
 });

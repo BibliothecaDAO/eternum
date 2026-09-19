@@ -2,7 +2,7 @@ import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
 import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Position } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
+import { useGame } from "@bibliothecadao/react";
 import type { LucideIcon } from "lucide-react";
 import Castle from "lucide-react/dist/esm/icons/castle";
 import Check from "lucide-react/dist/esm/icons/check";
@@ -82,15 +82,15 @@ export const FeedRowLine = ({ row, style }: { row: ImportantFeedRow; style?: CSS
 
 function useFeedRowTarget(row: ImportantFeedRow): Position | null {
   const {
-    setup: { components },
-  } = useDojo();
+    setup: { store },
+  } = useGame();
   const structure = useWorldSlicesStore((state) =>
     row.kind === "arrival" ? state.structures.find((entry) => entry.entity_id === row.structureEntityId) : undefined,
   );
   if (row.kind === "headline") {
     return row.headline.location ? new Position({ x: row.headline.location.x, y: row.headline.location.y }) : null;
   }
-  if (row.kind === "story") return resolveStoryEventPosition(row.event, components);
+  if (row.kind === "story") return resolveStoryEventPosition(row.event, store);
   if (row.kind === "arrival") {
     return structure ? new Position({ x: structure.base.coord_x, y: structure.base.coord_y }) : null;
   }
@@ -130,7 +130,7 @@ function summarizeFeedRow(row: ImportantFeedRow): { icon: ReactNode; text: React
 
 function summarizeStory(row: Extract<ImportantFeedRow, { kind: "story" }>): string {
   const { event } = row;
-  if (event.story !== "BattleStory") return event.presentation.title;
+  if (event.story !== "BattleEvent") return event.presentation.title;
   const description = event.presentation.description;
   const winner = formatWinnerName(
     findSegmentValue(parsePresentationDescription(description), (label) => label === "Winner"),

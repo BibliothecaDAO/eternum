@@ -69,7 +69,7 @@ describe("WorldmapInteractionAdapter", () => {
   it("routes owned-structure context menus through the adapter boundary", () => {
     const adapter = createWorldmapInteractionAdapter({
       state: {} as never,
-      dojoComponents: "components" as never,
+      store: "components" as never,
     });
 
     adapter.openOwnedStructureContextMenu({
@@ -82,7 +82,7 @@ describe("WorldmapInteractionAdapter", () => {
       event: "evt",
       structure: { id: 88 },
       hexCoords: { col: 3, row: 7 },
-      components: "components",
+      store: "components",
     });
   });
 });

@@ -246,7 +246,7 @@ export const buildGameReviewStepShareMessage = ({
     ].join("\n");
   }
 
-  if (step === "result-outcome" && data.rewards) {
+  if (step === "result-outcome" && data.finalization.rankingFinalized && data.personalScore) {
     const finalRank =
       typeof data.personalScore?.rank === "number" &&
       Number.isFinite(data.personalScore.rank) &&
@@ -257,8 +257,7 @@ export const buildGameReviewStepShareMessage = ({
     return [
       `${worldLabel} result on Realms Blitz:`,
       `Final rank: ${finalRank}`,
-      `Chest entitlement: +${formatReviewValue(data.rewards.chests)}`,
-      "Mainnet settlement follows the operator-posted result.",
+      `Victory points: ${formatReviewValue(data.personalScore.points)}`,
       "",
       ...tweetFooterLines,
     ].join("\n");

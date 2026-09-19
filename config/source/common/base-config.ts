@@ -36,11 +36,6 @@ const SEASON_START_AFTER_SECONDS = ONE_DAY_IN_SECONDS + ONE_HOUR_IN_SECONDS * 12
 const SEASON_DURATION_SECONDS = ONE_HOUR_IN_SECONDS * 1.5;
 const SEASON_END_GRACE_SECONDS = ONE_DAY_IN_SECONDS;
 const SEASON_BRIDGE_CLOSE_AFTER_END_SECONDS = ONE_DAY_IN_SECONDS * 7;
-const AGENT_CONTROLLER_ADDRESS = "0x0277eE04e3f82D4E805Ab0e2044C53fB6d61ABd00a2a7f44B78410e9b43E1344";
-const AGENT_MAX_LIFETIME_COUNT = 10_000;
-const AGENT_MAX_CURRENT_COUNT = 1_000;
-const AGENT_MIN_SPAWN_LORDS_AMOUNT = 10;
-const AGENT_MAX_SPAWN_LORDS_AMOUNT = 35;
 const WONDER_PRODUCTION_BONUS_WITHIN_TILE_DISTANCE = 12;
 const WONDER_PRODUCTION_BONUS_PERCENT_NUM = 0;
 const VILLAGE_TOKEN_MINT_RECIPIENT = "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec";
@@ -48,13 +43,14 @@ const VILLAGE_TOKEN_MINT_RECIPIENT = "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ec
 export function buildCommonBaseConfig(): ConfigPatch {
   return {
     spireTravelEssenceCost: 0,
-    agent: {
-      controller_address: AGENT_CONTROLLER_ADDRESS,
-      max_lifetime_count: AGENT_MAX_LIFETIME_COUNT,
-      max_current_count: AGENT_MAX_CURRENT_COUNT,
-      min_spawn_lords_amount: AGENT_MIN_SPAWN_LORDS_AMOUNT,
-      max_spawn_lords_amount: AGENT_MAX_SPAWN_LORDS_AMOUNT,
+    bitcoin: { prizePerPhase: 1, minimumLabor: 100, ownerCutBps: 2000 },
+    mines: {
+      kinds: {
+        1: { resourceType: 38, buildingCategory: 39, productionRate: 5, capMinimum: 36000, capSteps: 1 },
+        2: { resourceType: 24, buildingCategory: 26, productionRate: 1.5, capMinimum: 300000, capSteps: 10 },
+      },
     },
+
     village: {
       village_mint_initial_recipient: VILLAGE_TOKEN_MINT_RECIPIENT,
     },

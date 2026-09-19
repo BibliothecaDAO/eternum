@@ -1,21 +1,18 @@
-import { readStructures, structuresByOwnerQuery } from "@bibliothecadao/eternum";
-import { ContractAddress } from "@bibliothecadao/types";
-import { useEntityQuery } from "@dojoengine/react";
+import { readStructures } from "@bibliothecadao/eternum";
+import type { ContractAddress } from "@bibliothecadao/types";
 import { useMemo } from "react";
-import { useDojo } from "../context";
+import { useGame } from "../context";
+import { useNativeRevision } from "./use-native-facts";
 
-export const usePlayerStructures = (playerAddress?: ContractAddress) => {
+export const usePlayerStructures = (owner?: ContractAddress) => {
   const {
+    setup: { store },
     account: { account },
-    setup: { components },
-  } = useDojo();
-
-  const structureEntities = useEntityQuery(
-    structuresByOwnerQuery(components, playerAddress || ContractAddress(account.address)),
-  );
-
+  } = useGame();
+  const revision = useNativeRevision(["Structure", "AddressName"]);
+  const address = owner ?? BigInt(account.address);
   return useMemo(
-    () => readStructures(components, structureEntities, ContractAddress(account.address)),
-    [structureEntities],
+    () => readStructures(store, address, BigInt(account.address)),
+    [store, address, account.address, revision],
   );
 };

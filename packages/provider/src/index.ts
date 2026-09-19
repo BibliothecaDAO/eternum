@@ -1,12 +1,22 @@
+import { requireNativeExecutionOutcome } from "./native-batch";
+import type { NativeTicketIdentity } from "@bibliothecadao/types";
+export { completeNativeBatches, nativeExecutionOutcomes, requireNativeExecutionOutcome } from "./native-batch";
+export type { BatchTransactionReceipt, NativeExecutionOutcome } from "@bibliothecadao/types";
+import { requireBatchReceipt } from "./native-batch";
+export { createNativeTicketSubmission } from "./native-ticket";
+export type { SignedNativeIntent } from "./native-ticket";
+export { encodeNativeCommand, frameNativeIntent, nativeTaggedHash } from "./native-command";
+export type { NativeCommand, NativeCommandPayloads } from "./native-command";
 /**
  * Provider class for interacting with the Eternum game contracts
  *
- * @param katana - The katana manifest containing contract addresses and ABIs
+ * @param manifest - The native manifest containing contract addresses and ABIs
  * @param url - Optional RPC URL for the provider
  */
+import { encodeNativeCommand, type NativeCommand, type NativeCommandPayloads } from "./native-command";
+import type { Abi } from "starknet";
 import type { Manifest } from "@bibliothecadao/types";
 import * as SystemProps from "@bibliothecadao/types";
-import { DojoProvider } from "@dojoengine/core";
 import EventEmitter from "eventemitter3";
 import {
   Account,
@@ -17,7 +27,9 @@ import {
   CallData,
   GetTransactionReceiptResponse,
   ResourceBoundsBN,
+  RpcProvider,
   uint256,
+  shortString,
   UniversalDetails,
 } from "starknet";
 import { classifyTransactionError, extractErrorMessage, formatErrorForConsole } from "./classify-transaction-error";
@@ -38,8 +50,12 @@ import {
   TransactionStreamWaiter,
   TransactionType,
 } from "./types";
-import { createVrfRequestRandomCall, isVrfEnabled, isVrfRequestRandomCall, type VrfSource } from "./vrf";
-export const NAMESPACE = "s1_eternum";
+export type NativeSubmission = (
+  signer: AccountInterface,
+  calls: AllowArray<Call>,
+) => Promise<{ transaction_hash: string; ticket: NativeTicketIdentity }>;
+type SubmittedTransaction = { transaction_hash: string; ticket?: NativeTicketIdentity };
+
 export {
   CATEGORY_BATCH_LIMITS,
   getTransactionCategory,
@@ -68,7 +84,6 @@ export type {
   TransactionSubmitGuardContext,
   TransactionStreamWaiter,
 } from "./types";
-export type { VrfSource } from "./vrf";
 
 // Mainnet currently rejects V3 invokes above this l2_gas max_amount ceiling.
 const MAX_V3_L2_GAS_MAX_AMOUNT = 1_200_000_000n;
@@ -160,7 +175,7 @@ const withL2GasHeadroom = (resourceBounds?: ResourceBoundsBN): ResourceBoundsBN 
   };
 };
 
-type VrfExecutionLock = {
+type ActorExecutionLock = {
   completed: Promise<void>;
   resolve: () => void;
 };
@@ -210,154 +225,97 @@ const resolveTransactionFailureStage = (error: unknown, fallback: TransactionFai
   return fallback;
 };
 
-/**
- * Gets a contract address from the manifest by name
- *
- * @param manifest - The manifest containing contract information
- * @param name - The name/tag of the contract to find
- * @returns The contract address
- * @throws Error if contract not found
- */
-export const getContractByName = (manifest: Manifest, name: string) => {
-  const contract = manifest.contracts.find((item) => item.tag === name);
-  if (!contract) {
-    throw new Error(`Contract ${name} not found in manifest`);
-  }
-  return contract.address;
-};
-
-/**
- * Higher order function that adds event emitter functionality to a class
- *
- * @param Base - The base class to extend
- * @returns A new class with event emitter capabilities
- */
-function ApplyEventEmitter<T extends new (...args: any[]) => {}>(Base: T) {
-  return class extends Base {
-    eventEmitter = new EventEmitter();
-
-    /**
-     * Emit an event
-     * @param event - The event name
-     * @param args - Arguments to pass to event handlers
-     */
-    emit(event: string, ...args: any[]) {
-      this.eventEmitter.emit(event, ...args);
-    }
-
-    /**
-     * Subscribe to an event
-     * @param event - The event name to listen for
-     * @param listener - Callback function when event occurs
-     */
-    on(event: string, listener: (...args: any[]) => void) {
-      this.eventEmitter.on(event, listener);
-    }
-
-    /**
-     * Unsubscribe from an event
-     * @param event - The event name to stop listening to
-     * @param listener - The callback function to remove
-     */
-    off(event: string, listener: (...args: any[]) => void) {
-      this.eventEmitter.off(event, listener);
-    }
-  };
-}
-const EnhancedDojoProvider = ApplyEventEmitter(DojoProvider);
-
-export const buildVrfCalls = async ({
-  account,
-  call,
-  vrfProviderAddress,
-  addressToCall,
-  source,
-}: {
-  account: AccountInterface;
-  call: Call;
-  vrfProviderAddress: string | undefined;
-  addressToCall: string;
-  source?: VrfSource;
-}): Promise<Call[]> => {
-  if (!account) return [];
-  if (!vrfProviderAddress) throw new Error("VRF provider address is not defined");
-
-  const requestRandomCall = createVrfRequestRandomCall({
-    vrfProviderAddress,
-    addressToCall,
-    source: source ?? { type: "nonce", value: account.address },
-  });
-
-  let calls = [];
-  calls.push(requestRandomCall);
-  calls.push(call);
-
-  return calls;
-};
-
-export class EternumProvider extends EnhancedDojoProvider {
+export class EternumProvider extends EventEmitter {
+  readonly manifest: Manifest;
+  readonly provider: RpcProvider;
   promiseQueue: PromiseQueue;
   private readonly TRANSACTION_CONFIRM_TIMEOUT_MS = 10_000;
   private readonly TRANSACTION_SUBMIT_TIMEOUT_MS = DEFAULT_TRANSACTION_SUBMIT_TIMEOUT_MS;
   private readonly FEE_ESTIMATE_TIMEOUT_MS = DEFAULT_FEE_ESTIMATE_TIMEOUT_MS;
-  private pendingVrfExecutionLocks = new Map<string, VrfExecutionLock>();
+  private pendingActorExecutionLocks = new Map<string, ActorExecutionLock>();
   private cachedExploreExecutionDetails = new Map<string, CachedExploreExecutionDetails>();
   private lastEstimateError?: { error: unknown; atMs: number };
   private readonly retryConfig?: RetryConfig;
+  private nativeSubmission?: NativeSubmission;
+  private commandAbi?: Abi;
+  private resolveOwnedStructure?: (actor: string) => number;
   private transactionSubmitGuard?: TransactionSubmitGuard;
   private transactionStreamWaiter?: TransactionStreamWaiter;
   private transactionStreamSubmitObserver?: (transactionHash: string) => void;
-  /** Model/contract-tag namespace: "s2" on appchain worlds, "s1_eternum" on legacy worlds. */
-  readonly namespace: string;
-  /** Active game on an s2 appchain world; 0 on legacy worlds (no calldata rewrite). */
+  /** Active game within the persistent world. */
   private readonly gameId: number;
-  /** Normalized addresses of this world's game-system contracts (game_id-prefixed entrypoints on s2). */
-  private readonly gameContractAddresses: Set<string>;
   /** Fixed bounds for a fee-free chain; undefined keeps the normal estimation path. */
   private readonly executionResourceBounds?: ResourceBoundsBN;
 
   /**
    * Create a new EternumProvider instance
    *
-   * @param katana - The katana manifest containing contract info
+   * @param manifest - The native manifest containing contract info
    * @param url - Optional RPC URL
-   * @param scope - s2 world scope and optional fixed execution bounds
+   * @param scope - Game scope and optional fixed execution bounds
    */
   constructor(
-    katana: Manifest,
+    manifest: Manifest,
     url?: string,
-    private VRF_PROVIDER_ADDRESS?: string,
     retryConfig?: RetryConfig,
     scope?: {
-      namespace?: string;
       gameId?: number;
       executionResourceBounds?: ResourceBoundsBN;
       transactionStreamWaiter?: TransactionStreamWaiter;
     },
   ) {
-    super(katana, url);
-    this.manifest = katana;
+    super();
+    this.manifest = manifest;
+    this.provider = new RpcProvider({ nodeUrl: url });
     this.retryConfig = retryConfig;
-    this.namespace = scope?.namespace ?? NAMESPACE;
     this.gameId = scope?.gameId ?? 0;
     this.executionResourceBounds = scope?.executionResourceBounds;
     this.transactionStreamWaiter = scope?.transactionStreamWaiter;
-    this.gameContractAddresses = new Set(
-      this.gameId > 0
-        ? ((katana.contracts ?? []) as { address?: string }[])
-            .map((contract) => this.normalizeAddress(contract.address))
-            .filter((address): address is string => Boolean(address))
-        : [],
-    );
 
-    this.getWorldAddress = function () {
-      const worldAddress = this.manifest.world.address;
-      return worldAddress;
-    };
     // No timed batching: appchain txs land in <1s, so waiting to merge actions only adds
     // latency (and a merged multicall makes one revert fail unrelated actions). The queue
     // stays for per-signer serialization; a backlog still coalesces naturally.
-    this.promiseQueue = new PromiseQueue(this, { batchDelayMs: 0 });
+    this.promiseQueue = new PromiseQueue(
+      { executeAndCheckTransaction: (...args) => this.executeAndCheckTransaction(...args) },
+      { batchDelayMs: 0, batchCalls: !("native" in this.manifest) },
+    );
+  }
+
+  public execute(signer: AccountInterface, calls: AllowArray<Call>, details?: UniversalDetails) {
+    return signer.execute(calls, details);
+  }
+
+  public setNativeSubmission(submit: NativeSubmission, abi: Abi, ownedStructure: (actor: string) => number): void {
+    if (!("native" in this.manifest)) throw new Error("Native submission requires a native deployment");
+    this.nativeSubmission = submit;
+    this.commandAbi = abi;
+    this.resolveOwnedStructure = ownedStructure;
+  }
+
+  public submitCommand(
+    signer: AccountInterface,
+    command: NativeCommand,
+    transactionType?: TransactionType,
+  ): Promise<GetTransactionReceiptResponse> {
+    if (!this.commandAbi) throw new Error("Native command ABI is not configured");
+    return this.promiseQueue.enqueue({
+      signer,
+      transactionType,
+      calls: {
+        contractAddress: this.manifest.world.address,
+        entrypoint: command.kind,
+        calldata: [String(this.gameId), ...encodeNativeCommand(this.commandAbi, command)],
+      },
+    });
+  }
+  private ownedStructure(actor: string): number {
+    if (!this.resolveOwnedStructure) throw new Error("Native player facts are not configured");
+    return this.resolveOwnedStructure(actor);
+  }
+  private bridgeAddress(): string {
+    const native = (this.manifest as unknown as { native: { domains: { bridge: { address: string } } } }).native;
+    if (!native?.domains.bridge?.address) throw new Error("Native bridge is not configured");
+    return native.domains.bridge.address;
   }
 
   public setTransactionStreamWaiter(
@@ -366,32 +324,6 @@ export class EternumProvider extends EnhancedDojoProvider {
   ): void {
     this.transactionStreamWaiter = waiter;
     this.transactionStreamSubmitObserver = submitObserver;
-  }
-
-  /**
-   * Every deployed s2 game-system entrypoint takes `game_id` as its first
-   * argument (the client never calls the exceptions: registrar launch
-   * functions and the MMR token hooks). Prepending it here — the single seam
-   * every transaction path funnels through — spares ~150 call sites from
-   * threading the id. Non-game calls in the same multicall (ERC20 approvals,
-   * VRF request_random) are left untouched; legacy worlds (gameId 0) skip the
-   * rewrite entirely.
-   */
-  private withGameIdCalldata(transactionDetails: AllowArray<Call>): AllowArray<Call> {
-    // `> 0` (not `<= 0` inverted) so prototype-built test doubles with no
-    // constructor state fall through to the legacy no-rewrite path.
-    if (!(this.gameId > 0) || !this.gameContractAddresses) return transactionDetails;
-
-    const prependGameId = (call: Call): Call => {
-      const contractAddress = this.normalizeAddress(call.contractAddress);
-      if (!contractAddress || !this.gameContractAddresses.has(contractAddress)) return call;
-      const calldata = Array.isArray(call.calldata) ? call.calldata : [];
-      return { ...call, calldata: [this.gameId.toString(), ...calldata] };
-    };
-
-    return Array.isArray(transactionDetails)
-      ? transactionDetails.map(prependGameId)
-      : prependGameId(transactionDetails);
   }
 
   private normalizeAddress(address: BigNumberish | undefined | null): string | undefined {
@@ -404,22 +336,6 @@ export class EternumProvider extends EnhancedDojoProvider {
     } catch {
       return String(address).toLowerCase();
     }
-  }
-
-  private isVrfRequestRandomCall(call: Call): boolean {
-    return isVrfRequestRandomCall({
-      call,
-      vrfProviderAddress: this.VRF_PROVIDER_ADDRESS,
-      normalizeAddress: (address) => this.normalizeAddress(address),
-    });
-  }
-
-  private getVrfSourceAddress(call: Call): string | undefined {
-    if (!Array.isArray(call.calldata) || call.calldata.length < 3) {
-      return undefined;
-    }
-
-    return this.normalizeAddress(call.calldata[2] as BigNumberish | undefined);
   }
 
   private getTransactionCalls(transactionDetails: AllowArray<Call>): Call[] {
@@ -458,64 +374,11 @@ export class EternumProvider extends EnhancedDojoProvider {
       .join("|");
   }
 
-  private getVrfRequestRandomCalls(transactionDetails: AllowArray<Call>): Call[] {
-    return this.getTransactionCalls(transactionDetails).filter((detail) => this.isVrfRequestRandomCall(detail));
-  }
-
-  private assertSingleVrfRequestRandomCall(transactionDetails: AllowArray<Call>): void {
-    const vrfRequestCalls = this.getVrfRequestRandomCalls(transactionDetails);
-    if (vrfRequestCalls.length <= 1) {
-      return;
-    }
-
-    throw new Error(
-      "Cannot execute a multicall with multiple VRF request_random calls. Submit VRF transactions separately.",
+  private getExploreTransactionExplorerId(calls: AllowArray<Call>): string | undefined {
+    const call = this.getTransactionCalls(calls).find(
+      ({ entrypoint }) => entrypoint === "Explore" || entrypoint === "Move",
     );
-  }
-
-  private getVrfSerializationKey(
-    signer: Account | AccountInterface,
-    transactionDetails: AllowArray<Call>,
-  ): string | undefined {
-    const details = this.getTransactionCalls(transactionDetails);
-    const vrfRequestCall = details.find((detail) => this.isVrfRequestRandomCall(detail));
-    if (!vrfRequestCall) {
-      return undefined;
-    }
-
-    const signerAddress = this.normalizeAddress((signer as { address?: BigNumberish }).address);
-    if (!signerAddress) {
-      return undefined;
-    }
-
-    const sourceAddress = this.getVrfSourceAddress(vrfRequestCall) ?? signerAddress;
-    return `${signerAddress}:${sourceAddress}`;
-  }
-
-  private getExploreSerializationKey(
-    signer: Account | AccountInterface,
-    transactionDetails: AllowArray<Call>,
-  ): string | undefined {
-    const signerAddress = this.normalizeAddress((signer as { address?: BigNumberish }).address);
-    if (!signerAddress) {
-      return undefined;
-    }
-
-    const explorerId = this.getExploreTransactionExplorerId(transactionDetails) ?? "unknown";
-    return `${signerAddress}:explore:${explorerId}`;
-  }
-
-  private getExploreTransactionExplorerId(transactionDetails: AllowArray<Call>): string | undefined {
-    const explorerCall = this.getTransactionCalls(transactionDetails).find(
-      (detail) => detail.entrypoint === "explorer_move" || detail.entrypoint === "explorer_extract_reward",
-    );
-    if (!Array.isArray(explorerCall?.calldata)) {
-      return undefined;
-    }
-
-    const explorerIdIndex = this.gameId > 0 ? 1 : 0;
-    const rawExplorerId = explorerCall.calldata[explorerIdIndex] as BigNumberish | undefined;
-    return this.normalizeAddress(rawExplorerId) ?? (rawExplorerId !== undefined ? String(rawExplorerId) : undefined);
+    return Array.isArray(call?.calldata) ? this.normalizeAddress(String(call.calldata[2])) : undefined;
   }
 
   private getTransactionSerializationKey(
@@ -523,11 +386,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     signer: Account | AccountInterface,
     transactionDetails: AllowArray<Call>,
   ): string | undefined {
-    if (txType === TransactionType.EXPLORE) {
-      return this.getExploreSerializationKey(signer, transactionDetails);
-    }
-
-    return this.getVrfSerializationKey(signer, transactionDetails);
+    return this.nativeSubmission ? `native:${this.gameId}:${this.normalizeAddress(signer.address)}` : undefined;
   }
 
   private getExploreExecutionDetailsCacheKey(
@@ -596,7 +455,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     return message.includes("nonce") || classifyTransactionError(error).kind === "resource_bounds";
   }
 
-  private createVrfExecutionLock(): VrfExecutionLock {
+  private createActorExecutionLock(): ActorExecutionLock {
     let resolve!: () => void;
     const completed = new Promise<void>((innerResolve) => {
       resolve = innerResolve;
@@ -605,12 +464,12 @@ export class EternumProvider extends EnhancedDojoProvider {
     return { completed, resolve };
   }
 
-  private async acquireVrfExecutionLock(key: string): Promise<() => void> {
+  private async acquireActorExecutionLock(key: string): Promise<() => void> {
     while (true) {
-      const existingLock = this.pendingVrfExecutionLocks.get(key);
+      const existingLock = this.pendingActorExecutionLocks.get(key);
       if (!existingLock) {
-        const lock = this.createVrfExecutionLock();
-        this.pendingVrfExecutionLocks.set(key, lock);
+        const lock = this.createActorExecutionLock();
+        this.pendingActorExecutionLocks.set(key, lock);
 
         let released = false;
         return () => {
@@ -619,9 +478,9 @@ export class EternumProvider extends EnhancedDojoProvider {
           }
           released = true;
 
-          const currentLock = this.pendingVrfExecutionLocks.get(key);
+          const currentLock = this.pendingActorExecutionLocks.get(key);
           if (currentLock === lock) {
-            this.pendingVrfExecutionLocks.delete(key);
+            this.pendingActorExecutionLocks.delete(key);
           }
           lock.resolve();
         };
@@ -637,6 +496,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     options?: { cacheKey?: string; forceRefresh?: boolean },
   ): Promise<UniversalDetails> {
     const details: UniversalDetails = { version: 3, tip: 0 };
+    if (this.nativeSubmission) return details;
     if (this.executionResourceBounds) {
       return { ...details, resourceBounds: this.executionResourceBounds };
     }
@@ -691,15 +551,10 @@ export class EternumProvider extends EnhancedDojoProvider {
    * A fee estimate that failed with an execution revert has already run the
    * calls and proven they fail deterministically — submitting anyway only
    * lands a doomed transaction and reports the same revert a second time.
-   * VRF multicalls are the one
-   * exception: their consume_random can revert at estimate time (no
-   * submit_random on chain yet) and still succeed at execution once the VRF
-   * server front-runs it. A marginal tx that would pass one block later is
-   * rejected too; callers retry (automation next tick, players re-click).
    */
   private shouldAbortSubmitAfterEstimateRevert(error: unknown, transactionDetails: AllowArray<Call>): boolean {
     if (classifyTransactionError(error).kind !== "reverted") return false;
-    return this.getVrfRequestRandomCalls(transactionDetails).length === 0;
+    return true;
   }
 
   private takeRecentEstimateError(): unknown {
@@ -727,11 +582,12 @@ export class EternumProvider extends EnhancedDojoProvider {
     transactionDetails: AllowArray<Call>,
     executionDetails: UniversalDetails,
     options?: { executionDetailsCacheKey?: string },
-  ): Promise<{ transaction_hash: string }> {
+  ): Promise<SubmittedTransaction> {
+    if (this.nativeSubmission) return this.nativeSubmission(signer, transactionDetails);
     if (this.retryConfig && this.retryConfig.maxRetries > 0) {
       let currentExecutionDetails = executionDetails;
       return await withRetry(
-        () => this.execute(signer as any, transactionDetails, this.namespace ?? NAMESPACE, currentExecutionDetails),
+        () => this.execute(signer as any, transactionDetails, currentExecutionDetails),
         this.retryConfig,
         async (error, attempt) => {
           if (this.shouldRefreshExecutionDetailsAfterSubmitError(error)) {
@@ -746,7 +602,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       );
     }
 
-    return await this.execute(signer as any, transactionDetails, this.namespace ?? NAMESPACE, executionDetails);
+    return await this.execute(signer as any, transactionDetails, executionDetails);
   }
 
   private getSignerAddress(signer: Account | AccountInterface): string | undefined {
@@ -774,8 +630,8 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   private async waitForTransactionSubmission(
-    submitPromise: Promise<{ transaction_hash: string }>,
-  ): Promise<{ transaction_hash: string }> {
+    submitPromise: Promise<SubmittedTransaction>,
+  ): Promise<SubmittedTransaction> {
     return await this.withTimeout(
       submitPromise,
       this.TRANSACTION_SUBMIT_TIMEOUT_MS,
@@ -835,11 +691,16 @@ export class EternumProvider extends EnhancedDojoProvider {
     this.emit("transactionFailed", payload);
   }
 
-  private emitTransactionSubmitted(transactionHash: string, transactionMeta: TransactionLifecycleMeta): void {
+  private emitTransactionSubmitted(
+    transactionHash: string,
+    transactionMeta: TransactionLifecycleMeta,
+    ticket?: NativeTicketIdentity,
+  ): void {
     this.transactionStreamSubmitObserver?.(transactionHash);
     this.emit("transactionSubmitted", {
       transactionHash,
       ...transactionMeta,
+      ...(ticket ? { ticket } : {}),
     });
   }
 
@@ -851,9 +712,9 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   private observeLateSubmittedTransaction(
-    submitPromise: Promise<{ transaction_hash: string }>,
+    submitPromise: Promise<SubmittedTransaction>,
     transactionMeta: TransactionLifecycleMeta,
-    releaseVrfExecutionLock?: () => void,
+    releaseActorExecutionLock?: () => void,
   ): void {
     void submitPromise
       .then((tx) => {
@@ -866,11 +727,15 @@ export class EternumProvider extends EnhancedDojoProvider {
           transactionHash: tx.transaction_hash,
         };
 
-        this.emitTransactionSubmitted(tx.transaction_hash, recoveredTransactionMeta);
+        this.emitTransactionSubmitted(tx.transaction_hash, recoveredTransactionMeta, tx.ticket);
         this.emitTransactionPending(tx.transaction_hash, recoveredTransactionMeta);
         if (!this.transactionStreamWaiter) return;
 
-        return this.waitForTransactionWithCheckInternal(tx.transaction_hash, recoveredTransactionMetaWithHash)
+        return this.waitForTransactionWithCheckInternal(
+          tx.transaction_hash,
+          recoveredTransactionMetaWithHash,
+          tx.ticket,
+        )
           .then((receipt) => {
             this.emit("transactionComplete", {
               details: receipt,
@@ -890,7 +755,7 @@ export class EternumProvider extends EnhancedDojoProvider {
         // The original timeout path already emitted the submit failure.
       })
       .finally(() => {
-        releaseVrfExecutionLock?.();
+        releaseActorExecutionLock?.();
       });
   }
 
@@ -902,14 +767,13 @@ export class EternumProvider extends EnhancedDojoProvider {
    * @param batchDetails - Optional details about batched transactions (from PromiseQueue)
    * @returns Transaction receipt
    */
-  async executeAndCheckTransaction(
+  private async executeAndCheckTransaction(
     signer: Account | AccountInterface,
     rawTransactionDetails: AllowArray<Call>,
     batchDetails?: BatchedTransactionDetail[],
     options?: ExecutionOptions & { transactionType?: TransactionType },
   ) {
-    const transactionDetails = this.withGameIdCalldata(rawTransactionDetails);
-    this.assertSingleVrfRequestRandomCall(transactionDetails);
+    const transactionDetails = rawTransactionDetails;
 
     const isMultipleTransactions = Array.isArray(transactionDetails);
 
@@ -918,13 +782,7 @@ export class EternumProvider extends EnhancedDojoProvider {
 
     if (isMultipleTransactions) {
       // For multiple calls, use the first call's entrypoint
-      txType =
-        TransactionType[
-          transactionDetails
-            // remove VRF provider call from the list to define the transaction type
-            .filter((detail) => !this.isVrfRequestRandomCall(detail))[0]
-            ?.entrypoint.toUpperCase() as keyof typeof TransactionType
-        ];
+      txType = TransactionType[transactionDetails[0]?.entrypoint.toUpperCase() as keyof typeof TransactionType];
     } else {
       txType = TransactionType[transactionDetails.entrypoint.toUpperCase() as keyof typeof TransactionType];
     }
@@ -958,13 +816,12 @@ export class EternumProvider extends EnhancedDojoProvider {
       });
     }
 
-    const vrfSerializationKey = this.getTransactionSerializationKey(txType, signer, transactionDetails);
-    let releaseVrfExecutionLock: (() => void) | undefined;
-    if (vrfSerializationKey) {
-      // Explores of the same explorer (and VRF requests from the same source)
-      // serialise here by design: the next explore's calls are built from the
-      // position the previous one leaves behind. Every other action pipelines.
-      releaseVrfExecutionLock = await this.acquireVrfExecutionLock(vrfSerializationKey);
+    const actorSerializationKey = this.getTransactionSerializationKey(txType, signer, transactionDetails);
+    let releaseActorExecutionLock: (() => void) | undefined;
+    if (actorSerializationKey) {
+      // Native actions share the player's recorded nonce; the next command signs only after Herald applies it.
+      // Legacy explores still serialize by explorer or randomness source.
+      releaseActorExecutionLock = await this.acquireActorExecutionLock(actorSerializationKey);
       if (txType === TransactionType.EXPLORE) {
         this.emit("transactionProgress", {
           stage: "explore_provider_lock_acquired",
@@ -976,10 +833,10 @@ export class EternumProvider extends EnhancedDojoProvider {
     }
 
     let tx;
-    let submitPromise: Promise<{ transaction_hash: string }> | undefined;
+    let submitPromise: Promise<SubmittedTransaction> | undefined;
     try {
       // Resolved inside the try so a preflight abort (the estimate proved a
-      // deterministic revert) rides the same failure emission and VRF-lock
+      // deterministic revert) rides the same failure emission and actor-lock
       // release as a submit failure.
       const executionDetails = executionDetailsPromise
         ? await executionDetailsPromise
@@ -1011,11 +868,11 @@ export class EternumProvider extends EnhancedDojoProvider {
         this.invalidateExploreExecutionDetailsCache(executionDetailsCacheKey);
       }
       if (submitPromise && submitFailure.failureKind === "submission_timeout_no_hash") {
-        this.observeLateSubmittedTransaction(submitPromise, transactionMeta, releaseVrfExecutionLock);
-        releaseVrfExecutionLock = undefined;
+        this.observeLateSubmittedTransaction(submitPromise, transactionMeta, releaseActorExecutionLock);
+        releaseActorExecutionLock = undefined;
       } else {
-        releaseVrfExecutionLock?.();
-        releaseVrfExecutionLock = undefined;
+        releaseActorExecutionLock?.();
+        releaseActorExecutionLock = undefined;
       }
       // Throw the resolved error too: when the submit error decoded to
       // nothing actionable, callers (automation's revert classifier, toasts)
@@ -1032,7 +889,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     }
 
     // Emit immediately so UI can show pending state
-    this.emitTransactionSubmitted(tx.transaction_hash, transactionMeta);
+    this.emitTransactionSubmitted(tx.transaction_hash, transactionMeta, tx.ticket);
 
     const waitForConfirmation = options?.waitForConfirmation ?? true;
     const transactionMetaWithHash = {
@@ -1040,22 +897,33 @@ export class EternumProvider extends EnhancedDojoProvider {
       transactionHash: tx.transaction_hash,
     };
     if (!this.transactionStreamWaiter) {
-      releaseVrfExecutionLock?.();
-      releaseVrfExecutionLock = undefined;
+      releaseActorExecutionLock?.();
+      releaseActorExecutionLock = undefined;
       this.emitTransactionPending(tx.transaction_hash, transactionMeta);
       return {
         statusReceipt: "PENDING",
         transaction_hash: tx.transaction_hash,
       } as unknown as GetTransactionReceiptResponse;
     }
-    const waitPromiseWithoutLockRelease = this.waitForTransactionWithCheckInternal(
+    const streamReceipt = this.waitForTransactionWithCheckInternal(
       tx.transaction_hash,
       transactionMetaWithHash,
+      tx.ticket,
     );
-    const waitPromise = releaseVrfExecutionLock
+    const waitPromiseWithoutLockRelease = this.nativeSubmission
+      ? this.withTimeout(
+          streamReceipt,
+          this.TRANSACTION_CONFIRM_TIMEOUT_MS,
+          () =>
+            new Error(
+              `Herald did not apply transaction ${tx.transaction_hash} within ${formatTimeoutDuration(this.TRANSACTION_CONFIRM_TIMEOUT_MS)}; the command barrier was released. Check sync before retrying.`,
+            ),
+        )
+      : streamReceipt;
+    const waitPromise = releaseActorExecutionLock
       ? waitPromiseWithoutLockRelease.finally(() => {
-          releaseVrfExecutionLock?.();
-          releaseVrfExecutionLock = undefined;
+          releaseActorExecutionLock?.();
+          releaseActorExecutionLock = undefined;
         })
       : waitPromiseWithoutLockRelease;
 
@@ -1159,6 +1027,7 @@ export class EternumProvider extends EnhancedDojoProvider {
   private async waitForTransactionWithCheckInternal(
     transactionHash: string,
     _transactionMeta?: TransactionLifecycleMeta,
+    ticket?: NativeTicketIdentity,
   ): Promise<GetTransactionReceiptResponse> {
     if (!this.transactionStreamWaiter) {
       return {
@@ -1167,9 +1036,19 @@ export class EternumProvider extends EnhancedDojoProvider {
       } as unknown as GetTransactionReceiptResponse;
     }
 
-    const transaction = await this.transactionStreamWaiter(transactionHash).catch((error) => {
+    let transaction = await this.transactionStreamWaiter(transactionHash).catch((error) => {
       throw attachTransactionFailureStage(error, "confirmation");
     });
+
+    if (ticket && transaction.status !== "REVERTED") {
+      const outcome = requireNativeExecutionOutcome(transaction.executions, ticket);
+      transaction = {
+        ...transaction,
+        status: outcome.status === "REVERTED" ? "REVERTED" : transaction.status,
+        revertReason: outcome.status === "REVERTED" ? `Native action rejected: ${outcome.reason}` : undefined,
+        batchRemaining: outcome.batchRemaining,
+      };
+    }
 
     if (transaction.status === "REVERTED") {
       const rawRevertReason = transaction.revertReason;
@@ -1186,2348 +1065,881 @@ export class EternumProvider extends EnhancedDojoProvider {
       block_number: transaction.block,
       finality_status: transaction.status,
       statusReceipt: transaction.status,
+      ...(transaction.batchRemaining !== undefined ? { batch_remaining: transaction.batchRemaining } : {}),
       transaction_hash: transaction.hash,
     } as GetTransactionReceiptResponse;
   }
 
-  public async bridge_withdraw_from_realm(props: SystemProps.BridgeWithdrawFromRealmProps) {
-    const { resources, from_structure_id, recipient_address, client_fee_recipient, signer } = props;
-
-    const calls = resources.map((resource) => ({
-      contractAddress: getContractByName(this.manifest, `${this.namespace}-resource_bridge_systems`),
-      entrypoint: "withdraw",
-      calldata: [from_structure_id, recipient_address, resource.tokenAddress, resource.amount, client_fee_recipient],
-    }));
-    return await this.executeAndCheckTransaction(signer, calls);
-  }
-
-  public async bridge_deposit_into_realm(props: SystemProps.BridgeDepositIntoRealmProps) {
-    const { resources, recipient_structure_id, client_fee_recipient, signer } = props;
-    const approvalCalls = resources.map((resource) => ({
-      contractAddress: resource.tokenAddress as string,
-      entrypoint: "approve",
-      calldata: [
-        getContractByName(this.manifest, `${this.namespace}-resource_bridge_systems`),
-        resource.amount,
-        0, // u128, u128
-      ],
-    }));
-
-    const depositCalls = resources.map((resource) => ({
-      contractAddress: getContractByName(this.manifest, `${this.namespace}-resource_bridge_systems`),
-      entrypoint: "deposit",
-      calldata: [
-        resource.tokenAddress,
-        recipient_structure_id,
-        resource.amount,
-        0, // u128, u128
-        client_fee_recipient,
-      ],
-    }));
-    return await this.executeAndCheckTransaction(signer, [...approvalCalls, ...depositCalls]);
-  }
-
-  /**
-   * Create a new trade order
-   *
-   * @param props - Properties for creating the order
-   * @param props.maker_id - ID of the realm creating the trade
-   * @param props.maker_gives_resources - Resources the maker is offering
-   * @param props.taker_id - ID of the realm that can accept the trade
-   * @param props.taker_gives_resources - Resources requested from the taker
-   * @param props.signer - Account executing the transaction
-   * @param props.expires_at - When the trade expires
-   * @returns Transaction receipt
-   *
-   * @example
-   * ```typescript
-   * // Use realm 123 to create a trade offering 100 wood for 50 stone. Expires at timestamp 1704067200 (example timestamp). Maker is realm 123, taker is realm 456.
-   * {
-   *   contractAddress: "<s1_eternum-trade_systems>",
-   *   entrypoint: "create_order",
-   *   calldata: [
-   *     123, // maker_id
-   *     1,   // maker_gives_resources.length / 2 (1 resource type)
-   *     1,   // resource type (wood)
-   *     100, // amount
-   *     456, // taker_id
-   *     1,   // taker_gives_resources.length / 2 (1 resource type)
-   *     2,   // resource type (stone)
-   *     50,  // amount
-   *     1704067200 // expires_at (example timestamp)
-   *   ]
-   * }
-   * ```
-   */
   public async create_order(props: SystemProps.CreateOrderProps) {
-    const {
-      maker_id,
-      taker_id,
-      maker_gives_resource_type,
-      taker_pays_resource_type,
-      maker_gives_min_resource_amount,
-      maker_gives_max_count,
-      taker_pays_min_resource_amount,
-      expires_at,
-      signer,
-    } = props;
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-trade_systems`),
-        entrypoint: "create_order",
-        calldata: [
-          maker_id,
-          taker_id,
-          maker_gives_resource_type,
-          taker_pays_resource_type,
-          maker_gives_min_resource_amount,
-          maker_gives_max_count,
-          taker_pays_min_resource_amount,
-          expires_at,
-        ],
+    return this.submitCommand(
+      props.signer,
+      {
+        kind: "CreateTradeOrder",
+        value: {
+          maker_id: props.maker_id,
+          taker_id: props.taker_id,
+          offered_resource: props.maker_gives_resource_type,
+          requested_resource: props.taker_pays_resource_type,
+          offered_per_lot: props.maker_gives_min_resource_amount,
+          requested_per_lot: props.taker_pays_min_resource_amount,
+          lots: props.maker_gives_max_count,
+          expires_at: props.expires_at,
+        },
       },
-      transactionType: TransactionType.CREATE_ORDER,
-    });
+      TransactionType.CREATE_ORDER,
+    );
   }
 
-  /**
-   * Accept a trade order
-   *
-   * @param props - Properties for accepting the order
-   * @param props.taker_id - ID of the realm accepting the trade
-   * @param props.trade_id - ID of the trade being accepted
-   * @param props.maker_gives_resources - Resources the maker is offering
-   * @param props.taker_gives_resources - Resources requested from the taker
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   *
-   * @example
-   * ```typescript
-   * {
-   *   contractAddress: "<s1_eternum-trade_systems>",
-   *   entrypoint: "accept_order",
-   *   calldata: [
-   *     123, // taker_id
-   *     789, // trade_id
-   *     1,   // maker_gives_resources.length / 2 (1 resource type)
-   *     1,   // resource type (wood)
-   *     100, // amount
-   *     1,   // taker_gives_resources.length / 2 (1 resource type)
-   *     2,   // resource type (stone)
-   *     50   // amount
-   *   ]
-   * }
-   * ```
-   */
   public async accept_order(props: SystemProps.AcceptOrderProps) {
-    const { taker_id, trade_id, taker_buys_count, signer } = props;
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-trade_systems`),
-        entrypoint: "accept_order",
-        calldata: [taker_id, trade_id, taker_buys_count],
+    return this.submitCommand(
+      props.signer,
+      {
+        kind: "AcceptTradeOrder",
+        value: { trade_id: props.trade_id, taker_id: props.taker_id, lots: props.taker_buys_count },
       },
-      transactionType: TransactionType.ACCEPT_ORDER,
-    });
+      TransactionType.ACCEPT_ORDER,
+    );
   }
 
-  /**
-   * Cancel a trade order
-   *
-   * @param props - Properties for canceling the order
-   * @param props.trade_id - ID of the trade to cancel
-   * @param props.return_resources - Resources to return
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   *
-   * @example
-   * ```typescript
-   * {
-   *   contractAddress: "<s1_eternum-trade_systems>",
-   *   entrypoint: "cancel_order",
-   *   calldata: [
-   *     789, // trade_id
-   *     1,   // return_resources.length / 2 (1 resource type)
-   *     1,   // resource type (wood)
-   *     100  // amount
-   *   ]
-   * }
-   * ```
-   */
   public async cancel_order(props: SystemProps.CancelOrderProps) {
-    const { trade_id, signer } = props;
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-trade_systems`),
-        entrypoint: "cancel_order",
-        calldata: [trade_id],
-      },
-      transactionType: TransactionType.CANCEL_ORDER,
-    });
+    return this.submitCommand(
+      props.signer,
+      { kind: "CancelTradeOrder", value: props.trade_id },
+      TransactionType.CANCEL_ORDER,
+    );
   }
 
-  /**
-   * Upgrade a realm's level
-   *
-   * @param props - Properties for upgrading realm
-   * @param props.realm_entity_id - ID of realm to upgrade
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   *
-   * @example
-   * ```typescript
-   * // Upgrade realm 123
-   * {
-   *   realm_entity_id: 123,
-   *   signer: account
-   * }
-   * ```
-   */
+  public async create_hyperstructure(props: SystemProps.SystemSigner & { x: number; y: number; alt: boolean }) {
+    return this.submitCommand(
+      props.signer,
+      { kind: "CreateReservedHyperstructure", value: { alt: props.alt, x: props.x, y: props.y } },
+      TransactionType.INITIALIZE,
+    );
+  }
+
+  public async settle_season(props: SystemProps.SystemSigner & { name: string; selectedRealm?: number }) {
+    return this.submitCommand(
+      props.signer,
+      {
+        kind: "SettleSeason",
+        value: {
+          name: props.name,
+          selected_realm:
+            props.selectedRealm === undefined
+              ? { kind: "None", value: undefined }
+              : { kind: "Some", value: props.selectedRealm },
+        },
+      },
+      TransactionType.SETTLE,
+    );
+  }
+
+  public async settle_village(props: SystemProps.SystemSigner & { passId: bigint; connectedRealmEntityId: number }) {
+    return this.submitCommand(
+      props.signer,
+      {
+        kind: "SettleVillage",
+        value: { pass_id: props.passId, connected_realm_entity_id: props.connectedRealmEntityId },
+      },
+      TransactionType.SETTLE,
+    );
+  }
+
   public async upgrade_realm(props: SystemProps.UpgradeRealmProps) {
-    const { realm_entity_id, signer } = props;
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-structure_systems`),
-        entrypoint: "level_up",
-        calldata: [realm_entity_id],
-      },
-      transactionType: TransactionType.LEVEL_UP,
-    });
+    return this.submitCommand(
+      props.signer,
+      { kind: "LevelUp", value: props.realm_entity_id },
+      TransactionType.LEVEL_UP,
+    );
   }
 
-  /**
-   * Create a village connected to a realm
-   *
-   * @param props - Properties for creating a village
-   * @param props.connected_realm - ID of the realm to connect the village to
-   * @param props.direction - Direction from the realm to place the village
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   *
-   * @example
-   * ```typescript
-   * // Create a village connected to realm 123 in the north direction
-   * {
-   *   connected_realm: 123,
-   *   direction: Direction.North,
-   *   signer: account
-   * }
-   * ```
-   */
-  public async create_village(props: SystemProps.CreateVillageProps) {
-    const { village_pass_token_id, connected_realm, direction, signer } = props;
-
-    let callData: Call[] = [];
-
-    if (this.VRF_PROVIDER_ADDRESS !== undefined && Number(this.VRF_PROVIDER_ADDRESS) !== 0) {
-      const requestRandomCall: Call = {
-        contractAddress: this.VRF_PROVIDER_ADDRESS!,
-        entrypoint: "request_random",
-        calldata: [getContractByName(this.manifest, `${this.namespace}-village_systems`), 0, signer.address],
-      };
-
-      callData = [requestRandomCall];
-    }
-
-    const createCall: Call = {
-      contractAddress: getContractByName(this.manifest, `${this.namespace}-village_systems`),
-      entrypoint: "create",
-      calldata: [village_pass_token_id, connected_realm, direction],
-    };
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: [...callData, createCall],
-      transactionType: TransactionType.CREATE,
-    });
-  }
-
-  /**
-   * Claim the village army grant once its delay has passed
-   *
-   * @param props - Properties for claiming village army grant
-   * @param props.village_id - ID of the village to claim for
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   */
   public async receive_army_grant(props: SystemProps.ReceiveArmyGrantProps) {
-    const { village_id, signer } = props;
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-village_systems`),
-        entrypoint: "receive_army_grant",
-        calldata: [village_id],
-      },
-      transactionType: TransactionType.CREATE,
-    });
-  }
-
-  /**
-   * Mint a test realm, mint season passes, and create a realm in one transaction
-   *
-   * @param props - Properties for creating a test realm
-   * @param props.token_id - Token ID for the realm
-   * @param props.realms_address - Address of the realms contract
-   * @param props.season_pass_address - Address of the season pass contract
-   * @param props.realm_settlement - Settlement location for the realm
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   *
-   * @example
-   * ```typescript
-   * // Mint and settle a test realm with ID 123
-   * {
-   *   token_id: 123,
-   *   realms_address: "0x123...",
-   *   season_pass_address: "0x456...",
-   *   realm_settlement: {
-   *     side: 1,
-   *     layer: 2,
-   *     point: 3
-   *   },
-   *   signer: account
-   * }
-   * ```
-   */
-  public async mint_and_settle_test_realm(props: SystemProps.MintAndSettleTestRealmProps) {
-    // const { token_id, realms_address, season_pass_address, realm_settlement, signer } = props;
-    const { signer } = props;
-
-    // const mintRealmCall = {
-    //   contractAddress: realms_address.toString(),
-    //   entrypoint: "mint",
-    //   calldata: [uint256.bnToUint256(token_id)],
-    // };
-
-    // const mintSeasonPassCall = {
-    //   contractAddress: season_pass_address.toString(),
-    //   entrypoint: "mint",
-    //   calldata: [signer.address, uint256.bnToUint256(token_id)],
-    // };
-
-    // const realmSystemsContractAddress = getContractByName(this.manifest, `${this.namespace}-blitz_realm_systems`);
-
-    // const approvalForAllCall = {
-    //   contractAddress: season_pass_address,
-    //   entrypoint: "set_approval_for_all",
-    //   calldata: [realmSystemsContractAddress, true],
-    // };
-
-    const createRealmCall = {
-      contractAddress: getContractByName(this.manifest, `${this.namespace}-ownership_systems`),
-      entrypoint: "transfer_structure_ownership",
-      calldata: ["171", "0x0018251388AADDb93472aa8aB7c5f147cd94252fE47a46A4De7707313b1B8dB2"],
-    };
-
-    // const approvalCloseForAllCall = {
-    //   contractAddress: season_pass_address,
-    //   entrypoint: "set_approval_for_all",
-    //   calldata: [realmSystemsContractAddress, false],
-    // };
-
-    return await this.executeAndCheckTransaction(signer, [
-      // mintRealmCall,
-      // mintSeasonPassCall,
-      // approvalForAllCall,
-      createRealmCall,
-      // approvalCloseForAllCall,
-    ]);
-  }
-
-  /**
-   * Send resources from one entity to another
-   *
-   * @param props - Properties for sending resources
-   * @param props.sender_entity_id - ID of the entity sending resources
-   * @param props.recipient_entity_id - ID of the entity receiving resources
-   * @param props.resources - Array of resource amounts to send
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   *
-   * @example
-   * ```typescript
-   * // Send 100 wood and 50 stone from entity 123 to entity 456
-   * {
-   *   sender_entity_id: 123,
-   *   recipient_entity_id: 456,
-   *   resources: [1, 100, 2, 50], // [resourceId, amount, resourceId, amount]
-   *   signer: account
-   * }
-   * ```
-   */
-  public async send_resources(props: SystemProps.SendResourcesProps) {
-    const { sender_entity_id, recipient_entity_id, resources, signer } = props;
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-resource_systems`),
-        entrypoint: "send",
-        calldata: [
-          sender_entity_id,
-          recipient_entity_id,
-          resources.length,
-          ...resources.flatMap(({ resource, amount }) => [resource, amount]),
-        ],
-      },
-      transactionType: TransactionType.SEND,
-    });
-  }
-
-  /**
-   * Send resources from multiple entities
-   *
-   * @param props - Properties for sending multiple resources
-   * @param props.calls - Array of send resource calls
-   * @param props.calls[].sender_entity_id - ID of the entity sending resources
-   * @param props.calls[].recipient_entity_id - ID of the entity receiving resources
-   * @param props.calls[].resources - Array of resource amounts to send
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   *
-   * @example
-   * ```typescript
-   * // Send resources from multiple entities
-   * {
-   *   calls: [
-   *     {
-   *       sender_entity_id: 123,
-   *       recipient_entity_id: 456,
-   *       resources: [1, 100, 2, 50]
-   *     },
-   *     {
-   *       sender_entity_id: 789,
-   *       recipient_entity_id: 101,
-   *       resources: [3, 75, 4, 25]
-   *     }
-   *   ],
-   *   signer: account
-   * }
-   * ```
-   */
-  public async send_resources_multiple(props: SystemProps.SendResourcesMultipleProps) {
-    const { calls, signer } = props;
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: calls.map((call) => ({
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-resource_systems`),
-        entrypoint: "send",
-        calldata: [call.sender_entity_id, call.recipient_entity_id, call.resources.length / 2, ...call.resources],
-      })),
-      transactionType: TransactionType.SEND,
-    });
-  }
-
-  /**
-   * Pickup resources from an entity after approval
-   *
-   * @param props - Properties for picking up resources
-   * @param props.recipient_entity_id - ID of the entity receiving resources
-   * @param props.owner_entity_id - ID of the entity that owns the resources
-   * @param props.resources - Array of resource amounts to pickup
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   *
-   * @example
-   * ```typescript
-   * // Pickup 100 wood and 50 stone from entity 123 to entity 456
-   * {
-   *   recipient_entity_id: 456,
-   *   owner_entity_id: 123,
-   *   resources: [1, 100, 2, 50], // [resourceId, amount, resourceId, amount]
-   *   signer: account
-   * }
-   * ```
-   */
-  public async pickup_resources(props: SystemProps.PickupResourcesProps) {
-    const { recipient_entity_id, owner_entity_id, resources, signer } = props;
-
-    const approvalCall = {
-      contractAddress: getContractByName(this.manifest, `${this.namespace}-resource_systems`),
-      entrypoint: "approve",
-      calldata: [
-        owner_entity_id,
-        recipient_entity_id,
-        resources.length,
-        ...resources.flatMap(({ resource, amount }) => [resource, amount]),
-      ],
-    };
-
-    const pickupCall = {
-      contractAddress: getContractByName(this.manifest, `${this.namespace}-resource_systems`),
-      entrypoint: "pickup",
-      calldata: [
-        recipient_entity_id,
-        owner_entity_id,
-        resources.length,
-        ...resources.flatMap(({ resource, amount }) => [resource, amount]),
-      ],
-    };
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: [approvalCall, pickupCall],
-      transactionType: TransactionType.PICKUP,
-    });
+    return this.submitCommand(
+      props.signer,
+      { kind: "ReceiveVillageArmy", value: props.village_id },
+      TransactionType.CREATE,
+    );
   }
 
   public async arrivals_offload(props: SystemProps.ArrivalsOffloadProps) {
-    const { structureId, day, slot, resource_count, signer } = props;
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-resource_systems`),
-        entrypoint: "arrivals_offload",
-        calldata: [structureId, day, slot, resource_count],
+    return this.submitCommand(
+      props.signer,
+      {
+        kind: "OffloadArrival",
+        value: { entity_id: props.structureId, day: props.day, slot: props.slot, resource_count: props.resource_count },
       },
-      transactionType: TransactionType.ARRIVALS_OFFLOAD,
-    });
+      TransactionType.ARRIVALS_OFFLOAD,
+    );
   }
 
-  /**
-   * Set a name for an address
-   *
-   * @param props - Properties for setting address name
-   * @param props.name - Name to set for the address
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   *
-   * @example
-   * ```typescript
-   * // Set name "Player1" for address
-   * {
-   *   name: "Player1",
-   *   signer: account
-   * }
-   * ```
-   */
   public async set_address_name(props: SystemProps.SetAddressNameProps) {
-    const { name, signer } = props;
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-name_systems`),
-        entrypoint: "set_address_name",
-        calldata: [name],
+    return this.submitCommand(
+      props.signer,
+      {
+        kind: "SetAddressName",
+        value: { owned_structure_id: this.ownedStructure(props.signer.address), name: props.name },
       },
-      transactionType: TransactionType.SET_ADDRESS_NAME,
-    });
+      TransactionType.SET_ADDRESS_NAME,
+    );
   }
 
-  /**
-   * Set a name for an entity
-   *
-   * @param props - Properties for setting entity name
-   * @param props.entity_id - ID of the entity to name
-   * @param props.name - Name to set for the entity
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   *
-   * @example
-   * ```typescript
-   * // Set name "Castle1" for entity 123
-   * {
-   *   entity_id: 123,
-   *   name: "Castle1",
-   *   signer: account
-   * }
-   * ```
-   */
   public async set_entity_name(props: SystemProps.SetEntityNameProps) {
-    const { entity_id, name, signer } = props;
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-name_systems`),
-        entrypoint: "set_entity_name",
-        calldata: [entity_id, name],
-      },
-      transactionType: TransactionType.SET_ENTITY_NAME,
-    });
+    return this.submitCommand(
+      props.signer,
+      { kind: "SetEntityName", value: { entity_id: props.entity_id, name: shortString.encodeShortString(props.name) } },
+      TransactionType.SET_ENTITY_NAME,
+    );
   }
 
-  /**
-   * Create a new building
-   *
-   * @param props - Properties for creating building
-   * @param props.entity_id - ID of the entity creating the building
-   * @param props.directions - Array of directions for building placement
-   * @param props.building_category - Category of building to create
-   * @param props.produce_resource_type - Type of resource the building will produce
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   *
-   * @example
-   * ```typescript
-   * // Create a wood production building at coordinates determined by directions [1,2]
-   * {
-   *   contractAddress: "<s1_eternum-production_systems>",
-   *   entrypoint: "create_building",
-   *   calldata: [
-   *     123,     // entity_id
-   *     [1, 2],  // directions array
-   *     1,       // building_category (e.g. 1 for resource production)
-   *     1        // produce_resource_type (e.g. 1 for wood) for farms and fishing villages use 0
-   *   ]
-   * }
-   * ```
-   */
   public async create_building(props: SystemProps.CreateBuildingProps): Promise<GetTransactionReceiptResponse> {
-    const { entity_id, directions, building_category, use_simple, signer } = props;
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-production_systems`),
-        entrypoint: "create_building",
-        calldata: CallData.compile([entity_id, directions, building_category, use_simple]),
+    return this.submitCommand(
+      props.signer,
+      {
+        kind: "CreateBuilding",
+        value: {
+          structure_id: props.entity_id,
+          directions: props.directions,
+          category: props.building_category,
+          use_simple: props.use_simple,
+        },
       },
-      transactionType: TransactionType.CREATE_BUILDING,
+      TransactionType.CREATE_BUILDING,
+    );
+  }
+
+  public async guard_add(props: SystemProps.GuardAddProps) {
+    return this.submitCommand(
+      props.signer,
+      {
+        kind: "ManageTroops",
+        value: {
+          kind: "RecruitGuard",
+          value: {
+            guard: { structure_id: props.for_structure_id, slot: props.slot },
+            category: unitVariant(props.category, ["Knight", "Paladin", "Crossbowman"] as const),
+            tier: unitVariant(props.tier, ["T1", "T2", "T3"] as const),
+            amount: props.amount,
+          },
+        },
+      },
+      TransactionType.GUARD_ADD,
+    );
+  }
+
+  public async guard_delete(props: SystemProps.GuardDeleteProps) {
+    return this.submitCommand(
+      props.signer,
+      {
+        kind: "ManageTroops",
+        value: { kind: "RemoveGuard", value: { structure_id: props.for_structure_id, slot: props.slot } },
+      },
+      TransactionType.GUARD_DELETE,
+    );
+  }
+
+  public async explorer_create(props: SystemProps.ExplorerCreateProps) {
+    return this.submitCommand(
+      props.signer,
+      {
+        kind: "CreateExplorer",
+        value: {
+          structure_id: props.for_structure_id,
+          category: props.category,
+          tier: props.tier,
+          amount: props.amount,
+          direction: props.spawn_direction,
+        },
+      },
+      TransactionType.EXPLORER_CREATE,
+    );
+  }
+
+  public async explorer_add(props: SystemProps.ExplorerAddProps) {
+    return this.submitCommand(
+      props.signer,
+      {
+        kind: "ManageTroops",
+        value: { kind: "RecruitExplorer", value: { explorer_id: props.to_explorer_id, amount: props.amount } },
+      },
+      TransactionType.EXPLORER_ADD,
+    );
+  }
+
+  public async explorer_delete(props: SystemProps.ExplorerDeleteProps) {
+    return this.submitCommand(
+      props.signer,
+      { kind: "ManageTroops", value: { kind: "RemoveExplorer", value: props.explorer_id } },
+      TransactionType.EXPLORER_DELETE,
+    );
+  }
+
+  public async bitcoin_mine_contribute_labor(props: SystemProps.BitcoinMineContributeLaborProps) {
+    return this.submitCommand(
+      props.signer,
+      { kind: "ContributeBitcoinLabor", value: { structure_id: props.structure_id, amount: props.labor_amount } },
+      TransactionType.BITCOIN_MINE_CONTRIBUTE_LABOR,
+    );
+  }
+
+  public async bitcoin_mine_claim_phase_reward(props: SystemProps.BitcoinMineClaimPhaseRewardProps) {
+    return requireBatchReceipt(
+      await this.submitCommand(
+        props.signer,
+        { kind: "ClaimBitcoinPhase", value: { phase: props.phase_id, mine_ids: props.mine_ids } },
+        TransactionType.BITCOIN_MINE_CLAIM_PHASE_REWARD,
+      ),
+    );
+  }
+
+  public async bitcoin_mine_close_phase(props: SystemProps.BitcoinMinePhaseProps) {
+    return this.submitCommand(props.signer, { kind: "CloseBitcoinPhase", value: props.phase_id });
+  }
+
+  public async bitcoin_mine_bind_phase(props: SystemProps.BitcoinMinePhaseProps) {
+    return this.submitCommand(props.signer, { kind: "BindBitcoinPhase", value: props.phase_id });
+  }
+
+  public async toggle_alternate(props: SystemProps.ToggleAlternateProps) {
+    return this.submitCommand(
+      props.signer,
+      { kind: "ToggleAlternate", value: { explorer_id: props.explorer_id, spire_direction: props.spire_direction } },
+      TransactionType.TRAVEL_HEX,
+    );
+  }
+
+  public async explorer_travel(props: SystemProps.ExplorerTravelProps) {
+    return this.submitCommand(
+      props.signer,
+      { kind: "Move", value: { explorer_id: props.explorer_id, directions: props.directions } },
+      TransactionType.TRAVEL_HEX,
+    );
+  }
+
+  public async attack_explorer_vs_explorer(props: SystemProps.AttackExplorerVsExplorerProps) {
+    return this.submitCommand(
+      props.signer,
+      {
+        kind: "Battle",
+        value: {
+          attacker_id: props.aggressor_id,
+          defender_id: props.defender_id,
+          steal_resources: resourceAmounts(props.steal_resources),
+        },
+      },
+      TransactionType.ATTACK_EXPLORER_VS_EXPLORER,
+    );
+  }
+
+  public async attack_explorer_vs_guard(props: SystemProps.AttackExplorerVsGuardProps) {
+    return this.submitCommand(
+      props.signer,
+      { kind: "BattleGuard", value: { attacker_id: props.explorer_id, defender_id: props.structure_id } },
+      TransactionType.ATTACK_EXPLORER_VS_GUARD,
+    );
+  }
+
+  public async attack_guard_vs_explorer(props: SystemProps.AttackGuardVsExplorerProps) {
+    return this.submitCommand(
+      props.signer,
+      {
+        kind: "GuardAttack",
+        value: {
+          guard: { structure_id: props.structure_id, slot: props.structure_guard_slot },
+          explorer_id: props.explorer_id,
+        },
+      },
+      TransactionType.ATTACK_GUARD_VS_EXPLORER,
+    );
+  }
+
+  public async raid_explorer_vs_guard(props: SystemProps.RaidExplorerVsGuardProps) {
+    return this.submitCommand(
+      props.signer,
+      {
+        kind: "Raid",
+        value: {
+          explorer_id: props.explorer_id,
+          structure_id: props.structure_id,
+          steal_resources: resourceAmounts(props.steal_resources),
+        },
+      },
+      TransactionType.RAID_EXPLORER_VS_GUARD,
+    );
+  }
+
+  public async pledge_faith(props: SystemProps.PledgeFaithProps) {
+    return this.submitCommand(
+      props.signer,
+      { kind: "PledgeFaith", value: { structure_id: props.structure_id, wonder_id: props.wonder_id } },
+      TransactionType.PLEDGE_FAITH,
+    );
+  }
+
+  public async remove_faith(props: SystemProps.RemoveFaithProps) {
+    return this.submitCommand(
+      props.signer,
+      { kind: "RemoveFaith", value: props.structure_id },
+      TransactionType.REMOVE_FAITH,
+    );
+  }
+
+  public async update_wonder_ownership(props: SystemProps.UpdateWonderOwnershipProps) {
+    return this.submitCommand(
+      props.signer,
+      { kind: "UpdateWonderOwnership", value: props.wonder_id },
+      TransactionType.UPDATE_WONDER_OWNERSHIP,
+    );
+  }
+
+  public async update_structure_ownership(props: SystemProps.UpdateStructureOwnershipProps) {
+    return this.submitCommand(
+      props.signer,
+      { kind: "UpdateFaithfulOwnership", value: props.structure_id },
+      TransactionType.UPDATE_STRUCTURE_OWNERSHIP,
+    );
+  }
+
+  public async create_guild(props: SystemProps.CreateGuildProps) {
+    return this.submitCommand(
+      props.signer,
+      {
+        kind: "CreateGuild",
+        value: {
+          owned_structure_id: this.ownedStructure(props.signer.address),
+          public: props.is_public,
+          name: props.guild_name,
+        },
+      },
+      TransactionType.CREATE_GUILD,
+    );
+  }
+
+  public async join_guild(props: SystemProps.JoinGuildProps) {
+    return this.submitCommand(
+      props.signer,
+      {
+        kind: "JoinGuild",
+        value: { owned_structure_id: this.ownedStructure(props.signer.address), guild_id: props.guild_entity_id },
+      },
+      TransactionType.JOIN_GUILD,
+    );
+  }
+
+  public async update_whitelist(props: SystemProps.UpdateWhitelist) {
+    return this.submitCommand(
+      props.signer,
+      {
+        kind: "SetGuildWhitelist",
+        value: {
+          owned_structure_id: this.ownedStructure(props.signer.address),
+          player: props.address,
+          allowed: props.whitelist,
+        },
+      },
+      TransactionType.UPDATE_WHITELIST,
+    );
+  }
+
+  public async remove_guild_member(props: SystemProps.RemoveGuildMember) {
+    return this.submitCommand(
+      props.signer,
+      { kind: "RemoveGuildMember", value: props.player_address_to_remove },
+      TransactionType.REMOVE_GUILD_MEMBER,
+    );
+  }
+
+  public async leave_guild(props: SystemProps.LeaveGuildProps) {
+    return this.submitCommand(props.signer, { kind: "LeaveGuild", value: undefined }, TransactionType.LEAVE_GUILD);
+  }
+
+  public async initialize(props: SystemProps.InitializeHyperstructureProps) {
+    return this.submitCommand(
+      props.signer,
+      { kind: "InitializeHyperstructure", value: props.hyperstructure_id },
+      TransactionType.INITIALIZE,
+    );
+  }
+
+  public async contribute_to_construction(props: SystemProps.ContributeToConstructionProps) {
+    return this.submitCommand(
+      props.signer,
+      {
+        kind: "ContributeHyperstructure",
+        value: {
+          hyperstructure_id: props.hyperstructure_entity_id,
+          from_structure_id: props.contributor_entity_id,
+          resources: props.contributions.map(({ resource, amount }) => ({ resource_type: resource, amount })),
+        },
+      },
+      TransactionType.CONTRIBUTE,
+    );
+  }
+
+  public async set_access(props: SystemProps.SetAccessProps) {
+    return this.submitCommand(
+      props.signer,
+      {
+        kind: "SetConstructionAccess",
+        value: {
+          hyperstructure_id: props.hyperstructure_entity_id,
+          access: unitVariant(props.access, ["Public", "Private", "GuildOnly"] as const),
+        },
+      },
+      TransactionType.SET_ACCESS,
+    );
+  }
+
+  public async end_game(props: SystemProps.EndGameProps) {
+    return requireBatchReceipt(
+      await this.submitCommand(props.signer, { kind: "CloseSeason", value: undefined }, TransactionType.END_GAME),
+    );
+  }
+
+  public async allocate_shares(props: SystemProps.SetCoOwnersProps) {
+    return this.submitCommand(
+      props.signer,
+      {
+        kind: "AllocateHyperstructureShares",
+        value: {
+          hyperstructure_id: props.hyperstructure_entity_id,
+          shareholders: props.co_owners.map((owner) => ({ player: owner[0], bps: owner[1] })),
+        },
+      },
+      TransactionType.ALLOCATE_SHARES,
+    );
+  }
+
+  public async burn_resource_for_labor_production(props: SystemProps.BurnOtherResourcesForLaborProductionProps) {
+    return this.submitCommand(
+      props.signer,
+      {
+        kind: "BurnResourceForLaborProduction",
+        value: { structure_id: props.entity_id, resource_types: props.resource_types, amounts: props.resource_amounts },
+      },
+      TransactionType.BURN_RESOURCE_FOR_LABOR_PRODUCTION,
+    );
+  }
+
+  public async burn_labor_for_resource_production(props: SystemProps.BurnLaborResourcesForOtherProductionProps) {
+    return this.submitCommand(
+      props.signer,
+      {
+        kind: "BurnLaborForResourceProduction",
+        value: {
+          structure_id: props.from_entity_id,
+          resource_types: props.produced_resource_types,
+          amounts: props.production_cycles,
+        },
+      },
+      TransactionType.BURN_LABOR_FOR_RESOURCE_PRODUCTION,
+    );
+  }
+
+  public async burn_resource_for_resource_production(props: SystemProps.BurnOtherPredefinedResourcesForResourcesProps) {
+    return this.submitCommand(
+      props.signer,
+      {
+        kind: "BurnResourceForResourceProduction",
+        value: {
+          structure_id: props.from_entity_id,
+          resource_types: props.produced_resource_types,
+          amounts: props.production_cycles,
+        },
+      },
+      TransactionType.BURN_RESOURCE_FOR_RESOURCE_PRODUCTION,
+    );
+  }
+
+  public async open_chest(props: SystemProps.OpenChestProps) {
+    return this.submitCommand(
+      props.signer,
+      { kind: "OpenRelicChest", value: { explorer_id: props.explorer_id, coord: props.chest_coord } },
+      TransactionType.OPEN_CHEST,
+    );
+  }
+
+  public async burn_research_for_relic(props: SystemProps.BurnResearchForRelicProps) {
+    return this.submitCommand(
+      props.signer,
+      { kind: "CraftRelic", value: props.structure_id },
+      TransactionType.BURN_RESEARCH_FOR_RELIC,
+    );
+  }
+
+  public async apply_relic(props: SystemProps.ApplyRelicProps) {
+    return this.submitCommand(props.signer, {
+      kind: "ApplyRelic",
+      value: {
+        entity_id: props.entity_id,
+        relic_id: props.relic_resource_id,
+        recipient: unitVariant(props.recipient_type, ["Explorer", "StructureProduction", "StructureGuard"] as const),
+      },
     });
   }
 
-  /**
-   * Destroy an existing building
-   *
-   * @param props - Properties for destroying building
-   * @param props.entity_id - ID of the entity destroying the building
-   * @param props.building_coord - Coordinates of building to destroy
-   * @param props.building_coord.alt - Whether this is an alt map coordinate (default: false)
-   * @param props.building_coord.x - X coordinate of building
-   * @param props.building_coord.y - Y coordinate of building
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   *
-   * @example
-   * ```typescript
-   * // Destroy building at coordinates (10, 20)
-   * {
-   *   contractAddress: "<s1_eternum-production_systems>",
-   *   entrypoint: "destroy_building",
-   *   calldata: [
-   *     123,     // entity_id
-   *     false,   // building_coord.alt
-   *     10,      // building_coord.x
-   *     20       // building_coord.y
-   *   ]
-   * }
-   * ```
-   */
+  public async transfer_structure_ownership(props: SystemProps.TransferStructureOwnershipProps) {
+    return this.submitCommand(props.signer, {
+      kind: "TransferStructureOwnership",
+      value: { entity_id: props.structure_id, new_owner: props.new_owner },
+    });
+  }
+
+  public async structure_burn(props: SystemProps.StructureBurnProps) {
+    return this.submitCommand(props.signer, {
+      kind: "BurnStructureResources",
+      value: { entity_id: props.structure_id, resources: resourceAmounts(props.resources) },
+    });
+  }
+
+  public async troop_burn(props: SystemProps.TroopBurnProps) {
+    return this.submitCommand(props.signer, {
+      kind: "BurnExplorerResources",
+      value: { entity_id: props.explorer_id, resources: resourceAmounts(props.resources) },
+    });
+  }
+
   public async destroy_building(props: SystemProps.DestroyBuildingProps) {
-    const { entity_id, building_coord, signer } = props;
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-production_systems`),
-        entrypoint: "destroy_building",
-        calldata: CallData.compile([
-          entity_id,
-          { alt: building_coord.alt ?? false, x: building_coord.x, y: building_coord.y },
-        ]),
-      },
-      transactionType: TransactionType.DESTROY_BUILDING,
-    });
+    return this.submitCommand(
+      props.signer,
+      { kind: "DestroyBuilding", value: { structure_id: props.entity_id, coord: props.building_coord } },
+      TransactionType.DESTROY_BUILDING,
+    );
   }
 
-  /**
-   * Pause production at a building
-   *
-   * @param props - Properties for pausing production
-   * @param props.entity_id - ID of the entity that owns the building
-   * @param props.building_coord - Coordinates of the building
-   * @param props.building_coord.alt - Whether this is an alt map coordinate (default: false)
-   * @param props.building_coord.x - X coordinate of the building
-   * @param props.building_coord.y - Y coordinate of the building
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   *
-   * @example
-   * ```typescript
-   * // Pause production at building at coordinates (10, 20)
-   * {
-   *   entity_id: 123,
-   *   building_coord: { alt: false, x: 10, y: 20 },
-   *   signer: account
-   * }
-   * ```
-   */
   public async pause_production(props: SystemProps.PauseProductionProps) {
-    const { entity_id, building_coord, signer } = props;
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-production_systems`),
-        entrypoint: "pause_building_production",
-        calldata: CallData.compile([
-          entity_id,
-          { alt: building_coord.alt ?? false, x: building_coord.x, y: building_coord.y },
-        ]),
-      },
-      transactionType: TransactionType.PAUSE_BUILDING_PRODUCTION,
-    });
+    return this.submitCommand(
+      props.signer,
+      { kind: "PauseBuildingProduction", value: { structure_id: props.entity_id, coord: props.building_coord } },
+      TransactionType.PAUSE_BUILDING_PRODUCTION,
+    );
   }
 
-  /**
-   * Resume production at a building
-   *
-   * @param props - Properties for resuming production
-   * @param props.entity_id - ID of the entity that owns the building
-   * @param props.building_coord - Coordinates of the building
-   * @param props.building_coord.alt - Whether this is an alt map coordinate (default: false)
-   * @param props.building_coord.x - X coordinate of the building
-   * @param props.building_coord.y - Y coordinate of the building
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   *
-   * @example
-   * ```typescript
-   * // Resume production at building at coordinates (10, 20)
-   * {
-   *   entity_id: 123,
-   *   building_coord: { alt: false, x: 10, y: 20 },
-   *   signer: account
-   * }
-   * ```
-   */
   public async resume_production(props: SystemProps.ResumeProductionProps) {
-    const { entity_id, building_coord, signer } = props;
+    return this.submitCommand(
+      props.signer,
+      { kind: "ResumeBuildingProduction", value: { structure_id: props.entity_id, coord: props.building_coord } },
+      TransactionType.RESUME_BUILDING_PRODUCTION,
+    );
+  }
 
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-production_systems`),
-        entrypoint: "resume_building_production",
-        calldata: CallData.compile([
-          entity_id,
-          { alt: building_coord.alt ?? false, x: building_coord.x, y: building_coord.y },
-        ]),
+  public async buy_resources(props: SystemProps.BuyResourcesProps) {
+    return this.submitCommand(
+      props.signer,
+      {
+        kind: "BuyFromBank",
+        value: {
+          bank_id: props.bank_entity_id,
+          structure_id: props.entity_id,
+          resource_type: props.resource_type,
+          amount: props.amount,
+        },
       },
-      transactionType: TransactionType.RESUME_BUILDING_PRODUCTION,
-    });
+      TransactionType.BUY,
+    );
+  }
+
+  public async sell_resources(props: SystemProps.SellResourcesProps) {
+    return this.submitCommand(
+      props.signer,
+      {
+        kind: "SellToBank",
+        value: {
+          bank_id: props.bank_entity_id,
+          structure_id: props.entity_id,
+          resource_type: props.resource_type,
+          amount: props.amount,
+        },
+      },
+      TransactionType.SELL,
+    );
+  }
+
+  public async remove_liquidity(props: SystemProps.RemoveLiquidityProps) {
+    return this.submitCommand(
+      props.signer,
+      {
+        kind: "RemoveBankLiquidity",
+        value: {
+          bank_id: props.bank_entity_id,
+          structure_id: props.entity_id,
+          resource_type: props.resource_type,
+          shares: props.shares,
+        },
+      },
+      TransactionType.REMOVE,
+    );
+  }
+
+  public async troop_troop_adjacent_transfer(props: SystemProps.TroopTroopAdjacentTransferProps) {
+    return this.submitCommand(
+      props.signer,
+      {
+        kind: "TransferExplorerResources",
+        value: {
+          from_entity_id: props.from_troop_id,
+          to_entity_id: props.to_troop_id,
+          resources: resourceAmounts(props.resources),
+        },
+      },
+      TransactionType.TROOP_TROOP_ADJACENT_TRANSFER,
+    );
+  }
+
+  public async troop_structure_adjacent_transfer(props: SystemProps.TroopStructureAdjacentTransferProps) {
+    return this.submitCommand(
+      props.signer,
+      {
+        kind: "TransferExplorerResourcesToStructure",
+        value: {
+          from_entity_id: props.from_explorer_id,
+          to_entity_id: props.to_structure_id,
+          resources: resourceAmounts(props.resources),
+        },
+      },
+      TransactionType.TROOP_STRUCTURE_ADJACENT_TRANSFER,
+    );
+  }
+
+  public async structure_troop_adjacent_transfer(props: SystemProps.StructureTroopAdjacentTransferProps) {
+    return this.submitCommand(
+      props.signer,
+      {
+        kind: "TransferStructureResourcesToExplorer",
+        value: {
+          from_entity_id: props.from_structure_id,
+          to_entity_id: props.to_troop_id,
+          resources: resourceAmounts(props.resources),
+        },
+      },
+      TransactionType.STRUCTURE_TROOP_ADJACENT_TRANSFER,
+    );
+  }
+
+  public async explorer_explorer_swap(props: SystemProps.ExplorerExplorerSwapProps) {
+    return this.submitCommand(
+      props.signer,
+      {
+        kind: "ManageTroops",
+        value: {
+          kind: "Transfer",
+          value: {
+            source: { kind: "Explorer", value: props.from_explorer_id },
+            target: { kind: "Explorer", value: props.to_explorer_id },
+            amount: props.count,
+          },
+        },
+      },
+      TransactionType.EXPLORER_EXPLORER_SWAP,
+    );
+  }
+
+  public async explorer_guard_swap(props: SystemProps.ExplorerGuardSwapProps) {
+    return this.submitCommand(
+      props.signer,
+      {
+        kind: "ManageTroops",
+        value: {
+          kind: "Transfer",
+          value: {
+            source: { kind: "Explorer", value: props.from_explorer_id },
+            target: { kind: "Guard", value: { structure_id: props.to_structure_id, slot: props.to_guard_slot } },
+            amount: props.count,
+          },
+        },
+      },
+      TransactionType.EXPLORER_GUARD_SWAP,
+    );
+  }
+
+  public async guard_explorer_swap(props: SystemProps.GuardExplorerSwapProps) {
+    return this.submitCommand(
+      props.signer,
+      {
+        kind: "ManageTroops",
+        value: {
+          kind: "Transfer",
+          value: {
+            source: { kind: "Guard", value: { structure_id: props.from_structure_id, slot: props.from_guard_slot } },
+            target: { kind: "Explorer", value: props.to_explorer_id },
+            amount: props.count,
+          },
+        },
+      },
+      TransactionType.GUARD_EXPLORER_SWAP,
+    );
+  }
+
+  public async provision_realm(props: SystemProps.UpgradeRealmProps & { upgrade?: boolean }) {
+    return this.submitCommand(
+      props.signer,
+      { kind: props.upgrade ? "ProvisionAndUpgradeRealm" : "ProvisionRealm", value: props.realm_entity_id },
+      TransactionType.PROVISION_REALM,
+    );
+  }
+
+  public async explorer_explore(props: SystemProps.ExplorerExploreProps) {
+    if (props.directions.length !== 1) throw new Error("Exploration requires exactly one direction");
+    return this.submitCommand(
+      props.signer,
+      { kind: "Explore", value: { explorer_id: props.explorer_id, direction: props.directions[0] } },
+      TransactionType.EXPLORE,
+    );
+  }
+
+  public async explorer_move(props: SystemProps.ExplorerMoveProps) {
+    return props.explore ? this.explorer_explore(props) : this.explorer_travel(props);
+  }
+
+  public async disband_guild(props: SystemProps.DisbandGuild) {
+    let receipt: GetTransactionReceiptResponse | undefined;
+    for (const player of props.calls)
+      receipt = await this.remove_guild_member({ signer: props.signer, player_address_to_remove: player.address });
+    if (!receipt) throw new Error("Guild disband requires members");
+    return receipt;
+  }
+
+  public async add_liquidity(props: SystemProps.AddLiquidityProps) {
+    let receipt: GetTransactionReceiptResponse | undefined;
+    for (const value of props.calls)
+      receipt = await this.submitCommand(props.signer, {
+        kind: "AddBankLiquidity",
+        value: { bank_id: props.bank_entity_id, structure_id: props.entity_id, ...value },
+      });
+    if (!receipt) throw new Error("Liquidity deposit requires resources");
+    return receipt;
+  }
+
+  public async send_resources_multiple(props: SystemProps.SendResourcesMultipleProps) {
+    let receipt: GetTransactionReceiptResponse | undefined;
+    for (const call of props.calls)
+      receipt = await this.submitCommand(
+        props.signer,
+        {
+          kind: "SendResources",
+          value: {
+            from_entity_id: call.sender_entity_id,
+            to_entity_id: call.recipient_entity_id,
+            resources: pairedResources(call.resources),
+          },
+        },
+        TransactionType.SEND,
+      );
+    if (!receipt) throw new Error("Resource transfer requires recipients");
+    return receipt;
   }
 
   public async execute_realm_production_plan(
     props: SystemProps.ExecuteRealmProductionPlanProps,
   ): Promise<GetTransactionReceiptResponse | undefined> {
-    const { signer, realm_entity_id, skipQueue } = props;
-    const productionSystemsAddress = getContractByName(this.manifest, `${this.namespace}-production_systems`);
-
-    const sanitizeInstructions = (
-      instructions: SystemProps.ProductionPlanInstruction[] | undefined,
-    ): { resource: string; cycles: string }[] => {
-      if (!instructions?.length) return [];
-      return instructions
-        .map(({ resource_id, cycles }) => {
-          const normalizeResource = (value: BigNumberish) => {
-            if (typeof value === "bigint") return value.toString();
-            if (typeof value === "number") return Math.floor(value).toString();
-            if (typeof value === "string") {
-              const parsed = Number(value);
-              if (Number.isFinite(parsed)) {
-                return Math.floor(parsed).toString();
-              }
-              return value;
-            }
-            return String(value);
-          };
-
-          const normalizeCycles = (value: BigNumberish) => {
-            if (typeof value === "bigint") return value.toString();
-            if (typeof value === "number") return Math.floor(value).toString();
-            if (typeof value === "string") {
-              if (value.startsWith("0x") || value.startsWith("0X")) {
-                try {
-                  return BigInt(value).toString();
-                } catch {
-                  return "0";
-                }
-              }
-              const parsed = Number(value);
-              if (Number.isFinite(parsed)) {
-                return Math.floor(parsed).toString();
-              }
-            }
-            return String(value);
-          };
-
-          const normalizedCycles = normalizeCycles(cycles);
-          const normalizedResource = normalizeResource(resource_id);
-
-          const cyclesNumber = Number(normalizedCycles);
-
-          return {
-            resource: normalizedResource,
-            cycles: Number.isFinite(cyclesNumber) ? Math.max(0, Math.floor(cyclesNumber)).toString() : "0",
-          };
-        })
-        .filter((item) => Number(item.cycles) > 0);
-    };
-
-    const resourceInstructions = sanitizeInstructions(props.resource_to_resource);
-    const laborInstructions = sanitizeInstructions(props.labor_to_resource);
-
-    if (!resourceInstructions.length && !laborInstructions.length) {
-      console.warn("execute_realm_production_plan called with no executable instructions");
-      return undefined;
-    }
-
-    const calls: Call[] = [];
-
-    if (resourceInstructions.length) {
-      const producedResourceTypes = resourceInstructions.map((item) => item.resource);
-      const productionCycles = resourceInstructions.map((item) => item.cycles);
-
-      calls.push({
-        contractAddress: productionSystemsAddress,
-        entrypoint: "burn_resource_for_resource_production",
-        calldata: [
-          realm_entity_id,
-          producedResourceTypes.length,
-          ...producedResourceTypes,
-          productionCycles.length,
-          ...productionCycles,
-        ],
-      });
-    }
-
-    if (laborInstructions.length) {
-      const producedResourceTypes = laborInstructions.map((item) => item.resource);
-      const productionCycles = laborInstructions.map((item) => item.cycles);
-
-      calls.push({
-        contractAddress: productionSystemsAddress,
-        entrypoint: "burn_labor_for_resource_production",
-        calldata: [
-          realm_entity_id,
-          productionCycles.length,
-          ...productionCycles,
-          producedResourceTypes.length,
-          ...producedResourceTypes,
-        ],
-      });
-    }
-
-    const callArgs: AllowArray<Call> = calls.length === 1 ? calls[0] : calls;
-
-    if (skipQueue) {
-      return await this.executeAndCheckTransaction(signer, callArgs, undefined, {
-        transactionType: TransactionType.BURN_RESOURCE_FOR_RESOURCE_PRODUCTION,
-      });
-    }
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: callArgs,
-      transactionType: TransactionType.BURN_RESOURCE_FOR_RESOURCE_PRODUCTION,
-    });
-  }
-
-  /**
-   * Change the owner fee for a bank
-   *
-   * @param props - Properties for changing bank owner fee
-   * @param props.bank_entity_id - ID of the bank to modify
-   * @param props.new_swap_fee_num - New numerator for swap fee calculation
-   * @param props.new_swap_fee_denom - New denominator for swap fee calculation
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   *
-   * @example
-   * ```typescript
-   * // Change bank 123's owner fee to 1/100 (1%)
-   * {
-   *   bank_entity_id: 123,
-   *   new_swap_fee_num: 1,
-   *   new_swap_fee_denom: 100,
-   *   signer: account
-   * }
-   * ```
-   */
-  public async change_bank_owner_fee(props: SystemProps.ChangeBankOwnerFeeProps) {
-    const { bank_entity_id, new_swap_fee_num, new_swap_fee_denom, signer } = props;
-
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${this.namespace}-bank_systems`),
-      entrypoint: "change_owner_amm_fee",
-      calldata: [bank_entity_id, new_swap_fee_num, new_swap_fee_denom],
-    });
-  }
-
-  /**
-   * Buy resources from a bank
-   *
-   * @param props - Properties for buying resources
-   * @param props.bank_entity_id - ID of the bank to buy from
-   * @param props.entity_id - ID of the entity buying resources
-   * @param props.resource_type - Type of resource to buy
-   * @param props.amount - Amount of resource to buy
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   *
-   * @example
-   * ```typescript
-   * // Buy 100 units of resource type 1 from bank 456
-   * {
-   *   bank_entity_id: 456,
-   *   entity_id: 123,
-   *   resource_type: 1,
-   *   amount: 100,
-   *   signer: account
-   * }
-   * ```
-   */
-  public async buy_resources(props: SystemProps.BuyResourcesProps) {
-    const { bank_entity_id, entity_id, resource_type, amount, signer } = props;
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-swap_systems`),
-        entrypoint: "buy",
-        calldata: [bank_entity_id, entity_id, resource_type, amount],
-      },
-      transactionType: TransactionType.BUY,
-    });
-  }
-
-  /**
-   * Sell resources to a bank
-   *
-   * @param props - Properties for selling resources
-   * @param props.bank_entity_id - ID of the bank to sell to
-   * @param props.entity_id - ID of the entity selling resources
-   * @param props.resource_type - Type of resource to sell
-   * @param props.amount - Amount of resource to sell
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   *
-   * @example
-   * ```typescript
-   * // Sell 50 units of resource type 2 to bank 456
-   * {
-   *   bank_entity_id: 456,
-   *   entity_id: 123,
-   *   resource_type: 2,
-   *   amount: 50,
-   *   signer: account
-   * }
-   * ```
-   */
-  public async sell_resources(props: SystemProps.SellResourcesProps) {
-    const { bank_entity_id, entity_id, resource_type, amount, signer } = props;
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-swap_systems`),
-        entrypoint: "sell",
-        calldata: [bank_entity_id, entity_id, resource_type, amount],
-      },
-      transactionType: TransactionType.SELL,
-    });
-  }
-
-  /**
-   * Add liquidity to a bank's pool
-   *
-   * @param props - Properties for adding liquidity
-   * @param props.bank_entity_id - ID of the bank to add liquidity to
-   * @param props.entity_id - ID of the entity providing liquidity
-   * @param props.calls - Array of liquidity addition calls
-   * @param props.calls[].resource_type - Type of resource to add
-   * @param props.calls[].resource_amount - Amount of resource to add
-   * @param props.calls[].lords_amount - Amount of LORDS tokens to add
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   *
-   * @example
-   * ```typescript
-   * // Add liquidity with 100 units of resource type 1 and 200 LORDS
-   * {
-   *   bank_entity_id: 456,
-   *   entity_id: 123,
-   *   calls: [{
-   *     resource_type: 1,
-   *     resource_amount: 100,
-   *     lords_amount: 200
-   *   }],
-   *   signer: account
-   * }
-   * ```
-   */
-  public async add_liquidity(props: SystemProps.AddLiquidityProps) {
-    const { bank_entity_id, entity_id, calls, signer } = props;
-
-    return await this.executeAndCheckTransaction(
-      signer,
-      calls.map((call) => {
-        return {
-          contractAddress: getContractByName(this.manifest, `${this.namespace}-liquidity_systems`),
-          entrypoint: "add",
-          calldata: [bank_entity_id, entity_id, call.resource_type, call.resource_amount, call.lords_amount],
-        };
-      }),
-    );
-  }
-
-  /**
-   * Remove liquidity from a bank's pool
-   *
-   * @param props - Properties for removing liquidity
-   * @param props.bank_entity_id - ID of the bank to remove liquidity from
-   * @param props.entity_id - ID of the entity removing liquidity
-   * @param props.resource_type - Type of resource to remove
-   * @param props.shares - Amount of liquidity shares to remove
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   *
-   * @example
-   * ```typescript
-   * // Remove 50 shares of liquidity for resource type 1
-   * {
-   *   bank_entity_id: 456,
-   *   entity_id: 123,
-   *   resource_type: 1,
-   *   shares: 50,
-   *   signer: account
-   * }
-   * ```
-   */
-  public async remove_liquidity(props: SystemProps.RemoveLiquidityProps) {
-    const { bank_entity_id, entity_id, resource_type, shares, signer } = props;
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-liquidity_systems`),
-        entrypoint: "remove",
-        calldata: [bank_entity_id, entity_id, resource_type, shares],
-      },
-      transactionType: TransactionType.REMOVE,
-    });
-  }
-
-  /**
-   * Add troops to a guard slot
-   *
-   * @param props - Properties for adding troops to a guard
-   * @param props.for_structure_id - ID of the structure to add guard troops to
-   * @param props.slot - Guard slot to place troops in
-   * @param props.category - Type of troops to add
-   * @param props.tier - Tier of troops to add
-   * @param props.amount - Number of troops to add
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   */
-  public async guard_add(props: SystemProps.GuardAddProps) {
-    const { for_structure_id, slot, category, tier, amount, signer } = props;
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-troop_management_systems`),
-        entrypoint: "guard_add",
-        calldata: [for_structure_id, slot, category, tier, amount],
-      },
-      transactionType: TransactionType.GUARD_ADD,
-    });
-  }
-
-  /**
-   * Delete troops from a guard slot
-   *
-   * @param props - Properties for deleting guard troops
-   * @param props.for_structure_id - ID of the structure to remove guard troops from
-   * @param props.slot - Guard slot to remove troops from
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   */
-  public async guard_delete(props: SystemProps.GuardDeleteProps) {
-    const { for_structure_id, slot, signer } = props;
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-troop_management_systems`),
-        entrypoint: "guard_delete",
-        calldata: [for_structure_id, slot],
-      },
-      transactionType: TransactionType.GUARD_DELETE,
-    });
-  }
-
-  /**
-   * Create a new explorer with troops
-   *
-   * @param props - Properties for creating an explorer
-   * @param props.for_structure_id - ID of the structure creating the explorer
-   * @param props.category - Type of troops to add
-   * @param props.tier - Tier of troops to add
-   * @param props.amount - Number of troops to add
-   * @param props.spawn_direction - Direction to spawn the explorer
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt with the new explorer ID
-   */
-  public async explorer_create(props: SystemProps.ExplorerCreateProps) {
-    const { for_structure_id, category, tier, amount, spawn_direction, signer } = props;
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-troop_management_systems`),
-        entrypoint: "explorer_create",
-        calldata: [for_structure_id, category, tier, amount, spawn_direction],
-      },
-      transactionType: TransactionType.EXPLORER_CREATE,
-    });
-  }
-
-  /**
-   * Add troops to an existing explorer
-   *
-   * @param props - Properties for adding troops to an explorer
-   * @param props.to_explorer_id - ID of the explorer to add troops to
-   * @param props.amount - Number of troops to add
-   * @param props.home_direction - Direction to the explorer's home
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   */
-  public async explorer_add(props: SystemProps.ExplorerAddProps) {
-    const { to_explorer_id, amount, home_direction, signer } = props;
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-troop_management_systems`),
-        entrypoint: "explorer_add",
-        calldata: [to_explorer_id, amount, home_direction],
-      },
-      transactionType: TransactionType.EXPLORER_ADD,
-    });
-  }
-
-  /**
-   * Delete an explorer and its troops
-   *
-   * @param props - Properties for deleting an explorer
-   * @param props.explorer_id - ID of the explorer to delete
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   */
-  public async explorer_delete(props: SystemProps.ExplorerDeleteProps) {
-    const { explorer_id, signer } = props;
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-troop_management_systems`),
-        entrypoint: "explorer_delete",
-        calldata: [explorer_id],
-      },
-      transactionType: TransactionType.EXPLORER_DELETE,
-    });
-  }
-
-  /**
-   * Transfer resources from one troop to another adjacent troop
-   *
-   * @param props - Properties for transferring resources between troops
-   * @param props.from_troop_id - ID of the troop sending resources
-   * @param props.to_troop_id - ID of the troop receiving resources
-   * @param props.resources - Array of resource type and amount tuples to transfer
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   */
-  public async troop_troop_adjacent_transfer(props: SystemProps.TroopTroopAdjacentTransferProps) {
-    const { from_troop_id, to_troop_id, resources, signer } = props;
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-resource_systems`),
-        entrypoint: "troop_troop_adjacent_transfer",
-        calldata: [
-          from_troop_id,
-          to_troop_id,
-          resources.length,
-          ...resources.flatMap(({ resourceId, amount }) => [resourceId, amount]),
-        ],
-      },
-      transactionType: TransactionType.TROOP_TROOP_ADJACENT_TRANSFER,
-    });
-  }
-
-  /**
-   * Transfer resources from a troop to an adjacent structure
-   *
-   * @param props - Properties for transferring resources from troop to structure
-   * @param props.from_explorer_id - ID of the explorer sending resources
-   * @param props.to_structure_id - ID of the structure receiving resources
-   * @param props.resources - Array of resource type and amount tuples to transfer
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   */
-  public async troop_structure_adjacent_transfer(props: SystemProps.TroopStructureAdjacentTransferProps) {
-    const { from_explorer_id, to_structure_id, resources, signer } = props;
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-resource_systems`),
-        entrypoint: "troop_structure_adjacent_transfer",
-        calldata: [
-          from_explorer_id,
-          to_structure_id,
-          resources.length,
-          ...resources.flatMap(({ resourceId, amount }) => [resourceId, amount]),
-        ],
-      },
-      transactionType: TransactionType.TROOP_STRUCTURE_ADJACENT_TRANSFER,
-    });
-  }
-
-  /**
-   * Transfer resources from a structure to an adjacent troop
-   *
-   * @param props - Properties for transferring resources from structure to troop
-   * @param props.from_structure_id - ID of the structure sending resources
-   * @param props.to_troop_id - ID of the troop receiving resources
-   * @param props.resources - Array of resource type and amount tuples to transfer
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   */
-  public async structure_troop_adjacent_transfer(props: SystemProps.StructureTroopAdjacentTransferProps) {
-    const { from_structure_id, to_troop_id, resources, signer } = props;
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-resource_systems`),
-        entrypoint: "structure_troop_adjacent_transfer",
-        calldata: [
-          from_structure_id,
-          to_troop_id,
-          resources.length,
-          ...resources.flatMap(({ resourceId, amount }) => [resourceId, amount]),
-        ],
-      },
-      transactionType: TransactionType.STRUCTURE_TROOP_ADJACENT_TRANSFER,
-    });
-  }
-
-  /**
-   * Swap troops between two explorers
-   *
-   * @param props - Properties for swapping troops between explorers
-   * @param props.from_explorer_id - ID of the explorer sending troops
-   * @param props.to_explorer_id - ID of the explorer receiving troops
-   * @param props.to_explorer_direction - Direction to the receiving explorer
-   * @param props.count - Number of troops to swap
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   */
-  public async explorer_explorer_swap(props: SystemProps.ExplorerExplorerSwapProps) {
-    const { from_explorer_id, to_explorer_id, to_explorer_direction, count, signer } = props;
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-troop_management_systems`),
-        entrypoint: "explorer_explorer_swap",
-        calldata: [from_explorer_id, to_explorer_id, to_explorer_direction, count],
-      },
-      transactionType: TransactionType.EXPLORER_EXPLORER_SWAP,
-    });
-  }
-
-  /**
-   * Swap troops from an explorer to a guard
-   *
-   * @param props - Properties for swapping troops from explorer to guard
-   * @param props.from_explorer_id - ID of the explorer sending troops
-   * @param props.to_structure_id - ID of the structure receiving troops
-   * @param props.to_structure_direction - Direction to the receiving structure
-   * @param props.to_guard_slot - Guard slot to place troops in
-   * @param props.count - Number of troops to swap
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   */
-  public async explorer_guard_swap(props: SystemProps.ExplorerGuardSwapProps) {
-    const { from_explorer_id, to_structure_id, to_structure_direction, to_guard_slot, count, signer } = props;
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-troop_management_systems`),
-        entrypoint: "explorer_guard_swap",
-        calldata: [from_explorer_id, to_structure_id, to_structure_direction, to_guard_slot, count],
-      },
-      transactionType: TransactionType.EXPLORER_GUARD_SWAP,
-    });
-  }
-
-  /**
-   * Swap troops from a guard to an explorer
-   *
-   * @param props - Properties for swapping troops from guard to explorer
-   * @param props.from_structure_id - ID of the structure sending troops
-   * @param props.from_guard_slot - Guard slot to take troops from
-   * @param props.to_explorer_id - ID of the explorer receiving troops
-   * @param props.to_explorer_direction - Direction to the receiving explorer
-   * @param props.count - Number of troops to swap
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   */
-  public async guard_explorer_swap(props: SystemProps.GuardExplorerSwapProps) {
-    const { from_structure_id, from_guard_slot, to_explorer_id, to_explorer_direction, count, signer } = props;
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-troop_management_systems`),
-        entrypoint: "guard_explorer_swap",
-        calldata: [from_structure_id, from_guard_slot, to_explorer_id, to_explorer_direction, count],
-      },
-      transactionType: TransactionType.GUARD_EXPLORER_SWAP,
-    });
-  }
-
-  public async bitcoin_mine_contribute_labor(props: SystemProps.BitcoinMineContributeLaborProps) {
-    const { signer, mine_id, target_phase_id, labor_amount } = props;
-    return this.promiseQueue.enqueue({
-      signer,
-      calls: {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-bitcoin_mine_systems`),
-        entrypoint: "contribute_labor",
-        calldata: [mine_id, target_phase_id, labor_amount],
-      },
-      transactionType: TransactionType.BITCOIN_MINE_CONTRIBUTE_LABOR,
-    });
-  }
-
-  public async bitcoin_mine_claim_phase_reward(props: SystemProps.BitcoinMineClaimPhaseRewardProps) {
-    const { signer, phase_id, mine_ids } = props;
-    const contractAddress = getContractByName(this.manifest, `${this.namespace}-bitcoin_mine_systems`);
-    const calls: Call[] = [];
-    if (isVrfEnabled(this.VRF_PROVIDER_ADDRESS)) {
-      calls.push(
-        createVrfRequestRandomCall({
-          vrfProviderAddress: this.VRF_PROVIDER_ADDRESS,
-          addressToCall: contractAddress,
-          source: { type: "nonce", value: signer.address },
-        }),
+    let receipt: GetTransactionReceiptResponse | undefined;
+    for (const [kind, instructions] of [
+      ["BurnResourceForResourceProduction", props.resource_to_resource],
+      ["BurnLaborForResourceProduction", props.labor_to_resource],
+    ] as const) {
+      const selected = instructions?.filter(({ cycles }) => BigInt(cycles) > 0n) ?? [];
+      if (!selected.length) continue;
+      receipt = await this.submitCommand(
+        props.signer,
+        {
+          kind,
+          value: {
+            structure_id: props.realm_entity_id,
+            resource_types: selected.map(({ resource_id }) => resource_id),
+            amounts: selected.map(({ cycles }) => cycles),
+          },
+        },
+        TransactionType.BURN_RESOURCE_FOR_RESOURCE_PRODUCTION,
       );
     }
-    calls.push({
-      contractAddress,
-      entrypoint: "claim_phase_reward",
-      calldata: [phase_id, mine_ids.length, ...mine_ids],
-    });
-    return this.promiseQueue.enqueue({
-      signer,
-      calls,
-      transactionType: TransactionType.BITCOIN_MINE_CLAIM_PHASE_REWARD,
-    });
+    return receipt;
   }
 
-  /**
-   * Toggle explorer to the alternate layer through an adjacent spire
-   *
-   * @param props - Properties for toggling explorer layer
-   * @param props.explorer_id - ID of the explorer to move
-   * @param props.spire_direction - Direction from explorer to adjacent spire
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   */
-  public async toggle_alternate(props: SystemProps.ToggleAlternateProps) {
-    const { explorer_id, spire_direction, signer } = props;
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-alt_movement_systems`),
-        entrypoint: "toggle_alternate",
-        calldata: [explorer_id, spire_direction],
-      },
-      transactionType: TransactionType.TRAVEL_HEX,
-    });
-  }
-
-  /**
-   * Move an explorer without exploring (can be batched with other transactions)
-   *
-   * @param props - Properties for traveling an explorer
-   * @param props.explorer_id - ID of the explorer to move
-   * @param props.directions - Array of directions to move in
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   */
-  public async explorer_travel(props: SystemProps.ExplorerTravelProps) {
-    const { explorer_id, directions, signer } = props;
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-troop_movement_systems`),
-        entrypoint: "explorer_move",
-        calldata: [explorer_id, directions, 0],
-      },
-      transactionType: TransactionType.TRAVEL_HEX,
-    });
-  }
-
-  /**
-   * Move an explorer and explore new tiles (never batched - executed in isolation)
-   *
-   * @param props - Properties for exploring with an explorer
-   * @param props.explorer_id - ID of the explorer to move
-   * @param props.directions - Array of directions to move in
-   * @param props.vrf_source_salt - Packed destination tile seed (Source::Salt)
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   */
-  public async explorer_explore(props: SystemProps.ExplorerExploreProps) {
-    const { explorer_id, directions, signer, vrf_source_salt } = props;
-
-    const troopMovementSystemsAddress = getContractByName(this.manifest, `${this.namespace}-troop_movement_systems`);
-    const callData: Call[] = [];
-
-    // explorer_move now consumes Source::Salt(tile.to_seed()).
-    if (isVrfEnabled(this.VRF_PROVIDER_ADDRESS)) {
-      if (vrf_source_salt === undefined) {
-        throw new Error(
-          "explorer_explore requires vrf_source_salt when VRF is enabled. Use packTileSeed({ alt, col, row }) for the destination tile.",
-        );
-      }
-      callData.push(
-        createVrfRequestRandomCall({
-          vrfProviderAddress: this.VRF_PROVIDER_ADDRESS,
-          addressToCall: troopMovementSystemsAddress,
-          source: { type: "salt", value: vrf_source_salt },
-        }),
-      );
-    }
-
-    // Explorer move with explore=1
-    callData.push({
-      contractAddress: troopMovementSystemsAddress,
-      entrypoint: "explorer_move",
-      calldata: [explorer_id, directions, 1],
-    });
-
-    // Extract reward
-    callData.push({
-      contractAddress: troopMovementSystemsAddress,
-      entrypoint: "explorer_extract_reward",
-      calldata: [explorer_id],
-    });
-
-    this.emit("transactionProgress", {
-      stage: "explore_calls_built",
-      type: TransactionType.EXPLORE,
-      explorerId: explorer_id,
-      signerAddress: this.getSignerAddress(signer),
-    });
-
-    return await this.promiseQueue.enqueue({ signer, calls: callData, transactionType: TransactionType.EXPLORE });
-  }
-
-  /**
-   * @deprecated Use explorer_travel or explorer_explore instead
-   *
-   * @param props - Properties for moving an explorer
-   * @param props.explorer_id - ID of the explorer to move
-   * @param props.directions - Array of directions to move in
-   * @param props.explore - Whether to explore new tiles along the way
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   */
-  public async explorer_move(props: SystemProps.ExplorerMoveProps) {
-    const { explorer_id, directions, explore, signer, vrf_source_salt } = props;
-
-    if (explore) {
-      return await this.explorer_explore({ explorer_id, directions, signer, vrf_source_salt });
-    } else {
-      return await this.explorer_travel({ explorer_id, directions, signer });
-    }
-  }
-  private withCombatRandomness(props: { signer: AccountInterface; ethereal?: boolean }, attack: Call): Call | Call[] {
-    if (!props.ethereal || !isVrfEnabled(this.VRF_PROVIDER_ADDRESS)) return attack;
-    return [
-      createVrfRequestRandomCall({
-        vrfProviderAddress: this.VRF_PROVIDER_ADDRESS,
-        addressToCall: attack.contractAddress,
-        source: { type: "nonce", value: props.signer.address },
-      }),
-      attack,
-    ];
-  }
-
-  /**
-   * Attack an explorer with another explorer
-   *
-   * @param props - Properties for explorer vs explorer attack
-   * @param props.aggressor_id - ID of the attacking explorer
-   * @param props.defender_id - ID of the defending explorer
-   * @param props.steal_resources - Resources to steal, as array of [resourceId, amount] tuples
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   */
-  public async attack_explorer_vs_explorer(props: SystemProps.AttackExplorerVsExplorerProps) {
-    const { aggressor_id, defender_id, steal_resources, signer } = props;
-
-    const calldata = [aggressor_id, defender_id];
-
-    // Add steal_resources array length
-    calldata.push(steal_resources.length);
-
-    // Add each resource entry to calldata
-    steal_resources.forEach((resource) => {
-      calldata.push(resource.resourceId); // resourceId
-      calldata.push(resource.amount); // amount
-    });
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: this.withCombatRandomness(props, {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-troop_battle_systems`),
-        entrypoint: "attack_explorer_vs_explorer",
-        calldata,
-      }),
-      transactionType: TransactionType.ATTACK_EXPLORER_VS_EXPLORER,
-    });
-  }
-
-  /**
-   * Attack a guard with an explorer
-   *
-   * @param props - Properties for explorer vs guard attack
-   * @param props.explorer_id - ID of the attacking explorer
-   * @param props.structure_id - ID of the structure with defending guard
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   */
-  public async attack_explorer_vs_guard(props: SystemProps.AttackExplorerVsGuardProps) {
-    const { explorer_id, structure_id, signer } = props;
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: this.withCombatRandomness(props, {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-troop_battle_systems`),
-        entrypoint: "attack_explorer_vs_guard",
-        calldata: [explorer_id, structure_id],
-      }),
-      transactionType: TransactionType.ATTACK_EXPLORER_VS_GUARD,
-    });
-  }
-
-  /**
-   * Attack a guard with an explorer and, in the same atomic multicall, garrison the surviving
-   * troops into the captured structure. The attack runs first so the explorer owns the structure
-   * by the time the guard swap executes.
-   *
-   * @param props - Properties for the attack + garrison multicall
-   * @param props.explorer_id - ID of the attacking explorer
-   * @param props.structure_id - ID of the structure with the defending guard
-   * @param props.structure_direction - Direction from the explorer to the structure
-   * @param props.to_guard_slot - Guard slot to place the surviving troops in
-   * @param props.count - Number of surviving troops to garrison (raw count, divisible by resource precision)
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   */
   public async attack_explorer_vs_guard_and_garrison(props: SystemProps.AttackExplorerVsGuardAndGarrisonProps) {
-    const { explorer_id, structure_id, structure_direction, to_guard_slot, count, signer } = props;
-
-    const calls: Call[] = [
-      ...this.getTransactionCalls(
-        this.withCombatRandomness(props, {
-          contractAddress: getContractByName(this.manifest, `${this.namespace}-troop_battle_systems`),
-          entrypoint: "attack_explorer_vs_guard",
-          calldata: [explorer_id, structure_id],
-        }),
-      ),
-      {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-troop_management_systems`),
-        entrypoint: "explorer_guard_swap",
-        calldata: [explorer_id, structure_id, structure_direction, to_guard_slot, count],
-      },
-    ];
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls,
-      transactionType: TransactionType.ATTACK_EXPLORER_VS_GUARD_AND_GARRISON,
+    await this.attack_explorer_vs_guard(props);
+    return this.explorer_guard_swap({
+      signer: props.signer,
+      from_explorer_id: props.explorer_id,
+      to_structure_id: props.structure_id,
+      to_structure_direction: props.structure_direction,
+      to_guard_slot: props.to_guard_slot,
+      count: props.count,
     });
   }
 
-  /**
-   * Attack an explorer with a guard
-   *
-   * @param props - Properties for guard vs explorer attack
-   * @param props.structure_id - ID of the structure with attacking guard
-   * @param props.structure_guard_slot - Guard slot of the attacking troops
-   * @param props.explorer_id - ID of the defending explorer
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   */
-  public async attack_guard_vs_explorer(props: SystemProps.AttackGuardVsExplorerProps) {
-    const { structure_id, structure_guard_slot, explorer_id, signer } = props;
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: this.withCombatRandomness(props, {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-troop_battle_systems`),
-        entrypoint: "attack_guard_vs_explorer",
-        calldata: [structure_id, structure_guard_slot, explorer_id],
-      }),
-      transactionType: TransactionType.ATTACK_GUARD_VS_EXPLORER,
-    });
-  }
-
-  /**
-   * Raid a structure with an explorer
-   *
-   * @param props - Properties for explorer raid
-   * @param props.explorer_id - ID of the raiding explorer
-   * @param props.structure_id - ID of the structure being raided
-   * @param props.structure_direction - Direction to the structure
-   * @param props.steal_resources - Resources to steal during the raid
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   */
-  public async raid_explorer_vs_guard(props: SystemProps.RaidExplorerVsGuardProps) {
-    const { explorer_id, structure_id, structure_direction, steal_resources, signer } = props;
-
-    // Prepare calldata for steal_resources which is a Span<(u8, u128)>
-    const resourcesCalldata = steal_resources.flatMap((resource) => [resource.resourceId, resource.amount]);
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-troop_raid_systems`),
-        entrypoint: "raid_explorer_vs_guard",
-        calldata: [
-          explorer_id,
-          structure_id,
-          structure_direction,
-          steal_resources.length, // Size of the span
-          ...resourcesCalldata, // Flattened resource tuples
-        ],
-      },
-      transactionType: TransactionType.RAID_EXPLORER_VS_GUARD,
-    });
-  }
-
-  /**
-   * Claim wonder production bonus for a structure
-   *
-   * @param props - Properties for claiming wonder production bonus
-   * @param props.structure_id - ID of the structure claiming the bonus
-   * @param props.wonder_structure_id - ID of the wonder structure providing the bonus
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   */
-  public async claim_wonder_production_bonus(props: SystemProps.ClaimWonderProductionBonusProps) {
-    const { structure_id, wonder_structure_id, signer } = props;
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-production_systems`),
-        entrypoint: "claim_wonder_production_bonus",
-        calldata: [structure_id, wonder_structure_id],
-      },
-      transactionType: TransactionType.CLAIM_WONDER_PRODUCTION_BONUS,
-    });
-  }
-
-  /**
-   * Pledge a structure's faith to a wonder.
-   *
-   * @param props - Properties for faith pledge
-   * @param props.structure_id - ID of the structure pledging faith
-   * @param props.wonder_id - ID of the wonder receiving faith
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   */
-  public async pledge_faith(props: SystemProps.PledgeFaithProps) {
-    const { structure_id, wonder_id, signer } = props;
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-faith_systems`),
-        entrypoint: "pledge_faith",
-        calldata: [structure_id, wonder_id],
-      },
-      transactionType: TransactionType.PLEDGE_FAITH,
-    });
-  }
-
-  /**
-   * Remove a structure's faith from its currently pledged wonder.
-   *
-   * @param props - Properties for removing faith
-   * @param props.structure_id - ID of the structure to remove from faith
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   */
-  public async remove_faith(props: SystemProps.RemoveFaithProps) {
-    const { structure_id, signer } = props;
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-faith_systems`),
-        entrypoint: "remove_faith",
-        calldata: [structure_id],
-      },
-      transactionType: TransactionType.REMOVE_FAITH,
-    });
-  }
-
-  /**
-   * Synchronize wonder ownership in the faith system.
-   *
-   * @param props - Properties for wonder ownership synchronization
-   * @param props.wonder_id - Wonder ID to synchronize
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   */
-  public async update_wonder_ownership(props: SystemProps.UpdateWonderOwnershipProps) {
-    const { wonder_id, signer } = props;
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-faith_systems`),
-        entrypoint: "update_wonder_ownership",
-        calldata: [wonder_id],
-      },
-      transactionType: TransactionType.UPDATE_WONDER_OWNERSHIP,
-    });
-  }
-
-  /**
-   * Synchronize structure ownership in the faith system.
-   *
-   * @param props - Properties for structure ownership synchronization
-   * @param props.structure_id - Structure ID to synchronize
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   */
-  public async update_structure_ownership(props: SystemProps.UpdateStructureOwnershipProps) {
-    const { structure_id, signer } = props;
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-faith_systems`),
-        entrypoint: "update_structure_ownership",
-        calldata: [structure_id],
-      },
-      transactionType: TransactionType.UPDATE_STRUCTURE_OWNERSHIP,
-    });
-  }
-
-  public async create_guild(props: SystemProps.CreateGuildProps) {
-    const { is_public, guild_name, signer } = props;
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-guild_systems`),
-        entrypoint: "create_guild",
-        calldata: [is_public, guild_name],
-      },
-      transactionType: TransactionType.CREATE_GUILD,
-    });
-  }
-
-  public async join_guild(props: SystemProps.JoinGuildProps) {
-    const { guild_entity_id, signer } = props;
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-guild_systems`),
-        entrypoint: "join_guild",
-        calldata: [guild_entity_id],
-      },
-      transactionType: TransactionType.JOIN_GUILD,
-    });
-  }
-
-  public async update_whitelist(props: SystemProps.UpdateWhitelist) {
-    const { address, whitelist, signer } = props;
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-guild_systems`),
-        entrypoint: "update_whitelist",
-        calldata: [address, whitelist],
-      },
-      transactionType: TransactionType.UPDATE_WHITELIST,
-    });
-  }
-
-  public async remove_guild_member(props: SystemProps.RemoveGuildMember) {
-    const { player_address_to_remove, signer } = props;
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-guild_systems`),
-        entrypoint: "remove_member",
-        calldata: [player_address_to_remove],
-      },
-      transactionType: TransactionType.REMOVE_GUILD_MEMBER,
-    });
-  }
-
-  public async disband_guild(props: SystemProps.DisbandGuild) {
-    const { calls, signer } = props;
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: calls.map((call) => {
-        return {
-          contractAddress: getContractByName(this.manifest, `${this.namespace}-guild_systems`),
-          entrypoint: "remove_member",
-          calldata: [call.address],
-        };
-      }),
-      transactionType: TransactionType.REMOVE_GUILD_MEMBER,
-    });
-  }
-
-  public async leave_guild(props: SystemProps.LeaveGuildProps) {
-    const { signer } = props;
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-guild_systems`),
-        entrypoint: "leave_guild",
-        calldata: [],
-      },
-      transactionType: TransactionType.LEAVE_GUILD,
-    });
-  }
-
-  public async initialize(props: SystemProps.InitializeHyperstructureProps) {
-    const { hyperstructure_id, signer } = props;
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-hyperstructure_systems`),
-        entrypoint: "initialize",
-        calldata: [hyperstructure_id],
-      },
-      transactionType: TransactionType.INITIALIZE,
-    });
-  }
-
-  public async contribute_to_construction(props: SystemProps.ContributeToConstructionProps) {
-    const { hyperstructure_entity_id, contributor_entity_id, contributions, signer } = props;
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-hyperstructure_systems`),
-        entrypoint: "contribute",
-        calldata: [hyperstructure_entity_id, contributor_entity_id, contributions],
-      },
-      transactionType: TransactionType.CONTRIBUTE,
-    });
-  }
-
-  public async set_access(props: SystemProps.SetAccessProps) {
-    const { hyperstructure_entity_id, access, signer } = props;
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-hyperstructure_systems`),
-        entrypoint: "update_construction_access",
-        calldata: [hyperstructure_entity_id, access],
-      },
-      transactionType: TransactionType.SET_ACCESS,
-    });
-  }
-
-  public async end_game(props: SystemProps.EndGameProps) {
-    const { signer } = props;
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-season_systems`),
-        entrypoint: "season_close",
-        calldata: [],
-      },
-      transactionType: TransactionType.END_GAME,
-    });
-  }
-
-  public async allocate_shares(props: SystemProps.SetCoOwnersProps) {
-    const { hyperstructure_entity_id, co_owners, signer } = props;
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-hyperstructure_systems`),
-        entrypoint: "allocate_shares",
-        calldata: [hyperstructure_entity_id, co_owners.length, ...co_owners.flat()],
-      },
-      transactionType: TransactionType.ALLOCATE_SHARES,
-    });
-  }
-
-  public async mint_test_realm(props: SystemProps.MintTestRealmProps) {
-    const {
-      token_id,
-      signer,
-      realms_address, // Should this be dynamically fetched from season config or passed to provider instead of prop?
-    } = props;
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: {
-        contractAddress: realms_address.toString(),
-        entrypoint: "mint",
-        calldata: [uint256.bnToUint256(token_id)],
-      },
-      transactionType: TransactionType.MINT,
-    });
-  }
-
-  public async mint_season_passes(props: SystemProps.MintSeasonPassesProps) {
-    const {
-      recipient,
-      token_ids,
-      signer,
-      season_pass_address, // Should this be dynamically fetched from season config instead of prop?
-    } = props;
-    const multicall = token_ids.map((token) => {
-      return {
-        contractAddress: season_pass_address.toString(),
-        entrypoint: "mint",
-        calldata: [recipient, uint256.bnToUint256(token)],
-      };
-    });
-    return await this.executeAndCheckTransaction(signer, multicall);
-  }
-
-  public async mint_test_lords(props: SystemProps.MintTestLordsProps) {
-    const { signer, lords_address } = props;
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: lords_address.toString(),
-      entrypoint: "mint_test_lords",
-      calldata: [],
-    });
-  }
-
-  public async attach_lords(props: SystemProps.AttachLordsProps) {
-    const { amount, signer, token_id, season_pass_address, lords_address } = props;
-
-    // approve lords contract to spend season pass
-
-    const approveTx = {
-      contractAddress: lords_address.toString(),
-      entrypoint: "approve",
-      calldata: [season_pass_address.toString(), uint256.bnToUint256(amount)],
-    };
-
-    return await this.executeAndCheckTransaction(signer, [
-      approveTx,
-      {
-        contractAddress: season_pass_address.toString(),
-        entrypoint: "attach_lords",
-        calldata: [uint256.bnToUint256(token_id), uint256.bnToUint256(amount)],
-      },
-    ]);
-  }
-
-  public async detach_lords(props: SystemProps.DetachLordsProps) {
-    const { amount, signer, token_id, season_pass_address } = props;
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: season_pass_address.toString(),
-      entrypoint: "detach_lords",
-      calldata: [uint256.bnToUint256(token_id), uint256.bnToUint256(amount)],
-    });
-  }
-
-  /**
-   * Burn other resources to produce labor
-   *
-   * @param props - Properties for burning resources for labor
-   * @param props.entity_id - ID of the realm entity
-   * @param props.resource_types - Array of resource types to burn
-   * @param props.resource_amounts - Array of resource amounts to burn
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   *
-   * @example
-   * ```typescript
-   * // Burn 100 wood and 50 stone to produce labor
-   * {
-   *   entity_id: 123,
-   *   resource_types: [1, 2], // wood and stone
-   *   resource_amounts: [100, 50],
-   *   signer: account
-   * }
-   * ```
-   */
-  public async burn_resource_for_labor_production(props: SystemProps.BurnOtherResourcesForLaborProductionProps) {
-    const { entity_id, resource_types, resource_amounts, signer } = props;
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-production_systems`),
-        entrypoint: "burn_resource_for_labor_production",
-        calldata: [entity_id, resource_types.length, ...resource_types, resource_amounts.length, ...resource_amounts],
-      },
-      transactionType: TransactionType.BURN_RESOURCE_FOR_LABOR_PRODUCTION,
-    });
-  }
-
-  /**
-   * Burn labor resources to produce other resources
-   *
-   * @param props - Properties for burning labor for resources
-   * @param props.from_entity_id - ID of the realm entity
-   * @param props.production_cycles - Array of cycles to burn
-   * @param props.produced_resource_types - Array of resource types to produce
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   *
-   * @example
-   * ```typescript
-   * // Burn 100 cycles worth of labor cost to produce wood
-   * // and another 100 cycles worth of labor cost to produce stone
-   * //
-   *
-   * {
-   *   from_entity_id: 123,
-   *   priduction_cycles: [100, 100],
-   *   produced_resource_types: [1, 2], // wood and stone
-   *   signer: account
-   * }
-   * ```
-   */
-  public async burn_labor_for_resource_production(props: SystemProps.BurnLaborResourcesForOtherProductionProps) {
-    const { from_entity_id, production_cycles, produced_resource_types, signer } = props;
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-production_systems`),
-        entrypoint: "burn_labor_for_resource_production",
-        calldata: [
-          from_entity_id,
-          production_cycles.length,
-          ...production_cycles,
-          produced_resource_types.length,
-          ...produced_resource_types,
-        ],
-      },
-      transactionType: TransactionType.BURN_LABOR_FOR_RESOURCE_PRODUCTION,
-    });
-  }
-
-  /**
-   * Burn predefined resources to produce other resources
-   *
-   * @param props - Properties for burning predefined resources
-   * @param props.from_entity_id - ID of the realm entity
-   * @param props.produced_resource_types - Array of resource types to produce
-   * @param props.production_cycles - Array of production cycles
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   *
-   * @example
-   * ```typescript
-   * // Burn predefined resources to produce gold for 2 output/input cycles
-   * {
-   *   from_entity_id: 123,
-   *   produced_resource_types: [5], // gold
-   *   production_cycles: [2],
-   *   signer: account
-   * }
-   * ```
-   */
-  public async burn_resource_for_resource_production(props: SystemProps.BurnOtherPredefinedResourcesForResourcesProps) {
-    const { from_entity_id, produced_resource_types, production_cycles, signer } = props;
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-production_systems`),
-        entrypoint: "burn_resource_for_resource_production",
-        calldata: [
-          from_entity_id,
-          produced_resource_types.length,
-          ...produced_resource_types,
-          production_cycles.length,
-          ...production_cycles,
-        ],
-      },
-      transactionType: TransactionType.BURN_RESOURCE_FOR_RESOURCE_PRODUCTION,
-    });
-  }
-
-  // Loot Chest functions
-
-  public async open_loot_chest(props: SystemProps.OpenLootChestProps) {
-    const { signer, token_id, loot_chest_address, claim_address } = props;
-
-    let callData: Call[] = [];
-
-    if (this.VRF_PROVIDER_ADDRESS !== undefined && Number(this.VRF_PROVIDER_ADDRESS) !== 0) {
-      const requestRandomCall: Call = {
-        contractAddress: this.VRF_PROVIDER_ADDRESS!,
-        entrypoint: "request_random",
-        calldata: [claim_address, 0, signer.address],
-      };
-
-      callData = [requestRandomCall];
+  public async bridge_deposit_into_realm(props: SystemProps.BridgeDepositIntoRealmProps) {
+    let receipt: GetTransactionReceiptResponse | undefined;
+    for (const resource of props.resources) {
+      const approval = await props.signer.execute({
+        contractAddress: String(resource.tokenAddress),
+        entrypoint: "approve",
+        calldata: CallData.compile({ spender: this.bridgeAddress(), amount: uint256.bnToUint256(resource.amount) }),
+      });
+      await this.provider.waitForTransaction(approval.transaction_hash);
+      receipt = await this.submitCommand(props.signer, {
+        kind: "DepositResource",
+        value: {
+          structure_id: props.recipient_structure_id,
+          resource_type: resource.resource_type,
+          amount: resource.amount,
+          client_fee_recipient: props.client_fee_recipient,
+        },
+      });
     }
-
-    // create multicall
-    // first approve
-    callData.push({
-      contractAddress: loot_chest_address,
-      entrypoint: "approve",
-      calldata: [claim_address, token_id.toString(), 0],
-    });
-
-    // then claim
-    callData.push({
-      contractAddress: claim_address,
-      entrypoint: "claim",
-      calldata: [token_id.toString(), 0],
-    });
-
-    return await signer.execute(callData);
+    if (!receipt) throw new Error("Bridge deposit requires resources");
+    return receipt;
   }
 
-  // Marketplace functions
-
-  /**
-   * Create a new marketplace order
-   *
-   * @param props - Properties for creating the order
-   * @param props.token_id - ID of the token to sell
-   * @param props.collection_id - ID of the collection the token belongs to
-   * @param props.price - Price of the token in LORDS (u128)
-   * @param props.expiration - Expiration timestamp (u32)
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   */
-  public async create_marketplace_orders(
-    props: SystemProps.CreateMarketplaceOrdersProps,
-  ): Promise<GetTransactionReceiptResponse> {
-    const { tokens, signer, marketplace_address } = props;
-
-    const calls = tokens.map((token) => {
-      return {
-        contractAddress: marketplace_address.toString(),
-        entrypoint: "create",
-        calldata: [token.token_id, token.collection_id, token.price.toString(), token.expiration],
-      };
-    });
-
-    // Extract cancel order IDs and create cancel entrypoint calls
-    const cancelCalls = tokens
-      .filter((token) => token.cancel_order_id !== null && token.cancel_order_id !== undefined)
-      .map((token) => ({
-        contractAddress: marketplace_address.toString(),
-        entrypoint: "cancel",
-        calldata: [token.cancel_order_id!.toString()],
-      }));
-
-    // Combine cancel calls with create calls
-    const allCalls = [...cancelCalls, ...calls];
-    const result = await this.executeAndCheckTransaction(signer, allCalls);
-    if (!result) {
-      throw new Error("Transaction failed - no result returned");
-    }
-    return result;
+  public async bridge_withdraw_from_realm(props: SystemProps.BridgeWithdrawFromRealmProps) {
+    let receipt: GetTransactionReceiptResponse | undefined;
+    for (const resource of props.resources)
+      receipt = await this.submitCommand(props.signer, {
+        kind: "WithdrawResource",
+        value: {
+          structure_id: props.from_structure_id,
+          resource_type: resource.resource_type,
+          amount: resource.amount,
+          recipient: props.recipient_address,
+          client_fee_recipient: props.client_fee_recipient,
+        },
+      });
+    if (!receipt) throw new Error("Bridge withdrawal requires resources");
+    return receipt;
   }
 
-  /**
-   * Accept an existing marketplace order
-   *
-   * @param props - Properties for accepting the order
-   * @param props.order_ids - IDs of the orders to accept (u64)
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   */
-  public async accept_marketplace_orders(props: SystemProps.AcceptMarketplaceOrdersProps, approval: Call) {
-    const { order_ids, signer } = props;
-
-    const calls = order_ids.map((order_id) => {
-      return {
-        contractAddress: props.marketplace_address.toString(),
-        entrypoint: "accept",
-        calldata: [order_id.toString()],
-      };
-    });
-
-    return await this.executeAndCheckTransaction(signer, [approval, ...calls]);
+  public async claim_wonder_points(
+    props: SystemProps.SystemSigner & { value: NativeCommandPayloads["ClaimWonderPoints"] },
+  ) {
+    return this.submitCommand(props.signer, { kind: "ClaimWonderPoints", value: props.value });
   }
 
-  /**
-   * Cancel an existing marketplace order
-   *
-   * @param props - Properties for canceling the order
-   * @param props.order_id - ID of the order to cancel (u64)
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   */
-  public async cancel_marketplace_order(props: SystemProps.CancelMarketplaceOrderProps) {
-    const { order_id, signer } = props;
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: {
-        contractAddress: props.marketplace_address.toString(),
-        entrypoint: "cancel",
-        calldata: [order_id],
-      },
-      transactionType: TransactionType.CANCEL_MARKETPLACE_ORDER,
-    });
+  public async claim_player_faith_points(
+    props: SystemProps.SystemSigner & { value: NativeCommandPayloads["ClaimPlayerFaithPoints"] },
+  ) {
+    return this.submitCommand(props.signer, { kind: "ClaimPlayerFaithPoints", value: props.value });
   }
 
-  /**
-   * Edit the price of an existing marketplace order
-   *
-   * @param props - Properties for editing the order
-   * @param props.order_id - ID of the order to edit (u64)
-   * @param props.new_price - New price for the order in LORDS (u128)
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   */
-  public async edit_marketplace_order(
-    props: SystemProps.EditMarketplaceOrderProps,
-  ): Promise<GetTransactionReceiptResponse> {
-    const { order_id, new_price, signer } = props;
-
-    const call = {
-      contractAddress: props.marketplace_address.toString(),
-      entrypoint: "edit",
-      calldata: [order_id, new_price],
-    };
-
-    const result = await this.executeAndCheckTransaction(signer, [call]);
-    if (!result) {
-      throw new Error("Transaction failed - no result returned");
-    }
-    return result;
+  public async claim_faith_prize(
+    props: SystemProps.SystemSigner & { value: NativeCommandPayloads["ClaimFaithPrize"] },
+  ) {
+    return this.submitCommand(props.signer, { kind: "ClaimFaithPrize", value: props.value });
   }
+}
 
-  public async transfer_structure_ownership(props: SystemProps.TransferStructureOwnershipProps) {
-    const { signer, structure_id, new_owner } = props;
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${this.namespace}-ownership_systems`),
-      entrypoint: "transfer_structure_ownership",
-      calldata: [structure_id, new_owner],
-    });
-  }
-
-  public async transfer_agent_ownership(props: SystemProps.TransferAgentOwnershipProps) {
-    const { signer, explorer_id, new_owner } = props;
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${this.namespace}-ownership_systems`),
-      entrypoint: "transfer_agent_ownership",
-      calldata: [explorer_id, new_owner],
-    });
-  }
-
-  public async structure_burn(props: SystemProps.StructureBurnProps) {
-    const { signer, structure_id, resources } = props;
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${this.namespace}-resource_systems`),
-      entrypoint: "structure_burn",
-      calldata: [
-        structure_id,
-        resources.length,
-        ...resources.flatMap(({ resourceId, amount }) => [resourceId, amount]),
-      ],
-    });
-  }
-
-  public async troop_burn(props: SystemProps.TroopBurnProps) {
-    const { signer, explorer_id, resources } = props;
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${this.namespace}-resource_systems`),
-      entrypoint: "troop_burn",
-      calldata: [explorer_id, resources.length, ...resources.flatMap(({ resourceId, amount }) => [resourceId, amount])],
-    });
-  }
-
-  public async open_chest(props: SystemProps.OpenChestProps) {
-    const { signer, explorer_id, chest_coord } = props;
-    const coordAlt = chest_coord.alt ?? false;
-    const calls = [];
-    if (this.VRF_PROVIDER_ADDRESS !== undefined && Number(this.VRF_PROVIDER_ADDRESS) !== 0) {
-      const requestRandomCall: Call = {
-        contractAddress: this.VRF_PROVIDER_ADDRESS!,
-        entrypoint: "request_random",
-        calldata: [getContractByName(this.manifest, `${this.namespace}-relic_systems`), 0, signer.address],
-      };
-
-      calls.push(requestRandomCall);
-    }
-
-    calls.push({
-      contractAddress: getContractByName(this.manifest, `${this.namespace}-relic_systems`),
-      entrypoint: "open_chest",
-      calldata: [explorer_id, coordAlt, chest_coord.x, chest_coord.y],
-    });
-    return await this.promiseQueue.enqueue({ signer, calls: calls, transactionType: TransactionType.OPEN_CHEST });
-  }
-
-  public async burn_research_for_relic(props: SystemProps.BurnResearchForRelicProps) {
-    const { signer, structure_id } = props;
-    return await this.executeAndCheckTransaction(
-      signer,
-      {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-artificer_systems`),
-        entrypoint: "burn_research_for_relic",
-        calldata: [structure_id],
-      },
-      undefined,
-      { transactionType: TransactionType.BURN_RESEARCH_FOR_RELIC },
-    );
-  }
-
-  public async apply_relic(props: SystemProps.ApplyRelicProps) {
-    const { signer, entity_id, relic_resource_id, recipient_type } = props;
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${this.namespace}-relic_systems`),
-      entrypoint: "apply_relic",
-      calldata: [entity_id, relic_resource_id, recipient_type],
-    });
-  }
+function resourceAmounts(resources: readonly { resourceId: BigNumberish; amount: BigNumberish }[]) {
+  return resources.map(({ resourceId, amount }) => ({ resource_type: resourceId, amount }));
+}
+function pairedResources(resources: readonly BigNumberish[]) {
+  if (resources.length % 2 !== 0) throw new Error("Resource transfer requires id/amount pairs");
+  return Array.from({ length: resources.length / 2 }, (_, index) => ({
+    resource_type: resources[index * 2],
+    amount: resources[index * 2 + 1],
+  }));
+}
+function unitVariant<const T extends readonly string[]>(
+  value: BigNumberish,
+  variants: T,
+): { kind: T[number]; value: undefined } {
+  const kind = variants[Number(value)];
+  if (!kind) throw new Error("Invalid command enum value");
+  return { kind, value: undefined };
 }

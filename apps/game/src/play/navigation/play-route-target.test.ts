@@ -1,7 +1,7 @@
 // @vitest-environment node
 
 import { configManager } from "@bibliothecadao/eternum";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { resolvePlayRouteTarget } from "./play-route-target";
 
@@ -10,7 +10,7 @@ const createLocation = (pathname: string, search = ""): Pick<Location, "pathname
   search,
 });
 
-configManager.mapCenter = 2010831280;
+vi.spyOn(configManager, "getMapCenter").mockReturnValue(2010831280);
 
 describe("resolvePlayRouteTarget", () => {
   it("resolves canonical map routes with a world-position camera target", () => {

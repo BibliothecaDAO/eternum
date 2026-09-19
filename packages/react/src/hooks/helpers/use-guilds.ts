@@ -1,41 +1,39 @@
-import {
-  guildMembersQuery,
-  guildWhitelistQuery,
-  playerWhitelistQuery,
-  readGuildMembers,
-  readGuildWhitelist,
-} from "@bibliothecadao/eternum";
-import { ContractAddress } from "@bibliothecadao/types";
-import { useEntityQuery } from "@dojoengine/react";
-import { useDojo } from "../context";
+import { readGuildMembers, readGuildWhitelist } from "@bibliothecadao/eternum";
+import type { ContractAddress } from "@bibliothecadao/types";
+import { useMemo } from "react";
+import { useGame } from "../context";
+import { useNativeRevision } from "./use-native-facts";
 
-export const useGuildMembers = (guildEntityId: ContractAddress) => {
+export const useGuildMembers = (guildId: ContractAddress) => {
   const {
+    setup: { store },
     account: { account },
-    setup: { components },
-  } = useDojo();
-
-  const memberEntities = useEntityQuery(guildMembersQuery(components, guildEntityId));
-
-  return readGuildMembers(components, memberEntities, ContractAddress(account.address));
+  } = useGame();
+  const revision = useNativeRevision(["GuildMember", "AddressName"]);
+  return useMemo(
+    () => readGuildMembers(store, guildId, BigInt(account.address)),
+    [store, guildId, account.address, revision],
+  );
 };
-
-export const useGuildWhitelist = (guildEntityId: ContractAddress) => {
+export const useGuildWhitelist = (guildId: ContractAddress) => {
   const {
-    setup: { components },
-  } = useDojo();
-
-  const whitelistEntities = useEntityQuery(guildWhitelistQuery(components, guildEntityId));
-
-  return readGuildWhitelist(components, whitelistEntities);
+    setup: { store },
+    account: { account },
+  } = useGame();
+  const revision = useNativeRevision(["GuildWhitelist", "AddressName"]);
+  return useMemo(
+    () => readGuildWhitelist(store, BigInt(account.address), { guildId }),
+    [store, guildId, account.address, revision],
+  );
 };
-
-export const usePlayerWhitelist = (playerAddress: ContractAddress) => {
+export const usePlayerWhitelist = (player: ContractAddress) => {
   const {
-    setup: { components },
-  } = useDojo();
-
-  const whitelistEntities = useEntityQuery(playerWhitelistQuery(components, playerAddress));
-
-  return readGuildWhitelist(components, whitelistEntities);
+    setup: { store },
+    account: { account },
+  } = useGame();
+  const revision = useNativeRevision(["GuildWhitelist", "AddressName"]);
+  return useMemo(
+    () => readGuildWhitelist(store, BigInt(account.address), { player }),
+    [store, player, account.address, revision],
+  );
 };

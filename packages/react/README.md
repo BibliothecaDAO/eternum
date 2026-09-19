@@ -1,92 +1,15 @@
-# @bibliothecadao/react
+# Eternum React bindings
 
-Shared React hooks and stores for Eternum game applications. This package provides a collection of React hooks and
-utilities that make it easy to integrate Eternum game functionality into React applications.
+`@bibliothecadao/react` provides the game context and hooks that read the native fact store. `useGame` exposes the
+active client setup and gameplay account. `useNativeRevision` subscribes to changes in the named models so a view can
+derive its current display from `setup.store`.
 
-## Available Hooks
+The store is authoritative. Hooks may derive presentation data, but must not fetch or cache a competing copy of live
+rows. The acting component may display a pending indicator while Herald supplies the shared provisional state.
 
-### Game State Hooks
+The browser creates its client through `apps/game/src/services/game-client.ts`; the same shared runtime serves the bot
+harness. Keep account setup and world selection in that flow.
 
-- `use-armies.ts`: Army management and combat system
-- `use-bank.ts`: Banking and economy system
-- `use-bridge.ts`: Bridge interactions and asset management
-- `use-buildings.ts`: Building construction and management
-- `use-fragment-mines.ts`: Mining system for fragments
-- `use-guilds.ts`: Guild management and interactions
-- `use-hyperstructures.ts`: Hyperstructure management
-- `use-players.ts`: Player data and interactions
-- `use-realm.ts`: Realm management and interactions
-- `use-resources.ts`: Resource tracking and management
-- `use-resource-arrivals.ts`: Resource arrival tracking
-- `use-rewards.ts`: Reward management system
-- `use-season-start.ts`: Season management and timing
-- `use-stamina.ts`: Stamina system management
-- `use-structures.ts`: Structure management and interactions
-- `use-trade.ts`: Trading system and market interactions
-
-### Utility Hooks
-
-- `use-cartridge-address.ts`: Cartridge address management
-- `use-contributions.ts`: Contribution tracking system
-- `use-debounce.ts`: Debounce utility for performance optimization
-- `use-query.ts`: Query management and caching
-- `use-screen-orientation.ts`: Screen orientation management
-
-## Installation
-
-```bash
-pnpm add @bibliothecadao/react
+```sh
+pnpm --dir packages/react build
 ```
-
-## Usage
-
-```typescript
-import { usePlayerOwnedRealmsInfo } from "@bibliothecadao/react";
-
-function RealmsList() {
-  const realms = usePlayerOwnedRealmsInfo();
-
-  return (
-    <div>
-      <h1>Your Realms</h1>
-      {realms.map((realm) => (
-        <div key={realm.entityId}>
-          <h2>Realm #{realm.entityId}</h2>
-          <p>Owner: {realm.owner}</p>
-          {/* Display other realm properties */}
-        </div>
-      ))}
-    </div>
-  );
-}
-```
-
-## Dependencies
-
-This package requires the following peer dependencies:
-
-- `@bibliothecadao/eternum`: Core Eternum functionality
-- `@bibliothecadao/types`: Type definitions
-- `@bibliothecadao/dojo`: Dojo integration
-- `@dojoengine/react`: Dojo React bindings
-- `@starknet-react/core`: Starknet React integration
-- `react`: React library
-- `starknet`: Starknet SDK
-- `wouter`: Lightweight routing
-
-## Development
-
-```bash
-# Install dependencies
-pnpm install
-
-# Build the package
-pnpm build
-
-# Development mode with watch
-pnpm dev
-```
-
-## License
-
-MIT

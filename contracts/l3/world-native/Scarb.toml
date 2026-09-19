@@ -1,0 +1,32 @@
+[package]
+name = "world_native"
+version = "0.1.0"
+edition = "2024_07"
+cairo-version = "=2.17.0"
+
+[dependencies]
+starknet = "=2.17.0"
+eternum_randomness_protocol = { path = "../randomness-protocol" }
+eternum_cubit = { path = "vendor/cubit" }
+
+[dev-dependencies]
+snforge_std = "=0.64.0"
+assert_macros = "=2.17.0"
+
+[lib]
+
+[[target.starknet-contract]]
+sierra = true
+casm = true
+build-external-contracts = ["eternum_randomness_protocol::authority::SequencingAccount"]
+
+[scripts]
+test = "bash ../test-native.sh"
+schema = "scarb build && bun scripts/generate-schema.mjs"
+
+[tool.fmt]
+max-line-length = 120
+sort-module-level-items = true
+
+[tool.scarb]
+allow-prebuilt-plugins = ["snforge_std"]
