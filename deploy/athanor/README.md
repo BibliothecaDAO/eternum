@@ -58,6 +58,14 @@ the Regular Blitz preset and starts Herald. The run directory holds its compose 
 private `harness.env`. It starts no live services. Failed runs retain their volumes for inspection; choose a fresh shard
 id for a new run.
 
+For ordered trials, use `scripts/shard.py --matrix MATRIX_JSON RUN_DIRECTORY`. The matrix contains `configurations` (an
+ordered list of shard configurations), `workload` (`games`, `accounts_per_game`, `minutes`, `interval_seconds`,
+`setup_concurrency`, `workload`) and `live` (`budget`, `container`, `chain_config`). The live budget is the existing
+candidate guard's JSON; the live container and chain configuration are read only for host snapshots. The guard must be
+running before deployment. Each trial stores its configuration, deployment, workload reports and start/end host
+snapshots under the run directory. A failed workload or exceeded live budget aborts the matrix. Each completed or failed
+candidate is stopped with its volumes retained; the next configuration starts fresh.
+
 The node initially waits for its game deployment while declarations remain available. After deployment, the runner
 recreates only that new shard's node with its sequencing account and world address. The node persists its epoch secret
 in its own data volume. Pending assignments are volatile across restart; recorded nonces prevent duplicate gameplay
