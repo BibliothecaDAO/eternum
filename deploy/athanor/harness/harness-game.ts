@@ -173,7 +173,12 @@ async function waitUntilPlaying({ setup: { store }, gameId: game_id }: GameClien
     const current = store.require("GameRegistry", { game_id });
     const timestamp = getBlockTimestamp().currentBlockTimestamp;
     if (current.end_at !== 0n && timestamp >= Number(current.end_at)) throw new Error(`Game ${game_id} has ended`);
-    if (current.ready && (current.dev_mode_on || timestamp >= start)) return;
+    if (
+      current.ready &&
+      (current.dev_mode_on ||
+        (timestamp >= Number(current.start_main_at) && timestamp >= Number(current.start_settling_at)))
+    )
+      return;
     await sleep(1_000);
   }
   throw new Error(`Herald did not confirm game ${game_id} ready at ${start}`);

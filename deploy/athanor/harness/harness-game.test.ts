@@ -7,13 +7,14 @@ import { setBlockTimestampSource } from "@bibliothecadao/eternum";
 
 test("setup waits for the confirmed start and roster readiness in every game mode", async () => {
   let timestamp = 82;
+  let start = 100n;
   let ready = false;
   setBlockTimestampSource(() => timestamp);
   const game = createHarnessGame({
     gameId: 4,
     setup: {
       store: {
-        require: () => ({ start_main_at: 100n, start_settling_at: 40n, end_at: 200n, ready, dev_mode_on: false }),
+        require: () => ({ start_main_at: start, start_settling_at: 40n, end_at: 200n, ready, dev_mode_on: false }),
       },
       systemCalls: {},
     },
@@ -29,6 +30,10 @@ test("setup waits for the confirmed start and roster readiness in every game mod
     await Bun.sleep(1_050);
     expect(started).toBe(false);
     ready = true;
+    start = 110n;
+    await Bun.sleep(1_050);
+    expect(started).toBe(false);
+    timestamp = 110;
     await waiting;
     expect(started).toBe(true);
     timestamp = 200;
