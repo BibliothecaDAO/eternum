@@ -5,24 +5,12 @@ import { resolve } from "node:path";
 import { ec, hash, RpcProvider } from "starknet";
 
 export interface NativeFixture {
-  scope: string;
   rpc: string;
   chain: string;
-  authority: { address: string };
   execution: { address: string };
   actor: string;
-  playerPublicKey: string;
-  owner: string;
   game: string;
   nativeSource: string;
-  provision: { realmCount: number; realmIds: number[]; layers?: ("surface" | "ethereal")[] };
-  geometry?: {
-    realm: { alt: boolean; x: number; y: number };
-    explorer: { alt: boolean; x: number; y: number };
-    spire?: { alt: boolean; x: number; y: number };
-  }[];
-  explorers?: number[];
-  firstExploreNonce?: string;
 }
 
 const hex = (value: string | number | bigint) => `0x${BigInt(value).toString(16)}`;
@@ -54,7 +42,7 @@ export async function admissionFor(provider: RpcProvider, fixture: NativeFixture
   return admission;
 }
 
-export function signedRequest(fixture: NativeFixture, admission: string[], arguments_: string[]) {
+export function signedRequest(fixture: NativeFixture, admission: string[], arguments_: string[], privateKey: string) {
   const [, rules, , nonce, order, timestamp] = admission;
   const intent = frameNativeIntent({
     chain: fixture.chain,
@@ -69,6 +57,6 @@ export function signedRequest(fixture: NativeFixture, admission: string[], argum
     arguments: arguments_,
   });
   const action = hash.computePoseidonHashOnElements(intent);
-  const signature = ec.starkCurve.sign(action, "0x3039");
-  return { action, intent, r: hex(signature.r), s: hex(signature.s), public_key: fixture.playerPublicKey };
+  const signature = ec.starkCurve.sign(action, privateKey);
+  return { action, intent, r: hex(signature.r), s: hex(signature.s), public_key: ec.starkCurve.getStarkKey(privateKey) };
 }
