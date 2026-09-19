@@ -1,4 +1,5 @@
 import { IncomingCaravans } from "./incoming-caravans";
+import { StructureOwnershipTransfer } from "./structure-ownership-transfer";
 import ArrowLeftRight from "lucide-react/dist/esm/icons/arrow-left-right";
 import Factory from "lucide-react/dist/esm/icons/factory";
 import Loader from "lucide-react/dist/esm/icons/loader";
@@ -222,6 +223,7 @@ const StructureBannerEntityDetailContent = memo(
                 </Button>
               )}
             </div>
+            <StructureOwnershipTransfer key={structureEntityId} structureId={structureEntityId} />
             {showHyperstructureVP && (
               <div className="mt-2 border-t border-gold/15 pt-2">
                 <HyperstructureVPDisplay
