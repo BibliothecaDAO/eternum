@@ -1,3 +1,4 @@
+import { confirmedTransactionReceipt } from "./transaction";
 import { readFileSync } from "node:fs";
 import { hash, json, type Account, type RpcProvider, type CompiledSierra, type CompiledSierraCasm } from "starknet";
 
@@ -55,6 +56,5 @@ export async function declareClass(
 }
 
 export async function waitForSuccess(provider: RpcProvider, transactionHash: string): Promise<void> {
-  const receipt = await provider.waitForTransaction(transactionHash, { retryInterval: 500, retries: 600 });
-  if (!receipt.isSuccess()) throw new Error(`Transaction ${transactionHash} failed: ${JSON.stringify(receipt)}`);
+  await confirmedTransactionReceipt(provider, transactionHash);
 }
