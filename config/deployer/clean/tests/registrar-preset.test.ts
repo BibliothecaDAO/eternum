@@ -4,6 +4,10 @@ import { buildCreateGameParams } from "../registrar/preset";
 
 describe("native game configuration", () => {
   const config = loadEnvironmentConfiguration("madara.blitz");
+  test("keeps Blitz finalization immediate and Eternum grace unchanged", () => {
+    expect(config.season.endGraceSeconds).toBe(0);
+    expect(loadEnvironmentConfiguration("madara.eternum").season.endGraceSeconds).toBe(86_400);
+  });
   test.each([0, -1, NaN, 1.5, undefined])("rejects an invalid chain clock (%s)", (chainTimestamp) => {
     expect(() =>
       buildCreateGameParams(config, {
@@ -47,7 +51,7 @@ describe("native game configuration", () => {
         dev_mode_on: true,
         two_player_mode: true,
         use_map_override: true,
-        end_grace_seconds: 86_400,
+        end_grace_seconds: 0,
       });
       expect(BigInt(params.seed as string)).not.toBe(0n);
       expect(params).not.toHaveProperty("fee_amount");
