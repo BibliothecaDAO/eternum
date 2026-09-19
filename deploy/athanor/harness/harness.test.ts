@@ -6,7 +6,7 @@ import type { HarnessProvider } from "./provider";
 import { afterEach, describe, expect, it, mock, spyOn } from "bun:test";
 import { ActionPaths, ActionType, configManager, type GameActions } from "@bibliothecadao/eternum";
 import type { Account } from "starknet";
-import { mapWithConcurrency } from "./account-factory";
+import { mapWithConcurrency, type HarnessAccount } from "./account-factory";
 import {
   chooseOutwardDirection,
   classifyWorkloadFailure,
@@ -15,10 +15,12 @@ import {
   neighbor,
   oppositeDirection,
   prioritizeExplorer,
+  prepareHarnessBots,
   resolveActionKind,
   resolveWorkloadTicks,
   runWorkload,
   type HarnessBot,
+  type TrackedTransaction,
 } from "./driver";
 import type { Coord, ExplorerRow, HarnessGame, ProductionState } from "./harness-game";
 import {
@@ -34,6 +36,28 @@ import { createHarnessProvider, parseHarnessArgs } from "./run";
 import { BlockTag } from "starknet";
 
 describe("Madara harness workload", () => {
+  it("uses the launched Blitz roster without submitting individual settlements", async () => {
+    const { game } = fakeWorld();
+    const settle = spyOn(game, "settle");
+    const setupTransactions: TrackedTransaction[] = [];
+    const beforeProvision = mock(async () => {
+      throw new Error("provision boundary");
+    });
+    await expect(
+      prepareHarnessBots({
+        gameType: "blitz",
+        game,
+        accounts: [{ botId: 1 }] as HarnessAccount[],
+        provider: confirmingProvider(),
+        setupTransactions,
+        beforeProvision,
+      }),
+    ).rejects.toThrow("provision boundary");
+    expect(beforeProvision).toHaveBeenCalledTimes(1);
+    expect(settle).not.toHaveBeenCalled();
+    expect(setupTransactions).toEqual([]);
+  });
+
   it("selects Eternum and rejects deferred ledger options", () => {
     expect(parseHarnessArgs([]).gameType).toBe("blitz");
     expect(parseHarnessArgs(["--game-type", "eternum"]).gameType).toBe("eternum");
@@ -96,30 +120,26 @@ describe("Madara harness workload", () => {
     expect(classifyWorkloadFailure(new Error("Herald snapshot timed out"))).toBe("chain_or_driver");
   });
 
-  it("records an action RPC failure instead of rejecting the workload", async () => {
-    let blockReads = 0;
-    const provider = {
-      async getBlock() {
-        blockReads += 1;
-        if (blockReads === 1) return { timestamp: 60 };
-        throw new Error("The socket connection was closed unexpectedly");
-      },
-    } as unknown as HarnessProvider;
+  it("records a lost Herald clock without fetching a block per action", async () => {
+    let clockReads = 0;
     spyOn(configManager, "getMapCenter").mockReturnValue(0);
     const world = fakeWorld();
+    world.game.currentTicks = () => {
+      if (++clockReads === 1) return { armies: 1, default: 60 };
+      throw new Error("Herald clock unavailable");
+    };
     const workload = await runWorkload({
       bots: [readyHarnessBot(world)],
       game: world.game,
       intervalSeconds: 1,
       minutes: 0.001,
-      provider,
+      provider: confirmingProvider(),
     });
-
     expect(workload.actions).toHaveLength(1);
     expect(workload.actions[0]).toMatchObject({
       failureClass: "chain_or_driver",
       outcome: "driver_failed",
-      rpc: { getBlock: { calls: 1 } },
+      rpc: { getBlock: { calls: 0 } },
     });
   });
 
@@ -377,6 +397,19 @@ describe("Madara harness reporting", () => {
       },
     });
   });
+  it("filters the workload window by embedded block timestamps", async () => {
+    const output = await readBlockStats(
+      [
+        { ...blockRow(10, 1, 10), timestamp: "2026-09-19T00:00:00Z" },
+        { ...blockRow(11, 3, 30), timestamp: "2026-09-19T00:00:02Z" },
+        { ...blockRow(12, 9, 90), timestamp: "2026-09-19T00:00:04Z" },
+      ],
+      [],
+      ["--since", "2026-09-19T00:00:01Z", "--until", "2026-09-19T00:00:03Z"],
+    );
+    expect(output.blocks).toEqual({ count: 1, busy: 1, first: 11, last: 11 });
+    expect(output.transactions.executed).toBe(3);
+  });
   it("separates counter resets and never divides lifetime totals or an empty interval", async () => {
     const reset = await readBlockStats(
       [],
@@ -417,7 +450,7 @@ describe("Madara harness CLI and concurrency", () => {
     ).toMatchObject({ bots: 4, minutes: 0.5, intervalSeconds: 5, gameId: 9, gameName: "game-9" });
   });
 
-  it("holds one game per process", () => {
+  it("sizes concurrent Regular rosters without relaxing the player cap", () => {
     expect(parseHarnessArgs([])).toMatchObject({
       bots: 96,
       intervalSeconds: 15,
@@ -426,7 +459,15 @@ describe("Madara harness CLI and concurrency", () => {
     });
     expect(parseHarnessArgs(["--workload", "cadence"]).workload).toBe("cadence");
     expect(() => parseHarnessArgs(["--workload", "unknown"])).toThrow("--workload");
-    expect(() => parseHarnessArgs(["--games", "2"])).toThrow("one game per process");
+    expect(parseHarnessArgs(["--games", "16"])).toMatchObject({ games: 16, accountsPerGame: 24, bots: 384 });
+    expect(parseHarnessArgs(["--games", "2", "--accounts-per-game", "3"])).toMatchObject({
+      games: 2,
+      accountsPerGame: 3,
+      bots: 6,
+    });
+    expect(() => parseHarnessArgs(["--games", "2", "--accounts-per-game", "25"])).toThrow("at most 24");
+    expect(() => parseHarnessArgs(["--bots", "96", "--games", "2"])).toThrow("Use --games");
+    expect(() => parseHarnessArgs(["--game-type", "eternum", "--games", "2"])).toThrow("Regular Blitz");
   });
 
   it("preserves input order while bounding concurrent work", async () => {
@@ -516,7 +557,7 @@ function fakeWorld(extraExplorer?: [number, ExplorerRow]): FakeWorld {
   const game: HarnessGame = {
     gameId: 1,
     actionsFor: () => actions,
-    ticksAt: (timestamp) => ({ armies: Math.floor(timestamp / 60), default: timestamp }),
+    currentTicks: () => ({ armies: 1, default: 60 }),
     mapCenter: () => ({ x: 0, y: 0 }),
     settlementStructureIds: () => undefined,
     structureCoord: () => undefined,
@@ -616,13 +657,13 @@ function metricsRow(time: number, transactions: number, ready: number, attempts:
   };
 }
 
-async function readBlockStats(rows: unknown[], metrics: unknown[]) {
+async function readBlockStats(rows: unknown[], metrics: unknown[], window: string[] = []) {
   const directory = await mkdtemp(join(tmpdir(), "node-metrics-"));
   try {
     const metricsPath = join(directory, "metrics.jsonl");
     await writeFile(metricsPath, metrics.map((row) => JSON.stringify(row)).join("\n"));
     const child = Bun.spawn(
-      ["python3", `${import.meta.dir}/../scripts/block-stats.py`, "--json", "--metrics", metricsPath],
+      ["python3", `${import.meta.dir}/../scripts/block-stats.py`, "--json", "--metrics", metricsPath, ...window],
       {
         stdin: new Blob([rows.map((row) => JSON.stringify(row)).join("\n")]),
         stdout: "pipe",

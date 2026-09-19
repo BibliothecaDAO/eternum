@@ -1,3 +1,4 @@
+import type { HarnessRpcRequests } from "./provider";
 import { PROCESS_INTERVAL_MS } from "@bibliothecadao/eternum/automation";
 import type { LayerRoundTripEvidence } from "./layer-round-trip";
 import type { SeasonFinalizationEvidence } from "./season-lifecycle";
@@ -91,6 +92,7 @@ export interface HarnessReportInput {
   workload: WorkloadResult;
   seasonFinalizations?: SeasonFinalizationEvidence[];
   layerRoundTrips?: LayerRoundTripEvidence[];
+  transportRequests?: HarnessRpcRequests;
 }
 
 interface PercentileSummary {
@@ -109,7 +111,9 @@ interface LatencyPercentiles {
 
 const PRECONFIRMED_P95_LIMIT_MS = 1_000;
 const ACCEPTED_ON_L2_P95_LIMIT_MS = 4_000;
-const RUNS_DIRECTORY = path.resolve(import.meta.dir, "../.lab/runs");
+export const HARNESS_OUTPUT_DIRECTORY = path.resolve(
+  process.env.HARNESS_OUTPUT_DIRECTORY ?? path.resolve(import.meta.dir, "../.lab/runs"),
+);
 const REPOSITORY_ROOT = path.resolve(import.meta.dir, "../../..");
 const BLOCK_STATS_SCRIPT = path.resolve(import.meta.dir, "../scripts/block-stats.sh");
 const HOST_STATE_SCRIPT = path.resolve(import.meta.dir, "../scripts/host-state.sh");
@@ -144,11 +148,11 @@ export async function finishHarnessEvidence(
 export async function writeHarnessReport(input: HarnessReportInput): Promise<{ passed: boolean; path: string }> {
   const analysis = analyzeHarnessResult(input);
   const createdAt = new Date().toISOString();
-  const runId = createdAt.replace(/[-:.]/g, "");
-  const outputPath = path.join(RUNS_DIRECTORY, `${runId}.json`);
+  const runId = `${createdAt.replace(/[-:.]/g, "")}-g${input.games.map(({ gameId }) => gameId).join("-")}`;
+  const outputPath = path.join(HARNESS_OUTPUT_DIRECTORY, `${runId}.json`);
   const manifest = buildHarnessManifest(input, analysis, runId, createdAt);
 
-  await mkdir(RUNS_DIRECTORY, { recursive: true });
+  await mkdir(HARNESS_OUTPUT_DIRECTORY, { recursive: true });
   await writeFile(outputPath, `${JSON.stringify(manifest, null, 2)}\n`);
   return { passed: analysis.passed, path: outputPath };
 }
@@ -271,6 +275,9 @@ function buildHarnessManifest(
         scope:
           "estimateInvokeFee, getBlock, getTransactionReceipt, and getTransactionStatus calls made by the harness driver",
         ...analysis.rpc,
+        transport: input.transportRequests
+          ? summarizeTransportRequests(input.transportRequests, input.workload.actions.length)
+          : null,
       },
       perGame: input.games.map((game) => summarizeGameWorkload(game, analysis.actions)),
       actions: analysis.actions,
@@ -531,4 +538,11 @@ async function runCommand(command: string[]): Promise<string> {
     throw new Error(`${command.join(" ")} failed (${exitCode}): ${stderr.trim()}`);
   }
   return stdout.trim();
+}
+
+function summarizeTransportRequests(requests: HarnessRpcRequests, actions: number) {
+  const calls =
+    Object.values(requests.http).reduce((sum, count) => sum + count, 0) +
+    Object.values(requests.websocket).reduce((sum, count) => sum + count, 0);
+  return { ...requests, calls, callsPerAction: actions > 0 ? roundMilliseconds(calls / actions) : null };
 }

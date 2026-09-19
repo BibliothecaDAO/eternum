@@ -8,7 +8,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONTAINER="${MADARA_CONTAINER:-${COMPOSE_PROJECT_NAME:-athanor-local}-madara-1}"
-DOCKER_ARGS=(logs "$CONTAINER")
+DOCKER_ARGS=(logs --tail 100000 "$CONTAINER")
 PYTHON_ARGS=()
 if [[ -n "${MADARA_METRICS_FILE:-}" ]]; then
   PYTHON_ARGS+=(--metrics "$MADARA_METRICS_FILE")
@@ -18,7 +18,6 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --since|--until)
       [[ $# -ge 2 ]] || { echo "missing value for $1" >&2; exit 2; }
-      DOCKER_ARGS+=("$1" "$2")
       PYTHON_ARGS+=("$1" "$2")
       shift 2
       ;;
@@ -31,7 +30,6 @@ while [[ $# -gt 0 ]]; do
         echo "unknown option: $1" >&2
         exit 2
       fi
-      DOCKER_ARGS+=(--since "$1")
       PYTHON_ARGS+=(--since "$1")
       shift
       ;;

@@ -3,6 +3,7 @@ import {
   configManager,
   createGameActions,
   FELT_CENTER,
+  getBlockTimestamp,
   ResourceManager,
   StaminaManager,
   multiplyByPrecision,
@@ -12,7 +13,7 @@ import {
   waitForWorldState,
 } from "@bibliothecadao/eternum";
 import { shortString, type Account } from "starknet";
-import { ResourcesIds, StructureType, TickIds, TroopType, type ID } from "@bibliothecadao/types";
+import { ResourcesIds, StructureType, TroopType, type ID } from "@bibliothecadao/types";
 
 export interface Coord {
   x: number;
@@ -51,7 +52,7 @@ export interface HarnessGame {
   gameId: number;
   /** Actions signed by this bot; every bot gets its own facade over the shared world. */
   actionsFor(signer: Account): GameActions;
-  ticksAt(blockTimestampSeconds: number): ChainTicks;
+  currentTicks(): ChainTicks;
   mapCenter(): Coord;
   settlementStructureIds(player: string): ID[] | undefined;
   structureCoord(structureId: ID): Coord | undefined;
@@ -85,10 +86,10 @@ export function createHarnessGame(client: GameClient): HarnessGame {
   return {
     gameId: client.gameId,
     actionsFor: (signer) => createGameActions(client, { signer }),
-    ticksAt: (timestamp) => ({
-      armies: Math.floor(timestamp / configuredTickSeconds(TickIds.Armies)),
-      default: Math.floor(timestamp / configuredTickSeconds(TickIds.Default)),
-    }),
+    currentTicks: () => {
+      const timestamp = getBlockTimestamp();
+      return { armies: timestamp.currentArmiesTick, default: timestamp.currentDefaultTick };
+    },
     mapCenter: () => ({ x: FELT_CENTER(), y: FELT_CENTER() }),
     settlementStructureIds: (player) => {
       if (![...store.inGame("PlayerEntry", game_id)].some((row) => row.player === BigInt(player))) return undefined;
@@ -159,12 +160,6 @@ export function createHarnessGame(client: GameClient): HarnessGame {
     waitFor: (read, timeoutMs, describe) => waitForWorldState(client, read, timeoutMs, describe),
   };
 }
-
-const configuredTickSeconds = (tick: TickIds): number => {
-  const seconds = Number(configManager.getTick(tick));
-  if (!(seconds > 0)) throw new Error(`Tick ${TickIds[tick]} has no configured interval`);
-  return seconds;
-};
 
 /**
  * The provider announces every hash it sent with the signer that sent it, and a bot submits one action at a time,

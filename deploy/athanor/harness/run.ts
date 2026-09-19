@@ -4,6 +4,7 @@ import { runLayerRoundTrip } from "./layer-round-trip";
 import { closeHarnessSeason } from "./season-lifecycle";
 import { defaultPresetForEnvironment } from "../../../config/deployer/clean/constants";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { Worker, isMainThread, parentPort, workerData, threadId } from "node:worker_threads";
 import path from "node:path";
 import { bindGameplayAccounts } from "@bibliothecadao/eternum";
 import { splitPlaytestRoster } from "../../../apps/launch-service/src/slots";
@@ -14,14 +15,21 @@ import { launchGame } from "../../../config/deployer/clean/launch/runner";
 import { createHarnessAccounts, type HarnessAccount } from "./account-factory";
 import { connectHarnessGameClient, type HarnessGameplayContracts } from "./game-client";
 import { createHarnessGame } from "./harness-game";
-import { HarnessProvider } from "./provider";
+import { HarnessProvider, measureHarnessRequests } from "./provider";
 import { prepareHarnessBots, runWorkload, type HarnessGameType, type TrackedTransaction } from "./driver";
-import { collectHarnessEvidenceBeforeRun, finishHarnessEvidence, writeHarnessReport } from "./report";
+import {
+  HARNESS_OUTPUT_DIRECTORY,
+  collectHarnessEvidenceBeforeRun,
+  finishHarnessEvidence,
+  writeHarnessReport,
+} from "./report";
 
 interface HarnessCliOptions {
   workload: "build-order" | "cadence";
   gameType: HarnessGameType;
   bots: number;
+  games?: number;
+  accountsPerGame?: number;
   gameId?: number;
   preparedGamePath?: string;
   gameName?: string;
@@ -61,7 +69,19 @@ export function parseHarnessArgs(args: string[]): HarnessCliOptions {
     process.exit(0);
   }
 
-  const bots = positiveInteger(values.bots ?? "96", "bots");
+  const games = values.games === undefined ? undefined : positiveInteger(values.games, "games");
+  const accountsPerGame =
+    games === undefined ? undefined : positiveInteger(values["accounts-per-game"] ?? "24", "accounts-per-game");
+  if (games !== undefined && values.bots !== undefined)
+    throw new Error("Use --games with --accounts-per-game, or --bots");
+  if (games === undefined && values["accounts-per-game"] !== undefined)
+    throw new Error("--accounts-per-game requires --games");
+  if (accountsPerGame !== undefined && accountsPerGame > 24)
+    throw new Error("Regular Blitz has at most 24 players per game");
+  const bots =
+    games === undefined
+      ? positiveInteger(values.bots ?? "96", "bots")
+      : positiveInteger(String(games * accountsPerGame!), "total accounts");
   const minutes = positiveNumber(values.minutes ?? "10", "minutes");
   const intervalSeconds = positiveNumber(values["interval-seconds"] ?? "15", "interval-seconds");
   const setupConcurrency = positiveInteger(values["setup-concurrency"] ?? "6", "setup-concurrency");
@@ -72,12 +92,10 @@ export function parseHarnessArgs(args: string[]): HarnessCliOptions {
   const gameType = values["game-type"] ?? "blitz";
   if (gameType !== "blitz" && gameType !== "eternum") throw new Error("--game-type must be blitz or eternum");
   if (gameType === "eternum" && workload === "build-order") throw new Error("Build-order workload requires Blitz");
-  if (bots > 96) throw new Error(`The harness supports at most 96 bots, received ${bots}`);
-  if (values.games !== undefined)
-    throw new Error("The game client holds one game per process; run one harness per game");
+  if (gameType === "eternum" && games !== undefined) throw new Error("--games requires Regular Blitz");
   if (gameType === "blitz" && gameId !== undefined)
     throw new Error("Blitz harness creates its fixed roster before launching; omit --game-id");
-  if (bots > 24 && gameId !== undefined) throw new Error("An existing game cannot be split across harness processes");
+  if (bots > 24 && gameId !== undefined) throw new Error("An existing game cannot be split across games");
   if (gameId !== undefined && !values["game-name"]) {
     values["game-name"] = `game-${gameId}`;
   }
@@ -86,6 +104,8 @@ export function parseHarnessArgs(args: string[]): HarnessCliOptions {
     gameType,
     workload,
     bots,
+    games,
+    accountsPerGame,
     gameId,
     preparedGamePath: values["prepared-game"],
     gameName: values["game-name"],
@@ -104,6 +124,7 @@ async function main(): Promise<void> {
   const gameplayContractsPath = requiredEnvironmentValue("GAMEPLAY_CONTRACTS_PATH", "native harness");
   process.env.HERALD_URL = options.heraldUrl;
 
+  const requests = measureHarnessRequests(options.rpcUrl);
   const provider = createHarnessProvider(options.rpcUrl);
   const [chainId, gameplayContracts, manifest] = await Promise.all([
     provider.getChainId(),
@@ -119,6 +140,7 @@ async function main(): Promise<void> {
     : await prepareGames(options, gameplayContracts, provider);
   if (Array.isArray(prepared)) {
     provider.dispose();
+    requests.dispose();
     await runRosterGroups(options, prepared);
     return;
   }
@@ -171,6 +193,10 @@ async function main(): Promise<void> {
       game: harnessGame,
       intervalSeconds: options.intervalSeconds,
       minutes: options.minutes,
+      onReady: async () => {
+        if (workerData?.harness) await waitForWorkloadStart();
+        requests.start();
+      },
       onTick: (completed, total) => {
         if (completed === 1 || completed === total || completed % 5 === 0) {
           console.log(`Scheduled workload tick ${completed}/${total}`);
@@ -179,6 +205,7 @@ async function main(): Promise<void> {
       provider,
     });
 
+    const transportRequests = requests.finish();
     const layerRoundTrips =
       options.gameType === "eternum"
         ? [
@@ -221,13 +248,16 @@ async function main(): Promise<void> {
       workload,
       seasonFinalizations,
       layerRoundTrips,
+      transportRequests,
     });
 
+    parentPort?.postMessage({ type: "result", ...report, pid: process.pid, threadId });
     console.log(`${report.passed ? "PASS" : "FAIL"}: ${report.path}`);
     if (!report.passed) process.exitCode = 1;
   } finally {
     client.dispose();
     provider.dispose();
+    requests.dispose();
   }
 }
 
@@ -282,6 +312,7 @@ function parseFlags(args: string[]): Record<string, string> {
         "rpc-url",
         "herald-url",
         "games",
+        "accounts-per-game",
       ].includes(name)
     ) {
       throw new Error(`Unsupported harness option --${name}`);
@@ -327,7 +358,14 @@ async function prepareGames(
     playerRegistryAddress: contracts.playerRegistryAddress,
     provider,
   });
-  const groups = options.gameType === "blitz" ? splitPlaytestRoster(accounts) : [accounts];
+  const groups =
+    options.games !== undefined
+      ? Array.from({ length: options.games }, (_, index) =>
+          accounts.slice(index * options.accountsPerGame!, (index + 1) * options.accountsPerGame!),
+        )
+      : options.gameType === "blitz"
+        ? splitPlaytestRoster(accounts)
+        : [accounts];
   const prefix = options.gameName ?? `lab-${Date.now().toString(36)}`;
   const prepared: PreparedGame[] = [];
   // Setup shares an authority account. Finish it before concurrent player workloads start.
@@ -344,44 +382,117 @@ async function prepareGames(
   return prepared.length === 1 ? prepared[0] : prepared;
 }
 
+interface GameWorkerReport {
+  passed: boolean;
+  path: string;
+  pid: number;
+  threadId: number;
+}
+
 async function runRosterGroups(options: HarnessCliOptions, games: PreparedGame[]): Promise<void> {
-  const directory = path.join(REPOSITORY_ROOT, "deploy/athanor/.lab/harness", `rosters-${Date.now()}`);
+  const directory = path.join(HARNESS_OUTPUT_DIRECTORY, `rosters-${Date.now()}`);
   await mkdir(directory, { recursive: true, mode: 0o700 });
-  const paths: string[] = [];
-  for (const game of games) {
-    const file = path.join(directory, `${game.game.gameId}.json`);
-    await writeFile(file, JSON.stringify(game), { mode: 0o600 });
-    paths.push(file);
+  const workers: Worker[] = [];
+  const reports: GameWorkerReport[] = [];
+  let failure: unknown;
+  try {
+    const paths = await Promise.all(
+      games.map(async (game) => {
+        const file = path.join(directory, `${game.game.gameId}.json`);
+        await writeFile(file, JSON.stringify(game), { mode: 0o600 });
+        return file;
+      }),
+    );
+    for (const [index, game] of games.entries()) workers.push(startGameWorker(options, game, paths[index]));
+    await waitForGameWorkers(workers, reports);
+  } catch (error) {
+    failure = error;
+  } finally {
+    await Promise.all(workers.map((worker) => worker.terminate()));
   }
-  const processes = games.map((game, index) =>
-    Bun.spawn({
-      cmd: [
-        process.execPath,
-        import.meta.filename,
-        "--bots",
-        String(game.accounts.length),
-        "--prepared-game",
-        paths[index],
-        "--minutes",
-        String(options.minutes),
-        "--interval-seconds",
-        String(options.intervalSeconds),
-        "--setup-concurrency",
-        String(options.setupConcurrency),
-        "--workload",
-        options.workload,
-        "--rpc-url",
-        options.rpcUrl,
-        "--herald-url",
-        options.heraldUrl,
-      ],
-      stdout: "inherit",
-      stderr: "inherit",
-    }),
+  const passed =
+    !failure &&
+    reports.length === games.length &&
+    reports.every((report) => report.passed && report.pid === process.pid);
+  const summary = {
+    passed,
+    pid: process.pid,
+    games: games.map(({ game }) => game),
+    reports,
+    error: failure instanceof Error ? failure.message : failure === undefined ? undefined : String(failure),
+  };
+  const output = path.join(directory, "summary.json");
+  await writeFile(output, JSON.stringify(summary, null, 2) + "\n");
+  if (!passed) throw new Error(`Roster workload failed: ${output}`, { cause: failure });
+  console.log(`PASS: ${output}`);
+}
+
+function startGameWorker(options: HarnessCliOptions, game: PreparedGame, file: string): Worker {
+  return new Worker(import.meta.filename, {
+    workerData: { harness: true },
+    argv: [
+      "--bots",
+      String(game.accounts.length),
+      "--prepared-game",
+      file,
+      "--minutes",
+      String(options.minutes),
+      "--interval-seconds",
+      String(options.intervalSeconds),
+      "--setup-concurrency",
+      String(options.setupConcurrency),
+      "--workload",
+      options.workload,
+      "--rpc-url",
+      options.rpcUrl,
+      "--herald-url",
+      options.heraldUrl,
+    ],
+  });
+}
+
+async function waitForGameWorkers(workers: Worker[], reports: GameWorkerReport[]): Promise<void> {
+  const ready = new Set<Worker>();
+  await Promise.all(
+    workers.map(
+      (worker) =>
+        new Promise<void>((resolve, reject) => {
+          let reported = false;
+          worker.on("message", (message) => {
+            if (message.type === "ready" && !ready.has(worker)) {
+              ready.add(worker);
+              if (ready.size === workers.length) {
+                const startAt = Date.now() + 1_000;
+                for (const player of workers) player.postMessage({ type: "start", startAt });
+              }
+            } else if (message.type === "result" && !reported) {
+              reported = true;
+              reports.push(message);
+            }
+          });
+          worker.once("error", reject);
+          worker.once("exit", (code) =>
+            code === 0 && reported
+              ? resolve()
+              : reject(new Error(`Game worker exited ${code} without a passing result`)),
+          );
+        }),
+    ),
   );
-  const exits = await Promise.all(processes.map((child) => child.exited));
-  if (exits.some((code) => code !== 0))
-    throw new Error(`Roster workload failed: exit codes ${exits.join(", ")}; prepared rosters: ${directory}`);
+}
+
+async function waitForWorkloadStart(): Promise<void> {
+  if (!parentPort) throw new Error("A game worker requires its driver port");
+  await new Promise<void>((resolve, reject) => {
+    const timeout = setTimeout(() => reject(new Error("Other games did not become ready within ten minutes")), 600_000);
+    parentPort!.once("message", async (message) => {
+      clearTimeout(timeout);
+      if (message.type !== "start") return reject(new Error("Unexpected driver message"));
+      await Bun.sleep(Math.max(0, message.startAt - Date.now()));
+      resolve();
+    });
+    parentPort!.postMessage({ type: "ready" });
+  });
 }
 
 async function waitForGameStart(provider: HarnessProvider, target: number): Promise<void> {
@@ -402,7 +513,7 @@ function requiredEnvironmentValue(name: string, context: string): string {
 
 function positiveInteger(value: string, name: string): number {
   const parsed = Number(value);
-  if (!Number.isInteger(parsed) || parsed <= 0) throw new Error(`--${name} must be a positive integer`);
+  if (!Number.isSafeInteger(parsed) || parsed <= 0) throw new Error(`--${name} must be a positive integer`);
   return parsed;
 }
 
@@ -421,6 +532,8 @@ function printUsage(): void {
 Usage: bun deploy/athanor/harness/run.ts [options]
 
   --bots <count>                 default: 96; Blitz splits into balanced games of up to 24
+  --games <count>                explicit concurrent games in one process, one client worker per game
+  --accounts-per-game <count>    with --games; default: 24, maximum: 24
   --game-type <blitz|eternum>     default: blitz
   --minutes <minutes>            default: 10
   --interval-seconds <seconds>   default: 15
@@ -434,7 +547,7 @@ Usage: bun deploy/athanor/harness/run.ts [options]
 `);
 }
 
-if (import.meta.main) {
+if (import.meta.main || (!isMainThread && workerData?.harness)) {
   await main().catch((error: unknown) => {
     console.error(error instanceof Error ? error.stack || error.message : String(error));
     process.exit(1);

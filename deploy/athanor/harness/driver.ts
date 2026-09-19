@@ -130,6 +130,7 @@ interface RunWorkloadOptions {
   game: HarnessGame;
   intervalSeconds: number;
   minutes: number;
+  onReady?: () => Promise<void>;
   onTick?: (completedTicks: number, totalTicks: number) => void;
   provider: HarnessProvider;
 }
@@ -295,11 +296,13 @@ export async function prepareHarnessBots({
   setupConcurrency = DEFAULT_SETUP_CONCURRENCY,
   setupTransactions,
 }: PrepareHarnessBotsOptions): Promise<HarnessBot[]> {
-  await mapWithConcurrency(accounts, setupConcurrency, async (harnessAccount) => {
-    const settle = await settleBot({ harnessAccount, game, gameType, provider });
-    setupTransactions.push(settle);
-    assertCompleted(settle);
-  });
+  if (gameType === "eternum") {
+    await mapWithConcurrency(accounts, setupConcurrency, async (harnessAccount) => {
+      const settle = await settleEternumBot({ harnessAccount, game, provider });
+      setupTransactions.push(settle);
+      assertCompleted(settle);
+    });
+  }
 
   await beforeProvision?.();
 
@@ -373,7 +376,7 @@ async function prepareExplorerRoute(
     ) {
       return;
     }
-    const chainTicks = await readChainTicks(game, provider, rpc);
+    const chainTicks = game.currentTicks();
     if (game.explorerStamina(explorer.explorerId, chainTicks.armies) < game.minimumStaminaFor("explore")) {
       await sleep(ACTION_READINESS_POLL_INTERVAL_MS);
       continue;
@@ -403,12 +406,14 @@ export async function runWorkload({
   intervalSeconds,
   minutes,
   onTick,
+  onReady,
   provider,
   buildOrder,
 }: RunWorkloadOptions): Promise<WorkloadResult> {
   const ticks = resolveWorkloadTicks(minutes, intervalSeconds);
   const overheadRpc = createRpcMetrics();
-  const readinessWaitMs = await waitForExplorerStaminaRestored(game, provider, bots, overheadRpc);
+  const readinessWaitMs = await waitForExplorerStaminaRestored(game, bots);
+  await onReady?.();
 
   const workloadStartedAtMs = Date.now();
   const actions: TrackedTransaction[] = [];
@@ -582,18 +587,15 @@ export function prioritizeExplorer<T extends ExplorerPriority>(candidates: T[]):
   return [...candidates].sort((left, right) => left.lastUsedAt - right.lastUsedAt)[0];
 }
 
-async function settleBot({
-  gameType,
+async function settleEternumBot({
   harnessAccount,
   game,
   provider,
 }: {
-  gameType: HarnessGameType;
   harnessAccount: HarnessAccount;
   game: HarnessGame;
   provider: HarnessProvider;
 }): Promise<TrackedTransaction> {
-  if (gameType === "blitz") throw new Error("Blitz roster must be settled by the launch authority before the harness starts");
   const name = `bot-${harnessAccount.botId.toString().padStart(3, "0")}`;
   return trackTransaction({
     botId: harnessAccount.botId,
@@ -602,7 +604,7 @@ async function settleBot({
     provider,
     send: () =>
       game.submit(harnessAccount.account, () =>
-        game.settle(harnessAccount.account, harnessAccount.owner, name, gameType),
+        game.settle(harnessAccount.account, harnessAccount.owner, name, "eternum"),
       ),
     stage: "setup",
   });
@@ -681,7 +683,7 @@ type ExecuteBotActionOptions = RunBotActionOptions & { chainTicks: ChainTicks };
 
 async function runBotAction(options: RunBotActionOptions): Promise<TrackedTransaction> {
   try {
-    const chainTicks = await readChainTicks(options.game, options.provider, options.rpc);
+    const chainTicks = options.game.currentTicks();
     const transaction = await executeBotAction({ ...options, chainTicks });
     classifyTransactionFailure(transaction);
     return transaction;
@@ -888,17 +890,12 @@ function chooseDirections(
     .map(({ direction }) => direction);
 }
 
-async function waitForExplorerStaminaRestored(
-  game: HarnessGame,
-  provider: HarnessProvider,
-  bots: HarnessBot[],
-  rpc: RpcMetrics,
-): Promise<number> {
+async function waitForExplorerStaminaRestored(game: HarnessGame, bots: HarnessBot[]): Promise<number> {
   const startedAtMs = Date.now();
   const deadline = startedAtMs + ACTION_READINESS_TIMEOUT_MS;
 
   while (Date.now() <= deadline) {
-    const { armies } = await readChainTicks(game, provider, rpc);
+    const { armies } = game.currentTicks();
     const everyBotReady = bots.every((bot) =>
       bot.explorers.every(
         (explorer) => game.explorerStamina(explorer.explorerId, armies) >= game.explorerMaxStamina(explorer.explorerId),
@@ -909,11 +906,6 @@ async function waitForExplorerStaminaRestored(
   }
 
   throw new Error("Explorers did not restore their configured stamina capacity within 360 seconds of chain time");
-}
-
-async function readChainTicks(game: HarnessGame, provider: HarnessProvider, rpc: RpcMetrics): Promise<ChainTicks> {
-  const block = await measureRpc(rpc, "getBlock", () => provider.getBlock("latest"));
-  return game.ticksAt(Number(block.timestamp));
 }
 
 export async function trackTransaction(options: TrackTransactionOptions): Promise<TrackedTransaction> {

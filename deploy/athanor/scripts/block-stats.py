@@ -17,14 +17,20 @@ def percentile(values, percentile_value):
     return ordered[index]
 
 
-def read_log():
+def read_log(since=None, until=None):
     rows = []
+    since, until = time_bound(since), time_bound(until)
     for line in sys.stdin:
         try:
             row = json.loads(line)
         except json.JSONDecodeError:
             continue
         if row.get("message") == "close_block_complete":
+            if since is not None or until is not None:
+                timestamp = time_bound(row["timestamp"])
+                if ((since is not None and timestamp < since)
+                        or (until is not None and timestamp > until)):
+                    continue
             rows.append(row)
     return rows
 
@@ -251,7 +257,7 @@ def main():
     parser.add_argument("--since")
     parser.add_argument("--until")
     args = parser.parse_args()
-    rows = read_log()
+    rows = read_log(args.since, args.until)
     node_metrics = read_metrics(args.metrics, args.since, args.until)
     summary = summarize(rows, node_metrics)
     if args.json:
