@@ -21,6 +21,11 @@ import {
 } from "../registrar/native-preset";
 import { nativeDomainAbi } from "../world/native/manifest";
 
+mock.module("../shared/transaction", () => ({
+  confirmedTransactionReceipt: async (provider: RpcProvider, transactionHash: string) =>
+    provider.getTransactionReceipt(transactionHash),
+}));
+
 const abi = [...Object.values(schema.types), ...schema.domains.registry.entrypoints];
 const codec = new CallData(abi);
 const directory = mkdtempSync(join(tmpdir(), "native-preset-"));
@@ -245,9 +250,9 @@ test.each([1, 2])("native launch encodes preset %i and resolves its game from th
   const layout = schema.domains.season.events.filter((event) => event.name === "RowSet").at(-1)!;
   const model = schema.models.find((model) => model.name === "GameRegistry")!;
   const event = { from_address: "0x456", keys: [...layout.prefix, "1", model.identity], data: ["1", "7", "1", "0"] };
-  const receipt = { execution_status: "SUCCEEDED", events: [event] };
+  const receipt = { block_number: 42, execution_status: "SUCCEEDED", events: [event] };
   const execute = mock(async (_call: unknown, _details: unknown) => ({ transaction_hash: "0x789" }));
-  const account = { execute, waitForTransaction: async () => receipt } as unknown as Account;
+  const account = { execute, getTransactionReceipt: async () => receipt } as unknown as Account;
   assertRegistrarAvailable(manifest as never);
   const created = await createRegistrarGame(account, params, manifest as never, undefined, definition);
   expect(created.gameId).toBe(7);

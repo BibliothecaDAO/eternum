@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test, mock } from "bun:test";
 import { CallData, type Account, type RpcProvider } from "starknet";
 import schemaJson from "../../../../../contracts/l3/world-native/schema/schema.json";
 import { canonicalRealmTraits, realmCatalogueDigest } from "./realm-catalogue";
@@ -7,6 +7,10 @@ import { inspectNativeWorld } from "./plan";
 import { deployNativeWorld } from "./deploy";
 import { buildNativeManifest } from "./manifest";
 import type { NativeWorld } from "./types";
+
+mock.module("../../shared/transaction", () => ({
+  confirmedTransactionReceipt: mock(async () => ({ block_number: 42, execution_status: "SUCCEEDED" })),
+}));
 
 const authentication = { submitter: "0x99", registry: "0x88", account_class: "0x77" };
 function fixture() {
@@ -90,7 +94,6 @@ describe("native deployment planning", () => {
         declared.push(classHash);
         return { transaction_hash: "0xdec" };
       },
-      waitForTransaction: async () => ({ isSuccess: () => true }),
     };
     const operator = {
       ...rpc,
@@ -100,7 +103,6 @@ describe("native deployment planning", () => {
         if (activated.length === local.domains.length) state.active = true;
         return { transaction_hash: "0xac" };
       },
-      waitForTransaction: async () => ({ isSuccess: () => true }),
     };
     const report = await deployNativeWorld(
       local,
@@ -135,7 +137,6 @@ describe("native deployment planning", () => {
         catalogue.digest = realmCatalogueDigest(catalogue.initialized);
         return { transaction_hash: "0xabc" };
       },
-      waitForTransaction: async () => ({ isSuccess: () => true }),
     };
     const report = await deployNativeWorld(local, account as unknown as Account, (transaction) =>
       submitted.push(transaction.hash),

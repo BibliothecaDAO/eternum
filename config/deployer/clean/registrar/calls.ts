@@ -1,3 +1,4 @@
+import { confirmedTransactionReceipt } from "../shared/transaction";
 import { completeNativeAdminCommand } from "../world/native/command";
 import { nativeDomainAbi } from "../world/native/manifest";
 import type { NativeWorldManifest } from "../world/native/types";
@@ -116,20 +117,6 @@ function buildRegistrarCall(
   };
 }
 
-function transactionSucceeded(receipt: unknown): boolean {
-  const helper = receipt as { isSuccess?: () => boolean; execution_status?: string };
-  if (typeof helper.isSuccess === "function") {
-    return helper.isSuccess();
-  }
-  return !helper.execution_status || helper.execution_status === "SUCCEEDED";
-}
-
-// Preserve the revert reason so registration retries can identify an already registered series.
-function receiptRevertReason(receipt: unknown): string | undefined {
-  const reason = (receipt as { revert_reason?: unknown }).revert_reason;
-  return typeof reason === "string" && reason.length > 0 ? reason : undefined;
-}
-
 export function resolveRegistrarExecutionDetails(target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID) {
   const chain = typeof target === "string" ? resolveDeploymentEnvironment(target).chain : "appchain";
   const resourceBounds = resolveGameTransactionResourceBounds(chain);
@@ -146,13 +133,7 @@ async function executeRegistrarCall(
   target: RegistrarTarget,
 ): Promise<RegistrarTransactionResult> {
   const transaction = await account.execute(call, resolveRegistrarExecutionDetails(target));
-  const receipt = await account.waitForTransaction(transaction.transaction_hash);
-  if (!transactionSucceeded(receipt)) {
-    const reason = receiptRevertReason(receipt);
-    throw new Error(
-      `${call.entrypoint} failed for transaction ${transaction.transaction_hash}${reason ? `: ${reason}` : ""}`,
-    );
-  }
+  const receipt = await confirmedTransactionReceipt(account, transaction.transaction_hash);
   return { transactionHash: transaction.transaction_hash, receipt };
 }
 
