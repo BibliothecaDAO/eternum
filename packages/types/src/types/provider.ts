@@ -406,7 +406,7 @@ export interface InitializeHyperstructureProps extends SystemSigner {
 export interface ContributeToConstructionProps extends SystemSigner {
   hyperstructure_entity_id: BigNumberish;
   contributor_entity_id: BigNumberish;
-  contributions: { resource: number; amount: number }[];
+  contributions: { resource: number; amount: BigNumberish }[];
 }
 
 export interface SetAccessProps extends SystemSigner {
