@@ -13,6 +13,8 @@ on:
       - "config/source/**"
       - "deploy/athanor/scripts/validate-native-target*"
       - "deploy/athanor/scripts/deploy-box*"
+      - "deploy/athanor/scripts/shard.py"
+      - "deploy/athanor/scripts/test_*.py"
       - "deploy/athanor/randomness/native-intent*.ts"
       - "scripts/generate-realm-metadata.py"
       - "packages/**"
@@ -127,7 +129,7 @@ jobs:
       - name: Test fail-closed deployment paths
         run: |
           node --test deploy/athanor/scripts/validate-native-target.test.mjs
-          python3 -m unittest discover -s deploy/athanor/scripts -p test_deploy_box.py -v
+          python3 -m unittest discover -s deploy/athanor/scripts -p "test_*.py" -v
 
   native-provider:
     runs-on: ubuntu-latest

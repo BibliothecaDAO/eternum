@@ -77,6 +77,41 @@ describe("native deployment planning", () => {
     expect(report.after.synced).toBe(true);
     expect(report.transactions).toEqual([]);
   });
+  test("class declaration uses the deployer while administration uses the bound operator", async () => {
+    const { local, rpc, state } = fixture();
+    state.active = false;
+    const declared: string[] = [];
+    const activated: string[] = [];
+    const declarer = {
+      getClass: async () => {
+        throw { code: 28 };
+      },
+      declare: async ({ classHash }: { classHash: string }) => {
+        declared.push(classHash);
+        return { transaction_hash: "0xdec" };
+      },
+      waitForTransaction: async () => ({ isSuccess: () => true }),
+    };
+    const operator = {
+      ...rpc,
+      execute: async (call: { contractAddress: string; entrypoint: string }) => {
+        expect(call.entrypoint).toBe("activate");
+        activated.push(call.contractAddress);
+        if (activated.length === local.domains.length) state.active = true;
+        return { transaction_hash: "0xac" };
+      },
+      waitForTransaction: async () => ({ isSuccess: () => true }),
+    };
+    const report = await deployNativeWorld(
+      local,
+      operator as unknown as Account,
+      () => {},
+      declarer as unknown as Account,
+    );
+    expect(declared).toEqual(local.domains.map(({ classHash }) => classHash));
+    expect(activated).toEqual(local.domains.map(({ address }) => address));
+    expect(report.after.synced).toBe(true);
+  });
   test("a matching catalogue prefix needs initialization without a blocker", async () => {
     const { local, rpc, catalogue } = fixture();
     catalogue.initialized = 128;

@@ -2,8 +2,8 @@
 
 ATHANOR is the infrastructure that runs Realms game worlds: the Madara sequencer with embedded recorded randomness,
 Herald, the launch service, identity, host bootstrap, local TLS, deployment and the gameplay harness. Native game
-contracts live in `contracts/l3/world-native`; the game clients consume Herald's snapshots and ordered diffs through
-the shared native fact store. Madara is the upstream sequencer inside this stack.
+contracts live in `contracts/l3/world-native`; the game clients consume Herald's snapshots and ordered diffs through the
+shared native fact store. Madara is the upstream sequencer inside this stack.
 
 The future shard model assigns each world to one isolated node and Herald, with shared identity and directory routing.
 Shard placement, fan-in, ledger integration and proving are deferred. The current cutover validates one shard before
@@ -14,12 +14,12 @@ selecting its supported capacity.
 Until the native cutover's fresh genesis, the running live stack retains its `madara-lab` compose project and container
 names, the `WP_REALMS_MADARA_LAB` chain ID and its existing tunnel hostnames. Source-directory changes do not rename,
 restart or switch that stack. Candidate projects use `athanor-<shard>` with disjoint ports and volumes. Set
-`COMPOSE_PROJECT_NAME` when starting a shard, and `MADARA_CONTAINER` when measuring a separately named running node.
-The three live holdovers are removed only at the approved traffic switch.
+`COMPOSE_PROJECT_NAME` when starting a shard, and `MADARA_CONTAINER` when measuring a separately named running node. The
+three live holdovers are removed only at the approved traffic switch.
 
-Use a separate checkout, compose project, ports, volumes and Herald database for a candidate. Keep the live project
-and owner playtest running. Announce any replacement of the candidate being playtested. Passing a small smoke does
-not authorize a traffic switch or a merge into `next`.
+Use a separate checkout, compose project, ports, volumes and Herald database for a candidate. Keep the live project and
+owner playtest running. Announce any replacement of the candidate being playtested. Passing a small smoke does not
+authorize a traffic switch or a merge into `next`.
 
 ## Build tools
 
@@ -47,23 +47,34 @@ Build a selected fork revision through the upstream Dockerfile and existing buil
 python3 deploy/athanor/randomness/release/build.py /path/to/madara REVISION BUILDX_BUILDER OUTPUT_DIRECTORY
 ```
 
-Use the image digest from that output with `deploy/athanor/randomness/node.yml` and an isolated compose project. The candidate
-configuration must supply the sequencing account, world address and private sequencing credential.
-The node persists its epoch secret in its own data volume. Pending assignments are volatile across restart; recorded
-nonces prevent duplicate gameplay effects. Keep WAL and fsync enabled for comparable runs. Never request fsync with
-WAL disabled.
+Use that node digest and a Herald release digest with `scripts/shard.py CONFIGURATION RUN_DIRECTORY`. The configuration
+names `shard`, `port_base` (three free loopback ports above 27999), `cpuset`, `node_memory_mib`, `madara_image`,
+`herald_image`, `chain_config` and `node_flags`. Both images must be pinned by digest. Flags explicitly select native
+execution and compilation mode. The runner refuses existing project state and CPUs outside `athanor.slice`.
+
+Supply `DEPLOYER_ACCOUNT_ADDRESS` and `DEPLOYER_PRIVATE_KEY` from the isolated devnet. The runner creates private
+credentials and volumes, deploys identity, binds a gameplay operator and deploys the native world under it, registers
+the Regular Blitz preset and starts Herald. The run directory holds its compose configuration, manifest, logs and
+private `harness.env`. It starts no live services. Failed runs retain their volumes for inspection; choose a fresh shard
+id for a new run.
+
+The node initially waits for its game deployment while declarations remain available. After deployment, the runner
+recreates only that new shard's node with its sequencing account and world address. The node persists its epoch secret
+in its own data volume. Pending assignments are volatile across restart; recorded nonces prevent duplicate gameplay
+effects. Keep WAL and fsync enabled for comparable runs. Never request fsync with WAL disabled.
 
 `docker-compose.yml` preserves the earlier infrastructure profiles and their pinned baseline image. That image is not
 the native candidate. Do not start that profile over an existing stack or treat its pin as acceptance of the current
-fork. Reserve disjoint ports and resource limits before starting a candidate. Caddy's local TLS routes require the
-host entries and certificates produced by `scripts/issue-certs.sh`; keep private files under `.lab/`.
+fork. Reserve disjoint ports and resource limits before starting a candidate. Caddy's local TLS routes require the host
+entries and certificates produced by `scripts/issue-certs.sh`; keep private files under `.lab/`.
 
 ## Native deployment
 
 Load credentials from a private, gitignored environment file under `.lab/`. The current deployment commands require
 `RPC_URL`, `DEPLOYER_ACCOUNT_ADDRESS`, `DEPLOYER_PRIVATE_KEY`, `BINDING_AUTHORITY_ADDRESS`, `RANDOMNESS_PRIVATE_KEY`,
-`NATIVE_AUTHORITY_FILE` and `NATIVE_WORLD_MANIFEST`. The sequencing authority output contains its signing credential;
-keep it private. `NATIVE_WORLD_MANIFEST` must point to the isolated world's output, not another stack's manifest.
+`NATIVE_AUTHORITY_FILE`, `GAMEPLAY_CONTRACTS_PATH`, `BINDING_AUTHORITY_PRIVATE_KEY` and `NATIVE_WORLD_MANIFEST`. The
+sequencing authority output contains its signing credential; keep it private. `NATIVE_WORLD_MANIFEST` must point to the
+isolated world's output, not another stack's manifest.
 
 On the already prepared isolated chain:
 
@@ -72,20 +83,24 @@ bun deploy/athanor/scripts/deploy-gameplay-contracts.ts
 bun deploy/athanor/harness/native/prepare-authority.ts "$NATIVE_WORLD_SEED"
 bun config/deployer/clean/cli/deploy-world.ts \
   --seed "$NATIVE_WORLD_SEED" \
-  --identity deploy/athanor/.lab/gameplay-contracts.json \
+  --identity "$GAMEPLAY_CONTRACTS_PATH" \
   --submitter "$SEQUENCING_SUBMITTER_ADDRESS"
 bun deploy/athanor/harness/native/prepare-authority.ts "$NATIVE_WORLD_SEED" "$NATIVE_WORLD_MANIFEST"
+export DEPLOYER_ACCOUNT_ADDRESS="$(jq -er .operatorAccountAddress "$GAMEPLAY_CONTRACTS_PATH")"
 bun config/deployer/clean/registrar/register-preset.ts \
   --environment madara.blitz --preset-id 2 --balance-profile official-60
 ```
 
+The deployer declares classes through `DEPLOYER_ACCOUNT_ADDRESS` and administers the world through identity's bound
+`operatorAccountAddress`, which uses the same signing key. Keep the original deployer account for sequencing authority
+preparation, funding and repeat world deployments; switch to the operator for preset registration and launch commands.
 Set `SEQUENCING_SUBMITTER_ADDRESS` to the address produced by authority preparation. Repeat deployment with the same
-seed, identity, submitter and manifest to check that an unchanged world submits zero transactions. Add `--inspect`
-to check class hashes, configuration and activation without mutation. Inspection does not prove storage compatibility;
-a populated upgrade needs its own read/mutate check. The event-codec cutover requires a fresh native deployment.
+seed, identity, submitter and manifest to check that an unchanged world submits zero transactions. Add `--inspect` to
+check class hashes, configuration and activation without mutation. Inspection does not prove storage compatibility; a
+populated upgrade needs its own read/mutate check. The event-codec cutover requires a fresh native deployment.
 
-Player identity deployment writes `.lab/gameplay-contracts.json`. No deployment output or private credential belongs
-in a tracked configuration file. The launch service and administrative commands use `ADMISSION_URL` for recorded
+Player identity deployment writes the explicit `GAMEPLAY_CONTRACTS_PATH`. No deployment output or private credential
+belongs in a tracked configuration file. The launch service and administrative commands use `ADMISSION_URL` for recorded
 execution; the client uses `VITE_PUBLIC_ADMISSION_URL` for that same node.
 
 ## Herald and client
@@ -118,5 +133,5 @@ For a node with OTLP export, set `MADARA_METRICS_FILE` to the collector's JSON-l
 `scripts/block-stats.py` combines close-block data with upstream counter deltas, excluding process resets. Report
 latency separately from gas and execution resources. Admission-to-visible includes queue wait and the Herald barrier.
 
-The server deployment workflow fails closed without native target configuration. Do not use it to update the live
-stack during integration. Preserve the baseline image and chain data until final acceptance and the approved cutover.
+The server deployment workflow fails closed without native target configuration. Do not use it to update the live stack
+during integration. Preserve the baseline image and chain data until final acceptance and the approved cutover.

@@ -15,7 +15,8 @@ export async function runNativeDeployment(args: CliArgs, root: string): Promise<
   const manifestPath = args.manifest ?? requiredEnvironment("NATIVE_WORLD_MANIFEST");
   const seed = required(args, "seed");
   const identity = JSON.parse(readFileSync(required(args, "identity"), "utf8"));
-  const authority = requiredEnvironment("DEPLOYER_ACCOUNT_ADDRESS");
+  const authority = identity.operatorAccountAddress;
+  if (!authority) throw new Error("Identity deployment requires a bound operatorAccountAddress");
   const provider = new RpcProvider({ nodeUrl: args["rpc-url"] ?? requiredEnvironment("RPC_URL") });
   await assertProviderChain(provider, "madara", "RPC_URL");
   const previous = existsSync(manifestPath)
@@ -40,8 +41,16 @@ export async function runNativeDeployment(args: CliArgs, root: string): Promise<
     return;
   }
   const account = createMadaraAccount(provider, authority, requiredEnvironment("DEPLOYER_PRIVATE_KEY"));
-  const report = await deployNativeWorld(local, account, (transaction) =>
-    console.error(JSON.stringify({ event: "native_world_transaction", ...transaction })),
+  const declarer = createMadaraAccount(
+    provider,
+    requiredEnvironment("DEPLOYER_ACCOUNT_ADDRESS"),
+    requiredEnvironment("DEPLOYER_PRIVATE_KEY"),
+  );
+  const report = await deployNativeWorld(
+    local,
+    account,
+    (transaction) => console.error(JSON.stringify({ event: "native_world_transaction", ...transaction })),
+    declarer,
   );
   writeWorldOutputs(
     buildNativeManifest(local, report.before),

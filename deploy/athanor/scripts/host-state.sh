@@ -12,7 +12,8 @@
 set -eu
 
 LAB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-CONFIG="$LAB_DIR/chain-config.yaml"
+CONFIG="${CHAIN_CONFIG_PATH:-$LAB_DIR/chain-config.yaml}"
+[[ -f "$CONFIG" ]] || { echo "Missing chain configuration: $CONFIG" >&2; exit 1; }
 CONTAINER="${MADARA_CONTAINER:-${COMPOSE_PROJECT_NAME:-athanor-local}-madara-1}"
 
 read -r load1 load5 load15 _ < /proc/loadavg

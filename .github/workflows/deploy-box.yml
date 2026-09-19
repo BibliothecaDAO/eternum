@@ -61,7 +61,7 @@ jobs:
           bun-version: "1.4.0"
 
       - name: Check deployment recipe
-        run: python3 -m unittest discover -s deploy/athanor/scripts -p test_deploy_box.py -v
+        run: python3 -m unittest discover -s deploy/athanor/scripts -p "test_*.py" -v
 
       - name: Validate native deployment target
         run: |
