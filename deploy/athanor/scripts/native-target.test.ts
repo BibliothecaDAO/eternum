@@ -27,13 +27,13 @@ describe("native deployment target is explicit", () => {
     test(`gameplay deployment refuses missing ${name} before contacting the chain`, async () => {
       const environment: Record<string, string> = { ...target };
       delete environment[name];
-      const error = await runWithoutTarget("deploy/madara-lab/scripts/deploy-gameplay-contracts.ts", environment);
+      const error = await runWithoutTarget("deploy/athanor/scripts/deploy-gameplay-contracts.ts", environment);
       expect(error).toContain(`${name} is required`);
     });
   }
 
   test("sequencing authority preparation has no default RPC or credential", async () => {
-    const error = await runWithoutTarget("deploy/madara-lab/harness/native/prepare-authority.ts", {});
+    const error = await runWithoutTarget("deploy/athanor/harness/native/prepare-authority.ts", {});
     expect(error).toContain("RANDOMNESS_PRIVATE_KEY, RPC_URL and NATIVE_AUTHORITY_FILE are required");
   });
 });

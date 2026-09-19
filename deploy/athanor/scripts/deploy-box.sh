@@ -5,7 +5,7 @@
 # carrying its own. `.github/workflows/deploy-box.yml` runs it on every push to `next` that
 # touches a service; it can also be run by hand on the box as root:
 #
-#   sudo bash deploy/madara-lab/scripts/deploy-box.sh
+#   sudo bash deploy/athanor/scripts/deploy-box.sh
 #
 # Only services whose inputs changed are restarted, because a herald restart drops every live game
 # socket. The last line of output is one JSON result (event=box_deploy) that says what moved, what
@@ -43,7 +43,7 @@ main() {
 
   run_step checkout_deploy_branch "$to"
   DEPLOY_STEP=plan
-  plan=$(as_realms bun "$REPO_DIR/deploy/madara-lab/scripts/deploy-box-plan.mjs" "$from" "$to")
+  plan=$(as_realms bun "$REPO_DIR/deploy/athanor/scripts/deploy-box-plan.mjs" "$from" "$to")
   services=$(read_plan_field "$plan" services)
   build_shared=$(read_plan_field "$plan" buildShared)
   printf '[box-deploy] plan %s\n' "$plan"

@@ -1,4 +1,4 @@
-import { encodeNativeCommand, frameNativeIntent, type NativeCommand } from "../../packages/provider/src/native-command";
+import { encodeNativeCommand, frameNativeIntent, type NativeCommand } from "../../../packages/provider/src/native-command";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";

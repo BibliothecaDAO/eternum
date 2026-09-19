@@ -27,7 +27,7 @@
   "workspaces": {
     ".": {
       "entry": [
-        "deploy/madara-lab/scripts/deploy-box-plan.mjs"
+        "deploy/athanor/scripts/deploy-box-plan.mjs"
       ]
     },
     "apps/realms": {

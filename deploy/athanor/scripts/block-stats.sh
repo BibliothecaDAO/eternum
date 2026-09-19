@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # Summarizes Madara's per-block `close_block_complete` JSON log lines for the lab container.
 #
-#   deploy/madara-lab/scripts/block-stats.sh
-#   deploy/madara-lab/scripts/block-stats.sh --since 2026-08-26T10:00:00Z --until 2026-08-26T10:10:00Z
-#   deploy/madara-lab/scripts/block-stats.sh --since 10m --json
+#   deploy/athanor/scripts/block-stats.sh
+#   deploy/athanor/scripts/block-stats.sh --since 2026-08-26T10:00:00Z --until 2026-08-26T10:10:00Z
+#   deploy/athanor/scripts/block-stats.sh --since 10m --json
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CONTAINER="${MADARA_CONTAINER:-madara-lab}"
+CONTAINER="${MADARA_CONTAINER:-${COMPOSE_PROJECT_NAME:-athanor-local}-madara-1}"
 DOCKER_ARGS=(logs "$CONTAINER")
 PYTHON_ARGS=()
 if [[ -n "${MADARA_METRICS_FILE:-}" ]]; then

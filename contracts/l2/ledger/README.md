@@ -17,7 +17,7 @@ pnpm ledger:deploy:mainnet
 ```
 
 The command declares and deploys `GameLedger`, writes `ledger` to `contracts/common/addresses/mainnet.json`, and exports
-the public value-plane addresses to the ignored `deploy/madara-lab/.env`. It does not upgrade live dependencies or grant
+the public value-plane addresses to the ignored `deploy/athanor/.env`. It does not upgrade live dependencies or grant
 roles. The MMRToken, Season Pass, and Village Pass upgrades and their ledger role grants are one ordered B.2 operation.
 
 The shared deployment runtime loads public network defaults from `contracts/common/.env.mainnet`, then overlays secrets

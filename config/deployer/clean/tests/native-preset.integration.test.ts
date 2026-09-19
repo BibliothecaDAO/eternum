@@ -14,7 +14,7 @@ import {
   commandArguments,
   readFixture,
   signedRequest,
-} from "../../../../deploy/madara-rand/native-intent";
+} from "../../../../deploy/athanor/randomness/native-intent";
 import { createNativeTicketSubmission } from "../../../../packages/provider/src/native-ticket";
 import { nativeExecutionOutcomes } from "../../../../packages/provider/src/native-batch";
 import { NativeDecoder } from "../../../../apps/herald/src/native/decoder";

@@ -496,7 +496,7 @@ async function readMadaraImage(): Promise<HarnessEvidence["madaraImage"]> {
     "docker",
     "inspect",
     "--format={{.Config.Image}}|{{.Image}}",
-    process.env.MADARA_CONTAINER ?? "madara-lab",
+    process.env.MADARA_CONTAINER ?? `${process.env.COMPOSE_PROJECT_NAME ?? "athanor-local"}-madara-1`,
   ]);
   const [tag, digest] = output.trim().split("|");
   if (!tag || !digest) throw new Error(`Could not parse Madara image metadata: ${output}`);

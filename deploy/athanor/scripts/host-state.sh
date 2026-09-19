@@ -3,8 +3,8 @@
 # One JSON object on stdout. Run it at the start and end of a run and attach both to the manifest, so a
 # number can always be read against the box, the governor, the swap pressure and the chain config it came from.
 #
-#   deploy/madara-lab/scripts/host-state.sh
-#   deploy/madara-lab/scripts/host-state.sh | jq .
+#   deploy/athanor/scripts/host-state.sh
+#   deploy/athanor/scripts/host-state.sh | jq .
 #
 # No sudo, no mutation. Missing inputs (a governor file on a VM, a stopped container) come back null, never fail.
 # No pipefail: this is best-effort extraction, and `… | head -1` SIGPIPEs the writer (exit 141) on a many-core
@@ -13,7 +13,7 @@ set -eu
 
 LAB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CONFIG="$LAB_DIR/chain-config.yaml"
-CONTAINER="${MADARA_CONTAINER:-madara-lab}"
+CONTAINER="${MADARA_CONTAINER:-${COMPOSE_PROJECT_NAME:-athanor-local}-madara-1}"
 
 read -r load1 load5 load15 _ < /proc/loadavg
 

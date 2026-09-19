@@ -46,7 +46,7 @@ export async function runNativeDeployment(args: CliArgs, root: string): Promise<
   writeWorldOutputs(
     buildNativeManifest(local, report.before),
     manifestPath,
-    args["world-address-file"] ?? resolve(root, "deploy/madara-lab/.lab/native-world-address"),
+    args["world-address-file"] ?? resolve(root, "deploy/athanor/.lab/native-world-address"),
   );
   console.log(
     JSON.stringify(

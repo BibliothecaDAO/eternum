@@ -17,7 +17,7 @@ CREDENTIALS_JSON="${CREDENTIALS_JSON:-/root/credentials.json}"
 REPO_URL="${REPO_URL:-https://github.com/BibliothecaDAO/eternum.git}"
 REPO_BRANCH="${REPO_BRANCH:-next}"
 REPO_DIR=/opt/realms/eternum
-LAB_DIR="$REPO_DIR/deploy/madara-lab"
+LAB_DIR="$REPO_DIR/deploy/athanor"
 PNPM_VERSION=10.25.0   # package.json "packageManager"
 NODE_MAJOR=22
 
@@ -72,7 +72,7 @@ set -euo pipefail
 # cannot read, and asdf.sh's cd-back then fails. HOME is realms' own and always accessible.
 cd "$HOME"
 if [ ! -x "$HOME/.bun/bin/bun" ]; then curl -fsSL https://bun.sh/install | bash; fi
-bash "$1/deploy/madara-lab/scripts/install-native-tools.sh" "$HOME/.local/share/eternum-native-tools"
+bash "$1/deploy/athanor/scripts/install-native-tools.sh" "$HOME/.local/share/eternum-native-tools"
 EOS
 }
 

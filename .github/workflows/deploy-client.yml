@@ -75,7 +75,7 @@ jobs:
         run: |
           test -n "$NATIVE_WORLD_MANIFEST_URL" && test -n "$ADMISSION_URL"
           curl --fail --silent --show-error --location "$NATIVE_WORLD_MANIFEST_URL" -o "$NATIVE_WORLD_MANIFEST"
-          node deploy/madara-lab/scripts/validate-native-target.mjs
+          node deploy/athanor/scripts/validate-native-target.mjs
 
       - name: Build client
         env:

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Issues the lab's wildcard certificate (realms.test, *.realms.test) into .lab/certs/ for Caddy.
 #
-#   deploy/madara-lab/scripts/issue-certs.sh
+#   deploy/athanor/scripts/issue-certs.sh
 #
 # The certificate comes from the mkcert root the game's Vite plugin keeps in ~/.vite-plugin-mkcert, so the one
 # `mkcert -install` that trusts that root (system store + Brave/Chrome NSS db) covers Vite and Caddy alike.
