@@ -294,6 +294,7 @@ export async function prepareHarnessBots({
   setupConcurrency = DEFAULT_SETUP_CONCURRENCY,
   setupTransactions,
 }: PrepareHarnessBotsOptions): Promise<HarnessBot[]> {
+  await game.waitUntilPlaying();
   if (gameType === "eternum") {
     await mapWithConcurrency(accounts, setupConcurrency, async (harnessAccount) => {
       const settle = await settleEternumBot({ harnessAccount, game, provider });

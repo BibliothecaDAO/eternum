@@ -3,6 +3,40 @@ import { EventEmitter } from "node:events";
 import type { GameClient } from "@bibliothecadao/eternum/game-client";
 import type { Account } from "starknet";
 import { createHarnessGame } from "./harness-game";
+import { setBlockTimestampSource } from "@bibliothecadao/eternum";
+
+test("setup waits for the confirmed start and roster readiness in every game mode", async () => {
+  let timestamp = 82;
+  let ready = false;
+  setBlockTimestampSource(() => timestamp);
+  const game = createHarnessGame({
+    gameId: 4,
+    setup: {
+      store: {
+        require: () => ({ start_main_at: 100n, start_settling_at: 40n, end_at: 200n, ready, dev_mode_on: false }),
+      },
+      systemCalls: {},
+    },
+  } as unknown as GameClient);
+  let started = false;
+  const waiting = game.waitUntilPlaying().then(() => {
+    started = true;
+  });
+  try {
+    await Bun.sleep(10);
+    expect(started).toBe(false);
+    timestamp = 100;
+    await Bun.sleep(1_050);
+    expect(started).toBe(false);
+    ready = true;
+    await waiting;
+    expect(started).toBe(true);
+    timestamp = 200;
+    await expect(game.waitUntilPlaying()).rejects.toThrow("Game 4 has ended");
+  } finally {
+    setBlockTimestampSource(null);
+  }
+});
 
 test("a mixed transaction completes only the successful bot's own ticket", async () => {
   const provider = new EventEmitter();
