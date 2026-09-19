@@ -2,7 +2,7 @@ import type { BiomeClimateConfig } from "@bibliothecadao/eternum";
 import type { BiomeType, StructureType } from "@bibliothecadao/types";
 import type { TerrainPropArchetypeId } from "./terrain-prop-catalog";
 
-export const PROCEDURAL_TERRAIN_STYLE_VERSION = 27;
+export const PROCEDURAL_TERRAIN_STYLE_VERSION = 28;
 
 export interface TerrainCellInput {
   surfacePresentation?: "ethereal";
@@ -58,6 +58,7 @@ export interface TerrainSurfaceSample {
 }
 
 export interface TerrainGeometryBuffers {
+  basaltWeights?: Float32Array;
   biomeIds: Float32Array;
   bounds: TerrainGeometryBounds;
   colors: Float32Array;
@@ -85,6 +86,7 @@ export function getTerrainGeometryBufferViews(
   buffers: TerrainGeometryBuffers,
 ): Array<Float32Array | Uint8Array | Uint32Array> {
   return [
+    ...(buffers.basaltWeights ? [buffers.basaltWeights] : []),
     buffers.biomeIds,
     buffers.colors,
     buffers.explored,
@@ -116,7 +118,7 @@ export interface TerrainPageDiagnostics {
 }
 
 export interface PreparedTerrainPage {
-  /** Four floats per explored tile: world X, world Z, shared lattice phase, occupied flag. */
+  /** Two floats per explored ethereal-layer tile: world X, world Z. */
   basaltInstances?: Float32Array | null;
   borderBuffers?: TerrainGeometryBuffers | null;
   buffers: TerrainGeometryBuffers;

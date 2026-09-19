@@ -6,7 +6,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { terrainHexToWorld } from "./terrain-coordinates";
 import { TerrainField } from "./terrain-field";
-import { BASALT_DETAIL_TILE_LIMIT } from "./terrain-basalt";
+import { BASALT_SUPPORT_HEIGHT } from "./terrain-basalt";
 import { TerrainFogField } from "./terrain-fog-field";
 import { ProceduralTerrain } from "./procedural-terrain";
 import { TerrainPropPools } from "./terrain-prop-pools";
@@ -18,7 +18,7 @@ vi.mock("./terrain-prop-asset-cache", async () => {
 });
 
 describe("ProceduralTerrain", () => {
-  it("shares basalt templates and bounds detail work across page boundaries and camera transitions", () => {
+  it("uses one flat shared surface for every occupied state and camera distance", () => {
     const terrain = new ProceduralTerrain();
     const pages = [-1, 0].flatMap((pageRow) =>
       [-1, 0].map((pageCol) =>
@@ -43,9 +43,12 @@ describe("ProceduralTerrain", () => {
       if (object instanceof InstancedMesh && object.userData.basaltInstances) meshes.push(object);
     });
     const far = meshes.filter((mesh) => mesh.name === "procedural-terrain-basalt");
-    const near = meshes.filter((mesh) => mesh.name === "procedural-terrain-basalt-detail");
-    expect(new Set(meshes.map((mesh) => mesh.geometry)).size).toBeLessThanOrEqual(18);
-    expect(far.every((mesh) => near.every((detail) => mesh.renderOrder < detail.renderOrder))).toBe(true);
+    expect(meshes).toHaveLength(4);
+    expect(far).toHaveLength(4);
+    expect(new Set(meshes.map((mesh) => mesh.geometry)).size).toBe(1);
+    expect(new Set(meshes.map((mesh) => mesh.material)).size).toBe(1);
+    const initialMatrices = meshes.map((mesh) => Array.from(mesh.instanceMatrix.array));
+    const initialTriangles = terrain.summarize(pages).triangles;
     const sharedDisposals = [...new Set(meshes.map((mesh) => mesh.geometry))].map((geometry) =>
       vi.spyOn(geometry, "dispose"),
     );
@@ -66,17 +69,20 @@ describe("ProceduralTerrain", () => {
         );
       expect(meshes.reduce((sum, mesh) => sum + mesh.count, 0)).toBe(576);
     };
-    draw(35);
-    expect(near.reduce((sum, mesh) => sum + mesh.count, 0)).toBe(0);
-    expect(terrain.summarize(pages).triangles).toBeLessThan(20_000);
-    draw(10);
-    const detailCount = near.reduce((sum, mesh) => sum + mesh.count, 0);
-    expect(detailCount).toBeGreaterThan(0);
-    expect(detailCount).toBeLessThanOrEqual(BASALT_DETAIL_TILE_LIMIT);
-    expect(terrain.summarize(pages).triangles).toBeLessThan(150_000);
-    expect(terrain.summarize(pages).geometryBytes).toBeLessThan(6 * 1024 * 1024);
-    draw(35);
-    expect(near.reduce((sum, mesh) => sum + mesh.count, 0)).toBe(0);
+    for (const height of [35, 10, 2, 35]) {
+      draw(height);
+      expect(meshes.map((mesh) => Array.from(mesh.instanceMatrix.array))).toEqual(initialMatrices);
+      expect(terrain.summarize(pages).triangles).toBe(initialTriangles);
+      expect(terrain.summarize(pages).triangles).toBeLessThan(20_000);
+    }
+    expect(terrain.summarize(pages).geometryBytes).toBeLessThan(2 * 1024 * 1024);
+    for (const page of pages) {
+      const field = new TerrainField(page.request);
+      for (const cell of page.request.cells) {
+        const center = terrainHexToWorld(cell.col, cell.row);
+        expect(field.sampleSurface(center.x, center.z).height).toBe(BASALT_SUPPORT_HEIGHT);
+      }
+    }
     terrain.present([pages[0]]);
     expect(sharedDisposals.every((spy) => spy.mock.calls.length === 0)).toBe(true);
     terrain.dispose();

@@ -39,8 +39,8 @@ describe("ethereal terrain integration", () => {
       cell(index % 24, { row: Math.floor(index / 24), occupied: index % 17 === 0 }),
     );
     const page = prepareTerrainPage(request(cells));
-    expect(page.basaltInstances).toHaveLength(24 * 24 * 4);
-    expect(page.basaltInstances!.byteLength).toBe(24 * 24 * 16);
+    expect(page.basaltInstances).toHaveLength(24 * 24 * 2);
+    expect(page.basaltInstances!.byteLength).toBe(24 * 24 * 8);
     expect(page.diagnostics.geometryBytes).toBeLessThan(2 * 1024 * 1024);
     expect(page.diagnostics.triangles).toBeLessThan(20_000);
     expect(page.diagnostics.vertices).toBeLessThan(40_000);
@@ -68,10 +68,16 @@ describe("ethereal terrain integration", () => {
     expect(world.basaltInstances).toBeNull();
   });
 
-  it("isolates a surface spire override to one hex with ordinary water beside it", () => {
+  it("blends the surface spire visually into its neighbor while retaining gameplay biomes", () => {
     const source = request([cell(0, { occupied: true, surfacePresentation: "ethereal" }), cell(1)], "world");
     const page = prepareTerrainPage(source);
-    expect(page.basaltInstances).toEqual(new Float32Array([0, 0, 0, 1]));
+    expect(page.basaltInstances).toBeNull();
+    expect(page.borderBuffers).toBeNull();
+    const weights = page.buffers.basaltWeights!;
+    expect(weights.some((weight) => weight > 0 && weight < 1)).toBe(true);
+    const positions = page.buffers.positions;
+    expect(weights.some((weight, i) => weight > 0 && positions[i * 3] > Math.sqrt(3) / 2 + 0.05)).toBe(true);
+    expect(weights.some((weight, i) => weight === 0 && positions[i * 3] > 1.5)).toBe(true);
     expect(page.waterBuffers!.indices.length).toBeGreaterThan(0);
     const neighbor = terrainHexToWorld(1, 0);
     expect(new TerrainField(source).sampleSurface(neighbor.x, neighbor.z).height).not.toBe(BASALT_SUPPORT_HEIGHT);

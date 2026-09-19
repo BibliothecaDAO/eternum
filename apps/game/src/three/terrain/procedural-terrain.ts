@@ -18,20 +18,11 @@ import { createInstancedMesh } from "../utils/create-instanced-mesh";
 
 import { MeshBasicNodeMaterial, MeshStandardNodeMaterial } from "three/webgpu";
 
-import {
-  BASALT_DETAIL_CAMERA_HEIGHT,
-  BASALT_DETAIL_RADIUS,
-  BASALT_DETAIL_TILE_LIMIT,
-  BASALT_FAR_TRIANGLES,
-  BASALT_FAR_VERTICES,
-  BASALT_VARIANT_COUNT,
-  buildBasaltFarTemplate,
-  buildBasaltTemplate,
-} from "./terrain-basalt";
+import { BASALT_SUPPORT_HEIGHT, buildBasaltShell } from "./terrain-basalt";
 import { findNearestTerrainHex } from "./terrain-coordinates";
 import { TerrainField } from "./terrain-field";
 import { createEtherealBorderMaterial } from "./terrain-ethereal-border-material";
-import { createEtherealTerrainFarMaterial, createEtherealTerrainMaterial } from "./terrain-ethereal-material";
+import { createEtherealTerrainMaterial } from "./terrain-ethereal-material";
 import type { TerrainFogMask } from "./terrain-fog-mask";
 import { acquireTerrainGroundTextures, type TerrainGroundTextureHandle } from "./terrain-ground-textures";
 import { createTerrainGroundMaterial, createTerrainMaterials, type TerrainMaterials } from "./terrain-material";
@@ -107,8 +98,7 @@ export class ProceduralTerrain {
   private groundTextureDetailEnabled = true;
   private groundTextureMaterial: TerrainMaterials["land"] | null = null;
   private readonly etherealMaterial = createEtherealTerrainMaterial();
-  private readonly etherealFarMaterial = createEtherealTerrainFarMaterial();
-  private readonly basaltTemplates = new Map<number, BufferGeometry>();
+  private basaltGeometry: BufferGeometry | null = null;
   private readonly etherealBorders = createEtherealBorderMaterial();
   private surfacePresentation: "world" | "ethereal" = "world";
   private groundTextureHandle: TerrainGroundTextureHandle | null = null;
@@ -142,7 +132,6 @@ export class ProceduralTerrain {
     this.fogField.applyRevealToMaterial(this.materials.flatLand);
     this.fogField.applyRevealToMaterial(this.materials.water);
     this.fogField.applyRevealToMaterial(this.etherealMaterial);
-    this.fogField.applyRevealToMaterial(this.etherealFarMaterial);
     this.fogField.applyRevealToMaterial(this.etherealBorders.material);
     this.setQualityTier(this.qualityTier);
     this.releaseAppearance = useWorldAppearanceStore.subscribe(() => this.applyAppearance());
@@ -398,16 +387,12 @@ export class ProceduralTerrain {
   summarize(preparedPages: readonly PreparedTerrainPage[]): TerrainPresentationDiagnostics {
     this.requireActive();
     const summary = summarizePresentation(preparedPages, this.getPropStats(), this.getShroudStats());
-    for (const geometry of this.basaltTemplates.values()) summary.geometryBytes += countBufferGeometryBytes(geometry);
+    if (this.basaltGeometry) summary.geometryBytes += countBufferGeometryBytes(this.basaltGeometry);
     for (const prepared of preparedPages) {
       const group = this.pages.get(prepared.request.pageKey)?.group;
       if (!group || !prepared.basaltInstances) continue;
-      summary.triangles -= (prepared.basaltInstances.length / 4) * BASALT_FAR_TRIANGLES;
-      summary.vertices -= (prepared.basaltInstances.length / 4) * BASALT_FAR_VERTICES;
       group.traverse((object) => {
         if (!(object instanceof InstancedMesh) || !object.userData.basaltInstances) return;
-        summary.triangles += object.count * ((object.geometry.index?.count ?? 0) / 3);
-        summary.vertices += object.count * object.geometry.getAttribute("position").count;
         summary.geometryBytes += object.instanceMatrix.array.byteLength;
       });
     }
@@ -467,8 +452,8 @@ export class ProceduralTerrain {
     this.releaseAppearance();
     this.pages.forEach(disposePageGeometry);
     this.pages.clear();
-    this.basaltTemplates.forEach((geometry) => geometry.dispose());
-    this.basaltTemplates.clear();
+    this.basaltGeometry?.dispose();
+    this.basaltGeometry = null;
     this.presentationGroup.clear();
     this.object3d.clear();
     this.pageWorker?.dispose();
@@ -485,7 +470,6 @@ export class ProceduralTerrain {
         this.materials.water,
         this.groundTextureMaterial,
         this.etherealMaterial,
-        this.etherealFarMaterial,
         this.etherealBorders.material,
       ].filter(Boolean),
     ).forEach((material) => material!.dispose());
@@ -559,14 +543,8 @@ export class ProceduralTerrain {
       if (preparedPage.buffers.indices.length)
         group.add(createTerrainMesh(preparedPage.buffers, this.materials.land, "land"));
       if (preparedPage.basaltInstances) {
-        group.add(
-          createBasaltPageGroup(
-            preparedPage.basaltInstances,
-            this.etherealMaterial,
-            this.etherealFarMaterial,
-            this.basaltTemplates,
-          ),
-        );
+        this.basaltGeometry ??= createBasaltGeometry();
+        group.add(createBasaltPageMesh(preparedPage.basaltInstances, this.etherealMaterial, this.basaltGeometry));
       }
       if (preparedPage.borderBuffers) {
         const borders = createTerrainMesh(preparedPage.borderBuffers, this.etherealBorders.material, "borders");
@@ -624,153 +602,41 @@ export class ProceduralTerrain {
   }
 }
 
-function createBasaltPageGroup(
+function createBasaltPageMesh(
   tiles: Float32Array,
-  nearMaterial: MeshStandardNodeMaterial,
-  farMaterial: MeshStandardNodeMaterial,
-  templates: Map<number, BufferGeometry>,
-): Group {
-  const group = new Group();
-  group.name = "procedural-terrain-basalt-lod";
-  const bounds = basaltPageBounds(tiles);
-  const far = createBasaltInstances(tiles.length / 4, BASALT_VARIANT_COUNT + 1, farMaterial, templates, bounds);
-  far.name = "procedural-terrain-basalt";
-  // LOD writes must precede every detail draw, including when this sentinel has zero instances.
-  far.renderOrder = -1;
-  group.add(far);
-  const near = createBasaltDetailMeshes(tiles, nearMaterial, templates, bounds);
-  group.add(...near.values());
-  configureBasaltLod(tiles, far, near);
-  return group;
-}
-
-function createBasaltDetailMeshes(
-  tiles: Float32Array,
-  nearMaterial: MeshStandardNodeMaterial,
-  templates: Map<number, BufferGeometry>,
-  bounds: Sphere,
-): Map<number, InstancedMesh> {
-  const near = new Map<number, InstancedMesh>();
-  const counts = new Map<number, number>();
-  for (let index = 0; index < tiles.length; index += 4) {
-    const variant = tiles[index + 3] ? BASALT_VARIANT_COUNT : tiles[index + 2];
-    counts.set(variant, (counts.get(variant) ?? 0) + 1);
-  }
-  for (const [variant, count] of counts) {
-    const mesh = createBasaltInstances(
-      Math.min(count, BASALT_DETAIL_TILE_LIMIT),
-      variant,
-      nearMaterial,
-      templates,
-      bounds,
-    );
-    mesh.name = "procedural-terrain-basalt-detail";
-    mesh.count = 0;
-    mesh.castShadow = true;
-    near.set(variant, mesh);
-  }
-
-  return near;
-}
-
-function configureBasaltLod(tiles: Float32Array, far: InstancedMesh, near: Map<number, InstancedMesh>): void {
-  const matrix = new Matrix4();
-  for (let index = 0; index < tiles.length; index += 4)
-    far.setMatrixAt(index / 4, matrix.makeTranslation(tiles[index], 0, tiles[index + 1]));
-  far.instanceMatrix.needsUpdate = true;
-  const focus = new Vector3();
-  const position = new Vector3();
-  const direction = new Vector3();
-  const retained = new Float64Array(6).fill(Number.NaN);
-  const selectLod: InstancedMesh["onBeforeRender"] = (_renderer, _scene, camera) => {
-    camera.getWorldPosition(position);
-    camera.getWorldDirection(direction);
-    if (isRetainedCamera(retained, position, direction)) return;
-    const distanceToGround = direction.y < -0.01 ? -position.y / direction.y : 0;
-    focus.copy(position).addScaledVector(direction, distanceToGround);
-    writeBasaltLod(tiles, far, near, matrix, position.y < BASALT_DETAIL_CAMERA_HEIGHT && distanceToGround > 0, focus);
-  };
-  // The shared helper binds the backend instance buffers on the first draw and then restores the prototype hook;
-  // run that once, then keep LOD selection installed for every later draw.
-  const prepareBuffers = far.onBeforeRender;
-  far.onBeforeRender = function (this: InstancedMesh, ...args: Parameters<InstancedMesh["onBeforeRender"]>) {
-    prepareBuffers.call(this, ...args);
-    far.onBeforeRender = selectLod;
-    selectLod.call(this, ...args);
-  };
-}
-
-/** Six numbers compared in place: the camera rarely moves between draws of the same page. */
-function isRetainedCamera(retained: Float64Array, position: Vector3, direction: Vector3): boolean {
-  const current = [position.x, position.y, position.z, direction.x, direction.y, direction.z];
-  let same = true;
-  for (let index = 0; index < 6; index++) {
-    if (retained[index] !== current[index]) same = false;
-    retained[index] = current[index];
-  }
-  return same;
-}
-
-function writeBasaltLod(
-  tiles: Float32Array,
-  far: InstancedMesh,
-  near: Map<number, InstancedMesh>,
-  matrix: Matrix4,
-  detail: boolean,
-  focus: Vector3,
-): void {
-  far.count = 0;
-  near.forEach((mesh) => {
-    mesh.count = 0;
-  });
-  for (let index = 0; index < tiles.length; index += 4) {
-    const x = tiles[index];
-    const z = tiles[index + 1];
-    const withinDetail = detail && (x - focus.x) ** 2 + (z - focus.z) ** 2 < BASALT_DETAIL_RADIUS ** 2;
-    const variant = tiles[index + 3] ? BASALT_VARIANT_COUNT : tiles[index + 2];
-    const mesh = withinDetail ? near.get(variant)! : far;
-    mesh.setMatrixAt(mesh.count++, matrix.makeTranslation(x, 0, z));
-  }
-  far.instanceMatrix.needsUpdate = true;
-  near.forEach((mesh) => {
-    mesh.instanceMatrix.needsUpdate = true;
-  });
-}
-
-function createBasaltInstances(
-  capacity: number,
-  variant: number,
   material: MeshStandardNodeMaterial,
-  templates: Map<number, BufferGeometry>,
-  bounds: Sphere,
+  geometry: BufferGeometry,
 ): InstancedMesh {
-  let geometry = templates.get(variant);
-  if (!geometry) {
-    const source =
-      variant > BASALT_VARIANT_COUNT
-        ? buildBasaltFarTemplate()
-        : buildBasaltTemplate(variant % BASALT_VARIANT_COUNT, variant === BASALT_VARIANT_COUNT);
-    geometry = new BufferGeometry();
-    geometry.setIndex(new BufferAttribute(new Uint16Array(source.indices), 1));
-    geometry.setAttribute("position", new BufferAttribute(new Float32Array(source.positions), 3));
-    geometry.setAttribute("normal", new BufferAttribute(new Float32Array(source.normals), 3));
-    geometry.setAttribute("terrainColor", new BufferAttribute(new Float32Array(source.colors), 3));
-    geometry.userData.sharedBasalt = true;
-    templates.set(variant, geometry);
-  }
-  const mesh = createInstancedMesh(geometry, material, capacity);
-  mesh.boundingSphere = bounds.clone();
+  const mesh = createInstancedMesh(geometry, material, tiles.length / 2);
+  mesh.name = "procedural-terrain-basalt";
+  mesh.boundingSphere = basaltPageBounds(tiles);
   mesh.receiveShadow = true;
   mesh.userData.basaltInstances = true;
   mesh.raycast = disableTerrainRaycast;
+  const matrix = new Matrix4();
+  for (let index = 0; index < tiles.length; index += 2)
+    mesh.setMatrixAt(index / 2, matrix.makeTranslation(tiles[index], 0, tiles[index + 1]));
+  mesh.instanceMatrix.needsUpdate = true;
+  // Keep createInstancedMesh's first-draw backend setup hook intact.
   return mesh;
+}
+
+function createBasaltGeometry(): BufferGeometry {
+  const source = buildBasaltShell();
+  const geometry = new BufferGeometry();
+  geometry.setIndex(new BufferAttribute(new Uint16Array(source.indices), 1));
+  geometry.setAttribute("position", new BufferAttribute(new Float32Array(source.positions), 3));
+  geometry.setAttribute("normal", new BufferAttribute(new Float32Array(source.normals), 3));
+  geometry.setAttribute("terrainColor", new BufferAttribute(new Float32Array(source.colors), 3));
+  geometry.userData.sharedBasalt = true;
+  return geometry;
 }
 
 function basaltPageBounds(tiles: Float32Array): Sphere {
   const box = new Box3();
-  for (let index = 0; index < tiles.length; index += 4) {
+  for (let index = 0; index < tiles.length; index += 2) {
     box.expandByPoint(new Vector3(tiles[index] - 1, 0, tiles[index + 1] - 1));
-    box.expandByPoint(new Vector3(tiles[index] + 1, 0.14, tiles[index + 1] + 1));
+    box.expandByPoint(new Vector3(tiles[index] + 1, BASALT_SUPPORT_HEIGHT, tiles[index + 1] + 1));
   }
   return box.getBoundingSphere(new Sphere());
 }
@@ -794,6 +660,10 @@ function createTerrainMesh(
     geometry.setAttribute("position", new BufferAttribute(buffers.positions, 3));
     geometry.setAttribute("normal", new BufferAttribute(buffers.normals, 3));
     geometry.setAttribute("uv", new BufferAttribute(buffers.uvs, 2));
+    geometry.setAttribute(
+      "terrainBasaltWeight",
+      new BufferAttribute(buffers.basaltWeights ?? new Float32Array(buffers.positions.length / 3), 1),
+    );
     geometry.setAttribute("terrainColor", new BufferAttribute(buffers.colors, 3));
     geometry.setAttribute("terrainRoughness", new BufferAttribute(buffers.roughness, 1));
     geometry.setAttribute("terrainShore", new BufferAttribute(buffers.shore, 1));

@@ -1,16 +1,27 @@
 # Ethereal landmarks
 
-The spire and Bitcoin mine are base-free landmarks placed on the procedural Three.js ethereal biome. Their former basalt
-bases and ground veins are removed; terrain owns the support surface and flowing neon gameplay-hex borders. Align
-model-local Y=0 with the occupied terrain top, currently 0.12, without an additional landmark lift. Both use a
-radius-one pointy gameplay hex. Source binaries are committed only in the same change as their shipped GLBs.
+The spire and Bitcoin mine sit on the procedural Three.js ethereal biome. Their former full-hex basalt bases and ground
+veins are removed; terrain owns the level support surface. Flowing neon gameplay-hex borders appear only on the ethereal
+layer; surface spire patches blend whole basalt slabs into revealed neighboring terrain. The spire retains only a small
+rooted rock outcropping beneath its portal. Align model-local Y=0 with the terrain top, currently 0.12, without an
+additional landmark lift. Both use a radius-one pointy gameplay hex. Source binaries are committed only in the same
+change as their shipped GLBs.
 
 ## Spire
 
 `spire.glb` is the hand-authored S2 dimensional spire: a hovering shard and fragments, plus a translucent purple sphere
-wrapped in neon currents, with one eight-second `Spire_Loop`. Upper-model emission and animation remain intact. The
-editable source is `apps/game/asset-sources/ethereal/spire/spire.blend` (Blender 5.2.1, textures packed, production
-collection `SPIRE_V2_PRODUCTION`). Its three former `spirePart=base` objects are absent from source and export.
+wrapped in neon currents, with one eight-second `Spire_Loop`. Portal emission and animation remain intact. The editable
+source is `apps/game/asset-sources/ethereal/spire/spire.blend` (Blender 5.2.1, textures packed, production collection
+`SPIRE_V2_PRODUCTION`). Its three former `spirePart=base` objects remain absent. A fixed, non-emissive seven-column
+outcropping sits beneath the portal: 0.734 wide, 0.706 deep and 0.155 high, with a 0.006 contact skirt below local
+ground. It shares the spire's packed basalt material and is only slightly wider than the 0.652-wide upper core.
+
+The former winding exterior veins are replaced by 16 flat mineral inclusions, each strictly vertical and 0.125–0.25
+long. They occupy the recessed V-shaped junctions between two neighboring rock columns, with dark intervals between
+them. No veins remain on the floating fragments or the grounded outcropping. The BLUE, ORANGE and PINK material names
+remain for the production light treatment. Construction and source-validation scripts are retained locally under
+`.context/ethereal-layer/biome-tiles/revision-2/`; the committed packed source is sufficient for a clean-checkout
+export.
 
 Rebuild from the repository root with Blender 5.2.1 and Khronos KTX-Software 4.4.2 on PATH:
 
@@ -23,10 +34,12 @@ pnpm --dir apps/game verify:assets
 
 The optimizer resamples the clip, limits textures to 480 px, encodes them as KTX2 and applies Draco without flattening
 the hierarchy: six current parents intentionally reach zero scale to hide inward-motion resets. Raw exports match byte
-for byte. Comparing all 241 authored poses before and after base removal gives zero upper-hierarchy matrix change. The
-lowest floating geometry stays at least 0.0473 above local support. The refitted export is 564,268 bytes, 25 primitives
-and 11,712 triangles, with eight materials, six KTX2 textures and 43 animation channels; the preceding base-bearing
-export was 603,840 bytes, 29 primitives and 16,140 triangles. These are asset counts, not frame draw costs.
+for byte. Comparing all 241 authored poses across the outcrop/seam refit gives zero matrix change for the 38 preserved
+objects; their stone and portal mesh geometry is unchanged. The new outcropping has no animation and does not intersect
+any portal surface across the complete loop; the nearest sampled portal vertex remains 0.04005 away. The current export
+is 550,564 bytes, 23 primitives and 10,064 triangles, with eight materials, six KTX2 textures and 43 animation channels.
+The preceding base-free export was 564,268 bytes, 25 primitives and 11,712 triangles. These are asset counts, not frame
+draw costs.
 
 Runtime: `src/three/structures/spire-model.ts` evaluates the hierarchy with a stable phase per placement and shares
 instanced stone draws. `spire-portal.ts` composes rear light, translucent core and front light, splitting currents by a
@@ -50,9 +63,9 @@ have identity transforms; the mine has no animation. Built with Blender 5.2.1.
 
 The 12 foundation posts, two cart tyres and two handle ends meet local support within 1e-6. The cart is a rigid assembly
 with a 20.9791-degree pitch. Ladder feet and the tilted cube have shallow contact skirts, with a maximum embed of
-0.00812, to prevent light gaps. All six 60-degree placements fit the gameplay hex. The occupied terrain provides a flat
-support plane across that hex. The cube keeps its navy/gold three-shade vertex palettes, gold emission strength 1.5 and
-blue circuitry strength 1.2; the gold material name is what `local-emissive-glow.ts` keys its light diffusion on.
+0.00812, to prevent light gaps. All six 60-degree placements fit the gameplay hex. Every ethereal tile provides the same
+flat support plane at every zoom. The cube keeps its navy/gold three-shade vertex palettes, gold emission strength 1.5
+and blue circuitry strength 1.2; the gold material name is what `local-emissive-glow.ts` keys its light diffusion on.
 
 Rebuild and optimize from the repository root with Blender 5.2.1 and Khronos KTX-Software 4.4.2 on PATH:
 

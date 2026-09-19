@@ -26,8 +26,8 @@ describe("production spire asset", () => {
     expect(bytes.length).toBeLessThan(768 * 1024);
     expect(gltf.extensionsUsed).toEqual(expect.arrayContaining(["KHR_draco_mesh_compression", "KHR_texture_basisu"]));
     const primitives = gltf.meshes.flatMap((mesh) => mesh.primitives);
-    expect(primitives).toHaveLength(25);
-    expect(primitives.reduce((sum, primitive) => sum + gltf.accessors[primitive.indices].count / 3, 0)).toBe(11712);
+    expect(primitives).toHaveLength(23);
+    expect(primitives.reduce((sum, primitive) => sum + gltf.accessors[primitive.indices].count / 3, 0)).toBe(10064);
     expect(gltf.materials).toHaveLength(8);
     expect(gltf.images).toHaveLength(6);
     for (const image of gltf.images) {
@@ -50,6 +50,38 @@ describe("production spire asset", () => {
     expect(gltf.nodes.some((node) => node.extras?.portalTransparencyMode === "split-depth-additive-v1")).toBe(true);
     for (const node of gltf.nodes.filter((node) => node.mesh !== undefined))
       expect(node.scale ?? [1, 1, 1]).toEqual([1, 1, 1]);
+  });
+
+  it("keeps the outcrop dark and rooted and confines veins to inner column junctions", () => {
+    const outcrops = gltf.nodes.filter((node) => node.extras?.spirePart === "outcrop");
+    expect(outcrops).toHaveLength(1);
+    const outcrop = outcrops[0];
+    expect(outcrop.extras.grounded).toBe(true);
+    expect(outcrop.translation ?? [0, 0, 0]).toEqual([0, 0, 0]);
+    for (const primitive of gltf.meshes[outcrop.mesh].primitives) {
+      const material = gltf.materials[primitive.material];
+      expect(material.emissiveFactor ?? [0, 0, 0]).toEqual([0, 0, 0]);
+      const position = gltf.accessors[primitive.attributes.POSITION];
+      expect(position.min[1]).toBeGreaterThan(-0.007);
+      expect(position.min[1]).toBeLessThanOrEqual(0);
+      expect(position.max[1]).toBeLessThan(0.18);
+      expect(position.max[0] - position.min[0]).toBeLessThan(0.8);
+    }
+    const veins = gltf.nodes.filter(
+      (node) =>
+        node.mesh !== undefined &&
+        gltf.meshes[node.mesh].primitives.some((primitive) =>
+          gltf.materials[primitive.material].name.startsWith("Veins"),
+        ),
+    );
+    expect(veins.length).toBeGreaterThan(0);
+    for (const vein of veins) {
+      expect(vein.extras.spirePart).toBe("spire");
+      expect(vein.extras.veinPlacement).toBe("inner-column-junction");
+      expect(vein.extras.veinShape).toBe("short-straight-vertical");
+    }
+    const animatedNodes = new Set(gltf.animations[0].channels.map((channel) => channel.target.node));
+    expect(animatedNodes.has(gltf.nodes.indexOf(outcrop))).toBe(false);
   });
 
   it("preserves the eight-second loop and hides every current during its teleport reset", () => {

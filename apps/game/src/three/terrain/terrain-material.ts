@@ -14,6 +14,7 @@ import {
   normalMap,
   normalLocal,
   positionLocal,
+  positionWorld,
   positionViewDirection,
   smoothstep,
   step,
@@ -27,6 +28,7 @@ import {
 } from "three/tsl";
 import { MeshPhysicalNodeMaterial, MeshStandardNodeMaterial } from "three/webgpu";
 
+import { createBasaltSurfaceColor } from "./terrain-ethereal-material";
 import { terrainHexEdgeDistance } from "./terrain-hex-node";
 import type { TerrainGroundTextures } from "./terrain-ground-textures";
 import {
@@ -196,11 +198,13 @@ export function createTerrainGroundMaterial(
     groundMotion,
   );
   const ashCoverage = smoothstep(0.05, 0.5, groundWeights1.w);
-  material.colorNode = shadeTerrainSurface(
+  material.colorNode = shadeWithSurfaceBasalt(
     mix(groundColor, volcanic.color, ashCoverage),
     smoothstep(0.25, 0.55, groundWeights0.w),
   );
-  material.emissiveNode = volcanic.embers.mul(ashCoverage);
+  material.emissiveNode = volcanic.embers
+    .mul(ashCoverage)
+    .mul(attribute<"float">("terrainBasaltWeight", "float").oneMinus());
   const sampledNormalMaterial = mix(secondaryNormalMaterial, primaryNormalMaterial, primaryBlend);
   material.roughnessNode = mix(
     sampledNormalMaterial.b.mul(attribute<"float">("terrainRoughness", "float")).clamp(0.7, 1),
@@ -210,7 +214,7 @@ export function createTerrainGroundMaterial(
   material.aoNode = mix(1, sampledNormalMaterial.a, 0.35);
   const detailedNormal = normalMap(
     vec3(sampledNormalMaterial.rg.add(detail.rippleNormal), sampledNormalMaterial.b),
-    vec2(snowCover.mul(-0.3).add(0.55)),
+    vec2(snowCover.mul(-0.3).add(0.55).mul(attribute<"float">("terrainBasaltWeight", "float").oneMinus())),
   );
   detailedNormal.unpackNormalMode = NormalRGPacking;
   material.normalNode = detailedNormal;
@@ -357,7 +361,18 @@ function selectStrongestGroundPair(weights0: Node<"vec4">, weights1: Node<"vec4"
 function createVertexColorMaterial(name: string, fallbackRoughness: number): MeshStandardNodeMaterial {
   const material = new MeshStandardNodeMaterial({ metalness: 0, roughness: fallbackRoughness });
   material.name = name;
-  material.colorNode = shadeTerrainSurface(attribute("terrainColor", "vec3"));
+  material.colorNode = shadeWithSurfaceBasalt(attribute("terrainColor", "vec3"));
   material.roughnessNode = attribute("terrainRoughness", "float");
   return material;
+}
+
+function shadeWithSurfaceBasalt(ground: Node<"vec3">, grassContrast: Node<"float"> = float(0)): Node<"vec3"> {
+  return Fn(() => {
+    const result = shadeTerrainSurface(ground, grassContrast).toVar();
+    const weight = attribute<"float">("terrainBasaltWeight", "float");
+    If(weight.greaterThan(0), () => {
+      result.assign(mix(result, applyGameEndFrost(createBasaltSurfaceColor(positionWorld.xz, vec3(1))), weight));
+    });
+    return result;
+  })();
 }

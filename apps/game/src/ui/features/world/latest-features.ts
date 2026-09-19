@@ -34,6 +34,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-09-20",
+    title: "Refined Ethereal Terrain",
+    type: "improvement",
+    description:
+      "Ethereal basalt stays consistent at every zoom, surface spires blend into neighbouring terrain, and spires gain grounded rock outcrops with recessed mineral highlights.",
+  },
+  {
     date: "2026-09-15",
     title: "Ethereal Basalt and Neon Borders",
     type: "feature",

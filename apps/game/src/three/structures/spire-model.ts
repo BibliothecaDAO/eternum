@@ -70,7 +70,7 @@ export class SpireModel extends InstancedModel {
       mesh.userData.spirePart = prepared.solids[index].userData.spirePart;
       mesh.frustumCulled = true;
     });
-    this.veins = new LocalEmissiveGlow(this.instancedMeshes, this.group);
+    this.veins = new LocalEmissiveGlow(this.instancedMeshes, this.group, { width: 0.003, opacity: 0.12 });
   }
 
   override setMatrixAt(index: number, matrix: Matrix4): void {

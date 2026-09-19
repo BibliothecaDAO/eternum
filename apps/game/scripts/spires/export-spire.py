@@ -17,8 +17,11 @@ if Path(bpy.data.filepath).resolve() != SOURCE.resolve():
 scene = bpy.context.scene
 collection = bpy.data.collections["SPIRE_V2_PRODUCTION"]
 objects = list(collection.objects)
-assert len(objects) == 44 and sum(obj.type == "MESH" for obj in objects) == 25
+assert len(objects) == 42 and sum(obj.type == "MESH" for obj in objects) == 23
 assert all(obj.get("spirePart") != "base" for obj in objects), "Terrain owns the landmark base"
+assert sum(obj.get("spirePart") == "outcrop" for obj in objects) == 1
+assert not any(obj.get("spirePart") == "fragment" and obj.type == "MESH"
+               and any(material.name.startswith("Veins") for material in obj.data.materials) for obj in objects)
 scene.frame_start, scene.frame_end, scene.render.fps = 1, 241, 30
 scene.frame_set(1)
 # Scene properties from the review session otherwise become animation extras.

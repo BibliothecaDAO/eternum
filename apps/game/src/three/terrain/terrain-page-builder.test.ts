@@ -10,7 +10,7 @@ import { createAllBiomesTerrainRequest } from "./verification/terrain-verificati
 describe("prepareTerrainPage", () => {
   it("tracks the reviewed all-biome terrain and placement style", () => {
     const prepared = prepareTerrainPage(createAllBiomesTerrainRequest());
-    expect(prepared.fingerprint).toMatchInlineSnapshot(`"fd351177"`);
+    expect(prepared.fingerprint).toMatchInlineSnapshot(`"10936834"`);
   });
 
   it("builds deterministic indexed terrain and frontier buffers", () => {
