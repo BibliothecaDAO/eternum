@@ -8,11 +8,14 @@ import os
 from pathlib import Path
 import re
 import secrets
+import signal
 import shutil
 import socket
 import subprocess
 import time
 from urllib.request import Request, urlopen
+
+import candidate_guard
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -260,9 +263,105 @@ def start_shard(config, directory):
     return result
 
 
+def workload_command(workload):
+    required = ("games", "accounts_per_game", "minutes", "interval_seconds", "setup_concurrency", "workload")
+    if set(workload) != set(required):
+        raise ValueError(f"workload requires exactly {', '.join(required)}")
+    return ["bun", "deploy/athanor/harness/run.ts", *[
+        value for key in required for value in (f"--{key.replace('_', '-')}", str(workload[key]))
+    ]]
+
+
+def check_live_budget(budget, since):
+    health = candidate_guard.check_health()
+    digests = candidate_guard.read_digests(since)
+    failures = candidate_guard.budget_failures(
+        budget, health, digests, shutil.disk_usage("/opt/athanor").free, shutil.disk_usage("/").free,
+    )
+    if failures:
+        raise RuntimeError("live budget exceeded: " + "; ".join(failures))
+    return {**health, "digests": digests}
+
+
+def run_guarded_workload(command, directory, environment, budget):
+    since = time.time()
+    with (directory / "harness.log").open("w") as output, (directory / "live-health.jsonl").open("w") as health:
+        process = subprocess.Popen(command, cwd=ROOT, env=environment, stdout=output,
+                                   stderr=subprocess.STDOUT, start_new_session=True)
+        try:
+            while True:
+                now = time.time()
+                health.write(json.dumps({"at": now, **check_live_budget(budget, since)}) + "\n")
+                health.flush()
+                since = now
+                try:
+                    code = process.wait(timeout=5)
+                    if code:
+                        raise subprocess.CalledProcessError(code, command)
+                    return
+                except subprocess.TimeoutExpired:
+                    pass
+        finally:
+            if process.poll() is None:
+                os.killpg(process.pid, signal.SIGTERM)
+                try:
+                    process.wait(timeout=10)
+                except subprocess.TimeoutExpired:
+                    os.killpg(process.pid, signal.SIGKILL)
+                    process.wait()
+
+
+def capture_hosts(directory, environment, live, phase):
+    script = ["bash", "deploy/athanor/scripts/host-state.sh"]
+    for label, target in (("candidate", {}), ("live", {
+        "MADARA_CONTAINER": live["container"], "CHAIN_CONFIG_PATH": live["chain_config"],
+    })):
+        run(script, directory, f"host-{label}-{phase}", {**environment, **target})
+
+
+def run_matrix(matrix, directory):
+    command = workload_command(matrix["workload"])
+    budget = json.loads(Path(matrix["live"]["budget"]).read_text())
+    # The existing guard protects deployment too, before the timed workload monitor starts.
+    subprocess.run(["systemctl", "is-active", "--quiet", "athanor-live-guard.service"], check=True)
+    directory.mkdir(mode=0o700, parents=True, exist_ok=False)
+    write_json(directory / "matrix.json", matrix)
+    for config in matrix["configurations"]:
+        target = directory / config["shard"]
+        if target.exists():
+            raise ValueError(f"duplicate run directory: {target}")
+        check_live_budget(budget, time.time() - 5)
+        environment = None
+        result = {"passed": False}
+        try:
+            start_shard(config, target)
+            private = dict(line.split("=", 1) for line in (target / "harness.env").read_text().splitlines())
+            environment = {**os.environ, **private, "HARNESS_OUTPUT_DIRECTORY": str(target / "workload")}
+            capture_hosts(target, environment, matrix["live"], "start")
+            run_guarded_workload(command, target, environment, budget)
+            result["passed"] = True
+        except Exception as error:
+            result["error"] = str(error)
+            raise
+        finally:
+            try:
+                if environment:
+                    capture_hosts(target, environment, matrix["live"], "end")
+            except Exception as error:
+                result.update(passed=False, error=str(error))
+                raise
+            finally:
+                if (target / "compose.json").exists():
+                    write_json(target / "matrix-result.json", result)
+                    run([*DOCKER, "compose", "-f", str(target / "compose.json"), "stop"], target, "shard-stop")
+    return {"passed": True, "directory": str(directory)}
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("configuration", type=Path)
     parser.add_argument("directory", type=Path)
+    parser.add_argument("--matrix", action="store_true", help="run an ordered configuration matrix and workload")
     args = parser.parse_args()
-    print(json.dumps(start_shard(json.loads(args.configuration.read_text()), args.directory)))
+    action = run_matrix if args.matrix else start_shard
+    print(json.dumps(action(json.loads(args.configuration.read_text()), args.directory.resolve())))
