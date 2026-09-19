@@ -34,6 +34,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-09-20",
+    title: "Illustrated Icons Across The UI",
+    description:
+      "Updated menus, game actions, and utility controls with detailed fantasy icons for a consistent visual style.",
+    type: "improvement",
+  },
+  {
     date: "2026-09-18",
     title: "Illustrated Mobile HUD",
     description:

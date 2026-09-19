@@ -36,7 +36,7 @@
   border-bottom: 1px solid #a8bbc020;
   background: #10191f;
 }
-.ml-header > svg {
+.ml-header > img {
   color: var(--ml-gold);
 }
 .ml-header strong {
@@ -106,7 +106,7 @@
   height: 30px;
   object-fit: contain;
 }
-.ml-family > svg {
+.ml-family > img {
   color: #aab8ac;
   flex-shrink: 0;
 }
@@ -193,7 +193,7 @@
   border-top: 1px solid #ffffff12;
   color: #7b9297;
 }
-.ml-library-note svg {
+.ml-library-note img {
   flex-shrink: 0;
   color: #b9a579;
 }
@@ -344,7 +344,7 @@
   color: #8ba29f;
   margin-top: 4px;
 }
-.ml-tier-card svg {
+.ml-tier-card img {
   flex-shrink: 0;
   color: #899e9e;
 }
@@ -597,7 +597,7 @@
     margin: 0;
     gap: 4px;
   }
-  .ml-family > svg:last-child,
+  .ml-family > img:last-child,
   .ml-family small {
     display: none;
   }
@@ -608,7 +608,7 @@
   .ml-family > span {
     font-size: 9px;
   }
-  .ml-family > svg {
+  .ml-family > img {
     width: 18px;
   }
   .ml-library fieldset {
@@ -694,7 +694,7 @@
   .ml-tier-card small {
     font-size: 7px;
   }
-  .ml-tier-card > button:first-child > svg {
+  .ml-tier-card > button:first-child > img {
     display: none;
   }
   .ml-export {

@@ -17,7 +17,18 @@ import type { LandingNetworkChain } from "../../lib/landing-network-state";
 import { getChainLabel } from "@/ui/utils/network-switch";
 import type { GameChain as Chain } from "@realms-world/chain";
 import { useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, Eye, Loader2, LogIn, Play, RefreshCw, Sparkles, Trophy, UserPlus, Users } from "lucide-react";
+import {
+  CheckCircle2,
+  Eye,
+  Loader2,
+  LogIn,
+  Play,
+  RefreshCw,
+  Sparkles,
+  Trophy,
+  UserPlus,
+  Users,
+} from "@/ui/design-system/atoms/game-icons";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "@/ui/features/event-feed/notify";

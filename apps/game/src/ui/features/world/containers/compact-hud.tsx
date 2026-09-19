@@ -1,3 +1,4 @@
+import { X } from "@/ui/design-system/atoms/game-icons";
 import type { CompactLane } from "@/hooks/helpers/use-compact-hud";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
@@ -167,9 +168,7 @@ export const CompactHud = memo(({ lane }: { lane: CompactLane }) => {
                   onClick={closeAndFocusTab}
                   className="flex h-11 w-11 items-center justify-center rounded-lg text-gold/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold active:bg-gold/15"
                 >
-                  <span aria-hidden="true" className="text-2xl font-light leading-none">
-                    ×
-                  </span>
+                  <X className="h-5 w-5" />
                 </button>
               </header>
               <div className="min-h-0 overflow-y-auto overscroll-contain p-2 touch-pan-y">

@@ -1,13 +1,7 @@
 import { DAY_PHASES, resolveDayPhase, type DayPhaseName } from "@/utils/cycle-progress";
 import { HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
 import { memo, useEffect } from "react";
-import Clock from "lucide-react/dist/esm/icons/clock";
-import Moon from "lucide-react/dist/esm/icons/moon";
-import MoonStar from "lucide-react/dist/esm/icons/moon-star";
-import Sun from "lucide-react/dist/esm/icons/sun";
-import SunDim from "lucide-react/dist/esm/icons/sun-dim";
-import Sunrise from "lucide-react/dist/esm/icons/sunrise";
-import Sunset from "lucide-react/dist/esm/icons/sunset";
+import { Clock, Moon, MoonStar, Sun, SunDim, Sunrise, Sunset } from "@/ui/design-system/atoms/game-icons";
 import { configManager } from "@bibliothecadao/eternum";
 import { TickIds } from "@bibliothecadao/types";
 import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";

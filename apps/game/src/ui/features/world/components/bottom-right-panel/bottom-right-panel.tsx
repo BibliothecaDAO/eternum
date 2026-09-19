@@ -1,3 +1,13 @@
+import {
+  Play,
+  Loader2,
+  Factory,
+  Hammer,
+  Info,
+  Pause as PauseIcon,
+  Pickaxe,
+  Trash2,
+} from "@/ui/design-system/atoms/game-icons";
 import { HUD_COLUMN_WIDTH } from "@/ui/features/world/containers/hud-layout";
 import { RightHudColumn } from "@/ui/features/world/containers/right-hud-column";
 import { canIssueOrders } from "@/utils/can-issue-orders";
@@ -46,13 +56,6 @@ import { SelectedWorldmapEntity } from "@/ui/features/world/components/actions/s
 import { RealmUpgradeCompact } from "@/ui/modules/entity-details/realm/realm-details";
 import { resolveRealmHasAvailableBuildingTile } from "@/ui/features/settlement/construction/realm-build-actions";
 import { requireActiveGameClient } from "@/sync/active-game-client";
-import Factory from "lucide-react/dist/esm/icons/factory";
-import Hammer from "lucide-react/dist/esm/icons/hammer";
-import Info from "lucide-react/dist/esm/icons/info";
-import PauseIcon from "lucide-react/dist/esm/icons/pause";
-import Pickaxe from "lucide-react/dist/esm/icons/pickaxe";
-import Play from "lucide-react/dist/esm/icons/play";
-import Trash2 from "lucide-react/dist/esm/icons/trash-2";
 
 import { BOTTOM_PANEL_HEIGHT, BOTTOM_PANEL_MARGIN, MINIMAP_SIZE } from "./constants";
 import { HexMinimap, normalizeMinimapTile, type MinimapTile } from "./hex-minimap";
@@ -524,7 +527,7 @@ const LocalTilePanel = () => {
                   onClick={handleToggleProduction}
                   className="h-7 border-green/50 bg-green/20 px-2 text-xxs hover:bg-green/40"
                 >
-                  ▶ Resume
+                  <Play className="mr-1 h-3 w-3" /> Resume
                 </Button>
               )}
             </div>
@@ -783,7 +786,7 @@ export const MinimapPanel = ({ compact = false }: { compact?: boolean }) => {
           />
           {isLoading && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-              <div className="h-10 w-10 animate-spin rounded-full border-2 border-gold/40 border-t-gold" />
+              <Loader2 className="h-10 w-10 animate-spin" />
             </div>
           )}
         </div>

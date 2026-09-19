@@ -5,12 +5,11 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_CUE, HUD_HEADLINE, HUD_LABEL, HUD_VALUE } from "@/ui/design-system/atoms/hud-typography";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { InfoBubble } from "@/ui/features/world/components/entities/collapsible-bubble";
-import Trees from "lucide-react/dist/esm/icons/trees";
+import { Trees, Crosshair as CrosshairIcon } from "@/ui/design-system/atoms/game-icons";
 import { formatBiomeBonus } from "@/ui/features/military";
 import { BattleLab } from "@/ui/features/military/battle/battle-lab";
 import { configManager } from "@bibliothecadao/eternum";
 import { BiomeType, TroopType } from "@bibliothecadao/types";
-import CrosshairIcon from "lucide-react/dist/esm/icons/crosshair";
 
 const unoccupiedTileTroopTypes: TroopType[] = [TroopType.Knight, TroopType.Crossbowman, TroopType.Paladin];
 

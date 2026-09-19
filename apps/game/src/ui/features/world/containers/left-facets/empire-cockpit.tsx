@@ -5,7 +5,7 @@ import { InfoBubble } from "@/ui/features/world/components/entities/collapsible-
 import { useStructureEntityDetail } from "@/ui/features/world/components/entities/hooks/use-structure-entity-detail";
 import { useStructureProductionSummary } from "@/ui/features/world/components/entities/structure-production-summary";
 import { MergedResourcePanel } from "@/ui/features/world/containers/left-facets/merged-resource-panel";
-import Factory from "lucide-react/dist/esm/icons/factory";
+import { Factory } from "@/ui/design-system/atoms/game-icons";
 import { memo } from "react";
 
 // Always-on panel for the active owned structure: one merged panel of resource tokens, rendered below the

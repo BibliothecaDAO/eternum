@@ -1,7 +1,4 @@
-import AlertCircle from "lucide-react/dist/esm/icons/alert-circle";
-import Check from "lucide-react/dist/esm/icons/check";
-import Loader2 from "lucide-react/dist/esm/icons/loader-2";
-import RefreshCw from "lucide-react/dist/esm/icons/refresh-cw";
+import { AlertCircle, Check, Loader2, RefreshCw } from "@/ui/design-system/atoms/game-icons";
 import { useEffect, useMemo, useState } from "react";
 
 import type { BootstrapTask } from "@/game-entry/bootstrap-controller";

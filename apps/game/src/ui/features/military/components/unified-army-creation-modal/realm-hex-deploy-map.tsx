@@ -1,8 +1,8 @@
+import { Loader2, AlertTriangle } from "@/ui/design-system/atoms/game-icons";
 import { requireBiomeColor, resolveBiomeTypeFromId } from "@/three/managers/biome-colors";
 import { useWorldSpatialTiles } from "@/hooks/use-world-spatial-tiles";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Direction, getDirectionBetweenAdjacentHexes, getNeighborHexes } from "@bibliothecadao/types";
-import AlertTriangle from "lucide-react/dist/esm/icons/alert-triangle";
 import { useMemo } from "react";
 
 interface RealmHexDeployMapProps {
@@ -167,7 +167,7 @@ export const RealmHexDeployMap = ({
     <div className="flex-1 p-1.5 rounded-xl bg-gradient-to-br from-brown/10 to-brown/5 border border-gold/20">
       {isLoading ? (
         <div className="flex justify-center py-2">
-          <div className="w-5 h-5 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
+          <Loader2 className="w-5 h-5 animate-spin" />
         </div>
       ) : noAdjacentAvailable ? (
         <div className="text-center p-2 bg-danger/10 border-l-2 border-danger rounded">

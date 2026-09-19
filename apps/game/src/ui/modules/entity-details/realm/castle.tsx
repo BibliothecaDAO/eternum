@@ -15,13 +15,15 @@ import { useMemo, useState } from "react";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 
 import { useComponentValue } from "@dojoengine/react";
-import AlertCircleIcon from "lucide-react/dist/esm/icons/alert-circle";
-import ArrowUpRightIcon from "lucide-react/dist/esm/icons/arrow-up-right";
-import ChevronDownIcon from "lucide-react/dist/esm/icons/chevron-down";
-import CrownIcon from "lucide-react/dist/esm/icons/crown";
-import PlusIcon from "lucide-react/dist/esm/icons/plus";
-import SparklesIcon from "lucide-react/dist/esm/icons/sparkles";
-import Pickaxe from "lucide-react/dist/esm/icons/pickaxe";
+import {
+  AlertCircle as AlertCircleIcon,
+  ArrowUpRight as ArrowUpRightIcon,
+  ChevronDown as ChevronDownIcon,
+  Crown as CrownIcon,
+  Plus as PlusIcon,
+  Hyperstructure as WonderIcon,
+  Pickaxe,
+} from "@/ui/design-system/atoms/game-icons";
 import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 
 const WONDER_BONUS_DISTANCE = 12;
@@ -165,7 +167,7 @@ export const Castle = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className="bg-gold/20 p-3 rounded-lg">
-                      <SparklesIcon className="w-7 h-7 text-gold" />
+                      <WonderIcon className="w-7 h-7 text-gold" />
                     </div>
                     <div>
                       <h6 className="text-gold font-bold text-lg mb-1">Wonder Bonus Available</h6>

@@ -5,7 +5,7 @@ import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { SelectBiome } from "@/ui/design-system/molecules/select-biome";
 import { type CombatSimulator, configManager } from "@bibliothecadao/eternum";
 import { BiomeType, resources, ResourcesIds, TroopType } from "@bibliothecadao/types";
-import Globe from "lucide-react/dist/esm/icons/globe";
+import { Globe } from "@/ui/design-system/atoms/game-icons";
 
 interface BiomeEnvironmentBarProps {
   combatSimulator: CombatSimulator;

@@ -1,5 +1,4 @@
-import ArrowUpRight from "lucide-react/dist/esm/icons/arrow-up-right";
-import ChevronLeft from "lucide-react/dist/esm/icons/chevron-left";
+import { ArrowUpRight, ChevronLeft } from "@/ui/design-system/atoms/game-icons";
 
 export const FactoryV2Header = ({ onBack }: { onBack: () => void }) => {
   return (

@@ -1,10 +1,5 @@
+import { Loader2, ChevronDown, CircleHelp, Pause, Play, RefreshCw, Trash2 } from "@/ui/design-system/atoms/game-icons";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
-import CircleHelp from "lucide-react/dist/esm/icons/circle-help";
-import Pause from "lucide-react/dist/esm/icons/pause";
-import Play from "lucide-react/dist/esm/icons/play";
-import RefreshCw from "lucide-react/dist/esm/icons/refresh-cw";
-import Trash2 from "lucide-react/dist/esm/icons/trash-2";
 import { useEffect, useState, type KeyboardEvent, type ReactNode } from "react";
 import { resolveFactoryEnvironmentLabel } from "../catalog";
 import { resolveFactoryModeAppearance } from "../mode-appearance";
@@ -1114,22 +1109,12 @@ const FactoryV2LiveStatus = ({
 );
 
 const FactoryV2LoaderHalo = ({ pollingState }: { pollingState: FactoryPollingState }) => (
-  <div className="relative flex h-14 w-14 items-center justify-center">
-    <div
-      className={cn(
-        "absolute h-14 w-14 rounded-full border",
-        pollingState.status === "paused" ? "border-rose-300/55" : "border-amber-300/45",
-      )}
-    />
-    <div
-      className={cn(
-        "absolute h-10 w-10 rounded-full border-2 border-transparent",
-        pollingState.status === "paused"
-          ? "border-t-rose-400"
-          : "animate-spin border-t-amber-500 border-r-amber-300/70",
-      )}
-    />
-    <div className={cn("h-3 w-3 rounded-full", pollingState.status === "paused" ? "bg-rose-400" : "bg-amber-400")} />
+  <div className="flex h-14 w-14 items-center justify-center">
+    {pollingState.status === "paused" ? (
+      <Pause className="h-10 w-10" />
+    ) : (
+      <Loader2 className="h-10 w-10 animate-spin" />
+    )}
   </div>
 );
 

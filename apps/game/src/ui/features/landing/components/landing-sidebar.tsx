@@ -1,6 +1,6 @@
 import { ReactComponent as RealmsLogo } from "@/assets/icons/rw-logo.svg";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { Settings } from "lucide-react";
+import { Settings } from "@/ui/design-system/atoms/game-icons";
 import { NavLink, useLocation } from "react-router-dom";
 import { NAVIGATION_SECTIONS, getSectionFromPath } from "../context/navigation-config";
 import { resolveLandingSurfacePath, type LandingEntryRouteState } from "../lib/landing-entry-state";

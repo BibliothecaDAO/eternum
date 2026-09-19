@@ -1,6 +1,4 @@
-import Route from "lucide-react/dist/esm/icons/route";
-import Telescope from "lucide-react/dist/esm/icons/telescope";
-import Wheat from "lucide-react/dist/esm/icons/wheat";
+import { Route, Telescope, Wheat } from "@/ui/design-system/atoms/game-icons";
 import type { ReactNode } from "react";
 
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";

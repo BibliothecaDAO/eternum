@@ -1,5 +1,5 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { ReactComponent as Cross } from "@/assets/icons/common/cross.svg";
+import { X as Cross } from "@/ui/design-system/atoms/game-icons";
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/design-system/atoms/select";
 import TextInput from "@/ui/design-system/atoms/text-input";
@@ -102,8 +102,8 @@ export const SelectResource: React.FC<SelectResourceProps> = ({
     <div className="flex items-center">
       <Cross
         className={clsx(
-          "my-auto w-8 mx-auto hover:fill-gold/50 fill-gold hover:scale-125 hover:animate-pulse duration-300 transition-all",
-          { "pointer-events-none fill-gold/50": !selectedResource },
+          "my-auto w-8 mx-auto hover:opacity-50  hover:scale-125 hover:animate-pulse duration-300 transition-all",
+          { "pointer-events-none opacity-50": !selectedResource },
         )}
         onClick={() => {
           setSelectedResource("");

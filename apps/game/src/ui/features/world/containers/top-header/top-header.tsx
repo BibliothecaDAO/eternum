@@ -16,8 +16,7 @@ import { IdentityChip } from "./identity-chip";
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
-import EyeIcon from "lucide-react/dist/esm/icons/eye";
-import Swords from "lucide-react/dist/esm/icons/swords";
+import { Eye as EyeIcon, Swords } from "@/ui/design-system/atoms/game-icons";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 export const TopHeader = memo(() => {

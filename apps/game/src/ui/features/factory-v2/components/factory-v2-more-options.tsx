@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
+import { ChevronDown } from "@/ui/design-system/atoms/game-icons";
 import type { FactoryMoreOptionSection, FactoryMoreOptionsDraft, FactoryMoreOptionsErrors } from "../map-options";
 
 const buildInitialExpandedSectionIds = (sections: FactoryMoreOptionSection[]) => (sections[0] ? [sections[0].id] : []);

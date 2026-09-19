@@ -1,3 +1,4 @@
+import { Check, ChevronDown, Flame, Search, ShieldCheck, X } from "@/ui/design-system/atoms/game-icons";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
@@ -19,11 +20,6 @@ import {
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { findResourceById, ID, PlayerStructure, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
-import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
-import Flame from "lucide-react/dist/esm/icons/flame";
-import Search from "lucide-react/dist/esm/icons/search";
-import ShieldCheck from "lucide-react/dist/esm/icons/shield-check";
-import X from "lucide-react/dist/esm/icons/x";
 import { Dispatch, memo, ReactNode, SetStateAction, useCallback, useEffect, useMemo, useState } from "react";
 import { BigNumberish } from "starknet";
 import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
@@ -339,7 +335,7 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
           >
             <div className="space-y-2 text-xs text-gold/80">
               <div className="flex items-start gap-2">
-                <span className="text-green">✓</span>
+                <Check className="h-4 w-4" />
                 <span>
                   {mode.id === "blitz"
                     ? "Owned structure → owned structure troop transfers allowed"
@@ -347,7 +343,7 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
                 </span>
               </div>
               <div className="flex items-start gap-2">
-                <span className="text-red">✗</span>
+                <X className="h-4 w-4" />
                 <span>
                   {mode.id === "blitz"
                     ? "Direct structure → army troop transfers are not available in Blitz"

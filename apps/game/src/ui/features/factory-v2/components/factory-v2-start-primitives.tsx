@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
+import { ChevronDown } from "@/ui/design-system/atoms/game-icons";
 import type { FactoryMoreOptionField } from "../map-options";
 import type { FactoryDurationOption } from "../types";
 

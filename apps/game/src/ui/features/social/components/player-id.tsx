@@ -1,5 +1,5 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { ReactComponent as ArrowLeft } from "@/assets/icons/common/arrow-left.svg";
+import { ArrowLeft, MapPin } from "@/ui/design-system/atoms/game-icons";
 import { Position as PositionType } from "@bibliothecadao/eternum";
 import { playerAvatarUrl } from "@/hooks/use-player-profile";
 import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
@@ -16,7 +16,6 @@ import {
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress, StructureType } from "@bibliothecadao/types";
-import MapPin from "lucide-react/dist/esm/icons/map-pin";
 import { useMemo } from "react";
 
 interface PlayerStructureView {

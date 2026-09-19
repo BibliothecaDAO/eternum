@@ -7,7 +7,7 @@ import {
   writeRenderMode,
 } from "@/three/render-profile";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { Maximize2, Minimize2, Monitor, Music, Volume2, VolumeX, X } from "lucide-react";
+import { Maximize2, Minimize2, Monitor, Music, Volume2, VolumeX, X } from "@/ui/design-system/atoms/game-icons";
 import { useEffect, useState } from "react";
 
 interface DocumentWithFullscreen extends HTMLDocument {

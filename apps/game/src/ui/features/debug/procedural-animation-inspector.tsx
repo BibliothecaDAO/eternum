@@ -9,7 +9,7 @@ import {
   Layers3,
   RefreshCw,
   X,
-} from "lucide-react";
+} from "@/ui/design-system/atoms/game-icons";
 import type { ReactNode } from "react";
 
 import {
@@ -394,7 +394,7 @@ const InspectorButton = ({
     disabled={disabled}
     onClick={onClick}
     className={cn(
-      "flex h-8 items-center gap-1.5 border px-2 text-[0.6rem] font-semibold uppercase tracking-wider transition hover:bg-white/[0.07] hover:text-white disabled:opacity-30 [&_svg]:h-3 [&_svg]:w-3",
+      "flex h-8 items-center gap-1.5 border px-2 text-[0.6rem] font-semibold uppercase tracking-wider transition hover:bg-white/[0.07] hover:text-white disabled:opacity-30 [&_img]:h-3 [&_img]:w-3",
       active ? "border-cyan-300/40 bg-cyan-300/10 text-cyan-100" : "border-white/10 text-slate-300",
     )}
     data-active={active ? "true" : "false"}

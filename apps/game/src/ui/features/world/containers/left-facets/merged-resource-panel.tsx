@@ -28,7 +28,7 @@ import {
 import type { ClientComponents } from "@bibliothecadao/types";
 import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import type { ComponentValue } from "@dojoengine/recs";
-import Plus from "lucide-react/dist/esm/icons/plus";
+import { Plus } from "@/ui/design-system/atoms/game-icons";
 import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 
 type ProductionItem = StructureProductionSummary["items"][number];

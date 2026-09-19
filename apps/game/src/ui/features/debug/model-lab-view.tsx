@@ -14,7 +14,7 @@ import {
   Ship,
   SkipForward,
   Waves,
-} from "lucide-react";
+} from "@/ui/design-system/atoms/game-icons";
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
