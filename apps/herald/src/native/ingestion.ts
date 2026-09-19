@@ -2,7 +2,14 @@ import { nativeExecutionOutcomes } from "@bibliothecadao/provider";
 import { transactionGameIds } from "./transactions";
 import type { MadaraRpc } from "../madara-rpc";
 import { normalizeFelt } from "../model-registry";
-import type { DecodedWorldEvent, FoldChange, RpcBlockWithReceipts, RpcReceipt, RpcTransaction } from "../types";
+import type {
+  DecodedWorldEvent,
+  FoldChange,
+  RpcBlockTransaction,
+  RpcBlockWithReceipts,
+  RpcReceipt,
+  RpcTransaction,
+} from "../types";
 import { WorldFold } from "../world-fold";
 import { NativeDecoder } from "./decoder";
 
@@ -62,6 +69,10 @@ export class NativeIngestion {
 
   actionReceipt(fold: WorldFold, receipt: RpcReceipt): RpcReceipt {
     this.validateReceipt(fold.overlay(), receipt, receipt.block_number ?? null, 0);
+    return this.executionReceipt(receipt);
+  }
+
+  private executionReceipt(receipt: RpcReceipt): RpcReceipt {
     if (receipt.execution_status === "REVERTED") return receipt;
     return { ...receipt, executions: nativeExecutionOutcomes(receipt.events, this.decoder.manifest.world.address) };
   }
@@ -75,6 +86,7 @@ export class NativeIngestion {
     if (this.halted) throw this.halted;
     const preview = input.fold.overlay();
     const events: DecodedWorldEvent[] = [];
+    const transactions: RpcBlockTransaction[] = [];
     let pages = 0;
     for (
       let number = Math.max(input.fromBlock, this.decoder.manifest.native.deploymentBlock);
@@ -84,9 +96,13 @@ export class NativeIngestion {
       const block = await input.rpc.getBlockWithReceipts(number);
       if (block.block_number !== number) throw new Error("Native replay block number mismatch");
       pages++;
-      block.transactions.forEach(({ receipt }, index) => {
+      block.transactions.forEach(({ receipt, transaction }, index) => {
         try {
           events.push(...this.validateReceipt(preview, receipt, number, index));
+          transactions.push({
+            transaction,
+            receipt: this.executionReceipt({ ...receipt, block_number: number }),
+          });
         } catch (error) {
           throw this.rejectReceipt(receipt, number, error, true);
         }
@@ -103,6 +119,7 @@ export class NativeIngestion {
     });
     return {
       events,
+      transactions,
       changes: byBlock,
       metrics: {
         decoded_events: events.length,

@@ -247,9 +247,16 @@ export class LiveWorld {
     if (head.block_number < this.confirmedBlockValue) return;
     const startedAt = performance.now();
 
-    const confirmedChanges = await this.applyConfirmedThrough(head.block_number);
+    const confirmed = await this.applyConfirmedThrough(head.block_number);
     await this.freezeFinalizedReviewSnapshots();
-    for (const [block, changes] of confirmedChanges) this.broadcastConfirmedChanges(changes, block);
+    for (const [block, changes] of confirmed.changes) this.broadcastConfirmedChanges(changes, block);
+    // Subscriptions can miss a receipt during reconnect or fall behind a confirmed head.
+    // Replay publishes outcomes after their authoritative rows, so client barriers recover too.
+    for (const { receipt, transaction } of confirmed.transactions) {
+      this.pendingReceipts.delete(normalizeFelt(receipt.transaction_hash));
+      this.recordTransactionSender(receipt.transaction_hash, transaction);
+      this.publishReceiptStatus(receipt);
+    }
     this.resetOverlay();
     await this.rebuildOverlay();
     this.publishOverlayReverts();
@@ -388,7 +395,7 @@ export class LiveWorld {
     }
   }
 
-  private async applyConfirmedThrough(target: number): Promise<Map<number, FoldChange[]>> {
+  private async applyConfirmedThrough(target: number) {
     const result = await this.native.replay({
       fold: this.confirmedFold,
       rpc: this.input.rpc,
@@ -400,7 +407,7 @@ export class LiveWorld {
       target,
     );
     this.confirmedBlockValue = target;
-    return result.changes;
+    return result;
   }
 
   private async rebuildOverlay(): Promise<void> {
