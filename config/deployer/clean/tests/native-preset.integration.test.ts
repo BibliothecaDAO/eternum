@@ -54,14 +54,13 @@ test.skipIf(!fixturePath)(
       gameName: `preset-bridge-${presetId}`,
       presetId,
       startMainAt: block.timestamp,
+      chainTimestamp: block.timestamp,
       durationSeconds: 86400,
       devModeOn: true,
       singleRealmMode: true,
       twoPlayerMode: false,
       useMapOverride: false,
     });
-    params.start_settling_at = block.timestamp;
-    params.registration_start = block.timestamp - 1;
     const created = await createRegistrarGame(actor, params, manifest, undefined, definition);
     if (!created.gameId) throw new Error("Registrar returned no game id");
     fixture.game = `0x${BigInt(created.gameId).toString(16)}`;

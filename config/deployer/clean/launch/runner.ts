@@ -254,12 +254,14 @@ async function buildRegistrarGameParams(launch: PreparedLaunch) {
     ? await resolveBlitzRoster(launch.runtime.provider, owners, launch.runtime.environment.id)
     : [];
   if (!launch.config.blitz.mode.on && owners.length) throw new Error("Eternum does not use a fixed roster");
+  const block = await launch.runtime.provider.getBlock("latest");
   return buildNativeGameParams(
     launch.config,
     {
       gameName: launch.request.gameName,
       presetId: launch.runtime.presetId,
       startMainAt: launch.runtime.startTime,
+      chainTimestamp: block.timestamp,
       durationSeconds: launch.config.season.durationSeconds,
       devModeOn: launch.config.dev.mode.on,
       singleRealmMode: launch.config.settlement.single_realm_mode,

@@ -6,6 +6,7 @@ export interface CreateGamePayloadInput {
   gameName: string;
   presetId: number;
   startMainAt: number;
+  chainTimestamp: number;
   durationSeconds: number;
   devModeOn: boolean;
   singleRealmMode: boolean;
@@ -119,8 +120,11 @@ export function buildBiomeClimateConfig(config: Config) {
   };
 }
 
-function resolveRegistrationSchedule(startMainAt: number) {
-  const startSettlingAt = Math.min(Math.floor(Date.now() / 1000), startMainAt);
+function resolveRegistrationSchedule(startMainAt: number, chainTimestamp: number) {
+  if (!Number.isSafeInteger(chainTimestamp) || chainTimestamp < 1) {
+    throw new Error("Game creation requires a positive chain timestamp");
+  }
+  const startSettlingAt = Math.min(chainTimestamp, startMainAt);
   return { registrationStartAt: startSettlingAt - 1, startSettlingAt };
 }
 
@@ -158,7 +162,7 @@ function deriveGameSeed(input: CreateGamePayloadInput): string {
 }
 
 export function buildCreateGameParams(config: Config, input: CreateGamePayloadInput): Record<string, unknown> {
-  const { registrationStartAt, startSettlingAt } = resolveRegistrationSchedule(input.startMainAt);
+  const { registrationStartAt, startSettlingAt } = resolveRegistrationSchedule(input.startMainAt, input.chainTimestamp);
   const registrationCountMax = resolveRegistrationCountMax(config, input.twoPlayerMode);
 
   return {
