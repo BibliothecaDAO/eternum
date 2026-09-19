@@ -8,6 +8,7 @@ import { TroopSelectionGrid } from "./unified-army-creation-modal/troop-selectio
 import { useArmyCreation } from "./unified-army-creation-modal/use-army-creation";
 import { DISPLAYED_SLOT_NUMBER_MAP, type GuardSlot } from "@bibliothecadao/types";
 import type { ArmyDeploymentTarget } from "../utils/open-army-deployment-picker";
+import { GuardDismissal } from "./guard-dismissal";
 
 export const ArmyDeploymentPicker = (target: ArmyDeploymentTarget) => {
   const ordersAllowed = useUIStore(canIssueOrders);
@@ -73,6 +74,14 @@ const ArmyDeploymentForm = (target: ArmyDeploymentTarget) => {
         onSubmit={form.handleCreate}
         embedded
       />
+      {!target.isExplorer && target.initialGuardSlot !== undefined && (
+        <GuardDismissal
+          structureId={target.structureId}
+          slot={target.initialGuardSlot}
+          disabled={form.isLoading}
+          onDismissed={() => usePopoverStore.getState().close("army-deployment")}
+        />
+      )}
     </div>
   );
 };
