@@ -33,12 +33,11 @@ test.skipIf(!fixturePath)(
     const fixture = readFixture(fixturePath!);
     const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
     const provider = new RpcProvider({ nodeUrl: fixture.rpc });
-    const admin = createMadaraAccount(
-      provider,
-      "0x055be462e718c4166d656d11f89e341115b8bc82389c3762a10eade04fcb225d",
-      "0x077e56c6dc32d40a67f6f7e6625c8dc5e570abe49c0a24e9202e4ae906abcc07",
-    );
-    const actor = createMadaraAccount(provider, fixture.actor, "0x3039");
+    const adminAddress = process.env.DEPLOYER_ACCOUNT_ADDRESS;
+    const privateKey = process.env.DEPLOYER_PRIVATE_KEY;
+    if (!adminAddress || !privateKey) throw new Error("Isolated deployer credentials are required");
+    const admin = createMadaraAccount(provider, adminAddress, privateKey);
+    const actor = createMadaraAccount(provider, fixture.actor, privateKey);
     const registry = manifest.native.domains.registry.address;
     const bridge = manifest.native.domains.bridge.address;
     const config = loadEnvironmentConfiguration("madara.eternum");
@@ -52,7 +51,7 @@ test.skipIf(!fixturePath)(
     await registerNativePreset(actor, presetId, buildNativePresetRegistration(config, presetId, manifestPath));
     const block = await provider.getBlock("latest");
     const params = buildNativeGameParams(config, {
-      gameName: "preset-bridge-check",
+      gameName: `preset-bridge-${presetId}`,
       presetId,
       startMainAt: block.timestamp,
       durationSeconds: 86400,
@@ -71,7 +70,12 @@ test.skipIf(!fixturePath)(
     try {
       const execute = async (command: NativeCommand) => {
         const admission = await admissionFor(provider, fixture);
-        const { action: _action, ...request } = signedRequest(fixture, admission, commandArguments(fixture, command));
+        const { action: _action, ...request } = signedRequest(
+          fixture,
+          admission,
+          commandArguments(fixture, command),
+          privateKey,
+        );
         const { transaction_hash: transactionHash, order } = await submit(request);
         await waitForSuccess(admin, transactionHash);
         const receipt = await provider.getTransactionReceipt(transactionHash);
@@ -79,7 +83,6 @@ test.skipIf(!fixturePath)(
         const outcomes = nativeExecutionOutcomes(receipt.events, fixture.execution.address);
         const outcome = outcomes.find((item) => BigInt(item.order) === order);
         expect(outcome?.status).toBe("SUCCEEDED");
-        if (!("events" in receipt)) throw new Error("Missing receipt events");
         console.log(JSON.stringify({ action: command.kind, game: fixture.game, transactionHash: transactionHash }));
         return receipt.events
           .filter((event) => decoder.owns(event.from_address))
