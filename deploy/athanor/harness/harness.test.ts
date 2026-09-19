@@ -573,6 +573,7 @@ function fakeWorld(extraExplorer?: [number, ExplorerRow]): FakeWorld {
     currentTicks: () => ({ armies: 1, default: 60 }),
     mapCenter: () => ({ x: 0, y: 0 }),
     settlementStructureIds: () => undefined,
+    waitUntilPlaying: async () => {},
     structureCoord: () => undefined,
     startingTroopType: () => undefined,
     explorerOf: () => undefined,

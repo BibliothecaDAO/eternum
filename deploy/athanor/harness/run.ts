@@ -173,7 +173,6 @@ async function main(): Promise<void> {
   try {
     const harnessGame = createHarnessGame(client);
     const setupTransactions: TrackedTransaction[] = [];
-    if (options.gameType === "eternum" && game.startAt) await waitForGameStart(provider, game.startAt);
     const bots = await prepareHarnessBots({
       gameType: options.gameType,
       accounts,
@@ -493,16 +492,6 @@ async function waitForWorkloadStart(): Promise<void> {
     });
     parentPort!.postMessage({ type: "ready" });
   });
-}
-
-async function waitForGameStart(provider: HarnessProvider, target: number): Promise<void> {
-  const deadline = Date.now() + Math.max(120_000, (target - Math.floor(Date.now() / 1_000)) * 1_000 + 120_000);
-  while (Date.now() <= deadline) {
-    const block = await provider.getBlock("latest");
-    if (Number(block.timestamp) >= target) return;
-    await Bun.sleep(1_000);
-  }
-  throw new Error(`Chain timestamp did not reach ${target}`);
 }
 
 function requiredEnvironmentValue(name: string, context: string): string {

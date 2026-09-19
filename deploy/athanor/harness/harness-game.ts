@@ -1,4 +1,5 @@
 import { requireNativeExecutionOutcome } from "@bibliothecadao/provider";
+import { setTimeout as sleep } from "node:timers/promises";
 import {
   buildArmyPathIndexes,
   configManager,
@@ -52,6 +53,7 @@ interface SubmittedEvent {
 /** The game as the harness plays it: native facts, the projection's occupancy, and per-bot action facades over one client. */
 export interface HarnessGame {
   gameId: number;
+  waitUntilPlaying(): Promise<void>;
   /** Actions signed by this bot; every bot gets its own facade over the shared world. */
   actionsFor(signer: Account): GameActions;
   currentTicks(): ChainTicks;
@@ -86,6 +88,7 @@ export function createHarnessGame(client: GameClient): HarnessGame {
 
   return {
     gameId: client.gameId,
+    waitUntilPlaying: () => waitUntilPlaying(client),
     actionsFor: (signer) => createGameActions(client, { signer }),
     currentTicks: () => {
       const timestamp = getBlockTimestamp();
@@ -159,6 +162,21 @@ export function createHarnessGame(client: GameClient): HarnessGame {
     submit: (signer, act) => captureSubmission(client, awaitingHash, signer.address, act),
     waitFor: (read, timeoutMs, describe) => waitForWorldState(client, read, timeoutMs, describe),
   };
+}
+
+async function waitUntilPlaying({ setup: { store }, gameId: game_id }: GameClient): Promise<void> {
+  const game = store.require("GameRegistry", { game_id });
+  const start = Number(game.start_main_at > game.start_settling_at ? game.start_main_at : game.start_settling_at);
+  const remaining = Math.max(0, start - getBlockTimestamp().currentBlockTimestamp);
+  const deadline = Date.now() + remaining * 1_000 + 120_000;
+  while (Date.now() <= deadline) {
+    const current = store.require("GameRegistry", { game_id });
+    const timestamp = getBlockTimestamp().currentBlockTimestamp;
+    if (current.end_at !== 0n && timestamp >= Number(current.end_at)) throw new Error(`Game ${game_id} has ended`);
+    if (current.ready && (current.dev_mode_on || timestamp >= start)) return;
+    await sleep(1_000);
+  }
+  throw new Error(`Herald did not confirm game ${game_id} ready at ${start}`);
 }
 
 /**
