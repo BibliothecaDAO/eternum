@@ -46,7 +46,6 @@ pub struct BatchProgress {
 pub enum Command {
     CreateExplorer: CreateExplorer,
     Explore: Explore,
-    ClaimProduction: u32,
     Battle: crate::combat_actions::AttackExplorer,
     Move: Move,
     ToggleAlternate: ToggleAlternate,
@@ -95,7 +94,6 @@ pub enum Command {
     SetConstructionAccess: crate::hyperstructures::SetConstructionAccess,
     OpenRelicChest: crate::relics::OpenChest,
     ApplyRelic: crate::relics::ApplyRelic,
-    ExtractExplorationReward: u32,
     CloseSeason,
     PledgeFaith: crate::faith::Pledge,
     RemoveFaith: u32,
@@ -236,9 +234,6 @@ pub trait IResourceCommands<T> {
         actor: ContractAddress,
         command: crate::arrivals::OffloadArrival,
         context: ExecutionContext,
-    );
-    fn claim_production(
-        ref self: T, game_id: u32, actor: ContractAddress, structure_id: u32, context: ExecutionContext,
     );
     fn approve_resources(
         ref self: T,

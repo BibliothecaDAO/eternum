@@ -637,26 +637,6 @@ pub mod ResourcesDomain {
                 }
             }
         }
-        fn claim_production(
-            ref self: ContractState, game_id: u32, actor: ContractAddress, structure_id: u32, context: ExecutionContext,
-        ) {
-            let peers = self.lifecycle.require_active();
-            assert!(get_caller_address() == peers.season, "only authenticated command domain");
-            assert_playing(self.game_dispatcher().game(game_id), context.timestamp);
-            let key = ResourceKey { game_id, entity_id: structure_id };
-            assert!(self.structure_owner(key) == actor, "actor does not own structure");
-            let start_at = self.production_start(game_id);
-            for resource_type in 1_u8..59 {
-                if resource_type < 39 || resource_type > 56 {
-                    let rule = self.rule(game_id, resource_type);
-                    self
-                        .resources
-                        .settle_resource(
-                            key, resource_type, rule.unit_weight, context.timestamp.try_into().unwrap(), start_at,
-                        );
-                }
-            }
-        }
     }
     #[abi(embed_v0)]
     impl ResourceAllowance of crate::resources::IResourceAllowance<ContractState> {

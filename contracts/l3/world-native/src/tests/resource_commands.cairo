@@ -143,17 +143,16 @@ fn explicit_burn_does_not_harvest_and_rejection_keeps_the_stream_moving() {
     assert!(execute(deployment, Command::BurnStructureResources(burn), 40));
     assert_eq!(resources.resource_balance(slot), 90);
     assert_eq!(resources.resource_production(slot).last_updated_at, 30);
-    assert!(execute(deployment, Command::ClaimProduction(source.entity_id), 40));
-    assert_eq!(resources.resource_balance(slot), 110);
     let production = resources.resource_production(slot);
     assert!(
         !execute(deployment, Command::BurnStructureResources(ResourceBurn { resources: amount(1, 120), ..burn }), 45),
     );
-    assert_eq!(resources.resource_balance(slot), 110);
+    assert_eq!(resources.resource_balance(slot), 90);
     assert_eq!(resources.resource_production(slot), production);
     assert!(execute(deployment, Command::BurnStructureResources(burn), 45));
-    assert_eq!(resources.resource_balance(slot), 100);
-    assert_eq!(ISeasonDispatcher { contract_address: deployment.peers.season }.next_nonce(3, deployment.actor), 4);
+    assert_eq!(resources.resource_balance(slot), 80);
+    assert_eq!(resources.resource_production(slot), production);
+    assert_eq!(ISeasonDispatcher { contract_address: deployment.peers.season }.next_nonce(3, deployment.actor), 3);
 }
 
 #[test]

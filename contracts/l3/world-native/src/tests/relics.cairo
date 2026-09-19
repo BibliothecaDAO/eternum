@@ -413,6 +413,43 @@ pub fn configure_extraction(deployment: super::Deployment, id: u8, amount: u128)
     );
     stop_cheat_caller_address(deployment.peers.map);
 }
+
+#[feature("safe_dispatcher")]
+fn extract_reward(deployment: super::Deployment, explorer_id: u32, timestamp: u64, executed_at: u64) -> bool {
+    start_cheat_block_timestamp_global(executed_at);
+    start_cheat_caller_address(deployment.peers.map, deployment.peers.troops);
+    let result = IExtractionSafeDispatcher { contract_address: deployment.peers.map }
+        .extract_exploration_reward(
+            3, deployment.actor, explorer_id, ExecutionContext { timestamp, ..super::context() },
+        );
+    stop_cheat_caller_address(deployment.peers.map);
+    result.is_ok()
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn only_movement_can_extract_a_reward() {
+    let (deployment, _, explorer) = setup(false);
+    configure_extraction(deployment, 2, 10);
+    start_cheat_block_timestamp_global(40);
+    let map = IExtractionSafeDispatcher { contract_address: deployment.peers.map };
+    let before = balance(deployment, explorer, 2);
+    for caller in array![deployment.actor, deployment.peers.season, deployment.peers.economy] {
+        start_cheat_caller_address(deployment.peers.map, caller);
+        assert!(
+            map
+                .extract_exploration_reward(
+                    3, deployment.actor, explorer.entity_id, ExecutionContext { timestamp: 40, ..super::context() },
+                )
+                .is_err(),
+        );
+        assert_eq!(balance(deployment, explorer, 2), before);
+    }
+    stop_cheat_caller_address(deployment.peers.map);
+    assert!(extract_reward(deployment, explorer.entity_id, 40, 40));
+    assert_eq!(balance(deployment, explorer, 2), before + 10 * RESOURCE_PRECISION);
+}
+
 #[test]
 fn extraction_applies_active_boost_once_and_routes_eternum_rewards_to_the_explorer() {
     let (deployment, home, explorer) = setup(false);
@@ -420,10 +457,10 @@ fn extraction_applies_active_boost_once_and_routes_eternum_rewards_to_the_explor
     assert!(execute(deployment, apply(explorer, 48, Recipient::Explorer), 40));
     let before = balance(deployment, explorer, 2);
     let home_before = balance(deployment, home, 2);
-    assert!(execute_recorded_at(deployment, Command::ExtractExplorationReward(explorer.entity_id), 70, 5000));
+    assert!(extract_reward(deployment, explorer.entity_id, 70, 5000));
     assert_eq!(balance(deployment, explorer, 2), before + 30 * RESOURCE_PRECISION);
     assert_eq!(balance(deployment, home, 2), home_before);
-    assert!(execute(deployment, Command::ExtractExplorationReward(explorer.entity_id), 71));
+    assert!(extract_reward(deployment, explorer.entity_id, 71, 71));
     assert_eq!(balance(deployment, explorer, 2), before + 30 * RESOURCE_PRECISION);
 }
 #[test]
@@ -432,7 +469,7 @@ fn extraction_after_bonus_expiry_routes_blitz_resources_to_home() {
     configure_extraction(deployment, 2, 10);
     assert!(execute(deployment, apply(explorer, 48, Recipient::Explorer), 40));
     let before = balance(deployment, home, 2);
-    assert!(execute(deployment, Command::ExtractExplorationReward(explorer.entity_id), 80));
+    assert!(extract_reward(deployment, explorer.entity_id, 80, 80));
     assert_eq!(balance(deployment, home, 2), before + 10 * RESOURCE_PRECISION);
     assert_eq!(balance(deployment, explorer, 2), 0);
 }
@@ -442,7 +479,7 @@ fn blitz_relic_rewards_stay_with_the_explorer() {
     configure_extraction(deployment, 39, 1);
     let before = balance(deployment, explorer, 39);
     let home_before = balance(deployment, home, 39);
-    assert!(execute(deployment, Command::ExtractExplorationReward(explorer.entity_id), 40));
+    assert!(extract_reward(deployment, explorer.entity_id, 40, 40));
     assert_eq!(balance(deployment, explorer, 39), before + RESOURCE_PRECISION);
     assert_eq!(balance(deployment, home, 39), home_before);
 }
@@ -452,18 +489,18 @@ fn extraction_rejects_wrong_layer_dead_explorer_and_mismatched_tile() {
     configure_extraction(deployment, 2, 10);
     let original = troop(deployment, explorer);
     move_fixture(deployment, explorer, Coord { alt: true, ..original.coord });
-    assert_terminal_rejection(deployment, Command::ExtractExplorationReward(explorer.entity_id), 40);
+    assert!(!extract_reward(deployment, explorer.entity_id, 40, 40));
     move_fixture(deployment, explorer, crate::geometry::neighbor(original.coord, 0));
-    assert_terminal_rejection(deployment, Command::ExtractExplorationReward(explorer.entity_id), 40);
+    assert!(!extract_reward(deployment, explorer.entity_id, 40, 40));
     set_fixture(
         deployment.peers.troops,
         selector!("explorers"),
         array![3, explorer.entity_id.into()].span(),
         crate::troops::ExplorerTroops { troops: crate::troops::Troops { count: 0, ..original.troops }, ..original },
     );
-    assert_terminal_rejection(deployment, Command::ExtractExplorationReward(explorer.entity_id), 40);
+    assert!(!extract_reward(deployment, explorer.entity_id, 40, 40));
     set_fixture(deployment.peers.troops, selector!("explorers"), array![3, explorer.entity_id.into()].span(), original);
-    assert!(execute(deployment, Command::ExtractExplorationReward(explorer.entity_id), 40));
+    assert!(extract_reward(deployment, explorer.entity_id, 40, 40));
 }
 
 #[test]
@@ -511,7 +548,7 @@ fn chest_rejections_leave_the_chest_and_points_untouched() {
 #[feature("safe_dispatcher")]
 fn extraction_requires_configuration_and_rejects_foreign_grants() {
     let (deployment, _, explorer) = setup(false);
-    assert_terminal_rejection(deployment, Command::ExtractExplorationReward(explorer.entity_id), 40);
+    assert!(!extract_reward(deployment, explorer.entity_id, 40, 40));
     let map = IExtractionSafeDispatcher { contract_address: deployment.peers.map };
     let rewards = array![ExplorationReward { resource_type: 2, amount: 10, weight: 1 }].span();
     assert!(map.configure_extraction(3, rewards).is_err());
@@ -525,7 +562,7 @@ fn extraction_requires_configuration_and_rejects_foreign_grants() {
             .grant_exploration_reward(explorer, 2, 100, 40)
             .is_err(),
     );
-    assert!(execute(deployment, Command::ExtractExplorationReward(explorer.entity_id), 40));
+    assert!(extract_reward(deployment, explorer.entity_id, 40, 40));
 }
 
 #[test]
@@ -550,7 +587,7 @@ fn exploration_grants_a_surface_reward_atomically_and_extraction_cannot_pay_twic
             ),
         );
         assert_eq!(balance(deployment, recipient, 2), before + 10 * RESOURCE_PRECISION);
-        assert!(execute_recorded_at(deployment, Command::ExtractExplorationReward(explorer.entity_id), 41, 5001));
+        assert!(extract_reward(deployment, explorer.entity_id, 41, 5001));
         assert_eq!(balance(deployment, recipient, 2), before + 10 * RESOURCE_PRECISION);
     }
 }
