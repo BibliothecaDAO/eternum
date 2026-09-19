@@ -32,6 +32,7 @@ const waitForGameRegistryByIdMock = mock(async ({ gameId }: { gameId: number }) 
 const writeLaunchSummaryMock = mock(() => ".context/game-launch/madara-blitz-bltz-test.json");
 const buildCreateGameParamsMock = mock((_: unknown, params: unknown) => params);
 const originalGetChainId = RpcProvider.prototype.getChainId;
+const originalGetBlock = RpcProvider.prototype.getBlock;
 
 mock.module("../config/config-loader", () => ({
   loadEnvironmentConfiguration: () => buildLaunchConfig(),
@@ -76,10 +77,12 @@ const { launchGame, runLaunchStep } = await import("../launch/runner");
 
 afterAll(() => {
   RpcProvider.prototype.getChainId = originalGetChainId;
+  RpcProvider.prototype.getBlock = originalGetBlock;
   mock.restore();
 });
 
 beforeEach(() => {
+  RpcProvider.prototype.getBlock = mock(async () => ({ timestamp: 1_999_990_000 })) as RpcProvider["getBlock"];
   RpcProvider.prototype.getChainId = async function () {
     const nodeUrl = (this as RpcProvider & { channel: { nodeUrl: string } }).channel.nodeUrl;
     return expectedChainId(nodeUrl.includes("mainnet.example") ? "mainnet" : "madara") as Awaited<
@@ -113,7 +116,7 @@ describe("registrar game launch", () => {
     expect(summary.durationSeconds).toBe(durationSeconds);
     expect(buildCreateGameParamsMock).toHaveBeenCalledWith(
       expect.anything(),
-      expect.objectContaining({ presetId: Number(version), durationSeconds }),
+      expect.objectContaining({ presetId: Number(version), durationSeconds, chainTimestamp: 1_999_990_000 }),
       expect.anything(),
     );
   });

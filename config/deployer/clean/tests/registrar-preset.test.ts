@@ -4,15 +4,31 @@ import { buildCreateGameParams } from "../registrar/preset";
 
 describe("native game configuration", () => {
   const config = loadEnvironmentConfiguration("madara.blitz");
+  test.each([0, -1, NaN, 1.5, undefined])("rejects an invalid chain clock (%s)", (chainTimestamp) => {
+    expect(() =>
+      buildCreateGameParams(config, {
+        gameName: "bltz-clock",
+        presetId: 2,
+        startMainAt: 2_000_000_000,
+        chainTimestamp: chainTimestamp as number,
+        durationSeconds: 3_600,
+        devModeOn: false,
+        singleRealmMode: false,
+        twoPlayerMode: false,
+        useMapOverride: false,
+      }),
+    ).toThrow("positive chain timestamp");
+  });
   test("keeps launch clocks and mode overrides in CreateGameParams", () => {
     const originalDateNow = Date.now;
-    Date.now = () => 1_999_990_000_000;
+    Date.now = () => 1_999_995_000_000;
 
     try {
       const params = buildCreateGameParams(config, {
         gameName: "bltz-a2",
         presetId: 3,
         startMainAt: 2_000_000_000,
+        chainTimestamp: 1_999_990_000,
         durationSeconds: 7_200,
         devModeOn: true,
         singleRealmMode: false,
@@ -20,7 +36,7 @@ describe("native game configuration", () => {
         useMapOverride: true,
       });
 
-      // Settling and registration open at creation time, not at start − window.
+      // A launcher clock ahead of the chain cannot delay recorded settlement.
       expect(params).toMatchObject({
         preset_id: 3,
         start_settling_at: 1_999_990_000,
@@ -50,6 +66,7 @@ describe("native game configuration", () => {
         gameName: "bltz-late",
         presetId: 3,
         startMainAt: 2_000_000_000,
+        chainTimestamp: 2_000_000_500,
         durationSeconds: 3_600,
         devModeOn: true,
         singleRealmMode: false,
@@ -73,6 +90,7 @@ describe("native game configuration", () => {
       gameName: "bltz-capacity",
       presetId: 3,
       startMainAt: 2_000_000_000,
+      chainTimestamp: 1_999_990_000,
       durationSeconds: 3_600,
       devModeOn: true,
       singleRealmMode: false,
