@@ -9,7 +9,7 @@ describe("game chain names", () => {
     const config = await readFile(
       path.resolve(
         import.meta.dirname,
-        "../../../deploy/madara-lab/chain-config.yaml",
+        "../../../deploy/athanor/chain-config.yaml",
       ),
       "utf8",
     );

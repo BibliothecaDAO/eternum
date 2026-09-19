@@ -1166,7 +1166,7 @@ NATIVE_WORLD_MANIFEST=/absolute/path/to/native-manifest.json pnpm --dir apps/gam
 ```
 
 Configure `VITE_PUBLIC_ADMISSION_URL` and the matching Herald and RPC endpoints in the client environment. The manifest
-must match the generated native schema. See `deploy/madara-lab/README.md` for the complete isolated stack setup. Do not
+must match the generated native schema. See `deploy/athanor/README.md` for the complete isolated stack setup. Do not
 put deployment private keys in the browser environment.
 
 ## Read current facts
@@ -1291,7 +1291,7 @@ pnpm run build:packages
 
 ## Isolated development stack
 
-Follow `deploy/madara-lab/README.md` to configure a separate Madara node, PostgreSQL database, native deployment,
+Follow `deploy/athanor/README.md` to configure a separate Madara node, PostgreSQL database, native deployment,
 Herald, identity service and admission endpoint. Ports, volumes and credentials belong to that environment. Do not run a
 development deployment against a live game stack.
 

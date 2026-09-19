@@ -345,7 +345,7 @@ async function prepareGames(
 }
 
 async function runRosterGroups(options: HarnessCliOptions, games: PreparedGame[]): Promise<void> {
-  const directory = path.join(REPOSITORY_ROOT, "deploy/madara-lab/.lab/harness", `rosters-${Date.now()}`);
+  const directory = path.join(REPOSITORY_ROOT, "deploy/athanor/.lab/harness", `rosters-${Date.now()}`);
   await mkdir(directory, { recursive: true, mode: 0o700 });
   const paths: string[] = [];
   for (const game of games) {
@@ -418,7 +418,7 @@ async function readJson<T>(filePath: string): Promise<T> {
 
 function printUsage(): void {
   console.log(`
-Usage: bun deploy/madara-lab/harness/run.ts [options]
+Usage: bun deploy/athanor/harness/run.ts [options]
 
   --bots <count>                 default: 96; Blitz splits into balanced games of up to 24
   --game-type <blitz|eternum>     default: blitz

@@ -26,7 +26,7 @@ def build_image(source, output, revision, runtime):
     context.mkdir()
     shutil.copyfile(output / 'herald.js', context / 'herald.js')
     tag = f'athanor-herald:{revision}'
-    dockerfile = source / 'deploy/madara-rand/release/Herald.Dockerfile'
+    dockerfile = source / 'deploy/athanor/randomness/release/Herald.Dockerfile'
     run(['docker', 'build', '-f', str(dockerfile), '--build-arg', f'BUN_IMAGE={runtime}',
          '-t', tag, str(context)], output / 'image-build.log', source)
     return json.loads(read(['docker', 'image', 'inspect', tag]))[0]['Id']
@@ -35,7 +35,7 @@ def build_image(source, output, revision, runtime):
 def main():
     if len(sys.argv) != 4:
         raise SystemExit('usage: build-herald.py NATIVE_REVISION BUN_RUNTIME_DIGEST OUTPUT_DIRECTORY')
-    repository = Path(__file__).resolve().parents[3]
+    repository = Path(__file__).resolve().parents[4]
     revision = read(['git', 'rev-parse', '--verify', f'{sys.argv[1]}^{{commit}}'], repository)
     runtime = sys.argv[2]
     if '@sha256:' not in runtime:

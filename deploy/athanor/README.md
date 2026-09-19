@@ -1,8 +1,21 @@
-# Native game lab
+# ATHANOR
 
-This directory owns shared infrastructure, identity deployment and the gameplay harness. Native game contracts live
-in `contracts/l3/world-native`; the embedded admission node is packaged by `deploy/madara-rand/release/build.py`.
-Herald publishes snapshots and ordered diffs to the shared client's authoritative native fact store.
+ATHANOR is the infrastructure that runs Realms game worlds: the Madara sequencer with embedded recorded randomness,
+Herald, the launch service, identity, host bootstrap, local TLS, deployment and the gameplay harness. Native game
+contracts live in `contracts/l3/world-native`; the game clients consume Herald's snapshots and ordered diffs through
+the shared native fact store. Madara is the upstream sequencer inside this stack.
+
+The future shard model assigns each world to one isolated node and Herald, with shared identity and directory routing.
+Shard placement, fan-in, ledger integration and proving are deferred. The current cutover validates one shard before
+selecting its supported capacity.
+
+## Live holdovers
+
+Until the native cutover's fresh genesis, the running live stack retains its `madara-lab` compose project and container
+names, the `WP_REALMS_MADARA_LAB` chain ID and its existing tunnel hostnames. Source-directory changes do not rename,
+restart or switch that stack. Candidate projects use `athanor-<shard>` with disjoint ports and volumes. Set
+`COMPOSE_PROJECT_NAME` when starting a shard, and `MADARA_CONTAINER` when measuring a separately named running node.
+The three live holdovers are removed only at the approved traffic switch.
 
 Use a separate checkout, compose project, ports, volumes and Herald database for a candidate. Keep the live project
 and owner playtest running. Announce any replacement of the candidate being playtested. Passing a small smoke does
@@ -15,7 +28,7 @@ From the repository root:
 ```bash
 pnpm install --frozen-lockfile
 pnpm run build:packages
-bash deploy/madara-lab/scripts/install-native-tools.sh "$HOME/.local/share/eternum-native-tools"
+bash deploy/athanor/scripts/install-native-tools.sh "$HOME/.local/share/eternum-native-tools"
 source "$HOME/.local/share/eternum-native-tools/env"
 (cd contracts/l3/world-native && scarb build && scarb test)
 python3 scripts/generate-realm-metadata.py --check
@@ -31,10 +44,10 @@ execution: declare and execute the generated classes on the selected node image 
 Build a selected fork revision through the upstream Dockerfile and existing build cache:
 
 ```bash
-python3 deploy/madara-rand/release/build.py /path/to/madara REVISION BUILDX_BUILDER OUTPUT_DIRECTORY
+python3 deploy/athanor/randomness/release/build.py /path/to/madara REVISION BUILDX_BUILDER OUTPUT_DIRECTORY
 ```
 
-Use the image digest from that output with `deploy/madara-rand/node.yml` and an isolated compose project. The candidate
+Use the image digest from that output with `deploy/athanor/randomness/node.yml` and an isolated compose project. The candidate
 configuration must supply the sequencing account, world address and private sequencing credential.
 The node persists its epoch secret in its own data volume. Pending assignments are volatile across restart; recorded
 nonces prevent duplicate gameplay effects. Keep WAL and fsync enabled for comparable runs. Never request fsync with
@@ -55,13 +68,13 @@ keep it private. `NATIVE_WORLD_MANIFEST` must point to the isolated world's outp
 On the already prepared isolated chain:
 
 ```bash
-bun deploy/madara-lab/scripts/deploy-gameplay-contracts.ts
-bun deploy/madara-lab/harness/native/prepare-authority.ts "$NATIVE_WORLD_SEED"
+bun deploy/athanor/scripts/deploy-gameplay-contracts.ts
+bun deploy/athanor/harness/native/prepare-authority.ts "$NATIVE_WORLD_SEED"
 bun config/deployer/clean/cli/deploy-world.ts \
   --seed "$NATIVE_WORLD_SEED" \
-  --identity deploy/madara-lab/.lab/gameplay-contracts.json \
+  --identity deploy/athanor/.lab/gameplay-contracts.json \
   --submitter "$SEQUENCING_SUBMITTER_ADDRESS"
-bun deploy/madara-lab/harness/native/prepare-authority.ts "$NATIVE_WORLD_SEED" "$NATIVE_WORLD_MANIFEST"
+bun deploy/athanor/harness/native/prepare-authority.ts "$NATIVE_WORLD_SEED" "$NATIVE_WORLD_MANIFEST"
 bun config/deployer/clean/registrar/register-preset.ts \
   --environment madara.blitz --preset-id 2 --balance-profile official-60
 ```
@@ -79,7 +92,7 @@ execution; the client uses `VITE_PUBLIC_ADMISSION_URL` for that same node.
 
 Create a separate PostgreSQL database and configure `HERALD_CHAIN=madara`, `HERALD_RPC_URL`, `DATABASE_URL` and
 `NATIVE_WORLD_MANIFEST`. Start Herald with `pnpm --dir apps/herald start`, or package its real workspace graph with
-`deploy/madara-rand/release/build-herald.py`. The candidate service must use that same manifest and chain.
+`deploy/athanor/randomness/release/build-herald.py`. The candidate service must use that same manifest and chain.
 
 Wait for `/health` and the confirmed snapshot before connecting the client. Set its native manifest, admission and
 Herald URLs to the isolated endpoints, then run `pnpm --dir apps/game dev`. Use the client HTTPS configuration when
@@ -93,7 +106,7 @@ schemas are explicit ingestion faults and require a planned release. Historical 
 The harness uses the shared client, native fact store, recorded admission and node transaction subscriptions:
 
 ```bash
-bun deploy/madara-lab/harness/run.ts \
+bun deploy/athanor/harness/run.ts \
   --bots 6 --minutes 2.5 --interval-seconds 15 --setup-concurrency 6 --workload build-order
 ```
 

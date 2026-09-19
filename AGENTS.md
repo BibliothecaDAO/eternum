@@ -21,7 +21,7 @@ render from it. The acting UI may show a local pending indicator; shared provisi
 pre-confirmed overlay.
 
 Key directories: `apps/game` (the game client — has its own `AGENTS.md`), `packages/core` (game logic and sync runtime),
-`packages/*` (native bindings, shared types), `contracts/*` (Cairo), `deploy/madara-lab` (self-hosted chain infra — read
+`packages/*` (native bindings, shared types), `contracts/*` (Cairo), `deploy/athanor` (self-hosted chain infra — read
 its README before touching it), `docs/plans` (implementation briefs: each item states its evidence, the fix, and a
 verifiable gate).
 

@@ -15,8 +15,7 @@ Read [`AGENTS.md`](../AGENTS.md) first. It is the coding and review standard for
 ### Where things live
 
 - Contributing: [`CONTRIBUTING.md`](../CONTRIBUTING.md)
-- Chain and box infrastructure (the self-hosted Madara L3):
-  [`deploy/madara-lab/README.md`](../deploy/madara-lab/README.md)
+- Chain and box infrastructure (the self-hosted Madara L3): [`deploy/athanor/README.md`](../deploy/athanor/README.md)
 - Game launch and balance config: [`config/deployer/clean/README.md`](../config/deployer/clean/README.md) and
   [`config/README.md`](../config/README.md)
 - Herald (block folding, snapshots, ordered diffs): [`apps/herald/README.md`](../apps/herald/README.md)

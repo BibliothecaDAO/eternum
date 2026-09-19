@@ -11,9 +11,9 @@ on:
       - "apps/herald/src/model-registry.ts"
       - "config/deployer/clean/**"
       - "config/source/**"
-      - "deploy/madara-lab/scripts/validate-native-target*"
-      - "deploy/madara-lab/scripts/deploy-box*"
-      - "deploy/madara-rand/native-intent*.ts"
+      - "deploy/athanor/scripts/validate-native-target*"
+      - "deploy/athanor/scripts/deploy-box*"
+      - "deploy/athanor/randomness/native-intent*.ts"
       - "scripts/generate-realm-metadata.py"
       - "packages/**"
       - ".github/workflows/native-world.yml"
@@ -123,11 +123,11 @@ jobs:
             bun test "$file"
           done
       - name: Test retained receipt recovery
-        run: bun test deploy/madara-rand/native-intent.test.ts
+        run: bun test deploy/athanor/randomness/native-intent.test.ts
       - name: Test fail-closed deployment paths
         run: |
-          node --test deploy/madara-lab/scripts/validate-native-target.test.mjs
-          python3 -m unittest discover -s deploy/madara-lab/scripts -p test_deploy_box.py -v
+          node --test deploy/athanor/scripts/validate-native-target.test.mjs
+          python3 -m unittest discover -s deploy/athanor/scripts -p test_deploy_box.py -v
 
   native-provider:
     runs-on: ubuntu-latest

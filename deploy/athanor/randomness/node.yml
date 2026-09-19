@@ -29,7 +29,7 @@ services:
       RANDOMNESS_EPOCH_SECRET: /data/game-epoch-secret.json
       RUST_LOG: info
     volumes:
-      - ../madara-lab/chain-config.yaml:/config/chain-config.yaml:ro
+      - ../chain-config.yaml:/config/chain-config.yaml:ro
       - node-data:/data
     ports:
       - "127.0.0.1:15050:9944"

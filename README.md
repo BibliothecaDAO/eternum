@@ -68,7 +68,7 @@ eternum/
 │   └── l2/                    # Ledger, tokens and collectibles on Starknet
 ├── packages/                  # Shared libraries & SDK (core, provider, react, types, chain, identity)
 ├── config/                    # Balance presets, deployer and launch configs
-├── deploy/madara-lab/         # Self-hosted chain and box infrastructure
+├── deploy/athanor/         # Self-hosted chain and box infrastructure
 └── docs/                      # Architecture notes and implementation briefs
 ```
 
@@ -101,7 +101,7 @@ cd eternum
 pnpm install --frozen-lockfile
 
 # Install native tools without changing another workspace's toolchain
-bash deploy/madara-lab/scripts/install-native-tools.sh "$HOME/.local/share/eternum-native-tools"
+bash deploy/athanor/scripts/install-native-tools.sh "$HOME/.local/share/eternum-native-tools"
 source "$HOME/.local/share/eternum-native-tools/env"
 
 pnpm run build:packages
@@ -120,7 +120,7 @@ pnpm dev
 ### Running Contracts Locally
 
 The game domains live in `contracts/l3/world-native`. Scarb compiles them; isolated deployment and validation are
-covered in [`deploy/madara-lab/README.md`](./deploy/madara-lab/README.md).
+covered in [`deploy/athanor/README.md`](./deploy/athanor/README.md).
 
 ```bash
 cd contracts/l3/world-native

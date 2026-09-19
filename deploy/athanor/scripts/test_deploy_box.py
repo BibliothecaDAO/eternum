@@ -31,7 +31,7 @@ class DeployBoxTest(unittest.TestCase):
         self.git("config", "user.name", "Deploy test")
         self.git("config", "user.email", "deploy-test@example.invalid")
         (self.repo / "package.json").write_text("{}\n")
-        planner = self.repo / "deploy/madara-lab/scripts/deploy-box-plan.mjs"
+        planner = self.repo / "deploy/athanor/scripts/deploy-box-plan.mjs"
         planner.parent.mkdir(parents=True)
         shutil.copy2(SCRIPT.with_name("deploy-box-plan.mjs"), planner)
         importers = {".": {}, "packages/types": {}, "config": {}}
@@ -49,7 +49,7 @@ class DeployBoxTest(unittest.TestCase):
             "@service/transport@1.0.0": {"resolution": {"integrity": "original"}},
         })
         self.write_lock()
-        self.git("add", "package.json", "pnpm-lock.yaml", "deploy/madara-lab/scripts/deploy-box-plan.mjs")
+        self.git("add", "package.json", "pnpm-lock.yaml", "deploy/athanor/scripts/deploy-box-plan.mjs")
         self.git("commit", "-m", "Initial deployment")
         self.base = self.git("rev-parse", "HEAD")
         self.git("init", "--bare", str(self.root / "remote"))

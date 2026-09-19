@@ -4,7 +4,7 @@ import { parseArgs, resolveConfig, resolveDataDir, RunnerConfigError } from "./c
 
 const FULL_ENV = {
   ADMISSION_URL: "https://admission.example",
-  NATIVE_WORLD_MANIFEST: "deploy/madara-lab/.lab/native/manifest.json",
+  NATIVE_WORLD_MANIFEST: "deploy/athanor/.lab/native/manifest.json",
   HERALD_URL: "https://herald.example",
   RPC_URL: "https://rpc.example",
   VITE_PUBLIC_PLAYER_ACCOUNT_CLASS_HASH: "0x1",
@@ -35,7 +35,7 @@ describe("runner config", () => {
       quietWindowMs: 5_000,
       heartbeatMs: null,
     });
-    expect(config.manifestPath).toMatch(/deploy\/madara-lab\/\.lab\/native\/manifest\.json$/);
+    expect(config.manifestPath).toMatch(/deploy\/athanor\/\.lab\/native\/manifest\.json$/);
     expect(resolveDataDir(config, 12)).toMatch(/\.agent-data\/12$/);
   });
 

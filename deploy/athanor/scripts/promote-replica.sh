@@ -7,7 +7,7 @@
 #   4. stop the replica and start `madara-promoted` on the replica's volume (alias `madara`, same published ports)
 #   5. print RTO and the heads; `docker compose up madara` now fails at its entrypoint (no identity)
 #
-# Usage: scripts/promote-replica.sh    (from deploy/madara-lab, docker compose in scope)
+# Usage: scripts/promote-replica.sh    (from deploy/athanor, docker compose in scope)
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -24,7 +24,8 @@ docker compose rm -f madara >/dev/null 2>&1 || true
 if curl -sf -m 1 http://127.0.0.1:5050 >/dev/null 2>&1; then echo "promote: port 5050 still answers — refusing to continue"; exit 2; fi
 echo "promote: old sequencer stopped and removed, port 5050 closed"
 
-docker run --rm -v madara-lab_madara-data:/old -v madara-lab_madara-replica-data:/new alpine \
+project=$(docker compose config --format json | jq -er .name)
+docker run --rm -v "${project}_madara-data:/old" -v "${project}_madara-replica-data:/new" alpine \
   sh -c 'rm -f /old/SEQUENCER && touch /old/RETIRED && touch /new/SEQUENCER' >/dev/null
 echo "promote: identity token moved to the replica volume"
 

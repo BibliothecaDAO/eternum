@@ -1,4 +1,4 @@
-# Madara lab: a single pinned Madara sequencer running the Realms game world locally.
+# ATHANOR: isolated Realms infrastructure with a pinned Madara sequencer.
 #
 #   docker compose up -d                 # madara only
 #   World deployment uses config/deployer/clean/cli/deploy-world.ts (see README).
@@ -14,15 +14,15 @@
 #
 # Pin discipline: the default is the exact image measured below. Set MADARA_IMAGE to compare another build and record
 # that image's digest in the README.
+name: athanor-local
 services:
   # Sequencer. It only starts if the identity token /data/SEQUENCER is present — promote-replica.sh moves that
   # token to the replica's volume, so a promoted-away sequencer cannot come back (E.2 fencing).
   madara:
     image: ${MADARA_IMAGE:-ghcr.io/madara-alliance/madara@sha256:ec30298d51ce0780e1ad88cc00e1c17bef31530d0e338fe7fcc1d71d1bad31b2}
-    container_name: madara-lab
     entrypoint: ["/bin/sh", "-c", "test -f /data/SEQUENCER || { echo 'madara: no sequencer identity in /data (see promote-replica.sh)'; exit 3; }; exec madara \"$@\"", "--"]
     command:
-      - --name=realms-madara-lab
+      - --name=athanor
       - --devnet
       - --base-path=/data
       - --chain-config-path=/config/chain-config.yaml
@@ -65,7 +65,6 @@ services:
   # promotion target. Not herald's live source — the follower polls the pre-confirmed block every 500 ms.
   madara-replica:
     image: ${MADARA_IMAGE:-ghcr.io/madara-alliance/madara@sha256:ec30298d51ce0780e1ad88cc00e1c17bef31530d0e338fe7fcc1d71d1bad31b2}
-    container_name: madara-lab-replica
     profiles: ["replica"]
     command:
       - --name=realms-madara-replica
@@ -108,11 +107,10 @@ services:
   # moves the identity token here first.
   madara-promoted:
     image: ${MADARA_IMAGE:-ghcr.io/madara-alliance/madara@sha256:ec30298d51ce0780e1ad88cc00e1c17bef31530d0e338fe7fcc1d71d1bad31b2}
-    container_name: madara-lab-promoted
     profiles: ["promoted"]
     entrypoint: ["/bin/sh", "-c", "test -f /data/SEQUENCER || { echo 'madara: no sequencer identity in /data (see promote-replica.sh)'; exit 3; }; exec madara \"$@\"", "--"]
     command:
-      - --name=realms-madara-lab
+      - --name=athanor
       - --devnet
       - --base-path=/data
       - --chain-config-path=/config/chain-config.yaml
@@ -155,7 +153,6 @@ services:
 
   caddy:
     image: ${CADDY_IMAGE:-caddy:2-alpine}
-    container_name: madara-lab-caddy
     environment:
       IDENTITY_RPC_UPSTREAM: ${IDENTITY_RPC_UPSTREAM:-https://rpc.starknet.lava.build}
     volumes:
@@ -172,7 +169,6 @@ services:
   # scripts/bootstrap-server.sh into .lab/cloudflared/. Pin the image digest in the README at first use.
   cloudflared:
     image: ${CLOUDFLARED_IMAGE:-cloudflare/cloudflared:latest}
-    container_name: madara-lab-cloudflared
     profiles: ["server"]
     # Recent cloudflared images default to a non-root user that cannot read the 0600 realms-owned
     # credentials.json bootstrap renders. cloudflared is a single-purpose network daemon — run it as root.
@@ -190,7 +186,6 @@ services:
   # Session store for apps/realms (better-auth over Drizzle). DATABASE_URL in README.
   postgres:
     image: ${POSTGRES_IMAGE:-postgres:17-alpine}
-    container_name: madara-lab-postgres
     profiles: ["web"]
     environment:
       POSTGRES_USER: realms
