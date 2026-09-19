@@ -16,7 +16,7 @@ import {
   signedRequest,
 } from "../../../../deploy/athanor/randomness/native-intent";
 import { createNativeTicketSubmission } from "../../../../packages/provider/src/native-ticket";
-import { nativeExecutionOutcomes } from "../../../../packages/provider/src/native-batch";
+import { nativeExecutionOutcomes, requireNativeExecutionOutcome } from "../../../../packages/provider/src/native-batch";
 import { NativeDecoder } from "../../../../apps/herald/src/native/decoder";
 
 const fixturePath = process.env.NATIVE_PRESET_LAB_FIXTURE;
@@ -81,9 +81,14 @@ test.skipIf(!fixturePath)(
         const receipt = await provider.getTransactionReceipt(transactionHash);
         if (!("events" in receipt)) throw new Error("Missing receipt events");
         const outcomes = nativeExecutionOutcomes(receipt.events, fixture.execution.address);
-        const outcome = outcomes.find((item) => BigInt(item.order) === order);
-        expect(outcome?.status).toBe("SUCCEEDED");
-        console.log(JSON.stringify({ action: command.kind, game: fixture.game, transactionHash: transactionHash }));
+        const outcome = requireNativeExecutionOutcome(outcomes, {
+          gameId: fixture.game,
+          actor: fixture.actor,
+          nonce: admission[3],
+          order: order.toString(),
+        });
+        console.log(JSON.stringify({ action: command.kind, game: fixture.game, transactionHash, outcome }));
+        expect(outcome.status).toBe("SUCCEEDED");
         return receipt.events
           .filter((event) => decoder.owns(event.from_address))
           .map((event, index) =>
@@ -145,6 +150,25 @@ test.skipIf(!fixturePath)(
             ),
         ),
       ).toBe(true);
+      const arrival = depositRows.find((row) => row.kind === "set" && row.model.name === "ResourceArrival");
+      if (!arrival || arrival.kind !== "set") throw new Error("Deposit emitted no arrival");
+      const interval = Number(definition.rules.tick_config.delivery_tick_in_seconds);
+      const availableAt = (Number(arrival.key.day) * 48 + Number(arrival.key.slot)) * interval;
+      const deadline = Date.now() + (interval + 30) * 1_000;
+      while ((await provider.getBlock("latest")).timestamp < availableAt) {
+        if (Date.now() >= deadline) throw new Error("Chain did not reach the deposit arrival tick");
+        await Bun.sleep(2_000);
+      }
+      const offloaded = await execute({
+        kind: "OffloadArrival",
+        value: {
+          entity_id: structureId,
+          day: BigInt(arrival.key.day),
+          slot: Number(arrival.key.slot),
+          resource_count: 1,
+        },
+      });
+      expect(offloaded.some((row) => row.kind === "delete" && row.model.name === "ResourceArrival")).toBe(true);
       const recipient = "0x777";
       const balance = async () => {
         const [low, high] = await provider.callContract({
@@ -170,5 +194,5 @@ test.skipIf(!fixturePath)(
       submit.dispose();
     }
   },
-  120_000,
+  360_000,
 );
