@@ -49,6 +49,7 @@ pub fn validate_params(params: CreateGameParams, blitz: bool) {
         "registration must open before settling",
     );
     if blitz {
+        assert!(params.end_grace_seconds == 0, "Blitz has no settlement grace period");
         assert!(params.roster.len() > 0 && params.roster.len() <= 24, "invalid Blitz roster size");
         assert!(params.mode == crate::settlement::SettlementMode::Triple, "Regular Blitz required");
         assert!(!params.dev_mode_on, "free Blitz does not use development mode");

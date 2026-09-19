@@ -152,7 +152,11 @@ fn params(blitz: bool) -> CreateGameParams {
         start_settling_at: 200,
         start_main_at: 300,
         duration_seconds: 100,
-        end_grace_seconds: 10,
+        end_grace_seconds: if blitz {
+            0
+        } else {
+            10
+        },
         dev_mode_on: false,
         mode: if blitz {
             SettlementMode::Triple
@@ -209,6 +213,7 @@ fn blitz_launch_initializes_domains_once_and_allocates_isolated_games() {
         let game = games.game(expected);
         assert_eq!(game.preset_id, 1);
         assert_eq!(game.end_at, 400);
+        assert_eq!(game.end_grace_seconds, 0);
         assert_eq!(game.creator, super::authority());
         assert_eq!(status_at(game, 299), GameStatus::Registration);
         assert_eq!(status_at(game, 300), GameStatus::Registration);
@@ -266,6 +271,7 @@ fn invalid_schedules_modes_and_registration_limits_never_allocate() {
     for input in array![
         CreateGameParams { name: 0, ..params(true) }, CreateGameParams { seed: 0, ..params(true) },
         CreateGameParams { duration_seconds: 0, ..params(true) },
+        CreateGameParams { end_grace_seconds: 1, ..params(true) },
         CreateGameParams { start_settling_at: 301, ..params(true) },
         CreateGameParams { registration_start: 200, ..params(true) },
         CreateGameParams { roster: roster(25), ..params(true) },
@@ -556,4 +562,12 @@ fn recorded_roster_batches_block_early_play_and_report_ticket_progress() {
     super::season_lifecycle::execute_batch_in_game(d, game_id, command, 207, 0);
     assert!(IGameDispatcher { contract_address: d.peers.season }.game(game_id).ready);
     super::season_lifecycle::execute_batch_in_game(d, game_id, command, 208, 0);
+    let games = IGameDispatcher { contract_address: d.peers.season };
+    let end_at = games.game(game_id).end_at;
+    let finalize = crate::commands::Command::MarkGameSettled;
+    assert!(!super::resource_commands::execute_in_game(d, game_id, finalize, end_at - 1, end_at - 1));
+    assert!(!games.game(game_id).settled);
+    super::season_lifecycle::execute_batch_in_game(d, game_id, finalize, end_at, 0);
+    assert!(games.game(game_id).settled);
+    assert_eq!(status_at(games.game(game_id), end_at), GameStatus::Settled);
 }

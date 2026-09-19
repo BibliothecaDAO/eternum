@@ -15,6 +15,7 @@ Required environment:
 - `DEPLOYER_ACCOUNT_ADDRESS`, `DEPLOYER_PRIVATE_KEY` — registrar writer
 
 `bun run src/main.ts` serves port 3006, freezes due slot rosters and claims durable jobs. Completing a Blitz launch
-atomically schedules its result job after the actual game end and grace period. Results resume from the chain cursor.
-Failed jobs remain visible and can be retried by a launcher. Slot registration needs a verified identity, but not
-launcher privileges. No L2 service is required for a free slot.
+atomically schedules its result job at the actual game end, with no Blitz grace period. Finalization completes pending
+actions and hyperstructure settlement before recording results, which resume from the chain cursor. Failed jobs remain
+visible and can be retried by a launcher. Slot registration needs a verified identity, but not launcher privileges. No
+L2 service is required for a free slot.

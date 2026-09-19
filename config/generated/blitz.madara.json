@@ -93,7 +93,7 @@
     "startSettlingAfterSeconds": 59,
     "startMainAfterSeconds": 60,
     "durationSeconds": 7200,
-    "endGraceSeconds": 86400,
+    "endGraceSeconds": 0,
     "bridgeCloseAfterEndSeconds": 604800,
     "startSettlingAt": 0,
     "startMainAt": 0
