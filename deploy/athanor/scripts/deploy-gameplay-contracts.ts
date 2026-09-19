@@ -3,7 +3,8 @@ import { spawnSync } from "node:child_process";
 import { mkdirSync, renameSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { type Account, addAddressPadding, hash, RpcProvider } from "starknet";
+import { type Account, addAddressPadding, ec, hash, RpcProvider } from "starknet";
+import { ensureGameplayAccount, bindGameplayAccounts } from "@bibliothecadao/eternum";
 import { assertProviderChain } from "../../../packages/chain/chain-guard.js";
 
 import {
@@ -19,12 +20,13 @@ const LAB_DIRECTORY = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const REPOSITORY_ROOT = resolve(LAB_DIRECTORY, "../..");
 const CONTRACT_DIRECTORY = resolve(REPOSITORY_ROOT, "contracts/l3/player-account");
 const ARTIFACT_DIRECTORY = resolve(CONTRACT_DIRECTORY, "target/dev");
-const OUTPUT_PATH = resolve(LAB_DIRECTORY, ".lab/gameplay-contracts.json");
+const OUTPUT_PATH = resolve(requiredEnvironment("GAMEPLAY_CONTRACTS_PATH"));
 
 const RPC_URL = requiredEnvironment("RPC_URL");
 const DEPLOYER_ADDRESS = requiredEnvironment("DEPLOYER_ACCOUNT_ADDRESS");
 const DEPLOYER_PRIVATE_KEY = requiredEnvironment("DEPLOYER_PRIVATE_KEY");
 const BINDING_AUTHORITY_ADDRESS = requiredEnvironment("BINDING_AUTHORITY_ADDRESS");
+const BINDING_AUTHORITY_PRIVATE_KEY = requiredEnvironment("BINDING_AUTHORITY_PRIVATE_KEY");
 
 function requiredEnvironment(name: string): string {
   const value = process.env[name]?.trim();
@@ -36,6 +38,7 @@ const PLAYER_ACCOUNT_ARTIFACT = "realms_player_account_RealmsPlayerAccount.contr
 const PLAYER_REGISTRY_ARTIFACT = "realms_player_account_PlayerRegistry.contract_class.json";
 
 interface GameplayDeploymentResult {
+  operatorAccountAddress: string;
   bindingAuthorityAddress: string;
   playerAccountClassHash: string;
   playerRegistryAddress: string;
@@ -131,7 +134,9 @@ async function deployGameplayContracts(): Promise<GameplayDeploymentResult> {
 
   await deployPlayerRegistryIfNeeded(account, playerRegistryClassHash, playerRegistryAddress);
 
+  const operatorAccountAddress = await prepareOperator(provider, playerAccountClassHash, playerRegistryAddress);
   const result = {
+    operatorAccountAddress,
     bindingAuthorityAddress: addAddressPadding(BINDING_AUTHORITY_ADDRESS),
     playerAccountClassHash,
     playerRegistryAddress,
@@ -140,6 +145,29 @@ async function deployGameplayContracts(): Promise<GameplayDeploymentResult> {
   } satisfies GameplayDeploymentResult;
   writeDeploymentResult(result);
   return result;
+}
+
+async function prepareOperator(
+  provider: RpcProvider,
+  classHash: string,
+  playerRegistryAddress: string,
+): Promise<string> {
+  const operator = await ensureGameplayAccount({
+    provider,
+    authority: BINDING_AUTHORITY_ADDRESS,
+    classHash,
+    owner: DEPLOYER_ADDRESS,
+    privateKey: DEPLOYER_PRIVATE_KEY,
+    publicKey: ec.starkCurve.getStarkKey(DEPLOYER_PRIVATE_KEY),
+  });
+  await bindGameplayAccounts({
+    accounts: [{ address: operator.address, owner: DEPLOYER_ADDRESS }],
+    authority: createMadaraAccount(provider, BINDING_AUTHORITY_ADDRESS, BINDING_AUTHORITY_PRIVATE_KEY),
+    chain: "madara",
+    playerRegistryAddress,
+    provider,
+  });
+  return operator.address;
 }
 
 deployGameplayContracts()

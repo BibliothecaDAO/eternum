@@ -9,6 +9,7 @@ export async function deployNativeWorld(
   local: NativeWorld,
   account: Account,
   onSubmitted: (transaction: NativeTransaction) => void,
+  declarer: Account = account,
 ) {
   const before = await inspectNativeWorld(local, account);
   if (before.blockers.length) throw new Error(before.blockers.join("; "));
@@ -20,6 +21,7 @@ export async function deployNativeWorld(
   };
   for (const domain of local.domains) {
     const state = before.domains.find((state) => state.name === domain.name)!;
+    await declareClass(declarer, domain, (hash) => record("declare", domain.name, hash));
     await deployDomain(account, domain, state.chainClassHash, record);
   }
   for (const domain of local.domains) {
@@ -84,7 +86,6 @@ async function deployDomain(
   chainClassHash: string | null,
   record: (action: NativeTransaction["action"], domain: string, hash: string) => void,
 ) {
-  await declareClass(account, domain, (hash) => record("declare", domain.name, hash));
   if (!chainClassHash) {
     const result = await account.deployContract(
       {

@@ -17,10 +17,12 @@ async function runWithoutTarget(script: string, environment: Record<string, stri
 
 describe("native deployment target is explicit", () => {
   const target = {
+    GAMEPLAY_CONTRACTS_PATH: "/tmp/unused-gameplay-contracts.json",
     RPC_URL: "http://127.0.0.1:1",
     DEPLOYER_ACCOUNT_ADDRESS: "0x1",
     DEPLOYER_PRIVATE_KEY: "0x2",
     BINDING_AUTHORITY_ADDRESS: "0x3",
+    BINDING_AUTHORITY_PRIVATE_KEY: "0x4",
   };
 
   for (const name of Object.keys(target)) {
