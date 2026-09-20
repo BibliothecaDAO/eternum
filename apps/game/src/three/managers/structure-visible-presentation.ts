@@ -5,6 +5,11 @@ import { Euler, Object3D, Vector3 } from "three";
 export const STRUCTURE_SURFACE_LIFT = 0.05;
 export const COMPACT_LABEL_LIFT = 2.72;
 
+/** The Bitcoin mine is modelled with its base at the terrain top: terrain owns its support, so it takes no lift. */
+export function sitsDirectlyOnTerrain(structureType: unknown): boolean {
+  return structureType === StructureType.BitcoinMine;
+}
+
 interface VisibleStructureLabel {
   position: Vector3;
 }
@@ -65,7 +70,7 @@ export function applyVisibleStructurePresentation<
 ): void {
   const { col, row } = input.structure.hexCoords;
   input.getWorldPositionForHexCoordsInto(col, row, input.scratchPosition);
-  input.scratchPosition.y += input.structure.structureType === StructureType.BitcoinMine ? 0 : STRUCTURE_SURFACE_LIFT;
+  input.scratchPosition.y += sitsDirectlyOnTerrain(input.structure.structureType) ? 0 : STRUCTURE_SURFACE_LIFT;
   input.dummy.position.copy(input.scratchPosition);
   input.dummy.rotation.y = input.rotationY;
   input.dummy.updateMatrix();

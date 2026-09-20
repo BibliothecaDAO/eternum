@@ -43,7 +43,7 @@ enum BuildingFilenames {
 
 export const ChestModelPath = "/models/reward-tiles/chest.glb";
 export const RiftModelPath = "/models/reward-tiles/rift.glb";
-export const BITCOIN_MINE_MODEL_PATH = "/models/ethereal/bitcoin-mine.glb";
+const BITCOIN_MINE_MODEL_PATH = "/models/ethereal/bitcoin-mine.glb";
 
 export const VILLAGE_MODEL_PATH = "/models/settlements/village.glb";
 export const REALM_MODEL_PATHS = {

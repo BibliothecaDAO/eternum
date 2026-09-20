@@ -4,11 +4,14 @@ import {
   RiftModelPath,
   VILLAGE_MODEL_PATH,
   SPIRE_MODEL_PATH,
-  BITCOIN_MINE_MODEL_PATH,
   isSettlementModelPath,
 } from "@/three/constants/scene-constants";
 import { SettlementModel } from "../structures/settlement-model";
-import { TERRAIN_LAB_BUILDINGS, type TerrainLabBuilding } from "./terrain-lab-buildings";
+import {
+  TERRAIN_LAB_BUILDINGS,
+  resolveTerrainLabStructureType,
+  type TerrainLabBuilding,
+} from "./terrain-lab-buildings";
 import { HyperstructureModel } from "../structures/hyperstructure-model";
 import { HYPERSTRUCTURE_MODEL_PATH } from "../structures/hyperstructure-design";
 import { SpireModel } from "../structures/spire-model";
@@ -19,6 +22,7 @@ import { Matrix4, PerspectiveCamera, Plane, Raycaster, Scene, Vector2, Vector3 }
 import { buildArmyModelAssetPath } from "@/three/constants/army-constants";
 import { HoverHexManager } from "@/three/managers/hover-hex-manager";
 import InstancedModel from "@/three/managers/instanced-model";
+import { sitsDirectlyOnTerrain } from "@/three/managers/structure-visible-presentation";
 import { ProceduralTerrain } from "@/three/terrain/procedural-terrain";
 import {
   findNearestTerrainHex,
@@ -267,6 +271,11 @@ export class TerrainLabInteraction {
     this.update(0);
   }
 
+  /** The lab places spires through its building loop; in the game the spire manager seats them the same way. */
+  private sitsDirectlyOnTerrain(building: TerrainLabBuilding): boolean {
+    return building.path === SPIRE_MODEL_PATH || sitsDirectlyOnTerrain(resolveTerrainLabStructureType(building.path));
+  }
+
   private updateBuildings(buildings: readonly TerrainLabBuilding[]): void {
     const counts = new Map<string, number>();
     for (const building of buildings) {
@@ -275,8 +284,7 @@ export class TerrainLabInteraction {
       this.matrix.makeRotationY(building.yaw);
       this.matrix.setPosition(
         center.x,
-        this.terrain.sampleSurface(center.x, center.z).height +
-          (building.path === SPIRE_MODEL_PATH || building.path === BITCOIN_MINE_MODEL_PATH ? 0 : 0.025),
+        this.terrain.sampleSurface(center.x, center.z).height + (this.sitsDirectlyOnTerrain(building) ? 0 : 0.025),
         center.z,
       );
       const index = counts.get(building.path) ?? 0;
