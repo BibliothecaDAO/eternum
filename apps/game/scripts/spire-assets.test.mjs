@@ -27,7 +27,7 @@ describe("production spire asset", () => {
     expect(gltf.extensionsUsed).toEqual(expect.arrayContaining(["KHR_draco_mesh_compression", "KHR_texture_basisu"]));
     const primitives = gltf.meshes.flatMap((mesh) => mesh.primitives);
     expect(primitives).toHaveLength(23);
-    expect(primitives.reduce((sum, primitive) => sum + gltf.accessors[primitive.indices].count / 3, 0)).toBe(10784);
+    expect(primitives.reduce((sum, primitive) => sum + gltf.accessors[primitive.indices].count / 3, 0)).toBe(10624);
     expect(gltf.materials).toHaveLength(8);
     expect(gltf.images).toHaveLength(6);
     for (const image of gltf.images) {
@@ -79,7 +79,7 @@ describe("production spire asset", () => {
         ),
     );
     expect(veins).toHaveLength(3);
-    expect(veins.reduce((sum, vein) => sum + vein.extras.veinSegmentCount, 0)).toBe(32);
+    expect(veins.reduce((sum, vein) => sum + vein.extras.veinSegmentCount, 0)).toBe(24);
     for (const vein of veins) {
       expect(vein.extras.spirePart).toBe("spire");
       expect(vein.extras.veinPlacement).toBe("inner-column-junction");
@@ -87,8 +87,14 @@ describe("production spire asset", () => {
     }
     const stone = gltf.nodes.find((node) => node.name === "SPIRE / Basalt");
     expect(stone.extras.crownMainApexCount).toBe(1);
-    expect(stone.extras.crownSlopingShoulderCount).toBe(2);
-    expect(stone.extras.crownFlatCapCount).toBe(16);
+    expect(stone.extras.crownSlopingShoulderCount).toBe(18);
+    expect(stone.extras.crownFlatCapCount).toBe(0);
+    expect(stone.extras.inwardSlopingBottomCount).toBe(19);
+    expect(stone.extras.centralDirectApex).toBe(true);
+    expect(stone.extras.centralTaperStartZ).toBeGreaterThanOrEqual(stone.extras.highestExternalColumnZ);
+    expect(stone.extras.centralTaperStartZ).toBeCloseTo(3.81879, 5);
+    expect(stone.extras.highestExternalColumnZ).toBeCloseTo(3.43835, 5);
+    expect(stone.extras.centralApexZ - stone.extras.centralTaperStartZ).toBeCloseTo(0.14, 6);
     const animatedNodes = new Set(gltf.animations[0].channels.map((channel) => channel.target.node));
     expect(animatedNodes.has(gltf.nodes.indexOf(outcrop))).toBe(false);
   });

@@ -16,9 +16,7 @@ import { useInGameLeaderboard } from "@/ui/features/social/player/use-in-game-le
 import { IdentityLogin } from "@/ui/modules/identity/identity-login";
 import { isExplicitSpectateSession } from "@/utils/spectator-session";
 import { ContractAddress } from "@bibliothecadao/types";
-import EyeIcon from "lucide-react/dist/esm/icons/eye";
-import Trophy from "lucide-react/dist/esm/icons/trophy";
-import LoaderIcon from "lucide-react/dist/esm/icons/loader-2";
+import { Eye as EyeIcon, Trophy, Loader2 as LoaderIcon } from "@/ui/design-system/atoms/game-icons";
 import { useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {

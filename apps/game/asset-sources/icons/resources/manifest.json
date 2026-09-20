@@ -1,0 +1,581 @@
+{
+  "version": 1,
+  "output": {
+    "size": 256,
+    "subjectSize": 220,
+    "maxBytes": 131072,
+    "format": "png"
+  },
+  "generation": {
+    "useCase": "stylized-concept",
+    "assetType": "Eternum game resource UI icon",
+    "style": "premium medieval-fantasy game icon, evolved low-poly forms with restrained hand-painted texture, crisp dark umber edge separation, tactile materials, readable silhouette",
+    "composition": "one centered object in a square canvas, orthographic-like three-quarter view, balanced visual weight, generous transparent margin, readable at 24 pixels",
+    "lighting": "warm key light from the upper left, subtle cool fill from the lower right, controlled highlights, no cast shadow outside the object",
+    "palette": "aged parchment gold, basalt charcoal, muted iron and one resource-specific accent",
+    "constraints": "genuinely transparent background; exactly one icon subject; no frame, badge, ground plane, scenery, text, letters, numbers, logo, watermark or cropped edges",
+    "avoid": "photorealism, glossy mobile-game plastic, noisy particles, thin detached details, muddy silhouette, excessive bloom"
+  },
+  "resources": [
+    {
+      "id": 1,
+      "enumKey": "Stone",
+      "slug": "stone",
+      "name": "Stone",
+      "family": "material",
+      "subject": "a compact chunk of pale quarried stone with broad chisel-cut facets",
+      "accent": "warm limestone beige with cool gray shadow planes",
+      "pilot": true
+    },
+    {
+      "id": 2,
+      "enumKey": "Coal",
+      "slug": "coal",
+      "name": "Coal",
+      "family": "material",
+      "subject": "a compact cluster of angular coal chunks with a few fractured planes",
+      "accent": "charcoal black with restrained blue-gray highlights"
+    },
+    {
+      "id": 3,
+      "enumKey": "Wood",
+      "slug": "wood",
+      "name": "Wood",
+      "family": "material",
+      "subject": "one sturdy cut timber log with a clearly visible growth-ring end and bold bark ridges",
+      "accent": "warm cedar orange and deep walnut brown",
+      "pilot": true
+    },
+    {
+      "id": 4,
+      "enumKey": "Copper",
+      "slug": "copper",
+      "name": "Copper",
+      "family": "material",
+      "subject": "a compact cluster of rough copper ore with visible native-metal seams",
+      "accent": "burnished copper orange with small turquoise oxidation notes"
+    },
+    {
+      "id": 5,
+      "enumKey": "Ironwood",
+      "slug": "ironwood",
+      "name": "Ironwood",
+      "family": "material",
+      "subject": "a dense dark timber section with metallic grain and iron-like knots",
+      "accent": "deep mahogany with gunmetal veins"
+    },
+    {
+      "id": 6,
+      "enumKey": "Obsidian",
+      "slug": "obsidian",
+      "name": "Obsidian",
+      "family": "material",
+      "subject": "a sharp cluster of volcanic glass blades with broad readable facets",
+      "accent": "near-black glass with restrained violet reflections"
+    },
+    {
+      "id": 7,
+      "enumKey": "Gold",
+      "slug": "gold",
+      "name": "Gold",
+      "family": "material",
+      "subject": "a compact natural gold nugget with weighty rounded facets",
+      "accent": "rich antique gold, not neon yellow"
+    },
+    {
+      "id": 8,
+      "enumKey": "Silver",
+      "slug": "silver",
+      "name": "Silver",
+      "family": "material",
+      "subject": "a compact cluster of native silver ore with clean metallic ridges",
+      "accent": "cool silver with charcoal recesses"
+    },
+    {
+      "id": 9,
+      "enumKey": "Mithral",
+      "slug": "mithral",
+      "name": "Mithral",
+      "family": "material",
+      "subject": "a light otherworldly metal shard whose separated plates hover around a small gravitational core",
+      "accent": "pale celestial blue, silver and a restrained violet core glow",
+      "pilot": true
+    },
+    {
+      "id": 10,
+      "enumKey": "AlchemicalSilver",
+      "slug": "alchemical-silver",
+      "name": "Alchemical Silver",
+      "family": "material",
+      "subject": "a small sealed crucible holding liquid silver charged with contained energy",
+      "accent": "mercury silver with a muted lavender charge"
+    },
+    {
+      "id": 11,
+      "enumKey": "ColdIron",
+      "slug": "cold-iron",
+      "name": "Cold Iron",
+      "family": "material",
+      "subject": "a brutal block of dark iron ore rimed with permanent frost",
+      "accent": "blackened iron with cold cyan frost"
+    },
+    {
+      "id": 12,
+      "enumKey": "DeepCrystal",
+      "slug": "deep-crystal",
+      "name": "Deep Crystal",
+      "family": "material",
+      "subject": "one squat geode split open to reveal vibrating crystal growth",
+      "accent": "deep indigo stone and luminous ice-blue crystal"
+    },
+    {
+      "id": 13,
+      "enumKey": "Ruby",
+      "slug": "ruby",
+      "name": "Ruby",
+      "family": "material",
+      "subject": "one rough-cut ruby crystal with a broad unmistakable gemstone silhouette",
+      "accent": "blood red with warm crimson highlights"
+    },
+    {
+      "id": 14,
+      "enumKey": "Diamonds",
+      "slug": "diamonds",
+      "name": "Diamonds",
+      "family": "material",
+      "subject": "a compact cluster of three rough diamonds with distinct large facets",
+      "accent": "clear crystal with restrained lavender-blue refraction"
+    },
+    {
+      "id": 15,
+      "enumKey": "Hartwood",
+      "slug": "hartwood",
+      "name": "Hartwood",
+      "family": "material",
+      "subject": "a heart-shaped knot of sacred red wood with one bead of luminous sap",
+      "accent": "dark bloodwood red and warm amber sap"
+    },
+    {
+      "id": 16,
+      "enumKey": "Ignium",
+      "slug": "ignium",
+      "name": "Ignium",
+      "family": "material",
+      "subject": "a dense fire-scarred mineral crystal with heat glowing through deep cracks",
+      "accent": "basalt black, ember red and molten orange"
+    },
+    {
+      "id": 17,
+      "enumKey": "TwilightQuartz",
+      "slug": "twilight-quartz",
+      "name": "Twilight Quartz",
+      "family": "material",
+      "subject": "one elegant quartz cluster that appears to consume light at its edges",
+      "accent": "midnight violet fading to dusky magenta"
+    },
+    {
+      "id": 18,
+      "enumKey": "TrueIce",
+      "slug": "true-ice",
+      "name": "True Ice",
+      "family": "material",
+      "subject": "a massive shard of ancient unmeltable ice with stone-like carved facets",
+      "accent": "milky white and pale glacial cyan"
+    },
+    {
+      "id": 19,
+      "enumKey": "Adamantine",
+      "slug": "adamantine",
+      "name": "Adamantine",
+      "family": "material",
+      "subject": "a heavy angular adamantine ingot wrapped around a contained dark anomaly",
+      "accent": "deep navy metal with a muted electric-blue seam"
+    },
+    {
+      "id": 20,
+      "enumKey": "Sapphire",
+      "slug": "sapphire",
+      "name": "Sapphire",
+      "family": "material",
+      "subject": "one broad rough-cut sapphire with strong crown-like facets",
+      "accent": "royal blue with pale blue highlights"
+    },
+    {
+      "id": 21,
+      "enumKey": "EtherealSilica",
+      "slug": "ethereal-silica",
+      "name": "Ethereal Silica",
+      "family": "material",
+      "subject": "a translucent glassy silica prism bending a single impossible ribbon of light",
+      "accent": "sea green glass with soft spectral highlights"
+    },
+    {
+      "id": 22,
+      "enumKey": "Dragonhide",
+      "slug": "dragonhide",
+      "name": "Dragonhide",
+      "family": "material",
+      "subject": "two overlapping armored dragon scales with a singed broken edge",
+      "accent": "dark burgundy, old bronze and a restrained ember seam"
+    },
+    {
+      "id": 23,
+      "enumKey": "Labor",
+      "slug": "labor",
+      "name": "Labor",
+      "family": "utility",
+      "subject": "two crossed, worn medieval work gloves with broad cuffs",
+      "accent": "work-leather brown with a small parchment-gold highlight",
+      "pilot": true
+    },
+    {
+      "id": 24,
+      "enumKey": "AncientFragment",
+      "slug": "ancient-fragment",
+      "name": "Ancient Fragment",
+      "family": "special",
+      "subject": "one broken shard of an ancient prismatic artifact with a chipped silhouette",
+      "accent": "teal crystal, amber core and dark stone edge"
+    },
+    {
+      "id": 25,
+      "enumKey": "Donkey",
+      "slug": "donkey",
+      "name": "Donkey",
+      "family": "utility",
+      "subject": "a sturdy pack donkey carrying two balanced canvas trade bundles",
+      "accent": "weathered gray coat, tan canvas and dark leather"
+    },
+    {
+      "id": 26,
+      "enumKey": "Knight",
+      "slug": "knight-t1",
+      "name": "Knight T1",
+      "family": "troop",
+      "subject": "an entry-tier foot knight in practical dark iron armor holding a broad sword downward",
+      "accent": "dark iron, leather brown and one muted red cloth panel",
+      "distinction": "simple equipment, open stance, no ornament or magical effects",
+      "pilot": true
+    },
+    {
+      "id": 27,
+      "enumKey": "KnightT2",
+      "slug": "knight-t2",
+      "name": "Knight T2",
+      "family": "troop",
+      "subject": "a veteran foot knight in reinforced plate holding a broad sword downward",
+      "accent": "tempered steel, dark leather and a richer red cloth panel",
+      "distinction": "visibly heavier armor and one modest gold trim, no magical effects"
+    },
+    {
+      "id": 28,
+      "enumKey": "KnightT3",
+      "slug": "knight-t3",
+      "name": "Knight T3",
+      "family": "troop",
+      "subject": "an elite foot knight in imposing masterwork plate holding a broad sword downward",
+      "accent": "blackened steel, antique gold trim and saturated crimson cloth",
+      "distinction": "crowned closed helm, strongest silhouette and a restrained ember-red rune in the sword",
+      "pilot": true
+    },
+    {
+      "id": 29,
+      "enumKey": "Crossbowman",
+      "slug": "crossbowman-t1",
+      "name": "Crossbowman T1",
+      "family": "troop",
+      "subject": "an entry-tier hooded crossbowman aiming a compact wooden crossbow",
+      "accent": "forest green cloth, warm wood and dark iron",
+      "distinction": "simple equipment and no ornament or magical effects"
+    },
+    {
+      "id": 30,
+      "enumKey": "CrossbowmanT2",
+      "slug": "crossbowman-t2",
+      "name": "Crossbowman T2",
+      "family": "troop",
+      "subject": "a veteran hooded crossbowman aiming a reinforced windlass crossbow",
+      "accent": "deep green cloth, dark walnut and tempered steel",
+      "distinction": "reinforced shoulders, heavier crossbow and one modest gold fitting"
+    },
+    {
+      "id": 31,
+      "enumKey": "CrossbowmanT3",
+      "slug": "crossbowman-t3",
+      "name": "Crossbowman T3",
+      "family": "troop",
+      "subject": "an elite masked crossbowman aiming an ornate masterwork crossbow",
+      "accent": "near-black green, antique gold and a saturated emerald bolt",
+      "distinction": "strongest armor silhouette and one restrained magical bolt glow"
+    },
+    {
+      "id": 32,
+      "enumKey": "Paladin",
+      "slug": "paladin-t1",
+      "name": "Paladin T1",
+      "family": "troop",
+      "subject": "an entry-tier mounted paladin with a practical lance and plain kite shield",
+      "accent": "pale steel, navy cloth and weathered brown leather",
+      "distinction": "simple tack and no ornament or magical effects"
+    },
+    {
+      "id": 33,
+      "enumKey": "PaladinT2",
+      "slug": "paladin-t2",
+      "name": "Paladin T2",
+      "family": "troop",
+      "subject": "a veteran mounted paladin with reinforced barding, lance and kite shield",
+      "accent": "bright steel, royal blue cloth and modest antique-gold trim",
+      "distinction": "heavier horse armor and one heraldic shield mark without text"
+    },
+    {
+      "id": 34,
+      "enumKey": "PaladinT3",
+      "slug": "paladin-t3",
+      "name": "Paladin T3",
+      "family": "troop",
+      "subject": "an elite mounted paladin with masterwork barding, radiant lance and crowned shield",
+      "accent": "silver-white plate, antique gold, deep royal blue and a restrained pale-blue glow",
+      "distinction": "most imposing silhouette and clearly upgraded equipment"
+    },
+    {
+      "id": 35,
+      "enumKey": "Wheat",
+      "slug": "wheat",
+      "name": "Wheat",
+      "family": "food",
+      "subject": "one tied sheaf of ripe wheat with three bold grain heads",
+      "accent": "harvest gold and warm straw brown"
+    },
+    {
+      "id": 36,
+      "enumKey": "Fish",
+      "slug": "fish",
+      "name": "Fish",
+      "family": "food",
+      "subject": "one sturdy river fish in a compact curved swimming silhouette",
+      "accent": "cool teal scales with a pale silver belly"
+    },
+    {
+      "id": 37,
+      "enumKey": "Lords",
+      "slug": "lords",
+      "name": "Lords",
+      "family": "currency",
+      "subject": "a short stack of heavy blackened medieval coins with one blank crown-shaped relief",
+      "accent": "charcoal metal with restrained silver edge highlights",
+      "distinction": "no letters, numbers or copied brand mark"
+    },
+    {
+      "id": 38,
+      "enumKey": "Essence",
+      "slug": "essence",
+      "name": "Essence",
+      "family": "special",
+      "subject": "a sealed angular vial containing luminous otherworldly essence",
+      "accent": "deep violet glass with vivid magenta liquid and one cyan highlight"
+    },
+    {
+      "id": 39,
+      "enumKey": "StaminaRelic1",
+      "slug": "stamina-relic-1",
+      "name": "Stamina Relic 1",
+      "family": "relic",
+      "subject": "one bronze winged boot relic representing renewed marching stamina",
+      "accent": "aged bronze with muted leaf-green energy",
+      "distinction": "tier one: compact silhouette, one wing and a restrained energy seam",
+      "pilot": true
+    },
+    {
+      "id": 40,
+      "enumKey": "StaminaRelic2",
+      "slug": "stamina-relic-2",
+      "name": "Stamina Relic 2",
+      "family": "relic",
+      "subject": "one silver winged boot relic representing greatly renewed marching stamina",
+      "accent": "tempered silver with brighter emerald energy",
+      "distinction": "tier two: same core silhouette as tier one, two larger wings and clearly stronger energy",
+      "pilot": true
+    },
+    {
+      "id": 41,
+      "enumKey": "DamageRelic1",
+      "slug": "damage-relic-1",
+      "name": "Damage Relic 1",
+      "family": "relic",
+      "subject": "a compact dark iron sword relic with one glowing damage rune",
+      "accent": "dark iron, antique brass and muted ember red",
+      "distinction": "tier one: practical blade and one restrained rune"
+    },
+    {
+      "id": 42,
+      "enumKey": "DamageRelic2",
+      "slug": "damage-relic-2",
+      "name": "Damage Relic 2",
+      "family": "relic",
+      "subject": "a masterwork dark iron sword relic with a split blade and stronger damage runes",
+      "accent": "blackened steel, antique gold and vivid crimson",
+      "distinction": "tier two: same family silhouette with a broader blade and clearly stronger runes"
+    },
+    {
+      "id": 43,
+      "enumKey": "DamageReductionRelic1",
+      "slug": "army-damage-reduction-relic-1",
+      "name": "Damage Reduction Relic 1",
+      "family": "relic",
+      "scope": "army",
+      "subject": "a round dark iron shield relic with one protective crack sealed by blue energy",
+      "accent": "dark iron and muted sky blue",
+      "distinction": "tier one: plain rim and restrained protective seam"
+    },
+    {
+      "id": 44,
+      "enumKey": "DamageReductionRelic2",
+      "slug": "army-damage-reduction-relic-2",
+      "name": "Damage Reduction Relic 2",
+      "family": "relic",
+      "scope": "army",
+      "subject": "a reinforced round shield relic with multiple cracks sealed by strong blue energy",
+      "accent": "tempered steel and vivid electric blue",
+      "distinction": "tier two: same family silhouette with reinforced rim and clearly stronger warding"
+    },
+    {
+      "id": 45,
+      "enumKey": "ExplorationRelic1",
+      "slug": "exploration-relic-1",
+      "name": "Exploration Relic 1",
+      "family": "relic",
+      "subject": "a simple brass compass relic with one violet cardinal needle",
+      "accent": "aged brass and muted violet",
+      "distinction": "tier one: compact plain housing"
+    },
+    {
+      "id": 46,
+      "enumKey": "ExplorationRelic2",
+      "slug": "exploration-relic-2",
+      "name": "Exploration Relic 2",
+      "family": "relic",
+      "subject": "an ornate masterwork compass relic with a luminous violet double needle",
+      "accent": "antique gold, silver and vivid violet",
+      "distinction": "tier two: same family silhouette with expanded cardinal points and stronger glow"
+    },
+    {
+      "id": 47,
+      "enumKey": "ExplorationRewardRelic1",
+      "slug": "exploration-reward-relic-1",
+      "name": "Exploration Reward Relic 1",
+      "family": "relic",
+      "subject": "a rolled treasure map relic pinned by one small gemstone",
+      "accent": "aged parchment, dark walnut and muted amber",
+      "distinction": "tier one: one marked route and one gemstone"
+    },
+    {
+      "id": 48,
+      "enumKey": "ExplorationRewardRelic2",
+      "slug": "exploration-reward-relic-2",
+      "name": "Exploration Reward Relic 2",
+      "family": "relic",
+      "subject": "an ornate treasure map relic pinned by three rare gemstones",
+      "accent": "rich parchment, antique gold and jewel-tone accents",
+      "distinction": "tier two: same family silhouette with richer route marks and three gemstones"
+    },
+    {
+      "id": 49,
+      "enumKey": "StructureDamageReductionRelic1",
+      "slug": "structure-damage-reduction-relic-1",
+      "name": "Structure Damage Reduction Relic 1",
+      "family": "relic",
+      "scope": "structure",
+      "subject": "a compact stone gatehouse relic wrapped by one pale-blue ward band",
+      "accent": "aged stone, dark wood and muted icy blue",
+      "distinction": "tier one: low walls and one restrained ward band"
+    },
+    {
+      "id": 50,
+      "enumKey": "StructureDamageReductionRelic2",
+      "slug": "structure-damage-reduction-relic-2",
+      "name": "Structure Damage Reduction Relic 2",
+      "family": "relic",
+      "scope": "structure",
+      "subject": "a reinforced stone fortress relic wrapped by two strong pale-blue ward bands",
+      "accent": "dark dressed stone, antique steel and vivid icy blue",
+      "distinction": "tier two: same family silhouette with taller towers and clearly stronger warding"
+    },
+    {
+      "id": 51,
+      "enumKey": "ProductionRelic1",
+      "slug": "production-relic-1",
+      "name": "Production Relic 1",
+      "family": "relic",
+      "scope": "structure",
+      "subject": "a sturdy mining pick relic striking one compact ore chunk",
+      "accent": "dark iron, walnut and muted amber",
+      "distinction": "tier one: single tool and one impact spark"
+    },
+    {
+      "id": 52,
+      "enumKey": "ProductionRelic2",
+      "slug": "production-relic-2",
+      "name": "Production Relic 2",
+      "family": "relic",
+      "scope": "structure",
+      "subject": "crossed masterwork mining tools striking a rich ore cluster",
+      "accent": "tempered steel, antique gold and vivid amber",
+      "distinction": "tier two: same family silhouette with two tools and stronger impact energy"
+    },
+    {
+      "id": 53,
+      "enumKey": "LaborProductionRelic1",
+      "slug": "labor-production-relic-1",
+      "name": "Labor Production Relic 1",
+      "family": "relic",
+      "scope": "structure",
+      "subject": "a pair of sturdy leather work gloves clasped together as a labor relic",
+      "accent": "work-leather brown and muted parchment gold",
+      "distinction": "tier one: plain cuffs and restrained glow"
+    },
+    {
+      "id": 54,
+      "enumKey": "LaborProductionRelic2",
+      "slug": "labor-production-relic-2",
+      "name": "Labor Production Relic 2",
+      "family": "relic",
+      "scope": "structure",
+      "subject": "a pair of reinforced masterwork work gloves clasped together as a labor relic",
+      "accent": "dark leather, antique gold plates and vivid golden energy",
+      "distinction": "tier two: same family silhouette with reinforced cuffs and clearly stronger glow"
+    },
+    {
+      "id": 55,
+      "enumKey": "TroopProductionRelic1",
+      "slug": "troop-production-relic-1",
+      "name": "Troop Production Relic 1",
+      "family": "relic",
+      "scope": "structure",
+      "subject": "a compact barracks gate relic with three helmet silhouettes behind it",
+      "accent": "aged stone, dark iron and muted teal",
+      "distinction": "tier one: low gate and three simple helmets"
+    },
+    {
+      "id": 56,
+      "enumKey": "TroopProductionRelic2",
+      "slug": "troop-production-relic-2",
+      "name": "Troop Production Relic 2",
+      "family": "relic",
+      "scope": "structure",
+      "subject": "a reinforced barracks fortress relic with five elite helmet silhouettes behind it",
+      "accent": "dark dressed stone, antique gold and vivid teal",
+      "distinction": "tier two: same family silhouette with taller towers and clearly larger formation"
+    },
+    {
+      "id": 57,
+      "enumKey": "Research",
+      "slug": "research",
+      "name": "Research",
+      "family": "special",
+      "subject": "an open medieval research folio holding a small geometric arcane instrument",
+      "accent": "aged parchment, dark walnut, antique brass and restrained violet ink",
+      "distinction": "must not resemble the Essence vial"
+    }
+  ]
+}

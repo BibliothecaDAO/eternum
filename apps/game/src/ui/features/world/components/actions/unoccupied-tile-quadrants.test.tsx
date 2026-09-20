@@ -51,10 +51,6 @@ vi.mock("@bibliothecadao/types", () => ({
   },
 }));
 
-vi.mock("lucide-react/dist/esm/icons/crosshair", () => ({
-  default: (props: React.SVGProps<SVGSVGElement>) => <svg {...props} />,
-}));
-
 describe("BiomeSummaryCard", () => {
   let container: HTMLDivElement;
   let root: Root;

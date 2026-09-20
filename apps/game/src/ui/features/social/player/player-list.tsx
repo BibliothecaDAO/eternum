@@ -1,4 +1,4 @@
-import Invite from "lucide-react/dist/esm/icons/mail";
+import { Mail as Invite, User } from "@/ui/design-system/atoms/game-icons";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { playerAvatarUrl } from "@/hooks/use-player-profile";
@@ -8,7 +8,6 @@ import type { PlayerActivityBreakdown } from "@/services/leaderboard/player-acti
 import { ContractAddress, GuildInfo, PlayerInfo } from "@bibliothecadao/types";
 import clsx from "clsx";
 import gsap from "gsap";
-import User from "lucide-react/dist/esm/icons/user";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { LeaderboardEffectsOverlay } from "./leaderboard-effects";
 import { PlayerEffect, useLeaderboardEffects } from "./use-leaderboard-effects";
@@ -474,7 +473,7 @@ const PlayerRow = ({
                 whitelistPlayer(player.address);
                 setTooltip(null);
               }}
-              className={clsx("w-5 h-5 fill-gold hover:fill-amber-400 transition-all duration-200", {
+              className={clsx("w-5 h-5  hover:brightness-125 transition-all duration-200", {
                 "animate-pulse opacity-50 pointer-events-none": isLoading,
                 "cursor-pointer": !isLoading,
               })}

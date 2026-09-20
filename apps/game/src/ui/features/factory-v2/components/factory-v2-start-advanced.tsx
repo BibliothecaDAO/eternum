@@ -1,5 +1,5 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
+import { ChevronDown } from "@/ui/design-system/atoms/game-icons";
 import {
   listFactoryBiomeClimateFields,
   type FactoryBiomeClimateDraft,

@@ -38,7 +38,28 @@ const allLatestFeatures: LatestFeature[] = [
     title: "Refined Ethereal Terrain",
     type: "improvement",
     description:
-      "Ethereal basalt has clearer joints and softer surface transitions. Spires rise toward one main tip, with evenly distributed mineral highlights and a stepped rock outcrop.",
+      "Ethereal basalt has clearer joints and softer surface transitions. Spire columns slope inward toward one continuous tip, with recessed mineral highlights and a stepped rock outcrop.",
+  },
+  {
+    date: "2026-09-20",
+    title: "Illustrated Icons Across The UI",
+    description:
+      "Updated menus, game actions, and utility controls with detailed fantasy icons for a consistent visual style.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-18",
+    title: "Illustrated Mobile HUD",
+    description:
+      "Replaced the compact HUD's labeled generic symbols with spacious illustrated Eternum controls for Empire, Map, Log, Chat and Details.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-16",
+    title: "Game-World Menu Icons",
+    description:
+      "Reworked key menus with illustrated tools, war gear, caravans, maps and artifacts that stay clear at compact HUD sizes and feel native to Eternum's world.",
+    type: "improvement",
   },
   {
     date: "2026-09-15",

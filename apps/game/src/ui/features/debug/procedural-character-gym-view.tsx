@@ -1,10 +1,5 @@
-import { KnightAnimationReviewPanel } from "./knight-animation-review-panel";
 import {
-  createKnightAnimationScenario,
-  readKnightAnimationScenario,
-  resolveKnightReviewSequence,
-} from "@/three/characters/gym/knight-animation-review";
-import {
+  Loader2,
   Camera,
   Check,
   FlaskConical,
@@ -18,7 +13,13 @@ import {
   Target,
   X,
   Zap,
-} from "lucide-react";
+} from "@/ui/design-system/atoms/game-icons";
+import { KnightAnimationReviewPanel } from "./knight-animation-review-panel";
+import {
+  createKnightAnimationScenario,
+  readKnightAnimationScenario,
+  resolveKnightReviewSequence,
+} from "@/three/characters/gym/knight-animation-review";
 import { useCallback, useEffect, useRef, useState, type MutableRefObject, type ReactNode, type RefObject } from "react";
 import { Link } from "react-router-dom";
 
@@ -823,7 +824,7 @@ const CharacterGymViewport = ({
 const CharacterGymLoadingState = () => (
   <div className="absolute inset-0 grid place-items-center bg-[#070b13]">
     <div className="flex flex-col items-center gap-3 text-center">
-      <div className="h-8 w-8 animate-spin rounded-full border-2 border-violet-300/20 border-t-violet-200" />
+      <Loader2 className="h-8 w-8 animate-spin" />
       <div>
         <p className="text-sm font-semibold text-white">
           Loading renderer, character assets, procedural mounts, and Jolt
@@ -916,7 +917,7 @@ const ActionButton = ({
     onClick={onClick}
     disabled={disabled}
     className={cn(
-      "flex h-9 items-center gap-2 border px-3 text-xs font-semibold uppercase tracking-wider transition [&_svg]:h-3.5 [&_svg]:w-3.5",
+      "flex h-9 items-center gap-2 border px-3 text-xs font-semibold uppercase tracking-wider transition [&_img]:h-3.5 [&_img]:w-3.5",
       primary
         ? "border-violet-300/50 bg-violet-400/15 text-violet-100 hover:bg-violet-400/25"
         : "border-white/10 bg-white/[0.025] text-slate-300 hover:bg-white/[0.08] hover:text-white",

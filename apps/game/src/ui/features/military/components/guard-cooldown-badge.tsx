@@ -1,6 +1,6 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { formatTime } from "@bibliothecadao/eternum";
-import Timer from "lucide-react/dist/esm/icons/timer";
+import { Timer } from "@/ui/design-system/atoms/game-icons";
 
 /** The red "rebuilding" badge on a wiped guard slot: the delay left before it accepts troops again. */
 export const GuardCooldownBadge = ({ seconds, className }: { seconds: number; className?: string }) => (

@@ -1,4 +1,4 @@
-import { ReactComponent as Trash } from "@/assets/icons/common/trashcan.svg";
+import { Trash } from "@/ui/design-system/atoms/game-icons";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { ContractAddress, GuildMemberInfo } from "@bibliothecadao/types";
 import clsx from "clsx";
@@ -74,7 +74,7 @@ const InviteRow = ({
             removePlayerFromWhitelist(player.address);
             setTooltip(null);
           }}
-          className={clsx("h-5 w-5 fill-red/70 transition-all duration-200 hover:scale-110 hover:fill-red/90", {
+          className={clsx("h-5 w-5 opacity-70 transition-all duration-200 hover:scale-110 hover:opacity-100", {
             "pointer-events-none opacity-50": isLoading,
             "cursor-pointer": !isLoading,
           })}

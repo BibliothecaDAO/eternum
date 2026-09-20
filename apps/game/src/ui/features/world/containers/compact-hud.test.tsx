@@ -56,11 +56,17 @@ vi.mock("@/config/game-modes/use-game-mode-config", () => ({
 }));
 vi.mock("@/ui/config", () => ({
   BuildingThumbs: {
+    compass: "compass.png",
     construction: "construction.png",
+    discord: "discord.png",
+    home: "home.png",
+    latestUpdates: "latest-updates.png",
     production: "production.png",
     military: "military.png",
     transfer: "transfer.png",
     scale: "scale.png",
+    trophy: "trophy.png",
+    worldMap: "world.png",
   },
 }));
 vi.mock("@/ui/features/economy/trading", () => ({ MarketModal: () => <article>Market</article> }));
@@ -122,6 +128,10 @@ const ACTION_STRIP = 'nav[aria-label="Structure actions"]';
 const tab = (label: string) => container.querySelector<HTMLButtonElement>(`${TAB_BAR} [aria-label="${label}"]`);
 const tabLabels = () =>
   [...container.querySelectorAll(`${TAB_BAR} button`)].map((button) => button.getAttribute("aria-label"));
+const tabVisibleText = () =>
+  [...container.querySelectorAll(`${TAB_BAR} button`)].map((button) => button.textContent?.trim());
+const tabImages = () =>
+  [...container.querySelectorAll<HTMLImageElement>(`${TAB_BAR} button img`)].map((image) => image.getAttribute("src"));
 const actionStrip = () => container.querySelector<HTMLElement>(ACTION_STRIP);
 const action = (label: string) => container.querySelector<HTMLButtonElement>(`${ACTION_STRIP} [aria-label="${label}"]`);
 const actionLabels = () =>
@@ -160,6 +170,8 @@ afterEach(async () => {
 
 it("keeps all five navigation targets stable before a tile is selected", () => {
   expect(tabLabels()).toEqual(["Empire", "Map", "Log", "Chat", "Details"]);
+  expect(tabVisibleText()).toEqual(["", "", "", "", ""]);
+  expect(tabImages()).toEqual(["home.png", "world.png", "latest-updates.png", "discord.png", "compass.png"]);
   expect(sheet()).toBeNull();
   expect(shell()?.className).toContain("pointer-events-none");
 });
@@ -228,6 +240,7 @@ it("opens one sheet at a time and closes it when the active tab is tapped again"
 it("hosts the standings for a spectator", async () => {
   await act(async () => store.setState({ isSpectating: true }));
   expect(tabLabels()[0]).toBe("Standings");
+  expect(tabImages()[0]).toBe("trophy.png");
   await tap("Standings");
   expect(sheetContent()).toBe("Standings");
 });

@@ -18,12 +18,12 @@ ground. Its original seven columns vary from 0.101 to 0.155 high; the surroundin
 forming a lower step within the gameplay hex. All share the spire's packed basalt material. The upper core converges on
 one sharp main apex, with two inward-sloping shoulders and sixteen broad caps instead of separate pointed tips.
 
-The former winding exterior veins are replaced by 32 flat mineral inclusions, each strictly vertical and 0.105–0.220
+The former winding exterior veins are replaced by 24 flat mineral inclusions, each strictly vertical and 0.111–0.220
 long. They occupy the recessed V-shaped junctions between two neighboring rock columns, with dark intervals between
-them. Each of eight viewing sectors contains three to five veins, distributed from local height 1.693 to 3.277. No veins
+them. Each of eight viewing sectors contains exactly three veins, distributed from local height 1.490 to 3.277. No veins
 remain on the floating fragments or the grounded outcropping. The BLUE, ORANGE and PINK material names remain for the
 production light treatment. Construction and source-validation scripts are retained locally under
-`.context/ethereal-layer/biome-tiles/revision-3/`; the committed packed source is sufficient for a clean-checkout
+`.context/ethereal-layer/biome-tiles/revision-4/`; the committed packed source is sufficient for a clean-checkout
 export.
 
 Rebuild from the repository root with Blender 5.2.1 and Khronos KTX-Software 4.4.2 on PATH:
@@ -38,11 +38,12 @@ pnpm --dir apps/game verify:assets
 The optimizer resamples the clip, limits textures to 480 px, encodes them as KTX2 and applies Draco without flattening
 the hierarchy: six current parents intentionally reach zero scale to hide inward-motion resets. Raw exports match byte
 for byte. Comparing all 241 authored poses across the crown/outcrop/seam revision gives zero matrix change for all 42
-production objects; all 18 portal and floating-fragment meshes remain unchanged. The outcropping has no animation and
-does not intersect any portal surface across the complete loop; the nearest sampled portal vertex remains 0.04005 away.
-The current export is 553,464 bytes, 23 primitives and 10,784 triangles, with eight materials, six KTX2 textures and 43
-animation channels. The preceding base-free export was 564,268 bytes, 25 primitives and 11,712 triangles. These are
-asset counts, not frame draw costs.
+production objects; all 19 portal, floating-fragment and outcrop meshes remain unchanged. The outcropping has no
+animation and does not intersect any portal surface across the complete loop; the nearest sampled portal vertex remains
+0.04005 away. The revised main core also clears every portal surface through all 241 poses, with minimum sampled vertex
+clearance 0.07744. The current export is 553,212 bytes, 23 primitives and 10,624 triangles, with eight materials, six
+KTX2 textures and 43 animation channels. The preceding base-free export was 564,268 bytes, 25 primitives and 11,712
+triangles. These are asset counts, not frame draw costs.
 
 Runtime: `src/three/structures/spire-model.ts` evaluates the hierarchy with a stable phase per placement and shares
 instanced stone draws. `spire-portal.ts` composes rear light, translucent core and front light, splitting currents by a

@@ -9,8 +9,8 @@ import {
 import { HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
-import type { LucideIcon } from "lucide-react";
-import X from "lucide-react/dist/esm/icons/x";
+import type { GameIcon } from "@/ui/design-system/atoms/game-icon";
+import { X } from "@/ui/design-system/atoms/game-icons";
 import {
   type CSSProperties,
   type PointerEvent as ReactPointerEvent,
@@ -268,7 +268,7 @@ export const SurfaceHost = () => {
 
 interface PopoverHeaderProps {
   title: ReactNode;
-  icon?: LucideIcon;
+  icon?: GameIcon;
   onClose: () => void;
 }
 
@@ -296,7 +296,7 @@ const PopoverHeader = ({ title, icon: Icon, onClose }: PopoverHeaderProps) => (
 
 interface SurfaceFrameProps {
   title: ReactNode;
-  icon?: LucideIcon;
+  icon?: GameIcon;
   onClose: () => void;
   footer?: ReactNode;
   /** Width and height of the surface, usually `SURFACE_WORKSPACE_CLASS`; the panel caps both to the viewport. */

@@ -16,7 +16,7 @@ import { currencyFormat, formatNumber } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 import { useMarket, useResourceManager } from "@bibliothecadao/react";
 import { findResourceById, ID, MarketInterface, ResourcesIds } from "@bibliothecadao/types";
-import Store from "lucide-react/dist/esm/icons/store";
+import { Store } from "@/ui/design-system/atoms/game-icons";
 import { lazy, Suspense, useMemo, useState } from "react";
 import { resolveBestPrices } from "./best-prices";
 import { MarketResourceSidebar } from "./market-resource-sidebar";

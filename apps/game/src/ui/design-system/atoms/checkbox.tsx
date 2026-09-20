@@ -1,4 +1,4 @@
-import { ReactComponent as Checkmark } from "@/assets/icons/common/checkmark.svg";
+import { Check as Checkmark } from "@/ui/design-system/atoms/game-icons";
 import clsx from "clsx";
 type CheckboxProps = {
   enabled: boolean;
@@ -15,7 +15,7 @@ export const Checkbox = ({ enabled, onClick, text }: CheckboxProps) => (
         enabled ? "border-grey" : "border-gold",
       )}
     >
-      {enabled && <Checkmark className="fill-gold" />}
+      {enabled && <Checkmark className="h-3 w-3" />}
     </div>
     {text && (
       <div onClick={onClick} className="text-sm  hover:text-white transition-colors duration-200">

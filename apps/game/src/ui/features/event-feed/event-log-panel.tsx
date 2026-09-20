@@ -6,7 +6,7 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { PopoverPanel, SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { configManager } from "@bibliothecadao/eternum";
 import { TickIds } from "@bibliothecadao/types";
-import ScrollText from "lucide-react/dist/esm/icons/scroll-text";
+import { ScrollText } from "@/ui/design-system/atoms/game-icons";
 import { useState } from "react";
 import { orderHeadlineFeed, useHeadlineFeedStore } from "../news-headlines/headline-feed-store";
 import { FeedRowLine } from "./feed-row-line";

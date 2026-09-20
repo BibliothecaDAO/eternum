@@ -1,6 +1,6 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import CircleButton from "@/ui/design-system/molecules/circle-button";
-import MessageCircle from "lucide-react/dist/esm/icons/message-circle";
+import { MessageCircle } from "@/ui/design-system/atoms/game-icons";
 import { useCallback, useMemo } from "react";
 import {
   useRealtimeChatActions,

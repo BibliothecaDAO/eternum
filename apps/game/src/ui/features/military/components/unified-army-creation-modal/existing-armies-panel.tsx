@@ -10,12 +10,7 @@ import { getTroopResourceId, StaminaManager } from "@bibliothecadao/eternum";
 import { requireActiveGameClient } from "@/sync/active-game-client";
 import { useExplorersByStructure } from "@bibliothecadao/react";
 import { type ArmyInfo, type ID, resources, type TroopTier, type TroopType } from "@bibliothecadao/types";
-import Check from "lucide-react/dist/esm/icons/check";
-import Compass from "lucide-react/dist/esm/icons/compass";
-import Crosshair from "lucide-react/dist/esm/icons/crosshair";
-import Loader2 from "lucide-react/dist/esm/icons/loader-2";
-import Trash2 from "lucide-react/dist/esm/icons/trash-2";
-import X from "lucide-react/dist/esm/icons/x";
+import { Check, Compass, Crosshair, Loader2, Trash2, X } from "@/ui/design-system/atoms/game-icons";
 import { memo, useMemo, useState } from "react";
 
 interface ExistingArmiesPanelProps {

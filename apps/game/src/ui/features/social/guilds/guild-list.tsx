@@ -4,8 +4,7 @@ import { SortPanel } from "@/ui/design-system/molecules/sort-panel";
 import { currencyIntlFormat } from "@/ui/utils/utils";
 import { GuildInfo, ResourcesIds } from "@bibliothecadao/types";
 import clsx from "clsx";
-import Globe from "lucide-react/dist/esm/icons/globe";
-import Lock from "lucide-react/dist/esm/icons/lock";
+import { Globe, Lock } from "@/ui/design-system/atoms/game-icons";
 import { ReactElement, useMemo } from "react";
 
 interface GuildCustom extends GuildInfo {

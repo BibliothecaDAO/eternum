@@ -1,4 +1,4 @@
-import { ReactComponent as Lightning } from "@/assets/icons/common/lightning.svg";
+import { Zap as Lightning } from "@/ui/design-system/atoms/game-icons";
 import { configManager } from "@bibliothecadao/eternum";
 import { BiomeType, ID, TroopType } from "@bibliothecadao/types";
 import { useMemo } from "react";
@@ -38,7 +38,7 @@ export const StaminaResource = ({
       valueText={`${Number(stamina.amount)}/${maxStamina}`}
       percentage={staminaPercentage}
       fillColor={staminaColor}
-      icon={<Lightning className="fill-order-power w-2 ml-0.5" />}
+      icon={<Lightning className=" w-2 ml-0.5" />}
       tooltipContent={`Stamina: ${Number(stamina.amount)} / ${maxStamina}`}
       className={className}
     />

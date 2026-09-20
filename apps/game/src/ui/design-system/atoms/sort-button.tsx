@@ -1,5 +1,4 @@
-import { ReactComponent as CaretDown } from "@/assets/icons/common/caret-down.svg";
-import { ReactComponent as CaretUp } from "@/assets/icons/common/caret-up.svg";
+import { ChevronDown as CaretDown, ChevronUp as CaretUp } from "@/ui/design-system/atoms/game-icons";
 import clsx from "clsx";
 
 type SortButtonProps = {
@@ -59,11 +58,11 @@ export const SortButton = ({
       <div className="flex flex-col items-center justify-center ml-1">
         <CaretUp
           onClick={() => onChange(sortKey, sort !== "asc" ? "asc" : "none")}
-          className={clsx(classNameCaret, sort == "asc" ? "stroke-gold" : "stroke-gold/50")}
+          className={clsx("h-3 w-3", classNameCaret, sort == "asc" ? "opacity-100" : "opacity-40")}
         />
         <CaretDown
           onClick={() => onChange(sortKey, sort !== "desc" ? "desc" : "none")}
-          className={clsx(classNameCaret, sort == "desc" ? "stroke-gold" : "stroke-gold/50")}
+          className={clsx("h-3 w-3", classNameCaret, sort == "desc" ? "opacity-100" : "opacity-40")}
         />
       </div>
     </button>

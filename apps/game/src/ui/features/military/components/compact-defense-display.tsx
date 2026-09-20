@@ -21,8 +21,7 @@ import {
   TroopType,
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
-import ArrowLeft from "lucide-react/dist/esm/icons/arrow-left";
-import Plus from "lucide-react/dist/esm/icons/plus";
+import { ArrowLeft, Plus } from "@/ui/design-system/atoms/game-icons";
 import type { KeyboardEvent } from "react";
 import { useMemo, useState } from "react";
 
@@ -230,7 +229,7 @@ export const CompactDefenseDisplay = ({
           <GuardCooldownBadge seconds={cooldownSeconds} />
         ) : isEmptySlot ? (
           <>
-            {isSlotInteractive && <Plus className="h-3.5 w-3.5 text-gold" strokeWidth={2.5} />}
+            {isSlotInteractive && <Plus className="h-3.5 w-3.5 text-gold" />}
             <span
               className={cn(
                 labelTextClass,
@@ -383,7 +382,7 @@ export const CompactDefenseDisplay = ({
                 height: isBanner ? "36px" : "40px",
               }}
             >
-              <ArrowLeft className={cn(isBanner ? "w-4 h-4" : "w-5 h-5", "text-gold/80")} strokeWidth={2} />
+              <ArrowLeft className={cn(isBanner ? "w-4 h-4" : "w-5 h-5", "text-gold/80")} />
             </div>
             <span className={cn(isBanner ? "text-[9px]" : "text-[10px]", "text-gold/60")}>Enemy</span>
           </div>

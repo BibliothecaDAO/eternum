@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { type BiomeType, getRelicInfo, type ID, ResourcesIds } from "@bibliothecadao/types";
 import { configManager } from "@bibliothecadao/eternum";
-import Sparkles from "lucide-react/dist/esm/icons/sparkles";
+import { TreasureChest } from "@/ui/design-system/atoms/game-icons";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_BODY, HUD_HEADLINE } from "@/ui/design-system/atoms/hud-typography";
 import { HUD_PILL_BUTTON, OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
@@ -49,7 +49,7 @@ export function ChestTileDetails({
             </p>
           </div>
         </InfoBubble>
-        <InfoBubble variant="section" title="Contents" icon={Sparkles}>
+        <InfoBubble variant="section" title="Contents" icon={TreasureChest}>
           {opening ? <RelicList relics={opening.relics} /> : <CrateContents />}
           {!opening && (
             <button

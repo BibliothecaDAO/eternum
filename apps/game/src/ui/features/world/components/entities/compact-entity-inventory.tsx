@@ -20,7 +20,7 @@ import {
   ResourcesIds,
 } from "@bibliothecadao/types";
 import { ComponentValue } from "@dojoengine/recs";
-import Sparkles from "lucide-react/dist/esm/icons/sparkles";
+import { Sparkles } from "@/ui/design-system/atoms/game-icons";
 
 interface CompactEntityInventoryProps {
   resources?: ComponentValue<ClientComponents["Resource"]["schema"]> | null;

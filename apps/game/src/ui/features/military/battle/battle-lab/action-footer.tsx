@@ -2,7 +2,7 @@ import Button from "@/ui/design-system/atoms/button";
 import { HUD_CUE } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import TwitterShareButton from "@/ui/design-system/molecules/twitter-share-button";
-import RotateCcw from "lucide-react/dist/esm/icons/rotate-ccw";
+import { RotateCcw } from "@/ui/design-system/atoms/game-icons";
 
 import { BattleCooldownTimer } from "../battle-cooldown-timer";
 import type { AttackMode } from "./use-battle-lab-state";

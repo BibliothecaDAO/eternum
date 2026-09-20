@@ -5,7 +5,7 @@ import {
 } from "@/ui/design-system/atoms/overlay-surface";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_BODY, HUD_BODY_MUTED, HUD_VALUE } from "@/ui/design-system/atoms/hud-typography";
-import Loader2 from "lucide-react/dist/esm/icons/loader-2";
+import { Loader2 } from "@/ui/design-system/atoms/game-icons";
 import { memo } from "react";
 import type { EmpireSuggestion } from "./use-empire-suggestions";
 

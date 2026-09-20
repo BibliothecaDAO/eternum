@@ -1,4 +1,4 @@
-import { ReactComponent as Refresh } from "@/assets/icons/common/refresh.svg";
+import { RefreshCw as Refresh } from "@/ui/design-system/atoms/game-icons";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useUISound } from "@/audio";
 import { Button } from "@/ui/design-system/atoms";

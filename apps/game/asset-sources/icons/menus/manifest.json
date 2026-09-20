@@ -1,0 +1,888 @@
+{
+  "version": 1,
+  "output": {
+    "size": 256,
+    "subjectSize": 220,
+    "maxBytes": 131072,
+    "format": "png"
+  },
+  "icons": [
+    {
+      "slug": "build",
+      "name": "Build",
+      "target": "construction.png",
+      "consumers": [
+        "BuildingThumbs.construction"
+      ],
+      "subject": "Mason's mallet, stone block and trowel",
+      "accent": "limestone"
+    },
+    {
+      "slug": "production",
+      "name": "Production",
+      "target": "production.png",
+      "consumers": [
+        "BuildingThumbs.production"
+      ],
+      "subject": "Hammer, glowing ingot and anvil",
+      "accent": "ember"
+    },
+    {
+      "slug": "military",
+      "name": "Military",
+      "target": "military.png",
+      "consumers": [
+        "BuildingThumbs.military"
+      ],
+      "subject": "Battered shield, sword and spear",
+      "accent": "crimson"
+    },
+    {
+      "slug": "transfer",
+      "name": "Transfer",
+      "target": "transfer.png",
+      "consumers": [
+        "BuildingThumbs.transfer"
+      ],
+      "subject": "Loaded medieval handcart",
+      "accent": "teal binding"
+    },
+    {
+      "slug": "trade",
+      "name": "Trade",
+      "target": "trade.png",
+      "consumers": [
+        "BuildingThumbs.scale",
+        "BuildingThumbs.predictionMarket"
+      ],
+      "subject": "Merchant scales with coin and gemstone",
+      "accent": "sapphire"
+    },
+    {
+      "slug": "settings",
+      "name": "Settings",
+      "target": "settings.png",
+      "consumers": [
+        "BuildingThumbs.settings"
+      ],
+      "subject": "Artificer's tuning mechanism and winding key",
+      "accent": "teal enamel"
+    },
+    {
+      "slug": "automation",
+      "name": "Automation",
+      "target": "robot.png",
+      "consumers": [
+        "BuildingThumbs.automation"
+      ],
+      "subject": "Clockwork golem head",
+      "accent": "emerald runes"
+    },
+    {
+      "slug": "world",
+      "name": "World Map",
+      "target": "world.png",
+      "consumers": [
+        "BuildingThumbs.worldStructures",
+        "BuildingThumbs.worldMap"
+      ],
+      "subject": "Campaign map and compass",
+      "accent": "crimson wax"
+    },
+    {
+      "slug": "guild",
+      "name": "Guild",
+      "target": "guild.png",
+      "consumers": [
+        "BuildingThumbs.guild"
+      ],
+      "subject": "Heraldic war banner and crossed lances",
+      "accent": "crimson cloth"
+    },
+    {
+      "slug": "ui-close",
+      "name": "Close",
+      "target": "ui-close.png",
+      "consumers": [
+        "GameIcons.X"
+      ],
+      "subject": "a thick diagonal X of crossed solid bronze bars",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-check",
+      "name": "Check",
+      "target": "ui-check.png",
+      "consumers": [
+        "GameIcons.Check",
+        "GameIcons.CheckCircle2"
+      ],
+      "subject": "a thick bronze checkmark tick with green enamel inset",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-chevron-down",
+      "name": "Chevron Down",
+      "target": "ui-chevron-down.png",
+      "consumers": [
+        "GameIcons.ChevronDown",
+        "GameIcons.ChevronUp",
+        "GameIcons.ChevronLeft",
+        "GameIcons.ChevronRight",
+        "GameIcons.ChevronsUp"
+      ],
+      "subject": "a single thick downward V chevron carved from bronze",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-arrow-right",
+      "name": "Arrow Right",
+      "target": "ui-arrow-right.png",
+      "consumers": [
+        "GameIcons.ArrowRight",
+        "GameIcons.ArrowLeft",
+        "GameIcons.ArrowUp",
+        "GameIcons.ArrowDown",
+        "GameIcons.ArrowUpCircle",
+        "GameIcons.ArrowUpRight",
+        "GameIcons.Navigation",
+        "GameIcons.TrendingUp",
+        "GameIcons.LogIn"
+      ],
+      "subject": "a thick bronze right arrow with straight shaft and triangular head",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-plus",
+      "name": "Plus",
+      "target": "ui-plus.png",
+      "consumers": [
+        "GameIcons.Plus",
+        "GameIcons.CirclePlus",
+        "GameIcons.UserPlus"
+      ],
+      "subject": "a thick upright bronze plus sign",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-search",
+      "name": "Search",
+      "target": "ui-search.png",
+      "consumers": [
+        "GameIcons.Search"
+      ],
+      "subject": "a bronze and wood magnifying glass with clear pale blue glass",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-pause",
+      "name": "Pause",
+      "target": "ui-pause.png",
+      "consumers": [
+        "GameIcons.Pause"
+      ],
+      "subject": "two thick parallel vertical bronze bars, pause symbol",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-play",
+      "name": "Play",
+      "target": "ui-play.png",
+      "consumers": [
+        "GameIcons.Play"
+      ],
+      "subject": "one solid bronze triangular wedge pointing right, play symbol",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-refresh",
+      "name": "Refresh",
+      "target": "ui-refresh.png",
+      "consumers": [
+        "GameIcons.RefreshCw",
+        "GameIcons.RotateCw",
+        "GameIcons.RotateCcw",
+        "GameIcons.Loader",
+        "GameIcons.Loader2"
+      ],
+      "subject": "a thick clockwise circular bronze arrow with one clear arrowhead and an open gap",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-warning",
+      "name": "Warning",
+      "target": "ui-warning.png",
+      "consumers": [
+        "GameIcons.AlertCircle",
+        "GameIcons.AlertTriangle",
+        "GameIcons.TriangleAlert",
+        "GameIcons.ShieldAlert"
+      ],
+      "subject": "a thick bronze triangular warning frame with an amber enamel exclamation mark inside",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-info",
+      "name": "Info",
+      "target": "ui-info.png",
+      "consumers": [
+        "GameIcons.Info"
+      ],
+      "subject": "a chunky bronze lowercase i, large round dot and thick stem, information symbol",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-copy",
+      "name": "Copy",
+      "target": "ui-copy.png",
+      "consumers": [
+        "GameIcons.Copy"
+      ],
+      "subject": "two overlapping parchment sheets with folded corners and bronze edge details, no writing",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-eye",
+      "name": "Eye",
+      "target": "ui-eye.png",
+      "consumers": [
+        "GameIcons.Eye"
+      ],
+      "subject": "an open almond shaped sculpted bronze eye with a pale blue glass pupil",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-lock",
+      "name": "Lock",
+      "target": "ui-lock.png",
+      "consumers": [
+        "GameIcons.Lock"
+      ],
+      "subject": "a closed iron padlock with a bronze face and keyhole",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-unlock",
+      "name": "Unlock",
+      "target": "ui-unlock.png",
+      "consumers": [
+        "GameIcons.Unlock"
+      ],
+      "subject": "an open iron padlock with raised shackle and bronze face",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-edit",
+      "name": "Edit",
+      "target": "ui-edit.png",
+      "consumers": [
+        "GameIcons.Pen",
+        "GameIcons.Pencil"
+      ],
+      "subject": "a feather quill with bronze nib positioned diagonally",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-trash",
+      "name": "Trash",
+      "target": "ui-trash.png",
+      "consumers": [
+        "GameIcons.Trash",
+        "GameIcons.Trash2"
+      ],
+      "subject": "a small iron rubbish bin with simple vertical panels and a raised lid",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-message",
+      "name": "Message",
+      "target": "ui-message.png",
+      "consumers": [
+        "GameIcons.MessageCircle",
+        "GameIcons.MessageSquare"
+      ],
+      "subject": "a solid bronze speech bubble with a distinct lower left tail and pale parchment inset",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-mail",
+      "name": "Mail",
+      "target": "ui-mail.png",
+      "consumers": [
+        "GameIcons.Mail"
+      ],
+      "subject": "a closed folded parchment envelope with red wax seal",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-crown",
+      "name": "Crown",
+      "target": "ui-crown.png",
+      "consumers": [
+        "GameIcons.Crown"
+      ],
+      "subject": "a small medieval gold crown with three clear points and one crimson gemstone",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-pickaxe",
+      "name": "Pickaxe",
+      "target": "ui-pickaxe.png",
+      "consumers": [
+        "GameIcons.Pickaxe"
+      ],
+      "subject": "a miners iron pickaxe with a wooden handle positioned diagonally",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-camp",
+      "name": "Camp",
+      "target": "ui-camp.png",
+      "consumers": [
+        "GameIcons.Tent"
+      ],
+      "subject": "a simple triangular medieval canvas tent, ochre cloth and dark open doorway",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-people",
+      "name": "People",
+      "target": "ui-people.png",
+      "consumers": [
+        "GameIcons.Users"
+      ],
+      "subject": "three small medieval portrait busts grouped together, simple bronze and parchment forms",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-person",
+      "name": "Person",
+      "target": "ui-person.png",
+      "consumers": [
+        "GameIcons.User"
+      ],
+      "subject": "one medieval portrait bust silhouette carved in bronze",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-skull",
+      "name": "Skull",
+      "target": "ui-skull.png",
+      "consumers": [
+        "GameIcons.Skull"
+      ],
+      "subject": "a weathered ivory human skull with deep eye sockets, compact front three-quarter view",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-star",
+      "name": "Star",
+      "target": "ui-star.png",
+      "consumers": [
+        "GameIcons.Star"
+      ],
+      "subject": "a solid thick five pointed gold star with beveled planes",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-lightning",
+      "name": "Lightning",
+      "target": "ui-lightning.png",
+      "consumers": [
+        "GameIcons.Zap"
+      ],
+      "subject": "one thick gold lightning bolt with pale amber enamel",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-flame",
+      "name": "Flame",
+      "target": "ui-flame.png",
+      "consumers": [
+        "GameIcons.Flame"
+      ],
+      "subject": "one stylized orange and gold flame carved in broad translucent planes",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-flask",
+      "name": "Flask",
+      "target": "ui-flask.png",
+      "consumers": [
+        "GameIcons.FlaskConical"
+      ],
+      "subject": "a small round alchemist glass flask with emerald liquid and bronze collar",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-sun",
+      "name": "Sun",
+      "target": "ui-sun.png",
+      "consumers": [
+        "GameIcons.Sun",
+        "GameIcons.SunDim",
+        "GameIcons.Sunrise",
+        "GameIcons.Sunset"
+      ],
+      "subject": "a golden sun disc with eight thick rays, simple carved bronze planes",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-moon",
+      "name": "Moon",
+      "target": "ui-moon.png",
+      "consumers": [
+        "GameIcons.Moon",
+        "GameIcons.MoonStar"
+      ],
+      "subject": "a silver crescent moon with pale blue enamel",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-location",
+      "name": "Location",
+      "target": "ui-location.png",
+      "consumers": [
+        "GameIcons.MapPin"
+      ],
+      "subject": "a thick bronze map pin marker with crimson central inset",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-target",
+      "name": "Target",
+      "target": "ui-target.png",
+      "consumers": [
+        "GameIcons.Target",
+        "GameIcons.Crosshair"
+      ],
+      "subject": "a circular wooden archery target with concentric bronze and crimson rings",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-calendar",
+      "name": "Calendar",
+      "target": "ui-calendar.png",
+      "consumers": [
+        "GameIcons.CalendarDays"
+      ],
+      "subject": "a parchment calendar tablet with bronze top rings and a simple empty cell grid, no letters or digits",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-expand",
+      "name": "Expand",
+      "target": "ui-expand.png",
+      "consumers": [
+        "GameIcons.Maximize2"
+      ],
+      "subject": "two thick bronze arrows pointing apart diagonally toward upper right and lower left",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-collapse",
+      "name": "Collapse",
+      "target": "ui-collapse.png",
+      "consumers": [
+        "GameIcons.Minimize2"
+      ],
+      "subject": "two thick bronze arrows pointing together diagonally from upper right and lower left",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-menu",
+      "name": "Menu",
+      "target": "ui-menu.png",
+      "consumers": [
+        "GameIcons.Menu"
+      ],
+      "subject": "three thick short horizontal bronze bars stacked vertically",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-volume",
+      "name": "Volume",
+      "target": "ui-volume.png",
+      "consumers": [
+        "GameIcons.Volume2"
+      ],
+      "subject": "a small medieval bronze speaking horn with two sculpted sound arcs",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-mute",
+      "name": "Mute",
+      "target": "ui-mute.png",
+      "consumers": [
+        "GameIcons.VolumeX"
+      ],
+      "subject": "a small medieval bronze speaking horn with a clear crimson X across its bell",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-music",
+      "name": "Music",
+      "target": "ui-music.png",
+      "consumers": [
+        "GameIcons.Music",
+        "GameIcons.Music2"
+      ],
+      "subject": "two joined bronze musical eighth notes",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-camera",
+      "name": "Camera",
+      "target": "ui-camera.png",
+      "consumers": [
+        "GameIcons.Camera"
+      ],
+      "subject": "a compact bronze fantasy camera with one prominent round blue glass lens",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-video",
+      "name": "Video",
+      "target": "ui-video.png",
+      "consumers": [
+        "GameIcons.Video"
+      ],
+      "subject": "a compact bronze film camera with two round reels and a lens",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-bug",
+      "name": "Bug",
+      "target": "ui-bug.png",
+      "consumers": [
+        "GameIcons.Bug"
+      ],
+      "subject": "a small bronze beetle with six short legs and a dark green shell",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-dice",
+      "name": "Dice",
+      "target": "ui-dice.png",
+      "consumers": [
+        "GameIcons.Dices"
+      ],
+      "subject": "one carved ivory six sided die with dark recessed pips",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-gauge",
+      "name": "Gauge",
+      "target": "ui-gauge.png",
+      "consumers": [
+        "GameIcons.Gauge"
+      ],
+      "subject": "a bronze semicircular dial with one crimson needle, no numbers",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-anchor",
+      "name": "Anchor",
+      "target": "ui-anchor.png",
+      "consumers": [
+        "GameIcons.Anchor"
+      ],
+      "subject": "one weathered iron ships anchor with bronze fittings",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-ship",
+      "name": "Ship",
+      "target": "ui-ship.png",
+      "consumers": [
+        "GameIcons.Ship"
+      ],
+      "subject": "one small medieval sailing ship with cream sail and dark wooden hull",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-waves",
+      "name": "Waves",
+      "target": "ui-waves.png",
+      "consumers": [
+        "GameIcons.Waves"
+      ],
+      "subject": "three layered thick stylized blue water wave crests",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-footprints",
+      "name": "Footprints",
+      "target": "ui-footprints.png",
+      "consumers": [
+        "GameIcons.Footprints"
+      ],
+      "subject": "two staggered boot sole impressions rendered as solid brown leather forms",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-flag",
+      "name": "Flag",
+      "target": "ui-flag.png",
+      "consumers": [
+        "GameIcons.Flag"
+      ],
+      "subject": "a crimson medieval pennant on a bronze pole",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-layers",
+      "name": "Layers",
+      "target": "ui-layers.png",
+      "consumers": [
+        "GameIcons.Layers3"
+      ],
+      "subject": "three stacked offset square stone slabs with bronze edges",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-hexagon",
+      "name": "Hexagon",
+      "target": "ui-hexagon.png",
+      "consumers": [
+        "GameIcons.Hexagon",
+        "GameIcons.Shapes"
+      ],
+      "subject": "one thick bronze hexagonal tile with a stone inset",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-hash",
+      "name": "Hash",
+      "target": "ui-hash.png",
+      "consumers": [
+        "GameIcons.Hash"
+      ],
+      "subject": "a thick bronze number sign, two parallel vertical bars crossed by two horizontal bars",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-share",
+      "name": "Share",
+      "target": "ui-share.png",
+      "consumers": [
+        "GameIcons.Share2"
+      ],
+      "subject": "three bronze nodes connected by two thick branches, recognizable share symbol",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-bell",
+      "name": "Bell",
+      "target": "ui-bell.png",
+      "consumers": [
+        "GameIcons.Bell"
+      ],
+      "subject": "a small bronze notification bell with clear clapper",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-book",
+      "name": "Book",
+      "target": "ui-book.png",
+      "consumers": [
+        "GameIcons.BookOpen"
+      ],
+      "subject": "an open thick parchment book with a dark leather cover, no writing",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-rocket",
+      "name": "Rocket",
+      "target": "ui-rocket.png",
+      "consumers": [
+        "GameIcons.Rocket"
+      ],
+      "subject": "a compact bronze fantasy rocket with three fins and a crimson nose cone",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-wrench",
+      "name": "Wrench",
+      "target": "ui-wrench.png",
+      "consumers": [
+        "GameIcons.Wrench"
+      ],
+      "subject": "a single heavy bronze wrench positioned diagonally",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-mountain",
+      "name": "Mountain",
+      "target": "ui-mountain.png",
+      "consumers": [
+        "GameIcons.Mountain"
+      ],
+      "subject": "a single craggy gray mountain peak with pale snow cap",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-trees",
+      "name": "Trees",
+      "target": "ui-trees.png",
+      "consumers": [
+        "GameIcons.Trees"
+      ],
+      "subject": "three compact stylized evergreen trees with dark green crowns and brown trunks",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-telescope",
+      "name": "Telescope",
+      "target": "ui-telescope.png",
+      "consumers": [
+        "GameIcons.Telescope"
+      ],
+      "subject": "a brass spyglass telescope on a short wooden tripod",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-route",
+      "name": "Route",
+      "target": "ui-route.png",
+      "consumers": [
+        "GameIcons.Route"
+      ],
+      "subject": "a winding parchment route with three bronze waypoints joined by a thick crimson path",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-network-off",
+      "name": "Network Off",
+      "target": "ui-network-off.png",
+      "consumers": [
+        "GameIcons.WifiOff"
+      ],
+      "subject": "three chunky bronze wireless signal arcs above a dot crossed by a crimson slash",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-monitor",
+      "name": "Monitor",
+      "target": "ui-monitor.png",
+      "consumers": [
+        "GameIcons.Monitor"
+      ],
+      "subject": "a bronze framed rectangular monitor with dark glass screen and short pedestal stand",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-activity",
+      "name": "Activity",
+      "target": "ui-activity.png",
+      "consumers": [
+        "GameIcons.Activity"
+      ],
+      "subject": "a thick bronze heartbeat zigzag with one tall central peak",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-cloud-lightning",
+      "name": "Cloud Lightning",
+      "target": "ui-cloud-lightning.png",
+      "consumers": [
+        "GameIcons.CloudLightning"
+      ],
+      "subject": "a compact gray cloud with one solid gold lightning bolt beneath",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-download",
+      "name": "Download",
+      "target": "ui-download.png",
+      "consumers": [
+        "GameIcons.Download",
+        "GameIcons.ArrowDownToLine"
+      ],
+      "subject": "a thick bronze downward arrow above a wide shallow bronze receiving tray",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-external-link",
+      "name": "External Link",
+      "target": "ui-external-link.png",
+      "consumers": [
+        "GameIcons.ExternalLink"
+      ],
+      "subject": "a thick bronze arrow emerging diagonally upper right from an open square bronze frame",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-swap",
+      "name": "Swap",
+      "target": "ui-swap.png",
+      "consumers": [
+        "GameIcons.ArrowLeftRight",
+        "GameIcons.ArrowRightLeft"
+      ],
+      "subject": "two thick parallel bronze arrows pointing in opposite horizontal directions",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-skip",
+      "name": "Skip",
+      "target": "ui-skip.png",
+      "consumers": [
+        "GameIcons.SkipForward"
+      ],
+      "subject": "two solid bronze right-pointing triangles followed by a short vertical bronze bar",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-step",
+      "name": "Step",
+      "target": "ui-step.png",
+      "consumers": [
+        "GameIcons.StepForward"
+      ],
+      "subject": "one solid bronze right-pointing triangle followed by a short vertical bronze bar",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-minus",
+      "name": "Minus",
+      "target": "ui-minus.png",
+      "consumers": [
+        "GameIcons.UserMinus",
+        "GameIcons.Minus"
+      ],
+      "subject": "one thick short horizontal bronze bar",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-pin",
+      "name": "Pin",
+      "target": "ui-pin.png",
+      "consumers": [
+        "GameIcons.Pin"
+      ],
+      "subject": "a small brass pushpin with a crimson rounded head and sharp point",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-backpack",
+      "name": "Backpack",
+      "target": "ui-backpack.png",
+      "consumers": [
+        "GameIcons.Backpack"
+      ],
+      "subject": "a small brown leather backpack with bronze buckles",
+      "accent": "aged bronze"
+    },
+    {
+      "slug": "ui-chest",
+      "name": "Chest",
+      "target": "ui-chest.png",
+      "consumers": [
+        "GameIcons.TreasureChest"
+      ],
+      "subject": "a wooden treasure chest with bronze bands, open lid and a few gold coins",
+      "accent": "aged bronze"
+    }
+  ]
+}

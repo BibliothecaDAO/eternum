@@ -26,8 +26,7 @@ import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { formatIncomingEta, useStructureUpgrade } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
-import ChevronsUp from "lucide-react/dist/esm/icons/chevrons-up";
-import CrownIcon from "lucide-react/dist/esm/icons/crown";
+import { ChevronsUp, Crown as CrownIcon } from "@/ui/design-system/atoms/game-icons";
 
 // One chip style for every requirement / produces row — matches the
 // building-tile inspector so the castle reads with the same vocabulary.

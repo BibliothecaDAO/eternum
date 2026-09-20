@@ -1,3 +1,4 @@
+import { X } from "@/ui/design-system/atoms/game-icons";
 import { useEffect } from "react";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
@@ -34,7 +35,7 @@ const ArmyDeploymentForm = (target: ArmyDeploymentTarget) => {
           aria-label="Close deployment picker"
           onClick={() => usePopoverStore.getState().close("army-deployment")}
         >
-          ×
+          <X className="h-4 w-4" />
         </button>
       </div>
       <TroopSelectionGrid

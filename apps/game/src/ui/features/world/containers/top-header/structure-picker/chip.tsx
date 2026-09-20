@@ -15,16 +15,18 @@ import { resolveStructureUiCapabilities } from "@/ui/lib/structure-capabilities"
 import { configManager } from "@bibliothecadao/eternum";
 import { getLevelName, ID, RealmLevels, ResourcesIds, type Structure, StructureType } from "@bibliothecadao/types";
 import clsx from "clsx";
-import ChevronUp from "lucide-react/dist/esm/icons/chevron-up";
-import ChevronsUp from "lucide-react/dist/esm/icons/chevrons-up";
-import Hexagon from "lucide-react/dist/esm/icons/hexagon";
-import Info from "lucide-react/dist/esm/icons/info";
-import Loader2 from "lucide-react/dist/esm/icons/loader-2";
-import ShieldCheck from "lucide-react/dist/esm/icons/shield-check";
-import Pickaxe from "lucide-react/dist/esm/icons/pickaxe";
-import Star from "lucide-react/dist/esm/icons/star";
-import Users from "lucide-react/dist/esm/icons/users";
-import type { LucideIcon } from "lucide-react";
+import {
+  ChevronUp,
+  ChevronsUp,
+  Hexagon,
+  Info,
+  Loader2,
+  ShieldCheck,
+  Pickaxe,
+  Star,
+  Users,
+} from "@/ui/design-system/atoms/game-icons";
+import type { GameIcon } from "@/ui/design-system/atoms/game-icon";
 import { memo, useCallback, type KeyboardEvent, type MouseEvent } from "react";
 import { resolveRealmBootstrapErrorMessage } from "@/ui/modules/entity-details/hooks/realm-bootstrap-error";
 
@@ -58,7 +60,7 @@ export type StructureWithMetadata = Structure & {
   };
 };
 
-const StructureInfoStat = ({ icon: Icon, label, title }: { icon: LucideIcon; label: string; title: string }) => (
+const StructureInfoStat = ({ icon: Icon, label, title }: { icon: GameIcon; label: string; title: string }) => (
   <span
     className="inline-flex items-center gap-1 rounded border border-gold/15 bg-black/25 px-1.5 py-0.5 text-xxs text-gold/75"
     title={title}
@@ -327,7 +329,7 @@ const StructureChip = memo(({ structure, isSelected, onSelectStructure, onToggle
         title={structure.isFavorite ? "Remove from favorites" : "Favorite structure"}
         aria-label={structure.isFavorite ? "Remove from favorites" : "Favorite structure"}
       >
-        <Star className={clsx("h-3.5 w-3.5", structure.isFavorite ? "fill-current text-gold" : "text-gold/60")} />
+        <Star className={clsx("h-3.5 w-3.5", structure.isFavorite ? "opacity-100" : "opacity-40 grayscale")} />
       </button>
       {structure.groupColor && (
         <span

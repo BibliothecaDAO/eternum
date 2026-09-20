@@ -2,7 +2,7 @@ import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation
 import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { ActorType, ID } from "@bibliothecadao/types";
-import ArrowLeftRight from "lucide-react/dist/esm/icons/arrow-left-right";
+import { ArrowLeftRight } from "@/ui/design-system/atoms/game-icons";
 import { Suspense } from "react";
 import { HelpContainer } from "./help-container";
 

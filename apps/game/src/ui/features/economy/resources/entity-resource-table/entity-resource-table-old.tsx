@@ -13,7 +13,7 @@ import { BuildingType, getBuildingFromResource, ID, ResourcesIds } from "@biblio
 import { useComponentValue } from "@dojoengine/react";
 import { HUD_CUE, HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
+import { ChevronDown } from "@/ui/design-system/atoms/game-icons";
 import React, { useCallback, useMemo, useState } from "react";
 import { ALWAYS_SHOW_RESOURCES, TIER_DISPLAY_NAMES } from "./utils";
 import { gameEntityKey } from "@bibliothecadao/eternum/game-client";

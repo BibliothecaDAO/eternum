@@ -1,11 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import CalendarDays from "lucide-react/dist/esm/icons/calendar-days";
-import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
-import Clock3 from "lucide-react/dist/esm/icons/clock-3";
-import Info from "lucide-react/dist/esm/icons/info";
-import Rocket from "lucide-react/dist/esm/icons/rocket";
-import RotateCw from "lucide-react/dist/esm/icons/rotate-cw";
+import { CalendarDays, ChevronDown, Clock3, Info, Rocket, RotateCw } from "@/ui/design-system/atoms/game-icons";
 import { formatFactoryDurationLabel } from "../duration";
 import {
   getBlitzPlayStyleOptions,

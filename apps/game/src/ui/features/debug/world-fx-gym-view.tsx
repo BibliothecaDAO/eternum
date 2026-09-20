@@ -1,4 +1,4 @@
-import { Flame, Pause, Play, RefreshCw, Sparkles } from "lucide-react";
+import { Flame, Pause, Play, RefreshCw, Sparkles } from "@/ui/design-system/atoms/game-icons";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 

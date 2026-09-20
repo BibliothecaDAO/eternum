@@ -1,6 +1,6 @@
 import { AudioCategory, useAudio, useMusicPlayer } from "@/audio";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { Music2, SkipForward, Volume2, VolumeX } from "lucide-react";
+import { Music2, SkipForward, Volume2, VolumeX } from "@/ui/design-system/atoms/game-icons";
 import { useCallback } from "react";
 
 type LandingMusicPlayerPresentation = "floating" | "header";
