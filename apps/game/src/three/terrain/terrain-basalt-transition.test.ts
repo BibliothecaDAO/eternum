@@ -33,6 +33,7 @@ describe("surface basalt margins", () => {
     const transition = new SurfaceBasaltTransition(source([spire, cell(1)]));
     const weights = new Map<string, number>();
     let shared = 0;
+    let fadingShared = 0;
     for (const owner of [spire, cell(1)]) {
       let area = 0;
       visitSurfaceBasaltSlabs(owner, (polygon, center) => {
@@ -46,7 +47,8 @@ describe("surface basalt margins", () => {
         const weight = transition.slabWeight(center.x, center.z, owner);
         if (weights.has(key)) {
           expect(weight).toBe(weights.get(key));
-          expect(weight).toBe(1);
+          expect(weight).toBeGreaterThan(0);
+          if (weight < 1) fadingShared++;
           shared++;
         }
         weights.set(key, weight);
@@ -54,20 +56,20 @@ describe("surface basalt margins", () => {
       expect(area).toBeCloseTo((3 * Math.sqrt(3)) / 2, 5);
     }
     expect(shared).toBeGreaterThan(0);
+    expect(fadingShared).toBeGreaterThan(0);
   });
 
-  it("matches geometry and material across independently prepared page boundaries", () => {
+  it("matches height across independently prepared page boundaries", () => {
     const left = prepareTerrainPage(source([spire], [cell(1)]));
     const right = prepareTerrainPage(source([cell(1)], [spire]));
     const boundary = Math.sqrt(3) / 2;
     const samples = (page: typeof left) => {
-      const result = new Map<string, number[]>();
+      const result = new Map<string, number>();
       for (let i = 0; i < page.buffers.positions.length; i += 3) {
         if (Math.abs(page.buffers.positions[i] - boundary) > 2e-6 || page.buffers.normals[i + 1] < 0.5) continue;
-        result.set(page.buffers.positions[i + 2].toFixed(5), [
-          page.buffers.positions[i + 1],
-          page.buffers.basaltWeights![i / 3],
-        ]);
+        // A boundary can coincide with a joint between differently faded slabs. Shared
+        // slabs retain identical weights (above); heights must match even across joints.
+        result.set(page.buffers.positions[i + 2].toFixed(5), page.buffers.positions[i + 1]);
       }
       return result;
     };
@@ -75,10 +77,7 @@ describe("surface basalt margins", () => {
       b = samples(right);
     expect(a.size).toBeGreaterThan(0);
     expect(b).toEqual(a);
-    for (const [height, weight] of a.values()) {
-      expect(height).toBeCloseTo(0.12, 6);
-      expect(weight).toBe(1);
-    }
+    for (const height of a.values()) expect(height).toBeCloseTo(0.12, 6);
     const field = new TerrainField(source([spire, cell(1)]));
     expect(field.sampleSurface(0.9, 0).height).toBeCloseTo(0.12, 6);
     const neighbor = terrainHexToWorld(1, 0);

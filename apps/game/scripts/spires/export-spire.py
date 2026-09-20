@@ -22,6 +22,12 @@ assert all(obj.get("spirePart") != "base" for obj in objects), "Terrain owns the
 assert sum(obj.get("spirePart") == "outcrop" for obj in objects) == 1
 assert not any(obj.get("spirePart") == "fragment" and obj.type == "MESH"
                and any(material.name.startswith("Veins") for material in obj.data.materials) for obj in objects)
+outcrop = next(obj for obj in objects if obj.get("spirePart") == "outcrop")
+assert outcrop.get("outcropInnerColumns") == 7 and outcrop.get("outcropOuterColumns") == 12
+assert sum(obj.get("veinSegmentCount", 0) for obj in objects) == 32
+stone = next(obj for obj in objects if obj.name == "SPIRE / Basalt")
+assert stone.get("crownMainApexCount") == 1 and stone.get("crownSlopingShoulderCount") == 2
+assert stone.get("crownFlatCapCount") == 16
 scene.frame_start, scene.frame_end, scene.render.fps = 1, 241, 30
 scene.frame_set(1)
 # Scene properties from the review session otherwise become animation extras.

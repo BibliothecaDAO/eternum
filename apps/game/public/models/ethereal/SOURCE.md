@@ -12,15 +12,18 @@ change as their shipped GLBs.
 `spire.glb` is the hand-authored S2 dimensional spire: a hovering shard and fragments, plus a translucent purple sphere
 wrapped in neon currents, with one eight-second `Spire_Loop`. Portal emission and animation remain intact. The editable
 source is `apps/game/asset-sources/ethereal/spire/spire.blend` (Blender 5.2.1, textures packed, production collection
-`SPIRE_V2_PRODUCTION`). Its three former `spirePart=base` objects remain absent. A fixed, non-emissive seven-column
-outcropping sits beneath the portal: 0.734 wide, 0.706 deep and 0.155 high, with a 0.006 contact skirt below local
-ground. It shares the spire's packed basalt material and is only slightly wider than the 0.652-wide upper core.
+`SPIRE_V2_PRODUCTION`). Its three former `spirePart=base` objects remain absent. A fixed, non-emissive 19-column
+outcropping sits beneath the portal: 1.226 wide, 1.132 deep and 0.155 high, with a 0.006 contact skirt below local
+ground. Its original seven columns vary from 0.101 to 0.155 high; the surrounding twelve vary from 0.047 to 0.080,
+forming a lower step within the gameplay hex. All share the spire's packed basalt material. The upper core converges on
+one sharp main apex, with two inward-sloping shoulders and sixteen broad caps instead of separate pointed tips.
 
-The former winding exterior veins are replaced by 16 flat mineral inclusions, each strictly vertical and 0.125–0.25
+The former winding exterior veins are replaced by 32 flat mineral inclusions, each strictly vertical and 0.105–0.220
 long. They occupy the recessed V-shaped junctions between two neighboring rock columns, with dark intervals between
-them. No veins remain on the floating fragments or the grounded outcropping. The BLUE, ORANGE and PINK material names
-remain for the production light treatment. Construction and source-validation scripts are retained locally under
-`.context/ethereal-layer/biome-tiles/revision-2/`; the committed packed source is sufficient for a clean-checkout
+them. Each of eight viewing sectors contains three to five veins, distributed from local height 1.693 to 3.277. No veins
+remain on the floating fragments or the grounded outcropping. The BLUE, ORANGE and PINK material names remain for the
+production light treatment. Construction and source-validation scripts are retained locally under
+`.context/ethereal-layer/biome-tiles/revision-3/`; the committed packed source is sufficient for a clean-checkout
 export.
 
 Rebuild from the repository root with Blender 5.2.1 and Khronos KTX-Software 4.4.2 on PATH:
@@ -34,12 +37,12 @@ pnpm --dir apps/game verify:assets
 
 The optimizer resamples the clip, limits textures to 480 px, encodes them as KTX2 and applies Draco without flattening
 the hierarchy: six current parents intentionally reach zero scale to hide inward-motion resets. Raw exports match byte
-for byte. Comparing all 241 authored poses across the outcrop/seam refit gives zero matrix change for the 38 preserved
-objects; their stone and portal mesh geometry is unchanged. The new outcropping has no animation and does not intersect
-any portal surface across the complete loop; the nearest sampled portal vertex remains 0.04005 away. The current export
-is 550,564 bytes, 23 primitives and 10,064 triangles, with eight materials, six KTX2 textures and 43 animation channels.
-The preceding base-free export was 564,268 bytes, 25 primitives and 11,712 triangles. These are asset counts, not frame
-draw costs.
+for byte. Comparing all 241 authored poses across the crown/outcrop/seam revision gives zero matrix change for all 42
+production objects; all 18 portal and floating-fragment meshes remain unchanged. The outcropping has no animation and
+does not intersect any portal surface across the complete loop; the nearest sampled portal vertex remains 0.04005 away.
+The current export is 553,464 bytes, 23 primitives and 10,784 triangles, with eight materials, six KTX2 textures and 43
+animation channels. The preceding base-free export was 564,268 bytes, 25 primitives and 11,712 triangles. These are
+asset counts, not frame draw costs.
 
 Runtime: `src/three/structures/spire-model.ts` evaluates the hierarchy with a stable phase per placement and shares
 instanced stone draws. `spire-portal.ts` composes rear light, translucent core and front light, splitting currents by a

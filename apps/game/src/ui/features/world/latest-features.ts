@@ -38,7 +38,7 @@ const allLatestFeatures: LatestFeature[] = [
     title: "Refined Ethereal Terrain",
     type: "improvement",
     description:
-      "Ethereal basalt stays consistent at every zoom, surface spires blend into neighbouring terrain, and spires gain grounded rock outcrops with recessed mineral highlights.",
+      "Ethereal basalt has clearer joints and softer surface transitions. Spires rise toward one main tip, with evenly distributed mineral highlights and a stepped rock outcrop.",
   },
   {
     date: "2026-09-15",

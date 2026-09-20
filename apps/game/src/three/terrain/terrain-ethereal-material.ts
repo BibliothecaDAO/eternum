@@ -9,12 +9,14 @@ import { BASALT_BLOCK_RADIUS } from "./terrain-basalt";
 export function createEtherealTerrainMaterial(): MeshStandardNodeMaterial {
   const material = new MeshStandardNodeMaterial({ metalness: 0, roughness: 0.9 });
   material.name = "terrain-ethereal-basalt";
-  material.colorNode = applyGameEndFrost(createBasaltSurfaceColor(positionWorld.xz, attribute("terrainColor", "vec3")));
+  material.colorNode = applyGameEndFrost(
+    createBasaltSurface(positionWorld.xz).color.mul(attribute("terrainColor", "vec3")),
+  );
   return material;
 }
 
 /** Shared with surface-biome transitions; ground coordinates must be world aligned. */
-export function createBasaltSurfaceColor(ground: Node<"vec2">, tint: Node<"vec3">): Node<"vec3"> {
+export function createBasaltSurface(ground: Node<"vec2">): { color: Node<"vec3">; softEdge: Node<"float"> } {
   const radius = BASALT_BLOCK_RADIUS;
   const spacing = vec2(Math.sqrt(3) * radius, 3 * radius);
   const a = ground.sub(ground.div(spacing).round().mul(spacing));
@@ -48,14 +50,18 @@ export function createBasaltSurfaceColor(ground: Node<"vec2">, tint: Node<"vec3"
     );
   // Individual regular hexagons retain their shape; only the narrow joint width varies.
   // Derivatives antialias the fixed world-space edge rather than changing its width with zoom.
-  const inset = gapVariation.mul(0.004).add(0.006);
+  const inset = gapVariation.mul(0.006).add(0.008);
   const slabEdge = float(radius)
     .sub(inset)
     .mul(Math.sqrt(3) / 2);
   const pixel = fwidth(distance).mul(0.5).max(0.0001);
   const slab = smoothstep(slabEdge.sub(pixel), slabEdge.add(pixel), distance).oneMinus();
   const stone = vec3(0.035, 0.04, 0.049).mul(variation.mul(0.3).add(0.85));
-  return mix(vec3(0.011, 0.014, 0.02), stone, slab).mul(tint);
+  return {
+    color: mix(vec3(0.011, 0.014, 0.02), stone, slab),
+    // Outer mineral traces dissolve into their host biome instead of ending in hard polygon edges.
+    softEdge: smoothstep((radius * Math.sqrt(3)) / 2 - 0.045, (radius * Math.sqrt(3)) / 2, distance).oneMinus(),
+  };
 }
 
 /** Reuse the existing cloud field in fog: no extra noise samples, geometry, or hidden world data. */

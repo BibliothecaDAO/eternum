@@ -27,7 +27,7 @@ describe("production spire asset", () => {
     expect(gltf.extensionsUsed).toEqual(expect.arrayContaining(["KHR_draco_mesh_compression", "KHR_texture_basisu"]));
     const primitives = gltf.meshes.flatMap((mesh) => mesh.primitives);
     expect(primitives).toHaveLength(23);
-    expect(primitives.reduce((sum, primitive) => sum + gltf.accessors[primitive.indices].count / 3, 0)).toBe(10064);
+    expect(primitives.reduce((sum, primitive) => sum + gltf.accessors[primitive.indices].count / 3, 0)).toBe(10784);
     expect(gltf.materials).toHaveLength(8);
     expect(gltf.images).toHaveLength(6);
     for (const image of gltf.images) {
@@ -57,6 +57,8 @@ describe("production spire asset", () => {
     expect(outcrops).toHaveLength(1);
     const outcrop = outcrops[0];
     expect(outcrop.extras.grounded).toBe(true);
+    expect(outcrop.extras.outcropInnerColumns).toBe(7);
+    expect(outcrop.extras.outcropOuterColumns).toBe(12);
     expect(outcrop.translation ?? [0, 0, 0]).toEqual([0, 0, 0]);
     for (const primitive of gltf.meshes[outcrop.mesh].primitives) {
       const material = gltf.materials[primitive.material];
@@ -65,7 +67,9 @@ describe("production spire asset", () => {
       expect(position.min[1]).toBeGreaterThan(-0.007);
       expect(position.min[1]).toBeLessThanOrEqual(0);
       expect(position.max[1]).toBeLessThan(0.18);
-      expect(position.max[0] - position.min[0]).toBeLessThan(0.8);
+      expect(position.max[0] - position.min[0]).toBeCloseTo(1.2261, 3);
+      expect(position.max[2] - position.min[2]).toBeCloseTo(1.1317, 3);
+      expect(gltf.accessors[primitive.indices].count / 3).toBe(836);
     }
     const veins = gltf.nodes.filter(
       (node) =>
@@ -74,12 +78,17 @@ describe("production spire asset", () => {
           gltf.materials[primitive.material].name.startsWith("Veins"),
         ),
     );
-    expect(veins.length).toBeGreaterThan(0);
+    expect(veins).toHaveLength(3);
+    expect(veins.reduce((sum, vein) => sum + vein.extras.veinSegmentCount, 0)).toBe(32);
     for (const vein of veins) {
       expect(vein.extras.spirePart).toBe("spire");
       expect(vein.extras.veinPlacement).toBe("inner-column-junction");
       expect(vein.extras.veinShape).toBe("short-straight-vertical");
     }
+    const stone = gltf.nodes.find((node) => node.name === "SPIRE / Basalt");
+    expect(stone.extras.crownMainApexCount).toBe(1);
+    expect(stone.extras.crownSlopingShoulderCount).toBe(2);
+    expect(stone.extras.crownFlatCapCount).toBe(16);
     const animatedNodes = new Set(gltf.animations[0].channels.map((channel) => channel.target.node));
     expect(animatedNodes.has(gltf.nodes.indexOf(outcrop))).toBe(false);
   });

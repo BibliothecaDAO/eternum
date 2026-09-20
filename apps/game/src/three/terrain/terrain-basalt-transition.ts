@@ -52,7 +52,8 @@ export class SurfaceBasaltTransition {
     const col = Math.round(x / SPACING_X - z / SPACING_Z / 2);
     const row = Math.round(z / SPACING_Z);
     const variation = ((((col * 73 + row * 151 + col * row * 17) % 251) + 251) % 251) / 251;
-    return 1 - smoothstep(0.13, 0.29 + variation * 0.19, distance);
+    // Fade complete slabs near the boundary, then dissolve the first neighbouring ring.
+    return 1 - smoothstep(-0.035, 0.24 + variation * 0.08, distance);
   }
 
   private distanceFromPatch(x: number, z: number, cell: Pick<TerrainCellInput, "col" | "row">): number {

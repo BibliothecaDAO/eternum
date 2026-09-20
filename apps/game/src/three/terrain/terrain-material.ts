@@ -28,7 +28,7 @@ import {
 } from "three/tsl";
 import { MeshPhysicalNodeMaterial, MeshStandardNodeMaterial } from "three/webgpu";
 
-import { createBasaltSurfaceColor } from "./terrain-ethereal-material";
+import { createBasaltSurface } from "./terrain-ethereal-material";
 import { terrainHexEdgeDistance } from "./terrain-hex-node";
 import type { TerrainGroundTextures } from "./terrain-ground-textures";
 import {
@@ -371,7 +371,9 @@ function shadeWithSurfaceBasalt(ground: Node<"vec3">, grassContrast: Node<"float
     const result = shadeTerrainSurface(ground, grassContrast).toVar();
     const weight = attribute<"float">("terrainBasaltWeight", "float");
     If(weight.greaterThan(0), () => {
-      result.assign(mix(result, applyGameEndFrost(createBasaltSurfaceColor(positionWorld.xz, vec3(1))), weight));
+      const basalt = createBasaltSurface(positionWorld.xz);
+      const coverage = weight.mul(mix(basalt.softEdge, 1, smoothstep(0.55, 1, weight)));
+      result.assign(mix(result, applyGameEndFrost(basalt.color), coverage));
     });
     return result;
   })();
