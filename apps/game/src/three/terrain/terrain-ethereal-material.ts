@@ -1,71 +1,67 @@
-import { applyGameEndFrost, mapAnimationTime as time } from "../effects/game-end-freeze";
-import { NormalRGPacking } from "three";
+import { applyGameEndFrost } from "../effects/game-end-freeze";
 import type Node from "three/src/nodes/core/Node.js";
-import type UniformNode from "three/src/nodes/core/UniformNode.js";
-import {
-  color,
-  fwidth,
-  int,
-  mix,
-  mx_noise_float,
-  normalMap,
-  positionWorld,
-  smoothstep,
-  texture,
-  uv,
-  vec2,
-  vec3,
-} from "three/tsl";
+import { attribute, color, float, fwidth, mix, positionWorld, smoothstep, vec2, vec3 } from "three/tsl";
 import { MeshStandardNodeMaterial } from "three/webgpu";
-
 import { createEtherealSurfacePalette } from "./ethereal-surface-palette";
-import { terrainHexEdgeDistance } from "./terrain-hex-node";
-import { TERRAIN_GROUND_SURFACE_IDS } from "./terrain-ground-profile";
-import type { TerrainGroundTextures } from "./terrain-ground-textures";
+import { BASALT_BLOCK_RADIUS } from "./terrain-basalt";
 
-const STONE_LAYER = TERRAIN_GROUND_SURFACE_IDS.indexOf("stone");
-const DUST_LAYER = TERRAIN_GROUND_SURFACE_IDS.indexOf("dry-earth");
-
-/** The alternate layer changes terrain presentation without inventing a gameplay biome. */
-export function createEtherealTerrainMaterial(
-  textures: TerrainGroundTextures,
-  groundMotion: UniformNode<"float", number>,
-): MeshStandardNodeMaterial {
-  const material = new MeshStandardNodeMaterial({ metalness: 0, roughness: 1 });
-  material.name = "terrain-ethereal";
-  const palette = createEtherealSurfacePalette();
-  const ground = positionWorld.xz;
-  const drift = time.mul(groundMotion);
-  const cloud = mx_noise_float(vec3(ground.mul(0.38), 0))
-    .mul(0.5)
-    .add(0.5);
-  const stoneUv = uv().mul(0.52);
-  const dustUv = uv().mul(0.31).add(vec2(0.37, 0.61));
-  const stone = texture(textures.albedoHeight, stoneUv).depth(int(STONE_LAYER));
-  const dust = texture(textures.albedoHeight, dustUv).depth(int(DUST_LAYER));
-  const stoneMaterial = texture(textures.normalMaterial, stoneUv).depth(int(STONE_LAYER));
-  const dustMaterial = texture(textures.normalMaterial, dustUv).depth(int(DUST_LAYER));
-  // Pale mineral dust settles in the recesses; the existing stone atlas supplies real relief and grain.
-  const dustCover = smoothstep(0.25, 0.72, cloud.sub(stone.a.sub(0.5).mul(0.45)));
-  const stoneColor = stone.rgb.mul(color("#8b91b0"));
-  const dustColor = dust.rgb.mul(color("#8994b5"));
-  const base = mix(stoneColor, dustColor, dustCover.mul(0.72));
-  const flowingCloud = mx_noise_float(vec3(ground.mul(0.26), drift.mul(0.035)))
-    .mul(0.5)
-    .add(0.5);
-  const energy = createEtherealEnergy(ground, drift, flowingCloud);
-  const edgeDistance = terrainHexEdgeDistance(ground);
-  const border = smoothstep(0.006, fwidth(edgeDistance).max(0.001).add(0.006), edgeDistance).oneMinus();
-  material.colorNode = applyGameEndFrost(base);
-  // Emission keeps the void's identity through the day cycle without specular glare.
-  material.emissiveNode = base.mul(0.16).add(energy.mul(0.38)).add(color(palette.glowColor).mul(border).mul(0.035));
-  const surfaceMaterial = mix(stoneMaterial, dustMaterial, dustCover.mul(0.72));
-  const surfaceNormal = normalMap(vec3(surfaceMaterial.rg, 1), vec2(0.6));
-  surfaceNormal.unpackNormalMode = NormalRGPacking;
-  material.normalNode = surfaceNormal;
-  material.roughnessNode = surfaceMaterial.b.clamp(0.84, 1);
-  material.aoNode = mix(1, surfaceMaterial.a, 0.4);
+/** One surface treatment at every zoom and on both occupied and unoccupied tiles. */
+export function createEtherealTerrainMaterial(): MeshStandardNodeMaterial {
+  const material = new MeshStandardNodeMaterial({ metalness: 0, roughness: 0.9 });
+  material.name = "terrain-ethereal-basalt";
+  material.colorNode = applyGameEndFrost(
+    createBasaltSurface(positionWorld.xz).color.mul(attribute("terrainColor", "vec3")),
+  );
   return material;
+}
+
+/** Shared with surface-biome transitions; ground coordinates must be world aligned. */
+export function createBasaltSurface(ground: Node<"vec2">): { color: Node<"vec3">; softEdge: Node<"float"> } {
+  const radius = BASALT_BLOCK_RADIUS;
+  const spacing = vec2(Math.sqrt(3) * radius, 3 * radius);
+  const a = ground.sub(ground.div(spacing).round().mul(spacing));
+  const staggered = ground.sub(spacing.mul(0.5));
+  const b = staggered.sub(staggered.div(spacing).round().mul(spacing));
+  const delta = a.dot(a).lessThanEqual(b.dot(b)).select(a, b);
+  const blockCenter = ground.sub(delta);
+  const row = blockCenter.y.div(1.5 * radius).round();
+  const col = blockCenter.x
+    .div(Math.sqrt(3) * radius)
+    .sub(row.mul(0.5))
+    .round();
+  // Bound the arithmetic for stable signed-coordinate hashes on both graphics backends.
+  const q = col.mod(97).add(97).mod(97);
+  const r = row.mod(89).add(89).mod(89);
+  const variation = q.mul(114).add(r.mul(218)).add(q.mul(r).mul(17)).mod(251).div(251);
+  const gapVariation = q.mul(37).add(r.mul(83)).add(q.mul(r).mul(11)).mod(251).div(251);
+  const distance = delta.x
+    .abs()
+    .max(
+      delta.x
+        .mul(0.5)
+        .add(delta.y.mul(Math.sqrt(3) / 2))
+        .abs(),
+    )
+    .max(
+      delta.x
+        .mul(-0.5)
+        .add(delta.y.mul(Math.sqrt(3) / 2))
+        .abs(),
+    );
+  // Individual regular hexagons retain their shape; only the narrow joint width varies.
+  // Derivatives antialias the fixed world-space edge rather than changing its width with zoom.
+  const inset = gapVariation.mul(0.006).add(0.008);
+  const slabEdge = float(radius)
+    .sub(inset)
+    .mul(Math.sqrt(3) / 2);
+  const pixel = fwidth(distance).mul(0.5).max(0.0001);
+  const slab = smoothstep(slabEdge.sub(pixel), slabEdge.add(pixel), distance).oneMinus();
+  const stone = vec3(0.035, 0.04, 0.049).mul(variation.mul(0.3).add(0.85));
+  return {
+    color: mix(vec3(0.011, 0.014, 0.02), stone, slab),
+    // Outer mineral traces dissolve into their host biome instead of ending in hard polygon edges.
+    softEdge: smoothstep((radius * Math.sqrt(3)) / 2 - 0.045, (radius * Math.sqrt(3)) / 2, distance).oneMinus(),
+  };
 }
 
 /** Reuse the existing cloud field in fog: no extra noise samples, geometry, or hidden world data. */

@@ -9,10 +9,31 @@ const input = (biomes = new Map<number, string>()) => ({
   cells,
   getProjectedBiome: (col: number) => biomes.get(col),
   isOccupied: () => false,
+  getSurfacePresentation: (): "ethereal" | undefined => undefined,
   simulateAllExplored: false,
 });
 
 describe("worldmap authoritative terrain content", () => {
+  it("derives a spire surface from current occupancy without changing its biome or neighboring cells", () => {
+    const content = new WorldmapTerrainContent();
+    const biomes = new Map([
+      [11, "Snow"],
+      [12, "Grassland"],
+    ]);
+    let spireCol: number | undefined = 11;
+    const capture = () =>
+      content.capture({
+        ...input(biomes),
+        isOccupied: (col) => col === spireCol,
+        getSurfacePresentation: (col) => (col === spireCol ? "ethereal" : undefined),
+      });
+    expect(capture().cells).toEqual([
+      { biomeKey: "Snow", col: 11, row: 0, occupied: true, surfacePresentation: "ethereal" },
+      { biomeKey: "Grassland", col: 12, row: 0, occupied: false, surfacePresentation: undefined },
+    ]);
+    spireCol = undefined;
+    expect(capture().cells[0]).toMatchObject({ biomeKey: "Snow", occupied: false, surfacePresentation: undefined });
+  });
   it("keeps subsequent camera captures atomic until the authoritative change completes", () => {
     const content = new WorldmapTerrainContent();
     expect(content.capture(input()).commitMode).toBe("ambient");

@@ -26,6 +26,7 @@ export interface WorldmapTerrainSourceCellRef {
   biomeKey: string;
   instanceIndex: number;
   occupied?: boolean;
+  surfacePresentation?: "ethereal";
 }
 
 export interface WorldmapTerrainCellRef extends WorldmapTerrainSourceCellRef {

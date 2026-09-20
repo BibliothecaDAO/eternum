@@ -15,7 +15,14 @@ const presentation = (
   chunkKey: string,
   kind: "exact" | "provisional",
   transitionToken: number,
-  cells: Array<{ col: number; row: number; biomeKey: string; instanceIndex: number; authoritative?: boolean }>,
+  cells: Array<{
+    col: number;
+    row: number;
+    biomeKey: string;
+    instanceIndex: number;
+    authoritative?: boolean;
+    surfacePresentation?: "ethereal";
+  }>,
 ): WorldmapTerrainPresentation<string> => ({
   chunkKey,
   kind,
@@ -48,7 +55,7 @@ describe("worldmap terrain presentation runtime", () => {
       { col: 2, row: 0, biomeKey: "Outline", instanceIndex: 1 },
     ]);
     const activeExact = presentation("24,0", "exact", 8, [
-      { col: 1, row: 0, biomeKey: "Beach", instanceIndex: 0, authoritative: true },
+      { col: 1, row: 0, biomeKey: "Beach", instanceIndex: 0, authoritative: true, surfacePresentation: "ethereal" },
     ]);
 
     const composite = composeWorldmapTerrainPresentations({
@@ -66,6 +73,7 @@ describe("worldmap terrain presentation runtime", () => {
       ["0,0", "Grassland", "0,0"],
     ]);
     expect(composite.cellsByBiome.get("Beach")?.[0].instanceIndex).toBe(0);
+    expect(composite.cellsByBiome.get("Beach")?.[0].surfacePresentation).toBe("ethereal");
     expect(composite.cellsByBiome.get("Outline")?.[0].instanceIndex).toBe(0);
     expect(composite.cellsByBiome.get("Grassland")?.[0].instanceIndex).toBe(0);
   });

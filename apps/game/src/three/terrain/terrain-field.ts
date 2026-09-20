@@ -3,6 +3,9 @@ import { BiomeType, BiomeTypeToId } from "@bibliothecadao/types/terrain";
 import { Color } from "three/src/math/Color.js";
 
 import { TERRAIN_FOG_GROUND_HEIGHT } from "./terrain-fog-style";
+import { SurfaceBasaltTransition } from "./terrain-basalt-transition";
+import { sampleBasaltSurface } from "./terrain-basalt";
+import { isEtherealTerrainCell } from "./terrain-surface-presentation";
 import { TerrainNoise } from "./terrain-noise";
 import { TERRAIN_BIOME_ART_DIRECTIONS, type TerrainBiomeArtDirection } from "./terrain-biome-art-direction";
 import {
@@ -105,6 +108,7 @@ export class TerrainField {
   private readonly sampleByKey = new Map<string, CellFieldSample>();
   private readonly candidatesByKey = new Map<string, CellFieldSample[]>();
   private readonly noise: TerrainNoise;
+  readonly basaltTransition: SurfaceBasaltTransition;
   private biomeMismatchCount: number | null = null;
   private readonly settlements: Array<{
     centerX: number;
@@ -115,6 +119,7 @@ export class TerrainField {
   private lastRoadSample: { x: number; z: number; distance: number } | null = null;
 
   constructor(private readonly request: TerrainPageRequest) {
+    this.basaltTransition = new SurfaceBasaltTransition(request);
     request.halo.forEach(requireConsistentTerrainCellExploration);
     request.cells.forEach(requireConsistentTerrainCellExploration);
     request.halo.forEach((cell) => this.cellByKey.set(terrainCellKey(cell.col, cell.row), cell));
@@ -269,6 +274,10 @@ export class TerrainField {
 
   sampleSurface(worldX: number, worldZ: number): TerrainSurfaceSample {
     const owner = findNearestTerrainHex(worldX, worldZ);
+    const cell = this.getCell(owner.col, owner.row);
+    if (cell?.explored && isEtherealTerrainCell(this.request, cell)) {
+      return { ...sampleBasaltSurface(), biome: cell.biome };
+    }
     if (this.getCell(owner.col, owner.row)?.explored === false) {
       return { biome: null, height: TERRAIN_FOG_GROUND_HEIGHT, normal: [0, 1, 0] };
     }
@@ -636,9 +645,9 @@ export class TerrainField {
     relief: number,
     candidates: readonly CellFieldSample[],
   ): number {
-    if (this.request.flatSurface) return TERRAIN_FOG_GROUND_HEIGHT;
     const detail = (this.noise.sample(worldX * 0.7, worldZ * 0.7, "terrain-relief-v1") - 0.5) * 2 * relief;
-    return this.applyStructurePad(worldX, worldZ, baseHeight + detail, candidates);
+    const height = this.applyStructurePad(worldX, worldZ, baseHeight + detail, candidates);
+    return this.basaltTransition.blendHeight(worldX, worldZ, height);
   }
 
   private resolveMacroLandformOffset(worldX: number, worldZ: number, direction: TerrainBiomeArtDirection): number {

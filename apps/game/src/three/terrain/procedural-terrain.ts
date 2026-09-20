@@ -4,6 +4,7 @@ import {
   BufferAttribute,
   BufferGeometry,
   Box3,
+  Matrix4,
   Group,
   InstancedMesh,
   Mesh,
@@ -13,11 +14,14 @@ import {
   type Object3D,
   type Raycaster,
 } from "three";
+import { createInstancedMesh } from "../utils/create-instanced-mesh";
 
-import { MeshStandardNodeMaterial } from "three/webgpu";
+import { MeshBasicNodeMaterial, MeshStandardNodeMaterial } from "three/webgpu";
 
+import { BASALT_SUPPORT_HEIGHT, buildBasaltShell } from "./terrain-basalt";
 import { findNearestTerrainHex } from "./terrain-coordinates";
 import { TerrainField } from "./terrain-field";
+import { createEtherealBorderMaterial } from "./terrain-ethereal-border-material";
 import { createEtherealTerrainMaterial } from "./terrain-ethereal-material";
 import type { TerrainFogMask } from "./terrain-fog-mask";
 import { acquireTerrainGroundTextures, type TerrainGroundTextureHandle } from "./terrain-ground-textures";
@@ -36,6 +40,7 @@ import {
 } from "./terrain-movement-effects";
 import type {
   PreparedTerrainPage,
+  TerrainBorderBuffers,
   TerrainGeometryBuffers,
   TerrainPageRequest,
   TerrainSurfaceSample,
@@ -93,7 +98,9 @@ export class ProceduralTerrain {
   private readonly presentationGroup = new Group();
   private groundTextureDetailEnabled = true;
   private groundTextureMaterial: TerrainMaterials["land"] | null = null;
-  private etherealMaterial: TerrainMaterials["land"] | null = null;
+  private readonly etherealMaterial = createEtherealTerrainMaterial();
+  private basaltGeometry: BufferGeometry | null = null;
+  private readonly etherealBorders = createEtherealBorderMaterial();
   private surfacePresentation: "world" | "ethereal" = "world";
   private groundTextureHandle: TerrainGroundTextureHandle | null = null;
   private groundTexturesPromise: Promise<TerrainGroundTextureHandle> | null = null;
@@ -125,6 +132,8 @@ export class ProceduralTerrain {
     this.materials = createTerrainMaterials();
     this.fogField.applyRevealToMaterial(this.materials.flatLand);
     this.fogField.applyRevealToMaterial(this.materials.water);
+    this.fogField.applyRevealToMaterial(this.etherealMaterial);
+    this.fogField.applyRevealToMaterial(this.etherealBorders.material);
     this.setQualityTier(this.qualityTier);
     this.releaseAppearance = useWorldAppearanceStore.subscribe(() => this.applyAppearance());
   }
@@ -207,15 +216,8 @@ export class ProceduralTerrain {
   setSurfacePresentation(presentation: "world" | "ethereal"): void {
     this.requireActive();
     if (presentation === this.surfacePresentation) return;
-    if (presentation === "ethereal" && !this.etherealMaterial) {
-      if (!this.groundTextureHandle) throw new Error("Load ground textures before presenting the Ethereal layer");
-      this.etherealMaterial = createEtherealTerrainMaterial(
-        this.groundTextureHandle.textures,
-        this.materials.groundMotion,
-      );
-      this.fogField.applyRevealToMaterial(this.etherealMaterial);
-    }
     this.surfacePresentation = presentation;
+    this.fogField.setSurfacePresentation(presentation);
     this.refreshGroundMaterial();
     this.applyAppearance();
   }
@@ -237,6 +239,7 @@ export class ProceduralTerrain {
     const { fogStyle, reducedMotion } = useWorldAppearanceStore.getState();
     const profile = TERRAIN_QUALITY_PROFILES[this.qualityTier];
     const motion = reducedMotion ? 0 : 1;
+    this.etherealBorders.motion.value = motion;
     this.fogField.setStyle(fogStyle);
     this.fogField.setReducedMotion(reducedMotion);
     this.fogField.setQuality(profile.fogMotionStrength * motion, profile.fogMistStrength);
@@ -384,7 +387,17 @@ export class ProceduralTerrain {
 
   summarize(preparedPages: readonly PreparedTerrainPage[]): TerrainPresentationDiagnostics {
     this.requireActive();
-    return summarizePresentation(preparedPages, this.getPropStats(), this.getShroudStats());
+    const summary = summarizePresentation(preparedPages, this.getPropStats(), this.getShroudStats());
+    if (this.basaltGeometry) summary.geometryBytes += countBufferGeometryBytes(this.basaltGeometry);
+    for (const prepared of preparedPages) {
+      const group = this.pages.get(prepared.request.pageKey)?.group;
+      if (!group || !prepared.basaltInstances) continue;
+      group.traverse((object) => {
+        if (!(object instanceof InstancedMesh) || !object.userData.basaltInstances) return;
+        summary.geometryBytes += object.instanceMatrix.array.byteLength;
+      });
+    }
+    return summary;
   }
 
   refreshPropOccupancy(isOccupied: (col: number, row: number) => boolean): void {
@@ -440,6 +453,8 @@ export class ProceduralTerrain {
     this.releaseAppearance();
     this.pages.forEach(disposePageGeometry);
     this.pages.clear();
+    this.basaltGeometry?.dispose();
+    this.basaltGeometry = null;
     this.presentationGroup.clear();
     this.object3d.clear();
     this.pageWorker?.dispose();
@@ -456,6 +471,7 @@ export class ProceduralTerrain {
         this.materials.water,
         this.groundTextureMaterial,
         this.etherealMaterial,
+        this.etherealBorders.material,
       ].filter(Boolean),
     ).forEach((material) => material!.dispose());
     this.groundTextureHandle?.release();
@@ -525,7 +541,15 @@ export class ProceduralTerrain {
     const group = new Group();
     group.name = `terrain-page:${preparedPage.request.pageKey}`;
     try {
-      group.add(createTerrainMesh(preparedPage.buffers, this.materials.land, "land"));
+      if (preparedPage.buffers.indices.length)
+        group.add(createTerrainMesh(preparedPage.buffers, this.materials.land, "land"));
+      if (preparedPage.basaltInstances) {
+        this.basaltGeometry ??= createBasaltGeometry();
+        group.add(createBasaltPageMesh(preparedPage.basaltInstances, this.etherealMaterial, this.basaltGeometry));
+      }
+      if (preparedPage.borderBuffers) {
+        group.add(createBorderMesh(preparedPage.borderBuffers, this.etherealBorders.material));
+      }
       if (preparedPage.waterBuffers) {
         group.add(createTerrainMesh(preparedPage.waterBuffers, this.materials.water, "water"));
       }
@@ -566,17 +590,79 @@ export class ProceduralTerrain {
 
   private refreshGroundMaterial(): void {
     this.materials.land =
-      this.surfacePresentation === "ethereal" && this.etherealMaterial
-        ? this.etherealMaterial
-        : this.groundTextureDetailEnabled && this.groundTextureMaterial
-          ? this.groundTextureMaterial
-          : this.materials.flatLand;
+      this.groundTextureDetailEnabled && this.groundTextureMaterial
+        ? this.groundTextureMaterial
+        : this.materials.flatLand;
     this.applyLandMaterial();
   }
 
   private requireActive(): void {
     if (this.disposed) throw new Error("ProceduralTerrain has been disposed");
   }
+}
+
+function createBasaltPageMesh(
+  tiles: Float32Array,
+  material: MeshStandardNodeMaterial,
+  geometry: BufferGeometry,
+): InstancedMesh {
+  const mesh = createInstancedMesh(geometry, material, tiles.length / 2);
+  mesh.name = "procedural-terrain-basalt";
+  mesh.boundingSphere = basaltPageBounds(tiles);
+  mesh.receiveShadow = true;
+  mesh.userData.basaltInstances = true;
+  mesh.raycast = disableTerrainRaycast;
+  const matrix = new Matrix4();
+  for (let index = 0; index < tiles.length; index += 2)
+    mesh.setMatrixAt(index / 2, matrix.makeTranslation(tiles[index], 0, tiles[index + 1]));
+  mesh.instanceMatrix.needsUpdate = true;
+  // Keep createInstancedMesh's first-draw backend setup hook intact.
+  return mesh;
+}
+
+function createBasaltGeometry(): BufferGeometry {
+  const source = buildBasaltShell();
+  const geometry = new BufferGeometry();
+  geometry.setIndex(new BufferAttribute(new Uint16Array(source.indices), 1));
+  geometry.setAttribute("position", new BufferAttribute(new Float32Array(source.positions), 3));
+  geometry.setAttribute("normal", new BufferAttribute(new Float32Array(source.normals), 3));
+  geometry.setAttribute("terrainColor", new BufferAttribute(new Float32Array(source.colors), 3));
+  geometry.userData.sharedBasalt = true;
+  return geometry;
+}
+
+function basaltPageBounds(tiles: Float32Array): Sphere {
+  const box = new Box3();
+  for (let index = 0; index < tiles.length; index += 2) {
+    box.expandByPoint(new Vector3(tiles[index] - 1, 0, tiles[index + 1] - 1));
+    box.expandByPoint(new Vector3(tiles[index] + 1, BASALT_SUPPORT_HEIGHT, tiles[index + 1] + 1));
+  }
+  return box.getBoundingSphere(new Sphere());
+}
+
+function countBufferGeometryBytes(geometry: BufferGeometry): number {
+  return (
+    Object.values(geometry.attributes).reduce((sum, attribute) => sum + attribute.array.byteLength, 0) +
+    (geometry.index?.array.byteLength ?? 0)
+  );
+}
+
+function createBorderMesh(buffers: TerrainBorderBuffers, material: MeshBasicNodeMaterial): Mesh {
+  const geometry = new BufferGeometry();
+  geometry.name = "procedural-terrain-borders";
+  geometry.setIndex(new BufferAttribute(buffers.indices, 1));
+  geometry.setAttribute("position", new BufferAttribute(buffers.positions, 3));
+  geometry.setAttribute("normal", new BufferAttribute(buffers.normals, 3));
+  geometry.setAttribute("uv", new BufferAttribute(buffers.uvs, 2));
+  geometry.setAttribute("terrainColor", new BufferAttribute(buffers.colors, 3));
+  geometry.boundingBox = new Box3(new Vector3(...buffers.bounds.boxMin), new Vector3(...buffers.bounds.boxMax));
+  geometry.boundingSphere = new Sphere(new Vector3(...buffers.bounds.sphereCenter), buffers.bounds.sphereRadius);
+
+  const mesh = new Mesh(geometry, material);
+  mesh.name = "procedural-terrain-borders";
+  mesh.renderOrder = 2;
+  mesh.raycast = disableTerrainRaycast;
+  return mesh;
 }
 
 function createTerrainMesh(
@@ -591,6 +677,10 @@ function createTerrainMesh(
     geometry.setAttribute("position", new BufferAttribute(buffers.positions, 3));
     geometry.setAttribute("normal", new BufferAttribute(buffers.normals, 3));
     geometry.setAttribute("uv", new BufferAttribute(buffers.uvs, 2));
+    geometry.setAttribute(
+      "terrainBasaltWeight",
+      new BufferAttribute(buffers.basaltWeights ?? new Float32Array(buffers.positions.length / 3), 1),
+    );
     geometry.setAttribute("terrainColor", new BufferAttribute(buffers.colors, 3));
     geometry.setAttribute("terrainRoughness", new BufferAttribute(buffers.roughness, 1));
     geometry.setAttribute("terrainShore", new BufferAttribute(buffers.shore, 1));
@@ -627,7 +717,7 @@ function disposePageGeometry(page: PresentedTerrainPage): void {
 function disposePageGroup(group: Group): void {
   group.traverse((object) => {
     if (object instanceof InstancedMesh) object.dispose();
-    if (object instanceof Mesh) object.geometry.dispose();
+    if (object instanceof Mesh && !object.geometry.userData.sharedBasalt) object.geometry.dispose();
   });
   group.clear();
 }

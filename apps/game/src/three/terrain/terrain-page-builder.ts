@@ -1,3 +1,6 @@
+import { BASALT_SHELL_TRIANGLES, BASALT_SHELL_VERTICES } from "./terrain-basalt";
+import { type SurfaceBasaltTransition, visitSurfaceBasaltSlabs } from "./terrain-basalt-transition";
+import { buildEtherealBorderCell } from "./terrain-ethereal-borders";
 import {
   terrainHexCorners,
   terrainHexToWorld,
@@ -6,17 +9,23 @@ import {
   type TerrainWorldCoordinate,
 } from "./terrain-coordinates";
 import { TERRAIN_FOG_GROUND_HEIGHT } from "./terrain-fog-style";
+import { normalizeTerrainGroundWeights } from "./terrain-ground-profile";
 import { TerrainField, type TerrainVisualSample } from "./terrain-field";
 import { PRODUCTION_TERRAIN_PROP_DENSITY_MULTIPLIER, prepareTerrainPropInstances } from "./terrain-props";
 import { prepareTerrainShroudInstances } from "./terrain-shroud";
 import { applySettlementIslands } from "./terrain-settlement-ground";
 import type {
   PreparedTerrainPage,
+  TerrainBorderBuffers,
   TerrainCellInput,
   TerrainGeometryBuffers,
   TerrainPageRequest,
 } from "./terrain-types";
-import { PROCEDURAL_TERRAIN_STYLE_VERSION, getTerrainGeometryBufferViews } from "./terrain-types";
+import {
+  PROCEDURAL_TERRAIN_STYLE_VERSION,
+  getTerrainBorderBufferViews,
+  getTerrainGeometryBufferViews,
+} from "./terrain-types";
 import {
   isTerrainWaterBiome,
   isTerrainWaterCovered,
@@ -27,6 +36,7 @@ import {
 } from "./terrain-water";
 
 interface GeometryAccumulator {
+  basaltWeights: number[];
   biomeIds: number[];
   colors: number[];
   explored: number[];
@@ -76,14 +86,24 @@ export function prepareTerrainPage(request: TerrainPageRequest): PreparedTerrain
   const vertexSampler = new TerrainVertexSampler(field);
   const land = createGeometryAccumulator();
   const water = createGeometryAccumulator();
+  const basalt: number[] = [];
+  const borders = createBorderAccumulator();
   let fogTerrainCells = 0;
   let frontierEdges = 0;
 
   for (const cell of canonicalCells(request.cells)) {
     if (cell.explored && cell.biome) {
-      appendCellPatch(land, vertexSampler, cell, subdivisions);
+      if (request.surfacePresentation === "ethereal") {
+        const center = terrainHexToWorld(cell.col, cell.row);
+        basalt.push(center.x, center.z);
+        appendBorderCell(borders, buildEtherealBorderCell(cell.col, cell.row));
+        continue;
+      }
+      if (field.basaltTransition.affects(cell))
+        appendSurfaceBasaltPatch(land, vertexSampler, field.basaltTransition, cell, subdivisions);
+      else appendCellPatch(land, vertexSampler, cell, subdivisions);
       if (shouldAppendWaterCellPatch(field, cell)) appendWaterCellPatch(water, vertexSampler, cell, subdivisions);
-      if (!request.flatSurface) frontierEdges += appendFrontierSkirts(land, field, cell);
+      frontierEdges += appendFrontierSkirts(land, field, cell);
       continue;
     }
     fogTerrainCells += 1;
@@ -92,14 +112,30 @@ export function prepareTerrainPage(request: TerrainPageRequest): PreparedTerrain
 
   const buffers = finalizeGeometry(land);
   const waterBuffers = water.positions.length > 0 ? finalizeGeometry(water) : null;
+  const basaltInstances = basalt.length ? new Float32Array(basalt) : null;
+  const borderBuffers = borders.positions.length ? finalizeBorders(borders) : null;
   const propInstances = prepareTerrainPropInstances(request, field);
   const shroudInstances = prepareTerrainShroudInstances(request, field);
-  const geometryBytes = countGeometryBytes(buffers) + (waterBuffers ? countGeometryBytes(waterBuffers) : 0);
-  const fingerprint = fingerprintPreparedPage(request, buffers, waterBuffers, propInstances, shroudInstances);
+  const geometryBytes =
+    countGeometryBytes(buffers) +
+    (waterBuffers ? countGeometryBytes(waterBuffers) : 0) +
+    (borderBuffers ? countViewBytes(getTerrainBorderBufferViews(borderBuffers)) : 0) +
+    (basaltInstances?.byteLength ?? 0);
+  const fingerprint = fingerprintPreparedPage(
+    request,
+    buffers,
+    waterBuffers,
+    propInstances,
+    shroudInstances,
+    basaltInstances,
+    borderBuffers,
+  );
   const prepareMs = performance.now() - startedAt;
 
   return {
     buffers,
+    basaltInstances,
+    borderBuffers,
     diagnostics: {
       biomeMismatchCount: field.getBiomeMismatchCount(),
       exploredSurfaceSamples: vertexSampler.exploredSamples,
@@ -110,8 +146,13 @@ export function prepareTerrainPage(request: TerrainPageRequest): PreparedTerrain
       roadSegments: request.roadSegments.length,
       settlementSites: request.settlementAnchors.length,
       shroudInstances: shroudInstances.length,
-      triangles: (buffers.indices.length + (waterBuffers?.indices.length ?? 0)) / 3,
-      vertices: (buffers.positions.length + (waterBuffers?.positions.length ?? 0)) / 3,
+      triangles:
+        [buffers, waterBuffers, borderBuffers].reduce((sum, geometry) => sum + (geometry?.indices.length ?? 0), 0) / 3 +
+        (basalt.length / 2) * BASALT_SHELL_TRIANGLES,
+      vertices:
+        [buffers, waterBuffers, borderBuffers].reduce((sum, geometry) => sum + (geometry?.positions.length ?? 0), 0) /
+          3 +
+        (basalt.length / 2) * BASALT_SHELL_VERTICES,
     },
     fingerprint,
     propInstances,
@@ -223,6 +264,86 @@ function appendWaterVertex(target: GeometryAccumulator, vertex: SampledWaterVert
     },
     vertex.waterDepth,
   );
+}
+
+function appendSurfaceBasaltPatch(
+  target: GeometryAccumulator,
+  sampler: TerrainVertexSampler,
+  transition: SurfaceBasaltTransition,
+  cell: TerrainCellInput,
+  subdivisions: number,
+): void {
+  const boundary = terrainHexCorners(cell.col, cell.row);
+  visitSurfaceBasaltSlabs(
+    cell,
+    (polygon, center) => {
+      const weight = transition.slabWeight(center.x, center.z, cell);
+      const indices = polygon.map((point) => {
+        const sample = sampleSurfaceBasaltVertex(sampler, cell, point, boundary, subdivisions);
+        return appendVertex(target, point, sample, 0, weight);
+      });
+      const centroid = {
+        x: polygon.reduce((sum, p) => sum + p.x, 0) / polygon.length,
+        z: polygon.reduce((sum, p) => sum + p.z, 0) / polygon.length,
+      };
+      const centerIndex = appendVertex(target, centroid, sampler.sample(cell, centroid), 0, weight);
+      for (let i = 0; i < indices.length; i++)
+        target.indices.push(centerIndex, indices[(i + 1) % indices.length], indices[i]);
+    },
+    subdivisions,
+  );
+}
+
+function sampleSurfaceBasaltVertex(
+  sampler: TerrainVertexSampler,
+  cell: TerrainCellInput,
+  point: TerrainWorldCoordinate,
+  boundary: TerrainWorldCoordinate[],
+  subdivisions: number,
+): TerrainVisualSample {
+  const sample = sampler.sample(cell, point);
+  for (let edge = 0; edge < 6; edge++) {
+    const start = boundary[edge],
+      end = boundary[(edge + 1) % 6];
+    const dx = end.x - start.x,
+      dz = end.z - start.z;
+    if (Math.abs(dx * (point.z - start.z) - dz * (point.x - start.x)) > 2e-6) continue;
+    // Every gameplay edge follows the same coarse triangles, independent of page split or neighbour style.
+    const progress =
+      Math.max(0, Math.min(1, ((point.x - start.x) * dx + (point.z - start.z) * dz) / (dx * dx + dz * dz))) *
+      subdivisions;
+    const lower = Math.min(subdivisions - 1, Math.floor(progress));
+    const at = (step: number) =>
+      sampler.sample(cell, {
+        x: snapTerrainCoordinate(start.x + (dx * step) / subdivisions),
+        z: snapTerrainCoordinate(start.z + (dz * step) / subdivisions),
+      });
+    return interpolateTerrainSample(sample, at(lower), at(lower + 1), progress - lower);
+  }
+  return sample;
+}
+
+function interpolateTerrainSample(
+  sample: TerrainVisualSample,
+  a: TerrainVisualSample,
+  b: TerrainVisualSample,
+  t: number,
+): TerrainVisualSample {
+  const lerp = (left: number, right: number) => left + (right - left) * t;
+  const vector = (left: readonly number[], right: readonly number[]) =>
+    left.map((value, index) => lerp(value, right[index]));
+  const normal = vector(a.normal, b.normal);
+  const normalLength = Math.hypot(...normal);
+  return {
+    ...sample,
+    height: lerp(a.height, b.height),
+    normal: normal.map((value) => value / normalLength) as [number, number, number],
+    color: vector(a.color, b.color) as [number, number, number],
+    groundWeights: normalizeTerrainGroundWeights(vector(a.groundWeights, b.groundWeights)),
+    roughness: lerp(a.roughness, b.roughness),
+    shore: lerp(a.shore, b.shore),
+    uvOffset: vector(a.uvOffset, b.uvOffset) as [number, number],
+  };
 }
 
 function appendCellPatch(
@@ -360,8 +481,10 @@ function appendVertex(
   point: TerrainWorldCoordinate,
   sample: TerrainVisualSample,
   waterDepth = 0,
+  basaltWeight = 0,
 ): number {
   const index = target.positions.length / 3;
+  target.basaltWeights.push(basaltWeight);
   target.positions.push(point.x, sample.height, point.z);
   target.uvs.push(point.x + sample.uvOffset[0], point.z + sample.uvOffset[1]);
   target.normals.push(...sample.normal);
@@ -380,6 +503,7 @@ function appendVertex(
 
 function createGeometryAccumulator(): GeometryAccumulator {
   return {
+    basaltWeights: [],
     biomeIds: [],
     colors: [],
     explored: [],
@@ -399,6 +523,7 @@ function createGeometryAccumulator(): GeometryAccumulator {
 function finalizeGeometry(source: GeometryAccumulator): TerrainGeometryBuffers {
   const positions = new Float32Array(source.positions);
   return {
+    basaltWeights: new Float32Array(source.basaltWeights),
     biomeIds: new Float32Array(source.biomeIds),
     bounds: resolveGeometryBounds(positions),
     colors: new Float32Array(source.colors),
@@ -478,7 +603,11 @@ function resolveSubdivisions(value: number | undefined): number {
 }
 
 function countGeometryBytes(buffers: TerrainGeometryBuffers): number {
-  return getTerrainGeometryBufferViews(buffers).reduce((total, buffer) => total + buffer.byteLength, 0);
+  return countViewBytes(getTerrainGeometryBufferViews(buffers));
+}
+
+function countViewBytes(views: readonly ArrayBufferView[]): number {
+  return views.reduce((total, view) => total + view.byteLength, 0);
 }
 
 function fingerprintPreparedPage(
@@ -487,12 +616,14 @@ function fingerprintPreparedPage(
   water: TerrainGeometryBuffers | null,
   props: PreparedTerrainPage["propInstances"],
   shroud: PreparedTerrainPage["shroudInstances"],
+  basalt: Float32Array | null,
+  borders: TerrainBorderBuffers | null,
 ): string {
   let hash = hashString(
     JSON.stringify({
       cells: canonicalCells(request.cells),
       climate: request.climate,
-      ...(request.flatSurface ? { flatSurface: true } : {}),
+      surfacePresentation: request.surfacePresentation,
       halo: canonicalCells(request.halo),
       mapCenter: request.mapCenter,
       pageKey: request.pageKey,
@@ -507,13 +638,19 @@ function fingerprintPreparedPage(
   );
   hash = hashGeometry(land, hash);
   if (water) hash = hashGeometry(water, hash);
+  if (basalt) hash = hashViews([basalt], hash);
+  if (borders) hash = hashViews(getTerrainBorderBufferViews(borders), hash);
   return hash.toString(16).padStart(8, "0");
 }
 
 function hashGeometry(buffers: TerrainGeometryBuffers, initialHash: number): number {
+  return hashViews(getTerrainGeometryBufferViews(buffers), initialHash);
+}
+
+function hashViews(views: readonly ArrayBufferView[], initialHash: number): number {
   let hash = initialHash;
-  for (const buffer of getTerrainGeometryBufferViews(buffers)) {
-    const bytes = new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+  for (const view of views) {
+    const bytes = new Uint8Array(view.buffer, view.byteOffset, view.byteLength);
     for (const byte of bytes) hash = Math.imul(hash ^ byte, 0x01000193) >>> 0;
   }
   return hash;
@@ -525,4 +662,31 @@ function hashString(value: string): number {
     hash = Math.imul(hash ^ value.charCodeAt(index), 0x01000193) >>> 0;
   }
   return hash;
+}
+
+type BorderCell = ReturnType<typeof buildEtherealBorderCell>;
+
+function createBorderAccumulator(): BorderCell {
+  return { positions: [], normals: [], colors: [], indices: [], uvs: [] };
+}
+
+function appendBorderCell(target: BorderCell, cell: BorderCell): void {
+  const offset = target.positions.length / 3;
+  target.positions.push(...cell.positions);
+  target.normals.push(...cell.normals);
+  target.colors.push(...cell.colors);
+  target.uvs.push(...cell.uvs);
+  for (const index of cell.indices) target.indices.push(offset + index);
+}
+
+function finalizeBorders(source: BorderCell): TerrainBorderBuffers {
+  const positions = new Float32Array(source.positions);
+  return {
+    bounds: resolveGeometryBounds(positions),
+    colors: new Float32Array(source.colors),
+    indices: new Uint32Array(source.indices),
+    normals: new Float32Array(source.normals),
+    positions,
+    uvs: new Float32Array(source.uvs),
+  };
 }

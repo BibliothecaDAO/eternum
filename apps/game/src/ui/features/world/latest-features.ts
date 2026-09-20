@@ -35,6 +35,20 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-20",
+    title: "Ethereal Basalt and Neon Borders",
+    type: "feature",
+    description:
+      "Explore dark basalt slabs framed by flowing neon hex borders. Spires rise from a stepped rock outcrop to a single tip, and surface spire tiles dissolve into the neighbouring terrain.",
+  },
+  {
+    date: "2026-09-20",
+    title: "Bitcoin Block Excavations",
+    description:
+      "Bitcoin mines reveal golden digital blocks in ethereal basalt, with medieval mining equipment marking their working faces.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-20",
     title: "Illustrated Icons Across The UI",
     description:
       "Updated menus, game actions, and utility controls with detailed fantasy icons for a consistent visual style.",

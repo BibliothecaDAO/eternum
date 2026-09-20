@@ -276,7 +276,7 @@ export const ProceduralTerrainDebugView = () => {
             </label>
             {preview.biome === "ethereal" && (
               <p className="text-xs text-stone-400">
-                Ethereal / Underground — a separate world layer of fractured stone and flowing mineral energy.
+                Ethereal / Underground — dark basalt slabs with flowing neon along gameplay hex borders.
               </p>
             )}
             <label className="flex flex-col gap-1 text-sm">
