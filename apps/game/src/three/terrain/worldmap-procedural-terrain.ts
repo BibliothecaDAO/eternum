@@ -200,10 +200,11 @@ interface WorldBounds {
 }
 
 const BIOME_VALUES = new Set<string>(Object.values(BiomeType));
-// Keep ordinary out-and-back pans reusable without retaining dense or obsolete terrain revisions indefinitely.
-// Expanded basalt measured 153 MiB per page; the byte ceiling also excludes any individually oversized result.
-const PREPARED_PAGE_CACHE_LIMIT = 64;
-const PREPARED_PAGE_CACHE_BYTES_LIMIT = 64 * 1024 * 1024;
+// Out-and-back pans reuse the expensive worker result; the cache holds CPU-side typed arrays and evicts the
+// least-recently-used signatures. One byte budget replaces the former 64-page count, whose worst case retained
+// 328 MiB: a 24x24 page measures 1.80 MiB of land, 5.12 MiB of ocean and 1.14 MiB of ethereal basalt, so the budget
+// keeps four 4x4 camera windows of land and still holds a full window of open sea.
+const PREPARED_PAGE_CACHE_BYTES_LIMIT = 128 * 1024 * 1024;
 const ROAD_PAGE_PADDING = 1.5;
 const PRESENT_STEP_METRIC: Record<TerrainPresentStep, TerrainPresentStepMetric> = {
   "terrain:present:page": "presentPageTaskMaxMs",
@@ -795,18 +796,13 @@ export class WorldmapProceduralTerrain {
 
   private touchPreparedPage(signature: string, prepared: PreparedTerrainPage): void {
     this.removePreparedPage(signature);
-    // Presentation owns its own reference, even when this optional reuse cache cannot retain the page.
-    if (prepared.diagnostics.geometryBytes > PREPARED_PAGE_CACHE_BYTES_LIMIT) return;
     this.preparedBySignature.set(signature, prepared);
     this.preparedCacheBytes += prepared.diagnostics.geometryBytes;
     this.prunePreparedCache();
   }
 
   private prunePreparedCache(): void {
-    while (
-      this.preparedBySignature.size > PREPARED_PAGE_CACHE_LIMIT ||
-      this.preparedCacheBytes > PREPARED_PAGE_CACHE_BYTES_LIMIT
-    ) {
+    while (this.preparedCacheBytes > PREPARED_PAGE_CACHE_BYTES_LIMIT) {
       const oldestSignature = this.preparedBySignature.keys().next().value;
       if (oldestSignature === undefined) return;
       this.removePreparedPage(oldestSignature);

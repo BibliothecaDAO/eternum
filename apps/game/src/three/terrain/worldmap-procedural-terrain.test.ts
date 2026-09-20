@@ -459,7 +459,7 @@ describe("WorldmapProceduralTerrain", () => {
   });
 
   it("bounds the prepared-page LRU while retaining recently visited pages", async () => {
-    stubPageWorker();
+    stubCachePageSizes(2 * 1024 * 1024);
     const terrain = new WorldmapProceduralTerrain();
 
     for (let page = 0; page < 65; page += 1) {
@@ -757,7 +757,7 @@ describe("WorldmapProceduralTerrain", () => {
   });
 
   it("evicts by retained geometry bytes in LRU order without charging repeated cache hits again", async () => {
-    stubCachePageSizes(32 * 1024 * 1024);
+    stubCachePageSizes(64 * 1024 * 1024);
     const terrain = new WorldmapProceduralTerrain();
     await terrain.presentAsync(singlePageInput(0));
     await expect(terrain.presentAsync(singlePageInput(2))).resolves.toMatchObject({ preparedCachePages: 2 });
@@ -777,7 +777,7 @@ describe("WorldmapProceduralTerrain", () => {
   });
 
   it("accounts for replaced content signatures and releases its byte budget on clear", async () => {
-    stubCachePageSizes(32 * 1024 * 1024);
+    stubCachePageSizes(64 * 1024 * 1024);
     const terrain = new WorldmapProceduralTerrain();
     const first = singlePageInput(0);
     const replacement = { ...first, cells: [{ ...first.cells[0], occupied: true }] };
@@ -793,34 +793,17 @@ describe("WorldmapProceduralTerrain", () => {
     await expect(terrain.presentAsync(first)).resolves.toMatchObject({ builtPages: 0, preparedCachePages: 2 });
     terrain.dispose();
   });
-
-  it("presents an oversized page without caching it or evicting reusable smaller pages", async () => {
-    stubCachePageSizes((pageKey) => (pageKey === "0,0" ? 65 : 32) * 1024 * 1024);
-    const terrain = new WorldmapProceduralTerrain();
-    const oversized = { ...singlePageInput(0), cells: [worldCell(0, 0, BiomeType.Beach)] };
-    await terrain.presentAsync(singlePageInput(2));
-    await expect(terrain.presentAsync(oversized)).resolves.toMatchObject({ builtPages: 1, preparedCachePages: 1 });
-    const mesh = terrain.object3d.getObjectByName("procedural-terrain-land");
-    const surface = terrain.sampleSurface(0, 0);
-    expect(mesh).toBeDefined();
-    expect(terrain.getVisibleCellCount()).toBe(1);
-    await expect(terrain.presentAsync(oversized)).resolves.toMatchObject({ builtPages: 1, preparedCachePages: 1 });
-    expect(terrain.object3d.getObjectByName("procedural-terrain-land")).toBe(mesh);
-    expect(terrain.sampleSurface(0, 0)).toEqual(surface);
-    await expect(terrain.presentAsync(singlePageInput(2))).resolves.toMatchObject({ builtPages: 0 });
-    terrain.dispose();
-  });
 });
 
-/** Exercise large-page cache policy with real small pages, without allocating hundreds of megabytes in tests. */
-function stubCachePageSizes(bytes: number | ((pageKey: string) => number)): void {
+/** Exercise the cache byte budget with real small pages, without allocating hundreds of megabytes in tests. */
+function stubCachePageSizes(bytes: number): void {
   vi.spyOn(ProceduralTerrain.prototype, "preparePageAsync").mockImplementation(async (request) => {
     const page = prepareTerrainPage(request);
     return {
       ...page,
       diagnostics: {
         ...page.diagnostics,
-        geometryBytes: typeof bytes === "number" ? bytes : bytes(request.pageKey),
+        geometryBytes: bytes,
       },
     };
   });
