@@ -3,10 +3,10 @@ import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import sharp from "sharp";
 import { describe, expect, it } from "vitest";
 
 import { buildMenuIcons } from "./build-menu-icons.mjs";
+import { measureAppearanceDistance, readIconAppearanceSignature } from "./icon-image.mjs";
 import {
   APPROVED_MENU_ICON_DIRECTORY,
   loadMenuIconManifest,
@@ -14,8 +14,9 @@ import {
 } from "./menu-icon-manifest.mjs";
 import { verifyMenuIcons } from "./verify-menu-icons.mjs";
 
-// sharp/libvips produces a 2.14 RMSE for transfer.png between macOS and Linux Lanczos resampling.
-const MAX_PLATFORM_PIXEL_RMSE = 3;
+// Platform resampling noise measures under 0.4, a one-pixel subject shift measures 5 and a swapped
+// icon measures 57, so this threshold convicts a real regression without convicting the CI runner.
+const MAX_APPEARANCE_DISTANCE = 1;
 
 describe("menu icon pipeline", () => {
   it("maps each approved semantic icon to its stable public path", async () => {
@@ -34,6 +35,14 @@ describe("menu icon pipeline", () => {
     });
   });
 
+  it("publishes every menu icon against the output contract", async () => {
+    const manifest = await loadMenuIconManifest();
+
+    await expect(verifyMenuIcons({ imageDirectory: PUBLISHED_MENU_ICON_DIRECTORY })).resolves.toMatchObject({
+      count: manifest.icons.length,
+    });
+  }, 60_000);
+
   // Rebuilding the complete UI family now processes more than eighty masters.
   it("rebuilds the published menu set from approved masters", async () => {
     const outputDirectory = await mkdtemp(join(tmpdir(), "eternum-menu-icons-"));
@@ -44,26 +53,9 @@ describe("menu icon pipeline", () => {
       count: manifest.icons.length,
     });
     for (const icon of manifest.icons) {
-      const generated = await readIconPixels(join(outputDirectory, icon.target));
-      const published = await readIconPixels(join(PUBLISHED_MENU_ICON_DIRECTORY, icon.target));
-      expect(generated.info).toEqual(published.info);
-      expect(calculatePixelRmse(generated.data, published.data), icon.target).toBeLessThanOrEqual(
-        MAX_PLATFORM_PIXEL_RMSE,
-      );
+      const rebuilt = await readIconAppearanceSignature(join(outputDirectory, icon.target));
+      const published = await readIconAppearanceSignature(join(PUBLISHED_MENU_ICON_DIRECTORY, icon.target));
+      expect(measureAppearanceDistance(rebuilt, published), icon.target).toBeLessThanOrEqual(MAX_APPEARANCE_DISTANCE);
     }
   }, 60_000);
 });
-
-async function readIconPixels(path) {
-  const { data, info } = await sharp(path).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
-  return { data, info };
-}
-
-function calculatePixelRmse(actual, expected) {
-  let squaredError = 0;
-  for (let index = 0; index < actual.length; index += 1) {
-    const difference = actual[index] - expected[index];
-    squaredError += difference * difference;
-  }
-  return Math.sqrt(squaredError / actual.length);
-}
