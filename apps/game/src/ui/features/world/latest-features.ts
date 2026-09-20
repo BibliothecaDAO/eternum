@@ -35,10 +35,17 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-20",
-    title: "Refined Ethereal Terrain",
-    type: "improvement",
+    title: "Ethereal Basalt and Neon Borders",
+    type: "feature",
     description:
-      "Ethereal basalt has clearer joints and softer surface transitions. Spire columns slope inward toward one continuous tip, with recessed mineral highlights and a stepped rock outcrop.",
+      "Explore dark basalt slabs framed by flowing neon hex borders. Spires rise from a stepped rock outcrop to a single tip, and surface spire tiles dissolve into the neighbouring terrain.",
+  },
+  {
+    date: "2026-09-20",
+    title: "Bitcoin Block Excavations",
+    description:
+      "Bitcoin mines reveal golden digital blocks in ethereal basalt, with medieval mining equipment marking their working faces.",
+    type: "improvement",
   },
   {
     date: "2026-09-20",
@@ -59,20 +66,6 @@ const allLatestFeatures: LatestFeature[] = [
     title: "Game-World Menu Icons",
     description:
       "Reworked key menus with illustrated tools, war gear, caravans, maps and artifacts that stay clear at compact HUD sizes and feel native to Eternum's world.",
-    type: "improvement",
-  },
-  {
-    date: "2026-09-15",
-    title: "Ethereal Basalt and Neon Borders",
-    type: "feature",
-    description:
-      "Explore dark basalt framed by flowing neon hex borders. Spires and Bitcoin mines stand directly on the terrain, and surface spire tiles share the ethereal ground.",
-  },
-  {
-    date: "2026-09-15",
-    title: "Bitcoin Block Excavations",
-    description:
-      "Bitcoin mines reveal golden digital blocks in ethereal basalt, with medieval mining equipment marking their working faces.",
     type: "improvement",
   },
   {
