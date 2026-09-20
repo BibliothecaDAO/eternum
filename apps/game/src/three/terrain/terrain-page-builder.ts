@@ -1,5 +1,5 @@
 import { BASALT_SHELL_TRIANGLES, BASALT_SHELL_VERTICES } from "./terrain-basalt";
-import { SurfaceBasaltTransition, visitSurfaceBasaltSlabs } from "./terrain-basalt-transition";
+import { type SurfaceBasaltTransition, visitSurfaceBasaltSlabs } from "./terrain-basalt-transition";
 import { buildEtherealBorderCell } from "./terrain-ethereal-borders";
 import {
   terrainHexCorners,
@@ -83,7 +83,6 @@ export function prepareTerrainPage(request: TerrainPageRequest): PreparedTerrain
   request = applySettlementIslands(request);
   const subdivisions = resolveSubdivisions(request.subdivisions);
   const field = new TerrainField(request);
-  const transition = new SurfaceBasaltTransition(request);
   const vertexSampler = new TerrainVertexSampler(field);
   const land = createGeometryAccumulator();
   const water = createGeometryAccumulator();
@@ -100,7 +99,8 @@ export function prepareTerrainPage(request: TerrainPageRequest): PreparedTerrain
         appendBorderCell(borders, buildEtherealBorderCell(cell.col, cell.row));
         continue;
       }
-      if (transition.affects(cell)) appendSurfaceBasaltPatch(land, vertexSampler, transition, cell, subdivisions);
+      if (field.basaltTransition.affects(cell))
+        appendSurfaceBasaltPatch(land, vertexSampler, field.basaltTransition, cell, subdivisions);
       else appendCellPatch(land, vertexSampler, cell, subdivisions);
       if (shouldAppendWaterCellPatch(field, cell)) appendWaterCellPatch(water, vertexSampler, cell, subdivisions);
       frontierEdges += appendFrontierSkirts(land, field, cell);

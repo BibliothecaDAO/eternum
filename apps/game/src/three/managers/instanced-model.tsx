@@ -115,7 +115,7 @@ export default class InstancedModel {
   private worldBounds?: { box: Box3; sphere: Sphere };
   timeOffsets: Float32Array;
   private contactShadowMesh?: InstancedMesh;
-  private readonly goldGlow: LocalEmissiveGlow[] = [];
+  private readonly localGlows: LocalEmissiveGlow[] = [];
   private contactShadowScale = 1;
   private readonly contactShadowMatrix = new Matrix4();
   private readonly contactShadowPosition = new Vector3();
@@ -228,9 +228,9 @@ export default class InstancedModel {
       const material = mesh.material;
       if (!(material instanceof MeshStandardMaterial)) continue;
       const glow = LOCAL_GLOW_MATERIALS[material.name];
-      if (glow) this.goldGlow.push(new LocalEmissiveGlow([mesh], this.group, glow));
+      if (glow) this.localGlows.push(new LocalEmissiveGlow([mesh], this.group, glow));
     }
-    this.goldGlow.forEach((glow) => glow.updateBoundsAndCount());
+    this.localGlows.forEach((glow) => glow.updateBoundsAndCount());
     this.createContactShadowMesh(gltf);
   }
 
@@ -309,7 +309,7 @@ export default class InstancedModel {
       resolvedCount = Math.min(resolvedCount, finalCount);
     });
     this.count = resolvedCount;
-    this.goldGlow.forEach((glow) => glow.updateBoundsAndCount());
+    this.localGlows.forEach((glow) => glow.updateBoundsAndCount());
   }
 
   setMatrixAt(index: number, matrix: Matrix4, groundHeight: number = matrix.elements[13]) {
@@ -389,7 +389,7 @@ export default class InstancedModel {
       this.applyWorldBounds(mesh);
     });
 
-    this.goldGlow.forEach((glow) => glow.updateBoundsAndCount());
+    this.localGlows.forEach((glow) => glow.updateBoundsAndCount());
     if (this.contactShadowMesh) {
       if (this.worldBounds) {
         this.applyWorldBounds(this.contactShadowMesh);
@@ -665,7 +665,7 @@ export default class InstancedModel {
         }
       : undefined;
     this.instancedMeshes.forEach((mesh) => this.applyWorldBounds(mesh));
-    this.goldGlow.forEach((glow) => glow.updateBoundsAndCount());
+    this.localGlows.forEach((glow) => glow.updateBoundsAndCount());
     if (this.contactShadowMesh) {
       this.applyWorldBounds(this.contactShadowMesh);
     }
@@ -688,8 +688,8 @@ export default class InstancedModel {
     this.animationBuckets = null;
     this.bucketIndicesBuilt = false;
 
-    this.goldGlow.forEach((glow) => glow.dispose());
-    this.goldGlow.length = 0;
+    this.localGlows.forEach((glow) => glow.dispose());
+    this.localGlows.length = 0;
 
     // Dispose of instanced meshes and their resources
     this.instancedMeshes.forEach((mesh) => {

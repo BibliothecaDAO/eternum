@@ -108,7 +108,7 @@ export class TerrainField {
   private readonly sampleByKey = new Map<string, CellFieldSample>();
   private readonly candidatesByKey = new Map<string, CellFieldSample[]>();
   private readonly noise: TerrainNoise;
-  private readonly basaltTransition: SurfaceBasaltTransition;
+  readonly basaltTransition: SurfaceBasaltTransition;
   private biomeMismatchCount: number | null = null;
   private readonly settlements: Array<{
     centerX: number;

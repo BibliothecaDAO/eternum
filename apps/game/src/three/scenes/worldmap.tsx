@@ -3637,11 +3637,17 @@ export default class WorldmapScene extends WarpTravel {
     });
   }
 
-  private isTerrainSupportHex(col: number, row: number): boolean {
+  /** A structure or a spire: terrain levels a pad under both. Callers that already know the presentation pass it. */
+  private isTerrainSupportHex(
+    col: number,
+    row: number,
+    surfacePresentation = this.getTerrainCellSurfacePresentation(col, row),
+  ): boolean {
+    if (surfacePresentation === "ethereal") return true;
     const contract = new Position({ x: col, y: row }).getContract();
     return (
       this.worldSpatialProjection.getStructuresAtHex({ alt: activeMapLayer(), col: contract.x, row: contract.y })
-        .length > 0 || this.getTerrainCellSurfacePresentation(col, row) === "ethereal"
+        .length > 0
     );
   }
 
@@ -4845,16 +4851,10 @@ export default class WorldmapScene extends WarpTravel {
         : null;
       const biomeKey = biome ?? "Outline";
       const instanceIndex = instanceCounts.get(biomeKey) ?? 0;
-      const occupied = this.isTerrainSupportHex(col, row);
+      const surfacePresentation = this.getTerrainCellSurfacePresentation(col, row);
+      const occupied = this.isTerrainSupportHex(col, row, surfacePresentation);
       instanceCounts.set(biomeKey, instanceIndex + 1);
-      const cell = {
-        biomeKey,
-        col,
-        instanceIndex,
-        occupied,
-        row,
-        surfacePresentation: this.getTerrainCellSurfacePresentation(col, row),
-      };
+      const cell = { biomeKey, col, instanceIndex, occupied, row, surfacePresentation };
       terrainCells.push(cell);
 
       if (biome) {
@@ -6427,12 +6427,13 @@ export default class WorldmapScene extends WarpTravel {
         }
 
         const biome = exploredBiome ?? this.perfSimulation!.getSimulatedBiome(col, row);
+        const surfacePresentation = this.getTerrainCellSurfacePresentation(col, row);
         fingerprintEntries.push({
           biomeKey: biome,
           col,
           row,
-          occupied: this.isTerrainSupportHex(col, row),
-          surfacePresentation: this.getTerrainCellSurfacePresentation(col, row),
+          occupied: this.isTerrainSupportHex(col, row, surfacePresentation),
+          surfacePresentation,
         });
       }
     }

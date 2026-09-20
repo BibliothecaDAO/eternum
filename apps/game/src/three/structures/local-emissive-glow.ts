@@ -6,7 +6,7 @@ import { createInstancedMeshWithSharedMatrices } from "../utils/create-instanced
 import { MaterialPool } from "../utils/material-pool";
 
 export interface GlowOptions {
-  name?: string;
+  name: string;
   width?: number;
   intensity?: number;
   opacity?: number;
@@ -34,9 +34,9 @@ export class LocalEmissiveGlow {
   constructor(
     meshes: InstancedMesh[],
     group: Group,
-    private readonly options: GlowOptions = {},
+    private readonly options: GlowOptions,
   ) {
-    this.group.name = options.name ?? "Spire vein light";
+    this.group.name = options.name;
     // Light behind the portal must be composed before its translucent core, while opaque veins still occlude normally.
     this.group.renderOrder = Number.MIN_SAFE_INTEGER;
     group.add(this.group);

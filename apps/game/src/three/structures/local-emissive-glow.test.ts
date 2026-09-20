@@ -25,7 +25,7 @@ function fixture() {
   const source = createInstancedMesh(geometry, material, 3);
   const group = new Group();
   group.add(source);
-  const veins = new LocalEmissiveGlow([source], group);
+  const veins = new LocalEmissiveGlow([source], group, { name: "Test light" });
   const halo = group.children[1].children[0] as typeof source;
   return { authored, source, group, veins, halo };
 }
