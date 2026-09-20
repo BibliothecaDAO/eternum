@@ -75,7 +75,7 @@ Rebuild and optimize from the repository root with Blender 5.2.1 and Khronos KTX
 
 ```sh
 blender --background --threads 4 --python-exit-code 1 --python apps/game/scripts/bitcoin-mine/build-mine.py
-node apps/game/scripts/optimize-structure-models.mjs ethereal/bitcoin-mine.glb
+pnpm --dir apps/game optimize:bitcoin-mine
 pnpm --dir apps/game verify:structures
 pnpm --dir apps/game verify:assets
 ```
