@@ -3,6 +3,7 @@
 import { prepareTerrainPage } from "./terrain-page-builder";
 import { buildTerrainFogMask, type TerrainFogMask } from "./terrain-fog-mask";
 import {
+  getTerrainBorderBufferViews,
   getTerrainGeometryBufferViews,
   type PreparedTerrainPage,
   type TerrainGeometryBuffers,
@@ -48,7 +49,9 @@ function collectTransferables(page: PreparedTerrainPage): Transferable[] {
     ...collectGeometryTransferables(page.buffers),
     ...(page.waterBuffers ? collectGeometryTransferables(page.waterBuffers) : []),
     ...(page.basaltInstances ? [page.basaltInstances.buffer as ArrayBuffer] : []),
-    ...(page.borderBuffers ? collectGeometryTransferables(page.borderBuffers) : []),
+    ...(page.borderBuffers
+      ? getTerrainBorderBufferViews(page.borderBuffers).map((buffer) => buffer.buffer as ArrayBuffer)
+      : []),
   ];
 }
 

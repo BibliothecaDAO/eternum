@@ -40,6 +40,7 @@ import {
 } from "./terrain-movement-effects";
 import type {
   PreparedTerrainPage,
+  TerrainBorderBuffers,
   TerrainGeometryBuffers,
   TerrainPageRequest,
   TerrainSurfaceSample,
@@ -547,9 +548,7 @@ export class ProceduralTerrain {
         group.add(createBasaltPageMesh(preparedPage.basaltInstances, this.etherealMaterial, this.basaltGeometry));
       }
       if (preparedPage.borderBuffers) {
-        const borders = createTerrainMesh(preparedPage.borderBuffers, this.etherealBorders.material, "borders");
-        borders.renderOrder = 2;
-        group.add(borders);
+        group.add(createBorderMesh(preparedPage.borderBuffers, this.etherealBorders.material));
       }
       if (preparedPage.waterBuffers) {
         group.add(createTerrainMesh(preparedPage.waterBuffers, this.materials.water, "water"));
@@ -648,10 +647,28 @@ function countBufferGeometryBytes(geometry: BufferGeometry): number {
   );
 }
 
+function createBorderMesh(buffers: TerrainBorderBuffers, material: MeshBasicNodeMaterial): Mesh {
+  const geometry = new BufferGeometry();
+  geometry.name = "procedural-terrain-borders";
+  geometry.setIndex(new BufferAttribute(buffers.indices, 1));
+  geometry.setAttribute("position", new BufferAttribute(buffers.positions, 3));
+  geometry.setAttribute("normal", new BufferAttribute(buffers.normals, 3));
+  geometry.setAttribute("uv", new BufferAttribute(buffers.uvs, 2));
+  geometry.setAttribute("terrainColor", new BufferAttribute(buffers.colors, 3));
+  geometry.boundingBox = new Box3(new Vector3(...buffers.bounds.boxMin), new Vector3(...buffers.bounds.boxMax));
+  geometry.boundingSphere = new Sphere(new Vector3(...buffers.bounds.sphereCenter), buffers.bounds.sphereRadius);
+
+  const mesh = new Mesh(geometry, material);
+  mesh.name = "procedural-terrain-borders";
+  mesh.renderOrder = 2;
+  mesh.raycast = disableTerrainRaycast;
+  return mesh;
+}
+
 function createTerrainMesh(
   buffers: TerrainGeometryBuffers,
-  material: MeshStandardNodeMaterial | MeshBasicNodeMaterial,
-  layer: "land" | "water" | "borders",
+  material: TerrainMaterials["land"],
+  layer: "land" | "water",
 ): Mesh {
   const geometry = new BufferGeometry();
   try {

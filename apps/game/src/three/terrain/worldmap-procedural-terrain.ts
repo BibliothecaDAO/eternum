@@ -202,7 +202,7 @@ interface WorldBounds {
 const BIOME_VALUES = new Set<string>(Object.values(BiomeType));
 // Out-and-back pans reuse the expensive worker result; the cache holds CPU-side typed arrays and evicts the
 // least-recently-used signatures. One byte budget replaces the former 64-page count, whose worst case retained
-// 328 MiB: a 24x24 page measures 1.80 MiB of land, 5.12 MiB of ocean and 1.14 MiB of ethereal basalt, so the budget
+// 328 MiB: a 24x24 page measures 1.80 MiB of land, 5.12 MiB of ocean and 0.66 MiB of ethereal basalt, so the budget
 // keeps four 4x4 camera windows of land and still holds a full window of open sea.
 const PREPARED_PAGE_CACHE_BYTES_LIMIT = 128 * 1024 * 1024;
 const ROAD_PAGE_PADDING = 1.5;

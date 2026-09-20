@@ -1,4 +1,3 @@
-import { BiomeTypeToId } from "@bibliothecadao/types/terrain";
 import { BASALT_SHELL_TRIANGLES, BASALT_SHELL_VERTICES } from "./terrain-basalt";
 import { SurfaceBasaltTransition, visitSurfaceBasaltSlabs } from "./terrain-basalt-transition";
 import { buildEtherealBorderCell } from "./terrain-ethereal-borders";
@@ -17,11 +16,16 @@ import { prepareTerrainShroudInstances } from "./terrain-shroud";
 import { applySettlementIslands } from "./terrain-settlement-ground";
 import type {
   PreparedTerrainPage,
+  TerrainBorderBuffers,
   TerrainCellInput,
   TerrainGeometryBuffers,
   TerrainPageRequest,
 } from "./terrain-types";
-import { PROCEDURAL_TERRAIN_STYLE_VERSION, getTerrainGeometryBufferViews } from "./terrain-types";
+import {
+  PROCEDURAL_TERRAIN_STYLE_VERSION,
+  getTerrainBorderBufferViews,
+  getTerrainGeometryBufferViews,
+} from "./terrain-types";
 import {
   isTerrainWaterBiome,
   isTerrainWaterCovered,
@@ -84,7 +88,7 @@ export function prepareTerrainPage(request: TerrainPageRequest): PreparedTerrain
   const land = createGeometryAccumulator();
   const water = createGeometryAccumulator();
   const basalt: number[] = [];
-  const borders = createGeometryAccumulator();
+  const borders = createBorderAccumulator();
   let fogTerrainCells = 0;
   let frontierEdges = 0;
 
@@ -93,7 +97,7 @@ export function prepareTerrainPage(request: TerrainPageRequest): PreparedTerrain
       if (request.surfacePresentation === "ethereal") {
         const center = terrainHexToWorld(cell.col, cell.row);
         basalt.push(center.x, center.z);
-        appendBorderGeometry(borders, buildEtherealBorderCell(cell.col, cell.row), cell);
+        appendBorderCell(borders, buildEtherealBorderCell(cell.col, cell.row));
         continue;
       }
       if (transition.affects(cell)) appendSurfaceBasaltPatch(land, vertexSampler, transition, cell, subdivisions);
@@ -109,13 +113,14 @@ export function prepareTerrainPage(request: TerrainPageRequest): PreparedTerrain
   const buffers = finalizeGeometry(land);
   const waterBuffers = water.positions.length > 0 ? finalizeGeometry(water) : null;
   const basaltInstances = basalt.length ? new Float32Array(basalt) : null;
-  const borderBuffers = borders.positions.length ? finalizeGeometry(borders) : null;
+  const borderBuffers = borders.positions.length ? finalizeBorders(borders) : null;
   const propInstances = prepareTerrainPropInstances(request, field);
   const shroudInstances = prepareTerrainShroudInstances(request, field);
-  const geometryBytes = [buffers, waterBuffers, borderBuffers].reduce<number>(
-    (sum, geometry) => sum + (geometry ? countGeometryBytes(geometry) : 0),
-    basaltInstances?.byteLength ?? 0,
-  );
+  const geometryBytes =
+    countGeometryBytes(buffers) +
+    (waterBuffers ? countGeometryBytes(waterBuffers) : 0) +
+    (borderBuffers ? countViewBytes(getTerrainBorderBufferViews(borderBuffers)) : 0) +
+    (basaltInstances?.byteLength ?? 0);
   const fingerprint = fingerprintPreparedPage(
     request,
     buffers,
@@ -598,7 +603,11 @@ function resolveSubdivisions(value: number | undefined): number {
 }
 
 function countGeometryBytes(buffers: TerrainGeometryBuffers): number {
-  return getTerrainGeometryBufferViews(buffers).reduce((total, buffer) => total + buffer.byteLength, 0);
+  return countViewBytes(getTerrainGeometryBufferViews(buffers));
+}
+
+function countViewBytes(views: readonly ArrayBufferView[]): number {
+  return views.reduce((total, view) => total + view.byteLength, 0);
 }
 
 function fingerprintPreparedPage(
@@ -608,7 +617,7 @@ function fingerprintPreparedPage(
   props: PreparedTerrainPage["propInstances"],
   shroud: PreparedTerrainPage["shroudInstances"],
   basalt: Float32Array | null,
-  borders: TerrainGeometryBuffers | null,
+  borders: TerrainBorderBuffers | null,
 ): string {
   let hash = hashString(
     JSON.stringify({
@@ -629,18 +638,19 @@ function fingerprintPreparedPage(
   );
   hash = hashGeometry(land, hash);
   if (water) hash = hashGeometry(water, hash);
-  if (basalt) {
-    for (const byte of new Uint8Array(basalt.buffer, basalt.byteOffset, basalt.byteLength))
-      hash = Math.imul(hash ^ byte, 0x01000193) >>> 0;
-  }
-  if (borders) hash = hashGeometry(borders, hash);
+  if (basalt) hash = hashViews([basalt], hash);
+  if (borders) hash = hashViews(getTerrainBorderBufferViews(borders), hash);
   return hash.toString(16).padStart(8, "0");
 }
 
 function hashGeometry(buffers: TerrainGeometryBuffers, initialHash: number): number {
+  return hashViews(getTerrainGeometryBufferViews(buffers), initialHash);
+}
+
+function hashViews(views: readonly ArrayBufferView[], initialHash: number): number {
   let hash = initialHash;
-  for (const buffer of getTerrainGeometryBufferViews(buffers)) {
-    const bytes = new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+  for (const view of views) {
+    const bytes = new Uint8Array(view.buffer, view.byteOffset, view.byteLength);
     for (const byte of bytes) hash = Math.imul(hash ^ byte, 0x01000193) >>> 0;
   }
   return hash;
@@ -654,29 +664,29 @@ function hashString(value: string): number {
   return hash;
 }
 
-function appendBorderGeometry(
-  target: GeometryAccumulator,
-  geometry: { positions: number[]; normals: number[]; colors: number[]; indices: number[]; uvs?: number[] },
-  cell: TerrainCellInput,
-): void {
+type BorderCell = ReturnType<typeof buildEtherealBorderCell>;
+
+function createBorderAccumulator(): BorderCell {
+  return { positions: [], normals: [], colors: [], indices: [], uvs: [] };
+}
+
+function appendBorderCell(target: BorderCell, cell: BorderCell): void {
   const offset = target.positions.length / 3;
-  for (let index = 0; index < geometry.positions.length; index += 3) {
-    const x = geometry.positions[index],
-      height = geometry.positions[index + 1],
-      z = geometry.positions[index + 2];
-    target.positions.push(x, height, z);
-    target.normals.push(geometry.normals[index], geometry.normals[index + 1], geometry.normals[index + 2]);
-    target.colors.push(geometry.colors[index], geometry.colors[index + 1], geometry.colors[index + 2]);
-    target.uvs.push(geometry.uvs?.[(index / 3) * 2] ?? x, geometry.uvs?.[(index / 3) * 2 + 1] ?? z);
-    target.basaltWeights.push(0);
-    target.biomeIds.push(cell.biome ? BiomeTypeToId[cell.biome] : 0);
-    target.explored.push(1);
-    target.roughness.push(0.9);
-    target.shore.push(0);
-    target.heights.push(height);
-    target.waterDepth.push(0);
-    target.groundWeights0.push(0, 0, 0, 0);
-    target.groundWeights1.push(0, 0, 0, 255);
-  }
-  for (const index of geometry.indices) target.indices.push(offset + index);
+  target.positions.push(...cell.positions);
+  target.normals.push(...cell.normals);
+  target.colors.push(...cell.colors);
+  target.uvs.push(...cell.uvs);
+  for (const index of cell.indices) target.indices.push(offset + index);
+}
+
+function finalizeBorders(source: BorderCell): TerrainBorderBuffers {
+  const positions = new Float32Array(source.positions);
+  return {
+    bounds: resolveGeometryBounds(positions),
+    colors: new Float32Array(source.colors),
+    indices: new Uint32Array(source.indices),
+    normals: new Float32Array(source.normals),
+    positions,
+    uvs: new Float32Array(source.uvs),
+  };
 }

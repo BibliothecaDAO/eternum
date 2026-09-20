@@ -73,6 +73,16 @@ export interface TerrainGeometryBuffers {
   waterDepth: Float32Array;
 }
 
+/** Border strips carry only what their unlit material and the fog reveal read. */
+export interface TerrainBorderBuffers {
+  bounds: TerrainGeometryBounds;
+  colors: Float32Array;
+  indices: Uint32Array;
+  normals: Float32Array;
+  positions: Float32Array;
+  uvs: Float32Array;
+}
+
 export interface TerrainGeometryBounds {
   boxMax: readonly [number, number, number];
   boxMin: readonly [number, number, number];
@@ -101,6 +111,10 @@ export function getTerrainGeometryBufferViews(
   ];
 }
 
+export function getTerrainBorderBufferViews(buffers: TerrainBorderBuffers): Array<Float32Array | Uint32Array> {
+  return [buffers.colors, buffers.indices, buffers.normals, buffers.positions, buffers.uvs];
+}
+
 export interface TerrainPageDiagnostics {
   biomeMismatchCount: number;
   exploredSurfaceSamples: number;
@@ -118,7 +132,7 @@ export interface TerrainPageDiagnostics {
 export interface PreparedTerrainPage {
   /** Two floats per explored ethereal-layer tile: world X, world Z. */
   basaltInstances?: Float32Array | null;
-  borderBuffers?: TerrainGeometryBuffers | null;
+  borderBuffers?: TerrainBorderBuffers | null;
   buffers: TerrainGeometryBuffers;
   diagnostics: TerrainPageDiagnostics;
   fingerprint: string;
