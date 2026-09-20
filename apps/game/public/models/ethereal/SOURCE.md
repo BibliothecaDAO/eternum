@@ -15,16 +15,16 @@ source is `apps/game/asset-sources/ethereal/spire/spire.blend` (Blender 5.2.1, t
 `SPIRE_V2_PRODUCTION`). Its three former `spirePart=base` objects remain absent. A fixed, non-emissive 19-column
 outcropping sits beneath the portal: 1.226 wide, 1.132 deep and 0.155 high, with a 0.006 contact skirt below local
 ground. Its original seven columns vary from 0.101 to 0.155 high; the surrounding twelve vary from 0.047 to 0.080,
-forming a lower step within the gameplay hex. All share the spire's packed basalt material. The upper core converges on
-one sharp main apex, with two inward-sloping shoulders and sixteen broad caps instead of separate pointed tips.
+forming a lower step within the gameplay hex. All share the spire's packed basalt material. Every main column slopes
+inward at both ends: eighteen sloping shoulders and no flat caps above, nineteen sloping bottoms below. The central
+shaft stays a full-width hexagon above the highest surrounding shoulder (3.438), then closes in one short continuous
+point whose taper starts at 3.819 and is 0.14 high, so the core has a single apex at 3.959.
 
 The former winding exterior veins are replaced by 24 flat mineral inclusions, each strictly vertical and 0.111–0.220
 long. They occupy the recessed V-shaped junctions between two neighboring rock columns, with dark intervals between
 them. Each of eight viewing sectors contains exactly three veins, distributed from local height 1.490 to 3.277. No veins
 remain on the floating fragments or the grounded outcropping. The BLUE, ORANGE and PINK material names remain for the
-production light treatment. Construction and source-validation scripts are retained locally under
-`.context/ethereal-layer/biome-tiles/revision-4/`; the committed packed source is sufficient for a clean-checkout
-export.
+production light treatment. The committed packed source is all a clean-checkout export needs.
 
 Rebuild from the repository root with Blender 5.2.1 and Khronos KTX-Software 4.4.2 on PATH:
 

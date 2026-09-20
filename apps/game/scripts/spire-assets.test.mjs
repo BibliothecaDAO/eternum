@@ -52,13 +52,10 @@ describe("production spire asset", () => {
       expect(node.scale ?? [1, 1, 1]).toEqual([1, 1, 1]);
   });
 
-  it("keeps the outcrop dark and rooted and confines veins to inner column junctions", () => {
+  it("keeps the outcrop dark and rooted and the veins inside the core below its single apex", () => {
     const outcrops = gltf.nodes.filter((node) => node.extras?.spirePart === "outcrop");
     expect(outcrops).toHaveLength(1);
     const outcrop = outcrops[0];
-    expect(outcrop.extras.grounded).toBe(true);
-    expect(outcrop.extras.outcropInnerColumns).toBe(7);
-    expect(outcrop.extras.outcropOuterColumns).toBe(12);
     expect(outcrop.translation ?? [0, 0, 0]).toEqual([0, 0, 0]);
     for (const primitive of gltf.meshes[outcrop.mesh].primitives) {
       const material = gltf.materials[primitive.material];
@@ -79,22 +76,23 @@ describe("production spire asset", () => {
         ),
     );
     expect(veins).toHaveLength(3);
-    expect(veins.reduce((sum, vein) => sum + vein.extras.veinSegmentCount, 0)).toBe(24);
-    for (const vein of veins) {
-      expect(vein.extras.spirePart).toBe("spire");
-      expect(vein.extras.veinPlacement).toBe("inner-column-junction");
-      expect(vein.extras.veinShape).toBe("short-straight-vertical");
-    }
+    // The checks read exported geometry: the authored tags in node extras describe intent and prove nothing.
     const stone = gltf.nodes.find((node) => node.name === "SPIRE / Basalt");
-    expect(stone.extras.crownMainApexCount).toBe(1);
-    expect(stone.extras.crownSlopingShoulderCount).toBe(18);
-    expect(stone.extras.crownFlatCapCount).toBe(0);
-    expect(stone.extras.inwardSlopingBottomCount).toBe(19);
-    expect(stone.extras.centralDirectApex).toBe(true);
-    expect(stone.extras.centralTaperStartZ).toBeGreaterThanOrEqual(stone.extras.highestExternalColumnZ);
-    expect(stone.extras.centralTaperStartZ).toBeCloseTo(3.81879, 5);
-    expect(stone.extras.highestExternalColumnZ).toBeCloseTo(3.43835, 5);
-    expect(stone.extras.centralApexZ - stone.extras.centralTaperStartZ).toBeCloseTo(0.14, 6);
+    const core = gltf.accessors[gltf.meshes[stone.mesh].primitives[0].attributes.POSITION];
+    expect(core.max[1]).toBeCloseTo(3.95879, 4);
+    expect(core.min[1]).toBeGreaterThan(0.9);
+    for (const vein of veins) {
+      const [primitive] = gltf.meshes[vein.mesh].primitives;
+      const bounds = gltf.accessors[primitive.attributes.POSITION];
+      // Eight short segments per colour, between the hovering base and the crown shoulders, within the core footprint.
+      expect(gltf.accessors[primitive.indices].count / 3).toBe(96);
+      expect(bounds.min[1]).toBeGreaterThan(1.4);
+      expect(bounds.max[1]).toBeLessThan(3.3);
+      for (const axis of [0, 2]) {
+        expect(bounds.min[axis]).toBeGreaterThan(core.min[axis]);
+        expect(bounds.max[axis]).toBeLessThan(core.max[axis]);
+      }
+    }
     const animatedNodes = new Set(gltf.animations[0].channels.map((channel) => channel.target.node));
     expect(animatedNodes.has(gltf.nodes.indexOf(outcrop))).toBe(false);
   });
