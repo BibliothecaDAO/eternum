@@ -99,7 +99,7 @@ export function prepareTerrainPage(request: TerrainPageRequest): PreparedTerrain
       if (transition.affects(cell)) appendSurfaceBasaltPatch(land, vertexSampler, transition, cell, subdivisions);
       else appendCellPatch(land, vertexSampler, cell, subdivisions);
       if (shouldAppendWaterCellPatch(field, cell)) appendWaterCellPatch(water, vertexSampler, cell, subdivisions);
-      if (!request.flatSurface) frontierEdges += appendFrontierSkirts(land, field, cell);
+      frontierEdges += appendFrontierSkirts(land, field, cell);
       continue;
     }
     fogTerrainCells += 1;
@@ -615,7 +615,6 @@ function fingerprintPreparedPage(
       cells: canonicalCells(request.cells),
       climate: request.climate,
       surfacePresentation: request.surfacePresentation,
-      ...(request.flatSurface ? { flatSurface: true } : {}),
       halo: canonicalCells(request.halo),
       mapCenter: request.mapCenter,
       pageKey: request.pageKey,

@@ -645,7 +645,6 @@ export class TerrainField {
     relief: number,
     candidates: readonly CellFieldSample[],
   ): number {
-    if (this.request.flatSurface) return TERRAIN_FOG_GROUND_HEIGHT;
     const detail = (this.noise.sample(worldX * 0.7, worldZ * 0.7, "terrain-relief-v1") - 0.5) * 2 * relief;
     const height = this.applyStructurePad(worldX, worldZ, baseHeight + detail, candidates);
     return this.basaltTransition.blendHeight(worldX, worldZ, height);

@@ -21,7 +21,6 @@ describe("terrain lab previews", () => {
     );
     const prepared = prepareTerrainPage(request);
     const field = new TerrainField(request);
-    expect(request.flatSurface).toBeUndefined();
     expect(request.surfacePresentation).toBe("ethereal");
     expect(prepared.basaltInstances!.length).toBeGreaterThan(0);
     const center = terrainHexToWorld(selected.col, selected.row);
@@ -29,7 +28,6 @@ describe("terrain lab previews", () => {
       expect(field.sampleSurface(center.x + offset, center.z).height).toBe(BASALT_SUPPORT_HEIGHT);
       expect(field.sampleSurface(center.x + offset, center.z).normal).toEqual([0, 1, 0]);
     }
-    expect(buildTerrainLabRequest(source, DEFAULT_TERRAIN_LAB_PREVIEW, selected).flatSurface).toBeUndefined();
   });
 
   it("preserves fixture biome data and fog boundaries in a dedicated Ethereal preview", () => {
