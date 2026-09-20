@@ -35,7 +35,7 @@ it("builds the crate panel from the structure tile chrome with contents read fro
   const container = render();
   const header = container.querySelector('[aria-expanded="true"]')!;
   expect(header.textContent).toBe("Relic Tile · (3, 4)");
-  expect(header.querySelector("svg")).not.toBeNull();
+  expect(header.querySelector('img[src="/image-icons/ui-chevron-down.png"]')).not.toBeNull();
   expect(container.textContent).toContain("Crate #99");
   expect(container.querySelector('img[src="/images/relic-chest/chest-closed.png"]')).not.toBeNull();
   expect(container.textContent).toContain("Contents");
