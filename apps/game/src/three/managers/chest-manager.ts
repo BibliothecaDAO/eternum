@@ -71,6 +71,7 @@ export class ChestManager {
   private entityIdMap: Map<number, ID> = new Map();
   private chestInstanceOrder: ID[] = [];
   private chestInstanceIndices: Map<ID, number> = new Map();
+  private readonly placedTerrainHeights = new Map<ID, number>();
   private chunkSize: number;
   private currentCameraView: CameraView;
   private contentLadder: WorldmapContentLadder;
@@ -204,6 +205,7 @@ export class ChestManager {
     this.entityIdLabels.clear();
     this.entityIdMap.clear();
     this.chestInstanceIndices.clear();
+    this.placedTerrainHeights.clear();
     this.chestInstanceOrder = [];
     this.visibleChests = [];
     this.renderedChunk = "null";
@@ -235,6 +237,7 @@ export class ChestManager {
 
     this.entityIdMap.clear();
     this.chestInstanceIndices.clear();
+    this.placedTerrainHeights.clear();
     this.chestInstanceOrder = [];
     this.visibleChests = [];
     this.transitionChunkByToken.clear();
@@ -444,6 +447,19 @@ export class ChestManager {
     this.updateChestMarkers();
   }
 
+  /** Terrain pages can arrive after a chest is placed; move only the chests whose sampled height changed. */
+  public refreshTerrainPlacement(): void {
+    if (this.isDestroyed || !this.chestModel) return;
+    const moved = this.visibleChests.filter(
+      (chest) =>
+        this.chestInstanceIndices.has(chest.entityId) &&
+        this.placedTerrainHeights.get(chest.entityId) !== this.getChestWorldPosition(chest).y,
+    );
+    if (moved.length === 0) return;
+    moved.forEach((chest) => this.updateChestInstance(chest));
+    this.updateChestMarkers();
+  }
+
   private updateChestMarkers(): void {
     if (!this.pointsRenderer) return;
     const revealed = this.visibleChests.filter(
@@ -501,11 +517,13 @@ export class ChestManager {
 
     this.chestInstanceOrder.pop();
     this.chestInstanceIndices.delete(entityId);
+    this.placedTerrainHeights.delete(entityId);
     this.entityIdMap.delete(lastIndex);
     this.removeEntityIdLabel(entityId);
   }
 
   private writeChestInstance(chest: ChestSpatialRenderable, index: number) {
+    this.placedTerrainHeights.set(chest.entityId, this.getChestWorldPosition(chest).y);
     if (this.chestTransitions?.has(this.transitionKey(chest))) {
       this.chestModel?.removeInstance(index);
       return;

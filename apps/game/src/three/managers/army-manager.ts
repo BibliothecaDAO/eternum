@@ -1144,6 +1144,29 @@ export class ArmyManager {
     setWorldmapRenderGauge("visibleArmies", this.visibleArmyOrder.length);
   }
 
+  /** Terrain pages can arrive after an army is placed; a marching army keeps its path and lands on the new surface. */
+  public refreshTerrainPlacement(): void {
+    if (this.isDestroyed) return;
+    for (const [entityId, slot] of this.visibleArmyIndices) {
+      const army = this.armyPresentations.get(entityId);
+      if (army && this.hasTerrainMovedUnderArmy(army)) this.regroundArmy(army, slot);
+    }
+  }
+
+  private hasTerrainMovedUnderArmy(army: ArmyData): boolean {
+    const numericId = this.toNumericId(army.entityId);
+    if (this.armyModel.isEntityMoving(numericId)) return false;
+    const placedHeight = this.armyModel.getInstanceData(numericId)?.position.y;
+    return placedHeight !== undefined && placedHeight !== this.resolveArmyPlacement(army).y;
+  }
+
+  private regroundArmy(army: ArmyData, slot: number): void {
+    const modelType = this.armyModel.getAssignedModelType(this.toNumericId(army.entityId));
+    if (modelType === undefined) return;
+    this.refreshArmyInstance(army, slot, modelType);
+    this.markVisibleArmyPresentationDirty();
+  }
+
   private markVisibleArmyPresentationDirty(buffersDirty: boolean = true): void {
     this.visibleArmyPresentationDirty = true;
     this.visibleArmyBuffersDirty ||= buffersDirty;
@@ -1216,15 +1239,7 @@ export class ArmyManager {
 
   private refreshArmyInstance(army: ArmyData, slot: number, modelType: ModelType, reResolveCosmetics?: boolean): void {
     const numericId = this.toNumericId(army.entityId);
-    const isMoving = this.armyModel.isEntityMoving(numericId);
-    const position = resolveArmyPresentationPosition({
-      entityId: army.entityId,
-      hexCoords: army.hexCoords,
-      path: this.armyPaths.get(army.entityId),
-      isMoving,
-      movingPosition: this.armyModel.getEntityWorldPosition(numericId),
-      getArmyWorldPosition: (entityId, hexCoords) => this.getArmyWorldPosition(entityId, hexCoords),
-    });
+    const position = this.resolveArmyPlacement(army);
 
     this.armyModel.assignModelToEntity(numericId, modelType);
 
@@ -1264,6 +1279,18 @@ export class ArmyManager {
     this.armyPresentations.set(army.entityId, army);
     this.armyModel.rebindMovementMatrixIndex(numericId, slot);
     this.syncArmyAuxiliaryPresentation(army, position);
+  }
+
+  private resolveArmyPlacement(army: ArmyData): Vector3 {
+    const numericId = this.toNumericId(army.entityId);
+    return resolveArmyPresentationPosition({
+      entityId: army.entityId,
+      hexCoords: army.hexCoords,
+      path: this.armyPaths.get(army.entityId),
+      isMoving: this.armyModel.isEntityMoving(numericId),
+      movingPosition: this.armyModel.getEntityWorldPosition(numericId),
+      getArmyWorldPosition: (entityId, hexCoords) => this.getArmyWorldPosition(entityId, hexCoords),
+    });
   }
 
   private syncArmyAuxiliaryPresentation(army: ArmyData, position: Vector3) {

@@ -5606,7 +5606,7 @@ export default class WorldmapScene extends WarpTravel {
           subdivisions: 2,
         },
         this.chunkWorkQueue,
-        (event) => this.recordTerrainPresentationEvent(event),
+        (event) => this.handleTerrainPresentationEvent(event),
       )
       .then((terrainDiagnostics) => {
         if (!terrainDiagnostics) return;
@@ -5653,11 +5653,24 @@ export default class WorldmapScene extends WarpTravel {
     });
   }
 
+  private handleTerrainPresentationEvent(event: TerrainPresentationEvent): void {
+    if (event.kind === "page_complete") this.regroundTerrainPlacements();
+    this.recordTerrainPresentationEvent(event);
+  }
+
+  /**
+   * Managers place their content while terrain pages still stream, on the fallback surface. Everything that samples
+   * terrain height at placement re-grounds here, so a new terrain-placed manager joins this list.
+   */
+  private regroundTerrainPlacements(): void {
+    this.structureManager.refreshTerrainPlacement();
+    this.spireManager.refreshTerrainPlacement();
+    this.reservedHyperstructureManager.refreshTerrainPlacement();
+    this.chestManager.refreshTerrainPlacement();
+    this.armyManager.refreshTerrainPlacement();
+  }
+
   private recordTerrainPresentationEvent(event: TerrainPresentationEvent): void {
-    if (event.kind === "page_complete") {
-      this.spireManager.refreshTerrainPlacement();
-      this.structureManager.refreshTerrainPlacement();
-    }
     const milestone = recordWorldmapTerrainPresentationEvent(
       getActiveWorldmapTerrainPresentationMetrics(),
       this.terrainMetricsSceneId,
