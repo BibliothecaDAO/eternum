@@ -14,7 +14,17 @@ import { useLandingNetworkState } from "../../hooks/use-landing-network-state";
 import type { LandingNetworkChain } from "../../lib/landing-network-state";
 import { getChainLabel } from "@/ui/utils/network-switch";
 import type { GameChain as Chain } from "@realms-world/chain";
-import { CheckCircle2, Eye, Loader2, LogIn, Play, RefreshCw, Sparkles, Trophy, Users } from "@/ui/design-system/atoms/game-icons";
+import {
+  CheckCircle2,
+  Eye,
+  Loader2,
+  LogIn,
+  Play,
+  RefreshCw,
+  Sparkles,
+  Trophy,
+  Users,
+} from "@/ui/design-system/atoms/game-icons";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
 

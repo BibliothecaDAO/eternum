@@ -1,4 +1,11 @@
-import { AlertCircle as AlertCircleIcon, ArrowUpRight as ArrowUpRightIcon, ChevronDown as ChevronDownIcon, Crown as CrownIcon, Plus as PlusIcon, Pickaxe } from "@/ui/design-system/atoms/game-icons";
+import {
+  AlertCircle as AlertCircleIcon,
+  ArrowUpRight as ArrowUpRightIcon,
+  ChevronDown as ChevronDownIcon,
+  Crown as CrownIcon,
+  Plus as PlusIcon,
+  Pickaxe,
+} from "@/ui/design-system/atoms/game-icons";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { surfaceAnchorFrom } from "@/ui/design-system/molecules/popover";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
@@ -13,7 +20,6 @@ import { useGame, useNativeRow } from "@bibliothecadao/react";
 import { ContractAddress, LEVEL_DESCRIPTIONS, RealmLevels, ResourcesIds } from "@bibliothecadao/types";
 import { useState } from "react";
 import { useStructureUpgrade } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
-
 
 export const Castle = () => {
   const game = useGame();

@@ -59,7 +59,7 @@ export const getTxMessage = (type: TransactionType): string => {
       return "Retreated from battle";
       return "Claimed spoils of war";
 
-    // Legacy Army
+      // Legacy Army
       return "Raised a new army";
       return "Disbanded troops";
       return "Recruited soldiers";
@@ -89,7 +89,7 @@ export const getTxMessage = (type: TransactionType): string => {
       return "Minted tokens";
       return "Minted test LORDS";
 
-    // Banking & Trading
+      // Banking & Trading
       return "Opened ledger with the royal bank";
       return "Established royal treasury";
       return "Adjusted bank fees";
@@ -132,7 +132,7 @@ export const getTxMessage = (type: TransactionType): string => {
       return "Transferred tribe ownership";
       return "Added player to whitelist";
 
-    // Structures & Ownership
+      // Structures & Ownership
       return "Transferred structure ownership";
       return "Burned structure";
     case TransactionType.SET_ENTITY_NAME:
@@ -154,7 +154,7 @@ export const getTxMessage = (type: TransactionType): string => {
       return "Registered in the realm";
       return "Locked tokens";
 
-    // Lords & Approvals
+      // Lords & Approvals
       return "Pledged LORDS tokens";
       return "Withdrew LORDS tokens";
       return "Authorized resource transfer";
@@ -163,7 +163,7 @@ export const getTxMessage = (type: TransactionType): string => {
     case TransactionType.SET_ACCESS:
       return "Access rights updated";
 
-    // Season & Leaderboard
+      // Season & Leaderboard
       return "Season closed";
       return "Claimed season prize";
       return "Claimed leaderboard rewards";
@@ -186,7 +186,7 @@ export const getTxMessage = (type: TransactionType): string => {
       return "Granted role";
       return "Updated game configuration";
 
-    // Legacy
+      // Legacy
       return "Resumed production";
       return "Paused production";
       return "Destroyed building";
@@ -241,7 +241,7 @@ export const getTxIcon = (type: TransactionType): string => {
       return "🏃";
       return "🏆";
 
-    // Legacy Army
+      // Legacy Army
       return "⚔️";
       return "🏃";
 
@@ -264,7 +264,7 @@ export const getTxIcon = (type: TransactionType): string => {
     case TransactionType.BURN_LABOR_FOR_RESOURCE_PRODUCTION:
       return "✨";
 
-    // Banking & Trading
+      // Banking & Trading
       return "🏦";
     case TransactionType.BUY:
     case TransactionType.SELL:
@@ -289,7 +289,7 @@ export const getTxIcon = (type: TransactionType): string => {
     case TransactionType.UPDATE_WHITELIST:
       return "📜";
 
-    // Structures & Ownership
+      // Structures & Ownership
       return "🔄";
     case TransactionType.SET_ENTITY_NAME:
       return "✍️";
@@ -307,7 +307,7 @@ export const getTxIcon = (type: TransactionType): string => {
       return "🏰";
       return "🎫";
 
-    // Lords & Approvals
+      // Lords & Approvals
       return "👑";
       return "📜";
     case TransactionType.SET_ACCESS:
@@ -329,7 +329,7 @@ export const getTxIcon = (type: TransactionType): string => {
     case TransactionType.INITIALIZE:
       return "⚙️";
 
-    // Legacy
+      // Legacy
       return "▶️";
       return "⏸️";
       return "💥";

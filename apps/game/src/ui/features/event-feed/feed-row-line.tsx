@@ -1,5 +1,18 @@
 import type { GameIcon } from "@/ui/design-system/atoms/game-icon";
-import { Castle, Check, Clock3, Crown, Hourglass, Info, Package, Shield, Skull, Swords, TriangleAlert, Trophy } from "@/ui/design-system/atoms/game-icons";
+import {
+  Castle,
+  Check,
+  Clock3,
+  Crown,
+  Hourglass,
+  Info,
+  Package,
+  Shield,
+  Skull,
+  Swords,
+  TriangleAlert,
+  Trophy,
+} from "@/ui/design-system/atoms/game-icons";
 import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
 import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";

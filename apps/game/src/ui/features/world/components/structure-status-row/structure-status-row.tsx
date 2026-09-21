@@ -1,5 +1,17 @@
 import type { GameIcon } from "@/ui/design-system/atoms/game-icon";
-import { Castle, Crosshair, Crown, Hexagon, Pencil, Pickaxe, Shield, Sparkles, Star, Tent, Users } from "@/ui/design-system/atoms/game-icons";
+import {
+  Castle,
+  Crosshair,
+  Crown,
+  Hexagon,
+  Pencil,
+  Pickaxe,
+  Shield,
+  Sparkles,
+  Star,
+  Tent,
+  Users,
+} from "@/ui/design-system/atoms/game-icons";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { STRUCTURE_GROUP_CONFIG } from "@/ui/features/world/containers/top-header/structure-groups";

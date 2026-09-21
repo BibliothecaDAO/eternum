@@ -439,8 +439,16 @@ describe("Parallel Category Processing", () => {
 
     // Enqueue 2 HIGH items and 2 LOW items
     const promises = [
-      queue.enqueue({ signer, calls: makeCall("battle1"), transactionType: TransactionType.ATTACK_EXPLORER_VS_EXPLORER }),
-      queue.enqueue({ signer, calls: makeCall("battle2"), transactionType: TransactionType.ATTACK_EXPLORER_VS_EXPLORER }),
+      queue.enqueue({
+        signer,
+        calls: makeCall("battle1"),
+        transactionType: TransactionType.ATTACK_EXPLORER_VS_EXPLORER,
+      }),
+      queue.enqueue({
+        signer,
+        calls: makeCall("battle2"),
+        transactionType: TransactionType.ATTACK_EXPLORER_VS_EXPLORER,
+      }),
       queue.enqueue({ signer, calls: makeCall("name1"), transactionType: TransactionType.SET_ENTITY_NAME }),
       queue.enqueue({ signer, calls: makeCall("name2"), transactionType: TransactionType.SET_ENTITY_NAME }),
     ];
@@ -509,9 +517,9 @@ describe("Parallel Category Processing", () => {
     const queue = new PromiseQueue(executor, { batchDelayMs: 0 });
     const signer = makeSigner();
 
-  const pA = queue.enqueue({ signer, calls: makeCall("explorer_explore"), transactionType: TransactionType.EXPLORE });
+    const pA = queue.enqueue({ signer, calls: makeCall("explorer_explore"), transactionType: TransactionType.EXPLORE });
     await vi.advanceTimersByTimeAsync(0);
-  const pB = queue.enqueue({ signer, calls: makeCall("explorer_explore"), transactionType: TransactionType.EXPLORE });
+    const pB = queue.enqueue({ signer, calls: makeCall("explorer_explore"), transactionType: TransactionType.EXPLORE });
     await vi.advanceTimersByTimeAsync(0);
 
     expect(executor.executeAndCheckTransaction).toHaveBeenCalledTimes(2);

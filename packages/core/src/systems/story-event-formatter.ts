@@ -770,7 +770,6 @@ function shortenAddress(value: unknown): string | null {
   return `${raw.slice(0, 6)}…${raw.slice(-4)}`;
 }
 
-
 function amountToBigInt(value: unknown): bigint | null {
   if (value === undefined || value === null) return null;
   if (typeof value === "bigint") return value;

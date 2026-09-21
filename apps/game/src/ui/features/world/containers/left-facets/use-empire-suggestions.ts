@@ -1,5 +1,13 @@
 import type { GameIcon } from "@/ui/design-system/atoms/game-icon";
-import { ArrowUpCircle, Building2, Compass, Home as HomeIcon, Shield, Sparkles, Wheat } from "@/ui/design-system/atoms/game-icons";
+import {
+  ArrowUpCircle,
+  Building2,
+  Compass,
+  Home as HomeIcon,
+  Shield,
+  Sparkles,
+  Wheat,
+} from "@/ui/design-system/atoms/game-icons";
 import { hasGameEnded } from "@bibliothecadao/eternum/game-sync";
 import { useGameModeConfig, useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
 import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
