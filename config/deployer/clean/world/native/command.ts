@@ -21,10 +21,7 @@ const administrativeCommands = new Set<NativeCommand["kind"]>([
   "RecordBlitzResults",
 ]);
 
-const repeatableBatches = new Set<NativeCommand["kind"]>([
-  "SettleBlitzRoster",
-  "MarkGameSettled",
-]);
+const repeatableBatches = new Set<NativeCommand["kind"]>(["SettleBlitzRoster", "MarkGameSettled"]);
 
 type AdminCommandInput = {
   provider: RpcProvider;

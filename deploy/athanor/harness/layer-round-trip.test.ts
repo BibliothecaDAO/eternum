@@ -90,8 +90,8 @@ function fixture(
         explorer = { ...explorer, alt: !explorer.alt };
         put(explorer, 9);
       } else {
-        const direction = Number(calldata[3]);
-        const explore = calldata[4] === "1";
+        const explore = input.entrypoint === "explorer_explore";
+        const direction = Number(explore ? calldata[2] : calldata[3]);
         const target = explorer.alt
           ? { ...explorer, x: explorer.x + (direction === 0 ? 15 : -15) }
           : { ...neighbor(explorer, direction), alt: false };

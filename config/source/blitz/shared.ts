@@ -134,7 +134,6 @@ export function buildOfficialBlitzSimpleRecipes(profileMultiplier: number): Reso
   };
 }
 
-
 export function buildComplexBuildingCost(rareResource: ResourcesIds, essenceAmount: number): ResourceCost[] {
   return [
     { resource: ResourcesIds.Labor, amount: 360 },
