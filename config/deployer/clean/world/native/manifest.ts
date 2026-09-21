@@ -30,23 +30,10 @@ export function buildNativeManifest(local: NativeWorld, before: NativePlan): Nat
     contracts: local.domains.map((domain) => ({
       address: domain.address,
       class_hash: domain.classHash,
-      tag: `native-${domain.name}`,
       selector: hash.getSelectorFromName(domain.name),
       init_calldata: domain.constructorCalldata,
-      systems: local.schema.domains[domain.name].systems ?? [],
-    })),
-    models: local.schema.models.map((model) => ({
-      class_hash: "0x0",
-      tag: `native-${model.name}`,
-      selector: model.identity,
-      members: [
-        ...model.keys.map((member) => ({ name: member.name, type: member.type, key: true })),
-        ...model.members.map((member) => ({ name: member.name, type: member.type, key: false })),
-      ],
     })),
     events: [],
-    libraries: [],
-    external_contracts: [],
     abis: [...abis.values()],
     native: {
       version: 1,

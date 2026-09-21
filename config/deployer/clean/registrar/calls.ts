@@ -22,7 +22,6 @@ interface ManifestContract {
   tag?: string;
   address?: string;
   abi?: ManifestAbiEntry[];
-  systems?: string[];
 }
 
 export type RegistrarManifest = NativeWorldManifest;
@@ -98,7 +97,7 @@ function requireRegistrarContract(context: RegistrarContext, entrypoint: Registr
     }
     throw new Error(`Native registry is missing from the manifest`);
   }
-  if (!registrar.systems?.includes(entrypoint) && !abiIncludesEntrypoint(registrar.abi, entrypoint)) {
+  if (!abiIncludesEntrypoint(registrar.abi, entrypoint)) {
     throw new Error(`Native registry ABI is missing ${entrypoint}`);
   }
   return { ...registrar, address: registrarAddress };

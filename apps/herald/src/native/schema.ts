@@ -33,7 +33,6 @@ export interface NativeSchema {
     string,
     {
       contract: string;
-      systems?: string[];
       events: NativeEventLayout[];
       entrypoints: { name: string; inputs: NativeMember[] }[];
     }

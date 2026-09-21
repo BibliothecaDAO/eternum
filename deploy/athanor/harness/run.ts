@@ -8,7 +8,7 @@ import { Worker, isMainThread, parentPort, workerData, threadId } from "node:wor
 import path from "node:path";
 import { bindGameplayAccounts } from "@bibliothecadao/eternum";
 import { splitPlaytestRoster } from "../../../apps/launch-service/src/slots";
-import { configureGameplayAccountSubmits, type CommittedManifest } from "@bibliothecadao/eternum/game-client";
+import { configureGameplayAccountSubmits } from "@bibliothecadao/eternum/game-client";
 import { Account, ec, logger } from "starknet";
 import { assertChainId } from "../../../packages/chain/chain-guard.js";
 import { launchGame } from "../../../config/deployer/clean/launch/runner";
@@ -44,8 +44,10 @@ interface GameplayContractsArtifact extends HarnessGameplayContracts {
   rpcUrl?: string;
 }
 
-interface WorldManifest extends CommittedManifest {
-  contracts: Array<{ address: string; selector: string; tag: string; systems: string[] }>;
+interface WorldManifest {
+  world: { address: string };
+  contracts: Array<{ address: string; selector: string }>;
+  [key: string]: unknown;
 }
 
 interface LaunchedGame {

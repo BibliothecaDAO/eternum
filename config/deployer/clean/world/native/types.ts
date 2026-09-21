@@ -9,19 +9,8 @@ export interface NativeWorldManifest {
     address: string;
     class_hash: string;
     init_calldata: string[];
-    tag: string;
     selector: string;
-    systems: string[];
   }>;
-  libraries: Array<{ class_hash: string; tag: string; selector: string; systems: string[]; version: string }>;
-  models: Array<{
-    class_hash: string;
-    tag: string;
-    selector: string;
-    members: Array<{ name: string; type: string; key: boolean }>;
-  }>;
-  events: NativeWorldManifest["models"];
-  external_contracts: never[];
   abis: Abi;
 }
 export interface NativeAuthentication {

@@ -30,7 +30,7 @@ export interface RecentStoryEvent {
   summary: string;
 }
 
-/** The game as the runner holds it: one client, the Herald listing it booted from, and the world's systems. */
+/** The game as the runner holds it: one client and the Herald listing it booted from. */
 export interface RunnerGame {
   client: GameClient;
   listing: HeraldGameDirectoryEntry;
@@ -41,7 +41,7 @@ export interface RunnerGame {
   onSyncFailed(listener: (error: Error) => void): () => void;
 }
 
-/** The manifest's contracts carry the tag the harness resolves systems by; the world deployment keeps only selectors. */
+/** The manifest carries the deployed native contract selectors used by the harness. */
 interface TaggedManifest extends CommittedManifest {
   contracts: { selector: string; address: string; tag: string }[];
 }
