@@ -215,7 +215,7 @@ fn guard_deletion_does_not_erase_defeat_delay_and_explorer_deletion_clears_owned
 
 #[test]
 #[feature("safe_dispatcher")]
-fn management_and_combat_calculation_reject_foreign_callers() {
+fn management_and_combat_reject_foreign_callers() {
     let (d, _, first, second) = setup();
     let safe = crate::troop_management::ITroopManagementSafeDispatcher { contract_address: d.peers.troops };
     assert!(
@@ -225,21 +225,14 @@ fn management_and_combat_calculation_reject_foreign_callers() {
             .is_err(),
     );
     assert!(
-        crate::combat_domain::ICombatSafeDispatcherTrait::resolve_battle(
-            crate::combat_domain::ICombatSafeDispatcher { contract_address: d.peers.combat },
+        crate::combat_actions::ICombatActionsSafeDispatcherTrait::battle(
+            crate::combat_actions::ICombatActionsSafeDispatcher { contract_address: d.peers.combat },
             3,
-            troop(d, first).unwrap().troops,
-            troop(d, second).unwrap().troops,
-            crate::combat::CombatContext {
-                timestamp: 100,
-                attacker_roll: 0,
-                defender_roll: 0,
-                attacker_biome: crate::biome::Biome::Grassland,
-                defender_biome: crate::biome::Biome::Grassland,
-                attack_distance: 1,
-                attacker_is_structure_guard: false,
-                defender_is_structure_guard: false,
+            d.actor,
+            crate::combat_actions::AttackExplorer {
+                attacker_id: first, defender_id: second, steal_resources: array![].span(),
             },
+            super::context(),
         )
             .is_err(),
     );

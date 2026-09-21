@@ -203,19 +203,19 @@ const schema = {
     },
     {
       name: "BattleEvent",
-      owners: ["troops"],
+      owners: ["combat"],
       scope: "game",
       version: 1,
-      event: artifacts.troops.find(
+      event: artifacts.combat.find(
         (item) => item.type === "event" && item.name === "world_native::troops::BattleEvent",
       ),
     },
     {
       name: "RaidEvent",
-      owners: ["troops"],
+      owners: ["combat"],
       scope: "game",
       version: 1,
-      event: artifacts.troops.find(
+      event: artifacts.combat.find(
         (item) => item.type === "event" && item.name === "world_native::combat_actions::RaidEvent",
       ),
     },

@@ -103,15 +103,6 @@ pub mod TroopFixture {
         ) {
             panic!("fixture unsupported command");
         }
-        fn battle(
-            ref self: ContractState,
-            game_id: u32,
-            actor: ContractAddress,
-            command: crate::combat_actions::AttackExplorer,
-            context: ExecutionContext,
-        ) {
-            panic!("fixture unsupported command");
-        }
     }
 }
 

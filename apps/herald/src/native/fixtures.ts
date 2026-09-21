@@ -74,9 +74,9 @@ export function rulesEvent(gameId = "1") {
 }
 
 export function battleEvent(attacker = "7", defender = "8", timestamp = "1920"): RpcEvent {
-  const layout = schema.domains.troops.events.find((event) => event.name === "BattleEvent")!;
+  const layout = schema.domains.combat.events.find((event) => event.name === "BattleEvent")!;
   return {
-    from_address: manifest.native.domains.troops.address,
+    from_address: manifest.native.domains.combat.address,
     keys: [...layout.prefix, "1", "1", attacker, defender, "2", "3"],
     data: [
       attacker,

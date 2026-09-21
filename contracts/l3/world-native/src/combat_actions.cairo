@@ -36,6 +36,14 @@ pub fn battle_side(
 }
 #[starknet::interface]
 pub trait ICombatActions<T> {
+    fn battle(
+        ref self: T,
+        game_id: u32,
+        actor: starknet::ContractAddress,
+        command: crate::combat_actions::AttackExplorer,
+        context: ExecutionContext,
+    );
+
     fn guard_attack(
         ref self: T, game_id: u32, actor: starknet::ContractAddress, command: GuardAttack, context: ExecutionContext,
     );

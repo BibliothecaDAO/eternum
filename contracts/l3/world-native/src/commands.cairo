@@ -180,13 +180,6 @@ pub trait ITroopCommands<T> {
         ref self: T, game_id: u32, actor: ContractAddress, command: CreateExplorer, context: ExecutionContext,
     );
     fn explore(ref self: T, game_id: u32, actor: ContractAddress, command: Explore, context: ExecutionContext);
-    fn battle(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        command: crate::combat_actions::AttackExplorer,
-        context: ExecutionContext,
-    );
 }
 
 #[starknet::interface]

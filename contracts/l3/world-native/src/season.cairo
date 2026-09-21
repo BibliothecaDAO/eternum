@@ -345,6 +345,7 @@ pub mod SeasonDomain {
             let caller = get_caller_address();
             assert!(
                 caller == peers.troops
+                    || caller == peers.combat
                     || caller == peers.map
                     || caller == peers.structures
                     || caller == peers.resources
@@ -580,11 +581,11 @@ pub mod SeasonDomain {
             },
             Command::GuardAttack(value) => {
                 value.serialize(ref calldata);
-                (peers.troops, selector!("guard_attack"))
+                (peers.combat, selector!("guard_attack"))
             },
             Command::Raid(value) => {
                 value.serialize(ref calldata);
-                (peers.troops, selector!("raid"))
+                (peers.combat, selector!("raid"))
             },
             Command::MarkGameSettled => (peers.season, selector!("mark_game_settled")),
             Command::LeaveGuild => (peers.registry, selector!("leave_guild")),
@@ -695,11 +696,11 @@ pub mod SeasonDomain {
             },
             Command::BattleGuard(value) => {
                 value.serialize(ref calldata);
-                (peers.troops, selector!("battle_guard"))
+                (peers.combat, selector!("battle_guard"))
             },
             Command::Battle(value) => {
                 value.serialize(ref calldata);
-                (peers.troops, selector!("battle"))
+                (peers.combat, selector!("battle"))
             },
             Command::Move(value) => {
                 value.serialize(ref calldata);

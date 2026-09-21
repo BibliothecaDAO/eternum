@@ -129,7 +129,7 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
     model("TradeOrder", ["economy"], "game", struct("trade::TradeKey"), struct("trade::TradeOrder")),
     model("TradeRules", ["economy"], "game", method("economy", "trade_rules").inputs, struct("trade::TradeRules")),
     model("Guard", ["troops"], "game", struct("guards::GuardKey"), struct("guards::Guard")),
-    model("VillageRaid", ["troops"], "game", struct("resources::ResourceKey"), [
+    model("VillageRaid", ["combat"], "game", struct("resources::ResourceKey"), [
       { name: "last_tick", type: "core::integer::u64" },
     ]),
     model("BitcoinMine", ["prizes"], "game", struct("resources::ResourceKey"), struct("bitcoin::MineFunding")),

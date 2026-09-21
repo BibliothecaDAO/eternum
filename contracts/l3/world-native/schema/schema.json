@@ -1656,137 +1656,6 @@
           ]
         },
         {
-          "name": "BattleEvent",
-          "prefix": [
-            "0x1f2a859ff6d82254f122800be40d0837341227d1e7d10e20a20748250947366"
-          ],
-          "members": [
-            {
-              "name": "version",
-              "type": "core::integer::u8",
-              "kind": "key"
-            },
-            {
-              "name": "game_id",
-              "type": "core::integer::u32",
-              "kind": "key"
-            },
-            {
-              "name": "attacker_id",
-              "type": "core::integer::u32",
-              "kind": "key"
-            },
-            {
-              "name": "defender_id",
-              "type": "core::integer::u32",
-              "kind": "key"
-            },
-            {
-              "name": "attacker_owner",
-              "type": "core::integer::u32",
-              "kind": "key"
-            },
-            {
-              "name": "defender_owner",
-              "type": "core::integer::u32",
-              "kind": "key"
-            },
-            {
-              "name": "winner_id",
-              "type": "core::integer::u32",
-              "kind": "data"
-            },
-            {
-              "name": "coord",
-              "type": "world_native::troops::Coord",
-              "kind": "data"
-            },
-            {
-              "name": "max_reward",
-              "type": "core::array::Span::<world_native::resources::ResourceAmount>",
-              "kind": "data"
-            },
-            {
-              "name": "attacker",
-              "type": "world_native::combat_actions::BattleSide",
-              "kind": "data"
-            },
-            {
-              "name": "defender",
-              "type": "world_native::combat_actions::BattleSide",
-              "kind": "data"
-            },
-            {
-              "name": "timestamp",
-              "type": "core::integer::u64",
-              "kind": "data"
-            }
-          ]
-        },
-        {
-          "name": "RaidEvent",
-          "prefix": [
-            "0x1e96e77801ade10fead420f147e6e347b0f7e7d2dda8d4431249034ab681c9b"
-          ],
-          "members": [
-            {
-              "name": "version",
-              "type": "core::integer::u8",
-              "kind": "key"
-            },
-            {
-              "name": "game_id",
-              "type": "core::integer::u32",
-              "kind": "key"
-            },
-            {
-              "name": "explorer_id",
-              "type": "core::integer::u32",
-              "kind": "key"
-            },
-            {
-              "name": "structure_id",
-              "type": "core::integer::u32",
-              "kind": "key"
-            },
-            {
-              "name": "success",
-              "type": "core::bool",
-              "kind": "data"
-            },
-            {
-              "name": "player",
-              "type": "core::starknet::contract_address::ContractAddress",
-              "kind": "data"
-            },
-            {
-              "name": "target_owner",
-              "type": "core::starknet::contract_address::ContractAddress",
-              "kind": "data"
-            },
-            {
-              "name": "troops_before",
-              "type": "core::integer::u128",
-              "kind": "data"
-            },
-            {
-              "name": "troops_after",
-              "type": "core::integer::u128",
-              "kind": "data"
-            },
-            {
-              "name": "requested_loot",
-              "type": "core::array::Span::<world_native::resources::ResourceAmount>",
-              "kind": "data"
-            },
-            {
-              "name": "timestamp",
-              "type": "core::integer::u64",
-              "kind": "data"
-            }
-          ]
-        },
-        {
           "name": "StoryEvent",
           "prefix": [
             "0x33b7d96bc1ff34b0a89214516b6ef5d2b8bdd9c301222eda2a1e96f78b84b96"
@@ -2101,118 +1970,6 @@
         },
         {
           "type": "function",
-          "name": "battle",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "actor",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "command",
-              "type": "world_native::combat_actions::AttackExplorer"
-            },
-            {
-              "name": "context",
-              "type": "world_native::commands::ExecutionContext"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "battle_guard",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "actor",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "command",
-              "type": "world_native::commands::Battle"
-            },
-            {
-              "name": "context",
-              "type": "world_native::commands::ExecutionContext"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "guard_attack",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "actor",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "command",
-              "type": "world_native::combat_actions::GuardAttack"
-            },
-            {
-              "name": "context",
-              "type": "world_native::commands::ExecutionContext"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "raid",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "actor",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "command",
-              "type": "world_native::combat_actions::Raid"
-            },
-            {
-              "name": "context",
-              "type": "world_native::commands::ExecutionContext"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "village_last_raided",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::resources::ResourceKey"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::integer::u64"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
           "name": "move_explorer",
           "inputs": [
             {
@@ -2254,6 +2011,90 @@
             {
               "name": "context",
               "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "next_guard",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::resources::ResourceKey"
+            },
+            {
+              "name": "maximum",
+              "type": "core::integer::u8"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::option::Option::<world_native::guards::GuardKey>"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "save_guard",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::guards::GuardKey"
+            },
+            {
+              "name": "guard",
+              "type": "world_native::guards::Guard"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "reset_guards",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::resources::ResourceKey"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "save_explorer",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::troops::ExplorerKey"
+            },
+            {
+              "name": "explorer",
+              "type": "world_native::troops::ExplorerTroops"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "finish_battle",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::troops::ExplorerKey"
+            },
+            {
+              "name": "explorer",
+              "type": "world_native::troops::ExplorerTroops"
+            },
+            {
+              "name": "before",
+              "type": "core::integer::u128"
             }
           ],
           "outputs": [],
@@ -7453,65 +7294,276 @@
               "kind": "data"
             }
           ]
+        },
+        {
+          "name": "BattleEvent",
+          "prefix": [
+            "0x1f2a859ff6d82254f122800be40d0837341227d1e7d10e20a20748250947366"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "game_id",
+              "type": "core::integer::u32",
+              "kind": "key"
+            },
+            {
+              "name": "attacker_id",
+              "type": "core::integer::u32",
+              "kind": "key"
+            },
+            {
+              "name": "defender_id",
+              "type": "core::integer::u32",
+              "kind": "key"
+            },
+            {
+              "name": "attacker_owner",
+              "type": "core::integer::u32",
+              "kind": "key"
+            },
+            {
+              "name": "defender_owner",
+              "type": "core::integer::u32",
+              "kind": "key"
+            },
+            {
+              "name": "winner_id",
+              "type": "core::integer::u32",
+              "kind": "data"
+            },
+            {
+              "name": "coord",
+              "type": "world_native::troops::Coord",
+              "kind": "data"
+            },
+            {
+              "name": "max_reward",
+              "type": "core::array::Span::<world_native::resources::ResourceAmount>",
+              "kind": "data"
+            },
+            {
+              "name": "attacker",
+              "type": "world_native::combat_actions::BattleSide",
+              "kind": "data"
+            },
+            {
+              "name": "defender",
+              "type": "world_native::combat_actions::BattleSide",
+              "kind": "data"
+            },
+            {
+              "name": "timestamp",
+              "type": "core::integer::u64",
+              "kind": "data"
+            }
+          ]
+        },
+        {
+          "name": "RaidEvent",
+          "prefix": [
+            "0x1e96e77801ade10fead420f147e6e347b0f7e7d2dda8d4431249034ab681c9b"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "game_id",
+              "type": "core::integer::u32",
+              "kind": "key"
+            },
+            {
+              "name": "explorer_id",
+              "type": "core::integer::u32",
+              "kind": "key"
+            },
+            {
+              "name": "structure_id",
+              "type": "core::integer::u32",
+              "kind": "key"
+            },
+            {
+              "name": "success",
+              "type": "core::bool",
+              "kind": "data"
+            },
+            {
+              "name": "player",
+              "type": "core::starknet::contract_address::ContractAddress",
+              "kind": "data"
+            },
+            {
+              "name": "target_owner",
+              "type": "core::starknet::contract_address::ContractAddress",
+              "kind": "data"
+            },
+            {
+              "name": "troops_before",
+              "type": "core::integer::u128",
+              "kind": "data"
+            },
+            {
+              "name": "troops_after",
+              "type": "core::integer::u128",
+              "kind": "data"
+            },
+            {
+              "name": "requested_loot",
+              "type": "core::array::Span::<world_native::resources::ResourceAmount>",
+              "kind": "data"
+            },
+            {
+              "name": "timestamp",
+              "type": "core::integer::u64",
+              "kind": "data"
+            }
+          ]
+        },
+        {
+          "name": "RowSet",
+          "prefix": [
+            "0x39d31a8346a7df98372837a3b1003b72bd3eb7da809fff89a68dbcf5ed30d0c"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "model",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "keys",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            },
+            {
+              "name": "values",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            }
+          ]
         }
       ],
       "entrypoints": [
         {
           "type": "function",
-          "name": "resolve_raid",
+          "name": "battle_guard",
           "inputs": [
             {
               "name": "game_id",
               "type": "core::integer::u32"
             },
             {
-              "name": "explorer",
-              "type": "world_native::troops::Troops"
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
             },
             {
-              "name": "guards",
-              "type": "core::array::Span::<world_native::guards::Guard>"
-            },
-            {
-              "name": "biome",
-              "type": "world_native::biome::Biome"
-            },
-            {
-              "name": "timestamp",
-              "type": "core::integer::u64"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "world_native::raid::RaidResolution"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "resolve_battle",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "attacker",
-              "type": "world_native::troops::Troops"
-            },
-            {
-              "name": "defender",
-              "type": "world_native::troops::Troops"
+              "name": "command",
+              "type": "world_native::commands::Battle"
             },
             {
               "name": "context",
-              "type": "world_native::combat::CombatContext"
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "battle",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "command",
+              "type": "world_native::combat_actions::AttackExplorer"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "guard_attack",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "command",
+              "type": "world_native::combat_actions::GuardAttack"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "raid",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "command",
+              "type": "world_native::combat_actions::Raid"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "village_last_raided",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::resources::ResourceKey"
             }
           ],
           "outputs": [
             {
-              "type": "(world_native::troops::Troops, world_native::troops::Troops)"
+              "type": "core::integer::u64"
             }
           ],
           "state_mutability": "view"
@@ -8832,7 +8884,7 @@
       "name": "VillageRaid",
       "identity": "0x56696c6c61676552616964",
       "owners": [
-        "troops"
+        "combat"
       ],
       "scope": "game",
       "keys": [
@@ -11736,7 +11788,7 @@
     {
       "name": "BattleEvent",
       "owners": [
-        "troops"
+        "combat"
       ],
       "scope": "game",
       "version": 1,
@@ -11811,7 +11863,7 @@
     {
       "name": "RaidEvent",
       "owners": [
-        "troops"
+        "combat"
       ],
       "scope": "game",
       "version": 1,
@@ -11957,16 +12009,6 @@
         {
           "name": "snapshot",
           "type": "@core::array::Array::<world_native::exploration_rewards::ExplorationReward>"
-        }
-      ]
-    },
-    "core::array::Span::<world_native::guards::Guard>": {
-      "type": "struct",
-      "name": "core::array::Span::<world_native::guards::Guard>",
-      "members": [
-        {
-          "name": "snapshot",
-          "type": "@core::array::Array::<world_native::guards::Guard>"
         }
       ]
     },
@@ -12203,6 +12245,20 @@
         {
           "name": "Some",
           "type": "world_native::buildings::Building"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
+    "core::option::Option::<world_native::guards::GuardKey>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::guards::GuardKey>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::guards::GuardKey"
         },
         {
           "name": "None",
@@ -12559,84 +12615,6 @@
         {
           "name": "resource_count",
           "type": "core::integer::u8"
-        }
-      ]
-    },
-    "world_native::biome::Biome": {
-      "type": "enum",
-      "name": "world_native::biome::Biome",
-      "variants": [
-        {
-          "name": "None",
-          "type": "()"
-        },
-        {
-          "name": "DeepOcean",
-          "type": "()"
-        },
-        {
-          "name": "Ocean",
-          "type": "()"
-        },
-        {
-          "name": "Beach",
-          "type": "()"
-        },
-        {
-          "name": "Scorched",
-          "type": "()"
-        },
-        {
-          "name": "Bare",
-          "type": "()"
-        },
-        {
-          "name": "Tundra",
-          "type": "()"
-        },
-        {
-          "name": "Snow",
-          "type": "()"
-        },
-        {
-          "name": "TemperateDesert",
-          "type": "()"
-        },
-        {
-          "name": "Shrubland",
-          "type": "()"
-        },
-        {
-          "name": "Taiga",
-          "type": "()"
-        },
-        {
-          "name": "Grassland",
-          "type": "()"
-        },
-        {
-          "name": "TemperateDeciduousForest",
-          "type": "()"
-        },
-        {
-          "name": "TemperateRainForest",
-          "type": "()"
-        },
-        {
-          "name": "SubtropicalDesert",
-          "type": "()"
-        },
-        {
-          "name": "TropicalSeasonalForest",
-          "type": "()"
-        },
-        {
-          "name": "TropicalRainForest",
-          "type": "()"
-        },
-        {
-          "name": "Underground",
-          "type": "()"
         }
       ]
     },
@@ -13203,44 +13181,6 @@
         {
           "name": "steal_resources",
           "type": "core::array::Span::<world_native::resources::ResourceAmount>"
-        }
-      ]
-    },
-    "world_native::combat::CombatContext": {
-      "type": "struct",
-      "name": "world_native::combat::CombatContext",
-      "members": [
-        {
-          "name": "timestamp",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "attacker_roll",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "defender_roll",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "attacker_biome",
-          "type": "world_native::biome::Biome"
-        },
-        {
-          "name": "defender_biome",
-          "type": "world_native::biome::Biome"
-        },
-        {
-          "name": "attack_distance",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "attacker_is_structure_guard",
-          "type": "core::bool"
-        },
-        {
-          "name": "defender_is_structure_guard",
-          "type": "core::bool"
         }
       ]
     },
@@ -15334,32 +15274,6 @@
         }
       ]
     },
-    "world_native::raid::RaidResolution": {
-      "type": "struct",
-      "name": "world_native::raid::RaidResolution",
-      "members": [
-        {
-          "name": "explorer",
-          "type": "world_native::troops::Troops"
-        },
-        {
-          "name": "guards",
-          "type": "core::array::Span::<world_native::guards::Guard>"
-        },
-        {
-          "name": "damage_to_explorer",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "damage_to_guards",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "guarded",
-          "type": "core::bool"
-        }
-      ]
-    },
     "world_native::realms::RealmCatalogue": {
       "type": "struct",
       "name": "world_native::realms::RealmCatalogue",
@@ -17193,5 +17107,5 @@
       ]
     }
   },
-  "identity": "8abfea74a3b6376b9629ee035c5412122037ad220530e0c5e99dc5537b53a7f8"
+  "identity": "dda896875e14d22badb22e3e9370361b6ec3cb933ed18f684a36796c16fa9e0d"
 }

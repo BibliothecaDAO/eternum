@@ -602,6 +602,7 @@ pub mod ResourcesDomain {
                 caller == peers.structures
                     || caller == peers.economy
                     || caller == peers.troops
+                    || caller == peers.combat
                     || caller == peers.bridge
                     || caller == peers.prizes,
                 "only resource settlement domain",

@@ -884,7 +884,7 @@ pub mod StructuresDomain {
     #[abi(embed_v0)]
     impl Capture of crate::guards::IStructureCapture<ContractState> {
         fn capture_structure(ref self: ContractState, key: ResourceKey, capturing_home: u32, timestamp: u64) {
-            self.assert_troops();
+            assert!(get_caller_address() == self.lifecycle.require_active().combat, "only combat domain");
             let record = self.structures.record(key);
             let owner = self.structures.record(ResourceKey { game_id: key.game_id, entity_id: capturing_home }).owner;
             assert!(owner != 0.try_into().unwrap(), "capturing home is unowned");

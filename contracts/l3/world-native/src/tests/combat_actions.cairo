@@ -162,7 +162,7 @@ fn a_surviving_explorer_loots_the_defeated_army_before_its_resources_are_deleted
         .serialize(ref expected);
     80_u64.serialize(ref expected);
     let mut found = false;
-    for (_, event) in spy.get_events().emitted_by(d.peers.troops).events.span() {
+    for (_, event) in spy.get_events().emitted_by(d.peers.combat).events.span() {
         if *event.keys.at(0) == selector!("BattleEvent") {
             assert_eq!(event.data.span(), expected.span());
             found = true;
@@ -234,7 +234,7 @@ fn village_immunity_is_recorded_per_village_and_allows_only_troop_loot_until_its
     );
     grant(d, target, 2, 90);
     grant(d, target, 26, RESOURCE_PRECISION);
-    let view = ICombatActionsDispatcher { contract_address: d.peers.troops };
+    let view = ICombatActionsDispatcher { contract_address: d.peers.combat };
     assert!(execute(d, raid(attacker, target, resources(10)), 80));
     assert_eq!(view.village_last_raided(target), 16);
     assert_terminal_rejection(d, raid(attacker, target, resources(10)), 90);
@@ -363,10 +363,10 @@ fn raid_rounding_and_weighted_outcomes_keep_the_declared_thresholds() {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn combat_actions_and_raid_calculation_reject_foreign_callers() {
+fn combat_actions_and_troop_writes_reject_foreign_callers() {
     let (d, home, target, attacker, defender) = setup(false);
     let context = crate::commands::ExecutionContext { raw_root: 7, timestamp: 80 };
-    let actions = crate::combat_actions::ICombatActionsSafeDispatcher { contract_address: d.peers.troops };
+    let actions = crate::combat_actions::ICombatActionsSafeDispatcher { contract_address: d.peers.combat };
     assert!(
         crate::combat_actions::ICombatActionsSafeDispatcherTrait::raid(
             actions,
@@ -390,15 +390,11 @@ fn combat_actions_and_raid_calculation_reject_foreign_callers() {
         )
             .is_err(),
     );
-    let combat = crate::combat_domain::ICombatSafeDispatcher { contract_address: d.peers.combat };
     assert!(
-        crate::combat_domain::ICombatSafeDispatcherTrait::resolve_raid(
-            combat,
-            3,
-            troop(d, attacker).unwrap().troops,
-            array![Default::default(), Default::default(), Default::default(), Default::default()].span(),
-            crate::biome::Biome::Grassland,
-            80,
+        crate::troops::ICombatTroopsSafeDispatcherTrait::save_explorer(
+            crate::troops::ICombatTroopsSafeDispatcher { contract_address: d.peers.troops },
+            ExplorerKey { game_id: 3, explorer_id: attacker },
+            troop(d, attacker).unwrap(),
         )
             .is_err(),
     );
@@ -480,7 +476,7 @@ fn ethereal_battle_uses_both_recorded_d20_rolls_in_damage_and_history() {
         .serialize(ref expected);
     80_u64.serialize(ref expected);
     let mut found = false;
-    for (_, event) in spy.get_events().emitted_by(d.peers.troops).events.span() {
+    for (_, event) in spy.get_events().emitted_by(d.peers.combat).events.span() {
         if *event.keys.at(0) == selector!("BattleEvent") {
             assert_eq!(event.data.span(), expected.span());
             found = true;
@@ -651,7 +647,7 @@ fn a_destroyed_raider_never_collects_loot_even_when_the_roll_wins() {
     );
     assert_eq!(balance(d, target.entity_id, 2), 90);
     let mut saw_winning_roll = false;
-    for (_, event) in spy.get_events().emitted_by(d.peers.troops).events.span() {
+    for (_, event) in spy.get_events().emitted_by(d.peers.combat).events.span() {
         if *event.keys.at(0) == selector!("RaidEvent") {
             saw_winning_roll = *event.data.at(0) == 1;
         }

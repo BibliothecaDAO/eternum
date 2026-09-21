@@ -509,7 +509,7 @@ fn a_single_guard_in_the_highest_slot_must_be_fought_before_capture() {
             40,
         ),
     );
-    let events = spy.get_events().emitted_by(deployment.peers.troops);
+    let events = spy.get_events().emitted_by(deployment.peers.combat);
     let mut fought = false;
     for (_, event) in events.events.span() {
         if *event.keys.at(0) == selector!("BattleEvent") {
