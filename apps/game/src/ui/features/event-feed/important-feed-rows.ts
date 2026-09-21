@@ -27,7 +27,6 @@ export const battleIdentity = (event: ProcessedStoryEvent): string =>
 const routineProductionTypes = new Set<TransactionType>([
   TransactionType.BURN_RESOURCE_FOR_RESOURCE_PRODUCTION,
   TransactionType.BURN_LABOR_FOR_RESOURCE_PRODUCTION,
-  TransactionType.BURN_RESOURCE_FOR_LABOR_PRODUCTION,
 ]);
 
 function isImportantPersonalRow(row: FeedRow): boolean {

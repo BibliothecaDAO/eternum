@@ -44,8 +44,6 @@ export const getTxMessage = (type: TransactionType): string => {
       return "Transferred troops to structure";
     case TransactionType.STRUCTURE_TROOP_ADJACENT_TRANSFER:
       return "Transferred troops from structure";
-    case TransactionType.TROOP_BURN:
-      return "Burned troops";
 
     // Combat
     case TransactionType.ATTACK_EXPLORER_VS_EXPLORER:
@@ -102,8 +100,6 @@ export const getTxMessage = (type: TransactionType): string => {
       return "Converted resources";
     case TransactionType.BURN_LABOR_FOR_RESOURCE_PRODUCTION:
       return "Used labor for production";
-    case TransactionType.BURN_RESOURCE_FOR_LABOR_PRODUCTION:
-      return "Converted resources to labor";
     case TransactionType.MINT:
       return "Minted tokens";
     case TransactionType.MINT_TEST_LORDS:
@@ -223,7 +219,7 @@ export const getTxMessage = (type: TransactionType): string => {
     case TransactionType.END_GAME:
       return "Game has ended";
 
-    // Blitz
+      // Blitz
       return "Submitted blitz rankings";
 
     // Chests & Relics
@@ -372,8 +368,6 @@ export const getTxIcon = (type: TransactionType): string => {
       return "📦";
     case TransactionType.BURN_RESOURCE_FOR_RESOURCE_PRODUCTION:
     case TransactionType.BURN_LABOR_FOR_RESOURCE_PRODUCTION:
-    case TransactionType.BURN_RESOURCE_FOR_LABOR_PRODUCTION:
-      return "🔥";
     case TransactionType.MINT:
     case TransactionType.MINT_TEST_LORDS:
       return "✨";
@@ -428,8 +422,6 @@ export const getTxIcon = (type: TransactionType): string => {
     case TransactionType.TRANSFER_STRUCTURE_OWNERSHIP:
       return "🔄";
     case TransactionType.STRUCTURE_BURN:
-    case TransactionType.TROOP_BURN:
-      return "🔥";
     case TransactionType.SET_ENTITY_NAME:
     case TransactionType.SET_ADDRESS_NAME:
       return "✍️";
@@ -625,8 +617,6 @@ export const getTxShortLabel = (type: TransactionType): string => {
       return "Convert";
     case TransactionType.BURN_LABOR_FOR_RESOURCE_PRODUCTION:
       return "Produce";
-    case TransactionType.BURN_RESOURCE_FOR_LABOR_PRODUCTION:
-      return "Labor";
     case TransactionType.GUARD_ADD:
       return "Add Guard";
     case TransactionType.GUARD_DELETE:

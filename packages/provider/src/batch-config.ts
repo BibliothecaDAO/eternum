@@ -87,7 +87,6 @@ export const TRANSACTION_COST_CATEGORY: Partial<Record<TransactionType, Transact
   [TransactionType.TROOP_TROOP_ADJACENT_TRANSFER]: TransactionCostCategory.MEDIUM,
   [TransactionType.TROOP_STRUCTURE_ADJACENT_TRANSFER]: TransactionCostCategory.MEDIUM,
   [TransactionType.STRUCTURE_TROOP_ADJACENT_TRANSFER]: TransactionCostCategory.MEDIUM,
-  [TransactionType.TROOP_BURN]: TransactionCostCategory.MEDIUM,
 
   // Legacy Army
   [TransactionType.ARMY_CREATE]: TransactionCostCategory.MEDIUM,
@@ -109,7 +108,6 @@ export const TRANSACTION_COST_CATEGORY: Partial<Record<TransactionType, Transact
   [TransactionType.ARRIVALS_OFFLOAD]: TransactionCostCategory.MEDIUM,
   [TransactionType.BURN_RESOURCE_FOR_RESOURCE_PRODUCTION]: TransactionCostCategory.MEDIUM,
   [TransactionType.BURN_LABOR_FOR_RESOURCE_PRODUCTION]: TransactionCostCategory.MEDIUM,
-  [TransactionType.BURN_RESOURCE_FOR_LABOR_PRODUCTION]: TransactionCostCategory.MEDIUM,
   [TransactionType.MINT]: TransactionCostCategory.MEDIUM,
   [TransactionType.MINT_TEST_LORDS]: TransactionCostCategory.MEDIUM,
 

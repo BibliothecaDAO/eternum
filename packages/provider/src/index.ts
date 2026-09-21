@@ -1498,17 +1498,6 @@ export class EternumProvider extends EventEmitter {
     );
   }
 
-  public async burn_resource_for_labor_production(props: SystemProps.BurnOtherResourcesForLaborProductionProps) {
-    return this.submitCommand(
-      props.signer,
-      {
-        kind: "BurnResourceForLaborProduction",
-        value: { structure_id: props.entity_id, resource_types: props.resource_types, amounts: props.resource_amounts },
-      },
-      TransactionType.BURN_RESOURCE_FOR_LABOR_PRODUCTION,
-    );
-  }
-
   public async burn_labor_for_resource_production(props: SystemProps.BurnLaborResourcesForOtherProductionProps) {
     return this.submitCommand(
       props.signer,
@@ -1577,13 +1566,6 @@ export class EternumProvider extends EventEmitter {
     return this.submitCommand(props.signer, {
       kind: "BurnStructureResources",
       value: { entity_id: props.structure_id, resources: resourceAmounts(props.resources) },
-    });
-  }
-
-  public async troop_burn(props: SystemProps.TroopBurnProps) {
-    return this.submitCommand(props.signer, {
-      kind: "BurnExplorerResources",
-      value: { entity_id: props.explorer_id, resources: resourceAmounts(props.resources) },
     });
   }
 
@@ -1902,7 +1884,6 @@ export class EternumProvider extends EventEmitter {
   ) {
     return this.submitCommand(props.signer, { kind: "ClaimPlayerFaithPoints", value: props.value });
   }
-
 }
 
 function resourceAmounts(resources: readonly { resourceId: BigNumberish; amount: BigNumberish }[]) {

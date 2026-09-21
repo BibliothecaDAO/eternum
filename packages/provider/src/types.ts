@@ -85,7 +85,6 @@ export enum TransactionType {
   TROOP_TROOP_ADJACENT_TRANSFER = "troop_troop_adjacent_transfer",
   TROOP_STRUCTURE_ADJACENT_TRANSFER = "troop_structure_adjacent_transfer",
   STRUCTURE_TROOP_ADJACENT_TRANSFER = "structure_troop_adjacent_transfer",
-  TROOP_BURN = "troop_burn",
 
   // Combat
   ATTACK_EXPLORER_VS_EXPLORER = "attack_explorer_vs_explorer",
@@ -119,7 +118,6 @@ export enum TransactionType {
   ARRIVALS_OFFLOAD = "arrivals_offload",
   BURN_RESOURCE_FOR_RESOURCE_PRODUCTION = "burn_resource_for_resource_production",
   BURN_LABOR_FOR_RESOURCE_PRODUCTION = "burn_labor_for_resource_production",
-  BURN_RESOURCE_FOR_LABOR_PRODUCTION = "burn_resource_for_labor_production",
   MINT = "mint",
   MINT_TEST_LORDS = "mint_test_lords",
 

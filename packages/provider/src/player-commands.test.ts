@@ -193,11 +193,6 @@ const commandCases = [
   ["settle_season", { name: "Realm" }, ["SettleSeason"]],
   ["settle_village", { passId: 1, connectedRealmEntityId: 2 }, ["SettleVillage"]],
   [
-    "burn_resource_for_labor_production",
-    { entity_id: 1, resource_types: [2], resource_amounts: [3] },
-    ["BurnResourceForLaborProduction"],
-  ],
-  [
     "burn_labor_for_resource_production",
     { from_entity_id: 1, produced_resource_types: [2], production_cycles: [3] },
     ["BurnLaborForResourceProduction"],
@@ -249,7 +244,6 @@ const commandCases = [
   ["leave_guild", {}, ["LeaveGuild"]],
   ["transfer_structure_ownership", { structure_id: 1, new_owner: "0x123" }, ["TransferStructureOwnership"]],
   ["structure_burn", { structure_id: 1, resources: [{ resourceId: 2, amount: 3 }] }, ["BurnStructureResources"]],
-  ["troop_burn", { explorer_id: 1, resources: [{ resourceId: 2, amount: 3 }] }, ["BurnExplorerResources"]],
   ["open_chest", { explorer_id: 1, chest_coord: { x: 2, y: 3, alt: false } }, ["OpenRelicChest"]],
   ["burn_research_for_relic", { structure_id: 1 }, ["CraftRelic"]],
   ["apply_relic", { entity_id: 1, relic_resource_id: 2, recipient_type: 0 }, ["ApplyRelic"]],

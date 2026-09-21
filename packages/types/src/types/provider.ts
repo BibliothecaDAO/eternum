@@ -450,17 +450,6 @@ export interface MintTestLordsProps extends SystemSigner {
 /**
  * Props for burning resources to produce labor
  */
-export interface BurnOtherResourcesForLaborProductionProps {
-  /** ID of the realm entity */
-  entity_id: number;
-  /** Array of resource types to burn */
-  resource_types: number[];
-  /** Array of resource amounts to burn */
-  resource_amounts: number[];
-  /** Account executing the transaction */
-  signer: Account | AccountInterface;
-}
-
 /**
  * Props for burning labor to produce other resources
  */
@@ -777,11 +766,6 @@ export interface TransferStructureOwnershipProps extends SystemSigner {
 
 export interface StructureBurnProps extends SystemSigner {
   structure_id: BigNumberish;
-  resources: Resource[];
-}
-
-export interface TroopBurnProps extends SystemSigner {
-  explorer_id: BigNumberish;
   resources: Resource[];
 }
 

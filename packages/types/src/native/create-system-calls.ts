@@ -93,8 +93,6 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.arrivals_offload(props);
   };
 
-;
-
   const set_entity_name = async (props: SystemProps.SetEntityNameProps): Promise<GetTransactionReceiptResponse> => {
     return await provider.set_entity_name(props);
   };
@@ -183,12 +181,6 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.disband_guild(props);
   };
 
-  const burn_resource_for_labor_production = async (
-    props: SystemProps.BurnOtherResourcesForLaborProductionProps,
-  ): Promise<GetTransactionReceiptResponse> => {
-    return await provider.burn_resource_for_labor_production(props);
-  };
-
   const burn_labor_for_resource_production = async (
     props: SystemProps.BurnLaborResourcesForOtherProductionProps,
   ): Promise<GetTransactionReceiptResponse> => {
@@ -238,8 +230,6 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
   ): Promise<GetTransactionReceiptResponse> => {
     return await provider.guard_explorer_swap(props);
   };
-
-;
 
   const toggle_alternate = async (props: SystemProps.ToggleAlternateProps): Promise<GetTransactionReceiptResponse> => {
     return await provider.toggle_alternate(props);
@@ -341,10 +331,6 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.structure_burn(props);
   };
 
-  const troop_burn = async (props: SystemProps.TroopBurnProps): Promise<GetTransactionReceiptResponse> => {
-    return await provider.troop_burn(props);
-  };
-
   const open_chest = async (props: SystemProps.OpenChestProps): Promise<GetTransactionReceiptResponse> => {
     return await provider.open_chest(props);
   };
@@ -412,7 +398,6 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     bridge_deposit_into_realm: withAuth(bridge_deposit_into_realm),
     bridge_withdraw_from_realm: withAuth(bridge_withdraw_from_realm),
 
-    burn_resource_for_labor_production: withAuth(burn_resource_for_labor_production),
     burn_labor_for_resource_production: withAuth(burn_labor_for_resource_production),
     burn_resource_for_resource_production: withAuth(burn_resource_for_resource_production),
 
@@ -441,7 +426,6 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
 
     transfer_structure_ownership: withAuth(transfer_structure_ownership),
     structure_burn: withAuth(structure_burn),
-    troop_burn: withAuth(troop_burn),
     open_chest: withAuth(open_chest),
     burn_research_for_relic: withAuth(burn_research_for_relic),
     apply_relic: withAuth(apply_relic),
