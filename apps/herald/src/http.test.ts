@@ -51,7 +51,7 @@ const httpState: Parameters<typeof createHeraldRequestHandler>[0] = {
         return [
           {
             key: "0x7",
-            value: { game_id: "7", blitz_mode_on: true, victory_points_grant_config: { hyp_points_per_second: "1" } },
+            value: { game_id: "7", mode_id: 1, victory_points_grant_config: { hyp_points_per_second: "1" } },
           },
         ];
       if (model === "SettlementRules")
