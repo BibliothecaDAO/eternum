@@ -23,7 +23,7 @@ import {
 } from "@bibliothecadao/eternum";
 import { useGame, useNativeRevision } from "@bibliothecadao/react";
 
-import X from "lucide-react/dist/esm/icons/x";
+import { X } from "@/ui/design-system/atoms/game-icons";
 import { buildAttackStaminaRequirementLabel, resolveAttackStaminaState } from "./attack-stamina-state";
 import { getStructureDefenseSlotLimit, getUnlockedGuardSlots } from "../utils/defense-slot-utils";
 import { CombatModal } from "./combat-modal";

@@ -8,11 +8,12 @@ interface CaptureTerrainContentInput {
   cells: readonly TerrainCoverageCell[];
   getProjectedBiome: (col: number, row: number) => string | undefined;
   isOccupied: (col: number, row: number) => boolean;
+  getSurfacePresentation: (col: number, row: number) => "ethereal" | undefined;
   simulateAllExplored: boolean;
 }
 
 interface TerrainContentSnapshot {
-  cells: Array<TerrainCoverageCell & { occupied: boolean }>;
+  cells: Array<TerrainCoverageCell & { occupied: boolean; surfacePresentation?: "ethereal" }>;
   commitMode: "atomic" | "ambient";
   revision: number;
 }
@@ -35,6 +36,7 @@ export class WorldmapTerrainContent {
           input.getProjectedBiome(cell.col, cell.row) ?? (input.simulateAllExplored ? cell.biomeKey : "Outline"),
         col: cell.col,
         occupied: input.isOccupied(cell.col, cell.row),
+        surfacePresentation: input.getSurfacePresentation(cell.col, cell.row),
         row: cell.row,
       })),
     };

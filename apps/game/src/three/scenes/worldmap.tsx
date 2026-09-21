@@ -3649,12 +3649,28 @@ export default class WorldmapScene extends WarpTravel {
     });
   }
 
-  private isProjectedStructureHex(col: number, row: number): boolean {
+  /** A structure or a spire: terrain levels a pad under both. Callers that already know the presentation pass it. */
+  private isTerrainSupportHex(
+    col: number,
+    row: number,
+    surfacePresentation = this.getTerrainCellSurfacePresentation(col, row),
+  ): boolean {
+    if (surfacePresentation === "ethereal") return true;
     const contract = new Position({ x: col, y: row }).getContract();
     return (
       this.worldSpatialProjection.getStructuresAtHex({ alt: activeMapLayer(), col: contract.x, row: contract.y })
         .length > 0
     );
+  }
+
+  private getTerrainCellSurfacePresentation(col: number, row: number): "ethereal" | undefined {
+    const contract = new Position({ x: col, y: row }).getContract();
+    const tile = this.worldSpatialProjection.getTileAtHex({
+      alt: activeMapLayer(),
+      col: contract.x,
+      row: contract.y,
+    });
+    return tile?.occupierType === TileOccupier.Spire ? "ethereal" : undefined;
   }
 
   protected getWarpTravelLifecycleAdapter(): WarpTravelLifecycleAdapter {
@@ -4847,9 +4863,10 @@ export default class WorldmapScene extends WarpTravel {
         : null;
       const biomeKey = biome ?? "Outline";
       const instanceIndex = instanceCounts.get(biomeKey) ?? 0;
-      const occupied = this.isProjectedStructureHex(col, row);
+      const surfacePresentation = this.getTerrainCellSurfacePresentation(col, row);
+      const occupied = this.isTerrainSupportHex(col, row, surfacePresentation);
       instanceCounts.set(biomeKey, instanceIndex + 1);
-      const cell = { biomeKey, col, instanceIndex, occupied, row };
+      const cell = { biomeKey, col, instanceIndex, occupied, row, surfacePresentation };
       terrainCells.push(cell);
 
       if (biome) {
@@ -5583,6 +5600,7 @@ export default class WorldmapScene extends WarpTravel {
       .presentAsync(
         {
           cells: content.cells,
+          surfacePresentation: activeMapLayer() ? "ethereal" : "world",
           climate: configManager.getBiomeClimateConfig() ?? NEUTRAL_BIOME_CLIMATE,
           commitMode: content.commitMode,
           mapCenter: configManager.getMapCenter(),
@@ -5600,7 +5618,7 @@ export default class WorldmapScene extends WarpTravel {
           subdivisions: 2,
         },
         this.chunkWorkQueue,
-        (event) => this.recordTerrainPresentationEvent(event),
+        (event) => this.handleTerrainPresentationEvent(event),
       )
       .then((terrainDiagnostics) => {
         if (!terrainDiagnostics) return;
@@ -5641,9 +5659,27 @@ export default class WorldmapScene extends WarpTravel {
         });
         return tile ? requireBiomeTypeFromId(tile.biome) : undefined;
       },
-      isOccupied: (col, row) => this.isProjectedStructureHex(col, row),
+      isOccupied: (col, row) => this.isTerrainSupportHex(col, row),
+      getSurfacePresentation: (col, row) => this.getTerrainCellSurfacePresentation(col, row),
       simulateAllExplored: this.simulateAllExplored,
     });
+  }
+
+  private handleTerrainPresentationEvent(event: TerrainPresentationEvent): void {
+    if (event.kind === "page_complete") this.regroundTerrainPlacements();
+    this.recordTerrainPresentationEvent(event);
+  }
+
+  /**
+   * Managers place their content while terrain pages still stream, on the fallback surface. Everything that samples
+   * terrain height at placement re-grounds here, so a new terrain-placed manager joins this list.
+   */
+  private regroundTerrainPlacements(): void {
+    this.structureManager.refreshTerrainPlacement();
+    this.spireManager.refreshTerrainPlacement();
+    this.reservedHyperstructureManager.refreshTerrainPlacement();
+    this.chestManager.refreshTerrainPlacement();
+    this.armyManager.refreshTerrainPlacement();
   }
 
   private recordTerrainPresentationEvent(event: TerrainPresentationEvent): void {
@@ -6390,22 +6426,30 @@ export default class WorldmapScene extends WarpTravel {
 
   private getTerrainFingerprintForChunk(startRow: number, startCol: number): string {
     const bounds = getRenderBounds(startRow, startCol, this.renderChunkSize, this.chunkSize);
-    const fingerprintEntries: Array<{ biomeKey: string; col: number; row: number }> = [];
+    const fingerprintEntries: Array<{
+      biomeKey: string;
+      col: number;
+      row: number;
+      occupied: boolean;
+      surfacePresentation?: "ethereal";
+    }> = [];
 
     for (let row = bounds.minRow; row <= bounds.maxRow; row++) {
       for (let col = bounds.minCol; col <= bounds.maxCol; col++) {
-        const isStructure = this.isProjectedStructureHex(col, row);
-        if (isStructure) {
-          continue;
-        }
-
         const exploredBiome = this.exploredTiles.get(col)?.get(row);
         if (!exploredBiome && !this.simulateAllExplored) {
           continue;
         }
 
         const biome = exploredBiome ?? this.perfSimulation!.getSimulatedBiome(col, row);
-        fingerprintEntries.push({ biomeKey: biome, col, row });
+        const surfacePresentation = this.getTerrainCellSurfacePresentation(col, row);
+        fingerprintEntries.push({
+          biomeKey: biome,
+          col,
+          row,
+          occupied: this.isTerrainSupportHex(col, row, surfacePresentation),
+          surfacePresentation,
+        });
       }
     }
 

@@ -7,7 +7,7 @@ import { PrizePanel } from "@/ui/features/prize";
 import { getPlayerInfo } from "@bibliothecadao/eternum";
 import { useGame } from "@bibliothecadao/react";
 import { ContractAddress, StructureType } from "@bibliothecadao/types";
-import { Shapes, Sparkles, Users } from "lucide-react";
+import { Shapes, Sparkles, Users } from "@/ui/design-system/atoms/game-icons";
 import { ReactNode, useCallback, useEffect, useMemo } from "react";
 import { FaithLeaderboardPanel } from "../faith";
 import { GuildMembers } from "../guilds/guild-members";

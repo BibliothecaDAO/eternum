@@ -175,6 +175,9 @@ interface StructureInstanceBinding {
   entityIdsByInstance: Map<number, ID>;
   instanceIndex: number;
   model: StructureModel;
+  terrainHeight: number;
+  worldX: number;
+  worldZ: number;
 }
 
 const isBoundStructureInstance = (binding: StructureInstanceBinding | undefined): binding is StructureInstanceBinding =>
@@ -776,6 +779,26 @@ export class StructureManager {
 
   private resolveTerrainSurface(): TerrainSurface {
     return this.hexagonScene?.getTerrainSurface() ?? FLAT_TERRAIN_SURFACE;
+  }
+
+  /** Re-ground committed instances when streamed terrain replaces their initial fallback surface. */
+  public refreshTerrainPlacement(): void {
+    if (this.isDestroyed) return;
+    const terrain = this.resolveTerrainSurface();
+    for (const [entityId, bindings] of this.structureInstanceBindings) {
+      // Every page completion visits every bound structure: sample from the binding and touch RECS only on a change.
+      const height = terrain.sampleSurface(bindings[0].worldX, bindings[0].worldZ).height;
+      if (bindings.every((binding) => binding.terrainHeight === height)) continue;
+      const structure = this.resolveStructureInfoByEntityId(entityId);
+      if (!structure) continue;
+
+      this.syncVisibleStructurePresentation(structure, this.resolveVisibleStructureRotationY(structure));
+      for (const binding of bindings) {
+        binding.model.setMatrixAt(binding.instanceIndex, this.dummy.matrix);
+        binding.terrainHeight = height;
+      }
+      this.frustumVisibilityDirty = true;
+    }
   }
 
   private updateShadowFlags(): void {
@@ -1655,7 +1678,9 @@ export class StructureManager {
     model.setMatrixAt(instanceIndex, this.dummy.matrix);
     dirtyModels.add(model);
 
-    return { entityIdsByInstance, instanceIndex, model };
+    const { x: worldX, z: worldZ } = this.dummy.position;
+    const terrainHeight = this.resolveTerrainSurface().sampleSurface(worldX, worldZ).height;
+    return { entityIdsByInstance, instanceIndex, model, terrainHeight, worldX, worldZ };
   }
 
   // An overflow is a sizing bug, not a runtime condition: count it, warn once, and keep the pass alive.

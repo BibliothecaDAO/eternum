@@ -1,4 +1,4 @@
-import { FlaskConical } from "lucide-react";
+import { FlaskConical } from "@/ui/design-system/atoms/game-icons";
 import { lazy, Suspense, useEffect, useRef } from "react";
 import { Link, Navigate, Route, Routes, useLocation } from "react-router-dom";
 

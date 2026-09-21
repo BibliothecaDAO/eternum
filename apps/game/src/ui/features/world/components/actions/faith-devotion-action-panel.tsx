@@ -16,8 +16,7 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { displayAddress } from "@/ui/utils/utils";
 import { useGame } from "@bibliothecadao/react";
 import { ID, StructureType } from "@bibliothecadao/types";
-import Loader from "lucide-react/dist/esm/icons/loader";
-import Sparkles from "lucide-react/dist/esm/icons/sparkles";
+import { Loader, Sparkles } from "@/ui/design-system/atoms/game-icons";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
 

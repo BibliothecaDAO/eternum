@@ -19,7 +19,7 @@ import {
   Clock,
   Trophy,
   RefreshCw,
-} from "lucide-react";
+} from "@/ui/design-system/atoms/game-icons";
 import { Suspense, lazy, useCallback, useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { primeGameEntry } from "@/game-entry-preload";

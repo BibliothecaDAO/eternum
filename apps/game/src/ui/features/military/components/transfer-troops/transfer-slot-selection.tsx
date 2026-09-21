@@ -1,6 +1,6 @@
 import { DISPLAYED_SLOT_NUMBER_MAP, GUARD_SLOT_NAMES, TroopTier, TroopType } from "@bibliothecadao/types";
 import clsx from "clsx";
-import AlertTriangle from "lucide-react/dist/esm/icons/alert-triangle";
+import { AlertTriangle } from "@/ui/design-system/atoms/game-icons";
 import { GuardCooldownBadge } from "../guard-cooldown-badge";
 import { GuardStaminaBar } from "../guard-stamina-bar";
 import { TransferDirection } from "./transfer-direction";

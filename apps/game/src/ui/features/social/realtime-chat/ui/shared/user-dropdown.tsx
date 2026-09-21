@@ -1,3 +1,4 @@
+import { Pin } from "@/ui/design-system/atoms/game-icons";
 import React, { useState, useMemo } from "react";
 import type { PlayerPresence } from "../../model/types";
 import { UserAvatar } from "./user-avatar";
@@ -67,20 +68,7 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({
             className={`ml-2 p-1 rounded hover:bg-gold/20 transition-colors ${isPinned ? "text-gold" : "text-gold/30"}`}
             title={isPinned ? "Unpin user" : "Pin user"}
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-3 w-3"
-              fill={isPinned ? "currentColor" : "none"}
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
-              />
-            </svg>
+            <Pin className={`h-3 w-3 ${isPinned ? "opacity-100" : "opacity-40"}`} />
           </button>
         )}
       </li>

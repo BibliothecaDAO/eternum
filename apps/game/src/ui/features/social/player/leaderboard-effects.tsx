@@ -1,7 +1,6 @@
 import clsx from "clsx";
 import gsap from "gsap";
-import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
-import ChevronUp from "lucide-react/dist/esm/icons/chevron-up";
+import { ChevronDown, ChevronUp } from "@/ui/design-system/atoms/game-icons";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { EffectIntensity, PlayerEffect, PointDeltas } from "./use-leaderboard-effects";

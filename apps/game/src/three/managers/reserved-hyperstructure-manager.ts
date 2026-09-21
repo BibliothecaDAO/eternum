@@ -57,6 +57,7 @@ export class ReservedHyperstructureManager {
   private reservedHyperstructureModel: InstancedModel | null = null;
   private modelVisible = true;
   private destroyed = false;
+  private placedTerrainHeights: number[] = [];
 
   constructor(
     private readonly scene: Scene,
@@ -116,6 +117,16 @@ export class ReservedHyperstructureManager {
     this.renderReservedHyperstructures();
   }
 
+  /** Terrain pages can arrive after the sites are placed; re-place them once a sampled height has moved. */
+  public refreshTerrainPlacement(): void {
+    if (!this.reservedHyperstructureModel || this.destroyed) return;
+    const heights = this.getReservedHyperstructureHexes().map((hexCoords) => this.sampleTerrainHeight(hexCoords));
+    const moved =
+      heights.length !== this.placedTerrainHeights.length ||
+      heights.some((height, index) => height !== this.placedTerrainHeights[index]);
+    if (moved) this.renderReservedHyperstructures();
+  }
+
   private renderReservedHyperstructures(): void {
     const reservedHyperstructureModel = this.reservedHyperstructureModel;
     if (!reservedHyperstructureModel) {
@@ -125,6 +136,7 @@ export class ReservedHyperstructureManager {
     incrementWorldmapRenderCounter("reservedSiteRebuilds");
     const entries = this.getReservedHyperstructureHexes();
     const previousCount = reservedHyperstructureModel.getCount();
+    this.placedTerrainHeights = entries.map((hexCoords) => this.sampleTerrainHeight(hexCoords));
 
     entries.forEach((hexCoords, index) => {
       this.instanceMatrix.copy(this.resolveInstanceMatrix(hexCoords));
@@ -145,6 +157,11 @@ export class ReservedHyperstructureManager {
       .getStructures(activeMapLayer())
       .filter((structure) => structure.reserved)
       .map((structure) => this.normalizeHexCoords(structure.hexCoords));
+  }
+
+  private sampleTerrainHeight(hexCoords: HexPosition): number {
+    const position = getWorldPositionForHex(hexCoords);
+    return this.terrainSurface.sampleSurface(position.x, position.z).height;
   }
 
   private resolveInstanceMatrix(hexCoords: HexPosition): Matrix4 {

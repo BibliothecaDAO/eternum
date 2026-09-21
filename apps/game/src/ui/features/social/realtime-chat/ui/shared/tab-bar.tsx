@@ -1,7 +1,6 @@
+import { X, Minus, Minimize2 as CollapseIcon, Maximize2 as ExpandIcon } from "@/ui/design-system/atoms/game-icons";
 import React, { useState } from "react";
 import type { ChatTab } from "../../model/types";
-import { ReactComponent as CollapseIcon } from "@/assets/icons/common/collapse.svg";
-import { ReactComponent as ExpandIcon } from "@/assets/icons/common/expand.svg";
 
 interface TabBarProps {
   tabs: ChatTab[];
@@ -65,7 +64,7 @@ export const TabBar: React.FC<TabBarProps> = ({
                     className="ml-1 text-gold/50 hover:text-gold transition-colors text-2xl leading-none"
                     title="Close tab"
                   >
-                    ×
+                    <X className="h-4 w-4" />
                   </button>
                 )}
               </div>
@@ -96,9 +95,7 @@ export const TabBar: React.FC<TabBarProps> = ({
               className="px-2 py-1 text-xs text-gold/70 hover:text-gold hover:bg-gold/10 rounded transition-all"
               title="Minimize chat"
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="w-4 h-4">
-                <path d="M6 12L18 12" stroke="#E0AF65" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
+              <Minus className="w-4 h-4" />
             </button>
           </>
         )}

@@ -1,7 +1,7 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { StructureArrivals } from "@/ui/features/economy/resources/resource-arrival";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
-import PackageOpen from "lucide-react/dist/esm/icons/package-open";
+import { PackageOpen } from "@/ui/design-system/atoms/game-icons";
 import { memo } from "react";
 
 export const AllResourceArrivals = memo(
@@ -14,7 +14,7 @@ export const AllResourceArrivals = memo(
       return (
         <div className="h-full flex items-center justify-center p-6">
           <div className="flex flex-col items-center gap-3 text-gold/40">
-            <PackageOpen size={28} strokeWidth={1.5} />
+            <PackageOpen size={28} />
             <p className="text-xs uppercase tracking-widest">No incoming transfers</p>
           </div>
         </div>

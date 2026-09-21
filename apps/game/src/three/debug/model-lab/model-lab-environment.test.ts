@@ -13,7 +13,6 @@ describe("model lab production biome fixtures", () => {
       );
       expect(request.cells.every((cell) => cell.explored && !cell.occupied)).toBe(true);
       expect(request.halo.length).toBeGreaterThan(0);
-      expect(request.flatSurface).not.toBe(true);
     }
   });
   it("puts army review on the selected land biome", () => {

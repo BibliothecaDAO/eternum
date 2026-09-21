@@ -31,16 +31,18 @@ import {
   StructureType,
 } from "@bibliothecadao/types";
 import clsx from "clsx";
-import ArrowDown from "lucide-react/dist/esm/icons/arrow-down";
-import ArrowLeftRight from "lucide-react/dist/esm/icons/arrow-left-right";
-import ArrowUp from "lucide-react/dist/esm/icons/arrow-up";
-import Factory from "lucide-react/dist/esm/icons/factory";
-import FlaskConical from "lucide-react/dist/esm/icons/flask-conical";
-import ShoppingCart from "lucide-react/dist/esm/icons/shopping-cart";
-import Target from "lucide-react/dist/esm/icons/target";
-import Trash2 from "lucide-react/dist/esm/icons/trash-2";
-import X from "lucide-react/dist/esm/icons/x";
-import Zap from "lucide-react/dist/esm/icons/zap";
+import {
+  ArrowDown,
+  ArrowLeftRight,
+  ArrowUp,
+  Factory,
+  FlaskConical,
+  ShoppingCart,
+  Target,
+  Trash2,
+  X,
+  Zap,
+} from "@/ui/design-system/atoms/game-icons";
 import React, { useCallback, useMemo, useState } from "react";
 import {
   ALWAYS_SHOW_RESOURCES,

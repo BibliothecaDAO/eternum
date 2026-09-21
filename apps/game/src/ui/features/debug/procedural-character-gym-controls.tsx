@@ -11,7 +11,7 @@ import {
   Swords,
   Target,
   Zap,
-} from "lucide-react";
+} from "@/ui/design-system/atoms/game-icons";
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 
@@ -1056,7 +1056,7 @@ const ControlSection = ({
 }) => (
   <details open={defaultOpen} className="group border border-white/10 bg-black/20">
     <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2.5 text-xs font-semibold uppercase tracking-[0.16em] text-slate-300 transition hover:bg-white/[0.035]">
-      <span className="flex items-center gap-2 [&_svg]:h-3.5 [&_svg]:w-3.5 [&_svg]:text-violet-300">
+      <span className="flex items-center gap-2 [&_img]:h-3.5 [&_img]:w-3.5 [&_img]:text-violet-300">
         {icon}
         {title}
       </span>
@@ -1215,7 +1215,7 @@ const ControlButton = ({ icon, label, onClick }: { icon: ReactNode; label: strin
   <button
     type="button"
     onClick={onClick}
-    className="flex h-9 w-full items-center justify-center gap-2 border border-white/10 bg-white/[0.035] text-xs font-semibold uppercase tracking-wider text-slate-300 transition hover:bg-white/[0.08] hover:text-white [&_svg]:h-3.5 [&_svg]:w-3.5"
+    className="flex h-9 w-full items-center justify-center gap-2 border border-white/10 bg-white/[0.035] text-xs font-semibold uppercase tracking-wider text-slate-300 transition hover:bg-white/[0.08] hover:text-white [&_img]:h-3.5 [&_img]:w-3.5"
   >
     {icon}
     {label}

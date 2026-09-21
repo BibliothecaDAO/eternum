@@ -5,6 +5,7 @@ import {
   BoxGeometry,
   Group,
   InstancedMesh,
+  InstancedBufferAttribute,
   Matrix4,
   Mesh,
   MeshBasicMaterial,
@@ -182,5 +183,55 @@ describe("InstancedModel material semantics", () => {
     expect(readInstanceMatrix(chestMesh, 0).elements).toEqual(visibleMatrix.elements);
     expect(readInstanceMatrix(chestMesh, 1).elements).toEqual(hiddenMatrix.elements);
     expect(model.getMatricesAndCount().count).toBe(1);
+  });
+});
+
+it("gives only Bitcoin gold local light and keeps its pooled source, slots and lifetime independent", async () => {
+  const { default: InstancedModel } = await import("./instanced-model");
+  const scene = new Group();
+  const materials = [
+    ["Satoshi gold / pixel core", 1.5],
+    ["Digital block / blue circuitry", 1.2],
+  ] as const;
+  for (const [name, emissiveIntensity] of materials) {
+    const material = new MeshStandardMaterial({ emissive: 0xffa000, emissiveIntensity, vertexColors: true });
+    material.name = name;
+    scene.add(new Mesh(new BoxGeometry(), material));
+  }
+  const source = scene.children[0] as Mesh<BoxGeometry, MeshStandardMaterial>;
+  const sourceDispose = vi.spyOn(source.geometry, "dispose");
+  const model = new InstancedModel({ scene, animations: [] }, 3, false, "lab-building", "cache");
+  const groups = model.group.children.filter((child) => child.name.startsWith("Bitcoin"));
+  expect(groups.map((group) => group.name)).toEqual(["Bitcoin pixel light"]);
+  const halos = groups.map((group) => group.children[0] as InstancedMesh);
+  expect(halos.map((mesh) => mesh.count)).toEqual([0]);
+  expect(source.material.emissiveIntensity).toBe(1.5);
+  expect(source.material.toneMapped).toBe(true);
+  expect((model.instancedMeshes[0].material as MeshStandardMaterial).vertexColors).toBe(true);
+  expect((model.instancedMeshes[1].material as MeshStandardMaterial).toneMapped).toBe(true);
+  model.setMatrixAt(1, new Matrix4().makeTranslation(4, 2, 8));
+  model.setCount(2);
+  expect(halos.map((mesh) => mesh.count)).toEqual([2]);
+  expect(readInstanceMatrix(halos[0], 1).elements[12]).toBe(4);
+  model.setWorldBounds({ box: new Box3(), sphere: new Sphere(new Vector3(4, 2, 8), 3) });
+  expect(halos[0].boundingSphere?.radius).toBeCloseTo(3.006);
+  expect(halos[0].frustumCulled).toBe(true);
+  model.setWorldBounds();
+  expect(halos[0].frustumCulled).toBe(false);
+  model.removeInstance(1);
+  expect(readInstanceMatrix(halos[0], 1).determinant()).toBe(0);
+  const restored = new InstancedBufferAttribute(new Float32Array(3 * 16), 16);
+  model.setMatricesAndCount(restored, 0);
+  expect(halos.map((mesh) => mesh.count)).toEqual([0]);
+  const haloDispose = vi.spyOn(halos[0].geometry, "dispose");
+  model.dispose();
+  expect(groups.every((group) => group.parent === null)).toBe(true);
+  expect(haloDispose).toHaveBeenCalledOnce();
+  expect(sourceDispose).not.toHaveBeenCalled();
+  scene.traverse((object) => {
+    if (object instanceof Mesh) {
+      object.geometry.dispose();
+      object.material.dispose();
+    }
   });
 });

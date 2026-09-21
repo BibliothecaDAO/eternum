@@ -329,7 +329,7 @@ function createVisibleStructurePassSubject() {
   subject.structureInstanceSlots = new Map();
   subject.structureInstanceFreeSlots = new Map();
   subject.structureModelDrawCounts = new Map();
-  subject.dummy = { matrix: {} };
+  subject.dummy = { matrix: {}, position: { x: 0, z: 0 } };
   subject.activeStructureAttachmentEntities = new Set();
   subject.structureAttachmentSignatures = new Map();
   subject.entityIdLabels = new Map();

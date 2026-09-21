@@ -7,7 +7,7 @@ import { BLITZ_CARD_DIMENSIONS } from "@/ui/shared/lib/blitz-highlight";
 import { buildGameReviewStepShareMessage } from "@/ui/shared/lib/x-share-messages";
 import { displayAddress } from "@/ui/utils/utils";
 import { toPng } from "html-to-image";
-import { ArrowLeft, ArrowRight, Copy, Flag, Gift, Loader2, Share2, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Copy, Flag, Gift, Loader2, Share2, X } from "@/ui/design-system/atoms/game-icons";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type MutableRefObject } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
 

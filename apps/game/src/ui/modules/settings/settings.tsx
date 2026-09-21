@@ -27,7 +27,7 @@ import { getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
 import { useGame, useNativeRevision } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
 import { useDisconnect } from "@starknet-react/core";
-import Pencil from "lucide-react/dist/esm/icons/pencil";
+import { Pencil } from "@/ui/design-system/atoms/game-icons";
 import { type ReactNode, useState } from "react";
 import { NotificationSettings } from "./notification-settings";
 import { PwaInstallControl } from "@/pwa/pwa-install-control";

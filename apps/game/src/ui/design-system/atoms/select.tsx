@@ -1,7 +1,5 @@
 import * as SelectPrimitive from "@radix-ui/react-select";
-import Check from "lucide-react/dist/esm/icons/check";
-import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
-import ChevronUp from "lucide-react/dist/esm/icons/chevron-up";
+import { Check, ChevronDown, ChevronUp } from "@/ui/design-system/atoms/game-icons";
 import * as React from "react";
 
 import { cn } from "@/ui/design-system/atoms/lib/utils";

@@ -1,3 +1,4 @@
+import { ArrowRight, Lock as LockIcon, Pen } from "@/ui/design-system/atoms/game-icons";
 import { useWorldSpatialTiles } from "@/hooks/use-world-spatial-tiles";
 import { Position as PositionInterface } from "@bibliothecadao/eternum";
 
@@ -29,8 +30,6 @@ import {
   TroopType,
 } from "@bibliothecadao/types";
 import clsx from "clsx";
-import LockIcon from "lucide-react/dist/esm/icons/lock";
-import Pen from "lucide-react/dist/esm/icons/pen";
 import { useEffect, useMemo, useState } from "react";
 import { requireActiveGameClient } from "@/sync/active-game-client";
 
@@ -51,7 +50,7 @@ type ArmyCreateProps = {
 
 interface DirectionButtonProps {
   direction: Direction;
-  label: string;
+  label: React.ReactNode;
   tooltip: string;
   availableDirections: Direction[];
   selectedDirection: Direction | null;
@@ -77,6 +76,7 @@ const DirectionButton: React.FC<DirectionButtonProps> = ({
       disabled={!isAvailable}
       className={`aspect-square text-sm ${isAvailable ? "cursor-pointer" : "cursor-not-allowed opacity-50"}`}
       title={tooltip}
+      aria-label={tooltip}
     >
       {label}
     </Button>
@@ -412,7 +412,7 @@ const ArmyCreate = ({ owner_entity, army, isExplorer, guardSlot, onCancel, onSuc
             <div className="grid grid-cols-3 gap-2 mx-auto my-4 max-w-xs">
               <DirectionButton
                 direction={Direction.SOUTH_WEST}
-                label="↖"
+                label={<ArrowRight className="h-5 w-5" style={{ rotate: "-135deg" }} />}
                 tooltip="North West"
                 availableDirections={freeDirections}
                 selectedDirection={selectedDirection}
@@ -421,7 +421,7 @@ const ArmyCreate = ({ owner_entity, army, isExplorer, guardSlot, onCancel, onSuc
               <div />
               <DirectionButton
                 direction={Direction.SOUTH_EAST}
-                label="↗"
+                label={<ArrowRight className="h-5 w-5" style={{ rotate: "-45deg" }} />}
                 tooltip="North East"
                 availableDirections={freeDirections}
                 selectedDirection={selectedDirection}
@@ -429,7 +429,7 @@ const ArmyCreate = ({ owner_entity, army, isExplorer, guardSlot, onCancel, onSuc
               />
               <DirectionButton
                 direction={Direction.WEST}
-                label="←"
+                label={<ArrowRight className="h-5 w-5" style={{ rotate: "180deg" }} />}
                 tooltip="West"
                 availableDirections={freeDirections}
                 selectedDirection={selectedDirection}
@@ -438,7 +438,7 @@ const ArmyCreate = ({ owner_entity, army, isExplorer, guardSlot, onCancel, onSuc
               <div className="flex items-center justify-center text-4xl ">🏰</div>
               <DirectionButton
                 direction={Direction.EAST}
-                label="→"
+                label={<ArrowRight className="h-5 w-5" style={{ rotate: "0deg" }} />}
                 tooltip="East"
                 availableDirections={freeDirections}
                 selectedDirection={selectedDirection}
@@ -446,7 +446,7 @@ const ArmyCreate = ({ owner_entity, army, isExplorer, guardSlot, onCancel, onSuc
               />
               <DirectionButton
                 direction={Direction.NORTH_WEST}
-                label="↙"
+                label={<ArrowRight className="h-5 w-5" style={{ rotate: "135deg" }} />}
                 tooltip="South West"
                 availableDirections={freeDirections}
                 selectedDirection={selectedDirection}
@@ -455,7 +455,7 @@ const ArmyCreate = ({ owner_entity, army, isExplorer, guardSlot, onCancel, onSuc
               <div />
               <DirectionButton
                 direction={Direction.NORTH_EAST}
-                label="↘"
+                label={<ArrowRight className="h-5 w-5" style={{ rotate: "45deg" }} />}
                 tooltip="South East"
                 availableDirections={freeDirections}
                 selectedDirection={selectedDirection}
@@ -582,7 +582,7 @@ export const ArmyManagementCard = ({ owner_entity, army }: ArmyManagementCardPro
                     setEditName(true);
                   }}
                 >
-                  <Pen className="w-4 h-4 fill-gold" />
+                  <Pen className="w-4 h-4 " />
                 </button>
               </div>
             )}

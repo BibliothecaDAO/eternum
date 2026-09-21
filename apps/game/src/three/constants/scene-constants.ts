@@ -44,6 +44,7 @@ enum BuildingFilenames {
 
 export const ChestModelPath = "/models/reward-tiles/chest.glb";
 export const RiftModelPath = "/models/reward-tiles/rift.glb";
+const BITCOIN_MINE_MODEL_PATH = "/models/ethereal/bitcoin-mine.glb";
 
 export const VILLAGE_MODEL_PATH = "/models/settlements/village.glb";
 export const REALM_MODEL_PATHS = {
@@ -64,6 +65,7 @@ export function isSettlementModelPath(path: string): boolean {
 export const SHARED_BUILDING_MODEL_PATHS = buildUniqueAssetPaths([
   ...Object.values(BuildingFilenames).map((fileName) => `${BUILDINGS_MODELS_PATH}${fileName}`),
   RiftModelPath,
+  BITCOIN_MINE_MODEL_PATH,
   ...Object.values(REALM_MODEL_PATHS),
   VILLAGE_MODEL_PATH,
   HYPERSTRUCTURE_MODEL_PATH,
@@ -175,7 +177,7 @@ export function getStructureModelPaths(): Record<StructureType, string[]> {
     [StructureType.Mine]: Object.values(MineKinds).map((kind) => kind.model),
     [StructureType.Village]: [VILLAGE_MODEL_PATH],
     [StructureType.Camp]: [VILLAGE_MODEL_PATH],
-    [StructureType.BitcoinMine]: [BUILDINGS_MODELS_PATH + BuildingFilenames.Mine],
+    [StructureType.BitcoinMine]: [BITCOIN_MINE_MODEL_PATH],
   };
 }
 

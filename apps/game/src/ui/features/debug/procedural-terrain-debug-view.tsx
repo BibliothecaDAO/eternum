@@ -5,7 +5,7 @@ import { TERRAIN_LAB_BUILDINGS } from "@/three/debug/terrain-lab-buildings";
 import { HYPERSTRUCTURE_MODEL_PATH } from "@/three/structures/hyperstructure-design";
 import { VILLAGE_MODEL_PATH, isRealmModelPath } from "@/three/constants/scene-constants";
 import { SETTLEMENT_RELATIONSHIPS, type SettlementRelationship } from "@/three/structures/settlement-appearance";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw } from "@/ui/design-system/atoms/game-icons";
 import { useEffect, useRef, useState, type RefObject } from "react";
 import { useSearchParams } from "react-router-dom";
 
@@ -276,7 +276,7 @@ export const ProceduralTerrainDebugView = () => {
             </label>
             {preview.biome === "ethereal" && (
               <p className="text-xs text-stone-400">
-                Ethereal / Underground — a separate world layer of fractured stone and flowing mineral energy.
+                Ethereal / Underground — dark basalt slabs with flowing neon along gameplay hex borders.
               </p>
             )}
             <label className="flex flex-col gap-1 text-sm">

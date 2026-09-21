@@ -1,4 +1,4 @@
-import { ReactComponent as Inventory } from "@/assets/icons/common/bagpack.svg";
+import { Backpack as Inventory } from "@/ui/design-system/atoms/game-icons";
 import { formatNumber, formatStringNumber } from "@/ui/utils/utils";
 import { configManager, getArmyTotalCapacityInKg, getRemainingCapacityInKg } from "@bibliothecadao/eternum";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
@@ -61,7 +61,7 @@ export const ArmyCapacity = ({ resource, className }: ArmyCapacityProps) => {
       valueText={valueText}
       percentage={weightPercentage}
       fillColor={capacityColor}
-      icon={<Inventory className="fill-order-giants w-2 ml-0.5" />}
+      icon={<Inventory className=" w-2 ml-0.5" />}
       tooltipContent={tooltipContent}
       className={className}
     />

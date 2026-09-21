@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
-import { Copy, Loader2, Share2 } from "lucide-react";
+import { Copy, Loader2, Share2 } from "@/ui/design-system/atoms/game-icons";
 
 import { Button } from "@/ui/design-system/atoms";
 import { BlitzHighlightCardWithSelector } from "@/ui/shared/components/blitz-highlight-card";

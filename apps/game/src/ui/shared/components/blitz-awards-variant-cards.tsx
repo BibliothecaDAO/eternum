@@ -1,3 +1,4 @@
+import { Hyperstructure, Swords, ChevronsUp } from "@/ui/design-system/atoms/game-icons";
 import { forwardRef, useMemo, useState, type Ref } from "react";
 import { createPortal } from "react-dom";
 
@@ -151,62 +152,9 @@ const getOptionSixMetricIconId = (awardId: AwardId): OptionSixMetricIconId | nul
 };
 
 const OptionSixMetricIcon = ({ iconId }: { iconId: OptionSixMetricIconId }) => {
-  if (iconId === "first-hyperstructure") {
-    return (
-      <svg viewBox="0 0 20 20" role="presentation" aria-hidden="true">
-        <path
-          d="M10 1.9 16.1 5.4v7.2L10 16.1 3.9 12.6V5.4Z"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.9"
-          strokeLinejoin="round"
-        />
-        <path d="M10 5.5v6.2M7.3 8.6h5.4" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
-      </svg>
-    );
-  }
-
-  if (iconId === "first-blood") {
-    return (
-      <svg viewBox="0 0 20 20" role="presentation" aria-hidden="true">
-        <path
-          d="M10 1.6S4.8 7.7 4.8 10.9a5.2 5.2 0 0 0 10.4 0c0-3.2-5.2-9.3-5.2-9.3Z"
-          fill="currentColor"
-          stroke="currentColor"
-          strokeWidth="0.5"
-        />
-      </svg>
-    );
-  }
-
-  return (
-    <svg viewBox="0 0 20 20" role="presentation" aria-hidden="true">
-      <path
-        d="M4.2 7.6 10 2.2l5.8 5.4"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2.4"
-        strokeLinecap="square"
-        strokeLinejoin="miter"
-      />
-      <path
-        d="M4.2 12.1 10 6.7l5.8 5.4"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2.4"
-        strokeLinecap="square"
-        strokeLinejoin="miter"
-      />
-      <path
-        d="M4.2 16.6 10 11.2l5.8 5.4"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2.4"
-        strokeLinecap="square"
-        strokeLinejoin="miter"
-      />
-    </svg>
-  );
+  if (iconId === "first-hyperstructure") return <Hyperstructure />;
+  if (iconId === "first-blood") return <Swords />;
+  return <ChevronsUp />;
 };
 
 const buildLeaderboardIdentityLookup = (leaderboard: LandingLeaderboardEntry[]): Map<string, LeaderboardIdentity> => {
@@ -1004,7 +952,7 @@ const OPTION_SIX_STYLES = `
     filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.35));
   }
 
-  .blitz-card-root.variant-option-six .award-index svg {
+  .blitz-card-root.variant-option-six .award-index img {
     width: 18px;
     height: 18px;
     display: block;

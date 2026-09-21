@@ -13,8 +13,7 @@ import {
 } from "@bibliothecadao/eternum";
 import { useGame, usePlayerWhitelist } from "@bibliothecadao/react";
 import { ContractAddress, PlayerInfo } from "@bibliothecadao/types";
-import ChevronRight from "lucide-react/dist/esm/icons/chevron-right";
-import Download from "lucide-react/dist/esm/icons/download";
+import { ChevronRight, Download } from "@/ui/design-system/atoms/game-icons";
 import { useMemo, useState } from "react";
 
 export const Guilds = ({

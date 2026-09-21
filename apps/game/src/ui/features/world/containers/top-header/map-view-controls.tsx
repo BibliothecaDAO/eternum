@@ -1,7 +1,6 @@
 import { HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import Mountain from "lucide-react/dist/esm/icons/mountain";
-import Sparkles from "lucide-react/dist/esm/icons/sparkles";
+import { Mountain, Portal } from "@/ui/design-system/atoms/game-icons";
 import { TOP_PILL } from "./top-pill";
 
 interface MapViewControlsProps {
@@ -73,7 +72,7 @@ const CompactLayerSwitch = ({
 }) => {
   const currentLayer = mapLayer ? "Ethereal" : "Surface";
   const nextLayer = mapLayer ? "Surface" : "Ethereal";
-  const Icon = mapLayer ? Sparkles : Mountain;
+  const Icon = mapLayer ? Portal : Mountain;
 
   return (
     <div role="group" aria-label="Map layer" className={cn(TOP_PILL, "px-1 max-lg:h-auto")}>
@@ -108,7 +107,7 @@ const LayerSwitch = ({ mapLayer, onLayerChange }: { mapLayer: boolean; onLayerCh
       onClick={() => onLayerChange(true)}
       className={layerButtonClasses(mapLayer)}
     >
-      <Sparkles className="h-3.5 w-3.5" aria-hidden />
+      <Portal className="h-3.5 w-3.5" aria-hidden />
       Ethereal
     </button>
   </div>

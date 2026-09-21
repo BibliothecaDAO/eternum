@@ -58,11 +58,7 @@ import {
   TroopType,
 } from "@bibliothecadao/types";
 import clsx from "clsx";
-import InfoIcon from "lucide-react/dist/esm/icons/info";
-import Hammer from "lucide-react/dist/esm/icons/hammer";
-import Pause from "lucide-react/dist/esm/icons/pause";
-import Play from "lucide-react/dist/esm/icons/play";
-import Trash from "lucide-react/dist/esm/icons/trash";
+import { Info as InfoIcon, Hammer, Pause, Play, Trash } from "@/ui/design-system/atoms/game-icons";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
 

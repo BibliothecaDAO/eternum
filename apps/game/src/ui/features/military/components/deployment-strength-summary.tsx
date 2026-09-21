@@ -1,7 +1,7 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { configManager } from "@bibliothecadao/eternum";
 import { TroopTier } from "@bibliothecadao/types";
-import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
+import { ChevronDown } from "@/ui/design-system/atoms/game-icons";
 import { useId, useState } from "react";
 
 interface DeploymentStrengthSummaryProps {

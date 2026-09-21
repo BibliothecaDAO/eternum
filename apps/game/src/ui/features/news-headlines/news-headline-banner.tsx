@@ -1,12 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import Castle from "lucide-react/dist/esm/icons/castle";
-import Clock3 from "lucide-react/dist/esm/icons/clock-3";
-import Crown from "lucide-react/dist/esm/icons/crown";
-import Navigation from "lucide-react/dist/esm/icons/navigation";
-import Shield from "lucide-react/dist/esm/icons/shield";
-import Skull from "lucide-react/dist/esm/icons/skull";
-import Trophy from "lucide-react/dist/esm/icons/trophy";
-import X from "lucide-react/dist/esm/icons/x";
+import { Castle, Clock3, Crown, Navigation, Shield, Skull, Trophy, X } from "@/ui/design-system/atoms/game-icons";
 
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { AlertBannerShell } from "@/ui/shared/components/alert-banner-shell";

@@ -1,6 +1,6 @@
 import { ReactComponent as RealmsLogo } from "@/assets/icons/rw-logo.svg";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { Menu, Settings, X } from "lucide-react";
+import { Menu, Settings, X } from "@/ui/design-system/atoms/game-icons";
 import { useState, useCallback } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {

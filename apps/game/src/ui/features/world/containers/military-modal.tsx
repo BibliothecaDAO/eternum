@@ -12,7 +12,7 @@ import { StructureSidebar } from "@/ui/features/world/containers/structure-sideb
 import { useStructureEntityDetail } from "@/ui/features/world/components/entities/hooks/use-structure-entity-detail";
 import type { StructureWithMetadata } from "@/ui/features/world/containers/top-header/structure-picker/chip";
 import { Direction, type ID } from "@bibliothecadao/types";
-import Swords from "lucide-react/dist/esm/icons/swords";
+import { Swords } from "@/ui/design-system/atoms/game-icons";
 import { memo, useCallback, useEffect, useState } from "react";
 
 interface MilitaryModalProps {

@@ -1,13 +1,13 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_CUE, HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
-import type { LucideIcon } from "lucide-react";
-import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
+import type { GameIcon } from "@/ui/design-system/atoms/game-icon";
+import { ChevronDown } from "@/ui/design-system/atoms/game-icons";
 import { type ReactNode, useState } from "react";
 
 interface InfoBubbleProps {
   title: ReactNode;
-  icon?: LucideIcon;
+  icon?: GameIcon;
   cue?: ReactNode;
   children: ReactNode;
   className?: string;

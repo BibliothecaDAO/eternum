@@ -10,11 +10,21 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertCircle, Castle, Check, ExternalLink, Eye, Loader2, Play, Sparkles, X } from "lucide-react";
+import {
+  AlertCircle,
+  Castle,
+  Check,
+  ExternalLink,
+  Eye,
+  Loader2,
+  Play,
+  Sparkles,
+  X,
+  TreasureChest,
+} from "@/ui/design-system/atoms/game-icons";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
 import { resolveEntryContextFromLandingSelection } from "@/game-entry/context";
 import { RealmNumberPicker } from "./realm-number-picker";
 import { createAutoSettleEntryKey, useAutoSettleStore } from "@/hooks/store/use-auto-settle-store";
@@ -404,7 +414,7 @@ const SettlementPhase = ({
             </div>
           ) : (
             <div className="flex items-center justify-center gap-2">
-              <TreasureChest className="w-4 h-4 fill-brown" />
+              <TreasureChest className="w-4 h-4 " />
               <span>Settle</span>
             </div>
           )}
@@ -698,7 +708,7 @@ const VillageRevealPhase = ({
   return (
     <div className="flex flex-col items-center text-center">
       <div className="mx-auto w-16 h-16 mb-3 rounded-full bg-gold/20 flex items-center justify-center">
-        <TreasureChest className="w-8 h-8 fill-gold text-gold" />
+        <TreasureChest className="w-8 h-8  text-gold" />
       </div>
       <h2 className="text-lg font-semibold text-gold mb-1">
         {spinning ? "Revealing Village Resource..." : "Village Resource Revealed"}

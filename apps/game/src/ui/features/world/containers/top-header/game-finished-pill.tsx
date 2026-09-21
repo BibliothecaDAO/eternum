@@ -5,7 +5,7 @@ import Button from "@/ui/design-system/atoms/button";
 import { HUD_BODY, HUD_HEADLINE } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Popover } from "@/ui/design-system/molecules/popover";
-import TrophyIcon from "lucide-react/dist/esm/icons/trophy";
+import { Trophy as TrophyIcon } from "@/ui/design-system/atoms/game-icons";
 import { useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { TOP_PILL } from "./top-pill";

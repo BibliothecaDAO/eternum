@@ -7,11 +7,7 @@ import { formatSocialText, twitterTemplates } from "@/ui/socials";
 import { getGuild, getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
 import { useGame, useGuildMembers, useGuildWhitelist } from "@bibliothecadao/react";
 import { ContractAddress, PlayerInfo } from "@bibliothecadao/types";
-import CalendarDays from "lucide-react/dist/esm/icons/calendar-days";
-import Mail from "lucide-react/dist/esm/icons/mail";
-import Shield from "lucide-react/dist/esm/icons/shield";
-import UserMinus from "lucide-react/dist/esm/icons/user-minus";
-import Users from "lucide-react/dist/esm/icons/users";
+import { CalendarDays, Mail, Shield, UserMinus, Users } from "@/ui/design-system/atoms/game-icons";
 import { useCallback, useMemo, useState } from "react";
 
 import { env } from "../../../../../env";

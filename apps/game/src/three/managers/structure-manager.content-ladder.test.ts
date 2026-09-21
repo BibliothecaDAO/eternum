@@ -181,7 +181,7 @@ const MID_BAND_CONTEXT = {
 };
 
 /** A real manager wired to a stub scene so band flips travel through the camera-view listener. */
-function createLiveManager(structures = PRIORITY_STRUCTURES) {
+function createLiveManager(structures = PRIORITY_STRUCTURES, terrainHeight = () => 0) {
   vi.spyOn(THREE.TextureLoader.prototype, "load").mockImplementation(() => new THREE.Texture());
   const renderables = structures.map((structure) => ({
     entityId: structure.entityId,
@@ -196,7 +196,7 @@ function createLiveManager(structures = PRIORITY_STRUCTURES) {
     removeCameraViewListener: (listener: CameraViewListener) => listeners.delete(listener),
     getShadowsEnabled: () => true,
     getCamera: () => undefined,
-    getTerrainSurface: () => undefined,
+    getTerrainSurface: () => ({ sampleSurface: () => ({ height: terrainHeight(), biome: null, normal: [0, 1, 0] }) }),
   };
   const worldSpatialProjection = {
     subscribeStructures: vi.fn(() => vi.fn()),
@@ -332,6 +332,73 @@ describe("StructureManager content ladder", () => {
   });
 });
 
+describe("StructureManager terrain placement", () => {
+  it("moves already bound mines and realms with labels and attachments when terrain arrives, without rebinding", () => {
+    let height = 0;
+    const structures = [createStructure(1, { structureType: "BitcoinMine" }), createStructure(2)];
+    const { manager, models } = createLiveManager(structures, () => height);
+    const matrices = new Map<number, THREE.Matrix4>();
+    const compactHeights = new Map<number, number>();
+    const attachmentHeights = new Map<number, number>();
+    const setMatrixAt = vi.fn((index: number, matrix: THREE.Matrix4) => matrices.set(index, matrix.clone()));
+    const model = { ...models.realm, setMatrixAt };
+    manager.attachmentManager = {
+      setVisible: vi.fn(),
+      clear: vi.fn(),
+      removeAttachments: vi.fn(),
+      spawnAttachments: vi.fn(),
+      updateAttachmentTransforms: vi.fn((entityId: number, base: { position: THREE.Vector3 }) =>
+        attachmentHeights.set(entityId, base.position.y),
+      ),
+    };
+    manager.compactLabelRenderer.setLabel.mockImplementation(
+      ({ entityId, position }: { entityId: number; position: THREE.Vector3 }) =>
+        compactHeights.set(entityId, position.y),
+    );
+    vi.spyOn(manager, "resolveStructureAttachmentsForRender").mockReturnValue([{ id: "banner" }]);
+    vi.spyOn(manager, "updateStructureLabelData").mockImplementation(() => {});
+    for (const structure of structures) {
+      manager.entityIdLabels.set(structure.entityId, createHoverLabel(structure.entityId));
+      manager.syncVisibleStructurePresentation(structure, 0);
+      const binding = manager.bindStructureInstance(model, structure.entityId, new Map(), new Set());
+      manager.structureInstanceBindings.set(structure.entityId, [binding]);
+    }
+    expect(matrices.get(0)!.elements[13]).toBe(0);
+    expect(matrices.get(1)!.elements[13]).toBeCloseTo(0.05);
+    const bindings = [...manager.structureInstanceBindings.values()];
+    setMatrixAt.mockClear();
+    manager.compactLabelRenderer.setLabel.mockClear();
+    manager.attachmentManager.spawnAttachments.mockClear();
+    manager.attachmentManager.updateAttachmentTransforms.mockClear();
+
+    height = 0.12;
+    manager.refreshTerrainPlacement();
+
+    expect(matrices.get(0)!.elements[13]).toBeCloseTo(0.12);
+    expect(matrices.get(1)!.elements[13]).toBeCloseTo(0.17);
+    expect(manager.entityIdLabels.get(1).position.y).toBeCloseTo(2.12);
+    expect(manager.entityIdLabels.get(2).position.y).toBeCloseTo(2.12);
+    expect(manager.compactLabelRenderer.setLabel).toHaveBeenCalledTimes(2);
+    expect(compactHeights.get(1)).toBeCloseTo(2.84);
+    expect(compactHeights.get(2)).toBeCloseTo(2.89);
+    expect(manager.attachmentManager.updateAttachmentTransforms).toHaveBeenCalledTimes(2);
+    expect(attachmentHeights.get(1)).toBeCloseTo(0.12);
+    expect(attachmentHeights.get(2)).toBeCloseTo(0.17);
+    expect(manager.attachmentManager.spawnAttachments).not.toHaveBeenCalled();
+    expect([...manager.structureInstanceBindings.values()]).toEqual(bindings);
+    expect(setMatrixAt).toHaveBeenCalledTimes(2);
+
+    manager.refreshTerrainPlacement();
+    expect(setMatrixAt).toHaveBeenCalledTimes(2);
+    expect(manager.compactLabelRenderer.setLabel).toHaveBeenCalledTimes(2);
+    expect(manager.attachmentManager.updateAttachmentTransforms).toHaveBeenCalledTimes(2);
+    manager.destroy();
+    height = 0.2;
+    manager.refreshTerrainPlacement();
+    expect(setMatrixAt).toHaveBeenCalledTimes(2);
+  });
+});
+
 function createVisibleStructurePassFence() {
   let fenceVersion = 0;
   return {
@@ -371,7 +438,7 @@ function createFullRefreshSubject(structureCount: number) {
   subject.structureInstanceSlots = new Map();
   subject.structureInstanceFreeSlots = new Map();
   subject.structureModelDrawCounts = new Map();
-  subject.dummy = { matrix: {} };
+  subject.dummy = { matrix: {}, position: { x: 0, z: 0 } };
   subject.activeStructureAttachmentEntities = new Set();
   subject.structureAttachmentSignatures = new Map();
   subject.entityIdLabels = new Map();

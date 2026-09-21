@@ -2,9 +2,10 @@ import type { BiomeClimateConfig } from "@bibliothecadao/eternum";
 import type { BiomeType, StructureType } from "@bibliothecadao/types";
 import type { TerrainPropArchetypeId } from "./terrain-prop-catalog";
 
-export const PROCEDURAL_TERRAIN_STYLE_VERSION = 25;
+export const PROCEDURAL_TERRAIN_STYLE_VERSION = 29;
 
 export interface TerrainCellInput {
+  surfacePresentation?: "ethereal";
   biome: BiomeType | null;
   col: number;
   explored: boolean;
@@ -35,10 +36,9 @@ export interface TerrainSettlementAnchor {
 }
 
 export interface TerrainPageRequest {
+  surfacePresentation?: "world" | "ethereal";
   cells: readonly TerrainCellInput[];
   climate: BiomeClimateConfig;
-  /** A level tile surface at the fog plane, without landforms or frontier walls. */
-  flatSurface?: boolean;
   halo: readonly TerrainCellInput[];
   mapCenter: number;
   pageKey: string;
@@ -56,6 +56,7 @@ export interface TerrainSurfaceSample {
 }
 
 export interface TerrainGeometryBuffers {
+  basaltWeights?: Float32Array;
   biomeIds: Float32Array;
   bounds: TerrainGeometryBounds;
   colors: Float32Array;
@@ -72,6 +73,16 @@ export interface TerrainGeometryBuffers {
   waterDepth: Float32Array;
 }
 
+/** Border strips carry only what their unlit material and the fog reveal read. */
+export interface TerrainBorderBuffers {
+  bounds: TerrainGeometryBounds;
+  colors: Float32Array;
+  indices: Uint32Array;
+  normals: Float32Array;
+  positions: Float32Array;
+  uvs: Float32Array;
+}
+
 export interface TerrainGeometryBounds {
   boxMax: readonly [number, number, number];
   boxMin: readonly [number, number, number];
@@ -83,6 +94,7 @@ export function getTerrainGeometryBufferViews(
   buffers: TerrainGeometryBuffers,
 ): Array<Float32Array | Uint8Array | Uint32Array> {
   return [
+    ...(buffers.basaltWeights ? [buffers.basaltWeights] : []),
     buffers.biomeIds,
     buffers.colors,
     buffers.explored,
@@ -97,6 +109,10 @@ export function getTerrainGeometryBufferViews(
     buffers.uvs,
     buffers.waterDepth,
   ];
+}
+
+export function getTerrainBorderBufferViews(buffers: TerrainBorderBuffers): Array<Float32Array | Uint32Array> {
+  return [buffers.colors, buffers.indices, buffers.normals, buffers.positions, buffers.uvs];
 }
 
 export interface TerrainPageDiagnostics {
@@ -114,6 +130,9 @@ export interface TerrainPageDiagnostics {
 }
 
 export interface PreparedTerrainPage {
+  /** Two floats per explored ethereal-layer tile: world X, world Z. */
+  basaltInstances?: Float32Array | null;
+  borderBuffers?: TerrainBorderBuffers | null;
   buffers: TerrainGeometryBuffers;
   diagnostics: TerrainPageDiagnostics;
   fingerprint: string;

@@ -12,7 +12,7 @@ import {
 import { describe, expect, it, vi } from "vitest";
 import { createInstancedMesh } from "../utils/create-instanced-mesh";
 import { MaterialPool } from "../utils/material-pool";
-import { SpireVeins } from "./spire-veins";
+import { LocalEmissiveGlow } from "./local-emissive-glow";
 
 function fixture() {
   const authored = new MeshStandardMaterial({
@@ -25,12 +25,12 @@ function fixture() {
   const source = createInstancedMesh(geometry, material, 3);
   const group = new Group();
   group.add(source);
-  const veins = new SpireVeins([source], group);
+  const veins = new LocalEmissiveGlow([source], group, { name: "Test light" });
   const halo = group.children[1].children[0] as typeof source;
   return { authored, source, group, veins, halo };
 }
 
-describe("spire vein diffusion", () => {
+describe("local emissive glow", () => {
   it("retains authored color and geometry while showing saturated veins without scene bloom", () => {
     const { authored, source, veins, halo } = fixture();
     const display = source.material as MeshStandardMaterial;

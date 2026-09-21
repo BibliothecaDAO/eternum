@@ -1,4 +1,4 @@
-import RefreshCw from "lucide-react/dist/esm/icons/refresh-cw";
+import { RefreshCw } from "@/ui/design-system/atoms/game-icons";
 import { ButtonHTMLAttributes } from "react";
 
 interface RefreshButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {

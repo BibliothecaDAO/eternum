@@ -3,7 +3,7 @@ import { getTierStyle } from "@/ui/utils/tier-styles";
 import { getTroopResourceId } from "@bibliothecadao/eternum";
 import { DISPLAYED_SLOT_NUMBER_MAP, GUARD_SLOT_NAMES, resources, TroopTier } from "@bibliothecadao/types";
 import clsx from "clsx";
-import AlertTriangle from "lucide-react/dist/esm/icons/alert-triangle";
+import { AlertTriangle } from "@/ui/design-system/atoms/game-icons";
 import { useMemo } from "react";
 
 import { GuardCooldownBadge } from "../guard-cooldown-badge";

@@ -1,7 +1,7 @@
 import type { CompactLane } from "@/hooks/helpers/use-compact-hud";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import type { ID, MarketInterface, ResourcesIds } from "@bibliothecadao/types";
-import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
+import { ChevronDown } from "@/ui/design-system/atoms/game-icons";
 import { useState } from "react";
 import { resolveBestPrice } from "./best-prices";
 import {

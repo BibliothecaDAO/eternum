@@ -1,7 +1,6 @@
 import { resolveCompactLane } from "@/hooks/helpers/use-compact-hud";
 import { type Building, type RealmInfo as RealmInfoType, ResourcesIds } from "@bibliothecadao/types";
-import Bot from "lucide-react/dist/esm/icons/bot";
-import Hammer from "lucide-react/dist/esm/icons/hammer";
+import { Bot, Hammer } from "@/ui/design-system/atoms/game-icons";
 import { useEffect, useRef, useState } from "react";
 
 import { Tabs } from "@/ui/design-system/atoms";

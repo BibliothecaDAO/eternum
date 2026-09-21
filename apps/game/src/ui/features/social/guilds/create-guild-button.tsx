@@ -1,6 +1,5 @@
-import { ReactComponent as LockClosed } from "@/assets/icons/common/lock-closed.svg";
+import { Lock as LockClosed, Unlock as LockOpen } from "@/ui/design-system/atoms/game-icons";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
-import { ReactComponent as LockOpen } from "@/assets/icons/common/lock-open.svg";
 import Button from "@/ui/design-system/atoms/button";
 import TextInput from "@/ui/design-system/atoms/text-input";
 import { MAX_NAME_LENGTH } from "@bibliothecadao/types";
@@ -42,7 +41,7 @@ export const CreateGuildButton = ({
         >
           {isPublic ? (
             <LockOpen
-              className="h-4 w-4 fill-gold"
+              className="h-4 w-4 "
               onMouseEnter={() => {
                 setTooltip({
                   position: "bottom",
@@ -55,7 +54,7 @@ export const CreateGuildButton = ({
             />
           ) : (
             <LockClosed
-              className="h-4 w-4 fill-gold/60"
+              className="h-4 w-4 opacity-60"
               onMouseEnter={() => {
                 setTooltip({
                   position: "bottom",

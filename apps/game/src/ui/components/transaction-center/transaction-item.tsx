@@ -1,3 +1,4 @@
+import { Loader2, Check, X, ChevronDown, ExternalLink } from "@/ui/design-system/atoms/game-icons";
 import { useState, useCallback } from "react";
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import type { Transaction } from "@/hooks/store/use-transaction-store";
@@ -114,30 +115,19 @@ export const TransactionItem = ({ transaction, isStuck }: TransactionItemProps) 
           <div className={`flex items-center gap-1.5 ${statusColor}`}>
             {transaction.status === "pending" && (
               <>
-                <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  />
-                </svg>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
                 <span className="text-xs">{isStuck ? "Stuck" : "Pending"}</span>
               </>
             )}
             {transaction.status === "success" && (
               <>
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
+                <Check className="w-3.5 h-3.5" />
                 <span className="text-xs">Success</span>
               </>
             )}
             {transaction.status === "reverted" && (
               <>
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <X className="w-3.5 h-3.5" />
                 <span className="text-xs">Failed</span>
               </>
             )}
@@ -149,30 +139,11 @@ export const TransactionItem = ({ transaction, isStuck }: TransactionItemProps) 
 
         {/* Expand/External link indicator */}
         {isBatched ? (
-          <svg
-            className={`w-3.5 h-3.5 text-gold/30 group-hover:text-gold/60 transition-all flex-shrink-0 ${isExpanded ? "rotate-180" : ""}`}
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            aria-hidden="true"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
+          <ChevronDown
+            className={`w-3.5 h-3.5 opacity-50 group-hover:opacity-100 transition-all flex-shrink-0 ${isExpanded ? "rotate-180" : ""}`}
+          />
         ) : (
-          <svg
-            className="w-3.5 h-3.5 text-gold/30 group-hover:text-gold/60 transition-colors flex-shrink-0"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            aria-hidden="true"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-            />
-          </svg>
+          <ExternalLink className="w-3.5 h-3.5 opacity-50 group-hover:opacity-100 transition-opacity flex-shrink-0" />
         )}
       </div>
 
@@ -197,14 +168,7 @@ export const TransactionItem = ({ transaction, isStuck }: TransactionItemProps) 
             >
               <span className="text-gold/40">└─</span>
               <span>View on {getExplorerName()}</span>
-              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                />
-              </svg>
+              <ExternalLink className="w-3 h-3" />
             </button>
           )}
         </div>

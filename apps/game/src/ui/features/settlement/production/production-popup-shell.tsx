@@ -1,6 +1,6 @@
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { SURFACE_WORKSPACE_CLASS, SurfaceFrame } from "@/ui/design-system/molecules/popover";
-import Factory from "lucide-react/dist/esm/icons/factory";
+import { Factory } from "@/ui/design-system/atoms/game-icons";
 
 interface ProductionPopupShellProps {
   children: React.ReactNode;

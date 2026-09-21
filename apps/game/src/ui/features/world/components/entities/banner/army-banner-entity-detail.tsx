@@ -1,8 +1,6 @@
-import Loader from "lucide-react/dist/esm/icons/loader";
-import Trash2 from "lucide-react/dist/esm/icons/trash-2";
+import { Loader, Trash2, Zap as Lightning } from "@/ui/design-system/atoms/game-icons";
 import { memo, type ReactNode, useMemo } from "react";
 
-import { ReactComponent as Lightning } from "@/assets/icons/common/lightning.svg";
 import { useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { playerAvatarUrl } from "@/hooks/use-player-profile";
@@ -292,7 +290,7 @@ const InlineStaminaBar = ({
       className="flex items-center gap-2 text-xxs text-gold/80"
       title={travelBlocked ? (travelBlockedTitle ?? undefined) : undefined}
     >
-      <Lightning className={cn("h-3 w-3 fill-order-power", recharging && STAMINA_RECHARGING_TEXT_CLASS)} />
+      <Lightning className={cn("h-3 w-3 ", recharging && STAMINA_RECHARGING_TEXT_CLASS)} />
       <div
         className={cn(
           "flex-1 h-2 rounded-full border border-gray-600 overflow-hidden",

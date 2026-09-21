@@ -17,7 +17,20 @@ if Path(bpy.data.filepath).resolve() != SOURCE.resolve():
 scene = bpy.context.scene
 collection = bpy.data.collections["SPIRE_V2_PRODUCTION"]
 objects = list(collection.objects)
-assert len(objects) == 47 and sum(obj.type == "MESH" for obj in objects) == 27
+assert len(objects) == 42 and sum(obj.type == "MESH" for obj in objects) == 23
+assert all(obj.get("spirePart") != "base" for obj in objects), "Terrain owns the landmark base"
+assert sum(obj.get("spirePart") == "outcrop" for obj in objects) == 1
+assert not any(obj.get("spirePart") == "fragment" and obj.type == "MESH"
+               and any(material.name.startswith("Veins") for material in obj.data.materials) for obj in objects)
+outcrop = next(obj for obj in objects if obj.get("spirePart") == "outcrop")
+assert outcrop.get("outcropInnerColumns") == 7 and outcrop.get("outcropOuterColumns") == 12
+assert sum(obj.get("veinSegmentCount", 0) for obj in objects) == 24
+stone = next(obj for obj in objects if obj.name == "SPIRE / Basalt")
+assert stone.get("crownMainApexCount") == 1 and stone.get("crownSlopingShoulderCount") == 18
+assert stone.get("crownFlatCapCount") == 0
+assert stone.get("inwardSlopingBottomCount") == 19 and stone.get("centralDirectApex") is True
+assert stone["centralTaperStartZ"] >= stone["highestExternalColumnZ"]
+assert abs(stone["centralApexZ"] - stone["centralTaperStartZ"] - 0.14) < 1e-6
 scene.frame_start, scene.frame_end, scene.render.fps = 1, 241, 30
 scene.frame_set(1)
 # Scene properties from the review session otherwise become animation extras.

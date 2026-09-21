@@ -34,7 +34,7 @@ describe("WorldmapProceduralTerrain", () => {
     terrain.setSurfacePresentation("ethereal");
     const loading = terrain.loadGroundTextures();
     terrain.setSurfacePresentation("world");
-    expect(apply).not.toHaveBeenCalled();
+    expect(apply).toHaveBeenLastCalledWith("world");
     resolveTextures();
     await loading;
     expect(apply).toHaveBeenLastCalledWith("world");
@@ -459,7 +459,7 @@ describe("WorldmapProceduralTerrain", () => {
   });
 
   it("bounds the prepared-page LRU while retaining recently visited pages", async () => {
-    stubPageWorker();
+    stubCachePageSizes(2 * 1024 * 1024);
     const terrain = new WorldmapProceduralTerrain();
 
     for (let page = 0; page < 65; page += 1) {
@@ -755,7 +755,60 @@ describe("WorldmapProceduralTerrain", () => {
     expect(coverage.pages.every(({ coverage: page }) => page.props === "uploaded")).toBe(true);
     terrain.dispose();
   });
+
+  it("evicts by retained geometry bytes in LRU order without charging repeated cache hits again", async () => {
+    stubCachePageSizes(64 * 1024 * 1024);
+    const terrain = new WorldmapProceduralTerrain();
+    await terrain.presentAsync(singlePageInput(0));
+    await expect(terrain.presentAsync(singlePageInput(2))).resolves.toMatchObject({ preparedCachePages: 2 });
+    for (let hit = 0; hit < 3; hit++) {
+      await expect(terrain.presentAsync(singlePageInput(0))).resolves.toMatchObject({
+        builtPages: 0,
+        preparedCachePages: 2,
+      });
+    }
+    await expect(terrain.presentAsync(singlePageInput(4))).resolves.toMatchObject({
+      builtPages: 1,
+      preparedCachePages: 2,
+    });
+    await expect(terrain.presentAsync(singlePageInput(0))).resolves.toMatchObject({ builtPages: 0 });
+    await expect(terrain.presentAsync(singlePageInput(2))).resolves.toMatchObject({ builtPages: 1 });
+    terrain.dispose();
+  });
+
+  it("accounts for replaced content signatures and releases its byte budget on clear", async () => {
+    stubCachePageSizes(64 * 1024 * 1024);
+    const terrain = new WorldmapProceduralTerrain();
+    const first = singlePageInput(0);
+    const replacement = { ...first, cells: [{ ...first.cells[0], occupied: true }] };
+    await terrain.presentAsync(first);
+    await terrain.presentAsync(singlePageInput(2));
+    await expect(terrain.presentAsync(replacement)).resolves.toMatchObject({ builtPages: 1, preparedCachePages: 2 });
+    await expect(terrain.presentAsync(singlePageInput(2))).resolves.toMatchObject({ builtPages: 0 });
+    await expect(terrain.presentAsync(first)).resolves.toMatchObject({ builtPages: 1 });
+
+    terrain.clear();
+    await expect(terrain.presentAsync(first)).resolves.toMatchObject({ builtPages: 1, preparedCachePages: 1 });
+    await expect(terrain.presentAsync(singlePageInput(2))).resolves.toMatchObject({ preparedCachePages: 2 });
+    await expect(terrain.presentAsync(first)).resolves.toMatchObject({ builtPages: 0, preparedCachePages: 2 });
+    terrain.dispose();
+  });
 });
+
+/** Exercise the cache byte budget with real small pages, without allocating hundreds of megabytes in tests. */
+function stubCachePageSizes(bytes: number): void {
+  vi.spyOn(ProceduralTerrain.prototype, "preparePageAsync").mockImplementation(async (request) => {
+    const page = prepareTerrainPage(request);
+    return {
+      ...page,
+      diagnostics: {
+        ...page.diagnostics,
+        geometryBytes: bytes,
+      },
+    };
+  });
+  vi.spyOn(ProceduralTerrain.prototype, "prepareFogMaskAsync").mockResolvedValue(null);
+}
 
 /** Builds pages on the calling thread: jsdom has no Worker, and the fog mask never needs one for these windows. */
 function stubPageWorker(): void {

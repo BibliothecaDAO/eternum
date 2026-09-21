@@ -3,7 +3,7 @@ import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { formatRelicBonusText } from "@/ui/utils/relic-utils";
 import { configManager, formatTime, relicsArmiesTicksLeft } from "@bibliothecadao/eternum";
 import { getRelicInfo, ID, RelicEffectWithEndTick, RelicInfo, ResourcesIds, TickIds } from "@bibliothecadao/types";
-import Sparkles from "lucide-react/dist/esm/icons/sparkles";
+import { Sparkles } from "@/ui/design-system/atoms/game-icons";
 import { useMemo } from "react";
 
 interface ActiveRelicEffectsProps {

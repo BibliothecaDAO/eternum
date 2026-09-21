@@ -32,6 +32,7 @@ import type { TerrainFogFieldStats } from "./terrain-fog-field";
 import type { TerrainMovementInteraction } from "./terrain-movement-effects";
 
 interface WorldmapProceduralCell {
+  surfacePresentation?: "ethereal";
   biomeKey: string;
   col: number;
   occupied: boolean;
@@ -39,6 +40,7 @@ interface WorldmapProceduralCell {
 }
 
 export interface WorldmapProceduralPresentationInput {
+  surfacePresentation?: "world" | "ethereal";
   cells: readonly WorldmapProceduralCell[];
   climate?: BiomeClimateConfig;
   /** Authoritative content changes commit together; camera coverage can stream as ambient pages become ready. */
@@ -198,9 +200,11 @@ interface WorldBounds {
 }
 
 const BIOME_VALUES = new Set<string>(Object.values(BiomeType));
-// Four complete 4x4 camera windows let ordinary out-and-back pans reuse the expensive worker result. The GPU still
-// presents only the active window; this cache holds CPU-side typed arrays and evicts least-recently-used signatures.
-const PREPARED_PAGE_CACHE_LIMIT = 64;
+// Out-and-back pans reuse the expensive worker result; the cache holds CPU-side typed arrays and evicts the
+// least-recently-used signatures. One byte budget replaces the former 64-page count, whose worst case retained
+// 328 MiB: a 24x24 page measures 1.80 MiB of land, 5.12 MiB of ocean and 0.66 MiB of ethereal basalt, so the budget
+// keeps four 4x4 camera windows of land and still holds a full window of open sea.
+const PREPARED_PAGE_CACHE_BYTES_LIMIT = 128 * 1024 * 1024;
 const ROAD_PAGE_PADDING = 1.5;
 const PRESENT_STEP_METRIC: Record<TerrainPresentStep, TerrainPresentStepMetric> = {
   "terrain:present:page": "presentPageTaskMaxMs",
@@ -229,6 +233,7 @@ export class WorldmapProceduralTerrain {
     presentTasks: 0,
   };
   private preparedCacheRevision = 0;
+  private preparedCacheBytes = 0;
   private presentationRevision = 0;
   private cancelActiveRun: (() => void) | null = null;
   private readonly presentedPages = new Map<
@@ -237,7 +242,6 @@ export class WorldmapProceduralTerrain {
   >();
   private visibleCellCount = 0;
   private surfacePresentation: "world" | "ethereal" = "world";
-  private groundTexturesReady = false;
   private disposed = false;
 
   constructor() {
@@ -273,13 +277,12 @@ export class WorldmapProceduralTerrain {
   async loadGroundTextures(): Promise<void> {
     await this.terrain.loadGroundTextures();
     if (this.disposed) return;
-    this.groundTexturesReady = true;
     this.terrain.setSurfacePresentation(this.surfacePresentation);
   }
 
   setSurfacePresentation(presentation: "world" | "ethereal"): void {
     this.surfacePresentation = presentation;
-    if (this.groundTexturesReady) this.terrain.setSurfacePresentation(presentation);
+    this.terrain.setSurfacePresentation(presentation);
   }
 
   setPropLod(lod: TerrainPropLod): void {
@@ -779,7 +782,6 @@ export class WorldmapProceduralTerrain {
       .then((prepared) => {
         if (cacheRevision === this.preparedCacheRevision) {
           this.touchPreparedPage(preparation.signature, prepared);
-          this.prunePreparedCache();
         }
         return prepared;
       })
@@ -793,21 +795,31 @@ export class WorldmapProceduralTerrain {
   }
 
   private touchPreparedPage(signature: string, prepared: PreparedTerrainPage): void {
-    this.preparedBySignature.delete(signature);
+    this.removePreparedPage(signature);
     this.preparedBySignature.set(signature, prepared);
+    this.preparedCacheBytes += prepared.diagnostics.geometryBytes;
+    this.prunePreparedCache();
   }
 
   private prunePreparedCache(): void {
-    while (this.preparedBySignature.size > PREPARED_PAGE_CACHE_LIMIT) {
+    while (this.preparedCacheBytes > PREPARED_PAGE_CACHE_BYTES_LIMIT) {
       const oldestSignature = this.preparedBySignature.keys().next().value;
       if (oldestSignature === undefined) return;
-      this.preparedBySignature.delete(oldestSignature);
+      this.removePreparedPage(oldestSignature);
     }
+  }
+
+  private removePreparedPage(signature: string): void {
+    const page = this.preparedBySignature.get(signature);
+    if (!page) return;
+    this.preparedCacheBytes -= page.diagnostics.geometryBytes;
+    this.preparedBySignature.delete(signature);
   }
 
   private clearPreparedWork(): void {
     this.preparedCacheRevision += 1;
     this.preparedBySignature.clear();
+    this.preparedCacheBytes = 0;
     this.pendingBySignature.clear();
   }
 }
@@ -877,6 +889,7 @@ function buildWorldmapTerrainPageRequest(
   return {
     cells,
     climate: input.climate ?? NEUTRAL_BIOME_CLIMATE,
+    surfacePresentation: input.surfacePresentation,
     halo: resolvePageHalo(cells, partition.cellsByKey),
     mapCenter: input.mapCenter,
     pageKey: page.pageKey,
@@ -992,6 +1005,7 @@ function containsWorldPoint(bounds: WorldBounds, point: TerrainWorldCoordinate):
 function toTerrainCell(cell: WorldmapProceduralCell): TerrainCellInput {
   const biome = resolveBiomeKey(cell.biomeKey);
   return {
+    ...(cell.surfacePresentation ? { surfacePresentation: cell.surfacePresentation } : {}),
     biome,
     col: cell.col,
     explored: biome !== null,
