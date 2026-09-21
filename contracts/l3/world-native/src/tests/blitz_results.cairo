@@ -26,8 +26,8 @@ fn setup(scores: Span<u128>) -> super::Deployment {
     let (d, _, _) = setup_with_rules(
         crate::rules::SliceRules {
             mode_rules: super::recorded::BLITZ_RULES,
-            entry_rule: 2,
-            command_mask: 0xffffffffffffffffffffffffffffffff_u128,
+            entry_rule: crate::rules::ENTRY_ROSTER,
+            command_mask: super::recorded::BLITZ_COMMAND_MASK,
             ..super::recorded::rules(),
         },
     );

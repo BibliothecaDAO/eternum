@@ -33,10 +33,16 @@ pub fn setup_mode(blitz: bool) -> (super::Deployment, ResourceKey, ResourceKey, 
     } else {
         super::recorded::ETERNUM_RULES
     };
+    ruleset
+        .command_mask = if blitz {
+            super::recorded::BLITZ_COMMAND_MASK
+        } else {
+            super::recorded::ETERNUM_COMMAND_MASK
+        };
     ruleset.entry_rule = if blitz {
-        2
+        crate::rules::ENTRY_ROSTER
     } else {
-        0
+        crate::rules::ENTRY_ENTITLEMENT
     };
     ruleset.victory_points_grant_config.hyp_points_per_second = 1000;
     let (deployment, first, second) = setup_with_rules(ruleset);

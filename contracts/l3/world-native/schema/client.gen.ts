@@ -1,5 +1,23 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "7109f66680637682a25e93bf3cb305a3adfcc5fcfb83e5f0f5cc0f0239b9bc99";
+export const nativeFactSchemaIdentity = "8abfea74a3b6376b9629ee035c5412122037ad220530e0c5e99dc5537b53a7f8";
+export const nativeRuleConstants = {
+  "ENTRY_ENTITLEMENT": 0,
+  "ENTRY_OPEN": 1,
+  "ENTRY_ROSTER": 2,
+  "HOME_REWARDS": 1,
+  "DISCOVER_CAMPS": 2,
+  "DISCOVER_CHESTS": 4,
+  "DISCOVER_HYPERSTRUCTURES": 8,
+  "SPIRES": 16,
+  "CAPTURE_VILLAGES": 64,
+  "SAME_OWNER_TRANSFER": 256,
+  "SEASON_CLOSE": 1024,
+  "RESERVED_HYPERSTRUCTURES": 2048,
+  "DEV_VILLAGE_ENTRY": 8192,
+  "OWNER_ONLY_SHARES": 16384,
+  "HYPERSTRUCTURE_MULTIPLIERS": 32768,
+  "PRODUCTION_START": 131072
+} as const;
 export interface NativeRows {
   Preset: { readonly preset_id: number; readonly commitment: bigint };
   GameSequence: { readonly address: bigint; readonly next_game_id: number };

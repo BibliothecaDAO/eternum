@@ -464,7 +464,7 @@ pub fn assert_terminal_rejection(deployment: Deployment, command: Command, times
         .recorded_outcome(order + 1)
         .unwrap();
     assert_eq!(result.status, 2);
-    assert_eq!(result.reason, 'GAMEPLAY_REJECTED');
+    assert!(result.reason != 0);
 }
 
 #[test]
@@ -627,10 +627,15 @@ fn troop_deposit_ownership(blitz_mode_on: bool, category: u8) {
             } else {
                 super::recorded::ETERNUM_RULES
             },
-            entry_rule: if blitz_mode_on {
-                2
+            command_mask: if blitz_mode_on {
+                super::recorded::BLITZ_COMMAND_MASK
             } else {
-                0
+                super::recorded::ETERNUM_COMMAND_MASK
+            },
+            entry_rule: if blitz_mode_on {
+                crate::rules::ENTRY_ROSTER
+            } else {
+                crate::rules::ENTRY_ENTITLEMENT
             },
             ..recorded::rules(),
         },
@@ -721,10 +726,15 @@ fn delayed_village_troops_ignore_the_connection_and_keep_transport_ownership_rul
                 } else {
                     super::recorded::ETERNUM_RULES
                 },
-                entry_rule: if blitz_mode_on {
-                    2
+                command_mask: if blitz_mode_on {
+                    super::recorded::BLITZ_COMMAND_MASK
                 } else {
-                    0
+                    super::recorded::ETERNUM_COMMAND_MASK
+                },
+                entry_rule: if blitz_mode_on {
+                    crate::rules::ENTRY_ROSTER
+                } else {
+                    crate::rules::ENTRY_ENTITLEMENT
                 },
                 ..recorded::rules(),
             },

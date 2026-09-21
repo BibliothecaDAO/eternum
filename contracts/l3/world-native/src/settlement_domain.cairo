@@ -77,7 +77,7 @@ pub mod SettlementDomain {
             let owner = self.bound_owner(actor);
             let game = self.games().game(game_id);
             let rules = self.games().rules(game_id);
-            assert!(rules.entry_rule != 2, "not a season game");
+            assert!(rules.entry_rule != crate::rules::ENTRY_ROSTER, "not a season game");
             assert!(command.name != 0, "name cannot be empty");
             assert!(game.dev_mode_on || context.timestamp >= game.start_settling_at, "settling not started");
             assert!(game.end_at == 0 || context.timestamp < game.end_at, "game ended");
@@ -86,7 +86,8 @@ pub mod SettlementDomain {
                 assert!(game.dev_mode_on, "development mode required");
                 self.settlements.record_entry(key, actor);
             } else {
-                let requires_entitlement = !self.games().game(game_id).dev_mode_on && rules.entry_rule == 0;
+                let requires_entitlement = !self.games().game(game_id).dev_mode_on
+                    && rules.entry_rule == crate::rules::ENTRY_ENTITLEMENT;
                 self.settlements.reserve_entry(key, actor, requires_entitlement);
             }
             let mut root = context.raw_root;
@@ -214,7 +215,7 @@ pub mod SettlementDomain {
             assert!(key.game_id != 0, "game id zero is reserved");
             let games = self.games();
             if games.ownership_rules_ready(key.game_id) {
-                assert!(games.rules(key.game_id).entry_rule != 2, "Blitz uses a fixed roster");
+                assert!(games.rules(key.game_id).entry_rule != crate::rules::ENTRY_ROSTER, "Blitz uses a fixed roster");
             }
             let operator = self.ledger_operator();
             assert!(operator.is_non_zero() && get_caller_address() == operator, "only ledger operator");
@@ -234,7 +235,7 @@ pub mod SettlementDomain {
             assert!(get_caller_address() == peers.season, "only recorded settlement dispatch");
             assert!(actor == self.lifecycle.domain_state().authority, "only launch authority");
             let game = self.games().game(game_id);
-            assert!(self.games().rules(game_id).entry_rule == 2, "not a Blitz game");
+            assert!(self.games().rules(game_id).entry_rule == crate::rules::ENTRY_ROSTER, "not a Blitz game");
             assert!(context.timestamp >= game.start_settling_at, "settling not started");
             let roster = crate::registrar::IRegistrarDispatcherTrait::blitz_roster(
                 crate::registrar::IRegistrarDispatcher { contract_address: peers.registry }, game_id,
@@ -295,7 +296,7 @@ pub mod SettlementDomain {
                 return (realm_id, self.realms.traits(realm_id));
             }
             let rules = self.games().rules(key.game_id);
-            if self.games().game(key.game_id).dev_mode_on || rules.entry_rule == 1 {
+            if self.games().game(key.game_id).dev_mode_on || rules.entry_rule == crate::rules::ENTRY_OPEN {
                 let remaining = crate::realms::CANONICAL_REALM_COUNT - settled.into();
                 assert!(remaining > 0, "all canonical realms allocated");
                 let index = crate::random::range(seed, 71419, remaining.into()).try_into().unwrap();

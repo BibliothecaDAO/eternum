@@ -331,7 +331,7 @@ pub mod SeasonDomain {
         }
         fn start_blitz(ref self: ContractState, game_id: u32, timestamp: u64) {
             assert!(get_caller_address() == self.lifecycle.require_active().settlement, "only settlement domain");
-            assert!(self.games.rules(game_id).entry_rule == 2, "fixed roster required");
+            assert!(self.games.rules(game_id).entry_rule == crate::rules::ENTRY_ROSTER, "fixed roster required");
             let mut game = self.games.game(game_id);
             assert!(!game.ready, "roster already ready");
             let duration = game.end_at - game.start_main_at;
@@ -451,7 +451,9 @@ pub mod SeasonDomain {
             let mut command_fields = array![];
             command.serialize(ref command_fields);
             let command_index: u128 = (*command_fields.at(0)).try_into().unwrap();
-            assert!(crate::rules::command_enabled(rules.command_mask, command_index), "COMMAND_DISABLED");
+            if !crate::rules::command_enabled(rules.command_mask, command_index) {
+                return Err('COMMAND_DISABLED');
+            }
             if !self.games.game(game_id).ready && command != Command::SettleBlitzRoster {
                 return Err('ROSTER_NOT_READY');
             }

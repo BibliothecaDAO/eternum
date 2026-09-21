@@ -1114,7 +1114,6 @@ pub mod TroopsDomain {
             context: ExecutionContext,
         ) {
             let rules = self.authorize(game_id, context);
-            assert!(crate::rules::rule_enabled(rules, crate::rules::RAIDS), "raids are disabled");
             crate::resources::assert_unique_resources(command.steal_resources);
             let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
             let explorer = self.owned_explorer(key, actor);

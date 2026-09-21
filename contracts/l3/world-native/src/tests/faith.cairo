@@ -12,7 +12,8 @@ pub fn setup() -> (super::Deployment, ResourceKey, ResourceKey) {
     let mut rules = super::recorded::rules();
     rules.faith_enabled = true;
     rules.mode_rules = super::recorded::ETERNUM_RULES;
-    rules.entry_rule = 0;
+    rules.command_mask = super::recorded::ETERNUM_COMMAND_MASK;
+    rules.entry_rule = crate::rules::ENTRY_ENTITLEMENT;
     let (deployment, wonder, realm) = setup_with_rules(rules);
     set_wonder(deployment, wonder, true);
     set_wonder(deployment, realm, false);
@@ -207,8 +208,8 @@ fn faith_requires_eternum_and_enabled_pledges_and_obeys_each_time_boundary() {
     let config = crate::rules::SliceRules {
         faith_enabled: false,
         mode_rules: super::recorded::ETERNUM_RULES,
-        entry_rule: 0,
-        command_mask: 0xffffffffffffffffffffffffffffffff_u128,
+        entry_rule: crate::rules::ENTRY_ENTITLEMENT,
+        command_mask: super::recorded::ETERNUM_COMMAND_MASK,
         ..super::recorded::rules(),
     };
     let (disabled, wonder, _) = setup_with_rules(config);
@@ -216,8 +217,8 @@ fn faith_requires_eternum_and_enabled_pledges_and_obeys_each_time_boundary() {
     let config = crate::rules::SliceRules {
         faith_enabled: true,
         mode_rules: super::recorded::BLITZ_RULES,
-        entry_rule: 2,
-        command_mask: 0xffffffffffffffffffffffffffffffff_u128,
+        entry_rule: crate::rules::ENTRY_ROSTER,
+        command_mask: super::recorded::BLITZ_COMMAND_MASK,
         ..super::recorded::rules(),
     };
     let (blitz, wonder, _) = setup_with_rules(config);

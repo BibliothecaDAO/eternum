@@ -414,7 +414,6 @@ pub mod StructuresDomain {
             assert!(key.entity_id >= 0xfffffff9 && key.entity_id <= 0xfffffffe, "invalid regional bank id");
             assert!(!coord.alt && owner != 0.try_into().unwrap(), "invalid bank placement");
             let rules = self.game_dispatcher().rules(key.game_id);
-            assert!(crate::rules::rule_enabled(rules, crate::rules::BANKS), "banks are disabled");
             assert!(!self.structures.exists(key), "bank already exists");
             self.reveal_structure_tile(key.game_id, coord);
             self.map_dispatcher().reveal_structure_surroundings(key.game_id, coord);
@@ -874,11 +873,6 @@ pub mod StructuresDomain {
             let record = self.structures.record(key);
             assert!(record.owner == actor, "actor does not own structure");
             assert!(self.game_dispatcher().ownership_rules_ready(game_id), "ownership rules require initialized game");
-            let rules = self.game_dispatcher().rules(game_id);
-            assert!(
-                crate::rules::rule_enabled(rules, crate::rules::STRUCTURE_OWNERSHIP_TRANSFERS),
-                "structure ownership transfers disabled",
-            );
             assert!(command.new_owner != 0.try_into().unwrap(), "new owner is zero");
             assert!(record.base.category != crate::ownership::VILLAGE_CATEGORY, "cannot transfer ownership of village");
             if record.owner == command.new_owner {

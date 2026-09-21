@@ -1,3 +1,4 @@
+use eternum_randomness_protocol::entrypoint::IRecordedExecutionViewsDispatcher;
 use snforge_std::{EventSpyTrait, EventsFilterTrait, spy_events, start_cheat_caller_address, stop_cheat_caller_address};
 use crate::combat::TroopsTrait;
 use crate::combat_actions::{AttackExplorer, GuardAttack, ICombatActionsDispatcher, ICombatActionsDispatcherTrait, Raid};
@@ -6,8 +7,10 @@ use crate::guards::{Guard, GuardKey, IGuardsDispatcher, IGuardsDispatcherTrait};
 use crate::map::{IMapDispatcher, IMapDispatcherTrait};
 use crate::resources::{IResourcesDispatcher, IResourcesDispatcherTrait, ResourceAmount, ResourceKey, ResourceSlot};
 use crate::rules::RESOURCE_PRECISION;
+use crate::season::{ISeasonDispatcher, ISeasonDispatcherTrait};
 use crate::structures::{IStructuresDispatcher, IStructuresDispatcherTrait, StructureRecord};
 use crate::troops::{Coord, ExplorerKey, ExplorerTroops, ITroopsDispatcher, ITroopsDispatcherTrait, Stamina, Troops};
+use super::recorded_receipts::RecordedReceiptsTrait;
 use super::resource_commands::{assert_terminal_rejection, execute, execute_recorded_at, grant, set_fixture};
 
 fn setup(blitz: bool) -> (super::Deployment, ResourceKey, ResourceKey, u32, u32) {
@@ -20,10 +23,16 @@ fn setup_with_immunity(blitz: bool, immunity: u8) -> (super::Deployment, Resourc
     } else {
         super::recorded::ETERNUM_RULES
     };
+    rules
+        .command_mask = if blitz {
+            super::recorded::BLITZ_COMMAND_MASK
+        } else {
+            super::recorded::ETERNUM_COMMAND_MASK
+        };
     rules.entry_rule = if blitz {
-        2
+        crate::rules::ENTRY_ROSTER
     } else {
-        0
+        crate::rules::ENTRY_ENTITLEMENT
     };
     rules.battle_config.regular_immunity_ticks = immunity;
     rules.battle_config.village_immunity_ticks = 0;
@@ -255,6 +264,11 @@ fn raid_mode_owner_range_and_resource_failures_preserve_the_armies() {
     assert_eq!(troop(d, attacker).unwrap().troops, before.unwrap().troops);
     let (blitz, _, target, attacker, _) = setup(true);
     assert_terminal_rejection(blitz, raid(attacker, target, array![].span()), 80);
+    let season = ISeasonDispatcher { contract_address: blitz.peers.season };
+    let result = IRecordedExecutionViewsDispatcher { contract_address: blitz.peers.season }
+        .recorded_outcome(season.execution_head().order)
+        .unwrap();
+    assert_eq!(result.reason, 'COMMAND_DISABLED');
 }
 
 #[test]

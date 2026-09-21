@@ -20,10 +20,16 @@ fn setup(blitz: bool) -> (super::Deployment, ResourceKey) {
     } else {
         super::recorded::ETERNUM_RULES
     };
+    rules
+        .command_mask = if blitz {
+            super::recorded::BLITZ_COMMAND_MASK
+        } else {
+            super::recorded::ETERNUM_COMMAND_MASK
+        };
     rules.entry_rule = if blitz {
-        2
+        crate::rules::ENTRY_ROSTER
     } else {
-        0
+        crate::rules::ENTRY_ENTITLEMENT
     };
     let (d, home, _) = setup_with_rules(rules);
     start_cheat_caller_address(d.peers.economy, super::authority());

@@ -136,7 +136,16 @@ function eventLayouts(abi) {
   return layouts;
 }
 
+const ruleSource = await readFile(new URL("src/rules.cairo", root), "utf8");
+const ruleConstants = Object.fromEntries(
+  [...ruleSource.matchAll(/^pub const ([A-Z][A-Z0-9_]*): u(?:8|32) = ([0-9]+);$/gm)].map(([, name, value]) => [
+    name,
+    Number(value),
+  ]),
+);
+
 const schema = {
+  ruleConstants,
   version: 2,
   cairoVersion: "2.17.0",
   encoding: "cairo-serde",
@@ -347,6 +356,7 @@ const factRows = schema.models.map((model) => [model.name, factMembers([...model
 const declarations = [
   "// Generated from native fact models and contract ABIs. Run the native schema generator to update.",
   `export const nativeFactSchemaIdentity = ${JSON.stringify(schema.identity)};`,
+  `export const nativeRuleConstants = ${JSON.stringify(ruleConstants, null, 2)} as const;`,
   "export interface NativeRows {",
   ...factRows.map(([name, row]) => `  ${name}: ${row.ts};`),
   "}",
@@ -393,11 +403,15 @@ function commandType(type) {
   throw new Error(`Unsupported native command type ${type}`);
 }
 const command = types.get("world_native::commands::Command");
+const commandBits = Object.fromEntries(
+  command.variants.map(({ name }, index) => [name, (1n << BigInt(index)).toString()]),
+);
 await writeText(
   "schema/commands.gen.ts",
   [
     "// Generated from the compiled Command ABI. Run the native schema generator to update.",
     'import type { BigNumberish } from "starknet";',
+    `export const nativeCommandBits = ${JSON.stringify(commandBits, null, 2)} as const;`,
     "export interface NativeCommandPayloads {",
     ...command.variants.map(({ name, type }) => `  ${name}: ${commandType(type)};`),
     "}",

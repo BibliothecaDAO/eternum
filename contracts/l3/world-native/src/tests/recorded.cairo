@@ -38,6 +38,9 @@ pub struct FixtureAction {
     pub command: Command,
 }
 
+pub const BLITZ_COMMAND_MASK: u128 = 71478916396378193887;
+pub const ETERNUM_COMMAND_MASK: u128 = 73786976294838206463;
+
 pub const BLITZ_RULES: u32 = crate::rules::HOME_REWARDS
     + crate::rules::DISCOVER_CAMPS
     + crate::rules::DISCOVER_CHESTS
@@ -50,15 +53,8 @@ pub const BLITZ_RULES: u32 = crate::rules::HOME_REWARDS
 
 pub const ETERNUM_RULES: u32 = crate::rules::DISCOVER_HYPERSTRUCTURES
     + crate::rules::SPIRES
-    + crate::rules::RAIDS
-    + crate::rules::LABOR_BURN
-    + crate::rules::BANKS
     + crate::rules::SEASON_CLOSE
-    + crate::rules::STRUCTURE_TO_ARMY_TRANSFERS
-    + crate::rules::DEV_VILLAGE_ENTRY
-    + crate::rules::FAITH_OPERATIONS
-    + crate::rules::STRUCTURE_OWNERSHIP_TRANSFERS
-    + crate::rules::TRADE;
+    + crate::rules::DEV_VILLAGE_ENTRY;
 
 pub fn rules() -> crate::rules::SliceRules {
     let data = read_txt(@FileTrait::new("tests/fixtures/preset-1.txt"));

@@ -67,10 +67,16 @@ fn setup(blitz: bool) -> (super::Deployment, ResourceKey, ResourceKey) {
     } else {
         super::recorded::ETERNUM_RULES
     };
+    config
+        .command_mask = if blitz {
+            super::recorded::BLITZ_COMMAND_MASK
+        } else {
+            super::recorded::ETERNUM_COMMAND_MASK
+        };
     config.entry_rule = if blitz {
-        2
+        crate::rules::ENTRY_ROSTER
     } else {
-        0
+        crate::rules::ENTRY_ENTITLEMENT
     };
     config.map_config.relic_discovery_interval_sec = 10;
     config.map_config.relic_hex_dist_from_center = 12;

@@ -338,10 +338,6 @@ pub mod ResourcesDomain {
             context: ExecutionContext,
         ) {
             let key = self.assert_production_command(game_id, actor, command, context.timestamp);
-            assert(
-                crate::rules::rule_enabled(self.game_dispatcher().rules(game_id), crate::rules::LABOR_BURN),
-                'labor burn is disabled',
-            );
             self.refill_from_recipes(key, command, false, context.timestamp);
         }
         fn burn_resource_for_resource_production(
@@ -510,12 +506,6 @@ pub mod ResourcesDomain {
             assert!(
                 crate::geometry::adjacent(crate::structures::structure_coord(from.base), to.coord),
                 "structure and explorer are not adjacent",
-            );
-            assert!(
-                crate::rules::rule_enabled(
-                    self.game_dispatcher().rules(game_id), crate::rules::STRUCTURE_TO_ARMY_TRANSFERS,
-                ),
-                "structure to explorer transfer disabled",
             );
             for resource in command.resources {
                 assert!(

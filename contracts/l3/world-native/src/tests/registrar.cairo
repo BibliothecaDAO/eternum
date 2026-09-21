@@ -65,10 +65,15 @@ fn definition(blitz: bool) -> PresetDefinition {
             } else {
                 super::recorded::ETERNUM_RULES
             },
-            entry_rule: if blitz {
-                2
+            command_mask: if blitz {
+                super::recorded::BLITZ_COMMAND_MASK
             } else {
-                0
+                super::recorded::ETERNUM_COMMAND_MASK
+            },
+            entry_rule: if blitz {
+                crate::rules::ENTRY_ROSTER
+            } else {
+                crate::rules::ENTRY_ENTITLEMENT
             },
             ..super::recorded::rules(),
         },
@@ -587,8 +592,9 @@ fn open_preset_exploration_discovers_a_camp_and_credits_the_home_realm() {
     let d = setup();
     let mut preset = definition(true);
     preset.rules.mode_id = 7;
+    preset.rules.command_mask = super::recorded::BLITZ_COMMAND_MASK;
     preset.rules.mode_rules = HOME_REWARDS | DISCOVER_CAMPS | DISCOVER_CHESTS;
-    preset.rules.entry_rule = 1;
+    preset.rules.entry_rule = crate::rules::ENTRY_OPEN;
     preset.rules.map_config.shards_mines_win_probability = 0;
     preset.rules.map_config.shards_mines_fail_probability = 1;
     preset.rules.map_config.camp_win_probability = 1;

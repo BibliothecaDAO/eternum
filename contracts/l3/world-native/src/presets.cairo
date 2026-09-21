@@ -120,7 +120,7 @@ fn configure_settlement(
     let rules = crate::settlement::SettlementRules {
         registration_start: params.registration_start,
         registration_limit: params.roster.len().try_into().unwrap(),
-        mode: if preset.rules.entry_rule == 2 {
+        mode: if preset.rules.entry_rule == crate::rules::ENTRY_ROSTER {
             params.mode
         } else {
             crate::settlement::SettlementMode::Single

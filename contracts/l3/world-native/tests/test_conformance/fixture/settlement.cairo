@@ -51,6 +51,7 @@ fn prepare_without_entitlement(
     let resources: Span<ResourceRule> = Serde::deserialize(ref fields).unwrap();
     let buildings: Span<world_native::buildings::BuildingRuleConfig> = Serde::deserialize(ref fields).unwrap();
     if blitz {
+        rules.command_mask = 71478916396378193887;
         rules.mode_rules = world_native::rules::HOME_REWARDS
             + world_native::rules::DISCOVER_CAMPS
             + world_native::rules::DISCOVER_CHESTS
@@ -60,7 +61,7 @@ fn prepare_without_entitlement(
             + world_native::rules::OWNER_ONLY_SHARES
             + world_native::rules::HYPERSTRUCTURE_MULTIPLIERS
             + world_native::rules::PRODUCTION_START;
-        rules.entry_rule = 2;
+        rules.entry_rule = world_native::rules::ENTRY_ROSTER;
     }
     let games = IGameDispatcher { contract_address: season };
     let game = world_native::game::GameRegistry {

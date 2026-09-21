@@ -24,10 +24,16 @@ fn rules(blitz: bool) -> crate::rules::SliceRules {
     } else {
         super::recorded::ETERNUM_RULES
     };
+    rules
+        .command_mask = if blitz {
+            super::recorded::BLITZ_COMMAND_MASK
+        } else {
+            super::recorded::ETERNUM_COMMAND_MASK
+        };
     rules.entry_rule = if blitz {
-        2
+        crate::rules::ENTRY_ROSTER
     } else {
-        0
+        crate::rules::ENTRY_ENTITLEMENT
     };
     rules.map_config.hyps_win_prob = 0;
     rules.map_config.hyps_fail_prob = 1;

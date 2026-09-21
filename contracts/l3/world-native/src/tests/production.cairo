@@ -250,8 +250,8 @@ fn blitz_rejects_labor_recipes_but_accepts_resource_production() {
     let (deployment, key, _) = super::resource_commands::setup_with_rules(
         crate::rules::SliceRules {
             mode_rules: super::recorded::BLITZ_RULES,
-            entry_rule: 2,
-            command_mask: 0xffffffffffffffffffffffffffffffff_u128,
+            entry_rule: crate::rules::ENTRY_ROSTER,
+            command_mask: super::recorded::BLITZ_COMMAND_MASK,
             ..super::recorded::rules(),
         },
     );

@@ -78,7 +78,8 @@ fn ownership_transfer_rejects_zero_foreign_village_and_ended_game() {
 fn blitz_ownership_transfer_is_rejected_even_by_owner() {
     let mut rules = super::recorded::rules();
     rules.mode_rules = super::recorded::BLITZ_RULES;
-    rules.entry_rule = 2;
+    rules.command_mask = super::recorded::BLITZ_COMMAND_MASK;
+    rules.entry_rule = crate::rules::ENTRY_ROSTER;
     let (d, home, _) = setup_with_rules(rules);
     assert_terminal_rejection(
         d,

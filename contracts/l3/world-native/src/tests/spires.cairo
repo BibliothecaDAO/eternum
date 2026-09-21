@@ -107,8 +107,8 @@ fn initialization_rejects_invalid_layouts_foreign_callers_blitz_and_repeats() {
             games.game(1),
             crate::rules::SliceRules {
                 mode_rules: super::recorded::BLITZ_RULES,
-                entry_rule: 2,
-                command_mask: 0xffffffffffffffffffffffffffffffff_u128,
+                entry_rule: crate::rules::ENTRY_ROSTER,
+                command_mask: super::recorded::BLITZ_COMMAND_MASK,
                 ..games.rules(1),
             },
         );

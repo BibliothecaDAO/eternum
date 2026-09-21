@@ -51,7 +51,7 @@ pub fn validate_params(params: CreateGameParams, rules: crate::rules::SliceRules
     if !crate::rules::rule_enabled(rules, crate::rules::SEASON_CLOSE) {
         assert!(params.end_grace_seconds == 0, "result finalisation has no grace period");
     }
-    if rules.entry_rule == 2 {
+    if rules.entry_rule == crate::rules::ENTRY_ROSTER {
         assert!(params.roster.len() > 0 && params.roster.len() <= 24, "invalid Blitz roster size");
         assert!(params.mode == crate::settlement::SettlementMode::Triple, "Regular Blitz required");
         assert!(!params.dev_mode_on, "free Blitz does not use development mode");
