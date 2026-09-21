@@ -93,9 +93,7 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.arrivals_offload(props);
   };
 
-  const set_address_name = async (props: SystemProps.SetAddressNameProps): Promise<GetTransactionReceiptResponse> => {
-    return await provider.set_address_name(props);
-  };
+;
 
   const set_entity_name = async (props: SystemProps.SetEntityNameProps): Promise<GetTransactionReceiptResponse> => {
     return await provider.set_entity_name(props);
@@ -241,9 +239,7 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.guard_explorer_swap(props);
   };
 
-  const explorer_move = async (props: SystemProps.ExplorerMoveProps): Promise<GetTransactionReceiptResponse> => {
-    return await provider.explorer_move(props);
-  };
+;
 
   const toggle_alternate = async (props: SystemProps.ToggleAlternateProps): Promise<GetTransactionReceiptResponse> => {
     return await provider.toggle_alternate(props);
@@ -372,17 +368,12 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
       (props: SystemProps.SystemSigner & { value: NativeCommandPayloads["ClaimPlayerFaithPoints"] }) =>
         provider.claim_player_faith_points(props),
     ),
-    claim_faith_prize: withAuth(
-      (props: SystemProps.SystemSigner & { value: NativeCommandPayloads["ClaimFaithPrize"] }) =>
-        provider.claim_faith_prize(props),
-    ),
     send_resources_multiple: withAuth(send_resources_multiple),
     arrivals_offload: withAuth(arrivals_offload),
     remove_liquidity: withAuth(remove_liquidity),
     add_liquidity: withAuth(add_liquidity),
     sell_resources: withAuth(sell_resources),
     buy_resources: withAuth(buy_resources),
-    set_address_name: withAuth(set_address_name),
     set_entity_name: withAuth(set_entity_name),
     bitcoin_mine_contribute_labor: withAuth(bitcoin_mine_contribute_labor),
     bitcoin_mine_claim_phase_reward: withAuth(bitcoin_mine_claim_phase_reward),
@@ -433,7 +424,6 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     explorer_explorer_swap: withAuth(explorer_explorer_swap),
     explorer_guard_swap: withAuth(explorer_guard_swap),
     guard_explorer_swap: withAuth(guard_explorer_swap),
-    explorer_move: withAuth(explorer_move),
     toggle_alternate: withAuth(toggle_alternate),
     explorer_travel: withAuth(explorer_travel),
     explorer_explore: withAuth(explorer_explore),

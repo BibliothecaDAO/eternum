@@ -509,9 +509,9 @@ describe("Parallel Category Processing", () => {
     const queue = new PromiseQueue(executor, { batchDelayMs: 0 });
     const signer = makeSigner();
 
-    const pA = queue.enqueue({ signer, calls: makeCall("explorer_move"), transactionType: TransactionType.EXPLORE });
+  const pA = queue.enqueue({ signer, calls: makeCall("explorer_explore"), transactionType: TransactionType.EXPLORE });
     await vi.advanceTimersByTimeAsync(0);
-    const pB = queue.enqueue({ signer, calls: makeCall("explorer_move"), transactionType: TransactionType.EXPLORE });
+  const pB = queue.enqueue({ signer, calls: makeCall("explorer_explore"), transactionType: TransactionType.EXPLORE });
     await vi.advanceTimersByTimeAsync(0);
 
     expect(executor.executeAndCheckTransaction).toHaveBeenCalledTimes(2);

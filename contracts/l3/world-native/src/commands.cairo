@@ -50,7 +50,6 @@ pub enum Command {
     Move: Move,
     ToggleAlternate: ToggleAlternate,
     TransferStructureOwnership: crate::ownership::TransferOwnership,
-    SetAddressName: crate::names::SetAddressName,
     LevelUp: u32,
     SettleBlitzRoster,
     ProvisionRealm: u32,
@@ -59,14 +58,11 @@ pub enum Command {
     SettleVillage: crate::village::SettleVillage,
     ReceiveVillageArmy: u32,
     BurnStructureResources: crate::resources::ResourceBurn,
-    RegularizeResourceWeights: Span<u32>,
-    BurnExplorerResources: crate::resources::ResourceBurn,
     TransferExplorerResources: crate::resources::ResourceTransfer,
     TransferStructureResourcesToExplorer: crate::resources::ResourceTransfer,
     OffloadArrival: crate::arrivals::OffloadArrival,
     SendResources: crate::resources::ResourceTransfer,
     TransferExplorerResourcesToStructure: crate::resources::ResourceTransfer,
-    BurnResourceForLaborProduction: crate::production::RefillProduction,
     BurnLaborForResourceProduction: crate::production::RefillProduction,
     BurnResourceForResourceProduction: crate::production::RefillProduction,
     CreateBuilding: crate::buildings::CreateBuilding,
@@ -110,7 +106,6 @@ pub enum Command {
     LeaveGuild,
     SetGuildWhitelist: crate::guilds::SetWhitelist,
     RemoveGuildMember: ContractAddress,
-    MintDevelopmentResources: crate::dev::MintResources,
     MarkGameSettled,
     ManageTroops: crate::troop_management::ManageTroops,
     GuardAttack: crate::combat_actions::GuardAttack,
@@ -160,7 +155,6 @@ fn command_items(command: Command) -> u32 {
         Command::Battle(value) => value.steal_resources.len(),
         Command::Raid(value) => value.steal_resources.len(),
         Command::BurnStructureResources(value) => value.resources.len(),
-        Command::BurnExplorerResources(value) => value.resources.len(),
         Command::TransferExplorerResources(value) => value.resources.len(),
         Command::TransferStructureResourcesToExplorer(value) => value.resources.len(),
         Command::SendResources(value) => value.resources.len(),
@@ -169,8 +163,6 @@ fn command_items(command: Command) -> u32 {
         Command::ContributeHyperstructure(value) => value.resources.len(),
         Command::AllocateHyperstructureShares(value) => value.shareholders.len(),
         Command::RecordBlitzResults(value) => value.players.len(),
-        Command::MintDevelopmentResources(value) => value.resources.len(),
-        Command::RegularizeResourceWeights(value) => value.len(),
         Command::CreateBanks(value) => value.len(),
         _ => 0,
     }
@@ -231,13 +223,6 @@ pub trait IResourceCommands<T> {
         command: crate::resources::ResourceBurn,
         context: ExecutionContext,
     );
-    fn burn_explorer_resources(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        command: crate::resources::ResourceBurn,
-        context: ExecutionContext,
-    );
     fn transfer_explorer_resources(
         ref self: T,
         game_id: u32,
@@ -251,9 +236,6 @@ pub trait IResourceCommands<T> {
         actor: ContractAddress,
         command: crate::resources::ResourceTransfer,
         context: ExecutionContext,
-    );
-    fn regularize_resource_weights(
-        ref self: T, game_id: u32, actor: ContractAddress, structure_ids: Span<u32>, context: ExecutionContext,
     );
 }
 

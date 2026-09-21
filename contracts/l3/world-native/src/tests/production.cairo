@@ -202,7 +202,6 @@ fn all_refill_strategies_pay_their_inputs_and_queue_output_without_an_active_bui
     let refill = RefillProduction {
         structure_id: home.entity_id, resource_types: array![2].span(), amounts: array![2 * precision].span(),
     };
-    assert!(execute_recorded_at(deployment, Command::BurnResourceForLaborProduction(refill), 60, 1000));
     let refill = RefillProduction { resource_types: array![26].span(), amounts: array![2].span(), ..refill };
     assert!(execute_recorded_at(deployment, Command::BurnLaborForResourceProduction(refill), 60, 1001));
     assert!(execute_recorded_at(deployment, Command::BurnResourceForResourceProduction(refill), 60, 1002));
@@ -211,68 +210,8 @@ fn all_refill_strategies_pay_their_inputs_and_queue_output_without_an_active_bui
     assert_eq!(resources.resource_production(slot).output_amount_left, 600);
     assert_eq!(resources.resource_production(slot).building_count, 0);
     assert_eq!(resources.resource_balance(slot), 0);
-    assert_eq!(resources.resource_production(ResourceSlot { resource_type: 23, ..slot }).output_amount_left, 14);
     assert_eq!(resources.resource_balance(ResourceSlot { resource_type: 2, ..slot }), 60);
     assert_eq!(resources.resource_balance(ResourceSlot { resource_type: 3, ..slot }), 60);
-}
-
-#[test]
-fn malformed_refills_and_out_of_game_actions_reject_without_spending() {
-    let (deployment, home, _) = setup();
-    configure(deployment);
-    grant(deployment, home, 2, 100);
-    grant(deployment, home, 3, 100);
-    let valid = RefillProduction {
-        structure_id: home.entity_id, resource_types: array![26].span(), amounts: array![1].span(),
-    };
-    let before = resource_facts(deployment, home);
-    for command in array![
-        Command::BurnLaborForResourceProduction(valid), Command::BurnResourceForResourceProduction(valid),
-        Command::BurnResourceForLaborProduction(valid),
-    ] {
-        assert_terminal_rejection(deployment, command, 19);
-    }
-    for malformed in array![
-        RefillProduction { amounts: array![].span(), ..valid }, RefillProduction { amounts: array![0].span(), ..valid },
-        RefillProduction { resource_types: array![0].span(), ..valid },
-        RefillProduction { resource_types: array![59].span(), ..valid },
-        RefillProduction { structure_id: 999, ..valid },
-    ] {
-        for command in array![
-            Command::BurnResourceForLaborProduction(malformed), Command::BurnLaborForResourceProduction(malformed),
-            Command::BurnResourceForResourceProduction(malformed),
-        ] {
-            assert_terminal_rejection(deployment, command, 60);
-        }
-        assert_eq!(resource_facts(deployment, home), before);
-    }
-    for timestamp in array![201_u64] {
-        assert_terminal_rejection(deployment, Command::BurnLaborForResourceProduction(valid), timestamp);
-        assert_terminal_rejection(deployment, Command::BurnResourceForResourceProduction(valid), timestamp);
-        assert_terminal_rejection(deployment, Command::BurnResourceForLaborProduction(valid), timestamp);
-        assert_eq!(resource_facts(deployment, home), before);
-    }
-}
-
-#[test]
-fn labor_conversion_rejects_fractional_inputs_and_resources_with_no_labor_output() {
-    let (deployment, home, _) = setup();
-    configure(deployment);
-    let precision = crate::rules::RESOURCE_PRECISION;
-    grant(deployment, home, 2, 2 * precision);
-    let before = resource_facts(deployment, home);
-    for amount in array![1_u128, precision + 1, precision] {
-        assert_terminal_rejection(
-            deployment,
-            Command::BurnResourceForLaborProduction(
-                RefillProduction {
-                    structure_id: home.entity_id, resource_types: array![2].span(), amounts: array![amount].span(),
-                },
-            ),
-            60,
-        );
-        assert_eq!(resource_facts(deployment, home), before);
-    }
 }
 
 #[test]

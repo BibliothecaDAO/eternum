@@ -72,7 +72,6 @@ export enum TransactionType {
   EXPLORER_CREATE = "explorer_create",
   EXPLORER_ADD = "explorer_add",
   EXPLORER_DELETE = "explorer_delete",
-  EXPLORER_MOVE = "explorer_move",
   EXPLORER_EXTRACT_REWARD = "explorer_extract_reward",
   EXPLORER_EXPLORER_SWAP = "explorer_explorer_swap",
   EXPLORER_GUARD_SWAP = "explorer_guard_swap",
@@ -161,7 +160,6 @@ export enum TransactionType {
   TRANSFER_STRUCTURE_OWNERSHIP = "transfer_structure_ownership",
   STRUCTURE_BURN = "structure_burn",
   SET_ENTITY_NAME = "set_entity_name",
-  SET_ADDRESS_NAME = "set_address_name",
 
   // Hyperstructures
   CONTRIBUTE = "contribute",

@@ -676,7 +676,6 @@ mod blitz_results;
 mod building_commands;
 mod camps;
 
-mod dev;
 mod faith;
 
 mod faith_prizes;

@@ -224,12 +224,17 @@ async function moveExplorer(
 ) {
   await waitForStamina(context);
   await submitStep(context, kind, () =>
-    context.client.setup.systemCalls.explorer_move({
-      signer: context.bot.account,
-      explorer_id: Number(context.explorer.explorerId),
-      directions: [direction],
-      explore,
-    }),
+    explore
+      ? context.client.setup.systemCalls.explorer_explore({
+          signer: context.bot.account,
+          explorer_id: Number(context.explorer.explorerId),
+          directions: [direction],
+        })
+      : context.client.setup.systemCalls.explorer_travel({
+          signer: context.bot.account,
+          explorer_id: Number(context.explorer.explorerId),
+          directions: [direction],
+        }),
   );
   if (context.explorer.alt !== target.alt) throw new Error("Movement crossed layers without spire travel");
   if (explore) {

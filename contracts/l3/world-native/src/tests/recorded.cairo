@@ -235,11 +235,14 @@ fn unexecuted_ticket_recovery_preserves_original_context_after_delay() {
 #[test]
 fn oversized_command_is_terminal_and_the_next_ticket_executes() {
     let d = super::setup(true);
-    let mut ids = array![];
-    for id in 1_u32..255 {
-        ids.append(id);
+    let mut directions = array![];
+    for _ in 1_u32..255 {
+        directions.append(1_u8);
     }
-    let action = FixtureAction { command: Command::RegularizeResourceWeights(ids.span()), ..super::intent(d, 1) };
+    let action = FixtureAction {
+        command: Command::Move(crate::commands::Move { explorer_id: 1, directions: directions.span() }),
+        ..super::intent(d, 1),
+    };
     super::execute(d, action);
     let view = IRecordedExecutionViewsDispatcher { contract_address: d.peers.season };
     assert_eq!(view.recorded_outcome(1).unwrap().status, 2);
@@ -249,34 +252,6 @@ fn oversized_command_is_terminal_and_the_next_ticket_executes() {
     super::execute(d, FixtureAction { nonce: 1, ..super::intent(d, 1) });
     assert_eq!(view.recorded_outcome(2).unwrap().status, 1);
     assert_eq!(season.next_nonce(1, d.actor), 2);
-}
-
-#[test]
-fn command_item_bound_counts_items_not_their_serialized_fields() {
-    let mut resources = array![];
-    for resource_type in 1_u8..59 {
-        resources.append(crate::resources::ResourceAmount { resource_type, amount: 1 });
-    }
-    let command = Command::BurnStructureResources(
-        crate::resources::ResourceBurn { entity_id: 1, resources: resources.span() },
-    );
-    let mut fields = array![];
-    command.serialize(ref fields);
-    assert!(fields.len() > crate::commands::MAX_COMMAND_ITEMS);
-    assert_eq!(crate::commands::decode_command(fields.span(), command_commitment(command)).unwrap(), command);
-    let mut ids = array![];
-    for id in 1_u32..65 {
-        ids.append(id);
-    }
-    let command = Command::RegularizeResourceWeights(ids.span());
-    let mut fields = array![];
-    command.serialize(ref fields);
-    assert!(crate::commands::decode_command(fields.span(), command_commitment(command)).is_ok());
-    ids.append(65);
-    let command = Command::RegularizeResourceWeights(ids.span());
-    let mut fields = array![];
-    command.serialize(ref fields);
-    assert!(crate::commands::decode_command(fields.span(), command_commitment(command)).is_err());
 }
 
 #[test]

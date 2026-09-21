@@ -331,33 +331,6 @@ pub mod ResourcesDomain {
     }
     #[abi(embed_v0)]
     impl ProductionCommands of crate::production::IProductionCommands<ContractState> {
-        fn burn_resource_for_labor_production(
-            ref self: ContractState,
-            game_id: u32,
-            actor: ContractAddress,
-            command: RefillProduction,
-            context: ExecutionContext,
-        ) {
-            let key = self.assert_production_command(game_id, actor, command, context.timestamp);
-            for index in 0..command.resource_types.len() {
-                let resource_type = *command.resource_types.at(index);
-                let amount = *command.amounts.at(index);
-                assert!(amount != 0, "zero resource amount");
-                assert!(amount % crate::rules::RESOURCE_PRECISION == 0, "fractional labor input");
-                let rule = self.rule(game_id, resource_type);
-                let output = rule.labor_output_per_resource.into() * (amount / crate::rules::RESOURCE_PRECISION);
-                assert(output != 0, 'resource cannot produce labor');
-                self.spend(key, resource_type, amount, context.timestamp);
-                self
-                    .refill_output(
-                        key,
-                        23,
-                        output,
-                        array![crate::resources::ResourceAmount { resource_type, amount }].span(),
-                        context.timestamp,
-                    );
-            }
-        }
         fn burn_labor_for_resource_production(
             ref self: ContractState,
             game_id: u32,
@@ -494,28 +467,6 @@ pub mod ResourcesDomain {
                     context.timestamp,
                 );
         }
-        fn burn_explorer_resources(
-            ref self: ContractState,
-            game_id: u32,
-            actor: ContractAddress,
-            command: crate::resources::ResourceBurn,
-            context: ExecutionContext,
-        ) {
-            self.assert_resource_command(game_id, context.timestamp);
-            self
-                .troops_dispatcher()
-                .authorized_explorer(ExplorerKey { game_id, explorer_id: command.entity_id }, actor);
-            let key = ResourceKey { game_id, entity_id: command.entity_id };
-            crate::resources::assert_unique_resources(command.resources);
-            self.burn(key, command.resources);
-            self
-                .emit_resource_story(
-                    key,
-                    self.structure_owner(key),
-                    Story::ResourceBurnStory(crate::ownership::ResourceAmountsStory { resources: command.resources }),
-                    context.timestamp,
-                );
-        }
         fn transfer_explorer_resources(
             ref self: ContractState,
             game_id: u32,
@@ -565,34 +516,6 @@ pub mod ResourcesDomain {
                 );
             }
             self.transfer_instant(game_id, command, context.timestamp);
-        }
-        fn regularize_resource_weights(
-            ref self: ContractState,
-            game_id: u32,
-            actor: ContractAddress,
-            structure_ids: Span<u32>,
-            context: ExecutionContext,
-        ) {
-            assert!(
-                get_caller_address() == self.lifecycle.require_active().season, "only authenticated command domain",
-            );
-            crate::game::assert_settling_with_grace(self.game_dispatcher().game(game_id), context.timestamp);
-            assert!(!structure_ids.is_empty(), "structure ids are empty");
-            crate::commands::assert_unique_entity_ids(structure_ids);
-            for id in structure_ids {
-                let key = ResourceKey { game_id, entity_id: *id };
-                assert!(self.structure_owner(key) != 0.try_into().unwrap(), "structure has no owner");
-                let mut weight = self.resources.weight(key);
-                assert!(weight.capacity != 0, "structure weight capacity is zero");
-                let mut total = 0_u128;
-                for resource_type in 1_u8..59 {
-                    total += self.resources.balance(key, resource_type) * self.rule(game_id, resource_type).unit_weight;
-                }
-                if total <= weight.capacity {
-                    weight.weight = total;
-                    self.resources.write_weight(key, weight);
-                }
-            }
         }
     }
     #[generate_trait]

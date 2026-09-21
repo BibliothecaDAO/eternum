@@ -19,7 +19,6 @@ pub mod combat_actions;
 pub mod combat_domain;
 pub mod commands;
 
-pub mod dev;
 pub mod discovery;
 pub mod economy;
 pub mod entry;

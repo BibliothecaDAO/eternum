@@ -305,42 +305,6 @@ fn structure_transfer_harvests_but_rejects_all_nine_troop_resources() {
     }
 }
 
-#[test]
-fn regularization_is_permissionless_excludes_production_and_keeps_overcapacity_weight() {
-    let (deployment, home, _) = setup();
-    let resources = IResourcesDispatcher { contract_address: deployment.peers.resources };
-    let keys = array![3, home.entity_id.into()].span();
-    set_fixture(
-        deployment.peers.resources,
-        selector!("weights"),
-        keys,
-        crate::resources::Weight { capacity: 1000, weight: 200 },
-    );
-    let command = Command::RegularizeResourceWeights(array![home.entity_id].span());
-    assert!(execute(deployment, command, 40));
-    assert_eq!(resources.resource_weight(home), crate::resources::Weight { capacity: 1000, weight: 100 });
-    assert_eq!(
-        resources
-            .resource_production(ResourceSlot { game_id: 3, entity_id: home.entity_id, resource_type: 1 })
-            .last_updated_at,
-        30,
-    );
-    let overcapacity = crate::resources::Weight { capacity: 50, weight: 200 };
-    set_fixture(deployment.peers.resources, selector!("weights"), keys, overcapacity);
-    assert!(execute(deployment, command, 40));
-    assert_eq!(resources.resource_weight(home), overcapacity);
-    start_cheat_caller_address(deployment.peers.resources, deployment.peers.season);
-    crate::commands::IResourceCommandsDispatcherTrait::regularize_resource_weights(
-        crate::commands::IResourceCommandsDispatcher { contract_address: deployment.peers.resources },
-        3,
-        authority(),
-        array![home.entity_id].span(),
-        ExecutionContext { timestamp: 40, ..context() },
-    );
-    stop_cheat_caller_address(deployment.peers.resources);
-    assert!(!execute(deployment, Command::RegularizeResourceWeights(array![].span()), 40));
-    assert!(!execute(deployment, Command::RegularizeResourceWeights(array![999].span()), 40));
-}
 
 fn arrival_fixture(
     deployment: Deployment, entity_id: u32, slot: u8, values: Span<ResourceAmount>,
@@ -765,17 +729,14 @@ fn delayed_village_troops_ignore_the_connection_and_keep_transport_ownership_rul
 }
 
 #[test]
-fn duplicate_ids_in_burns_and_weight_repair_reject_without_mutating_balances() {
+fn duplicate_resource_ids_reject_without_mutating_balances() {
     let (d, source, _) = setup();
     let before = resource_facts(d, source);
     let resources = array![
         ResourceAmount { resource_type: 1, amount: 10 }, ResourceAmount { resource_type: 1, amount: 20 },
     ]
         .span();
-    for command in array![
-        Command::BurnStructureResources(ResourceBurn { entity_id: source.entity_id, resources }),
-        Command::RegularizeResourceWeights(array![source.entity_id, source.entity_id].span()),
-    ] {
+    for command in array![Command::BurnStructureResources(ResourceBurn { entity_id: source.entity_id, resources })] {
         assert_terminal_rejection(d, command, 40);
         assert_eq!(resource_facts(d, source), before);
     }

@@ -556,14 +556,6 @@ pub mod SeasonDomain {
                 value.serialize(ref calldata);
                 (peers.prizes, selector!("bind_bitcoin_phase"))
             },
-            Command::FundFaithPrizes(value) => {
-                value.serialize(ref calldata);
-                (peers.prizes, selector!("fund_faith_prizes"))
-            },
-            Command::MintDevelopmentResources(value) => {
-                value.serialize(ref calldata);
-                (peers.structures, selector!("mint_resources"))
-            },
             Command::CreateGuild(value) => {
                 value.serialize(ref calldata);
                 (peers.registry, selector!("create_guild"))
@@ -724,10 +716,6 @@ pub mod SeasonDomain {
                 value.serialize(ref calldata);
                 (peers.structures, selector!("set_entity_name"))
             },
-            Command::SetAddressName(value) => {
-                value.serialize(ref calldata);
-                (peers.structures, selector!("set_address_name"))
-            },
             Command::SettleVillage(value) => {
                 value.serialize(ref calldata);
                 (peers.settlement, selector!("settle_village"))
@@ -757,10 +745,6 @@ pub mod SeasonDomain {
                 value.serialize(ref calldata);
                 (peers.structures, selector!("level_up"))
             },
-            Command::BurnResourceForLaborProduction(value) => {
-                value.serialize(ref calldata);
-                (peers.resources, selector!("burn_resource_for_labor_production"))
-            },
             Command::BurnLaborForResourceProduction(value) => {
                 value.serialize(ref calldata);
                 (peers.resources, selector!("burn_labor_for_resource_production"))
@@ -789,10 +773,6 @@ pub mod SeasonDomain {
                 value.serialize(ref calldata);
                 (peers.resources, selector!("burn_structure_resources"))
             },
-            Command::BurnExplorerResources(value) => {
-                value.serialize(ref calldata);
-                (peers.resources, selector!("burn_explorer_resources"))
-            },
             Command::TransferExplorerResources(value) => {
                 value.serialize(ref calldata);
                 (peers.resources, selector!("transfer_explorer_resources"))
@@ -812,10 +792,6 @@ pub mod SeasonDomain {
             Command::OffloadArrival(value) => {
                 value.serialize(ref calldata);
                 (peers.resources, selector!("offload_arrival"))
-            },
-            Command::RegularizeResourceWeights(value) => {
-                value.serialize(ref calldata);
-                (peers.resources, selector!("regularize_resource_weights"))
             },
         };
         context.serialize(ref calldata);

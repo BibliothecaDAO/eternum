@@ -91,13 +91,6 @@ pub trait IProductionRules<T> {
 
 #[starknet::interface]
 pub trait IProductionCommands<T> {
-    fn burn_resource_for_labor_production(
-        ref self: T,
-        game_id: u32,
-        actor: starknet::ContractAddress,
-        command: RefillProduction,
-        context: crate::commands::ExecutionContext,
-    );
     fn burn_labor_for_resource_production(
         ref self: T,
         game_id: u32,

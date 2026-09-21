@@ -371,32 +371,6 @@ pub mod StructuresDomain {
         RowSet: RowSet,
     }
     #[abi(embed_v0)]
-    impl Development of crate::dev::IDevelopment<ContractState> {
-        fn mint_resources(
-            ref self: ContractState,
-            game_id: u32,
-            actor: ContractAddress,
-            command: crate::dev::MintResources,
-            context: ExecutionContext,
-        ) {
-            let state = self.lifecycle.domain_state();
-            assert!(
-                get_caller_address() == self.lifecycle.require_active().season, "only authenticated command domain",
-            );
-            assert!(actor == state.authority, "only domain authority");
-            crate::commands::assert_context_time(context.timestamp);
-            assert!(self.game_dispatcher().game(game_id).dev_mode_on, "development mode required");
-            let key = ResourceKey { game_id, entity_id: command.entity_id };
-            crate::resources::assert_unique_resources(command.resources);
-            for resource in command.resources {
-                assert!(*resource.amount != 0, "amount must not be zero");
-                self.structures.structure(key).expect('structure does not exist');
-                self
-                    .resources_dispatcher()
-                    .grant_resource(key, *resource.resource_type, *resource.amount, context.timestamp);
-            }
-        }
-    }
     #[abi(embed_v0)]
     impl Camps of crate::camps::ICampRules<ContractState> {
         fn configure_camps(ref self: ContractState, game_id: u32, resources: Span<crate::resources::ResourceAmount>) {

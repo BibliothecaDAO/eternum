@@ -564,7 +564,7 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     };
     const secondCall: Call = {
       contractAddress: "0x1",
-      entrypoint: "set_address_name",
+      entrypoint: "set_entity_name",
       calldata: [],
     };
 
@@ -780,7 +780,7 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
       },
       {
         contractAddress: "0x123",
-        entrypoint: "explorer_move",
+        entrypoint: "explorer_travel",
         calldata: [42, [0], 1],
       },
       {
@@ -829,7 +829,7 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
       },
       {
         contractAddress: "0x123",
-        entrypoint: "explorer_move",
+        entrypoint: "explorer_travel",
         calldata: [42, [0], 1],
       },
       {
@@ -846,7 +846,7 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
       },
       {
         contractAddress: "0x123",
-        entrypoint: "explorer_move",
+        entrypoint: "explorer_travel",
         calldata: [43, [1], 1],
       },
       {
@@ -898,7 +898,7 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
       },
       {
         contractAddress: "0x123",
-        entrypoint: "explorer_move",
+        entrypoint: "explorer_travel",
         calldata: [42, [0], 1],
       },
       {
@@ -945,7 +945,7 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
       },
       {
         contractAddress: "0x123",
-        entrypoint: "explorer_move",
+        entrypoint: "explorer_travel",
         calldata: [42, [0], 1],
       },
       {

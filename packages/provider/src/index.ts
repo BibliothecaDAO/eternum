@@ -1172,17 +1172,6 @@ export class EternumProvider extends EventEmitter {
     );
   }
 
-  public async set_address_name(props: SystemProps.SetAddressNameProps) {
-    return this.submitCommand(
-      props.signer,
-      {
-        kind: "SetAddressName",
-        value: { owned_structure_id: this.ownedStructure(props.signer.address), name: props.name },
-      },
-      TransactionType.SET_ADDRESS_NAME,
-    );
-  }
-
   public async set_entity_name(props: SystemProps.SetEntityNameProps) {
     return this.submitCommand(
       props.signer,
@@ -1786,10 +1775,6 @@ export class EternumProvider extends EventEmitter {
     );
   }
 
-  public async explorer_move(props: SystemProps.ExplorerMoveProps) {
-    return props.explore ? this.explorer_explore(props) : this.explorer_travel(props);
-  }
-
   public async disband_guild(props: SystemProps.DisbandGuild) {
     let receipt: GetTransactionReceiptResponse | undefined;
     for (const player of props.calls)
@@ -1918,11 +1903,6 @@ export class EternumProvider extends EventEmitter {
     return this.submitCommand(props.signer, { kind: "ClaimPlayerFaithPoints", value: props.value });
   }
 
-  public async claim_faith_prize(
-    props: SystemProps.SystemSigner & { value: NativeCommandPayloads["ClaimFaithPrize"] },
-  ) {
-    return this.submitCommand(props.signer, { kind: "ClaimFaithPrize", value: props.value });
-  }
 }
 
 function resourceAmounts(resources: readonly { resourceId: BigNumberish; amount: BigNumberish }[]) {

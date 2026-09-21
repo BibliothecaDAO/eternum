@@ -90,28 +90,6 @@ fn blitz_ownership_transfer_is_rejected_even_by_owner() {
     assert_eq!(record(d, home).owner, d.actor);
 }
 
-#[test]
-fn address_name_belongs_to_actor_with_an_owned_structure_and_can_be_cleared() {
-    let (d, home, _) = setup();
-    let names = INamesDispatcher { contract_address: d.peers.structures };
-    let original = record(d, home);
-    assert!(
-        execute(d, Command::SetAddressName(SetAddressName { owned_structure_id: home.entity_id, name: 'Ada' }), 80),
-    );
-    assert_eq!(names.address_name(d.actor).name, 'Ada');
-    assert_terminal_rejection(
-        d, Command::SetAddressName(SetAddressName { owned_structure_id: 999, name: 'Missing' }), 80,
-    );
-    save(d, home, StructureRecord { owner: 999.try_into().unwrap(), ..original });
-    assert_terminal_rejection(
-        d, Command::SetAddressName(SetAddressName { owned_structure_id: home.entity_id, name: 'Foreign' }), 80,
-    );
-    assert_eq!(names.address_name(d.actor).name, 'Ada');
-    assert_eq!(names.address_name(999.try_into().unwrap()).name, 0);
-    save(d, home, original);
-    assert!(execute(d, Command::SetAddressName(SetAddressName { owned_structure_id: home.entity_id, name: 0 }), 80));
-    assert_eq!(names.address_name(d.actor).name, 0);
-}
 
 #[test]
 fn discovery_uses_pinned_weight_totals_offsets_and_layer_restrictions() {

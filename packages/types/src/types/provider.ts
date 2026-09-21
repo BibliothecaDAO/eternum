@@ -63,10 +63,6 @@ export interface BridgeWithdrawFromRealmProps extends SystemSigner {
   client_fee_recipient: BigNumberish;
 }
 
-export interface SetAddressNameProps extends SystemSigner {
-  name: BigNumberish;
-}
-
 export interface SetEntityNameProps extends SystemSigner {
   entity_id: BigNumberish;
   name: string;
@@ -496,15 +492,6 @@ export interface BurnOtherPredefinedResourcesForResourcesProps {
 /**
  * Properties for moving an explorer
  */
-export interface ExplorerMoveProps extends SystemSigner {
-  /** ID of the explorer to move */
-  explorer_id: number;
-  /** Array of directions to move in */
-  directions: number[];
-  /** Whether to explore new tiles along the way */
-  explore: boolean;
-}
-
 /**
  * Properties for traveling an explorer (no exploration)
  */

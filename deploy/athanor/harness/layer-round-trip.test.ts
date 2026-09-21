@@ -151,19 +151,17 @@ function fixture(
                   entrypoint: "toggle_alternate",
                   calldata: ["7", String(explorer_id), String(spire_direction)],
                 }),
-              explorer_move: ({
-                explorer_id,
-                directions,
-                explore,
-              }: {
-                explorer_id: number;
-                directions: number[];
-                explore: boolean;
-              }) =>
+              explorer_travel: ({ explorer_id, directions }: { explorer_id: number; directions: number[] }) =>
                 account.execute({
                   contractAddress: "0xa1",
-                  entrypoint: "explorer_move",
-                  calldata: ["7", String(explorer_id), "1", String(directions[0]), explore ? "1" : "0"],
+                  entrypoint: "explorer_travel",
+                  calldata: ["7", String(explorer_id), String(directions.length), ...directions.map(String)],
+                }),
+              explorer_explore: ({ explorer_id, directions }: { explorer_id: number; directions: number[] }) =>
+                account.execute({
+                  contractAddress: "0xa1",
+                  entrypoint: "explorer_explore",
+                  calldata: ["7", String(explorer_id), String(directions[0])],
                 }),
             },
           },
