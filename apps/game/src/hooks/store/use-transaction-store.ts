@@ -169,13 +169,13 @@ const generateMockHash = (): string => {
 
 const MOCK_TX_TYPES = [
   TransactionType.EXPLORE,
-  TransactionType.ARMY_CREATE,
-  TransactionType.BATTLE_START,
+  TransactionType.EXPLORER_CREATE,
+  TransactionType.ATTACK_EXPLORER_VS_EXPLORER,
   TransactionType.BUY,
   TransactionType.SELL,
   TransactionType.CREATE_ORDER,
   TransactionType.TRAVEL_HEX,
-  TransactionType.UPGRADE_LEVEL,
+  TransactionType.LEVEL_UP,
 ];
 
 const getRandomTxType = (): TransactionType => {
@@ -185,14 +185,14 @@ const getRandomTxType = (): TransactionType => {
 const getTxDescription = (type: TransactionType): string => {
   const descriptions: Record<string, string> = {
     [TransactionType.EXPLORE]: "Exploring new lands",
-    [TransactionType.ARMY_CREATE]: "Raising a new army",
-    [TransactionType.BATTLE_START]: "Starting battle",
+    [TransactionType.EXPLORER_CREATE]: "Raising a new army",
+    [TransactionType.ATTACK_EXPLORER_VS_EXPLORER]: "Starting battle",
     [TransactionType.BUY]: "Purchasing from market",
     [TransactionType.SELL]: "Selling on market",
     [TransactionType.CREATE_ORDER]: "Creating trade order",
     [TransactionType.TRAVEL_HEX]: "Traveling to destination",
-    [TransactionType.UPGRADE_LEVEL]: "Upgrading building",
-    [TransactionType.ATTACK_EXPLORER_VS_GUARD_AND_GARRISON]: "Claiming and garrisoning structure",
+    [TransactionType.LEVEL_UP]: "Upgrading building",
+    [TransactionType.ATTACK_EXPLORER_VS_GUARD]: "Claiming and garrisoning structure",
   };
   return descriptions[type] ?? "Transaction in progress";
 };

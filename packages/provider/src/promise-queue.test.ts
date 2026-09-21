@@ -285,7 +285,7 @@ describe("Configurable Batch Delay", () => {
     const p = queue.enqueue({
       signer,
       calls: makeCall("battle"),
-      transactionType: TransactionType.BATTLE_START,
+      transactionType: TransactionType.ATTACK_EXPLORER_VS_EXPLORER,
     });
 
     await vi.advanceTimersByTimeAsync(0);
@@ -349,7 +349,7 @@ describe("Configurable Batch Delay", () => {
     const pHigh = queue.enqueue({
       signer,
       calls: makeCall("battle"),
-      transactionType: TransactionType.BATTLE_START,
+      transactionType: TransactionType.ATTACK_EXPLORER_VS_EXPLORER,
     });
 
     await vi.advanceTimersByTimeAsync(0);
@@ -398,7 +398,7 @@ describe("Configurable Batch Delay", () => {
     const pHigh = queue.enqueue({
       signer,
       calls: makeCall("battle"),
-      transactionType: TransactionType.BATTLE_START,
+      transactionType: TransactionType.ATTACK_EXPLORER_VS_EXPLORER,
     });
 
     // The timer should fire at 0ms from now (immediate reschedule)
@@ -439,10 +439,10 @@ describe("Parallel Category Processing", () => {
 
     // Enqueue 2 HIGH items and 2 LOW items
     const promises = [
-      queue.enqueue({ signer, calls: makeCall("battle1"), transactionType: TransactionType.BATTLE_START }),
-      queue.enqueue({ signer, calls: makeCall("battle2"), transactionType: TransactionType.BATTLE_RESOLVE }),
+      queue.enqueue({ signer, calls: makeCall("battle1"), transactionType: TransactionType.ATTACK_EXPLORER_VS_EXPLORER }),
+      queue.enqueue({ signer, calls: makeCall("battle2"), transactionType: TransactionType.ATTACK_EXPLORER_VS_EXPLORER }),
       queue.enqueue({ signer, calls: makeCall("name1"), transactionType: TransactionType.SET_ENTITY_NAME }),
-      queue.enqueue({ signer, calls: makeCall("name2"), transactionType: TransactionType.SET_ADDRESS_NAME }),
+      queue.enqueue({ signer, calls: makeCall("name2"), transactionType: TransactionType.SET_ENTITY_NAME }),
     ];
 
     await Promise.all(promises);
@@ -545,7 +545,7 @@ describe("Parallel Category Processing", () => {
       executeAndCheckTransaction: vi.fn().mockImplementation((signer, calls, batchDetails, options) => {
         // Fail for HIGH items (BATTLE_START), succeed for LOW items
         const txType = options?.transactionType;
-        if (txType === TransactionType.BATTLE_START) {
+        if (txType === TransactionType.ATTACK_EXPLORER_VS_EXPLORER) {
           return Promise.reject(new Error("HIGH category failed"));
         }
         return Promise.resolve({ statusReceipt: "PENDING", transaction_hash: "0xok" });
@@ -556,7 +556,7 @@ describe("Parallel Category Processing", () => {
     const signer = makeSigner();
 
     const pHigh = queue
-      .enqueue({ signer, calls: makeCall("battle"), transactionType: TransactionType.BATTLE_START })
+      .enqueue({ signer, calls: makeCall("battle"), transactionType: TransactionType.ATTACK_EXPLORER_VS_EXPLORER })
       .catch((e: unknown) => e);
 
     const pLow = queue.enqueue({

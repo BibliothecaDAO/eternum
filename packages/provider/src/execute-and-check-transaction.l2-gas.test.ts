@@ -585,7 +585,7 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     const secondResult = provider.promiseQueue.enqueue({
       signer,
       calls: secondCall,
-      transactionType: TransactionType.SET_ADDRESS_NAME,
+      transactionType: TransactionType.SET_ENTITY_NAME,
     });
 
     await vi.advanceTimersByTimeAsync(50);

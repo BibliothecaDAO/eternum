@@ -72,7 +72,6 @@ export enum TransactionType {
   EXPLORER_CREATE = "explorer_create",
   EXPLORER_ADD = "explorer_add",
   EXPLORER_DELETE = "explorer_delete",
-  EXPLORER_EXTRACT_REWARD = "explorer_extract_reward",
   EXPLORER_EXPLORER_SWAP = "explorer_explorer_swap",
   EXPLORER_GUARD_SWAP = "explorer_guard_swap",
   GUARD_EXPLORER_SWAP = "guard_explorer_swap",
@@ -89,21 +88,10 @@ export enum TransactionType {
   // Combat
   ATTACK_EXPLORER_VS_EXPLORER = "attack_explorer_vs_explorer",
   ATTACK_EXPLORER_VS_GUARD = "attack_explorer_vs_guard",
-  ATTACK_EXPLORER_VS_GUARD_AND_GARRISON = "attack_explorer_vs_guard_and_garrison",
   ATTACK_GUARD_VS_EXPLORER = "attack_guard_vs_explorer",
   RAID_EXPLORER_VS_GUARD = "raid_explorer_vs_guard",
-  BATTLE_START = "battle_start",
-  BATTLE_RESOLVE = "battle_resolve",
-  BATTLE_FORCE_START = "battle_force_start",
-  BATTLE_JOIN = "battle_join",
-  BATTLE_LEAVE = "battle_leave",
-  BATTLE_CLAIM = "battle_claim",
 
   // Legacy Army (kept for compatibility)
-  ARMY_CREATE = "army_create",
-  ARMY_DELETE = "army_delete",
-  ARMY_BUY_TROOPS = "army_buy_troops",
-  ARMY_MERGE_TROOPS = "army_merge_troops",
 
   // Buildings
   CREATE_BUILDING = "create_building",
@@ -114,57 +102,34 @@ export enum TransactionType {
 
   // Resources & Production
   SEND = "send",
-  PICKUP = "pickup",
   ARRIVALS_OFFLOAD = "arrivals_offload",
   BURN_RESOURCE_FOR_RESOURCE_PRODUCTION = "burn_resource_for_resource_production",
   BURN_LABOR_FOR_RESOURCE_PRODUCTION = "burn_labor_for_resource_production",
-  MINT = "mint",
-  MINT_TEST_LORDS = "mint_test_lords",
 
   // Banking & Trading
-  OPEN_ACCOUNT = "open_account",
-  CREATE_BANKS = "create_banks",
-  CHANGE_OWNER_AMM_FEE = "change_owner_amm_fee",
-  CHANGE_OWNER_BRIDGE_FEE = "change_owner_bridge_fee",
   BUY = "buy",
   SELL = "sell",
-  ADD = "add",
   REMOVE = "remove",
-  DEPOSIT = "deposit",
-  WITHDRAW = "withdraw",
 
   // Orders & Marketplace
   CREATE_ORDER = "create_order",
   ACCEPT_ORDER = "accept_order",
-  ACCEPT_PARTIAL_ORDER = "accept_partial_order",
   CANCEL_ORDER = "cancel_order",
   CREATE = "create",
-  ACCEPT = "accept",
-  CANCEL = "cancel",
-  EDIT = "edit",
 
   // Guilds
   CREATE_GUILD = "create_guild",
   JOIN_GUILD = "join_guild",
   LEAVE_GUILD = "leave_guild",
-  REMOVE_MEMBER = "remove_member",
   UPDATE_WHITELIST = "update_whitelist",
   REMOVE_GUILD_MEMBER = "remove_guild_member",
-  REMOVE_PLAYER_FROM_WHITELIST = "remove_player_from_whitelist",
-  TRANSFER_GUILD_OWNERSHIP = "transfer_guild_ownership",
-  WHITELIST_PLAYER = "whitelist_player",
 
   // Structures & Ownership
-  TRANSFER_STRUCTURE_OWNERSHIP = "transfer_structure_ownership",
-  STRUCTURE_BURN = "structure_burn",
   SET_ENTITY_NAME = "set_entity_name",
 
   // Hyperstructures
   CONTRIBUTE = "contribute",
-  UPDATE_CONSTRUCTION_ACCESS = "update_construction_access",
-  CLAIM_CONSTRUCTION_POINTS = "claim_construction_points",
   ALLOCATE_SHARES = "allocate_shares",
-  CLAIM_WONDER_PRODUCTION_BONUS = "claim_wonder_production_bonus",
   PLEDGE_FAITH = "pledge_faith",
   REMOVE_FAITH = "remove_faith",
   UPDATE_WONDER_OWNERSHIP = "update_wonder_ownership",
@@ -172,22 +137,11 @@ export enum TransactionType {
 
   // Realms & Settlement
   SETTLE = "settle",
-  REGISTER = "register",
-  TOKEN_LOCK = "token_lock",
-  MAKE_SPIRES = "make_spires",
 
   // Lords & Approvals
-  ATTACH_LORDS = "attach_lords",
-  DETACH_LORDS = "detach_lords",
-  APPROVE = "approve",
-  SET_APPROVAL_FOR_ALL = "set_approval_for_all",
-  SET_CO_OWNERS = "set_co_owners",
   SET_ACCESS = "set_access",
 
   // Season & Leaderboard
-  SEASON_CLOSE = "season_close",
-  SEASON_PRIZE_CLAIM = "season_prize_claim",
-  CLAIM_LEADERBOARD_REWARDS = "claim_leaderboard_rewards",
   END_GAME = "end_game",
 
   // Blitz
@@ -195,53 +149,9 @@ export enum TransactionType {
   // Chests & Relics
   OPEN_CHEST = "open_chest",
   BURN_RESEARCH_FOR_RELIC = "burn_research_for_relic",
-  APPLY_RELIC = "apply_relic",
 
   // Config (Admin)
   INITIALIZE = "initialize",
-  GRANT_ROLE = "grant_role",
-  SET_STARTING_RESOURCES_CONFIG = "set_starting_resources_config",
-  SET_MAP_CONFIG = "set_map_config",
-  SET_VILLAGE_FOUND_RESOURCES_CONFIG = "set_village_found_resources_config",
-  SET_VICTORY_POINTS_GRANT_CONFIG = "set_victory_points_grant_config",
-  SET_VICTORY_POINTS_WIN_CONFIG = "set_victory_points_win_config",
-  SET_GAME_MODE_CONFIG = "set_game_mode_config",
-  SET_BLITZ_PREVIOUS_GAME = "set_blitz_previous_game",
-  SET_TRAVEL_FOOD_COST_CONFIG = "set_travel_food_cost_config",
-  SET_SEASON_CONFIG = "set_season_config",
-  SET_RESOURCE_BRIDGE_FEE_SPLIT_CONFIG = "set_resource_bridge_fee_split_config",
-  SET_CAPACITY_CONFIG = "set_capacity_config",
-  SET_DONKEY_SPEED_CONFIG = "set_donkey_speed_config",
-  SET_RESOURCE_WEIGHT_CONFIG = "set_resource_weight_config",
-  SET_TRADE_CONFIG = "set_trade_config",
-  SET_TICK_CONFIG = "set_tick_config",
-  SET_RESOURCE_FACTORY_CONFIG = "set_resource_factory_config",
-  SET_BANK_CONFIG = "set_bank_config",
-  SET_RESOURCE_BRIDGE_WHITELIST_CONFIG = "set_resource_bridge_whitelist_config",
-  SET_TROOP_CONFIG = "set_troop_config",
-  SET_BATTLE_CONFIG = "set_battle_config",
-  SET_STRUCTURE_LEVEL_CONFIG = "set_structure_level_config",
-  SET_WORLD_CONFIG = "set_world_config",
-  SET_BIOME_CLIMATE_CONFIG = "set_biome_climate_config",
-  SET_MERCENARIES_NAME_CONFIG = "set_mercenaries_name_config",
-  SET_STRUCTURE_MAX_LEVEL_CONFIG = "set_structure_max_level_config",
-  SET_BUILDING_CONFIG = "set_building_config",
-  SET_BUILDING_CATEGORY_CONFIG = "set_building_category_config",
-  SET_HYPERSTRUCTURE_CONFIG = "set_hyperstructure_config",
-  SET_STAMINA_CONFIG = "set_stamina_config",
-  SET_STAMINA_REFILL_CONFIG = "set_stamina_refill_config",
-  SET_SETTLEMENT_CONFIG = "set_settlement_config",
-  SET_BLITZ_EXPLORATION_CONFIG = "set_blitz_exploration_config",
-  SET_BLITZ_REGISTRATION_CONFIG = "set_blitz_registration_config",
 
   // Legacy (kept for compatibility)
-  RESUME_PRODUCTION = "resume_production",
-  PAUSE_PRODUCTION = "pause_production",
-  DESTROY = "destroy",
-  UPGRADE_LEVEL = "upgrade_level",
-  CREATE_MARKETPLACE_ORDERS = "create_marketplace_orders",
-  ACCEPT_MARKETPLACE_ORDER = "accept_marketplace_order",
-  CANCEL_MARKETPLACE_ORDER = "cancel_marketplace_order",
-  EDIT_MARKETPLACE_ORDER = "edit_marketplace_order",
-  CONTRIBUTE_TO_CONSTRUCTION = "contribute_to_construction",
 }
