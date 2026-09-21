@@ -54,7 +54,11 @@ fn definition(blitz: bool) -> PresetDefinition {
         resources.append(ResourceRule { resource_type, unit_weight: 1, realm_rate: 10, village_rate: 5 });
     }
     PresetDefinition {
-        rules: crate::rules::SliceRules { blitz_mode_on: blitz, ..super::recorded::rules() },
+        rules: crate::rules::SliceRules { mode_id: if blitz {
+            1
+        } else {
+            0
+        }, ..super::recorded::rules() },
         resources: ResourcePreset {
             resources: resources.span(),
             production: super::production::recipes(),

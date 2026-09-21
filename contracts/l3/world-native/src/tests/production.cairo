@@ -248,7 +248,9 @@ fn malformed_refills_and_out_of_game_actions_reject_without_spending() {
 #[test]
 fn blitz_rejects_labor_recipes_but_accepts_resource_production() {
     let (deployment, key, _) = super::resource_commands::setup_with_rules(
-        crate::rules::SliceRules { blitz_mode_on: true, ..super::recorded::rules() },
+        crate::rules::SliceRules {
+            mode_id: 1, command_mask: 0xffffffffffffffffffffffffffffffff_u128, ..super::recorded::rules(),
+        },
     );
     configure(deployment);
     grant(deployment, key, 2, 100);

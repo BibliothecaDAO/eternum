@@ -81,7 +81,8 @@ function buildRules(config: Config) {
     },
     map_center_offset: config.settlement.center,
     spire_travel_essence_cost: scaled(config.spireTravelEssenceCost),
-    blitz_mode_on: config.blitz.mode.on,
+    mode_id: config.blitz.mode.on ? 1 : 0,
+    command_mask: 0xffffffffffffffffffffffffffffffffn,
     faith_enabled: faith.enabled,
     speed_config: {
       donkey_sec_per_km: config.speed.donkey_for_resources,

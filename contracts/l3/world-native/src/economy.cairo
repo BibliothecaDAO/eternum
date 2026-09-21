@@ -354,7 +354,7 @@ pub mod EconomyDomain {
                 get_caller_address() == self.lifecycle.require_active().season, "only authenticated command domain",
             );
             crate::commands::assert_context_time(timestamp);
-            assert!(!self.games().rules(game_id).blitz_mode_on, "economy requires Eternum mode");
+            assert!(!crate::rules::is_blitz(self.games().rules(game_id)), "economy requires Eternum mode");
         }
         fn bank_structure(self: @ContractState, game_id: u32, bank_id: u32) -> Structure {
             let bank = self.structure(game_id, bank_id);

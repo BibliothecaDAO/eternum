@@ -23,7 +23,11 @@ fn games(d: super::Deployment) -> IGameDispatcher {
     IGameDispatcher { contract_address: d.peers.season }
 }
 fn setup(scores: Span<u128>) -> super::Deployment {
-    let (d, _, _) = setup_with_rules(crate::rules::SliceRules { blitz_mode_on: true, ..super::recorded::rules() });
+    let (d, _, _) = setup_with_rules(
+        crate::rules::SliceRules {
+            mode_id: 1, command_mask: 0xffffffffffffffffffffffffffffffff_u128, ..super::recorded::rules(),
+        },
+    );
     let d = super::bind_authority(d);
     set_fixture(d.peers.registry, selector!("roster_sizes"), array![3].span(), scores.len());
     for index in 0..scores.len() {

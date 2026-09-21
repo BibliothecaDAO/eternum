@@ -337,7 +337,7 @@ pub mod FaithState {
                 "only authenticated command domain",
             );
             crate::commands::assert_context_time(timestamp);
-            assert!(!self.games().rules(game_id).blitz_mode_on, "faith requires Eternum");
+            assert!(!crate::rules::is_blitz(self.games().rules(game_id)), "faith requires Eternum");
             self.games().game(game_id)
         }
         fn require_started(self: @ComponentState<TContractState>, game: crate::game::GameRegistry, timestamp: u64) {

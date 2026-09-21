@@ -11,7 +11,7 @@ use super::resource_commands::{assert_terminal_rejection, execute, execute_recor
 pub fn setup() -> (super::Deployment, ResourceKey, ResourceKey) {
     let mut rules = super::recorded::rules();
     rules.faith_enabled = true;
-    rules.blitz_mode_on = false;
+    rules.mode_id = 0;
     let (deployment, wonder, realm) = setup_with_rules(rules);
     set_wonder(deployment, wonder, true);
     set_wonder(deployment, realm, false);
@@ -203,10 +203,20 @@ fn faith_requires_eternum_and_enabled_pledges_and_obeys_each_time_boundary() {
     assert_terminal_rejection(deployment, claim(0.try_into().unwrap(), wonder), 40);
     assert_terminal_rejection(deployment, Command::ClaimWonderPoints(realm.entity_id), 40);
     assert_terminal_rejection(deployment, pledge(wonder, wonder), 200);
-    let config = crate::rules::SliceRules { faith_enabled: false, blitz_mode_on: false, ..super::recorded::rules() };
+    let config = crate::rules::SliceRules {
+        faith_enabled: false,
+        mode_id: 0,
+        command_mask: 0xffffffffffffffffffffffffffffffff_u128,
+        ..super::recorded::rules(),
+    };
     let (disabled, wonder, _) = setup_with_rules(config);
     assert_terminal_rejection(disabled, pledge(wonder, wonder), 40);
-    let config = crate::rules::SliceRules { faith_enabled: true, blitz_mode_on: true, ..super::recorded::rules() };
+    let config = crate::rules::SliceRules {
+        faith_enabled: true,
+        mode_id: 1,
+        command_mask: 0xffffffffffffffffffffffffffffffff_u128,
+        ..super::recorded::rules(),
+    };
     let (blitz, wonder, _) = setup_with_rules(config);
     assert_terminal_rejection(blitz, pledge(wonder, wonder), 40);
 }

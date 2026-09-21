@@ -50,7 +50,11 @@ fn prepare_without_entitlement(
     let mut rules: world_native::rules::SliceRules = Serde::deserialize(ref fields).unwrap();
     let resources: Span<ResourceRule> = Serde::deserialize(ref fields).unwrap();
     let buildings: Span<world_native::buildings::BuildingRuleConfig> = Serde::deserialize(ref fields).unwrap();
-    rules.blitz_mode_on = blitz;
+    rules.mode_id = if blitz {
+        1
+    } else {
+        0
+    };
     let games = IGameDispatcher { contract_address: season };
     let game = world_native::game::GameRegistry {
         dev_mode_on: false, start_main_at: 1200, end_at: 1300, ..games.game(7),

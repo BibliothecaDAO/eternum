@@ -338,7 +338,7 @@ pub mod ResourcesDomain {
             context: ExecutionContext,
         ) {
             let key = self.assert_production_command(game_id, actor, command, context.timestamp);
-            assert(!self.game_dispatcher().rules(game_id).blitz_mode_on, 'Blitz requires resources');
+            assert(!crate::rules::is_blitz(self.game_dispatcher().rules(game_id)), 'Blitz requires resources');
             self.refill_from_recipes(key, command, false, context.timestamp);
         }
         fn burn_resource_for_resource_production(
@@ -508,7 +508,10 @@ pub mod ResourcesDomain {
                 crate::geometry::adjacent(crate::structures::structure_coord(from.base), to.coord),
                 "structure and explorer are not adjacent",
             );
-            assert!(!self.game_dispatcher().rules(game_id).blitz_mode_on, "no structure to explorer transfer in blitz");
+            assert!(
+                !crate::rules::is_blitz(self.game_dispatcher().rules(game_id)),
+                "no structure to explorer transfer in blitz",
+            );
             for resource in command.resources {
                 assert!(
                     !crate::resources::is_troop_resource(*resource.resource_type), "cannot transfer troop resource",
@@ -623,7 +626,7 @@ pub mod ResourcesDomain {
         }
         fn production_start(self: @ContractState, game_id: u32) -> u32 {
             let games = self.game_dispatcher();
-            if games.rules(game_id).blitz_mode_on {
+            if crate::rules::is_blitz(games.rules(game_id)) {
                 games.game(game_id).start_main_at.try_into().unwrap()
             } else {
                 0
@@ -686,7 +689,7 @@ pub mod ResourcesDomain {
             let destination = structures.structure(to).expect('missing recipient structure');
             let rules = self.game_dispatcher().rules(game_id);
             assert!(
-                !rules.blitz_mode_on || source.owner == destination.owner,
+                !crate::rules::is_blitz(rules) || source.owner == destination.owner,
                 "blitz delayed transfers require the same owner",
             );
             let travel_time = crate::transport::travel_time(

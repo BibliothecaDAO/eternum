@@ -130,7 +130,7 @@ pub mod RegistrarState {
                 definition.settlement.reward_profile == 1 || definition.settlement.reward_profile == 2,
                 "unknown settlement profile",
             );
-            if definition.rules.blitz_mode_on {
+            if crate::rules::is_blitz(definition.rules) {
                 assert!(definition.settlement.spires.is_none(), "Blitz preset has spires");
             } else {
                 crate::spires::validate(definition.settlement.spires.expect('missing season spires'));
@@ -208,7 +208,7 @@ pub mod RegistrarState {
         fn validate_game(
             self: @ComponentState<TContractState>, params: CreateGameParams, definition: PresetDefinition,
         ) {
-            super::validate_params(params, definition.rules.blitz_mode_on);
+            super::validate_params(params, crate::rules::is_blitz(definition.rules));
             let commitment = self.presets.read(params.preset_id);
             assert!(commitment != 0, "preset is not registered");
             assert!(commitment == crate::presets::commitment(definition), "preset definition mismatch");

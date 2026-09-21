@@ -11218,9 +11218,15 @@
           "feltLength": 1
         },
         {
-          "name": "blitz_mode_on",
-          "type": "core::bool",
-          "id": "0x626c69747a5f6d6f64655f6f6e",
+          "name": "mode_id",
+          "type": "core::integer::u8",
+          "id": "0x6d6f64655f6964",
+          "feltLength": 1
+        },
+        {
+          "name": "command_mask",
+          "type": "core::integer::u128",
+          "id": "0x636f6d6d616e645f6d61736b",
           "feltLength": 1
         },
         {
@@ -11237,7 +11243,7 @@
         }
       ],
       "keyLength": 1,
-      "valueLength": 88
+      "valueLength": 89
     },
     {
       "name": "EntitySequence",
@@ -15909,8 +15915,12 @@
           "type": "core::integer::u128"
         },
         {
-          "name": "blitz_mode_on",
-          "type": "core::bool"
+          "name": "mode_id",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "command_mask",
+          "type": "core::integer::u128"
         },
         {
           "name": "faith_enabled",
@@ -17145,5 +17155,5 @@
       ]
     }
   },
-  "identity": "8f9403d692ed7ca3200bce59de973925f01a62885b3f6728464e765748f95fee"
+  "identity": "87b89c7e0f1b40984d3835f4a5781eba1f71d68cd03293ce21df0447056e1bbe"
 }

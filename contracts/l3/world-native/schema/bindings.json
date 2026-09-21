@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "8f9403d692ed7ca3200bce59de973925f01a62885b3f6728464e765748f95fee",
+  "schemaIdentity": "87b89c7e0f1b40984d3835f4a5781eba1f71d68cd03293ce21df0447056e1bbe",
   "commandAbi": [
     {
       "type": "impl",
@@ -1905,8 +1905,12 @@
           "type": "core::integer::u128"
         },
         {
-          "name": "blitz_mode_on",
-          "type": "core::bool"
+          "name": "mode_id",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "command_mask",
+          "type": "core::integer::u128"
         },
         {
           "name": "faith_enabled",

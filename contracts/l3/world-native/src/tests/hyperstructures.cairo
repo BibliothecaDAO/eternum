@@ -28,7 +28,11 @@ pub fn setup() -> (super::Deployment, ResourceKey, ResourceKey, ResourceKey) {
 }
 pub fn setup_mode(blitz: bool) -> (super::Deployment, ResourceKey, ResourceKey, ResourceKey) {
     let mut ruleset = super::recorded::rules();
-    ruleset.blitz_mode_on = blitz;
+    ruleset.mode_id = if blitz {
+        1
+    } else {
+        0
+    };
     ruleset.victory_points_grant_config.hyp_points_per_second = 1000;
     let (deployment, first, second) = setup_with_rules(ruleset);
     start_cheat_caller_address(deployment.peers.economy, super::authority());

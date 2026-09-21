@@ -86,7 +86,7 @@ fn only_game_creation_initializes_reservations_and_repeated_initialization_is_id
     let deployment = setup(true);
     let games = IGameDispatcher { contract_address: deployment.peers.season };
     let mut game_rules = recorded::rules();
-    game_rules.blitz_mode_on = true;
+    game_rules.mode_id = 1;
     start_cheat_caller_address(deployment.peers.settlement, authority());
     start_cheat_caller_address(deployment.peers.season, authority());
     games.create_game(3, games.game(1), game_rules);
@@ -178,7 +178,14 @@ fn village_placement_shares_reservations_with_fixed_blitz_and_eternum_entries() 
     let deployment = setup(true);
     let games = IGameDispatcher { contract_address: deployment.peers.season };
     start_cheat_caller_address(deployment.peers.season, authority());
-    games.create_game(3, games.game(1), crate::rules::SliceRules { blitz_mode_on: true, ..recorded::rules() });
+    games
+        .create_game(
+            3,
+            games.game(1),
+            crate::rules::SliceRules {
+                mode_id: 1, command_mask: 0xffffffffffffffffffffffffffffffff_u128, ..recorded::rules(),
+            },
+        );
     stop_cheat_caller_address(deployment.peers.season);
     configure(deployment, 1, SettlementRules { registration_limit: 2, ..rules() });
     configure(deployment, 3, SettlementRules { mode: SettlementMode::Triple, registration_limit: 2, ..rules() });
@@ -245,7 +252,9 @@ fn remember_distinct(ref seen: Array<crate::troops::Coord>, added: Span<crate::t
 fn a_missing_ledger_operator_never_bypasses_eternum_entitlements() {
     let d = setup(true);
     let games = IGameDispatcher { contract_address: d.peers.season };
-    let game_rules = crate::rules::SliceRules { blitz_mode_on: false, ..recorded::rules() };
+    let game_rules = crate::rules::SliceRules {
+        mode_id: 0, command_mask: 0xffffffffffffffffffffffffffffffff_u128, ..recorded::rules(),
+    };
     start_cheat_caller_address(d.peers.season, authority());
     games.create_game(3, crate::game::GameRegistry { dev_mode_on: false, ..games.game(1) }, game_rules);
     configure(d, 3, rules());

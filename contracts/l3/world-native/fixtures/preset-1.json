@@ -109,12 +109,13 @@
     },
     "map_center_offset": 20,
     "spire_travel_essence_cost": "10000000000",
-    "blitz_mode_on": false,
-    "faith_enabled": true,
+    "mode_id": 0,
+    "command_mask": "340282366920938463463374607431768211455",
     "speed_config": {
       "donkey_sec_per_km": 9,
       "donkey_sec_per_km_troops": 27
-    }
+    },
+    "faith_enabled": true
   },
   "resources": [
     {

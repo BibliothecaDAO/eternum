@@ -228,7 +228,11 @@ fn register_pass(deployment: Deployment, pass_id: u16) -> VillagePassKey {
 
 fn assert_blitz_village(mode: SettlementMode) {
     let (deployment, realm) = setup_config(
-        false, mode, crate::rules::SliceRules { blitz_mode_on: true, ..recorded::rules() },
+        false,
+        mode,
+        crate::rules::SliceRules {
+            mode_id: 1, command_mask: 0xffffffffffffffffffffffffffffffff_u128, ..recorded::rules(),
+        },
     );
     let pass = register_pass(deployment, 1);
     assert!(run(deployment, settle(realm, 1), 100));

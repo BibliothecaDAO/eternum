@@ -87,7 +87,9 @@ fn season_close_requires_started_eternum_and_timed_games_stop_at_their_clock() {
     configure(eternum, 1);
     assert_terminal_rejection(eternum, Command::CloseSeason, 19);
     assert_terminal_rejection(eternum, Command::CloseSeason, 200);
-    let rules = crate::rules::SliceRules { blitz_mode_on: true, ..super::recorded::rules() };
+    let rules = crate::rules::SliceRules {
+        mode_id: 1, command_mask: 0xffffffffffffffffffffffffffffffff_u128, ..super::recorded::rules(),
+    };
     let (blitz, home, _) = setup_with_rules(rules);
     configure(blitz, 1);
     assert_terminal_rejection(blitz, Command::CloseSeason, 100);

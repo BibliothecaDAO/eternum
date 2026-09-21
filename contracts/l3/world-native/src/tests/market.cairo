@@ -23,7 +23,7 @@ fn banks() -> Span<BankPlacement> {
 }
 fn setup() -> (super::Deployment, ResourceKey, ResourceKey) {
     let mut rules = super::recorded::rules();
-    rules.blitz_mode_on = false;
+    rules.mode_id = 0;
     rules.speed_config.donkey_sec_per_km = 1;
     rules.speed_config.donkey_sec_per_km_troops = 2;
     rules.tick_config.delivery_tick_in_seconds = 1;

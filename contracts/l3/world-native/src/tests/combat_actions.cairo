@@ -15,7 +15,11 @@ fn setup(blitz: bool) -> (super::Deployment, ResourceKey, ResourceKey, u32, u32)
 }
 fn setup_with_immunity(blitz: bool, immunity: u8) -> (super::Deployment, ResourceKey, ResourceKey, u32, u32) {
     let mut rules = super::recorded::rules();
-    rules.blitz_mode_on = blitz;
+    rules.mode_id = if blitz {
+        1
+    } else {
+        0
+    };
     rules.battle_config.regular_immunity_ticks = immunity;
     rules.battle_config.village_immunity_ticks = 0;
     rules.battle_config.village_raid_immunity_ticks = 3;

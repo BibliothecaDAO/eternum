@@ -19,7 +19,11 @@ use super::resource_commands::{execute, execute_recorded_at, grant, setup_with_r
 
 fn rules(blitz: bool) -> crate::rules::SliceRules {
     let mut rules = super::recorded::rules();
-    rules.blitz_mode_on = blitz;
+    rules.mode_id = if blitz {
+        1
+    } else {
+        0
+    };
     rules.map_config.hyps_win_prob = 0;
     rules.map_config.hyps_fail_prob = 1;
     rules.map_config.shards_mines_win_probability = 0;

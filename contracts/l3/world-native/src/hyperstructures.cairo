@@ -156,7 +156,7 @@ pub mod HyperstructureState {
             self.games().game(game_id);
             assert!(self.hyper_rule_count.read(game_id) == 0, "hyperstructure rules already configured");
             assert!(
-                !rules.resources.is_empty() || self.games().rules(game_id).blitz_mode_on,
+                !rules.resources.is_empty() || crate::rules::is_blitz(self.games().rules(game_id)),
                 "empty construction requirements",
             );
             for index in 0..rules.resources.len() {
@@ -308,7 +308,7 @@ pub mod HyperstructureState {
             let key = ResourceKey { game_id, entity_id: command.hyperstructure_id };
             self.assert_owner(key, actor);
             assert!(self.state(key).stage == Stage::Complete, "hyperstructure not complete");
-            validate_shares(command.shareholders, self.games().rules(game_id).blitz_mode_on, actor);
+            validate_shares(command.shareholders, crate::rules::is_blitz(self.games().rules(game_id)), actor);
             self.checkpoint(key, context.timestamp);
             self
                 .write_shares(
@@ -590,7 +590,7 @@ pub mod HyperstructureState {
                 );
         }
         fn multiplier(self: @ComponentState<TContractState>, key: ResourceKey) -> u8 {
-            if !self.games().rules(key.game_id).blitz_mode_on {
+            if !crate::rules::is_blitz(self.games().rules(key.game_id)) {
                 return 1;
             }
             let rules = ISettlementViewsDispatcher { contract_address: self.peers().settlement }

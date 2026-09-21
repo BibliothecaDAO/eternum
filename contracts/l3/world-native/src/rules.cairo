@@ -160,9 +160,27 @@ pub struct SliceRules {
     pub victory_points_grant_config: VictoryPointsGrantConfig,
     pub map_center_offset: u32,
     pub spire_travel_essence_cost: u128,
-    pub blitz_mode_on: bool,
+    pub mode_id: u8,
+    pub command_mask: u128,
     pub faith_enabled: bool,
     pub speed_config: SpeedConfig,
+}
+
+pub fn is_blitz(rules: SliceRules) -> bool {
+    rules.mode_id == 1
+}
+
+pub fn command_enabled(mask: u128, index: u128) -> bool {
+    let mut bit = 1_u128;
+    let mut position = 0_u128;
+    loop {
+        if position >= index {
+            break;
+        }
+        bit *= 2;
+        position += 1;
+    }
+    mask / bit % 2_u128 != 0
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]

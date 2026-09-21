@@ -128,7 +128,7 @@ pub mod BlitzResultState {
             assert!(actor == lifecycle.domain_state().authority, "only domain authority");
             crate::commands::assert_context_time(timestamp);
             let games = self.games();
-            assert!(games.rules(game_id).blitz_mode_on, "requires Blitz");
+            assert!(crate::rules::is_blitz(games.rules(game_id)), "requires Blitz");
             let game = games.game(game_id);
             assert!(game.ready && game.end_at != 0 && timestamp >= game.end_at, "game has not ended");
             assert!(game.settled, "final point settlement incomplete");

@@ -114,7 +114,7 @@ pub mod SeasonDomain {
             crate::commands::assert_context_time(context.timestamp);
             let mut game = self.games.game(game_id);
             crate::game::assert_playing(game, context.timestamp);
-            assert!(!self.games.rules(game_id).blitz_mode_on, "season closure requires Eternum");
+            assert!(!crate::rules::is_blitz(self.games.rules(game_id)), "season closure requires Eternum");
             let threshold = self.season_win_threshold(game_id);
             assert!(threshold != 0, "season win threshold is zero");
             let initiator = match self.close_initiators.read(game_id) {
@@ -328,7 +328,7 @@ pub mod SeasonDomain {
         }
         fn start_blitz(ref self: ContractState, game_id: u32, timestamp: u64) {
             assert!(get_caller_address() == self.lifecycle.require_active().settlement, "only settlement domain");
-            assert!(self.games.rules(game_id).blitz_mode_on, "not a Blitz game");
+            assert!(crate::rules::is_blitz(self.games.rules(game_id)), "not a Blitz game");
             let mut game = self.games.game(game_id);
             assert!(!game.ready, "roster already ready");
             let duration = game.end_at - game.start_main_at;
@@ -444,6 +444,11 @@ pub mod SeasonDomain {
         ) -> Result<Span<felt252>, felt252> {
             self.validate_action(intent, envelope, game_id)?;
             let command = decode_command(intent.arguments.span(), *intent.command).map_err(|_error| 'INVALID_COMMAND')?;
+            let rules = self.games.rules(game_id);
+            let mut command_fields = array![];
+            command.serialize(ref command_fields);
+            let command_index: u128 = (*command_fields.at(0)).try_into().unwrap();
+            assert!(crate::rules::command_enabled(rules.command_mask, command_index), "COMMAND_DISABLED");
             if !self.games.game(game_id).ready && command != Command::SettleBlitzRoster {
                 return Err('ROSTER_NOT_READY');
             }

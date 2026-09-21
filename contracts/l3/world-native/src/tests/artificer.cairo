@@ -15,7 +15,11 @@ fn view(d: super::Deployment) -> IArtificerDispatcher {
 }
 fn setup(blitz: bool) -> (super::Deployment, ResourceKey) {
     let mut rules = super::recorded::rules();
-    rules.blitz_mode_on = blitz;
+    rules.mode_id = if blitz {
+        1
+    } else {
+        0
+    };
     let (d, home, _) = setup_with_rules(rules);
     start_cheat_caller_address(d.peers.economy, super::authority());
     view(d).configure_artificer(3, 10 * RESOURCE_PRECISION);

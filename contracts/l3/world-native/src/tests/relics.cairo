@@ -62,7 +62,11 @@ pub fn rules() -> Span<RelicRule> {
 }
 fn setup(blitz: bool) -> (super::Deployment, ResourceKey, ResourceKey) {
     let mut config = super::recorded::rules();
-    config.blitz_mode_on = blitz;
+    config.mode_id = if blitz {
+        1
+    } else {
+        0
+    };
     config.map_config.relic_discovery_interval_sec = 10;
     config.map_config.relic_hex_dist_from_center = 12;
     config.map_config.relic_chest_relics_per_chest = 3;

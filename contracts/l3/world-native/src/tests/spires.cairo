@@ -101,7 +101,14 @@ fn initialization_rejects_invalid_layouts_foreign_callers_blitz_and_repeats() {
     }
     let games = IGameDispatcher { contract_address: d.peers.season };
     start_cheat_caller_address(d.peers.season, authority());
-    games.create_game(3, games.game(1), crate::rules::SliceRules { blitz_mode_on: true, ..games.rules(1) });
+    games
+        .create_game(
+            3,
+            games.game(1),
+            crate::rules::SliceRules {
+                mode_id: 1, command_mask: 0xffffffffffffffffffffffffffffffff_u128, ..games.rules(1),
+            },
+        );
     stop_cheat_caller_address(d.peers.season);
     assert!(safe.initialize_spires(3, layout(1)).is_err());
     safe.initialize_spires(1, layout(1)).unwrap();

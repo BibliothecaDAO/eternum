@@ -76,7 +76,7 @@ pub mod SettlementDomain {
             assert!(get_caller_address() == peers.season, "only authenticated command domain");
             let owner = self.bound_owner(actor);
             let game = self.games().game(game_id);
-            assert!(!self.games().rules(game_id).blitz_mode_on, "not a season game");
+            assert!(!crate::rules::is_blitz(self.games().rules(game_id)), "not a season game");
             assert!(command.name != 0, "name cannot be empty");
             assert!(game.dev_mode_on || context.timestamp >= game.start_settling_at, "settling not started");
             assert!(game.end_at == 0 || context.timestamp < game.end_at, "game ended");
@@ -149,7 +149,7 @@ pub mod SettlementDomain {
             let rules = self.games().rules(game_id);
             assert!(game.dev_mode_on || context.timestamp >= game.start_settling_at, "settling not started");
             assert!(game.end_at == 0 || context.timestamp < game.end_at, "game ended");
-            let dev_entry = game.dev_mode_on && !rules.blitz_mode_on;
+            let dev_entry = game.dev_mode_on && !crate::rules::is_blitz(rules);
             let pass = VillagePassKey { game_id, pass_id: command.pass_id };
             if !dev_entry {
                 self.villages.require_pass(pass, owner);
@@ -213,7 +213,7 @@ pub mod SettlementDomain {
             assert!(key.game_id != 0, "game id zero is reserved");
             let games = self.games();
             if games.ownership_rules_ready(key.game_id) {
-                assert!(!games.rules(key.game_id).blitz_mode_on, "Blitz uses a fixed roster");
+                assert!(!crate::rules::is_blitz(games.rules(key.game_id)), "Blitz uses a fixed roster");
             }
             let operator = self.ledger_operator();
             assert!(operator.is_non_zero() && get_caller_address() == operator, "only ledger operator");
@@ -233,7 +233,7 @@ pub mod SettlementDomain {
             assert!(get_caller_address() == peers.season, "only recorded settlement dispatch");
             assert!(actor == self.lifecycle.domain_state().authority, "only launch authority");
             let game = self.games().game(game_id);
-            assert!(self.games().rules(game_id).blitz_mode_on, "not a Blitz game");
+            assert!(crate::rules::is_blitz(self.games().rules(game_id)), "not a Blitz game");
             assert!(context.timestamp >= game.start_settling_at, "settling not started");
             let roster = crate::registrar::IRegistrarDispatcherTrait::blitz_roster(
                 crate::registrar::IRegistrarDispatcher { contract_address: peers.registry }, game_id,
