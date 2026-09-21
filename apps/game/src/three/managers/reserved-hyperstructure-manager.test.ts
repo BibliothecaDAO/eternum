@@ -4,6 +4,10 @@ import { describe, expect, it, vi } from "vitest";
 
 const placedHeights = vi.hoisted(() => [] as number[]);
 vi.mock("@/three/map-layer", () => ({ activeMapLayer: () => false }));
+vi.mock("@/ui/config", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/ui/config")>()),
+  FELT_CENTER: () => 0,
+}));
 vi.mock("../structures/hyperstructure-kit", () => ({ createHyperstructureKit: () => ({ scene: new Group() }) }));
 vi.mock("@/three/managers/instanced-model", () => ({
   default: class {

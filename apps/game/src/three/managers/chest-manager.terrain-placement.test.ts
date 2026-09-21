@@ -1,10 +1,17 @@
 import { afterEach, expect, it, vi } from "vitest";
 import { Matrix4, Scene, Vector3 } from "three";
+import { configManager } from "@bibliothecadao/eternum";
+import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import type { WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
+import preset from "../../../../../contracts/l3/world-native/fixtures/preset-1.json";
 
 vi.mock("../scenes/hexagon-scene", () => ({ CameraView: { Close: 1, Medium: 2, Far: 3 } }));
 vi.mock("../utils/utils", () => ({ gltfLoader: { loadAsync: vi.fn() } }));
 vi.mock("../utils", () => ({ getWorldPositionForHex: () => new Vector3(1, 0, 2) }));
+vi.mock("@/ui/config", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/ui/config")>()),
+  FELT_CENTER: () => 0,
+}));
 vi.mock("../utils/labels/label-factory", () => ({ createChestLabel: vi.fn() }));
 vi.mock("@/hooks/store/use-ui-store", () => ({ useUIStore: { getState: vi.fn() } }));
 
@@ -20,6 +27,12 @@ type PlacementHarness = {
 afterEach(() => vi.restoreAllMocks());
 
 it("moves a placed chest onto terrain that arrives later, and only when its height changed", () => {
+  configManager.setActiveGame(1, 1);
+  const store = new NativeFactStore();
+  store.applyEntityOperations([
+    { type: "upsert", entities: [{ hashed_keys: "0x1", models: { SliceRules: { ...preset.rules, game_id: 1 } } }] },
+  ]);
+  configManager.setStore(store);
   vi.spyOn(ChestManager.prototype as unknown as PlacementHarness, "initializePointsRenderer").mockImplementation(
     () => {},
   );
