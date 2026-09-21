@@ -156,7 +156,8 @@ pub mod HyperstructureState {
             self.games().game(game_id);
             assert!(self.hyper_rule_count.read(game_id) == 0, "hyperstructure rules already configured");
             assert!(
-                !rules.resources.is_empty() || crate::rules::is_blitz(self.games().rules(game_id)),
+                !rules.resources.is_empty()
+                    || !crate::rules::rule_enabled(self.games().rules(game_id), crate::rules::DISCOVER_HYPERSTRUCTURES),
                 "empty construction requirements",
             );
             for index in 0..rules.resources.len() {
@@ -308,7 +309,11 @@ pub mod HyperstructureState {
             let key = ResourceKey { game_id, entity_id: command.hyperstructure_id };
             self.assert_owner(key, actor);
             assert!(self.state(key).stage == Stage::Complete, "hyperstructure not complete");
-            validate_shares(command.shareholders, crate::rules::is_blitz(self.games().rules(game_id)), actor);
+            validate_shares(
+                command.shareholders,
+                crate::rules::rule_enabled(self.games().rules(game_id), crate::rules::OWNER_ONLY_SHARES),
+                actor,
+            );
             self.checkpoint(key, context.timestamp);
             self
                 .write_shares(
@@ -590,7 +595,7 @@ pub mod HyperstructureState {
                 );
         }
         fn multiplier(self: @ComponentState<TContractState>, key: ResourceKey) -> u8 {
-            if !crate::rules::is_blitz(self.games().rules(key.game_id)) {
+            if !crate::rules::rule_enabled(self.games().rules(key.game_id), crate::rules::HYPERSTRUCTURE_MULTIPLIERS) {
                 return 1;
             }
             let rules = ISettlementViewsDispatcher { contract_address: self.peers().settlement }
@@ -621,12 +626,12 @@ pub mod HyperstructureState {
             count
         }
     }
-    fn validate_shares(shares: Span<Share>, blitz: bool, owner: ContractAddress) {
+    fn validate_shares(shares: Span<Share>, owner_only: bool, owner: ContractAddress) {
         assert!(!shares.is_empty() && shares.len() <= 20, "invalid shareholder count");
-        if blitz {
+        if owner_only {
             assert!(
                 shares.len() == 1 && *shares.at(0).player == owner && *shares.at(0).bps == 10000,
-                "Blitz shares belong to owner",
+                "shares must belong to owner",
             );
         }
         let mut total: u16 = 0;

@@ -82,7 +82,7 @@ pub mod EconomyDomain {
             command: CreateOrder,
             context: ExecutionContext,
         ) {
-            self.assert_command(game_id, context.timestamp, false);
+            self.assert_command(game_id, context.timestamp, false, crate::rules::TRADE);
             self.validate_offer(game_id, actor, command, context.timestamp);
             let order = crate::trade::new_order(command);
             self.reserve_offer(game_id, order, context.timestamp);
@@ -105,7 +105,7 @@ pub mod EconomyDomain {
             command: AcceptOrder,
             context: ExecutionContext,
         ) {
-            self.assert_command(game_id, context.timestamp, false);
+            self.assert_command(game_id, context.timestamp, false, crate::rules::TRADE);
             let key = TradeKey { game_id, trade_id: command.trade_id };
             let order = self.trades.order(key).expect('trade does not exist');
             let taker = self.owned_structure(game_id, command.taker_id, actor);
@@ -122,7 +122,7 @@ pub mod EconomyDomain {
         fn cancel_trade_order(
             ref self: ContractState, game_id: u32, actor: ContractAddress, trade_id: u32, context: ExecutionContext,
         ) {
-            self.assert_command(game_id, context.timestamp, true);
+            self.assert_command(game_id, context.timestamp, true, crate::rules::TRADE);
             let key = TradeKey { game_id, trade_id };
             let order = self.trades.order(key).expect('trade does not exist');
             self.owned_structure(game_id, order.maker_id, actor);
@@ -157,7 +157,7 @@ pub mod EconomyDomain {
             banks: Span<BankPlacement>,
             context: ExecutionContext,
         ) {
-            self.assert_economy_submission(game_id, context.timestamp);
+            self.assert_economy_submission(game_id, context.timestamp, crate::rules::BANKS);
             assert!(actor == self.lifecycle.domain_state().authority, "only domain authority");
             assert!(banks.len() == 6, "six regional banks required");
             for index in 0..6_u32 {
@@ -185,7 +185,7 @@ pub mod EconomyDomain {
             command: AddLiquidity,
             context: ExecutionContext,
         ) {
-            self.assert_economy_submission(game_id, context.timestamp);
+            self.assert_economy_submission(game_id, context.timestamp, crate::rules::BANKS);
             if actor != self.lifecycle.domain_state().authority {
                 assert_playing(self.games().game(game_id), context.timestamp);
             }
@@ -228,7 +228,7 @@ pub mod EconomyDomain {
             command: RemoveLiquidity,
             context: ExecutionContext,
         ) {
-            self.assert_command(game_id, context.timestamp, true);
+            self.assert_command(game_id, context.timestamp, true, crate::rules::BANKS);
             let bank = self.bank_structure(game_id, command.bank_id);
             assert!(command.resource_type != crate::resources::LORDS, "resource type cannot be lords");
             let key = MarketKey { game_id, resource_type: command.resource_type };
@@ -295,7 +295,7 @@ pub mod EconomyDomain {
             context: ExecutionContext,
             buy: bool,
         ) {
-            self.assert_command(game_id, context.timestamp, false);
+            self.assert_command(game_id, context.timestamp, false, crate::rules::BANKS);
             let player = self.owned_structure(game_id, command.structure_id, actor);
             let bank = self.bank_structure(game_id, command.bank_id);
             let key = MarketKey { game_id, resource_type: command.resource_type };
@@ -349,12 +349,12 @@ pub mod EconomyDomain {
                     game_id, actor, command, quote.market, lords, quote.owner_fee, quote.lp_fee, buy, context.timestamp,
                 );
         }
-        fn assert_economy_submission(self: @ContractState, game_id: u32, timestamp: u64) {
+        fn assert_economy_submission(self: @ContractState, game_id: u32, timestamp: u64, rule: u32) {
             assert!(
                 get_caller_address() == self.lifecycle.require_active().season, "only authenticated command domain",
             );
             crate::commands::assert_context_time(timestamp);
-            assert!(!crate::rules::is_blitz(self.games().rules(game_id)), "economy requires Eternum mode");
+            assert!(crate::rules::rule_enabled(self.games().rules(game_id), rule), "economy operation is disabled");
         }
         fn bank_structure(self: @ContractState, game_id: u32, bank_id: u32) -> Structure {
             let bank = self.structure(game_id, bank_id);
@@ -577,8 +577,8 @@ pub mod EconomyDomain {
             assert!(structure.owner == actor && actor != 0.try_into().unwrap(), "actor does not own trade structure");
             structure
         }
-        fn assert_command(self: @ContractState, game_id: u32, timestamp: u64, grace: bool) {
-            self.assert_economy_submission(game_id, timestamp);
+        fn assert_command(self: @ContractState, game_id: u32, timestamp: u64, grace: bool, rule: u32) {
+            self.assert_economy_submission(game_id, timestamp, rule);
             let games = self.games();
             if grace {
                 assert_main_with_grace(games.game(game_id), timestamp);

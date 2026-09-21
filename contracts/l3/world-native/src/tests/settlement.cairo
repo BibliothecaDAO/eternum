@@ -86,7 +86,8 @@ fn only_game_creation_initializes_reservations_and_repeated_initialization_is_id
     let deployment = setup(true);
     let games = IGameDispatcher { contract_address: deployment.peers.season };
     let mut game_rules = recorded::rules();
-    game_rules.mode_id = 1;
+    game_rules.mode_rules = super::recorded::BLITZ_RULES;
+    game_rules.entry_rule = 2;
     start_cheat_caller_address(deployment.peers.settlement, authority());
     start_cheat_caller_address(deployment.peers.season, authority());
     games.create_game(3, games.game(1), game_rules);
@@ -183,7 +184,10 @@ fn village_placement_shares_reservations_with_fixed_blitz_and_eternum_entries() 
             3,
             games.game(1),
             crate::rules::SliceRules {
-                mode_id: 1, command_mask: 0xffffffffffffffffffffffffffffffff_u128, ..recorded::rules(),
+                mode_rules: super::recorded::BLITZ_RULES,
+                entry_rule: 2,
+                command_mask: 0xffffffffffffffffffffffffffffffff_u128,
+                ..recorded::rules(),
             },
         );
     stop_cheat_caller_address(deployment.peers.season);
@@ -253,7 +257,10 @@ fn a_missing_ledger_operator_never_bypasses_eternum_entitlements() {
     let d = setup(true);
     let games = IGameDispatcher { contract_address: d.peers.season };
     let game_rules = crate::rules::SliceRules {
-        mode_id: 0, command_mask: 0xffffffffffffffffffffffffffffffff_u128, ..recorded::rules(),
+        mode_rules: super::recorded::ETERNUM_RULES,
+        entry_rule: 0,
+        command_mask: 0xffffffffffffffffffffffffffffffff_u128,
+        ..recorded::rules(),
     };
     start_cheat_caller_address(d.peers.season, authority());
     games.create_game(3, crate::game::GameRegistry { dev_mode_on: false, ..games.game(1) }, game_rules);

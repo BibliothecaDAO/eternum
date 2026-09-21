@@ -114,7 +114,10 @@ pub mod SeasonDomain {
             crate::commands::assert_context_time(context.timestamp);
             let mut game = self.games.game(game_id);
             crate::game::assert_playing(game, context.timestamp);
-            assert!(!crate::rules::is_blitz(self.games.rules(game_id)), "season closure requires Eternum");
+            assert!(
+                crate::rules::rule_enabled(self.games.rules(game_id), crate::rules::SEASON_CLOSE),
+                "season closure is disabled",
+            );
             let threshold = self.season_win_threshold(game_id);
             assert!(threshold != 0, "season win threshold is zero");
             let initiator = match self.close_initiators.read(game_id) {
@@ -328,7 +331,7 @@ pub mod SeasonDomain {
         }
         fn start_blitz(ref self: ContractState, game_id: u32, timestamp: u64) {
             assert!(get_caller_address() == self.lifecycle.require_active().settlement, "only settlement domain");
-            assert!(crate::rules::is_blitz(self.games.rules(game_id)), "not a Blitz game");
+            assert!(self.games.rules(game_id).entry_rule == 2, "fixed roster required");
             let mut game = self.games.game(game_id);
             assert!(!game.ready, "roster already ready");
             let duration = game.end_at - game.start_main_at;

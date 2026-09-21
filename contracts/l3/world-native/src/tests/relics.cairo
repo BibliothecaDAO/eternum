@@ -62,8 +62,13 @@ pub fn rules() -> Span<RelicRule> {
 }
 fn setup(blitz: bool) -> (super::Deployment, ResourceKey, ResourceKey) {
     let mut config = super::recorded::rules();
-    config.mode_id = if blitz {
-        1
+    config.mode_rules = if blitz {
+        super::recorded::BLITZ_RULES
+    } else {
+        super::recorded::ETERNUM_RULES
+    };
+    config.entry_rule = if blitz {
+        2
     } else {
         0
     };
@@ -275,7 +280,7 @@ fn reveal_relics_reveal_only_the_ring_without_points_or_discovery() {
     assert_eq!(balance(deployment, home, 38), 9250 * RESOURCE_PRECISION);
 }
 #[test]
-fn chest_discovery_is_blitz_surface_only_timed_and_skips_reserved_or_occupied_tiles() {
+fn chest_discovery_is_surface_only_timed_and_skips_reserved_or_occupied_tiles() {
     let (deployment, _, _) = setup(true);
     let origin = Coord { alt: false, x: 2000200, y: 2000200 };
     let expected = crate::relics::chest_destination(origin, 321, 40, 12);

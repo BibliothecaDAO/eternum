@@ -15,8 +15,13 @@ fn view(d: super::Deployment) -> IArtificerDispatcher {
 }
 fn setup(blitz: bool) -> (super::Deployment, ResourceKey) {
     let mut rules = super::recorded::rules();
-    rules.mode_id = if blitz {
-        1
+    rules.mode_rules = if blitz {
+        super::recorded::BLITZ_RULES
+    } else {
+        super::recorded::ETERNUM_RULES
+    };
+    rules.entry_rule = if blitz {
+        2
     } else {
         0
     };

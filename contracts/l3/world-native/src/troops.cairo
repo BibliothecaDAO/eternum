@@ -1114,7 +1114,7 @@ pub mod TroopsDomain {
             context: ExecutionContext,
         ) {
             let rules = self.authorize(game_id, context);
-            assert!(!crate::rules::is_blitz(rules), "no raid in blitz mode");
+            assert!(crate::rules::rule_enabled(rules, crate::rules::RAIDS), "raids are disabled");
             crate::resources::assert_unique_resources(command.steal_resources);
             let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
             let explorer = self.owned_explorer(key, actor);
@@ -1291,7 +1291,8 @@ pub mod TroopsDomain {
             rules: SliceRules,
             timestamp: u64,
         ) {
-            if explorer.troops.count == 0 || (target.base.category == 5 && !crate::rules::is_blitz(rules)) {
+            if explorer.troops.count == 0
+                || (target.base.category == 5 && !crate::rules::rule_enabled(rules, crate::rules::CAPTURE_VILLAGES)) {
                 return;
             }
             if !crate::geometry::adjacent(explorer.coord, crate::structures::structure_coord(target.base))

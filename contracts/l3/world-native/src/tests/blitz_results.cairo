@@ -25,7 +25,10 @@ fn games(d: super::Deployment) -> IGameDispatcher {
 fn setup(scores: Span<u128>) -> super::Deployment {
     let (d, _, _) = setup_with_rules(
         crate::rules::SliceRules {
-            mode_id: 1, command_mask: 0xffffffffffffffffffffffffffffffff_u128, ..super::recorded::rules(),
+            mode_rules: super::recorded::BLITZ_RULES,
+            entry_rule: 2,
+            command_mask: 0xffffffffffffffffffffffffffffffff_u128,
+            ..super::recorded::rules(),
         },
     );
     let d = super::bind_authority(d);

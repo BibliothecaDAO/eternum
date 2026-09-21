@@ -414,7 +414,7 @@ pub mod StructuresDomain {
             assert!(key.entity_id >= 0xfffffff9 && key.entity_id <= 0xfffffffe, "invalid regional bank id");
             assert!(!coord.alt && owner != 0.try_into().unwrap(), "invalid bank placement");
             let rules = self.game_dispatcher().rules(key.game_id);
-            assert!(!crate::rules::is_blitz(rules), "banks require Eternum mode");
+            assert!(crate::rules::rule_enabled(rules, crate::rules::BANKS), "banks are disabled");
             assert!(!self.structures.exists(key), "bank already exists");
             self.reveal_structure_tile(key.game_id, coord);
             self.map_dispatcher().reveal_structure_surroundings(key.game_id, coord);
@@ -533,7 +533,12 @@ pub mod StructuresDomain {
             let peers = self.lifecycle.require_active();
             assert!(get_caller_address() == peers.season, "only season domain");
             let game = self.game_dispatcher().game(game_id);
-            assert!(crate::rules::is_blitz(self.game_dispatcher().rules(game_id)), "not a Blitz game");
+            assert!(
+                crate::rules::rule_enabled(
+                    self.game_dispatcher().rules(game_id), crate::rules::RESERVED_HYPERSTRUCTURES,
+                ),
+                "reserved hyperstructures disabled",
+            );
             assert!(game.end_at == 0 || context.timestamp < game.end_at, "game ended");
             crate::settlement::IBlitzReservationsDispatcherTrait::release_hyperstructure(
                 crate::settlement::IBlitzReservationsDispatcher { contract_address: peers.map }, game_id, coord,
@@ -870,7 +875,10 @@ pub mod StructuresDomain {
             assert!(record.owner == actor, "actor does not own structure");
             assert!(self.game_dispatcher().ownership_rules_ready(game_id), "ownership rules require initialized game");
             let rules = self.game_dispatcher().rules(game_id);
-            assert!(!crate::rules::is_blitz(rules), "cannot transfer structure in Blitz");
+            assert!(
+                crate::rules::rule_enabled(rules, crate::rules::STRUCTURE_OWNERSHIP_TRANSFERS),
+                "structure ownership transfers disabled",
+            );
             assert!(command.new_owner != 0.try_into().unwrap(), "new owner is zero");
             assert!(record.base.category != crate::ownership::VILLAGE_CATEGORY, "cannot transfer ownership of village");
             if record.owner == command.new_owner {
@@ -989,7 +997,9 @@ pub mod StructuresDomain {
                 Discovery::Hyperstructure => self.create_hyperstructure(key, seed, completed),
                 Discovery::BitcoinMine => {},
                 Discovery::Camp => {
-                    assert!(crate::rules::is_blitz(rules), "camps require Blitz");
+                    assert!(
+                        crate::rules::rule_enabled(rules, crate::rules::DISCOVER_CAMPS), "camp discovery is disabled",
+                    );
                     for resource in self.camp_resources(game_id) {
                         self
                             .resources_dispatcher()

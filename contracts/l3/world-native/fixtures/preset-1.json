@@ -116,7 +116,8 @@
       "donkey_sec_per_km": 9,
       "donkey_sec_per_km_troops": 27
     },
-    "faith_enabled": true
+    "faith_enabled": true,
+    "mode_rules": 865976
   },
   "resources": [
     {

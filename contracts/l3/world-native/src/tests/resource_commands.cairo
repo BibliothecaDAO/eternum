@@ -621,11 +621,19 @@ fn eternum_troop_deposits_require_ownership_for_category_8() {
 
 fn troop_deposit_ownership(blitz_mode_on: bool, category: u8) {
     let (deployment, home, target) = setup_with_rules(
-        crate::rules::SliceRules { mode_id: if blitz_mode_on {
-            1
-        } else {
-            0
-        }, ..recorded::rules() },
+        crate::rules::SliceRules {
+            mode_rules: if blitz_mode_on {
+                super::recorded::BLITZ_RULES
+            } else {
+                super::recorded::ETERNUM_RULES
+            },
+            entry_rule: if blitz_mode_on {
+                2
+            } else {
+                0
+            },
+            ..recorded::rules(),
+        },
     );
     let structures = IStructuresDispatcher { contract_address: deployment.peers.structures };
     let structure = structures.structure(target).unwrap();
@@ -707,11 +715,19 @@ fn village_fixture(deployment: Deployment, key: ResourceKey, owner: starknet::Co
 fn delayed_village_troops_ignore_the_connection_and_keep_transport_ownership_rules() {
     for blitz_mode_on in array![false, true] {
         let (deployment, from, to) = setup_with_rules(
-            crate::rules::SliceRules { mode_id: if blitz_mode_on {
-                1
-            } else {
-                0
-            }, ..recorded::rules() },
+            crate::rules::SliceRules {
+                mode_rules: if blitz_mode_on {
+                    super::recorded::BLITZ_RULES
+                } else {
+                    super::recorded::ETERNUM_RULES
+                },
+                entry_rule: if blitz_mode_on {
+                    2
+                } else {
+                    0
+                },
+                ..recorded::rules(),
+            },
         );
         village_fixture(deployment, to, deployment.actor);
         grant(deployment, from, 26, 100);

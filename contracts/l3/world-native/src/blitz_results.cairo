@@ -128,7 +128,10 @@ pub mod BlitzResultState {
             assert!(actor == lifecycle.domain_state().authority, "only domain authority");
             crate::commands::assert_context_time(timestamp);
             let games = self.games();
-            assert!(crate::rules::is_blitz(games.rules(game_id)), "requires Blitz");
+            assert!(
+                !crate::rules::rule_enabled(games.rules(game_id), crate::rules::SEASON_CLOSE),
+                "result finalisation is disabled",
+            );
             let game = games.game(game_id);
             assert!(game.ready && game.end_at != 0 && timestamp >= game.end_at, "game has not ended");
             assert!(game.settled, "final point settlement incomplete");

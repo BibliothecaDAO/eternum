@@ -224,7 +224,7 @@ pub mod MapDomain {
             self.lifecycle.assert_configurator();
             let peers = self.lifecycle.require_active();
             let games = IGameDispatcher { contract_address: peers.season };
-            assert!(!crate::rules::is_blitz(games.rules(game_id)), "spires require an Eternum game");
+            assert!(crate::rules::rule_enabled(games.rules(game_id), crate::rules::SPIRES), "spires are disabled");
             assert!(self.spire_layouts.read(game_id).is_none(), "spires already initialized");
             crate::spires::validate(layout);
             let center = self.map_center(game_id);
@@ -340,12 +340,7 @@ pub mod MapDomain {
                     alt: false, x: 2147483646 - rules.map_center_offset, y: 2147483646 - rules.map_center_offset,
                 };
                 crate::discovery::surface(
-                    rules.map_config,
-                    seed,
-                    timestamp,
-                    distance(coord, center),
-                    hyperstructures,
-                    crate::rules::is_blitz(rules),
+                    rules.map_config, seed, timestamp, distance(coord, center), hyperstructures, rules.mode_rules,
                 )
             }
         }
@@ -465,7 +460,10 @@ pub mod MapDomain {
                 reward.amount, explorer.troops.boosts, context.timestamp / rules.tick_config.armies_tick_in_seconds,
             );
             let receiver = crate::exploration_rewards::receiver(
-                crate::rules::is_blitz(rules), explorer_id, explorer.owner, reward.resource_type,
+                crate::rules::rule_enabled(rules, crate::rules::HOME_REWARDS),
+                explorer_id,
+                explorer.owner,
+                reward.resource_type,
             );
             crate::exploration_rewards::IExplorationGrantDispatcherTrait::grant_exploration_reward(
                 crate::exploration_rewards::IExplorationGrantDispatcher { contract_address: peers.resources },
@@ -499,7 +497,7 @@ pub mod MapDomain {
             crate::commands::assert_context_time(timestamp);
             let games = IGameDispatcher { contract_address: peers.season };
             let rules = games.rules(game_id);
-            if !crate::rules::is_blitz(rules) || coord.alt {
+            if !crate::rules::rule_enabled(rules, crate::rules::DISCOVER_CHESTS) || coord.alt {
                 return;
             }
             if self.last_relic_discovery.read(game_id)
@@ -567,7 +565,10 @@ pub mod MapDomain {
             let season = self.lifecycle.require_active().season;
             let game = IGameDispatcher { contract_address: season }.game(game_id);
             let game_rules = IGameDispatcher { contract_address: season }.rules(game_id);
-            assert!(crate::rules::is_blitz(game_rules), "not a Blitz game");
+            assert!(
+                crate::rules::rule_enabled(game_rules, crate::rules::RESERVED_HYPERSTRUCTURES),
+                "reserved hyperstructures disabled",
+            );
             assert!(game.end_at == 0 || timestamp < game.end_at, "game ended");
             let rules = ISettlementViewsDispatcher { contract_address: self.lifecycle.require_active().settlement }
                 .settlement_rules(game_id);

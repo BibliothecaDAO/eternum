@@ -15,8 +15,13 @@ fn setup(blitz: bool) -> (super::Deployment, ResourceKey, ResourceKey, u32, u32)
 }
 fn setup_with_immunity(blitz: bool, immunity: u8) -> (super::Deployment, ResourceKey, ResourceKey, u32, u32) {
     let mut rules = super::recorded::rules();
-    rules.mode_id = if blitz {
-        1
+    rules.mode_rules = if blitz {
+        super::recorded::BLITZ_RULES
+    } else {
+        super::recorded::ETERNUM_RULES
+    };
+    rules.entry_rule = if blitz {
+        2
     } else {
         0
     };

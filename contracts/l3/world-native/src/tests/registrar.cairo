@@ -1,5 +1,6 @@
 use eternum_randomness_protocol::entrypoint::IRecordedExecutionViewsDispatcher;
 use snforge_std::{start_cheat_block_timestamp_global, start_cheat_caller_address, stop_cheat_caller_address};
+use crate::commands::{Command, CreateExplorer, Explore};
 use crate::game::{GameStatus, IGameDispatcher, IGameDispatcherTrait, status_at};
 use crate::guards::{GuardKey, IGuardsDispatcher, IGuardsDispatcherTrait};
 use crate::lifecycle::{IDomainDispatcher, IDomainDispatcherTrait, PeersTrait};
@@ -12,13 +13,17 @@ use crate::registrar::{
     IRegistrarSafeDispatcherTrait, RosterPlayer,
 };
 use crate::resources::{IResourcesDispatcher, IResourcesDispatcherTrait, ResourceKey, ResourceRule, ResourceSlot};
+use crate::rules::{DISCOVER_CAMPS, DISCOVER_CHESTS, HOME_REWARDS, RESOURCE_PRECISION};
 use crate::season::{ISeasonDispatcher, ISeasonDispatcherTrait};
 use crate::settlement::{
     ISettlementCommandsDispatcher, ISettlementCommandsDispatcherTrait, ISettlementCommandsSafeDispatcher,
-    ISettlementCommandsSafeDispatcherTrait, ISettlementViewsDispatcher, ISettlementViewsDispatcherTrait, SettlementMode,
+    ISettlementCommandsSafeDispatcherTrait, ISettlementCreationDispatcher, ISettlementCreationDispatcherTrait,
+    ISettlementViewsDispatcher, ISettlementViewsDispatcherTrait, RealmCreation, SettlementCreation, SettlementMode,
 };
 use crate::structures::{IStructuresDispatcher, IStructuresDispatcherTrait};
+use crate::troops::{ExplorerKey, ITroopsDispatcher, ITroopsDispatcherTrait};
 use super::recorded_receipts::RecordedReceiptsTrait;
+use super::resource_commands::execute_in_game;
 
 fn setup() -> super::Deployment {
     let d = super::setup_with_domains(false, "StructuresDomain", "TroopsDomain");
@@ -54,11 +59,19 @@ fn definition(blitz: bool) -> PresetDefinition {
         resources.append(ResourceRule { resource_type, unit_weight: 1, realm_rate: 10, village_rate: 5 });
     }
     PresetDefinition {
-        rules: crate::rules::SliceRules { mode_id: if blitz {
-            1
-        } else {
-            0
-        }, ..super::recorded::rules() },
+        rules: crate::rules::SliceRules {
+            mode_rules: if blitz {
+                super::recorded::BLITZ_RULES
+            } else {
+                super::recorded::ETERNUM_RULES
+            },
+            entry_rule: if blitz {
+                2
+            } else {
+                0
+            },
+            ..super::recorded::rules(),
+        },
         resources: ResourcePreset {
             resources: resources.span(),
             production: super::production::recipes(),
@@ -567,4 +580,77 @@ fn recorded_roster_batches_block_early_play_and_report_ticket_progress() {
     super::season_lifecycle::execute_batch_in_game(d, game_id, finalize, end_at, 0);
     assert!(games.game(game_id).settled);
     assert_eq!(status_at(games.game(game_id), end_at), GameStatus::Settled);
+}
+
+#[test]
+fn open_preset_exploration_discovers_a_camp_and_credits_the_home_realm() {
+    let d = setup();
+    let mut preset = definition(true);
+    preset.rules.mode_id = 7;
+    preset.rules.mode_rules = HOME_REWARDS | DISCOVER_CAMPS | DISCOVER_CHESTS;
+    preset.rules.entry_rule = 1;
+    preset.rules.map_config.shards_mines_win_probability = 0;
+    preset.rules.map_config.shards_mines_fail_probability = 1;
+    preset.rules.map_config.camp_win_probability = 1;
+    preset.rules.map_config.camp_fail_probability = 0;
+    preset.rules.map_config.relic_discovery_interval_sec = 60000;
+    registry(d).register_preset(1, preset);
+    let game_id = registry(d).create_game(CreateGameParams { end_grace_seconds: 0, ..params(false) }, preset);
+
+    let center = 2147483646 - IGameDispatcher { contract_address: d.peers.season }.rules(game_id).map_center_offset;
+    start_cheat_block_timestamp_global(300);
+    start_cheat_caller_address(d.peers.structures, d.peers.settlement);
+    let home = ResourceKey {
+        game_id,
+        entity_id: ISettlementCreationDispatcher { contract_address: d.peers.structures }
+            .create_settlement(
+                game_id,
+                d.actor,
+                crate::troops::Coord { alt: false, x: center, y: center },
+                SettlementCreation::Realm(
+                    RealmCreation {
+                        realm_id: 1,
+                        traits: crate::realms::RealmTraits { wonder: 1, order: 1, resources: array![1].span() },
+                        grant_troops: true,
+                        activate_economy: true,
+                    },
+                ),
+                crate::commands::ExecutionContext { timestamp: 300, ..super::context() },
+            ),
+    };
+    stop_cheat_caller_address(d.peers.structures);
+    let guards = IGuardsDispatcher { contract_address: d.peers.troops };
+    let category: u8 = guards.guard(GuardKey { game_id, structure_id: home.entity_id, slot: 0 }).troops.category.into();
+    assert!(
+        execute_in_game(
+            d,
+            game_id,
+            Command::CreateExplorer(
+                CreateExplorer {
+                    structure_id: home.entity_id, category, tier: 0, amount: RESOURCE_PRECISION, direction: 0,
+                },
+            ),
+            301,
+            301,
+        ),
+    );
+    let structures = IStructuresDispatcher { contract_address: d.peers.structures };
+    let explorer_id = *structures.structure(home).unwrap().troop_explorers.at(0);
+    let troops = ITroopsDispatcher { contract_address: d.peers.troops };
+    let explorer = ExplorerKey { game_id, explorer_id };
+    let origin = troops.explorer(explorer).unwrap().coord;
+    let resources = IResourcesDispatcher { contract_address: d.peers.resources };
+    let home_slot = ResourceSlot { game_id, entity_id: home.entity_id, resource_type: 1 };
+    let before = resources.resource_balance(home_slot);
+
+    assert!(execute_in_game(d, game_id, Command::Explore(Explore { explorer_id, direction: 0 }), 360, 360));
+
+    let target = crate::geometry::neighbor(origin, 0);
+    let tile = IMapDispatcher { contract_address: d.peers.map }
+        .tile(crate::geometry::tile_key(game_id, target))
+        .unwrap();
+    assert_eq!((tile.data / 2) % 256, crate::camps::CAMP_OCCUPIER.into());
+    assert_eq!(troops.explorer(explorer).unwrap().coord, origin);
+    assert_eq!(resources.resource_balance(home_slot), before + 10 * RESOURCE_PRECISION);
+    assert_eq!(resources.resource_balance(ResourceSlot { entity_id: explorer_id, ..home_slot }), 0);
 }

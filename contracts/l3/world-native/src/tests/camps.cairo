@@ -19,8 +19,13 @@ use super::resource_commands::{execute, execute_recorded_at, grant, setup_with_r
 
 fn rules(blitz: bool) -> crate::rules::SliceRules {
     let mut rules = super::recorded::rules();
-    rules.mode_id = if blitz {
-        1
+    rules.mode_rules = if blitz {
+        super::recorded::BLITZ_RULES
+    } else {
+        super::recorded::ETERNUM_RULES
+    };
+    rules.entry_rule = if blitz {
+        2
     } else {
         0
     };
@@ -59,29 +64,32 @@ fn create(d: super::Deployment, coord: Coord) -> ResourceKey {
     ResourceKey { game_id: 3, entity_id: id }
 }
 #[test]
-fn camp_lottery_is_blitz_only_after_mines() {
+fn camp_lottery_obeys_discoverable_rules_after_mines() {
     let mut config = rules(true).map_config;
     for seed in 0_u64..32 {
-        assert_eq!(surface(config, seed.into(), 30, 1, 0, true), Discovery::Camp);
-        assert_eq!(surface(config, seed.into(), 30, 1, 0, false), Discovery::None);
+        assert_eq!(surface(config, seed.into(), 30, 1, 0, crate::rules::DISCOVER_CAMPS), Discovery::Camp);
+        assert_eq!(surface(config, seed.into(), 30, 1, 0, crate::rules::DISCOVER_HYPERSTRUCTURES), Discovery::None);
     }
     config.camp_win_probability = 3;
     config.camp_fail_probability = 7;
     for seed in 0_u64..32 {
         let won = crate::random::lottery(seed.into(), 7, 3, 7, 30);
-        assert_eq!(surface(config, seed.into(), 30, 1, 0, true), if won {
-            Discovery::Camp
-        } else {
-            Discovery::None
-        });
+        assert_eq!(
+            surface(config, seed.into(), 30, 1, 0, crate::rules::DISCOVER_CAMPS),
+            if won {
+                Discovery::Camp
+            } else {
+                Discovery::None
+            },
+        );
     }
     config.hyps_win_prob = 1;
     config.hyps_fail_prob = 0;
     config.hyps_fail_prob_increase_p_hex = 10000;
     config.shards_mines_win_probability = 1;
     config.shards_mines_fail_probability = 0;
-    assert_eq!(surface(config, 101, 30, 0, 0, true), Discovery::Mine);
-    assert_eq!(surface(config, 101, 30, 0, 0, false), Discovery::Hyperstructure);
+    assert_eq!(surface(config, 101, 30, 0, 0, crate::rules::DISCOVER_CAMPS), Discovery::Mine);
+    assert_eq!(surface(config, 101, 30, 0, 0, crate::rules::DISCOVER_HYPERSTRUCTURES), Discovery::Hyperstructure);
 }
 #[test]
 fn camps_grant_configured_resources_labor_and_one_crossbow_guard() {

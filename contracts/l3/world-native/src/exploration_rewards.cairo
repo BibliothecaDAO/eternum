@@ -52,8 +52,8 @@ pub fn boosted_amount(amount: u128, boosts: crate::troops::TroopBoosts, tick: u6
     };
     (amount + bonus) * crate::rules::RESOURCE_PRECISION
 }
-pub fn receiver(blitz: bool, explorer_id: u32, home: u32, resource_type: u8) -> u32 {
-    if !blitz || (resource_type >= 39 && resource_type <= 56) {
+pub fn receiver(home_rewards: bool, explorer_id: u32, home: u32, resource_type: u8) -> u32 {
+    if !home_rewards || (resource_type >= 39 && resource_type <= 56) {
         explorer_id
     } else {
         home

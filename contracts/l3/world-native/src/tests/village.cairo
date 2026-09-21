@@ -231,7 +231,10 @@ fn assert_blitz_village(mode: SettlementMode) {
         false,
         mode,
         crate::rules::SliceRules {
-            mode_id: 1, command_mask: 0xffffffffffffffffffffffffffffffff_u128, ..recorded::rules(),
+            mode_rules: super::recorded::BLITZ_RULES,
+            entry_rule: 2,
+            command_mask: 0xffffffffffffffffffffffffffffffff_u128,
+            ..recorded::rules(),
         },
     );
     let pass = register_pass(deployment, 1);

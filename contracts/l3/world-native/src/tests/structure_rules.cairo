@@ -77,7 +77,8 @@ fn ownership_transfer_rejects_zero_foreign_village_and_ended_game() {
 #[test]
 fn blitz_ownership_transfer_is_rejected_even_by_owner() {
     let mut rules = super::recorded::rules();
-    rules.mode_id = 1;
+    rules.mode_rules = super::recorded::BLITZ_RULES;
+    rules.entry_rule = 2;
     let (d, home, _) = setup_with_rules(rules);
     assert_terminal_rejection(
         d,
@@ -101,10 +102,10 @@ fn discovery_uses_pinned_weight_totals_offsets_and_layer_restrictions() {
     assert_eq!(config.bitcoin_mine_win_probability, 200);
     assert_eq!(config.bitcoin_mine_fail_probability, 9800);
     // Independent draws from the pinned Poseidon RNG at time 80, offsets 2, 7 and 10.
-    assert_eq!(surface(config, 62, 80, 0, 0, true), Discovery::Mine); // mine draw 299
-    assert_eq!(surface(config, 67, 80, 0, 0, true), Discovery::Camp); // mine 8885, camp 299
+    assert_eq!(surface(config, 62, 80, 0, 0, crate::rules::DISCOVER_CAMPS), Discovery::Mine); // mine draw 299
+    assert_eq!(surface(config, 67, 80, 0, 0, crate::rules::DISCOVER_CAMPS), Discovery::Camp); // mine 8885, camp 299
     assert_eq!(
-        surface(config, 53454, 80, 0, 0, true), Discovery::Camp,
+        surface(config, 53454, 80, 0, 0, crate::rules::DISCOVER_CAMPS), Discovery::Camp,
     ); // mine threshold 1000 is excluded; camp draw 521 wins
     assert_eq!(ethereal(config, true, false, 23568, 80), Discovery::BitcoinMine); // draw 199
     assert_eq!(ethereal(config, true, false, 4175, 80), Discovery::None); // draw 200

@@ -56,7 +56,7 @@ pub fn validate(preset: PresetDefinition) {
     );
     let troops = preset.rules.troop_limit_config;
     assert!(troops.mercenaries_troop_lower_bound < troops.mercenaries_troop_upper_bound, "invalid mercenary bounds");
-    if crate::rules::is_blitz(preset.rules) && map.camp_win_probability != 0 {
+    if crate::rules::rule_enabled(preset.rules, crate::rules::DISCOVER_CAMPS) && map.camp_win_probability != 0 {
         let mut labor_rate = None;
         for rule in preset.resources.resources {
             if *rule.resource_type == 23 {
@@ -120,7 +120,7 @@ fn configure_settlement(
     let rules = crate::settlement::SettlementRules {
         registration_start: params.registration_start,
         registration_limit: params.roster.len().try_into().unwrap(),
-        mode: if crate::rules::is_blitz(preset.rules) {
+        mode: if preset.rules.entry_rule == 2 {
             params.mode
         } else {
             crate::settlement::SettlementMode::Single
@@ -177,11 +177,12 @@ fn initialize_map(address: ContractAddress, game_id: u32, preset: PresetDefiniti
     crate::exploration_rewards::IExtractionDispatcherTrait::configure_extraction(
         crate::exploration_rewards::IExtractionDispatcher { contract_address: address }, game_id, preset.exploration,
     );
-    if crate::rules::is_blitz(preset.rules) {
+    if crate::rules::rule_enabled(preset.rules, crate::rules::RESERVED_HYPERSTRUCTURES) {
         crate::settlement::IBlitzReservationsDispatcherTrait::initialize_reservations(
             crate::settlement::IBlitzReservationsDispatcher { contract_address: address }, game_id,
         );
-    } else {
+    }
+    if crate::rules::rule_enabled(preset.rules, crate::rules::SPIRES) {
         crate::spires::ISpiresDispatcherTrait::initialize_spires(
             crate::spires::ISpiresDispatcher { contract_address: address },
             game_id,

@@ -28,8 +28,13 @@ pub fn setup() -> (super::Deployment, ResourceKey, ResourceKey, ResourceKey) {
 }
 pub fn setup_mode(blitz: bool) -> (super::Deployment, ResourceKey, ResourceKey, ResourceKey) {
     let mut ruleset = super::recorded::rules();
-    ruleset.mode_id = if blitz {
-        1
+    ruleset.mode_rules = if blitz {
+        super::recorded::BLITZ_RULES
+    } else {
+        super::recorded::ETERNUM_RULES
+    };
+    ruleset.entry_rule = if blitz {
+        2
     } else {
         0
     };

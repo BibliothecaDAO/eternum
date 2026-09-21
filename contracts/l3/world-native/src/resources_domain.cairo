@@ -338,7 +338,10 @@ pub mod ResourcesDomain {
             context: ExecutionContext,
         ) {
             let key = self.assert_production_command(game_id, actor, command, context.timestamp);
-            assert(!crate::rules::is_blitz(self.game_dispatcher().rules(game_id)), 'Blitz requires resources');
+            assert(
+                crate::rules::rule_enabled(self.game_dispatcher().rules(game_id), crate::rules::LABOR_BURN),
+                'labor burn is disabled',
+            );
             self.refill_from_recipes(key, command, false, context.timestamp);
         }
         fn burn_resource_for_resource_production(
@@ -509,8 +512,10 @@ pub mod ResourcesDomain {
                 "structure and explorer are not adjacent",
             );
             assert!(
-                !crate::rules::is_blitz(self.game_dispatcher().rules(game_id)),
-                "no structure to explorer transfer in blitz",
+                crate::rules::rule_enabled(
+                    self.game_dispatcher().rules(game_id), crate::rules::STRUCTURE_TO_ARMY_TRANSFERS,
+                ),
+                "structure to explorer transfer disabled",
             );
             for resource in command.resources {
                 assert!(
@@ -626,7 +631,7 @@ pub mod ResourcesDomain {
         }
         fn production_start(self: @ContractState, game_id: u32) -> u32 {
             let games = self.game_dispatcher();
-            if crate::rules::is_blitz(games.rules(game_id)) {
+            if crate::rules::rule_enabled(games.rules(game_id), crate::rules::PRODUCTION_START) {
                 games.game(game_id).start_main_at.try_into().unwrap()
             } else {
                 0
@@ -689,8 +694,9 @@ pub mod ResourcesDomain {
             let destination = structures.structure(to).expect('missing recipient structure');
             let rules = self.game_dispatcher().rules(game_id);
             assert!(
-                !crate::rules::is_blitz(rules) || source.owner == destination.owner,
-                "blitz delayed transfers require the same owner",
+                !crate::rules::rule_enabled(rules, crate::rules::SAME_OWNER_TRANSFER)
+                    || source.owner == destination.owner,
+                "transfers require the same owner",
             );
             let travel_time = crate::transport::travel_time(
                 crate::structures::structure_coord(source.base),

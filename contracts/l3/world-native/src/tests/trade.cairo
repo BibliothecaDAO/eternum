@@ -13,7 +13,8 @@ use super::resource_commands::{assert_terminal_rejection, execute, execute_recor
 
 fn setup() -> (super::Deployment, ResourceKey, ResourceKey) {
     let mut rules = super::recorded::rules();
-    rules.mode_id = 0;
+    rules.mode_rules = super::recorded::ETERNUM_RULES;
+    rules.entry_rule = 0;
     rules.speed_config.donkey_sec_per_km = 1;
     rules.speed_config.donkey_sec_per_km_troops = 2;
     rules.tick_config.delivery_tick_in_seconds = 1;
@@ -240,7 +241,8 @@ fn trade_rejects_blitz_and_either_ethereal_endpoint() {
     let key = create(deployment, offer(maker));
     assert_terminal_rejection(deployment, accept(key, taker, 1), 50);
     let mut rules = super::recorded::rules();
-    rules.mode_id = 1;
+    rules.mode_rules = super::recorded::BLITZ_RULES;
+    rules.entry_rule = 2;
     let (blitz, source, _) = setup_with_rules(rules);
     assert_terminal_rejection(blitz, Command::CreateTradeOrder(offer(source)), 40);
 }

@@ -39,7 +39,7 @@ pub trait IGameSettlement<T> {
     ) -> u64;
 }
 
-pub fn validate_params(params: CreateGameParams, blitz: bool) {
+pub fn validate_params(params: CreateGameParams, rules: crate::rules::SliceRules) {
     assert!(params.name != 0, "game name is empty");
     assert!(params.seed != 0, "game seed is zero");
     assert!(params.duration_seconds != 0, "game duration is zero");
@@ -48,8 +48,10 @@ pub fn validate_params(params: CreateGameParams, blitz: bool) {
         Into::<u32, u64>::into(params.registration_start) < params.start_settling_at,
         "registration must open before settling",
     );
-    if blitz {
-        assert!(params.end_grace_seconds == 0, "Blitz has no settlement grace period");
+    if !crate::rules::rule_enabled(rules, crate::rules::SEASON_CLOSE) {
+        assert!(params.end_grace_seconds == 0, "result finalisation has no grace period");
+    }
+    if rules.entry_rule == 2 {
         assert!(params.roster.len() > 0 && params.roster.len() <= 24, "invalid Blitz roster size");
         assert!(params.mode == crate::settlement::SettlementMode::Triple, "Regular Blitz required");
         assert!(!params.dev_mode_on, "free Blitz does not use development mode");
@@ -130,11 +132,10 @@ pub mod RegistrarState {
                 definition.settlement.reward_profile == 1 || definition.settlement.reward_profile == 2,
                 "unknown settlement profile",
             );
-            if crate::rules::is_blitz(definition.rules) {
-                assert!(definition.settlement.spires.is_none(), "Blitz preset has spires");
-            } else {
+            if crate::rules::rule_enabled(definition.rules, crate::rules::SPIRES) {
                 crate::spires::validate(definition.settlement.spires.expect('missing season spires'));
-                assert!(definition.economy.withdrawals.is_some(), "missing Eternum withdrawal configuration");
+            } else {
+                assert!(definition.settlement.spires.is_none(), "spires are disabled");
             }
             crate::presets::validate(definition);
             let commitment = crate::presets::commitment(definition);
@@ -208,7 +209,7 @@ pub mod RegistrarState {
         fn validate_game(
             self: @ComponentState<TContractState>, params: CreateGameParams, definition: PresetDefinition,
         ) {
-            super::validate_params(params, crate::rules::is_blitz(definition.rules));
+            super::validate_params(params, definition.rules);
             let commitment = self.presets.read(params.preset_id);
             assert!(commitment != 0, "preset is not registered");
             assert!(commitment == crate::presets::commitment(definition), "preset definition mismatch");

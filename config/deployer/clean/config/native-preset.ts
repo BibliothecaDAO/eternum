@@ -40,6 +40,29 @@ function hasNoProduction(resource: number) {
   return (resource >= 39 && resource <= 56) || resource === 58;
 }
 
+const modeRule = {
+  HOME_REWARDS: 1,
+  DISCOVER_CAMPS: 2,
+  DISCOVER_CHESTS: 4,
+  DISCOVER_HYPERSTRUCTURES: 8,
+  SPIRES: 16,
+  RAIDS: 32,
+  CAPTURE_VILLAGES: 64,
+  LABOR_BURN: 128,
+  SAME_OWNER_TRANSFER: 256,
+  BANKS: 512,
+  SEASON_CLOSE: 1024,
+  RESERVED_HYPERSTRUCTURES: 2048,
+  STRUCTURE_TO_ARMY_TRANSFERS: 4096,
+  DEV_VILLAGE_ENTRY: 8192,
+  OWNER_ONLY_SHARES: 16384,
+  HYPERSTRUCTURE_MULTIPLIERS: 32768,
+  FAITH_OPERATIONS: 65536,
+  PRODUCTION_START: 131072,
+  STRUCTURE_OWNERSHIP_TRANSFERS: 262144,
+  TRADE: 524288,
+} as const;
+
 function buildRules(config: Config) {
   const faith = config.faith;
   if (!faith) throw new Error("Native faith config is required");
@@ -83,6 +106,27 @@ function buildRules(config: Config) {
     spire_travel_essence_cost: scaled(config.spireTravelEssenceCost),
     mode_id: config.blitz.mode.on ? 1 : 0,
     command_mask: 0xffffffffffffffffffffffffffffffffn,
+    mode_rules: config.blitz.mode.on
+      ? modeRule.HOME_REWARDS |
+        modeRule.DISCOVER_CAMPS |
+        modeRule.DISCOVER_CHESTS |
+        modeRule.CAPTURE_VILLAGES |
+        modeRule.SAME_OWNER_TRANSFER |
+        modeRule.RESERVED_HYPERSTRUCTURES |
+        modeRule.OWNER_ONLY_SHARES |
+        modeRule.HYPERSTRUCTURE_MULTIPLIERS |
+        modeRule.PRODUCTION_START
+      : modeRule.DISCOVER_HYPERSTRUCTURES |
+        modeRule.SPIRES |
+        modeRule.RAIDS |
+        modeRule.LABOR_BURN |
+        modeRule.BANKS |
+        modeRule.SEASON_CLOSE |
+        modeRule.STRUCTURE_TO_ARMY_TRANSFERS |
+        modeRule.DEV_VILLAGE_ENTRY |
+        modeRule.FAITH_OPERATIONS |
+        modeRule.STRUCTURE_OWNERSHIP_TRANSFERS |
+        modeRule.TRADE,
     entry_rule: config.blitz.mode.on ? 2 : 0,
     faith_enabled: faith.enabled,
     speed_config: {

@@ -365,7 +365,8 @@ pub mod BridgeState {
             if withdrawal {
                 let rules = self.games().rules(game_id);
                 assert!(
-                    !crate::rules::is_blitz(rules) || village.owner == realm.owner,
+                    !crate::rules::rule_enabled(rules, crate::rules::SAME_OWNER_TRANSFER)
+                        || village.owner == realm.owner,
                     "blitz delayed transfers require the same owner",
                 );
                 travel_time =

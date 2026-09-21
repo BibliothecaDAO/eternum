@@ -38,6 +38,28 @@ pub struct FixtureAction {
     pub command: Command,
 }
 
+pub const BLITZ_RULES: u32 = crate::rules::HOME_REWARDS
+    + crate::rules::DISCOVER_CAMPS
+    + crate::rules::DISCOVER_CHESTS
+    + crate::rules::CAPTURE_VILLAGES
+    + crate::rules::SAME_OWNER_TRANSFER
+    + crate::rules::RESERVED_HYPERSTRUCTURES
+    + crate::rules::OWNER_ONLY_SHARES
+    + crate::rules::HYPERSTRUCTURE_MULTIPLIERS
+    + crate::rules::PRODUCTION_START;
+
+pub const ETERNUM_RULES: u32 = crate::rules::DISCOVER_HYPERSTRUCTURES
+    + crate::rules::SPIRES
+    + crate::rules::RAIDS
+    + crate::rules::LABOR_BURN
+    + crate::rules::BANKS
+    + crate::rules::SEASON_CLOSE
+    + crate::rules::STRUCTURE_TO_ARMY_TRANSFERS
+    + crate::rules::DEV_VILLAGE_ENTRY
+    + crate::rules::FAITH_OPERATIONS
+    + crate::rules::STRUCTURE_OWNERSHIP_TRANSFERS
+    + crate::rules::TRADE;
+
 pub fn rules() -> crate::rules::SliceRules {
     let data = read_txt(@FileTrait::new("tests/fixtures/preset-1.txt"));
     let mut fields = data.span();

@@ -12,9 +12,9 @@ pub enum Discovery {
 }
 
 pub fn surface(
-    config: MapConfig, seed: u256, timestamp: u64, distance: u128, hyperstructures: u32, blitz: bool,
+    config: MapConfig, seed: u256, timestamp: u64, distance: u128, hyperstructures: u32, mode_rules: u32,
 ) -> Discovery {
-    if !blitz {
+    if mode_rules & crate::rules::DISCOVER_HYPERSTRUCTURES != 0 {
         let hyper_success = hyperstructure_weight(config, distance, hyperstructures);
         let hyper_total: u128 = config.hyps_win_prob.into() + config.hyps_fail_prob.into();
         if lottery(seed, 1, hyper_success, hyper_total - hyper_success, timestamp) {
@@ -26,7 +26,8 @@ pub fn surface(
     ) {
         return Discovery::Mine;
     }
-    if blitz && lottery(seed, 7, config.camp_win_probability.into(), config.camp_fail_probability.into(), timestamp) {
+    if mode_rules & crate::rules::DISCOVER_CAMPS != 0
+        && lottery(seed, 7, config.camp_win_probability.into(), config.camp_fail_probability.into(), timestamp) {
         return Discovery::Camp;
     }
     Discovery::None
