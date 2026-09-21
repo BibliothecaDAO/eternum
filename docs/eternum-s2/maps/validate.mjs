@@ -31,14 +31,14 @@ check("The proposal has 96 unique paired spires: 6/6/12/18/24/30 on radii 2/6/12
     layout.etherealSpires.map((point) => scale(point, 15)),
   );
 });
-check("Mountain rings32–35 contain exactly 804 cells; every one is pre-explored.", () => {
-  assert.equal(mountainKeys.size, 804);
+check("Mountain rings33–35 contain exactly 612 cells; every one is pre-explored.", () => {
+  assert.equal(mountainKeys.size, 612);
   assert.equal(layout.mountains.length, mountainKeys.size);
   for (const point of disk(45))
-    assert.equal(mountainKeys.has(key(point)), distance(point) >= 32 && distance(point) <= 35);
+    assert.equal(mountainKeys.has(key(point)), distance(point) >= 33 && distance(point) <= 35);
   for (const mountain of mountainKeys) assert(primaryExploration.has(mountain));
 });
-check("Graph flood-fill cannot cross the mountain barrier: the origin component is exactly rings0–31.", () => {
+check("Graph flood-fill cannot cross the mountain barrier: the origin component is exactly rings0–32.", () => {
   const visited = new Set(["0,0"]);
   const queue = [[0, 0]];
   for (let cursor = 0; cursor < queue.length; cursor++) {
@@ -48,8 +48,8 @@ check("Graph flood-fill cannot cross the mountain barrier: the origin component 
       queue.push(next);
     }
   }
-  assert.equal(visited.size, 2977);
-  assert.deepEqual(visited, new Set(disk(31).map(key)));
+  assert.equal(visited.size, 3169);
+  assert.deepEqual(visited, new Set(disk(32).map(key)));
   for (const point of corners(45)) assert(!visited.has(key(point)));
 });
 check(
@@ -72,7 +72,7 @@ check(
 check(
   "All structure neighbors are revealed; ethereal origin is reserved and pre-explored; outer halos are retained.",
   () => {
-    assert.equal(primaryExploration.size, 1483);
+    assert.equal(primaryExploration.size, 1291);
     assert.equal(etherealExploration.size, 667);
     for (const point of halo([[0, 0], ...layout.primarySpires])) assert(primaryExploration.has(key(point)));
     for (const point of halo(layout.etherealSpires)) assert(etherealExploration.has(key(point)));

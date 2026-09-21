@@ -122,7 +122,7 @@ node docs/eternum-s2/validate.mjs
 Primary hexes, and paired Ethereal Spire coordinates multiply by 15. The old base-coordinate-step and per-Realm-area
 aliases are removed. The map generator consumes these explicit rules from this file's selected JSON.
 
-Inclusive mountain bounds 32–35 produce four occupied rings. The outer six-spaced lattice includes side positions.
+Inclusive mountain bounds 33–35 produce three occupied rings. The outer six-spaced lattice includes side positions.
 Bank/Spire halos are set unions. Primary fixed reveals exclude later holding reveals. Ethereal core counts refer to
 radius 24 (the unchanged Bitcoin probability core), while transport reaches radius 30 and complete reveal halos
 reach 31. Never use the new transport extent to rebase either discovery probability curve.

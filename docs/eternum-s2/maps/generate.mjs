@@ -123,7 +123,7 @@ function primary(previous = false) {
       : "Realm rings 0–30 · 450 primary hexes to the outer spire ring · one bank at (0, 0)",
     previous
       ? "Reference layout with six banks at the corners of Realm ring 21, a central spire and a full spire lattice at spacing six Realm-grid steps."
-      : "Proposed layout with a single origin bank, six inner spires on Realm ring two, a complete mountain barrier on primary rings 32 through 35, and the existing spire lattice extended through Realm ring thirty. Realm settlements begin at Realm ring three.",
+      : "Proposed layout with a single origin bank, six inner spires on Realm ring two, a complete mountain barrier on primary rings 33 through 35, and the existing spire lattice extended through Realm ring thirty. Realm settlements begin at Realm ring three.",
     previous ? "REFERENCE / BEFORE" : "PROPOSED / AFTER",
   );
   for (const point of disk(extent)) {
@@ -154,7 +154,7 @@ function primary(previous = false) {
   if (!previous) {
     svg += text(95, 235, "THE INNER ARENA", { "font-size": 16, "letter-spacing": 2, fill: C.muted });
     svg += text(95, 269, "Six spires · primary ring 30", { "font-size": 21 });
-    svg += text(95, 301, "Mountains · primary rings 32–35", { "font-size": 21 });
+    svg += text(95, 301, "Mountains · primary rings 33–35", { "font-size": 21 });
     svg += text(95, 333, "See the separate 45-ring close-up.", { "font-size": 18, class: "muted" });
   } else {
     svg += text(95, 235, "BANK PLACEMENT", { "font-size": 16, "letter-spacing": 2, fill: C.muted });
@@ -250,8 +250,8 @@ function closeup() {
     .map((point) => scale(point, 15));
   let svg = head(
     "The inner 45 rings · a sealed arena",
-    "Primary layer at individual-hex scale · bank at 0 · spires at 30 · mountains at 32–35 · first Realm sites at 45",
-    "Close-up of primary rings zero through forty-five. A bank sits at the origin. Six spires sit on ring thirty, each with six adjacent pre-explored hexes. A continuous four-hex-thick mountain barrier fills rings thirty-two through thirty-five. Realm settlement begins at Realm ring three, primary ring forty-five. Hyperstructure foundation discovery is zero throughout rings zero to thirty-five.",
+    "Primary layer at individual-hex scale · bank at 0 · spires at 30 · mountains at 33–35 · first Realm sites at 45",
+    "Close-up of primary rings zero through forty-five. A bank sits at the origin. Six spires sit on ring thirty, each with six adjacent pre-explored hexes. A continuous three-hex-thick mountain barrier fills rings thirty-three through thirty-five. Realm settlement begins at Realm ring three, primary ring forty-five. Hyperstructure foundation discovery is zero throughout rings zero to thirty-five.",
     "PROPOSED / CLOSE-UP",
   );
   for (const point of disk(45)) {
@@ -322,7 +322,7 @@ function closeup() {
     );
   };
   svg += callout([30, -30], 1110, 326, "PRIMARY RING 30", "Six paired inner spires");
-  svg += callout([34, -34], 1164, 414, "RINGS 32–35", "804 mountain hexes");
+  svg += callout([34, -34], 1164, 414, "RINGS 33–35", "612 mountain hexes");
   svg += callout([45, -45], 1195, 220, "PRIMARY RING 45", "Realm ring 3 · first settlements");
   svg += footer(
     [
@@ -333,7 +333,7 @@ function closeup() {
       { label: "Pre-explored hex", color: C.explored, shape: "square", width: 280 },
     ],
     "The bank, all spires and their six neighbors are pre-explored. Mountains are fully pre-explored, impassable and spawn-free.",
-    "Rings 32–35 inclusive occupy four hex rows. Ring 31 keeps every inner-spire neighbor clear of the mountain barrier.",
+    "Rings 33–35 form a three-hex-wide barrier. Ring 32 is ordinary terrain; inner-spire neighbors on ring 31 stay clear.",
   );
   return svg;
 }
@@ -351,7 +351,7 @@ const metadata = {
   coordinateSystem: "pointy-top axial (q,r); radius = max(abs(q), abs(r), abs(q+r))",
   rules: RULES,
   interpretation: {
-    mountains: "Inclusive radii 32–35: four occupied rings; explicit radius bounds define the depth.",
+    mountains: "Inclusive radii 33–35: three occupied rings; ring32 is ordinary terrain inside the barrier.",
     spireLattice:
       "Retain the full spacing-six lattice shown in the source images, extend it through radius30, remove origin, add six radius2 corners.",
     settlementSites:

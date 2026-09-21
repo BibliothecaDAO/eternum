@@ -252,8 +252,8 @@ Accepted scope: the [central Bank rules and maps](./banking-explainer.md), appli
    the client. No trade action acquires an army-travel requirement.
 
 Acceptance: the five central-Bank invariant targets in the selected config, plus authoritative regression tests for all
-six inner entry paths, denied mountain crossings/landings, no HSF at rings 0/31/32/35, unchanged HSF probability at 36,
-allowed Camps/Rifts/Fragment Mines on inner ordinary fog, denied origin Bitcoin Mine and bank fee routing across
+six inner entry paths, denied mountain crossings/landings, no HSF at rings 0/31/32/33/35, unchanged HSF probability at
+36, allowed Camps/Rifts/Fragment Mines on inner ordinary fog, denied origin Bitcoin Mine and bank fee routing across
 capture. Validate concurrent and repeated initialization and preserve Blitz fixtures.
 
 The map validator checks design geometry; it is not evidence that the game contracts implement these rules. The full

@@ -24,9 +24,8 @@ pnpm run validate:eternum-s2
 the reference images is retained, extended through radius30, and supplemented by six radius2 corner spires. All original
 spires except the origin remain at identical coordinates.
 
-The mountain interpretation follows the explicit inclusive ring range 32–35: four occupied hex rows, 804 cells. The
-explicit bounds take precedence over the informal three-hex-depth description. Ring31 remains clear, including all
-inner-spire neighbors.
+The mountain range occupies inclusive rings 33–35: three hex rows, 612 cells. Ring32 is ordinary terrain inside the
+barrier. Ring31 also remains clear, including all inner-spire neighbors.
 
 Pre-explored halos include coordinates beyond the outer spire ring, because each outer spire also requires all six
 neighbors. The ethereal map shows ring31 for these halos. Realm dots represent schematic eligible lattice sites; other

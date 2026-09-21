@@ -19,7 +19,7 @@ approach, supplying an expedition and holding the centre against rivals arriving
 | Centre                     | A Spire connects both origins                          | Bank on Primary; vacant, explored origin on Ethereal          |
 | Inner access               | No ring-2 Spires                                       | Six paired Spires: Primary radius 30 / Ethereal radius 2      |
 | Outer Spires               | Six-spaced lattice through Realm ring 24               | Lattice retained and extended through Realm ring 30           |
-| Primary approach           | Armies can traverse the centre over land               | Full mountain barrier at Primary radii 32–35                  |
+| Primary approach           | Armies can traverse the centre over land               | Full mountain barrier at Primary radii 33–35                  |
 | Hyperstructure Foundations | Centre-weighted discovery                              | Same calculation outside radius 35; zero chance at radii 0–35 |
 | First Realm placements     | Realm ring 3                                           | Realm ring 3, Primary radius 45, outside the mountains        |
 
@@ -106,12 +106,13 @@ Read outward from the Bank:
 - **Radius 30:** six inner Spires form the gateways from Ethereal space.
 - **Radius 31:** ordinary terrain includes the outward neighbours of the inner Spires. Their complete explored halos fit
   inside the mountain wall.
-- **Radii 32–35:** every hex is Mountains. The barrier has no pass, portal, settlement or spawn location.
+- **Radius 32:** ordinary terrain inside the barrier; normal discovery eligibility applies, except HSFs remain excluded.
+- **Radii 33–35:** every hex is Mountains. The barrier has no pass, portal, settlement or spawn location.
 - **Radii 36–44:** ordinary terrain outside the wall. Hyperstructure Foundation discovery becomes eligible again,
   subject to the existing calculation and all other eligibility rules.
 - **Radius 45:** Realm ring 3 is the first Realm placement ring.
 
-The exact interval 32–35 is inclusive: **four hex rings**, containing 804 mountain hexes. Radius 31 is the last
+The exact interval 33–35 is inclusive: **three hex rings**, containing 612 mountain hexes. Radius 32 is the last
 non-mountain ring inside; radius 36 is the first non-mountain ring outside. No connected Primary movement path can cross
 this complete annulus.
 
@@ -146,13 +147,13 @@ discovery there.
 | ------------------------------------------- | --------------------------------------- | ------------------------------- | ---------------------------------------------------------------------- |
 | Primary Bank and six adjacent hexes         | Explored                                | Normal structure and army rules | Bank fixed at centre; no initial discovery rolls in its halo           |
 | Every Primary Spire and six adjacent hexes  | Explored                                | Normal Spire and army rules     | Fixed Spire; no initial discovery rolls in its halo                    |
-| Primary radii 32–35                         | Explored Mountains                      | Impassable for all armies       | No structure, holding, army, resource node or other spawn              |
-| Other eligible Primary hexes at radii 0–31  | Ordinary fog, unless otherwise revealed | Normal terrain rules            | Camps, Essence Rifts and Fragment Mines remain eligible; no HSF        |
+| Primary radii 33–35                         | Explored Mountains                      | Impassable for all armies       | No structure, holding, army, resource node or other spawn              |
+| Other eligible Primary hexes at radii 0–32  | Ordinary fog, unless otherwise revealed | Normal terrain rules            | Camps, Essence Rifts and Fragment Mines remain eligible; no HSF        |
 | Primary radius 36 and beyond                | Ordinary rules                          | Normal terrain rules            | HSF calculation resumes at actual radius; other discovery rules remain |
 | Every Ethereal Spire and six adjacent hexes | Explored                                | Normal terrain/Spire rules      | No initial discovery rolls in revealed hexes                           |
 | Ethereal origin                             | Explored                                | Normal Ethereal terrain rules   | No Bank, no Spire, no Bitcoin Mine                                     |
 
-All Mountains are pre-explored wherever that biome is present. The complete required range is radii 32–35 on Primary.
+All Mountains are pre-explored wherever that biome is present. The complete required range is radii 33–35 on Primary.
 Mountains never appear as an ordinary traversable random biome, and this change does not add Mountains to Ethereal
 space.
 
@@ -210,7 +211,7 @@ actions and authoritative transitions must consume the same Eternum S2 preset.
 
 Required checks include: exactly one Bank; no centre Spire; exact paired coordinates and unique counts; complete
 explored halos including those beyond the outermost Spire ring; no Primary path across Mountains; no spawn or teleport
-landing on Mountains; HSF rejection at radii 0, 31, 32 and 35 and the unchanged curve at 36; continued
+landing on Mountains; HSF rejection at radii 0, 31, 32, 33 and 35 and the unchanged curve at 36; continued
 Camp/Rift/Fragment eligibility on ordinary inner fog; no Bitcoin Mine at Ethereal `(0,0)`; global routing and fee
 ownership before and after Bank capture; and unchanged Blitz behaviour.
 

@@ -535,7 +535,7 @@ matter as much as aggregate world supply.
 
 The Primary capacity model contains 736,561 hexes. Its former 28,928-pre-explored assumption must be recomputed against
 the new layout and actual holding placements; it is not a launch count. The fixed Bank/Spire halos and mountain range
-reveal 1,483 unique Primary hexes before holding-specific reveals. Model exploration assumptions of 12.5% by day 7, 25%
+reveal 1,291 unique Primary hexes before holding-specific reveals. Model exploration assumptions of 12.5% by day 7, 25%
 by day 14, 50% by day 28 and 75% by day 42 remain planning assumptions, not forced player milestones. Earlier node
 supply projections below require remeasurement against the revised eligible fog before they can validate this layout.
 
@@ -577,7 +577,7 @@ There are 96 paired Spire locations: six inner corners on Realm ring 2, plus the
 24 and 30. Multiply signed Ethereal axial coordinates by 15 to obtain the Primary counterparts. Neither origin has a
 Spire. Realm placement starts at Realm ring 3, Primary radius 45.
 
-Every Primary hex on inclusive radii 32–35 is Mountains: four hex rings, 804 hexes, all pre-explored, impassable and
+Every Primary hex on inclusive radii 33–35 is Mountains: three hex rings, 612 hexes, all pre-explored, impassable and
 unspawnable. Armies enter the Ethereal layer at an outer Spire, approach an inner ring-2 Spire and cross back to Primary
 radius 30. The Bank is then 30 hexes away measured centre to centre. A crossing may require battle; ordinary movement,
 arrival placement and combat determine the actual journey. No unit presentation, route batching or teleport landing may

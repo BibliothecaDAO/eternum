@@ -9649,7 +9649,7 @@
       "precision": "integer_or_scaled_asset"
     },
     "world.map.primary_fixed_preexplored_hexes": {
-      "value": "1483",
+      "value": "1291",
       "unit": "unique_hexes_excluding_holding_reveals",
       "precision": "integer"
     },
@@ -9704,7 +9704,7 @@
       "precision": "exact_or_enum"
     },
     "world.mountains.primary_first_ring": {
-      "value": "32",
+      "value": "33",
       "unit": "primary_hex_radius_inclusive",
       "precision": "integer"
     },
@@ -9714,7 +9714,7 @@
       "precision": "integer"
     },
     "world.mountains.required_hex_count": {
-      "value": "804",
+      "value": "612",
       "unit": "hexes",
       "precision": "integer"
     },
@@ -10509,14 +10509,14 @@
       "unit": "invariant",
       "minimum": "n/a",
       "maximum": "n/a",
-      "acceptance": "All Bank and Spire centers and neighbors revealed without discovery lotteries; include outer halo ring31 on Ethereal; 1483 fixed Primary and 667 total Ethereal reveals; 403 revealed and1398 unexplored within Ethereal core24."
+      "acceptance": "All Bank and Spire centers and neighbors revealed without discovery lotteries; include outer halo ring31 on Ethereal; 1291 fixed Primary and 667 total Ethereal reveals; 403 revealed and1398 unexplored within Ethereal core24."
     },
     "world.mountains_barrier": {
       "value": "pass",
       "unit": "invariant",
       "minimum": "n/a",
       "maximum": "n/a",
-      "acceptance": "All 804 Primary hexes on inclusive rings32..35 explored, unspawnable and impassable across authoritative movement, deployment, teleport landing and placement; no path from ring45 to origin."
+      "acceptance": "All 612 Primary hexes on inclusive rings33..35 explored, unspawnable and impassable across authoritative movement, deployment, teleport landing and placement; no path from ring45 to origin."
     },
     "world_node.fragment_mine.fragment_full_world_adequacy": {
       "value": "5",

@@ -8,12 +8,12 @@
     "spireSpacing": 6,
     "innerSpireRing": 2,
     "firstRealmRing": 3,
-    "mountainFirstRing": 32,
+    "mountainFirstRing": 33,
     "mountainLastRing": 35,
     "hyperstructureExcludedThrough": 35
   },
   "interpretation": {
-    "mountains": "Inclusive radii 32–35: four occupied rings; explicit radius bounds define the depth.",
+    "mountains": "Inclusive radii 33–35: three occupied rings; ring32 is ordinary terrain inside the barrier.",
     "spireLattice": "Retain the full spacing-six lattice shown in the source images, extend it through radius30, remove origin, add six radius2 corners.",
     "settlementSites": "Realm-grid candidates are schematic; sites occupied by preplaced structures are removed. Realm/Village placement retains other eligibility rules.",
     "exploration": "All six neighbors are included even beyond outer spire ring30; ethereal radius31 halo is shown."
@@ -31,11 +31,11 @@
       "24": 24,
       "30": 30
     },
-    "mountainHexes": 804,
+    "mountainHexes": 612,
     "primaryStructureExploration": 679,
-    "primaryPreexplored": 1483,
+    "primaryPreexplored": 1291,
     "etherealPreexplored": 667,
-    "primaryInnerTraversableHexes": 2977,
+    "primaryInnerTraversableHexes": 3169,
     "realmSitesOnFirstSettlementRing": 18
   },
   "bank": [

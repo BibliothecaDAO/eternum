@@ -11,11 +11,11 @@
       "result": "PASS"
     },
     {
-      "claim": "Mountain rings32–35 contain exactly 804 cells; every one is pre-explored.",
+      "claim": "Mountain rings33–35 contain exactly 612 cells; every one is pre-explored.",
       "result": "PASS"
     },
     {
-      "claim": "Graph flood-fill cannot cross the mountain barrier: the origin component is exactly rings0–31.",
+      "claim": "Graph flood-fill cannot cross the mountain barrier: the origin component is exactly rings0–32.",
       "result": "PASS"
     },
     {
