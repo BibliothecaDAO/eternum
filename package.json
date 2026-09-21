@@ -81,6 +81,7 @@
     "format": "pnpm prettier --write .",
     "format:check": "pnpm prettier --check .",
     "knip": "NODE_OPTIONS=--max-old-space-size=8192 pnpm dlx knip@5.80.0 --config knip.config.ts --exclude binaries,dependencies",
+    "validate:eternum-s2": "node docs/eternum-s2/validate.mjs",
     "lint": "pnpm --recursive run lint",
     "lint:fix": "pnpm --recursive run lint:fix",
     "typecheck": "pnpm --dir ./apps/game typecheck && pnpm --dir ./apps/realtime-server typecheck",
