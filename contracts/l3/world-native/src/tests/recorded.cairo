@@ -236,7 +236,7 @@ fn unexecuted_ticket_recovery_preserves_original_context_after_delay() {
 fn oversized_command_is_terminal_and_the_next_ticket_executes() {
     let d = super::setup(true);
     let mut directions = array![];
-    for _ in 1_u32..255 {
+    for _ in 1_u32..66 {
         directions.append(1_u8);
     }
     let action = FixtureAction {

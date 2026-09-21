@@ -64,23 +64,10 @@ pub struct ClaimPlayer {
     pub player: ContractAddress,
     pub wonder_id: u32,
 }
-#[derive(Copy, Drop, Serde, Debug, PartialEq)]
-pub struct BlacklistKey {
-    pub game_id: u32,
-    pub wonder_id: u32,
-    pub blocked_id: felt252,
-}
-#[derive(Copy, Drop, Serde, Debug, PartialEq)]
-pub struct SetBlacklist {
-    pub wonder_id: u32,
-    pub blocked_id: felt252,
-    pub blocked: bool,
-}
 #[starknet::interface]
 pub trait IFaith<T> {
     fn configure_faith(ref self: T, game_id: u32, rules: FaithRules);
     fn faith_rules(self: @T, game_id: u32) -> FaithRules;
-    fn faith_blacklisted(self: @T, key: BlacklistKey) -> bool;
     fn pledge_faith(
         ref self: T, game_id: u32, actor: ContractAddress, command: Pledge, context: crate::commands::ExecutionContext,
     );
@@ -109,13 +96,6 @@ pub trait IFaith<T> {
         game_id: u32,
         actor: ContractAddress,
         command: ClaimPlayer,
-        context: crate::commands::ExecutionContext,
-    );
-    fn set_faith_blacklist(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        command: SetBlacklist,
         context: crate::commands::ExecutionContext,
     );
 }
@@ -155,7 +135,6 @@ pub mod FaithState {
         pub faith_wonder_count: Map<u32, u32>,
         pub faith_wonder_ids: Map<(u32, u32), u32>,
         pub faith_rules: Map<u32, Option<super::FaithRules>>,
-        pub blacklist: Map<(u32, u32, felt252), bool>,
         pub prize_checkpoint: Map<u32, (u32, u128, u32)>,
     }
     #[event]
@@ -189,9 +168,6 @@ pub mod FaithState {
         }
         fn faith_rules(self: @ComponentState<TContractState>, game_id: u32) -> super::FaithRules {
             self.faith_rules.read(game_id).expect('missing faith rules')
-        }
-        fn faith_blacklisted(self: @ComponentState<TContractState>, key: super::BlacklistKey) -> bool {
-            self.blacklist.read((key.game_id, key.wonder_id, key.blocked_id))
         }
         fn pledge_faith(
             ref self: ComponentState<TContractState>,
@@ -285,31 +261,6 @@ pub mod FaithState {
             assert!(command.player != 0.try_into().unwrap(), "invalid player");
             self.wonder(game_id, command.wonder_id);
             self.update_rates(game_id, command.player, command.wonder_id, true, 0, 0, context.timestamp, game.end_at);
-        }
-        fn set_faith_blacklist(
-            ref self: ComponentState<TContractState>,
-            game_id: u32,
-            actor: ContractAddress,
-            command: super::SetBlacklist,
-            context: ExecutionContext,
-        ) {
-            self.authorize(game_id, context.timestamp);
-            assert!(self.wonder(game_id, command.wonder_id).owner == actor, "only wonder owner");
-            if command.blocked {
-                if let Some(id) = TryInto::<felt252, u32>::try_into(command.blocked_id) {
-                    assert!(
-                        self.faith_pledges.read((game_id, id)).wonder_id != command.wonder_id,
-                        "remove pledge before blacklist",
-                    );
-                }
-            }
-            self.blacklist.write((game_id, command.wonder_id, command.blocked_id), command.blocked);
-            let keys = array![game_id.into(), command.wonder_id.into(), command.blocked_id].span();
-            if command.blocked {
-                self.emit(RowSet { version: 1, model: 'FaithBlacklist', keys, values: array![1].span() });
-            } else {
-                self.emit(RowDeleted { version: 1, model: 'FaithBlacklist', keys });
-            }
         }
     }
     #[generate_trait]
@@ -454,11 +405,6 @@ pub mod FaithState {
             );
             let wonder = self.wonder(game_id, command.wonder_id);
             assert!(wonder.owner != 0.try_into().unwrap(), "wonder has no owner");
-            assert!(
-                !self.blacklist.read((game_id, command.wonder_id, command.structure_id.into())),
-                "structure is blacklisted",
-            );
-            assert!(!self.blacklist.read((game_id, command.wonder_id, actor.into())), "address is blacklisted");
             if command.structure_id != command.wonder_id {
                 assert!(
                     self.faith_pledges.read((game_id, command.wonder_id)).wonder_id == command.wonder_id,
