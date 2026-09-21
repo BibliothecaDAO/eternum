@@ -1,3 +1,4 @@
+import { Plus } from "@/ui/design-system/atoms/game-icons";
 import { memo, useCallback, useMemo, useRef } from "react";
 
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
@@ -25,7 +26,6 @@ import {
   RelicRecipientType,
   ResourcesIds,
 } from "@bibliothecadao/types";
-import Plus from "lucide-react/dist/esm/icons/plus";
 
 type ProductionItem = StructureProductionSummary["items"][number];
 

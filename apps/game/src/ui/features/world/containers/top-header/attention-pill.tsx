@@ -1,8 +1,8 @@
+import { Bell } from "@/ui/design-system/atoms/game-icons";
 import { configManager } from "@bibliothecadao/eternum";
 import { HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { memo, useMemo, useRef } from "react";
-import Bell from "lucide-react/dist/esm/icons/bell";
 import { useGame, useNativeRevision } from "@bibliothecadao/react";
 import { Position } from "@bibliothecadao/eternum";
 import { useUIStore } from "@/hooks/store/use-ui-store";

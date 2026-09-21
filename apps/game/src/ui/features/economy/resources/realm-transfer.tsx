@@ -1,3 +1,4 @@
+import { ChevronDown, Flame, Search, ShieldCheck, X } from "@/ui/design-system/atoms/game-icons";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
@@ -18,11 +19,6 @@ import {
 } from "@bibliothecadao/eternum";
 import { useGame, useResourceManager, useNativeRevision, useNativeRow } from "@bibliothecadao/react";
 import { findResourceById, ID, PlayerStructure, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
-import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
-import Flame from "lucide-react/dist/esm/icons/flame";
-import Search from "lucide-react/dist/esm/icons/search";
-import ShieldCheck from "lucide-react/dist/esm/icons/shield-check";
-import X from "lucide-react/dist/esm/icons/x";
 import { Dispatch, memo, ReactNode, SetStateAction, useCallback, useEffect, useMemo, useState } from "react";
 import { BigNumberish } from "starknet";
 

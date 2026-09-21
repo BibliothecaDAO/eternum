@@ -1,10 +1,10 @@
+import { Sparkles } from "@/ui/design-system/atoms/game-icons";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 
 import { divideByPrecision, ResourceManager } from "@bibliothecadao/eternum";
 import { getRelicInfo, ID, isRelic, RelicRecipientType, ResourcesIds } from "@bibliothecadao/types";
-import Sparkles from "lucide-react/dist/esm/icons/sparkles";
 import { useMemo, useState } from "react";
 import { RelicActivationPopup } from "./relic-activation-popup";
 

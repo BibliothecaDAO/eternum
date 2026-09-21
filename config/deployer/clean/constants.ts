@@ -1,6 +1,6 @@
 import { DEFAULT_FACTORY_CONFIG_VERSION } from "../../shared/factory-defaults";
 import type { DeploymentEnvironment, DeploymentEnvironmentId } from "./types";
-import { nativePresets } from "../../../source/native";
+import { nativePresets } from "../../source/native";
 
 export const DEFAULT_VERSION = DEFAULT_FACTORY_CONFIG_VERSION;
 // Madara world presets, registered on the fresh world of 2026-09-12:

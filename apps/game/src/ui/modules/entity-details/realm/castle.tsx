@@ -1,3 +1,4 @@
+import { AlertCircle as AlertCircleIcon, ArrowUpRight as ArrowUpRightIcon, ChevronDown as ChevronDownIcon, Crown as CrownIcon, Plus as PlusIcon, Pickaxe } from "@/ui/design-system/atoms/game-icons";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { surfaceAnchorFrom } from "@/ui/design-system/molecules/popover";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
@@ -13,12 +14,6 @@ import { ContractAddress, LEVEL_DESCRIPTIONS, RealmLevels, ResourcesIds } from "
 import { useState } from "react";
 import { useStructureUpgrade } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
 
-import AlertCircleIcon from "lucide-react/dist/esm/icons/alert-circle";
-import ArrowUpRightIcon from "lucide-react/dist/esm/icons/arrow-up-right";
-import ChevronDownIcon from "lucide-react/dist/esm/icons/chevron-down";
-import CrownIcon from "lucide-react/dist/esm/icons/crown";
-import PlusIcon from "lucide-react/dist/esm/icons/plus";
-import Pickaxe from "lucide-react/dist/esm/icons/pickaxe";
 
 export const Castle = () => {
   const game = useGame();

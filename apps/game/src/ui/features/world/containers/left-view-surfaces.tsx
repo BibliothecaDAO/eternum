@@ -1,3 +1,4 @@
+import { Package as PackageIcon } from "@/ui/design-system/atoms/game-icons";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -12,7 +13,6 @@ import { useStructureGroups } from "@/ui/features/world/containers/top-header/st
 import { setEntityNameLocalStorage, configManager } from "@bibliothecadao/eternum";
 import { useNativeRow } from "@bibliothecadao/react";
 import { type ID } from "@bibliothecadao/types";
-import PackageIcon from "lucide-react/dist/esm/icons/package";
 import { memo, useCallback } from "react";
 
 /**

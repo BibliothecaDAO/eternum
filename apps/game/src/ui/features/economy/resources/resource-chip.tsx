@@ -1,3 +1,4 @@
+import { Factory, FlaskConical, Sparkles } from "@/ui/design-system/atoms/game-icons";
 import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { surfaceAnchorFrom } from "@/ui/design-system/molecules/popover";
@@ -27,9 +28,6 @@ import {
   StructureType,
   TickIds,
 } from "@bibliothecadao/types";
-import Factory from "lucide-react/dist/esm/icons/factory";
-import FlaskConical from "lucide-react/dist/esm/icons/flask-conical";
-import Sparkles from "lucide-react/dist/esm/icons/sparkles";
 import { useCallback, useMemo } from "react";
 
 export const ResourceChip = ({

@@ -1,12 +1,10 @@
+import { ArrowRightLeft, ShieldAlert, Sparkles } from "@/ui/design-system/atoms/game-icons";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import Button from "@/ui/design-system/atoms/button";
 import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { getTileAt, configManager } from "@bibliothecadao/eternum";
 import { useGame, useNativeRow, useNativeRevision } from "@bibliothecadao/react";
 import type { ID } from "@bibliothecadao/types";
-import ArrowRightLeft from "lucide-react/dist/esm/icons/arrow-right-left";
-import ShieldAlert from "lucide-react/dist/esm/icons/shield-alert";
-import Sparkles from "lucide-react/dist/esm/icons/sparkles";
 import { resolveSpireCrossing } from "./spire-crossing";
 
 export const SpireTravelModal = ({

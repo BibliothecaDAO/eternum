@@ -1,3 +1,4 @@
+import type { GameIcon } from "@/ui/design-system/atoms/game-icon";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useIdentitySession, useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { resolveEffectiveRegistrationCountMax } from "@/hooks/registration-capacity";
@@ -13,7 +14,7 @@ import { useLandingNetworkState } from "../../hooks/use-landing-network-state";
 import type { LandingNetworkChain } from "../../lib/landing-network-state";
 import { getChainLabel } from "@/ui/utils/network-switch";
 import type { GameChain as Chain } from "@realms-world/chain";
-import { CheckCircle2, Eye, Loader2, LogIn, Play, RefreshCw, Sparkles, Trophy, Users } from "lucide-react";
+import { CheckCircle2, Eye, Loader2, LogIn, Play, RefreshCw, Sparkles, Trophy, Users } from "@/ui/design-system/atoms/game-icons";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
 

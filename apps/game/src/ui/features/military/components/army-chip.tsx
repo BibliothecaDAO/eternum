@@ -1,3 +1,4 @@
+import { ArrowLeftRight, ArrowRight, CirclePlus } from "@/ui/design-system/atoms/game-icons";
 import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
@@ -14,9 +15,6 @@ import { InventoryResources } from "@/ui/features/economy/resources";
 import { armyHasTroops, getArmyRelicEffects, configManager, StaminaManager } from "@bibliothecadao/eternum";
 import { useNativeRow, useResourceManager, useQuery } from "@bibliothecadao/react";
 import { ActorType, ArmyInfo, RelicRecipientType, TroopTier, TroopType } from "@bibliothecadao/types";
-import ArrowLeftRight from "lucide-react/dist/esm/icons/arrow-left-right";
-import ArrowRight from "lucide-react/dist/esm/icons/arrow-right";
-import CirclePlus from "lucide-react/dist/esm/icons/circle-plus";
 import React, { useCallback, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ArmyManagementCard } from "./army-management-card";

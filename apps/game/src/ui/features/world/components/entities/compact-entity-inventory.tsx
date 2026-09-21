@@ -1,3 +1,4 @@
+import { Sparkles } from "@/ui/design-system/atoms/game-icons";
 import { memo, useCallback, useMemo } from "react";
 
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
@@ -18,7 +19,6 @@ import {
   resources as resourceDefs,
   ResourcesIds,
 } from "@bibliothecadao/types";
-import Sparkles from "lucide-react/dist/esm/icons/sparkles";
 
 interface CompactEntityInventoryProps {
   resources?: ResourceManager | null;

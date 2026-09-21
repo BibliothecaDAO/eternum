@@ -1,12 +1,8 @@
+import type { GameIcon } from "@/ui/design-system/atoms/game-icon";
+import { Castle, Crown, Pickaxe, Sparkles, Tent } from "@/ui/design-system/atoms/game-icons";
 import type { LeftListFilter, LeftListSort } from "@/hooks/store/use-ui-store";
 import type { StructureWithMetadata } from "@/ui/features/world/containers/top-header/structure-picker/chip";
 import { type ID, StructureType } from "@bibliothecadao/types";
-import Castle from "lucide-react/dist/esm/icons/castle";
-import Crown from "lucide-react/dist/esm/icons/crown";
-import type { LucideIcon } from "lucide-react";
-import Pickaxe from "lucide-react/dist/esm/icons/pickaxe";
-import Sparkles from "lucide-react/dist/esm/icons/sparkles";
-import Tent from "lucide-react/dist/esm/icons/tent";
 
 /**
  * Returns structures matching `filter`. `"all"` keeps everything (only used
@@ -74,7 +70,7 @@ export const sortStructures = (
 export const CATEGORY_FILTER_OPTIONS: Array<{
   value: StructureType;
   label: string;
-  icon: LucideIcon;
+  icon: GameIcon;
 }> = [
   { value: StructureType.Realm, label: "Realms", icon: Crown },
   { value: StructureType.Village, label: "Villages", icon: Castle },

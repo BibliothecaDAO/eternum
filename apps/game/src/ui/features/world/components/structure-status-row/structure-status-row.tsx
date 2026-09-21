@@ -1,3 +1,5 @@
+import type { GameIcon } from "@/ui/design-system/atoms/game-icon";
+import { Castle, Crosshair, Crown, Hexagon, Pencil, Pickaxe, Shield, Sparkles, Star, Tent, Users } from "@/ui/design-system/atoms/game-icons";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { STRUCTURE_GROUP_CONFIG } from "@/ui/features/world/containers/top-header/structure-groups";
@@ -11,23 +13,11 @@ import {
 } from "@/ui/features/world/containers/structure-status";
 import { resolveStructureUiCapabilities } from "@/ui/lib/structure-capabilities";
 import { type ID, StructureType } from "@bibliothecadao/types";
-import Castle from "lucide-react/dist/esm/icons/castle";
-import Crosshair from "lucide-react/dist/esm/icons/crosshair";
-import Crown from "lucide-react/dist/esm/icons/crown";
-import Hexagon from "lucide-react/dist/esm/icons/hexagon";
-import type { LucideIcon } from "lucide-react";
-import Pencil from "lucide-react/dist/esm/icons/pencil";
-import Pickaxe from "lucide-react/dist/esm/icons/pickaxe";
-import Shield from "lucide-react/dist/esm/icons/shield";
-import Sparkles from "lucide-react/dist/esm/icons/sparkles";
-import Star from "lucide-react/dist/esm/icons/star";
-import Tent from "lucide-react/dist/esm/icons/tent";
-import Users from "lucide-react/dist/esm/icons/users";
 import { createElement, memo, useCallback } from "react";
 
 // Category → icon, same lookup the picker uses elsewhere. Centralized here so
 // every consumer of StructureStatusRow gets the same iconography.
-const CATEGORY_ICONS: Partial<Record<StructureType, LucideIcon>> = {
+const CATEGORY_ICONS: Partial<Record<StructureType, GameIcon>> = {
   [StructureType.Realm]: Crown,
   [StructureType.Village]: Castle,
   [StructureType.Camp]: Tent,
@@ -35,7 +25,7 @@ const CATEGORY_ICONS: Partial<Record<StructureType, LucideIcon>> = {
   [StructureType.Hyperstructure]: Sparkles,
 };
 
-const getCategoryIcon = (category: StructureType | number | undefined): LucideIcon => {
+const getCategoryIcon = (category: StructureType | number | undefined): GameIcon => {
   if (category === undefined) return Crown;
   return CATEGORY_ICONS[category as StructureType] ?? Crown;
 };
@@ -73,7 +63,7 @@ const STATUS_TONE_TEXT: Record<"green" | "amber" | "red", string> = {
   red: "text-rose-400 drop-shadow-[0_0_4px_rgba(244,114,114,0.7)]",
 };
 
-const InlineStat = ({ icon: Icon, label, title }: { icon: LucideIcon; label: string; title?: string }) => (
+const InlineStat = ({ icon: Icon, label, title }: { icon: GameIcon; label: string; title?: string }) => (
   <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold tabular-nums text-gold/75" title={title}>
     <Icon className="h-3 w-3 text-gold/55" />
     <span>{label}</span>

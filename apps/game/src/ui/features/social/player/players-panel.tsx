@@ -1,3 +1,4 @@
+import { ChevronDown, ChevronUp, Search } from "@/ui/design-system/atoms/game-icons";
 import { useLeaderboardActivity } from "@/hooks/use-leaderboard-activity";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
@@ -14,9 +15,6 @@ import { getEntityIdFromKeys, normalizeDiacriticalMarks } from "@/ui/utils/utils
 import { configManager, getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
 import { useGame, useNativeRevision } from "@bibliothecadao/react";
 import { ContractAddress, BANDITS_NAME, PlayerInfo } from "@bibliothecadao/types";
-import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
-import ChevronUp from "lucide-react/dist/esm/icons/chevron-up";
-import Search from "lucide-react/dist/esm/icons/search";
 import { KeyboardEvent, useEffect, useMemo, useState } from "react";
 
 const buildActivityBreakdownLookup = (entries: PlayerLeaderboardActivityEntry[]) =>

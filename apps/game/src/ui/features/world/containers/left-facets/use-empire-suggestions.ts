@@ -1,3 +1,5 @@
+import type { GameIcon } from "@/ui/design-system/atoms/game-icon";
+import { ArrowUpCircle, Building2, Compass, Home as HomeIcon, Shield, Sparkles, Wheat } from "@/ui/design-system/atoms/game-icons";
 import { hasGameEnded } from "@bibliothecadao/eternum/game-sync";
 import { useGameModeConfig, useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
 import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
@@ -6,14 +8,6 @@ import { useStructuresWithMetadata } from "@/ui/features/world/containers/top-he
 import { TileManager } from "@bibliothecadao/eternum";
 import { useGame, useNativeRevision } from "@bibliothecadao/react";
 import { StructureType } from "@bibliothecadao/types";
-import type { LucideIcon } from "lucide-react";
-import ArrowUpCircle from "lucide-react/dist/esm/icons/arrow-up-circle";
-import Building2 from "lucide-react/dist/esm/icons/building-2";
-import Compass from "lucide-react/dist/esm/icons/compass";
-import HomeIcon from "lucide-react/dist/esm/icons/home";
-import Shield from "lucide-react/dist/esm/icons/shield";
-import Sparkles from "lucide-react/dist/esm/icons/sparkles";
-import Wheat from "lucide-react/dist/esm/icons/wheat";
 import { useMemo } from "react";
 import {
   readBlitzRealmSuggestions,
@@ -22,10 +16,10 @@ import {
 } from "@bibliothecadao/eternum/automation";
 
 export interface EmpireSuggestion extends Omit<BlitzSuggestionDraft, "priority"> {
-  icon: LucideIcon;
+  icon: GameIcon;
 }
 
-const ACTION_ICONS: Record<EmpireSuggestionAction, LucideIcon> = {
+const ACTION_ICONS: Record<EmpireSuggestionAction, GameIcon> = {
   "build-copper": Building2,
   "build-coal": Building2,
   "build-first": Building2,

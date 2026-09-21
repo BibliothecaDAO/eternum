@@ -1,21 +1,10 @@
+import type { GameIcon } from "@/ui/design-system/atoms/game-icon";
+import { Castle, Check, Clock3, Crown, Hourglass, Info, Package, Shield, Skull, Swords, TriangleAlert, Trophy } from "@/ui/design-system/atoms/game-icons";
 import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
 import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Position } from "@bibliothecadao/eternum";
 import { useGame } from "@bibliothecadao/react";
-import type { LucideIcon } from "lucide-react";
-import Castle from "lucide-react/dist/esm/icons/castle";
-import Check from "lucide-react/dist/esm/icons/check";
-import Clock3 from "lucide-react/dist/esm/icons/clock-3";
-import Crown from "lucide-react/dist/esm/icons/crown";
-import Hourglass from "lucide-react/dist/esm/icons/hourglass";
-import Info from "lucide-react/dist/esm/icons/info";
-import Package from "lucide-react/dist/esm/icons/package";
-import Shield from "lucide-react/dist/esm/icons/shield";
-import Skull from "lucide-react/dist/esm/icons/skull";
-import Swords from "lucide-react/dist/esm/icons/swords";
-import TriangleAlert from "lucide-react/dist/esm/icons/triangle-alert";
-import Trophy from "lucide-react/dist/esm/icons/trophy";
 import type { CSSProperties, ReactNode } from "react";
 import type { HeadlineType } from "../news-headlines/headline-types";
 import {
@@ -34,7 +23,7 @@ export const FEED_ROW_CLASS =
   "pointer-events-auto flex h-8 w-full items-center gap-2 rounded-md bg-black/50 px-2.5 text-xs text-gold backdrop-blur-[2px]";
 const FEED_ROW_ICON_COLUMN_CLASS = "flex w-4 shrink-0 items-center justify-center";
 
-const HEADLINE_ICONS: Record<HeadlineType, LucideIcon> = {
+const HEADLINE_ICONS: Record<HeadlineType, GameIcon> = {
   "realm-fall": Castle,
   "hyper-capture": Crown,
   elimination: Skull,

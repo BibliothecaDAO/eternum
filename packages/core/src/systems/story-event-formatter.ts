@@ -670,8 +670,8 @@ function extractDirectionLabel(entry: unknown): string | undefined {
     const keys = Object.keys(entry as Record<string, unknown>);
     if (keys.length === 1) return keys[0];
   }
-  if (typeof import.meta !== "undefined" && import.meta.env?.DEV) {
-    throw new Error(`Unknown enum value: ${String(value)}`);
+  if (process.env.NODE_ENV !== "production") {
+    throw new Error(`Unknown enum value: ${String(entry)}`);
   }
   return undefined;
 }
@@ -770,22 +770,6 @@ function shortenAddress(value: unknown): string | null {
   return `${raw.slice(0, 6)}…${raw.slice(-4)}`;
 }
 
-function formatTokenAmount(amount: unknown, decimals: unknown): string | undefined {
-  const decimalPlaces = toNumber(decimals) ?? 0;
-  const raw = amountToBigInt(amount);
-  if (raw === null) return undefined;
-  if (decimalPlaces === 0) {
-    return `${raw.toString()} tokens`;
-  }
-  const divisor = BigInt(10) ** BigInt(decimalPlaces);
-  const whole = raw / divisor;
-  const fraction = raw % divisor;
-  if (fraction === 0n) {
-    return `${whole.toString()} tokens`;
-  }
-  const fractionStr = fraction.toString().padStart(decimalPlaces, "0").replace(/0+$/, "");
-  return `${whole.toString()}.${fractionStr} tokens`;
-}
 
 function amountToBigInt(value: unknown): bigint | null {
   if (value === undefined || value === null) return null;

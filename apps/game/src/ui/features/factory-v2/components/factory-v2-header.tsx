@@ -1,4 +1,4 @@
-import ChevronLeft from "lucide-react/dist/esm/icons/chevron-left";
+import { ChevronLeft } from "@/ui/design-system/atoms/game-icons";
 
 export const FactoryV2Header = ({ onBack }: { onBack: () => void }) => {
   return (

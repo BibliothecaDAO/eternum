@@ -1,3 +1,4 @@
+import { Eye as EyeIcon, Swords } from "@/ui/design-system/atoms/game-icons";
 import { useCompactLane } from "@/hooks/helpers/use-compact-hud";
 import { HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
 import { HudHeaderLayout } from "./hud-header-layout";
@@ -15,8 +16,6 @@ import { AttentionPill } from "./attention-pill";
 import { IdentityChip } from "./identity-chip";
 import { useGame, useNativeRow } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
-import EyeIcon from "lucide-react/dist/esm/icons/eye";
-import Swords from "lucide-react/dist/esm/icons/swords";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 export const TopHeader = memo(() => {
   const lane = useCompactLane();

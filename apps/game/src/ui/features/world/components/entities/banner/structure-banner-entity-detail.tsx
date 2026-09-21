@@ -1,10 +1,6 @@
+import { ArrowLeftRight, Factory, Loader, Shield, Sparkles } from "@/ui/design-system/atoms/game-icons";
 import { IncomingCaravans } from "./incoming-caravans";
 import { StructureOwnershipTransfer } from "./structure-ownership-transfer";
-import ArrowLeftRight from "lucide-react/dist/esm/icons/arrow-left-right";
-import Factory from "lucide-react/dist/esm/icons/factory";
-import Loader from "lucide-react/dist/esm/icons/loader";
-import Shield from "lucide-react/dist/esm/icons/shield";
-import Sparkles from "lucide-react/dist/esm/icons/sparkles";
 import { memo, useCallback } from "react";
 
 import Button from "@/ui/design-system/atoms/button";

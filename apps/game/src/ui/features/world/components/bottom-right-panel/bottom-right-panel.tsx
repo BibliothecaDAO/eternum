@@ -1,3 +1,4 @@
+import { Factory, Hammer, Info, Pause as PauseIcon, Pickaxe, Play, Trash2 } from "@/ui/design-system/atoms/game-icons";
 import { getMinePresentation } from "@bibliothecadao/types";
 import { HUD_COLUMN_WIDTH } from "@/ui/features/world/containers/hud-layout";
 import { RightHudColumn } from "@/ui/features/world/containers/right-hud-column";
@@ -45,13 +46,6 @@ import { SelectedWorldmapEntity } from "@/ui/features/world/components/actions/s
 import { RealmUpgradeCompact } from "@/ui/modules/entity-details/realm/realm-details";
 import { resolveRealmHasAvailableBuildingTile } from "@/ui/features/settlement/construction/realm-build-actions";
 import { requireActiveGameClient } from "@/sync/active-game-client";
-import Factory from "lucide-react/dist/esm/icons/factory";
-import Hammer from "lucide-react/dist/esm/icons/hammer";
-import Info from "lucide-react/dist/esm/icons/info";
-import PauseIcon from "lucide-react/dist/esm/icons/pause";
-import Pickaxe from "lucide-react/dist/esm/icons/pickaxe";
-import Play from "lucide-react/dist/esm/icons/play";
-import Trash2 from "lucide-react/dist/esm/icons/trash-2";
 
 import { BOTTOM_PANEL_HEIGHT, BOTTOM_PANEL_MARGIN, MINIMAP_SIZE } from "./constants";
 import { HexMinimap, normalizeMinimapTile, type MinimapTile } from "./hex-minimap";
