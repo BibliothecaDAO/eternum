@@ -121,407 +121,349 @@
       "resource_type": 1,
       "unit_weight": 1000,
       "realm_rate": 1000000000,
-      "village_rate": 500000000,
-      "labor_output_per_resource": 11000000000
+      "village_rate": 500000000
     },
     {
       "resource_type": 2,
       "unit_weight": 1000,
       "realm_rate": 1000000000,
-      "village_rate": 500000000,
-      "labor_output_per_resource": 12000000000
+      "village_rate": 500000000
     },
     {
       "resource_type": 3,
       "unit_weight": 1000,
       "realm_rate": 1000000000,
-      "village_rate": 500000000,
-      "labor_output_per_resource": 10000000000
+      "village_rate": 500000000
     },
     {
       "resource_type": 4,
       "unit_weight": 1000,
       "realm_rate": 1000000000,
-      "village_rate": 500000000,
-      "labor_output_per_resource": 14000000000
+      "village_rate": 500000000
     },
     {
       "resource_type": 5,
       "unit_weight": 1000,
       "realm_rate": 1000000000,
-      "village_rate": 500000000,
-      "labor_output_per_resource": 16000000000
+      "village_rate": 500000000
     },
     {
       "resource_type": 6,
       "unit_weight": 1000,
       "realm_rate": 1000000000,
-      "village_rate": 500000000,
-      "labor_output_per_resource": 15000000000
+      "village_rate": 500000000
     },
     {
       "resource_type": 7,
       "unit_weight": 1000,
       "realm_rate": 1000000000,
-      "village_rate": 500000000,
-      "labor_output_per_resource": 16000000000
+      "village_rate": 500000000
     },
     {
       "resource_type": 8,
       "unit_weight": 1000,
       "realm_rate": 1000000000,
-      "village_rate": 500000000,
-      "labor_output_per_resource": 16000000000
+      "village_rate": 500000000
     },
     {
       "resource_type": 9,
       "unit_weight": 1000,
       "realm_rate": 1000000000,
-      "village_rate": 500000000,
-      "labor_output_per_resource": 30000000000
+      "village_rate": 500000000
     },
     {
       "resource_type": 10,
       "unit_weight": 1000,
       "realm_rate": 1000000000,
-      "village_rate": 500000000,
-      "labor_output_per_resource": 30000000000
+      "village_rate": 500000000
     },
     {
       "resource_type": 11,
       "unit_weight": 1000,
       "realm_rate": 1000000000,
-      "village_rate": 500000000,
-      "labor_output_per_resource": 16000000000
+      "village_rate": 500000000
     },
     {
       "resource_type": 12,
       "unit_weight": 1000,
       "realm_rate": 1000000000,
-      "village_rate": 500000000,
-      "labor_output_per_resource": 25000000000
+      "village_rate": 500000000
     },
     {
       "resource_type": 13,
       "unit_weight": 1000,
       "realm_rate": 1000000000,
-      "village_rate": 500000000,
-      "labor_output_per_resource": 25000000000
+      "village_rate": 500000000
     },
     {
       "resource_type": 14,
       "unit_weight": 1000,
       "realm_rate": 1000000000,
-      "village_rate": 500000000,
-      "labor_output_per_resource": 20000000000
+      "village_rate": 500000000
     },
     {
       "resource_type": 15,
       "unit_weight": 1000,
       "realm_rate": 1000000000,
-      "village_rate": 500000000,
-      "labor_output_per_resource": 20000000000
+      "village_rate": 500000000
     },
     {
       "resource_type": 16,
       "unit_weight": 1000,
       "realm_rate": 1000000000,
-      "village_rate": 500000000,
-      "labor_output_per_resource": 30000000000
+      "village_rate": 500000000
     },
     {
       "resource_type": 17,
       "unit_weight": 1000,
       "realm_rate": 1000000000,
-      "village_rate": 500000000,
-      "labor_output_per_resource": 30000000000
+      "village_rate": 500000000
     },
     {
       "resource_type": 18,
       "unit_weight": 1000,
       "realm_rate": 1000000000,
-      "village_rate": 500000000,
-      "labor_output_per_resource": 30000000000
+      "village_rate": 500000000
     },
     {
       "resource_type": 19,
       "unit_weight": 1000,
       "realm_rate": 1000000000,
-      "village_rate": 500000000,
-      "labor_output_per_resource": 30000000000
+      "village_rate": 500000000
     },
     {
       "resource_type": 20,
       "unit_weight": 1000,
       "realm_rate": 1000000000,
-      "village_rate": 500000000,
-      "labor_output_per_resource": 20000000000
+      "village_rate": 500000000
     },
     {
       "resource_type": 21,
       "unit_weight": 1000,
       "realm_rate": 1000000000,
-      "village_rate": 500000000,
-      "labor_output_per_resource": 30000000000
+      "village_rate": 500000000
     },
     {
       "resource_type": 22,
       "unit_weight": 1000,
       "realm_rate": 1000000000,
-      "village_rate": 500000000,
-      "labor_output_per_resource": 30000000000
+      "village_rate": 500000000
     },
     {
       "resource_type": 23,
       "unit_weight": 1000,
       "realm_rate": 1000000000,
-      "village_rate": 500000000,
-      "labor_output_per_resource": 0
+      "village_rate": 500000000
     },
     {
       "resource_type": 24,
       "unit_weight": 100,
       "realm_rate": 3000000000,
-      "village_rate": 1500000000,
-      "labor_output_per_resource": 0
+      "village_rate": 1500000000
     },
     {
       "resource_type": 25,
       "unit_weight": 0,
       "realm_rate": 3000000000,
-      "village_rate": 1500000000,
-      "labor_output_per_resource": 0
+      "village_rate": 1500000000
     },
     {
       "resource_type": 26,
       "unit_weight": 5000,
       "realm_rate": 5000000000,
-      "village_rate": 2500000000,
-      "labor_output_per_resource": 0
+      "village_rate": 2500000000
     },
     {
       "resource_type": 27,
       "unit_weight": 5000,
       "realm_rate": 5000000000,
-      "village_rate": 2500000000,
-      "labor_output_per_resource": 0
+      "village_rate": 2500000000
     },
     {
       "resource_type": 28,
       "unit_weight": 5000,
       "realm_rate": 5000000000,
-      "village_rate": 2500000000,
-      "labor_output_per_resource": 0
+      "village_rate": 2500000000
     },
     {
       "resource_type": 29,
       "unit_weight": 5000,
       "realm_rate": 5000000000,
-      "village_rate": 2500000000,
-      "labor_output_per_resource": 0
+      "village_rate": 2500000000
     },
     {
       "resource_type": 30,
       "unit_weight": 5000,
       "realm_rate": 5000000000,
-      "village_rate": 2500000000,
-      "labor_output_per_resource": 0
+      "village_rate": 2500000000
     },
     {
       "resource_type": 31,
       "unit_weight": 5000,
       "realm_rate": 5000000000,
-      "village_rate": 2500000000,
-      "labor_output_per_resource": 0
+      "village_rate": 2500000000
     },
     {
       "resource_type": 32,
       "unit_weight": 5000,
       "realm_rate": 5000000000,
-      "village_rate": 2500000000,
-      "labor_output_per_resource": 0
+      "village_rate": 2500000000
     },
     {
       "resource_type": 33,
       "unit_weight": 5000,
       "realm_rate": 5000000000,
-      "village_rate": 2500000000,
-      "labor_output_per_resource": 0
+      "village_rate": 2500000000
     },
     {
       "resource_type": 34,
       "unit_weight": 5000,
       "realm_rate": 5000000000,
-      "village_rate": 2500000000,
-      "labor_output_per_resource": 0
+      "village_rate": 2500000000
     },
     {
       "resource_type": 35,
       "unit_weight": 100,
       "realm_rate": 6000000000,
-      "village_rate": 3000000000,
-      "labor_output_per_resource": 0
+      "village_rate": 3000000000
     },
     {
       "resource_type": 36,
       "unit_weight": 100,
       "realm_rate": 6000000000,
-      "village_rate": 3000000000,
-      "labor_output_per_resource": 0
+      "village_rate": 3000000000
     },
     {
       "resource_type": 37,
       "unit_weight": 0,
       "realm_rate": 0,
-      "village_rate": 0,
-      "labor_output_per_resource": 0
+      "village_rate": 0
     },
     {
       "resource_type": 38,
       "unit_weight": 100,
       "realm_rate": 10000000000,
-      "village_rate": 5000000000,
-      "labor_output_per_resource": 0
+      "village_rate": 5000000000
     },
     {
       "resource_type": 39,
       "unit_weight": 0,
       "realm_rate": 0,
-      "village_rate": 0,
-      "labor_output_per_resource": 0
+      "village_rate": 0
     },
     {
       "resource_type": 40,
       "unit_weight": 0,
       "realm_rate": 0,
-      "village_rate": 0,
-      "labor_output_per_resource": 0
+      "village_rate": 0
     },
     {
       "resource_type": 41,
       "unit_weight": 0,
       "realm_rate": 0,
-      "village_rate": 0,
-      "labor_output_per_resource": 0
+      "village_rate": 0
     },
     {
       "resource_type": 42,
       "unit_weight": 0,
       "realm_rate": 0,
-      "village_rate": 0,
-      "labor_output_per_resource": 0
+      "village_rate": 0
     },
     {
       "resource_type": 43,
       "unit_weight": 0,
       "realm_rate": 0,
-      "village_rate": 0,
-      "labor_output_per_resource": 0
+      "village_rate": 0
     },
     {
       "resource_type": 44,
       "unit_weight": 0,
       "realm_rate": 0,
-      "village_rate": 0,
-      "labor_output_per_resource": 0
+      "village_rate": 0
     },
     {
       "resource_type": 45,
       "unit_weight": 0,
       "realm_rate": 0,
-      "village_rate": 0,
-      "labor_output_per_resource": 0
+      "village_rate": 0
     },
     {
       "resource_type": 46,
       "unit_weight": 0,
       "realm_rate": 0,
-      "village_rate": 0,
-      "labor_output_per_resource": 0
+      "village_rate": 0
     },
     {
       "resource_type": 47,
       "unit_weight": 0,
       "realm_rate": 0,
-      "village_rate": 0,
-      "labor_output_per_resource": 0
+      "village_rate": 0
     },
     {
       "resource_type": 48,
       "unit_weight": 0,
       "realm_rate": 0,
-      "village_rate": 0,
-      "labor_output_per_resource": 0
+      "village_rate": 0
     },
     {
       "resource_type": 49,
       "unit_weight": 0,
       "realm_rate": 0,
-      "village_rate": 0,
-      "labor_output_per_resource": 0
+      "village_rate": 0
     },
     {
       "resource_type": 50,
       "unit_weight": 0,
       "realm_rate": 0,
-      "village_rate": 0,
-      "labor_output_per_resource": 0
+      "village_rate": 0
     },
     {
       "resource_type": 51,
       "unit_weight": 0,
       "realm_rate": 0,
-      "village_rate": 0,
-      "labor_output_per_resource": 0
+      "village_rate": 0
     },
     {
       "resource_type": 52,
       "unit_weight": 0,
       "realm_rate": 0,
-      "village_rate": 0,
-      "labor_output_per_resource": 0
+      "village_rate": 0
     },
     {
       "resource_type": 53,
       "unit_weight": 0,
       "realm_rate": 0,
-      "village_rate": 0,
-      "labor_output_per_resource": 0
+      "village_rate": 0
     },
     {
       "resource_type": 54,
       "unit_weight": 0,
       "realm_rate": 0,
-      "village_rate": 0,
-      "labor_output_per_resource": 0
+      "village_rate": 0
     },
     {
       "resource_type": 55,
       "unit_weight": 0,
       "realm_rate": 0,
-      "village_rate": 0,
-      "labor_output_per_resource": 0
+      "village_rate": 0
     },
     {
       "resource_type": 56,
       "unit_weight": 0,
       "realm_rate": 0,
-      "village_rate": 0,
-      "labor_output_per_resource": 0
+      "village_rate": 0
     },
     {
       "resource_type": 57,
       "unit_weight": 0,
       "realm_rate": 1000000000,
-      "village_rate": 500000000,
-      "labor_output_per_resource": 0
+      "village_rate": 500000000
     },
     {
       "resource_type": 58,
       "unit_weight": 0,
       "realm_rate": 0,
-      "village_rate": 0,
-      "labor_output_per_resource": 0
+      "village_rate": 0
     }
   ]
 }
