@@ -39,8 +39,7 @@ export function disk(radius) {
   }
   return result;
 }
-export const ring = (radius) => disk(radius).filter((point) => distance(point) === radius);
-export const unique = (points) => [...new Map(points.map((point) => [key(point), point])).values()];
+const unique = (points) => [...new Map(points.map((point) => [key(point), point])).values()];
 export const halo = (points) => unique(points.flatMap((point) => [point, ...neighbors(point)]));
 export const project = ([q, r], size = 1) => [Math.sqrt(3) * (q + r / 2) * size, 1.5 * r * size];
 

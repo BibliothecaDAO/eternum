@@ -12,11 +12,11 @@ central-bank design. They describe the design; they do not prove production game
 | `primary-closeup.svg` | Individual primary hexes through radius45: bank, inner spires, mountain barrier and first Realm sites |
 | `metadata.json`       | Parameters, exact counts, coordinate arrays and interpretive notes                                    |
 
-Run from this directory with any current Node runtime:
+Run from the repository root:
 
 ```sh
-node generate.mjs
-node validate.mjs
+pnpm run generate:eternum-s2-maps
+pnpm run validate:eternum-s2
 ```
 
 `geometry.mjs` is the geometry authority for these artifacts. It uses pointy-top axial coordinates, hex radius
