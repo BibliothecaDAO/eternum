@@ -36,7 +36,7 @@ pub mod ResourcesDomain {
         resources: ResourceState::Storage,
         #[substorage(v0)]
         arrivals: ArrivalState::Storage,
-        resource_rules: Map<(u32, u8), (u128, u128, u64)>,
+        resource_rules: Map<(u32, u8), (u128, u128)>,
         resources_configured: Map<u32, bool>,
         #[substorage(v0)]
         production: ProductionState::Storage,
@@ -91,7 +91,6 @@ pub mod ResourcesDomain {
                             rule.unit_weight,
                             Into::<u64, u128>::into(rule.realm_rate)
                                 + Into::<u64, u128>::into(rule.village_rate) * RATE_WORD_SCALE,
-                            rule.labor_output_per_resource,
                         ),
                     );
                 let mut values = array![];
@@ -641,11 +640,10 @@ pub mod ResourcesDomain {
         fn rule(self: @ContractState, game_id: u32, resource_type: u8) -> ResourceRule {
             assert!(self.resources_configured.read(game_id), "missing resource rules");
             assert!(resource_type > 0 && resource_type <= 58, "invalid resource type");
-            let (unit_weight, rates, labor_output_per_resource) = self.resource_rules.read((game_id, resource_type));
+            let (unit_weight, rates) = self.resource_rules.read((game_id, resource_type));
             ResourceRule {
                 resource_type,
                 unit_weight,
-                labor_output_per_resource,
                 realm_rate: (rates % RATE_WORD_SCALE).try_into().unwrap(),
                 village_rate: (rates / RATE_WORD_SCALE).try_into().unwrap(),
             }

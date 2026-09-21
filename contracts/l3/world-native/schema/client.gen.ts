@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "5276d6802286616bfeafe8b2c5eb65b8323263040d4d1c0e712a5dda7050bf29";
+export const nativeFactSchemaIdentity = "8f9403d692ed7ca3200bce59de973925f01a62885b3f6728464e765748f95fee";
 export interface NativeRows {
   Preset: { readonly preset_id: number; readonly commitment: bigint };
   GameSequence: { readonly address: bigint; readonly next_game_id: number };
@@ -11,11 +11,7 @@ export interface NativeRows {
   GuildWhitelist: { readonly game_id: number; readonly guild_id: bigint; readonly player: bigint; readonly allowed: boolean };
   ArtificerCost: { readonly game_id: number; readonly research: bigint };
   BlitzResult: { readonly game_id: number; readonly players: readonly ({ readonly player: bigint; readonly points: bigint; readonly rank: number })[]; readonly complete: boolean; readonly commitment: bigint };
-  FaithRewardToken: { readonly game_id: number; readonly token: bigint };
-  FaithPrizePool: { readonly game_id: number; readonly funded: bigint; readonly distributed: boolean };
-  FaithPrizeClaimed: { readonly game_id: number; readonly player: bigint; readonly wonder_id: number; readonly claimed: boolean };
   FaithRules: { readonly game_id: number; readonly wonder_rate: number; readonly realm_rate: number; readonly village_rate: number; readonly owner_share_bps: number };
-  FaithBlacklist: { readonly game_id: number; readonly wonder_id: number; readonly blocked_id: bigint; readonly blocked: boolean };
   SeasonWinThreshold: { readonly game_id: number; readonly points: bigint };
   ExtractionRewards: { readonly game_id: number; readonly rewards: readonly ({ readonly resource_type: number; readonly amount: bigint; readonly weight: bigint })[] };
   RelicRules: { readonly game_id: number; readonly rules: readonly ({ readonly rate_bps: number; readonly duration: number; readonly uses: number; readonly essence_cost: bigint; readonly draw_weight: bigint })[] };
@@ -74,7 +70,7 @@ export interface NativeRows {
   WonderFaith: { readonly game_id: number; readonly wonder_id: number; readonly last_recorded_owner: bigint; readonly claimed_points: bigint; readonly claim_per_sec: number; readonly claim_last_at: bigint; readonly owner_claim_per_sec: number; readonly num_structures_pledged: number };
   FaithfulStructure: { readonly game_id: number; readonly structure_id: number; readonly wonder_id: number; readonly faithful_since: bigint; readonly fp_to_wonder_owner_per_sec: number; readonly fp_to_struct_owner_per_sec: number; readonly last_recorded_owner: bigint };
   PlayerFaithPoints: { readonly game_id: number; readonly player: bigint; readonly wonder_id: number; readonly points_claimed: bigint; readonly points_per_sec_as_owner: number; readonly points_per_sec_as_pledger: number; readonly last_updated_at: bigint };
-  ResourceRule: { readonly game_id: number; readonly resource_type: number; readonly unit_weight: bigint; readonly realm_rate: bigint; readonly village_rate: bigint; readonly labor_output_per_resource: bigint };
+  ResourceRule: { readonly game_id: number; readonly resource_type: number; readonly unit_weight: bigint; readonly realm_rate: bigint; readonly village_rate: bigint };
   ResourceRulesReady: { readonly game_id: number; readonly ready: boolean };
   UpgradeLimits: { readonly game_id: number; readonly realm_max: number; readonly village_max: number };
   UpgradeRecipe: { readonly game_id: number; readonly level: number; readonly costs: readonly ({ readonly resource_type: number; readonly amount: bigint })[] };
@@ -100,11 +96,7 @@ export interface NativeKeys {
   GuildWhitelist: { readonly game_id: number; readonly guild_id: bigint; readonly player: bigint };
   ArtificerCost: { readonly game_id: number };
   BlitzResult: { readonly game_id: number };
-  FaithRewardToken: { readonly game_id: number };
-  FaithPrizePool: { readonly game_id: number };
-  FaithPrizeClaimed: { readonly game_id: number; readonly player: bigint; readonly wonder_id: number };
   FaithRules: { readonly game_id: number };
-  FaithBlacklist: { readonly game_id: number; readonly wonder_id: number; readonly blocked_id: bigint };
   SeasonWinThreshold: { readonly game_id: number };
   ExtractionRewards: { readonly game_id: number };
   RelicRules: { readonly game_id: number };
@@ -305,41 +297,6 @@ export const nativeFactModels = {
       "commitment": "felt"
     }
   },
-  "FaithRewardToken": {
-    "keys": [
-      "game_id"
-    ],
-    "scope": "game",
-    "fields": {
-      "game_id": "u32",
-      "token": "felt"
-    }
-  },
-  "FaithPrizePool": {
-    "keys": [
-      "game_id"
-    ],
-    "scope": "game",
-    "fields": {
-      "game_id": "u32",
-      "funded": "u128",
-      "distributed": "boolean"
-    }
-  },
-  "FaithPrizeClaimed": {
-    "keys": [
-      "game_id",
-      "player",
-      "wonder_id"
-    ],
-    "scope": "game",
-    "fields": {
-      "game_id": "u32",
-      "player": "felt",
-      "wonder_id": "u32",
-      "claimed": "boolean"
-    }
-  },
   "FaithRules": {
     "keys": [
       "game_id"
@@ -351,20 +308,6 @@ export const nativeFactModels = {
       "realm_rate": "u16",
       "village_rate": "u16",
       "owner_share_bps": "u16"
-    }
-  },
-  "FaithBlacklist": {
-    "keys": [
-      "game_id",
-      "wonder_id",
-      "blocked_id"
-    ],
-    "scope": "game",
-    "fields": {
-      "game_id": "u32",
-      "wonder_id": "u32",
-      "blocked_id": "felt",
-      "blocked": "boolean"
     }
   },
   "SeasonWinThreshold": {
@@ -1381,8 +1324,7 @@ export const nativeFactModels = {
       "resource_type": "u8",
       "unit_weight": "u128",
       "realm_rate": "u64",
-      "village_rate": "u64",
-      "labor_output_per_resource": "u64"
+      "village_rate": "u64"
     }
   },
   "ResourceRulesReady": {

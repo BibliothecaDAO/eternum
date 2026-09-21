@@ -299,7 +299,6 @@ pub trait IStructures<T> {
     fn structure_buildings(self: @T, key: ResourceKey) -> crate::buildings::StructureBuildings;
     fn structure(self: @T, key: ResourceKey) -> Option<Structure>;
     fn structure_owner(self: @T, key: ResourceKey) -> ContractAddress;
-    fn provision_spire(ref self: T, game_id: u32, coord: Coord) -> u32;
     fn provision_realm(
         ref self: T, game_id: u32, actor: ContractAddress, coord: Coord, grants: Span<(u8, u128)>,
     ) -> u32;
@@ -470,16 +469,6 @@ pub mod StructuresDomain {
     }
     #[abi(embed_v0)]
     impl Structures of super::IStructures<ContractState> {
-        fn provision_spire(ref self: ContractState, game_id: u32, coord: Coord) -> u32 {
-            self.assert_authority();
-            assert!(self.game_dispatcher().game(game_id).dev_mode_on, "fixture provisioning requires development game");
-            crate::spires::ISpiresDispatcherTrait::place_spire(
-                crate::spires::ISpiresDispatcher { contract_address: self.lifecycle.require_active().map },
-                game_id,
-                coord,
-            )
-        }
-
         fn building(self: @ContractState, key: BuildingKey) -> Option<Building> {
             self.buildings.building(key)
         }

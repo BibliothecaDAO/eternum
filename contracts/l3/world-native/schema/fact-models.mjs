@@ -47,7 +47,6 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
       row.absence = { value: "empty", meaning: "No result batch has been recorded for this game." };
     if (row.name === "FaithfulStructure")
       row.absence = { value: "empty", meaning: "The structure has no faith allegiance." };
-    if (row.name === "FaithBlacklist") row.absence = { value: "false", meaning: "The identifier is not blacklisted." };
     if (row.name === "ProductionBonus")
       row.absence = { value: "zero", meaning: "No production bonus has been granted to this structure." };
     if (row.name === "ResourceArrival")
@@ -97,23 +96,7 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
       method("prizes", "blitz_result").inputs,
       struct("blitz_results::BlitzResult"),
     ),
-    model("FaithRewardToken", ["prizes"], "game", method("prizes", "faith_reward_token").inputs, [
-      { name: "token", type: method("prizes", "faith_reward_token").outputs[0].type },
-    ]),
-    model(
-      "FaithPrizePool",
-      ["prizes"],
-      "game",
-      method("prizes", "faith_prize_pool").inputs,
-      struct("faith_prizes::PrizePool"),
-    ),
-    model("FaithPrizeClaimed", ["prizes"], "game", struct("faith::PlayerFaithKey"), [
-      { name: "claimed", type: "core::bool" },
-    ]),
     model("FaithRules", ["prizes"], "game", method("prizes", "faith_rules").inputs, struct("faith::FaithRules")),
-    model("FaithBlacklist", ["prizes"], "game", struct("faith::BlacklistKey"), [
-      { name: "blocked", type: "core::bool" },
-    ]),
     model("SeasonWinThreshold", ["season"], "game", method("season", "season_win_threshold").inputs, [
       { name: "points", type: "core::integer::u128" },
     ]),

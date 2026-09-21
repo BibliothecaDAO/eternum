@@ -244,10 +244,6 @@ pub mod MapDomain {
         fn spire_layout(self: @ContractState, game_id: u32) -> Option<crate::spires::SpireLayout> {
             self.spire_layouts.read(game_id)
         }
-        fn place_spire(ref self: ContractState, game_id: u32, coord: Coord) -> u32 {
-            assert!(get_caller_address() == self.lifecycle.require_active().structures, "only structures domain");
-            self.create_spire(game_id, coord)
-        }
     }
     #[abi(embed_v0)]
     impl SeasonPlacement of crate::realms::ISeasonPlacement<ContractState> {

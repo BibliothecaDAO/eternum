@@ -5,7 +5,6 @@ import type { BlitzBalanceProfile } from "./shared";
 import {
   buildBlitzStartingResources,
   buildOfficialBlitzComplexRecipes,
-  buildOfficialBlitzLaborOutputs,
   buildOfficialBlitzResourceOutputs,
   buildOfficialBlitzSimpleRecipes,
 } from "./shared";
@@ -53,7 +52,6 @@ export const official90BlitzProfile: BlitzBalanceProfile = {
     productionByComplexRecipeOutputs: buildOfficialBlitzResourceOutputs(1),
     productionBySimpleRecipe: buildOfficialBlitzSimpleRecipes(1),
     productionBySimpleRecipeOutputs: buildOfficialBlitzResourceOutputs(1),
-    laborOutputPerResource: buildOfficialBlitzLaborOutputs(1),
   },
   buildings: {
     complexBuildingCosts: COMPLEX_BUILDING_COSTS,

@@ -11,7 +11,6 @@ pub struct SpireLayout {
 pub trait ISpires<T> {
     fn initialize_spires(ref self: T, game_id: u32, layout: SpireLayout);
     fn spire_layout(self: @T, game_id: u32) -> Option<SpireLayout>;
-    fn place_spire(ref self: T, game_id: u32, coord: Coord) -> u32;
 }
 
 pub fn validate(layout: SpireLayout) {

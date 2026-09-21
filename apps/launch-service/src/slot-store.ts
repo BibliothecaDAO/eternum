@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { Pool, PoolClient } from "pg";
+import { nativePresetIdFor } from "../../../config/source/native";
 import { normalizeAddress } from "./address";
 import { SlotConflict, SlotNotFound, splitPlaytestRoster, type PlaytestSlot, type SlotStore } from "./slots";
 
@@ -46,7 +47,7 @@ async function queueSlotGames(client: PoolClient, slot: PlaytestSlot, groups: Pl
     const gameName = `${slot.name}-${index + 1}`;
     const request = {
       environment: "madara.blitz",
-      version: "2",
+      version: String(nativePresetIdFor("blitz", "official-60")),
       gameName,
       gameStartTime: slot.closesAt,
       devModeOn: false,

@@ -137,20 +137,6 @@ fn an_occupied_alternate_center_rejects_before_revealing_the_surface() {
 }
 
 #[test]
-#[feature("safe_dispatcher")]
-fn internal_placement_authenticates_the_structures_domain() {
-    let d = deployment();
-    let safe = ISpiresSafeDispatcher { contract_address: d.peers.map };
-    for caller in array![d.actor, authority(), d.peers.troops, d.peers.season] {
-        start_cheat_caller_address(d.peers.map, caller);
-        assert!(safe.place_spire(1, center(d, 1)).is_err());
-    }
-    start_cheat_caller_address(d.peers.map, d.peers.structures);
-    assert_eq!(safe.place_spire(1, center(d, 1)).unwrap(), 1);
-    assert!(safe.place_spire(1, center(d, 1)).is_err());
-}
-
-#[test]
 fn eternum_preset_spires_follow_the_pinned_east_southwest_ring_order() {
     let center = Coord { alt: false, x: 2000000, y: 2000000 };
     let preset = SpireLayout { count: 6, base_distance: 10, layer_distance: 6, max_layer: 6 };

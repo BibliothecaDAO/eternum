@@ -51,12 +51,7 @@ fn safe(d: super::Deployment) -> IRegistrarSafeDispatcher {
 fn definition(blitz: bool) -> PresetDefinition {
     let mut resources = array![];
     for resource_type in 1_u8..59 {
-        resources
-            .append(
-                ResourceRule {
-                    resource_type, unit_weight: 1, realm_rate: 10, village_rate: 5, labor_output_per_resource: 1,
-                },
-            );
+        resources.append(ResourceRule { resource_type, unit_weight: 1, realm_rate: 10, village_rate: 5 });
     }
     PresetDefinition {
         rules: crate::rules::SliceRules { blitz_mode_on: blitz, ..super::recorded::rules() },

@@ -460,7 +460,6 @@ pub struct ResourceRule {
     pub unit_weight: u128,
     pub realm_rate: u64,
     pub village_rate: u64,
-    pub labor_output_per_resource: u64,
 }
 
 #[starknet::interface]

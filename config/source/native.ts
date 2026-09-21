@@ -16,6 +16,14 @@ export function nativePresetForId(id: number) {
   return preset;
 }
 
+export function nativePresetIdFor(gameType: "eternum" | "blitz", profile?: BlitzBalanceProfileId): number {
+  const entry = Object.entries(nativePresets).find(
+    ([, preset]) => preset.gameType === gameType && preset.profile === profile,
+  );
+  if (!entry) throw new Error(`No native preset for ${gameType}${profile ? ` profile ${profile}` : ""}`);
+  return Number(entry[0]);
+}
+
 export function resolveBlitzProfileId(config: Config): number {
   const preset = Object.values(nativePresets).find(
     ({ profile }) => profile === config.blitz.exploration.rewardProfileId,

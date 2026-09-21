@@ -46,15 +46,11 @@ pub fn setup_with_rules(rules: crate::rules::SliceRules) -> (Deployment, Resourc
         rules
             .append(
                 ResourceRule {
-                    resource_type,
-                    unit_weight: if resource_type == 58 {
+                    resource_type, unit_weight: if resource_type == 58 {
                         0
                     } else {
                         1
-                    },
-                    realm_rate: 2,
-                    village_rate: 1,
-                    labor_output_per_resource: 0,
+                    }, realm_rate: 2, village_rate: 1,
                 },
             );
     }

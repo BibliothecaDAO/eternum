@@ -7,33 +7,6 @@
   "domains": {
     "season": {
       "contract": "SeasonDomain",
-      "systems": [
-        "troop_management_systems",
-        "troop_movement_systems",
-        "troop_battle_systems",
-        "alt_movement_systems",
-        "ownership_systems",
-        "name_systems",
-        "structure_systems",
-        "resource_systems",
-        "production_systems",
-        "blitz_realm_systems",
-        "realm_systems",
-        "village_systems",
-        "hyperstructure_create_systems",
-        "bitcoin_mine_systems",
-        "trade_systems",
-        "bank_systems",
-        "swap_systems",
-        "liquidity_systems",
-        "hyperstructure_systems",
-        "faith_systems",
-        "season_systems",
-        "relic_systems",
-        "artificer_systems",
-        "guild_systems",
-        "resource_bridge_systems"
-      ],
       "events": [
         {
           "name": "RowSet",
@@ -800,7 +773,6 @@
     },
     "map": {
       "contract": "MapDomain",
-      "systems": [],
       "events": [
         {
           "name": "RowSet",
@@ -1032,26 +1004,6 @@
             }
           ],
           "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "place_spire",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "coord",
-              "type": "world_native::troops::Coord"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::integer::u32"
-            }
-          ],
-          "state_mutability": "external"
         },
         {
           "type": "function",
@@ -1515,7 +1467,6 @@
     },
     "troops": {
       "contract": "TroopsDomain",
-      "systems": [],
       "events": [
         {
           "name": "RowSet",
@@ -2336,7 +2287,6 @@
     },
     "structures": {
       "contract": "StructuresDomain",
-      "systems": [],
       "events": [
         {
           "name": "RowSet",
@@ -2563,30 +2513,6 @@
       "entrypoints": [
         {
           "type": "function",
-          "name": "mint_resources",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "actor",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "command",
-              "type": "world_native::dev::MintResources"
-            },
-            {
-              "name": "context",
-              "type": "world_native::commands::ExecutionContext"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
           "name": "configure_camps",
           "inputs": [
             {
@@ -2768,26 +2694,6 @@
             }
           ],
           "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "provision_spire",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "coord",
-              "type": "world_native::troops::Coord"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::integer::u32"
-            }
-          ],
-          "state_mutability": "external"
         },
         {
           "type": "function",
@@ -3283,7 +3189,6 @@
     },
     "settlement": {
       "contract": "SettlementDomain",
-      "systems": [],
       "events": [
         {
           "name": "RowSet",
@@ -3800,7 +3705,6 @@
     },
     "resources": {
       "contract": "ResourcesDomain",
-      "systems": [],
       "events": [
         {
           "name": "RowSet",
@@ -4619,30 +4523,6 @@
         },
         {
           "type": "function",
-          "name": "burn_resource_for_labor_production",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "actor",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "command",
-              "type": "world_native::production::RefillProduction"
-            },
-            {
-              "name": "context",
-              "type": "world_native::commands::ExecutionContext"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
           "name": "burn_labor_for_resource_production",
           "inputs": [
             {
@@ -4787,30 +4667,6 @@
         },
         {
           "type": "function",
-          "name": "burn_explorer_resources",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "actor",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "command",
-              "type": "world_native::resources::ResourceBurn"
-            },
-            {
-              "name": "context",
-              "type": "world_native::commands::ExecutionContext"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
           "name": "transfer_explorer_resources",
           "inputs": [
             {
@@ -4848,30 +4704,6 @@
             {
               "name": "command",
               "type": "world_native::resources::ResourceTransfer"
-            },
-            {
-              "name": "context",
-              "type": "world_native::commands::ExecutionContext"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "regularize_resource_weights",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "actor",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "structure_ids",
-              "type": "core::array::Span::<core::integer::u32>"
             },
             {
               "name": "context",
@@ -4927,7 +4759,6 @@
     },
     "economy": {
       "contract": "EconomyDomain",
-      "systems": [],
       "events": [
         {
           "name": "RowSet",
@@ -6124,7 +5955,6 @@
     },
     "prizes": {
       "contract": "PrizesDomain",
-      "systems": [],
       "events": [
         {
           "name": "RowSet",
@@ -6748,142 +6578,6 @@
         },
         {
           "type": "function",
-          "name": "configure_faith_reward_token",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "token",
-              "type": "core::starknet::contract_address::ContractAddress"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "faith_reward_token",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::starknet::contract_address::ContractAddress"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "faith_prize_pool",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "world_native::faith_prizes::PrizePool"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "faith_prize_claimed",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::faith::PlayerFaithKey"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::bool"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "fund_faith_prizes",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "actor",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "amount",
-              "type": "core::integer::u128"
-            },
-            {
-              "name": "context",
-              "type": "world_native::commands::ExecutionContext"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "distribute_faith_prizes",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "actor",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "context",
-              "type": "world_native::commands::ExecutionContext"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::integer::u64"
-            }
-          ],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "claim_faith_prize",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "actor",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "command",
-              "type": "world_native::faith::ClaimPlayer"
-            },
-            {
-              "name": "context",
-              "type": "world_native::commands::ExecutionContext"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
           "name": "configure_faith",
           "inputs": [
             {
@@ -6910,22 +6604,6 @@
           "outputs": [
             {
               "type": "world_native::faith::FaithRules"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "faith_blacklisted",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::faith::BlacklistKey"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::bool"
             }
           ],
           "state_mutability": "view"
@@ -7076,30 +6754,6 @@
         },
         {
           "type": "function",
-          "name": "set_faith_blacklist",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "actor",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "command",
-              "type": "world_native::faith::SetBlacklist"
-            },
-            {
-              "name": "context",
-              "type": "world_native::commands::ExecutionContext"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
           "name": "blitz_result",
           "inputs": [
             {
@@ -7188,7 +6842,6 @@
     },
     "registry": {
       "contract": "RegistryDomain",
-      "systems": [],
       "events": [
         {
           "name": "RowSet",
@@ -7753,7 +7406,6 @@
     },
     "combat": {
       "contract": "CombatDomain",
-      "systems": [],
       "events": [
         {
           "name": "RowSet",
@@ -7892,7 +7544,6 @@
     },
     "bridge": {
       "contract": "BridgeDomain",
-      "systems": [],
       "events": [
         {
           "name": "RowSet",
@@ -8571,97 +8222,6 @@
       }
     },
     {
-      "name": "FaithRewardToken",
-      "identity": "0x4661697468526577617264546f6b656e",
-      "owners": [
-        "prizes"
-      ],
-      "scope": "game",
-      "keys": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "token",
-          "type": "core::starknet::contract_address::ContractAddress",
-          "id": "0x746f6b656e",
-          "feltLength": 1
-        }
-      ],
-      "keyLength": 1,
-      "valueLength": 1
-    },
-    {
-      "name": "FaithPrizePool",
-      "identity": "0x46616974685072697a65506f6f6c",
-      "owners": [
-        "prizes"
-      ],
-      "scope": "game",
-      "keys": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "funded",
-          "type": "core::integer::u128",
-          "id": "0x66756e646564",
-          "feltLength": 1
-        },
-        {
-          "name": "distributed",
-          "type": "core::bool",
-          "id": "0x6469737472696275746564",
-          "feltLength": 1
-        }
-      ],
-      "keyLength": 1,
-      "valueLength": 2
-    },
-    {
-      "name": "FaithPrizeClaimed",
-      "identity": "0x46616974685072697a65436c61696d6564",
-      "owners": [
-        "prizes"
-      ],
-      "scope": "game",
-      "keys": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        },
-        {
-          "name": "player",
-          "type": "core::starknet::contract_address::ContractAddress",
-          "feltLength": 1
-        },
-        {
-          "name": "wonder_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "claimed",
-          "type": "core::bool",
-          "id": "0x636c61696d6564",
-          "feltLength": 1
-        }
-      ],
-      "keyLength": 3,
-      "valueLength": 1
-    },
-    {
       "name": "FaithRules",
       "identity": "0x466169746852756c6573",
       "owners": [
@@ -8703,45 +8263,6 @@
       ],
       "keyLength": 1,
       "valueLength": 4
-    },
-    {
-      "name": "FaithBlacklist",
-      "identity": "0x4661697468426c61636b6c697374",
-      "owners": [
-        "prizes"
-      ],
-      "scope": "game",
-      "keys": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        },
-        {
-          "name": "wonder_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        },
-        {
-          "name": "blocked_id",
-          "type": "core::felt252",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "blocked",
-          "type": "core::bool",
-          "id": "0x626c6f636b6564",
-          "feltLength": 1
-        }
-      ],
-      "keyLength": 3,
-      "valueLength": 1,
-      "absence": {
-        "value": "false",
-        "meaning": "The identifier is not blacklisted."
-      }
     },
     {
       "name": "SeasonWinThreshold",
@@ -11408,16 +10929,10 @@
           "type": "core::integer::u64",
           "id": "0x76696c6c6167655f72617465",
           "feltLength": 1
-        },
-        {
-          "name": "labor_output_per_resource",
-          "type": "core::integer::u64",
-          "id": "0x6c61626f725f6f75747075745f7065725f7265736f75726365",
-          "feltLength": 1
         }
       ],
       "keyLength": 2,
-      "valueLength": 4
+      "valueLength": 3
     },
     {
       "name": "ResourceRulesReady",
@@ -13736,10 +13251,6 @@
           "type": "world_native::ownership::TransferOwnership"
         },
         {
-          "name": "SetAddressName",
-          "type": "world_native::names::SetAddressName"
-        },
-        {
           "name": "LevelUp",
           "type": "core::integer::u32"
         },
@@ -13772,14 +13283,6 @@
           "type": "world_native::resources::ResourceBurn"
         },
         {
-          "name": "RegularizeResourceWeights",
-          "type": "core::array::Span::<core::integer::u32>"
-        },
-        {
-          "name": "BurnExplorerResources",
-          "type": "world_native::resources::ResourceBurn"
-        },
-        {
           "name": "TransferExplorerResources",
           "type": "world_native::resources::ResourceTransfer"
         },
@@ -13798,10 +13301,6 @@
         {
           "name": "TransferExplorerResourcesToStructure",
           "type": "world_native::resources::ResourceTransfer"
-        },
-        {
-          "name": "BurnResourceForLaborProduction",
-          "type": "world_native::production::RefillProduction"
         },
         {
           "name": "BurnLaborForResourceProduction",
@@ -13932,22 +13431,6 @@
           "type": "world_native::faith::ClaimPlayer"
         },
         {
-          "name": "SetFaithBlacklist",
-          "type": "world_native::faith::SetBlacklist"
-        },
-        {
-          "name": "FundFaithPrizes",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "DistributeFaithPrizes",
-          "type": "()"
-        },
-        {
-          "name": "ClaimFaithPrize",
-          "type": "world_native::faith::ClaimPlayer"
-        },
-        {
           "name": "RecordBlitzResults",
           "type": "world_native::blitz_results::RecordBlitzResults"
         },
@@ -13974,10 +13457,6 @@
         {
           "name": "RemoveGuildMember",
           "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
-          "name": "MintDevelopmentResources",
-          "type": "world_native::dev::MintResources"
         },
         {
           "name": "MarkGameSettled",
@@ -14095,20 +13574,6 @@
         }
       ]
     },
-    "world_native::dev::MintResources": {
-      "type": "struct",
-      "name": "world_native::dev::MintResources",
-      "members": [
-        {
-          "name": "entity_id",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "resources",
-          "type": "core::array::Span::<world_native::resources::ResourceAmount>"
-        }
-      ]
-    },
     "world_native::discovery::Discovery": {
       "type": "enum",
       "name": "world_native::discovery::Discovery",
@@ -14176,38 +13641,6 @@
         {
           "name": "amount",
           "type": "core::integer::u128"
-        }
-      ]
-    },
-    "world_native::faith_prizes::PrizePool": {
-      "type": "struct",
-      "name": "world_native::faith_prizes::PrizePool",
-      "members": [
-        {
-          "name": "funded",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "distributed",
-          "type": "core::bool"
-        }
-      ]
-    },
-    "world_native::faith::BlacklistKey": {
-      "type": "struct",
-      "name": "world_native::faith::BlacklistKey",
-      "members": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "wonder_id",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "blocked_id",
-          "type": "core::felt252"
         }
       ]
     },
@@ -14346,24 +13779,6 @@
         {
           "name": "pledger_rate",
           "type": "core::integer::u16"
-        }
-      ]
-    },
-    "world_native::faith::SetBlacklist": {
-      "type": "struct",
-      "name": "world_native::faith::SetBlacklist",
-      "members": [
-        {
-          "name": "wonder_id",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "blocked_id",
-          "type": "core::felt252"
-        },
-        {
-          "name": "blocked",
-          "type": "core::bool"
         }
       ]
     },
@@ -15694,10 +15109,6 @@
         {
           "name": "season_win_points",
           "type": "core::integer::u128"
-        },
-        {
-          "name": "faith_reward_token",
-          "type": "core::starknet::contract_address::ContractAddress"
         }
       ]
     },
@@ -16211,10 +15622,6 @@
         },
         {
           "name": "village_rate",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "labor_output_per_resource",
           "type": "core::integer::u64"
         }
       ]
@@ -17738,5 +17145,5 @@
       ]
     }
   },
-  "identity": "5276d6802286616bfeafe8b2c5eb65b8323263040d4d1c0e712a5dda7050bf29"
+  "identity": "8f9403d692ed7ca3200bce59de973925f01a62885b3f6728464e765748f95fee"
 }

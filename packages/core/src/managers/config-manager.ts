@@ -99,14 +99,6 @@ export class ClientConfigManager {
       ]),
     );
   }
-  get laborOutputPerResource() {
-    return Object.fromEntries(
-      [...this.facts().inGame("ResourceRule", this.gameId)].map((row) => [
-        row.resource_type,
-        { resource: row.resource_type, amount: Number(row.labor_output_per_resource) },
-      ]),
-    );
-  }
   get resourceOutputRate() {
     return Object.fromEntries(
       [...this.facts().inGame("ResourceRule", this.gameId)].map((row) => [
@@ -548,10 +540,8 @@ export class ClientConfigManager {
   }
   getLaborConfig(resourceId: number) {
     const recipe = this.facts().require("ProductionRecipe", { game_id: this.gameId, resource_type: resourceId });
-    const resource = this.facts().require("ResourceRule", { game_id: this.gameId, resource_type: resourceId });
     const labor = this.facts().require("ResourceRule", { game_id: this.gameId, resource_type: ResourcesIds.Labor });
     return {
-      laborProductionPerResource: this.divideByPrecision(Number(resource.labor_output_per_resource)),
       laborBurnPerResourceOutput: this.divideByPrecision(
         Number(recipe.simple_inputs.find((input) => input.resource_type === ResourcesIds.Labor)?.amount ?? 0n),
       ),
@@ -561,7 +551,9 @@ export class ClientConfigManager {
     };
   }
   isLaborProductionEnabled() {
-    return [...this.facts().inGame("ResourceRule", this.gameId)].some((rule) => rule.labor_output_per_resource > 0n);
+    return [...this.facts().inGame("ProductionRecipe", this.gameId)].some((recipe) =>
+      recipe.simple_inputs.some((input) => input.resource_type === ResourcesIds.Labor),
+    );
   }
   getMapCenter() {
     return MAP_CENTER - this.rules().map_center_offset;

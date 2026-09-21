@@ -255,6 +255,38 @@ fn oversized_command_is_terminal_and_the_next_ticket_executes() {
 }
 
 #[test]
+fn command_item_bound_counts_items_not_their_serialized_fields() {
+    let mut resources = array![];
+    for resource_type in 1_u8..59 {
+        resources.append(crate::resources::ResourceAmount { resource_type, amount: 1 });
+    }
+    let command = Command::BurnStructureResources(
+        crate::resources::ResourceBurn { entity_id: 1, resources: resources.span() },
+    );
+    let mut fields = array![];
+    command.serialize(ref fields);
+    assert!(fields.len() > crate::commands::MAX_COMMAND_ITEMS);
+    assert_eq!(crate::commands::decode_command(fields.span(), command_commitment(command)).unwrap(), command);
+
+    let mut mine_ids = array![];
+    for mine_id in 1_u32..65 {
+        mine_ids.append(mine_id);
+    }
+    let command = Command::ClaimBitcoinPhase(crate::bitcoin::ClaimPhase { phase: 1, mine_ids: mine_ids.span() });
+    let mut fields = array![];
+    command.serialize(ref fields);
+    assert!(crate::commands::decode_command(fields.span(), command_commitment(command)).is_ok());
+    mine_ids.append(65);
+    let command = Command::ClaimBitcoinPhase(crate::bitcoin::ClaimPhase { phase: 1, mine_ids: mine_ids.span() });
+    let mut fields = array![];
+    command.serialize(ref fields);
+    assert_eq!(
+        crate::commands::decode_command(fields.span(), command_commitment(command)).unwrap_err(),
+        array!['command items limit'],
+    );
+}
+
+#[test]
 fn nested_loot_lists_obey_the_shared_command_limit() {
     let mut loot = array![];
     for resource_type in 1_u8..66 {

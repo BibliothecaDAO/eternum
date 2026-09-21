@@ -6,7 +6,6 @@ import type {
   ResourceOutputs,
 } from "../../../packages/types/src/types/common";
 import {
-  LABOR_PRODUCTION_OUTPUT_AMOUNTS_THROUGH_RESOURCES,
   RESOURCE_PRODUCTION_INPUT_RESOURCES,
   RESOURCE_PRODUCTION_INPUT_RESOURCES_SIMPLE_SYSTEM,
   RESOURCE_PRODUCTION_OUTPUT_AMOUNTS,
@@ -135,20 +134,6 @@ export function buildOfficialBlitzSimpleRecipes(profileMultiplier: number): Reso
   };
 }
 
-export function buildOfficialBlitzLaborOutputs(profileMultiplier: number): ResourceOutputs {
-  return {
-    ...LABOR_PRODUCTION_OUTPUT_AMOUNTS_THROUGH_RESOURCES,
-    [ResourcesIds.Wood]: 1 * profileMultiplier,
-    [ResourcesIds.Coal]: 2 * profileMultiplier,
-    [ResourcesIds.Copper]: 2 * profileMultiplier,
-    [ResourcesIds.Ironwood]: 5 * profileMultiplier,
-    [ResourcesIds.ColdIron]: 5 * profileMultiplier,
-    [ResourcesIds.Gold]: 5 * profileMultiplier,
-    [ResourcesIds.Adamantine]: 20 * profileMultiplier,
-    [ResourcesIds.Mithral]: 20 * profileMultiplier,
-    [ResourcesIds.Dragonhide]: 20 * profileMultiplier,
-  };
-}
 
 export function buildComplexBuildingCost(rareResource: ResourcesIds, essenceAmount: number): ResourceCost[] {
   return [

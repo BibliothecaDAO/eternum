@@ -7,7 +7,6 @@ export interface NativeCommandPayloads {
   Move: { readonly explorer_id: BigNumberish; readonly directions: readonly (BigNumberish)[] };
   ToggleAlternate: { readonly explorer_id: BigNumberish; readonly spire_direction: BigNumberish };
   TransferStructureOwnership: { readonly entity_id: BigNumberish; readonly new_owner: BigNumberish };
-  SetAddressName: { readonly owned_structure_id: BigNumberish; readonly name: BigNumberish };
   LevelUp: BigNumberish;
   SettleBlitzRoster: undefined;
   ProvisionRealm: BigNumberish;
@@ -16,14 +15,11 @@ export interface NativeCommandPayloads {
   SettleVillage: { readonly pass_id: BigNumberish; readonly connected_realm_entity_id: BigNumberish };
   ReceiveVillageArmy: BigNumberish;
   BurnStructureResources: { readonly entity_id: BigNumberish; readonly resources: readonly ({ readonly resource_type: BigNumberish; readonly amount: BigNumberish })[] };
-  RegularizeResourceWeights: readonly (BigNumberish)[];
-  BurnExplorerResources: { readonly entity_id: BigNumberish; readonly resources: readonly ({ readonly resource_type: BigNumberish; readonly amount: BigNumberish })[] };
   TransferExplorerResources: { readonly from_entity_id: BigNumberish; readonly to_entity_id: BigNumberish; readonly resources: readonly ({ readonly resource_type: BigNumberish; readonly amount: BigNumberish })[] };
   TransferStructureResourcesToExplorer: { readonly from_entity_id: BigNumberish; readonly to_entity_id: BigNumberish; readonly resources: readonly ({ readonly resource_type: BigNumberish; readonly amount: BigNumberish })[] };
   OffloadArrival: { readonly entity_id: BigNumberish; readonly day: BigNumberish; readonly slot: BigNumberish; readonly resource_count: BigNumberish };
   SendResources: { readonly from_entity_id: BigNumberish; readonly to_entity_id: BigNumberish; readonly resources: readonly ({ readonly resource_type: BigNumberish; readonly amount: BigNumberish })[] };
   TransferExplorerResourcesToStructure: { readonly from_entity_id: BigNumberish; readonly to_entity_id: BigNumberish; readonly resources: readonly ({ readonly resource_type: BigNumberish; readonly amount: BigNumberish })[] };
-  BurnResourceForLaborProduction: { readonly structure_id: BigNumberish; readonly resource_types: readonly (BigNumberish)[]; readonly amounts: readonly (BigNumberish)[] };
   BurnLaborForResourceProduction: { readonly structure_id: BigNumberish; readonly resource_types: readonly (BigNumberish)[]; readonly amounts: readonly (BigNumberish)[] };
   BurnResourceForResourceProduction: { readonly structure_id: BigNumberish; readonly resource_types: readonly (BigNumberish)[]; readonly amounts: readonly (BigNumberish)[] };
   CreateBuilding: { readonly structure_id: BigNumberish; readonly directions: readonly (BigNumberish)[]; readonly category: BigNumberish; readonly use_simple: boolean };
@@ -56,10 +52,6 @@ export interface NativeCommandPayloads {
   UpdateFaithfulOwnership: BigNumberish;
   ClaimWonderPoints: BigNumberish;
   ClaimPlayerFaithPoints: { readonly player: BigNumberish; readonly wonder_id: BigNumberish };
-  SetFaithBlacklist: { readonly wonder_id: BigNumberish; readonly blocked_id: BigNumberish; readonly blocked: boolean };
-  FundFaithPrizes: BigNumberish;
-  DistributeFaithPrizes: undefined;
-  ClaimFaithPrize: { readonly player: BigNumberish; readonly wonder_id: BigNumberish };
   RecordBlitzResults: { readonly start: BigNumberish; readonly players: readonly ({ readonly player: BigNumberish; readonly points: BigNumberish; readonly rank: BigNumberish })[] };
   CraftRelic: BigNumberish;
   CreateGuild: { readonly owned_structure_id: BigNumberish; readonly public: boolean; readonly name: BigNumberish };
@@ -67,7 +59,6 @@ export interface NativeCommandPayloads {
   LeaveGuild: undefined;
   SetGuildWhitelist: { readonly player: BigNumberish; readonly owned_structure_id: BigNumberish; readonly allowed: boolean };
   RemoveGuildMember: BigNumberish;
-  MintDevelopmentResources: { readonly entity_id: BigNumberish; readonly resources: readonly ({ readonly resource_type: BigNumberish; readonly amount: BigNumberish })[] };
   MarkGameSettled: undefined;
   ManageTroops: { readonly kind: "RecruitGuard"; readonly value: { readonly guard: { readonly structure_id: BigNumberish; readonly slot: BigNumberish }; readonly category: { readonly kind: "Knight"; readonly value: undefined } | { readonly kind: "Paladin"; readonly value: undefined } | { readonly kind: "Crossbowman"; readonly value: undefined }; readonly tier: { readonly kind: "T1"; readonly value: undefined } | { readonly kind: "T2"; readonly value: undefined } | { readonly kind: "T3"; readonly value: undefined }; readonly amount: BigNumberish } } | { readonly kind: "RemoveGuard"; readonly value: { readonly structure_id: BigNumberish; readonly slot: BigNumberish } } | { readonly kind: "RecruitExplorer"; readonly value: { readonly explorer_id: BigNumberish; readonly amount: BigNumberish } } | { readonly kind: "RemoveExplorer"; readonly value: BigNumberish } | { readonly kind: "Transfer"; readonly value: { readonly source: { readonly kind: "Explorer"; readonly value: BigNumberish } | { readonly kind: "Guard"; readonly value: { readonly structure_id: BigNumberish; readonly slot: BigNumberish } }; readonly target: { readonly kind: "Explorer"; readonly value: BigNumberish } | { readonly kind: "Guard"; readonly value: { readonly structure_id: BigNumberish; readonly slot: BigNumberish } }; readonly amount: BigNumberish } };
   GuardAttack: { readonly guard: { readonly structure_id: BigNumberish; readonly slot: BigNumberish }; readonly explorer_id: BigNumberish };

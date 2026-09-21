@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "5276d6802286616bfeafe8b2c5eb65b8323263040d4d1c0e712a5dda7050bf29",
+  "schemaIdentity": "8f9403d692ed7ca3200bce59de973925f01a62885b3f6728464e765748f95fee",
   "commandAbi": [
     {
       "type": "impl",
@@ -271,20 +271,6 @@
       ]
     },
     {
-      "type": "struct",
-      "name": "world_native::names::SetAddressName",
-      "members": [
-        {
-          "name": "owned_structure_id",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "name",
-          "type": "core::felt252"
-        }
-      ]
-    },
-    {
       "type": "enum",
       "name": "core::bool",
       "variants": [
@@ -369,16 +355,6 @@
         {
           "name": "resources",
           "type": "core::array::Span::<world_native::resources::ResourceAmount>"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "core::array::Span::<core::integer::u32>",
-      "members": [
-        {
-          "name": "snapshot",
-          "type": "@core::array::Array::<core::integer::u32>"
         }
       ]
     },
@@ -497,6 +473,16 @@
         {
           "name": "amount",
           "type": "core::integer::u128"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "core::array::Span::<core::integer::u32>",
+      "members": [
+        {
+          "name": "snapshot",
+          "type": "@core::array::Array::<core::integer::u32>"
         }
       ]
     },
@@ -846,24 +832,6 @@
     },
     {
       "type": "struct",
-      "name": "world_native::faith::SetBlacklist",
-      "members": [
-        {
-          "name": "wonder_id",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "blocked_id",
-          "type": "core::felt252"
-        },
-        {
-          "name": "blocked",
-          "type": "core::bool"
-        }
-      ]
-    },
-    {
-      "type": "struct",
       "name": "world_native::blitz_results::PlayerResult",
       "members": [
         {
@@ -951,20 +919,6 @@
         {
           "name": "allowed",
           "type": "core::bool"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "world_native::dev::MintResources",
-      "members": [
-        {
-          "name": "entity_id",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "resources",
-          "type": "core::array::Span::<world_native::resources::ResourceAmount>"
         }
       ]
     },
@@ -1235,10 +1189,6 @@
           "type": "world_native::ownership::TransferOwnership"
         },
         {
-          "name": "SetAddressName",
-          "type": "world_native::names::SetAddressName"
-        },
-        {
           "name": "LevelUp",
           "type": "core::integer::u32"
         },
@@ -1271,14 +1221,6 @@
           "type": "world_native::resources::ResourceBurn"
         },
         {
-          "name": "RegularizeResourceWeights",
-          "type": "core::array::Span::<core::integer::u32>"
-        },
-        {
-          "name": "BurnExplorerResources",
-          "type": "world_native::resources::ResourceBurn"
-        },
-        {
           "name": "TransferExplorerResources",
           "type": "world_native::resources::ResourceTransfer"
         },
@@ -1297,10 +1239,6 @@
         {
           "name": "TransferExplorerResourcesToStructure",
           "type": "world_native::resources::ResourceTransfer"
-        },
-        {
-          "name": "BurnResourceForLaborProduction",
-          "type": "world_native::production::RefillProduction"
         },
         {
           "name": "BurnLaborForResourceProduction",
@@ -1431,22 +1369,6 @@
           "type": "world_native::faith::ClaimPlayer"
         },
         {
-          "name": "SetFaithBlacklist",
-          "type": "world_native::faith::SetBlacklist"
-        },
-        {
-          "name": "FundFaithPrizes",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "DistributeFaithPrizes",
-          "type": "()"
-        },
-        {
-          "name": "ClaimFaithPrize",
-          "type": "world_native::faith::ClaimPlayer"
-        },
-        {
           "name": "RecordBlitzResults",
           "type": "world_native::blitz_results::RecordBlitzResults"
         },
@@ -1473,10 +1395,6 @@
         {
           "name": "RemoveGuildMember",
           "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
-          "name": "MintDevelopmentResources",
-          "type": "world_native::dev::MintResources"
         },
         {
           "name": "MarkGameSettled",
@@ -3864,23 +3782,7 @@
       "scope": "game"
     },
     {
-      "name": "FaithRewardToken",
-      "scope": "game"
-    },
-    {
-      "name": "FaithPrizePool",
-      "scope": "game"
-    },
-    {
-      "name": "FaithPrizeClaimed",
-      "scope": "game"
-    },
-    {
       "name": "FaithRules",
-      "scope": "game"
-    },
-    {
-      "name": "FaithBlacklist",
       "scope": "game"
     },
     {

@@ -7,7 +7,6 @@ import {
   buildComplexBuildingCost,
   buildEliteBuildingCost,
   buildOfficialBlitzComplexRecipes,
-  buildOfficialBlitzLaborOutputs,
   buildOfficialBlitzResourceOutputs,
   buildOfficialBlitzSimpleRecipes,
 } from "./shared";
@@ -135,7 +134,6 @@ export const official60BlitzProfile: BlitzBalanceProfile = {
     productionByComplexRecipeOutputs: buildOfficial60BlitzResourceOutputs(),
     productionBySimpleRecipe: buildOfficialBlitzSimpleRecipes(2),
     productionBySimpleRecipeOutputs: buildOfficial60BlitzResourceOutputs(),
-    laborOutputPerResource: buildOfficialBlitzLaborOutputs(2),
   },
   troop: {
     stamina: official60BlitzStaminaConfig,

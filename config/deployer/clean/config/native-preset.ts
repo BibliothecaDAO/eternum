@@ -98,7 +98,7 @@ function buildResources(config: Config) {
     const resource_type = index + 1;
     // Relics and SAT have no production recipe or carried weight in the pinned rules.
     if (hasNoProduction(resource_type)) {
-      return { resource_type, unit_weight: 0, realm_rate: 0n, village_rate: 0n, labor_output_per_resource: 0n };
+      return { resource_type, unit_weight: 0, realm_rate: 0n, village_rate: 0n };
     }
     const output = scaled(required(balances.productionByComplexRecipeOutputs, resource_type, "output"), precision);
     return {
@@ -106,10 +106,6 @@ function buildResources(config: Config) {
       unit_weight: required(balances.resourceWeightsGrams, resource_type, "resource weight"),
       realm_rate: output,
       village_rate: output / 2n,
-      labor_output_per_resource: scaled(
-        required(balances.laborOutputPerResource, resource_type, "labor output"),
-        precision,
-      ),
     };
   });
   const production = resources.map(({ resource_type }) => ({

@@ -354,7 +354,6 @@ export interface Config {
     productionByComplexRecipeOutputs: ResourceOutputs;
     productionBySimpleRecipe: ResourceInputs;
     productionBySimpleRecipeOutputs: ResourceOutputs;
-    laborOutputPerResource: ResourceOutputs;
 
     resourceWeightsGrams: { [key in ResourcesIds]: number };
     resourceRarity: { [key in ResourcesIds]?: number };

@@ -173,7 +173,6 @@ fn resource_configuration_keeps_full_width_rates_without_storing_its_key_twice()
                     unit_weight: 0xffffffffffffffffffffffffffffffff,
                     realm_rate: 0xffffffffffffffff,
                     village_rate: 0xffffffffffffffff - resource_type.into(),
-                    labor_output_per_resource: 0xffffffffffffffff,
                 },
             );
     }
@@ -211,6 +210,39 @@ fn all_refill_strategies_pay_their_inputs_and_queue_output_without_an_active_bui
     assert_eq!(resources.resource_balance(slot), 0);
     assert_eq!(resources.resource_balance(ResourceSlot { resource_type: 2, ..slot }), 2 * precision + 60);
     assert_eq!(resources.resource_balance(ResourceSlot { resource_type: 3, ..slot }), 60);
+}
+
+#[test]
+fn malformed_refills_and_out_of_game_actions_reject_without_spending() {
+    let (deployment, home, _) = setup();
+    configure(deployment);
+    grant(deployment, home, 2, 100);
+    grant(deployment, home, 3, 100);
+    let valid = RefillProduction {
+        structure_id: home.entity_id, resource_types: array![26].span(), amounts: array![1].span(),
+    };
+    let before = resource_facts(deployment, home);
+    for command in array![
+        Command::BurnLaborForResourceProduction(valid), Command::BurnResourceForResourceProduction(valid),
+    ] {
+        assert_terminal_rejection(deployment, command, 19);
+    }
+    for malformed in array![
+        RefillProduction { amounts: array![].span(), ..valid }, RefillProduction { amounts: array![0].span(), ..valid },
+        RefillProduction { resource_types: array![0].span(), ..valid },
+        RefillProduction { resource_types: array![59].span(), ..valid },
+        RefillProduction { structure_id: 999, ..valid },
+    ] {
+        for command in array![
+            Command::BurnLaborForResourceProduction(malformed), Command::BurnResourceForResourceProduction(malformed),
+        ] {
+            assert_terminal_rejection(deployment, command, 60);
+        }
+        assert_eq!(resource_facts(deployment, home), before);
+    }
+    assert_terminal_rejection(deployment, Command::BurnLaborForResourceProduction(valid), 201);
+    assert_terminal_rejection(deployment, Command::BurnResourceForResourceProduction(valid), 201);
+    assert_eq!(resource_facts(deployment, home), before);
 }
 
 #[test]
