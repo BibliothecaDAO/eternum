@@ -1,7 +1,6 @@
 use snforge_std::{start_cheat_caller_address, stop_cheat_caller_address};
 use crate::commands::Command;
 use crate::discovery::{Discovery, ethereal, surface};
-use crate::names::{INamesDispatcher, INamesDispatcherTrait, SetAddressName};
 use crate::ownership::TransferOwnership;
 use crate::resources::{ResourceAmount, ResourceKey};
 use crate::structures::{IStructuresDispatcher, IStructuresDispatcherTrait, StructureRecord};

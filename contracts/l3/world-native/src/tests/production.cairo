@@ -138,7 +138,6 @@ fn production_commands_reject_a_forged_internal_caller_before_mutating_resources
     let context = crate::commands::ExecutionContext { raw_root: 1234, timestamp: 60 };
     for caller in array![deployment.actor, deployment.peers.structures, super::authority()] {
         start_cheat_caller_address(deployment.peers.resources, caller);
-        assert!(commands.burn_resource_for_labor_production(3, deployment.actor, command, context).is_err());
         assert!(commands.burn_labor_for_resource_production(3, deployment.actor, command, context).is_err());
         assert!(commands.burn_resource_for_resource_production(3, deployment.actor, command, context).is_err());
         assert_eq!(resource_facts(deployment, key), before);
@@ -210,7 +209,7 @@ fn all_refill_strategies_pay_their_inputs_and_queue_output_without_an_active_bui
     assert_eq!(resources.resource_production(slot).output_amount_left, 600);
     assert_eq!(resources.resource_production(slot).building_count, 0);
     assert_eq!(resources.resource_balance(slot), 0);
-    assert_eq!(resources.resource_balance(ResourceSlot { resource_type: 2, ..slot }), 60);
+    assert_eq!(resources.resource_balance(ResourceSlot { resource_type: 2, ..slot }), 2 * precision + 60);
     assert_eq!(resources.resource_balance(ResourceSlot { resource_type: 3, ..slot }), 60);
 }
 

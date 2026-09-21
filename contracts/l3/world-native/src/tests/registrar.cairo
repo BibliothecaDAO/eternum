@@ -58,7 +58,6 @@ fn definition(blitz: bool) -> PresetDefinition {
                 },
             );
     }
-    let zero = 0.try_into().unwrap();
     PresetDefinition {
         rules: crate::rules::SliceRules { blitz_mode_on: blitz, ..super::recorded::rules() },
         resources: ResourcePreset {

@@ -1,14 +1,15 @@
 #[starknet::contract]
 pub mod PrizesDomain {
     const MAX_PHASES_PER_CLAIM: u32 = 8;
-    use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
-    use starknet::{ContractAddress, get_caller_address, get_contract_address};
+    use starknet::storage::StorageMapReadAccess;
+    use starknet::{ContractAddress, get_caller_address};
     use crate::blitz_results::BlitzResultState;
+    use crate::commands::ExecutionContext;
     use crate::events::RowSet;
     use crate::faith::{
-        ClaimPlayer, FaithState, FaithfulStructure, PlayerFaithKey, PlayerFaithPoints, WonderFaith, WonderFaithWinners,
+        FaithState, FaithfulStructure, PlayerFaithKey, PlayerFaithPoints, WonderFaith, WonderFaithWinners,
     };
-    use crate::game::{GameRegistry, IGameDispatcher, IGameDispatcherTrait, assert_playing};
+    use crate::game::{IGameDispatcher, IGameDispatcherTrait, assert_playing};
     use crate::lifecycle::Lifecycle;
     use crate::resources::{IResourcesDispatcher, IResourcesDispatcherTrait, ResourceKey};
     use crate::structures::{IStructuresDispatcher, IStructuresDispatcherTrait};
@@ -197,7 +198,6 @@ pub mod PrizesDomain {
     fn constructor(ref self: ContractState, authority: ContractAddress) {
         self.lifecycle.initialize(authority);
     }
-    #[abi(embed_v0)]
     #[generate_trait]
     impl Internal of InternalTrait {
         fn resources(self: @ContractState) -> IResourcesDispatcher {

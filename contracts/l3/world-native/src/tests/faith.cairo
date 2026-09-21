@@ -1,9 +1,8 @@
 use snforge_std::{start_cheat_caller_address, stop_cheat_caller_address};
 use crate::commands::Command;
 use crate::faith::{
-    BlacklistKey, ClaimPlayer, FaithRules, IFaithDispatcher, IFaithDispatcherTrait, IFaithOwnershipViewsDispatcher,
+    ClaimPlayer, FaithRules, IFaithDispatcher, IFaithDispatcherTrait, IFaithOwnershipViewsDispatcher,
     IFaithOwnershipViewsDispatcherTrait, IFaithSafeDispatcher, IFaithSafeDispatcherTrait, PlayerFaithKey, Pledge,
-    SetBlacklist,
 };
 use crate::resources::ResourceKey;
 use crate::structures::{IStructuresDispatcher, IStructuresDispatcherTrait, StructureRecord};
