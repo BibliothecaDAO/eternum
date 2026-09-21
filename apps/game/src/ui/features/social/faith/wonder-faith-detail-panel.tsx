@@ -52,13 +52,12 @@ export const WonderFaithDetailPanel = ({
   } = useGame();
   const ordersAllowed = useUIStore(canIssueOrders);
   const [claiming, setClaiming] = useState(false);
-  const claim = async (kind: "wonder" | "player" | "prize") => {
+  const claim = async (kind: "wonder" | "player") => {
     setClaiming(true);
     try {
       const value = { player: account.address, wonder_id: wonderId };
       if (kind === "wonder") await systemCalls.claim_wonder_points({ signer: account, value: wonderId });
-      else if (kind === "player") await systemCalls.claim_player_faith_points({ signer: account, value });
-      else await systemCalls.claim_faith_prize({ signer: account, value });
+      else await systemCalls.claim_player_faith_points({ signer: account, value });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Faith claim failed");
     } finally {
@@ -112,9 +111,6 @@ export const WonderFaithDetailPanel = ({
           </Button>
           <Button disabled={claiming} onClick={() => void claim("player")}>
             Claim faith points
-          </Button>
-          <Button disabled={claiming} onClick={() => void claim("prize")}>
-            Claim faith prize
           </Button>
         </div>
       )}
