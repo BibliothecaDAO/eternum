@@ -295,7 +295,6 @@ test("Eternum registers its configured bridge tokens and Blitz has no bridge", (
       { resource_type: 37, token: madaraAddresses.lords },
     ].sort((a, b) => Number(a.resource_type) - Number(b.resource_type)),
   );
-  expect(preset.faith_reward_token).toBe(madaraAddresses.lords);
   expect(buildNativePreset(configuration(2)).economy.withdrawals.isNone()).toBe(true);
   for (const [mutation, error] of [
     [
@@ -303,12 +302,6 @@ test("Eternum registers its configured bridge tokens and Blitz has no bridge", (
         delete config.faith;
       },
       "Native faith config is required",
-    ],
-    [
-      (config) => {
-        config.faith!.reward_token = "0x0";
-      },
-      "reward token",
     ],
     [
       (config) => {

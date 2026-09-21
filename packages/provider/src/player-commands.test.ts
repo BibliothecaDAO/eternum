@@ -69,12 +69,6 @@ describe("player command callers", () => {
       "ClaimPlayerFaithPoints",
       { player: 0x123n, wonder_id: 11n },
     ],
-    [
-      "claim_faith_prize",
-      { value: { player: "0x123", wonder_id: 11 } },
-      "ClaimFaithPrize",
-      { player: 0x123n, wonder_id: 11n },
-    ],
     ["receive_army_grant", { village_id: 12 }, "ReceiveVillageArmy", 12n],
     [
       "set_entity_name",
@@ -271,7 +265,6 @@ it("covers every public player action", () => {
     ...commandCases.map(([name]) => name),
     "claim_wonder_points",
     "claim_player_faith_points",
-    "claim_faith_prize",
     "receive_army_grant",
     "set_entity_name",
     "create_guild",

@@ -457,8 +457,8 @@ pub mod SeasonDomain {
                 .map_err(|_error| 'GAMEPLAY_REJECTED')?;
             match command {
                 Command::SettleBlitzRoster | Command::CloseSeason | Command::MarkGameSettled |
-                Command::ClaimBitcoinPhase(_) | Command::RecordBlitzResults(_) |
-                Command::DistributeFaithPrizes => {
+                Command::ClaimBitcoinPhase(_) |
+                Command::RecordBlitzResults(_) => {
                     let mut output = result;
                     let remaining: u64 = Serde::deserialize(ref output).expect('missing batch result');
                     assert!(output.is_empty(), "invalid batch result");
@@ -594,11 +594,6 @@ pub mod SeasonDomain {
                 value.serialize(ref calldata);
                 (peers.prizes, selector!("record_blitz_results"))
             },
-            Command::DistributeFaithPrizes => (peers.prizes, selector!("distribute_faith_prizes")),
-            Command::ClaimFaithPrize(value) => {
-                value.serialize(ref calldata);
-                (peers.prizes, selector!("claim_faith_prize"))
-            },
             Command::PledgeFaith(value) => {
                 value.serialize(ref calldata);
                 (peers.prizes, selector!("pledge_faith"))
@@ -622,10 +617,6 @@ pub mod SeasonDomain {
             Command::ClaimPlayerFaithPoints(value) => {
                 value.serialize(ref calldata);
                 (peers.prizes, selector!("claim_player_faith_points"))
-            },
-            Command::SetFaithBlacklist(value) => {
-                value.serialize(ref calldata);
-                (peers.prizes, selector!("set_faith_blacklist"))
             },
             Command::CloseSeason => (get_contract_address(), selector!("close_season")),
             Command::CreateExplorer(value) => {

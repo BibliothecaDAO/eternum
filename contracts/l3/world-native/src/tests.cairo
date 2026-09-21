@@ -678,7 +678,6 @@ mod camps;
 
 mod faith;
 
-mod faith_prizes;
 
 mod guilds;
 

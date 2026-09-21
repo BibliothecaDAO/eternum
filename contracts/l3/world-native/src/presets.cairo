@@ -1,4 +1,3 @@
-use starknet::ContractAddress;
 use crate::lifecycle::Peers;
 use crate::resources::{IResourcesDispatcher, IResourcesDispatcherTrait};
 
@@ -48,7 +47,6 @@ pub struct PresetDefinition {
     pub economy: EconomyPreset,
     pub exploration: Span<crate::exploration_rewards::ExplorationReward>,
     pub season_win_points: u128,
-    pub faith_reward_token: ContractAddress,
 }
 
 pub fn validate(preset: PresetDefinition) {
@@ -173,11 +171,6 @@ fn configure_economy(peers: Peers, game_id: u32, preset: EconomyPreset) {
 fn configure_season(peers: Peers, game_id: u32, preset: PresetDefinition) {
     crate::game::ISeasonLifecycleDispatcherTrait::configure_season_win(
         crate::game::ISeasonLifecycleDispatcher { contract_address: peers.season }, game_id, preset.season_win_points,
-    );
-    crate::faith_prizes::IFaithPrizesDispatcherTrait::configure_faith_reward_token(
-        crate::faith_prizes::IFaithPrizesDispatcher { contract_address: peers.prizes },
-        game_id,
-        preset.faith_reward_token,
     );
 }
 fn initialize_map(address: ContractAddress, game_id: u32, preset: PresetDefinition) {

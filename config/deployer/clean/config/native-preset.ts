@@ -286,7 +286,6 @@ export function buildNativePreset(config: Config) {
         }))
       : eternumExplorationRewards(config.exploration.reward),
     season_win_points: config.victoryPoints.pointsForWin,
-    faith_reward_token: config.faith!.reward_token,
   };
 }
 
@@ -344,8 +343,6 @@ function validateRequiredNativeConfig(config: Config): void {
     if (!Number.isSafeInteger(config.faith[field]) || config.faith[field] < 0)
       throw new Error(`Native faith ${field} is required and must be nonnegative`);
   }
-  if (!config.faith.reward_token || (config.faith.enabled && BigInt(config.faith.reward_token) === 0n))
-    throw new Error("Native faith reward token is required");
   if (!Number.isSafeInteger(config.artificer?.research_cost_for_relic) || config.artificer!.research_cost_for_relic < 0)
     throw new Error("Native research cost is required and must be nonnegative");
 }

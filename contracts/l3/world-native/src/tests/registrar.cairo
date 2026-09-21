@@ -129,7 +129,6 @@ fn definition(blitz: bool) -> PresetDefinition {
         exploration: array![crate::exploration_rewards::ExplorationReward { resource_type: 1, amount: 10, weight: 1 }]
             .span(),
         season_win_points: 1000,
-        faith_reward_token: zero,
     }
 }
 fn roster(count: u32) -> Span<RosterPlayer> {

@@ -582,7 +582,6 @@ export interface Config {
     realm_fp_per_sec: number;
     village_fp_per_sec: number;
     owner_share_percent: number;
-    reward_token: string;
   };
   artificer?: {
     research_cost_for_relic: number;

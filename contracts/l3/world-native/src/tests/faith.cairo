@@ -127,28 +127,6 @@ fn removing_pledges_requires_an_owner_and_updates_rates_before_deleting_allegian
     assert_eq!(view(deployment).wonder_faith(wonder).claim_per_sec, 0);
 }
 #[test]
-fn blacklist_requires_wonder_owner_removal_first_and_checks_both_address_and_structure() {
-    let (deployment, wonder, realm) = setup();
-    assert!(execute(deployment, pledge(wonder, wonder), 40));
-    assert!(execute(deployment, pledge(realm, wonder), 50));
-    let block = SetBlacklist { wonder_id: wonder.entity_id, blocked_id: realm.entity_id.into(), blocked: true };
-    assert_terminal_rejection(deployment, Command::SetFaithBlacklist(block), 60);
-    assert!(execute(deployment, Command::RemoveFaith(realm.entity_id), 60));
-    assert!(execute(deployment, Command::SetFaithBlacklist(block), 60));
-    assert_terminal_rejection(deployment, pledge(realm, wonder), 70);
-    assert!(execute(deployment, Command::SetFaithBlacklist(SetBlacklist { blocked: false, ..block }), 70));
-    let block = SetBlacklist { blocked_id: deployment.actor.into(), ..block };
-    assert!(execute(deployment, Command::SetFaithBlacklist(block), 70));
-    assert_terminal_rejection(deployment, pledge(realm, wonder), 70);
-    assert!(execute(deployment, Command::SetFaithBlacklist(SetBlacklist { blocked: false, ..block }), 70));
-    assert!(execute(deployment, pledge(realm, wonder), 70));
-    assert!(execute(deployment, Command::SetFaithBlacklist(SetBlacklist { blocked_id: 999, ..block }), 500));
-    assert!(
-        IFaithDispatcher { contract_address: deployment.peers.prizes }
-            .faith_blacklisted(BlacklistKey { game_id: 3, wonder_id: wonder.entity_id, blocked_id: 999 }),
-    );
-}
-#[test]
 fn subservient_wonders_cannot_receive_pledges_and_submission_requires_no_followers() {
     let (deployment, first, second) = setup();
     set_wonder(deployment, second, true);
@@ -205,21 +183,6 @@ fn village_pledges_use_the_village_rate_and_integer_owner_split() {
     assert_eq!(state.fp_to_wonder_owner_per_sec, 3);
     assert_eq!(state.fp_to_struct_owner_per_sec, 7);
     assert_eq!(view(deployment).wonder_faith(wonder).claim_per_sec, 510);
-}
-#[test]
-fn unrelated_players_cannot_remove_pledges_or_change_a_wonders_blacklist() {
-    let (deployment, wonder, realm) = setup();
-    assert!(execute(deployment, pledge(wonder, wonder), 40));
-    assert!(execute(deployment, pledge(realm, wonder), 50));
-    assert!(execute(deployment, transfer(realm, 987.try_into().unwrap()), 60));
-    assert!(execute(deployment, transfer(wonder, 988.try_into().unwrap()), 60));
-    assert_terminal_rejection(deployment, Command::RemoveFaith(realm.entity_id), 70);
-    assert_terminal_rejection(
-        deployment,
-        Command::SetFaithBlacklist(SetBlacklist { wonder_id: wonder.entity_id, blocked_id: 999, blocked: true }),
-        70,
-    );
-    assert_eq!(view(deployment).faithful_structure(realm).wonder_id, wonder.entity_id);
 }
 #[test]
 fn equal_scoring_wonders_remain_tied_without_duplicate_winner_entries() {

@@ -16,9 +16,6 @@ import type { NativeWorldManifest } from "./types";
 
 const administrativeCommands = new Set<NativeCommand["kind"]>([
   "SettleBlitzRoster",
-  "FundFaithPrizes",
-  "DistributeFaithPrizes",
-  "SetFaithBlacklist",
   "CreateBanks",
   "MarkGameSettled",
   "RecordBlitzResults",
@@ -26,7 +23,6 @@ const administrativeCommands = new Set<NativeCommand["kind"]>([
 
 const repeatableBatches = new Set<NativeCommand["kind"]>([
   "SettleBlitzRoster",
-  "DistributeFaithPrizes",
   "MarkGameSettled",
 ]);
 

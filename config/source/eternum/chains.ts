@@ -65,9 +65,6 @@ function resolveEternumContractAddressConfig(context: EnvironmentContext): Confi
     village: {
       village_pass_nft_address: resolveConfiguredAddress(context.addresses.villagePass, "villagePass"),
     },
-    faith: {
-      reward_token: resolveConfiguredAddress(context.addresses.lords, "lords"),
-    },
   };
 }
 

@@ -28,7 +28,6 @@ pub mod exploration_rewards;
 
 pub mod faith;
 
-pub mod faith_prizes;
 pub mod fixed_constants;
 pub mod game;
 pub mod geometry;
