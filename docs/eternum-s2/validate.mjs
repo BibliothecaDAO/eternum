@@ -44,6 +44,8 @@ function validateFiles() {
 
   const configText = fs.readFileSync(path.join(packageRoot, "config/initial-playtest.json"), "utf8");
   assert(!/\b(?:candidate|checkpoint|workbook|overlay|e\d{2})\b/i.test(configText), "config contains design history");
+  assert(!/raid|rebellion|casual|onboarding/i.test(configText), "config contains removed Village or raid rules");
+  assert(!/manager/i.test(configText), "config contains the removed separate Village Manager role");
 }
 
 function validateMarkdown() {
@@ -115,6 +117,78 @@ function validateSelectedConfig() {
   assert.equal(config.parameters["world_node.bitcoin.onchain_activation_enabled"].value, "true");
   assert.equal(config.parameters["world_node.bitcoin_mine.order_execution"].value, "contract_native");
   assert.equal(config.parameters["village.creation_fee_other_payment_assets"].value, "not_allowed");
+  assert.equal(config.parameters["village.max_per_parent_realm"].value, "6");
+  assert.equal(config.parameters["village.resource_roll.count"].value, "1");
+  assert.equal(config.parameters["village.resource_roll.pool_size"].value, "22");
+  assert.equal(
+    config.parameters["village.resource_roll.selection"].value,
+    "collection_trait_frequency_weighted_random_without_player_choice",
+  );
+  const expectedVillageResourceWeights = {
+    adamantine: 55,
+    alchemical_silver: 93,
+    coal: 3833,
+    cold_iron: 957,
+    copper: 2643,
+    deep_crystal: 239,
+    diamonds: 300,
+    dragonhide: 23,
+    ethereal_silica: 162,
+    gold: 914,
+    hartwood: 594,
+    ignium: 172,
+    ironwood: 1179,
+    mithral: 37,
+    obsidian: 2216,
+    ruby: 239,
+    sapphire: 247,
+    silver: 1741,
+    stone: 3941,
+    true_ice: 139,
+    twilight_quartz: 111,
+    wood: 5015,
+  };
+  const actualVillageResourceWeights = Object.fromEntries(
+    Object.keys(expectedVillageResourceWeights).map((resource) => [
+      resource,
+      Number(config.parameters[`village.resource_roll.weight.${resource}`].value),
+    ]),
+  );
+  assert.deepEqual(actualVillageResourceWeights, expectedVillageResourceWeights);
+  assert.equal(
+    Object.values(actualVillageResourceWeights).reduce((total, weight) => total + weight, 0),
+    Number(config.parameters["village.resource_roll.total_weight"].value),
+  );
+  assert.equal(config.parameters["village.owner.initial_assignment"].value, "parent_realm_owner_at_mint");
+  assert.equal(
+    config.parameters["village.owner.change_policy"].value,
+    "current_owner_direct_transfer_or_successful_capture",
+  );
+  assert.equal(
+    config.parameters["village.owner.authority_scope"].value,
+    "complete_village_gameplay_bridge_and_ownership_transfer",
+  );
+  assert.equal(config.parameters["village.parent_link_mutability"].value, "immutable_after_mint");
+  assert.equal(
+    config.parameters["village.parent_realm_capture_effect"].value,
+    "village_owner_and_attachment_unchanged",
+  );
+  assert.equal(
+    config.parameters["bridge.village_out_tax_destination"].value,
+    "current_parent_realm_owner_external_wallet",
+  );
+  assert(!Object.keys(config.parameters).some((key) => key.startsWith("village.manager.")));
+  assert.equal(config.parameters["combat.hostile_holding_outcome"].value, "decisive_combat_then_complete_capture");
+  assert.equal(config.parameters["combat.inventory_extraction_without_capture"].value, "not_allowed");
+  assert(!config.assets.some((asset) => "raid_policy" in asset));
+  assert(!config.transitions.some((transition) => transition.subsystem === "raid"));
+  assert(!config.transitions.some((transition) => transition.transition_id === "rebel_village"));
+  for (const transitionId of ["mint_village", "transfer_village", "capture_village"]) {
+    assert(
+      config.transitions.some((transition) => transition.transition_id === transitionId),
+      `${transitionId} is missing`,
+    );
+  }
   assert.equal(config.parameters["tribe.formation_fee_other_payment_assets"].value, "not_allowed");
   assert.equal(config.parameters["hs.construction_total"].value, "150000000");
   assert.equal(config.parameters["storage.central.material_capacity_kg_all_holdings"].value, "180000");

@@ -26,10 +26,10 @@
     "agents"
   ],
   "configuration_counts": {
-    "parameters": 2002,
-    "acceptance_targets": 66,
+    "parameters": 2011,
+    "acceptance_targets": 67,
     "assets": 41,
     "recipe_components": 1362,
-    "transitions": 45
+    "transitions": 46
   }
 }

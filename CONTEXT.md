@@ -1,7 +1,19 @@
 # Eternum Game
 
-This glossary defines the game-specific language used when discussing armies, mounted creatures, combat presentation,
-and tier progression.
+This glossary defines game-specific language used for holdings, authority, armies, combat presentation and tier
+progression.
+
+## Holdings and authority
+
+**Holding**: A player-controlled place with its own buildings, inventory, production and troops. Realms, Villages and
+Camps are holdings. _Avoid_: Settlement, when referring to all holding types
+
+**Village Owner**: The wallet with complete control of a Village. The parent Realm Owner pays to mint it and becomes its
+first owner. Direct transfer or successful capture can replace the owner without changing the Village's parent Realm.
+_Avoid_: Village Manager, Village controller, delegate
+
+**Capture**: The ownership transition that follows decisive combat against a capturable structure and transfers the
+structure's defined entity-bound state as one unit. _Avoid_: Raid, loot
 
 ## Mounted armies
 

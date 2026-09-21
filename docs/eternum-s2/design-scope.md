@@ -40,7 +40,7 @@ Claim Workers and food ──► choose early buildings ──► service them t
         │                         │
         │                         ├──► construction materials ──► upgrades / trade / Hyperstructures
         │                         ├──► transport capacity ──────► long-range freight
-        │                         ├──► troops ──────────────► explore / raid / capture
+        │                         ├──► troops ──────────────► explore / defend / capture
         │                         └──► Research ────────────► Relics
         │
         ▼
@@ -54,11 +54,11 @@ Eligible Tribe Owner closes ──► score freezes ──► 7-day exit ──�
 ```
 
 The opening is about establishing a reliable supply of Workers, Wheat and Fish. Expansion adds resource production,
-storage and transport. Armies then turn economic strength into exploration, defence, raiding and control of the world.
-The endgame converts that control and a Tribe's shared economy into Hyperstructures and Victory Points.
+storage and transport. Armies then turn economic strength into exploration, defence and control of the world. The
+endgame converts that control and a Tribe's shared economy into Hyperstructures and Victory Points.
 
-This is not a linear technology tree. A player can trade, specialise, raid, supply allies or pursue world structures.
-The shared constraint is opportunity cost: spending Workers on one route makes another route slower.
+This is not a linear technology tree. A player can trade, specialise, capture holdings, supply allies or pursue world
+structures. The shared constraint is opportunity cost: spending Workers on one route makes another route slower.
 
 ## 3. Holdings and progression
 
@@ -109,22 +109,61 @@ captured Realm transfers its complete operational state.
 
 ### 3.2 Villages
 
-A Village is attached to a parent Realm. Creating one costs USD 5 in USDC, a dollar-denominated token. That payment is
-converted in the same transaction to LORDS, Eternum's ecosystem token. If conversion fails, the Village is not created
-and no fee is collected.
+A Village is a purchasable holding permanently attached to a parent Realm. Only that Realm's current owner can pay for
+and mint a Village, and each Realm can have at most six attached Villages. Creating one costs USD 5 in USDC, a
+dollar-denominated token. That payment is converted in the same transaction to LORDS, Eternum's ecosystem token. If
+conversion fails, the Village is not created and no fee is collected.
 
-A Village produces one of the 22 construction materials at 50% of the equivalent Realm rate and can grow only to City.
-It cannot be conquered directly. Its controller cannot import troops from another holding, so Village defence and
-rebellion must use troops produced in that Village.
+Minting assigns the Village exactly one of the 22 construction materials. The player cannot choose the result. The draw
+uses the frequency of each Resource trait across the 8,000 Realms collection as its weight, so common resources are much
+more likely than rare ones. The 24,850 total trait occurrences form the exact weight denominator:
 
-A Village may rebel by attacking its own parent Realm. If the Village controller wins, they capture the parent Realm,
-keep the Village and preserve the attachment between them. Ordinary Realm capture rules apply to the captured Realm.
-Village maintenance windows are twice the Realm windows, recognising their slower supporting role.
+| Resource          | Weight | Approximate chance |
+| ----------------- | -----: | -----------------: |
+| Wood              |  5,015 |           20.1811% |
+| Stone             |  3,941 |           15.8592% |
+| Coal              |  3,833 |           15.4245% |
+| Copper            |  2,643 |           10.6358% |
+| Obsidian          |  2,216 |            8.9175% |
+| Silver            |  1,741 |            7.0060% |
+| Ironwood          |  1,179 |            4.7445% |
+| Cold Iron         |    957 |            3.8511% |
+| Gold              |    914 |            3.6781% |
+| Hartwood          |    594 |            2.3903% |
+| Diamonds          |    300 |            1.2072% |
+| Sapphire          |    247 |            0.9940% |
+| Ruby              |    239 |            0.9618% |
+| Deep Crystal      |    239 |            0.9618% |
+| Ignium            |    172 |            0.6922% |
+| Ethereal Silica   |    162 |            0.6519% |
+| True Ice          |    139 |            0.5594% |
+| Twilight Quartz   |    111 |            0.4467% |
+| Alchemical Silver |     93 |            0.3742% |
+| Adamantine        |     55 |            0.2213% |
+| Mithral           |     37 |            0.1489% |
+| Dragonhide        |     23 |            0.0926% |
 
-When a Village exports an eligible asset from the game to a player's external wallet, the request passes through its
-parent Realm and pays 5% to the parent Realm Owner's external wallet. This export gateway is called the bridge and is
-explained in Chapter 11. Villages can transfer locally and participate in the economy, but they are not miniature
-independent Realms.
+The Realm owner who mints the Village becomes its first **Village Owner**. The Village Owner has complete control: they
+can run its economy, logistics and military, bridge eligible assets out, and transfer ownership to another wallet. A
+transfer gives the recipient the same complete authority, including the right to transfer the Village again. There is no
+separate Manager or limited delegation role. Agent-specific authority remains outside this scope; an ordinary wallet has
+the same rules whether a person or separate automation operates it.
+
+A Village can be attacked and captured under the same combat-and-capture flow as a Realm or Camp. Successful capture
+transfers the Village, its complete entity-bound operational state and its ownership to the winning army's controller.
+The Village remains attached to its original parent Realm and continues to use one of that Realm's six Village slots.
+Capturing the parent Realm does not transfer separately owned Villages. There is no Village immunity, rebellion action
+or locally raised-troop restriction.
+
+A Village produces its rolled construction material at 50% of the equivalent Realm rate and can grow only to City.
+Village maintenance windows are twice the Realm windows, recognising its smaller supporting role.
+
+When a Village exports an eligible asset from the game to a player's external wallet, the request pays 5% of the gross
+amount to the current parent Realm Owner's external wallet. The parent link—and therefore the tax recipient—is unchanged
+by Village transfer or capture. The remaining 95% passes through the normal worldwide bridge-efficiency rule explained
+in Chapter 11. For example, exporting 1,000 Wood pays 50 Wood to the parent Realm Owner; at 50% bridge efficiency, the
+Village Owner receives 475 Wood externally. Villages can transfer locally and participate in the economy, but their
+smaller progression, production and military limits keep them supplementary to Realms.
 
 ### 3.3 Camps
 
@@ -132,8 +171,8 @@ Camps are small wallet-linked outposts with six buildable slots. They start empt
 Workers. A Camp can construct only Tier 1 Worker's Quarters, Farms, Fisheries, Markets and Storehouses. It cannot build
 resource, military or Artificer buildings; upgrade buildings; use a Bank; or bridge assets.
 
-Camps have no Worker or food raid floors. They provide a light forward base rather than a second full economy. Camps can
-be captured; everything that belongs to the Camp transfers with it.
+Camps provide a light forward base rather than a second full economy. Camps can be captured; everything that belongs to
+the Camp transfers with it.
 
 ### 3.4 Starting state
 
@@ -152,6 +191,9 @@ matched to the local terrain type, or biome, that gives it a combat bonus. Most 
 defenders; 100 remain unassigned in local troop inventory. This gives a defensible opening without granting a fully
 flexible offensive army.
 
+At Village mint, the parent Realm Owner becomes the Village Owner. Giving another wallet control is an ownership
+transfer, not a separate management permission: the recipient gains every Village action and may transfer it again.
+
 ## 4. Workers: the operating constraint
 
 Nearly every economic action needs Workers. A Worker is one unit of available labour, not a persistent character with an
@@ -159,8 +201,9 @@ identity. Holdings produce Workers over time; the player claims them into storag
 A spent Worker is consumed.
 
 Workers are local and cannot enter or leave the game through the bridge. They occupy Worker capacity, weigh 1 kg when
-transported, can move between holdings and can be raided above protected floors. This makes labour a supply chain: the
-player must produce it, store it and place it where the work will happen.
+transported and can move between holdings. This makes labour a supply chain: the player must produce it, store it and
+place it where the work will happen. Workers held by a captured holding remain with that holding as part of its complete
+operational state.
 
 ### 4.1 Worker sources
 
@@ -180,22 +223,14 @@ must decide whether current labour goes to collecting output, expanding, maintai
 training armies or pursuing the endgame.
 
 **First-season change:** Labor was manufactured from resources and used as a simple recipe substitute. Workers are not
-renamed Labor. They are produced over time, claimed into bounded storage, moved, protected, raided and consumed by
-specific work.
+renamed Labor. They are produced over time, claimed into bounded storage, moved and consumed by specific work.
 
-### 4.2 Protected floors
+### 4.2 Recovery
 
-A raid cannot take every Worker or every unit of food from a Realm or Village. The protected floor is the amount that
-remains available for basic recovery after the raid resolves.
-
-| Holding | Workers |  Wheat |   Fish |
-| ------- | ------: | -----: | -----: |
-| Realm   |   3,000 | 60,000 | 60,000 |
-| Village |   1,500 | 30,000 | 30,000 |
-| Camp    |       0 |      0 |      0 |
-
-Raids take only from claimed inventory above these floors. Floors preserve a recovery path but do not protect ordinary
-resources, Fragments or other raidable assets.
+There are no raid floors because Eternum S2 has no raid action. Holdings change hands only through capture, which
+transfers the complete holding rather than extracting selected inventory. The Worker-only Tier 1 construction route is
+the economic recovery path: a holding that lacks its efficient material inputs can still rebuild essential production by
+spending more Workers.
 
 ### 4.3 What the economy contains
 
@@ -204,8 +239,8 @@ Hyperstructures. Essence comes from world Rifts and supports advanced troops, Re
 come from finite Mines and initiate Hyperstructures. Research is a local settlement balance used to create Relics.
 Donkeys carry freight, while LORDS is the external ecosystem token used for fees, markets and prizes.
 
-These asset families do not all follow the same storage, transfer, raid or bridge rules. Chapter 9 lists those
-boundaries before the guide moves into logistics and trading.
+These asset families do not all follow the same storage, transfer or bridge rules. Chapter 9 lists those boundaries
+before the guide moves into logistics and trading.
 
 ## 5. Production, entitlement and claims
 
@@ -383,8 +418,8 @@ travelSeconds = routeHexes * 9;
 Food is not an extra dispatch cost. Hyperstructure contributions are a deliberate exception: they consume 10 Workers per
 1,000 resource units but bypass Donkeys and ordinary freight timing.
 
-Transfers must be physically routed. Raided loot sits with the deployed army, has a 10 kg per surviving troop capacity
-and must return or transfer before it becomes settlement inventory.
+Transfers must be physically routed. Combat does not create portable loot: a successful claim transfers the captured
+structure and its entity-bound state in place.
 
 ## 11. Trade, Banks and bridges
 
@@ -471,24 +506,26 @@ Crossbowmen operate at 70% against armies and 30% against structures; Knights op
 against structures. Defenders still recovering from a recent action take an 85% damage multiplier; exhausted defenders
 take 70%.
 
-Combat losses are resolved before an eligible capture. Villages cannot be conquered. Realms, Camps, Banks,
-Hyperstructures and other world structures each transfer the state defined for that structure. For example, capturing a
-Hyperstructure changes control and future control VP but never confiscates Shares owned by player wallets.
+Combat losses are resolved before an eligible capture. Realms, Villages, Camps, Banks, Hyperstructures and other world
+structures each transfer the state defined for that structure. For example, capturing a Village transfers its complete
+entity-bound state and replaces its Owner, while capturing a Hyperstructure changes control and future control VP but
+never confiscates Shares owned by player wallets.
 
-## 14. Raiding and recovery
+## 14. Capture and recovery
 
-The first raid takes 20% of eligible claimed inventory above protected floors and destroys 10% of unassigned claimed
-troops. Further raids against the same holding within 24 hours multiply the loot fraction by 50% each time, globally
-across attackers.
+Eternum S2 has one hostile settlement outcome: **attack, defeat and capture**. There is no raid action, loot fraction,
+raid cooldown, protected inventory floor or repeat-raid decay. An attacker cannot remove selected assets while leaving
+the defender in control.
 
-```ts
-eligible = max(0, claimed - protectedFloor);
-lootFraction = 0.2 * 0.5 ** priorRaidsInWindow;
-loot = min(attackerCapacity, floor(eligible * lootFraction));
-```
+Capture is atomic. Combat losses settle first; time-dependent production, maintenance, training, score and work state
+settle at the capture timestamp; then the structure's defined entity-bound state moves to the winning controller. If any
+mandatory settlement or ownership write fails, control does not change. Wallet-bound property such as Hyperstructure
+Shares remains with its wallet.
 
-Workers, Wheat and Fish floors preserve the ability to rebuild. The worker-only T1 construction route is the second half
-of that recovery design: it prevents missing local construction materials from becoming a permanent lockout.
+A captured Realm, Village or Camp can therefore become a working additional holding instead of a one-time source of
+loot. Its new Owner receives the complete authority defined for that holding. The Worker-only T1 construction route
+prevents a holding that lacks the efficient material inputs from becoming permanently unable to restore essential
+production.
 
 ## 15. World structure supply
 
@@ -584,8 +621,8 @@ There is one active work order per Mine. Work stays with the Mine across capture
 orders. The game accepts new work only when the Mine has enough free storage for a possible reward, so settlement cannot
 burn the reward or fail for lack of room. The initial playtest funds 100,000,000 Satoshis and reserves 80% for emission.
 
-Satoshis can be raided, do not use Donkey routes and can bridge out through a Realm only. There is no inbound bridge and
-no generic mint fallback.
+Satoshis do not use Donkey routes and can bridge out through a Realm only. There is no inbound bridge and no generic
+mint fallback.
 
 ## 18. Faith and Wonders
 
@@ -713,11 +750,13 @@ knowledge of the first season.
 
 | Earlier-season concept                                   | S2 rule                                                                              | Consequence                                                                      |
 | -------------------------------------------------------- | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------- |
-| Labor as a non-bridgeable simple-mode input              | Finite produced and claimed Workers                                                  | Work becomes local, storable, movable, raidable and strategically scarce.        |
+| Labor as a non-bridgeable simple-mode input              | Finite produced and claimed Workers                                                  | Work becomes local, storable, movable and strategically scarce.                  |
 | Standard vs Simple production recipes                    | Resource-efficient vs Worker-only T1 recovery routes                                 | Worker-only is a bootstrap fallback, not a universal mature recipe.              |
 | Direct production inventory                              | Local entitlement then atomic claim                                                  | Collection timing, maintenance and capacity are explicit.                        |
 | Buildings operate indefinitely                           | Serviced / Worn / Unserviced maintenance states                                      | Neglected production slows then stops without deleting the building.             |
 | Broad storage assumptions                                | Separate material, Worker, troop and Donkey capacities                               | No silent cross-family overflow or burn.                                         |
+| Villages as protected onboarding settlements             | Purchasable, transferable and capturable support holdings with full Owner control    | A Realm can support six smaller holdings without a separate immunity ruleset.    |
+| Raids that extract value without conquest                | Decisive combat followed by complete capture                                         | Hostile settlement play has one legible attack/defend/claim outcome.             |
 | Realm/Village core holdings                              | Adds capturable Camps                                                                | Forward presence can exist without duplicating a full Realm economy.             |
 | One-tier troop emphasis                                  | T1/T2/T3 at 1×/3×/9× strength                                                        | Upgrades consume lower tiers and Essence; body count remains constrained.        |
 | Hyperstructure completion as a primarily structural goal | Public 22-resource build, Control/Share Victory Point streams and fixed-target close | Ownership, funding and conquest have distinct economic meanings.                 |
@@ -799,7 +838,7 @@ Priority implementation slices:
 3. Worker, food and ordinary-resource production;
 4. construction, repeated-family escalation and settlement upgrades;
 5. freight, Donkeys and transfers;
-6. military escrow, movement, combat, raid and capture;
+6. military escrow, movement, combat and capture;
 7. world discovery and node extraction;
 8. Artificer, catalyst and Relic lifecycle;
 9. Banks, bridge permissions and custody;
@@ -815,10 +854,11 @@ The initial playtest should capture, at minimum:
 - entitlement lost to cap, claim batch sizes and claims made while worn;
 - time to City, Kingdom and Empire by player segment;
 - recipe route selection and repeated-family counts;
-- Donkey production, route lengths, freight failures and stranded loot;
+- Donkey production, route lengths and freight failures;
 - explored hexes, node discoveries, control, local buffer saturation and extraction;
 - Essence spending by sink and Fragment use/import/export/backing;
-- troop class/tier production, combat, raids, captures and protected-floor recovery;
+- troop class/tier production, combat, capture-state conservation and post-capture recovery;
+- weighted Village resource rolls, ownership transfer, parent attachment, bridge tax and capture;
 - Foundation initiation, contribution timing, Hyperstructure completion, capture and Share transfer;
 - score attribution, close eligibility, finalisation progress and prize liabilities.
 

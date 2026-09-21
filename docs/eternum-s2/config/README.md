@@ -9,7 +9,7 @@ to Eternum only and is deliberately independent of working documents or external
 | -------------------- | ------------------------------------------------------------------------------------------ |
 | `parameters`         | Selected scalar, enum, formula text and policy values keyed by stable domain name          |
 | `acceptance_targets` | Balance and operational corridors to measure during validation and playtests               |
-| `assets`             | Precision, mass, capacity family, raid, bridge, transfer and market rules                  |
+| `assets`             | Precision, mass, capacity family, bridge, transfer and market rules                        |
 | `recipes`            | One row per recipe component, including amount formula, rounding and destination           |
 | `transitions`        | State-machine summaries for admission, debit, credit, timer, partial and failure behaviour |
 | `presentation_order` | Canonical resource and building order for generated tables and tools                       |
@@ -76,6 +76,19 @@ caller + source state + preconditions
 The design scope controls behaviour when a transition summary is intentionally compact. Generated contract tests should
 still assert every field represented by the transition.
 
+## Village ownership and capture
+
+`mint_village` charges the parent Realm Owner and makes that wallet the first Village Owner. There is no separate
+Manager authority. The current Owner has complete Village authority, and `transfer_village` moves that authority to
+another wallet. `capture_village` does the same after decisive combat while preserving the Village's immutable parent
+link and complete entity-bound state. The 5% bridge-out tax always goes to the current owner of that parent Realm.
+
+The resource draw is not uniform. Use the 22 `village.resource_roll.weight.*` parameters as integer weights and
+`village.resource_roll.total_weight` as their required sum. Never convert rounded display percentages back into weights.
+
+The selected config contains no raid transition or raid properties on assets. Do not generate a dormant Eternum raid
+path from older code. Hostile settlement play resolves through combat and complete capture.
+
 ## Activation
 
 Compile the selected file into versioned Eternum preset rows. Stage and read back all rows before activating one config
@@ -93,6 +106,7 @@ The file contains no:
 - design iteration labels or workbook lineage;
 - external documentation dependencies;
 - Agent parameters, assets, recipes or transitions; or
+- raid, Village immunity or Village rebellion rules; or
 - production deployment addresses except where an asset rule itself selects a contract address.
 
 Run the package validator after any edit:

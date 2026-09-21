@@ -38,10 +38,10 @@ overlay. Those working materials are intentionally absent.
 
 The playable baseline includes:
 
-- Realms, Villages and Camps;
+- Realms, purchasable/capturable Villages with delegated management, and Camps;
 - Workers, entitlement-based production, maintenance and split storage;
 - buildings, settlement progression, logistics, trade and bridging;
-- troops, exploration, combat, raids and capture;
+- troops, exploration, combat and capture;
 - world structures, Research, Relics, Bitcoin Mines, Faith and Wonders;
 - Hyperstructures, Tribes, Victory Points, season close and funded prize settlement; and
 - the client, indexing, replay, configuration and custody contracts needed to make those mechanics reliable.
