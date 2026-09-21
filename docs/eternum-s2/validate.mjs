@@ -12,6 +12,8 @@ validateFiles();
 validateMarkdown();
 validateCounts();
 validateSelectedConfig();
+validateCentralBank();
+await import("./maps/validate.mjs");
 
 console.log(
   `Eternum S2 package valid: ${config.counts.parameters} parameters, ` +
@@ -143,4 +145,66 @@ function validateSelectedConfig() {
 
 function readJson(relativePath) {
   return JSON.parse(fs.readFileSync(path.join(packageRoot, relativePath), "utf8"));
+}
+
+function validateCentralBank() {
+  const value = (key) => config.parameters[key]?.value;
+  const required = {
+    "bank.count": "1",
+    "world.bank_count": "1",
+    "world.bank_ring": "0",
+    "world.bank.1.coord_x": "0",
+    "world.bank.1.coord_y": "0",
+    "world.bank.1.layer": "0",
+    "bank.route": "central_bank",
+    "bank.orderbook_route": "central_bank",
+    "bank.central_enforced_onchain": "true",
+    "bank.closest_enforced_onchain": "false",
+    "bank.amm_controller_fee_bps": "250",
+    "bank.amm_protocol_fee_bps": "250",
+    "bank.amm_liquidity_scope": "global_per_ordinary_resource",
+    "world.map.coordinate_system": "signed_axial_hex",
+    "world.map.realm_spacing_primary_hexes": "15",
+    "world.map.first_realm_ring": "3",
+    "world.map.spire_inner_realm_ring": "2",
+    "world.map.spire_outermost_realm_ring": "30",
+    "world.map.spire_origin_enabled": "false",
+    "world.map.structure_preexplored_halo_radius": "1",
+    "world.map.initial_reveal_discovery_rolls": "false",
+    "world.mountains.primary_first_ring": "32",
+    "world.mountains.primary_last_ring": "35",
+    "world.mountains.traversable": "false",
+    "world.mountains.spawn_allowed": "false",
+    "world.mountains.preexplored": "true",
+    "world.mountains.required_hex_count": "804",
+    "world.hsf.discovery.excluded_through_primary_ring": "35",
+    "world.hsf.discovery.distance_origin": "map_origin_without_rebasing",
+    "world.hsf.creation_inner_exclusion_all_paths": "true",
+    "world.hsf.discovery.center_win_weight": "4000",
+    "world.hsf.discovery.center_fail_weight": "96000",
+    "world.hsf.discovery.distance_multiplier_bps": "9820",
+    "world.hsf.discovery.per_found_multiplier_bps": "9100",
+    "world.hsf_count": "48",
+    "world.discovery.inner_ordinary_terrain_allowed": "CAMP|ESSENCE_RIFT|FRAGMENT_MINE",
+    "map.ethereal.origin_preexplored": "true",
+    "world_node.bitcoin.discovery_origin_allowed": "false",
+    "world_node.bitcoin.discovery_core_outer_ring": "24",
+    "map.ethereal.core_radius": "24",
+    "map.ethereal.spire_count": "96",
+    "map.ethereal.preexplored_core_hexes": "403",
+    "map.ethereal.eligible_unexplored_core_hexes": "1398",
+    "map.ethereal.preexplored_total_hexes": "667",
+  };
+  for (const [key, expected] of Object.entries(required)) assert.equal(value(key), expected, key);
+  assert(
+    !Object.keys(config.parameters).some((key) => /^world\.bank\.[2-6]\./.test(key)),
+    "regional Bank coordinates remain",
+  );
+  assert(!config.transitions.some((t) => /nearest_bank/.test(t.transition_id + t.preconditions + t.failure_rule)));
+  assert(config.transitions.some((t) => t.transition_id === "swap_central_bank"));
+  assert(config.transitions.some((t) => t.transition_id === "initialize_central_bank_map"));
+  const explain = fs.readFileSync(path.join(packageRoot, "banking-explainer.md"), "utf8");
+  for (const match of explain.matchAll(/\]\((\.\/[^)#]+)(?:#[^)]+)?\)/g)) {
+    assert(fs.existsSync(path.resolve(packageRoot, match[1])), `Missing explainer link: ${match[1]}`);
+  }
 }

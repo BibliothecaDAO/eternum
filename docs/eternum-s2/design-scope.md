@@ -6,7 +6,7 @@
 
 **Status:** implementation scope; not a statement of deployment, prize funding or launch authorisation
 
-**Last reconciled:** 21 September 2026
+**Last reconciled:** 22 September 2026
 
 ## 1. What this document controls
 
@@ -392,9 +392,11 @@ The **bridge** is the gateway between in-game balances and a player's external w
 in-game trading venues. These are separate systems: a Bank swaps one asset for another inside the economy, while the
 bridge moves an eligible asset into or out of the game.
 
-Six World Banks let players trade each ordinary resource against LORDS. A player does not build a Bank: Banks are
-structures on the map, and an order routes to the nearest one. Each Bank begins with three T2 guard armies—one for each
-troop class—so taking control is a military objective.
+One World Bank at Primary (0,0) routes AMM and orderbook trades from every Realm and Village. It replaces the six
+regional Banks and the central Spire. Trading remains remotely accessible under the existing holding permissions; armies
+make the journey to capture and defend the Bank. The Bank begins with three T2 guard armies, one per troop class. All
+eligible controller fees accrue through this single objective. Global liquidity, fee rates and historical balances
+retain their existing rules. The complete [Banking explainer and maps](./banking-explainer.md) show the approach.
 
 Each Bank is an automated market: its two reserves price a swap using the constant-product rule `x*y=k`. The Bank
 controller receives 2.5% of the LORDS value traded and the protocol receives another 2.5%. Direct player-to-player
@@ -494,14 +496,19 @@ The **Primary layer** holds settlements, ordinary exploration and most world str
 reached through Spires and contains Bitcoin Mines. Both are hex maps; distance, access and the ability to defend a route
 matter as much as aggregate world supply.
 
-The Primary map model contains 736,561 hexes, with 28,928 pre-explored. The initial exploration assumptions reach 12.5%
-by day 7, 25% by day 14, 50% by day 28 and 75% by day 42. These are capacity-model assumptions, not forced player
-milestones.
+The Primary capacity model contains 736,561 hexes. Its former 28,928-pre-explored assumption must be recomputed against
+the new layout and actual holding placements; it is not a launch count. The fixed Bank/Spire halos and mountain range
+reveal 1,483 unique Primary hexes before holding-specific reveals. Model exploration assumptions of 12.5% by day 7, 25%
+by day 14, 50% by day 28 and 75% by day 42 remain planning assumptions, not forced player milestones. Earlier node
+supply projections below require remeasurement against the revised eligible fog before they can validate this layout.
 
 When one explored hex is eligible for several discoveries, the game resolves them in order: Hyperstructure Foundation,
 Fragment Mine, Essence Rift, Bitcoin Mine, then Camp. The first successful result occupies that discovery. There are 48
-discoverable Hyperstructure Foundations on the Primary layer. Agents are deferred to the other development team and are
-not discovered or played in this scope.
+discoverable Hyperstructure Foundations on the Primary layer. HSF discovery and all Foundation creation are prohibited
+at Primary radii 0–35 inclusive. Outside that exclusion, retain the existing distance and depletion calculation using
+actual distance from the origin, without rebasing at radius 36. On ordinary eligible inner fog, Camps, Essence Rifts and
+Fragment Mines remain discoverable. Mountains and initialisation reveals never run discovery lotteries. Agents are
+deferred to the other development team and are not discovered or played in this scope.
 
 ### 15.1 Essence Rifts
 
@@ -528,9 +535,23 @@ bridge redemption before the season begins.
 
 ### 15.3 Spires and layers
 
-The Ethereal layer has 1,801 core hexes, 373 initially explored core hexes and 61 Spires at six-hex spacing. A Spire
-connects a location in one layer to its matching location in the other and may require a battle before crossing. The
-Primary and Ethereal layers share one economy but have distinct geography and special structures.
+There are 96 paired Spire locations: six inner corners on Realm ring 2, plus the six-spaced outer lattice on Realm rings
+6, 12, 18, 24 and 30. Their Primary radii are 30, 90, 180, 270, 360 and 450; matching Ethereal radii are 2, 6, 12, 18,
+24 and 30. Multiply signed Ethereal axial coordinates by 15 to obtain the Primary counterparts. Neither origin has a
+Spire. Realm placement starts at Realm ring 3, Primary radius 45.
+
+Every Primary hex on inclusive radii 32–35 is Mountains: four hex rings, 804 hexes, all pre-explored, impassable and
+unspawnable. Armies enter the Ethereal layer at an outer Spire, approach an inner ring-2 Spire and cross back to Primary
+radius 30. The Bank is then 30 hexes away measured centre to centre. A crossing may require battle; ordinary movement,
+arrival placement and combat determine the actual journey. No unit presentation, route batching or teleport landing may
+bypass the mountain restriction.
+
+Initialisation reveals the Bank, every Spire and all six neighbours on Primary; every Spire and all six neighbours on
+Ethereal; and the entire mountain range. Ethereal (0,0) is vacant, explored and explicitly barred from Bitcoin Mine
+spawning. Halos are unions, include outer neighbours beyond the Spire extent, and reveal without discovery rewards. The
+full Ethereal reveal set contains 667 hexes, extending to radius 31. Its unchanged radius-24 Bitcoin probability core
+contains 1,801 hexes: 403 explored and 1,398 unexplored. Extending the transport lattice does not extend the mining
+probability core or change its existing outer decay. See the [maps and expedition walkthrough](./banking-explainer.md).
 
 ## 16. Artificers, Research and Relics
 

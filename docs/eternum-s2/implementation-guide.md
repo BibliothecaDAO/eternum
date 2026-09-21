@@ -46,8 +46,8 @@ immutable preset_id ──► mode + schema version
 | Holdings             | `Structure`, Realm, Village and Camp models already establish categories and ownership seams.                             | Apply the S2 slot, tier, starting-state, production, defence and transfer rules per holding. Realm and Camp capture transfer their complete operational state. Villages remain unconquerable and can rebel only against their parent Realm.                                                                         |
 | Logistics            | Donkeys, arrivals and weight-aware transfers exist.                                                                       | Charge one consumed Donkey per 100 kg and one logistics Worker per 1,000 kg, minimum one. Route economic freight for nine seconds per hex. Keep raid loot on the army until delivered. Hyperstructure contributions use their explicit exception.                                                                   |
 | Military             | Troop types, tiers, guards, explorers, stamina, movement, battle and raid systems already exist.                          | Add per-building six-hour training escrow, unassigned troop capacity, configured tier recipes, 1×/3×/9× strength, deployment body limits, protected floors, repeat-raid decay and complete capture settlement.                                                                                                      |
-| Discovery            | Map exploration already discovers structures and rewards.                                                                 | Apply the ordered S2 discovery resolver, staged Fragment Mine probability, Essence Rift supply, 48 Foundations and layer-specific structures. No Agent discovery is admitted.                                                                                                                                       |
-| Banks and trade      | Bank, liquidity, swap, trade and capture systems already exist.                                                           | Enforce six nearest-route World Banks, selected reserves and fees, T2 guards and controller fee rights. Keep direct transfers separate from AMM swaps.                                                                                                                                                              |
+| Discovery            | Map exploration already discovers structures and rewards.                                                                 | Apply the ordered resolver and 48-Foundation cap, with no HSF creation on Primary radii 0–35. Preserve other inner discoveries on eligible fog. Initialize the paired Spire lattice, mountain annulus and exact explored-halo unions before placement. Exclude Bitcoin Mines at Ethereal origin.                    |
+| Banks and trade      | Bank, liquidity, swap, trade and capture systems already exist.                                                           | Enforce the single Primary origin Bank for AMM and orderbook routing, preserving global liquidity, selected fees, T2 guards and future controller fee rights. Keep trade remotely accessible and direct transfers separate.                                                                                         |
 | Bridge               | `systems/resources/contracts/resource_bridge_systems.cairo` and bridge utilities handle current deposits and withdrawals. | Enforce the asset matrix and worldwide Hyperstructure efficiency bands in both directions. Add fully prefunded native Fragment liability and Realm-only Satoshi export. Keep currency custody outside the resource-efficiency curve.                                                                                |
 | Artificer and Relics | Artificer and Relic models/systems already provide the main extension seams.                                              | Implement Research entitlement and claim costs, one optional catalyst stack, fixed Relic price, activation cost, one-active-per-family and direct-transfer-only policy.                                                                                                                                             |
 | Bitcoin Mines        | Bitcoin Mine models, discovery and contribution systems exist and currently use Labor terminology.                        | Convert S2 contribution to Workers→Work, preserve work across capture, settle ten-minute work-weighted phases, reserve storage before accepting work and credit the funded Satoshi reward directly.                                                                                                                 |
@@ -223,3 +223,29 @@ The build is ready for admission only when:
 
 Agents do not block this definition because they are deliberately outside the playable baseline. A production launch
 decision also remains separate from implementation completion.
+
+## Central Bank implementation ticket
+
+Accepted scope: the [central Bank rules and maps](./banking-explainer.md), applied only to the Eternum S2 preset.
+
+1. Compile the explicit signed axial geometry into the initializer. Remove all six former Bank placements and the origin
+   Spire, establish the sole Bank, generate 96 paired Spires and install the full Mountains annulus first.
+2. Append the Mountains biome without changing existing serialized biome identifiers. Reject Mountains at the shared
+   authoritative movement/path, spawn/deployment, settlement, discovery and Spire-arrival admission boundaries. Apply
+   the same rule to every army class, including visually flying mounts. Client pathfinding and rendering must agree.
+3. Reveal the union of fixed structure halos and Mountains without reward/discovery rolls; include Ethereal radius-31
+   neighbours. Reserve the Ethereal origin before any mine placement. Stage/read back and activate idempotently.
+4. Gate all HSF creation at actual Primary radius <=35, retain the existing curve beyond it and continue lower-priority
+   discovery checks on otherwise eligible hexes. Recompute exploration denominators from eligible fog.
+5. Replace nearest-Bank lookups and validation with the configured central Bank in quotes, swaps, orderbook creation,
+   fills and fee settlement. Preserve caller, custody, slippage and capture rules. Do not reseed global AMM liquidity.
+6. Ship visible explored Mountains, matching layer coordinates, explored entry halos and an accurate capture route in
+   the client. No trade action acquires an army-travel requirement.
+
+Acceptance: the five central-Bank invariant targets in the selected config, plus authoritative regression tests for all
+six inner entry paths, denied mountain crossings/landings, no HSF at rings 0/31/32/35, unchanged HSF probability at 36,
+allowed Camps/Rifts/Fragment Mines on inner ordinary fog, denied origin Bitcoin Mine and bank fee routing across
+capture. Validate concurrent and repeated initialization and preserve Blitz fixtures.
+
+The map validator checks design geometry; it is not evidence that the game contracts implement these rules. The full
+Primary explored count depends on holding placement. Remeasure node supply and bank contestability on the new layout.

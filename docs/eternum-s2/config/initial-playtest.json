@@ -10,11 +10,11 @@
     "agents"
   ],
   "counts": {
-    "parameters": 1991,
-    "acceptance_targets": 61,
+    "parameters": 2002,
+    "acceptance_targets": 66,
     "assets": 41,
     "recipe_components": 1362,
-    "transitions": 44
+    "transitions": 45
   },
   "parameters": {
     "asset": {
@@ -73,12 +73,12 @@
       "precision": "integer_or_scaled_asset"
     },
     "bank.closest_enforced_onchain": {
-      "value": "true",
+      "value": "false",
       "unit": "boolean",
-      "precision": "exact"
+      "precision": "exact_or_enum"
     },
     "bank.count": {
-      "value": "6",
+      "value": "1",
       "unit": "Banks",
       "precision": "integer"
     },
@@ -98,9 +98,9 @@
       "precision": "integer"
     },
     "bank.orderbook_route": {
-      "value": "nearest_bank",
-      "unit": "enum",
-      "precision": "integer_or_scaled_asset"
+      "value": "central_bank",
+      "unit": "rule",
+      "precision": "exact_or_enum"
     },
     "bank.reference_order_kg": {
       "value": "1000",
@@ -1939,8 +1939,8 @@
       "precision": "integer"
     },
     "map.ethereal.eligible_unexplored_core_hexes": {
-      "value": "1428",
-      "unit": "rule_or_config_value",
+      "value": "1398",
+      "unit": "hexes_within_core_radius_24",
       "precision": "integer"
     },
     "map.ethereal.layer_transition_model": {
@@ -1949,13 +1949,13 @@
       "precision": "exact_or_enum"
     },
     "map.ethereal.preexplored_core_hexes": {
-      "value": "373",
-      "unit": "rule_or_config_value",
+      "value": "403",
+      "unit": "unique_hexes_within_core_radius_24",
       "precision": "integer"
     },
     "map.ethereal.spire_count": {
-      "value": "61",
-      "unit": "rule_or_config_value",
+      "value": "96",
+      "unit": "paired_spire_locations",
       "precision": "integer"
     },
     "map.ethereal.spire_spacing_hexes": {
@@ -9759,104 +9759,29 @@
       "precision": "integer_or_scaled_asset"
     },
     "world.bank_count": {
-      "value": "6",
+      "value": "1",
       "unit": "Banks",
-      "precision": "integer_or_scaled_asset"
+      "precision": "integer"
     },
     "world.bank_ring": {
-      "value": "30",
-      "unit": "ring_index",
-      "precision": "integer_or_scaled_asset"
+      "value": "0",
+      "unit": "primary_hex_radius",
+      "precision": "integer"
     },
     "world.bank.1.coord_x": {
-      "value": "240",
-      "unit": "coordinate_units",
-      "precision": "integer_or_scaled_asset"
+      "value": "0",
+      "unit": "signed_axial_hex_q",
+      "precision": "integer"
     },
     "world.bank.1.coord_y": {
       "value": "0",
-      "unit": "coordinate_units",
-      "precision": "integer_or_scaled_asset"
+      "unit": "signed_axial_hex_r",
+      "precision": "integer"
     },
     "world.bank.1.layer": {
       "value": "0",
       "unit": "layer",
-      "precision": "integer_or_scaled_asset"
-    },
-    "world.bank.2.coord_x": {
-      "value": "0",
-      "unit": "coordinate_units",
-      "precision": "integer_or_scaled_asset"
-    },
-    "world.bank.2.coord_y": {
-      "value": "240",
-      "unit": "coordinate_units",
-      "precision": "integer_or_scaled_asset"
-    },
-    "world.bank.2.layer": {
-      "value": "0",
-      "unit": "layer",
-      "precision": "integer_or_scaled_asset"
-    },
-    "world.bank.3.coord_x": {
-      "value": "-240",
-      "unit": "coordinate_units",
-      "precision": "integer_or_scaled_asset"
-    },
-    "world.bank.3.coord_y": {
-      "value": "240",
-      "unit": "coordinate_units",
-      "precision": "integer_or_scaled_asset"
-    },
-    "world.bank.3.layer": {
-      "value": "0",
-      "unit": "layer",
-      "precision": "integer_or_scaled_asset"
-    },
-    "world.bank.4.coord_x": {
-      "value": "-240",
-      "unit": "coordinate_units",
-      "precision": "integer_or_scaled_asset"
-    },
-    "world.bank.4.coord_y": {
-      "value": "0",
-      "unit": "coordinate_units",
-      "precision": "integer_or_scaled_asset"
-    },
-    "world.bank.4.layer": {
-      "value": "0",
-      "unit": "layer",
-      "precision": "integer_or_scaled_asset"
-    },
-    "world.bank.5.coord_x": {
-      "value": "0",
-      "unit": "coordinate_units",
-      "precision": "integer_or_scaled_asset"
-    },
-    "world.bank.5.coord_y": {
-      "value": "-240",
-      "unit": "coordinate_units",
-      "precision": "integer_or_scaled_asset"
-    },
-    "world.bank.5.layer": {
-      "value": "0",
-      "unit": "layer",
-      "precision": "integer_or_scaled_asset"
-    },
-    "world.bank.6.coord_x": {
-      "value": "240",
-      "unit": "coordinate_units",
-      "precision": "integer_or_scaled_asset"
-    },
-    "world.bank.6.coord_y": {
-      "value": "-240",
-      "unit": "coordinate_units",
-      "precision": "integer_or_scaled_asset"
-    },
-    "world.bank.6.layer": {
-      "value": "0",
-      "unit": "layer",
-      "precision": "integer_or_scaled_asset"
+      "precision": "integer"
     },
     "world.discovery.priority": {
       "value": "HSF|FRAGMENT_MINE|ESSENCE_RIFT|BITCOIN_MINE|CAMP",
@@ -9918,20 +9843,10 @@
       "unit": "rule_or_config_value",
       "precision": "integer"
     },
-    "world.map.base_coordinate_step": {
-      "value": "8",
-      "unit": "coordinate_units_per_hex",
-      "precision": "integer"
-    },
     "world.map.expansion_threshold_bps": {
       "value": "8000",
       "unit": "basis_points",
       "precision": "integer_or_scaled_asset"
-    },
-    "world.map.hexes_per_realm_area": {
-      "value": "180",
-      "unit": "hexes",
-      "precision": "integer"
     },
     "world.map.initial_layer_max": {
       "value": "6",
@@ -9967,6 +9882,146 @@
       "value": "100000000",
       "unit": "Satoshis",
       "precision": "integer"
+    },
+    "bank.route": {
+      "value": "central_bank",
+      "unit": "rule",
+      "precision": "exact_or_enum"
+    },
+    "bank.central_enforced_onchain": {
+      "value": "true",
+      "unit": "boolean",
+      "precision": "exact_or_enum"
+    },
+    "world.map.coordinate_system": {
+      "value": "signed_axial_hex",
+      "unit": "rule",
+      "precision": "exact_or_enum"
+    },
+    "world.map.realm_spacing_primary_hexes": {
+      "value": "15",
+      "unit": "primary_hexes_per_realm_step",
+      "precision": "integer"
+    },
+    "world.map.first_realm_ring": {
+      "value": "3",
+      "unit": "realm_ring",
+      "precision": "integer"
+    },
+    "world.map.spire_outermost_realm_ring": {
+      "value": "30",
+      "unit": "realm_ring",
+      "precision": "integer"
+    },
+    "world.map.spire_inner_realm_ring": {
+      "value": "2",
+      "unit": "realm_ring",
+      "precision": "integer"
+    },
+    "world.map.spire_placement": {
+      "value": "nonzero_six_spaced_axial_lattice_through_ring_30_plus_six_ring_2_corners",
+      "unit": "rule",
+      "precision": "exact_or_enum"
+    },
+    "world.map.spire_origin_enabled": {
+      "value": "false",
+      "unit": "boolean",
+      "precision": "exact_or_enum"
+    },
+    "world.map.structure_preexplored_halo_radius": {
+      "value": "1",
+      "unit": "hexes",
+      "precision": "integer"
+    },
+    "world.map.initial_reveal_discovery_rolls": {
+      "value": "false",
+      "unit": "boolean",
+      "precision": "exact_or_enum"
+    },
+    "world.map.primary_fixed_preexplored_hexes": {
+      "value": "1483",
+      "unit": "unique_hexes_excluding_holding_reveals",
+      "precision": "integer"
+    },
+    "world.mountains.primary_first_ring": {
+      "value": "32",
+      "unit": "primary_hex_radius_inclusive",
+      "precision": "integer"
+    },
+    "world.mountains.primary_last_ring": {
+      "value": "35",
+      "unit": "primary_hex_radius_inclusive",
+      "precision": "integer"
+    },
+    "world.mountains.required_hex_count": {
+      "value": "804",
+      "unit": "hexes",
+      "precision": "integer"
+    },
+    "world.mountains.traversable": {
+      "value": "false",
+      "unit": "boolean",
+      "precision": "exact_or_enum"
+    },
+    "world.mountains.spawn_allowed": {
+      "value": "false",
+      "unit": "boolean",
+      "precision": "exact_or_enum"
+    },
+    "world.mountains.preexplored": {
+      "value": "true",
+      "unit": "boolean",
+      "precision": "exact_or_enum"
+    },
+    "world.mountains.placement": {
+      "value": "complete_primary_annulus",
+      "unit": "rule",
+      "precision": "exact_or_enum"
+    },
+    "world.hsf.discovery.excluded_through_primary_ring": {
+      "value": "35",
+      "unit": "primary_hex_radius_inclusive",
+      "precision": "integer"
+    },
+    "world.hsf.discovery.distance_origin": {
+      "value": "map_origin_without_rebasing",
+      "unit": "rule",
+      "precision": "exact_or_enum"
+    },
+    "world.hsf.creation_inner_exclusion_all_paths": {
+      "value": "true",
+      "unit": "boolean",
+      "precision": "exact_or_enum"
+    },
+    "world.discovery.inner_ordinary_terrain_allowed": {
+      "value": "CAMP|ESSENCE_RIFT|FRAGMENT_MINE",
+      "unit": "rule",
+      "precision": "exact_or_enum"
+    },
+    "map.ethereal.transport_spire_outer_radius": {
+      "value": "30",
+      "unit": "ethereal_hex_radius",
+      "precision": "integer"
+    },
+    "map.ethereal.initial_reveal_outer_radius": {
+      "value": "31",
+      "unit": "ethereal_hex_radius",
+      "precision": "integer"
+    },
+    "map.ethereal.preexplored_total_hexes": {
+      "value": "667",
+      "unit": "unique_hexes_including_outer_halos",
+      "precision": "integer"
+    },
+    "map.ethereal.origin_preexplored": {
+      "value": "true",
+      "unit": "boolean",
+      "precision": "exact_or_enum"
+    },
+    "world_node.bitcoin.discovery_origin_allowed": {
+      "value": "false",
+      "unit": "boolean",
+      "precision": "exact_or_enum"
     }
   },
   "acceptance_targets": {
@@ -10396,6 +10451,41 @@
       "minimum": "0",
       "maximum": "48",
       "acceptance": "p95 first claimed Food <= 48 hours with zero permanent deadlocks"
+    },
+    "world.central_bank_geometry": {
+      "value": "pass",
+      "unit": "invariant",
+      "minimum": "n/a",
+      "maximum": "n/a",
+      "acceptance": "Exactly one Primary origin Bank; 96 paired Spires, no origin Spire; 15:1 signed axial correspondence; first Realm ring3; six replaced Bank sites ordinary placement eligibility."
+    },
+    "world.mountains_barrier": {
+      "value": "pass",
+      "unit": "invariant",
+      "minimum": "n/a",
+      "maximum": "n/a",
+      "acceptance": "All 804 Primary hexes on inclusive rings32..35 explored, unspawnable and impassable across authoritative movement, deployment, teleport landing and placement; no path from ring45 to origin."
+    },
+    "world.discovery_exclusions": {
+      "value": "pass",
+      "unit": "invariant",
+      "minimum": "n/a",
+      "maximum": "n/a",
+      "acceptance": "No HSF creation on Primary rings0..35; preserve existing chance at actual radius36 and beyond; Camps, Rifts and Fragment Mines remain eligible on ordinary inner fog; Ethereal origin never a Bitcoin Mine."
+    },
+    "world.initial_exploration_union": {
+      "value": "pass",
+      "unit": "invariant",
+      "minimum": "n/a",
+      "maximum": "n/a",
+      "acceptance": "All Bank and Spire centers and neighbors revealed without discovery lotteries; include outer halo ring31 on Ethereal; 1483 fixed Primary and 667 total Ethereal reveals; 403 revealed and1398 unexplored within Ethereal core24."
+    },
+    "bank.central_routing_capture": {
+      "value": "pass",
+      "unit": "invariant",
+      "minimum": "n/a",
+      "maximum": "n/a",
+      "acceptance": "AMM and orderbook routes all Realms/Villages to sole Bank, preserves fees and global liquidity, transfers future controller fees on capture, no new trade travel requirement; Blitz unchanged."
     }
   },
   "assets": [
@@ -42272,18 +42362,18 @@
       "parameter_keys": "onchain.limit.config_rows_per_staging_batch|universal.config_*"
     },
     {
-      "transition_id": "swap_nearest_bank",
+      "transition_id": "swap_central_bank",
       "subsystem": "market",
       "caller": "Realm_or_Village_controller",
       "source_state": "active_season_or_exit",
-      "preconditions": "computed_nearest_bank",
+      "preconditions": "configured_single_primary_origin_bank",
       "debits": "sold_asset_and_fees",
       "credits": "bought_asset",
       "escrows": "none",
       "timers": "quote_expiry",
       "capacity_check": "material_capacity",
       "partial_rule": "slippage_bounded",
-      "failure_rule": "nonnearest_revert",
+      "failure_rule": "noncentral_bank_or_invalid_quote_revert",
       "events": "SwapExecuted",
       "parameter_keys": "market.*|bank.*"
     },
@@ -42350,6 +42440,22 @@
       "failure_rule": "atomic_revert_without_timestamp_mutation",
       "events": "upgrade_settlement_quoted|upgrade_settlement_executed",
       "parameter_keys": "n/a|n/a|n/a"
+    },
+    {
+      "transition_id": "initialize_central_bank_map",
+      "subsystem": "world",
+      "caller": "world_initializer",
+      "source_state": "uninitialized_eternum_s2_game",
+      "preconditions": "frozen_s2_preset_and_no_existing_layout",
+      "debits": "none",
+      "credits": "none",
+      "escrows": "none",
+      "timers": "before_season_admission",
+      "capacity_check": "none",
+      "partial_rule": "idempotent_staged_writes_then_atomic_activation",
+      "failure_rule": "invalid_geometry_or_spawn_overlap_prevents_activation",
+      "events": "WorldLayoutInitialized",
+      "parameter_keys": "world.map.*|world.bank*|world.mountains.*|world.hsf.*|map.ethereal.*|world_node.bitcoin.discovery_origin_allowed"
     }
   ],
   "presentation_order": {

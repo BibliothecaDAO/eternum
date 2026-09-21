@@ -83,3 +83,10 @@ Before implementing a subsystem:
 
 Do not infer missing values from current Eternum, Blitz or an external document. A genuinely missing mechanic or value
 is a package defect and should be resolved here before code chooses a default.
+
+## Central Bank geography
+
+The [Banking explainer](./banking-explainer.md) details the single central Bank, Mountains and the Ethereal approach. It
+includes two reconstructed reference maps, updated Primary/Ethereal maps and the inner-45-ring close-up. Map rules
+consume the selected config; regenerate with `node docs/eternum-s2/maps/generate.mjs` and validate with
+`node docs/eternum-s2/maps/validate.mjs`. Geometry validation does not establish deployed gameplay behaviour.

@@ -27,3 +27,17 @@ ability, unless it introduces distinct gameplay rules
 
 **Fire Breath**: The Sky Dragon's mount action: a directed breath effect that presents the existing Paladin attack
 without defining a separate damage or area-of-effect rule. _Avoid_: Fire spell, dragon ability
+
+## World geography
+
+**Hex ring**: All hexes at one hex-step distance from the origin of a map layer. _Avoid_: Realm ring when counting
+individual Primary hexes
+
+**Realm ring**: A ring in the Realm placement lattice; in Eternum S2, one lattice step spans 15 Primary hexes. _Avoid_:
+Hex ring without specifying the map layer
+
+**World Bank**: The capturable trading structure whose controller holds future banking fee rights. _Avoid_: Market,
+which names a Donkey-producing holding building
+
+**Mountains**: A revealed biome that admits neither army traversal nor spawning. _Avoid_: Difficult terrain, which
+suggests a traversable movement penalty

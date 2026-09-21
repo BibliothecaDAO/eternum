@@ -1,0 +1,39 @@
+{
+  "result": "PASS",
+  "checks": 8,
+  "claims": [
+    {
+      "claim": "The reference reproduces 6 banks on Realm ring21 and 61 spacing-six spires including the origin.",
+      "result": "PASS"
+    },
+    {
+      "claim": "The proposal has 96 unique paired spires: 6/6/12/18/24/30 on radii 2/6/12/18/24/30.",
+      "result": "PASS"
+    },
+    {
+      "claim": "Mountain rings32–35 contain exactly 804 cells; every one is pre-explored.",
+      "result": "PASS"
+    },
+    {
+      "claim": "Graph flood-fill cannot cross the mountain barrier: the origin component is exactly rings0–31.",
+      "result": "PASS"
+    },
+    {
+      "claim": "All six inner spires and their full halos lie inside the mountain barrier; each is 30 steps from the bank.",
+      "result": "PASS"
+    },
+    {
+      "claim": "All structure neighbors are revealed; ethereal origin is reserved and pre-explored; outer halos are retained.",
+      "result": "PASS"
+    },
+    {
+      "claim": "Realm ring3 starts at primary ring45, outside the excluded foundation area and the mountains.",
+      "result": "PASS"
+    },
+    {
+      "claim": "Ethereal discovery core keeps radius24 with 403 explored and 1398 eligible unexplored hexes.",
+      "result": "PASS"
+    }
+  ],
+  "scope": "Design-map geometry and exploration rules; not gameplay runtime evidence."
+}

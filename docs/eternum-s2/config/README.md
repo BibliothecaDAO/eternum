@@ -100,3 +100,15 @@ Run the package validator after any edit:
 ```bash
 node docs/eternum-s2/validate.mjs
 ```
+
+## Map coordinates and derived counts
+
+`world.map.coordinate_system` is signed axial logical hex space. Decode storage offsets before calculating
+`max(abs(q),abs(r),abs(q+r))`; do not treat pixel positions or storage integers as hex radii. Realm steps span 15
+Primary hexes, and paired Ethereal Spire coordinates multiply by 15. The old base-coordinate-step and per-Realm-area
+aliases are removed. The map generator consumes these explicit rules from this file's selected JSON.
+
+Inclusive mountain bounds 32–35 produce four occupied rings. The outer six-spaced lattice includes side positions.
+Bank/Spire halos are set unions. Primary fixed reveals exclude later holding reveals. Ethereal core counts refer to
+radius 24 (the unchanged Bitcoin probability core), while transport reaches radius 30 and complete reveal halos
+reach 31. Never use the new transport extent to rebase either discovery probability curve.
