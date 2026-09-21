@@ -11,7 +11,6 @@ autoInstallPeers: true
 resolvePeersFromWorkspaceRoot: false
 
 overrides:
-  "@latticexyz/schema-type>abitype": 1.1.0
   "vocs>@hono/node-server": 1.12.0
 
 packageExtensions:

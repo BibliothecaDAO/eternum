@@ -177,11 +177,11 @@ const mapVillageSettleError = (error: unknown): string => {
     return "Still loading your player name. Retry settlement in a moment.";
   }
 
-  if (message.includes("name_systems contract not found")) {
+  if (message.includes("name contract not found")) {
     return "Name system contract not found for this world.";
   }
 
-  if (message.includes("village_systems contract not found")) {
+  if (message.includes("village contract not found")) {
     return "Village system contract not found for this world.";
   }
 
@@ -190,7 +190,7 @@ const mapVillageSettleError = (error: unknown): string => {
   }
 
   if (message.includes("evp: village token can not be transferred")) {
-    return "Village pass transfer blocked by world config. The village_systems contract likely needs DISTRIBUTOR_ROLE on Village Pass.";
+    return "Village pass transfer blocked by world config. The village contract likely needs distributor access.";
   }
 
   if (message.includes("season is over") || message.includes("settling") || message.includes("timing")) {

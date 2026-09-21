@@ -1,6 +1,6 @@
 /**
  * The contract moves an army through a spire to its own hex on the other layer, and only if that hex is free.
- * Mirrors `alt_movement_systems::toggle_alternate` so the modal can say why a crossing will not go through.
+ * Mirrors the native alternate movement command so the modal can say why a crossing will not go through.
  */
 interface SpireCrossingTile {
   occupier_id: number | bigint;

@@ -10,6 +10,12 @@ export const nativePresets: Record<
   3: { gameType: "blitz", profile: "official-90", rewardProfile: 2 },
 };
 
+export function nativePresetForId(id: number) {
+  const preset = nativePresets[id];
+  if (!preset) throw new Error(`Unsupported native preset ${id}`);
+  return preset;
+}
+
 export function resolveBlitzProfileId(config: Config): number {
   const preset = Object.values(nativePresets).find(
     ({ profile }) => profile === config.blitz.exploration.rewardProfileId,

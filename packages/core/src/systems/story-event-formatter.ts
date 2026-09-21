@@ -448,15 +448,6 @@ const formatters: Record<string, StoryFormatter> = {
       icon: "troop",
     };
   },
-  PrizeDistributedStory: (_, payload, components, resolvePlayerName) => {
-    const recipient = nameOwner(payload.to_player_address, components, resolvePlayerName);
-    const amount = formatTokenAmount(payload.amount, payload.decimals);
-    return {
-      title: "Prize distributed",
-      description: joinPieces([recipient ? `To ${recipient}` : undefined, amount ? amount : undefined]),
-      icon: "prize",
-    };
-  },
 };
 
 export function buildStoryEventPresentation(
@@ -678,6 +669,9 @@ function extractDirectionLabel(entry: unknown): string | undefined {
   if (typeof entry === "object" && entry !== null) {
     const keys = Object.keys(entry as Record<string, unknown>);
     if (keys.length === 1) return keys[0];
+  }
+  if (typeof import.meta !== "undefined" && import.meta.env?.DEV) {
+    throw new Error(`Unknown enum value: ${String(value)}`);
   }
   return undefined;
 }

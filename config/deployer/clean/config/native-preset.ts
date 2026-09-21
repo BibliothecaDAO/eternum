@@ -41,6 +41,8 @@ function hasNoProduction(resource: number) {
 }
 
 function buildRules(config: Config) {
+  const faith = config.faith;
+  if (!faith) throw new Error("Native faith config is required");
   const bitcoinEnabled = !config.blitz.mode.on && config.exploration.bitcoinMineWinProbability > 0;
   return {
     battle_config: {
@@ -80,7 +82,7 @@ function buildRules(config: Config) {
     map_center_offset: config.settlement.center,
     spire_travel_essence_cost: scaled(config.spireTravelEssenceCost),
     blitz_mode_on: config.blitz.mode.on,
-    faith_enabled: config.faith!.enabled,
+    faith_enabled: faith.enabled,
     speed_config: {
       donkey_sec_per_km: config.speed.donkey_for_resources,
       donkey_sec_per_km_troops: config.speed.donkey_for_troops,
@@ -90,6 +92,7 @@ function buildRules(config: Config) {
 
 function buildResources(config: Config) {
   const balances = config.resources;
+  if (!config.mines) throw new Error("Mine balance config is required");
   const precision = balances.resourcePrecision;
   const resources = Array.from({ length: 58 }, (_, index) => {
     const resource_type = index + 1;
@@ -136,8 +139,10 @@ function buildResources(config: Config) {
 }
 
 function buildMines(config: Config) {
+  const mines = config.mines;
+  if (!mines) throw new Error("Mine balance config is required");
   return {
-    mine_kinds: Object.entries(config.mines!.kinds).map(
+    mine_kinds: Object.entries(mines.kinds).map(
       ([kind, { resourceType, buildingCategory, productionRate, capMinimum, capSteps }]) => ({
         kind: Number(kind),
         config: {
@@ -149,11 +154,13 @@ function buildMines(config: Config) {
         },
       }),
     ),
-    surface_mines: config.mines!.surfacePool.map((entry) => ({ ...entry })),
+    surface_mines: mines.surfacePool.map((entry) => ({ ...entry })),
   };
 }
 
 function buildStructures(config: Config) {
+  const faith = config.faith;
+  if (!faith) throw new Error("Native faith config is required");
   const precision = config.resources.resourcePrecision;
   return {
     buildings: Array.from({ length: 40 }, (_, index) => {
@@ -181,10 +188,10 @@ function buildStructures(config: Config) {
       return { resource_type: resource, amount: scaled(min_amount, precision) };
     }),
     faith: {
-      wonder_rate: config.faith!.wonder_base_fp_per_sec,
-      realm_rate: config.faith!.realm_fp_per_sec,
-      village_rate: config.faith!.village_fp_per_sec,
-      owner_share_bps: config.faith!.owner_share_percent * 100,
+      wonder_rate: faith.wonder_base_fp_per_sec,
+      realm_rate: faith.realm_fp_per_sec,
+      village_rate: faith.village_fp_per_sec,
+      owner_share_bps: faith.owner_share_percent * 100,
     },
     upgrade_limits: { realm_max: config.realmMaxLevel - 1, village_max: config.villageMaxLevel - 1 },
     upgrades: Array.from({ length: Math.max(config.realmMaxLevel, config.villageMaxLevel) - 1 }, (_, index) => ({

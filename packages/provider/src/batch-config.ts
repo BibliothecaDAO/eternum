@@ -193,7 +193,6 @@ export const TRANSACTION_COST_CATEGORY: Partial<Record<TransactionType, Transact
   // Season/Leaderboard claims
   [TransactionType.SEASON_PRIZE_CLAIM]: TransactionCostCategory.LOW,
   [TransactionType.CLAIM_LEADERBOARD_REWARDS]: TransactionCostCategory.LOW,
-  [TransactionType.BLITZ_PRIZE_PLAYER_RANK]: TransactionCostCategory.LOW,
 
   // Bank fees
   [TransactionType.CHANGE_OWNER_AMM_FEE]: TransactionCostCategory.LOW,

@@ -100,7 +100,6 @@ it("keeps retained story aliases at their existing notification levels", () => {
       }
     }
   }
-  expect(() => includesStoryNotification("off", "PrizeDistributedStory")).toThrow("Unknown");
 });
 
 it("uses event-time recipients, normalizes duplicates, and excludes neutral addresses", () => {

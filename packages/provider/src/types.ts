@@ -193,7 +193,6 @@ export enum TransactionType {
   END_GAME = "end_game",
 
   // Blitz
-  BLITZ_PRIZE_PLAYER_RANK = "blitz_prize_player_rank",
 
   // Chests & Relics
   OPEN_CHEST = "open_chest",

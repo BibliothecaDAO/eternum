@@ -224,7 +224,6 @@ export const getTxMessage = (type: TransactionType): string => {
       return "Game has ended";
 
     // Blitz
-    case TransactionType.BLITZ_PRIZE_PLAYER_RANK:
       return "Submitted blitz rankings";
 
     // Chests & Relics
@@ -468,7 +467,6 @@ export const getTxIcon = (type: TransactionType): string => {
     // Season & Leaderboard
     case TransactionType.SEASON_CLOSE:
     case TransactionType.END_GAME:
-    case TransactionType.BLITZ_PRIZE_PLAYER_RANK:
       return "🏁";
     case TransactionType.SEASON_PRIZE_CLAIM:
     case TransactionType.CLAIM_LEADERBOARD_REWARDS:

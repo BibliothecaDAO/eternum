@@ -19,7 +19,6 @@ export const BlitzSetHyperstructureShareholdersTo100 = React.memo(() => {
   const mode = useGameModeConfig();
   const ordersAllowed = useUIStore(canIssueOrders);
 
-  // listen to all the hyperstructures where you are owner with useEntityQuery
   const ownedHyperstructures = useOwnedHyperstructuresEntityIds();
   const previousOwnedHyperstructures = useRef<ID[]>([]);
   const allocateSharesDelayUntil = useRef<number>(0);

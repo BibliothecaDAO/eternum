@@ -1,4 +1,5 @@
-import { DEFAULT_ETERNUM_PRESET_ID, defaultPresetForEnvironment } from "../../../config/deployer/clean/constants";
+import { defaultPresetForEnvironment } from "../../../config/deployer/clean/constants";
+import { nativePresetForId } from "../../../config/source/native";
 import { Schema } from "effect";
 
 const NonEmptyString = Schema.NonEmptyString;
@@ -67,7 +68,7 @@ export function applyDurableLaunchDefaults(
   if (kind === "result") return request;
   if (!("gameName" in request) || "gameId" in request) throw new Error("Invalid game request");
   const version = request.version ?? (defaultPresetForEnvironment(request.environment) as "1" | "2");
-  if ((request.environment === "madara.eternum") !== (version === DEFAULT_ETERNUM_PRESET_ID)) {
+  if (nativePresetForId(Number(version)).gameType !== (request.environment === "madara.eternum" ? "eternum" : "blitz")) {
     throw new Error("Preset does not match the requested game format");
   }
   const shared = { ...request, version };

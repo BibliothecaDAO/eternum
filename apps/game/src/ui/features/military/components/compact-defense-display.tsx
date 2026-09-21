@@ -168,9 +168,7 @@ export const CompactDefenseDisplay = ({
     const staminaCurrent = staminaSnapshot?.current;
     const staminaMax = staminaSnapshot?.max;
     const rawSlot = Number(defense.slot ?? 0);
-    const guardSlotKey = (
-      Object.prototype.hasOwnProperty.call(GUARD_SLOT_NAMES, rawSlot) ? rawSlot : rawSlot + 1
-    ) as GuardSlot;
+    const guardSlotKey = rawSlot as GuardSlot;
     const slotDisplayNumber = DISPLAYED_SLOT_NUMBER_MAP[guardSlotKey];
     const slotIconSrc = SLOT_ICON_MAP[rawSlot] ?? SLOT_ICON_MAP[guardSlotKey];
     const slotName = GUARD_SLOT_NAMES[guardSlotKey] ?? `Slot ${slotDisplayNumber}`;
