@@ -11,7 +11,6 @@ import { runNativeDeployment } from "../world/native/cli";
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const supported = new Set([
-    "profile",
     "artifacts",
     "seed",
     "manifest",
@@ -24,7 +23,6 @@ async function main() {
     "submitter",
     "schema",
   ]);
-  if (args.profile && args.profile !== "native") throw new Error("Only native deployment is supported");
   for (const flag of Object.keys(args))
     if (!supported.has(flag)) throw new Error(`Unknown deployment option: --${flag}`);
   if (args.inspect !== undefined && args.inspect !== "true") throw new Error("--inspect does not take a value");

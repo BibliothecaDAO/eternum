@@ -29,7 +29,7 @@ const buildBlitzWorld = () =>
   });
 
 describe("buildWorldDeployment", () => {
-  it("indexes manifest contracts by normalized selector and derives the namespace", () => {
+  it("indexes manifest contracts by normalized selector and normalizes endpoints", () => {
     const world = buildBlitzWorld();
     expect(world.worldAddress).toBe("0xw0r1d");
     expect(world.contractsBySelector).toEqual({ [`0x${"abc".padStart(64, "0")}`]: "0x1" });

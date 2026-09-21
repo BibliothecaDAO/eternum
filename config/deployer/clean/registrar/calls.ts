@@ -19,7 +19,6 @@ interface ManifestAbiEntry {
 }
 
 interface ManifestContract {
-  tag?: string;
   address?: string;
   abi?: ManifestAbiEntry[];
 }
@@ -92,7 +91,7 @@ function requireRegistrarContract(context: RegistrarContext, entrypoint: Registr
   if (!registrar || !hasDeployedAddress(registrarAddress)) {
     if (context.environmentId) {
       throw new Error(
-        `${context.environmentId} world not deployed yet; set its registrar address after migrating ${context.manifest.world?.seed ?? "the configured profile"}`,
+        `${context.environmentId} world is not deployed; set its registrar address in the native manifest`,
       );
     }
     throw new Error(`Native registry is missing from the manifest`);

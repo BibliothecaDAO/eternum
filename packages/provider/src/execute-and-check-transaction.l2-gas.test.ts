@@ -774,11 +774,6 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     };
     const calls: Call[] = [
       {
-        contractAddress: "0x999",
-        entrypoint: "request_random",
-        calldata: ["0x123", 1, "0xfeed"],
-      },
-      {
         contractAddress: "0x123",
         entrypoint: "explorer_travel",
         calldata: [42, [0], 1],
@@ -823,11 +818,6 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     };
     const firstCalls: Call[] = [
       {
-        contractAddress: "0x999",
-        entrypoint: "request_random",
-        calldata: ["0x123", 1, "0xfeed"],
-      },
-      {
         contractAddress: "0x123",
         entrypoint: "explorer_travel",
         calldata: [42, [0], 1],
@@ -839,11 +829,6 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
       },
     ];
     const secondCalls: Call[] = [
-      {
-        contractAddress: "0x999",
-        entrypoint: "request_random",
-        calldata: ["0x123", 1, "0xbeef"],
-      },
       {
         contractAddress: "0x123",
         entrypoint: "explorer_travel",
@@ -892,11 +877,6 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     };
     const calls: Call[] = [
       {
-        contractAddress: "0x999",
-        entrypoint: "request_random",
-        calldata: ["0x123", 1, "0xfeed"],
-      },
-      {
         contractAddress: "0x123",
         entrypoint: "explorer_travel",
         calldata: [42, [0], 1],
@@ -938,11 +918,6 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
         }),
     };
     const calls: Call[] = [
-      {
-        contractAddress: "0x999",
-        entrypoint: "request_random",
-        calldata: ["0x123", 1, "0xfeed"],
-      },
       {
         contractAddress: "0x123",
         entrypoint: "explorer_travel",
