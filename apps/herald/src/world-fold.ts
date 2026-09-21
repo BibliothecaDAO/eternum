@@ -248,7 +248,7 @@ export class WorldFold {
         const gameId = BigInt(value.game_id as string).toString();
         const config = rules.get(gameId);
         if (!config) throw new Error(`Finalized game ${gameId} has no rules`);
-        return config.blitz_mode_on !== true || results.has(gameId);
+        return Number(config.mode_id) !== 1 || results.has(gameId);
       })
       .map(({ value }) => BigInt(value.game_id as string).toString());
   }

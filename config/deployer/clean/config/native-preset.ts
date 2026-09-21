@@ -83,6 +83,7 @@ function buildRules(config: Config) {
     spire_travel_essence_cost: scaled(config.spireTravelEssenceCost),
     mode_id: config.blitz.mode.on ? 1 : 0,
     command_mask: 0xffffffffffffffffffffffffffffffffn,
+    entry_rule: config.blitz.mode.on ? 2 : 0,
     faith_enabled: faith.enabled,
     speed_config: {
       donkey_sec_per_km: config.speed.donkey_for_resources,

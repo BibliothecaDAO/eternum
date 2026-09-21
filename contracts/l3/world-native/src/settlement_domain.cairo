@@ -76,6 +76,7 @@ pub mod SettlementDomain {
             assert!(get_caller_address() == peers.season, "only authenticated command domain");
             let owner = self.bound_owner(actor);
             let game = self.games().game(game_id);
+            let rules = self.games().rules(game_id);
             assert!(!crate::rules::is_blitz(self.games().rules(game_id)), "not a season game");
             assert!(command.name != 0, "name cannot be empty");
             assert!(game.dev_mode_on || context.timestamp >= game.start_settling_at, "settling not started");
@@ -85,7 +86,7 @@ pub mod SettlementDomain {
                 assert!(game.dev_mode_on, "development mode required");
                 self.settlements.record_entry(key, actor);
             } else {
-                let requires_entitlement = !self.games().game(game_id).dev_mode_on;
+                let requires_entitlement = !self.games().game(game_id).dev_mode_on && rules.entry_rule == 0;
                 self.settlements.reserve_entry(key, actor, requires_entitlement);
             }
             let mut root = context.raw_root;
@@ -293,7 +294,8 @@ pub mod SettlementDomain {
             if let Some(realm_id) = selected {
                 return (realm_id, self.realms.traits(realm_id));
             }
-            if self.games().game(key.game_id).dev_mode_on {
+            let rules = self.games().rules(key.game_id);
+            if self.games().game(key.game_id).dev_mode_on || rules.entry_rule == 1 {
                 let remaining = crate::realms::CANONICAL_REALM_COUNT - settled.into();
                 assert!(remaining > 0, "all canonical realms allocated");
                 let index = crate::random::range(seed, 71419, remaining.into()).try_into().unwrap();

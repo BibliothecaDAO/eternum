@@ -326,7 +326,7 @@ export class ClientConfigManager {
   }
   getExploreReward() {
     const rules = this.rules();
-    const reward_resource = rules.blitz_mode_on ? ResourcesIds.Essence : ResourcesIds.AncientFragment;
+    const reward_resource = rules.mode_id === 1 ? ResourcesIds.Essence : ResourcesIds.AncientFragment;
     const resource_amount = rules.map_config.reward_resource_amount;
     return {
       reward_resource,
@@ -451,7 +451,7 @@ export class ClientConfigManager {
   getBlitzConfig() {
     const settlement = this.facts().require("SettlementRules", { game_id: this.gameId });
     return {
-      blitz_mode_on: this.rules().blitz_mode_on,
+      blitz_mode_on: this.rules().mode_id === 1,
       blitz_settlement_config: {
         single_realm_mode: settlement.mode === "Single",
         two_player_mode: settlement.mode === "Duel",

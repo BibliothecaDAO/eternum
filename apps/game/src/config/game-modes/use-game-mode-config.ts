@@ -7,7 +7,7 @@ import { resolveGameModeFromBlitzFlag, type ResolvedGameMode } from "./resolved-
 const useBlitzMode = () => {
   const rules = useNativeRow("SliceRules", { game_id: configManager.getActiveGameId() });
   if (!rules) throw new Error("Native game rules are not synchronized");
-  return rules.blitz_mode_on;
+  return rules.mode_id === 1;
 };
 export const useResolvedWorldGameMode = (): ResolvedGameMode => resolveGameModeFromBlitzFlag(useBlitzMode());
 export const useGameModeConfig = () => {

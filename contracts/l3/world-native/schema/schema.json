@@ -11230,6 +11230,12 @@
           "feltLength": 1
         },
         {
+          "name": "entry_rule",
+          "type": "core::integer::u8",
+          "id": "0x656e7472795f72756c65",
+          "feltLength": 1
+        },
+        {
           "name": "faith_enabled",
           "type": "core::bool",
           "id": "0x66616974685f656e61626c6564",
@@ -11243,7 +11249,7 @@
         }
       ],
       "keyLength": 1,
-      "valueLength": 89
+      "valueLength": 90
     },
     {
       "name": "EntitySequence",
@@ -15923,6 +15929,10 @@
           "type": "core::integer::u128"
         },
         {
+          "name": "entry_rule",
+          "type": "core::integer::u8"
+        },
+        {
           "name": "faith_enabled",
           "type": "core::bool"
         },
@@ -17155,5 +17165,5 @@
       ]
     }
   },
-  "identity": "87b89c7e0f1b40984d3835f4a5781eba1f71d68cd03293ce21df0447056e1bbe"
+  "identity": "b247ca066777ff0b560f2b4af25a860722391c17b651817cd3a1f0e76a983eaa"
 }

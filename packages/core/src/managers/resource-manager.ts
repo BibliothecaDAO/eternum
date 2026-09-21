@@ -81,7 +81,7 @@ export class ResourceManager {
   private productionForGameClock(production: Production | undefined): Production | undefined {
     if (!production || production.building_count === 0) return production;
     const rules = this.store.require("SliceRules", { game_id: this.gameId });
-    if (!rules.blitz_mode_on) return production;
+    if (rules.mode_id !== 1) return production;
     const game = this.store.require("GameRegistry", { game_id: this.gameId });
     return {
       ...production,

@@ -70,7 +70,7 @@ function directoryEntry(game: Row, facts: DirectoryRows, input: DirectoryInput):
     game_id: number(game.game_id),
     name: shortString(game.name),
     preset_id: number(game.preset_id),
-    mode: config.blitz_mode_on ? "blitz" : "eternum",
+    mode: number(config.mode_id) === 1 ? "blitz" : "eternum",
     dev_mode_on: game.dev_mode_on === true,
     ready: game.ready === true,
     status:

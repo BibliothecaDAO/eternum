@@ -111,6 +111,7 @@
     "spire_travel_essence_cost": "10000000000",
     "mode_id": 0,
     "command_mask": "340282366920938463463374607431768211455",
+    "entry_rule": 0,
     "speed_config": {
       "donkey_sec_per_km": 9,
       "donkey_sec_per_km_troops": 27
