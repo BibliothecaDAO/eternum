@@ -68,7 +68,9 @@ export function applyDurableLaunchDefaults(
   if (kind === "result") return request;
   if (!("gameName" in request) || "gameId" in request) throw new Error("Invalid game request");
   const version = request.version ?? (defaultPresetForEnvironment(request.environment) as "1" | "2");
-  if (nativePresetForId(Number(version)).gameType !== (request.environment === "madara.eternum" ? "eternum" : "blitz")) {
+  if (
+    nativePresetForId(Number(version)).gameType !== (request.environment === "madara.eternum" ? "eternum" : "blitz")
+  ) {
     throw new Error("Preset does not match the requested game format");
   }
   const shared = { ...request, version };
