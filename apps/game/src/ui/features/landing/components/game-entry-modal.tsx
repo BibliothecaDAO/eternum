@@ -263,7 +263,7 @@ const ETERNUM_SETTLEMENT_COPY: SettlementCopy = {
 
 const FRONTIER_SETTLEMENT_COPY: SettlementCopy = {
   title: "Found your realm",
-  description: "Name it once. It is raised again on every new map with everything you build.",
+  description: "It is raised again on every new map with everything you build.",
   action: "Found a realm",
 };
 
@@ -280,7 +280,6 @@ const SettlementPhase = ({
   onEnterGame,
   errorMessage,
   canSettle = true,
-  children,
 }: {
   copy: SettlementCopy;
   canSettle?: boolean;
@@ -291,7 +290,6 @@ const SettlementPhase = ({
   onSettle: () => void;
   onEnterGame: () => void;
   errorMessage: string | null;
-  children?: React.ReactNode;
 }) => {
   const realmLabel = expectedSettlementCount === 1 ? "realm" : "realms";
   const isSettlementSyncing = stage === "syncing";
@@ -330,8 +328,6 @@ const SettlementPhase = ({
               : copy.description}
         </p>
       </div>
-
-      {!isSettlementComplete && !isSettlementSyncing && children}
 
       {/* Progress bar */}
       <div className="space-y-2 mb-4">
@@ -887,11 +883,6 @@ export const GameEntryModal = ({
   const isFrontierMode = worldMode === "frontier";
   // Eternum and Frontier both settle one realm from here; Blitz realms are settled by the launch service.
   const isSeasonMode = isEternumMode || isFrontierMode;
-  const [realmName, setRealmName] = useState("");
-  const realmNameFelt = useMemo(
-    () => (account?.address ? resolvePlayerNameFelt(account.address, realmName.trim() || accountName) : null),
-    [account?.address, accountName, realmName],
-  );
   const isDevMode = worldMeta?.devModeOn === true;
   const isEternumDevMode = isEternumMode && isDevMode;
   const [devRealmNumber, setDevRealmNumber] = useState("1");
@@ -1066,7 +1057,6 @@ export const GameEntryModal = ({
     setIsSubmittingVillageSettlement(false);
     setVillageSettlementError(null);
     setVillageRevealResult(null);
-    setRealmName("");
   }, []);
 
   const beginEntityWait = useCallback((): AbortSignal => {
@@ -1546,8 +1536,7 @@ export const GameEntryModal = ({
         throw new Error("World configuration is still loading. Please wait a moment and try again.");
       }
       const signer = account as unknown as Account;
-      const settlementName = isFrontierMode ? realmNameFelt : usernameFelt;
-      if (!settlementName) {
+      if (!usernameFelt) {
         throw new Error("Unable to resolve player name for settlement.");
       }
 
@@ -1573,7 +1562,7 @@ export const GameEntryModal = ({
       await submitSettlement(worldMeta, signer, (client) =>
         client.setup.systemCalls.settle_season({
           signer,
-          name: settlementName,
+          name: usernameFelt,
           selectedRealm: isEternumDevMode ? Number(devRealmNumber) : undefined,
         }),
       );
@@ -1605,7 +1594,6 @@ export const GameEntryModal = ({
     finalizeFailedSettlement,
     finalizeSuccessfulSettlement,
     isEternumMode,
-    isFrontierMode,
     isSeasonMode,
     isEternumDevMode,
     devRealmNumber,
@@ -1613,7 +1601,6 @@ export const GameEntryModal = ({
     markSettling,
     syncSettlementStateFromSnapshot,
     usernameFelt,
-    realmNameFelt,
     waitForSettlementTarget,
     worldMeta,
     worldName,
@@ -1807,21 +1794,7 @@ export const GameEntryModal = ({
                   onSettle={handleSettle}
                   onEnterGame={handleEnterGame}
                   errorMessage={settleErrorMessage}
-                >
-                  {isFrontierMode && (
-                    <label className="mb-4 block text-xs text-gold/70">
-                      Realm name
-                      <input
-                        value={realmName}
-                        maxLength={31}
-                        placeholder={accountName ?? "Your realm"}
-                        disabled={isSettling}
-                        onChange={(event) => setRealmName(event.target.value)}
-                        className="mt-1 w-full rounded-md border border-gold/20 bg-black/30 px-2 py-1.5 text-sm text-gold"
-                      />
-                    </label>
-                  )}
-                </SettlementPhase>
+                />
               </motion.div>
             )}
 

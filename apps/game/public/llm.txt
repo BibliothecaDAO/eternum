@@ -2035,9 +2035,9 @@ meta: {
 
 ## Founding
 
-Open the Frontier season, found a realm and name it once. From then on it is raised again on every new map, in its own
-stretch of wilderness. Entry is free and open for the whole season, so a player who arrives in week five starts the same
-way as one who arrived on day one.
+Open the Frontier season and found a realm. It keeps its catalogue name, your player name comes from your Realms
+profile, and from then on it is raised again on every new map, in its own stretch of wilderness. Entry is free and open
+for the whole season, so a player who arrives in week five starts the same way as one who arrived on day one.
 
 A new realm starts with 2,000 troops, 5,000 wheat, 2,000 labor, no Essence and six plots around the castle.
 
