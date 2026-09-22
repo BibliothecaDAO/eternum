@@ -1,6 +1,7 @@
 import { Effect, Layer } from "effect";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import { LaunchExecutor } from "./executor";
+import type { ClaimedLaunchRun } from "./model";
 import { databaseLayer } from "./store";
 import { createLaunchTestStore } from "./test-store";
 import { processNextLaunch } from "./worker";
@@ -28,6 +29,44 @@ describe("durable launch worker", () => {
     await new Promise((resolve) => setTimeout(resolve, 5));
     const recovered = await store.claim(60_000);
     expect(recovered).toMatchObject({ id: queued.id, attempts: 2, status: "running" });
+    expect(await store.list("madara.blitz")).toHaveLength(1);
+  });
+
+  test("interrupts execution when a revoked lease is requeued and reclaimed without overwriting its new owner", async () => {
+    const store = database.store;
+    const queued = await store.enqueue("game", request);
+    let interrupted = false;
+    let successorLeaseToken: string | undefined;
+    const executor = {
+      execute: (run: ClaimedLaunchRun) =>
+        Effect.promise(async () => {
+          await store.retry(run.id, run.leaseToken, "lease revoked", 0);
+          const successor = await store.claim(60_000);
+          expect(successor).toMatchObject({ id: queued.id, attempts: 2, status: "running" });
+          successorLeaseToken = successor!.leaseToken;
+          expect(successorLeaseToken).not.toBe(run.leaseToken);
+        }).pipe(
+          Effect.uninterruptible,
+          Effect.andThen(Effect.never),
+          Effect.onInterrupt(() =>
+            Effect.sync(() => {
+              interrupted = true;
+            }),
+          ),
+        ),
+    };
+    const services = Layer.mergeAll(databaseLayer(store), Layer.succeed(LaunchExecutor, executor));
+
+    await Effect.runPromise(processNextLaunch(300).pipe(Effect.provide(services)));
+
+    expect(interrupted).toBe(true);
+    expect(await store.find("game", "madara.blitz", request.gameName)).toMatchObject({
+      id: queued.id,
+      status: "running",
+      attempts: 2,
+      leaseToken: successorLeaseToken,
+      errorMessage: "lease revoked",
+    });
     expect(await store.list("madara.blitz")).toHaveLength(1);
   });
 
