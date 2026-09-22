@@ -1,11 +1,13 @@
 import { Effect } from "effect";
 import { useNavigate, useSearch } from "@tanstack/react-router";
+import { shortString } from "starknet";
+import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { env } from "@/env";
 import { HeraldClient, type DirectoryGame } from "@/services/herald";
 import { IdentityApi } from "@/services/identity";
 import { PlaytestClient, type PlaytestSlot } from "@/services/playtest";
 import { nextOpenGame } from "@/ui/next-game";
-import { formatCountdown, formatLocalTime, ordinal } from "@/ui/format";
+import { formatCountdown, formatLocalTime, ordinal, shortAddress } from "@/ui/format";
 import { useMutation, useQuery } from "@/ui/hooks";
 import { ErrorPanel, GoldButton, GhostButton, Loading, Panel, Pill, StatBlock, type PillTone } from "@/ui/kit";
 import { useNowSeconds, useSession } from "@/ui/session";
@@ -20,6 +22,12 @@ const statusPill = (game: DirectoryGame): { tone: PillTone; label: string } => {
     default:
       return { tone: "done", label: "FINISHED" };
   }
+};
+
+/** The name a player registered with; the address only when the game holds no name for them. */
+const playerName = (facts: NativeFactStore, address: bigint): string => {
+  const row = facts.get("AddressName", { address });
+  return row ? shortString.decodeShortString(row.name.toString()) : shortAddress(`0x${address.toString(16)}`);
 };
 
 /** The game client addresses a game by its shard's chain id and its id there. */
@@ -161,7 +169,7 @@ function GameDetail({ chainId, game, now }: { chainId: string; game: DirectoryGa
         </GhostButton>
       </div>
       {game.mode === "blitz" && ended && !result?.complete && <p role="status">Final points are being settled.</p>}
-      {result?.complete && (
+      {facts.kind === "ok" && result?.complete && (
         <div>
           <h3 className="mb-2 font-heading">Final results</h3>
           {result.players.map((player) => (
@@ -170,7 +178,7 @@ function GameDetail({ chainId, game, now }: { chainId: string; game: DirectoryGa
               className="flex justify-between border-t border-line-soft py-2 font-mono text-sm"
             >
               <span>
-                {ordinal(player.rank)} · 0x{player.player.toString(16).slice(0, 8)}…
+                {ordinal(player.rank)} · {playerName(facts.value, player.player)}
               </span>
               <span>{(Number(player.points) / 1_000_000).toLocaleString()} VP</span>
             </div>

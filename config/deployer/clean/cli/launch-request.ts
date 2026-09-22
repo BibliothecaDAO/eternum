@@ -172,10 +172,6 @@ function resolveSharedLaunchRequestOptions(args: Args, environment: DeploymentEn
 
   return {
     rpcUrl: requireRpcUrl(args["rpc-url"] || process.env.RPC_URL, "--rpc-url or RPC_URL"),
-    ledgerAddress: args.ledger || process.env.LEDGER_ADDRESS,
-    ledgerRpcUrl: args["ledger-rpc-url"] || process.env.LEDGER_RPC_URL,
-    lordsAddress: args.lords || process.env.LORDS_ADDRESS,
-    sponsoredPoolLords: args["sponsored-pool-lords"] || process.env.LEDGER_SPONSORED_POOL_LORDS,
     accountAddress: resolveOptionalArg(args, "account-address", ["DEPLOYER_ACCOUNT_ADDRESS"]),
     privateKey: resolveOptionalArg(args, "private-key", ["DEPLOYER_PRIVATE_KEY"]),
     devModeOn: resolveOptionalBooleanArg(args, "dev-mode-on", ["DEV_MODE_ON"]),

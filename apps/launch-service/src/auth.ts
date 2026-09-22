@@ -13,7 +13,7 @@ export interface IdentityResolver {
 }
 
 export type LaunchAppEnv = { Variables: { launcherAddress: string } };
-export type LaunchAccess = Pick<LaunchServiceConfig, "allowedOrigins" | "allowAnyLauncher" | "launcherAllowlist">;
+type LaunchAccess = Pick<LaunchServiceConfig, "allowedOrigins" | "launcherAllowlist">;
 
 export const requireIdentity =
   (identity: IdentityResolver, config: LaunchAccess): MiddlewareHandler<LaunchAppEnv> =>
@@ -35,7 +35,7 @@ export const requireLauncher =
   (config: LaunchAccess): MiddlewareHandler<LaunchAppEnv> =>
   async (context, next) => {
     if (context.req.method === "GET" || context.req.method === "OPTIONS") return next();
-    if (!config.allowAnyLauncher && !config.launcherAllowlist.has(context.get("launcherAddress"))) {
+    if (!config.launcherAllowlist.has(context.get("launcherAddress"))) {
       return context.json({ error: "This identity is not allowed to launch games." }, 403);
     }
     return next();

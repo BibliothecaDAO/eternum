@@ -19,10 +19,6 @@ async function request<T>(path: string, body?: unknown): Promise<T> {
 export const fetchPlaytestSlots = () => request<{ slots: PlaytestSlot[] }>("/api/slots");
 export const registerPlaytestSlot = (name: string) =>
   request<PlaytestSlot>(`/api/slots/${encodeURIComponent(name)}/register`, {});
-export const createPlaytestSlot = (name: string, closesAt: string) =>
-  request<PlaytestSlot>("/api/slots", { name, closesAt });
-export const closePlaytestSlot = (name: string) =>
-  request<PlaytestSlot>(`/api/slots/${encodeURIComponent(name)}/close`, {});
 export const fetchFactoryRuns = (environment: "madara.blitz" | "madara.eternum") =>
   request<{ runs: FactoryRun[] }>(`/api/factory/runs?environment=${environment}`);
 export const createEternumGame = (gameName: string, gameStartTime: string) =>

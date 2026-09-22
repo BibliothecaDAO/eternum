@@ -31,7 +31,6 @@ export interface LaunchServiceConfig {
   databaseUrl: string;
   identityUrl: string;
   allowedOrigins: ReadonlySet<string>;
-  allowAnyLauncher: boolean;
   launcherAllowlist: ReadonlySet<string>;
   rpcUrl: string;
   admissionUrl: string;
@@ -62,6 +61,7 @@ export const readLaunchServiceConfig = (
         const launcherEntries = raw.LAUNCHER_ALLOWLIST.split(",")
           .map((value) => value.trim())
           .filter(Boolean);
+        if (launcherEntries.includes("*")) throw new Error("LAUNCHER_ALLOWLIST must name launcher addresses, not *");
         return {
           databaseUrl: raw.DATABASE_URL,
           identityUrl: raw.IDENTITY_URL,
@@ -70,9 +70,7 @@ export const readLaunchServiceConfig = (
               .map((value) => value.trim())
               .filter(Boolean),
           ),
-          // "*" opens launching to any verified session (still origin- and session-gated).
-          allowAnyLauncher: launcherEntries.includes("*"),
-          launcherAllowlist: new Set(launcherEntries.filter((entry) => entry !== "*").map(normalizeAddress)),
+          launcherAllowlist: new Set(launcherEntries.map(normalizeAddress)),
           rpcUrl: raw.RPC_URL,
           admissionUrl: raw.ADMISSION_URL,
           heraldUrl: raw.HERALD_URL,

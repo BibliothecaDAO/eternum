@@ -13,14 +13,12 @@ import { useNowSeconds, useSession } from "./session";
 const BACKDROPS: Record<string, { src: string; deep?: boolean }> = {
   "/": { src: "/art/covers/vigil.webp" },
   "/play": { src: "/art/covers/arena.webp" },
-  "/ranks": { src: "/art/covers/arena.webp" },
   "/profile": { src: "/art/covers/realmland.webp", deep: true },
   "/p": { src: "/art/covers/realmland.webp", deep: true },
 };
 
 const NAV_TABS = [
   { to: "/", label: "Home" },
-  { to: "/ranks", label: "Ranks" },
   { to: "/profile", label: "Profile" },
 ] as const;
 

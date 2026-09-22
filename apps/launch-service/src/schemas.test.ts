@@ -1,11 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { applyDurableLaunchDefaults, type CreateGameRequest } from "./schemas";
 
-const gameRequest = (devModeOn?: boolean, version?: "2" | "4"): CreateGameRequest => ({
+const gameRequest = (devModeOn?: boolean): CreateGameRequest => ({
   environment: "madara.blitz",
   gameName: "bltz-test",
   ...(devModeOn === undefined ? {} : { devModeOn }),
-  ...(version === undefined ? {} : { version, twoPlayerMode: version === "4" }),
 });
 
 describe("applyDurableLaunchDefaults", () => {
@@ -21,10 +20,6 @@ describe("applyDurableLaunchDefaults", () => {
     const result = applyDurableLaunchDefaults("game", gameRequest(false), 0);
     expect(result.version).toBe("2");
     expect("gameStartTime" in result && result.gameStartTime).toBeTruthy();
-  });
-
-  it("keeps a Duel launch version 4 instead of forcing the default", () => {
-    expect(applyDurableLaunchDefaults("game", gameRequest(false, "4")).version).toBe("4");
   });
 });
 

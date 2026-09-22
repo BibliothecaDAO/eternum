@@ -51,7 +51,6 @@ async function queueSlotGames(client: PoolClient, slot: PlaytestSlot, groups: Pl
       gameName,
       gameStartTime: slot.closesAt,
       devModeOn: false,
-      twoPlayerMode: false,
       singleRealmMode: false,
       rosterOwners: players.map(({ owner }) => owner),
     };
@@ -61,6 +60,16 @@ async function queueSlotGames(client: PoolClient, slot: PlaytestSlot, groups: Pl
       [randomUUID(), gameName, JSON.stringify(request)],
     );
   }
+}
+
+/** A frozen slot stays listed until the next one freezes, long enough for its games to exist and its members to find them. */
+async function pruneEarlierFrozenSlots(client: PoolClient, keep: string) {
+  await client.query(
+    `DELETE FROM playtest_registrations r USING playtest_slots s
+     WHERE r.slot_name = s.name AND s.frozen_at IS NOT NULL AND s.name <> $1`,
+    [keep],
+  );
+  await client.query("DELETE FROM playtest_slots WHERE frozen_at IS NOT NULL AND name <> $1", [keep]);
 }
 
 export class PostgresSlotStore implements SlotStore {
@@ -123,6 +132,7 @@ export class PostgresSlotStore implements SlotStore {
       );
       await client.query("UPDATE playtest_slots SET frozen_at = clock_timestamp() WHERE name = $1", [name]);
       await queueSlotGames(client, slot, groups);
+      await pruneEarlierFrozenSlots(client, name);
       return readSlot(client, name);
     });
   }

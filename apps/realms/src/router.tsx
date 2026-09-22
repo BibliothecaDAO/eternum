@@ -5,7 +5,6 @@ import { HomeScreen } from "./routes/home";
 import { PlayScreen } from "./routes/play";
 import { PlayerScreen } from "./routes/player";
 import { ProfileScreen } from "./routes/profile";
-import { RanksScreen } from "./routes/ranks";
 
 const rootRoute = createRootRoute({ component: Frame });
 
@@ -26,11 +25,10 @@ const playRoute = createRoute({
   validateSearch: validatePlaySearch,
 });
 
-const ranksRoute = createRoute({ getParentRoute: () => rootRoute, path: "/ranks", component: RanksScreen });
 const profileRoute = createRoute({ getParentRoute: () => rootRoute, path: "/profile", component: ProfileScreen });
 const playerRoute = createRoute({ getParentRoute: () => rootRoute, path: "/p/$address", component: PlayerScreen });
 
-const routeTree = rootRoute.addChildren([homeRoute, playRoute, ranksRoute, profileRoute, playerRoute]);
+const routeTree = rootRoute.addChildren([homeRoute, playRoute, profileRoute, playerRoute]);
 
 export const router = createRouter({ routeTree });
 

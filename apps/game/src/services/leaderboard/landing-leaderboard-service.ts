@@ -9,8 +9,6 @@ export interface LandingLeaderboardEntry {
   address: string;
   displayName: string | null;
   points: number;
-  mmr?: number;
-  mmrTier?: string;
   exploredTiles?: number;
   exploredTilePoints?: number;
   riftsTaken?: number;

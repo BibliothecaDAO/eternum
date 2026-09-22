@@ -8,6 +8,7 @@ function fixture(count = 13) {
   }));
   const recorded: { player: bigint; points: bigint; rank: number }[] = [];
   const operations: ResultOperations = {
+    secondsUntilEnd: vi.fn(async () => 0),
     settle: vi.fn(async () => undefined),
     progress: vi.fn(async () => ({
       players: [...recorded],
@@ -63,6 +64,13 @@ describe("native result jobs", () => {
     vi.mocked(operations.settle).mockRejectedValueOnce(new Error("checkpoint interrupted"));
     await expect(completeBlitzResults(operations)).rejects.toThrow("checkpoint interrupted");
     expect(operations.record).not.toHaveBeenCalled();
+    await expect(completeBlitzResults(operations)).resolves.toBe(123n);
+  });
+  it("refuses to settle before the chain reaches the game's end", async () => {
+    const { operations } = fixture();
+    vi.mocked(operations.secondsUntilEnd).mockResolvedValueOnce(90);
+    await expect(completeBlitzResults(operations)).rejects.toMatchObject({ secondsUntilEnd: 90 });
+    expect(operations.settle).not.toHaveBeenCalled();
     await expect(completeBlitzResults(operations)).resolves.toBe(123n);
   });
   it("fails loudly if the authoritative cursor does not advance", async () => {

@@ -2,7 +2,7 @@ import { configManager } from "@bibliothecadao/eternum";
 import { useNativeRow } from "@bibliothecadao/react";
 import { WinnersTable } from "./components/winners-table";
 
-export const PrizePanel = () => {
+export const ResultsPanel = () => {
   const result = useNativeRow("BlitzResult", { game_id: configManager.getActiveGameId() });
   const finalized = result?.complete === true;
 

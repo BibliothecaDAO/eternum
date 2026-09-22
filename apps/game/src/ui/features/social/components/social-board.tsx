@@ -3,7 +3,7 @@ import { useWorldSlicesStore, type WorldSlicesStore } from "@/hooks/store/use-wo
 import { filterPlayersByBlitzSettlement } from "@/services/blitz/blitz-settlement-players";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Tabs } from "@/ui/design-system/atoms/tab";
-import { PrizePanel } from "@/ui/features/prize";
+import { ResultsPanel } from "@/ui/features/results";
 import { getPlayerInfo } from "@bibliothecadao/eternum";
 import { useGame } from "@bibliothecadao/react";
 import { ContractAddress, StructureType } from "@bibliothecadao/types";
@@ -188,13 +188,13 @@ export const SocialBoard = ({ focusOwnPlayer = false }: { focusOwnPlayer?: boole
 
     if (isBlitzMode) {
       baseTabs.push({
-        key: "Blitz Prize",
+        key: "Results",
         label: (
           <div className="flex items-center gap-2">
-            <span>Blitz Prize</span>
+            <span>Results</span>
           </div>
         ),
-        component: <PrizePanel />,
+        component: <ResultsPanel />,
         expandedContent: null,
       });
     }

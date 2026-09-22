@@ -96,8 +96,6 @@ export function describeError(error: unknown): string {
   const tag =
     typeof error === "object" && error !== null && "_tag" in error ? String((error as { _tag: string })._tag) : "";
   switch (tag) {
-    case "ValuePlaneNotDeployed":
-      return "The mainnet ledger is not deployed yet — value facts return once it lands.";
     case "LaunchUnavailable":
       return "Registration is unavailable. Refresh the slot list and try again.";
     case "HeraldUnreachable":

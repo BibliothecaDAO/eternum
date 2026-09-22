@@ -23,14 +23,12 @@ afterEach(async () => {
 const createApp = (
   resolver: IdentityResolver,
   store = database.store,
-  allowAnyLauncher = false,
   slots = new PostgresSlotStore(store.pool),
   verifyPlayer = vi.fn(async (_owner: string) => {}),
 ) => ({
   app: createLaunchApp({
     config: {
       allowedOrigins: new Set([ALLOWED_ORIGIN]),
-      allowAnyLauncher,
       launcherAllowlist: new Set([ALLOWED_ADDRESS]),
     },
     identity: resolver,
@@ -69,7 +67,6 @@ describe("free slot registration", () => {
     const { app } = createApp(
       identity("0x456"),
       database.store,
-      false,
       slots,
       vi.fn(async () => {
         throw new Error("Identity has no gameplay account");
@@ -85,35 +82,6 @@ describe("free slot registration", () => {
     const request = registerRequest();
     request.headers.set("origin", "https://untrusted.example");
     expect((await app.request(request)).status).toBe(403);
-    expect(await slots.list()).toEqual([]);
-  });
-
-  test("only launchers can create or close slots", async () => {
-    const { app, slots } = createApp(identity("0x456"));
-    for (const path of ["/api/slots", "/api/slots/friday/close"]) {
-      const response = await app.request(
-        new Request(`http://launch.test${path}`, {
-          method: "POST",
-          headers: registerRequest().headers,
-          body: JSON.stringify({ name: "friday", closesAt: "2099-01-01T00:00:00Z" }),
-        }),
-      );
-      expect(response.status).toBe(403);
-    }
-    expect(await slots.list()).toEqual([]);
-  });
-
-  test("slot reads need no wallet and malformed schedules do not reach storage", async () => {
-    const { app, slots } = createApp(identity(ALLOWED_ADDRESS));
-    expect(await (await app.request("http://launch.test/api/slots")).json()).toEqual({ slots: [] });
-    const response = await app.request(
-      new Request("http://launch.test/api/slots", {
-        method: "POST",
-        headers: registerRequest().headers,
-        body: JSON.stringify({ name: "friday", closesAt: "not a date" }),
-      }),
-    );
-    expect(response.status).toBe(400);
     expect(await slots.list()).toEqual([]);
   });
 });
@@ -150,11 +118,6 @@ describe("launch service authorization", () => {
   test("rejects a signed-in address outside the launcher allowlist", async () => {
     const { app } = createApp(identity("0x456"));
     expect((await app.request(launchRequest())).status).toBe(403);
-  });
-
-  test("with a wildcard allowlist, any verified session may launch", async () => {
-    const { app } = createApp(identity("0x456"), database.store, true);
-    expect((await app.request(launchRequest())).status).toBe(202);
   });
 
   test("returns the requested format when launching and listing Eternum games", async () => {
@@ -204,8 +167,12 @@ describe("launch service authorization", () => {
     expect(disallowed.headers.get("access-control-allow-origin")).toBeNull();
   });
 
-  test("rejects an unregistered registrar preset", async () => {
+  test("rejects Duel and unregistered presets at the schema", async () => {
     const { app } = createApp(identity(ALLOWED_ADDRESS));
+    const duel = new Request(launchRequest(), {
+      body: JSON.stringify({ environment: "madara.blitz", gameName: "bltz-duel-game", version: "4" }),
+    });
+    expect((await app.request(duel)).status).toBe(400);
     const request = launchRequest();
     request.headers.set("content-type", "application/json");
     const invalid = new Request(request, {
@@ -217,25 +184,6 @@ describe("launch service authorization", () => {
     });
 
     expect((await app.request(invalid)).status).toBe(400);
-  });
-
-  test("launches a Duel on preset 4 and stores version:4", async () => {
-    const { app, store } = createApp(identity(ALLOWED_ADDRESS));
-    const request = launchRequest();
-    request.headers.set("content-type", "application/json");
-    const duel = new Request(request, {
-      body: JSON.stringify({
-        environment: "madara.blitz",
-        gameName: "bltz-duel-game",
-        version: "4",
-        twoPlayerMode: true,
-        devModeOn: false,
-      }),
-    });
-
-    expect((await app.request(duel)).status).toBe(202);
-    const run = await store.find("game", "madara.blitz", "bltz-duel-game");
-    expect(run && "version" in run.request ? run.request.version : undefined).toBe("4");
   });
 
   test("launches a real game dev-off and stores devModeOn:false", async () => {

@@ -6,7 +6,6 @@ import type { NativeWorldManifest } from "../world/native/types";
 import type { buildNativePreset } from "../config/native-preset";
 import { resolveGameTransactionResourceBounds } from "@bibliothecadao/eternum";
 import { Account, CallData, shortString, type Call, type RawArgs, RpcProvider } from "starknet";
-import { openLedgerGame, type LedgerTarget } from "../ledger/calls";
 import { loadRepoJsonFile } from "../shared/repo";
 import type { DeploymentEnvironmentId } from "../types";
 
@@ -32,15 +31,6 @@ export interface RegistrarTransactionResult {
 
 export interface CreateRegistrarGameResult extends RegistrarTransactionResult {
   gameId?: number;
-  openLedgerTxHash?: string;
-}
-
-export interface RegistrarLedgerGameTarget {
-  account: Account;
-  target: LedgerTarget;
-  presetId: number;
-  start: number;
-  end: number;
 }
 
 export type RegistrarEnvironmentId = DeploymentEnvironmentId;
@@ -279,7 +269,6 @@ export async function createRegistrarGame(
   account: Account,
   params: unknown,
   target: RegistrarTarget,
-  ledger?: RegistrarLedgerGameTarget,
   nativeDefinition?: ReturnType<typeof buildNativePreset>,
 ): Promise<CreateRegistrarGameResult> {
   const context = resolveRegistrarContext(target);
@@ -301,16 +290,7 @@ export async function createRegistrarGame(
     definition: nativeDefinition,
   });
   const result = await executeRegistrarCall(account, buildRegistrarCall("create_game", calldata, target), target);
-  const gameId = resolveCreatedGameId(result.receipt, target);
-  const ledgerResult =
-    gameId && ledger
-      ? await openLedgerGame(ledger.account, ledger.target, gameId, ledger.presetId, ledger.start, ledger.end)
-      : null;
-  return {
-    ...result,
-    gameId,
-    openLedgerTxHash: ledgerResult?.transactionHash,
-  };
+  return { ...result, gameId: resolveCreatedGameId(result.receipt, target) };
 }
 
 export async function settleBlitzRoster(

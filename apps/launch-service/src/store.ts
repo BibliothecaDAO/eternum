@@ -43,6 +43,8 @@ export interface LaunchServiceStore extends LaunchRunStore {
   heartbeat(runId: string, leaseToken: string, leaseMs: number): Promise<boolean>;
   complete(runId: string, leaseToken: string, summary: LaunchSummary): Promise<LaunchRun>;
   retry(runId: string, leaseToken: string, errorMessage: string, retryDelayMs: number): Promise<void>;
+  /** Requeues a run that ran too early; the attempt is given back. */
+  defer(runId: string, leaseToken: string, delayMs: number): Promise<void>;
   fail(runId: string, leaseToken: string, errorMessage: string): Promise<void>;
   delete(kind: LaunchKind, environment: GameEnvironmentId, name: string): Promise<boolean>;
 }
@@ -228,6 +230,15 @@ export class PostgresLaunchStore implements LaunchServiceStore {
          lease_token = NULL, error_message = $3, updated_at = now()
        WHERE id = $1 AND lease_token = $2 AND status = 'running'`,
       [runId, leaseToken, errorMessage, new Date(Date.now() + retryDelayMs)],
+    );
+  }
+
+  async defer(runId: string, leaseToken: string, delayMs: number): Promise<void> {
+    await this.pool.query(
+      `UPDATE launch_runs SET status = 'queued', attempts = attempts - 1, available_at = $3, claimed_until = NULL,
+         lease_token = NULL, error_message = NULL, updated_at = now()
+       WHERE id = $1 AND lease_token = $2 AND status = 'running'`,
+      [runId, leaseToken, new Date(Date.now() + delayMs)],
     );
   }
 

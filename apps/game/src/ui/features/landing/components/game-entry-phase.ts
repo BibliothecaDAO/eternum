@@ -4,11 +4,15 @@ export type GameEntryModalPhase =
   | "loading"
   | "settlement-waiting"
   | "settlement"
+  | "spectate"
   | "village-pass-required"
   | "village-placement"
   | "village-reveal"
   | "ready"
   | "error";
+
+/** What a Blitz game offers the connected player: play, wait for the roster's realms, or watch. */
+export type BlitzEntry = "play" | "preparing" | "spectate" | "review";
 
 interface ResolveGameEntryBlockingErrorInput {
   worldAvailabilityErrorMessage: string | null;
@@ -22,6 +26,7 @@ interface ResolveGameEntryModalPhaseInput {
   bootstrapStatus: GameEntryBootstrapStatus;
   hasPhaseError: boolean;
   isBlitzMode: boolean;
+  blitzEntry: BlitzEntry | null;
   isSpectateMode: boolean;
   worldMode: string;
   isCheckingWorldAvailability: boolean;
@@ -37,26 +42,41 @@ interface ResolveGameEntryModalPhaseInput {
   checksComplete: boolean;
   needsSettlement: boolean;
   canPlay: boolean;
-  isBlitzSettlementUnlocked: boolean;
+  isSettlementUnlocked: boolean;
 }
 
 interface GameEntryPreflightInput {
-  isEternumMode: boolean;
   isSpectateMode: boolean;
   settlementCheckComplete: boolean;
 }
 
 export const isGameEntryPreflightComplete = ({
-  isEternumMode,
   isSpectateMode,
   settlementCheckComplete,
-}: GameEntryPreflightInput): boolean => {
-  const waitsForPlayerSettlementCheck = !isSpectateMode;
+}: GameEntryPreflightInput): boolean => isSpectateMode || settlementCheckComplete;
 
-  return !waitsForPlayerSettlementCheck || settlementCheckComplete;
+/** Membership is the roster fact; readiness and the end of the game decide what a member may do. */
+export const resolveBlitzEntry = ({
+  isMember,
+  ready,
+  ended,
+}: {
+  isMember: boolean;
+  ready: boolean;
+  ended: boolean;
+}): BlitzEntry => {
+  if (ended) return "review";
+  if (!isMember) return "spectate";
+  return ready ? "play" : "preparing";
 };
 
-const resolveBlitzSettlementPhase = ({
+const resolveBlitzPhase = (entry: BlitzEntry): Extract<GameEntryModalPhase, "ready" | "settlement" | "spectate"> => {
+  if (entry === "play") return "ready";
+  if (entry === "preparing") return "settlement";
+  return "spectate";
+};
+
+const resolveEternumSettlementPhase = ({
   canPlay,
   isSettlementUnlocked,
 }: {
@@ -100,6 +120,7 @@ export const resolveGameEntryModalPhase = ({
   bootstrapStatus,
   hasPhaseError,
   isBlitzMode,
+  blitzEntry,
   isSpectateMode,
   worldMode,
   isCheckingWorldAvailability,
@@ -115,7 +136,7 @@ export const resolveGameEntryModalPhase = ({
   checksComplete,
   needsSettlement,
   canPlay,
-  isBlitzSettlementUnlocked,
+  isSettlementUnlocked,
 }: ResolveGameEntryModalPhaseInput): GameEntryModalPhase => {
   if (hasPhaseError || bootstrapStatus === "error") {
     return "error";
@@ -141,9 +162,9 @@ export const resolveGameEntryModalPhase = ({
 
   if (isEternumMode) {
     if (!checksComplete) return "loading";
-    return resolveBlitzSettlementPhase({
+    return resolveEternumSettlementPhase({
       canPlay: canPlay && !(isEternumDevMode && isSettlingAdditionalRealm),
-      isSettlementUnlocked: isBlitzSettlementUnlocked,
+      isSettlementUnlocked,
     });
   }
 
@@ -152,10 +173,7 @@ export const resolveGameEntryModalPhase = ({
   }
 
   if (isBlitzMode) {
-    return resolveBlitzSettlementPhase({
-      canPlay,
-      isSettlementUnlocked: isBlitzSettlementUnlocked,
-    });
+    return blitzEntry ? resolveBlitzPhase(blitzEntry) : "loading";
   }
 
   if (needsSettlement) {

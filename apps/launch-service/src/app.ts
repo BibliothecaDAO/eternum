@@ -12,7 +12,7 @@ import { CreateGameRequestSchema, type LaunchJobRequest, type LaunchKind } from 
 import type { LaunchServiceStore } from "./store";
 
 interface LaunchAppDependencies {
-  config: Pick<LaunchServiceConfig, "allowedOrigins" | "allowAnyLauncher" | "launcherAllowlist">;
+  config: Pick<LaunchServiceConfig, "allowedOrigins" | "launcherAllowlist">;
   identity: IdentityResolver;
   store: LaunchServiceStore;
   slots: SlotStore;
@@ -76,7 +76,7 @@ export const createLaunchApp = (dependencies: LaunchAppDependencies) => {
   );
   app.use("/api/*", requireIdentity(dependencies.identity, dependencies.config));
   app.use("/api/factory/*", requireLauncher(dependencies.config));
-  app.route("/api/slots", createSlotRoutes(dependencies.slots, dependencies.config, dependencies.verifyPlayer));
+  app.route("/api/slots", createSlotRoutes(dependencies.slots, dependencies.verifyPlayer));
 
   app.get("/health", async (context) => {
     try {

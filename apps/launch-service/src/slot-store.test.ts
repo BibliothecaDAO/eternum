@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { Pool } from "pg";
 import { expect, test } from "vitest";
+import { createBlitzTimetable, nextBlitzSlot } from "./schedule";
 import { PostgresLaunchStore } from "./store";
 import { PostgresSlotStore } from "./slot-store";
 
@@ -54,12 +55,7 @@ test("registration and frozen groups survive concurrency and service restart", a
     expect(queued).toHaveLength(2);
     expect(queued.map(({ name }) => name).sort()).toEqual(["friday-1", "friday-2"]);
     for (const run of queued) {
-      expect(run.request).toMatchObject({
-        version: "2",
-        devModeOn: false,
-        twoPlayerMode: false,
-        singleRealmMode: false,
-      });
+      expect(run.request).toMatchObject({ version: "2", devModeOn: false, singleRealmMode: false });
       expect(run.status).toBe("queued");
       expect("rosterOwners" in run.request && run.request.rosterOwners).toEqual(
         first.registrations.filter(({ gameNumber }) => run.name === `friday-${gameNumber}`).map(({ owner }) => owner),
@@ -81,6 +77,44 @@ test("registration and frozen groups survive concurrency and service restart", a
   }
 });
 
+test("the timetable creates the next slot once across workers and prunes frozen ones", async () => {
+  const schema = `slot_test_${randomUUID().replaceAll("-", "")}`;
+  const admin = new Pool({ connectionString: databaseUrl });
+  const url = new URL(databaseUrl!);
+  url.searchParams.set("options", `-c search_path=${schema}`);
+  const database = new PostgresLaunchStore(url.toString());
+  const slots = new PostgresSlotStore(database.pool);
+  try {
+    await admin.query(`CREATE SCHEMA ${schema}`);
+    await database.initialize();
+    const now = new Date("2026-10-01T11:30:00Z");
+    const workers = [createBlitzTimetable(slots), createBlitzTimetable(slots), createBlitzTimetable(slots)];
+    await Promise.all(workers.map((ensure) => ensure(now)));
+    await Promise.all(workers.map((ensure) => ensure(now)));
+    expect((await slots.list()).map(({ name, closesAt }) => ({ name, closesAt }))).toEqual([
+      { name: "blitz-20261001-2000", closesAt: "2026-10-01T20:00:00.000Z" },
+    ]);
+    expect(nextBlitzSlot(new Date("2026-10-01T20:00:00Z"))).toEqual({
+      name: "blitz-20261002-1100",
+      closesAt: "2026-10-02T11:00:00.000Z",
+    });
+    await slots.register("blitz-20261001-2000", "0x1");
+    await database.pool.query("UPDATE playtest_slots SET closes_at = clock_timestamp() - interval '1 second'");
+    await slots.freezeNextDue();
+    await workers[0]!(new Date("2026-10-01T20:00:01Z"));
+    await database.pool.query("UPDATE playtest_slots SET closes_at = clock_timestamp() - interval '1 second'");
+    await slots.freezeNextDue();
+    expect((await slots.list()).map(({ name, frozenAt }) => ({ name, frozen: frozenAt !== null }))).toEqual([
+      { name: "blitz-20261002-1100", frozen: true },
+    ]);
+    expect((await database.list("madara.blitz", "game")).map(({ name }) => name)).toEqual(["blitz-20261001-2000-1"]);
+  } finally {
+    await database.close();
+    await admin.query(`DROP SCHEMA ${schema} CASCADE`);
+    await admin.end();
+  }
+});
+
 test("the worker freezes zero and single-player slots without inventing players", async () => {
   const schema = `slot_test_${randomUUID().replaceAll("-", "")}`;
   const admin = new Pool({ connectionString: databaseUrl });
@@ -97,13 +131,17 @@ test("the worker freezes zero and single-player slots without inventing players"
     await slots.register("solo", "0x123");
     await database.pool.query("UPDATE playtest_slots SET closes_at = clock_timestamp() - interval '1 second'");
     await slots.freezeNextDue();
+    expect((await slots.list()).map(({ name, frozenAt }) => [name, frozenAt !== null])).toEqual([
+      ["empty", true],
+      ["solo", false],
+    ]);
     await slots.freezeNextDue();
     await slots.freezeNextDue();
-    const [empty, solo] = await slots.list();
-    expect(empty.frozenAt).not.toBeNull();
-    expect(empty.registrations).toEqual([]);
+    const [solo, ...others] = await slots.list();
+    expect(others).toEqual([]);
     expect(solo.frozenAt).not.toBeNull();
     expect(solo.registrations).toMatchObject([{ owner: "0x123", gameNumber: 1 }]);
+    expect((await database.list("madara.blitz", "game")).map(({ name }) => name)).toEqual(["solo-1"]);
   } finally {
     await database.close();
     await admin.query(`DROP SCHEMA ${schema} CASCADE`);

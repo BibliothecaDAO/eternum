@@ -415,9 +415,6 @@
     "apps/game/src/hooks/store/use-amm-store.ts": [
       "files"
     ],
-    "apps/game/src/hooks/store/use-loot-chest-opening-store.ts": [
-      "files"
-    ],
     "apps/game/src/services/amm/game-amm-client.ts": [
       "files"
     ],

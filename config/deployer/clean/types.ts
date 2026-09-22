@@ -22,13 +22,6 @@ export interface DeploymentEnvironment {
   privateKey?: string;
 }
 
-export interface LedgerLaunchOptions {
-  ledgerAddress?: string;
-  ledgerRpcUrl?: string;
-  lordsAddress?: string;
-  sponsoredPoolLords?: string;
-}
-
 export interface ExecutedConfigStep {
   id: string;
   description: string;
@@ -41,7 +34,7 @@ export interface LaunchGameResumeStepState {
   latestEvent?: string;
 }
 
-export interface LaunchGameRequest extends LedgerLaunchOptions {
+export interface LaunchGameRequest {
   admissionUrl?: string;
   rosterOwners?: readonly string[];
   launchKind?: "game";
@@ -85,8 +78,6 @@ export interface LaunchGameSummary {
   gameId?: number;
   worldAddress?: string;
   createGameTxHash?: string;
-  openLedgerTxHash?: string;
-  sponsorLedgerTxHash?: string;
   configMode: ExecutionMode;
   configSteps: ExecutedConfigStep[];
   dryRun: boolean;

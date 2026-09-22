@@ -89,7 +89,7 @@ const makeHeraldClient = () => {
   const health: Effect.Effect<HeraldHealth, HeraldUnreachable | BoundaryDecodeError> = heraldGet("/health", Health);
 
   const gameFacts = (gameId: number) =>
-    heraldGet(`/games/${gameId}/snapshot?models=GameRegistry,BlitzRoster,BlitzResult`, Snapshot).pipe(
+    heraldGet(`/games/${gameId}/snapshot?models=GameRegistry,BlitzRoster,BlitzResult,AddressName`, Snapshot).pipe(
       Effect.flatMap((snapshot) =>
         Effect.try({
           try: () => decodeGameFacts(snapshot, gameId),

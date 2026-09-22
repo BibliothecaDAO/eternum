@@ -45,7 +45,6 @@ const sharedRequest = (request: CreateGameRequest, rpc: RpcTarget, registrar: Re
   privateKey: registrar.privateKey,
   version: request.version,
   devModeOn: request.devModeOn,
-  twoPlayerMode: request.twoPlayerMode,
   singleRealmMode: request.singleRealmMode,
   durationSeconds: request.durationSeconds,
   mapConfigOverrides: request.mapConfigOverrides,

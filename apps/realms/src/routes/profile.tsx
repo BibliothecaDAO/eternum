@@ -5,7 +5,6 @@ import { HeraldClient } from "@/services/herald";
 import { IdentityApi } from "@/services/identity";
 import { IdentityUnreachable } from "@/services/platform/errors";
 import { Wallet } from "@/services/platform/wallet";
-import { MmrClient, mmrTier, mmrToInteger } from "@/services/mmr";
 import { portraitUrl, shortAddress } from "@/ui/format";
 import { useMutation, useQuery } from "@/ui/hooks";
 import { describeError, ErrorPanel, Flavor, GhostButton, GoldButton, Loading, Panel, PanelTitle } from "@/ui/kit";
@@ -105,7 +104,6 @@ function SignedInProfile({ address }: { address: string }) {
     }),
   );
 
-  const rating = useQuery(() => Effect.flatMap(MmrClient, (mmr) => mmr.rating(address)), [address]);
   const directory = useQuery(() => Effect.flatMap(HeraldClient, (herald) => herald.directory), []);
   const history = useQuery(
     () => (directory.kind === "ok" ? matchHistory(address, directory.value.games, 12) : Effect.succeed([])),
@@ -113,8 +111,6 @@ function SignedInProfile({ address }: { address: string }) {
   );
 
   if (!session) return null;
-  const mmr = rating.kind === "ok" ? mmrToInteger(rating.value) : null;
-  const tier = mmr !== null ? mmrTier(mmr) : null;
 
   return (
     <div className="grid items-start gap-3.5 lg:grid-cols-2">
@@ -130,11 +126,6 @@ function SignedInProfile({ address }: { address: string }) {
             <div className="font-display text-[24px] tracking-[0.05em]">
               {session.hasChosenName ? session.name : "Unnamed lord"}
             </div>
-            {tier && mmr !== null && (
-              <div className={`mt-1 font-heading text-[12px] font-semibold uppercase tracking-[0.1em] ${tier.color}`}>
-                {tier.name} · <span className="font-mono tabular-nums">{mmr.toLocaleString("en-US")}</span>
-              </div>
-            )}
             <button
               type="button"
               onClick={() => setEditingPortrait((value) => !value)}

@@ -65,7 +65,3 @@ export function buildLedgerEconomicPreset(
 export function buildRegisterLedgerPresetCalldata(presetId: number, preset: LedgerEconomicPreset): string[] {
   return CallData.compile([presetId, preset] as never);
 }
-
-export function resolveLedgerFundingAmount(currentPool: bigint, targetPool: bigint): bigint {
-  return currentPool < targetPool ? targetPool - currentPool : 0n;
-}

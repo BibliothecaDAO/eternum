@@ -25,7 +25,15 @@ interface ResultTarget {
   gameId: number;
 }
 
+/** The job ran before the chain reached the game's end; the worker requeues it for that moment. */
+export class GameNotEnded extends Error {
+  constructor(readonly secondsUntilEnd: number) {
+    super(`Game ends in ${secondsUntilEnd}s of chain time`);
+  }
+}
+
 export interface ResultOperations {
+  secondsUntilEnd(): Promise<number>;
   settle(): Promise<unknown>;
   progress(): Promise<ResultProgress>;
   players(): Promise<readonly { player: bigint; points: bigint }[]>;
@@ -34,6 +42,8 @@ export interface ResultOperations {
 
 /** Chain progress owns retries, including a crash after a submitted batch landed. */
 export async function completeBlitzResults(operations: ResultOperations): Promise<bigint> {
+  const secondsUntilEnd = await operations.secondsUntilEnd();
+  if (secondsUntilEnd > 0) throw new GameNotEnded(secondsUntilEnd);
   await operations.settle();
   let progress = await operations.progress();
   if (progress.complete) return progress.commitment;
@@ -93,6 +103,13 @@ export async function finalizeGame(
 
 function resultOperations(target: ResultTarget): ResultOperations {
   return {
+    secondsUntilEnd: async () => {
+      const game = await view<{ end_at: bigint; end_grace_seconds: bigint }>(target, "registry", "game", [
+        target.gameId,
+      ]);
+      const block = await target.provider.getBlock("latest");
+      return Number(game.end_at + game.end_grace_seconds) - block.timestamp;
+    },
     settle: () => completeNativeAdminCommand({ ...target, command: { kind: "MarkGameSettled", value: undefined } }),
     progress: () => view<ResultProgress>(target, "prizes", "blitz_result", [target.gameId]),
     players: async () => {

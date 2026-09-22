@@ -1,7 +1,9 @@
 import { Effect, Layer } from "effect";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
+import { LaunchExecutionFailure } from "./errors";
 import { LaunchExecutor } from "./executor";
 import type { ClaimedLaunchRun } from "./model";
+import { GameNotEnded } from "./results";
 import { databaseLayer } from "./store";
 import { createLaunchTestStore } from "./test-store";
 import { processNextLaunch } from "./worker";
@@ -81,6 +83,22 @@ describe("durable launch worker", () => {
 
     expect(abandoned?.request).toMatchObject({ gameStartTime: persistedStart });
     expect(recovered?.request).toMatchObject({ gameStartTime: persistedStart });
+  });
+
+  test("defers a result job to the chain's end time without spending an attempt", async () => {
+    const store = database.store;
+    await store.enqueue("result", { environment: "madara.blitz", gameName: "bltz-early", gameId: 4 });
+    const services = Layer.mergeAll(
+      databaseLayer(store),
+      Layer.succeed(LaunchExecutor, {
+        execute: (run) => Effect.fail(new LaunchExecutionFailure({ runId: run.id, cause: new GameNotEnded(90) })),
+      }),
+    );
+
+    await Effect.runPromise(processNextLaunch(60_000).pipe(Effect.provide(services)));
+
+    expect(await store.find("result", "madara.blitz", "bltz-early")).toMatchObject({ status: "queued", attempts: 0 });
+    expect(await store.claim(60_000)).toBeNull();
   });
 
   test("completes a claimed launch through the injected executor and store", async () => {

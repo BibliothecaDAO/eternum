@@ -9,10 +9,9 @@ const OptionalNumberRecord = Schema.optional(Schema.Record(Schema.String, Schema
 const SharedOptions = {
   // Frontier is never created through the API: the season schedule owns it.
   environment: Schema.Literals(["madara.blitz", "madara.eternum"]),
-  // One preset id per game mode.
-  version: Schema.optional(Schema.Literals(["1", "2", "3", "4"])),
+  // One preset id per game mode; Duel (4) is registered but has no launch flow.
+  version: Schema.optional(Schema.Literals(["2", "3"])),
   devModeOn: Schema.optional(Schema.Boolean),
-  twoPlayerMode: Schema.optional(Schema.Boolean),
   singleRealmMode: Schema.optional(Schema.Boolean),
   durationSeconds: Schema.optional(Schema.Number),
   mapConfigOverrides: OptionalNumberRecord,
@@ -30,9 +29,8 @@ export const CreateGameRequestSchema = Schema.Struct({
 
 interface SharedLaunchOptions {
   environment: "madara.blitz" | "madara.eternum" | "madara.frontier";
-  version?: "1" | "2" | "3" | "4";
+  version?: "1" | "2" | "3";
   devModeOn?: boolean;
-  twoPlayerMode?: boolean;
   singleRealmMode?: boolean;
   durationSeconds?: number;
   mapConfigOverrides?: Record<string, number>;
@@ -89,8 +87,6 @@ export function applyDurableLaunchDefaults(
   if (preset.environmentGameType !== resolveDeploymentEnvironment(request.environment).gameType) {
     throw new Error("Preset does not match the requested game format");
   }
-  if ((version === "4") !== Boolean(request.twoPlayerMode))
-    throw new Error("Duel uses preset 4; other modes cannot use Duel settlement");
   return {
     ...request,
     version,

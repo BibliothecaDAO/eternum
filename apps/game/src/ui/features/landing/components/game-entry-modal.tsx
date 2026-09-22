@@ -43,6 +43,7 @@ import {
   type SettlementSnapshot,
 } from "@/runtime/world/herald-pre-session-reader";
 import { gameKey } from "@/runtime/world/store";
+import { feltEquals } from "@bibliothecadao/eternum/game-client";
 import Button from "@/ui/design-system/atoms/button";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
@@ -54,11 +55,11 @@ import { getShard, requireShard, type GameRef } from "@bibliothecadao/eternum/ga
 import { Account } from "starknet";
 import {
   isGameEntryPreflightComplete,
+  resolveBlitzEntry,
   resolveGameEntryBlockingError,
   resolveGameEntryModalPhase,
   type GameEntryModalPhase as ModalPhase,
 } from "./game-entry-phase";
-import { resolveBlitzSettlementAvailability } from "./game-entry-blitz-timing";
 
 import { resolveGameEntryTarget } from "./game-entry-navigation";
 import { isSelectedWorldEntityWaitAborted, waitForSelectedWorldEntityState } from "./selected-world-entity-wait";
@@ -66,6 +67,8 @@ import { isSelectedWorldEntityWaitAborted, waitForSelectedWorldEntityState } fro
 const DEBUG_MODAL = false;
 const SETTLEMENT_SYNC_TIMEOUT_MS = 90000;
 const VILLAGE_REVEAL_SLOW_MS = 45_000;
+// An Eternum settlement creates one realm; Blitz realms are settled by the launch service.
+const SEASON_SETTLEMENT_COUNT = 1;
 
 const debugLog = (_worldName: string | null, ..._args: unknown[]) => {
   if (DEBUG_MODAL) {
@@ -80,8 +83,6 @@ type SettlementStatus = {
 };
 
 type SettleStage = "idle" | "settling" | "syncing" | "done" | "error";
-
-const getExpectedBlitzSettlementCount = (singleRealmMode: boolean): number => (singleRealmMode ? 1 : 3);
 
 const deriveSettlementStatus = ({
   snapshot,
@@ -439,7 +440,7 @@ const SettlementWaitingPhase = ({ secondsUntilUnlock }: { secondsUntilUnlock: nu
       <div className="text-center mb-4">
         <img src="/images/logos/eternum-loader.png" className="mx-auto w-20 mb-3" alt="Settlement pending" />
         <h2 className="text-lg font-semibold text-gold">Settlement Opens Soon</h2>
-        <p className="text-xs text-gold/60 mt-1">Blitz settlement opens when the registration window begins.</p>
+        <p className="text-xs text-gold/60 mt-1">Settlement opens when the season begins.</p>
       </div>
 
       <div className="rounded-lg border border-gold/20 bg-black/25 px-4 py-5 text-center">
@@ -455,6 +456,53 @@ const SettlementWaitingPhase = ({ secondsUntilUnlock }: { secondsUntilUnlock: nu
     </div>
   );
 };
+
+const BlitzPreparingPhase = ({ settledPlayers, rosterSize }: { settledPlayers: number; rosterSize: number }) => {
+  const progress = rosterSize > 0 ? Math.min(100, (settledPlayers / rosterSize) * 100) : 0;
+  return (
+    <div className="flex flex-col">
+      <div className="text-center mb-4">
+        <img src="/images/logos/eternum-loader.png" className="mx-auto w-20 mb-3" alt="Preparing realms" />
+        <h2 className="text-lg font-semibold text-gold">Your realms are being prepared</h2>
+        <p className="text-xs text-gold/60 mt-1">Play opens once every player on the roster has their realms.</p>
+      </div>
+      <div className="space-y-2">
+        <div className="h-2 bg-brown/50 rounded-full overflow-hidden">
+          <motion.div
+            className="h-full bg-gradient-to-r from-gold/80 to-gold rounded-full"
+            initial={{ width: 0 }}
+            animate={{ width: `${progress}%` }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+          />
+        </div>
+        <div className="flex justify-between text-xs text-gold/70">
+          <span>
+            {Math.min(settledPlayers, rosterSize)} / {rosterSize} players settled
+          </span>
+          <span>{Math.round(progress)}%</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const BlitzSpectatePhase = ({ ended, onSpectate }: { ended: boolean; onSpectate: () => void }) => (
+  <div className="text-center py-4">
+    <Eye className="w-12 h-12 text-gold mx-auto mb-3" />
+    <h2 className="text-lg font-semibold text-gold mb-2">
+      {ended ? "This game has ended" : "You are not in this game"}
+    </h2>
+    <p className="text-sm text-white/60 mb-4">
+      {ended ? "Its results are final. You can still look around the map." : "Only the roster plays. You can watch."}
+    </p>
+    <Button onClick={onSpectate} className="w-full h-11 !text-brown !bg-gold rounded-md" forceUppercase={false}>
+      <div className="flex items-center justify-center gap-2">
+        <Eye className="w-4 h-4" />
+        <span>{ended ? "Review" : "Spectate"}</span>
+      </div>
+    </Button>
+  </div>
+);
 
 const VillagePassRequiredPhase = ({
   onGetVillagePass,
@@ -850,10 +898,7 @@ export const GameEntryModal = ({
   const [villageSettlementError, setVillageSettlementError] = useState<string | null>(null);
   const [villageRevealResult, setVillageRevealResult] = useState<VillageRevealResult | null>(null);
 
-  const expectedSettlementCount = useMemo(
-    () => (isEternumMode ? 1 : getExpectedBlitzSettlementCount(worldMeta?.singleRealmMode ?? false)),
-    [isEternumMode, worldMeta?.singleRealmMode],
-  );
+  const expectedSettlementCount = SEASON_SETTLEMENT_COUNT;
   const hasEnteredGameRef = useRef(false);
   const entityWaitAbortControllerRef = useRef<AbortController | null>(null);
 
@@ -892,6 +937,12 @@ export const GameEntryModal = ({
     staleTime: 10_000,
   });
   const ownedStructuresError = ownedStructuresErrorRaw instanceof Error ? ownedStructuresErrorRaw.message : null;
+  const blitzRoster = useQuery({
+    queryKey: ["blitzRoster", chain, worldName, worldMeta?.gameId],
+    enabled: isOpen && isBlitzMode && !isSpectateMode && Boolean(worldMeta?.gameId),
+    queryFn: () => getSelectedWorldReader().fetchBlitzRoster(),
+    refetchInterval: 5_000,
+  });
   const villagePassInventoryWarning = useMemo(() => {
     if (!villagePassInventoryError) return null;
     const normalized = villagePassInventoryError.toLowerCase();
@@ -1026,25 +1077,28 @@ export const GameEntryModal = ({
     return () => window.clearInterval(id);
   }, [isOpen]);
 
-  const blitzSettlementAvailability = resolveBlitzSettlementAvailability({
-    registrationStartAt: worldMeta?.registrationStartAt ?? null,
-    registrationEndAt: worldMeta?.registrationEndAt ?? null,
-    devModeOn: worldMeta?.devModeOn ?? false,
-    nowSec,
-  });
   const nowSeconds = nowSec;
   const seasonStartAt = worldMeta?.startSettlingAt ?? worldMeta?.startMainAt ?? null;
   const seasonHasStarted = seasonStartAt != null && seasonStartAt <= nowSeconds;
   const seasonNotEnded = worldMeta?.endAt == null || worldMeta.endAt === 0 || nowSeconds <= worldMeta.endAt;
   const seasonTimingValid = isDevMode || (seasonHasStarted && seasonNotEnded);
   const secondsUntilSeasonStart = seasonStartAt == null ? null : Math.max(0, seasonStartAt - nowSeconds);
+  const blitzEntry = useMemo(() => {
+    if (!isBlitzMode || !worldMeta || !blitzRoster.data) return null;
+    return resolveBlitzEntry({
+      isMember: Boolean(account?.address) && blitzRoster.data.some((owner) => feltEquals(owner, account?.address)),
+      ready: worldMeta.ready,
+      ended: !seasonNotEnded,
+    });
+  }, [account?.address, blitzRoster.data, isBlitzMode, seasonNotEnded, worldMeta]);
   const hasVillagePass = villagePassBalance > 0n || villagePasses.length > 0;
   const isLoadingVillagePrereqs =
     isCheckingWorldAvailability || isLoadingVillagePassInventory || isLoadingOwnedStructures || !worldMeta;
+  // Blitz entry is decided by the roster fact; Eternum entry by the player's own settlement.
+  const checksComplete = isBlitzMode ? blitzEntry != null : settlementCheckComplete;
   const entryPreflightComplete = isGameEntryPreflightComplete({
-    isEternumMode,
     isSpectateMode,
-    settlementCheckComplete,
+    settlementCheckComplete: checksComplete,
   });
   const bootstrapStatus: "idle" | "pending-world" | "loading" | "ready" | "error" = preflightError
     ? "error"
@@ -1060,7 +1114,7 @@ export const GameEntryModal = ({
       },
       {
         id: "preflight",
-        label: isBlitzMode ? "Checking blitz settlement state" : "Checking world entry state",
+        label: isBlitzMode ? "Checking the roster" : "Checking world entry state",
         status: entryPreflightComplete ? ("complete" as const) : ("running" as const),
       },
     ],
@@ -1071,13 +1125,13 @@ export const GameEntryModal = ({
     return Math.round((completed / tasks.length) * 100);
   }, [tasks]);
 
-  // Blitz entry preflight only needs settlement readiness. Hyperstructure initialization no longer blocks /enter.
-  const checksComplete = settlementCheckComplete;
   const worldAvailabilityErrorMessage =
     worldAvailability?.error instanceof Error ? worldAvailability.error.message : null;
+  const rosterError = blitzRoster.error instanceof Error ? blitzRoster.error : null;
   const phaseError = useMemo(
     () =>
       preflightError ??
+      rosterError ??
       resolveGameEntryBlockingError({
         worldAvailabilityErrorMessage,
         isCheckingWorldAvailability,
@@ -1087,6 +1141,7 @@ export const GameEntryModal = ({
       }),
     [
       preflightError,
+      rosterError,
       worldAvailabilityErrorMessage,
       isCheckingWorldAvailability,
       worldAvailability?.isAvailable,
@@ -1101,6 +1156,7 @@ export const GameEntryModal = ({
       bootstrapStatus,
       hasPhaseError: phaseError != null,
       isBlitzMode,
+      blitzEntry,
       isSpectateMode,
       worldMode,
       isCheckingWorldAvailability,
@@ -1112,11 +1168,11 @@ export const GameEntryModal = ({
       hasVillagePass,
       checksComplete,
       needsSettlement,
-      canPlay: canPlay && (!isBlitzMode || worldMeta?.ready === true),
+      canPlay,
       isEternumDevMode,
       isDevMode,
       isSettlingAdditionalRealm: devSettlementTarget !== null,
-      isBlitzSettlementUnlocked: isEternumMode ? seasonTimingValid : worldMeta?.ready === true,
+      isSettlementUnlocked: seasonTimingValid,
     });
 
     return result;
@@ -1127,12 +1183,11 @@ export const GameEntryModal = ({
     devSettlementTarget,
     phaseError,
     isBlitzMode,
+    blitzEntry,
     isSpectateMode,
     checksComplete,
-    settlementCheckComplete,
     needsSettlement,
     canPlay,
-    blitzSettlementAvailability.isUnlocked,
     seasonTimingValid,
     isEternumMode,
     isLoadingVillagePrereqs,
@@ -1247,8 +1302,8 @@ export const GameEntryModal = ({
       return;
     }
 
-    if (!isBlitzMode && !isEternumMode) {
-      debugLog(worldName, "Skipping settlement check - world mode unresolved");
+    if (!isEternumMode) {
+      debugLog(worldName, "Skipping settlement check - only Eternum settles from this modal");
       return;
     }
 
@@ -1289,7 +1344,6 @@ export const GameEntryModal = ({
     void checkSettlementStatus();
   }, [
     account,
-    isBlitzMode,
     isEternumMode,
     isOpen,
     isSpectateMode,
@@ -1323,26 +1377,33 @@ export const GameEntryModal = ({
     window.open("https://empire.realms.world/trade", "_blank", "noopener,noreferrer");
   }, []);
 
-  // Enter game handler - navigates to the game.
-  const handleEnterGame = useCallback(() => {
-    if (!navigationEntryContext) {
-      return;
-    }
+  const enterGame = useCallback(
+    (spectate: boolean) => {
+      if (!navigationEntryContext) {
+        return;
+      }
 
-    markGameEntryMilestone("enter-game-started");
+      markGameEntryMilestone("enter-game-started");
 
-    const entryTarget = resolveGameEntryTarget({
-      chainId: navigationEntryContext.chainId,
-      gameId: navigationEntryContext.gameId,
-      structureEntityId: useUIStore.getState().structureEntityId,
-      worldMapReturnPosition: useUIStore.getState().worldMapReturnPosition,
-      isSpectateMode: navigationEntryContext.intent === "spectate",
-      mapCenterOffset: worldMeta?.mapCenterOffset ?? null,
-    });
+      const entryTarget = resolveGameEntryTarget({
+        chainId: navigationEntryContext.chainId,
+        gameId: navigationEntryContext.gameId,
+        structureEntityId: useUIStore.getState().structureEntityId,
+        worldMapReturnPosition: useUIStore.getState().worldMapReturnPosition,
+        isSpectateMode: spectate,
+        mapCenterOffset: worldMeta?.mapCenterOffset ?? null,
+      });
 
-    navigate(entryTarget.url);
-    window.dispatchEvent(new Event("urlChanged"));
-  }, [navigate, navigationEntryContext, worldMeta?.mapCenterOffset]);
+      navigate(entryTarget.url);
+      window.dispatchEvent(new Event("urlChanged"));
+    },
+    [navigate, navigationEntryContext, worldMeta?.mapCenterOffset],
+  );
+  const handleEnterGame = useCallback(
+    () => enterGame(navigationEntryContext?.intent === "spectate"),
+    [enterGame, navigationEntryContext?.intent],
+  );
+  const handleSpectate = useCallback(() => enterGame(true), [enterGame]);
 
   const handleVillageSettle = useCallback(async () => {
     const activeVillageRealmEntityId = selectedVillageRealmEntityId;
@@ -1435,7 +1496,7 @@ export const GameEntryModal = ({
     }, 1000);
   }, [autoSettleEnabled, autoSettleEntryKey, handleEnterGame, markCompleted, worldName]);
 
-  const finalizeFailedBlitzSettlement = useCallback(
+  const finalizeFailedSettlement = useCallback(
     (error: Error) => {
       console.error("[GameEntryModal] Settlement failed", { worldName, error });
       setSettleStage("error");
@@ -1512,7 +1573,7 @@ export const GameEntryModal = ({
       finalizeSuccessfulSettlement();
     } catch (error) {
       if (isSelectedWorldEntityWaitAborted(error)) return;
-      finalizeFailedBlitzSettlement(error instanceof Error ? error : new Error("Settlement failed"));
+      finalizeFailedSettlement(error instanceof Error ? error : new Error("Settlement failed"));
     } finally {
       setIsSettling(false);
     }
@@ -1521,9 +1582,8 @@ export const GameEntryModal = ({
     autoSettleEntryKey,
     account,
     expectedSettlementCount,
-    finalizeFailedBlitzSettlement,
+    finalizeFailedSettlement,
     finalizeSuccessfulSettlement,
-    isBlitzMode,
     isEternumMode,
     isEternumDevMode,
     devRealmNumber,
@@ -1691,17 +1751,21 @@ export const GameEntryModal = ({
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
               >
-                <SettlementWaitingPhase
-                  secondsUntilUnlock={
-                    isEternumMode ? secondsUntilSeasonStart : blitzSettlementAvailability.secondsUntilUnlock
-                  }
-                />
+                <SettlementWaitingPhase secondsUntilUnlock={secondsUntilSeasonStart} />
               </motion.div>
             )}
             {phase === "settlement" && isBlitzMode && (
-              <div className="p-6 text-center">
-                Your realms are being prepared automatically. Entry opens when every player is ready.
-              </div>
+              <motion.div key="preparing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <BlitzPreparingPhase
+                  settledPlayers={worldMeta?.settledPlayersCount ?? 0}
+                  rosterSize={blitzRoster.data?.length ?? 0}
+                />
+              </motion.div>
+            )}
+            {phase === "spectate" && (
+              <motion.div key="spectate" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <BlitzSpectatePhase ended={blitzEntry === "review"} onSpectate={handleSpectate} />
+              </motion.div>
             )}
             {phase === "settlement" && isEternumMode && (
               <motion.div key="settlement" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>

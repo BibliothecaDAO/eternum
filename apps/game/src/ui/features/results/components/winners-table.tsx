@@ -1,5 +1,4 @@
-import { displayAddress } from "@/ui/utils/utils";
-import { configManager, getAddressName, toHexString } from "@bibliothecadao/eternum";
+import { configManager, displayPlayerName, getAddressName } from "@bibliothecadao/eternum";
 import { useGame, useNativeRevision } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
 import { useMemo } from "react";
@@ -34,7 +33,7 @@ export const WinnersTable = () => {
   }, [store, leaderboardRevision]);
 
   const playerName = (address: bigint): string =>
-    getAddressName(ContractAddress(address), store) || displayAddress(toHexString(address));
+    displayPlayerName(ContractAddress(address), getAddressName(ContractAddress(address), store));
 
   if (rows.length === 0) return <div className="text-gray-400 text-sm">No ranked players yet.</div>;
 

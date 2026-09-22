@@ -3,6 +3,8 @@ import { Duration, Effect, Result } from "effect";
 import { LaunchExecutor } from "./executor";
 import { LaunchExecutionFailure } from "./errors";
 import type { ClaimedLaunchRun } from "./model";
+import { GameNotEnded } from "./results";
+import { createBlitzTimetable } from "./schedule";
 import { databaseOperation, LaunchDatabase } from "./store";
 
 const errorMessage = (error: LaunchExecutionFailure): string =>
@@ -51,6 +53,13 @@ export const processNextLaunch = (leaseMs: number) =>
       return true;
     }
 
+    if (result.failure.cause instanceof GameNotEnded) {
+      const delayMs = result.failure.cause.secondsUntilEnd * 1_000;
+      yield* databaseOperation("defer result", () => store.defer(run.id, run.leaseToken, delayMs));
+      yield* Effect.logInfo("result_deferred", { runId: run.id, name: run.name, delayMs });
+      return true;
+    }
+
     const message = errorMessage(result.failure);
     if (run.attempts < 3) {
       yield* databaseOperation("retry launch", () => store.retry(run.id, run.leaseToken, message, 5_000));
@@ -62,11 +71,14 @@ export const processNextLaunch = (leaseMs: number) =>
     return true;
   });
 
-export const launchWorkerLoop = (leaseMs: number, pollMs: number, slots: SlotStore) =>
-  Effect.forever(
-    databaseOperation("freeze playtest roster", () => slots.freezeNextDue()).pipe(
+export const launchWorkerLoop = (leaseMs: number, pollMs: number, slots: SlotStore) => {
+  const ensureNextSlot = createBlitzTimetable(slots);
+  return Effect.forever(
+    databaseOperation("schedule blitz slot", () => ensureNextSlot()).pipe(
+      Effect.andThen(databaseOperation("freeze playtest roster", () => slots.freezeNextDue())),
       Effect.andThen(processNextLaunch(leaseMs)),
       Effect.catchCause((cause) => Effect.logError("launch_worker_iteration_failed", { cause: String(cause) })),
       Effect.andThen(Effect.sleep(Duration.millis(pollMs))),
     ),
   );
+};

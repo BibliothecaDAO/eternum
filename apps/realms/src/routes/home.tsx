@@ -31,12 +31,6 @@ function Landing({ next, now }: { next: DirectoryGame | undefined; now: number }
           >
             See the next game
           </Link>
-          <Link
-            to="/ranks"
-            className="cut inline-flex items-center border border-line bg-inset px-5 py-3.5 font-heading text-[12px] font-semibold uppercase tracking-[0.12em] text-gold hover:border-amber-deep hover:text-amber-hot"
-          >
-            The ladder
-          </Link>
         </div>
       </div>
       <div className="mt-7 grid max-w-[880px] grid-cols-1 gap-3.5 md:grid-cols-2">

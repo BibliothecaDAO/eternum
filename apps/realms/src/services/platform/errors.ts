@@ -6,11 +6,6 @@ export class RpcError extends Data.TaggedError("RpcError")<{
   readonly cause: unknown;
 }> {}
 
-/** A value-plane contract has no mainnet address yet (pre-B.1 deploy). */
-export class ValuePlaneNotDeployed extends Data.TaggedError("ValuePlaneNotDeployed")<{
-  readonly contract: string;
-}> {}
-
 /** A boundary payload did not match its schema. Loud by design — never a silent zero. */
 export class BoundaryDecodeError extends Data.TaggedError("BoundaryDecodeError")<{
   readonly boundary: string;
