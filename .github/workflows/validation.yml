@@ -1,0 +1,178 @@
+name: validation
+
+on:
+  pull_request:
+  push:
+    branches: [next]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validation-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  scope:
+    runs-on: ubuntu-latest
+    outputs:
+      client: ${{ steps.paths.outputs.client }}
+      herald: ${{ steps.paths.outputs.herald }}
+      services: ${{ steps.paths.outputs.services }}
+      native: ${{ steps.paths.outputs.native }}
+      runtime: ${{ steps.paths.outputs.runtime }}
+      terrain: ${{ steps.paths.outputs.terrain }}
+      amm: ${{ steps.paths.outputs.amm }}
+      collectibles: ${{ steps.paths.outputs.collectibles }}
+      mmr: ${{ steps.paths.outputs.mmr }}
+      season_pass: ${{ steps.paths.outputs.season_pass }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Select validation areas
+        id: paths
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          python3 - <<'PYTHON'
+          import fnmatch, json, os, subprocess
+          files = subprocess.check_output(["git", "diff", "--name-only", "-z", os.environ["BASE_SHA"], os.environ["HEAD_SHA"]]).decode().split("\0")
+          shared = [".github/workflows/**", "package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml"]
+          areas = {
+              "client": [
+                  "apps/game/**",
+                  "packages/**",
+                  "contracts/l3/world-native/schema/**"
+              ],
+              "herald": [
+                  "apps/herald/**",
+                  "packages/**",
+                  "contracts/l3/world-native/schema/**"
+              ],
+              "services": [
+                  "apps/launch-service/**",
+                  "apps/realms/**",
+                  "apps/web/**",
+                  "apps/realtime-server/**",
+                  "packages/**",
+                  "config/**",
+                  "contracts/l3/world-native/schema/**"
+              ],
+              "native": [
+                  "contracts/l3/**",
+                  "packages/**",
+                  "config/**",
+                  "deploy/athanor/**",
+                  "scripts/generate-realm-metadata.py"
+              ],
+              "runtime": [
+                  "apps/agent-runner/**",
+                  "deploy/athanor/**",
+                  "packages/**",
+                  "config/**"
+              ],
+              "terrain": [
+                  "apps/game/src/three/**",
+                  "apps/game/scripts/**",
+                  "apps/game/public/**",
+                  "apps/game/vitest.assets.*",
+                  "packages/core/src/utils/biome/**"
+              ],
+              "amm": [
+                  "contracts/l2/ammv2/**"
+              ],
+              "collectibles": [
+                  "contracts/l2/collectibles/**"
+              ],
+              "mmr": [
+                  "contracts/l2/mmr/**"
+              ],
+              "season_pass": [
+                  "contracts/l2/season_pass/**"
+              ]
+          }
+          selected = {area: any(fnmatch.fnmatch(path, pattern) for path in files for pattern in shared + patterns) for area, patterns in areas.items()}
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+              for area, enabled in selected.items():
+                  print(f"{area}={str(enabled).lower()}", file=output)
+          print(json.dumps(selected, sort_keys=True))
+          PYTHON
+
+  static:
+    uses: ./.github/workflows/static.yml
+
+  client:
+    needs: scope
+    if: needs.scope.outputs.client == 'true'
+    uses: ./.github/workflows/test-client.yml
+
+  herald:
+    needs: scope
+    if: needs.scope.outputs.herald == 'true'
+    uses: ./.github/workflows/test-herald.yml
+
+  services:
+    needs: scope
+    if: needs.scope.outputs.services == 'true'
+    uses: ./.github/workflows/test-services.yml
+
+  native:
+    needs: scope
+    if: needs.scope.outputs.native == 'true'
+    uses: ./.github/workflows/native-world.yml
+
+  runtime:
+    needs: scope
+    if: needs.scope.outputs.runtime == 'true'
+    uses: ./.github/workflows/test-agent-runtime.yml
+
+  terrain:
+    needs: scope
+    if: needs.scope.outputs.terrain == 'true'
+    uses: ./.github/workflows/verify-terrain.yml
+
+  amm:
+    needs: scope
+    if: needs.scope.outputs.amm == 'true'
+    uses: ./.github/workflows/test-ammv2.yml
+
+  collectibles:
+    needs: scope
+    if: needs.scope.outputs.collectibles == 'true'
+    uses: ./.github/workflows/test-collectibles.yml
+
+  mmr:
+    needs: scope
+    if: needs.scope.outputs.mmr == 'true'
+    uses: ./.github/workflows/test-mmr.yml
+
+  season_pass:
+    needs: scope
+    if: needs.scope.outputs.season_pass == 'true'
+    uses: ./.github/workflows/test-season-pass.yml
+
+  validation:
+    name: validation
+    if: always()
+    needs: [scope, static, client, herald, services, native, runtime, terrain, amm, collectibles, mmr, season_pass]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every selected area
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          python3 - <<'PYTHON'
+          import json, os
+          results = json.loads(os.environ["RESULTS"])
+          scope = results["scope"]
+          passed = scope["result"] == "success" and results["static"]["result"] == "success"
+          for area, job in results.items():
+              if area in ("scope", "static"):
+                  continue
+              expected = "success" if scope["outputs"].get(area) == "true" else "skipped"
+              passed = passed and job["result"] == expected
+          print(json.dumps({"passed": passed, "areas": results}, sort_keys=True))
+          raise SystemExit(0 if passed else 1)
+          PYTHON

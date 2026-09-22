@@ -1,0 +1,45 @@
+name: static
+
+on:
+  workflow_call:
+
+jobs:
+  knip:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check for unused files, exports and types
+        run: pnpm run knip
+
+      - name: Check changed-file formatting
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          git diff --name-only --diff-filter=ACMR -z "$BASE_SHA" "$HEAD_SHA" |
+            while IFS= read -r -d '' file; do
+              [ -L "$file" ] && continue
+              [ -f "$file" ] || continue
+              case "$file" in
+                *.cjs|*.mjs|*.js|*.jsx|*.ts|*.tsx|*.json|*.md|*.mdx|*.yaml|*.yml|*.css|*.scss|*.html)
+                  pnpm prettier --check "$file" ;;
+              esac
+            done

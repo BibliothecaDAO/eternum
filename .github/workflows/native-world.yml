@@ -1,29 +1,7 @@
 name: native-world
 
 on:
-  pull_request:
-  push:
-    branches: [next]
-    paths:
-      - "contracts/l3/test-native.sh"
-      - "contracts/l3/world-native/**"
-      - "contracts/l3/randomness-protocol/**"
-      - "apps/herald/src/model-registry.ts"
-      - "config/deployer/clean/**"
-      - "config/source/**"
-      - "deploy/athanor/scripts/validate-native-target*"
-      - "deploy/athanor/scripts/deploy-box*"
-      - "deploy/athanor/scripts/shard.py"
-      - "deploy/athanor/scripts/test_*.py"
-      - "deploy/athanor/randomness/native-intent*.ts"
-      - "scripts/generate-realm-metadata.py"
-      - "packages/**"
-      - ".github/workflows/native-world.yml"
-      - "pnpm-lock.yaml"
-
-concurrency:
-  group: native-world-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  workflow_call:
 
 jobs:
   native-world:
@@ -147,18 +125,3 @@ jobs:
         run: pnpm --filter @bibliothecadao/provider... run build
       - name: Test native command provider
         run: pnpm --dir packages/provider exec vitest run
-
-  native-validation:
-    if: always()
-    needs: [native-world, randomness-protocol, native-deployer, native-provider]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Require every native validation job to pass
-        env:
-          JOB_RESULTS: ${{ toJSON(needs) }}
-        run: |
-          node --input-type=module <<'JS'
-          const jobs = Object.entries(JSON.parse(process.env.JOB_RESULTS)).map(([name, job]) => ({ name, result: job.result }));
-          console.log(JSON.stringify({ jobs, passed: jobs.every(({ result }) => result === "success") }));
-          if (jobs.some(({ result }) => result !== "success")) process.exit(1);
-          JS

@@ -1,16 +1,13 @@
 name: test ammv2
 
 on:
-  pull_request:
-    paths:
-      - "contracts/l2/ammv2/**"
-      - ".github/workflows/test-ammv2.yml"
+  workflow_call:
 
 jobs:
   test-ammv2:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: software-mansion/setup-scarb@v1
         with:
           tool-versions: contracts/l2/ammv2/.tool-versions

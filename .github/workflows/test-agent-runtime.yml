@@ -1,21 +1,7 @@
 name: agent-runtime
 
 on:
-  pull_request:
-    paths:
-      - "apps/agent-runner/**"
-      - "deploy/athanor/harness/**"
-      - "deploy/athanor/scripts/**"
-      - "packages/**"
-      - "config/**"
-      - "package.json"
-      - "pnpm-lock.yaml"
-      - "pnpm-workspace.yaml"
-      - ".github/workflows/test-agent-runtime.yml"
-
-concurrency:
-  group: agent-runtime-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  workflow_call:
 
 jobs:
   offline-tests:

@@ -1,22 +1,7 @@
-name: notifications
+name: services
 
 on:
-  pull_request:
-    paths:
-      - "packages/core/**"
-      - "apps/herald/**"
-      - "packages/notifications/**"
-      - "packages/identity/**"
-      - "packages/db/**"
-      - "apps/realms/**"
-      - "contracts/l3/world-native/schema/**"
-      - "pnpm-lock.yaml"
-      - "pnpm-workspace.yaml"
-      - ".github/workflows/test-notifications.yml"
-
-concurrency:
-  group: notifications-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
+  workflow_call:
 
 jobs:
   preferences-and-policy:
@@ -37,6 +22,9 @@ jobs:
           --health-cmd "pg_isready -U postgres -d identity_test" --health-interval 5s --health-timeout 5s
           --health-retries 10
     env:
+      DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/identity_test
+      DATABASE_SSL: "false"
+      LAUNCH_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/identity_test
       IDENTITY_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/identity_test
     steps:
       - name: Checkout
@@ -57,10 +45,18 @@ jobs:
         run: pnpm --dir packages/notifications test
       - name: Verify authenticated preference transport
         run: pnpm --dir packages/identity test
-      - name: Verify API and PostgreSQL preference races
-        run:
-          pnpm --dir apps/realms test server/main.test.ts server/api-cors.test.ts
-          server/notification-preference-store.integration.test.ts server/push-subscription-store.integration.test.ts
-          server/push-notifications.test.ts server/web-push-sender.test.ts server/automatic-notifications
-      - name: Typecheck identity server
-        run: pnpm --dir apps/realms typecheck
+      - name: Test identity APIs and PostgreSQL races
+        run: pnpm --dir apps/realms test
+      - name: Test launch lifecycle and PostgreSQL stores
+        run: pnpm --dir apps/launch-service test
+      - name: Test chat access and delivery
+        run: pnpm --dir apps/realtime-server test
+      - name: Initialize the portal test database
+        run: pnpm --dir packages/db exec drizzle-kit push --force
+      - name: Test account portal calculations and authentication
+        run: pnpm --dir apps/web test
+      - name: Typecheck services
+        run: |
+          pnpm --dir apps/realms typecheck
+          pnpm --dir apps/launch-service typecheck
+          pnpm --dir apps/realtime-server typecheck

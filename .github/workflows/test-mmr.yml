@@ -1,16 +1,13 @@
 name: test mmr
 
 on:
-  pull_request:
-    paths:
-      - "contracts/l2/mmr/**"
-      - ".github/workflows/test-mmr.yml"
+  workflow_call:
 
 jobs:
   test-mmr:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: software-mansion/setup-scarb@v1
         with:
           tool-versions: .tool-versions

@@ -1,26 +1,13 @@
 name: test collectibles
 
 on:
-  pull_request:
-    paths-ignore:
-      - "contracts/common/**"
-      - "contracts/l2/season_pass/**"
-      - "contracts/l2/village_pass/**"
-      - "contracts/utils/**"
-      - "client/**"
-      - "**/manifest.json"
-      - "config/**"
-      - ".github/**"
-      - "pnpm-lock.yaml"
-
-env:
-  SCARB_VERSION: v2.9.2
+  workflow_call:
 
 jobs:
   test-collectibles:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: software-mansion/setup-scarb@v1
         with:
           tool-versions: contracts/l2/collectibles/.tool-versions
