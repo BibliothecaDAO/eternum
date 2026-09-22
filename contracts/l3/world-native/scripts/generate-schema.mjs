@@ -1,4 +1,4 @@
-import { defineFactModels } from "../schema/fact-models.mjs";
+import { defineFactModels, syncScopes } from "../schema/fact-models.mjs";
 import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
@@ -354,6 +354,27 @@ function factMembers(members) {
 }
 
 const factRows = schema.models.map((model) => [model.name, factMembers([...model.keys, ...model.members])]);
+
+/** Every fact and event needs a subscription scope whose fields exist, or generation stops here. */
+function validatedSyncScopes() {
+  const fields = new Map([
+    ...schema.models.map((model) => [model.name, new Set([...model.keys, ...model.members].map(({ name }) => name))]),
+    ...schema.events.map(({ name, event }) => [name, new Set(event.members.map((member) => member.name))]),
+  ]);
+  const missing = [...fields.keys()].filter((name) => !Object.hasOwn(syncScopes, name));
+  if (missing.length > 0) throw new Error(`No subscription scope for ${missing.join(", ")}`);
+  const unknown = Object.keys(syncScopes).filter((name) => !fields.has(name));
+  if (unknown.length > 0) throw new Error(`Subscription scope for unknown facts ${unknown.join(", ")}`);
+  for (const [name, rule] of Object.entries(syncScopes)) {
+    if (rule === "shared" || rule === "actor") continue;
+    const { epoch, regions = [], ...sets } = rule;
+    const named = [...Object.values(sets).flat(), ...regions.flatMap((region) => Object.values(region))];
+    if (epoch !== undefined) named.push(epoch);
+    const absent = named.filter((field) => !fields.get(name).has(field));
+    if (absent.length > 0) throw new Error(`Subscription scope for ${name} names unknown fields ${absent.join(", ")}`);
+  }
+  return syncScopes;
+}
 const declarations = [
   "// Generated from native fact models and contract ABIs. Run the native schema generator to update.",
   `export const nativeFactSchemaIdentity = ${JSON.stringify(schema.identity)};`,
@@ -379,6 +400,7 @@ const declarations = [
     null,
     2,
   )} as const;`,
+  `export const nativeSyncScopes = ${JSON.stringify(validatedSyncScopes(), null, 2)} as const;`,
 ];
 await writeText("schema/client.gen.ts", declarations.join("\n") + "\n");
 

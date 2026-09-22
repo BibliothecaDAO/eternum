@@ -283,17 +283,18 @@ describe("GameSyncRuntime recovery", () => {
     const harness = createSessionHarness({
       store: memory.store,
       snapshot: {
-        Position: [fact("army", "Position", { x: 1 })],
+        Structure: [fact("realm", "Structure", { entity_id: 1 })],
         ActionNonce: [fact("first", "ActionNonce", { next_nonce: 4 })],
       },
     });
+    harness.session.snapshotModels = ["Structure", "ActionNonce"];
     await new GameSyncRuntime().startSession(harness.session);
 
     harness.emitScope([fact("second", "ActionNonce", { next_nonce: 0 })]);
     await flushMicrotasks();
 
     expect([...memory.rows.entries()]).toEqual([
-      ["Position:army", { x: 1 }],
+      ["Structure:realm", { entity_id: 1 }],
       ["ActionNonce:second", { next_nonce: 0 }],
     ]);
   });

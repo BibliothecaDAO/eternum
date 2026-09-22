@@ -1798,3 +1798,281 @@ export const nativeFactModels = {
     }
   }
 } as const;
+export const nativeSyncScopes = {
+  "ActionNonce": "actor",
+  "ExecutionRecorded": "actor",
+  "BatchProgress": "actor",
+  "Preset": "shared",
+  "GameSequence": "shared",
+  "SpireLayout": "shared",
+  "LedgerOperator": "shared",
+  "CampResources": "shared",
+  "ArtificerCost": "shared",
+  "BlitzResult": "shared",
+  "FaithRules": "shared",
+  "SeasonWinThreshold": "shared",
+  "ExtractionRewards": "shared",
+  "RelicRules": "shared",
+  "ChestRules": "shared",
+  "RelicDiscovery": "shared",
+  "DepositRules": "shared",
+  "WithdrawalRules": "shared",
+  "ResourceToken": "shared",
+  "BankRules": "shared",
+  "Market": "shared",
+  "TradeRules": "shared",
+  "BitcoinPhase": "shared",
+  "MineKindConfig": "shared",
+  "MinePool": "shared",
+  "BlitzSettlementOrder": "shared",
+  "BlitzRoster": "shared",
+  "RealmCatalogue": "shared",
+  "RealmGrants": "shared",
+  "HyperstructureReservations": "shared",
+  "SettlementRules": "shared",
+  "SettlementProgress": "shared",
+  "SettlementPool": "shared",
+  "VillageRules": "shared",
+  "VillagePool": "shared",
+  "ProductionRecipe": "shared",
+  "ProductionReady": "shared",
+  "BoardRules": "shared",
+  "BuildingRule": "shared",
+  "BuildingRulesReady": "shared",
+  "HyperstructureRules": "shared",
+  "ResourceRule": "shared",
+  "ResourceRulesReady": "shared",
+  "UpgradeLimits": "shared",
+  "UpgradeRecipe": "shared",
+  "DepthRules": "shared",
+  "GameRegistry": "shared",
+  "SliceRules": "shared",
+  "EntitySequence": "shared",
+  "PointsTotal": "shared",
+  "DomainState": "shared",
+  "DomainClass": "shared",
+  "Authentication": "shared",
+  "OwnershipRulesReady": "shared",
+  "AddressName": {
+    "owners": [
+      "address"
+    ]
+  },
+  "PlayerPoints": {
+    "owners": [
+      "address"
+    ]
+  },
+  "RealmTraits": {
+    "realmTraits": [
+      "realm_id"
+    ]
+  },
+  "EntryEntitlement": {
+    "owners": [
+      "owner"
+    ]
+  },
+  "PlayerEntry": {
+    "owners": [
+      "owner"
+    ]
+  },
+  "VillagePass": {
+    "owners": [
+      "owner"
+    ]
+  },
+  "Liquidity": {
+    "owners": [
+      "owner"
+    ]
+  },
+  "StoryEvent": {
+    "owners": [
+      "owner"
+    ]
+  },
+  "Guild": {
+    "owners": [
+      "guild_id"
+    ]
+  },
+  "GuildMember": {
+    "owners": [
+      "actor"
+    ]
+  },
+  "GuildWhitelist": {
+    "owners": [
+      "player"
+    ]
+  },
+  "ChestPity": {
+    "owners": [
+      "player"
+    ]
+  },
+  "BitcoinContribution": {
+    "owners": [
+      "player"
+    ]
+  },
+  "PlayerFaithPoints": {
+    "owners": [
+      "player"
+    ]
+  },
+  "PointsAwarded": {
+    "owners": [
+      "player"
+    ]
+  },
+  "ChestTokens": {
+    "owners": [
+      "player"
+    ],
+    "epoch": "epoch"
+  },
+  "ChestReward": {
+    "owners": [
+      "player"
+    ],
+    "epoch": "epoch"
+  },
+  "RaidEvent": {
+    "owners": [
+      "player",
+      "target_owner"
+    ]
+  },
+  "WonderFaith": {
+    "owners": [
+      "last_recorded_owner"
+    ]
+  },
+  "TileOpt": {
+    "regions": [
+      {
+        "alt": "alt",
+        "x": "col",
+        "y": "row"
+      }
+    ]
+  },
+  "Building": {
+    "realms": [
+      "outer_entity_id"
+    ]
+  },
+  "ProductionReceiver": {
+    "realms": [
+      "home"
+    ]
+  },
+  "ExplorerTroops": {
+    "entities": [
+      "explorer_id"
+    ]
+  },
+  "Guard": {
+    "entities": [
+      "structure_id"
+    ]
+  },
+  "FaithfulStructure": {
+    "entities": [
+      "structure_id"
+    ]
+  },
+  "BitcoinClaim": {
+    "entities": [
+      "mine_id"
+    ]
+  },
+  "TradeOrder": {
+    "entities": [
+      "maker_id",
+      "taker_id"
+    ]
+  },
+  "BattleEvent": {
+    "entities": [
+      "attacker_id",
+      "defender_id"
+    ]
+  },
+  "ResourceProduction": {
+    "entities": [
+      "entity_id"
+    ],
+    "productionSources": [
+      "entity_id"
+    ]
+  },
+  "Structure": {
+    "entities": [
+      "entity_id"
+    ]
+  },
+  "BankName": {
+    "entities": [
+      "entity_id"
+    ]
+  },
+  "VillageRaid": {
+    "entities": [
+      "entity_id"
+    ]
+  },
+  "BitcoinMine": {
+    "entities": [
+      "entity_id"
+    ]
+  },
+  "ResourceBalance": {
+    "entities": [
+      "entity_id"
+    ]
+  },
+  "ProductionBonus": {
+    "entities": [
+      "entity_id"
+    ]
+  },
+  "ResourceWeight": {
+    "entities": [
+      "entity_id"
+    ]
+  },
+  "ResourceArrival": {
+    "entities": [
+      "entity_id"
+    ]
+  },
+  "StructureBuildings": {
+    "entities": [
+      "entity_id"
+    ]
+  },
+  "Hyperstructure": {
+    "entities": [
+      "entity_id"
+    ]
+  },
+  "HyperstructureProgress": {
+    "entities": [
+      "entity_id"
+    ]
+  },
+  "HyperstructureShares": {
+    "entities": [
+      "entity_id"
+    ]
+  },
+  "EntityName": {
+    "entities": [
+      "entity_id"
+    ]
+  }
+} as const;
