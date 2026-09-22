@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { isoBase64URL, isoCBOR } from "@simplewebauthn/server/helpers";
 import { buildSiwsMessage } from "@realms-world/identity";
 import { createGuardian, deviceChangeHash } from "@realms-world/guardian";
@@ -18,13 +18,24 @@ const GUARDIAN_KEY = "0x2dccce1da22003777062ee0870e9881b460a8b7eca276870f57c601f
 const CHAIN_ID = "0x5245414c4d535f53484152445f41";
 
 let proxy: Awaited<ReturnType<typeof getPlatformProxy<{ DB: D1Database }>>>;
+const OPERATOR_TOKEN = "operator-test-token";
+
+/** The Heralds this test's shards answer from, by URL; a missing entry answers 503. */
+const heralds = new Map<string, unknown>();
+const fetchShard = (async (input: RequestInfo | URL) => {
+  const body = heralds.get(new URL(input instanceof Request ? input.url : input).href);
+  return body === undefined ? new Response("unavailable", { status: 503 }) : Response.json(body);
+}) as typeof fetch;
 let env: IdentityEnv;
 let auth: ReturnType<typeof createIdentityAuth>;
 
 beforeAll(async () => {
   proxy = await getPlatformProxy<{ DB: D1Database }>({ environment: "staging", persist: false });
-  const migration = readFileSync(new URL("../migrations/0001_identity.sql", import.meta.url), "utf8");
-  const statements = migration
+  const migrations = new URL("../migrations/", import.meta.url);
+  const statements = readdirSync(migrations)
+    .sort()
+    .map((file) => readFileSync(new URL(file, migrations), "utf8"))
+    .join(";\n")
     .replace(/^--.*$/gm, "")
     .split(";")
     .map((statement) => statement.trim())
@@ -36,6 +47,7 @@ beforeAll(async () => {
     ACCOUNT_CLASS_HASH,
     BETTER_AUTH_SECRET: "identity-test-secret-identity-test-secret",
     IDENTITY_RPC_URL: "http://127.0.0.1:1",
+    DIRECTORY_ADMIN_TOKEN: OPERATOR_TOKEN,
     DB: proxy.env.DB,
     GUARDIAN: createGuardian(GUARDIAN_KEY),
     PUBLIC_RATE_LIMIT: { limit: async () => ({ success: true }) },
@@ -50,7 +62,7 @@ afterAll(() => proxy?.dispose());
 /** A browser: one cookie jar, first-party requests to the app's /api. */
 const createBrowser = () => {
   const cookies = new Map<string, string>();
-  const request = async (path: string, init: { method?: string; body?: unknown } = {}) => {
+  const request = async (path: string, init: { method?: string; body?: unknown; token?: string } = {}) => {
     const response = await routeIdentityRequest(
       new Request(`${ORIGIN}${path}`, {
         method: init.method ?? (init.body === undefined ? "GET" : "POST"),
@@ -58,11 +70,13 @@ const createBrowser = () => {
           origin: ORIGIN,
           "content-type": "application/json",
           cookie: [...cookies].map(([name, value]) => `${name}=${value}`).join("; "),
+          ...(init.token ? { authorization: `Bearer ${init.token}` } : {}),
         },
         ...(init.body === undefined ? {} : { body: JSON.stringify(init.body) }),
       }),
       env,
       auth,
+      { cache: proxy.caches.default as unknown as Cache, fetchShard },
     );
     for (const header of response.headers.getSetCookie()) {
       const [pair = ""] = header.split(";");
@@ -251,6 +265,41 @@ describe("identity Worker", () => {
     expect(await status()).toBe(true);
     await createBrowser().request("/api/notifications/push/revoke", { body: { id: first.id, token: first.token } });
     expect(await status()).toBe(false);
+  });
+
+  it("lists each shard's games under that shard, names a shard it cannot read, and refuses a listed chain id", async () => {
+    const operator = createBrowser();
+    const game = (gameId: number, name: string) => ({ game_id: gameId, name, status: "Running" });
+    heralds.set("https://shard-a.test/manifest", { chainId: "0xa" });
+    heralds.set("https://shard-a.test/games", { chain: "0xa", games: [game(1, "frontier-a")] });
+    heralds.set("https://shard-b.test/manifest", { chainId: "0xb" });
+    heralds.set("https://shard-c.test/manifest", { chainId: "0x0a" });
+
+    expect((await operator.request("/api/directory/shards", { body: { url: "https://shard-a.test" } })).status).toBe(
+      401,
+    );
+    for (const url of ["https://shard-a.test", "https://shard-b.test"]) {
+      const admitted = await operator.request("/api/directory/shards", { body: { url }, token: OPERATOR_TOKEN });
+      expect(admitted.status).toBe(201);
+    }
+    const duplicate = await operator.request("/api/directory/shards", {
+      body: { url: "https://shard-c.test" },
+      token: OPERATOR_TOKEN,
+    });
+    expect(await duplicate.json()).toEqual({ error: "chain_id_listed", url: "https://shard-a.test" });
+
+    const list = async () =>
+      ((await (await createBrowser().request("/api/directory")).json()) as { shards: unknown[] }).shards;
+    expect(await list()).toEqual([
+      { url: "https://shard-a.test", chainId: "0xa", status: "active", games: [game(1, "frontier-a")] },
+      { url: "https://shard-b.test", chainId: "0xb", status: "active", games: null, error: "unavailable" },
+    ]);
+
+    heralds.set("https://shard-b.test/games", { chain: "0xb", games: [game(1, "blitz-b")] });
+    expect(await list()).toEqual([
+      { url: "https://shard-a.test", chainId: "0xa", status: "active", games: [game(1, "frontier-a")] },
+      { url: "https://shard-b.test", chainId: "0xb", status: "active", games: [game(1, "blitz-b")] },
+    ]);
   });
 
   it("refuses to link a wallet that already belongs to another Realms account", async () => {

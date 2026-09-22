@@ -3,8 +3,8 @@ import type { Guardian } from "@realms-world/guardian";
 
 /**
  * The identity Worker's environment. Plain values are decoded loudly, so a misconfigured deployment fails on its first
- * request instead of answering with defaults. Secrets (`BETTER_AUTH_SECRET`, `IDENTITY_RPC_URL`) are set per
- * environment and never committed.
+ * request instead of answering with defaults. Secrets (`BETTER_AUTH_SECRET`, `IDENTITY_RPC_URL`,
+ * `DIRECTORY_ADMIN_TOKEN`) are set per environment and never committed.
  */
 const IdentityVars = Schema.Struct({
   ENVIRONMENT: Schema.Literals(["staging", "production"]),
@@ -15,6 +15,8 @@ const IdentityVars = Schema.Struct({
   BETTER_AUTH_SECRET: Schema.NonEmptyString,
   /** A Starknet mainnet RPC, for Sign in with Starknet signature checks. */
   IDENTITY_RPC_URL: Schema.NonEmptyString,
+  /** The operator's token for listing shards and changing their status. */
+  DIRECTORY_ADMIN_TOKEN: Schema.NonEmptyString,
 });
 
 export interface IdentityEnv extends Schema.Schema.Type<typeof IdentityVars> {
