@@ -115,7 +115,7 @@ fn configure_structures(peers: Peers, game_id: u32, preset: StructurePreset) {
         crate::faith::IFaithDispatcher { contract_address: peers.prizes }, game_id, preset.faith,
     );
     crate::upgrades::IUpgradeRulesDispatcherTrait::configure_upgrades(
-        crate::upgrades::IUpgradeRulesDispatcher { contract_address: peers.registry },
+        crate::upgrades::IUpgradeRulesDispatcher { contract_address: peers.structures },
         game_id,
         preset.upgrade_limits,
         preset.upgrades,

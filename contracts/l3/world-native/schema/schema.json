@@ -2045,6 +2045,35 @@
         {
           "name": "RowSet",
           "prefix": [
+            "0x2a67f55ebbc91ddd8772d60674830a4521ec8a56824b1763b19349ccbe4cf93",
+            "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "model",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "keys",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            },
+            {
+              "name": "values",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            }
+          ]
+        },
+        {
+          "name": "RowSet",
+          "prefix": [
             "0x1517f684ec2bc21ca20251bbef26b7ad0434759388fc50e84858abf49e4024b",
             "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
           ],
@@ -2748,6 +2777,62 @@
           ],
           "outputs": [],
           "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "configure_upgrades",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "limits",
+              "type": "world_native::upgrades::UpgradeLimits"
+            },
+            {
+              "name": "recipes",
+              "type": "core::array::Span::<world_native::upgrades::UpgradeRecipe>"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "upgrade_limits",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "world_native::upgrades::UpgradeLimits"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "upgrade_recipe",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "level",
+              "type": "core::integer::u8"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "world_native::upgrades::UpgradeRecipe"
+            }
+          ],
+          "state_mutability": "view"
         },
         {
           "type": "function",
@@ -6765,94 +6850,9 @@
               "kind": "data"
             }
           ]
-        },
-        {
-          "name": "RowSet",
-          "prefix": [
-            "0x2a67f55ebbc91ddd8772d60674830a4521ec8a56824b1763b19349ccbe4cf93",
-            "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
-          ],
-          "members": [
-            {
-              "name": "version",
-              "type": "core::integer::u8",
-              "kind": "key"
-            },
-            {
-              "name": "model",
-              "type": "core::felt252",
-              "kind": "key"
-            },
-            {
-              "name": "keys",
-              "type": "core::array::Span::<core::felt252>",
-              "kind": "data"
-            },
-            {
-              "name": "values",
-              "type": "core::array::Span::<core::felt252>",
-              "kind": "data"
-            }
-          ]
         }
       ],
       "entrypoints": [
-        {
-          "type": "function",
-          "name": "configure_upgrades",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "limits",
-              "type": "world_native::upgrades::UpgradeLimits"
-            },
-            {
-              "name": "recipes",
-              "type": "core::array::Span::<world_native::upgrades::UpgradeRecipe>"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "upgrade_limits",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "world_native::upgrades::UpgradeLimits"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "upgrade_recipe",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "level",
-              "type": "core::integer::u8"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "world_native::upgrades::UpgradeRecipe"
-            }
-          ],
-          "state_mutability": "view"
-        },
         {
           "type": "function",
           "name": "ownership_rules_ready",
@@ -11053,7 +11053,7 @@
       "name": "UpgradeLimits",
       "identity": "0x557067726164654c696d697473",
       "owners": [
-        "registry"
+        "structures"
       ],
       "scope": "game",
       "keys": [
@@ -11091,7 +11091,7 @@
       "name": "UpgradeRecipe",
       "identity": "0x55706772616465526563697065",
       "owners": [
-        "registry"
+        "structures"
       ],
       "scope": "game",
       "keys": [
@@ -17173,5 +17173,5 @@
       ]
     }
   },
-  "identity": "2170436a6b296c107b1d4fd48f831e5162d58cb564c224b17063a28a7d7f592c"
+  "identity": "51edc6d3d6be26472d69d493522e6a875d9fff89326037a62b1a33c3117c3975"
 }

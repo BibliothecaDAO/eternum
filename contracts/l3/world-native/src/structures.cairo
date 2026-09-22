@@ -342,11 +342,13 @@ pub mod StructuresDomain {
         ISettlementViewsDispatcherTrait,
     };
     use crate::troops::{Coord, ExplorerKey, ITroopsDispatcher, ITroopsDispatcherTrait};
-    use crate::upgrades::IUpgradeRulesDispatcherTrait;
+    use crate::upgrades::{UpgradeLimits, UpgradeRecipe, UpgradeState};
     use super::{Structure, StructureBase, StructureRecord, StructureState};
     component!(path: BuildingState, storage: buildings, event: BuildingEvent);
     impl BuildingInternal = BuildingState::InternalImpl<ContractState>;
     component!(path: Lifecycle, storage: lifecycle, event: LifecycleEvent);
+    component!(path: UpgradeState, storage: upgrades, event: UpgradeEvent);
+    impl UpgradeInternal = UpgradeState::InternalImpl<ContractState>;
     component!(path: StructureState, storage: structures, event: StructureEvent);
     #[abi(embed_v0)]
     impl Domain = Lifecycle::DomainImpl<ContractState>;
@@ -354,6 +356,8 @@ pub mod StructuresDomain {
     impl StructureInternal = StructureState::InternalImpl<ContractState>;
     #[storage]
     struct Storage {
+        #[substorage(v0)]
+        upgrades: UpgradeState::Storage,
         #[substorage(v0)]
         lifecycle: Lifecycle::Storage,
         camp_resource_count: Map<u32, Option<u32>>,
@@ -368,6 +372,7 @@ pub mod StructuresDomain {
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
+        UpgradeEvent: UpgradeState::Event,
         LifecycleEvent: Lifecycle::Event,
         StructureEvent: StructureState::Event,
         BuildingEvent: BuildingState::Event,
@@ -760,6 +765,23 @@ pub mod StructuresDomain {
         }
     }
     #[abi(embed_v0)]
+    impl UpgradeRules of crate::upgrades::IUpgradeRules<ContractState> {
+        fn configure_upgrades(
+            ref self: ContractState, game_id: u32, limits: UpgradeLimits, recipes: Span<UpgradeRecipe>,
+        ) {
+            self.lifecycle.assert_configurator();
+            self.game_dispatcher().game(game_id);
+            self.upgrades.configure(game_id, limits, recipes);
+        }
+        fn upgrade_limits(self: @ContractState, game_id: u32) -> UpgradeLimits {
+            self.upgrades.limits(game_id)
+        }
+        fn upgrade_recipe(self: @ContractState, game_id: u32, level: u8) -> UpgradeRecipe {
+            self.upgrades.recipe(game_id, level)
+        }
+    }
+
+    #[abi(embed_v0)]
     impl Upgrades of crate::upgrades::IStructureUpgrades<ContractState> {
         fn level_up(
             ref self: ContractState, game_id: u32, actor: ContractAddress, structure_id: u32, context: ExecutionContext,
@@ -772,8 +794,7 @@ pub mod StructuresDomain {
             let record = self.structures.record(key);
             assert!(record.owner == actor, "actor does not own structure");
             assert!(record.base.category == 1 || record.base.category == 5, "structure is not a realm or village");
-            let rules = crate::upgrades::IUpgradeRulesDispatcher { contract_address: peers.registry };
-            let limits = rules.upgrade_limits(game_id);
+            let limits = self.upgrades.limits(game_id);
             let maximum = if record.base.category == 1 {
                 limits.realm_max
             } else {
@@ -781,7 +802,7 @@ pub mod StructuresDomain {
             };
             assert!(record.base.level < maximum, "structure is already at max level");
             let next_level = record.base.level + 1;
-            for cost in rules.upgrade_recipe(game_id, next_level).costs {
+            for cost in self.upgrades.recipe(game_id, next_level).costs {
                 self.spend(key, *cost.resource_type, *cost.amount, context.timestamp);
             }
             self.structures.upgrade(key, record.base, self.game_dispatcher().rules(game_id).troop_limit_config);
@@ -1267,10 +1288,7 @@ pub mod StructuresDomain {
         fn resolve_building_coord(
             self: @ContractState, game_id: u32, base: StructureBase, directions: Span<u8>,
         ) -> Coord {
-            let limits = crate::upgrades::IUpgradeRulesDispatcher {
-                contract_address: self.lifecycle.require_active().registry,
-            }
-                .upgrade_limits(game_id);
+            let limits = self.upgrades.limits(game_id);
             let maximum = match base.category {
                 1 => limits.realm_max,
                 5 => limits.village_max,

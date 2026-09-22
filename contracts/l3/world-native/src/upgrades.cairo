@@ -35,7 +35,7 @@ pub mod UpgradeState {
     pub struct Storage {
         pub limits: Map<u32, Option<UpgradeLimits>>,
         pub cost_counts: Map<(u32, u8), u32>,
-        pub costs: Map<(u32, u8, u32), ResourceAmount>,
+        pub upgrade_costs: Map<(u32, u8, u32), ResourceAmount>,
     }
 
     #[event]
@@ -55,7 +55,7 @@ pub mod UpgradeState {
             assert!(level > 0 && (level <= limits.realm_max || level <= limits.village_max), "invalid upgrade level");
             let mut costs = array![];
             for index in 0..self.cost_counts.read((game_id, level)) {
-                costs.append(self.costs.read((game_id, level, index)));
+                costs.append(self.upgrade_costs.read((game_id, level, index)));
             }
             UpgradeRecipe { costs: costs.span() }
         }
@@ -84,7 +84,7 @@ pub mod UpgradeState {
                 let mut index = 0;
                 for cost in recipe.costs {
                     assert!(*cost.resource_type > 0 && *cost.resource_type <= 58, "invalid resource type");
-                    self.costs.write((game_id, level, index), *cost);
+                    self.upgrade_costs.write((game_id, level, index), *cost);
                     index += 1;
                 }
                 let mut values = array![];
