@@ -52,7 +52,7 @@ vi.mock("starknet", async (original) => ({
 }));
 
 const vector = readFileSync(
-  new URL("../../../contracts/l3/randomness-protocol/tests/fixtures/v3.txt", import.meta.url),
+  new URL("../../../contracts/l3/randomness-protocol/tests/fixtures/v4.txt", import.meta.url),
   "utf8",
 )
   .trim()

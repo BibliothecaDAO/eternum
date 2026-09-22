@@ -52,10 +52,10 @@ fn act_at(d: super::Deployment, actor: ContractAddress, command: Command, accept
     start_cheat_block_timestamp_global(accepted);
     let admission = IRecordedExecutionViewsDispatcher { contract_address: d.peers.season }
         .get_admission(3, actor.into());
-    let order = season.execution_head().order;
+    let order = super::recorded::head(d.peers.season, 3).order;
     let ok = execute_recorded_at(super::Deployment { actor, ..d }, command, accepted, executed);
     assert_eq!(season.next_nonce(3, actor), admission.nonce + 1);
-    assert_eq!(season.execution_head().order, order + 1);
+    assert_eq!(super::recorded::head(d.peers.season, 3).order, order + 1);
     ok
 }
 #[test]

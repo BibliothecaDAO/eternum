@@ -203,25 +203,26 @@ fn forged_signature_actor_game_and_replayed_intent_are_rejected() {
         .unwrap();
     let results = IRecordedExecutionViewsDispatcher { contract_address: deployment.peers.season };
     gateway.execute(action, context(), bad_r, bad_s).unwrap();
-    assert_eq!(results.recorded_outcome(1).unwrap().reason, 'INVALID_SIGNATURE');
+    assert_eq!(results.recorded_outcome(1, 1).unwrap().reason, 'INVALID_SIGNATURE');
     let mut forged = action;
     forged.actor = 0x999.try_into().unwrap();
     gateway.execute(forged, context(), r, s).unwrap();
-    assert_eq!(results.recorded_outcome(2).unwrap().reason, 'INVALID_ACTOR');
+    assert_eq!(results.recorded_outcome(1, 2).unwrap().reason, 'INVALID_ACTOR');
     forged = action;
     forged.game_id = 2;
     gateway.execute(forged, context(), r, s).unwrap();
-    assert_eq!(results.recorded_outcome(3).unwrap().reason, 'INVALID_SIGNATURE');
-    assert!(!results.recorded_outcome(1).unwrap().nonce_consumed);
-    assert!(!results.recorded_outcome(2).unwrap().nonce_consumed);
-    assert!(!results.recorded_outcome(3).unwrap().nonce_consumed);
+    // The forged game's action is recorded on that game's own chain.
+    assert_eq!(results.recorded_outcome(2, 1).unwrap().reason, 'INVALID_SIGNATURE');
+    assert!(!results.recorded_outcome(1, 1).unwrap().nonce_consumed);
+    assert!(!results.recorded_outcome(1, 2).unwrap().nonce_consumed);
+    assert!(!results.recorded_outcome(2, 1).unwrap().nonce_consumed);
     assert_eq!(ISeasonDispatcher { contract_address: deployment.peers.season }.next_nonce(1, deployment.actor), 0);
     let successor = action;
     let (r, s) = signature(deployment, successor);
     gateway.execute(successor, context(), r, s).unwrap();
-    assert_eq!(results.recorded_outcome(4).unwrap().status, 1);
+    assert_eq!(results.recorded_outcome(1, 3).unwrap().status, 1);
     gateway.execute(successor, context(), r, s).unwrap();
-    assert_eq!(results.recorded_outcome(5).unwrap().reason, 'STALE_NONCE');
+    assert_eq!(results.recorded_outcome(1, 4).unwrap().reason, 'STALE_NONCE');
     assert_eq!(ISeasonDispatcher { contract_address: deployment.peers.season }.next_nonce(1, deployment.actor), 1);
 }
 
@@ -377,18 +378,18 @@ fn signatures_are_bound_to_deployment_command_nonce_and_deadline() {
     let mut changed = action;
     changed.command = Command::CloseSeason;
     gateway.execute(changed, context(), r, s).unwrap();
-    assert_eq!(results.recorded_outcome(1).unwrap().reason, 'INVALID_SIGNATURE');
+    assert_eq!(results.recorded_outcome(1, 1).unwrap().reason, 'INVALID_SIGNATURE');
     changed = action;
     changed.nonce = 1;
     gateway.execute(changed, context(), r, s).unwrap();
-    assert_eq!(results.recorded_outcome(2).unwrap().reason, 'INVALID_SIGNATURE');
+    assert_eq!(results.recorded_outcome(1, 2).unwrap().reason, 'INVALID_SIGNATURE');
     changed = action;
-    assert!(!results.recorded_outcome(1).unwrap().nonce_consumed);
-    assert!(!results.recorded_outcome(2).unwrap().nonce_consumed);
+    assert!(!results.recorded_outcome(1, 1).unwrap().nonce_consumed);
+    assert!(!results.recorded_outcome(1, 2).unwrap().nonce_consumed);
     changed.deadline = 99;
     let (expired_r, expired_s) = signature(first, changed);
     gateway.execute(changed, context(), expired_r, expired_s).unwrap();
-    assert_eq!(results.recorded_outcome(3).unwrap().reason, 'INVALID_ACCEPTANCE');
+    assert_eq!(results.recorded_outcome(1, 3).unwrap().reason, 'INVALID_ACCEPTANCE');
     assert!(gateway.execute(action, ExecutionContext { raw_root: 1, timestamp: 101 }, r, s).is_err());
     // Both deployments use the same test key; address binding still changes the digest.
     assert!(
@@ -485,11 +486,11 @@ fn authority_rotates_authentication_without_replacing_the_domain() {
     assert_eq!(current.submitter, replacement.submitter);
     assert_eq!(current.registry, previous.registry);
     assert_eq!(current.account_class, previous.account_class);
+    recorded::deploy_submitter(replacement.submitter);
     let action = intent(deployment, 1);
     let (r, s) = signature(deployment, action);
     start_cheat_caller_address(deployment.peers.season, submitter());
     assert!(safe.execute(action, context(), r, s).is_err());
-    recorded::deploy_submitter(replacement.submitter);
     configure_submitter(deployment.peers.season, replacement.submitter);
     start_cheat_caller_address(deployment.peers.season, replacement.submitter);
     gateway.execute(action, context(), r, s);

@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "3ca6efed9759ab69120e3137978848241210cd3ee03150aa1615fabfa78e712f",
+  "schemaIdentity": "3e002a8af685a571f6576bfd446f8ce53cfd8f0b9ac803fa6ceb70233c14ad1c",
   "commandAbi": [
     {
       "type": "impl",
@@ -2170,24 +2170,6 @@
       ]
     },
     {
-      "type": "struct",
-      "name": "eternum_randomness_protocol::recording::ExecutionHead",
-      "members": [
-        {
-          "name": "order",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "timestamp",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "state",
-          "type": "core::felt252"
-        }
-      ]
-    },
-    {
       "type": "interface",
       "name": "world_native::season::ISeason",
       "items": [
@@ -2270,17 +2252,6 @@
           "outputs": [
             {
               "type": "core::integer::u64"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "execution_head",
-          "inputs": [],
-          "outputs": [
-            {
-              "type": "eternum_randomness_protocol::recording::ExecutionHead"
             }
           ],
           "state_mutability": "view"
@@ -2487,6 +2458,24 @@
       ]
     },
     {
+      "type": "struct",
+      "name": "eternum_randomness_protocol::recording::ExecutionHead",
+      "members": [
+        {
+          "name": "order",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "timestamp",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "state",
+          "type": "core::felt252"
+        }
+      ]
+    },
+    {
       "type": "interface",
       "name": "eternum_randomness_protocol::entrypoint::IRecordedExecutionViews",
       "items": [
@@ -2513,7 +2502,12 @@
         {
           "type": "function",
           "name": "get_head",
-          "inputs": [],
+          "inputs": [
+            {
+              "name": "game",
+              "type": "core::felt252"
+            }
+          ],
           "outputs": [
             {
               "type": "eternum_randomness_protocol::recording::ExecutionHead"

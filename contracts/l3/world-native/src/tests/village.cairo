@@ -118,7 +118,7 @@ fn run(deployment: Deployment, command: Command, timestamp: u64) -> bool {
         s,
     );
     IRecordedExecutionViewsDispatcher { contract_address: deployment.peers.season }
-        .recorded_outcome(season.execution_head().order)
+        .recorded_outcome(3, super::recorded::head(deployment.peers.season, 3).order)
         .unwrap()
         .status == 1
 }
@@ -277,10 +277,12 @@ fn exhausted_geometry_records_rejection_and_keeps_the_pass() {
     assert!(pool.village_pool(3).opened == 0 && pool.settlement_pool(3).opened == 0);
     let season = ISeasonDispatcher { contract_address: deployment.peers.season };
     let result = IRecordedExecutionViewsDispatcher { contract_address: deployment.peers.season }
-        .recorded_outcome(1)
+        .recorded_outcome(3, 1)
         .unwrap();
     assert!(result.status == 2 && result.reason == 'GAMEPLAY_REJECTED');
-    assert!(season.execution_head().order == 1 && season.next_nonce(3, deployment.actor) == 1);
+    assert!(
+        super::recorded::head(deployment.peers.season, 3).order == 1 && season.next_nonce(3, deployment.actor) == 1,
+    );
 }
 
 #[test]

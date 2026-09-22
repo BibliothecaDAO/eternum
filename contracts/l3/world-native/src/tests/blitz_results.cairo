@@ -55,10 +55,10 @@ fn setup(scores: Span<u128>) -> super::Deployment {
 fn submit(d: super::Deployment, start: u8, players: Span<PlayerResult>) -> bool {
     let season = ISeasonDispatcher { contract_address: d.peers.season };
     let nonce = season.next_nonce(3, d.actor);
-    let order = season.execution_head().order;
+    let order = super::recorded::head(d.peers.season, 3).order;
     let passed = execute(d, Command::RecordBlitzResults(RecordBlitzResults { start, players }), 500);
     assert_eq!(season.next_nonce(3, d.actor), nonce + 1);
-    assert_eq!(season.execution_head().order, order + 1);
+    assert_eq!(super::recorded::head(d.peers.season, 3).order, order + 1);
     passed
 }
 

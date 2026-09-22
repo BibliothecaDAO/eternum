@@ -4,7 +4,9 @@ use snforge_std::{EventSpy, EventSpyTrait};
 
 #[generate_trait]
 pub impl RecordedReceipts of RecordedReceiptsTrait {
-    fn recorded_outcome(self: IRecordedExecutionViewsDispatcher, order: u64) -> Option<ExecutionRecorded> {
+    fn recorded_outcome(
+        self: IRecordedExecutionViewsDispatcher, game: felt252, order: u64,
+    ) -> Option<ExecutionRecorded> {
         let mut offset = array![0].span();
         let mut spy: EventSpy = Serde::deserialize(ref offset).unwrap();
         for (emitter, event) in spy.get_events().events {
@@ -17,7 +19,7 @@ pub impl RecordedReceipts of RecordedReceiptsTrait {
             let mut data = event.data.span();
             let recorded: ExecutionRecorded = Serde::deserialize(ref data).expect('malformed execution event');
             assert!(data.is_empty(), "trailing execution event data");
-            if recorded.order == order {
+            if recorded.game_id == game && recorded.order == order {
                 return Some(recorded);
             }
         }

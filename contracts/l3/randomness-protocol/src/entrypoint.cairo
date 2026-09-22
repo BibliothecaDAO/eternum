@@ -42,7 +42,7 @@ pub struct Admission {
 #[starknet::interface]
 pub trait IRecordedExecutionViews<T> {
     fn get_admission(self: @T, game: felt252, actor: felt252) -> Admission;
-    fn get_head(self: @T) -> crate::recording::ExecutionHead;
+    fn get_head(self: @T, game: felt252) -> crate::recording::ExecutionHead;
 }
 
 pub fn authenticate_submission(authority: ContractAddress) {

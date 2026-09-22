@@ -609,12 +609,18 @@ fn recorded_roster_batches_block_early_play_and_report_ticket_progress() {
     assert!(!super::resource_commands::execute_in_game(d, game_id, crate::commands::Command::CloseSeason, 205, 205));
     let season = ISeasonDispatcher { contract_address: d.peers.season };
     let receipts = IRecordedExecutionViewsDispatcher { contract_address: d.peers.season };
-    assert_eq!(receipts.recorded_outcome(season.execution_head().order).unwrap().reason, 'ROSTER_NOT_READY');
+    assert_eq!(
+        receipts.recorded_outcome(game_id.into(), super::recorded::head(d.peers.season, game_id).order).unwrap().reason,
+        'ROSTER_NOT_READY',
+    );
     assert_eq!(season.next_nonce(game_id, d.actor), 1);
     super::season_lifecycle::execute_batch_in_game(d, game_id, command, 205, 1);
     assert!(!IGameDispatcher { contract_address: d.peers.registry }.game(game_id).ready);
     assert!(!super::resource_commands::execute_in_game(d, game_id, crate::commands::Command::CloseSeason, 206, 206));
-    assert_eq!(receipts.recorded_outcome(season.execution_head().order).unwrap().reason, 'ROSTER_NOT_READY');
+    assert_eq!(
+        receipts.recorded_outcome(game_id.into(), super::recorded::head(d.peers.season, game_id).order).unwrap().reason,
+        'ROSTER_NOT_READY',
+    );
     assert_eq!(season.next_nonce(game_id, d.actor), 3);
     super::season_lifecycle::execute_batch_in_game(d, game_id, command, 207, 0);
     assert!(IGameDispatcher { contract_address: d.peers.registry }.game(game_id).ready);

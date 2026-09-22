@@ -51,13 +51,17 @@ pub fn following_state(previous_state: felt252, envelope: @Envelope, event: Exec
 
 #[starknet::component]
 pub mod RecordedState {
-    use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
+    use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
+    use starknet::{ContractAddress, get_block_timestamp};
+    use crate::entrypoint::timestamp_in_bounds;
+    use crate::epochs::{IRandomnessEpochsDispatcher, IRandomnessEpochsDispatcherTrait};
     use crate::{Envelope, Intent};
     use super::{ExecutionHead, ExecutionRecorded, HeadPacking, following_state};
 
+    /// Each game keeps its own recorded chain, so one game's actions replay and verify alone.
     #[storage]
     pub struct Storage {
-        pub head: ExecutionHead,
+        pub heads: Map<felt252, ExecutionHead>,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -66,6 +70,17 @@ pub mod RecordedState {
     }
     #[generate_trait]
     pub impl InternalImpl<TContractState, +HasComponent<TContractState>> of InternalTrait<TContractState> {
+        /// The action is its own game's next, no earlier than that game's head, drawn from the open epoch.
+        fn require_next(
+            self: @ComponentState<TContractState>, submitter: ContractAddress, intent: @Intent, envelope: @Envelope,
+        ) {
+            let head = self.heads.read(*intent.game_id);
+            assert!(*envelope.order == head.order + 1, "out of order");
+            assert!(timestamp_in_bounds(*envelope.timestamp, get_block_timestamp()), "future execution time");
+            assert!(*envelope.timestamp >= head.timestamp, "backwards execution time");
+            let epoch = IRandomnessEpochsDispatcher { contract_address: submitter }.current_randomness_epoch();
+            assert!(*envelope.epoch == epoch, "stale randomness epoch");
+        }
         fn record(
             ref self: ComponentState<TContractState>,
             intent: @Intent,
@@ -86,13 +101,15 @@ pub mod RecordedState {
                 status,
                 reason,
             };
+            let previous = self.heads.read(*intent.game_id);
             self
-                .head
+                .heads
                 .write(
+                    *intent.game_id,
                     ExecutionHead {
                         order: *envelope.order,
                         timestamp: *envelope.timestamp,
-                        state: following_state(self.head.read().state, envelope, event),
+                        state: following_state(previous.state, envelope, event),
                     },
                 );
             self.emit(event);

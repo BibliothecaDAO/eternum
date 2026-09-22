@@ -36,7 +36,7 @@ fn definitive_failure_is_recorded_and_the_next_ticket_executes() {
     let (r, s) = pair().sign(action_identity(@action)).unwrap();
     reject_execution(address, action, context(@recorded), r, s).unwrap();
     let views = IRecordedExecutionViewsDispatcher { contract_address: address };
-    let failed = views.recorded_outcome(1).unwrap();
+    let failed = views.recorded_outcome(7, 1).unwrap();
     assert!(failed.status == 2 && failed.reason == 'EXECUTION_FAILED' && failed.nonce_consumed, "missing failure");
     assert!(views.get_admission(7, 456).nonce == 1, "failure did not consume current nonce");
 
@@ -46,8 +46,8 @@ fn definitive_failure_is_recorded_and_the_next_ticket_executes() {
     next_context.order = 2;
     let (r, s) = pair().sign(action_identity(@next)).unwrap();
     IRecordedExecutionDispatcher { contract_address: address }.execute(next, context(@next_context), r, s);
-    assert!(views.get_head().order == 2 && views.get_admission(7, 456).nonce == 2, "successor blocked");
-    assert!(views.recorded_outcome(2).unwrap().status == 1, "successor rejected");
+    assert!(views.get_head(7).order == 2 && views.get_admission(7, 456).nonce == 2, "successor blocked");
+    assert!(views.recorded_outcome(7, 2).unwrap().status == 1, "successor rejected");
 }
 
 #[test]
@@ -59,14 +59,14 @@ fn failure_recording_rejects_forgery_and_preserves_a_stale_nonce() {
     let (_, s) = pair().sign(action_identity(@action)).unwrap();
     assert!(reject_execution(address, action, context(@recorded), 1, s).is_err(), "forged failure consumed a ticket");
     let views = IRecordedExecutionViewsDispatcher { contract_address: address };
-    assert!(views.get_head().order == 0 && views.get_admission(7, 456).nonce == 0, "forgery changed progress");
+    assert!(views.get_head(7).order == 0 && views.get_admission(7, 456).nonce == 0, "forgery changed progress");
     for order in 1_u64..3 {
         let action = intent(address);
         let mut recorded = envelope(@action);
         recorded.order = order;
         let (r, s) = pair().sign(action_identity(@action)).unwrap();
         reject_execution(address, action, context(@recorded), r, s).unwrap();
-        let failed = views.recorded_outcome(order).unwrap();
+        let failed = views.recorded_outcome(7, order).unwrap();
         assert!(failed.status == 2 && failed.reason == 'EXECUTION_FAILED', "missing terminal outcome");
         assert!(failed.nonce_consumed == (order == 1), "stale nonce consumed twice");
         assert!(views.get_admission(7, 456).nonce == 1, "failure moved stale nonce");
@@ -118,27 +118,27 @@ fn malformed_transport_consumes_nothing_and_invalid_action_signature_is_terminal
         match case {
             0 => { r = 1; },
             1 => {
-                witness.envelope = array!['ETERNUM_ENTROPY', 2];
-                witness.envelope.append_span(encode_envelope(@recorded).span().slice(2, 6));
+                witness.envelope = array!['ETERNUM_ENTROPY', 3];
+                witness.envelope.append_span(encode_envelope(@recorded).span().slice(2, 7));
             },
             2 => { witness.envelope.append(0); },
-            3 => { witness.envelope = array!['ETERNUM_ENTROPY', 3, recorded.action]; },
+            3 => { witness.envelope = array!['ETERNUM_ENTROPY', 4, recorded.action]; },
             _ => {
-                witness.envelope = array!['ETERNUM_ENTROPY', 3, recorded.action, 0];
-                witness.envelope.append_span(encode_envelope(@recorded).span().slice(4, 4));
+                witness.envelope = array!['ETERNUM_ENTROPY', 4, recorded.action, 0];
+                witness.envelope.append_span(encode_envelope(@recorded).span().slice(4, 5));
             },
         }
         let result = IRecordedExecutionSafeDispatcher { contract_address: address }.execute(action, witness, r, s);
         let views = IRecordedExecutionViewsDispatcher { contract_address: address };
         if case == 0 {
             assert!(result.is_ok(), "authenticated invalid signature blocked order");
-            let rejected = views.recorded_outcome(1).unwrap();
+            let rejected = views.recorded_outcome(7, 1).unwrap();
             assert!(rejected.status == 2 && rejected.reason == 'INVALID_SIGNATURE', "missing signature reason");
             assert!(
                 views.get_admission(7, 456).nonce == 0 && !rejected.nonce_consumed, "forgery consumed player nonce",
             );
         } else {
-            assert!(result.is_err() && views.get_head().order == 0, "malformed witness consumed order");
+            assert!(result.is_err() && views.get_head(7).order == 0, "malformed witness consumed order");
         }
     }
 }
@@ -151,7 +151,7 @@ fn delayed_execution_uses_recorded_time_after_intent_expiry_and_rejects_duplicat
     let recorded = envelope(@action);
     let (r, s) = pair().sign(action_identity(@action)).unwrap();
     IRecordedExecutionDispatcher { contract_address: address }.execute(action, context(@recorded), r, s);
-    let head = IRecordedExecutionViewsDispatcher { contract_address: address }.get_head();
+    let head = IRecordedExecutionViewsDispatcher { contract_address: address }.get_head(7);
     let order = head.order;
     let time = head.timestamp;
     assert!(
@@ -161,7 +161,7 @@ fn delayed_execution_uses_recorded_time_after_intent_expiry_and_rejects_duplicat
                 .state == following_state(
                     0,
                     @recorded,
-                    IRecordedExecutionViewsDispatcher { contract_address: address }.recorded_outcome(order).unwrap(),
+                    IRecordedExecutionViewsDispatcher { contract_address: address }.recorded_outcome(7, order).unwrap(),
                 ),
         "recorded execution",
     );
@@ -184,7 +184,7 @@ fn invalid_transport_is_non_consuming_and_invalid_acceptance_is_terminal() {
         match case {
             0 => { recorded.action = 0; },
             1 => { recorded.order = 2; },
-            2 => { recorded.order = 11; },
+            2 => { recorded.epoch = 2; },
             3 => { recorded.execution_config = 1; },
             4 => { recorded.timestamp = 999; },
             5 => { recorded.timestamp = 1011; },
@@ -193,10 +193,12 @@ fn invalid_transport_is_non_consuming_and_invalid_acceptance_is_terminal() {
         }
         let result = IRecordedExecutionSafeDispatcher { contract_address: address }
             .execute(action, context(@recorded), r, s);
-        let order = IRecordedExecutionViewsDispatcher { contract_address: address }.get_head().order;
+        let order = IRecordedExecutionViewsDispatcher { contract_address: address }.get_head(7).order;
         if case == 4 || case == 5 {
             assert!(result.is_ok() && order == 1, "invalid acceptance blocked order");
-            let rejected = IRecordedExecutionViewsDispatcher { contract_address: address }.recorded_outcome(1).unwrap();
+            let rejected = IRecordedExecutionViewsDispatcher { contract_address: address }
+                .recorded_outcome(7, 1)
+                .unwrap();
             assert!(rejected.status == 2 && rejected.reason == 'INVALID_ACCEPTANCE', "missing acceptance reason");
         } else {
             assert!(result.is_err() && order == 0, "invalid transport changed progress");
@@ -261,7 +263,7 @@ fn simulation_context_cannot_bypass_transaction_authorization() {
             "preview context accepted",
         );
         assert!(
-            IRecordedExecutionViewsDispatcher { contract_address: address }.get_head().order == 0,
+            IRecordedExecutionViewsDispatcher { contract_address: address }.get_head(7).order == 0,
             "preview changed state",
         );
     }
@@ -306,7 +308,7 @@ fn authority_rejects_multicalls_callbacks_and_foreign_targets() {
             ISequencingAccountSafeDispatcher { contract_address: account }.__execute__(calls).is_err(),
             "unbound call accepted",
         );
-        let order = IRecordedExecutionViewsDispatcher { contract_address: address }.get_head().order;
+        let order = IRecordedExecutionViewsDispatcher { contract_address: address }.get_head(7).order;
         assert!(order == 0, "unbound call effect");
     }
 }
@@ -335,11 +337,11 @@ fn pending_binding_survives_authority_credential_rotation() {
     start_cheat_signature(account, array![new_r, new_s].span());
     ISequencingAccountSafeDispatcher { contract_address: account }.__execute__(array![call]).unwrap();
     let views = IRecordedExecutionViewsDispatcher { contract_address: address };
-    let head = views.get_head();
+    let head = views.get_head(7);
     assert!(
         head.order == 1
             && head.timestamp == recorded.timestamp
-            && head.state == following_state(0, @recorded, views.recorded_outcome(1).unwrap()),
+            && head.state == following_state(0, @recorded, views.recorded_outcome(7, 1).unwrap()),
         "rotation changed binding",
     );
 }
@@ -357,7 +359,7 @@ fn losses_and_terminal_rejections_consume_the_original_nonce() {
         recorded.root = 1;
         let (r, s) = pair().sign(action_identity(@action)).unwrap();
         IRecordedExecutionDispatcher { contract_address: address }.execute(action, context(@recorded), r, s);
-        let result = IRecordedExecutionViewsDispatcher { contract_address: address }.recorded_outcome(1).unwrap();
+        let result = IRecordedExecutionViewsDispatcher { contract_address: address }.recorded_outcome(7, 1).unwrap();
         assert!(result.status == if terminal {
             2
         } else {
@@ -365,7 +367,7 @@ fn losses_and_terminal_rejections_consume_the_original_nonce() {
         }, "terminal status");
         assert!(
             IRecordedExecutionViewsDispatcher { contract_address: address }
-                .get_head()
+                .get_head(7)
                 .state == following_state(0, @recorded, result),
             "terminal binding",
         );
@@ -395,7 +397,7 @@ fn accepted_execution_after_a_day_matches_immediate_execution() {
         start_cheat_block_timestamp_global(recorded.timestamp + delay);
         start_cheat_block_timestamp(address, recorded.timestamp + delay);
         IRecordedExecutionDispatcher { contract_address: address }.execute(action, context(@recorded), r, s);
-        let head = IRecordedExecutionViewsDispatcher { contract_address: address }.get_head();
+        let head = IRecordedExecutionViewsDispatcher { contract_address: address }.get_head(7);
         let order = head.order;
         let timestamp = head.timestamp;
         assert!(
@@ -406,7 +408,7 @@ fn accepted_execution_after_a_day_matches_immediate_execution() {
                         0,
                         @recorded,
                         IRecordedExecutionViewsDispatcher { contract_address: address }
-                            .recorded_outcome(order)
+                            .recorded_outcome(7, order)
                             .unwrap(),
                     ),
             "delay changed recorded context",
@@ -430,7 +432,7 @@ fn outage_recovery_consumes_the_accepted_prefix_before_fresh_work() {
     start_cheat_block_timestamp(address, recorded.timestamp + 86400);
     IRecordedExecutionDispatcher { contract_address: address }.execute(action, context(@recorded), r, s);
     let views = IRecordedExecutionViewsDispatcher { contract_address: address };
-    assert!(views.recorded_outcome(1).unwrap().status == 2, "original rejection retained");
+    assert!(views.recorded_outcome(7, 1).unwrap().status == 2, "original rejection retained");
     let next = views.get_admission(7, 456);
     assert!(next.order == 2 && next.nonce == 1, "delayed ticket blocked successor");
     assert!(next.timestamp == recorded.timestamp + 86400, "fresh admission must observe recovery time");
@@ -439,14 +441,14 @@ fn outage_recovery_consumes_the_accepted_prefix_before_fresh_work() {
     successor.valid_from = next.timestamp;
     successor.valid_until = next.timestamp + 10;
     terminal_arguments(ref successor);
-    let previous_state = views.get_head().state;
+    let previous_state = views.get_head(7).state;
     let mut fresh = envelope(@successor);
     fresh.timestamp = next.timestamp;
     fresh.root = recorded.root ^ 1;
     fresh.order = next.order;
     let (r, s) = pair().sign(action_identity(@successor)).unwrap();
     IRecordedExecutionDispatcher { contract_address: address }.execute(successor, context(@fresh), r, s);
-    let head = IRecordedExecutionViewsDispatcher { contract_address: address }.get_head();
+    let head = IRecordedExecutionViewsDispatcher { contract_address: address }.get_head(7);
     let order = head.order;
     let timestamp = head.timestamp;
     assert!(
@@ -456,11 +458,11 @@ fn outage_recovery_consumes_the_accepted_prefix_before_fresh_work() {
                 .state == following_state(
                     previous_state,
                     @fresh,
-                    IRecordedExecutionViewsDispatcher { contract_address: address }.recorded_outcome(order).unwrap(),
+                    IRecordedExecutionViewsDispatcher { contract_address: address }.recorded_outcome(7, order).unwrap(),
                 ),
         "fresh context not retained",
     );
-    assert!(views.recorded_outcome(1).unwrap().status == 2, "recovery rewrote old outcome");
+    assert!(views.recorded_outcome(7, 1).unwrap().status == 2, "recovery rewrote old outcome");
     assert!(views.get_admission(7, 456).nonce == 2, "fresh ticket did not consume its nonce");
 }
 
@@ -493,20 +495,21 @@ fn invalid_action_keys_and_nonces_cannot_block_a_valid_successor(case: u32) {
             'INVALID_RULES'
         },
     };
+    let game = rejected.game_id;
     let recorded = envelope(@rejected);
     let (r, s) = pair().sign(action_identity(@rejected)).unwrap();
     IRecordedExecutionDispatcher { contract_address: address }.execute(rejected, context(@recorded), r, s);
     let views = IRecordedExecutionViewsDispatcher { contract_address: address };
-    let result = views.recorded_outcome(1).unwrap();
+    let result = views.recorded_outcome(game, 1).unwrap();
     assert!(result.status == 2 && result.reason == reason, "terminal reason mismatch");
-    assert!(
-        IRecordedExecutionViewsDispatcher { contract_address: address }
-            .get_head()
-            .state == following_state(0, @recorded, result),
-        "terminal ticket changed",
-    );
+    assert!(views.get_head(game).state == following_state(0, @recorded, result), "terminal ticket changed");
+    // An action naming another game is recorded on that game's chain and leaves game 7 at its first order.
     let next = views.get_admission(7, 456);
-    assert!(next.order == 2, "rejection blocked stream");
+    assert!(next.order == if game == 7 {
+        2
+    } else {
+        1
+    }, "rejection blocked stream");
     assert!(next.nonce == if case == 5 {
         1
     } else {
@@ -518,7 +521,7 @@ fn invalid_action_keys_and_nonces_cannot_block_a_valid_successor(case: u32) {
     following.order = next.order;
     let (r, s) = pair().sign(action_identity(@successor)).unwrap();
     IRecordedExecutionDispatcher { contract_address: address }.execute(successor, context(@following), r, s);
-    assert!(views.recorded_outcome(2).unwrap().status == 1, "valid successor failed");
+    assert!(views.recorded_outcome(7, next.order).unwrap().status == 1, "valid successor failed");
     assert!(views.get_admission(7, 456).nonce == next.nonce + 1, "successor nonce not consumed");
 }
 
@@ -567,7 +570,7 @@ fn stale_nonce_after_consumption_does_not_invalidate_the_next_action() {
     recorded.order = next.order;
     let (r, s) = pair().sign(action_identity(@stale)).unwrap();
     IRecordedExecutionDispatcher { contract_address: address }.execute(stale, context(@recorded), r, s);
-    assert!(views.recorded_outcome(2).unwrap().reason == 'STALE_NONCE', "stale nonce reason missing");
+    assert!(views.recorded_outcome(7, 2).unwrap().reason == 'STALE_NONCE', "stale nonce reason missing");
     let next = views.get_admission(7, 456);
     assert!(next.order == 3 && next.nonce == 1, "stale ticket consumed a future nonce");
     let mut successor = intent(address);
@@ -576,7 +579,7 @@ fn stale_nonce_after_consumption_does_not_invalidate_the_next_action() {
     recorded.order = next.order;
     let (r, s) = pair().sign(action_identity(@successor)).unwrap();
     IRecordedExecutionDispatcher { contract_address: address }.execute(successor, context(@recorded), r, s);
-    assert!(views.recorded_outcome(3).unwrap().status == 1, "successor invalidated by stale ticket");
+    assert!(views.recorded_outcome(7, 3).unwrap().status == 1, "successor invalidated by stale ticket");
 }
 
 #[test]
@@ -589,7 +592,7 @@ fn submitter_cannot_substitute_a_gameplay_key() {
     let witness = context(@recorded);
     IRecordedExecutionDispatcher { contract_address: address }.execute(action, witness, r, s);
     let views = IRecordedExecutionViewsDispatcher { contract_address: address };
-    let rejected = views.recorded_outcome(1).unwrap();
+    let rejected = views.recorded_outcome(7, 1).unwrap();
     assert!(rejected.status == 2 && rejected.reason == 'INVALID_SIGNATURE', "substituted key authorized gameplay");
     assert!(
         views.get_admission(7, 456).nonce == 0 && !rejected.nonce_consumed, "substituted key consumed player nonce",
@@ -626,7 +629,9 @@ fn recorded_time_never_moves_backwards_and_equal_time_is_valid() {
     terminal_arguments(ref retry);
     backwards.timestamp = recorded.timestamp;
     IRecordedExecutionDispatcher { contract_address: address }.execute(retry, context(@backwards), r, s);
-    assert!(views.recorded_outcome(2).unwrap().status == 2, "equal recorded timestamp did not execute terminal action");
+    assert!(
+        views.recorded_outcome(7, 2).unwrap().status == 2, "equal recorded timestamp did not execute terminal action",
+    );
     assert!(views.get_admission(7, 456).nonce == 2, "equal recorded timestamp did not consume nonce");
 }
 
@@ -653,7 +658,7 @@ fn unauthenticated_action_leaves_nonce_for_successor(case: u32) {
     }
     IRecordedExecutionDispatcher { contract_address: address }.execute(action, witness, r, s);
     let views = IRecordedExecutionViewsDispatcher { contract_address: address };
-    let rejected = views.recorded_outcome(1).unwrap();
+    let rejected = views.recorded_outcome(7, 1).unwrap();
     let reason = if case == 2 {
         'FOREIGN_CHAIN'
     } else if case == 3 {
@@ -669,7 +674,7 @@ fn unauthenticated_action_leaves_nonce_for_successor(case: u32) {
     following.order = next.order;
     let (r, s) = pair().sign(action_identity(@successor)).unwrap();
     IRecordedExecutionDispatcher { contract_address: address }.execute(successor, context(@following), r, s);
-    let succeeded = views.recorded_outcome(2).unwrap();
+    let succeeded = views.recorded_outcome(7, 2).unwrap();
     assert!(succeeded.status == 1 && succeeded.nonce_consumed, "valid successor did not execute");
     assert!(views.get_admission(7, 456).nonce == 1, "valid successor did not consume its nonce");
 }
@@ -761,7 +766,7 @@ fn batch_records_each_outcome_and_only_authenticated_current_nonces() {
     let views = IRecordedExecutionViewsDispatcher { contract_address: address };
     let mut state = 0;
     for recorded in envelopes {
-        let result = views.recorded_outcome(recorded.order).unwrap();
+        let result = views.recorded_outcome(7, recorded.order).unwrap();
         let consumed = recorded.order == 2 || recorded.order == 3;
         assert!(result.nonce_consumed == consumed, "wrong per-ticket nonce consumption");
         assert!(result.status == if recorded.order == 2 {
@@ -777,7 +782,7 @@ fn batch_records_each_outcome_and_only_authenticated_current_nonces() {
         }
         state = following_state(state, @recorded, result);
     }
-    let head = views.get_head();
+    let head = views.get_head(7);
     assert!(head.order == 4 && head.state == state, "batch omitted intermediate heads");
     assert!(views.get_admission(7, 456).nonce == 2, "batch consumed wrong player nonce");
 }
@@ -804,71 +809,133 @@ fn out_of_order_batch_rolls_back_every_ticket() {
     actions.serialize(ref calldata);
     assert!(sequencing_call(address, selector!("execute_batch"), calldata).is_err(), "out of order batch accepted");
     let views = IRecordedExecutionViewsDispatcher { contract_address: address };
-    assert!(views.get_head().order == 0 && views.get_admission(7, 456).nonce == 0, "partial batch effects escaped");
+    assert!(views.get_head(7).order == 0 && views.get_admission(7, 456).nonce == 0, "partial batch effects escaped");
+}
+
+fn game_action(address: starknet::ContractAddress, game: felt252, order: u64, root: u256) -> RecordedAction {
+    let mut action = intent(address);
+    action.game_id = game;
+    action.nonce = order - 1;
+    terminal_arguments(ref action);
+    let mut recorded = envelope(@action);
+    recorded.order = order;
+    recorded.root = root;
+    let (r, s) = pair().sign(action_identity(@action)).unwrap();
+    RecordedAction { intent: action, context: context(@recorded), r, s }
+}
+
+fn execute_actions(address: starknet::ContractAddress, actions: Array<RecordedAction>) {
+    let mut calldata = array![];
+    actions.serialize(ref calldata);
+    sequencing_call(address, selector!("execute_batch"), calldata).unwrap();
+}
+
+fn following(state: felt252, address: starknet::ContractAddress, action: @RecordedAction) -> felt252 {
+    let recorded = eternum_randomness_protocol::decode_envelope(action.context.envelope.span()).unwrap();
+    let views = IRecordedExecutionViewsDispatcher { contract_address: address };
+    following_state(state, @recorded, views.recorded_outcome(*action.intent.game_id, recorded.order).unwrap())
+}
+
+#[test]
+fn one_mixed_batch_extends_each_game_on_its_own_chain() {
+    let address = setup();
+    let secret: u256 = 123456;
+    let mut actions = array![];
+    for (game, order) in array![(7, 1_u64), (9, 1), (7, 2), (9, 2), (9, 3)] {
+        actions.append(game_action(address, game, order, epoch_root(secret, game, order)));
+    }
+    let mut seven = 0;
+    let mut eight = 0;
+    let expected = actions.span();
+    execute_actions(address, actions);
+    for action in expected {
+        if *action.intent.game_id == 7 {
+            seven = following(seven, address, action);
+        } else {
+            eight = following(eight, address, action);
+        }
+    }
+    let views = IRecordedExecutionViewsDispatcher { contract_address: address };
+    assert!(views.get_head(7).order == 2 && views.get_head(7).state == seven, "game 7 chain");
+    assert!(views.get_head(9).order == 3 && views.get_head(9).state == eight, "game 9 chain");
+    assert!(seven != eight, "games share a state hash");
+    assert!(views.get_admission(7, 456).order == 3 && views.get_admission(9, 456).order == 4, "next orders");
 }
 
 #[test]
 #[feature("safe_dispatcher")]
-fn epoch_reveal_reproduces_roots_and_never_allows_a_revealed_secret_again() {
+fn an_out_of_order_action_in_one_game_leaves_the_other_untouched() {
+    let address = setup();
+    execute_actions(address, array![game_action(address, 7, 1, 1), game_action(address, 9, 1, 2)]);
+    let views = IRecordedExecutionViewsDispatcher { contract_address: address };
+    let (seven, eight) = (views.get_head(7), views.get_head(9));
+    let mut calldata = array![];
+    array![game_action(address, 9, 3, 3)].serialize(ref calldata);
+    assert!(sequencing_call(address, selector!("execute_batch"), calldata).is_err(), "gap accepted");
+    assert!(views.get_head(7).state == seven.state && views.get_head(9).state == eight.state, "rejection moved a head");
+    execute_actions(address, array![game_action(address, 7, 2, 4)]);
+    assert!(views.get_head(7).order == 2 && views.get_head(9).order == 1, "game 7 blocked by game 9");
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn a_restart_rerolls_only_lost_tickets_and_a_revealed_secret_reproduces_both_games() {
     let address = setup();
     let account = IFixtureDispatcher { contract_address: address }.authority();
     let epochs = IRandomnessEpochsDispatcher { contract_address: account };
     let secret: u256 = 123456;
     assert!(
-        sequencing_call(address, selector!("reveal_randomness_epoch"), array![secret.low.into(), secret.high.into()])
-            .is_err(),
-        "early epoch reveal accepted",
-    );
-    assert!(
-        sequencing_call(address, selector!("open_randomness_epoch"), array![epoch_commitment(654321), 20]).is_err(),
+        sequencing_call(address, selector!("open_randomness_epoch"), array![epoch_commitment(654321)]).is_err(),
         "unrevealed epoch replaced",
     );
-    let mut actions = array![];
-    let mut envelopes = array![];
-    for order in 1_u64..11 {
-        let mut action = intent(address);
-        action.nonce = order - 1;
-        terminal_arguments(ref action);
-        let mut recorded = envelope(@action);
-        recorded.order = order;
-        recorded.root = epoch_root(secret, order);
-        let (r, s) = pair().sign(action_identity(@action)).unwrap();
-        actions.append(RecordedAction { intent: action, context: context(@recorded), r, s });
-        envelopes.append(recorded);
+    let mut executed = array![];
+    for (game, order) in array![(7, 1_u64), (9, 1), (7, 2), (9, 2)] {
+        executed.append(game_action(address, game, order, epoch_root(secret, game, order)));
     }
-    let mut calldata = array![];
-    actions.serialize(ref calldata);
-    sequencing_call(address, selector!("execute_batch"), calldata).unwrap();
+    let recorded = executed.span();
+    execute_actions(address, executed);
+    // Game 9's third ticket was assigned from epoch 1 and lost in the restart, which reveals epoch 1.
+    let lost = game_action(address, 9, 3, epoch_root(secret, 9, 3));
     assert!(
         sequencing_call(address, selector!("reveal_randomness_epoch"), array![1, 0]).is_err(), "wrong secret accepted",
     );
     sequencing_call(address, selector!("reveal_randomness_epoch"), array![secret.low.into(), secret.high.into()])
         .unwrap();
-    let epoch = epochs.get_randomness_epoch(1);
-    let revealed = epoch.revealed_secret.unwrap();
-    assert!(
-        epoch.first_order == 1 && epoch.last_order == 10 && epoch.commitment == epoch_commitment(revealed),
-        "epoch commitment changed",
-    );
-    let views = IRecordedExecutionViewsDispatcher { contract_address: address };
-    let mut state = 0;
-    for recorded in envelopes {
-        assert!(recorded.root == epoch_root(revealed, recorded.order), "recorded root cannot be reproduced");
-        state = following_state(state, @recorded, views.recorded_outcome(recorded.order).unwrap());
+    let mut calldata = array![];
+    array![lost].serialize(ref calldata);
+    assert!(sequencing_call(address, selector!("execute_batch"), calldata.clone()).is_err(), "revealed epoch executed");
+    let revealed = epochs.get_randomness_epoch(1).revealed_secret.unwrap();
+    let mut seven = 0;
+    let mut eight = 0;
+    for action in recorded {
+        let envelope = eternum_randomness_protocol::decode_envelope(action.context.envelope.span()).unwrap();
+        let game = *action.intent.game_id;
+        assert!(envelope.root == epoch_root(revealed, game, envelope.order), "root cannot be reproduced");
+        if game == 7 {
+            seven = following(seven, address, action);
+        } else {
+            eight = following(eight, address, action);
+        }
     }
-    assert!(views.get_head().state == state && views.get_head().order == 10, "recorded roots not bound in head");
+    let views = IRecordedExecutionViewsDispatcher { contract_address: address };
+    assert!(views.get_head(7).state == seven && views.get_head(9).state == eight, "roots not bound in heads");
     assert!(
-        sequencing_call(address, selector!("open_randomness_epoch"), array![epoch.commitment, 20]).is_err(),
+        sequencing_call(address, selector!("open_randomness_epoch"), array![epoch_commitment(revealed)]).is_err(),
         "revealed secret reused",
     );
-    sequencing_call(address, selector!("open_randomness_epoch"), array![epoch_commitment(654321), 20]).unwrap();
-    let next = epochs.get_randomness_epoch(2);
-    assert!(
-        epochs.current_randomness_epoch() == 2
-            && next.first_order == 11
-            && next.last_order == 20
-            && next.revealed_secret.is_none(),
-        "epoch transition lost order",
-    );
+    sequencing_call(address, selector!("open_randomness_epoch"), array![epoch_commitment(654321)]).unwrap();
+    assert!(epochs.current_randomness_epoch() == 2, "epoch not opened");
+    assert!(sequencing_call(address, selector!("execute_batch"), calldata).is_err(), "lost ticket kept its old root");
+    let next: u256 = 654321;
+    let mut rerolled = game_action(address, 9, 3, epoch_root(next, 9, 3));
+    let mut envelope = eternum_randomness_protocol::decode_envelope(rerolled.context.envelope.span()).unwrap();
+    envelope.epoch = 2;
+    rerolled.context = context(@envelope);
+    let mut continued = game_action(address, 7, 3, epoch_root(next, 7, 3));
+    let mut envelope = eternum_randomness_protocol::decode_envelope(continued.context.envelope.span()).unwrap();
+    envelope.epoch = 2;
+    continued.context = context(@envelope);
+    execute_actions(address, array![rerolled, continued]);
+    assert!(views.get_head(7).order == 3 && views.get_head(9).order == 3, "chains did not continue");
     assert!(epochs.get_randomness_epoch(1).revealed_secret == Some(secret), "historical reveal lost");
 }

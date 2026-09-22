@@ -26,9 +26,12 @@ pub struct Intent {
 #[derive(Drop, PartialEq, Serde)]
 pub struct Envelope {
     pub action: felt252,
+    /// Position in the action's own game, starting at one.
     pub order: u64,
     pub timestamp: u64,
     pub execution_config: felt252,
+    /// The sequencing account's randomness epoch whose secret derived the root.
+    pub epoch: u64,
     pub root: u256,
 }
 
@@ -61,13 +64,13 @@ pub fn action_identity(intent: @Intent) -> felt252 {
 
 pub fn encode_envelope(envelope: @Envelope) -> Array<felt252> {
     assert!(*envelope.order > 0, "invalid execution order");
-    let mut fields = array![ENVELOPE_TAG, 3];
+    let mut fields = array![ENVELOPE_TAG, 4];
     envelope.serialize(ref fields);
     fields
 }
 
 pub fn decode_envelope(mut fields: Span<felt252>) -> Option<Envelope> {
-    if *fields.pop_front()? != ENVELOPE_TAG || *fields.pop_front()? != 3 {
+    if *fields.pop_front()? != ENVELOPE_TAG || *fields.pop_front()? != 4 {
         return Option::None;
     }
     let envelope: Envelope = Serde::deserialize(ref fields)?;

@@ -7,7 +7,8 @@ use eternum_randomness_protocol::entrypoint::{
     Admission, ExecutionContext, IRecordedExecutionDispatcher, IRecordedExecutionDispatcherTrait,
     IRecordedExecutionFailureSafeDispatcher, IRecordedExecutionFailureSafeDispatcherTrait,
     IRecordedExecutionSafeDispatcher, IRecordedExecutionSafeDispatcherTrait, IRecordedExecutionViewsDispatcher,
-    IRecordedExecutionViewsSafeDispatcher, IRecordedExecutionViewsSafeDispatcherTrait,
+    IRecordedExecutionViewsDispatcherTrait, IRecordedExecutionViewsSafeDispatcher,
+    IRecordedExecutionViewsSafeDispatcherTrait,
 };
 use eternum_randomness_protocol::epochs::{
     IRandomnessEpochsDispatcher, IRandomnessEpochsDispatcherTrait, epoch_commitment,
@@ -24,6 +25,7 @@ use starknet::{ContractAddress, ResourcesBounds};
 use crate::commands::{Command, ExecutionContext as DomainContext, command_commitment};
 use crate::game::GameRegistry;
 use crate::lifecycle::{IDomainDispatcher, IDomainDispatcherTrait};
+use crate::recording::ExecutionHead;
 use crate::season::{ISeasonDispatcher, ISeasonDispatcherTrait, ISeasonSafeDispatcher};
 use super::fixtures::{IFixtureDispatcher, IFixtureDispatcherTrait};
 use super::recorded_receipts::RecordedReceiptsTrait;
@@ -124,8 +126,12 @@ pub fn make_intent(season: ContractAddress, action: FixtureAction) -> Intent {
         arguments,
     }
 }
+pub fn head(season: ContractAddress, game_id: u32) -> ExecutionHead {
+    IRecordedExecutionViewsDispatcher { contract_address: season }.get_head(game_id.into())
+}
 pub fn make_context(season: ContractAddress, action: FixtureAction, context: DomainContext) -> ExecutionContext {
-    let head = ISeasonDispatcher { contract_address: season }.execution_head();
+    let head = head(season, action.game_id);
+    let submitter = ISeasonDispatcher { contract_address: season }.authentication().submitter;
     let mut values = array!['ETERNUM_EXECUTION', 1];
     IDomainDispatcher { contract_address: season }.domain_state().peers.serialize(ref values);
     let envelope = Envelope {
@@ -133,6 +139,7 @@ pub fn make_context(season: ContractAddress, action: FixtureAction, context: Dom
         order: head.order + 1,
         timestamp: context.timestamp,
         execution_config: poseidon_hash_span(values.span()),
+        epoch: IRandomnessEpochsDispatcher { contract_address: submitter }.current_randomness_epoch(),
         root: context.raw_root,
     };
     ExecutionContext { envelope: encode_envelope(@envelope) }
@@ -171,13 +178,13 @@ fn definitive_execution_failure_consumes_only_its_ticket_then_successor_executes
     let d = super::setup(true);
     let action = super::intent(d, 1);
     let (r, s) = super::signature(d, action);
-    let original = make_context(d.peers.season, action, super::context());
     let authority = super::submitter();
     snforge_std::start_cheat_caller_address(authority, super::authority());
     ISequencingAuthorityDispatcher { contract_address: authority }.configure(d.peers.season);
     snforge_std::start_cheat_caller_address(authority, authority);
-    IRandomnessEpochsDispatcher { contract_address: authority }.open_randomness_epoch(epoch_commitment(123456), 100);
+    IRandomnessEpochsDispatcher { contract_address: authority }.open_randomness_epoch(epoch_commitment(123456));
     snforge_std::start_cheat_caller_address(authority, 0.try_into().unwrap());
+    let original = make_context(d.peers.season, action, super::context());
     configure_submitter(authority, authority);
     let mut calldata = array![];
     make_intent(d.peers.season, action).serialize(ref calldata);
@@ -193,13 +200,13 @@ fn definitive_execution_failure_consumes_only_its_ticket_then_successor_executes
             ],
         );
     let view = IRecordedExecutionViewsDispatcher { contract_address: d.peers.season };
-    assert_eq!(view.recorded_outcome(1).unwrap().status, 2);
-    assert_eq!(view.recorded_outcome(1).unwrap().reason, 'EXECUTION_FAILED');
+    assert_eq!(view.recorded_outcome(1, 1).unwrap().status, 2);
+    assert_eq!(view.recorded_outcome(1, 1).unwrap().reason, 'EXECUTION_FAILED');
     let season = ISeasonDispatcher { contract_address: d.peers.season };
     assert_eq!(season.next_nonce(1, d.actor), 1);
-    assert_eq!(season.execution_head().order, 1);
+    assert_eq!(head(d.peers.season, 1).order, 1);
     super::execute(d, FixtureAction { nonce: 1, ..action });
-    assert_eq!(view.recorded_outcome(2).unwrap().status, 1);
+    assert_eq!(view.recorded_outcome(1, 2).unwrap().status, 1);
     assert_eq!(season.next_nonce(1, d.actor), 2);
 }
 
@@ -219,16 +226,17 @@ fn failure_recording_rejects_unauthenticated_and_already_executed_tickets() {
             .is_err(),
     );
     let season = ISeasonDispatcher { contract_address: d.peers.season };
-    assert_eq!(season.execution_head().order, 0);
+    assert_eq!(head(d.peers.season, 1).order, 0);
     assert_eq!(season.next_nonce(1, d.actor), 0);
     snforge_std::start_cheat_caller_address(d.peers.season, super::submitter());
     let original = make_context(d.peers.season, action, super::context());
     super::execute(d, action);
     assert!(call.reject_execution(make_intent(d.peers.season, action), original, r, s).is_err());
-    assert_eq!(season.execution_head().order, 1);
+    assert_eq!(head(d.peers.season, 1).order, 1);
     assert_eq!(season.next_nonce(1, d.actor), 1);
     assert_eq!(
-        IRecordedExecutionViewsDispatcher { contract_address: d.peers.season }.recorded_outcome(1).unwrap().status, 1,
+        IRecordedExecutionViewsDispatcher { contract_address: d.peers.season }.recorded_outcome(1, 1).unwrap().status,
+        1,
     );
 }
 
@@ -242,8 +250,8 @@ fn unexecuted_ticket_recovery_preserves_original_context_after_delay() {
     snforge_std::start_cheat_block_timestamp(d.peers.season, 86400);
     IRecordedExecutionDispatcher { contract_address: d.peers.season }.execute(retained_intent, retained_context, r, s);
     let season = ISeasonDispatcher { contract_address: d.peers.season };
-    assert_eq!(season.execution_head().timestamp, 100);
-    assert_eq!(season.execution_head().order, 1);
+    assert_eq!(head(d.peers.season, 1).timestamp, 100);
+    assert_eq!(head(d.peers.season, 1).order, 1);
     assert_eq!(season.next_nonce(1, d.actor), 1);
     assert_eq!(IFixtureDispatcher { contract_address: d.peers.troops }.received_root(), 987654321);
 }
@@ -261,12 +269,12 @@ fn oversized_command_is_terminal_and_the_next_ticket_executes() {
     };
     super::execute(d, action);
     let view = IRecordedExecutionViewsDispatcher { contract_address: d.peers.season };
-    assert_eq!(view.recorded_outcome(1).unwrap().status, 2);
-    assert_eq!(view.recorded_outcome(1).unwrap().reason, 'INVALID_COMMAND');
+    assert_eq!(view.recorded_outcome(1, 1).unwrap().status, 2);
+    assert_eq!(view.recorded_outcome(1, 1).unwrap().reason, 'INVALID_COMMAND');
     let season = ISeasonDispatcher { contract_address: d.peers.season };
     assert_eq!(season.next_nonce(1, d.actor), 1);
     super::execute(d, FixtureAction { nonce: 1, ..super::intent(d, 1) });
-    assert_eq!(view.recorded_outcome(2).unwrap().status, 1);
+    assert_eq!(view.recorded_outcome(1, 2).unwrap().status, 1);
     assert_eq!(season.next_nonce(1, d.actor), 2);
 }
 
@@ -354,10 +362,10 @@ fn assert_oversized_loot_terminal(raid: bool) {
     let d = super::setup(true);
     super::execute(d, FixtureAction { command, ..super::intent(d, 1) });
     let view = IRecordedExecutionViewsDispatcher { contract_address: d.peers.season };
-    assert_eq!(view.recorded_outcome(1).unwrap().reason, 'INVALID_COMMAND');
+    assert_eq!(view.recorded_outcome(1, 1).unwrap().reason, 'INVALID_COMMAND');
     assert_eq!(IFixtureDispatcher { contract_address: d.peers.troops }.received_root(), 0);
     super::execute(d, FixtureAction { nonce: 1, ..super::intent(d, 1) });
-    assert_eq!(view.recorded_outcome(2).unwrap().status, 1);
+    assert_eq!(view.recorded_outcome(1, 2).unwrap().status, 1);
 }
 
 pub fn seed_game(registry: ContractAddress, game_id: u32, game: GameRegistry, rules: crate::rules::SliceRules) {

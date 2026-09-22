@@ -41,15 +41,17 @@ describe("recorded batch results", () => {
     expect(() => nativeExecutionOutcomes(events(String(2n ** 64n)), "0x77")).toThrow("Invalid");
   });
   it("keeps outcomes and progress independent for tickets sharing a receipt", () => {
+    // Another game's ticket at the same order resolves to its own outcome.
     const second = events("4");
+    second[0].keys[1] = "9";
     second[0].data[0] = "292";
+    second[1].data[0] = "9";
     second[1].data[1] = "292";
-    second[1].data[4] = "9";
     const rejected = events()[1];
     rejected.data = ["7", "293", "3", "0", "10", "2", "0x5354414c455f4e4f4e4345"];
     const outcomes = nativeExecutionOutcomes([...events("9"), rejected, ...second], "0x77");
     expect(requireNativeExecutionOutcome(outcomes, ticket)).toMatchObject({ status: "SUCCEEDED", batchRemaining: "9" });
-    expect(requireNativeExecutionOutcome(outcomes, { ...ticket, actor: "292", order: "9" })).toMatchObject({
+    expect(requireNativeExecutionOutcome(outcomes, { ...ticket, gameId: "9", actor: "292" })).toMatchObject({
       status: "SUCCEEDED",
       batchRemaining: "4",
     });
@@ -64,7 +66,8 @@ describe("recorded batch results", () => {
     expect(() => requireNativeExecutionOutcome(undefined, ticket)).toThrow("Missing");
     expect(() => requireNativeExecutionOutcome([...outcomes, ...outcomes], ticket)).toThrow("ambiguous");
     expect(() => requireNativeExecutionOutcome(outcomes, { ...ticket, order: "9" })).toThrow("Missing");
-    for (const field of ["gameId", "actor", "nonce"] as const) {
+    expect(() => requireNativeExecutionOutcome(outcomes, { ...ticket, gameId: "9" })).toThrow("Missing");
+    for (const field of ["actor", "nonce"] as const) {
       expect(() => requireNativeExecutionOutcome(outcomes, { ...ticket, [field]: "99" })).toThrow("identity mismatch");
     }
   });

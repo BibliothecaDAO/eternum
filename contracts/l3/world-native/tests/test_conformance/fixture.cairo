@@ -105,7 +105,9 @@ pub fn setup() -> ContractAddress {
     let cached = *snforge_std::load(snforge_std::test_address(), selector!("conformance_fixture"), 1).at(0);
     if cached != 0 {
         let season: ContractAddress = cached.try_into().unwrap();
-        if (ISeasonDispatcher { contract_address: season }).execution_head().order == 0 {
+        // Untouched means no recorded action in any game the fixture hosts, including settlement's game 8.
+        let heads = IRecordedExecutionViewsDispatcher { contract_address: season };
+        if heads.get_head(7).order == 0 && heads.get_head(8).order == 0 && heads.get_head(9).order == 0 {
             configure_execution(season);
             return season;
         }
@@ -159,7 +161,7 @@ pub fn setup() -> ContractAddress {
     snforge_std::store(snforge_std::test_address(), selector!("conformance_fixture"), array![season.into()].span());
     configure_execution(season);
     snforge_std::cheat_caller_address(account, account, snforge_std::CheatSpan::TargetCalls(1));
-    IRandomnessEpochsDispatcher { contract_address: account }.open_randomness_epoch(epoch_commitment(123456), 10);
+    IRandomnessEpochsDispatcher { contract_address: account }.open_randomness_epoch(epoch_commitment(123456));
     start_cheat_caller_address(account, 222.try_into().unwrap());
     season
 }
@@ -186,24 +188,22 @@ fn provision_game(peers: Peers, actor: ContractAddress, administrator: ContractA
     let resources: Span<ResourceRule> = Serde::deserialize(ref fields).unwrap();
     let buildings: Span<world_native::buildings::BuildingRuleConfig> = Serde::deserialize(ref fields).unwrap();
     assert!(fields.is_empty(), "trailing preset fixture");
-    seed_game(
-        peers.registry,
-        7,
-        GameRegistry {
-            name: 'conformance',
-            preset_id: 3,
-            creator: administrator,
-            settled: false,
-            ready: true,
-            dev_mode_on: true,
-            start_settling_at: 0,
-            start_main_at: 0,
-            end_at: 999999,
-            end_grace_seconds: 0,
-            seed: 1,
-        },
-        rules,
-    );
+    let game = GameRegistry {
+        name: 'conformance',
+        preset_id: 3,
+        creator: administrator,
+        settled: false,
+        ready: true,
+        dev_mode_on: true,
+        start_settling_at: 0,
+        start_main_at: 0,
+        end_at: 999999,
+        end_grace_seconds: 0,
+        seed: 1,
+    };
+    seed_game(peers.registry, 7, game, rules);
+    // A second game on the same shard proves each game keeps its own recorded chain.
+    seed_game(peers.registry, 9, game, rules);
     start_cheat_caller_address(peers.structures, administrator);
     let structures = IStructuresDispatcher { contract_address: peers.structures };
     let resource_store = IResourcesDispatcher { contract_address: peers.resources };
@@ -314,6 +314,7 @@ pub fn envelope(action: @Intent) -> Envelope {
         order: 1,
         timestamp: 1005,
         execution_config,
+        epoch: 1,
         root: 0x8000000000000000000000000000000000000000000000000000000000000000,
     }
 }
@@ -411,7 +412,7 @@ fn accepted_malformed_commands_are_terminal_and_cannot_stall_the_stream() {
         let (r, s) = pair().sign(action_identity(@action)).unwrap();
         IRecordedExecutionDispatcher { contract_address: address }.execute(action, context(@recorded), r, s);
         let views = IRecordedExecutionViewsDispatcher { contract_address: address };
-        assert!(views.recorded_outcome(1).unwrap().status == 2, "malformed command must be terminal");
+        assert!(views.recorded_outcome(7, 1).unwrap().status == 2, "malformed command must be terminal");
         let next = views.get_admission(7, 456);
         assert!(next.nonce == 1 && next.order == 2, "malformed command must consume its ticket");
         let mut valid = intent(address);
@@ -420,7 +421,7 @@ fn accepted_malformed_commands_are_terminal_and_cannot_stall_the_stream() {
         successor.order = next.order;
         let (r, s) = pair().sign(action_identity(@valid)).unwrap();
         IRecordedExecutionDispatcher { contract_address: address }.execute(valid, context(@successor), r, s);
-        assert!(views.recorded_outcome(2).unwrap().status == 1, "valid successor must execute");
+        assert!(views.recorded_outcome(7, 2).unwrap().status == 1, "valid successor must execute");
     }
 }
 
@@ -434,7 +435,7 @@ pub fn outcome(address: ContractAddress) -> Array<felt252> {
     let points = IPointsDispatcher { contract_address: address };
     let mut values = array![];
     IRecordedExecutionViewsDispatcher { contract_address: address }
-        .recorded_outcome(1)
+        .recorded_outcome(7, 1)
         .unwrap()
         .status
         .serialize(ref values);

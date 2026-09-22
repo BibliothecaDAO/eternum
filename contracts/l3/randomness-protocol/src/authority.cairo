@@ -17,9 +17,6 @@ pub trait ISequencingAccount<T> {
 #[starknet::contract(account)]
 pub mod SequencingAccount {
     use core::ecdsa::check_ecdsa_signature;
-    use crate::entrypoint::{
-        IRecordedExecutionViewsDispatcher, IRecordedExecutionViewsDispatcherTrait, MAX_EXECUTION_BATCH,
-    };
     use crate::epochs::{EpochState, IRandomnessEpochs, RandomnessEpoch};
     component!(path: EpochState, storage: epochs, event: EpochEvent);
     impl EpochInternal = EpochState::InternalImpl<ContractState>;
@@ -45,15 +42,13 @@ pub mod SequencingAccount {
 
     #[abi(embed_v0)]
     impl RandomnessEpochs of IRandomnessEpochs<ContractState> {
-        fn open_randomness_epoch(ref self: ContractState, commitment: felt252, last_order: u64) {
+        fn open_randomness_epoch(ref self: ContractState, commitment: felt252) {
             assert!(get_caller_address() == get_contract_address(), "only sequencing account");
-            let order = self.execution_order();
-            self.epochs.open(commitment, last_order, order);
+            self.epochs.open(commitment);
         }
         fn reveal_randomness_epoch(ref self: ContractState, secret: u256) {
             assert!(get_caller_address() == get_contract_address(), "only sequencing account");
-            let order = self.execution_order();
-            self.epochs.reveal(secret, order);
+            self.epochs.reveal(secret);
         }
         fn current_randomness_epoch(self: @ContractState) -> u64 {
             self.epochs.current.read()
@@ -98,14 +93,8 @@ pub mod SequencingAccount {
             self.require_signed_execution(@calls);
             let call = calls.at(0);
             if *call.to == self.deployment.read() {
-                let count: u64 = if *call.selector == selector!("execute_batch") {
-                    let count: u32 = (*call.calldata.at(0)).try_into().expect('invalid batch count');
-                    assert!(count > 0 && count <= MAX_EXECUTION_BATCH, "invalid execution batch size");
-                    count.into()
-                } else {
-                    1
-                };
-                self.epochs.require_order(self.execution_order() + count);
+                // The deployment checks each envelope names this epoch.
+                self.epochs.require_open();
             }
             array![starknet::syscalls::call_contract_syscall(*call.to, *call.selector, *call.calldata).unwrap_syscall()]
         }
@@ -113,9 +102,6 @@ pub mod SequencingAccount {
 
     #[generate_trait]
     impl Internal of InternalTrait {
-        fn execution_order(self: @ContractState) -> u64 {
-            IRecordedExecutionViewsDispatcher { contract_address: self.deployment.read() }.get_head().order
-        }
         fn require_signed_execution(self: @ContractState, calls: @Array<Call>) {
             let tx = get_tx_info().unbox();
             assert!(tx.version == 3, "queries and legacy transactions forbidden");

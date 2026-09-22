@@ -1,4 +1,5 @@
 use core::poseidon::poseidon_hash_span;
+use eternum_randomness_protocol::epochs::{epoch_commitment, epoch_root};
 use eternum_randomness_protocol::{
     action_identity, decode_bytes, decode_envelope, decode_intent, encode_bytes, encode_envelope, encode_intent,
     envelope_binding,
@@ -23,12 +24,26 @@ struct Vector {
     draws: Array<Draw>,
 }
 
+#[derive(Drop, Serde)]
+struct EpochVector {
+    secret: u256,
+    commitment: felt252,
+    game: felt252,
+    order: u64,
+    root: u256,
+}
+
 #[test]
 fn canonical_cross_language_vectors() {
-    let input = read_txt(@FileTrait::new("tests/fixtures/v3.txt"));
+    let input = read_txt(@FileTrait::new("tests/fixtures/v4.txt"));
     let mut fields = input.span();
     let vectors: Array<Vector> = Serde::deserialize(ref fields).unwrap();
+    let epochs: Array<EpochVector> = Serde::deserialize(ref fields).unwrap();
     assert!(fields.is_empty(), "trailing fixture data");
+    for epoch in epochs {
+        assert!(epoch_commitment(epoch.secret) == epoch.commitment, "epoch commitment");
+        assert!(epoch_root(epoch.secret, epoch.game, epoch.order) == epoch.root, "per-game epoch root");
+    }
     for vector in vectors {
         let intent = decode_intent(vector.intent.span()).unwrap();
         assert!(encode_intent(@intent) == vector.intent, "intent roundtrip");
@@ -71,14 +86,14 @@ fn rejects_noncanonical_bytes() {
 
 #[test]
 fn rejects_malformed_envelopes() {
-    let input = read_txt(@FileTrait::new("tests/fixtures/v3.txt"));
+    let input = read_txt(@FileTrait::new("tests/fixtures/v4.txt"));
     let mut fields = input.span();
     let vectors: Array<Vector> = Serde::deserialize(ref fields).unwrap();
     for vector in vectors {
         for length in 0..vector.envelope.len() {
             assert!(decode_envelope(vector.envelope.span().slice(0, length)).is_none(), "truncated envelope");
         }
-        for bad_index in array![0, 1, 3, 4, 6, 7] {
+        for bad_index in array![0, 1, 3, 4, 6, 7, 8] {
             let malformed = replace(vector.envelope.span(), bad_index, -1);
             assert!(decode_envelope(malformed.span()).is_none(), "invalid field");
         }
@@ -94,7 +109,7 @@ fn rejects_malformed_envelopes() {
 
 #[test]
 fn rejects_malformed_intents() {
-    let input = read_txt(@FileTrait::new("tests/fixtures/v3.txt"));
+    let input = read_txt(@FileTrait::new("tests/fixtures/v4.txt"));
     let mut fields = input.span();
     let vectors: Array<Vector> = Serde::deserialize(ref fields).unwrap();
     for vector in vectors {

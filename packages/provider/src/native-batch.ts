@@ -13,7 +13,8 @@ export function nativeExecutionOutcomes(events: readonly Event[], season: string
   const outcomes = own
     .filter((event) => BigInt(event.keys.at(-1) ?? "0") === executionRecordedSelector)
     .map(decodeExecution);
-  if (new Set(outcomes.map((outcome) => outcome.order)).size !== outcomes.length)
+  // Each game numbers its own recorded actions, so a batch can hold the same order in two games.
+  if (new Set(outcomes.map((outcome) => `${outcome.gameId}:${outcome.order}`)).size !== outcomes.length)
     throw new Error("Duplicate native execution order");
   for (const event of own.filter((event) => BigInt(event.keys[0] ?? "0") === batchProgressSelector)) {
     attachBatchProgress(outcomes, event);
@@ -66,14 +67,12 @@ export function requireNativeExecutionOutcome(
   outcomes: readonly NativeExecutionOutcome[] | undefined,
   ticket: NativeTicketIdentity,
 ): NativeExecutionOutcome {
-  const matching = outcomes?.filter((outcome) => BigInt(outcome.order) === BigInt(ticket.order));
+  const matching = outcomes?.filter(
+    (outcome) => BigInt(outcome.gameId) === BigInt(ticket.gameId) && BigInt(outcome.order) === BigInt(ticket.order),
+  );
   if (!matching || matching.length !== 1) throw new Error("Missing or ambiguous native ticket outcome");
   const outcome = matching[0];
-  if (
-    BigInt(outcome.gameId) !== BigInt(ticket.gameId) ||
-    BigInt(outcome.actor) !== BigInt(ticket.actor) ||
-    BigInt(outcome.nonce) !== BigInt(ticket.nonce)
-  )
+  if (BigInt(outcome.actor) !== BigInt(ticket.actor) || BigInt(outcome.nonce) !== BigInt(ticket.nonce))
     throw new Error("Native ticket outcome identity mismatch");
   return outcome;
 }

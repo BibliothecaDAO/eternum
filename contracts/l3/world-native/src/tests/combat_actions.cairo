@@ -266,7 +266,7 @@ fn raid_mode_owner_range_and_resource_failures_preserve_the_armies() {
     assert_terminal_rejection(blitz, raid(attacker, target, array![].span()), 80);
     let season = ISeasonDispatcher { contract_address: blitz.peers.season };
     let result = IRecordedExecutionViewsDispatcher { contract_address: blitz.peers.season }
-        .recorded_outcome(season.execution_head().order)
+        .recorded_outcome(3, super::recorded::head(blitz.peers.season, 3).order)
         .unwrap();
     assert_eq!(result.reason, 'COMMAND_DISABLED');
 }

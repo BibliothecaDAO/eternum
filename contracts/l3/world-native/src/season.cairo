@@ -1,5 +1,4 @@
 use starknet::{ClassHash, ContractAddress};
-use crate::recording::ExecutionHead;
 
 #[derive(Copy, Drop, Serde, starknet::Store)]
 pub struct Authentication {
@@ -22,7 +21,6 @@ pub trait ISeason<T> {
     fn rules_commitment(self: @T, rules: crate::rules::SliceRules) -> felt252;
     fn authentication(self: @T) -> Authentication;
     fn next_nonce(self: @T, game_id: u32, actor: ContractAddress) -> u64;
-    fn execution_head(self: @T) -> ExecutionHead;
 }
 
 #[starknet::contract]
@@ -32,7 +30,7 @@ pub mod SeasonDomain {
     use core::poseidon::poseidon_hash_span;
     use eternum_randomness_protocol::entrypoint::{
         Admission, ExecutionContext, IRecordedExecution, IRecordedExecutionFailure, IRecordedExecutionViews,
-        RecordedAction, accepted_context_matches, authenticate_submission, timestamp_in_bounds,
+        RecordedAction, accepted_context_matches, authenticate_submission,
     };
     use eternum_randomness_protocol::{Envelope, Intent, action_identity, decode_envelope};
     use starknet::storage::{
@@ -248,9 +246,6 @@ pub mod SeasonDomain {
         fn next_nonce(self: @ContractState, game_id: u32, actor: ContractAddress) -> u64 {
             self.nonces.read((game_id, actor))
         }
-        fn execution_head(self: @ContractState) -> ExecutionHead {
-            self.recording.head.read()
-        }
     }
 
     #[abi(embed_v0)]
@@ -301,7 +296,7 @@ pub mod SeasonDomain {
         fn get_admission(self: @ContractState, game: felt252, actor: felt252) -> Admission {
             let game_id: u32 = game.try_into().expect('invalid game id');
             let actor: ContractAddress = actor.try_into().expect('invalid actor');
-            let head = self.recording.head.read();
+            let head = self.recording.heads.read(game);
             Admission {
                 public_key: self.registered_key(actor),
                 rules: self.rules_identity(game_id),
@@ -311,8 +306,8 @@ pub mod SeasonDomain {
                 timestamp: starknet::get_block_timestamp(),
             }
         }
-        fn get_head(self: @ContractState) -> ExecutionHead {
-            self.recording.head.read()
+        fn get_head(self: @ContractState, game: felt252) -> ExecutionHead {
+            self.recording.heads.read(game)
         }
     }
 
@@ -425,13 +420,11 @@ pub mod SeasonDomain {
             Ok(IGameplayKeyDispatcher { contract_address: actor }.get_public_key())
         }
         fn authenticate_ticket(self: @ContractState, intent: @Intent, envelope: @Envelope) {
-            authenticate_submission(self.authentication.read().submitter);
-            let head = self.recording.head.read();
+            let submitter = self.authentication.read().submitter;
+            authenticate_submission(submitter);
             assert!(*envelope.action == action_identity(intent), "altered action");
-            assert!(*envelope.order == head.order + 1, "out of order");
             assert!(*envelope.execution_config == self.execution_config(), "execution config mismatch");
-            assert!(timestamp_in_bounds(*envelope.timestamp, starknet::get_block_timestamp()), "future execution time");
-            assert!(*envelope.timestamp >= head.timestamp, "backwards execution time");
+            self.recording.require_next(submitter, intent, envelope);
         }
         fn execute_action(
             ref self: ContractState,

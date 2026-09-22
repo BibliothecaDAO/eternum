@@ -45,7 +45,7 @@ pub fn setup() -> ContractAddress {
     start_cheat_chain_id(address, 'TEST');
     start_cheat_block_timestamp(address, 1100);
     snforge_std::cheat_caller_address(account, account, snforge_std::CheatSpan::TargetCalls(1));
-    IRandomnessEpochsDispatcher { contract_address: account }.open_randomness_epoch(epoch_commitment(123456), 10);
+    IRandomnessEpochsDispatcher { contract_address: account }.open_randomness_epoch(epoch_commitment(123456));
     start_cheat_caller_address(account, 222.try_into().unwrap());
     address
 }
@@ -70,6 +70,7 @@ pub fn envelope(action: @Intent) -> Envelope {
         order: 1,
         timestamp: 1005,
         execution_config: 987,
+        epoch: 1,
         root: 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff,
     }
 }
@@ -82,9 +83,9 @@ pub fn terminal_arguments(ref action: Intent) {
 }
 
 pub fn outcome(address: ContractAddress) -> Array<felt252> {
-    let timestamp = IRecordedExecutionViewsDispatcher { contract_address: address }.get_head().timestamp;
+    let timestamp = IRecordedExecutionViewsDispatcher { contract_address: address }.get_head(7).timestamp;
     let root = IFixtureDispatcher { contract_address: address }.outcome();
-    let result = IRecordedExecutionViewsDispatcher { contract_address: address }.recorded_outcome(1).unwrap();
+    let result = IRecordedExecutionViewsDispatcher { contract_address: address }.recorded_outcome(7, 1).unwrap();
     array![result.status.into(), timestamp.into(), root.low.into(), root.high.into(), (root.low % 2).into()]
 }
 

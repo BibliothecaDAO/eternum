@@ -118,7 +118,7 @@ pub fn execute_in_game(
     );
     IRecordedExecutionDispatcher { contract_address: deployment.peers.season }.execute(ticket, recorded_context, r, s);
     IRecordedExecutionViewsDispatcher { contract_address: deployment.peers.season }
-        .recorded_outcome(season.execution_head().order)
+        .recorded_outcome(game_id.into(), recorded::head(deployment.peers.season, game_id).order)
         .unwrap()
         .status == 1
 }
@@ -454,12 +454,12 @@ pub fn resource_facts(deployment: Deployment, key: ResourceKey) -> Array<felt252
 pub fn assert_terminal_rejection(deployment: Deployment, command: Command, timestamp: u64) {
     let season = ISeasonDispatcher { contract_address: deployment.peers.season };
     let nonce = season.next_nonce(3, deployment.actor);
-    let order = season.execution_head().order;
+    let order = recorded::head(deployment.peers.season, 3).order;
     assert!(!execute(deployment, command, timestamp));
     assert_eq!(season.next_nonce(3, deployment.actor), nonce + 1);
-    assert_eq!(season.execution_head().order, order + 1);
+    assert_eq!(recorded::head(deployment.peers.season, 3).order, order + 1);
     let result = IRecordedExecutionViewsDispatcher { contract_address: deployment.peers.season }
-        .recorded_outcome(order + 1)
+        .recorded_outcome(3, order + 1)
         .unwrap();
     assert_eq!(result.status, 2);
     assert!(result.reason != 0);

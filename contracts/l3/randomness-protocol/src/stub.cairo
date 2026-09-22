@@ -5,15 +5,17 @@ pub trait IFixture<T> {
     fn outcome(self: @T) -> u256;
 }
 
-/// Single-actor conformance fixture; gameplay and registry remain native-domain responsibilities.
+/// Single-actor, two-game conformance fixture; gameplay and registry remain native-domain responsibilities.
 #[starknet::contract]
 pub mod RecordedExecutionStub {
     use core::ecdsa::check_ecdsa_signature;
-    use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
+    use starknet::storage::{
+        Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess, StoragePointerWriteAccess,
+    };
     use starknet::{ContractAddress, get_block_timestamp, get_contract_address, get_tx_info};
     use crate::entrypoint::{
         Admission, ExecutionContext, IRecordedExecution, IRecordedExecutionFailure, RecordedAction,
-        accepted_context_matches, authenticate_submission, timestamp_in_bounds,
+        accepted_context_matches, authenticate_submission,
     };
     use crate::recording::{ExecutionHead, HeadPacking, RecordedState};
     use crate::{Intent, action_identity, decode_envelope};
@@ -25,7 +27,7 @@ pub mod RecordedExecutionStub {
         submitter: ContractAddress,
         actor: felt252,
         public_key: felt252,
-        nonce: u64,
+        nonces: Map<felt252, u64>,
         // Synthetic gameplay outcome for the conformance fixture only.
         root: u256,
         #[substorage(v0)]
@@ -94,22 +96,20 @@ pub mod RecordedExecutionStub {
     #[generate_trait]
     impl Internal of InternalTrait {
         fn authenticate_ticket(self: @ContractState, intent: @Intent, envelope: @crate::Envelope) {
-            authenticate_submission(self.submitter.read());
+            let submitter = self.submitter.read();
+            authenticate_submission(submitter);
             let action = action_identity(intent);
             assert!(*envelope.action == action, "altered action");
-            let head = self.recording.head.read();
-            assert!(*envelope.order == head.order + 1, "out of order");
             assert!(*envelope.execution_config == 987, "execution config mismatch");
-            assert!(timestamp_in_bounds(*envelope.timestamp, get_block_timestamp()), "future execution time");
-            assert!(*envelope.timestamp >= head.timestamp, "backwards execution time");
+            self.recording.require_next(submitter, intent, envelope);
         }
         fn consume_nonce(ref self: ContractState, intent: @Intent) -> bool {
-            let consumed = *intent.game_id == 7
+            let consumed = fixture_game(*intent.game_id)
                 && *intent.actor == self.actor.read()
-                && *intent.nonce == self.nonce.read()
+                && *intent.nonce == self.nonces.read(*intent.game_id)
                 && *intent.nonce < 0xffffffffffffffff;
             if consumed {
-                self.nonce.write(*intent.nonce + 1);
+                self.nonces.write(*intent.game_id, *intent.nonce + 1);
             }
             consumed
         }
@@ -131,10 +131,10 @@ pub mod RecordedExecutionStub {
             Ok(())
         }
         fn validate_action(self: @ContractState, intent: @Intent, envelope: @crate::Envelope) -> Result<(), felt252> {
-            if *intent.game_id != 7 {
+            if !fixture_game(*intent.game_id) {
                 return Err('INVALID_GAME');
             }
-            if *intent.nonce != self.nonce.read() {
+            if *intent.nonce != self.nonces.read(*intent.game_id) {
                 return Err('STALE_NONCE');
             }
             if *intent.nonce == 0xffffffffffffffff {
@@ -156,20 +156,24 @@ pub mod RecordedExecutionStub {
     #[abi(embed_v0)]
     impl Views of crate::entrypoint::IRecordedExecutionViews<ContractState> {
         fn get_admission(self: @ContractState, game: felt252, actor: felt252) -> Admission {
-            assert!(game == 7 && actor == self.actor.read(), "unknown fixture actor or game");
-            let head = self.recording.head.read();
+            assert!(fixture_game(game) && actor == self.actor.read(), "unknown fixture actor or game");
+            let head = self.recording.heads.read(game);
             Admission {
                 public_key: self.public_key.read(),
                 rules: 789,
                 execution_config: 987,
-                nonce: self.nonce.read(),
+                nonce: self.nonces.read(game),
                 order: head.order + 1,
                 timestamp: get_block_timestamp(),
             }
         }
-        fn get_head(self: @ContractState) -> ExecutionHead {
-            self.recording.head.read()
+        fn get_head(self: @ContractState, game: felt252) -> ExecutionHead {
+            self.recording.heads.read(game)
         }
+    }
+
+    fn fixture_game(game: felt252) -> bool {
+        game == 7 || game == 9
     }
 
     #[abi(embed_v0)]

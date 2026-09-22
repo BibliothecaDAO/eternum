@@ -138,6 +138,7 @@ fn accepted(season: ContractAddress, command: Command, timestamp: u64) -> (Inten
         order: admission.order,
         timestamp,
         execution_config: admission.execution_config,
+        epoch: 1,
         root: 987654321,
     };
     (action, envelope)
@@ -214,7 +215,7 @@ fn accepted_eternum_settlement_keeps_recorded_time_after_game_end() {
         start_cheat_block_timestamp_global(clock);
         submit(season, action, envelope);
         assert!(
-            IRecordedExecutionViewsDispatcher { contract_address: season }.recorded_outcome(1).unwrap().status == 1,
+            IRecordedExecutionViewsDispatcher { contract_address: season }.recorded_outcome(8, 1).unwrap().status == 1,
         );
         let facts = settled_facts(season);
         if immediate.is_empty() {
@@ -234,12 +235,12 @@ fn settlement_uses_the_bound_wallet_and_cannot_spend_another_owners_entitlement(
     };
     let results = IRecordedExecutionViewsDispatcher { contract_address: season };
     execute(season, command(), 1005);
-    assert!(results.recorded_outcome(1).unwrap().status == 2);
+    assert!(results.recorded_outcome(8, 1).unwrap().status == 2);
     assert!(views.player_entry(EntryKey { game_id: 8, owner: 789.try_into().unwrap() }).is_none());
     assert!(views.settlement_progress(8).realm_count == 0);
     grant_entry(season, 123.try_into().unwrap());
     execute(season, command(), 1005);
-    assert!(results.recorded_outcome(2).unwrap().status == 1);
+    assert!(results.recorded_outcome(8, 2).unwrap().status == 1);
     assert!(
         views
             .player_entry(EntryKey { game_id: 8, owner: 123.try_into().unwrap() })
@@ -256,14 +257,14 @@ fn rejected_settlement_rolls_back_entry_and_leaves_later_ticket_executable() {
     grant_entry(season, 123.try_into().unwrap());
     execute(season, Command::SettleSeason(world_native::realms::SettleSeason { name: 0, selected_realm: None }), 1005);
     let results = IRecordedExecutionViewsDispatcher { contract_address: season };
-    assert!(results.recorded_outcome(1).unwrap().status == 2);
+    assert!(results.recorded_outcome(8, 1).unwrap().status == 2);
     let views = ISettlementViewsDispatcher {
         contract_address: IDomainDispatcher { contract_address: season }.domain_state().peers.settlement,
     };
     assert!(views.player_entry(EntryKey { game_id: 8, owner: 123.try_into().unwrap() }).is_none());
     assert!(views.settlement_progress(8).realm_count == 0);
     execute(season, command(), 1005);
-    assert!(results.recorded_outcome(2).unwrap().status == 1);
+    assert!(results.recorded_outcome(8, 2).unwrap().status == 1);
 }
 
 #[test]
@@ -290,7 +291,7 @@ fn delayed_provisioning_starts_labor_once_without_regranting_starting_troops() {
     start_cheat_block_timestamp_global(100000);
     submit(season, action, envelope);
     let results = IRecordedExecutionViewsDispatcher { contract_address: season };
-    assert!(results.recorded_outcome(1).unwrap().status == 1, "recorded provisioning rejected after outage");
+    assert!(results.recorded_outcome(8, 1).unwrap().status == 1, "recorded provisioning rejected after outage");
     assert!(guards.guard(guard_key) == before_guard);
     assert!(resource_store.resource_balance(slot) == troop_balance);
     let labor = world_native::resources::ResourceSlot { resource_type: 23, ..slot };
@@ -298,7 +299,7 @@ fn delayed_provisioning_starts_labor_once_without_regranting_starting_troops() {
     assert!(production.building_count == 1);
     assert!(production.production_rate > 0);
     execute(season, Command::ProvisionRealm(1), 1201);
-    assert!(results.recorded_outcome(2).unwrap().status == 2);
+    assert!(results.recorded_outcome(8, 2).unwrap().status == 2);
     assert!(resource_store.resource_production(labor) == production);
     assert!(resource_store.resource_balance(slot) == troop_balance);
 }
@@ -322,7 +323,7 @@ fn provisioning_accepts_stone_and_rejects_lords_without_partial_grants() {
         let balance = resource_store.resource_balance(slot);
         start_cheat_block_timestamp_global(1300);
         execute(season, Command::ProvisionRealm(1), 1201);
-        let result = IRecordedExecutionViewsDispatcher { contract_address: season }.recorded_outcome(1).unwrap();
+        let result = IRecordedExecutionViewsDispatcher { contract_address: season }.recorded_outcome(8, 1).unwrap();
         if *resource_type == world_native::resources::LORDS {
             assert!(result.status == 2, "LORDS grant accepted");
             assert!(resource_store.resource_balance(slot) == balance);
@@ -357,7 +358,7 @@ fn reserved_hyperstructure_uses_recorded_time_after_an_outage() {
         start_cheat_block_timestamp_global(*clock);
         submit(season, action, envelope);
         let results = IRecordedExecutionViewsDispatcher { contract_address: season };
-        assert!(results.recorded_outcome(1).unwrap().status == 1, "recorded materialization failed");
+        assert!(results.recorded_outcome(8, 1).unwrap().status == 1, "recorded materialization failed");
         let structures = IStructuresDispatcher { contract_address: peers.structures };
         let key = ResourceKey { game_id: 8, entity_id: 1 };
         let hyper = IHyperstructuresDispatcher { contract_address: peers.economy }.hyperstructure(key).unwrap();
@@ -371,7 +372,7 @@ fn reserved_hyperstructure_uses_recorded_time_after_an_outage() {
             assert!(immediate == facts.span(), "materialization changed after delay");
         }
         execute(season, Command::CreateReservedHyperstructure(coord), 1201);
-        assert!(results.recorded_outcome(2).unwrap().status == 2);
+        assert!(results.recorded_outcome(8, 2).unwrap().status == 2);
         assert!(IHyperstructuresDispatcher { contract_address: peers.economy }.hyperstructure(key).unwrap() == hyper);
     }
 }
@@ -480,7 +481,7 @@ fn provision_and_upgrade_is_one_atomic_recorded_action() {
         let production_before = resources.resource_production(labor);
         start_cheat_block_timestamp_global(100000);
         execute(season, Command::ProvisionAndUpgradeRealm(1), 1201);
-        let result = IRecordedExecutionViewsDispatcher { contract_address: season }.recorded_outcome(1).unwrap();
+        let result = IRecordedExecutionViewsDispatcher { contract_address: season }.recorded_outcome(8, 1).unwrap();
         if *cost == 100 {
             assert!(result.status == 1);
             assert!(structures.structure(key).unwrap().base.level == 1);
