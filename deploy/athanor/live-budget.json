@@ -1,0 +1,10 @@
+{
+  "max_lag_blocks": 3,
+  "max_health_ms": 50,
+  "digest_p95_ms": {
+    "confirmed": 300,
+    "preconfirmed": 60
+  },
+  "min_candidate_free_bytes": 10737418240,
+  "min_host_free_bytes": 107374182400
+}

@@ -293,11 +293,11 @@ def workload_command(workload):
     ]]
 
 
-def check_live_budget(budget, since):
+def check_live_budget(budget, since, until, streaks):
     health = candidate_guard.check_health()
-    digests = candidate_guard.read_digests(since)
+    digests = candidate_guard.read_digests(since, until)
     failures = candidate_guard.budget_failures(
-        budget, health, digests, shutil.disk_usage("/opt/athanor").free, shutil.disk_usage("/").free,
+        budget, health, digests, shutil.disk_usage("/opt/athanor").free, shutil.disk_usage("/").free, streaks,
     )
     if failures:
         raise RuntimeError("live budget exceeded: " + "; ".join(failures))
@@ -306,13 +306,14 @@ def check_live_budget(budget, since):
 
 def run_guarded_workload(command, directory, environment, budget):
     since = time.time()
+    streaks = {}
     with (directory / "harness.log").open("w") as output, (directory / "live-health.jsonl").open("w") as health:
         process = subprocess.Popen(command, cwd=ROOT, env=environment, stdout=output,
                                    stderr=subprocess.STDOUT, start_new_session=True)
         try:
             while True:
                 now = time.time()
-                health.write(json.dumps({"at": now, **check_live_budget(budget, since)}) + "\n")
+                health.write(json.dumps({"at": now, **check_live_budget(budget, since, now, streaks)}) + "\n")
                 health.flush()
                 since = now
                 try:
@@ -342,7 +343,7 @@ def capture_hosts(directory, environment, live, phase):
 
 def run_matrix(matrix, directory):
     command = workload_command(matrix["workload"])
-    budget = json.loads(Path(matrix["live"]["budget"]).read_text())
+    budget = json.loads(candidate_guard.LIVE_BUDGET_PATH.read_text())
     # The existing guard protects deployment too, before the timed workload monitor starts.
     subprocess.run(["systemctl", "is-active", "--quiet", "athanor-live-guard.service"], check=True)
     directory.mkdir(mode=0o700, parents=True, exist_ok=False)
@@ -351,7 +352,8 @@ def run_matrix(matrix, directory):
         target = directory / config["shard"]
         if target.exists():
             raise ValueError(f"duplicate run directory: {target}")
-        check_live_budget(budget, time.time() - 5)
+        now = time.time()
+        check_live_budget(budget, now - 5, now, {})
         environment = None
         result = {"passed": False}
         try:

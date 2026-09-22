@@ -13,27 +13,33 @@ class CandidateGuardTests(unittest.TestCase):
         }
         self.health = {"lag_blocks": 1, "health_ms": 12}
 
-    def test_healthy_live_stack_keeps_candidate_running(self):
-        self.assertEqual(budget_failures(self.budget, self.health, [], 20, 200), [])
+    def test_latency_requires_two_consecutive_nonempty_windows_per_stream(self):
+        streaks = {}
+        windows = [
+            ([], []),
+            ([{"kind": "confirmed", "count": 30, "p95Ms": 251}], []),
+            ([], []),
+            ([{"kind": "confirmed", "count": 30, "p95Ms": 250}], []),
+            ([{"kind": "confirmed", "count": 30, "p95Ms": 251},
+              {"kind": "preconfirmed", "count": 2, "p95Ms": 51}], []),
+            ([{"kind": "confirmed", "count": 0, "p95Ms": 0}], []),
+            ([{"kind": "confirmed", "count": 30, "p95Ms": 251}], ["live confirmed p95"]),
+            ([{"kind": "confirmed", "count": 30, "p95Ms": 250},
+              {"kind": "preconfirmed", "count": 2, "p95Ms": 51}], ["live preconfirmed p95"]),
+        ]
+        for digests, expected in windows:
+            with self.subTest(digests=digests):
+                self.assertEqual(budget_failures(self.budget, self.health, digests, 20, 200, streaks), expected)
 
-    def test_live_latency_exceedance_stops_candidate(self):
-        for kind, value in (("confirmed", 251), ("preconfirmed", 51)):
-            with self.subTest(kind=kind):
-                result = budget_failures(self.budget, self.health, [
-                    {"kind": kind, "count": 1, "p95Ms": value},
-                ], 20, 200)
-                self.assertEqual(result, [f"live {kind} p95"])
-
-    def test_empty_latency_digest_is_not_a_measurement(self):
-        result = budget_failures(self.budget, self.health, [
-            {"kind": "preconfirmed", "count": 0, "p95Ms": 999},
-        ], 20, 200)
-        self.assertEqual(result, [])
-
-    def test_lag_health_and_disk_exceedance(self):
-        result = budget_failures(self.budget, {"lag_blocks": 4, "health_ms": 501}, [], 9, 99)
-        self.assertEqual(result, ["live Herald lag", "live health response latency",
-                                  "candidate disk reserve", "host disk reserve"])
+    def test_lag_health_and_disk_exceedance_requires_two_windows_and_resets(self):
+        streaks = {}
+        unhealthy = {"lag_blocks": 4, "health_ms": 501}
+        self.assertEqual(budget_failures(self.budget, unhealthy, [], 9, 99, streaks), [])
+        self.assertEqual(budget_failures(self.budget, unhealthy, [], 9, 99, streaks), [
+            "live Herald lag", "live health response latency", "candidate disk reserve", "host disk reserve",
+        ])
+        self.assertEqual(budget_failures(self.budget, self.health, [], 20, 200, streaks), [])
+        self.assertEqual(budget_failures(self.budget, unhealthy, [], 9, 99, streaks), [])
 
     def test_pause_targets_only_candidate_slice(self):
         with patch("candidate_guard.subprocess.run") as run:

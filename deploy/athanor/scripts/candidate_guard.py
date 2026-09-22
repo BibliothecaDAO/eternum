@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
 """Pause isolated candidate work when the live stack leaves its declared budget."""
 
-import argparse
 import json
+from decimal import Decimal
 from pathlib import Path
 import shutil
 import subprocess
 import time
 from urllib.request import Request, urlopen
+
+
+LIVE_BUDGET_PATH = Path(__file__).resolve().parents[1] / "live-budget.json"
 
 
 def read_json(url, payload=None):
@@ -31,9 +34,12 @@ def check_health():
             "health_ms": (time.monotonic() - started) * 1000}
 
 
-def read_digests(since):
+def read_digests(since, until):
+    # Journal bounds are inclusive; each digest belongs to only one polling window.
+    exclusive_since = Decimal(f"{since:.6f}") + Decimal("0.000001")
     result = subprocess.run(
-        ["journalctl", "-u", "herald", "--since", f"@{since:.6f}", "-o", "cat", "--no-pager"],
+        ["journalctl", "-u", "herald", "--since", f"@{exclusive_since}",
+         "--until", f"@{until:.6f}", "-o", "cat", "--no-pager"],
         capture_output=True, text=True, check=True, timeout=5,
     )
     digests = []
@@ -47,43 +53,56 @@ def read_digests(since):
     return digests
 
 
-def budget_failures(budget, health, digests, disk_free, root_free):
+def budget_failures(budget, health, digests, disk_free, root_free, streaks):
+    observations = [
+        ("live Herald lag", health["lag_blocks"] > budget["max_lag_blocks"]),
+        ("live health response latency", health["health_ms"] > budget["max_health_ms"]),
+        ("candidate disk reserve", disk_free < budget["min_candidate_free_bytes"]),
+        ("host disk reserve", root_free < budget["min_host_free_bytes"]),
+    ]
+    observations.extend(
+        (f"live {event['kind']} p95", event["p95Ms"] > budget["digest_p95_ms"][event["kind"]])
+        for event in digests if event["count"] > 0
+    )
     failures = []
-    if health["lag_blocks"] > budget["max_lag_blocks"]:
-        failures.append("live Herald lag")
-    if health["health_ms"] > budget["max_health_ms"]:
-        failures.append("live health response latency")
-    for event in digests:
-        if event["count"] > 0 and event["p95Ms"] > budget["digest_p95_ms"][event["kind"]]:
-            failures.append(f"live {event['kind']} p95")
-    if disk_free < budget["min_candidate_free_bytes"]:
-        failures.append("candidate disk reserve")
-    if root_free < budget["min_host_free_bytes"]:
-        failures.append("host disk reserve")
+    for reason, exceeded in observations:
+        streaks[reason] = streaks.get(reason, 0) + 1 if exceeded else 0
+        if streaks[reason] >= 2 and reason not in failures:
+            failures.append(reason)
     return failures
 
 
 def pause_candidate(reasons):
     # The guard runs outside this slice; live services never belong to it.
     subprocess.run(["systemctl", "freeze", "athanor.slice"], check=True, timeout=10)
-    print(json.dumps({"event": "candidate_paused", "reasons": reasons}), flush=True)
+    print(json.dumps({"event": "candidate_paused", "at": time.time(), "reasons": reasons}), flush=True)
 
 
 def monitor(budget):
     since = time.time()
+    streaks = {}
+    unavailable_windows = 0
     while True:
         next_since = time.time()
         try:
             health = check_health()
-            digests = read_digests(since)
+            digests = read_digests(since, next_since)
             failures = budget_failures(
                 budget, health, digests,
-                shutil.disk_usage("/opt/athanor").free, shutil.disk_usage("/").free,
+                shutil.disk_usage("/opt/athanor").free, shutil.disk_usage("/").free, streaks,
             )
         except Exception as error:
-            pause_candidate([f"live monitoring unavailable: {type(error).__name__}"])
-            return 1
-        print(json.dumps({"event": "candidate_live_health", **health, "digests": digests}), flush=True)
+            unavailable_windows += 1
+            print(json.dumps({"event": "candidate_live_monitoring_unavailable", "at": time.time(),
+                              "error": type(error).__name__}), flush=True)
+            if unavailable_windows >= 2:
+                pause_candidate([f"live monitoring unavailable: {type(error).__name__}"])
+                return 1
+            time.sleep(5)
+            continue
+        unavailable_windows = 0
+        print(json.dumps({"event": "candidate_live_health", "at": next_since,
+                          **health, "digests": digests}), flush=True)
         if failures:
             pause_candidate(failures)
             return 1
@@ -92,10 +111,7 @@ def monitor(budget):
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("budget", type=Path)
-    args = parser.parse_args()
-    budget = json.loads(args.budget.read_text())
+    budget = json.loads(LIVE_BUDGET_PATH.read_text())
     if not Path("/opt/athanor").is_mount():
         raise SystemExit("candidate disk is not mounted")
     return monitor(budget)

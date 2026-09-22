@@ -54,18 +54,30 @@ execution and compilation mode. The runner refuses existing project state and CP
 
 Supply `DEPLOYER_ACCOUNT_ADDRESS` and `DEPLOYER_PRIVATE_KEY` from the isolated devnet. The runner creates private
 credentials and volumes, deploys identity, binds a gameplay operator and deploys the native world under it, registers
-the Frontier and Regular Blitz presets and starts Herald. Each shard exports upstream node metrics through its own pinned OTLP
-collector into its private run directory; `harness.env` points the existing block reporter at that output. The run
-directory holds its compose configuration, manifest, logs and private `harness.env`. It starts no live services. Failed
-runs retain their volumes for inspection; choose a fresh shard id for a new run.
+the Frontier and Regular Blitz presets and starts Herald. Each shard exports upstream node metrics through its own
+pinned OTLP collector into its private run directory; `harness.env` points the existing block reporter at that output.
+The run directory holds its compose configuration, manifest, logs and private `harness.env`. It starts no live services.
+Failed runs retain their volumes for inspection; choose a fresh shard id for a new run.
 
 For ordered trials, use `scripts/shard.py --matrix MATRIX_JSON RUN_DIRECTORY`. The matrix contains `configurations` (an
 ordered list of shard configurations), `workload` (`games`, `accounts_per_game`, `minutes`, `interval_seconds`,
-`setup_concurrency`, `workload`) and `live` (`budget`, `container`, `chain_config`). The live budget is the existing
-candidate guard's JSON; the live container and chain configuration are read only for host snapshots. The guard must be
-running before deployment. Each trial stores its configuration, deployment, workload reports and start/end host
-snapshots under the run directory. A failed workload or exceeded live budget aborts the matrix. Each completed or failed
-candidate is stopped with its volumes retained; the next configuration starts fresh.
+`setup_concurrency`, `workload`) and `live` (`container`, `chain_config`). The guard and matrix both read
+`deploy/athanor/live-budget.json`; the live container and chain configuration are read only for host snapshots. The
+guard must be running before deployment. Each trial stores its configuration, deployment, workload reports and start/end
+host snapshots under the run directory. A failed workload or exceeded live budget aborts the matrix. Each completed or
+failed candidate is stopped with its volumes retained; the next configuration starts fresh.
+
+The checked-in live budget replaces the box-only budget file. Its 2026-09-22 baseline used 130 confirmed-diff windows
+from 13:20–15:30 UTC while the candidate was frozen: window p95 ranged from 225 to 237 ms. The 300 ms confirmed budget
+gives that maximum roughly 25% headroom. The preceding 24 hours contained 64 non-empty preconfirmed windows (1,728
+observations), with window p95 from 2 to 41 ms; their budget is 60 ms. Twelve live-health samples had zero lag and
+responses from 2.3 to 13.8 ms; the health budget is 50 ms and lag allowance remains three blocks. Disk reserves remain
+10 GiB for the candidate and 100 GiB for the host. Raw measurements stay with the run artifacts.
+
+The same condition must exceed its budget in two consecutive observed windows before the guard freezes the candidate or
+the matrix aborts. A healthy observation resets that condition. Digest streams are counted independently; empty polls
+and zero-count digests neither advance nor reset their streaks. Monitoring errors also require two consecutive failed
+polls. The guard logs the pause timestamp; after investigating, restart the guard and thaw only `athanor.slice`.
 
 The node initially waits for its game deployment while declarations remain available. After deployment, the runner
 recreates only that new shard's node with its sequencing account and world address. The node persists its epoch secret
