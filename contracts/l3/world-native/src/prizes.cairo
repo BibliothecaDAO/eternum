@@ -343,7 +343,7 @@ pub mod PrizesDomain {
         }
 
         fn games(self: @ContractState) -> IGameDispatcher {
-            IGameDispatcher { contract_address: self.lifecycle.require_active().season }
+            IGameDispatcher { contract_address: self.lifecycle.require_active().registry }
         }
     }
 }

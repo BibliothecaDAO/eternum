@@ -159,10 +159,11 @@ export function resolveCreatedGameId(
 function resolveNativeCreatedGameId(receipt: unknown, manifest: NativeWorldManifest): number | undefined {
   const schema = manifest.native.schemas[manifest.native.activeSchema];
   const model = schema.models.find((model) => model.name === "GameRegistry");
-  const layouts = schema.domains.season.events.filter((event) => event.name === "RowSet");
+  const layouts = schema.domains.registry.events.filter((event) => event.name === "RowSet");
   if (!model || !layouts.length) throw new Error("Native manifest has no game registry event");
   for (const event of readReceiptEvents(receipt)) {
-    if (!event.from_address || BigInt(event.from_address) !== BigInt(manifest.native.domains.season.address)) continue;
+    if (!event.from_address || BigInt(event.from_address) !== BigInt(manifest.native.domains.registry.address))
+      continue;
     const keys = event.keys ?? [];
     if (
       !layouts.some(
@@ -314,11 +315,11 @@ export async function settleBlitzRoster(
   admissionUrl: string,
 ): Promise<number> {
   const { manifest } = resolveRegistrarContext(target);
-  const season = manifest.native.domains.season.address;
+  const registry = manifest.native.domains.registry.address;
   const read = async () =>
-    new CallData(nativeDomainAbi(manifest, "season")).parse(
+    new CallData(nativeDomainAbi(manifest, "registry")).parse(
       "game",
-      await provider.callContract({ contractAddress: season, entrypoint: "game", calldata: [gameId] }, "latest"),
+      await provider.callContract({ contractAddress: registry, entrypoint: "game", calldata: [gameId] }, "latest"),
     ) as { ready: boolean; end_at: bigint; end_grace_seconds: bigint };
   let game = await read();
   if (game.ready) return Number(game.end_at + game.end_grace_seconds);

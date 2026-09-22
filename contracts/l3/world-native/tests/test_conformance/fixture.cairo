@@ -28,7 +28,9 @@ use world_native::commands::{
     Command, CreateExplorer, Explore, ITroopCommandsDispatcher, ITroopCommandsDispatcherTrait,
     ITroopCommandsSafeDispatcher, ITroopCommandsSafeDispatcherTrait, command_commitment,
 };
-use world_native::game::{GameRegistry, IGameDispatcher, IGameDispatcherTrait};
+use world_native::game::{
+    GameRegistry, IGameDispatcher, IGameDispatcherTrait, IPointsDispatcher, IPointsDispatcherTrait,
+};
 use world_native::lifecycle::{IDomainDispatcher, IDomainDispatcherTrait, Peers};
 use world_native::map::IMapDispatcherTrait;
 use world_native::season::{ISeasonDispatcher, ISeasonDispatcherTrait};
@@ -185,9 +187,9 @@ fn provision_game(peers: Peers, actor: ContractAddress, administrator: ContractA
     let resources: Span<ResourceRule> = Serde::deserialize(ref fields).unwrap();
     let buildings: Span<world_native::buildings::BuildingRuleConfig> = Serde::deserialize(ref fields).unwrap();
     assert!(fields.is_empty(), "trailing preset fixture");
-    start_cheat_caller_address(peers.season, administrator);
-    IGameDispatcher { contract_address: peers.season }
-        .create_game(
+    start_cheat_caller_address(peers.registry, administrator);
+    IGameDispatcher { contract_address: peers.registry }
+        .initialize_game(
             7,
             GameRegistry {
                 name: 'conformance',
@@ -204,7 +206,7 @@ fn provision_game(peers: Peers, actor: ContractAddress, administrator: ContractA
             },
             rules,
         );
-    stop_cheat_caller_address(peers.season);
+    stop_cheat_caller_address(peers.registry);
     start_cheat_caller_address(peers.structures, administrator);
     let structures = IStructuresDispatcher { contract_address: peers.structures };
     let resource_store = IResourcesDispatcher { contract_address: peers.resources };
@@ -428,7 +430,7 @@ pub fn outcome(address: ContractAddress) -> Array<felt252> {
     let resource_store = IResourcesDispatcher { contract_address: peers.resources };
     let map = world_native::map::IMapDispatcher { contract_address: peers.map };
     let troops = world_native::troops::ITroopsDispatcher { contract_address: peers.troops };
-    let game = IGameDispatcher { contract_address: address };
+    let points = IPointsDispatcher { contract_address: address };
     let mut values = array![];
     IRecordedExecutionViewsDispatcher { contract_address: address }
         .recorded_outcome(1)
@@ -469,8 +471,8 @@ pub fn outcome(address: ContractAddress) -> Array<felt252> {
             },
         )
         .serialize(ref values);
-    game.player_points(7, 456.try_into().unwrap()).serialize(ref values);
-    game.season_points(7).serialize(ref values);
+    points.player_points(7, 456.try_into().unwrap()).serialize(ref values);
+    points.season_points(7).serialize(ref values);
     IHyperstructuresDispatcher { contract_address: peers.economy }.hyperstructure_count(7).serialize(ref values);
     values
 }

@@ -20,7 +20,7 @@ fn view(d: super::Deployment) -> IBlitzResultsDispatcher {
     IBlitzResultsDispatcher { contract_address: d.peers.prizes }
 }
 fn games(d: super::Deployment) -> IGameDispatcher {
-    IGameDispatcher { contract_address: d.peers.season }
+    IGameDispatcher { contract_address: d.peers.registry }
 }
 fn setup(scores: Span<u128>) -> super::Deployment {
     let (d, _, _) = setup_with_rules(
@@ -45,7 +45,7 @@ fn setup(scores: Span<u128>) -> super::Deployment {
         );
     }
     set_fixture(
-        d.peers.season,
+        d.peers.registry,
         selector!("games"),
         array![3].span(),
         crate::game::GameRegistry { settled: true, ..games(d).game(3) },
@@ -159,7 +159,7 @@ fn results_require_the_authority_domain_path_and_finished_point_settlement() {
     stop_cheat_caller_address(d.peers.prizes);
     let game = games(d).game(3);
     set_fixture(
-        d.peers.season, selector!("games"), array![3].span(), crate::game::GameRegistry { settled: false, ..game },
+        d.peers.registry, selector!("games"), array![3].span(), crate::game::GameRegistry { settled: false, ..game },
     );
     assert!(!submit(d, 0, command.players));
     assert!(execute(d, Command::MarkGameSettled, 500));

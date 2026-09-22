@@ -422,7 +422,7 @@ fn ethereal_battle_uses_both_recorded_d20_rolls_in_damage_and_history() {
     move_to(d, defender, Coord { alt: true, x: 2000015, y: 2000000 });
     let before_attacker = troop(d, attacker).unwrap();
     let before_defender = troop(d, defender).unwrap();
-    let game = crate::game::IGameDispatcher { contract_address: d.peers.season };
+    let game = crate::game::IGameDispatcher { contract_address: d.peers.registry };
     let rules = crate::game::IGameDispatcherTrait::rules(game, 3);
     let mut root = super::context().raw_root;
     let seed = crate::random::game_root(ref root, 3, crate::game::IGameDispatcherTrait::game(game, 3).seed);

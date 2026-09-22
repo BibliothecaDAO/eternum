@@ -167,7 +167,7 @@ pub fn boost_production(ref bonus: crate::production::ProductionBonus, id: u8, r
 pub mod RelicState {
     use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
     use starknet::{ContractAddress, get_caller_address};
-    use crate::game::{IGameDispatcher, IGameDispatcherTrait, assert_playing};
+    use crate::game::{IGameDispatcher, IGameDispatcherTrait, IPointsDispatcher, IPointsDispatcherTrait, assert_playing};
     use crate::lifecycle::Lifecycle::InternalTrait as LifeInternalTrait;
     use crate::lifecycle::{Lifecycle, Peers};
     use crate::resources::{IResourcesDispatcher, IResourcesDispatcherTrait, ResourceKey};
@@ -254,7 +254,8 @@ pub mod RelicState {
                 self.resources().grant_resource(key, *id, crate::rules::RESOURCE_PRECISION, context.timestamp);
             }
             let points = config.victory_points_grant_config.relic_open_points.into();
-            self.games().register_relic_points(game_id, actor);
+            IPointsDispatcher { contract_address: get_dep_component!(@self, Life).require_active().season }
+                .register_relic_points(game_id, actor);
             self.record_chest_opened(game_id, actor, command, relics, points, context.timestamp);
         }
         fn apply_relic(
@@ -401,7 +402,7 @@ pub mod RelicState {
             get_dep_component!(self, Life).require_active()
         }
         fn games(self: @ComponentState<TContractState>) -> IGameDispatcher {
-            IGameDispatcher { contract_address: self.peers().season }
+            IGameDispatcher { contract_address: self.peers().registry }
         }
         fn resources(self: @ComponentState<TContractState>) -> IResourcesDispatcher {
             IResourcesDispatcher { contract_address: self.peers().resources }

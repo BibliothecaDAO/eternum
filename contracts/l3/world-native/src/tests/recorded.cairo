@@ -61,11 +61,11 @@ pub fn rules() -> crate::rules::SliceRules {
     let mut fields = data.span();
     Serde::deserialize(ref fields).unwrap()
 }
-pub fn create_games(season: ContractAddress, authority: ContractAddress) {
-    snforge_std::start_cheat_caller_address(season, authority);
+pub fn create_games(registry: ContractAddress, authority: ContractAddress) {
+    snforge_std::start_cheat_caller_address(registry, authority);
     for game_id in array![1, 2] {
-        IGameDispatcher { contract_address: season }
-            .create_game(
+        IGameDispatcher { contract_address: registry }
+            .initialize_game(
                 game_id,
                 GameRegistry {
                     name: 'fixture',
@@ -83,7 +83,7 @@ pub fn create_games(season: ContractAddress, authority: ContractAddress) {
                 rules(),
             );
     }
-    snforge_std::stop_cheat_caller_address(season);
+    snforge_std::stop_cheat_caller_address(registry);
 }
 pub fn deploy_submitter(address: ContractAddress) {
     let signer: StarkCurveKeyPair = KeyPairTrait::from_secret_key(54321);

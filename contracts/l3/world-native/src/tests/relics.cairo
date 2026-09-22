@@ -263,8 +263,9 @@ fn reveal_relics_reveal_only_the_ring_without_points_or_discovery() {
     let (deployment, home, explorer) = setup(false);
     move_fixture(deployment, explorer, Coord { alt: false, x: 2000100, y: 2000100 });
     let origin = troop(deployment, explorer).coord;
-    let games = crate::game::IGameDispatcher { contract_address: deployment.peers.season };
-    let before = crate::game::IGameDispatcherTrait::player_points(games, 3, deployment.actor);
+    let before = crate::game::IPointsDispatcherTrait::player_points(
+        crate::game::IPointsDispatcher { contract_address: deployment.peers.season }, 3, deployment.actor,
+    );
     for id in array![45_u8, 46] {
         assert!(execute(deployment, apply(explorer, id, Recipient::Explorer), 40));
     }
@@ -281,7 +282,12 @@ fn reveal_relics_reveal_only_the_ring_without_points_or_discovery() {
         }
     }
     assert_eq!(revealed, 18);
-    assert_eq!(crate::game::IGameDispatcherTrait::player_points(games, 3, deployment.actor), before);
+    assert_eq!(
+        crate::game::IPointsDispatcherTrait::player_points(
+            crate::game::IPointsDispatcher { contract_address: deployment.peers.season }, 3, deployment.actor,
+        ),
+        before,
+    );
     assert!(map.tile(crate::geometry::tile_key(3, origin)).is_none());
     assert_eq!(balance(deployment, home, 38), 9250 * RESOURCE_PRECISION);
 }
@@ -317,10 +323,12 @@ fn opening_a_chest_draws_with_replacement_once_and_replay_cannot_reopen_it() {
     move_fixture(deployment, explorer, crate::geometry::neighbor(coord, 0));
     let command = Command::OpenRelicChest(OpenChest { explorer_id: explorer.entity_id, coord });
     let mut root = super::context().raw_root;
-    let games = crate::game::IGameDispatcher { contract_address: deployment.peers.season };
+    let games = crate::game::IGameDispatcher { contract_address: deployment.peers.registry };
     let seed = crate::random::game_root(ref root, 3, crate::game::IGameDispatcherTrait::game(games, 3).seed);
     let expected = crate::relics::draw_relics(rules(), seed, 50, 3);
-    let points = crate::game::IGameDispatcherTrait::player_points(games, 3, deployment.actor);
+    let points = crate::game::IPointsDispatcherTrait::player_points(
+        crate::game::IPointsDispatcher { contract_address: deployment.peers.season }, 3, deployment.actor,
+    );
     assert!(execute_recorded_at(deployment, command, 50, 5000));
     for id in 39_u8..57 {
         let mut count = 0_u128;
@@ -331,7 +339,12 @@ fn opening_a_chest_draws_with_replacement_once_and_replay_cannot_reopen_it() {
         }
         assert_eq!(balance(deployment, explorer, id), (3 + count) * RESOURCE_PRECISION);
     }
-    assert_eq!(crate::game::IGameDispatcherTrait::player_points(games, 3, deployment.actor), points + 77);
+    assert_eq!(
+        crate::game::IPointsDispatcherTrait::player_points(
+            crate::game::IPointsDispatcher { contract_address: deployment.peers.season }, 3, deployment.actor,
+        ),
+        points + 77,
+    );
     assert_terminal_rejection(deployment, command, 51);
     assert_eq!(
         IMapDispatcher { contract_address: deployment.peers.map }

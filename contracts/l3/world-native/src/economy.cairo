@@ -561,7 +561,7 @@ pub mod EconomyDomain {
             }
         }
         fn games(self: @ContractState) -> IGameDispatcher {
-            IGameDispatcher { contract_address: self.lifecycle.require_active().season }
+            IGameDispatcher { contract_address: self.lifecycle.require_active().registry }
         }
         fn resources(self: @ContractState) -> IResourcesDispatcher {
             IResourcesDispatcher { contract_address: self.lifecycle.require_active().resources }

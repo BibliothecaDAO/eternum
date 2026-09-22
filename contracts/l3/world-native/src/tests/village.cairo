@@ -5,7 +5,7 @@ use snforge_std::{
     stop_cheat_caller_address,
 };
 use crate::commands::{Command, ExecutionContext};
-use crate::game::{IGameDispatcher, IGameDispatcherTrait};
+use crate::game::{IGameDispatcher, IGameDispatcherTrait, IPointsDispatcherTrait};
 use crate::map::{IMapDispatcher, IMapDispatcherTrait};
 use crate::resources::{IResourcesDispatcher, IResourcesDispatcherTrait, ResourceKey, ResourceRule, ResourceSlot};
 use crate::season::{ISeasonDispatcher, ISeasonDispatcherTrait};
@@ -37,11 +37,11 @@ fn setup(dev: bool) -> (Deployment, u32) {
 fn setup_config(dev: bool, mode: SettlementMode, game_rules: crate::rules::SliceRules) -> (Deployment, u32) {
     let deployment = super::setup_with_domains(true, "StructuresDomain", "TroopsDomain");
     super::entry::set_operator(deployment, authority());
-    let games = IGameDispatcher { contract_address: deployment.peers.season };
-    start_cheat_caller_address(deployment.peers.season, authority());
-    games.create_game(3, crate::game::GameRegistry { dev_mode_on: dev, ..games.game(1) }, game_rules);
+    let games = IGameDispatcher { contract_address: deployment.peers.registry };
+    start_cheat_caller_address(deployment.peers.registry, authority());
+    games.initialize_game(3, crate::game::GameRegistry { dev_mode_on: dev, ..games.game(1) }, game_rules);
     recorded::configure_submitter(deployment.peers.season, super::submitter());
-    stop_cheat_caller_address(deployment.peers.season);
+    stop_cheat_caller_address(deployment.peers.registry);
     let data = read_txt(@FileTrait::new("tests/fixtures/settlement.txt"));
     let mut fields = data.span();
     let grants: RealmGrants = Serde::deserialize(ref fields).unwrap();
@@ -91,7 +91,7 @@ fn run(deployment: Deployment, command: Command, timestamp: u64) -> bool {
     let season = ISeasonDispatcher { contract_address: deployment.peers.season };
     let action = recorded::FixtureAction {
         command,
-        rules: IGameDispatcher { contract_address: deployment.peers.season }.rules(3),
+        rules: IGameDispatcher { contract_address: deployment.peers.registry }.rules(3),
         nonce: season.next_nonce(3, deployment.actor),
         deadline: 10000,
         ..intent(deployment, 3),
@@ -171,7 +171,10 @@ fn production_pass_is_atomic_single_use_and_army_grant_uses_recorded_time() {
         assert!(tile.data % 0x20000000000 == 0, "settlement surroundings must have no occupant or discovery");
         assert!(tile.data / 0x20000000000 % 256 != 0, "neighbour biome missing");
     }
-    assert!(IGameDispatcher { contract_address: deployment.peers.season }.player_points(3, deployment.actor) == 0);
+    assert!(
+        crate::game::IPointsDispatcher { contract_address: deployment.peers.season }
+            .player_points(3, deployment.actor) == 0,
+    );
     assert!(!run(deployment, settle(realm, 7), 100));
     assert!(!run(deployment, Command::ReceiveVillageArmy(village_id), 100));
     let interval = recorded::rules().tick_config.armies_tick_in_seconds;

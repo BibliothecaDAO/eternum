@@ -5,7 +5,7 @@ use crate::camps::{
 };
 use crate::commands::{Command, CreateExplorer, Explore};
 use crate::discovery::{Discovery, surface};
-use crate::game::{IGameDispatcher, IGameDispatcherTrait};
+use crate::game::IPointsDispatcherTrait;
 use crate::geometry::{neighbor, tile_key};
 use crate::guards::{GuardKey, IGuardsDispatcher, IGuardsDispatcherTrait};
 use crate::map::{IMapDispatcher, IMapDispatcherTrait};
@@ -146,7 +146,7 @@ fn camp_reveals_six_biomes_without_neighbor_lotteries_or_points() {
         assert_eq!(tile.data % 0x20000000000, 0);
         assert!((tile.data / 0x20000000000) % 256 != 0);
     }
-    assert_eq!(IGameDispatcher { contract_address: d.peers.season }.season_points(3), 0);
+    assert_eq!(crate::game::IPointsDispatcher { contract_address: d.peers.season }.season_points(3), 0);
     assert_eq!(key.game_id, 3);
 }
 #[test]
@@ -204,7 +204,7 @@ fn recorded_exploration_discovers_a_camp_without_moving_the_explorer_into_it() {
     let camp_id: u32 = (tile.data / 512 % 0x100000000).try_into().unwrap();
     assert_eq!(structures.structure(ResourceKey { game_id: 3, entity_id: camp_id }).unwrap().base.created_at, 140);
     assert_eq!(
-        IGameDispatcher { contract_address: d.peers.season }.player_points(3, d.actor),
+        crate::game::IPointsDispatcher { contract_address: d.peers.season }.player_points(3, d.actor),
         rules(true).victory_points_grant_config.explore_tiles_points.into(),
     );
 }

@@ -328,7 +328,7 @@ pub mod FaithState {
             game
         }
         fn games(self: @ComponentState<TContractState>) -> IGameDispatcher {
-            IGameDispatcher { contract_address: get_dep_component!(self, Life).require_active().season }
+            IGameDispatcher { contract_address: get_dep_component!(self, Life).require_active().registry }
         }
         #[inline(never)]
         fn authorize(self: @ComponentState<TContractState>, game_id: u32, timestamp: u64) -> crate::game::GameRegistry {

@@ -1,6 +1,6 @@
 use snforge_std::{start_cheat_block_timestamp_global, start_cheat_caller_address, stop_cheat_caller_address};
 use crate::commands::{Command, ExecutionContext};
-use crate::game::{IGameDispatcher, IGameDispatcherTrait};
+use crate::game::IPointsDispatcherTrait;
 use crate::hyperstructures::{
     AllocateShares, ConstructionAccess, ConstructionResource, Contribution, HyperstructureRules,
     IHyperstructuresDispatcher, IHyperstructuresDispatcherTrait, IHyperstructuresSafeDispatcher,
@@ -94,7 +94,7 @@ fn balance(deployment: super::Deployment, key: ResourceKey, resource_type: u8) -
         .resource_balance(ResourceSlot { game_id: key.game_id, entity_id: key.entity_id, resource_type })
 }
 fn points(deployment: super::Deployment, actor: starknet::ContractAddress) -> u128 {
-    IGameDispatcher { contract_address: deployment.peers.season }.player_points(3, actor)
+    crate::game::IPointsDispatcher { contract_address: deployment.peers.season }.player_points(3, actor)
 }
 fn access(hyper: ResourceKey, access: ConstructionAccess) -> Command {
     Command::SetConstructionAccess(SetConstructionAccess { hyperstructure_id: hyper.entity_id, access })
@@ -159,7 +159,7 @@ fn contribution_rejections_roll_back_the_whole_batch_and_consume_the_ticket() {
     }
     assert_terminal_rejection(deployment, contribute(hyper, from, array![amount(2, 1)].span()), 200);
     assert_eq!(
-        IGameDispatcher { contract_address: deployment.peers.season }.season_points(3),
+        crate::game::IPointsDispatcher { contract_address: deployment.peers.season }.season_points(3),
         points(deployment, deployment.actor),
     );
 }

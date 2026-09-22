@@ -223,7 +223,7 @@ pub mod MapDomain {
         fn initialize_spires(ref self: ContractState, game_id: u32, layout: crate::spires::SpireLayout) {
             self.lifecycle.assert_configurator();
             let peers = self.lifecycle.require_active();
-            let games = IGameDispatcher { contract_address: peers.season };
+            let games = IGameDispatcher { contract_address: peers.registry };
             assert!(crate::rules::rule_enabled(games.rules(game_id), crate::rules::SPIRES), "spires are disabled");
             assert!(self.spire_layouts.read(game_id).is_none(), "spires already initialized");
             crate::spires::validate(layout);
@@ -313,7 +313,7 @@ pub mod MapDomain {
     #[abi(embed_v0)]
     impl Map of super::IMap<ContractState> {
         fn biome(self: @ContractState, key: TileKey) -> u8 {
-            let season = IGameDispatcher { contract_address: self.lifecycle.require_active().season };
+            let season = IGameDispatcher { contract_address: self.lifecycle.require_active().registry };
             let rules = season.rules(key.game_id);
             let climate = if rules.epoch_seconds == 0 {
                 rules.biome_climate_config
@@ -336,7 +336,7 @@ pub mod MapDomain {
         fn discovery(
             self: @ContractState, key: TileKey, seed: u256, hyperstructures: u32, timestamp: u64,
         ) -> crate::discovery::Discovery {
-            let season = IGameDispatcher { contract_address: self.lifecycle.require_active().season };
+            let season = IGameDispatcher { contract_address: self.lifecycle.require_active().registry };
             let rules = season.rules(key.game_id);
             let coord = Coord { alt: key.alt, x: key.col, y: key.row };
             if key.alt {
@@ -402,7 +402,7 @@ pub mod MapDomain {
             ref self: ContractState, game_id: u32, rewards: Span<crate::exploration_rewards::ExplorationReward>,
         ) {
             self.lifecycle.assert_configurator();
-            IGameDispatcher { contract_address: self.lifecycle.require_active().season }.game(game_id);
+            IGameDispatcher { contract_address: self.lifecycle.require_active().registry }.game(game_id);
             assert!(self.exploration_reward_count.read(game_id) == 0, "immutable extraction rewards");
             assert!(!rewards.is_empty(), "empty exploration pool");
             let mut total: u128 = 0;
@@ -447,7 +447,7 @@ pub mod MapDomain {
             let peers = self.lifecycle.require_active();
             assert!(get_caller_address() == peers.troops, "only movement domain");
             crate::commands::assert_context_time(context.timestamp);
-            let games = IGameDispatcher { contract_address: peers.season };
+            let games = IGameDispatcher { contract_address: peers.registry };
             let game = games.game(game_id);
             crate::game::assert_playing(game, context.timestamp);
             let explorer = crate::troops::ITroopsDispatcherTrait::authorized_explorer(
@@ -511,7 +511,7 @@ pub mod MapDomain {
             let peers = self.lifecycle.require_active();
             assert!(get_caller_address() == peers.troops, "only troops domain");
             crate::commands::assert_context_time(timestamp);
-            let games = IGameDispatcher { contract_address: peers.season };
+            let games = IGameDispatcher { contract_address: peers.registry };
             let rules = games.rules(game_id);
             if !crate::rules::rule_enabled(rules, crate::rules::DISCOVER_CHESTS) || coord.alt {
                 return;
@@ -578,9 +578,9 @@ pub mod MapDomain {
     #[generate_trait]
     impl Internal of InternalTrait {
         fn reserve_sites(ref self: ContractState, game_id: u32, count: u8, timestamp: u64) {
-            let season = self.lifecycle.require_active().season;
-            let game = IGameDispatcher { contract_address: season }.game(game_id);
-            let game_rules = IGameDispatcher { contract_address: season }.rules(game_id);
+            let registry = self.lifecycle.require_active().registry;
+            let game = IGameDispatcher { contract_address: registry }.game(game_id);
+            let game_rules = IGameDispatcher { contract_address: registry }.rules(game_id);
             assert!(
                 crate::rules::rule_enabled(game_rules, crate::rules::RESERVED_HYPERSTRUCTURES),
                 "reserved hyperstructures disabled",
@@ -622,7 +622,7 @@ pub mod MapDomain {
                 let tile = self.map.tile(tile_key(game_id, Coord { alt, ..coord }));
                 assert!(tile.map(|value| (value.data / 2) % BYTE_RANGE == 0).unwrap_or(true), "spire tile occupied");
             }
-            let id = IGameDispatcher { contract_address: self.lifecycle.require_active().season }
+            let id = IGameDispatcher { contract_address: self.lifecycle.require_active().registry }
                 .allocate_entity(game_id);
             for alt in array![false, true] {
                 let center = Coord { alt, ..coord };
@@ -643,7 +643,7 @@ pub mod MapDomain {
         }
 
         fn map_center(self: @ContractState, game_id: u32) -> Coord {
-            let rules = IGameDispatcher { contract_address: self.lifecycle.require_active().season }.rules(game_id);
+            let rules = IGameDispatcher { contract_address: self.lifecycle.require_active().registry }.rules(game_id);
             let center = 2147483646 - rules.map_center_offset;
             Coord { alt: false, x: center, y: center }
         }
@@ -654,7 +654,7 @@ pub mod MapDomain {
             timestamp: u64,
             reward: crate::exploration_rewards::ExtractedReward,
         ) {
-            let games = IGameDispatcher { contract_address: self.lifecycle.require_active().season };
+            let games = IGameDispatcher { contract_address: self.lifecycle.require_active().registry };
             self
                 .emit(
                     crate::ownership::StoryEvent {

@@ -141,7 +141,7 @@ fn setup_with_domains(activate: bool, structures_class: ByteArray, troops_class:
         stop_cheat_caller_address(address);
     }
     if activate {
-        recorded::create_games(season, authority());
+        recorded::create_games(registry_domain, authority());
     }
     configure_submitter(season, submitter());
     start_cheat_caller_address(season, submitter());
@@ -435,9 +435,10 @@ fn registered_account_with_unapproved_class_is_rejected_before_key_read() {
         IDomainDispatcher { contract_address: address }.configure(peers);
     }
     IDomainDispatcher { contract_address: season }.activate();
+    IDomainDispatcher { contract_address: registry_domain }.activate();
     start_cheat_caller_address(season, submitter());
     start_cheat_block_timestamp(season, 100);
-    recorded::create_games(season, authority());
+    recorded::create_games(registry_domain, authority());
     let error = recorded::admission(season, actor).unwrap_err();
     assert_eq!(error.span(), array!['unregistered actor', 'ENTRYPOINT_FAILED'].span());
     assert_eq!(ISeasonDispatcher { contract_address: season }.next_nonce(1, actor), 0);

@@ -295,7 +295,8 @@ pub mod ResourcesDomain {
                 "only economy or bridge domain",
             );
             crate::commands::assert_context_time(timestamp);
-            let rules = IGameDispatcher { contract_address: self.lifecycle.require_active().season }.rules(key.game_id);
+            let rules = IGameDispatcher { contract_address: self.lifecycle.require_active().registry }
+                .rules(key.game_id);
             let mut bonus = self.production.bonus(key);
             crate::relics::boost_production(
                 ref bonus, relic_id, rule, (timestamp / rules.tick_config.armies_tick_in_seconds).try_into().unwrap(),
@@ -631,7 +632,7 @@ pub mod ResourcesDomain {
             }
         }
         fn game_dispatcher(self: @ContractState) -> IGameDispatcher {
-            IGameDispatcher { contract_address: self.lifecycle.require_active().season }
+            IGameDispatcher { contract_address: self.lifecycle.require_active().registry }
         }
         #[inline(never)]
         fn structure_owner(self: @ContractState, key: ResourceKey) -> ContractAddress {

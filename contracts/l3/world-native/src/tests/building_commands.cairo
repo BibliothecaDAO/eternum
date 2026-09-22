@@ -140,10 +140,10 @@ fn building_configuration_is_authorized_complete_and_immutable() {
 #[test]
 fn storehouse_capacity_is_retained_while_paused_and_cannot_be_removed_while_needed() {
     let (deployment, home) = building_world();
-    let game = IGameDispatcher { contract_address: deployment.peers.season };
+    let game = IGameDispatcher { contract_address: deployment.peers.registry };
     let mut rules = game.rules(3);
     rules.capacity_config.storehouse_boost_capacity = 1;
-    set_fixture(deployment.peers.season, selector!("rules"), array![3].span(), rules);
+    set_fixture(deployment.peers.registry, selector!("rules"), array![3].span(), rules);
     let resources = IResourcesDispatcher { contract_address: deployment.peers.resources };
     set_fixture(
         deployment.peers.resources,
@@ -307,7 +307,7 @@ fn labor_buildings_cannot_be_destroyed_and_population_blocks_overbuilding() {
         crate::buildings::StructureBuildings {
             population: crate::buildings::Population {
                 current: counts.population.max
-                    + IGameDispatcher { contract_address: deployment.peers.season }
+                    + IGameDispatcher { contract_address: deployment.peers.registry }
                         .rules(3)
                         .building_config
                         .base_population,

@@ -35,7 +35,7 @@ pub mod BlitzResultState {
     use starknet::{ContractAddress, get_caller_address, get_tx_info};
     use crate::commands::ExecutionContext;
     use crate::events::RowSet;
-    use crate::game::{IGameDispatcher, IGameDispatcherTrait};
+    use crate::game::{IGameDispatcher, IGameDispatcherTrait, IPointsDispatcher, IPointsDispatcherTrait};
     use crate::lifecycle::Lifecycle;
     use crate::lifecycle::Lifecycle::{DomainImpl, InternalTrait as LifeInternal};
     use crate::ownership::{Story, StoryEvent};
@@ -95,7 +95,11 @@ pub mod BlitzResultState {
             assert!(command.start == count, "result batch out of order");
             let mut points = array![];
             for player in roster {
-                points.append(self.games().player_points(game_id, *player.account));
+                points
+                    .append(
+                        IPointsDispatcher { contract_address: get_dep_component!(@self, Life).require_active().season }
+                            .player_points(game_id, *player.account),
+                    );
             }
             for offset in 0..command.players.len() {
                 let index: u8 = (Into::<u8, u32>::into(count) + offset).try_into().unwrap();
@@ -116,7 +120,7 @@ pub mod BlitzResultState {
         +Drop<TContractState>,
     > of InternalTrait<TContractState> {
         fn games(self: @ComponentState<TContractState>) -> IGameDispatcher {
-            IGameDispatcher { contract_address: get_dep_component!(self, Life).require_active().season }
+            IGameDispatcher { contract_address: get_dep_component!(self, Life).require_active().registry }
         }
         fn roster(self: @ComponentState<TContractState>, game_id: u32) -> Span<RosterPlayer> {
             IRegistrarDispatcher { contract_address: get_dep_component!(self, Life).require_active().registry }

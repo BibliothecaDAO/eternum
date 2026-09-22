@@ -63,12 +63,12 @@ fn prepare_without_entitlement(
             + world_native::rules::PRODUCTION_START;
         rules.entry_rule = world_native::rules::ENTRY_ROSTER;
     }
-    let games = IGameDispatcher { contract_address: season };
+    let games = IGameDispatcher { contract_address: peers.registry };
     let game = world_native::game::GameRegistry {
         dev_mode_on: false, start_main_at: 1200, end_at: 1300, ..games.game(7),
     };
-    start_cheat_caller_address(season, 222.try_into().unwrap());
-    games.create_game(8, game, rules);
+    start_cheat_caller_address(peers.registry, 222.try_into().unwrap());
+    games.initialize_game(8, game, rules);
     let input = read_txt(@FileTrait::new("tests/fixtures/settlement.txt"));
     let mut fields = input.span();
     let mut grants: RealmGrants = Serde::deserialize(ref fields).unwrap();
@@ -166,7 +166,7 @@ fn grant_entry(season: ContractAddress, owner: ContractAddress) {
 }
 fn unprovisioned_realm(season: ContractAddress, grant_troops: bool) {
     let peers = IDomainDispatcher { contract_address: season }.domain_state().peers;
-    let center = 2147483646 - IGameDispatcher { contract_address: season }.rules(8).map_center_offset;
+    let center = 2147483646 - IGameDispatcher { contract_address: peers.registry }.rules(8).map_center_offset;
     let coord = *world_native::settlement_grid::settlement_location(
         world_native::troops::Coord { alt: false, x: center, y: center }, SettlementMode::Triple, 6, 0,
     )
@@ -348,7 +348,8 @@ fn reserved_hyperstructure_uses_recorded_time_after_an_outage() {
     let mut immediate = array![].span();
     for clock in array![1201_u64, 100000].span() {
         let season = prepare();
-        let rules = IGameDispatcher { contract_address: season }.rules(8);
+        let peers = IDomainDispatcher { contract_address: season }.domain_state().peers;
+        let rules = IGameDispatcher { contract_address: peers.registry }.rules(8);
         let center = 2147483646 - rules.map_center_offset;
         let coord = world_native::troops::Coord { alt: false, x: center, y: center };
         let (action, envelope) = accepted(season, Command::CreateReservedHyperstructure(coord), 1201);
@@ -356,7 +357,6 @@ fn reserved_hyperstructure_uses_recorded_time_after_an_outage() {
         submit(season, action, envelope);
         let results = IRecordedExecutionViewsDispatcher { contract_address: season };
         assert!(results.recorded_outcome(1).unwrap().status == 1, "recorded materialization failed");
-        let peers = IDomainDispatcher { contract_address: season }.domain_state().peers;
         let structures = IStructuresDispatcher { contract_address: peers.structures };
         let key = ResourceKey { game_id: 8, entity_id: 1 };
         let hyper = IHyperstructuresDispatcher { contract_address: peers.economy }.hyperstructure(key).unwrap();
@@ -380,7 +380,7 @@ fn reserved_hyperstructure_uses_recorded_time_after_an_outage() {
 fn settlement_commands_reject_forged_domain_callers_before_mutating() {
     let season = prepare();
     let peers = IDomainDispatcher { contract_address: season }.domain_state().peers;
-    let rules = IGameDispatcher { contract_address: season }.rules(8);
+    let rules = IGameDispatcher { contract_address: peers.registry }.rules(8);
     let center = 2147483646 - rules.map_center_offset;
     let coord = world_native::troops::Coord { alt: false, x: center, y: center };
     let actor = 456.try_into().unwrap();

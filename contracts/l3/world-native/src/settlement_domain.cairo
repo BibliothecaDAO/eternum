@@ -291,7 +291,7 @@ pub mod SettlementDomain {
             ILedgerOperatorDispatcher { contract_address: self.lifecycle.require_active().registry }.ledger_operator()
         }
         fn games(self: @ContractState) -> IGameDispatcher {
-            IGameDispatcher { contract_address: self.lifecycle.require_active().season }
+            IGameDispatcher { contract_address: self.lifecycle.require_active().registry }
         }
         fn resolve_season_realm(
             self: @ContractState, key: EntryKey, selected: Option<u32>, settled: u16, seed: u256,

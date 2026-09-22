@@ -324,7 +324,7 @@ pub mod StructuresDomain {
     use crate::commands::ExecutionContext;
     use crate::discovery::Discovery;
     use crate::events::RowSet;
-    use crate::game::{IGameDispatcher, IGameDispatcherTrait, assert_playing};
+    use crate::game::{IGameDispatcher, IGameDispatcherTrait, IPointsDispatcher, IPointsDispatcherTrait, assert_playing};
     use crate::geometry::tile_key;
     use crate::lifecycle::Lifecycle;
     use crate::map::{IMapDispatcher, IMapDispatcherTrait};
@@ -898,7 +898,8 @@ pub mod StructuresDomain {
             }
             self.change_owner(key, owner, timestamp);
             let points = if record.owner == 0.try_into().unwrap() {
-                self.game_dispatcher().register_capture(key.game_id, owner, record.base.category)
+                IPointsDispatcher { contract_address: self.lifecycle.require_active().season }
+                    .register_capture(key.game_id, owner, record.base.category)
             } else {
                 0
             };
@@ -1446,7 +1447,7 @@ pub mod StructuresDomain {
             assert!(get_caller_address() == self.lifecycle.require_active().troops, "only troops domain");
         }
         fn game_dispatcher(self: @ContractState) -> IGameDispatcher {
-            IGameDispatcher { contract_address: self.lifecycle.require_active().season }
+            IGameDispatcher { contract_address: self.lifecycle.require_active().registry }
         }
         fn map_dispatcher(self: @ContractState) -> IMapDispatcher {
             IMapDispatcher { contract_address: self.lifecycle.require_active().map }

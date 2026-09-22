@@ -102,7 +102,7 @@ pub mod HyperstructureState {
     use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
     use starknet::{ContractAddress, get_caller_address};
     use crate::events::{RowMemberSet, RowSet};
-    use crate::game::{IGameDispatcher, IGameDispatcherTrait, assert_playing};
+    use crate::game::{IGameDispatcher, IGameDispatcherTrait, IPointsDispatcher, IPointsDispatcherTrait, assert_playing};
     use crate::geometry::tile_key;
     use crate::guilds::{IGuildsDispatcher, IGuildsDispatcherTrait};
     use crate::lifecycle::Lifecycle::InternalTrait as LifecycleInternalTrait;
@@ -283,7 +283,8 @@ pub mod HyperstructureState {
                 let slot = ResourceSlot { game_id, entity_id: key.entity_id, resource_type: *resource.resource_type };
                 points += self.contribute_resource(from, slot, *resource.amount, state.seed, context.timestamp);
             }
-            self.games().register_hyperstructure_points(game_id, actor, points);
+            IPointsDispatcher { contract_address: self.peers().season }
+                .register_hyperstructure_points(game_id, actor, points);
             if self.is_complete(key, state.seed) {
                 state.stage = Stage::Complete;
                 self.write_state(key, state);
@@ -399,7 +400,7 @@ pub mod HyperstructureState {
             IGuildsDispatcher { contract_address: self.peers().registry }
         }
         fn games(self: @ComponentState<TContractState>) -> IGameDispatcher {
-            IGameDispatcher { contract_address: self.peers().season }
+            IGameDispatcher { contract_address: self.peers().registry }
         }
         fn rules(self: @ComponentState<TContractState>, game_id: u32) -> HyperstructureRules {
             let count = self.hyper_rule_count.read(game_id);
@@ -579,7 +580,8 @@ pub mod HyperstructureState {
             if points == 0 {
                 return;
             }
-            self.games().register_hyperstructure_points(key.game_id, player, points);
+            IPointsDispatcher { contract_address: self.peers().season }
+                .register_hyperstructure_points(key.game_id, player, points);
             self
                 .emit(
                     crate::ownership::StoryEvent {

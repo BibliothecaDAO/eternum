@@ -10,7 +10,7 @@ use super::{Deployment, authority, setup};
 
 fn deployment() -> Deployment {
     let d = setup(true);
-    stop_cheat_caller_address(d.peers.season);
+    stop_cheat_caller_address(d.peers.registry);
     d
 }
 
@@ -24,7 +24,7 @@ fn map(d: Deployment) -> IMapDispatcher {
     IMapDispatcher { contract_address: d.peers.map }
 }
 fn center(d: Deployment, game_id: u32) -> Coord {
-    let rules = IGameDispatcher { contract_address: d.peers.season }.rules(game_id);
+    let rules = IGameDispatcher { contract_address: d.peers.registry }.rules(game_id);
     Coord { alt: false, x: 2147483646 - rules.map_center_offset, y: 2147483646 - rules.map_center_offset }
 }
 fn initialize(d: Deployment, game_id: u32, config: SpireLayout) {
@@ -56,10 +56,10 @@ fn lattice_retains_center_then_point_side_order_and_hex_geometry() {
 #[test]
 fn production_initialization_places_the_same_spire_identity_on_both_layers_without_rewards() {
     let d = deployment();
-    let games = IGameDispatcher { contract_address: d.peers.season };
-    start_cheat_caller_address(d.peers.season, authority());
-    games.create_game(3, crate::game::GameRegistry { dev_mode_on: false, ..games.game(1) }, games.rules(1));
-    stop_cheat_caller_address(d.peers.season);
+    let games = IGameDispatcher { contract_address: d.peers.registry };
+    start_cheat_caller_address(d.peers.registry, authority());
+    games.initialize_game(3, crate::game::GameRegistry { dev_mode_on: false, ..games.game(1) }, games.rules(1));
+    stop_cheat_caller_address(d.peers.registry);
     initialize(d, 3, layout(7));
     assert_eq!(spires(d).spire_layout(3), Some(layout(7)));
     assert!(spires(d).spire_layout(1).is_none());
@@ -78,7 +78,12 @@ fn production_initialization_places_the_same_spire_identity_on_both_layers_witho
             }
         }
     }
-    assert_eq!(games.season_points(3), 0);
+    assert_eq!(
+        crate::game::IPointsDispatcherTrait::season_points(
+            crate::game::IPointsDispatcher { contract_address: d.peers.season }, 3,
+        ),
+        0,
+    );
     assert!(map(d).tile(tile_key(1, center(d, 1))).is_none());
 }
 
@@ -99,10 +104,10 @@ fn initialization_rejects_invalid_layouts_foreign_callers_blitz_and_repeats() {
         assert!(spires(d).spire_layout(1).is_none());
         assert!(map(d).tile(tile_key(1, center(d, 1))).is_none());
     }
-    let games = IGameDispatcher { contract_address: d.peers.season };
-    start_cheat_caller_address(d.peers.season, authority());
+    let games = IGameDispatcher { contract_address: d.peers.registry };
+    start_cheat_caller_address(d.peers.registry, authority());
     games
-        .create_game(
+        .initialize_game(
             3,
             games.game(1),
             crate::rules::SliceRules {
@@ -112,7 +117,7 @@ fn initialization_rejects_invalid_layouts_foreign_callers_blitz_and_repeats() {
                 ..games.rules(1),
             },
         );
-    stop_cheat_caller_address(d.peers.season);
+    stop_cheat_caller_address(d.peers.registry);
     assert!(safe.initialize_spires(3, layout(1)).is_err());
     safe.initialize_spires(1, layout(1)).unwrap();
     assert!(safe.initialize_spires(1, layout(7)).is_err());

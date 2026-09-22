@@ -242,7 +242,7 @@ pub mod BridgeState {
             get_dep_component!(self, Withdrawals)
         }
         fn games(self: @ComponentState<TContractState>) -> IGameDispatcher {
-            IGameDispatcher { contract_address: self.peers().season }
+            IGameDispatcher { contract_address: self.peers().registry }
         }
         fn resources(self: @ComponentState<TContractState>) -> IResourcesDispatcher {
             IResourcesDispatcher { contract_address: self.peers().resources }

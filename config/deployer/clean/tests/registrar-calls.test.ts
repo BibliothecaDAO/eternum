@@ -35,11 +35,11 @@ describe("native registrar", () => {
     assertRegistrarAvailable(manifest);
     expect(resolveRegistrarWorldAddress(manifest)).toBe("0x123");
   });
-  test("accepts each declared game row prefix only from the season domain", () => {
+  test("accepts each declared game row prefix only from the registry domain", () => {
     const model = schema.models.find((model) => model.name === "GameRegistry")!;
-    for (const layout of schema.domains.season.events.filter((event) => event.name === "RowSet")) {
+    for (const layout of schema.domains.registry.events.filter((event) => event.name === "RowSet")) {
       const event = {
-        from_address: "0x123",
+        from_address: "0x456",
         keys: [...layout.prefix, "1", model.identity],
         data: ["1", "7", "1", "0"],
       };
@@ -64,7 +64,7 @@ test("a ready roster submits no settlement transactions on retry", async () => {
   expect(finalizeAt).toBe(305);
   expect(provider.callContract).toHaveBeenCalledTimes(1);
   expect(provider.callContract).toHaveBeenCalledWith(
-    { contractAddress: "0x123", entrypoint: "game", calldata: [7] },
+    { contractAddress: "0x456", entrypoint: "game", calldata: [7] },
     "latest",
   );
 });

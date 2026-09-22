@@ -50,9 +50,14 @@ pub trait IGame<T> {
     fn ownership_rules_ready(self: @T, game_id: u32) -> bool;
     fn game(self: @T, game_id: u32) -> GameRegistry;
     fn rules(self: @T, game_id: u32) -> SliceRules;
-    fn create_game(ref self: T, game_id: u32, game: GameRegistry, rules: SliceRules);
+    fn initialize_game(ref self: T, game_id: u32, game: GameRegistry, rules: SliceRules);
+    fn write_game(ref self: T, game_id: u32, game: GameRegistry);
     fn start_blitz(ref self: T, game_id: u32, timestamp: u64);
     fn allocate_entity(ref self: T, game_id: u32) -> u32;
+}
+
+#[starknet::interface]
+pub trait IPoints<T> {
     fn register_exploration(ref self: T, game_id: u32, actor: ContractAddress);
     fn register_capture(ref self: T, game_id: u32, actor: ContractAddress, category: u8) -> u128;
     fn register_relic_points(ref self: T, game_id: u32, actor: ContractAddress);
@@ -118,59 +123,15 @@ pub mod GameState {
         pub rules: Map<u32, SliceRules>,
         pub exists: Map<u32, bool>,
         pub next_entity: Map<u32, u32>,
-        pub player_points: Map<(u32, starknet::ContractAddress), u128>,
-        pub season_points: Map<u32, u128>,
         pub ownership_rules_ready: Map<u32, bool>,
-        pub win_thresholds: Map<u32, Option<u128>>,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
     pub enum Event {
         RowSet: RowSet,
-        PointsAwarded: super::PointsAwarded,
     }
     #[generate_trait]
     pub impl InternalImpl<TContractState, +HasComponent<TContractState>> of InternalTrait<TContractState> {
-        fn register_exploration(
-            ref self: ComponentState<TContractState>, game_id: u32, actor: starknet::ContractAddress,
-        ) {
-            let amount: u128 = self.rules(game_id).victory_points_grant_config.explore_tiles_points.into();
-            self.register_points(game_id, actor, amount, super::PointActivity::Exploration);
-        }
-        fn register_points(
-            ref self: ComponentState<TContractState>,
-            game_id: u32,
-            actor: starknet::ContractAddress,
-            amount: u128,
-            activity: super::PointActivity,
-        ) {
-            if amount == 0 {
-                return;
-            }
-            self.emit(super::PointsAwarded { version: 1, game_id, player: actor, activity, points: amount });
-            let points = self.player_points.read((game_id, actor)) + amount;
-            let total = self.season_points.read(game_id) + amount;
-            self.player_points.write((game_id, actor), points);
-            self.season_points.write(game_id, total);
-            self
-                .emit(
-                    RowSet {
-                        version: 1,
-                        model: 'PlayerPoints',
-                        keys: array![game_id.into(), actor.into()].span(),
-                        values: array![points.into()].span(),
-                    },
-                );
-            self
-                .emit(
-                    RowSet {
-                        version: 1,
-                        model: 'PointsTotal',
-                        keys: array![game_id.into()].span(),
-                        values: array![total.into()].span(),
-                    },
-                );
-        }
         fn game(self: @ComponentState<TContractState>, game_id: u32) -> GameRegistry {
             assert!(self.exists.read(game_id), "game does not exist");
             self.games.read(game_id)

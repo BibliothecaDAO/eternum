@@ -41,7 +41,7 @@ pub mod SeasonDomain {
     use starknet::{ContractAddress, get_caller_address, get_contract_address, get_tx_info};
     use crate::commands::{Command, ExecutionContext as DomainContext, decode_command};
     use crate::events::RowSet;
-    use crate::game::{GameRegistry, GameState};
+    use crate::game::{IGameDispatcher, IGameDispatcherTrait};
     use crate::lifecycle::{Lifecycle, Peers};
     use crate::recording::{ExecutionHead, HeadPacking, RecordedState};
     use crate::rules::SliceRules;
@@ -51,8 +51,6 @@ pub mod SeasonDomain {
     };
     component!(path: RecordedState, storage: recording, event: RecordingEvent);
     impl RecordingInternal = RecordedState::InternalImpl<ContractState>;
-    component!(path: GameState, storage: games, event: GameEvent);
-    impl GameInternal = GameState::InternalImpl<ContractState>;
     component!(path: Lifecycle, storage: lifecycle, event: LifecycleEvent);
     #[abi(embed_v0)]
     impl Domain = Lifecycle::DomainImpl<ContractState>;
@@ -60,25 +58,26 @@ pub mod SeasonDomain {
 
     #[storage]
     struct Storage {
+        player_points: Map<(u32, ContractAddress), u128>,
+        season_points: Map<u32, u128>,
+        win_thresholds: Map<u32, Option<u128>>,
+        close_initiators: Map<u32, Option<ContractAddress>>,
         #[substorage(v0)]
         lifecycle: Lifecycle::Storage,
         authentication: Authentication,
         nonces: Map<(u32, ContractAddress), u64>,
         #[substorage(v0)]
-        games: GameState::Storage,
-        #[substorage(v0)]
         recording: RecordedState::Storage,
-        close_initiators: Map<u32, Option<ContractAddress>>,
     }
 
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
+        PointsAwarded: crate::game::PointsAwarded,
+        StoryEvent: crate::ownership::StoryEvent,
         LifecycleEvent: Lifecycle::Event,
         RowSet: RowSet,
-        GameEvent: GameState::Event,
         RecordingEvent: RecordedState::Event,
-        StoryEvent: crate::ownership::StoryEvent,
         BatchProgress: crate::commands::BatchProgress,
     }
 
@@ -92,9 +91,9 @@ pub mod SeasonDomain {
     impl SeasonLifecycle of crate::game::ISeasonLifecycle<ContractState> {
         fn configure_season_win(ref self: ContractState, game_id: u32, points: u128) {
             self.lifecycle.assert_configurator();
-            self.games.game(game_id);
-            assert!(self.games.win_thresholds.read(game_id).is_none(), "season win threshold already configured");
-            self.games.win_thresholds.write(game_id, Some(points));
+            self.games().game(game_id);
+            assert!(self.win_thresholds.read(game_id).is_none(), "season win threshold already configured");
+            self.win_thresholds.write(game_id, Some(points));
             self
                 .emit(
                     RowSet {
@@ -106,16 +105,16 @@ pub mod SeasonDomain {
                 );
         }
         fn season_win_threshold(self: @ContractState, game_id: u32) -> u128 {
-            self.games.win_thresholds.read(game_id).expect('missing season win threshold')
+            self.win_thresholds.read(game_id).expect('missing season win threshold')
         }
         fn close_season(ref self: ContractState, game_id: u32, actor: ContractAddress, context: DomainContext) -> u64 {
             let peers = self.lifecycle.require_active();
-            assert!(get_caller_address() == get_contract_address(), "only authenticated command domain");
+            assert!(get_caller_address() == peers.season, "only authenticated command domain");
             crate::commands::assert_context_time(context.timestamp);
-            let mut game = self.games.game(game_id);
+            let mut game = self.games().game(game_id);
             crate::game::assert_playing(game, context.timestamp);
             assert!(
-                crate::rules::rule_enabled(self.games.rules(game_id), crate::rules::SEASON_CLOSE),
+                crate::rules::rule_enabled(self.games().rules(game_id), crate::rules::SEASON_CLOSE),
                 "season closure is disabled",
             );
             let threshold = self.season_win_threshold(game_id);
@@ -136,11 +135,11 @@ pub mod SeasonDomain {
                 return remaining.into();
             }
             self.close_initiators.write(game_id, None);
-            if self.games.player_points.read((game_id, initiator)) < threshold {
+            if self.player_points.read((game_id, initiator)) < threshold {
                 return 0;
             }
             game.end_at = context.timestamp;
-            self.games.write_game(game_id, game);
+            self.games().write_game(game_id, game);
             self.record_season_end(game_id, initiator, context.timestamp);
             0
         }
@@ -156,7 +155,7 @@ pub mod SeasonDomain {
             );
             assert!(actor == self.lifecycle.domain_state().authority, "only domain authority");
             crate::commands::assert_context_time(context.timestamp);
-            let mut game = self.games.game(game_id);
+            let mut game = self.games().game(game_id);
             if game.settled {
                 return 0;
             }
@@ -172,8 +171,54 @@ pub mod SeasonDomain {
                 return remaining.into();
             }
             game.settled = true;
-            self.games.write_game(game_id, game);
+            self.games().write_game(game_id, game);
             0
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl Points of crate::game::IPoints<ContractState> {
+        fn register_relic_points(ref self: ContractState, game_id: u32, actor: ContractAddress) {
+            assert!(get_caller_address() == self.lifecycle.require_active().economy, "only economy domain");
+            let points = self.games().rules(game_id).victory_points_grant_config.relic_open_points;
+            self.register_points(game_id, actor, points.into(), crate::game::PointActivity::RelicChest);
+        }
+        fn register_hyperstructure_points(ref self: ContractState, game_id: u32, actor: ContractAddress, amount: u128) {
+            assert!(get_caller_address() == self.lifecycle.require_active().economy, "only economy domain");
+            self.games().game(game_id);
+            self.register_points(game_id, actor, amount, crate::game::PointActivity::Hyperstructure);
+        }
+        fn player_points(self: @ContractState, game_id: u32, actor: ContractAddress) -> u128 {
+            self.player_points.read((game_id, actor))
+        }
+        fn season_points(self: @ContractState, game_id: u32) -> u128 {
+            self.season_points.read(game_id)
+        }
+        fn register_capture(ref self: ContractState, game_id: u32, actor: ContractAddress, category: u8) -> u128 {
+            assert!(get_caller_address() == self.lifecycle.require_active().structures, "only structures domain");
+            let rules = self.games().rules(game_id).victory_points_grant_config;
+            let amount = if category == 2 {
+                rules.claim_hyperstructure_points
+            } else {
+                rules.claim_otherstructure_points
+            };
+            self
+                .register_points(
+                    game_id,
+                    actor,
+                    amount.into(),
+                    if category == 2 {
+                        crate::game::PointActivity::HyperstructureCapture
+                    } else {
+                        crate::game::PointActivity::StructureCapture
+                    },
+                );
+            amount.into()
+        }
+        fn register_exploration(ref self: ContractState, game_id: u32, actor: ContractAddress) {
+            assert!(get_caller_address() == self.lifecycle.require_active().troops, "only troops domain");
+            let amount = self.games().rules(game_id).victory_points_grant_config.explore_tiles_points;
+            self.register_points(game_id, actor, amount.into(), crate::game::PointActivity::Exploration);
         }
     }
 
@@ -271,93 +316,6 @@ pub mod SeasonDomain {
         }
     }
 
-    #[abi(embed_v0)]
-    impl Games of crate::game::IGame<ContractState> {
-        fn ownership_rules_ready(self: @ContractState, game_id: u32) -> bool {
-            self.games.ownership_rules_ready.read(game_id)
-        }
-
-        fn register_relic_points(ref self: ContractState, game_id: u32, actor: ContractAddress) {
-            assert!(get_caller_address() == self.lifecycle.require_active().economy, "only economy domain");
-            let points = self.games.rules(game_id).victory_points_grant_config.relic_open_points;
-            self.games.register_points(game_id, actor, points.into(), crate::game::PointActivity::RelicChest);
-        }
-        fn register_hyperstructure_points(ref self: ContractState, game_id: u32, actor: ContractAddress, amount: u128) {
-            assert!(get_caller_address() == self.lifecycle.require_active().economy, "only economy domain");
-            self.games.game(game_id);
-            self.games.register_points(game_id, actor, amount, crate::game::PointActivity::Hyperstructure);
-        }
-        fn player_points(self: @ContractState, game_id: u32, actor: ContractAddress) -> u128 {
-            self.games.player_points.read((game_id, actor))
-        }
-        fn season_points(self: @ContractState, game_id: u32) -> u128 {
-            self.games.season_points.read(game_id)
-        }
-        fn register_capture(ref self: ContractState, game_id: u32, actor: ContractAddress, category: u8) -> u128 {
-            assert!(get_caller_address() == self.lifecycle.require_active().structures, "only structures domain");
-            let rules = self.games.rules(game_id).victory_points_grant_config;
-            let amount = if category == 2 {
-                rules.claim_hyperstructure_points
-            } else {
-                rules.claim_otherstructure_points
-            };
-            self
-                .games
-                .register_points(
-                    game_id,
-                    actor,
-                    amount.into(),
-                    if category == 2 {
-                        crate::game::PointActivity::HyperstructureCapture
-                    } else {
-                        crate::game::PointActivity::StructureCapture
-                    },
-                );
-            amount.into()
-        }
-        fn register_exploration(ref self: ContractState, game_id: u32, actor: ContractAddress) {
-            assert!(get_caller_address() == self.lifecycle.require_active().troops, "only troops domain");
-            self.games.register_exploration(game_id, actor);
-        }
-        fn game(self: @ContractState, game_id: u32) -> GameRegistry {
-            self.games.game(game_id)
-        }
-        fn rules(self: @ContractState, game_id: u32) -> SliceRules {
-            self.games.rules(game_id)
-        }
-        fn create_game(ref self: ContractState, game_id: u32, game: GameRegistry, rules: SliceRules) {
-            self.lifecycle.assert_configurator();
-            self.games.create(game_id, game, rules);
-        }
-        fn start_blitz(ref self: ContractState, game_id: u32, timestamp: u64) {
-            assert!(get_caller_address() == self.lifecycle.require_active().settlement, "only settlement domain");
-            assert!(self.games.rules(game_id).entry_rule == crate::rules::ENTRY_ROSTER, "fixed roster required");
-            let mut game = self.games.game(game_id);
-            assert!(!game.ready, "roster already ready");
-            let duration = game.end_at - game.start_main_at;
-            game.start_main_at = core::cmp::max(game.start_main_at, timestamp);
-            game.end_at = game.start_main_at + duration;
-            game.ready = true;
-            self.games.write_game(game_id, game);
-        }
-        fn allocate_entity(ref self: ContractState, game_id: u32) -> u32 {
-            let peers = self.lifecycle.require_active();
-            let caller = get_caller_address();
-            assert!(
-                caller == peers.troops
-                    || caller == peers.combat
-                    || caller == peers.map
-                    || caller == peers.structures
-                    || caller == peers.resources
-                    || caller == peers.bridge
-                    || caller == peers.economy
-                    || caller == peers.prizes,
-                "only gameplay domain",
-            );
-            self.games.allocate(game_id)
-        }
-    }
-
     #[generate_trait]
     impl Internal of InternalTrait {
         #[inline(never)]
@@ -376,7 +334,7 @@ pub mod SeasonDomain {
                     crate::ownership::StoryEvent {
                         version: 1,
                         game_id,
-                        id: self.games.allocate(game_id),
+                        id: self.games().allocate_entity(game_id),
                         entity_id: None,
                         owner: Some(winner),
                         timestamp,
@@ -384,6 +342,43 @@ pub mod SeasonDomain {
                         story: crate::ownership::Story::SeasonEnded(winner),
                     },
                 );
+        }
+        fn register_points(
+            ref self: ContractState,
+            game_id: u32,
+            actor: starknet::ContractAddress,
+            amount: u128,
+            activity: crate::game::PointActivity,
+        ) {
+            if amount == 0 {
+                return;
+            }
+            self.emit(crate::game::PointsAwarded { version: 1, game_id, player: actor, activity, points: amount });
+            let points = self.player_points.read((game_id, actor)) + amount;
+            let total = self.season_points.read(game_id) + amount;
+            self.player_points.write((game_id, actor), points);
+            self.season_points.write(game_id, total);
+            self
+                .emit(
+                    RowSet {
+                        version: 1,
+                        model: 'PlayerPoints',
+                        keys: array![game_id.into(), actor.into()].span(),
+                        values: array![points.into()].span(),
+                    },
+                );
+            self
+                .emit(
+                    RowSet {
+                        version: 1,
+                        model: 'PointsTotal',
+                        keys: array![game_id.into()].span(),
+                        values: array![total.into()].span(),
+                    },
+                );
+        }
+        fn games(self: @ContractState) -> IGameDispatcher {
+            IGameDispatcher { contract_address: self.lifecycle.require_active().registry }
         }
         fn write_authentication(ref self: ContractState, authentication: Authentication) {
             assert!(
@@ -405,7 +400,7 @@ pub mod SeasonDomain {
         }
 
         fn rules_identity(self: @ContractState, game_id: u32) -> felt252 {
-            self.rules_commitment(self.games.rules(game_id))
+            self.rules_commitment(self.games().rules(game_id))
         }
         #[inline(never)]
         fn execution_config(self: @ContractState) -> felt252 {
@@ -448,14 +443,14 @@ pub mod SeasonDomain {
         ) -> Result<Span<felt252>, felt252> {
             self.validate_action(intent, envelope, game_id)?;
             let command = decode_command(intent.arguments.span(), *intent.command).map_err(|_error| 'INVALID_COMMAND')?;
-            let rules = self.games.rules(game_id);
+            let rules = self.games().rules(game_id);
             let mut command_fields = array![];
             command.serialize(ref command_fields);
             let command_index: u128 = (*command_fields.at(0)).try_into().unwrap();
             if !crate::rules::command_enabled(rules.command_mask, command_index) {
                 return Err('COMMAND_DISABLED');
             }
-            if !self.games.game(game_id).ready && command != Command::SettleBlitzRoster {
+            if !self.games().game(game_id).ready && command != Command::SettleBlitzRoster {
                 return Err('ROSTER_NOT_READY');
             }
             let result = dispatch(
@@ -520,7 +515,7 @@ pub mod SeasonDomain {
         fn validate_action(
             self: @ContractState, intent: @Intent, envelope: @Envelope, game_id: u32,
         ) -> Result<(), felt252> {
-            if !self.games.exists.read(game_id) {
+            if !self.games().ownership_rules_ready(game_id) {
                 return Err('INVALID_GAME');
             }
             if *intent.rules != self.rules_identity(game_id) {
@@ -629,7 +624,7 @@ pub mod SeasonDomain {
                 value.serialize(ref calldata);
                 (peers.prizes, selector!("claim_player_faith_points"))
             },
-            Command::CloseSeason => (get_contract_address(), selector!("close_season")),
+            Command::CloseSeason => (peers.season, selector!("close_season")),
             Command::CreateExplorer(value) => {
                 value.serialize(ref calldata);
                 (peers.troops, selector!("create_explorer"))

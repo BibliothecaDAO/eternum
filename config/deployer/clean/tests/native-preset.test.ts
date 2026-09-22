@@ -1,10 +1,4 @@
-import {
-  assertRegistrarAvailable,
-  createRegistrarGame,
-  resolveCreatedGameId,
-  resolveBlitzRoster,
-  findRegistrarGame,
-} from "../registrar/calls";
+import { resolveBlitzRoster, findRegistrarGame } from "../registrar/calls";
 import { afterAll, describe, expect, test, mock } from "bun:test";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -19,12 +13,6 @@ import {
   buildNativeGameParams,
   loadNativePresetConfiguration,
 } from "../registrar/native-preset";
-import { nativeDomainAbi } from "../world/native/manifest";
-
-mock.module("../shared/transaction", () => ({
-  confirmedTransactionReceipt: async (provider: RpcProvider, transactionHash: string) =>
-    provider.getTransactionReceipt(transactionHash),
-}));
 
 const abi = [...Object.values(schema.types), ...schema.domains.registry.entrypoints];
 const codec = new CallData(abi);
@@ -82,15 +70,6 @@ describe("native immutable balance presets", () => {
     expect(definition.exploration.map(({ resource_type, amount, weight }) => [resource_type, amount, weight])).toEqual(
       expected,
     );
-  });
-  test("domain ABIs keep the two create_game call shapes separate", () => {
-    const manifest = { native: { activeSchema: schema.identity, schemas: { [schema.identity]: schema } } };
-    const registryAbi = nativeDomainAbi(manifest as never, "registry");
-    const seasonAbi = nativeDomainAbi(manifest as never, "season");
-    const names = (abi: typeof registryAbi) =>
-      abi.find((entry) => entry.name === "create_game").inputs.map((input: { name: string }) => input.name);
-    expect(names(registryAbi)).toEqual(["params", "definition"]);
-    expect(names(seasonAbi)).toEqual(["game_id", "game", "rules"]);
   });
   test.each([1, 2, 3])("preset %i serializes all domains using the generated registrar ABI", (id) => {
     const config = configuration(id);
@@ -220,60 +199,6 @@ describe("native immutable balance presets", () => {
     } as unknown as Account;
     await expect(registerNativePreset(account, 2, registration)).rejects.toThrow("differs from manifest");
   });
-});
-
-test.each([1, 2])("native launch encodes preset %i and resolves its game from the season emitter", async (presetId) => {
-  const config = configuration(presetId);
-  const definition = buildNativePreset(config);
-  const params = buildNativeGameParams(
-    config,
-    {
-      gameName: "native-launch",
-      presetId,
-      startMainAt: 2000000000,
-      chainTimestamp: 1999999990,
-      durationSeconds: 3600,
-      devModeOn: presetId === 1,
-      singleRealmMode: presetId === 1,
-      twoPlayerMode: presetId === 3,
-      useMapOverride: false,
-    },
-    presetId === 1 ? [] : [{ owner: "0xabc", account: "0xdef" }],
-  );
-  const manifest = {
-    world: { address: "0x456" },
-    native: {
-      domains: { registry: { address: "0x123" }, season: { address: "0x456" } },
-      activeSchema: schema.identity,
-      schemas: { [schema.identity]: schema },
-    },
-  };
-  const layout = schema.domains.season.events.filter((event) => event.name === "RowSet").at(-1)!;
-  const model = schema.models.find((model) => model.name === "GameRegistry")!;
-  const event = { from_address: "0x456", keys: [...layout.prefix, "1", model.identity], data: ["1", "7", "1", "0"] };
-  const receipt = { block_number: 42, execution_status: "SUCCEEDED", events: [event] };
-  const execute = mock(async (_call: unknown, _details: unknown) => ({ transaction_hash: "0x789" }));
-  const account = { execute, getTransactionReceipt: async () => receipt } as unknown as Account;
-  assertRegistrarAvailable(manifest as never);
-  const created = await createRegistrarGame(account, params, manifest as never, undefined, definition);
-  expect(created.gameId).toBe(7);
-  expect(created.transactionHash).toBe("0x789");
-  expect(execute.mock.calls[0][0]).toEqual({
-    contractAddress: "0x123",
-    entrypoint: "create_game",
-    calldata: codec.compile("create_game", { params, definition }),
-  });
-  expect(params.roster).toEqual(presetId === 1 ? [] : [{ owner: "0xabc", account: "0xdef" }]);
-  expect(resolveCreatedGameId({ events: [{ ...event, from_address: "0x999" }] }, manifest as never)).toBeUndefined();
-  for (const layout of schema.domains.season.events.filter((event) => event.name === "RowSet")) {
-    expect(
-      resolveCreatedGameId(
-        { events: [{ ...event, keys: [...layout.prefix, "1", model.identity] }] },
-        manifest as never,
-      ),
-    ).toBe(7);
-  }
-  await expect(createRegistrarGame(account, params, manifest as never)).rejects.toThrow("immutable preset definition");
 });
 
 test("every native preset selects its declared game and balance profile", () => {

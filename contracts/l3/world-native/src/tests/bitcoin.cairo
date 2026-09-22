@@ -263,8 +263,8 @@ fn bitcoin_discovery_reveals_six_biomes_without_points_or_neighbor_discoveries()
         assert_eq!(tile.data % 0x20000000000, 0);
     }
     assert_eq!(
-        crate::game::IGameDispatcherTrait::player_points(
-            crate::game::IGameDispatcher { contract_address: deployment.peers.season }, 3, deployment.actor,
+        crate::game::IPointsDispatcherTrait::player_points(
+            crate::game::IPointsDispatcher { contract_address: deployment.peers.season }, 3, deployment.actor,
         ),
         0,
     );

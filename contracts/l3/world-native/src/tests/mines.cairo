@@ -231,14 +231,14 @@ fn discovered_surface_mines_use_kind_production_without_revealing_neighbors() {
 #[test]
 fn ethereal_discovery_never_draws_from_the_ordinary_mine_pool() {
     let d = super::setup(true);
-    let game = IGameDispatcher { contract_address: d.peers.season };
+    let game = IGameDispatcher { contract_address: d.peers.registry };
     let mut rules = super::recorded::rules();
     rules.bitcoin_mine_config.enabled = false;
     rules.map_config.shards_mines_win_probability = 1;
     rules.map_config.shards_mines_fail_probability = 0;
-    start_cheat_caller_address(d.peers.season, super::authority());
-    game.create_game(3, game.game(1), rules);
-    stop_cheat_caller_address(d.peers.season);
+    start_cheat_caller_address(d.peers.registry, super::authority());
+    game.initialize_game(3, game.game(1), rules);
+    stop_cheat_caller_address(d.peers.registry);
     start_cheat_caller_address(d.peers.resources, super::authority());
     IMineRulesDispatcher { contract_address: d.peers.resources }.configure_mines(3, kinds(), surface());
     stop_cheat_caller_address(d.peers.resources);

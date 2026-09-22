@@ -185,7 +185,7 @@ pub mod RegistrarState {
             self.register_roster(game_id, params.roster);
             let game = build_game(params, get_caller_address());
             let rules = game_rules(game_id, params, definition.rules);
-            IGameDispatcher { contract_address: peers.season }.create_game(game_id, game, rules);
+            IGameDispatcher { contract_address: peers.registry }.initialize_game(game_id, game, rules);
             crate::presets::initialize_game(peers, game_id, definition, params);
             self.launch_ids.write(params.name, game_id);
             self.launch_commitments.write(params.name, commitment);

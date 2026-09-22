@@ -6,7 +6,7 @@ export function nativeDomainAbi(manifest: NativeWorldManifest, name: string): Ab
   const schema = manifest.native?.schemas[manifest.native.activeSchema];
   const domain = schema?.domains[name];
   if (!domain) throw new Error(`Manifest has no native ${name} ABI`);
-  // Domain entrypoint names can overlap (for example season and registry create_game).
+  // Resolve entrypoints within their owning domain.
   return [...Object.values(schema.types), ...domain.entrypoints] as Abi;
 }
 

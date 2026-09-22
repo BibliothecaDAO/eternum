@@ -511,7 +511,7 @@ pub mod CombatDomain {
             self.game_dispatcher().rules(game_id)
         }
         fn game_dispatcher(self: @ContractState) -> IGameDispatcher {
-            IGameDispatcher { contract_address: self.lifecycle.require_active().season }
+            IGameDispatcher { contract_address: self.lifecycle.require_active().registry }
         }
         fn resources_dispatcher(self: @ContractState) -> IResourcesDispatcher {
             IResourcesDispatcher { contract_address: self.lifecycle.require_active().resources }

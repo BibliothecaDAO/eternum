@@ -45,7 +45,7 @@ pub mod BridgeDomain {
             tokens: Span<crate::withdrawals::ResourceToken>,
         ) {
             self.lifecycle.assert_configurator();
-            IGameDispatcher { contract_address: self.lifecycle.require_active().season }.game(game_id);
+            IGameDispatcher { contract_address: self.lifecycle.require_active().registry }.game(game_id);
             self.withdrawals.configure(game_id, rules, tokens);
         }
         fn withdrawal_rules(self: @ContractState, game_id: u32) -> crate::withdrawals::WithdrawalRules {

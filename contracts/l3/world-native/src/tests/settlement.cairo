@@ -84,14 +84,14 @@ fn settlement_pool_claim_requires_season_and_keeps_games_separate() {
 #[feature("safe_dispatcher")]
 fn only_game_creation_initializes_reservations_and_repeated_initialization_is_idempotent() {
     let deployment = setup(true);
-    let games = IGameDispatcher { contract_address: deployment.peers.season };
+    let games = IGameDispatcher { contract_address: deployment.peers.registry };
     let mut game_rules = recorded::rules();
     game_rules.mode_rules = super::recorded::BLITZ_RULES;
     game_rules.command_mask = super::recorded::BLITZ_COMMAND_MASK;
     game_rules.entry_rule = crate::rules::ENTRY_ROSTER;
     start_cheat_caller_address(deployment.peers.settlement, authority());
-    start_cheat_caller_address(deployment.peers.season, authority());
-    games.create_game(3, games.game(1), game_rules);
+    start_cheat_caller_address(deployment.peers.registry, authority());
+    games.initialize_game(3, games.game(1), game_rules);
     configure(deployment, 3, SettlementRules { mode: SettlementMode::Triple, registration_limit: 2, ..rules() });
     let map = deployment.peers.map;
     let safe = IBlitzReservationsSafeDispatcher { contract_address: map };
@@ -178,10 +178,10 @@ fn entry_entitlements_require_operator_and_compare_every_registration_field() {
 #[feature("safe_dispatcher")]
 fn village_placement_shares_reservations_with_fixed_blitz_and_eternum_entries() {
     let deployment = setup(true);
-    let games = IGameDispatcher { contract_address: deployment.peers.season };
-    start_cheat_caller_address(deployment.peers.season, authority());
+    let games = IGameDispatcher { contract_address: deployment.peers.registry };
+    start_cheat_caller_address(deployment.peers.registry, authority());
     games
-        .create_game(
+        .initialize_game(
             3,
             games.game(1),
             crate::rules::SliceRules {
@@ -191,7 +191,7 @@ fn village_placement_shares_reservations_with_fixed_blitz_and_eternum_entries() 
                 ..recorded::rules(),
             },
         );
-    stop_cheat_caller_address(deployment.peers.season);
+    stop_cheat_caller_address(deployment.peers.registry);
     configure(deployment, 1, SettlementRules { registration_limit: 2, ..rules() });
     configure(deployment, 3, SettlementRules { mode: SettlementMode::Triple, registration_limit: 2, ..rules() });
     let map = deployment.peers.map;
@@ -204,7 +204,7 @@ fn village_placement_shares_reservations_with_fixed_blitz_and_eternum_entries() 
         crate::settlement::IBlitzReservationsDispatcher { contract_address: map }, 3,
     );
     start_cheat_caller_address(map, deployment.peers.settlement);
-    let game_rules = IGameDispatcher { contract_address: deployment.peers.season }.rules(3);
+    let game_rules = IGameDispatcher { contract_address: deployment.peers.registry }.rules(3);
     let center = 2147483646 - game_rules.map_center_offset;
     for game_id in array![1_u32, 3] {
         let mut seen = array![];
@@ -256,15 +256,15 @@ fn remember_distinct(ref seen: Array<crate::troops::Coord>, added: Span<crate::t
 #[should_panic(expected: "entry entitlement required")]
 fn a_missing_ledger_operator_never_bypasses_eternum_entitlements() {
     let d = setup(true);
-    let games = IGameDispatcher { contract_address: d.peers.season };
+    let games = IGameDispatcher { contract_address: d.peers.registry };
     let game_rules = crate::rules::SliceRules {
         mode_rules: super::recorded::ETERNUM_RULES,
         entry_rule: crate::rules::ENTRY_ENTITLEMENT,
         command_mask: super::recorded::ETERNUM_COMMAND_MASK,
         ..recorded::rules(),
     };
-    start_cheat_caller_address(d.peers.season, authority());
-    games.create_game(3, crate::game::GameRegistry { dev_mode_on: false, ..games.game(1) }, game_rules);
+    start_cheat_caller_address(d.peers.registry, authority());
+    games.initialize_game(3, crate::game::GameRegistry { dev_mode_on: false, ..games.game(1) }, game_rules);
     configure(d, 3, rules());
     start_cheat_caller_address(d.peers.settlement, d.peers.season);
     crate::realms::ISeasonRealmsDispatcherTrait::settle_season(

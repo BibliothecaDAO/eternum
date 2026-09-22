@@ -25,10 +25,10 @@ pub fn setup() -> (Deployment, ResourceKey, ResourceKey) {
 pub fn setup_with_rules(rules: crate::rules::SliceRules) -> (Deployment, ResourceKey, ResourceKey) {
     let deployment = super::setup_with_domains(true, "StructuresDomain", "TroopsDomain");
     let peers = deployment.peers;
-    let games = IGameDispatcher { contract_address: peers.season };
-    start_cheat_caller_address(peers.season, authority());
+    let games = IGameDispatcher { contract_address: peers.registry };
+    start_cheat_caller_address(peers.registry, authority());
     games
-        .create_game(
+        .initialize_game(
             3,
             crate::game::GameRegistry {
                 dev_mode_on: false,
@@ -40,7 +40,7 @@ pub fn setup_with_rules(rules: crate::rules::SliceRules) -> (Deployment, Resourc
             },
             rules,
         );
-    stop_cheat_caller_address(peers.season);
+    stop_cheat_caller_address(peers.registry);
     let mut rules = array![];
     for resource_type in 1_u8..59 {
         rules
@@ -104,7 +104,7 @@ pub fn execute_in_game(
     let season = ISeasonDispatcher { contract_address: deployment.peers.season };
     let action = recorded::FixtureAction {
         command,
-        rules: IGameDispatcher { contract_address: deployment.peers.season }.rules(game_id),
+        rules: IGameDispatcher { contract_address: deployment.peers.registry }.rules(game_id),
         nonce: season.next_nonce(game_id, deployment.actor),
         deadline: 10000,
         ..intent(deployment, game_id),

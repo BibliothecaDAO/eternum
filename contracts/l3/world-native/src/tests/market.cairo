@@ -107,8 +107,8 @@ fn regional_banks_have_pinned_ids_guards_names_and_biome_only_surroundings() {
         );
     }
     assert_eq!(
-        crate::game::IGameDispatcherTrait::player_points(
-            crate::game::IGameDispatcher { contract_address: deployment.peers.season }, 3, super::authority(),
+        crate::game::IPointsDispatcherTrait::player_points(
+            crate::game::IPointsDispatcher { contract_address: deployment.peers.season }, 3, super::authority(),
         ),
         0,
     );

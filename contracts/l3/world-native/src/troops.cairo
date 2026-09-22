@@ -271,7 +271,7 @@ pub trait ICombatTroops<T> {
 pub mod TroopsDomain {
     use starknet::{ContractAddress, get_caller_address};
     use crate::commands::{CreateExplorer, ExecutionContext, Explore};
-    use crate::game::{IGameDispatcher, IGameDispatcherTrait, assert_playing};
+    use crate::game::{IGameDispatcher, IGameDispatcherTrait, IPointsDispatcher, IPointsDispatcherTrait, assert_playing};
     use crate::geometry::{neighbor, spire_neighbor, tile_key};
     use crate::lifecycle::Lifecycle;
     use crate::map::{IMapDispatcher, IMapDispatcherTrait};
@@ -846,7 +846,8 @@ pub mod TroopsDomain {
             let mut discovery = crate::discovery::Discovery::None;
             if exploring {
                 self.map_dispatcher().reveal(tile, biome.into());
-                self.game_dispatcher().register_exploration(game_id, actor);
+                IPointsDispatcher { contract_address: self.lifecycle.require_active().season }
+                    .register_exploration(game_id, actor);
                 if !destination.alt {
                     crate::relics::IRelicMapDispatcherTrait::discover_relic_chest(
                         crate::relics::IRelicMapDispatcher { contract_address: self.lifecycle.require_active().map },
@@ -1101,7 +1102,7 @@ pub mod TroopsDomain {
             self.game_dispatcher().rules(game_id)
         }
         fn game_dispatcher(self: @ContractState) -> IGameDispatcher {
-            IGameDispatcher { contract_address: self.lifecycle.require_active().season }
+            IGameDispatcher { contract_address: self.lifecycle.require_active().registry }
         }
         fn resources_dispatcher(self: @ContractState) -> IResourcesDispatcher {
             IResourcesDispatcher { contract_address: self.lifecycle.require_active().resources }

@@ -44,13 +44,14 @@ fn setup() -> super::Deployment {
         );
     }
     start_cheat_block_timestamp_global(100);
-    start_cheat_caller_address(d.peers.registry, super::authority());
     d
 }
 fn registry(d: super::Deployment) -> IRegistrarDispatcher {
+    snforge_std::cheat_caller_address(d.peers.registry, super::authority(), snforge_std::CheatSpan::TargetCalls(1));
     IRegistrarDispatcher { contract_address: d.peers.registry }
 }
-fn safe(d: super::Deployment) -> IRegistrarSafeDispatcher {
+fn safe(d: super::Deployment, caller: starknet::ContractAddress) -> IRegistrarSafeDispatcher {
+    snforge_std::cheat_caller_address(d.peers.registry, caller, snforge_std::CheatSpan::TargetCalls(1));
     IRegistrarSafeDispatcher { contract_address: d.peers.registry }
 }
 fn definition(blitz: bool) -> PresetDefinition {
@@ -195,22 +196,24 @@ fn params(blitz: bool) -> CreateGameParams {
 fn presets_are_immutable_and_launch_rejects_changed_preimages_before_allocating() {
     let d = setup();
     let preset = definition(true);
-    assert!(safe(d).create_game(params(true), preset).is_err());
-    assert!(safe(d).register_preset(0, preset).is_err());
+    assert!(safe(d, super::authority()).create_game(params(true), preset).is_err());
+    assert!(safe(d, super::authority()).register_preset(0, preset).is_err());
     assert!(
-        safe(d)
+        safe(d, super::authority())
             .register_preset(
                 1, PresetDefinition { settlement: SettlementPreset { spacing: 0, ..preset.settlement }, ..preset },
             )
             .is_err(),
     );
-    start_cheat_caller_address(d.peers.registry, d.actor);
-    assert!(safe(d).register_preset(1, preset).is_err());
-    start_cheat_caller_address(d.peers.registry, super::authority());
+    assert!(safe(d, d.actor).register_preset(1, preset).is_err());
     registry(d).register_preset(1, preset);
     assert_eq!(registry(d).preset_commitment(1), crate::presets::commitment(preset));
-    assert!(safe(d).register_preset(1, preset).is_err());
-    assert!(safe(d).create_game(params(true), PresetDefinition { season_win_points: 2, ..preset }).is_err());
+    assert!(safe(d, super::authority()).register_preset(1, preset).is_err());
+    assert!(
+        safe(d, super::authority())
+            .create_game(params(true), PresetDefinition { season_win_points: 2, ..preset })
+            .is_err(),
+    );
     assert_eq!(registry(d).next_game_id(), 1);
 }
 
@@ -219,7 +222,7 @@ fn blitz_launch_initializes_domains_once_and_allocates_isolated_games() {
     let d = setup();
     let preset = definition(true);
     registry(d).register_preset(1, preset);
-    let games = IGameDispatcher { contract_address: d.peers.season };
+    let games = IGameDispatcher { contract_address: d.peers.registry };
     for expected in 1_u32..3 {
         assert_eq!(
             registry(d).create_game(CreateGameParams { name: expected.into(), ..params(true) }, preset), expected,
@@ -292,7 +295,7 @@ fn invalid_schedules_modes_and_registration_limits_never_allocate() {
         CreateGameParams { roster: array![].span(), ..params(true) },
         CreateGameParams { mode: SettlementMode::Duel, ..params(true) },
     ] {
-        assert!(safe(d).create_game(input, preset).is_err());
+        assert!(safe(d, super::authority()).create_game(input, preset).is_err());
     }
     assert_eq!(registry(d).next_game_id(), 1);
 }
@@ -316,7 +319,7 @@ fn a_late_configuration_failure_rolls_back_all_domains_and_game_allocation() {
     assert_eq!(registry(d).next_game_id(), 1);
     assert!(
         crate::game::IGameSafeDispatcherTrait::game(
-            crate::game::IGameSafeDispatcher { contract_address: d.peers.season }, 1,
+            crate::game::IGameSafeDispatcher { contract_address: d.peers.registry }, 1,
         )
             .is_err(),
     );
@@ -328,7 +331,7 @@ fn settlement_uses_recorded_time_after_grace_and_rejections_consume_tickets() {
     let command = crate::commands::Command::MarkGameSettled;
     super::resource_commands::assert_terminal_rejection(d, command, 100);
     let d = super::bind_authority(d);
-    let games = IGameDispatcher { contract_address: d.peers.season };
+    let games = IGameDispatcher { contract_address: d.peers.registry };
     let game = games.game(3);
     let boundary = game.end_at + game.end_grace_seconds.into();
     super::resource_commands::assert_terminal_rejection(d, command, boundary);
@@ -347,7 +350,7 @@ fn preset_registration_rejects_enabled_mines_without_a_pool() {
     let mut preset = definition(true);
     preset.rules.map_config.shards_mines_win_probability = 1;
     preset.resources.surface_mines = array![].span();
-    assert!(safe(d).register_preset(1, preset).is_err());
+    assert!(safe(d, super::authority()).register_preset(1, preset).is_err());
     assert_eq!(registry(d).preset_commitment(1), 0);
 }
 
@@ -369,7 +372,7 @@ fn preset_registration_rejects_camps_with_zero_village_labor() {
             );
     }
     preset.resources.resources = resources.span();
-    assert!(safe(d).register_preset(1, preset).is_err());
+    assert!(safe(d, super::authority()).register_preset(1, preset).is_err());
     assert_eq!(registry(d).preset_commitment(1), 0);
 }
 
@@ -381,7 +384,7 @@ fn preset_registration_rejects_equal_or_reversed_mercenary_bounds() {
     preset.rules.troop_limit_config.mercenaries_troop_lower_bound = 10;
     for upper in array![10_u16, 9] {
         preset.rules.troop_limit_config.mercenaries_troop_upper_bound = upper;
-        assert!(safe(d).register_preset(1, preset).is_err());
+        assert!(safe(d, super::authority()).register_preset(1, preset).is_err());
         assert_eq!(registry(d).preset_commitment(1), 0);
     }
 }
@@ -398,11 +401,23 @@ fn fixed_blitz_rosters_require_unique_bound_players_and_regular_mode() {
         array![RosterPlayer { owner: 999.try_into().unwrap(), ..player }].span(),
         array![RosterPlayer { account: 2002.try_into().unwrap(), ..player }].span(),
     ] {
-        assert!(safe(d).create_game(CreateGameParams { roster: players, ..params(true) }, preset).is_err());
+        assert!(
+            safe(d, super::authority())
+                .create_game(CreateGameParams { roster: players, ..params(true) }, preset)
+                .is_err(),
+        );
         assert_eq!(registry(d).next_game_id(), 1);
     }
-    assert!(safe(d).create_game(CreateGameParams { mode: SettlementMode::Single, ..params(true) }, preset).is_err());
-    assert!(safe(d).create_game(CreateGameParams { dev_mode_on: true, ..params(true) }, preset).is_err());
+    assert!(
+        safe(d, super::authority())
+            .create_game(CreateGameParams { mode: SettlementMode::Single, ..params(true) }, preset)
+            .is_err(),
+    );
+    assert!(
+        safe(d, super::authority())
+            .create_game(CreateGameParams { dev_mode_on: true, ..params(true) }, preset)
+            .is_err(),
+    );
     for size in array![1_u32, 13, 17, 24] {
         let players = roster(size);
         let id = registry(d)
@@ -420,16 +435,18 @@ fn launch_retries_return_the_same_game_and_conflicting_rosters_reject() {
     let preset = definition(true);
     registry(d).register_preset(1, preset);
     let request = params(true);
-    start_cheat_caller_address(d.peers.registry, d.actor);
-    assert!(safe(d).create_game(request, preset).is_err());
-    start_cheat_caller_address(d.peers.registry, super::authority());
+    assert!(safe(d, d.actor).create_game(request, preset).is_err());
     assert_eq!(registry(d).game_id_by_name(request.name), 0);
     let first = registry(d).create_game(request, preset);
     assert_eq!(registry(d).create_game(request, preset), first);
     assert_eq!(registry(d).next_game_id(), first + 1);
     assert_eq!(registry(d).game_id_by_name(request.name), first);
-    assert!(safe(d).create_game(CreateGameParams { roster: roster(1), ..request }, preset).is_err());
-    assert!(safe(d).create_game(CreateGameParams { duration_seconds: 101, ..request }, preset).is_err());
+    assert!(
+        safe(d, super::authority()).create_game(CreateGameParams { roster: roster(1), ..request }, preset).is_err(),
+    );
+    assert!(
+        safe(d, super::authority()).create_game(CreateGameParams { duration_seconds: 101, ..request }, preset).is_err(),
+    );
     assert_eq!(registry(d).blitz_roster(first), request.roster);
     assert_eq!(registry(d).next_game_id(), first + 1);
 }
@@ -467,7 +484,7 @@ fn automatic_blitz_settlement_is_authorized_atomic_and_resumes_its_fixed_order()
     let preset = definition(true);
     registry(d).register_preset(1, preset);
     let game_id = registry(d).create_game(CreateGameParams { roster: roster(2), ..params(true) }, preset);
-    let games = IGameDispatcher { contract_address: d.peers.season };
+    let games = IGameDispatcher { contract_address: d.peers.registry };
     let commands = ISettlementCommandsDispatcher { contract_address: d.peers.settlement };
     let safe = ISettlementCommandsSafeDispatcher { contract_address: d.peers.settlement };
     let views = ISettlementViewsDispatcher { contract_address: d.peers.settlement };
@@ -569,14 +586,14 @@ fn recorded_roster_batches_block_early_play_and_report_ticket_progress() {
     assert_eq!(receipts.recorded_outcome(season.execution_head().order).unwrap().reason, 'ROSTER_NOT_READY');
     assert_eq!(season.next_nonce(game_id, d.actor), 1);
     super::season_lifecycle::execute_batch_in_game(d, game_id, command, 205, 1);
-    assert!(!IGameDispatcher { contract_address: d.peers.season }.game(game_id).ready);
+    assert!(!IGameDispatcher { contract_address: d.peers.registry }.game(game_id).ready);
     assert!(!super::resource_commands::execute_in_game(d, game_id, crate::commands::Command::CloseSeason, 206, 206));
     assert_eq!(receipts.recorded_outcome(season.execution_head().order).unwrap().reason, 'ROSTER_NOT_READY');
     assert_eq!(season.next_nonce(game_id, d.actor), 3);
     super::season_lifecycle::execute_batch_in_game(d, game_id, command, 207, 0);
-    assert!(IGameDispatcher { contract_address: d.peers.season }.game(game_id).ready);
+    assert!(IGameDispatcher { contract_address: d.peers.registry }.game(game_id).ready);
     super::season_lifecycle::execute_batch_in_game(d, game_id, command, 208, 0);
-    let games = IGameDispatcher { contract_address: d.peers.season };
+    let games = IGameDispatcher { contract_address: d.peers.registry };
     let end_at = games.game(game_id).end_at;
     let finalize = crate::commands::Command::MarkGameSettled;
     assert!(!super::resource_commands::execute_in_game(d, game_id, finalize, end_at - 1, end_at - 1));
@@ -602,7 +619,7 @@ fn open_preset_exploration_discovers_a_camp_and_credits_the_home_realm() {
     registry(d).register_preset(1, preset);
     let game_id = registry(d).create_game(CreateGameParams { end_grace_seconds: 0, ..params(false) }, preset);
 
-    let center = 2147483646 - IGameDispatcher { contract_address: d.peers.season }.rules(game_id).map_center_offset;
+    let center = 2147483646 - IGameDispatcher { contract_address: d.peers.registry }.rules(game_id).map_center_offset;
     start_cheat_block_timestamp_global(300);
     start_cheat_caller_address(d.peers.structures, d.peers.settlement);
     let home = ResourceKey {

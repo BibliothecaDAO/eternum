@@ -186,7 +186,7 @@ pub mod GuildState {
             let peers = get_dep_component!(self, Life).require_active();
             assert!(get_caller_address() == peers.season, "only authenticated command domain");
             crate::commands::assert_context_time(timestamp);
-            crate::game::assert_playing(IGameDispatcher { contract_address: peers.season }.game(game_id), timestamp);
+            crate::game::assert_playing(IGameDispatcher { contract_address: peers.registry }.game(game_id), timestamp);
         }
         fn require_structure(
             self: @ComponentState<TContractState>, game_id: u32, player: ContractAddress, structure_id: u32,

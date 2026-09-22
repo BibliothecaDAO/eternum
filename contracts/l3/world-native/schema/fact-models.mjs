@@ -340,10 +340,10 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
       method("registry", "upgrade_recipe").inputs,
       struct("upgrades::UpgradeRecipe"),
     ),
-    model("GameRegistry", ["season"], "game", method("season", "game").inputs, struct("game::GameRegistry")),
-    model("SliceRules", ["season"], "game", method("season", "rules").inputs, struct("rules::SliceRules")),
-    model("EntitySequence", ["season"], "game", method("season", "allocate_entity").inputs, [
-      { name: "next_entity_id", type: method("season", "allocate_entity").outputs[0].type },
+    model("GameRegistry", ["registry"], "game", method("registry", "game").inputs, struct("game::GameRegistry")),
+    model("SliceRules", ["registry"], "game", method("registry", "rules").inputs, struct("rules::SliceRules")),
+    model("EntitySequence", ["registry"], "game", method("registry", "allocate_entity").inputs, [
+      { name: "next_entity_id", type: method("registry", "allocate_entity").outputs[0].type },
     ]),
     model(
       "PlayerPoints",
@@ -368,7 +368,7 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
       "address",
     ),
     model("Authentication", ["season"], "deployment", domainKey, struct("season::Authentication"), "address"),
-    model("OwnershipRulesReady", ["season"], "game", method("season", "ownership_rules_ready").inputs, [
+    model("OwnershipRulesReady", ["registry"], "game", method("registry", "ownership_rules_ready").inputs, [
       { name: "ready", type: "core::bool" },
     ]),
     model("ActionNonce", ["season"], "game", method("season", "next_nonce").inputs, [
