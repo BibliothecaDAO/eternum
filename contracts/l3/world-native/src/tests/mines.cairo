@@ -166,7 +166,7 @@ fn discovered_surface_mines_use_kind_production_without_revealing_neighbors() {
     stop_cheat_caller_address(peers.resources);
     start_cheat_caller_address(peers.structures, super::authority());
     IBuildingRulesDispatcher { contract_address: peers.structures }
-        .configure_buildings(3, super::building_commands::rules());
+        .configure_buildings(3, super::building_commands::rules(), None);
     start_cheat_caller_address(peers.structures, peers.troops);
     let structures = IStructuresDispatcher { contract_address: peers.structures };
     let resources = IResourcesDispatcher { contract_address: peers.resources };

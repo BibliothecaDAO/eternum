@@ -8,6 +8,19 @@ export const nativePresets: Record<
     profile?: BlitzBalanceProfileId;
     spacing: number;
     epochSeconds: number;
+    board: null | {
+      demolitionRefundBps: number;
+      workshopRate: number;
+      barracksIICost: number;
+      barracksIIICost: number;
+      neighbors: Array<{
+        building: number;
+        neighbor: number;
+        productionBps: number;
+        capacityBps: number;
+        population: number;
+      }>;
+    };
     chests: null | {
       looseOneIn: number;
       relicProbability: number;
@@ -31,9 +44,9 @@ export const nativePresets: Record<
     }>;
   }
 > = {
-  1: { gameType: "eternum", spacing: 6, epochSeconds: 0, chests: null, depths: [] },
-  2: { gameType: "blitz", profile: "official-60", spacing: 6, epochSeconds: 0, chests: null, depths: [] },
-  3: { gameType: "blitz", profile: "official-90", spacing: 8, epochSeconds: 0, chests: null, depths: [] },
+  1: { gameType: "eternum", spacing: 6, epochSeconds: 0, chests: null, board: null, depths: [] },
+  2: { gameType: "blitz", profile: "official-60", spacing: 6, epochSeconds: 0, chests: null, board: null, depths: [] },
+  3: { gameType: "blitz", profile: "official-90", spacing: 8, epochSeconds: 0, chests: null, board: null, depths: [] },
 };
 
 export function nativePresetForId(id: number) {

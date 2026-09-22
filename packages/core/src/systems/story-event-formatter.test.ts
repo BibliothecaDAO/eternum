@@ -47,7 +47,15 @@ const buildStore = () => {
         troop_max_explorer_count: 4,
         starting_troops_granted: true,
       },
-      metadata: { realm_id: realmId, order: 0, has_wonder: false, village_realm: 0, mine_kind: 0, attunement: 0 },
+      metadata: {
+        realm_id: realmId,
+        order: 0,
+        has_wonder: false,
+        village_realm: 0,
+        mine_kind: 0,
+        attunement: 0,
+        barracks_tier: 0,
+      },
       troop_explorers: [],
       resources_packed: 0n,
     });

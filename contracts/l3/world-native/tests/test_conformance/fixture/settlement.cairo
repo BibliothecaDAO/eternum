@@ -98,7 +98,7 @@ fn prepare_without_entitlement(
     start_cheat_caller_address(peers.resources, 222.try_into().unwrap());
     IResourcesDispatcher { contract_address: peers.resources }.configure_resources(8, resources);
     world_native::buildings::IBuildingRulesDispatcherTrait::configure_buildings(
-        world_native::buildings::IBuildingRulesDispatcher { contract_address: peers.structures }, 8, buildings,
+        world_native::buildings::IBuildingRulesDispatcher { contract_address: peers.structures }, 8, buildings, None,
     );
 
     stop_cheat_caller_address(peers.resources);

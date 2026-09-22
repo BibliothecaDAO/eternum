@@ -206,11 +206,28 @@ function buildStructures(config: Config) {
   const faith = config.faith;
   if (!faith) throw new Error("Native faith config is required");
   const precision = config.resources.resourcePrecision;
+  const board = nativePresetForConfig(config).board;
   return {
+    board:
+      board === null
+        ? new CairoOption(CairoOptionVariant.None)
+        : new CairoOption(CairoOptionVariant.Some, {
+            demolition_refund_bps: board.demolitionRefundBps,
+            workshop_rate: scaled(board.workshopRate, precision),
+            barracks_ii_cost: scaled(board.barracksIICost, precision),
+            barracks_iii_cost: scaled(board.barracksIIICost, precision),
+            neighbors: board.neighbors.map((bonus) => ({
+              building: bonus.building,
+              neighbor: bonus.neighbor,
+              production_bps: bonus.productionBps,
+              capacity_bps: bonus.capacityBps,
+              population: bonus.population,
+            })),
+          }),
     buildings: Array.from({ length: 40 }, (_, index) => {
       const category = index + 1;
-      // Storehouse and mine-only Essence have no erection recipe in the pinned preset.
-      const hasNoRecipe = category === 2 || category === 39;
+      // Legacy presets have no storehouse recipe; Essence is mine-only.
+      const hasNoRecipe = (category === 2 && board === null) || category === 39;
       return {
         category,
         rule: {

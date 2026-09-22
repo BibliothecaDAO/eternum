@@ -273,7 +273,15 @@ function structureModel(entityId: number, owner: bigint, category: StructureType
       troop_max_explorer_count: 1,
       starting_troops_granted: false,
     },
-    metadata: { realm_id: 0, order: 0, has_wonder: false, village_realm: 0, mine_kind: 0, attunement: 0 },
+    metadata: {
+      realm_id: 0,
+      order: 0,
+      has_wonder: false,
+      village_realm: 0,
+      mine_kind: 0,
+      attunement: 0,
+      barracks_tier: 0,
+    },
     resources_packed: "0",
     troop_explorers: [],
   };

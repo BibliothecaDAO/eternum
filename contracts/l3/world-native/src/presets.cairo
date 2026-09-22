@@ -10,6 +10,7 @@ pub struct ResourcePreset {
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct StructurePreset {
+    pub board: Option<crate::buildings::BoardRules>,
     pub buildings: Span<crate::buildings::BuildingRuleConfig>,
     pub camps: Span<crate::resources::ResourceAmount>,
     pub faith: crate::faith::FaithRules,
@@ -86,16 +87,19 @@ pub fn commitment(preset: PresetDefinition) -> felt252 {
 }
 
 pub fn initialize_game(
-    peers: Peers, game_id: u32, preset: PresetDefinition, params: crate::registrar::CreateGameParams,
+    peers: Peers, game_id: u32, preset: PresetDefinition, settlement_rules: crate::settlement::SettlementRules,
 ) {
     configure_resources(peers.resources, game_id, preset.resources);
     configure_structures(peers, game_id, preset.structures);
-    configure_settlement(peers.settlement, game_id, preset, params);
+    configure_settlement(peers.settlement, game_id, preset.settlement, settlement_rules);
     configure_economy(peers, game_id, preset.economy);
-    configure_season(peers, game_id, preset);
-    initialize_map(peers.map, game_id, preset);
+    crate::game::ISeasonLifecycleDispatcherTrait::configure_season_win(
+        crate::game::ISeasonLifecycleDispatcher { contract_address: peers.season }, game_id, preset.season_win_points,
+    );
+    initialize_map(peers.map, game_id, preset.rules.mode_rules, preset.exploration, preset.settlement.spires);
 }
 
+#[inline(always)]
 fn configure_resources(address: ContractAddress, game_id: u32, preset: ResourcePreset) {
     IResourcesDispatcher { contract_address: address }.configure_resources(game_id, preset.resources);
     crate::production::IProductionRulesDispatcherTrait::configure_production(
@@ -108,9 +112,13 @@ fn configure_resources(address: ContractAddress, game_id: u32, preset: ResourceP
         preset.surface_mines,
     );
 }
+#[inline(always)]
 fn configure_structures(peers: Peers, game_id: u32, preset: StructurePreset) {
     crate::buildings::IBuildingRulesDispatcherTrait::configure_buildings(
-        crate::buildings::IBuildingRulesDispatcher { contract_address: peers.structures }, game_id, preset.buildings,
+        crate::buildings::IBuildingRulesDispatcher { contract_address: peers.structures },
+        game_id,
+        preset.buildings,
+        preset.board,
     );
     crate::camps::ICampRulesDispatcherTrait::configure_camps(
         crate::camps::ICampRulesDispatcher { contract_address: peers.structures }, game_id, preset.camps,
@@ -126,19 +134,8 @@ fn configure_structures(peers: Peers, game_id: u32, preset: StructurePreset) {
     );
 }
 fn configure_settlement(
-    address: ContractAddress, game_id: u32, preset: PresetDefinition, params: crate::registrar::CreateGameParams,
+    address: ContractAddress, game_id: u32, settlement: SettlementPreset, rules: crate::settlement::SettlementRules,
 ) {
-    let settlement = preset.settlement;
-    let rules = crate::settlement::SettlementRules {
-        registration_start: params.registration_start,
-        registration_limit: params.roster.len().try_into().unwrap(),
-        mode: if preset.rules.entry_rule == crate::rules::ENTRY_ROSTER {
-            params.mode
-        } else {
-            crate::settlement::SettlementMode::Single
-        },
-        spacing: settlement.spacing,
-    };
     crate::settlement::ISettlementConfigurationDispatcherTrait::configure_settlement(
         crate::settlement::ISettlementConfigurationDispatcher { contract_address: address },
         game_id,
@@ -152,6 +149,7 @@ fn configure_settlement(
         crate::expeditions::IExpeditionRulesDispatcher { contract_address: address }, game_id, settlement.depths,
     );
 }
+#[inline(always)]
 fn configure_economy(peers: Peers, game_id: u32, preset: EconomyPreset) {
     let address = peers.economy;
     crate::trade::ITradeDispatcherTrait::configure_trade(
@@ -183,25 +181,26 @@ fn configure_economy(peers: Peers, game_id: u32, preset: EconomyPreset) {
         );
     }
 }
-fn configure_season(peers: Peers, game_id: u32, preset: PresetDefinition) {
-    crate::game::ISeasonLifecycleDispatcherTrait::configure_season_win(
-        crate::game::ISeasonLifecycleDispatcher { contract_address: peers.season }, game_id, preset.season_win_points,
-    );
-}
-fn initialize_map(address: ContractAddress, game_id: u32, preset: PresetDefinition) {
+fn initialize_map(
+    address: ContractAddress,
+    game_id: u32,
+    mode_rules: u32,
+    exploration: Span<crate::exploration_rewards::ExplorationReward>,
+    spires: Option<crate::spires::SpireLayout>,
+) {
     crate::exploration_rewards::IExtractionDispatcherTrait::configure_extraction(
-        crate::exploration_rewards::IExtractionDispatcher { contract_address: address }, game_id, preset.exploration,
+        crate::exploration_rewards::IExtractionDispatcher { contract_address: address }, game_id, exploration,
     );
-    if crate::rules::rule_enabled(preset.rules, crate::rules::RESERVED_HYPERSTRUCTURES) {
+    if mode_rules & crate::rules::RESERVED_HYPERSTRUCTURES != 0 {
         crate::settlement::IBlitzReservationsDispatcherTrait::initialize_reservations(
             crate::settlement::IBlitzReservationsDispatcher { contract_address: address }, game_id,
         );
     }
-    if crate::rules::rule_enabled(preset.rules, crate::rules::SPIRES) {
+    if mode_rules & crate::rules::SPIRES != 0 {
         crate::spires::ISpiresDispatcherTrait::initialize_spires(
             crate::spires::ISpiresDispatcher { contract_address: address },
             game_id,
-            preset.settlement.spires.expect('missing season spires'),
+            spires.expect('missing season spires'),
         );
     }
 }

@@ -46,9 +46,9 @@ fn production_bonus_packing_retains_full_width_percentages_and_ticks(a: u16, b: 
 #[test]
 #[fuzzer(runs: 64)]
 fn building_packing_preserves_structure_pause_and_full_width_population(
-    category: u8, owner: u32, paused: bool, current: u32, maximum: u32,
+    category: u8, owner: u32, paused: bool, current: u32, maximum: u32, labor_paid: u128,
 ) {
-    let building = crate::buildings::Building { category, outer_entity_id: owner, paused };
+    let building = crate::buildings::Building { category, outer_entity_id: owner, paused, labor_paid };
     assert_eq!(crate::buildings::BuildingPacking::unpack(crate::buildings::BuildingPacking::pack(building)), building);
     let population = crate::buildings::Population { current, max: maximum };
     assert_eq!(

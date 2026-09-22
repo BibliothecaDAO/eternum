@@ -2365,6 +2365,10 @@
             {
               "name": "rules",
               "type": "core::array::Span::<world_native::buildings::BuildingRuleConfig>"
+            },
+            {
+              "name": "board",
+              "type": "core::option::Option::<world_native::buildings::BoardRules>"
             }
           ],
           "outputs": [],
@@ -10532,7 +10536,7 @@
           "name": "metadata",
           "type": "world_native::structures::StructureMetadata",
           "id": "0x6d65746164617461",
-          "feltLength": 6
+          "feltLength": 7
         }
       ],
       "keyLength": 2,
@@ -10974,6 +10978,60 @@
       }
     },
     {
+      "name": "BoardRules",
+      "identity": "0x426f61726452756c6573",
+      "owners": [
+        "structures"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "demolition_refund_bps",
+          "type": "core::integer::u16",
+          "id": "0x64656d6f6c6974696f6e5f726566756e645f627073",
+          "feltLength": 1
+        },
+        {
+          "name": "workshop_rate",
+          "type": "core::integer::u64",
+          "id": "0x776f726b73686f705f72617465",
+          "feltLength": 1
+        },
+        {
+          "name": "barracks_ii_cost",
+          "type": "core::integer::u128",
+          "id": "0x6261727261636b735f69695f636f7374",
+          "feltLength": 1
+        },
+        {
+          "name": "barracks_iii_cost",
+          "type": "core::integer::u128",
+          "id": "0x6261727261636b735f6969695f636f7374",
+          "feltLength": 1
+        },
+        {
+          "name": "neighbors",
+          "type": "core::array::Span::<world_native::buildings::NeighborBonus>",
+          "id": "0x6e65696768626f7273",
+          "feltLength": null
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": null,
+      "absence": {
+        "parent": "BuildingRulesReady",
+        "value": "empty",
+        "meaning": "This game uses base building rates and grants without board bonuses or demolition refunds."
+      }
+    },
+    {
       "name": "BuildingRule",
       "identity": "0x4275696c64696e6752756c65",
       "owners": [
@@ -11103,10 +11161,16 @@
           "type": "core::bool",
           "id": "0x706175736564",
           "feltLength": 1
+        },
+        {
+          "name": "labor_paid",
+          "type": "core::integer::u128",
+          "id": "0x6c61626f725f70616964",
+          "feltLength": 1
         }
       ],
       "keyLength": 6,
-      "valueLength": 3,
+      "valueLength": 4,
       "observation": {
         "domain": "production",
         "fields": {
@@ -12767,6 +12831,16 @@
         }
       ]
     },
+    "core::array::Span::<world_native::buildings::NeighborBonus>": {
+      "type": "struct",
+      "name": "core::array::Span::<world_native::buildings::NeighborBonus>",
+      "members": [
+        {
+          "name": "snapshot",
+          "type": "@core::array::Array::<world_native::buildings::NeighborBonus>"
+        }
+      ]
+    },
     "core::array::Span::<world_native::expeditions::DepthRules>": {
       "type": "struct",
       "name": "core::array::Span::<world_native::expeditions::DepthRules>",
@@ -13006,6 +13080,20 @@
         {
           "name": "Some",
           "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
+    "core::option::Option::<world_native::buildings::BoardRules>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::buildings::BoardRules>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::buildings::BoardRules"
         },
         {
           "name": "None",
@@ -13765,6 +13853,32 @@
         }
       ]
     },
+    "world_native::buildings::BoardRules": {
+      "type": "struct",
+      "name": "world_native::buildings::BoardRules",
+      "members": [
+        {
+          "name": "demolition_refund_bps",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "workshop_rate",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "barracks_ii_cost",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "barracks_iii_cost",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "neighbors",
+          "type": "core::array::Span::<world_native::buildings::NeighborBonus>"
+        }
+      ]
+    },
     "world_native::buildings::Building": {
       "type": "struct",
       "name": "world_native::buildings::Building",
@@ -13780,6 +13894,10 @@
         {
           "name": "paused",
           "type": "core::bool"
+        },
+        {
+          "name": "labor_paid",
+          "type": "core::integer::u128"
         }
       ]
     },
@@ -13896,6 +14014,32 @@
         {
           "name": "use_simple",
           "type": "core::bool"
+        }
+      ]
+    },
+    "world_native::buildings::NeighborBonus": {
+      "type": "struct",
+      "name": "world_native::buildings::NeighborBonus",
+      "members": [
+        {
+          "name": "building",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "neighbor",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "production_bps",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "capacity_bps",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "population",
+          "type": "core::integer::u8"
         }
       ]
     },
@@ -16068,6 +16212,10 @@
       "name": "world_native::presets::StructurePreset",
       "members": [
         {
+          "name": "board",
+          "type": "core::option::Option::<world_native::buildings::BoardRules>"
+        },
+        {
           "name": "buildings",
           "type": "core::array::Span::<world_native::buildings::BuildingRuleConfig>"
         },
@@ -17554,6 +17702,10 @@
         {
           "name": "attunement",
           "type": "core::integer::u8"
+        },
+        {
+          "name": "barracks_tier",
+          "type": "core::integer::u8"
         }
       ]
     },
@@ -18060,6 +18212,10 @@
         {
           "name": "Attunement",
           "type": "()"
+        },
+        {
+          "name": "Barracks",
+          "type": "()"
         }
       ]
     },
@@ -18228,5 +18384,5 @@
       ]
     }
   },
-  "identity": "28c5e1b077ff7bca4bf04725f4f56b426765738f3e0850bae61752193493a4ef"
+  "identity": "893ad8d2cc96bd6b3465ad978e77f518345b482b48e58a66a6148a7245d655b6"
 }

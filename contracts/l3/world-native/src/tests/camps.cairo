@@ -48,7 +48,7 @@ fn setup(blitz: bool) -> (super::Deployment, ResourceKey) {
     let (d, home, _) = setup_with_rules(rules(blitz));
     start_cheat_caller_address(d.peers.structures, super::authority());
     IBuildingRulesDispatcher { contract_address: d.peers.structures }
-        .configure_buildings(3, super::building_commands::rules());
+        .configure_buildings(3, super::building_commands::rules(), None);
     ICampRulesDispatcher { contract_address: d.peers.structures }
         .configure_camps(
             3,

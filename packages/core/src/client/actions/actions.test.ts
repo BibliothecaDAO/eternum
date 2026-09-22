@@ -130,7 +130,15 @@ const seedStructure = (store: NativeFactStore, position: { x: number; y: number 
       created_at: 0,
       starting_troops_granted: true,
     },
-    metadata: { realm_id: 1, order: 1, has_wonder: false, village_realm: 0, mine_kind: 0, attunement: 0 },
+    metadata: {
+      realm_id: 1,
+      order: 1,
+      has_wonder: false,
+      village_realm: 0,
+      mine_kind: 0,
+      attunement: 0,
+      barracks_tier: 0,
+    },
     troop_explorers: [],
     resources_packed: 0n,
   });

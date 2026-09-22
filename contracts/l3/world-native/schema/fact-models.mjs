@@ -33,6 +33,12 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
         value: "zero",
         meaning: "No players have settled or registered realms in this game.",
       };
+    if (row.name === "BoardRules")
+      row.absence = {
+        parent: "BuildingRulesReady",
+        value: "empty",
+        meaning: "This game uses base building rates and grants without board bonuses or demolition refunds.",
+      };
     if (row.name === "ChestRules")
       row.absence = { parent: "RelicRules", value: "empty", meaning: "This game uses interval relic chests." };
     if (row.name === "ChestPity" || row.name === "ChestTokens")
@@ -263,6 +269,7 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
     ),
     model("ResourceWeight", ["resources"], "game", struct("resources::ResourceKey"), struct("resources::Weight")),
     model("ResourceArrival", ["resources"], "game", struct("arrivals::ArrivalKey"), struct("arrivals::Arrival")),
+    model("BoardRules", ["structures"], "game", [struct("resources::ResourceKey")[0]], struct("buildings::BoardRules")),
     model(
       "BuildingRule",
       ["structures"],

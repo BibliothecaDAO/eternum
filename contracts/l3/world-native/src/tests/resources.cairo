@@ -24,15 +24,19 @@ trait IResourceFixture<T> {
 mod ResourceFixture {
     use crate::resources::{Production, ResourceKey, ResourceState, Weight};
     component!(path: ResourceState, storage: resources, event: ResourceEvent);
+    component!(path: crate::production::ProductionState, storage: recipes, event: RecipeEvent);
     impl Internal = ResourceState::InternalImpl<ContractState>;
     #[storage]
     struct Storage {
         #[substorage(v0)]
         resources: ResourceState::Storage,
+        #[substorage(v0)]
+        recipes: crate::production::ProductionState::Storage,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
+        RecipeEvent: crate::production::ProductionState::Event,
         #[flat]
         ResourceEvent: ResourceState::Event,
     }

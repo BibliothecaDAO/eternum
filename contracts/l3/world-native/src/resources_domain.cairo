@@ -1,6 +1,6 @@
 #[starknet::contract]
 pub mod ResourcesDomain {
-    use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
+    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
     use starknet::{ContractAddress, get_caller_address};
     use crate::arrivals::{Arrival, ArrivalKey, ArrivalState, OffloadArrival, has_arrived};
     use crate::commands::ExecutionContext;
@@ -26,7 +26,7 @@ pub mod ResourcesDomain {
     impl ResourceInternal = ResourceState::InternalImpl<ContractState>;
     impl ArrivalInternal = ArrivalState::InternalImpl<ContractState>;
     impl ProductionInternal = ProductionState::InternalImpl<ContractState>;
-    const RATE_WORD_SCALE: u128 = 0x10000000000000000;
+
 
     #[storage]
     struct Storage {
@@ -36,8 +36,6 @@ pub mod ResourcesDomain {
         resources: ResourceState::Storage,
         #[substorage(v0)]
         arrivals: ArrivalState::Storage,
-        resource_rules: Map<(u32, u8), (u128, u128)>,
-        resources_configured: Map<u32, bool>,
         #[substorage(v0)]
         production: ProductionState::Storage,
         #[substorage(v0)]
@@ -105,19 +103,20 @@ pub mod ResourcesDomain {
         fn configure_resources(ref self: ContractState, game_id: u32, rules: Span<ResourceRule>) {
             self.lifecycle.assert_configurator();
             let _ = self.game_dispatcher().game(game_id);
-            assert!(!self.resources_configured.read(game_id), "resource rules already configured");
+            assert!(!self.resources.resources_configured.read(game_id), "resource rules already configured");
             assert!(rules.len() == 58, "incomplete resource rules");
             for index in 0_u32..58 {
                 let rule = *rules.at(index);
                 assert!(rule.resource_type.into() == index + 1, "resource rules must be ordered");
                 self
+                    .resources
                     .resource_rules
                     .write(
                         (game_id, rule.resource_type),
                         (
                             rule.unit_weight,
                             Into::<u64, u128>::into(rule.realm_rate)
-                                + Into::<u64, u128>::into(rule.village_rate) * RATE_WORD_SCALE,
+                                + Into::<u64, u128>::into(rule.village_rate) * crate::resources::RESOURCE_RATE_SCALE,
                         ),
                     );
                 let mut values = array![];
@@ -132,7 +131,7 @@ pub mod ResourcesDomain {
                         },
                     );
             }
-            self.resources_configured.write(game_id, true);
+            self.resources.resources_configured.write(game_id, true);
             self
                 .emit(
                     RowSet {
@@ -668,15 +667,7 @@ pub mod ResourcesDomain {
         }
         #[inline(never)]
         fn rule(self: @ContractState, game_id: u32, resource_type: u8) -> ResourceRule {
-            assert!(self.resources_configured.read(game_id), "missing resource rules");
-            assert!(resource_type > 0 && resource_type <= 58, "invalid resource type");
-            let (unit_weight, rates) = self.resource_rules.read((game_id, resource_type));
-            ResourceRule {
-                resource_type,
-                unit_weight,
-                realm_rate: (rates % RATE_WORD_SCALE).try_into().unwrap(),
-                village_rate: (rates / RATE_WORD_SCALE).try_into().unwrap(),
-            }
+            self.resources.rule(game_id, resource_type)
         }
         fn assert_deposits_unlocked(self: @ContractState, key: ResourceKey, timestamp: u64) {
             let structure = IStructuresDispatcher { contract_address: self.lifecycle.require_active().structures }

@@ -23,6 +23,7 @@ pub trait IUpgradeRules<T> {
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub enum RealmUpgradeLane {
     Attunement,
+    Barracks,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]

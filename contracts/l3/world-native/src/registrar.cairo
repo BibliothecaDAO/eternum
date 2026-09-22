@@ -173,7 +173,8 @@ pub mod RegistrarState {
         ) -> u32 {
             get_dep_component!(@self, Life).assert_authority();
             let peers = get_dep_component!(@self, Life).require_active();
-            self.validate_game(params, definition);
+            super::validate_params(params, definition.rules, definition.settlement.spacing);
+            self.validate_preset(params.preset_id, crate::presets::commitment(definition));
             let mut encoded = array![];
             params.serialize(ref encoded);
             let commitment = core::poseidon::poseidon_hash_span(encoded.span());
@@ -188,7 +189,17 @@ pub mod RegistrarState {
             let game = build_game(params, get_caller_address());
             let rules = game_rules(game_id, params, definition.rules);
             get_dep_component_mut!(ref self, Games).create(game_id, game, rules);
-            crate::presets::initialize_game(peers, game_id, definition, params);
+            let settlement_rules = crate::settlement::SettlementRules {
+                registration_start: params.registration_start,
+                registration_limit: params.roster.len().try_into().unwrap(),
+                mode: if definition.rules.entry_rule == crate::rules::ENTRY_ROSTER {
+                    params.mode
+                } else {
+                    crate::settlement::SettlementMode::Single
+                },
+                spacing: definition.settlement.spacing,
+            };
+            crate::presets::initialize_game(peers, game_id, definition, settlement_rules);
             self.launch_ids.write(params.name, game_id);
             self.launch_commitments.write(params.name, commitment);
             self.write_next_game(game_id + 1);
@@ -206,13 +217,10 @@ pub mod RegistrarState {
             assert!(self.next_game.read() == 0, "registrar already initialized");
             self.write_next_game(1);
         }
-        fn validate_game(
-            self: @ComponentState<TContractState>, params: CreateGameParams, definition: PresetDefinition,
-        ) {
-            super::validate_params(params, definition.rules, definition.settlement.spacing);
-            let commitment = self.presets.read(params.preset_id);
+        fn validate_preset(self: @ComponentState<TContractState>, preset_id: u32, definition_commitment: felt252) {
+            let commitment = self.presets.read(preset_id);
             assert!(commitment != 0, "preset is not registered");
-            assert!(commitment == crate::presets::commitment(definition), "preset definition mismatch");
+            assert!(commitment == definition_commitment, "preset definition mismatch");
         }
         fn register_roster(ref self: ComponentState<TContractState>, game_id: u32, players: Span<RosterPlayer>) {
             if players.is_empty() {

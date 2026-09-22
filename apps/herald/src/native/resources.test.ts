@@ -185,7 +185,7 @@ describe("native building facts", () => {
     const { native, fold } = setup();
     native.applyReceipt(
       fold,
-      receipt([buildingEvent(["37", "7", "0"]), resourceEvent("ResourceBalance", ["1", "7", "23"], ["90"])]),
+      receipt([buildingEvent(["37", "7", "0", "0"]), resourceEvent("ResourceBalance", ["1", "7", "23"], ["90"])]),
       10,
       0,
     );
@@ -198,7 +198,7 @@ describe("native building facts", () => {
     expect(fold.modelRows("Building")[0].value).not.toHaveProperty("bonus_percent");
     native.applyReceipt(
       fold,
-      receipt([buildingEvent(["37", "7", "1"]), resourceEvent("ResourceBalance", ["1", "7", "35"], ["60"])]),
+      receipt([buildingEvent(["37", "7", "1", "0"]), resourceEvent("ResourceBalance", ["1", "7", "35"], ["60"])]),
       11,
       0,
     );
@@ -219,7 +219,7 @@ describe("native building facts", () => {
     expect(() =>
       native.applyReceipt(
         fold,
-        receipt([resourceEvent("ResourceBalance", ["1", "7", "23"], ["90"]), buildingEvent(["37", "7", "2"])]),
+        receipt([resourceEvent("ResourceBalance", ["1", "7", "23"], ["90"]), buildingEvent(["37", "7", "2", "0"])]),
         10,
         0,
       ),

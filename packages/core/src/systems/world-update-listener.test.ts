@@ -25,6 +25,7 @@ describe("native scene updates", () => {
       category: 3,
       outer_entity_id: 7,
       paused: false,
+      labor_paid: 0n,
     };
     store.applyEntityOperations([
       { type: "upsert", entities: [{ hashed_keys: "0x1", models: { Building: building } }] },

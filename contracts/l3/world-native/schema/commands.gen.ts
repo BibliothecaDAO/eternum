@@ -138,6 +138,6 @@ export interface NativeCommandPayloads {
   ProvisionAndUpgradeRealm: BigNumberish;
   SetEntityName: { readonly entity_id: BigNumberish; readonly name: BigNumberish };
   EnterDepth: { readonly explorer_id: BigNumberish; readonly depth: BigNumberish };
-  BuyRealmUpgrade: { readonly structure_id: BigNumberish; readonly lane: { readonly kind: "Attunement"; readonly value: undefined } };
+  BuyRealmUpgrade: { readonly structure_id: BigNumberish; readonly lane: { readonly kind: "Attunement"; readonly value: undefined } | { readonly kind: "Barracks"; readonly value: undefined } };
 }
 export type NativeCommand = { [K in keyof NativeCommandPayloads]: { kind: K; value: NativeCommandPayloads[K] } }[keyof NativeCommandPayloads];

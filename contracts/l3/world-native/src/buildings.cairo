@@ -12,6 +12,7 @@ pub struct Building {
     pub category: u8,
     pub outer_entity_id: u32,
     pub paused: bool,
+    pub labor_paid: u128,
 }
 #[derive(Copy, Drop, Serde, Default, Debug, PartialEq)]
 pub struct Population {
@@ -29,21 +30,24 @@ pub struct StructureBuildings {
 const BYTE_SCALE: u128 = 256;
 const PAUSED_SCALE: u64 = 0x10000000000;
 
-pub impl BuildingPacking of starknet::storage_access::StorePacking<Building, u64> {
-    fn pack(value: Building) -> u64 {
-        value.category.into()
+pub impl BuildingPacking of starknet::storage_access::StorePacking<Building, felt252> {
+    fn pack(value: Building) -> felt252 {
+        let identity: u64 = value.category.into()
             + Into::<u32, u64>::into(value.outer_entity_id) * 256
             + if value.paused {
                 PAUSED_SCALE
             } else {
                 0
-            }
+            };
+        identity.into() + Into::<u128, felt252>::into(value.labor_paid) * 0x10000000000000000
     }
-    fn unpack(value: u64) -> Building {
+    fn unpack(value: felt252) -> Building {
+        let value: u256 = value.into();
         Building {
-            category: (value % 256).try_into().unwrap(),
-            outer_entity_id: (value / 256 % 0x100000000).try_into().unwrap(),
-            paused: value / PAUSED_SCALE != 0,
+            category: (value.low % 256).try_into().unwrap(),
+            outer_entity_id: (value.low / 256 % 0x100000000).try_into().unwrap(),
+            paused: value.low / Into::<u64, u128>::into(PAUSED_SCALE) % 2 != 0,
+            labor_paid: value.low / 0x10000000000000000 + value.high * 0x10000000000000000,
         }
     }
 }
@@ -122,9 +126,44 @@ pub struct BuildingTerms {
     pub simple_count: u8,
     pub complex_count: u8,
 }
+#[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
+pub struct NeighborBonus {
+    pub building: u8,
+    pub neighbor: u8,
+    pub production_bps: u16,
+    pub capacity_bps: u16,
+    pub population: u8,
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct BoardRules {
+    pub demolition_refund_bps: u16,
+    pub workshop_rate: u64,
+    pub barracks_ii_cost: u128,
+    pub barracks_iii_cost: u128,
+    pub neighbors: Span<NeighborBonus>,
+}
+
+#[derive(Copy, Drop, starknet::Store)]
+pub struct BoardTerms {
+    pub demolition_refund_bps: u16,
+    pub workshop_rate: u64,
+    pub barracks_ii_cost: u128,
+    pub barracks_iii_cost: u128,
+    pub neighbor_count: u8,
+}
+
+#[derive(Copy, Drop, Default, Debug, PartialEq)]
+pub struct BuildingEffect {
+    pub resource_type: u8,
+    pub rate: u64,
+    pub capacity: u128,
+    pub population: u32,
+}
+
 #[starknet::interface]
 pub trait IBuildingRules<T> {
-    fn configure_buildings(ref self: T, game_id: u32, rules: Span<BuildingRuleConfig>);
+    fn configure_buildings(ref self: T, game_id: u32, rules: Span<BuildingRuleConfig>, board: Option<BoardRules>);
     fn building_rule(self: @T, key: BuildingRuleKey) -> BuildingRule;
 }
 
@@ -142,6 +181,8 @@ pub mod BuildingState {
         pub buildings: Map<(u32, bool, u32, u32, u32, u32), Building>,
         pub structure_buildings: Map<(u32, u32), StructureBuildings>,
         pub configured: Map<u32, bool>,
+        pub board_terms: Map<u32, Option<super::BoardTerms>>,
+        pub board_neighbors: Map<(u32, u8), super::NeighborBonus>,
         pub terms: Map<(u32, u8), BuildingTerms>,
         pub costs: Map<(u32, u8, bool, u8), ResourceAmount>,
     }
@@ -153,7 +194,12 @@ pub mod BuildingState {
     }
     #[generate_trait]
     pub impl InternalImpl<TContractState, +HasComponent<TContractState>> of InternalTrait<TContractState> {
-        fn configure(ref self: ComponentState<TContractState>, game_id: u32, rules: Span<BuildingRuleConfig>) {
+        fn configure(
+            ref self: ComponentState<TContractState>,
+            game_id: u32,
+            rules: Span<BuildingRuleConfig>,
+            board: Option<super::BoardRules>,
+        ) {
             assert!(!self.configured.read(game_id), "immutable building rules");
             assert!(rules.len() == 40, "incomplete building rules");
             let mut expected = 1_u8;
@@ -186,6 +232,41 @@ pub mod BuildingState {
                     );
                 expected += 1;
             }
+            if let Some(board) = board {
+                assert!(board.demolition_refund_bps <= 10000, "invalid demolition refund");
+                assert!(board.workshop_rate != 0, "zero workshop rate");
+                assert!(board.barracks_ii_cost != 0 && board.barracks_iii_cost != 0, "zero barracks cost");
+                let count: u8 = board.neighbors.len().try_into().unwrap();
+                for index in 0..count {
+                    let bonus = *board.neighbors.at(index.into());
+                    assert!(
+                        bonus.building > 0 && bonus.building <= 40 && bonus.neighbor <= 40, "invalid neighbor category",
+                    );
+                    self.board_neighbors.write((game_id, index), bonus);
+                }
+                self
+                    .board_terms
+                    .write(
+                        game_id,
+                        Some(
+                            super::BoardTerms {
+                                demolition_refund_bps: board.demolition_refund_bps,
+                                workshop_rate: board.workshop_rate,
+                                barracks_ii_cost: board.barracks_ii_cost,
+                                barracks_iii_cost: board.barracks_iii_cost,
+                                neighbor_count: count,
+                            },
+                        ),
+                    );
+                let mut values = array![];
+                board.serialize(ref values);
+                self
+                    .emit(
+                        RowSet {
+                            version: 1, model: 'BoardRules', keys: array![game_id.into()].span(), values: values.span(),
+                        },
+                    );
+            }
             self.configured.write(game_id, true);
             self
                 .emit(
@@ -196,6 +277,25 @@ pub mod BuildingState {
                         values: array![1].span(),
                     },
                 );
+        }
+        fn board(self: @ComponentState<TContractState>, game_id: u32) -> Option<super::BoardRules> {
+            assert!(self.configured.read(game_id), "missing building rules");
+            let Some(terms) = self.board_terms.read(game_id) else {
+                return None;
+            };
+            let mut neighbors = array![];
+            for index in 0..terms.neighbor_count {
+                neighbors.append(self.board_neighbors.read((game_id, index)));
+            }
+            Some(
+                super::BoardRules {
+                    demolition_refund_bps: terms.demolition_refund_bps,
+                    workshop_rate: terms.workshop_rate,
+                    barracks_ii_cost: terms.barracks_ii_cost,
+                    barracks_iii_cost: terms.barracks_iii_cost,
+                    neighbors: neighbors.span(),
+                },
+            )
         }
         fn rule(self: @ComponentState<TContractState>, key: BuildingRuleKey) -> BuildingRule {
             assert!(self.configured.read(key.game_id), "missing building rules");

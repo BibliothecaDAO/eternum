@@ -62,7 +62,10 @@ fn setup_config(dev: bool, mode: SettlementMode, game_rules: crate::rules::Slice
     start_cheat_caller_address(deployment.peers.resources, authority());
     IResourcesDispatcher { contract_address: deployment.peers.resources }.configure_resources(3, resources);
     crate::buildings::IBuildingRulesDispatcherTrait::configure_buildings(
-        crate::buildings::IBuildingRulesDispatcher { contract_address: deployment.peers.structures }, 3, buildings,
+        crate::buildings::IBuildingRulesDispatcher { contract_address: deployment.peers.structures },
+        3,
+        buildings,
+        None,
     );
 
     stop_cheat_caller_address(deployment.peers.resources);

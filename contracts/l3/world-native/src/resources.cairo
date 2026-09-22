@@ -1,6 +1,8 @@
 use crate::rules::RESOURCE_PRECISION;
 
 pub const LORDS: u8 = 37;
+pub const UNLIMITED_OUTPUT: u128 = 0xffffffffffffffffffffffffffffffff;
+pub const RESOURCE_RATE_SCALE: u128 = 0x10000000000000000;
 const FIRST_TROOP_RESOURCE: u8 = 26;
 const LAST_TROOP_RESOURCE: u8 = 34;
 
@@ -115,12 +117,16 @@ fn has_production(resource_type: u8) -> bool {
 pub mod ResourceState {
     use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
     use crate::events::{RowDeleted, RowSet};
+    use crate::production::ProductionState::InternalTrait as RecipeInternal;
+    use crate::production::{ProductionState, RecipeKey};
     use super::{
         Production, ProductionReceiver, ResourceKey, SettledResource, Weight, add, assert_production, assert_resource,
         has_production, settle, spend,
     };
     #[storage]
     pub struct Storage {
+        pub resource_rules: Map<(u32, u8), (u128, u128)>,
+        pub resources_configured: Map<u32, bool>,
         pub balances: Map<(u32, u32, u8), u128>,
         pub productions: Map<(u32, u32, u8), Production>,
         pub production_receivers: Map<(u32, u32, u8), Option<ProductionReceiver>>,
@@ -136,7 +142,20 @@ pub mod ResourceState {
         RowDeleted: RowDeleted,
     }
     #[generate_trait]
-    pub impl InternalImpl<TContractState, +HasComponent<TContractState>> of InternalTrait<TContractState> {
+    pub impl InternalImpl<
+        TContractState, +HasComponent<TContractState>, impl Recipes: ProductionState::HasComponent<TContractState>,
+    > of InternalTrait<TContractState> {
+        fn rule(self: @ComponentState<TContractState>, game_id: u32, resource_type: u8) -> super::ResourceRule {
+            assert!(self.resources_configured.read(game_id), "missing resource rules");
+            assert_resource(resource_type);
+            let (unit_weight, rates) = self.resource_rules.read((game_id, resource_type));
+            super::ResourceRule {
+                resource_type,
+                unit_weight,
+                realm_rate: (rates % super::RESOURCE_RATE_SCALE).try_into().unwrap(),
+                village_rate: (rates / super::RESOURCE_RATE_SCALE).try_into().unwrap(),
+            }
+        }
         fn burn_resource(
             ref self: ComponentState<TContractState>,
             key: ResourceKey,
@@ -276,10 +295,20 @@ pub mod ResourceState {
             start_at: u32,
         ) {
             assert_production(resource_type);
+            if super::is_troop_resource(resource_type) && output == super::UNLIMITED_OUTPUT {
+                self.settle_resource(key, 35, self.rule(key.game_id, 35).unit_weight, now, start_at);
+            }
             let mut resource = self.load_settled(key, resource_type, unit_weight, now, start_at);
             resource.production.building_count += 1;
             resource.production.production_rate += rate;
-            resource.production.output_amount_left += output;
+            resource
+                .production
+                .output_amount_left =
+                    if output == super::UNLIMITED_OUTPUT {
+                        output
+                    } else {
+                        resource.production.output_amount_left + output
+                    };
             self.commit_resource(key, resource_type, resource);
         }
         fn stop_production(
@@ -323,6 +352,9 @@ pub mod ResourceState {
             now: u32,
             start_at: u32,
         ) -> SettledResource {
+            if resource_type == 35 || super::is_troop_resource(resource_type) {
+                self.settle_training(key, now, start_at);
+            }
             let receiver = self.production_receivers.read((key.game_id, key.entity_id, resource_type));
             if let Some(receiver) = receiver {
                 self
@@ -349,6 +381,61 @@ pub mod ResourceState {
             }
             self.settle_incoming_production(key, resource_type, ref resource, unit_weight, now);
             resource
+        }
+
+        fn settle_training(ref self: ComponentState<TContractState>, key: ResourceKey, now: u32, start_at: u32) {
+            let mut trainers = array![];
+            for resource_type in super::FIRST_TROOP_RESOURCE..(super::LAST_TROOP_RESOURCE + 1) {
+                let production = self.production(key, resource_type);
+                if production.output_amount_left == super::UNLIMITED_OUTPUT
+                    && production.building_count != 0
+                    && production.last_updated_at != now {
+                    trainers.append((resource_type, production));
+                }
+            }
+            if trainers.is_empty() {
+                return;
+            }
+
+            let mut wheat = self.production(key, 35);
+            let wheat_weight = self.rule(key.game_id, 35).unit_weight;
+            let stored_wheat = self.balance(key, 35);
+            let mut available = stored_wheat;
+            if wheat.building_count != 0 {
+                let since = core::cmp::max(wheat.last_updated_at, core::cmp::min(now, start_at));
+                available += Into::<u32, u128>::into(now - since) * wheat.production_rate.into();
+            }
+            wheat.last_updated_at = now;
+            let mut outputs = array![];
+            for (resource_type, mut production) in trainers {
+                let recipe = get_dep_component!(@self, Recipes)
+                    .recipe(RecipeKey { game_id: key.game_id, resource_type });
+                assert!(recipe.simple_output != 0 && recipe.simple_inputs.len() == 1, "training needs a simple recipe");
+                let input = *recipe.simple_inputs.at(0);
+                assert!(input.resource_type == 35 && input.amount != 0, "training requires wheat");
+                let since = core::cmp::max(production.last_updated_at, core::cmp::min(now, start_at));
+                let expected = Into::<u32, u128>::into(now - since) * production.production_rate.into();
+                let per_cycle: u128 = recipe.simple_output.into();
+                let trained = core::cmp::min(expected, available * per_cycle / input.amount);
+                available -= (trained * input.amount + per_cycle - 1) / per_cycle;
+                production.last_updated_at = now;
+                outputs.append((resource_type, production, trained));
+            }
+
+            // Training consumes farm output before storage burns any surplus.
+            let mut weight = self.weight(key);
+            let mut wheat_balance = stored_wheat;
+            spend(35, ref wheat_balance, ref weight, stored_wheat, wheat_weight);
+            add(35, ref wheat_balance, ref weight, available, wheat_weight);
+            self.write_balance(key, 35, wheat_balance);
+            self.write_production(key, 35, wheat);
+            for (resource_type, production, trained) in outputs {
+                let mut balance = self.balance(key, resource_type);
+                add(resource_type, ref balance, ref weight, trained, self.rule(key.game_id, resource_type).unit_weight);
+                self.write_balance(key, resource_type, balance);
+                self.write_production(key, resource_type, production);
+            }
+            self.write_weight(key, weight);
         }
 
         fn redirect_production(

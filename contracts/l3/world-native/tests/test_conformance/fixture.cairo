@@ -255,7 +255,7 @@ fn provision_game(peers: Peers, actor: ContractAddress, administrator: ContractA
             .span(),
     );
     world_native::buildings::IBuildingRulesDispatcherTrait::configure_buildings(
-        world_native::buildings::IBuildingRulesDispatcher { contract_address: peers.structures }, 7, buildings,
+        world_native::buildings::IBuildingRulesDispatcher { contract_address: peers.structures }, 7, buildings, None,
     );
 
     stop_cheat_caller_address(peers.resources);

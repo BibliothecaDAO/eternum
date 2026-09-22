@@ -89,6 +89,7 @@ fn definition(blitz: bool) -> PresetDefinition {
             surface_mines: array![crate::mines::MineWeight { kind: 1, weight: 1 }].span(),
         },
         structures: StructurePreset {
+            board: None,
             buildings: super::building_commands::rules(),
             camps: array![].span(),
             faith: crate::faith::FaithRules {
