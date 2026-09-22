@@ -90,17 +90,7 @@ function createHarness() {
   const store = new NativeFactStore();
   const projection = new WorldSpatialProjection({ store });
   const write = (keys: number[], model: string, row: Record<string, unknown>) =>
-    store.applyEntityOperations([
-      {
-        type: "upsert",
-        entities: [
-          {
-            hashed_keys: hash.computePoseidonHashOnElements(keys),
-            models: { [model]: row },
-          },
-        ],
-      },
-    ]);
+    store.applyFacts([{ model: model, key: hash.computePoseidonHashOnElements(keys), value: row }]);
   projection.start();
   disposers.push(() => projection.dispose());
   return {

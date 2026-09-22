@@ -2,7 +2,7 @@ import type { GameSyncModelDefinition } from "../sync/model-manifest";
 import type { GameClientSetup } from "./game-client";
 
 import type {
-  GameSyncEntity,
+  GameSyncEvent,
   GameSyncEventConfirmation,
   GameSyncHead,
   GameSyncRuntimeMetrics,
@@ -33,7 +33,7 @@ export interface GameClientObserver {
   /** Herald reported a head: a confirmed block, or the pre-confirmed sequencer clock. */
   onHead?: (head: GameSyncHead) => void;
   /** A story event row arrived on the live stream, scoped to the chain, world and game it belongs to. */
-  onStoryEvent?: (event: GameSyncEntity, scope: StoryEventScope, confirmation?: GameSyncEventConfirmation) => void;
+  onStoryEvent?: (event: GameSyncEvent, scope: StoryEventScope, confirmation: GameSyncEventConfirmation) => void;
   /** A new session starts; story events from the previous one are stale. */
   onStoryEventsReset?: () => void;
   /** The diff for a submitted transaction reached the client. */

@@ -176,31 +176,17 @@ function createHarness() {
     );
   };
   const writeStructure = (entityId: number, owner: bigint, category: StructureType, level: number) =>
-    store.applyEntityOperations([
+    store.applyFacts([
       {
-        type: "upsert",
-        entities: [
-          {
-            hashed_keys: structureEntityKey(entityId),
-            models: { Structure: structureModel(entityId, owner, category, level) },
-          },
-        ],
+        model: "Structure",
+        key: structureEntityKey(entityId),
+        value: structureModel(entityId, owner, category, level),
       },
     ]);
   const writeTile = (tileId: string, col: number, row: number, entityId: number, occupierType: TileOccupier) => {
     const key = hash.computePoseidonHashOnElements([11, 0, col, row]);
     tileKeys.set(tileId, key);
-    return store.applyEntityOperations([
-      {
-        type: "upsert",
-        entities: [
-          {
-            hashed_keys: key,
-            models: { TileOpt: tileModel(col, row, entityId, occupierType) },
-          },
-        ],
-      },
-    ]);
+    return store.applyFacts([{ model: "TileOpt", key: key, value: tileModel(col, row, entityId, occupierType) }]);
   };
 
   return {
@@ -226,9 +212,9 @@ function createHarness() {
     presentationCount: () => inputs.length,
     projection,
     removeStructureAndTile: async (entityId: number, tileId: string) => {
-      await store.applyEntityOperations([
-        { type: "remove-components", entityId: structureEntityKey(entityId), models: ["Structure"] },
-        { type: "remove-components", entityId: tileKeys.get(tileId)!, models: ["TileOpt"] },
+      await store.applyFacts([
+        { model: "Structure", key: structureEntityKey(entityId), value: null },
+        { model: "TileOpt", key: tileKeys.get(tileId)!, value: null },
       ]);
       projection.flush();
     },

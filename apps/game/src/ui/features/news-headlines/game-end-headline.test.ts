@@ -3,50 +3,38 @@ import { describe, expect, it } from "vitest";
 import { resolveGameEndHeadline } from "./game-end-headline";
 
 function game(store: NativeFactStore, endAt = 100) {
-  store.applyEntityOperations([
+  store.applyFacts([
     {
-      type: "upsert",
-      entities: [
-        {
-          hashed_keys: "0x1",
-          models: {
-            GameRegistry: {
-              game_id: 1,
-              name: 0,
-              preset_id: 2,
-              creator: 1,
-              settled: false,
-              ready: true,
-              dev_mode_on: false,
-              start_settling_at: 1,
-              start_main_at: 2,
-              end_at: endAt,
-              end_grace_seconds: 10,
-              seed: 0,
-            },
-          },
-        },
-      ],
+      model: "GameRegistry",
+      key: "0x1",
+      value: {
+        game_id: 1,
+        name: 0,
+        preset_id: 2,
+        creator: 1,
+        settled: false,
+        ready: true,
+        dev_mode_on: false,
+        start_settling_at: 1,
+        start_main_at: 2,
+        end_at: endAt,
+        end_grace_seconds: 10,
+        seed: 0,
+      },
     },
   ]);
 }
 function result(store: NativeFactStore, gameId: number, players: { player: number; rank: number }[], complete = true) {
-  store.applyEntityOperations([
+  store.applyFacts([
     {
-      type: "upsert",
-      entities: [
-        {
-          hashed_keys: String(100 + gameId),
-          models: {
-            BlitzResult: {
-              game_id: gameId,
-              players: players.map((player) => ({ ...player, points: 0 })),
-              complete,
-              commitment: complete ? 123 : 0,
-            },
-          },
-        },
-      ],
+      model: "BlitzResult",
+      key: String(100 + gameId),
+      value: {
+        game_id: gameId,
+        players: players.map((player) => ({ ...player, points: 0 })),
+        complete,
+        commitment: complete ? 123 : 0,
+      },
     },
   ]);
 }

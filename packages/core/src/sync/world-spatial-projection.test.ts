@@ -3,7 +3,7 @@ import { hash } from "starknet";
 import { NativeFactStore } from "../client/native-fact-store";
 import { setBlockTimestampSource } from "../utils/timestamp";
 import explorerFixture from "../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
-import type { GameSyncEntityStoreOperation } from "./game-sync-types";
+import type { GameSyncFact } from "./game-sync-types";
 import { describe, expect, it, vi } from "vitest";
 import {
   WorldSpatialProjection,
@@ -46,10 +46,10 @@ const createHarness = () => {
         if (notify) listener(changes);
       }),
   };
-  const apply = (operations: GameSyncEntityStoreOperation[], skip = false) => {
+  const apply = (changes: GameSyncFact[], skip = false) => {
     notify = !skip;
     try {
-      facts.applyEntityOperations(operations);
+      facts.applyFacts(changes);
     } finally {
       notify = true;
     }
@@ -63,16 +63,15 @@ const createHarness = () => {
   ) => {
     const id = hash.computePoseidonHashOnElements(keys.map((value) => BigInt(value)));
     const previous = aliases.get(`${model}:${alias}`);
-    const operations: GameSyncEntityStoreOperation[] = [];
-    if (previous && previous !== id)
-      operations.push({ type: "remove-components", entityId: previous, models: [model] });
-    operations.push({ type: "upsert", entities: [{ hashed_keys: id, models: { [model]: row } }] });
-    apply(operations, skip);
+    const changes: GameSyncFact[] = [];
+    if (previous && previous !== id) changes.push({ model, key: previous, value: null });
+    changes.push({ model, key: id, value: row as Record<string, unknown> });
+    apply(changes, skip);
     aliases.set(`${model}:${alias}`, id);
   };
   const remove = (model: "TileOpt" | "ExplorerTroops", alias: string, options?: { skipUpdateStream: boolean }) => {
     const id = aliases.get(`${model}:${alias}`);
-    if (id) apply([{ type: "remove-components", entityId: id, models: [model] }], options?.skipUpdateStream);
+    if (id) apply([{ model, key: id, value: null }], options?.skipUpdateStream);
   };
   const writeTile = (
     entityId: string,

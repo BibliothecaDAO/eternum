@@ -65,10 +65,7 @@ const Snapshot = Schema.Struct({
 
 function decodeGameFacts(snapshot: typeof Snapshot.Type, gameId: number): NativeFactStore {
   const store = new NativeFactStore();
-  const entities = snapshot.models.flatMap(({ model, rows }) =>
-    rows.map((row) => ({ hashed_keys: row.key, models: { [model]: row.value } })),
-  );
-  store.applyEntityOperations([{ type: "upsert", entities }]);
+  store.applyFacts(snapshot.models.flatMap(({ model, rows }) => rows.map(({ key, value }) => ({ model, key, value }))));
   store.require("GameRegistry", { game_id: gameId });
   return store;
 }

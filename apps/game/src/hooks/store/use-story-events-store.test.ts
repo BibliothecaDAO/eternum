@@ -8,19 +8,18 @@ describe("story event stream", () => {
   it("retains the native story payload and receipt identity", () => {
     const event = toStreamStoryEvent(
       {
-        hashed_keys: "0xstory",
-        models: {
-          StoryEvent: {
-            game_id: "0x36",
-            id: "0x7",
-            owner: "0xabc",
-            entity_id: "0x2a",
-            tx_hash: "0xfeed",
-            story: {
-              BankSwap: { structure_id: "0x2a", bank_id: "0x2b", buy: true },
-            },
-            timestamp: "0x64",
+        model: "StoryEvent",
+        key: "0xstory",
+        value: {
+          game_id: "0x36",
+          id: "0x7",
+          owner: "0xabc",
+          entity_id: "0x2a",
+          tx_hash: "0xfeed",
+          story: {
+            BankSwap: { structure_id: "0x2a", bank_id: "0x2b", buy: true },
           },
+          timestamp: "0x64",
         },
       },
       scope,
@@ -39,12 +38,12 @@ describe("story event stream", () => {
 
   it("leaves persistent rows and point awards out of the activity stream", () => {
     for (const model of ["PlayerPoints", "PointsAwarded"]) {
-      expect(toStreamStoryEvent({ hashed_keys: "0x1", models: { [model]: { game_id: 54 } } }, scope)).toBeNull();
+      expect(toStreamStoryEvent({ model, key: "0x1", value: { game_id: 54 } }, scope)).toBeNull();
     }
   });
 
   it("rejects a combat event without its receipt identity", () => {
-    expect(() => toStreamStoryEvent({ hashed_keys: "0x1", models: { BattleEvent: { game_id: 54 } } }, scope)).toThrow(
+    expect(() => toStreamStoryEvent({ model: "BattleEvent", key: "0x1", value: { game_id: 54 } }, scope)).toThrow(
       "transaction hash",
     );
   });

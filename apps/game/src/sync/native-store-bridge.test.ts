@@ -51,16 +51,9 @@ const createHarness = () => {
     end_grace_seconds: 0,
     seed: "1",
   };
-  store.applyEntityOperations([
-    {
-      type: "upsert",
-      entities: [
-        {
-          hashed_keys: hash.computePoseidonHashOnElements([1]),
-          models: { SliceRules: { ...preset.rules, game_id: 1 }, GameRegistry: game },
-        },
-      ],
-    },
+  store.applyFacts([
+    { model: "SliceRules", key: hash.computePoseidonHashOnElements([1]), value: { ...preset.rules, game_id: 1 } },
+    { model: "GameRegistry", key: hash.computePoseidonHashOnElements([1]), value: game },
   ]);
   configManager.setActiveGame(1, 1);
   configManager.setStore(store);
@@ -74,15 +67,13 @@ const createHarness = () => {
     },
   };
   const writeStructures = (ids: number[], gameId = 1) =>
-    store.applyEntityOperations([
-      {
-        type: "upsert",
-        entities: ids.map((id) => ({
-          hashed_keys: hash.computePoseidonHashOnElements([gameId, id]),
-          models: { Structure: structure(id, gameId) },
-        })),
-      },
-    ]);
+    store.applyFacts(
+      ids.map((id) => ({
+        model: "Structure",
+        key: hash.computePoseidonHashOnElements([gameId, id]),
+        value: structure(id, gameId),
+      })),
+    );
   return {
     store,
     game,
@@ -128,24 +119,18 @@ describe("native fact to view bridge", () => {
     harness.writeStructures([1]);
     harness.writeStructures([2], 2);
     expect(useWorldSlicesStore.getState().structures.map((row) => row.entity_id)).toEqual([1]);
-    harness.store.applyEntityOperations([
-      { type: "remove-components", entityId: hash.computePoseidonHashOnElements([1, 1]), models: ["Structure"] },
-    ]);
+    harness.store.applyFacts([{ model: "Structure", key: hash.computePoseidonHashOnElements([1, 1]), value: null }]);
     expect(useWorldSlicesStore.getState().structures).toEqual([]);
   });
 
   it("updates the game clock from persistent game changes", () => {
     const harness = createHarness();
     disposers.push(harness.install());
-    harness.store.applyEntityOperations([
+    harness.store.applyFacts([
       {
-        type: "upsert",
-        entities: [
-          {
-            hashed_keys: hash.computePoseidonHashOnElements([1]),
-            models: { GameRegistry: { ...harness.game, end_at: "500" } },
-          },
-        ],
+        model: "GameRegistry",
+        key: hash.computePoseidonHashOnElements([1]),
+        value: { ...harness.game, end_at: "500" },
       },
     ]);
     expect(useUIStore.getState().gameEndAt).toBe(500);

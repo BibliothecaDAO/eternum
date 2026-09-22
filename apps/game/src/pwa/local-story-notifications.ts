@@ -7,7 +7,7 @@ import { isExplicitSpectateSession } from "@/utils/spectator-session";
 import {
   eventConfirmationRank,
   storyEventIdentity,
-  type GameSyncEntity,
+  type GameSyncEvent,
   type GameSyncEventConfirmation,
   type StoryEventScope,
 } from "@bibliothecadao/eternum/game-sync";
@@ -26,7 +26,7 @@ import {
 
 /** Called only from the live event callback. History hydration never enters the OS delivery path. */
 export function dispatchLocalStoryNotification(
-  event: GameSyncEntity,
+  event: GameSyncEvent,
   scope: StoryEventScope,
   confirmation?: GameSyncEventConfirmation,
 ): void {
@@ -36,9 +36,8 @@ export function dispatchLocalStoryNotification(
     isExplicitSpectateSession()
   )
     return;
-  const entry = Object.entries(event.models).find(([model]) => model === "StoryEvent" || model.endsWith("-StoryEvent"));
-  if (!entry) return;
-  void deliverStory(entry[1] as Record<string, unknown>, scope).catch(reportNotificationDeliveryError);
+  if (event.model !== "StoryEvent" && !event.model.endsWith("-StoryEvent")) return;
+  void deliverStory(event.value, scope).catch(reportNotificationDeliveryError);
 }
 
 type DeliveryContext = NonNullable<ReturnType<typeof resolveDeliveryContext>>;

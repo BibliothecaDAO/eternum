@@ -27,16 +27,12 @@ describe("native scene updates", () => {
       paused: false,
       labor_paid: 0n,
     };
-    store.applyEntityOperations([
-      { type: "upsert", entities: [{ hashed_keys: "0x1", models: { Building: building } }] },
-    ]);
+    store.applyFacts([{ model: "Building", key: "0x1", value: building }]);
     expect(changed).toHaveBeenLastCalledWith({ buildingType: 3, innerCol: 11, innerRow: 10, paused: false });
-    store.applyEntityOperations([{ type: "delete-entity", entityId: "0x1" }]);
+    store.applyFacts([{ model: "Building", key: "0x1", value: null }]);
     expect(changed).toHaveBeenLastCalledWith({ buildingType: 0, innerCol: 11, innerRow: 10, paused: false });
     stop();
-    store.applyEntityOperations([
-      { type: "upsert", entities: [{ hashed_keys: "0x1", models: { Building: building } }] },
-    ]);
+    store.applyFacts([{ model: "Building", key: "0x1", value: building }]);
     expect(changed).toHaveBeenCalledTimes(2);
   });
 
@@ -58,23 +54,22 @@ describe("native scene updates", () => {
         },
       },
     };
-    store.applyEvent({ hashed_keys: "0x1", models: { StoryEvent: opening } });
+    store.applyEvent({ model: "StoryEvent", key: "0x1", value: opening });
     expect(chest).toHaveBeenCalledWith({ explorerId: 7, hex: { x: 10, y: 20 }, relics: [39], timestamp: 100 });
     store.applyEvent({
-      hashed_keys: "0x2",
-      models: {
-        StoryEvent: {
-          game_id: "0x1",
-          timestamp: "0x65",
-          owner: "0xabc",
-          story: {
-            ExplorationReward: {
-              explorer_id: "0x7",
-              receiver: "0x8",
-              coord: { alt: true, x: "0xa", y: "0x14" },
-              resource_type: "0x1",
-              amount: "0x3b9aca00",
-            },
+      model: "StoryEvent",
+      key: "0x2",
+      value: {
+        game_id: "0x1",
+        timestamp: "0x65",
+        owner: "0xabc",
+        story: {
+          ExplorationReward: {
+            explorer_id: "0x7",
+            receiver: "0x8",
+            coord: { alt: true, x: "0xa", y: "0x14" },
+            resource_type: "0x1",
+            amount: "0x3b9aca00",
           },
         },
       },
@@ -82,10 +77,10 @@ describe("native scene updates", () => {
     expect(reward).toHaveBeenCalledWith(
       expect.objectContaining({ explorerId: 7, explorerOwnerAddress: 0xabcn, amount: 1, rawAmount: 1000000000n }),
     );
-    store.applyEvent({ hashed_keys: "0x3", models: { StoryEvent: { ...opening, game_id: "0x2" } } });
+    store.applyEvent({ model: "StoryEvent", key: "0x3", value: { ...opening, game_id: "0x2" } });
     expect(chest).toHaveBeenCalledTimes(1);
     stop();
-    store.applyEvent({ hashed_keys: "0x4", models: { StoryEvent: opening } });
+    store.applyEvent({ model: "StoryEvent", key: "0x4", value: opening });
     expect(chest).toHaveBeenCalledTimes(1);
     expect([...store.rows("ExplorerTroops")]).toEqual([]);
   });

@@ -10,12 +10,7 @@ function fixture(gameId = 54) {
   const manager = new ClientConfigManager();
   manager.setActiveGame(gameId, 2);
   const write = (model: string, keys: number[], value: Record<string, unknown>) =>
-    store.applyEntityOperations([
-      {
-        type: "upsert",
-        entities: [{ hashed_keys: hash.computePoseidonHashOnElements(keys), models: { [model]: value } }],
-      },
-    ]);
+    store.applyFacts([{ model, key: hash.computePoseidonHashOnElements(keys), value }]);
   write("SliceRules", [gameId], { ...preset.rules, game_id: gameId });
   manager.setStore(store);
   return { manager, store, write };
@@ -63,9 +58,7 @@ describe("native immutable configuration", () => {
 
   it("recovers only when Herald restores the missing rule", () => {
     const { manager, store, write } = fixture();
-    store.applyEntityOperations([
-      { type: "remove-components", entityId: hash.computePoseidonHashOnElements([54]), models: ["SliceRules"] },
-    ]);
+    store.applyFacts([{ model: "SliceRules", key: hash.computePoseidonHashOnElements([54]), value: null }]);
     expect(() => manager.getTick(TickIds.Armies)).toThrow("not synchronized");
     write("SliceRules", [54], { ...preset.rules, game_id: 54 });
     expect(manager.getTick(TickIds.Armies)).toBe(Number(preset.rules.tick_config.armies_tick_in_seconds));

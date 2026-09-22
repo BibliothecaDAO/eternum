@@ -131,15 +131,5 @@ const seedStructure = (store: NativeFactStore, position: { x: number; y: number 
   });
 
 function write(store: NativeFactStore, model: string, keys: number[], value: Record<string, unknown>) {
-  store.applyEntityOperations([
-    {
-      type: "upsert",
-      entities: [
-        {
-          hashed_keys: hash.computePoseidonHashOnElements(keys),
-          models: { [model]: value },
-        },
-      ],
-    },
-  ]);
+  store.applyFacts([{ model, key: hash.computePoseidonHashOnElements(keys), value }]);
 }

@@ -18,12 +18,7 @@ type Event = Parameters<typeof buildStoryEventPresentation>[0];
 const buildStore = () => {
   const store = new NativeFactStore();
   const write = (model: string, id: number, value: Record<string, unknown>) =>
-    store.applyEntityOperations([
-      {
-        type: "upsert",
-        entities: [{ hashed_keys: hash.computePoseidonHashOnElements([1, id]), models: { [model]: value } }],
-      },
-    ]);
+    store.applyFacts([{ model, key: hash.computePoseidonHashOnElements([1, id]), value }]);
   const setStructure = (id: number, realmId: number, level: number) =>
     write("Structure", id, {
       game_id: 1,

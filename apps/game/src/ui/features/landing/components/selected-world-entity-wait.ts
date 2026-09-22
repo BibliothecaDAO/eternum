@@ -136,12 +136,19 @@ export const waitForSelectedWorldEntityState = async <T>(
   return waitForEntitySubscriptionState({
     ...input,
     subscribe: async (onChange) => {
+      const ignore = () => undefined;
       const subscription = await transport.subscribe({
-        onEntity: (entity) => {
-          if (Object.keys(entity.models).some((model) => watchedModels.has(model))) onChange();
+        onFacts: ({ facts }) => {
+          if (facts.some((fact) => watchedModels.has(fact.model))) onChange();
         },
-        onEvent: () => undefined,
-        onEventGapFill: () => undefined,
+        onSnapshotStart: ignore,
+        onSnapshotModel: ignore,
+        onSnapshotEnd: ignore,
+        onScope: ignore,
+        onEvent: ignore,
+        onHead: ignore,
+        onTransaction: ignore,
+        onStartFailure: ignore,
       });
       return subscription.cancel;
     },

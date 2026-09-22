@@ -8,12 +8,7 @@ import { hash } from "starknet";
 
 const PLAYER = 0x3e1a40b7n;
 const upsert = (store: NativeFactStore, keys: number[], model: string, value: Record<string, unknown>) =>
-  store.applyEntityOperations([
-    {
-      type: "upsert",
-      entities: [{ hashed_keys: hash.computePoseidonHashOnElements(keys), models: { [model]: value } }],
-    },
-  ]);
+  store.applyFacts([{ model, key: hash.computePoseidonHashOnElements(keys), value }]);
 const points = (store: NativeFactStore, game: number, amount: bigint) =>
   upsert(store, [game, Number(PLAYER)], "PlayerPoints", {
     game_id: game,
@@ -82,19 +77,16 @@ describe("native leaderboard", () => {
     expect(manager.pointsPerPlayer.get(PLAYER)).toBe(100);
     const observed: number[] = [];
     store.subscribe(() => observed.push(manager.pointsPerPlayer.get(PLAYER)!));
-    store.applyEntityOperations([
+    store.applyFacts([
       {
-        type: "upsert",
-        entities: [
-          {
-            hashed_keys: hash.computePoseidonHashOnElements([23, 7]),
-            models: { HyperstructureShares: { ...shares, start_at: 150n } },
-          },
-          {
-            hashed_keys: hash.computePoseidonHashOnElements([23, Number(PLAYER)]),
-            models: { PlayerPoints: { game_id: 23, address: PLAYER, points: 100000000n } },
-          },
-        ],
+        model: "HyperstructureShares",
+        key: hash.computePoseidonHashOnElements([23, 7]),
+        value: { ...shares, start_at: 150n },
+      },
+      {
+        model: "PlayerPoints",
+        key: hash.computePoseidonHashOnElements([23, Number(PLAYER)]),
+        value: { game_id: 23, address: PLAYER, points: 100000000n },
       },
     ]);
     expect(observed).toEqual([100]);

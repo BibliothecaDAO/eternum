@@ -51,16 +51,8 @@ describe("game views", () => {
 
   it("hands out a resource manager bound to the entity's native weight row in the active game", () => {
     const { store, views } = createHarness();
-    store.applyEntityOperations([
-      {
-        type: "upsert",
-        entities: [
-          {
-            hashed_keys: "0xc",
-            models: { ResourceWeight: { game_id: GAME_ID, entity_id: 12, weight: 0n, capacity: 1000n } },
-          },
-        ],
-      },
+    store.applyFacts([
+      { model: "ResourceWeight", key: "0xc", value: { game_id: GAME_ID, entity_id: 12, weight: 0n, capacity: 1000n } },
     ]);
 
     expect(views.resources(12).hasResources()).toBe(true);
@@ -80,44 +72,38 @@ const seedStructure = (
   store: NativeFactStore,
   input: { entityId: number; owner: ContractAddress; category: StructureType; x: number; y: number },
 ) =>
-  store.applyEntityOperations([
+  store.applyFacts([
     {
-      type: "upsert",
-      entities: [
-        {
-          hashed_keys: `0x${input.entityId.toString(16)}`,
-          models: {
-            Structure: {
-              game_id: GAME_ID,
-              entity_id: input.entityId,
-              owner: input.owner,
-              base: {
-                category: input.category,
-                coord_x: input.x,
-                coord_y: input.y,
-                alt: false,
-                level: 0,
-                created_at: 1,
-                troop_explorer_count: 0,
-                troop_max_guard_count: 1,
-                troop_max_explorer_count: 1,
-                starting_troops_granted: false,
-              },
-              metadata: {
-                realm_id: 1,
-                village_realm: 0,
-                has_wonder: false,
-                order: 0,
-                mine_kind: 0,
-                attunement: 0,
-                barracks_tier: 0,
-              },
-              resources_packed: 0n,
-              troop_explorers: [],
-            },
-          },
+      model: "Structure",
+      key: `0x${input.entityId.toString(16)}`,
+      value: {
+        game_id: GAME_ID,
+        entity_id: input.entityId,
+        owner: input.owner,
+        base: {
+          category: input.category,
+          coord_x: input.x,
+          coord_y: input.y,
+          alt: false,
+          level: 0,
+          created_at: 1,
+          troop_explorer_count: 0,
+          troop_max_guard_count: 1,
+          troop_max_explorer_count: 1,
+          starting_troops_granted: false,
         },
-      ],
+        metadata: {
+          realm_id: 1,
+          village_realm: 0,
+          has_wonder: false,
+          order: 0,
+          mine_kind: 0,
+          attunement: 0,
+          barracks_tier: 0,
+        },
+        resources_packed: 0n,
+        troop_explorers: [],
+      },
     },
   ]);
 
@@ -125,28 +111,22 @@ const seedExplorer = (
   store: NativeFactStore,
   input: { explorerId: number; owner: number; x: number; y: number; stamina: bigint },
 ) =>
-  store.applyEntityOperations([
+  store.applyFacts([
     {
-      type: "upsert",
-      entities: [
-        {
-          hashed_keys: `0x${input.explorerId.toString(16)}`,
-          models: {
-            ExplorerTroops: {
-              ...explorerFixture.expected.key,
-              ...explorerFixture.expected.value,
-              game_id: GAME_ID,
-              explorer_id: input.explorerId,
-              owner: input.owner,
-              troops: {
-                ...explorerFixture.expected.value.troops,
-                count: 100n,
-                stamina: { amount: input.stamina, updated_tick: 1n },
-              },
-              coord: { alt: false, x: input.x, y: input.y },
-            },
-          },
+      model: "ExplorerTroops",
+      key: `0x${input.explorerId.toString(16)}`,
+      value: {
+        ...explorerFixture.expected.key,
+        ...explorerFixture.expected.value,
+        game_id: GAME_ID,
+        explorer_id: input.explorerId,
+        owner: input.owner,
+        troops: {
+          ...explorerFixture.expected.value.troops,
+          count: 100n,
+          stamina: { amount: input.stamina, updated_tick: 1n },
         },
-      ],
+        coord: { alt: false, x: input.x, y: input.y },
+      },
     },
   ]);

@@ -11,7 +11,7 @@ import {
   type Shard,
 } from "@bibliothecadao/eternum/game-client";
 import { createMicrotaskGameSyncScheduler } from "@bibliothecadao/eternum/game-sync";
-import type { GameSyncEntity, HeraldGameDirectoryEntry } from "@bibliothecadao/eternum/game-sync";
+import type { GameSyncEvent, HeraldGameDirectoryEntry } from "@bibliothecadao/eternum/game-sync";
 import { type NativeWorldBindings, ContractAddress } from "@bibliothecadao/types";
 import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
 import { signRunnerIntent } from "./signer";
@@ -113,7 +113,7 @@ const createRunnerObserver = (
 const logSync = (name: string, fields: Record<string, unknown>): void => logEvent(`agent_runner_sync_${name}`, fields);
 
 interface StoryEventRing {
-  push(event: GameSyncEntity): void;
+  push(event: GameSyncEvent): void;
   clear(): void;
   list(): RecentStoryEvent[];
 }
@@ -122,7 +122,7 @@ const createStoryEventRing = (): StoryEventRing => {
   const ring: RecentStoryEvent[] = [];
   return {
     push: (event) => {
-      ring.push({ at: Date.now(), models: Object.keys(event.models), summary: summarizeModels(event.models) });
+      ring.push({ at: Date.now(), models: [event.model], summary: summarizeModels({ [event.model]: event.value }) });
       if (ring.length > RECENT_EVENT_LIMIT) ring.shift();
     },
     clear: () => {

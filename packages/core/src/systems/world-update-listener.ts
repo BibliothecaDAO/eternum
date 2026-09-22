@@ -69,7 +69,7 @@ export class WorldUpdateListener {
 
   private onStory(name: string, callback: (payload: Fields, event: Fields) => void): () => void {
     return this.setup.store.subscribeEvents((event) => {
-      const story = fields(event.models.StoryEvent);
+      const story = event.model === "StoryEvent" ? fields(event.value) : undefined;
       if (!story || integer(story.game_id) !== configManager.getActiveGameId()) return;
       const payload = fields(fields(story.story)?.[name]);
       if (payload) callback(payload, story);
@@ -135,7 +135,7 @@ export class WorldUpdateListener {
     return {
       onBattleUpdate: (callback: (value: BattleEventSystemUpdate) => void) =>
         this.setup.store.subscribeEvents((event) => {
-          const battle = fields(event.models.BattleEvent);
+          const battle = event.model === "BattleEvent" ? fields(event.value) : undefined;
           if (!battle || integer(battle.game_id) !== configManager.getActiveGameId()) return;
           const attackerId = integer(battle.attacker_id);
           const defenderId = integer(battle.defender_id);

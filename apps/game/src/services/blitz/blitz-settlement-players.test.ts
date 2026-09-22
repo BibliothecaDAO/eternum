@@ -8,15 +8,13 @@ describe("readBlitzSettlementPlayerAddresses", () => {
   it("reads the entered gameplay account and isolates the active game", () => {
     const store = new NativeFactStore();
     configManager.setActiveGame(1, 1);
-    store.applyEntityOperations([
-      {
-        type: "upsert",
-        entities: [1, 2].map((game) => ({
-          hashed_keys: hash.computePoseidonHashOnElements([game, 0x456]),
-          models: { PlayerEntry: { game_id: game, owner: "0x456", player: "0x123" } },
-        })),
-      },
-    ]);
+    store.applyFacts(
+      [1, 2].map((game) => ({
+        model: "PlayerEntry",
+        key: hash.computePoseidonHashOnElements([game, 0x456]),
+        value: { game_id: game, owner: "0x456", player: "0x123" },
+      })),
+    );
     expect(readBlitzSettlementPlayerAddresses(store)).toEqual([0x123n]);
   });
 });

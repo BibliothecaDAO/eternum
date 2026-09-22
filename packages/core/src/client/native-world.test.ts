@@ -13,17 +13,7 @@ async function fixture() {
   const store = new NativeFactStore();
   const client = { store };
   const write = (model: string, keys: bigint[], value: Record<string, unknown>) =>
-    store.applyEntityOperations([
-      {
-        type: "upsert",
-        entities: [
-          {
-            hashed_keys: hash.computePoseidonHashOnElements(keys),
-            models: { [model]: value },
-          },
-        ],
-      },
-    ]);
+    store.applyFacts([{ model, key: hash.computePoseidonHashOnElements(keys), value }]);
   write("ActionNonce", [1n, 0x111n], { game_id: 1, actor: "0x111", next_nonce: "0" });
   return { client, store, write };
 }
@@ -96,12 +86,8 @@ describe("native bindings in the shared game client", () => {
     const prepare = vi.fn(async (actor: string) => {
       if (actor === "0x222") await snapshot;
       if (actor === "0x333") {
-        store.applyEntityOperations([
-          {
-            type: "remove-components",
-            entityId: hash.computePoseidonHashOnElements([1n, 0x222n]),
-            models: ["ActionNonce"],
-          },
+        store.applyFacts([
+          { model: "ActionNonce", key: hash.computePoseidonHashOnElements([1n, 0x222n]), value: null },
         ]);
       }
       write("ActionNonce", [1n, BigInt(actor)], { game_id: 1, actor, next_nonce: actor === "0x222" ? "0" : "7" });

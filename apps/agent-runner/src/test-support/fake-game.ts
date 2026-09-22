@@ -107,12 +107,7 @@ export function writeFact(
   keys: (number | bigint)[],
   value: Record<string, unknown>,
 ): void {
-  store.applyEntityOperations([
-    {
-      type: "upsert",
-      entities: [{ hashed_keys: hash.computePoseidonHashOnElements(keys), models: { [model]: value } }],
-    },
-  ]);
+  store.applyFacts([{ model, key: hash.computePoseidonHashOnElements(keys), value }]);
 }
 
 export const seedStructure = (

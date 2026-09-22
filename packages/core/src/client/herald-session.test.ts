@@ -73,7 +73,7 @@ describe("createHeraldGameSyncSession", () => {
     expect(observer.onStoryEventsReset).toHaveBeenCalledTimes(1);
 
     const head = { block: 13, preconfirmed: false, timestamp: 100 };
-    const event = { hashed_keys: "0x1", models: {} };
+    const event = { model: "StoryEvent", key: "0x1", value: {} };
     session.onHead?.(head);
     const confirmation = { block: 13, preconfirmed: false, confirmedAfterAttach: true };
     session.onEvent?.(event, confirmation);

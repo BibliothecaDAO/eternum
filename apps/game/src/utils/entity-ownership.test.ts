@@ -9,12 +9,7 @@ const fixture = () => {
   configManager.setActiveGame(1, 1);
   const store = new NativeFactStore();
   const write = (model: string, keys: (number | bigint)[], row: Record<string, unknown>) =>
-    store.applyEntityOperations([
-      {
-        type: "upsert",
-        entities: [{ hashed_keys: hash.computePoseidonHashOnElements(keys), models: { [model]: row } }],
-      },
-    ]);
+    store.applyFacts([{ model: model, key: hash.computePoseidonHashOnElements(keys), value: row }]);
   write("Structure", [1, 1], {
     game_id: 1,
     entity_id: 1,
@@ -74,9 +69,7 @@ describe("native ownership", () => {
     member(2, 88);
     expect(arePlayersAllied(store, 1n, 2n)).toBe(false);
     member(2, 99);
-    store.applyEntityOperations([
-      { type: "remove-components", entityId: hash.computePoseidonHashOnElements([1, 2]), models: ["GuildMember"] },
-    ]);
+    store.applyFacts([{ model: "GuildMember", key: hash.computePoseidonHashOnElements([1, 2]), value: null }]);
     expect(arePlayersAllied(store, 1n, 2n)).toBe(false);
     expect(arePlayersAllied(store, 1n, 1n)).toBe(false);
     expect(arePlayersAllied(store, undefined, 2n)).toBe(false);

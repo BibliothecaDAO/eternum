@@ -4,7 +4,7 @@ import {
   type NativeModelName,
   type NativeRows,
 } from "../../../../contracts/l3/world-native/schema/client.gen";
-import type { GameSyncEntity, GameSyncEntityStoreOperation, GameSyncStore } from "../sync/game-sync-types";
+import type { GameSyncEvent, GameSyncFact, GameSyncRetainedKeys, GameSyncStore } from "../sync/game-sync-types";
 
 type Fact = NativeRows[NativeModelName];
 type StoredFact = { readonly row: Fact; readonly wireId: string };
@@ -45,7 +45,7 @@ export class NativeFactStore implements GameSyncStore {
   private readonly wireKeys = new Map<NativeModelName, Map<string, string>>();
   private readonly gameKeys = new Map<string, Set<string>>();
   private readonly ownerKeys = new Map<string, Set<string>>();
-  private readonly eventListeners = new Set<(event: GameSyncEntity) => void>();
+  private readonly eventListeners = new Set<(event: GameSyncEvent) => void>();
   private readonly listeners = new Set<(changes: readonly NativeFactChange[]) => void>();
 
   get<M extends NativeModelName>(model: M, keys: NativeKeys[M]): NativeRows[M] | undefined {
@@ -81,21 +81,16 @@ export class NativeFactStore implements GameSyncStore {
     return () => this.listeners.delete(listener);
   }
 
-  listModelEntityIds(model: string): Iterable<string> {
-    return this.wireKeys.get(requireModel(model))?.keys() ?? [];
-  }
-
-  applyEntityOperations(operations: readonly GameSyncEntityStoreOperation[]): void {
+  /** One write: every fact, then the removal of each retained model's rows the write does not keep. */
+  applyFacts(facts: readonly GameSyncFact[], retain?: GameSyncRetainedKeys): void {
     const pending: PendingChanges = new Map();
     const assignedKeys = new Map<string, string>();
-    for (const operation of operations) {
-      if (operation.type === "upsert") {
-        for (const entity of operation.entities) this.stageEntity(pending, assignedKeys, entity);
-      } else {
-        const models = operation.type === "delete-entity" ? Object.keys(definitions) : operation.models;
-        for (const model of models) this.stageRemoval(pending, requireModel(model), wireId(operation.entityId));
-      }
+    for (const fact of facts) {
+      const model = requireModel(fact.model);
+      if (fact.value === null) this.stageRemoval(pending, model, wireId(fact.key));
+      else this.stageFact(pending, assignedKeys, model, wireId(fact.key), fact.value);
     }
+    for (const [name, keys] of retain ?? []) this.stageUnretained(pending, requireModel(name), keys);
     const changes = this.commit(pending);
     if (changes.length) {
       this.revision += 1;
@@ -103,37 +98,44 @@ export class NativeFactStore implements GameSyncStore {
     }
   }
 
-  subscribeEvents(listener: (event: GameSyncEntity) => void): () => void {
+  subscribeEvents(listener: (event: GameSyncEvent) => void): () => void {
     this.eventListeners.add(listener);
     return () => this.eventListeners.delete(listener);
   }
 
   // The runtime deduplicates effects; confirmation promotions only update its history callback.
-  applyEvent(event: GameSyncEntity): void {
+  applyEvent(event: GameSyncEvent): void {
     for (const listener of this.eventListeners) listener(event);
   }
 
-  private stageEntity(pending: PendingChanges, assignedKeys: Map<string, string>, entity: GameSyncEntity): void {
-    const id = wireId(entity.hashed_keys);
-    for (const [name, value] of Object.entries(entity.models)) {
-      const model = requireModel(name);
-      const row = decoders.get(model)!(value) as Fact;
-      if (definitions[model].scope === "game" && gameIdOf(row) === 0) throw new Error(`Reserved game id in ${model}`);
-      const key = factKey(model, row);
-      const existingKey = this.wireKeys.get(model)?.get(id);
-      const existingId = this.models.get(model)?.get(key)?.wireId;
-      const assignment = `${model}:${key}`;
-      if (
-        (existingKey !== undefined && existingKey !== key) ||
-        (existingId !== undefined && existingId !== id) ||
-        (assignedKeys.has(assignment) && assignedKeys.get(assignment) !== id)
-      )
-        throw new Error(`Conflicting native keys for ${model}`);
-      const prior = pending.get(model)?.get(id);
-      if (prior && prior.key !== key) throw new Error(`Changed native keys for ${model}`);
-      assignedKeys.set(assignment, id);
-      this.pendingModel(pending, model).set(id, { key, current: row });
-    }
+  private stageFact(
+    pending: PendingChanges,
+    assignedKeys: Map<string, string>,
+    model: NativeModelName,
+    id: string,
+    value: Record<string, unknown>,
+  ): void {
+    const row = decoders.get(model)!(value) as Fact;
+    if (definitions[model].scope === "game" && gameIdOf(row) === 0) throw new Error(`Reserved game id in ${model}`);
+    const key = factKey(model, row);
+    const existingKey = this.wireKeys.get(model)?.get(id);
+    const existingId = this.models.get(model)?.get(key)?.wireId;
+    const assignment = `${model}:${key}`;
+    if (
+      (existingKey !== undefined && existingKey !== key) ||
+      (existingId !== undefined && existingId !== id) ||
+      (assignedKeys.has(assignment) && assignedKeys.get(assignment) !== id)
+    )
+      throw new Error(`Conflicting native keys for ${model}`);
+    const prior = pending.get(model)?.get(id);
+    if (prior && prior.key !== key) throw new Error(`Changed native keys for ${model}`);
+    assignedKeys.set(assignment, id);
+    this.pendingModel(pending, model).set(id, { key, current: row });
+  }
+
+  private stageUnretained(pending: PendingChanges, model: NativeModelName, retained: ReadonlySet<string>): void {
+    const kept = new Set([...retained].map(wireId));
+    for (const id of this.wireKeys.get(model)?.keys() ?? []) if (!kept.has(id)) this.stageRemoval(pending, model, id);
   }
 
   private stageRemoval(pending: PendingChanges, model: NativeModelName, id: string): void {
@@ -157,6 +159,7 @@ export class NativeFactStore implements GameSyncStore {
       for (const [id, { key, current }] of rows) {
         const previous = values.get(key)?.row;
         if (!previous && !current) continue;
+        if (previous && current && isSameFact(previous, current)) continue;
         if (previous) this.index(model, key, previous, false);
         if (current) {
           values.set(key, { row: current, wireId: id });
@@ -179,6 +182,18 @@ export class NativeFactStore implements GameSyncStore {
       updateIndex(this.ownerKeys, `${structure.game_id}:${structure.owner}`, key, adding);
     }
   }
+}
+
+/** Decoded rows hold primitives, bigints, frozen arrays and records; a redelivered row is no change. */
+function isSameFact(left: unknown, right: unknown): boolean {
+  if (left === right) return true;
+  if (typeof left !== "object" || typeof right !== "object" || left === null || right === null) return false;
+  if (Array.isArray(left) !== Array.isArray(right)) return false;
+  const leftEntries = Object.entries(left);
+  return (
+    leftEntries.length === Object.keys(right).length &&
+    leftEntries.every(([field, value]) => isSameFact(value, (right as Record<string, unknown>)[field]))
+  );
 }
 
 function updateIndex(index: Map<string, Set<string>>, group: string, key: string, adding: boolean): void {

@@ -20,29 +20,17 @@ describe("buildExplorationSnapshot", () => {
     const structureOwner = 0xabcden;
     const armyOwner = 0x98765n;
     const store = new NativeFactStore();
-    store.applyEntityOperations([
+    store.applyFacts([
       {
-        type: "upsert",
-        entities: [
-          {
-            hashed_keys: hash.computePoseidonHashOnElements([1]),
-            models: { SliceRules: { ...preset.rules, game_id: 1, map_center_offset: 0 } },
-          },
-        ],
+        model: "SliceRules",
+        key: hash.computePoseidonHashOnElements([1]),
+        value: { ...preset.rules, game_id: 1, map_center_offset: 0 },
       },
     ]);
     configManager.setStore(store);
     const write = (model: string, id: number, row: Record<string, unknown>) =>
-      store.applyEntityOperations([
-        {
-          type: "upsert",
-          entities: [
-            {
-              hashed_keys: hash.computePoseidonHashOnElements([1, id]),
-              models: { [model]: { game_id: 1, ...row } },
-            },
-          ],
-        },
+      store.applyFacts([
+        { model: model, key: hash.computePoseidonHashOnElements([1, id]), value: { game_id: 1, ...row } },
       ]);
     const base = {
       category: 1,

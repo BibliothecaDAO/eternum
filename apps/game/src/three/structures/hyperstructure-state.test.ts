@@ -7,9 +7,13 @@ import { readHyperstructureConstruction } from "./hyperstructure-state";
 
 let store: NativeFactStore;
 const write = (keys: number[], models: Record<string, Record<string, unknown>>) => {
-  store.applyEntityOperations([
-    { type: "upsert", entities: [{ hashed_keys: hash.computePoseidonHashOnElements(keys), models }] },
-  ]);
+  store.applyFacts(
+    Object.entries(models).map(([model, value]) => ({
+      model,
+      key: hash.computePoseidonHashOnElements(keys),
+      value: value as Record<string, unknown>,
+    })),
+  );
 };
 const setStage = (stage: string) =>
   write([1, 17], {

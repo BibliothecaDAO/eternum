@@ -2,7 +2,7 @@ import { getPlayerName } from "@/hooks/use-player-profile";
 import { fetchHeraldGameHistory, requireShard } from "@bibliothecadao/eternum/game-client";
 import { getActiveGame } from "@/runtime/world";
 import { buildStoryEventPresentation, configManager } from "@bibliothecadao/eternum";
-import type { GameSyncEntity, HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
+import type { GameSyncEvent, HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
 import {
   eventConfirmationRank,
   storyEventIdentity,
@@ -132,14 +132,11 @@ function nativeEventIdentity(
 }
 
 export const toStreamStoryEvent = (
-  event: GameSyncEntity,
+  event: GameSyncEvent,
   scope: StoryEventScope,
   confirmation?: GameSyncEventConfirmation,
-): StreamStoryEvent | null => {
-  const modelEntry = Object.entries(event.models).find(([model]) => EVENT_MODELS.has(model));
-  const value = modelEntry ? asRecord(modelEntry[1]) : null;
-  return value ? storyEventFromValue(modelEntry![0], value, scope, confirmation) : null;
-};
+): StreamStoryEvent | null =>
+  EVENT_MODELS.has(event.model) ? storyEventFromValue(event.model, event.value, scope, confirmation) : null;
 
 const historyStoryEvent = (event: HeraldHistoryEvent, scope: StoryEventScope): StreamStoryEvent | null =>
   storyEventFromValue(
@@ -150,7 +147,7 @@ const historyStoryEvent = (event: HeraldHistoryEvent, scope: StoryEventScope): S
   );
 
 export const acceptGameSyncStoryEvent = (
-  event: GameSyncEntity,
+  event: GameSyncEvent,
   scope: StoryEventScope,
   confirmation?: GameSyncEventConfirmation,
 ): void => {

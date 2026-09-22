@@ -20,9 +20,19 @@ describe("native event routing", () => {
       modelDefinition: nativeModelDefinition(bindings as unknown as NativeWorldBindings),
     });
     const onEvent = vi.fn();
-    const onEntityBatch = vi.fn();
+    const onFacts = vi.fn();
     const onTransaction = vi.fn();
-    const subscription = transport.subscribe({ onEntity: vi.fn(), onEvent, onEntityBatch, onTransaction });
+    const subscription = transport.subscribe({
+      onSnapshotStart: vi.fn(),
+      onSnapshotModel: vi.fn(),
+      onSnapshotEnd: vi.fn(),
+      onScope: vi.fn(),
+      onFacts,
+      onEvent,
+      onHead: vi.fn(),
+      onTransaction,
+      onStartFailure: vi.fn(),
+    });
     const receive = (value: unknown) => socket.onmessage!({ data: JSON.stringify(value) });
     receive({ type: "hello", epoch: "test", seq: 0, confirmed_block: 1, preconfirmed_block: 2 });
     const writer = await subscription;
@@ -50,10 +60,11 @@ describe("native event routing", () => {
     });
     receive({ type: "tx", epoch: "test", seq: 2, block: 2, hash: "0x123", status: "PRE_CONFIRMED" });
     expect(onEvent).toHaveBeenCalledOnce();
-    expect(onEntityBatch).toHaveBeenCalledOnce();
-    expect(
-      onEntityBatch.mock.calls[0][0].entities.map((entity: { models: object }) => Object.keys(entity.models)),
-    ).toEqual([["TileOpt"], ["ExplorerTroops"]]);
+    expect(onFacts).toHaveBeenCalledOnce();
+    expect(onFacts.mock.calls[0][0].facts.map((fact: { model: string }) => fact.model)).toEqual([
+      "TileOpt",
+      "ExplorerTroops",
+    ]);
     expect(onTransaction).toHaveBeenCalledWith({ block: 2, hash: "0x123", status: "PRE_CONFIRMED" });
     expect(socket.close).not.toHaveBeenCalled();
     writer.cancel();
