@@ -26,21 +26,19 @@ pub fn setup_with_rules(rules: crate::rules::SliceRules) -> (Deployment, Resourc
     let deployment = super::setup_with_domains(true, "StructuresDomain", "TroopsDomain");
     let peers = deployment.peers;
     let games = IGameDispatcher { contract_address: peers.registry };
-    start_cheat_caller_address(peers.registry, authority());
-    games
-        .initialize_game(
-            3,
-            crate::game::GameRegistry {
-                dev_mode_on: false,
-                start_settling_at: 10,
-                start_main_at: 20,
-                end_at: 200,
-                end_grace_seconds: 10,
-                ..games.game(1),
-            },
-            rules,
-        );
-    stop_cheat_caller_address(peers.registry);
+    super::recorded::seed_game(
+        peers.registry,
+        3,
+        crate::game::GameRegistry {
+            dev_mode_on: false,
+            start_settling_at: 10,
+            start_main_at: 20,
+            end_at: 200,
+            end_grace_seconds: 10,
+            ..games.game(1),
+        },
+        rules,
+    );
     let mut rules = array![];
     for resource_type in 1_u8..59 {
         rules

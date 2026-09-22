@@ -74,7 +74,16 @@
       "t3_tier_strength": 9,
       "t1_tier_modifier": 50,
       "t2_tier_modifier": 100,
-      "t3_tier_modifier": 150
+      "t3_tier_modifier": 150,
+      "settlement_armies": 1,
+      "city_armies": 3,
+      "kingdom_armies": 5,
+      "empire_armies": 8,
+      "settlement_guard_slots": 1,
+      "city_guard_slots": 2,
+      "kingdom_guard_slots": 3,
+      "empire_guard_slots": 4,
+      "starting_guard": 1500
     },
     "capacity_config": {
       "troop_capacity": 10000,

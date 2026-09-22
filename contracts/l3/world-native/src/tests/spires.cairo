@@ -10,7 +10,6 @@ use super::{Deployment, authority, setup};
 
 fn deployment() -> Deployment {
     let d = setup(true);
-    stop_cheat_caller_address(d.peers.registry);
     d
 }
 
@@ -57,9 +56,9 @@ fn lattice_retains_center_then_point_side_order_and_hex_geometry() {
 fn production_initialization_places_the_same_spire_identity_on_both_layers_without_rewards() {
     let d = deployment();
     let games = IGameDispatcher { contract_address: d.peers.registry };
-    start_cheat_caller_address(d.peers.registry, authority());
-    games.initialize_game(3, crate::game::GameRegistry { dev_mode_on: false, ..games.game(1) }, games.rules(1));
-    stop_cheat_caller_address(d.peers.registry);
+    super::recorded::seed_game(
+        d.peers.registry, 3, crate::game::GameRegistry { dev_mode_on: false, ..games.game(1) }, games.rules(1),
+    );
     initialize(d, 3, layout(7));
     assert_eq!(spires(d).spire_layout(3), Some(layout(7)));
     assert!(spires(d).spire_layout(1).is_none());
@@ -105,19 +104,17 @@ fn initialization_rejects_invalid_layouts_foreign_callers_blitz_and_repeats() {
         assert!(map(d).tile(tile_key(1, center(d, 1))).is_none());
     }
     let games = IGameDispatcher { contract_address: d.peers.registry };
-    start_cheat_caller_address(d.peers.registry, authority());
-    games
-        .initialize_game(
-            3,
-            games.game(1),
-            crate::rules::SliceRules {
-                mode_rules: super::recorded::BLITZ_RULES,
-                entry_rule: crate::rules::ENTRY_ROSTER,
-                command_mask: super::recorded::BLITZ_COMMAND_MASK,
-                ..games.rules(1),
-            },
-        );
-    stop_cheat_caller_address(d.peers.registry);
+    super::recorded::seed_game(
+        d.peers.registry,
+        3,
+        games.game(1),
+        crate::rules::SliceRules {
+            mode_rules: super::recorded::BLITZ_RULES,
+            entry_rule: crate::rules::ENTRY_ROSTER,
+            command_mask: super::recorded::BLITZ_COMMAND_MASK,
+            ..games.rules(1),
+        },
+    );
     assert!(safe.initialize_spires(3, layout(1)).is_err());
     safe.initialize_spires(1, layout(1)).unwrap();
     assert!(safe.initialize_spires(1, layout(7)).is_err());

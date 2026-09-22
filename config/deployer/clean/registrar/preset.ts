@@ -74,6 +74,16 @@ export function buildTroopStaminaConfig(config: Config) {
 export function buildTroopLimitConfig(config: Config) {
   return {
     guard_resurrection_delay: config.troop.limit.guardResurrectionDelay,
+    settlement_armies: config.troop.limit.settlementArmies,
+    city_armies: config.troop.limit.cityArmies,
+    kingdom_armies: config.troop.limit.kingdomArmies,
+    empire_armies: config.troop.limit.empireArmies,
+    settlement_guard_slots: config.troop.limit.settlementGuardSlots,
+    city_guard_slots: config.troop.limit.cityGuardSlots,
+    kingdom_guard_slots: config.troop.limit.kingdomGuardSlots,
+    empire_guard_slots: config.troop.limit.empireGuardSlots,
+    starting_guard: config.troop.limit.startingGuard,
+
     mercenaries_troop_lower_bound: config.troop.limit.mercenariesTroopLowerBound,
     mercenaries_troop_upper_bound: config.troop.limit.mercenariesTroopUpperBound,
     settlement_deployment_cap: config.troop.limit.settlementDeploymentCap,

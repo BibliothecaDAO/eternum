@@ -67,8 +67,7 @@ fn prepare_without_entitlement(
     let game = world_native::game::GameRegistry {
         dev_mode_on: false, start_main_at: 1200, end_at: 1300, ..games.game(7),
     };
-    start_cheat_caller_address(peers.registry, 222.try_into().unwrap());
-    games.initialize_game(8, game, rules);
+    super::seed_game(peers.registry, 8, game, rules);
     let input = read_txt(@FileTrait::new("tests/fixtures/settlement.txt"));
     let mut fields = input.span();
     let mut grants: RealmGrants = Serde::deserialize(ref fields).unwrap();
@@ -109,7 +108,7 @@ fn prepare_without_entitlement(
         IBlitzReservationsSafeDispatcher { contract_address: peers.map }.initialize_reservations(8).unwrap();
         stop_cheat_caller_address(peers.map);
     }
-    start_cheat_caller_address(peers.registry, 222.try_into().unwrap());
+    snforge_std::cheat_caller_address(peers.registry, 222.try_into().unwrap(), snforge_std::CheatSpan::TargetCalls(1));
     ILedgerOperatorDispatcher { contract_address: peers.registry }.set_ledger_operator(222.try_into().unwrap());
     stop_cheat_caller_address(peers.registry);
     season

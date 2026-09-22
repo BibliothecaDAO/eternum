@@ -28,9 +28,7 @@ use world_native::commands::{
     Command, CreateExplorer, Explore, ITroopCommandsDispatcher, ITroopCommandsDispatcherTrait,
     ITroopCommandsSafeDispatcher, ITroopCommandsSafeDispatcherTrait, command_commitment,
 };
-use world_native::game::{
-    GameRegistry, IGameDispatcher, IGameDispatcherTrait, IPointsDispatcher, IPointsDispatcherTrait,
-};
+use world_native::game::{GameRegistry, IPointsDispatcher, IPointsDispatcherTrait};
 use world_native::lifecycle::{IDomainDispatcher, IDomainDispatcherTrait, Peers};
 use world_native::map::IMapDispatcherTrait;
 use world_native::season::{ISeasonDispatcher, ISeasonDispatcherTrait};
@@ -187,26 +185,24 @@ fn provision_game(peers: Peers, actor: ContractAddress, administrator: ContractA
     let resources: Span<ResourceRule> = Serde::deserialize(ref fields).unwrap();
     let buildings: Span<world_native::buildings::BuildingRuleConfig> = Serde::deserialize(ref fields).unwrap();
     assert!(fields.is_empty(), "trailing preset fixture");
-    start_cheat_caller_address(peers.registry, administrator);
-    IGameDispatcher { contract_address: peers.registry }
-        .initialize_game(
-            7,
-            GameRegistry {
-                name: 'conformance',
-                preset_id: 1,
-                creator: administrator,
-                settled: false,
-                ready: true,
-                dev_mode_on: true,
-                start_settling_at: 0,
-                start_main_at: 0,
-                end_at: 999999,
-                end_grace_seconds: 0,
-                seed: 1,
-            },
-            rules,
-        );
-    stop_cheat_caller_address(peers.registry);
+    seed_game(
+        peers.registry,
+        7,
+        GameRegistry {
+            name: 'conformance',
+            preset_id: 1,
+            creator: administrator,
+            settled: false,
+            ready: true,
+            dev_mode_on: true,
+            start_settling_at: 0,
+            start_main_at: 0,
+            end_at: 999999,
+            end_grace_seconds: 0,
+            seed: 1,
+        },
+        rules,
+    );
     start_cheat_caller_address(peers.structures, administrator);
     let structures = IStructuresDispatcher { contract_address: peers.structures };
     let resource_store = IResourcesDispatcher { contract_address: peers.resources };
@@ -498,4 +494,54 @@ pub fn reject_execution(
     address: ContractAddress, intent: Intent, context: ExecutionContext, r: felt252, s: felt252,
 ) -> Result<(), Array<felt252>> {
     submit(address, selector!("reject_execution"), intent, context, r, s)
+}
+
+fn seed_game(registry: ContractAddress, game_id: u32, game: GameRegistry, rules: world_native::rules::SliceRules) {
+    snforge_std::interact_with_state(
+        registry,
+        || {
+            let keys = array![game_id.into()].span();
+            starknet::storage_access::Store::<
+                GameRegistry,
+            >::write(
+                0,
+                starknet::storage_access::storage_base_address_from_felt252(
+                    snforge_std::map_entry_address(selector!("games"), keys),
+                ),
+                game,
+            )
+                .unwrap();
+            starknet::storage_access::Store::<
+                world_native::rules::SliceRules,
+            >::write(
+                0,
+                starknet::storage_access::storage_base_address_from_felt252(
+                    snforge_std::map_entry_address(selector!("rules"), keys),
+                ),
+                rules,
+            )
+                .unwrap();
+
+            starknet::storage_access::Store::<
+                bool,
+            >::write(
+                0,
+                starknet::storage_access::storage_base_address_from_felt252(
+                    snforge_std::map_entry_address(selector!("ownership_rules_ready"), keys),
+                ),
+                true,
+            )
+                .unwrap();
+            starknet::storage_access::Store::<
+                u32,
+            >::write(
+                0,
+                starknet::storage_access::storage_base_address_from_felt252(
+                    snforge_std::map_entry_address(selector!("next_entity"), keys),
+                ),
+                1,
+            )
+                .unwrap();
+        },
+    );
 }

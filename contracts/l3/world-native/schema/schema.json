@@ -8,6 +8,7 @@
     "DISCOVER_CHESTS": 4,
     "DISCOVER_HYPERSTRUCTURES": 8,
     "SPIRES": 16,
+    "UNOWNED_TARGETS": 32,
     "CAPTURE_VILLAGES": 64,
     "SAME_OWNER_TRANSFER": 256,
     "SEASON_CLOSE": 1024,
@@ -6902,26 +6903,6 @@
         },
         {
           "type": "function",
-          "name": "initialize_game",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "game",
-              "type": "world_native::game::GameRegistry"
-            },
-            {
-              "name": "rules",
-              "type": "world_native::rules::SliceRules"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
           "name": "write_game",
           "inputs": [
             {
@@ -11282,7 +11263,7 @@
           "name": "troop_limit_config",
           "type": "world_native::rules::TroopLimitConfig",
           "id": "0x74726f6f705f6c696d69745f636f6e666967",
-          "feltLength": 13
+          "feltLength": 22
         },
         {
           "name": "capacity_config",
@@ -11370,7 +11351,7 @@
         }
       ],
       "keyLength": 1,
-      "valueLength": 92
+      "valueLength": 101
     },
     {
       "name": "EntitySequence",
@@ -16084,6 +16065,42 @@
         {
           "name": "t3_tier_modifier",
           "type": "core::integer::u8"
+        },
+        {
+          "name": "settlement_armies",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "city_armies",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "kingdom_armies",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "empire_armies",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "settlement_guard_slots",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "city_guard_slots",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "kingdom_guard_slots",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "empire_guard_slots",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "starting_guard",
+          "type": "core::integer::u32"
         }
       ]
     },
@@ -17156,5 +17173,5 @@
       ]
     }
   },
-  "identity": "e44237ff184f9850a16937941083b5c048c57ecc84499d84f487d4de76eb3ac0"
+  "identity": "2170436a6b296c107b1d4fd48f831e5162d58cb564c224b17063a28a7d7f592c"
 }

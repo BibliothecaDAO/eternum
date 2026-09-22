@@ -77,6 +77,16 @@ export const blitzTroopConfig: ConfigPatch = {
     },
     limit: {
       guardResurrectionDelay: TROOP_GUARD_RESURRECTION_DELAY,
+      settlementArmies: 1,
+      cityArmies: 3,
+      kingdomArmies: 5,
+      empireArmies: 8,
+      settlementGuardSlots: 1,
+      cityGuardSlots: 2,
+      kingdomGuardSlots: 3,
+      empireGuardSlots: 4,
+      startingGuard: 1500,
+
       mercenariesTroopLowerBound: TROOP_MERCENARIES_TROOP_LOWER_BOUND,
       mercenariesTroopUpperBound: TROOP_MERCENARIES_TROOP_UPPER_BOUND,
       settlementDeploymentCap: TROOP_SETTLEMENT_DEPLOYMENT_CAP,

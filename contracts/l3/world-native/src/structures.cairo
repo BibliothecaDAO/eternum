@@ -226,9 +226,14 @@ pub mod StructureState {
                     },
                 );
         }
-        fn upgrade(ref self: ComponentState<TContractState>, key: ResourceKey, mut base: super::StructureBase) {
+        fn upgrade(
+            ref self: ComponentState<TContractState>,
+            key: ResourceKey,
+            mut base: super::StructureBase,
+            config: crate::rules::TroopLimitConfig,
+        ) {
             base.level += 1;
-            let (explorers, guards) = crate::upgrades::troop_limits(base.level);
+            let (explorers, guards) = crate::upgrades::troop_limits(config, base.level);
             base.troop_max_explorer_count = explorers;
             base.troop_max_guard_count = guards;
             self.structures.entry((key.game_id, key.entity_id)).base.write(base);
@@ -493,7 +498,9 @@ pub mod StructuresDomain {
             let game = self.game_dispatcher().game(game_id);
             assert!(game.dev_mode_on, "fixture provisioning requires development game");
             assert!(!coord.alt && actor != 0.try_into().unwrap(), "invalid realm owner or layer");
-            let record = realm_record(actor, coord, get_block_timestamp());
+            let record = realm_record(
+                actor, coord, get_block_timestamp(), self.game_dispatcher().rules(game_id).troop_limit_config,
+            );
             let key = self.place_settlement(game_id, coord, record);
             for grant in grants {
                 let (resource_type, amount) = *grant;
@@ -566,7 +573,9 @@ pub mod StructuresDomain {
             context: ExecutionContext,
         ) -> u32 {
             assert!(get_caller_address() == self.lifecycle.require_active().settlement, "only settlement domain");
-            let mut record = realm_record(actor, coord, context.timestamp);
+            let mut record = realm_record(
+                actor, coord, context.timestamp, self.game_dispatcher().rules(game_id).troop_limit_config,
+            );
             match creation {
                 crate::settlement::SettlementCreation::Realm(realm) => {
                     record.metadata.realm_id = realm.realm_id;
@@ -775,7 +784,7 @@ pub mod StructuresDomain {
             for cost in rules.upgrade_recipe(game_id, next_level).costs {
                 self.spend(key, *cost.resource_type, *cost.amount, context.timestamp);
             }
-            self.structures.upgrade(key, record.base);
+            self.structures.upgrade(key, record.base, self.game_dispatcher().rules(game_id).troop_limit_config);
             if record.base.category == 1 && self.game_dispatcher().rules(game_id).epoch_seconds == 0 {
                 let coord = Coord { alt: false, x: record.base.coord_x, y: record.base.coord_y };
                 self
@@ -926,13 +935,16 @@ pub mod StructuresDomain {
         }
         packed
     }
-    fn realm_record(actor: ContractAddress, coord: Coord, timestamp: u64) -> StructureRecord {
+    fn realm_record(
+        actor: ContractAddress, coord: Coord, timestamp: u64, config: crate::rules::TroopLimitConfig,
+    ) -> StructureRecord {
+        let (armies, guards) = crate::upgrades::troop_limits(config, 0);
         StructureRecord {
             owner: actor,
             base: StructureBase {
                 troop_explorer_count: 0,
-                troop_max_guard_count: 1,
-                troop_max_explorer_count: 1,
+                troop_max_guard_count: guards,
+                troop_max_explorer_count: armies,
                 created_at: timestamp.try_into().unwrap(),
                 category: 1,
                 coord_x: coord.x,
@@ -1130,7 +1142,8 @@ pub mod StructuresDomain {
         }
         fn grant_realm_troops(ref self: ContractState, key: ResourceKey, timestamp: u64) {
             let grants = self.settlement_rules().realm_grants(key.game_id);
-            self.grant_starting_troops(key, grants.resources, 1500 * RESOURCE_PRECISION, timestamp);
+            let guards = self.game_dispatcher().rules(key.game_id).troop_limit_config.starting_guard;
+            self.grant_starting_troops(key, grants.resources, guards.into() * RESOURCE_PRECISION, timestamp);
         }
         fn grant_starting_troops(
             ref self: ContractState,
@@ -1155,29 +1168,33 @@ pub mod StructuresDomain {
                 let amount = *grant.amount;
                 if kind == resource_type {
                     self.resources_dispatcher().grant_resource(key, kind, amount + guards, timestamp);
-                    self.spend(key, kind, guards, timestamp);
-                    crate::guards::IGuardsDispatcherTrait::add_starting_guard(
-                        crate::guards::IGuardsDispatcher { contract_address: self.lifecycle.require_active().troops },
-                        key,
-                        category,
-                        guards,
-                        timestamp,
-                    );
-                    self
-                        .emit_structure_story(
+                    if guards != 0 {
+                        self.spend(key, kind, guards, timestamp);
+                        crate::guards::IGuardsDispatcherTrait::add_starting_guard(
+                            crate::guards::IGuardsDispatcher {
+                                contract_address: self.lifecycle.require_active().troops,
+                            },
                             key,
-                            record.owner,
-                            Story::GuardAddStory(
-                                crate::ownership::GuardAddStory {
-                                    structure_id: key.entity_id,
-                                    slot: 0,
-                                    category,
-                                    tier: crate::troops::TroopTier::T1,
-                                    amount: guards,
-                                },
-                            ),
+                            category,
+                            guards,
                             timestamp,
                         );
+                        self
+                            .emit_structure_story(
+                                key,
+                                record.owner,
+                                Story::GuardAddStory(
+                                    crate::ownership::GuardAddStory {
+                                        structure_id: key.entity_id,
+                                        slot: 0,
+                                        category,
+                                        tier: crate::troops::TroopTier::T1,
+                                        amount: guards,
+                                    },
+                                ),
+                                timestamp,
+                            );
+                    }
                 }
             }
         }

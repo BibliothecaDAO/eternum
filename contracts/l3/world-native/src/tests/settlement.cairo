@@ -90,8 +90,7 @@ fn only_game_creation_initializes_reservations_and_repeated_initialization_is_id
     game_rules.command_mask = super::recorded::BLITZ_COMMAND_MASK;
     game_rules.entry_rule = crate::rules::ENTRY_ROSTER;
     start_cheat_caller_address(deployment.peers.settlement, authority());
-    start_cheat_caller_address(deployment.peers.registry, authority());
-    games.initialize_game(3, games.game(1), game_rules);
+    super::recorded::seed_game(deployment.peers.registry, 3, games.game(1), game_rules);
     configure(deployment, 3, SettlementRules { mode: SettlementMode::Triple, registration_limit: 2, ..rules() });
     let map = deployment.peers.map;
     let safe = IBlitzReservationsSafeDispatcher { contract_address: map };
@@ -179,19 +178,17 @@ fn entry_entitlements_require_operator_and_compare_every_registration_field() {
 fn village_placement_shares_reservations_with_fixed_blitz_and_eternum_entries() {
     let deployment = setup(true);
     let games = IGameDispatcher { contract_address: deployment.peers.registry };
-    start_cheat_caller_address(deployment.peers.registry, authority());
-    games
-        .initialize_game(
-            3,
-            games.game(1),
-            crate::rules::SliceRules {
-                mode_rules: super::recorded::BLITZ_RULES,
-                entry_rule: crate::rules::ENTRY_ROSTER,
-                command_mask: super::recorded::BLITZ_COMMAND_MASK,
-                ..recorded::rules(),
-            },
-        );
-    stop_cheat_caller_address(deployment.peers.registry);
+    super::recorded::seed_game(
+        deployment.peers.registry,
+        3,
+        games.game(1),
+        crate::rules::SliceRules {
+            mode_rules: super::recorded::BLITZ_RULES,
+            entry_rule: crate::rules::ENTRY_ROSTER,
+            command_mask: super::recorded::BLITZ_COMMAND_MASK,
+            ..recorded::rules(),
+        },
+    );
     configure(deployment, 1, SettlementRules { registration_limit: 2, ..rules() });
     configure(deployment, 3, SettlementRules { mode: SettlementMode::Triple, registration_limit: 2, ..rules() });
     let map = deployment.peers.map;
@@ -263,8 +260,9 @@ fn a_missing_ledger_operator_never_bypasses_eternum_entitlements() {
         command_mask: super::recorded::ETERNUM_COMMAND_MASK,
         ..recorded::rules(),
     };
-    start_cheat_caller_address(d.peers.registry, authority());
-    games.initialize_game(3, crate::game::GameRegistry { dev_mode_on: false, ..games.game(1) }, game_rules);
+    super::recorded::seed_game(
+        d.peers.registry, 3, crate::game::GameRegistry { dev_mode_on: false, ..games.game(1) }, game_rules,
+    );
     configure(d, 3, rules());
     start_cheat_caller_address(d.peers.settlement, d.peers.season);
     crate::realms::ISeasonRealmsDispatcherTrait::settle_season(

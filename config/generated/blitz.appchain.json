@@ -937,6 +937,15 @@
       },
       "limit": {
         "guardResurrectionDelay": 600,
+        "settlementArmies": 1,
+        "cityArmies": 3,
+        "kingdomArmies": 5,
+        "empireArmies": 8,
+        "settlementGuardSlots": 1,
+        "cityGuardSlots": 2,
+        "kingdomGuardSlots": 3,
+        "empireGuardSlots": 4,
+        "startingGuard": 1500,
         "mercenariesTroopLowerBound": 800,
         "mercenariesTroopUpperBound": 1600,
         "settlementDeploymentCap": 3000,
@@ -1652,8 +1661,7 @@
       "wonder_base_fp_per_sec": 0,
       "realm_fp_per_sec": 0,
       "village_fp_per_sec": 0,
-      "owner_share_percent": 0,
-      "reward_token": "0x0"
+      "owner_share_percent": 0
     },
     "artificer": {
       "research_cost_for_relic": 0

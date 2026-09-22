@@ -38,10 +38,10 @@ fn setup_config(dev: bool, mode: SettlementMode, game_rules: crate::rules::Slice
     let deployment = super::setup_with_domains(true, "StructuresDomain", "TroopsDomain");
     super::entry::set_operator(deployment, authority());
     let games = IGameDispatcher { contract_address: deployment.peers.registry };
-    start_cheat_caller_address(deployment.peers.registry, authority());
-    games.initialize_game(3, crate::game::GameRegistry { dev_mode_on: dev, ..games.game(1) }, game_rules);
+    super::recorded::seed_game(
+        deployment.peers.registry, 3, crate::game::GameRegistry { dev_mode_on: dev, ..games.game(1) }, game_rules,
+    );
     recorded::configure_submitter(deployment.peers.season, super::submitter());
-    stop_cheat_caller_address(deployment.peers.registry);
     let data = read_txt(@FileTrait::new("tests/fixtures/settlement.txt"));
     let mut fields = data.span();
     let grants: RealmGrants = Serde::deserialize(ref fields).unwrap();

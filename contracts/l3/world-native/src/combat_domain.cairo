@@ -50,6 +50,9 @@ pub mod CombatDomain {
             let mut attacker = self.troops_dispatcher().authorized_explorer(key, actor, context.timestamp);
             let target_key = ResourceKey { game_id, entity_id: command.defender_id };
             let target = self.structures_dispatcher().structure(target_key).expect('missing guarded structure');
+            if crate::rules::rule_enabled(rules, crate::rules::UNOWNED_TARGETS) {
+                assert!(target.owner == 0.try_into().unwrap(), "target must be unowned");
+            }
             assert!(target.owner != actor, "actor owns defender");
             assert!(attacker.troops.count != 0, "aggressor has no troops");
             self.assert_battle_immunity(game_id, attacker.owner, rules, context.timestamp);
@@ -462,6 +465,8 @@ pub mod CombatDomain {
             timestamp: u64,
         ) {
             if explorer.troops.count == 0
+                || (crate::rules::rule_enabled(rules, crate::rules::UNOWNED_TARGETS)
+                    && target.owner != 0.try_into().unwrap())
                 || (target.base.category == 5 && !crate::rules::rule_enabled(rules, crate::rules::CAPTURE_VILLAGES)) {
                 return;
             }

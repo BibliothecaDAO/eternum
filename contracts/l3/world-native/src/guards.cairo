@@ -82,7 +82,7 @@ pub mod GuardState {
         }
         // Attack the highest occupied functional slot first; Delta is slot zero.
         fn next(self: @ComponentState<TContractState>, key: ResourceKey, maximum: u8) -> Option<GuardKey> {
-            assert!(maximum > 0 && maximum <= 4, "invalid guard slot limit");
+            assert!(maximum <= 4, "invalid guard slot limit");
             let mut slot = maximum;
             while slot != 0 {
                 slot -= 1;

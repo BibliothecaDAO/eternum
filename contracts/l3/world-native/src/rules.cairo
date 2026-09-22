@@ -58,6 +58,15 @@ pub struct TroopLimitConfig {
     pub t1_tier_modifier: u8,
     pub t2_tier_modifier: u8,
     pub t3_tier_modifier: u8,
+    pub settlement_armies: u16,
+    pub city_armies: u16,
+    pub kingdom_armies: u16,
+    pub empire_armies: u16,
+    pub settlement_guard_slots: u8,
+    pub city_guard_slots: u8,
+    pub kingdom_guard_slots: u8,
+    pub empire_guard_slots: u8,
+    pub starting_guard: u32,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
@@ -178,6 +187,7 @@ pub const DISCOVER_CAMPS: u32 = 2;
 pub const DISCOVER_CHESTS: u32 = 4;
 pub const DISCOVER_HYPERSTRUCTURES: u32 = 8;
 pub const SPIRES: u32 = 16;
+pub const UNOWNED_TARGETS: u32 = 32;
 pub const CAPTURE_VILLAGES: u32 = 64;
 pub const SAME_OWNER_TRANSFER: u32 = 256;
 pub const SEASON_CLOSE: u32 = 1024;
@@ -387,6 +397,7 @@ pub impl TroopLimitConfigPacking of starknet::storage_access::StorePacking<Troop
             first: value.guard_resurrection_delay.into()
                 + value.mercenaries_troop_lower_bound.into() * 0x10000
                 + value.mercenaries_troop_upper_bound.into() * 0x100000000
+                + value.starting_guard.into() * 0x1000000000000
                 + value.settlement_deployment_cap.into() * 0x100000000000000000000,
             second: value.city_deployment_cap.into()
                 + value.kingdom_deployment_cap.into() * 0x100000000
@@ -395,7 +406,16 @@ pub impl TroopLimitConfigPacking of starknet::storage_access::StorePacking<Troop
                 + value.t2_tier_strength.into() * 0x100000000000000000000000000
                 + value.t3_tier_strength.into() * 0x10000000000000000000000000000
                 + value.t1_tier_modifier.into() * 0x1000000000000000000000000000000,
-            third: value.t2_tier_modifier.into() + value.t3_tier_modifier.into() * 0x100,
+            third: value.t2_tier_modifier.into()
+                + value.t3_tier_modifier.into() * 0x100
+                + value.settlement_armies.into() * 0x10000
+                + value.city_armies.into() * 0x100000000
+                + value.kingdom_armies.into() * 0x1000000000000
+                + value.empire_armies.into() * 0x10000000000000000
+                + value.settlement_guard_slots.into() * 0x100000000000000000000
+                + value.city_guard_slots.into() * 0x10000000000000000000000
+                + value.kingdom_guard_slots.into() * 0x1000000000000000000000000
+                + value.empire_guard_slots.into() * 0x100000000000000000000000000,
         }
     }
     fn unpack(value: PackedRuleWords) -> TroopLimitConfig {
@@ -413,6 +433,15 @@ pub impl TroopLimitConfigPacking of starknet::storage_access::StorePacking<Troop
             t1_tier_modifier: (value.second / 0x1000000000000000000000000000000).try_into().unwrap(),
             t2_tier_modifier: (value.third % 0x100).try_into().unwrap(),
             t3_tier_modifier: (value.third / 0x100 % 0x100).try_into().unwrap(),
+            settlement_armies: (value.third / 0x10000 % 0x10000).try_into().unwrap(),
+            city_armies: (value.third / 0x100000000 % 0x10000).try_into().unwrap(),
+            kingdom_armies: (value.third / 0x1000000000000 % 0x10000).try_into().unwrap(),
+            empire_armies: (value.third / 0x10000000000000000 % 0x10000).try_into().unwrap(),
+            settlement_guard_slots: (value.third / 0x100000000000000000000 % 0x100).try_into().unwrap(),
+            city_guard_slots: (value.third / 0x10000000000000000000000 % 0x100).try_into().unwrap(),
+            kingdom_guard_slots: (value.third / 0x1000000000000000000000000 % 0x100).try_into().unwrap(),
+            empire_guard_slots: (value.third / 0x100000000000000000000000000 % 0x100).try_into().unwrap(),
+            starting_guard: (value.first / 0x1000000000000 % 0x100000000).try_into().unwrap(),
         }
     }
 }

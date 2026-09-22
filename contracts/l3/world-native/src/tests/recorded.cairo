@@ -22,7 +22,7 @@ use snforge_std::{
 };
 use starknet::{ContractAddress, ResourcesBounds};
 use crate::commands::{Command, ExecutionContext as DomainContext, command_commitment};
-use crate::game::{GameRegistry, IGameDispatcher, IGameDispatcherTrait};
+use crate::game::GameRegistry;
 use crate::lifecycle::{IDomainDispatcher, IDomainDispatcherTrait};
 use crate::season::{ISeasonDispatcher, ISeasonDispatcherTrait, ISeasonSafeDispatcher};
 use super::fixtures::{IFixtureDispatcher, IFixtureDispatcherTrait};
@@ -62,28 +62,26 @@ pub fn rules() -> crate::rules::SliceRules {
     Serde::deserialize(ref fields).unwrap()
 }
 pub fn create_games(registry: ContractAddress, authority: ContractAddress) {
-    snforge_std::start_cheat_caller_address(registry, authority);
     for game_id in array![1, 2] {
-        IGameDispatcher { contract_address: registry }
-            .initialize_game(
-                game_id,
-                GameRegistry {
-                    name: 'fixture',
-                    preset_id: 1,
-                    creator: authority,
-                    settled: false,
-                    ready: true,
-                    dev_mode_on: true,
-                    start_settling_at: 0,
-                    start_main_at: 0,
-                    end_at: 999999,
-                    end_grace_seconds: 0,
-                    seed: 1,
-                },
-                rules(),
-            );
+        seed_game(
+            registry,
+            game_id,
+            GameRegistry {
+                name: 'fixture',
+                preset_id: 1,
+                creator: authority,
+                settled: false,
+                ready: true,
+                dev_mode_on: true,
+                start_settling_at: 0,
+                start_main_at: 0,
+                end_at: 999999,
+                end_grace_seconds: 0,
+                seed: 1,
+            },
+            rules(),
+        );
     }
-    snforge_std::stop_cheat_caller_address(registry);
 }
 pub fn deploy_submitter(address: ContractAddress) {
     let signer: StarkCurveKeyPair = KeyPairTrait::from_secret_key(54321);
@@ -360,4 +358,13 @@ fn assert_oversized_loot_terminal(raid: bool) {
     assert_eq!(IFixtureDispatcher { contract_address: d.peers.troops }.received_root(), 0);
     super::execute(d, FixtureAction { nonce: 1, ..super::intent(d, 1) });
     assert_eq!(view.recorded_outcome(2).unwrap().status, 1);
+}
+
+pub fn seed_game(registry: ContractAddress, game_id: u32, game: GameRegistry, rules: crate::rules::SliceRules) {
+    super::resource_commands::set_fixture(registry, selector!("games"), array![game_id.into()].span(), game);
+    super::resource_commands::set_fixture(registry, selector!("rules"), array![game_id.into()].span(), rules);
+    super::resource_commands::set_fixture(
+        registry, selector!("ownership_rules_ready"), array![game_id.into()].span(), true,
+    );
+    super::resource_commands::set_fixture(registry, selector!("next_entity"), array![game_id.into()].span(), 1_u32);
 }

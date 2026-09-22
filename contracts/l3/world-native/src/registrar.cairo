@@ -99,7 +99,8 @@ pub mod RegistrarState {
     };
     use starknet::{get_caller_address, get_contract_address};
     use crate::events::RowSet;
-    use crate::game::{IGameDispatcher, IGameDispatcherTrait};
+    use crate::game::GameState;
+    use crate::game::GameState::InternalTrait as GameInternal;
     use crate::lifecycle::Lifecycle;
     use crate::lifecycle::Lifecycle::InternalTrait as LifeInternal;
     use crate::presets::PresetDefinition;
@@ -123,6 +124,7 @@ pub mod RegistrarState {
         TContractState,
         +HasComponent<TContractState>,
         impl Life: Lifecycle::HasComponent<TContractState>,
+        impl Games: GameState::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of super::IRegistrar<ComponentState<TContractState>> {
         fn register_preset(ref self: ComponentState<TContractState>, preset_id: u32, definition: PresetDefinition) {
@@ -185,7 +187,7 @@ pub mod RegistrarState {
             self.register_roster(game_id, params.roster);
             let game = build_game(params, get_caller_address());
             let rules = game_rules(game_id, params, definition.rules);
-            IGameDispatcher { contract_address: peers.registry }.initialize_game(game_id, game, rules);
+            get_dep_component_mut!(ref self, Games).create(game_id, game, rules);
             crate::presets::initialize_game(peers, game_id, definition, params);
             self.launch_ids.write(params.name, game_id);
             self.launch_commitments.write(params.name, commitment);

@@ -787,3 +787,145 @@ fn an_expedition_cannot_move_into_yesterdays_region() {
     let today = crate::expeditions::site(0, 100, 1024, 1, 100, 0);
     crate::expeditions::assert_same_region(today, yesterday, 1024);
 }
+
+#[test]
+fn expedition_army_limits_follow_castle_level_without_guards_or_returning_troops() {
+    let d = setup();
+    let mut preset = definition(true);
+    preset.rules.entry_rule = crate::rules::ENTRY_OPEN;
+    preset.rules.epoch_seconds = 86400;
+    preset.rules.mode_rules = HOME_REWARDS | crate::rules::UNOWNED_TARGETS;
+    preset.settlement.spacing = 1024;
+    let limits = crate::rules::TroopLimitConfig {
+        settlement_armies: 2,
+        city_armies: 3,
+        kingdom_armies: 4,
+        empire_armies: 5,
+        settlement_guard_slots: 0,
+        city_guard_slots: 0,
+        kingdom_guard_slots: 0,
+        empire_guard_slots: 0,
+        starting_guard: 0,
+        t1_tier_modifier: 100,
+        settlement_deployment_cap: 3000,
+        ..preset.rules.troop_limit_config,
+    };
+    preset.rules.troop_limit_config = limits;
+    preset.structures.upgrade_limits.realm_max = 3;
+    preset
+        .structures
+        .upgrades =
+            array![
+                crate::upgrades::UpgradeRecipe { costs: array![].span() },
+                crate::upgrades::UpgradeRecipe { costs: array![].span() },
+                crate::upgrades::UpgradeRecipe { costs: array![].span() },
+            ]
+        .span();
+    let mut grants = array![];
+    for grant in preset.settlement.realms.resources {
+        grants
+            .append(
+                crate::resources::ResourceAmount {
+                    amount: if *grant.resource_type >= 26 && *grant.resource_type <= 34 {
+                        2000 * RESOURCE_PRECISION
+                    } else {
+                        *grant.amount
+                    },
+                    resource_type: *grant.resource_type,
+                },
+            );
+    }
+    preset.settlement.realms.resources = grants.span();
+    registry(d).register_preset(1, preset);
+    let game_id = registry(d)
+        .create_game(
+            CreateGameParams { dev_mode_on: true, end_grace_seconds: 0, duration_seconds: 500, ..params(false) },
+            preset,
+        );
+    super::resource_commands::set_fixture(d.peers.settlement, selector!("catalogue_count"), array![].span(), 8000_u32);
+    super::resource_commands::set_fixture(d.peers.settlement, selector!("traits"), array![1].span(), 0x4000001_u32);
+    assert!(
+        execute_in_game(
+            d,
+            game_id,
+            Command::SettleSeason(crate::realms::SettleSeason { name: 'home', selected_realm: Some(1) }),
+            350,
+            350,
+        ),
+    );
+    let home = ResourceKey { game_id, entity_id: 1 };
+    let structures = IStructuresDispatcher { contract_address: d.peers.structures };
+    let resources = IResourcesDispatcher { contract_address: d.peers.resources };
+    let guards = IGuardsDispatcher { contract_address: d.peers.troops };
+    assert_eq!(guards.guard(GuardKey { game_id, structure_id: 1, slot: 0 }).troops.count, 0);
+    let mut category = 0_u8;
+    let mut troop_resource = 0_u8;
+    let resources_by_category = array![26_u8, 32_u8, 29_u8];
+    for candidate in 0_u8..3 {
+        let balance = resources
+            .resource_balance(
+                ResourceSlot { game_id, entity_id: 1, resource_type: *resources_by_category.at(candidate.into()) },
+            );
+        if balance != 0 {
+            assert_eq!(balance, 2000 * RESOURCE_PRECISION);
+            category = candidate;
+            troop_resource = *resources_by_category.at(candidate.into());
+        }
+    }
+    assert!(troop_resource != 0, "starting garrison missing");
+    assert_eq!(crate::troops::max_army_size(limits, 0, crate::troops::TroopTier::T1), 3000);
+    let muster = Command::CreateExplorer(
+        CreateExplorer { structure_id: 1, category, tier: 0, amount: RESOURCE_PRECISION, direction: 5 },
+    );
+    for level in 0_u8..4 {
+        if level != 0 {
+            assert!(execute_in_game(d, game_id, Command::LevelUp(1), 351, 351));
+        }
+        let record = structures.structure(home).unwrap();
+        assert_eq!(record.base.troop_max_guard_count, 0);
+        assert_eq!(record.base.troop_max_explorer_count, Into::<u8, u16>::into(level) + 2);
+        while structures.structure(home).unwrap().troop_explorers.len() < Into::<u8, u32>::into(level) + 2 {
+            let direction: u8 = structures.structure(home).unwrap().troop_explorers.len().try_into().unwrap();
+            assert!(
+                execute_in_game(
+                    d,
+                    game_id,
+                    Command::CreateExplorer(
+                        CreateExplorer { structure_id: 1, category, tier: 0, amount: RESOURCE_PRECISION, direction },
+                    ),
+                    351,
+                    351,
+                ),
+            );
+        }
+        assert!(!execute_in_game(d, game_id, muster, 351, 351));
+    }
+    let id = *structures.structure(home).unwrap().troop_explorers.at(0);
+    let slot = ResourceSlot { game_id, entity_id: 1, resource_type: troop_resource };
+    let before = resources.resource_balance(slot);
+    assert!(
+        !execute_in_game(
+            d,
+            game_id,
+            Command::ManageTroops(
+                crate::troop_management::ManageTroops::Transfer(
+                    crate::troop_management::TransferTroops {
+                        source: crate::troop_management::Army::Explorer(id),
+                        target: crate::troop_management::Army::Guard(
+                            crate::troop_management::GuardSlot { structure_id: 1, slot: 0 },
+                        ),
+                        amount: RESOURCE_PRECISION,
+                    },
+                ),
+            ),
+            351,
+            351,
+        ),
+    );
+    assert!(
+        execute_in_game(
+            d, game_id, Command::ManageTroops(crate::troop_management::ManageTroops::RemoveExplorer(id)), 351, 351,
+        ),
+    );
+    assert_eq!(resources.resource_balance(slot), before);
+}

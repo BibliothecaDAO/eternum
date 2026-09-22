@@ -437,6 +437,16 @@ export interface Config {
     };
     limit: {
       guardResurrectionDelay: number;
+      settlementArmies: number;
+      cityArmies: number;
+      kingdomArmies: number;
+      empireArmies: number;
+      settlementGuardSlots: number;
+      cityGuardSlots: number;
+      kingdomGuardSlots: number;
+      empireGuardSlots: number;
+      startingGuard: number;
+
       mercenariesTroopLowerBound: number;
       mercenariesTroopUpperBound: number;
       settlementDeploymentCap: number;

@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "e44237ff184f9850a16937941083b5c048c57ecc84499d84f487d4de76eb3ac0",
+  "schemaIdentity": "2170436a6b296c107b1d4fd48f831e5162d58cb564c224b17063a28a7d7f592c",
   "commandAbi": [
     {
       "type": "impl",
@@ -1836,6 +1836,42 @@
         {
           "name": "t3_tier_modifier",
           "type": "core::integer::u8"
+        },
+        {
+          "name": "settlement_armies",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "city_armies",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "kingdom_armies",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "empire_armies",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "settlement_guard_slots",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "city_guard_slots",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "kingdom_guard_slots",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "empire_guard_slots",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "starting_guard",
+          "type": "core::integer::u32"
         }
       ]
     },

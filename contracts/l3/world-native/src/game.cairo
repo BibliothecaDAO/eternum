@@ -50,7 +50,6 @@ pub trait IGame<T> {
     fn ownership_rules_ready(self: @T, game_id: u32) -> bool;
     fn game(self: @T, game_id: u32) -> GameRegistry;
     fn rules(self: @T, game_id: u32) -> SliceRules;
-    fn initialize_game(ref self: T, game_id: u32, game: GameRegistry, rules: SliceRules);
     fn write_game(ref self: T, game_id: u32, game: GameRegistry);
     fn start_blitz(ref self: T, game_id: u32, timestamp: u64);
     fn allocate_entity(ref self: T, game_id: u32) -> u32;
@@ -121,7 +120,6 @@ pub mod GameState {
     pub struct Storage {
         pub games: Map<u32, GameRegistry>,
         pub rules: Map<u32, SliceRules>,
-        pub exists: Map<u32, bool>,
         pub next_entity: Map<u32, u32>,
         pub ownership_rules_ready: Map<u32, bool>,
     }
@@ -133,7 +131,7 @@ pub mod GameState {
     #[generate_trait]
     pub impl InternalImpl<TContractState, +HasComponent<TContractState>> of InternalTrait<TContractState> {
         fn game(self: @ComponentState<TContractState>, game_id: u32) -> GameRegistry {
-            assert!(self.exists.read(game_id), "game does not exist");
+            assert!(self.ownership_rules_ready.read(game_id), "game does not exist");
             self.games.read(game_id)
         }
         #[inline(never)]
@@ -142,7 +140,7 @@ pub mod GameState {
             self.rules.read(game_id)
         }
         fn create(ref self: ComponentState<TContractState>, game_id: u32, game: GameRegistry, rules: SliceRules) {
-            assert!(game_id != 0 && !self.exists.read(game_id), "game already exists or reserved");
+            assert!(game_id != 0 && !self.ownership_rules_ready.read(game_id), "game already exists or reserved");
             assert!(game.creator != 0.try_into().unwrap() && game.preset_id != 0, "invalid game identity");
             assert!(
                 game.start_main_at >= game.start_settling_at && game.end_at > game.start_main_at, "invalid game times",
@@ -164,7 +162,6 @@ pub mod GameState {
                         values: array![1].span(),
                     },
                 );
-            self.exists.write(game_id, true);
             self.next_entity.write(game_id, 1);
             self.write_game(game_id, game);
             let mut values = array![];

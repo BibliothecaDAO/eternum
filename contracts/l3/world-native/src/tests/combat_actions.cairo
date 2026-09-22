@@ -676,3 +676,61 @@ fn guard_targeting_preserves_highest_occupied_functional_slot_first() {
         999.try_into().unwrap(),
     );
 }
+
+#[test]
+fn unowned_target_rule_rejects_owned_sites_and_allows_capture_of_an_unowned_site() {
+    let mut rules = super::recorded::rules();
+    rules.mode_rules = crate::rules::UNOWNED_TARGETS;
+    rules.battle_config.regular_immunity_ticks = 0;
+    rules.troop_stamina_config.stamina_initial = 120;
+    let (d, home, target) = super::resource_commands::setup_with_rules(rules);
+    grant(d, home, 26, 100 * RESOURCE_PRECISION);
+    assert!(
+        execute(
+            d,
+            Command::CreateExplorer(
+                CreateExplorer {
+                    structure_id: home.entity_id, category: 0, tier: 0, amount: 100 * RESOURCE_PRECISION, direction: 0,
+                },
+            ),
+            80,
+        ),
+    );
+    let structures = IStructuresDispatcher { contract_address: d.peers.structures };
+    let attacker = *structures.structure(home).unwrap().troop_explorers.at(0);
+    move_fixture(d, attacker, 2000009);
+    let mut record = structures.structure(target).unwrap();
+    record.owner = 999.try_into().unwrap();
+    set_fixture(
+        d.peers.structures,
+        selector!("structures"),
+        array![3, target.entity_id.into()].span(),
+        StructureRecord {
+            owner: record.owner,
+            base: record.base,
+            resources_packed: record.resources_packed,
+            metadata: record.metadata,
+        },
+    );
+    let command = Command::BattleGuard(
+        crate::commands::Battle { attacker_id: attacker, defender_id: target.entity_id },
+    );
+    let before = troop(d, attacker);
+    assert_terminal_rejection(d, command, 80);
+    assert_eq!(troop(d, attacker), before);
+    assert_eq!(structures.structure(target).unwrap().owner, record.owner);
+    record.owner = 0.try_into().unwrap();
+    set_fixture(
+        d.peers.structures,
+        selector!("structures"),
+        array![3, target.entity_id.into()].span(),
+        StructureRecord {
+            owner: record.owner,
+            base: record.base,
+            resources_packed: record.resources_packed,
+            metadata: record.metadata,
+        },
+    );
+    assert!(execute(d, command, 80));
+    assert_eq!(structures.structure(target).unwrap().owner, d.actor);
+}

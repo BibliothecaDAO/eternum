@@ -55,6 +55,14 @@ pub fn validate(preset: PresetDefinition) {
         map.shards_mines_win_probability == 0 || !preset.resources.surface_mines.is_empty(), "empty enabled mine pool",
     );
     let troops = preset.rules.troop_limit_config;
+    assert!(
+        troops.settlement_guard_slots <= 4
+            && troops.city_guard_slots <= 4
+            && troops.kingdom_guard_slots <= 4
+            && troops.empire_guard_slots <= 4,
+        "invalid guard slot limit",
+    );
+
     assert!(troops.mercenaries_troop_lower_bound < troops.mercenaries_troop_upper_bound, "invalid mercenary bounds");
     if crate::rules::rule_enabled(preset.rules, crate::rules::DISCOVER_CAMPS) && map.camp_win_probability != 0 {
         let mut labor_rate = None;

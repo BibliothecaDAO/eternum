@@ -87,10 +87,6 @@ pub mod RegistryDomain {
         fn rules(self: @ContractState, game_id: u32) -> SliceRules {
             self.games.rules(game_id)
         }
-        fn initialize_game(ref self: ContractState, game_id: u32, game: GameRegistry, rules: SliceRules) {
-            self.lifecycle.assert_configurator();
-            self.games.create(game_id, game, rules);
-        }
         fn start_blitz(ref self: ContractState, game_id: u32, timestamp: u64) {
             assert!(get_caller_address() == self.lifecycle.require_active().settlement, "only settlement domain");
             assert!(self.games.rules(game_id).entry_rule == crate::rules::ENTRY_ROSTER, "fixed roster required");

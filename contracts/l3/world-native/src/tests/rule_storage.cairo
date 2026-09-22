@@ -70,6 +70,15 @@ fn trooplimitconfig_packing_preserves_every_field(
         t1_tier_modifier,
         t2_tier_modifier,
         t3_tier_modifier,
+        settlement_armies: guard_resurrection_delay,
+        city_armies: mercenaries_troop_lower_bound,
+        kingdom_armies: mercenaries_troop_upper_bound,
+        empire_armies: guard_resurrection_delay,
+        settlement_guard_slots: t1_tier_strength,
+        city_guard_slots: t2_tier_strength,
+        kingdom_guard_slots: t3_tier_strength,
+        empire_guard_slots: t1_tier_modifier,
+        starting_guard: city_deployment_cap,
     };
     assert!(TroopLimitConfigPacking::unpack(TroopLimitConfigPacking::pack(value)) == value);
     assert!(Store::<TroopLimitConfig>::size() == 3);

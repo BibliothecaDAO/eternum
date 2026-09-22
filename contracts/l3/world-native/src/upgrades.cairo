@@ -104,12 +104,12 @@ pub mod UpgradeState {
     }
 }
 
-pub fn troop_limits(level: u8) -> (u16, u8) {
+pub fn troop_limits(config: crate::rules::TroopLimitConfig, level: u8) -> (u16, u8) {
     match level {
-        0 => (1, 1),
-        1 => (3, 2),
-        2 => (5, 3),
-        3 => (8, 4),
+        0 => (config.settlement_armies, config.settlement_guard_slots),
+        1 => (config.city_armies, config.city_guard_slots),
+        2 => (config.kingdom_armies, config.kingdom_guard_slots),
+        3 => (config.empire_armies, config.empire_guard_slots),
         _ => panic!("unsupported troop limit level"),
     }
 }

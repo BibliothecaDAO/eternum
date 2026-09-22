@@ -236,9 +236,7 @@ fn ethereal_discovery_never_draws_from_the_ordinary_mine_pool() {
     rules.bitcoin_mine_config.enabled = false;
     rules.map_config.shards_mines_win_probability = 1;
     rules.map_config.shards_mines_fail_probability = 0;
-    start_cheat_caller_address(d.peers.registry, super::authority());
-    game.initialize_game(3, game.game(1), rules);
-    stop_cheat_caller_address(d.peers.registry);
+    super::recorded::seed_game(d.peers.registry, 3, game.game(1), rules);
     start_cheat_caller_address(d.peers.resources, super::authority());
     IMineRulesDispatcher { contract_address: d.peers.resources }.configure_mines(3, kinds(), surface());
     stop_cheat_caller_address(d.peers.resources);
