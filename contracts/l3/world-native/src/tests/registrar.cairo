@@ -1004,6 +1004,8 @@ fn assert_expedition_capture(depth: u8) {
                     camp_reward_max: (Into::<u16, u128>::into(index) + 1) * 100 * RESOURCE_PRECISION,
                     mine_chest: index != 0,
                     reveal_site_neighbors: false,
+                    entry_stamina: 0,
+                    attunement_cost: 0,
                 },
             );
     }
@@ -1152,4 +1154,111 @@ fn assert_expedition_capture(depth: u8) {
     }
     assert!(resources.production_receiver(mine).is_none());
     assert_eq!(resources.resource_production(mine).production_rate, 0);
+}
+
+#[test]
+fn depth_entry_requires_attunement_and_spends_only_the_selected_depth_stamina() {
+    let d = setup();
+    let mut preset = definition(true);
+    preset.rules.entry_rule = crate::rules::ENTRY_OPEN;
+    preset.rules.epoch_seconds = 100;
+    preset.rules.mode_rules = HOME_REWARDS | crate::rules::DEPTH_CONTENTS;
+    preset.rules.command_mask = 0xffffffffffffffffffffffffffffffff;
+    preset.settlement.spacing = 1024;
+    preset.rules.troop_limit_config.starting_guard = 0;
+    preset.rules.troop_limit_config.settlement_armies = 3;
+    preset.rules.troop_stamina_config.stamina_initial = 150;
+    preset.rules.troop_stamina_config.stamina_knight_max = 150;
+    preset.rules.troop_stamina_config.stamina_gain_per_tick = 0;
+    let mut depths = array![];
+    for depth in 0_u16..4 {
+        depths
+            .append(
+                crate::expeditions::DepthRules {
+                    supply_multiplier: depth + 1,
+                    guard_lower: depth + 1,
+                    guard_upper: depth + 2,
+                    mine_cap_min: 100 * RESOURCE_PRECISION,
+                    mine_cap_max: 100 * RESOURCE_PRECISION,
+                    mine_rate: RESOURCE_PRECISION.try_into().unwrap(),
+                    camp_reward_min: 100 * RESOURCE_PRECISION,
+                    camp_reward_max: 100 * RESOURCE_PRECISION,
+                    mine_chest: depth != 0,
+                    reveal_site_neighbors: false,
+                    entry_stamina: if depth == 0 {
+                        0
+                    } else {
+                        20 + 10 * depth
+                    },
+                    attunement_cost: Into::<u16, u128>::into(depth) * 100 * RESOURCE_PRECISION,
+                },
+            );
+    }
+    preset.settlement.depths = depths.span();
+    registry(d).register_preset(1, preset);
+    let game_id = registry(d)
+        .create_game(
+            CreateGameParams { dev_mode_on: true, end_grace_seconds: 0, duration_seconds: 500, ..params(false) },
+            preset,
+        );
+    super::resource_commands::set_fixture(d.peers.settlement, selector!("catalogue_count"), array![].span(), 8000_u32);
+    super::resource_commands::set_fixture(d.peers.settlement, selector!("traits"), array![1].span(), 0x4000001_u32);
+    assert!(
+        execute_in_game(
+            d,
+            game_id,
+            Command::SettleSeason(crate::realms::SettleSeason { name: 'home', selected_realm: Some(1) }),
+            350,
+            350,
+        ),
+    );
+    let home = ResourceKey { game_id, entity_id: 1 };
+    let resources = IResourcesDispatcher { contract_address: d.peers.resources };
+    let essence = ResourceSlot { game_id, entity_id: 1, resource_type: 38 };
+    start_cheat_caller_address(d.peers.resources, d.peers.structures);
+    resources.grant_resource(home, 26, 10 * RESOURCE_PRECISION, 350);
+    resources.grant_resource(home, 38, 1000 * RESOURCE_PRECISION, 350);
+    stop_cheat_caller_address(d.peers.resources);
+    let structures = IStructuresDispatcher { contract_address: d.peers.structures };
+    let troops = ITroopsDispatcher { contract_address: d.peers.troops };
+    let buy = Command::BuyRealmUpgrade(
+        crate::upgrades::BuyRealmUpgrade { structure_id: 1, lane: crate::upgrades::RealmUpgradeLane::Attunement },
+    );
+    for depth in 1_u8..4 {
+        assert!(
+            execute_in_game(
+                d,
+                game_id,
+                Command::CreateExplorer(
+                    CreateExplorer {
+                        structure_id: 1, category: 0, tier: 0, amount: RESOURCE_PRECISION, direction: depth - 1,
+                    },
+                ),
+                351,
+                351,
+            ),
+        );
+        let explorer_id = *structures.structure(home).unwrap().troop_explorers.at((depth - 1).into());
+        let key = ExplorerKey { game_id, explorer_id };
+        let before = troops.explorer(key).unwrap();
+        let enter = Command::EnterDepth(crate::commands::EnterDepth { explorer_id, depth });
+        assert!(!execute_in_game(d, game_id, enter, 351, 351));
+        assert_eq!(troops.explorer(key).unwrap(), before);
+        let balance = resources.resource_balance(essence);
+        assert!(execute_in_game(d, game_id, buy, 351, 351));
+        assert_eq!(structures.structure(home).unwrap().metadata.attunement, depth);
+        let after_purchase = resources.resource_balance(essence);
+        assert_eq!(balance - after_purchase, Into::<u8, u128>::into(depth) * 100 * RESOURCE_PRECISION);
+        assert!(execute_in_game(d, game_id, enter, 351, 351));
+        let inside = troops.explorer(key).unwrap();
+        assert_eq!(inside.coord.x, before.coord.x);
+        assert_eq!(inside.coord.y, before.coord.y + Into::<u8, u32>::into(depth) * preset.settlement.spacing);
+        assert_eq!(inside.troops.stamina.amount, 150 - (20 + Into::<u8, u64>::into(depth) * 10));
+        assert_eq!(resources.resource_balance(essence), after_purchase);
+        assert!(!execute_in_game(d, game_id, enter, 351, 351));
+        assert_eq!(troops.explorer(key).unwrap(), inside);
+    }
+    let balance = resources.resource_balance(essence);
+    assert!(!execute_in_game(d, game_id, buy, 351, 351));
+    assert_eq!(resources.resource_balance(essence), balance);
 }

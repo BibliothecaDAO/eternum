@@ -738,6 +738,14 @@ pub mod SeasonDomain {
                 value.serialize(ref calldata);
                 (peers.structures, selector!("create_reserved_hyperstructure"))
             },
+            Command::EnterDepth(value) => {
+                value.serialize(ref calldata);
+                (peers.troops, selector!("enter_depth"))
+            },
+            Command::BuyRealmUpgrade(value) => {
+                value.serialize(ref calldata);
+                (peers.structures, selector!("buy_realm_upgrade"))
+            },
             Command::LevelUp(value) => {
                 value.serialize(ref calldata);
                 (peers.structures, selector!("level_up"))

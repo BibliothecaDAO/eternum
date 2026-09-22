@@ -68,6 +68,8 @@ pub struct DepthRules {
     pub camp_reward_max: u128,
     pub mine_chest: bool,
     pub reveal_site_neighbors: bool,
+    pub entry_stamina: u16,
+    pub attunement_cost: u128,
 }
 
 #[starknet::interface]

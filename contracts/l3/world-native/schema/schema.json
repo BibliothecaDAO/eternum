@@ -1874,6 +1874,30 @@
         },
         {
           "type": "function",
+          "name": "enter_depth",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "command",
+              "type": "world_native::commands::EnterDepth"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
           "name": "move_explorer",
           "inputs": [
             {
@@ -2842,6 +2866,30 @@
             }
           ],
           "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "buy_realm_upgrade",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "command",
+              "type": "world_native::upgrades::BuyRealmUpgrade"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
         },
         {
           "type": "function",
@@ -10102,7 +10150,7 @@
           "name": "metadata",
           "type": "world_native::structures::StructureMetadata",
           "id": "0x6d65746164617461",
-          "feltLength": 5
+          "feltLength": 6
         }
       ],
       "keyLength": 2,
@@ -11391,10 +11439,22 @@
           "type": "core::bool",
           "id": "0x72657665616c5f736974655f6e65696768626f7273",
           "feltLength": 1
+        },
+        {
+          "name": "entry_stamina",
+          "type": "core::integer::u16",
+          "id": "0x656e7472795f7374616d696e61",
+          "feltLength": 1
+        },
+        {
+          "name": "attunement_cost",
+          "type": "core::integer::u128",
+          "id": "0x617474756e656d656e745f636f7374",
+          "feltLength": 1
         }
       ],
       "keyLength": 2,
-      "valueLength": 10,
+      "valueLength": 12,
       "observation": {
         "domain": "expedition",
         "fields": {
@@ -13817,6 +13877,14 @@
         {
           "name": "SetEntityName",
           "type": "world_native::names::SetEntityName"
+        },
+        {
+          "name": "EnterDepth",
+          "type": "world_native::commands::EnterDepth"
+        },
+        {
+          "name": "BuyRealmUpgrade",
+          "type": "world_native::upgrades::BuyRealmUpgrade"
         }
       ]
     },
@@ -13842,6 +13910,20 @@
         },
         {
           "name": "direction",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
+    "world_native::commands::EnterDepth": {
+      "type": "struct",
+      "name": "world_native::commands::EnterDepth",
+      "members": [
+        {
+          "name": "explorer_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "depth",
           "type": "core::integer::u8"
         }
       ]
@@ -13971,6 +14053,14 @@
         {
           "name": "reveal_site_neighbors",
           "type": "core::bool"
+        },
+        {
+          "name": "entry_stamina",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "attunement_cost",
+          "type": "core::integer::u128"
         }
       ]
     },
@@ -16929,6 +17019,10 @@
         {
           "name": "mine_kind",
           "type": "core::integer::u8"
+        },
+        {
+          "name": "attunement",
+          "type": "core::integer::u8"
         }
       ]
     },
@@ -17414,6 +17508,30 @@
         }
       ]
     },
+    "world_native::upgrades::BuyRealmUpgrade": {
+      "type": "struct",
+      "name": "world_native::upgrades::BuyRealmUpgrade",
+      "members": [
+        {
+          "name": "structure_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "lane",
+          "type": "world_native::upgrades::RealmUpgradeLane"
+        }
+      ]
+    },
+    "world_native::upgrades::RealmUpgradeLane": {
+      "type": "enum",
+      "name": "world_native::upgrades::RealmUpgradeLane",
+      "variants": [
+        {
+          "name": "Attunement",
+          "type": "()"
+        }
+      ]
+    },
     "world_native::upgrades::UpgradeLimits": {
       "type": "struct",
       "name": "world_native::upgrades::UpgradeLimits",
@@ -17579,5 +17697,5 @@
       ]
     }
   },
-  "identity": "ffa84c32c8e99b1b49659bad4933ebd93bd370db5eae529740ca0f52f4127526"
+  "identity": "88d24bbc123aa2de8b78c0f8cfbd7b506fd44d17fbcf6b72b4524ff7e1a7e535"
 }

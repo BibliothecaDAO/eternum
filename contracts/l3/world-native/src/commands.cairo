@@ -33,6 +33,12 @@ pub struct ToggleAlternate {
     pub spire_direction: u8,
 }
 
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct EnterDepth {
+    pub explorer_id: u32,
+    pub depth: u8,
+}
+
 #[derive(Drop, starknet::Event)]
 pub struct BatchProgress {
     #[key]
@@ -110,6 +116,8 @@ pub enum Command {
     WithdrawResource: crate::bridge::Withdraw,
     ProvisionAndUpgradeRealm: u32,
     SetEntityName: crate::names::SetEntityName,
+    EnterDepth: EnterDepth,
+    BuyRealmUpgrade: crate::upgrades::BuyRealmUpgrade,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
@@ -230,6 +238,7 @@ pub trait IResourceCommands<T> {
 
 #[starknet::interface]
 pub trait ITravelCommands<T> {
+    fn enter_depth(ref self: T, game_id: u32, actor: ContractAddress, command: EnterDepth, context: ExecutionContext);
     fn move_explorer(ref self: T, game_id: u32, actor: ContractAddress, command: Move, context: ExecutionContext);
     fn toggle_alternate(
         ref self: T, game_id: u32, actor: ContractAddress, command: ToggleAlternate, context: ExecutionContext,

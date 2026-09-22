@@ -65,6 +65,7 @@ function buildCommandMask(blitz: boolean): bigint {
         "Raid",
       ]
     : [];
+  disabled.push("EnterDepth", "BuyRealmUpgrade");
   let mask = Object.values(nativeCommandBits).reduce((mask, bit) => mask | BigInt(bit), 0n);
   for (const command of disabled) mask &= ~BigInt(nativeCommandBits[command]);
   return mask;
@@ -257,6 +258,8 @@ function buildSettlement(config: Config) {
       camp_reward_max: scaled(depth.campRewardMax),
       mine_chest: depth.mineChest,
       reveal_site_neighbors: depth.revealSiteNeighbors,
+      entry_stamina: depth.entryStamina,
+      attunement_cost: scaled(depth.attunementCost),
     })),
     realms: {
       resources: amounts(config.startingResources, config.resources.resourcePrecision),

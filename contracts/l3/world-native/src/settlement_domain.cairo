@@ -66,6 +66,10 @@ pub mod SettlementDomain {
             assert!(!enabled || rules.epoch_seconds != 0, "depths require expedition regions");
             for index in 0..depths.len() {
                 let value = *depths.at(index);
+                assert!(
+                    index != 0 || (value.entry_stamina == 0 && value.attunement_cost == 0),
+                    "surface needs no attunement",
+                );
                 assert!(value.supply_multiplier != 0, "zero supply multiplier");
                 assert!(value.guard_lower < value.guard_upper, "invalid depth guards");
                 assert!(value.mine_cap_min != 0 && value.mine_cap_min <= value.mine_cap_max, "invalid depth mine cap");

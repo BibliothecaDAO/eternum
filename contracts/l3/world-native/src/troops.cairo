@@ -920,6 +920,59 @@ pub mod TroopsDomain {
 
     #[abi(embed_v0)]
     impl Travel of crate::commands::ITravelCommands<ContractState> {
+        fn enter_depth(
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            command: crate::commands::EnterDepth,
+            context: ExecutionContext,
+        ) {
+            let rules = self.authorize(game_id, context);
+            assert!(rules.epoch_seconds != 0, "depth entry requires expeditions");
+            let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
+            let mut explorer = self.owned_explorer(key, actor, context.timestamp);
+            assert!(explorer.troops.count != 0, "explorer is dead");
+            let home = self.owned_structure(game_id, explorer.owner, actor);
+            assert!(command.depth != 0 && command.depth <= home.metadata.attunement, "depth is not unlocked");
+            let spacing = self.expedition_spacing(game_id);
+            let site = crate::expeditions::site(
+                self.game_dispatcher().game(game_id).start_main_at,
+                rules.epoch_seconds,
+                spacing,
+                home.metadata.realm_id,
+                context.timestamp,
+                0,
+            );
+            assert!(crate::geometry::adjacent(explorer.coord, site), "army must be beside its realm site");
+            let depth = crate::expeditions::IExpeditionRulesDispatcherTrait::depth_rules(
+                crate::expeditions::IExpeditionRulesDispatcher {
+                    contract_address: self.lifecycle.require_active().settlement,
+                },
+                game_id,
+                command.depth,
+            );
+            explorer
+                .troops
+                .stamina
+                .spend(
+                    ref explorer.troops.boosts,
+                    explorer.troops.category,
+                    explorer.troops.tier,
+                    rules.troop_stamina_config,
+                    depth.entry_stamina.into(),
+                    context.timestamp / rules.tick_config.armies_tick_in_seconds,
+                    true,
+                );
+            let destination = Coord {
+                y: explorer.coord.y + Into::<u8, u32>::into(command.depth) * spacing, ..explorer.coord,
+            };
+            let location = tile_key(game_id, destination);
+            self.reveal_expedition_tile(game_id, destination);
+            self.map_dispatcher().vacate(tile_key(game_id, explorer.coord), command.explorer_id);
+            self.map_dispatcher().occupy(location, command.explorer_id, super::explorer_occupier(explorer), false);
+            explorer.coord = destination;
+            self.troops.save(key, explorer);
+        }
         fn move_explorer(
             ref self: ContractState,
             game_id: u32,

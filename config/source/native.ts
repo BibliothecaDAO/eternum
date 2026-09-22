@@ -19,6 +19,8 @@ export const nativePresets: Record<
       campRewardMax: number;
       mineChest: boolean;
       revealSiteNeighbors: boolean;
+      entryStamina: number;
+      attunementCost: number;
     }>;
   }
 > = {

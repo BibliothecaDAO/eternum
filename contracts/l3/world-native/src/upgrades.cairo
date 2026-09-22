@@ -20,8 +20,22 @@ pub trait IUpgradeRules<T> {
     fn upgrade_recipe(self: @T, game_id: u32, level: u8) -> UpgradeRecipe;
 }
 
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub enum RealmUpgradeLane {
+    Attunement,
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct BuyRealmUpgrade {
+    pub structure_id: u32,
+    pub lane: RealmUpgradeLane,
+}
+
 #[starknet::interface]
 pub trait IStructureUpgrades<T> {
+    fn buy_realm_upgrade(
+        ref self: T, game_id: u32, actor: ContractAddress, command: BuyRealmUpgrade, context: ExecutionContext,
+    );
     fn level_up(ref self: T, game_id: u32, actor: ContractAddress, structure_id: u32, context: ExecutionContext);
 }
 

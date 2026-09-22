@@ -33,7 +33,7 @@ const structure = (owner: string, game = 1) => ({
   },
   troop_explorers: [],
   resources_packed: "0x0",
-  metadata: { realm_id: 1, village_realm: 0, mine_kind: 0, has_wonder: false, order: 0 },
+  metadata: { realm_id: 1, village_realm: 0, mine_kind: 0, attunement: 0, has_wonder: false, order: 0 },
 });
 
 describe("native fact store", () => {

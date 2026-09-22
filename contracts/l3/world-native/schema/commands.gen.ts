@@ -66,7 +66,9 @@ export const nativeCommandBits = {
   "DepositResource": "4611686018427387904",
   "WithdrawResource": "9223372036854775808",
   "ProvisionAndUpgradeRealm": "18446744073709551616",
-  "SetEntityName": "36893488147419103232"
+  "SetEntityName": "36893488147419103232",
+  "EnterDepth": "73786976294838206464",
+  "BuyRealmUpgrade": "147573952589676412928"
 } as const;
 export interface NativeCommandPayloads {
   CreateExplorer: { readonly structure_id: BigNumberish; readonly category: BigNumberish; readonly tier: BigNumberish; readonly amount: BigNumberish; readonly direction: BigNumberish };
@@ -135,5 +137,7 @@ export interface NativeCommandPayloads {
   WithdrawResource: { readonly structure_id: BigNumberish; readonly recipient: BigNumberish; readonly resource_type: BigNumberish; readonly amount: BigNumberish; readonly client_fee_recipient: BigNumberish };
   ProvisionAndUpgradeRealm: BigNumberish;
   SetEntityName: { readonly entity_id: BigNumberish; readonly name: BigNumberish };
+  EnterDepth: { readonly explorer_id: BigNumberish; readonly depth: BigNumberish };
+  BuyRealmUpgrade: { readonly structure_id: BigNumberish; readonly lane: { readonly kind: "Attunement"; readonly value: undefined } };
 }
 export type NativeCommand = { [K in keyof NativeCommandPayloads]: { kind: K; value: NativeCommandPayloads[K] } }[keyof NativeCommandPayloads];

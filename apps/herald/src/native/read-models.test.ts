@@ -35,7 +35,7 @@ function structure(id: string, category: string, owner: string) {
   return rowEvent(
     "Structure",
     ["1", id],
-    [owner, "0", "0", "0", "0", category, "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0"],
+    [owner, "0", "0", "0", "0", category, "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0"],
   );
 }
 

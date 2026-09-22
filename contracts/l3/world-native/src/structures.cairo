@@ -81,6 +81,7 @@ pub struct StructureMetadata {
     // associated with village
     pub village_realm: u32,
     pub mine_kind: u8,
+    pub attunement: u8,
 }
 const ORDER_SCALE: u128 = 0x10000;
 const WONDER_SCALE: u128 = 0x1000000;
@@ -98,6 +99,7 @@ pub impl StructureMetadataPacking of starknet::storage_access::StorePacking<Stru
             + wonder * WONDER_SCALE
             + value.village_realm.into() * CONNECTED_REALM_SCALE
             + value.mine_kind.into() * MINE_KIND_SCALE
+            + value.attunement.into() * 0x1000000000000000000
     }
     fn unpack(value: u128) -> StructureMetadata {
         StructureMetadata {
@@ -105,7 +107,8 @@ pub impl StructureMetadataPacking of starknet::storage_access::StorePacking<Stru
             order: (value / ORDER_SCALE % 256).try_into().unwrap(),
             has_wonder: value / WONDER_SCALE % 2 != 0,
             village_realm: (value / CONNECTED_REALM_SCALE % COORDINATE_SCALE).try_into().unwrap(),
-            mine_kind: (value / MINE_KIND_SCALE).try_into().unwrap(),
+            mine_kind: (value / MINE_KIND_SCALE % 256).try_into().unwrap(),
+            attunement: (value / 0x1000000000000000000).try_into().unwrap(),
         }
     }
 }
@@ -323,6 +326,7 @@ pub trait IStructures<T> {
 pub mod StructuresDomain {
     use starknet::storage::{
         Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess,
+        StoragePointerWriteAccess,
     };
     use starknet::{ContractAddress, get_block_timestamp, get_caller_address};
     use crate::buildings::{Building, BuildingKey, BuildingState, StructureBuildings};
@@ -783,6 +787,52 @@ pub mod StructuresDomain {
 
     #[abi(embed_v0)]
     impl Upgrades of crate::upgrades::IStructureUpgrades<ContractState> {
+        fn buy_realm_upgrade(
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            command: crate::upgrades::BuyRealmUpgrade,
+            context: ExecutionContext,
+        ) {
+            let peers = self.lifecycle.require_active();
+            assert!(get_caller_address() == peers.season, "only authenticated command domain");
+            crate::commands::assert_context_time(context.timestamp);
+            assert_playing(self.game_dispatcher().game(game_id), context.timestamp);
+            let key = ResourceKey { game_id, entity_id: command.structure_id };
+            let mut record = self.structures.record(key);
+            assert!(record.owner == actor && record.base.category == 1, "actor does not own realm");
+            match command.lane {
+                crate::upgrades::RealmUpgradeLane::Attunement => {
+                    assert!(record.metadata.attunement < 3, "attunement is complete");
+                    let next = record.metadata.attunement + 1;
+                    let depth = crate::expeditions::IExpeditionRulesDispatcherTrait::depth_rules(
+                        crate::expeditions::IExpeditionRulesDispatcher { contract_address: peers.settlement },
+                        game_id,
+                        next,
+                    );
+                    self.spend(key, 38, depth.attunement_cost, context.timestamp);
+                    record.metadata.attunement = next;
+                },
+            }
+            self.structures.structures.entry((game_id, command.structure_id)).metadata.write(record.metadata);
+            let mut values = array![];
+            record.metadata.serialize(ref values);
+            self
+                .emit(
+                    Event::StructureEvent(
+                        StructureState::Event::RowMemberSet(
+                            crate::events::RowMemberSet {
+                                version: 1,
+                                model: 'Structure',
+                                member: 'metadata',
+                                keys: array![game_id.into(), command.structure_id.into()].span(),
+                                values: values.span(),
+                            },
+                        ),
+                    ),
+                );
+        }
+
         fn level_up(
             ref self: ContractState, game_id: u32, actor: ContractAddress, structure_id: u32, context: ExecutionContext,
         ) {
