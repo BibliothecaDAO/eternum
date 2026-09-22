@@ -81,7 +81,6 @@
     "typecheck": "pnpm --dir ./apps/game typecheck && pnpm --dir ./apps/realtime-server typecheck",
     "test": "pnpm --recursive run test",
     "check:forbidden-hosts": "node --test scripts/check-forbidden-hosts.test.mjs && node scripts/check-forbidden-hosts.mjs",
-    "smoke:game-client": "tsx packages/core/scripts/run-game-client-headless.mjs",
     "lab:deploy-gameplay": "bun deploy/athanor/scripts/deploy-gameplay-contracts.ts",
     "lab:harness": "bun deploy/athanor/harness/run.ts",
     "lab:slice:prepare-authority": "bun deploy/athanor/harness/native/prepare-authority.ts",
