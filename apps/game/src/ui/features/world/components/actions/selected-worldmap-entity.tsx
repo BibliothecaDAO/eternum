@@ -1,4 +1,5 @@
 import { ChestTileDetails } from "./chest-tile-details";
+import { SpireDepthActions } from "./spire-depth-actions";
 import { useTileAt } from "@/hooks/helpers/use-tile-at";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useRelicCrateOpening } from "@/hooks/store/use-relic-crate-store";
@@ -252,6 +253,8 @@ const SelectedArmyTilePanel = ({
         compact
         layoutVariant="banner"
       />
+
+      <SpireDepthActions armyEntityId={armyEntityId} />
 
       <BiomeSummaryCard
         biome={biome}

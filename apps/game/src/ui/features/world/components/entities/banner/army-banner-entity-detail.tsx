@@ -183,6 +183,11 @@ const ArmyBannerEntityDetailContent = memo(
               rightAccessory={hasWarnings && movementReadiness ? <ArmyWarning readiness={movementReadiness} /> : null}
             />
           ) : null}
+          {derivedData.staminaDisplay && derivedData.staminaDisplay.secondsUntilFull > 0 ? (
+            <p className="text-[10px] text-gold/60">
+              Rested in {formatRestTime(derivedData.staminaDisplay.secondsUntilFull)}
+            </p>
+          ) : null}
           {showRelicsInline && (
             <CompactEntityInventory
               resources={explorerResources}
@@ -253,6 +258,12 @@ export const ArmyBannerEntityDetail = memo(
 );
 
 ArmyBannerEntityDetail.displayName = "ArmyBannerEntityDetail";
+
+const formatRestTime = (seconds: number): string => {
+  const minutes = Math.ceil(seconds / 60);
+  if (minutes < 60) return `${minutes} min`;
+  return `${Math.floor(minutes / 60)} h ${String(minutes % 60).padStart(2, "0")} min`;
+};
 
 const InlineStaminaBar = ({
   currentStamina,

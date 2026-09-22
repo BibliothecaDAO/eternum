@@ -249,10 +249,29 @@ interface GameEntryModalProps {
   entryIntent?: "play" | "settle";
 }
 
+interface SettlementCopy {
+  title: string;
+  description: string;
+  action: string;
+}
+
+const ETERNUM_SETTLEMENT_COPY: SettlementCopy = {
+  title: "Settle Into The Game",
+  description: "Settle to create your starting realm at a random location.",
+  action: "Settle",
+};
+
+const FRONTIER_SETTLEMENT_COPY: SettlementCopy = {
+  title: "Found your realm",
+  description: "Name it once. It is raised again on every new map with everything you build.",
+  action: "Found a realm",
+};
+
 /**
  * Settlement phase - shows settlement wizard
  */
 const SettlementPhase = ({
+  copy,
   stage,
   settledCount,
   expectedSettlementCount,
@@ -261,7 +280,9 @@ const SettlementPhase = ({
   onEnterGame,
   errorMessage,
   canSettle = true,
+  children,
 }: {
+  copy: SettlementCopy;
   canSettle?: boolean;
   stage: SettleStage;
   settledCount: number;
@@ -270,6 +291,7 @@ const SettlementPhase = ({
   onSettle: () => void;
   onEnterGame: () => void;
   errorMessage: string | null;
+  children?: React.ReactNode;
 }) => {
   const realmLabel = expectedSettlementCount === 1 ? "realm" : "realms";
   const isSettlementSyncing = stage === "syncing";
@@ -298,20 +320,18 @@ const SettlementPhase = ({
       <div className="text-center mb-4">
         <img src="/images/logos/eternum-loader.png" className="mx-auto w-20 mb-3" alt="Settlement" />
         <h2 className="text-lg font-semibold text-gold">
-          {isSettlementComplete
-            ? "Settlement Complete!"
-            : isSettlementSyncing
-              ? "Finalizing Settlement"
-              : "Settle Into The Game"}
+          {isSettlementComplete ? "Settlement Complete!" : isSettlementSyncing ? "Finalizing Settlement" : copy.title}
         </h2>
         <p className="text-xs text-gold/60 mt-1">
           {isSettlementComplete
             ? `Your ${realmLabel} ${expectedSettlementCount === 1 ? "is" : "are"} ready.`
             : isSettlementSyncing
               ? "Your settlement was submitted. Waiting for confirmation."
-              : `Settle to create your starting ${realmLabel} at a random location.`}
+              : copy.description}
         </p>
       </div>
+
+      {!isSettlementComplete && !isSettlementSyncing && children}
 
       {/* Progress bar */}
       <div className="space-y-2 mb-4">
@@ -413,7 +433,7 @@ const SettlementPhase = ({
           ) : (
             <div className="flex items-center justify-center gap-2">
               <TreasureChest className="w-4 h-4 " />
-              <span>Settle</span>
+              <span>{copy.action}</span>
             </div>
           )}
         </Button>
@@ -864,6 +884,14 @@ export const GameEntryModal = ({
   const worldMode = worldMeta?.mode ?? "unknown";
   const isBlitzMode = worldMode === "blitz";
   const isEternumMode = worldMode === "eternum";
+  const isFrontierMode = worldMode === "frontier";
+  // Eternum and Frontier both settle one realm from here; Blitz realms are settled by the launch service.
+  const isSeasonMode = isEternumMode || isFrontierMode;
+  const [realmName, setRealmName] = useState("");
+  const realmNameFelt = useMemo(
+    () => (account?.address ? resolvePlayerNameFelt(account.address, realmName.trim() || accountName) : null),
+    [account?.address, accountName, realmName],
+  );
   const isDevMode = worldMeta?.devModeOn === true;
   const isEternumDevMode = isEternumMode && isDevMode;
   const [devRealmNumber, setDevRealmNumber] = useState("1");
@@ -1038,6 +1066,7 @@ export const GameEntryModal = ({
     setIsSubmittingVillageSettlement(false);
     setVillageSettlementError(null);
     setVillageRevealResult(null);
+    setRealmName("");
   }, []);
 
   const beginEntityWait = useCallback((): AbortSignal => {
@@ -1092,6 +1121,7 @@ export const GameEntryModal = ({
     isSpectateMode,
     settlementCheckComplete: checksComplete,
   });
+  const settlementCopy = isFrontierMode ? FRONTIER_SETTLEMENT_COPY : ETERNUM_SETTLEMENT_COPY;
   const bootstrapStatus: "idle" | "pending-world" | "loading" | "ready" | "error" = preflightError
     ? "error"
     : isCheckingWorldAvailability || !entryPreflightComplete
@@ -1150,7 +1180,7 @@ export const GameEntryModal = ({
       worldMode,
       isCheckingWorldAvailability,
       hasWorldMeta: worldMeta != null,
-      isEternumMode,
+      isSeasonMode,
       isLoadingVillagePrereqs,
       hasVillageRevealResult: villageRevealResult != null,
       settlementMode,
@@ -1178,7 +1208,7 @@ export const GameEntryModal = ({
     needsSettlement,
     canPlay,
     seasonTimingValid,
-    isEternumMode,
+    isSeasonMode,
     isLoadingVillagePrereqs,
     isCheckingWorldAvailability,
     hasVillagePass,
@@ -1291,8 +1321,8 @@ export const GameEntryModal = ({
       return;
     }
 
-    if (!isEternumMode) {
-      debugLog(worldName, "Skipping settlement check - only Eternum settles from this modal");
+    if (!isSeasonMode) {
+      debugLog(worldName, "Skipping settlement check - Blitz realms are settled by the launch service");
       return;
     }
 
@@ -1333,7 +1363,7 @@ export const GameEntryModal = ({
     void checkSettlementStatus();
   }, [
     account,
-    isEternumMode,
+    isSeasonMode,
     isOpen,
     isSpectateMode,
     worldName,
@@ -1499,7 +1529,7 @@ export const GameEntryModal = ({
 
   // Settlement is an authenticated, recorded action.
   const handleSettle = useCallback(async () => {
-    if (!isEternumMode) {
+    if (!isSeasonMode) {
       debugLog(worldName, "Settlement requires a resolved game mode");
       return;
     }
@@ -1516,7 +1546,8 @@ export const GameEntryModal = ({
         throw new Error("World configuration is still loading. Please wait a moment and try again.");
       }
       const signer = account as unknown as Account;
-      if (!usernameFelt) {
+      const settlementName = isFrontierMode ? realmNameFelt : usernameFelt;
+      if (!settlementName) {
         throw new Error("Unable to resolve player name for settlement.");
       }
 
@@ -1542,7 +1573,7 @@ export const GameEntryModal = ({
       await submitSettlement(worldMeta, signer, (client) =>
         client.setup.systemCalls.settle_season({
           signer,
-          name: usernameFelt,
+          name: settlementName,
           selectedRealm: isEternumDevMode ? Number(devRealmNumber) : undefined,
         }),
       );
@@ -1574,12 +1605,15 @@ export const GameEntryModal = ({
     finalizeFailedSettlement,
     finalizeSuccessfulSettlement,
     isEternumMode,
+    isFrontierMode,
+    isSeasonMode,
     isEternumDevMode,
     devRealmNumber,
     refetchOwnedStructures,
     markSettling,
     syncSettlementStateFromSnapshot,
     usernameFelt,
+    realmNameFelt,
     waitForSettlementTarget,
     worldMeta,
     worldName,
@@ -1756,12 +1790,13 @@ export const GameEntryModal = ({
                 <BlitzSpectatePhase ended={blitzEntry === "review"} onSpectate={handleSpectate} />
               </motion.div>
             )}
-            {phase === "settlement" && isEternumMode && (
+            {phase === "settlement" && isSeasonMode && (
               <motion.div key="settlement" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                 {isEternumDevMode && (
                   <RealmNumberPicker value={devRealmNumber} onChange={setDevRealmNumber} disabled={isSettling} />
                 )}
                 <SettlementPhase
+                  copy={settlementCopy}
                   canSettle={!isEternumDevMode || validDevRealmNumber}
                   stage={settleStage}
                   settledCount={settledRealmCount}
@@ -1772,7 +1807,21 @@ export const GameEntryModal = ({
                   onSettle={handleSettle}
                   onEnterGame={handleEnterGame}
                   errorMessage={settleErrorMessage}
-                />
+                >
+                  {isFrontierMode && (
+                    <label className="mb-4 block text-xs text-gold/70">
+                      Realm name
+                      <input
+                        value={realmName}
+                        maxLength={31}
+                        placeholder={accountName ?? "Your realm"}
+                        disabled={isSettling}
+                        onChange={(event) => setRealmName(event.target.value)}
+                        className="mt-1 w-full rounded-md border border-gold/20 bg-black/30 px-2 py-1.5 text-sm text-gold"
+                      />
+                    </label>
+                  )}
+                </SettlementPhase>
               </motion.div>
             )}
 
@@ -1861,7 +1910,7 @@ export const GameEntryModal = ({
                     Settle Another Realm
                   </Button>
                 )}
-                {!isSpectateMode && (
+                {!isSpectateMode && isEternumMode && (
                   <Button
                     onClick={() => setSettlementMode("village")}
                     variant="outline"

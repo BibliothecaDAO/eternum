@@ -147,6 +147,15 @@ export type ExplorerRewardSystemUpdate = {
   rawAmount: bigint | number | string | null;
   timestamp: number;
 };
+/** A Frontier chest opened on capture: what the army found and how deep it stood. */
+export type ChestRewardSystemUpdate = {
+  explorerId: ID;
+  kind: "Relic" | "Cosmetic" | "Token";
+  quality: number;
+  depth: number;
+  timestamp: number;
+};
+
 /** A relic crate opened by an explorer: the contract hex it stood on and the relics it yielded. */
 export type RelicChestOpenedSystemUpdate = {
   explorerId: ID;

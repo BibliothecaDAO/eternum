@@ -18,11 +18,7 @@ interface PlayerRegistrationFields {
   hasPlayerSettledRealm: boolean | null;
 }
 
-const resolveMode = (summaryMode: WorldSummary["mode"]): ResolvedGameMode => {
-  if (summaryMode === "blitz") return "blitz";
-  if (summaryMode === "eternum") return "eternum";
-  return "unknown";
-};
+const resolveMode = (summaryMode: WorldSummary["mode"]): ResolvedGameMode => summaryMode ?? "unknown";
 
 /**
  * Map a `WorldSummary` payload into the legacy `WorldConfigMeta` shape.

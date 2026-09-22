@@ -79,6 +79,16 @@ export function PlotConstructionPicker(target: PlotConstructionTarget) {
                       </span>
                     ))}
                   </span>
+                  {building.neighbourHints.length > 0 && (
+                    <span className="block space-y-0.5 pb-1 text-left text-[10px] leading-tight text-gold/70">
+                      {building.neighbourHints.map((hint) => (
+                        <span key={hint.label} className={hint.present ? "block text-emerald-300" : "block"}>
+                          {hint.present ? "✓ " : ""}
+                          {hint.label}
+                        </span>
+                      ))}
+                    </span>
+                  )}
                   {building.disabled && (
                     <span aria-hidden="true" className="pointer-events-none absolute inset-0 bg-black/50" />
                   )}

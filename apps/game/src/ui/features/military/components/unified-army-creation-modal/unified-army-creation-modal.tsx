@@ -148,6 +148,12 @@ export const UnifiedArmyCreationBody = ({
                 </div>
               </>
             )}
+            {mode.ui.musterNotice && (
+              <>
+                <div className="border-t border-gold/15" />
+                <p className="px-1 py-1 text-[11px] text-amber-200/90">{mode.ui.musterNotice}</p>
+              </>
+            )}
           </div>
         </div>
 

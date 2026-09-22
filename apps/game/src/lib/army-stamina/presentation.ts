@@ -36,6 +36,7 @@ export const buildProjectedStaminaDisplayModel = (input: {
       displayCurrent: committedCurrent,
       committedRatio,
       displayRatio: committedRatio,
+      secondsUntilFull: 0,
     };
   }
 
@@ -49,6 +50,9 @@ export const buildProjectedStaminaDisplayModel = (input: {
   const nextTickGain = Math.max(0, Math.min(committedMax - committedCurrent, nextTickCurrent - committedCurrent));
   const displayCurrent = committedCurrent + nextTickGain * progressToNextTick;
   const displayRatio = committedMax > 0 ? Math.min(1, Math.max(committedRatio, displayCurrent / committedMax)) : 0;
+  const ticksUntilFull = nextTickGain > 0 ? Math.ceil((committedMax - committedCurrent) / nextTickGain) : 0;
+  const secondsUntilFull =
+    ticksUntilFull > 0 ? Math.max(0, input.armiesTickTimeRemaining) + (ticksUntilFull - 1) * safeTickDuration : 0;
 
   return {
     committedCurrent,
@@ -59,5 +63,6 @@ export const buildProjectedStaminaDisplayModel = (input: {
     displayCurrent,
     committedRatio,
     displayRatio,
+    secondsUntilFull,
   };
 };

@@ -7,6 +7,7 @@ import type {
   BuildingSystemUpdate,
   ExplorerRewardSystemUpdate,
   RelicChestOpenedSystemUpdate,
+  ChestRewardSystemUpdate,
 } from "./types";
 
 type Fields = Record<string, unknown>;
@@ -85,6 +86,22 @@ export class WorldUpdateListener {
             explorerId: integer(payload.explorer_id),
             hex: { x: integer(coord.x), y: integer(coord.y) },
             relics: payload.relics.map(integer) as ResourcesIds[],
+            timestamp: integer(event.timestamp),
+          });
+        }),
+    };
+  }
+
+  get ChestRewards() {
+    return {
+      onChestReward: (callback: (value: ChestRewardSystemUpdate) => void) =>
+        this.onStory("ChestReward", (payload, event) => {
+          const kind = typeof payload.kind === "string" ? payload.kind : Object.keys(fields(payload.kind) ?? {})[0];
+          callback({
+            explorerId: integer(payload.explorer_id),
+            kind: kind === "Cosmetic" || kind === "Token" ? kind : "Relic",
+            quality: integer(payload.quality),
+            depth: integer(payload.depth),
             timestamp: integer(event.timestamp),
           });
         }),

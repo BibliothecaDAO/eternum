@@ -36,18 +36,13 @@ export interface GameModeConfig {
   ui: {
     showAttackTypeSelector: boolean;
     showEndSeasonButton: boolean;
-    showMintCta: boolean;
-    showTransferResourcesToTroops: boolean;
     showExplorerCapacity: boolean;
-    showHyperstructureProgress: boolean;
-    onboardingVariant: "eternum" | "blitz";
     villageIconKey: VillageIconKey;
     showTradeMenu: boolean;
-    showBridgeMenu: boolean;
-    hyperstructuresMenuVariant: "eternum" | "blitz";
-    showBankToggle: boolean;
-    showQuestToggle: boolean;
     showGuildsTab: boolean;
+    showAutomation: boolean;
+    /** Shown on the army muster when the mode spends committed troops for good. */
+    musterNotice: string | null;
   };
   resources: {
     getTiers: () => ReturnType<typeof getResourceTiers>;
@@ -135,18 +130,12 @@ const blitzConfig: GameModeConfig = {
   ui: {
     showAttackTypeSelector: false,
     showEndSeasonButton: false,
-    showMintCta: false,
-    showTransferResourcesToTroops: false,
     showExplorerCapacity: false,
-    showHyperstructureProgress: false,
-    onboardingVariant: "blitz",
     villageIconKey: "tent",
     showTradeMenu: false,
-    showBridgeMenu: false,
-    hyperstructuresMenuVariant: "blitz",
-    showBankToggle: false,
-    showQuestToggle: false,
     showGuildsTab: false,
+    showAutomation: true,
+    musterNotice: null,
   },
   resources: {
     getTiers: () => getResourceTiers(true),
@@ -184,18 +173,12 @@ const eternumConfig: GameModeConfig = {
   ui: {
     showAttackTypeSelector: true,
     showEndSeasonButton: true,
-    showMintCta: true,
-    showTransferResourcesToTroops: true,
     showExplorerCapacity: true,
-    showHyperstructureProgress: true,
-    onboardingVariant: "eternum",
     villageIconKey: "castle",
     showTradeMenu: true,
-    showBridgeMenu: true,
-    hyperstructuresMenuVariant: "eternum",
-    showBankToggle: true,
-    showQuestToggle: true,
     showGuildsTab: true,
+    showAutomation: true,
+    musterNotice: null,
   },
   resources: {
     getTiers: () => getResourceTiers(false),
@@ -223,6 +206,11 @@ const frontierConfig: GameModeConfig = {
     shareEventLabel: "Realms Frontier",
     endgameCardTitle: "Realms Frontier",
     endgameCardSubtitle: "Season Results",
+  },
+  ui: {
+    ...blitzConfig.ui,
+    showAutomation: false,
+    musterNotice: "Committed troops do not return. What you send today is spent today, win or lose.",
   },
   resources: {
     getTiers: blitzConfig.resources.getTiers,

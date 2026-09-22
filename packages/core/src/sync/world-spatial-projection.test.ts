@@ -1,6 +1,7 @@
 import { TileOccupier } from "@bibliothecadao/types";
 import { hash } from "starknet";
 import { NativeFactStore } from "../client/native-fact-store";
+import { setBlockTimestampSource } from "../utils/timestamp";
 import explorerFixture from "../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 import type { GameSyncEntityStoreOperation } from "./game-sync-types";
 import { describe, expect, it, vi } from "vitest";
@@ -33,8 +34,13 @@ const createHarness = () => {
   const facts = new NativeFactStore();
   const aliases = new Map<string, string>();
   let notify = true;
+  // Rule facts are read through the same store interface; the harness answers them without full rows.
+  const rules = new Map<string, object>();
   const source = {
     entries: facts.entries.bind(facts),
+    get: ((model: string, keys: object) => rules.get(model) ?? facts.get(model as "TileOpt", keys as never)) as never,
+    require: ((model: string, keys: object) =>
+      rules.get(model) ?? facts.require(model as "TileOpt", keys as never)) as never,
     subscribe: (listener: Parameters<NativeFactStore["subscribe"]>[0]) =>
       facts.subscribe((changes) => {
         if (notify) listener(changes);
@@ -49,7 +55,7 @@ const createHarness = () => {
     }
   };
   const write = (
-    model: "TileOpt" | "ExplorerTroops",
+    model: "TileOpt" | "ExplorerTroops" | "Structure",
     alias: string,
     keys: (number | boolean)[],
     row: object,
@@ -126,17 +132,87 @@ const createHarness = () => {
       },
       skipUpdateStream,
     );
+  const writeExpeditionRules = (epochSeconds: number, spacing: number, startMainAt: number) => {
+    rules.set("SliceRules", { game_id: 13, epoch_seconds: epochSeconds });
+    rules.set("SettlementRules", { game_id: 13, spacing });
+    rules.set("GameRegistry", { game_id: 13, start_main_at: BigInt(startMainAt) });
+  };
+  const writeRealm = (
+    entityId: number,
+    realmId: number,
+    level: number,
+    coord = { x: 0xffffffff - realmId, y: 0xffffffff },
+  ) =>
+    write(
+      "Structure",
+      `realm-${entityId}`,
+      [13, entityId],
+      {
+        game_id: 13,
+        entity_id: entityId,
+        owner: 0x7n,
+        base: {
+          category: 1,
+          level,
+          created_at: "0x1",
+          coord_x: coord.x,
+          coord_y: coord.y,
+          alt: false,
+          troop_explorer_count: 0,
+          troop_max_guard_count: 0,
+          troop_max_explorer_count: 0,
+          starting_troops_granted: false,
+        },
+        troop_explorers: [],
+        resources_packed: "0x0",
+        metadata: {
+          realm_id: realmId,
+          village_realm: 0,
+          mine_kind: 0,
+          attunement: 0,
+          barracks_tier: 0,
+          has_wonder: false,
+          order: 0,
+        },
+      },
+      false,
+    );
   return {
     source,
     projection: new WorldSpatialProjection({ store: source, bucketSize: 4 }),
     writeTile,
     writeArmy,
+    writeExpeditionRules,
+    writeRealm,
     removeTile: (alias: string, options?: { skipUpdateStream: boolean }) => remove("TileOpt", alias, options),
     removeArmy: (alias: string, options?: { skipUpdateStream: boolean }) => remove("ExplorerTroops", alias, options),
   };
 };
 
 describe("WorldSpatialProjection", () => {
+  it("raises a Frontier realm on its day's region and moves it at rollover", () => {
+    const harness = createHarness();
+    setBlockTimestampSource(() => 86_400 * 10 + 100);
+    try {
+      harness.writeExpeditionRules(86_400, 16, 86_400 * 10);
+      harness.writeRealm(21, 3, 1);
+      harness.writeRealm(22, 4, 0, { x: 40, y: 50 });
+      harness.projection.start();
+      const surface = { alt: false, minCol: 0, maxCol: 200, minRow: 0, maxRow: 200 };
+      expect(harness.projection.getStructuresInBounds(surface)).toEqual([
+        expect.objectContaining({ entityId: 21, hexCoords: { alt: false, col: 40, row: 8 }, occupierType: 2 }),
+      ]);
+      setBlockTimestampSource(() => 86_400 * 11 + 100);
+      harness.projection.rebuild();
+      expect(harness.projection.getStructuresInBounds(surface)).toEqual([
+        expect.objectContaining({ entityId: 21, hexCoords: { alt: false, col: 40, row: 72 } }),
+      ]);
+    } finally {
+      setBlockTimestampSource(null);
+      harness.projection.dispose();
+    }
+  });
+
   it("keeps an unrevealed spawn out of terrain and path indexes without hiding its explorer", () => {
     const { projection, writeTile, writeArmy } = createHarness();
     writeTile("spawn", {

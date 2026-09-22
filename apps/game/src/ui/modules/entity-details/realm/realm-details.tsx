@@ -1,4 +1,5 @@
 import { NativeBridgePanel } from "@/ui/features/world/components/actions/native-bridge-panel";
+import { RealmLadders } from "./realm-ladders";
 import Button from "@/ui/design-system/atoms/button";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
@@ -139,6 +140,7 @@ const RealmVillageDetails = () => {
 export const RealmUpgradeCompact = () => {
   const ordersAllowed = useUIStore(canIssueOrders);
   const structureEntityId = useUIStore((state) => state.structureEntityId);
+  const ladders = <RealmLadders structureEntityId={structureEntityId} />;
   const upgradeInfo = useStructureUpgrade(structureEntityId);
   if (!upgradeInfo) return null;
 
@@ -170,6 +172,7 @@ export const RealmUpgradeCompact = () => {
             <span className="text-gold">Max</span>
           </span>
         </SectionRow>
+        {ladders}
       </div>
     );
   }
@@ -222,6 +225,7 @@ export const RealmUpgradeCompact = () => {
           </button>
         </div>
       )}
+      {ladders}
     </div>
   );
 };

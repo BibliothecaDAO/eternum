@@ -78,7 +78,7 @@ const hasQueryableGame = (worlds: readonly WorldSummary[], deployment: Shard): b
       world.chainId === deployment.chainId &&
       world.alive &&
       world.gameId != null &&
-      (world.mode === "blitz" || world.mode === "eternum"),
+      (world.mode === "blitz" || world.mode === "eternum" || world.mode === "frontier"),
   );
 
 const registrationFromDirectory = (
@@ -88,6 +88,6 @@ const registrationFromDirectory = (
   if (!playerState) return { isPlayerRegistered: null, hasPlayerSettledRealm: null };
   return {
     isPlayerRegistered: mode === "blitz" ? playerState.registered : null,
-    hasPlayerSettledRealm: mode === "eternum" ? playerState.settled : null,
+    hasPlayerSettledRealm: mode === "eternum" || mode === "frontier" ? playerState.settled : null,
   };
 };

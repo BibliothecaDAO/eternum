@@ -176,7 +176,8 @@ const GameCard = ({
   const isOngoing = game.gameStatus === "ongoing";
   const isUpcoming = game.gameStatus === "upcoming";
   const isEnded = game.gameStatus === "ended";
-  const isEternumMode = game.config?.mode === "eternum";
+  // Frontier founds a realm the way Eternum settles one: open entry, one realm, then play.
+  const isEternumMode = game.config?.mode === "eternum" || game.config?.mode === "frontier";
   const isBlitzMode = game.config?.mode === "blitz";
   const isUnknownMode = game.config?.mode === "unknown" || !game.config?.mode;
   const hasSettledEternumRealm = isEternumMode && game.config?.hasPlayerSettledRealm === true;
@@ -184,7 +185,11 @@ const GameCard = ({
   const canOpenEternumEntry = isEternumMode && !isEnded;
   const canPlayEternumDirect = canOpenEternumEntry && hasSettledEternumRealm;
   const showEternumSettleShortcut = canOpenEternumEntry && hasSettledEternumRealm;
-  const eternumPrimaryActionLabel = canPlayEternumDirect ? "Play" : "Settle";
+  const eternumPrimaryActionLabel = canPlayEternumDirect
+    ? "Play"
+    : game.config?.mode === "frontier"
+      ? "Found a realm"
+      : "Settle";
   // Can register during upcoming, or during ongoing if dev mode is on
   const canRegisterPeriod = isBlitzMode && (isUpcoming || (isOngoing && devModeOn));
   const canSpectatePreMainBlitz = isBlitzMode && canRegisterPeriod;
@@ -393,7 +398,7 @@ interface UnifiedGameGridProps {
   onSeeScore?: (selection: WorldSelection) => void;
   className?: string;
   /** Filter games by mode */
-  modeFilter?: "blitz" | "eternum";
+  modeFilter?: "frontier" | "blitz" | "eternum";
   /** Filter games by dev mode: true = only dev mode, false = only production, undefined = all */
   devModeFilter?: boolean;
   /** Custom title for the grid */

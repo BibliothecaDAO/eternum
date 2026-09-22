@@ -140,7 +140,7 @@ const fetchGameMeta = async (shard: Shard, gameId: number, playerAddress?: strin
   if (playerAddress && meta.mode === "blitz") {
     meta.isPlayerRegistered = game.player_state?.registered ?? false;
     meta.isRosterMember = game.player_state?.roster_member ?? false;
-  } else if (playerAddress && meta.mode === "eternum") {
+  } else if (playerAddress && (meta.mode === "eternum" || meta.mode === "frontier")) {
     meta.hasPlayerSettledRealm = game.player_state?.settled ?? false;
   }
   return meta;

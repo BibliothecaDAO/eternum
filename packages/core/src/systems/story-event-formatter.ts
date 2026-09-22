@@ -47,7 +47,21 @@ const resourceNameMap = resources.reduce<Record<number, string>>((acc, resource)
   return acc;
 }, {});
 
+const CHEST_QUALITY_LABELS = ["Common", "Uncommon", "Rare", "Epic"];
+const CHEST_KIND_LABELS: Record<string, string> = { Relic: "relic", Cosmetic: "cosmetic", Token: "token claim" };
+const EXPEDITION_GROUND_LABELS = ["the surface", "Ethereal I", "Ethereal II", "Ethereal III"];
+
 const formatters: Record<string, StoryFormatter> = {
+  ChestReward: (event, payload, components) => {
+    const quality = CHEST_QUALITY_LABELS[toNumber(payload.quality) ?? 0] ?? "Common";
+    const kind = CHEST_KIND_LABELS[formatEnum(payload.kind) ?? ""] ?? "reward";
+    const ground = EXPEDITION_GROUND_LABELS[toNumber(payload.depth) ?? 0];
+    return {
+      title: `Chest opened: ${quality} ${kind}`,
+      description: joinPieces([describeExplorer(payload.explorer_id, components), ground ? `On ${ground}` : undefined]),
+      icon: "prize",
+    };
+  },
   RealmCreatedStory: (event, payload, components, resolvePlayerName) => {
     const coord = formatCoord(payload.coord);
     const ownerLabel = nameOwner(event.ownerAddress, components, resolvePlayerName);

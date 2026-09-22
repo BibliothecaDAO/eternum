@@ -6,6 +6,7 @@ import { latestFeatures, type FeatureType } from "@/ui/features/world/latest-fea
 import {
   BookOpen,
   CloudLightning,
+  Compass,
   ExternalLink,
   Factory,
   Play,
@@ -460,6 +461,18 @@ const MODE_VISUALS: Record<
     panelGlow: string;
   }
 > = {
+  frontier: {
+    title: "Frontier",
+    subtitle:
+      "A treasure hunt in daily expeditions. Send armies into the fog and bring home Essence. Nobody can take your realm.",
+    chip: "Expedition",
+    videoSrc: "",
+    posterSrc: "/images/covers/05.png",
+    tone: "from-amber-900/70 via-orange-700/25 to-amber-300/20",
+    icon: Compass,
+    panelBorder: "border-amber-300/40",
+    panelGlow: "shadow-[0_0_35px_rgba(227,144,1,0.25)]",
+  },
   season: {
     title: "Eternum Seasons",
     subtitle: "Build your empire across seasons. Forge alliances, claim territory, and wage war on your own terms.",
@@ -504,6 +517,7 @@ const ModeCoexistenceHero = ({
   // Change page background when mode selection changes
   useEffect(() => {
     const bgMap: Record<LandingModeFilter, string> = {
+      frontier: "05",
       season: "07",
       blitz: "02",
     };
@@ -513,7 +527,7 @@ const ModeCoexistenceHero = ({
   const availableModes = Object.keys(MODE_VISUALS) as Array<LandingModeFilter>;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <div className={cn("grid grid-cols-1 gap-4", availableModes.length > 2 ? "lg:grid-cols-3" : "lg:grid-cols-2")}>
       {availableModes.map((mode, index) => {
         const config = MODE_VISUALS[mode];
         const Icon = config.icon;
@@ -542,17 +556,25 @@ const ModeCoexistenceHero = ({
               transitionDelay: mounted ? "0ms" : `${index * 150}ms`,
             }}
           >
-            <video
-              autoPlay
-              muted
-              loop
-              playsInline
-              preload="metadata"
-              poster={config.posterSrc}
-              className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
-            >
-              <source src={config.videoSrc} type="video/mp4" />
-            </video>
+            {config.videoSrc ? (
+              <video
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload="metadata"
+                poster={config.posterSrc}
+                className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+              >
+                <source src={config.videoSrc} type="video/mp4" />
+              </video>
+            ) : (
+              <img
+                src={config.posterSrc}
+                alt=""
+                className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+              />
+            )}
 
             <div className={cn("absolute inset-0 bg-gradient-to-br", config.tone)} />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent" />
@@ -609,7 +631,7 @@ const RegisteredActiveGamesBar = ({
   onSpectate,
   onRegistrationComplete,
 }: {
-  mode: "blitz" | "eternum";
+  mode: "frontier" | "blitz" | "eternum";
   onPlayGame: (selection: WorldSelection) => void;
   onSelectGame: (selection: WorldSelection) => void;
   onAutoSettleGame: (selection: WorldSelection) => void;
@@ -683,7 +705,7 @@ const PlayTabContent = ({
   isRefreshing?: boolean;
   disabled?: boolean;
 }) => {
-  const resolvedMode: "blitz" | "eternum" = modeFilter === "season" ? "eternum" : "blitz";
+  const resolvedMode: "frontier" | "blitz" | "eternum" = modeFilter === "season" ? "eternum" : modeFilter;
 
   return (
     <div className={cn("flex flex-col gap-4", disabled && "opacity-50 pointer-events-none")}>

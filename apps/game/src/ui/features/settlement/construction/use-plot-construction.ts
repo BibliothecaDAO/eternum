@@ -1,7 +1,19 @@
 import { useEffect, useRef, useState } from "react";
 import { useGame, useNativeRevision } from "@bibliothecadao/react";
-import { type BuildingTiles, getRealmInfo } from "@bibliothecadao/eternum";
-import { BuildingType, BuildingTypeToString, ContractAddress, type HexPosition } from "@bibliothecadao/types";
+import {
+  type BuildingTiles,
+  boardBonusesFor,
+  configManager,
+  describeBoardBonus,
+  getRealmInfo,
+} from "@bibliothecadao/eternum";
+import {
+  BuildingType,
+  BuildingTypeToString,
+  ContractAddress,
+  getNeighborHexes,
+  type HexPosition,
+} from "@bibliothecadao/types";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
@@ -39,6 +51,16 @@ export function usePlotConstruction(target: PlotConstructionTarget) {
     "Building",
   ]);
   const realm = getRealmInfo(target.entityId, store);
+  const boardRules = store.get("BoardRules", { game_id: configManager.getActiveGameId() });
+  const neighbourCategories = getNeighborHexes(target.spot.col, target.spot.row).map(
+    (hex) =>
+      target.tileManager.existingBuildings().find((built) => built.col === hex.col && built.row === hex.row)?.category,
+  );
+  const neighbourHints = (type: BuildingType) =>
+    boardBonusesFor(boardRules, type).map((bonus) => ({
+      label: `Beside ${BuildingTypeToString[bonus.neighbour as BuildingType] ?? "a neighbour"}: ${describeBoardBonus(bonus)}`,
+      present: neighbourCategories.includes(bonus.neighbour),
+    }));
   const isOwner = Boolean(account?.address && realm?.owner === ContractAddress(account.address));
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -63,6 +85,7 @@ export function usePlotConstruction(target: PlotConstructionTarget) {
         type,
         label: BuildingTypeToString[type],
         requirements: resolveBuildingRequirements(target.entityId, store, type, useSimpleCost, currentDefaultTick),
+        neighbourHints: neighbourHints(type),
         reason: state.reason,
         disabled: !state.canSubmit || pending,
       };

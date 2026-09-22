@@ -10,7 +10,7 @@ import {
   getGuildFromPlayerAddress,
 } from "@bibliothecadao/eternum";
 import { useGame, useNativeRow, useResourceManager, useNativeRevision } from "@bibliothecadao/react";
-import { ContractAddress, ID } from "@bibliothecadao/types";
+import { ContractAddress, ID, TickIds } from "@bibliothecadao/types";
 import { useCallback, useMemo, useState } from "react";
 
 interface UseArmyEntityDetailOptions {
@@ -21,6 +21,7 @@ interface StaminaDisplayData {
   isRecharging: boolean;
   displayCurrent: number;
   displayRatio: number;
+  secondsUntilFull: number;
 }
 
 interface DerivedArmyData {
@@ -87,11 +88,14 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
     const computedAmount = staminaSnapshot?.current ?? 0;
     const maxStamina = staminaSnapshot?.max ?? 0;
     const stamina = staminaSnapshot?.stamina ?? { amount: 0n, updated_tick: 0n };
+    const gainPerTick = configManager.getRefillPerTick();
+    const ticksUntilFull = gainPerTick > 0 ? Math.ceil(Math.max(0, maxStamina - computedAmount) / gainPerTick) : 0;
     const staminaDisplay: StaminaDisplayData | null = staminaSnapshot
       ? {
           isRecharging: computedAmount >= 0 && computedAmount < maxStamina,
           displayCurrent: computedAmount,
           displayRatio: maxStamina > 0 ? computedAmount / maxStamina : 0,
+          secondsUntilFull: ticksUntilFull * Number(configManager.getTick(TickIds.Armies)),
         }
       : null;
 

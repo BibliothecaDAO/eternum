@@ -24,6 +24,9 @@ import { BlockTimestampPoller } from "../shared/components/block-timestamp-polle
 import { ChainTimePoller } from "../shared/components/chain-time-poller";
 import { ActionRunners } from "../action-runners";
 import { RelicCrateOpenings } from "../features/military/chest/relic-crate-openings";
+import { ChestOpenings } from "../features/military/chest/chest-openings";
+import { ExpeditionRollover } from "../features/world/components/expeditions/expedition-rollover";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { NativeStoreBridge } from "./native-store-bridge";
 import { FLIGHT_TRACE_ENABLED, traceFlightCommit } from "@/three/flight-trace";
 import { Profiler } from "react";
@@ -84,12 +87,24 @@ const BackgroundSystems = () => (
     <GameCycleEffects />
     <ChainTimePoller />
     <BlitzSetHyperstructureShareholdersTo100 />
-    <AutomationManager />
-    <TransferAutomationManager />
-    <ExplorationAutomationManager />
+    <AutomationSystems />
+    <ChestOpenings />
+    <ExpeditionRollover />
     <SentryUserSync />
   </>
 );
+
+/** Automation exists only where the mode sells it; Frontier hides every automated surface. */
+const AutomationSystems = () => {
+  if (!useGameModeConfig().ui.showAutomation) return null;
+  return (
+    <>
+      <AutomationManager />
+      <TransferAutomationManager />
+      <ExplorationAutomationManager />
+    </>
+  );
+};
 
 /**
  * Core game systems that render interactive content.

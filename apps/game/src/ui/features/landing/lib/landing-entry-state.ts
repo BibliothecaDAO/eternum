@@ -1,4 +1,4 @@
-export type LandingModeFilter = "blitz" | "season";
+export type LandingModeFilter = "frontier" | "blitz" | "season";
 type LandingHomeTab = "play" | "learn" | "news" | "factory";
 
 export interface LandingEntryRouteState {
@@ -56,7 +56,7 @@ export const resolveLandingEntryState = ({
 
   return {
     activeTab: resolveActiveTab(returnPathname),
-    landingModeFilter: state?.landingModeFilter === "season" ? "season" : "blitz",
+    landingModeFilter: state?.landingModeFilter ?? "blitz",
     returnTo,
   };
 };

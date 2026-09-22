@@ -996,6 +996,27 @@ export class EternumProvider extends EventEmitter {
     );
   }
 
+  public async enter_depth(props: SystemProps.SystemSigner & { explorerId: number; depth: number }) {
+    return this.submitCommand(
+      props.signer,
+      { kind: "EnterDepth", value: { explorer_id: props.explorerId, depth: props.depth } },
+      TransactionType.ENTER_DEPTH,
+    );
+  }
+
+  public async buy_realm_upgrade(
+    props: SystemProps.SystemSigner & { structureId: number; lane: "Barracks" | "Attunement" },
+  ) {
+    return this.submitCommand(
+      props.signer,
+      {
+        kind: "BuyRealmUpgrade",
+        value: { structure_id: props.structureId, lane: { kind: props.lane, value: undefined } },
+      },
+      TransactionType.BUY_REALM_UPGRADE,
+    );
+  }
+
   public async settle_season(props: SystemProps.SystemSigner & { name: string; selectedRealm?: number }) {
     return this.submitCommand(
       props.signer,

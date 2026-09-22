@@ -20,4 +20,6 @@ export interface ArmyStaminaPresentation {
   nextTickGain: number;
   progressToNextTick: number;
   isRecharging: boolean;
+  /** Seconds until the bar is full at the current regeneration; 0 when it already is. */
+  secondsUntilFull: number;
 }

@@ -10,16 +10,12 @@ import { useEffect, useState } from "react";
 import { HUD_BODY_MUTED } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { StructureSidebar } from "@/ui/features/world/containers/structure-sidebar";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 
 const TAB_KEYS = ["arrivals", "transfer", "automation", "balances"] as const;
 type LogisticsTab = (typeof TAB_KEYS)[number];
-
-const TAB_INDEX_BY_KEY: Record<LogisticsTab, number> = {
-  arrivals: 0,
-  transfer: 1,
-  automation: 2,
-  balances: 3,
-};
+// Frontier moves nothing between structures: its logistics view keeps arrivals and balances only.
+const MANUAL_TAB_KEYS = ["arrivals", "balances"] as const;
 
 const tabClass =
   "!mx-0 min-h-11 flex items-center justify-center rounded-md border border-gold/20 bg-black/25 px-3 py-1.5 text-center text-[11px] font-semibold uppercase tracking-[0.14em] text-gold/75 transition hover:border-gold/40 hover:text-gold";
@@ -45,7 +41,9 @@ export const LogisticsView = ({ hasArrivals }: LogisticsViewProps) => {
   const arrivedArrivalsNumber = useUIStore((state) => state.arrivedArrivalsNumber);
   const pendingArrivalsNumber = useUIStore((state) => state.pendingArrivalsNumber);
 
-  const selectedIndex = TAB_INDEX_BY_KEY[activeTabKey];
+  const showAutomation = useGameModeConfig().ui.showAutomation;
+  const tabKeys: readonly LogisticsTab[] = showAutomation ? TAB_KEYS : MANUAL_TAB_KEYS;
+  const selectedIndex = Math.max(0, tabKeys.indexOf(activeTabKey));
   const totalArrivals = arrivedArrivalsNumber + pendingArrivalsNumber;
   // Ready-to-claim is more urgent (green) than still-in-flight (gold); pick the
   // tone that better matches what's actually waiting.
@@ -55,7 +53,7 @@ export const LogisticsView = ({ hasArrivals }: LogisticsViewProps) => {
     <div className="flex h-full flex-col gap-2 p-2">
       <Tabs
         selectedIndex={selectedIndex}
-        onChange={(index) => setActiveTabKey(TAB_KEYS[index] ?? "arrivals")}
+        onChange={(index) => setActiveTabKey(tabKeys[index] ?? "arrivals")}
         className="flex flex-1 flex-col gap-2 min-h-0"
       >
         <Tabs.List className="grid grid-cols-2 gap-1 lg:grid-cols-4">
@@ -75,20 +73,24 @@ export const LogisticsView = ({ hasArrivals }: LogisticsViewProps) => {
               )}
             </span>
           </Tabs.Tab>
-          <Tabs.Tab className={tabClass}>Transfer</Tabs.Tab>
-          <Tabs.Tab className={tabClass}>Automation</Tabs.Tab>
+          {showAutomation && <Tabs.Tab className={tabClass}>Transfer</Tabs.Tab>}
+          {showAutomation && <Tabs.Tab className={tabClass}>Automation</Tabs.Tab>}
           <Tabs.Tab className={tabClass}>Balances</Tabs.Tab>
         </Tabs.List>
         <Tabs.Panels className="flex-1 min-h-0 overflow-hidden">
           <Tabs.Panel className="h-full overflow-y-auto">
             <ResourceArrivals hasArrivals={hasArrivals} />
           </Tabs.Panel>
-          <Tabs.Panel className="h-full overflow-y-auto">
-            <TransferAutomationPanel initialSourceId={transferPanelSourceId ?? undefined} />
-          </Tabs.Panel>
-          <Tabs.Panel className="h-full overflow-y-auto">
-            <TransferAutomationAdvancedModal />
-          </Tabs.Panel>
+          {showAutomation && (
+            <Tabs.Panel className="h-full overflow-y-auto">
+              <TransferAutomationPanel initialSourceId={transferPanelSourceId ?? undefined} />
+            </Tabs.Panel>
+          )}
+          {showAutomation && (
+            <Tabs.Panel className="h-full overflow-y-auto">
+              <TransferAutomationAdvancedModal />
+            </Tabs.Panel>
+          )}
           <Tabs.Panel className="h-full overflow-hidden">
             <AllRealmsBalanceTab structures={playerStructures} />
           </Tabs.Panel>

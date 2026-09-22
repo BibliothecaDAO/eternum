@@ -1,7 +1,10 @@
 import type { ID, TileOpt, TroopTier, TroopType } from "@bibliothecadao/types";
 import { TileOccupier } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
+import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { expeditionRealmSite, isExpeditionRealm, readExpeditionRules } from "../utils/expeditions";
 import { isTileOccupierStructure } from "../utils/map/hex";
+import { getBlockTimestamp } from "../utils/timestamp";
 import { tileOptToTile } from "../utils/tile-opt";
 
 /** A map hex on one layer: `alt` is false on the surface and true on the ethereal layer, as in TileOpt. */
@@ -122,7 +125,7 @@ export type WorldSpatialProjectionChange =
   | ArmySpatialProjectionChange;
 
 export interface WorldSpatialProjectionOptions {
-  store: Pick<NativeFactStore, "entries" | "subscribe">;
+  store: Pick<NativeFactStore, "entries" | "subscribe" | "get" | "require">;
   bucketSize?: number;
 }
 
@@ -221,6 +224,28 @@ const resolveChestRenderable = (tileOpt: TileOpt | undefined): ChestSpatialRende
     entityId: tile.occupier_id,
     hexCoords: Object.freeze({ alt: tile.alt, col: tile.col, row: tile.row }),
   });
+};
+
+/** A Frontier realm has no tile of its own; it is raised on its day's region at the site the contract computes. */
+const resolveExpeditionRealmRenderable = (
+  store: Pick<NativeFactStore, "get" | "require">,
+  structure: NativeRows["Structure"] | undefined,
+): StructureSpatialRenderable | undefined => {
+  if (!structure || !isExpeditionRealm(structure)) return undefined;
+  const rules = readExpeditionRules(store, structure.game_id);
+  if (!rules) return undefined;
+  const site = expeditionRealmSite(rules, structure, getBlockTimestamp().currentBlockTimestamp);
+  const level = Math.min(3, Math.max(0, structure.base.level));
+  const occupierType =
+    (structure.metadata.has_wonder ? TileOccupier.RealmWonderLevel1 : TileOccupier.RealmRegularLevel1) + level;
+  return {
+    kind: "structure",
+    spatialId: `entity:${structure.entity_id}` as const,
+    entityId: structure.entity_id,
+    reserved: false,
+    hexCoords: { alt: false, col: site.col, row: site.row },
+    occupierType,
+  };
 };
 
 const resolveStructureRenderable = (tileOpt: TileOpt | undefined): StructureSpatialRenderable | undefined => {
@@ -487,7 +512,7 @@ const toArmyChange = ({
  * `flush()`, which the sync runtime calls after each applied ingest slice.
  */
 export class WorldSpatialProjection {
-  private readonly store: Pick<NativeFactStore, "entries" | "subscribe">;
+  private readonly store: Pick<NativeFactStore, "entries" | "subscribe" | "get" | "require">;
   private readonly chestIndex: SpatialIndex<ID, ChestSpatialRenderable>;
   private readonly structureIndex: SpatialIndex<StructureSpatialRenderable["spatialId"], StructureSpatialRenderable>;
   private readonly armyIndex: SpatialIndex<ID, ArmySpatialRenderable>;
@@ -521,6 +546,7 @@ export class WorldSpatialProjection {
       for (const change of changes) {
         if (change.model === "TileOpt") this.applyTileOptUpdate(change.key, [change.current, change.previous]);
         if (change.model === "ExplorerTroops") this.applyExplorerTroopsUpdate([change.current, change.previous]);
+        if (change.model === "Structure") this.applyStructureUpdate([change.current, change.previous]);
       }
     });
     try {
@@ -563,6 +589,11 @@ export class WorldSpatialProjection {
     for (const [, explorerTroops] of this.store.entries("ExplorerTroops")) {
       const army = resolveArmyRenderable(explorerTroops);
       if (army) nextArmies.set(army.entityId, army);
+    }
+
+    for (const [, structure] of this.store.entries("Structure")) {
+      const realm = resolveExpeditionRealmRenderable(this.store, structure);
+      if (realm) nextStructures.set(realm.spatialId, realm);
     }
 
     this.chestIndex.replace(nextChests);
@@ -609,6 +640,16 @@ export class WorldSpatialProjection {
       currentStructure,
       (structure) => structure.spatialId,
     );
+  }
+
+  private applyStructureUpdate([current, previous]: [
+    NativeRows["Structure"] | undefined,
+    NativeRows["Structure"] | undefined,
+  ]): void {
+    const currentRealm = resolveExpeditionRealmRenderable(this.store, current);
+    const previousRealm = resolveExpeditionRealmRenderable(this.store, previous);
+    const spatialId = currentRealm?.spatialId ?? previousRealm?.spatialId;
+    if (spatialId) this.structureIndex.update(spatialId, currentRealm);
   }
 
   private applyExplorerTroopsUpdate([currentExplorerTroops, previousExplorerTroops]: [

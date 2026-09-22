@@ -69,6 +69,8 @@ export enum TransactionType {
   // Exploration & Movement
   EXPLORE = "explore",
   TRAVEL_HEX = "travel_hex",
+  ENTER_DEPTH = "enter_depth",
+  BUY_REALM_UPGRADE = "buy_realm_upgrade",
   EXPLORER_CREATE = "explorer_create",
   EXPLORER_ADD = "explorer_add",
   EXPLORER_DELETE = "explorer_delete",

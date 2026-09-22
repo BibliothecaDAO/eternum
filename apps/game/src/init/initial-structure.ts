@@ -1,7 +1,13 @@
 import type { AppStore } from "@/hooks/store/use-ui-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import type { GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
-import { configManager } from "@bibliothecadao/eternum";
+import {
+  configManager,
+  expeditionRealmSite,
+  getBlockTimestamp,
+  isExpeditionRealm,
+  readExpeditionRules,
+} from "@bibliothecadao/eternum";
 
 import { resolveInitialStructureSelection } from "../sync/initial-structure-selection";
 
@@ -16,13 +22,20 @@ const readInitialSelectableStructures = (setup: SetupResult, owner?: bigint): In
   const gameId = configManager.getActiveGameId();
   const structures =
     owner === undefined ? setup.store.inGame("Structure", gameId) : setup.store.structuresOwnedBy(gameId, owner);
+  const expedition = readExpeditionRules(setup.store, gameId);
   return [...structures]
-    .map((structure) => ({
-      entity_id: structure.entity_id,
-      coord_x: structure.base.coord_x,
-      coord_y: structure.base.coord_y,
-      category: structure.base.category,
-    }))
+    .map((structure) => {
+      const site =
+        expedition && isExpeditionRealm(structure)
+          ? expeditionRealmSite(expedition, structure, getBlockTimestamp().currentBlockTimestamp)
+          : { col: structure.base.coord_x, row: structure.base.coord_y };
+      return {
+        entity_id: structure.entity_id,
+        coord_x: site.col,
+        coord_y: site.row,
+        category: structure.base.category,
+      };
+    })
     .sort((left, right) => left.entity_id - right.entity_id);
 };
 

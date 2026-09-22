@@ -78,6 +78,10 @@ export function storyNotificationCopy(
     case "ExplorerGuardSwapStory":
     case "GuardExplorerSwapStory":
       return { title: "Troops redeployed", body: "Your ranks have shifted into position." };
+    case "ChestReward":
+      return { title: "A chest cracks open", body: "Your army's find is yours to keep." };
+    case "RelicChestOpened":
+      return { title: "A crate is open", body: "Your army has pulled relics from the fog." };
     default:
       if (process.env.NODE_ENV !== "production") throw new Error(`Unknown notification copy: ${story}`);
       return { title: "The realm is stirring", body: "New confirmed activity awaits your attention." };

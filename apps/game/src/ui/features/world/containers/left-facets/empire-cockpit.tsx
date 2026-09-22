@@ -6,6 +6,7 @@ import { useStructureEntityDetail } from "@/ui/features/world/components/entitie
 import { useStructureProductionSummary } from "@/ui/features/world/components/entities/structure-production-summary";
 import { MergedResourcePanel } from "@/ui/features/world/containers/left-facets/merged-resource-panel";
 import { Factory } from "@/ui/design-system/atoms/game-icons";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { memo } from "react";
 
 // Always-on panel for the active owned structure: one merged panel of resource tokens, rendered below the
@@ -17,6 +18,7 @@ export const EmpireCockpit = memo(() => {
     structureEntityId,
   });
   const productionSummary = useStructureProductionSummary(structure, resources);
+  const showAutomation = useGameModeConfig().ui.showAutomation;
   const activeRelicIds = relicEffects.map((effect) => Number(effect.id));
 
   // Hide cockpit when there's nothing meaningful to show — keeps the rail
@@ -31,10 +33,12 @@ export const EmpireCockpit = memo(() => {
       title={typeLabel ?? "Structure"}
       icon={Factory}
       cue={
-        <AutomationPresetSwitch
-          entityId={structureEntityId}
-          entityType={isVillageLikeStructureCategory(structure.base.category) ? "village" : "realm"}
-        />
+        showAutomation ? (
+          <AutomationPresetSwitch
+            entityId={structureEntityId}
+            entityType={isVillageLikeStructureCategory(structure.base.category) ? "village" : "realm"}
+          />
+        ) : undefined
       }
       collapsible
     >

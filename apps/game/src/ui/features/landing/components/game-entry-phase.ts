@@ -31,7 +31,7 @@ interface ResolveGameEntryModalPhaseInput {
   worldMode: string;
   isCheckingWorldAvailability: boolean;
   hasWorldMeta: boolean;
-  isEternumMode: boolean;
+  isSeasonMode: boolean;
   isLoadingVillagePrereqs: boolean;
   hasVillageRevealResult: boolean;
   settlementMode: "realm" | "village";
@@ -125,7 +125,7 @@ export const resolveGameEntryModalPhase = ({
   worldMode,
   isCheckingWorldAvailability,
   hasWorldMeta,
-  isEternumMode,
+  isSeasonMode,
   isLoadingVillagePrereqs,
   hasVillageRevealResult,
   settlementMode,
@@ -160,7 +160,7 @@ export const resolveGameEntryModalPhase = ({
     return hasVillagePass || isDevMode ? "village-placement" : "village-pass-required";
   }
 
-  if (isEternumMode) {
+  if (isSeasonMode) {
     if (!checksComplete) return "loading";
     return resolveEternumSettlementPhase({
       canPlay: canPlay && !(isEternumDevMode && isSettlingAdditionalRealm),
