@@ -1,0 +1,26 @@
+// The identity Worker. Staging serves staging.realms.party/api beside the isolated box stack's app; production serves
+// play.realms.party/api at the cutover. Either way the app and its identity routes share one origin.
+// Each environment has its own D1 database, provisioned by name on first deploy, and its own secrets.
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "realms-identity",
+  "main": "server/worker.ts",
+  "compatibility_date": "2026-09-15",
+  "observability": { "enabled": true },
+  "env": {
+    "staging": {
+      "name": "realms-identity-staging",
+      "workers_dev": false,
+      "routes": [{ "pattern": "staging.realms.party/api/*", "zone_name": "realms.party" }],
+      "vars": { "ENVIRONMENT": "staging" },
+      "d1_databases": [{ "binding": "DB", "database_name": "realms-identity-staging" }],
+    },
+    "production": {
+      "name": "realms-identity",
+      "workers_dev": false,
+      "routes": [{ "pattern": "play.realms.party/api/*", "zone_name": "realms.party" }],
+      "vars": { "ENVIRONMENT": "production" },
+      "d1_databases": [{ "binding": "DB", "database_name": "realms-identity-production" }],
+    },
+  },
+}

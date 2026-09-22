@@ -2,6 +2,7 @@
 node_modules
 target
 .snfoundry_cache
+.wrangler
 docs/dist
 .DS_Store
 **/.DS_Store

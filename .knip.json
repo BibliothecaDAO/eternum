@@ -31,7 +31,8 @@
     "apps/realms": {
       "entry": [
         "src/main.tsx",
-        "server/main.ts"
+        "server/main.ts",
+        "server/worker.ts"
       ],
       "ignore": [
         "dist/**"

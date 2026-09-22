@@ -47,6 +47,7 @@
     "pg": "^8.18.0",
     "@types/pg": "^8.16.0",
     "drizzle-kit": "catalog:web",
-    "@types/web-push": "3.6.4"
+    "@types/web-push": "3.6.4",
+    "wrangler": "4.136.3"
   }
 }

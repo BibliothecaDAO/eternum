@@ -1,0 +1,73 @@
+name: Deploy Workers
+
+# Deploys the central-service Workers to Cloudflare. Staging, which the isolated box stack uses, deploys on every push to
+# the native branches; production deploys only by dispatch, at the cutover. Each environment has its own D1 databases
+# and secrets. The guardian Worker is deployed by the owner alone and is not listed here.
+on:
+  push:
+    branches: [native-services, native-world-foundation]
+    paths:
+      - "apps/realms/**"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/deploy-workers.yml"
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Cloudflare environment"
+        type: choice
+        options: [staging, production]
+        default: staging
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-workers-${{ inputs.environment || 'staging' }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy ${{ matrix.worker }} to ${{ inputs.environment || 'staging' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: ${{ inputs.environment || 'staging' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        worker: [apps/realms]
+    env:
+      TARGET: ${{ inputs.environment || 'staging' }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Deploy
+        working-directory: ${{ matrix.worker }}
+        env:
+          WRANGLER_OUTPUT_FILE_PATH: ${{ runner.temp }}/wrangler-output.ndjson
+        run: pnpm exec wrangler deploy --env "$TARGET"
+
+      # The deploy record names the Worker's route pattern on our zone; its host serves /api/health.
+      - name: Verify the route answers
+        env:
+          WRANGLER_OUTPUT_FILE_PATH: ${{ runner.temp }}/wrangler-output.ndjson
+        run: |
+          set -euo pipefail
+          target=$(jq -r 'select(.type == "deploy") | .targets[0]' "$WRANGLER_OUTPUT_FILE_PATH")
+          host=${target#https://}
+          host=${host%%/*}
+          curl -fsS --retry 5 --retry-delay 3 --retry-all-errors "https://$host/api/health" | tee health.json
+          jq -e --arg env "$TARGET" '.environment == $env' health.json
