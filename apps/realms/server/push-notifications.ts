@@ -165,5 +165,5 @@ class PushRequestError extends Data.TaggedError("PushRequestError")<{ code: stri
 
 function automaticPublicSource() {
   const config = resolveAutomaticNotificationConfig(serverEnv);
-  return config ? { chain: config.chain, worldAddress: config.worldAddress } : null;
+  return config ? { chainId: config.chainId, worldAddress: config.worldAddress } : null;
 }

@@ -1,7 +1,7 @@
 import { useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useNotificationPreferenceStore } from "@/hooks/use-notification-preferences";
-import { getActiveWorld } from "@/runtime/world";
+import { getActiveGame } from "@/runtime/world";
 import { buildEntryHref, parsePlayRoute } from "@/play/navigation/play-route";
 import { isExplicitSpectateSession } from "@/utils/spectator-session";
 import {
@@ -66,15 +66,15 @@ function resolveDeliveryContext(scope: StoryEventScope) {
   )
     return null;
   if (localNotificationCapability() || Notification.permission !== "granted") return null;
-  const world = getActiveWorld();
+  const world = getActiveGame();
   const route = parsePlayRoute(window.location);
   if (
     !world ||
     !route ||
     world.gameId !== scope.gameId ||
-    world.chain !== scope.chain ||
-    BigInt(world.worldAddress) !== BigInt(scope.worldAddress) ||
-    route.worldName !== world.name
+    world.chainId !== scope.chainId ||
+    route.chainId !== world.chainId ||
+    route.gameId !== world.gameId
   )
     return null;
   return { identity, account, preference: preferences.saved, world };
@@ -87,8 +87,8 @@ function isCurrentDeliveryContext(scope: StoryEventScope, expected: DeliveryCont
     current !== null &&
     current.identity === expected.identity &&
     current.account === expected.account &&
-    current.world.worldAddress === expected.world.worldAddress &&
-    current.world.name === expected.world.name &&
+    current.world.chainId === expected.world.chainId &&
+    current.world.gameId === expected.world.gameId &&
     current.preference === expected.preference
   );
 }
@@ -106,8 +106,8 @@ function buildEligibleNotification(value: Record<string, unknown>, scope: StoryE
     owner: context.identity,
     gameName: context.world.name,
     target: buildEntryHref({
-      chain: context.world.chain,
-      worldName: context.world.name,
+      chainId: context.world.chainId,
+      gameId: context.world.gameId,
       intent: "play",
       autoSettle: false,
     }),

@@ -1,7 +1,7 @@
 import { automaticPushSourceKey } from "@bibliothecadao/notifications";
 import { useEffect, useRef, useState } from "react";
 import { identityClient } from "@/hooks/context/identity-session";
-import { getActiveWorld } from "@/runtime/world";
+import { getActiveGame } from "@/runtime/world";
 import { buildEntryHref } from "@/play/navigation/play-route";
 import { localNotificationCapability } from "@/pwa/local-notification-client";
 import {
@@ -82,11 +82,11 @@ export function PushNotificationSettings({ owner }: { owner: string | null }) {
         await disablePushNotifications(device?.owner ?? owner);
         setDirectMessagesEnabled(false);
       } else {
-        const world = getActiveWorld();
+        const world = getActiveGame();
         if (!world) throw new Error("Enter a game before sending a test.");
         await sendBackgroundPushTest(
           owner,
-          buildEntryHref({ chain: world.chain, worldName: world.name, intent: "play", autoSettle: false }),
+          buildEntryHref({ chainId: world.chainId, gameId: world.gameId, intent: "play", autoSettle: false }),
         );
         setFeedback("Test accepted by the push service. Your browser and OS control when it appears.");
       }

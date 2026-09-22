@@ -18,6 +18,3 @@ export type GameEnvironmentId = GameEnvironment["id"];
 
 export const isGameEnvironmentId = (value: string): value is GameEnvironmentId =>
   GAME_ENVIRONMENTS.some((environment) => environment.id === value);
-
-export const getGameEnvironmentsForChain = (chain: GameChain): GameEnvironment[] =>
-  GAME_ENVIRONMENTS.filter((environment) => environment.chain === chain);

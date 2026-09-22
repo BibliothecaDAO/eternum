@@ -2,15 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { parseArgs, resolveConfig, resolveDataDir, RunnerConfigError } from "./config";
 
-const FULL_ENV = {
-  ADMISSION_URL: "https://admission.example",
-  NATIVE_WORLD_MANIFEST: "deploy/athanor/.lab/native/manifest.json",
-  HERALD_URL: "https://herald.example",
-  RPC_URL: "https://rpc.example",
-  VITE_PUBLIC_PLAYER_ACCOUNT_CLASS_HASH: "0x1",
-  VITE_PUBLIC_PLAYER_REGISTRY_ADDRESS: "0x2",
-  VITE_PUBLIC_BINDING_AUTHORITY_ADDRESS: "0x3",
-};
+const FULL_ENV = { SHARD_URL: "https://shard.example" };
 
 const resolve = (argv: string[], env: Record<string, string | undefined> = FULL_ENV) =>
   resolveConfig(parseArgs(argv), env);
@@ -20,13 +12,8 @@ describe("runner config", () => {
     const config = resolve(["--game-id", "12", "--signer", "none"]);
 
     expect(config).toMatchObject({
-      chain: "madara",
-      heraldUrl: FULL_ENV.HERALD_URL,
-      rpcUrl: FULL_ENV.RPC_URL,
+      shardUrl: FULL_ENV.SHARD_URL,
       game: { id: 12 },
-      playerAccountClassHash: "0x1",
-      playerRegistryAddress: "0x2",
-      bindingAuthorityAddress: "0x3",
       signer: { mode: "none" },
       dataDir: null,
       modelProfile: "balanced",
@@ -35,7 +22,6 @@ describe("runner config", () => {
       quietWindowMs: 5_000,
       heartbeatMs: null,
     });
-    expect(config.manifestPath).toMatch(/deploy\/athanor\/\.lab\/native\/manifest\.json$/);
     expect(resolveDataDir(config, 12)).toMatch(/\.agent-data\/12$/);
   });
 
@@ -55,43 +41,15 @@ describe("runner config", () => {
     );
   });
 
-  it("lets flags win over env and accepts the web client's env names", () => {
-    const config = resolve(["--game-name", "lab-1", "--signer", "none", "--herald-url", "https://flag.example"], {
-      ...FULL_ENV,
-      HERALD_URL: undefined,
-      VITE_PUBLIC_HERALD_URL: "https://vite.example",
-    });
+  it("lets flags win over env", () => {
+    const config = resolve(["--game-name", "lab-1", "--signer", "none", "--shard-url", "https://flag.example"]);
 
-    expect(config.heraldUrl).toBe("https://flag.example");
+    expect(config.shardUrl).toBe("https://flag.example");
     expect(config.game).toEqual({ name: "lab-1" });
   });
 
   it.each([
-    [
-      ["--game-id", "1", "--signer", "none"],
-      { ...FULL_ENV, HERALD_URL: undefined },
-      "--herald-url (or HERALD_URL / VITE_PUBLIC_HERALD_URL",
-    ],
-    [
-      ["--game-id", "1", "--signer", "none"],
-      { ...FULL_ENV, RPC_URL: undefined },
-      "--rpc-url (or RPC_URL / VITE_PUBLIC_NODE_URL",
-    ],
-    [
-      ["--game-id", "1", "--signer", "none"],
-      { ...FULL_ENV, VITE_PUBLIC_PLAYER_ACCOUNT_CLASS_HASH: undefined },
-      "--player-account-class-hash (or VITE_PUBLIC_PLAYER_ACCOUNT_CLASS_HASH",
-    ],
-    [
-      ["--game-id", "1", "--signer", "none"],
-      { ...FULL_ENV, VITE_PUBLIC_PLAYER_REGISTRY_ADDRESS: undefined },
-      "--player-registry-address (or VITE_PUBLIC_PLAYER_REGISTRY_ADDRESS",
-    ],
-    [
-      ["--game-id", "1", "--signer", "none"],
-      { ...FULL_ENV, VITE_PUBLIC_BINDING_AUTHORITY_ADDRESS: undefined },
-      "--binding-authority-address (or VITE_PUBLIC_BINDING_AUTHORITY_ADDRESS",
-    ],
+    [["--game-id", "1", "--signer", "none"], {}, "--shard-url (or SHARD_URL"],
     [["--signer", "none"], FULL_ENV, "Missing --game-id or --game-name"],
     [["--game-id", "1"], FULL_ENV, "Missing --signer"],
     [
@@ -110,10 +68,7 @@ describe("runner config", () => {
     expect(() => resolve(argv, env)).toThrow(message);
   });
 
-  it("rejects an unknown chain, signer mode, or a game selected twice", () => {
-    expect(() => resolve(["--game-id", "1", "--signer", "none", "--chain", "appchain"])).toThrow(
-      "--chain must be madara",
-    );
+  it("rejects an unknown signer mode or a game selected twice", () => {
     expect(() => resolve(["--game-id", "1", "--signer", "wallet"])).toThrow("--signer must be guest, key, or none");
     expect(() => resolve(["--game-id", "1", "--game-name", "x", "--signer", "none"])).toThrow("not both");
     expect(() => resolve(["--game-id", "zero", "--signer", "none"])).toThrow("--game-id must be a positive integer");

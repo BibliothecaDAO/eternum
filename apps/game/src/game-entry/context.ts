@@ -1,6 +1,6 @@
-import type { GameChain as Chain } from "@realms-world/chain";
+import type { GameRef } from "@bibliothecadao/eternum/game-client";
 
-import type { WorldSelectionInput } from "@/runtime/world";
+import { gameKey } from "@/runtime/world/store";
 import { resolveSpectateIntent } from "@/utils/spectator-session";
 import {
   buildEntryHref,
@@ -14,17 +14,14 @@ export type EntryIntent = "play" | "settle" | "spectate";
 
 type LocationLike = Pick<Location, "pathname" | "search">;
 
-export interface ResolvedEntryContext {
-  chain: Chain;
-  worldName: string;
-  worldAddress?: string;
+export interface ResolvedEntryContext extends GameRef {
   intent: EntryIntent;
   autoSettle: boolean;
   source: "landing" | "play-route";
 }
 
 interface LandingSelectionEntryContextInput {
-  selection: WorldSelectionInput;
+  selection: GameRef;
   intent: EntryIntent;
   autoSettle?: boolean;
 }
@@ -37,11 +34,7 @@ interface BuildPlayRouteFromEntryContextInput {
   spectate?: boolean;
 }
 
-export const isLandingPrimaryChain = (chain: Chain | null | undefined): chain is Chain => Boolean(chain);
-
-export const resolveEntryContextCacheKey = (context: Pick<ResolvedEntryContext, "chain" | "worldName">): string => {
-  return `${context.chain}:${context.worldName}`;
-};
+export const resolveEntryContextCacheKey = (context: GameRef): string => gameKey(context);
 
 const resolveFallbackScene = (intent: EntryIntent): PlayScene => {
   return intent === "spectate" ? "map" : "hex";
@@ -51,24 +44,14 @@ const resolveSpectateFlag = (intent: EntryIntent): boolean => {
   return intent === "spectate";
 };
 
-const resolveLandingEntryChain = (chain: Chain | null | undefined): Chain | null => {
-  return isLandingPrimaryChain(chain) ? chain : null;
-};
-
 export const resolveEntryContextFromLandingSelection = ({
   selection,
   intent,
   autoSettle = false,
-}: LandingSelectionEntryContextInput): ResolvedEntryContext | null => {
-  const resolvedChain = resolveLandingEntryChain(selection.chain);
-  if (!resolvedChain) {
-    return null;
-  }
-
+}: LandingSelectionEntryContextInput): ResolvedEntryContext => {
   return {
-    chain: resolvedChain,
-    worldName: selection.name,
-    worldAddress: selection.worldAddress,
+    chainId: selection.chainId,
+    gameId: selection.gameId,
     intent,
     autoSettle,
     source: "landing",
@@ -81,14 +64,9 @@ export const resolveEntryContextFromEntryRoute = (location: LocationLike): Resol
     return null;
   }
 
-  const resolvedChain = resolveLandingEntryChain(route.chain);
-  if (!resolvedChain) {
-    return null;
-  }
-
   return {
-    chain: resolvedChain,
-    worldName: route.worldName,
+    chainId: route.chainId,
+    gameId: route.gameId,
     intent: route.intent,
     autoSettle: route.autoSettle,
     source: "landing",
@@ -102,8 +80,8 @@ export const resolveEntryContextFromPlayRoute = (location: LocationLike): Resolv
   }
 
   return {
-    chain: route.chain,
-    worldName: route.worldName,
+    chainId: route.chainId,
+    gameId: route.gameId,
     intent: resolveSpectateIntent(location) ? "spectate" : "play",
     autoSettle: false,
     source: "play-route",
@@ -112,8 +90,8 @@ export const resolveEntryContextFromPlayRoute = (location: LocationLike): Resolv
 
 export const buildEntryHrefFromEntryContext = (context: ResolvedEntryContext): string => {
   return buildEntryHref({
-    chain: context.chain,
-    worldName: context.worldName,
+    chainId: context.chainId,
+    gameId: context.gameId,
     intent: context.intent,
     autoSettle: context.autoSettle,
   });
@@ -127,8 +105,8 @@ export const buildPlayRouteFromEntryContext = ({
   spectate = resolveSpectateFlag(context.intent),
 }: BuildPlayRouteFromEntryContextInput): string => {
   return buildPlayHref({
-    chain: context.chain,
-    worldName: context.worldName,
+    chainId: context.chainId,
+    gameId: context.gameId,
     scene,
     col,
     row,

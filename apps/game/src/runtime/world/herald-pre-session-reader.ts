@@ -1,5 +1,5 @@
 import { feltEquals, fetchHeraldGameSnapshot, snapshotModelRows } from "@bibliothecadao/eternum/game-client";
-import type { WorldDeployment } from "./world-directory";
+import type { Shard } from "@bibliothecadao/eternum/game-client";
 
 export interface PlayerStructure {
   category: number;
@@ -86,7 +86,7 @@ const toStructureLocation = (row: Record<string, unknown>): StructureLocation =>
   };
 };
 
-export const createHeraldPreSessionReader = (world: WorldDeployment, gameId: number): HeraldPreSessionReader => ({
+export const createHeraldPreSessionReader = (world: Shard, gameId: number): HeraldPreSessionReader => ({
   fetchAddressName: async (address) => {
     const snapshot = await fetchHeraldGameSnapshot(world, gameId, ["AddressName"]);
     return snapshotModelRows(snapshot, "AddressName").find((row) => feltEquals(row.address, address))?.name ?? null;

@@ -17,7 +17,7 @@ const createSession = (overrides: Partial<CreateHeraldGameSyncSessionInput> = {}
   createHeraldGameSyncSession({
     modelDefinition: nativeModelDefinition(bindings as unknown as NativeWorldBindings),
     baseUrl: "https://herald.realms.test",
-    chain: "madara",
+    chainId: "0x1",
     entityModels: [],
     eventModels: [],
     gameId: 54,
@@ -28,15 +28,15 @@ const createSession = (overrides: Partial<CreateHeraldGameSyncSessionInput> = {}
   });
 
 describe("buildHeraldGameStreamUrl", () => {
-  it("builds the per-chain, per-game WebSocket endpoint", () => {
-    expect(buildHeraldGameStreamUrl("https://herald.realms.test/stream/", "madara", 54)).toBe(
-      "wss://herald.realms.test/stream/madara/games/54",
+  it("builds the per-game WebSocket endpoint under the shard URL", () => {
+    expect(buildHeraldGameStreamUrl("https://herald.realms.test/stream/", 54)).toBe(
+      "wss://herald.realms.test/stream/games/54",
     );
-    expect(buildHeraldGameStreamUrl("ws://127.0.0.1:3003", "appchain", 7)).toBe("ws://127.0.0.1:3003/appchain/games/7");
+    expect(buildHeraldGameStreamUrl("ws://127.0.0.1:3003", 7)).toBe("ws://127.0.0.1:3003/games/7");
   });
 
   it("rejects a missing game scope", () => {
-    expect(() => buildHeraldGameStreamUrl("https://herald.realms.test", "madara", 0)).toThrow("positive game id");
+    expect(() => buildHeraldGameStreamUrl("https://herald.realms.test", 0)).toThrow("positive game id");
   });
 });
 
@@ -84,7 +84,7 @@ describe("createHeraldGameSyncSession", () => {
     expect(observer.onHead).toHaveBeenCalledWith(head);
     expect(observer.onStoryEvent).toHaveBeenCalledWith(
       event,
-      { chain: "madara", worldAddress: "0x1", gameId: 54 },
+      { chainId: "0x1", worldAddress: "0x1", gameId: 54 },
       confirmation,
     );
     expect(observer.onDiffReceived).toHaveBeenCalledWith("0xabc");

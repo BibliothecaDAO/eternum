@@ -3,6 +3,7 @@ import { buildNativeDirectory, buildNativeLeaderboard } from "./native/read-mode
 import type { DirectoryInput } from "./game-directory";
 import type { FoldRow, GameSnapshot, ReplayMetrics } from "./types";
 import type { HistoryQuery, HistoryStore } from "./history-store";
+import type { ShardManifest } from "./shard-manifest";
 
 interface SnapshotSource {
   modelRows: (model: string) => FoldRow[];
@@ -19,6 +20,7 @@ interface HeraldHttpState {
   readModels?: WorldReadModels;
   ingestionFailure?: () => { block: number | null; transactionHash: string; error: string } | undefined;
   chain: string;
+  manifest: ShardManifest;
   worldAddress: string;
   confirmedBlock: () => number;
   chainTimestamp: () => number;
@@ -93,13 +95,12 @@ const historyQuery = (url: URL, gameId: string): HistoryQuery => ({
 
 export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: Request) => Promise<Response>) => {
   const readModels = state.readModels ?? { directory: buildNativeDirectory, leaderboard: buildNativeLeaderboard };
-  const escapedChain = state.chain.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const directoryPath = `/${state.chain}/games`;
-  const snapshotPath = new RegExp(`^/${escapedChain}/games/([0-9]+)/snapshot$`);
-  const historyPath = new RegExp(`^/${escapedChain}/games/([0-9]+)/history$`);
-  const reviewSnapshotPath = new RegExp(`^/${escapedChain}/games/([0-9]+)/review/snapshot$`);
-  const leaderboardPath = new RegExp(`^/${escapedChain}/games/([0-9]+)/leaderboard$`);
-  const transactionCountPath = new RegExp(`^/${escapedChain}/games/([0-9]+)/transactions/count$`);
+  const directoryPath = "/games";
+  const snapshotPath = /^\/games\/([0-9]+)\/snapshot$/;
+  const historyPath = /^\/games\/([0-9]+)\/history$/;
+  const reviewSnapshotPath = /^\/games\/([0-9]+)\/review\/snapshot$/;
+  const leaderboardPath = /^\/games\/([0-9]+)\/leaderboard$/;
+  const transactionCountPath = /^\/games\/([0-9]+)\/transactions\/count$/;
 
   return async (request) => {
     const url = new URL(request.url);
@@ -107,6 +108,7 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
     if (request.method === "GET" && url.pathname === `${directoryPath}/updates`) {
       return streamDirectoryUpdates(request, state, readModels.directory);
     }
+    if (request.method === "GET" && url.pathname === "/manifest") return jsonResponse(state.manifest);
     if (request.method === "GET" && url.pathname === "/health") {
       const failure = state.ingestionFailure?.();
       return jsonResponse(
@@ -155,7 +157,7 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
       }
     }
 
-    if (request.method === "GET" && url.pathname === `/${state.chain}/history/story-events`) {
+    if (request.method === "GET" && url.pathname === "/history/story-events") {
       if (!state.history || state.undecodableEventCount() > 0)
         return jsonResponse({ error: "story_history_unavailable" }, 503);
       let after, limit;

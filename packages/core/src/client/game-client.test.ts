@@ -31,13 +31,6 @@ class FakeSocket implements HeraldSocket {
   }
 }
 
-// Offline deployment identity is checked against the same generated schema as a live deployment.
-const offlineManifest = {
-  world: { address: "0x1", abi: [{ type: "interface", name: "IWorld", items: [] }] },
-  contracts: [],
-  native: { activeSchema: bindings.schemaIdentity },
-};
-
 const hello = { confirmed_block: 12, epoch: "epoch-a", preconfirmed_block: null, seq: 0, type: "hello" };
 const rulesSnapshot = {
   type: "snapshot",
@@ -56,22 +49,18 @@ const createHarness = (overrides: Partial<CreateGameClientInput> = {}) => {
   const sockets: FakeSocket[] = [];
   const scheduler = createManualGameSyncScheduler();
   const input: CreateGameClientInput = {
-    world: {
-      id: "blitz",
-      chain: "madara",
+    shard: {
+      url: "http://herald.test",
+      chainId: "0x1",
+      releaseId: bindings.schemaIdentity,
       rpcUrl: "http://127.0.0.1:1",
-      heraldBaseUrl: "http://herald.test",
       admissionUrl: "http://admission.test",
+      accountClassHash: "0x2",
+      contracts: { season: "0x1" },
       worldAddress: "0x1",
-      contractsBySelector: {},
-      playerAccountClassHash: "0x2",
-      playerRegistryAddress: "0x3",
-      bindingAuthorityAddress: "0x4",
     },
     gameId: 54,
     presetId: 2,
-    networkConfig: { rpcUrl: "http://127.0.0.1:1", manifest: offlineManifest as never },
-    setupEnvironment: {},
     native: {
       bindings: bindings as unknown as NativeWorldBindings,
       chainId: "0x1",

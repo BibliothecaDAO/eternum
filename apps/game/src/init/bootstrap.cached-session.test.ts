@@ -7,8 +7,8 @@ import type { BootstrappedEntrySession } from "./bootstrap";
 import { resolveCachedEntrySessionForContext } from "./bootstrap-session-context";
 
 const createContext = (overrides: Partial<ResolvedEntryContext>): ResolvedEntryContext => ({
-  chain: "madara",
-  worldName: "iron-age",
+  chainId: "0xb2",
+  gameId: 9,
   intent: "play",
   autoSettle: false,
   source: "landing",
@@ -17,15 +17,7 @@ const createContext = (overrides: Partial<ResolvedEntryContext>): ResolvedEntryC
 
 const createSession = (context: ResolvedEntryContext): BootstrappedEntrySession => ({
   context,
-  profile: {
-    name: context.worldName,
-    chain: context.chain,
-    heraldBaseUrl: "https://herald.realms.test",
-    rpcUrl: "https://rpc.realms.test/rpc/v0_10_2",
-    worldAddress: "0x1",
-    contractsBySelector: {},
-    fetchedAt: 0,
-  },
+  profile: { chainId: context.chainId, gameId: context.gameId, presetId: 2, name: "iron-age", fetchedAt: 0 },
   setupResult: {} as never,
 });
 

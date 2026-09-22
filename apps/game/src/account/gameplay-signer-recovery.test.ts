@@ -27,7 +27,7 @@ function fixture(onChainKey = "0x99") {
       isCurrent,
     }),
   );
-  const configured = configureGameplayAccountSubmits(account as unknown as Account, "madara", recover);
+  const configured = configureGameplayAccountSubmits(account as unknown as Account, "0x1", recover);
   return { address, provider, api, execute, account, configured, recover, isCurrent };
 }
 afterEach(() => {

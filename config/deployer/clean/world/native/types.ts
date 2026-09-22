@@ -1,4 +1,5 @@
 import type { NativeRelease, NativeSchema } from "../../../../../apps/herald/src/native/schema";
+import type { ShardRecord } from "../../../../../apps/herald/src/shard-manifest";
 import type { ClassArtifact } from "../../shared/declare";
 import type { Abi } from "starknet";
 
@@ -12,6 +13,7 @@ export interface NativeWorldManifest {
     selector: string;
   }>;
   abis: Abi;
+  shard: ShardRecord;
 }
 export interface NativeAuthentication {
   submitter: string;

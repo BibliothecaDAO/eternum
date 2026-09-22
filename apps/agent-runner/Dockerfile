@@ -31,7 +31,7 @@ FROM base AS prod-deps
 RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
     pnpm install --frozen-lockfile --prod --filter "@bibliothecadao/agent-runner..."
 
-# The repository layout preserves workspace symlinks and schema imports. The deployment mounts its native manifest.
+# The repository layout preserves workspace symlinks and schema imports.
 FROM oven/bun:${BUN_VERSION}-slim AS runtime
 WORKDIR /app
 COPY --from=prod-deps /app/node_modules ./node_modules

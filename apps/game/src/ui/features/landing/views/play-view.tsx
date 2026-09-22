@@ -31,12 +31,10 @@ import {
 import { startGameEntryTimeline, markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
 import { useLocation, useNavigate } from "react-router-dom";
 import { UnifiedGameGrid, type WorldSelection } from "../components/game-selector/game-card-grid";
-import { getGameEnvironmentsForChain } from "@config";
+import { ShardUrlForm } from "../components/shard-url-form";
 import { GameReviewModal } from "../components/game-review-modal";
 import type { LandingModeFilter, LandingEntryRouteState } from "../lib/landing-entry-state";
-import { setGameReviewDismissed } from "../lib/game-review-storage";
 import { useLandingContext } from "../context/landing-context";
-import { useLandingNetworkState } from "../hooks/use-landing-network-state";
 import { invalidateWorldListQueries } from "@/hooks/world-list-queries";
 import { FACTORY_GAME_LIST_REFRESH_EVENT } from "../../factory-v2/game-list-refresh-event";
 
@@ -512,13 +510,7 @@ const ModeCoexistenceHero = ({
     setBackgroundId(bgMap[modeFilter]);
   }, [modeFilter, setBackgroundId]);
 
-  // One world hosts both formats; the hero offers Eternum when the build chain has an Eternum environment.
-  const hasEternumEnvironment = getGameEnvironmentsForChain(env.VITE_PUBLIC_CHAIN).some(
-    (environment) => environment.gameType === "eternum",
-  );
-  const availableModes = (Object.keys(MODE_VISUALS) as Array<LandingModeFilter>).filter(
-    (mode) => mode !== "season" || hasEternumEnvironment,
-  );
+  const availableModes = Object.keys(MODE_VISUALS) as Array<LandingModeFilter>;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -692,10 +684,6 @@ const PlayTabContent = ({
   disabled?: boolean;
 }) => {
   const resolvedMode: "blitz" | "eternum" = modeFilter === "season" ? "eternum" : "blitz";
-  // The Played column hides dev-mode (practice) games on production so the ladder shows real
-  // matches only. On the madara lab every game is dev-mode, so that rule would hide them all —
-  // show every ended game there, whether or not the viewer took part.
-  const playedDevModeFilter = env.VITE_PUBLIC_CHAIN === "madara" ? undefined : false;
 
   return (
     <div className={cn("flex flex-col gap-4", disabled && "opacity-50 pointer-events-none")}>
@@ -763,7 +751,6 @@ const PlayTabContent = ({
               onSpectate={onSpectate}
               onSeeScore={onSeeScore}
               modeFilter={resolvedMode}
-              devModeFilter={playedDevModeFilter}
               statusFilter="ended"
               hideHeader
               hideLegend
@@ -773,6 +760,7 @@ const PlayTabContent = ({
           </div>
         </div>
       </div>
+      <ShardUrlForm />
     </div>
   );
 };
@@ -790,7 +778,6 @@ export const PlayView = ({
   const queryClient = useQueryClient();
   const location = useLocation();
   const navigate = useNavigate();
-  const { preferredChain } = useLandingNetworkState();
 
   // Review flow state
   const [reviewWorld, setReviewWorld] = useState<WorldSelection | null>(null);
@@ -957,15 +944,9 @@ export const PlayView = ({
     }
   }, [queryClient]);
 
-  const dismissReviewForWorld = useCallback((world: WorldSelection | null) => {
-    if (!world?.chain || !world.worldAddress) return;
-    setGameReviewDismissed(world.chain, world.worldAddress);
-  }, []);
-
   const handleCloseReviewModal = useCallback(() => {
-    dismissReviewForWorld(reviewWorld);
     setReviewWorld(null);
-  }, [dismissReviewForWorld, reviewWorld]);
+  }, []);
 
   const handleRequireSignIn = useCallback(() => {
     requestSignIn({ redirectTo: currentLandingHref });

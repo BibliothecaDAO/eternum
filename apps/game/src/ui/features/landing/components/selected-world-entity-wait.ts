@@ -1,15 +1,7 @@
-import { nativeBindings } from "@/runtime/world/native-manifest";
-import { resolveWorldIdForGame, nativeModelDefinition } from "@bibliothecadao/eternum/game-client";
-import { requireWorldById } from "@/runtime/world/world-directory";
-import { buildHeraldGameStreamUrl } from "@bibliothecadao/eternum/game-client";
-import type { GameChain as Chain } from "@realms-world/chain";
+import { nativeBindings } from "@/runtime/world/native-bindings";
+import { requireOpenShard } from "@/runtime/world/shards";
+import { buildHeraldGameStreamUrl, nativeModelDefinition, type GameRef } from "@bibliothecadao/eternum/game-client";
 import { HeraldGameSyncTransport } from "@bibliothecadao/eternum/game-sync";
-
-interface EntitySubscriptionTarget {
-  chain: Chain;
-  gameId: number;
-  heraldBaseUrl: string;
-}
 
 interface WaitForEntitySubscriptionStateInput<T> {
   description: string;
@@ -21,12 +13,9 @@ interface WaitForEntitySubscriptionStateInput<T> {
   subscribe: (onChange: () => void) => Promise<() => void>;
 }
 
-interface WaitForSelectedWorldEntityStateInput<T> extends Omit<WaitForEntitySubscriptionStateInput<T>, "subscribe"> {
-  chain: Chain;
-  gameId?: number;
+interface WaitForSelectedWorldEntityStateInput<T>
+  extends Omit<WaitForEntitySubscriptionStateInput<T>, "subscribe">, GameRef {
   modelNames: readonly string[];
-  worldId?: string | null;
-  worldName: string;
 }
 
 const createAbortError = (): Error => {
@@ -37,27 +26,6 @@ const createAbortError = (): Error => {
 
 export const isSelectedWorldEntityWaitAborted = (error: unknown): boolean =>
   error instanceof Error && error.name === "AbortError";
-
-const resolveEntitySubscriptionTarget = async ({
-  chain,
-  gameId,
-  worldId,
-  worldName,
-}: Pick<
-  WaitForSelectedWorldEntityStateInput<unknown>,
-  "chain" | "gameId" | "worldId" | "worldName"
->): Promise<EntitySubscriptionTarget> => {
-  if (!gameId || gameId <= 0) {
-    throw new Error(`Cannot subscribe to selected ${chain} game "${worldName}" without its game id`);
-  }
-  const resolvedWorldId = worldId ?? (await resolveWorldIdForGame(worldName));
-  const world = requireWorldById(resolvedWorldId);
-  return {
-    gameId,
-    chain,
-    heraldBaseUrl: world.heraldBaseUrl,
-  };
-};
 
 export const waitForEntitySubscriptionState = async <T>(input: WaitForEntitySubscriptionStateInput<T>): Promise<T> => {
   if (input.signal?.aborted) throw createAbortError();
@@ -158,10 +126,10 @@ export const waitForEntitySubscriptionState = async <T>(input: WaitForEntitySubs
 export const waitForSelectedWorldEntityState = async <T>(
   input: WaitForSelectedWorldEntityStateInput<T>,
 ): Promise<T> => {
-  const target = await resolveEntitySubscriptionTarget(input);
+  const shard = await requireOpenShard(input.chainId);
   const transport = new HeraldGameSyncTransport({
     modelDefinition: nativeModelDefinition(nativeBindings),
-    url: buildHeraldGameStreamUrl(target.heraldBaseUrl, target.chain, target.gameId),
+    url: buildHeraldGameStreamUrl(shard.url, input.gameId),
   });
   const watchedModels = new Set(input.modelNames);
   return waitForEntitySubscriptionState({

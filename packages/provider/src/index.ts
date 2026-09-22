@@ -10,12 +10,11 @@ export type { NativeCommand, NativeCommandPayloads } from "./native-command";
 /**
  * Provider class for interacting with the Eternum game contracts
  *
- * @param manifest - The native manifest containing contract addresses and ABIs
+ * @param contracts - The shard's command entrypoint and bridge addresses
  * @param url - Optional RPC URL for the provider
  */
 import { encodeNativeCommand, type NativeCommand, type NativeCommandPayloads } from "./native-command";
 import type { Abi } from "starknet";
-import type { Manifest } from "@bibliothecadao/types";
 import * as SystemProps from "@bibliothecadao/types";
 import EventEmitter from "eventemitter3";
 import {
@@ -225,8 +224,14 @@ const resolveTransactionFailureStage = (error: unknown, fallback: TransactionFai
   return fallback;
 };
 
+/** The shard contracts a provider submits to. */
+export interface ProviderContracts {
+  world: string;
+  bridge?: string;
+}
+
 export class EternumProvider extends EventEmitter {
-  readonly manifest: Manifest;
+  readonly contracts: ProviderContracts;
   readonly provider: RpcProvider;
   promiseQueue: PromiseQueue;
   private readonly TRANSACTION_CONFIRM_TIMEOUT_MS = 10_000;
@@ -250,12 +255,12 @@ export class EternumProvider extends EventEmitter {
   /**
    * Create a new EternumProvider instance
    *
-   * @param manifest - The native manifest containing contract info
+   * @param contracts - The shard's command entrypoint and bridge addresses
    * @param url - Optional RPC URL
    * @param scope - Game scope and optional fixed execution bounds
    */
   constructor(
-    manifest: Manifest,
+    contracts: ProviderContracts,
     url?: string,
     retryConfig?: RetryConfig,
     scope?: {
@@ -265,7 +270,7 @@ export class EternumProvider extends EventEmitter {
     },
   ) {
     super();
-    this.manifest = manifest;
+    this.contracts = contracts;
     this.provider = new RpcProvider({ nodeUrl: url });
     this.retryConfig = retryConfig;
     this.gameId = scope?.gameId ?? 0;
@@ -277,7 +282,7 @@ export class EternumProvider extends EventEmitter {
     // stays for per-signer serialization; a backlog still coalesces naturally.
     this.promiseQueue = new PromiseQueue(
       { executeAndCheckTransaction: (...args) => this.executeAndCheckTransaction(...args) },
-      { batchDelayMs: 0, batchCalls: !("native" in this.manifest) },
+      { batchDelayMs: 0, batchCalls: false },
     );
   }
 
@@ -286,7 +291,6 @@ export class EternumProvider extends EventEmitter {
   }
 
   public setNativeSubmission(submit: NativeSubmission, abi: Abi, ownedStructure: (actor: string) => number): void {
-    if (!("native" in this.manifest)) throw new Error("Native submission requires a native deployment");
     this.nativeSubmission = submit;
     this.commandAbi = abi;
     this.resolveOwnedStructure = ownedStructure;
@@ -302,7 +306,7 @@ export class EternumProvider extends EventEmitter {
       signer,
       transactionType,
       calls: {
-        contractAddress: this.manifest.world.address,
+        contractAddress: this.contracts.world,
         entrypoint: command.kind,
         calldata: [String(this.gameId), ...encodeNativeCommand(this.commandAbi, command)],
       },
@@ -313,9 +317,8 @@ export class EternumProvider extends EventEmitter {
     return this.resolveOwnedStructure(actor);
   }
   private bridgeAddress(): string {
-    const native = (this.manifest as unknown as { native: { domains: { bridge: { address: string } } } }).native;
-    if (!native?.domains.bridge?.address) throw new Error("Native bridge is not configured");
-    return native.domains.bridge.address;
+    if (!this.contracts.bridge) throw new Error("Native bridge is not configured");
+    return this.contracts.bridge;
   }
 
   public setTransactionStreamWaiter(
@@ -403,9 +406,8 @@ export class EternumProvider extends EventEmitter {
       return undefined;
     }
 
-    const worldAddress =
-      this.normalizeAddress((this.manifest?.world?.address as BigNumberish | undefined) ?? undefined) ?? "unknown";
-    const nodeUrl = (this.provider as any)?.channel?.nodeUrl ?? (this.manifest as any)?.world?.metadata?.rpc_url;
+    const worldAddress = this.normalizeAddress(this.contracts.world) ?? "unknown";
+    const nodeUrl = (this.provider as any)?.channel?.nodeUrl;
     const transactionSignature = this.buildTransactionCacheSignature(transactionDetails);
     return `${String(nodeUrl ?? "unknown")}:${worldAddress}:${signerAddress}:${txType}:${transactionSignature}`;
   }

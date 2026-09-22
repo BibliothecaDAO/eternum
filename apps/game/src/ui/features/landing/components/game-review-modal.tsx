@@ -11,6 +11,7 @@ import { ArrowLeft, ArrowRight, Copy, Flag, Gift, Loader2, Share2, X } from "@/u
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type MutableRefObject } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
 
+import { gameKey } from "@/runtime/world/store";
 import { useGameReviewData } from "../hooks/use-game-review-data";
 import { UnifiedGameGrid, type GameData, type WorldSelection } from "./game-selector/game-card-grid";
 import { ScoreCardContent } from "./score-card-content";
@@ -191,11 +192,11 @@ export const GameReviewModal = ({
   onRequireSignIn,
 }: GameReviewModalProps) => {
   const worldName = world?.name;
-  const worldChain = world?.chain;
+  const reviewedGameKey = world ? gameKey(world) : null;
 
   const { data, isLoading, error, refetch } = useGameReviewData({
+    game: world,
     worldName,
-    chain: worldChain,
     enabled: isOpen,
   });
 
@@ -303,7 +304,7 @@ export const GameReviewModal = ({
     setFrozenSnapshot(null);
     setMapFingerprintZoom(MAP_FINGERPRINT_DEFAULT_ZOOM);
     setMapFingerprintGoldLevel(MAP_FINGERPRINT_DEFAULT_GOLD_LEVEL);
-  }, [isOpen, worldName, worldChain]);
+  }, [isOpen, reviewedGameKey]);
 
   useEffect(() => {
     if (!isOpen || !data) return;
@@ -433,7 +434,7 @@ export const GameReviewModal = ({
     setStepIndex((prev) => Math.max(0, prev - 1));
   }, []);
 
-  if (!isOpen || !worldName || !worldChain) return null;
+  if (!isOpen || !world) return null;
   const currentStepNumber = Math.min(stepIndex + 1, steps.length);
 
   return (

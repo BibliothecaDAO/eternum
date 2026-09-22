@@ -1,4 +1,4 @@
-import type { WorldDeployment } from "@/runtime/world/world-directory";
+import type { Shard } from "@bibliothecadao/eternum/game-client";
 import { fetchHeraldGameLeaderboard, fetchHeraldGameSnapshot } from "@bibliothecadao/eternum/game-client";
 import { type HeraldGameSnapshot, type PlayerLeaderboardActivityEntry } from "@bibliothecadao/eternum/game-sync";
 
@@ -87,7 +87,7 @@ export const buildLandingLeaderboard = (
   });
 };
 
-const fetchLeaderboardSource = async (world: WorldDeployment, gameId: number) => {
+const fetchLeaderboardSource = async (world: Shard, gameId: number) => {
   const [snapshot, leaderboard] = await Promise.all([
     fetchHeraldGameSnapshot(world, gameId, ["AddressName"]),
     fetchHeraldGameLeaderboard(world, gameId),
@@ -96,7 +96,7 @@ const fetchLeaderboardSource = async (world: WorldDeployment, gameId: number) =>
 };
 
 export const fetchLandingLeaderboard = async (
-  world: WorldDeployment,
+  world: Shard,
   gameId: number,
   limit: number = DEFAULT_LIMIT,
   offset = 0,
@@ -106,7 +106,7 @@ export const fetchLandingLeaderboard = async (
 };
 
 export const fetchLandingLeaderboardEntryByAddress = async (
-  world: WorldDeployment,
+  world: Shard,
   gameId: number,
   playerAddress: string,
 ): Promise<LandingLeaderboardEntry | null> => {

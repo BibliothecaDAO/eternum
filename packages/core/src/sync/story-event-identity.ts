@@ -1,5 +1,5 @@
 export interface StoryEventScope {
-  chain: string;
+  chainId: string;
   worldAddress: string;
   gameId: number;
 }
@@ -8,13 +8,13 @@ const FELT_PRIME = (1n << 251n) + 17n * (1n << 192n) + 1n;
 
 /** A deployment and game boundary, independent of transport URLs or display names. */
 export function storyEventScopeKey(scope: StoryEventScope): string {
-  if (!scope.chain || scope.chain.trim() !== scope.chain) throw new Error("StoryEvent requires a chain");
+  if (!scope.chainId || scope.chainId.trim() !== scope.chainId) throw new Error("StoryEvent requires a chain id");
   if (!Number.isSafeInteger(scope.gameId) || scope.gameId <= 0) {
     throw new Error("StoryEvent requires a positive game id");
   }
   const world = normalizeIdentityFelt(scope.worldAddress, "world address");
   if (world === "0x0") throw new Error("StoryEvent requires a deployed world address");
-  return `story:v1:${encodeURIComponent(scope.chain)}:${world}:${normalizeIdentityFelt(scope.gameId, "game_id")}`;
+  return `story:v1:${encodeURIComponent(scope.chainId)}:${world}:${normalizeIdentityFelt(scope.gameId, "game_id")}`;
 }
 
 /**

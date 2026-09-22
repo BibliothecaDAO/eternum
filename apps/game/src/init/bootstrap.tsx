@@ -8,9 +8,8 @@ import { SupersededGameSyncStartError } from "@bibliothecadao/eternum/game-sync"
 import { type SystemCallAuthHandler } from "@bibliothecadao/types";
 
 import { resolveEntryContextCacheKey, type ResolvedEntryContext } from "@/game-entry/context";
-import { applyWorldSelection, type WorldProfile } from "@/runtime/world";
-import { requireWorldById } from "@/runtime/world/world-directory";
-import type { GameChain as Chain } from "@realms-world/chain";
+import { applyGameSelection, type GameProfile } from "@/runtime/world";
+import { requireOpenShard } from "@/runtime/world/shards";
 import useSettlementStore from "../hooks/store/use-settlement-store";
 import { useSyncStore } from "../hooks/store/use-sync-store";
 import { useTransactionStore } from "../hooks/store/use-transaction-store";
@@ -28,7 +27,7 @@ export type { GameClientSetup as SetupResult } from "@bibliothecadao/eternum/gam
 
 export interface BootstrappedEntrySession {
   context: ResolvedEntryContext;
-  profile: WorldProfile;
+  profile: GameProfile;
   setupResult: SetupResult;
 }
 
@@ -59,24 +58,7 @@ export const getCachedBootstrappedEntrySession = (context?: ResolvedEntryContext
 };
 
 const resolveBootstrapSelection = (context: ResolvedEntryContext): BootstrapSelection => {
-  return {
-    cacheKey: resolveEntryContextCacheKey(context),
-    chain: context.chain,
-    worldName: context.worldName,
-  };
-};
-
-const applyWorldSelectionForEntryContext = async (context: ResolvedEntryContext): Promise<WorldProfile> => {
-  const result = await applyWorldSelection(
-    {
-      name: context.worldName,
-      chain: context.chain,
-      worldAddress: context.worldAddress,
-    },
-    context.chain,
-  );
-
-  return result.profile;
+  return { cacheKey: resolveEntryContextCacheKey(context) };
 };
 
 const runBootstrap = async ({
@@ -84,7 +66,7 @@ const runBootstrap = async ({
   profile,
 }: {
   context: ResolvedEntryContext;
-  profile: WorldProfile;
+  profile: GameProfile;
 }): Promise<BootstrapResult> => {
   const stores = resolveBootstrapStores();
   const reportProgress = createInitialSyncProgressReporter(stores.syncingStore.setInitialSyncProgress);
@@ -92,7 +74,6 @@ const runBootstrap = async ({
   reportProgress(0);
   try {
     const client = await createEntryGameClient({
-      chain: context.chain,
       profile,
       reportProgress,
       onSetupCompleted: renderer.prepare,
@@ -129,7 +110,7 @@ export const bootstrapGameForEntryContext = async (
   markGameEntryMilestone("destination-resolved");
   markGameEntryMilestone("world-selection-started");
   lifecycle.onWorldSelectionStarted?.();
-  const profile = await applyWorldSelectionForEntryContext(context);
+  const profile = await applyGameSelection(context);
   lifecycle.onWorldSelectionCompleted?.();
   markGameEntryMilestone("world-selection-completed");
   lifecycle.onBootstrapStarted?.();
@@ -170,17 +151,9 @@ const resetBootstrapForSelectionChange = (selection: BootstrapSelection) => {
   }
 
   const previousSelection = bootstrapSession.getTrackedSelection();
-
-  if (resetReason === "chain-changed") {
-    verboseLog(
-      `[BOOTSTRAP] Chain changed from "${previousSelection.chain}" to "${selection.chain}", resetting and re-bootstrapping...`,
-    );
-  } else {
-    verboseLog(
-      `[BOOTSTRAP] World changed from "${previousSelection.worldName}" to "${selection.worldName}", re-bootstrapping...`,
-    );
-  }
-
+  verboseLog(
+    `[BOOTSTRAP] Game changed from "${previousSelection.cacheKey}" to "${selection.cacheKey}", re-bootstrapping...`,
+  );
   resetBootstrap();
 };
 
@@ -216,8 +189,7 @@ const createBootstrapRendererHandoff = () => {
 };
 
 interface EntryGameClientInput {
-  chain: Chain;
-  profile: WorldProfile;
+  profile: GameProfile;
   reportProgress: InitialSyncProgressReporter;
   onSetupCompleted: (setup: SetupResult) => void;
 }
@@ -226,11 +198,10 @@ const createEntryGameClient = async (input: EntryGameClientInput): Promise<GameC
   const timing = { syncStartedAt: performance.now() };
   verboseLog("[STARTING GAME SETUP]");
   markGameEntryMilestone("setup-started");
-  const world = requireWorldById(input.profile.worldId);
   const client = await createBrowserGameClient({
-    world,
-    gameId: input.profile.gameId ?? 0,
-    presetId: input.profile.presetId ?? 0,
+    shard: await requireOpenShard(input.profile.chainId),
+    gameId: input.profile.gameId,
+    presetId: input.profile.presetId,
     authHandler: bootstrapAuthHandler,
     observer: createGameSyncObserver({
       reportProgress: input.reportProgress,

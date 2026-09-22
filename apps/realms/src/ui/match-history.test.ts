@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 import { afterEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/env", () => ({
-  env: { VITE_PUBLIC_HERALD_URL: "https://herald.test", VITE_PUBLIC_HERALD_CHAIN: "madara" },
+  env: { VITE_PUBLIC_HERALD_URL: "https://herald.test" },
 }));
 import { HeraldClient, type DirectoryGame } from "@/services/herald";
 import { matchHistory } from "./match-history";

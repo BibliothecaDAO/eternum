@@ -22,7 +22,7 @@ const envelope = {
     owner: "0x1",
     title: "Test",
     body: "Secret message",
-    target: "/enter/madara/game",
+    target: "/enter/0xa1/7",
     createdAt: Date.now(),
     expiresAt: Date.now() + 120_000,
   },

@@ -35,7 +35,7 @@ const CONSOLE_FAILURE_PATTERNS = [
 const GAME_CLIENT_MODULE_URL = `/@fs${fileURLToPath(new URL("../../../../packages/core/dist/client/index.js", import.meta.url))}`;
 
 const captureScript = `(async () => {
-  const [{ getScopedGameId }, { getActiveWorld }] =
+  const [{ getScopedGameId }, { getActiveGame }] =
     await Promise.all([
       import('${GAME_CLIENT_MODULE_URL}'),
       import('/src/runtime/world/store.ts')
@@ -49,7 +49,7 @@ const captureScript = `(async () => {
   const terrainCoverage = worldmap?.proceduralTerrain?.getPresentationCoverage?.() ?? null;
   const renderDiagnostics = window.getWorldmapRenderDiagnostics?.() ?? null;
   const rendererMemory = window.__memoryMonitorRenderer?.info?.memory ?? gameRenderer?.renderer?.info?.memory ?? null;
-  const activeWorld = getActiveWorld();
+  const activeWorld = getActiveGame();
   const observation = {
     pathname: location.pathname,
     canvasPresent: Boolean(document.getElementById('main-canvas')),
@@ -57,7 +57,7 @@ const captureScript = `(async () => {
     gameIdentity: {
       pathname: location.pathname,
       gameId: provider?.gameId ?? getScopedGameId(),
-      worldAddress: provider?.getWorldAddress?.() ?? activeWorld?.worldAddress ?? null,
+      worldAddress: provider?.getWorldAddress?.() ?? null,
       worldName: activeWorld?.name ?? null,
       tileRows: store ? Array.from(store.inGame('TileOpt', getScopedGameId())).length : null,
       structureRows: store ? Array.from(store.inGame('Structure', getScopedGameId())).length : null
@@ -110,8 +110,9 @@ function readOptionalInteger(args, name) {
 }
 
 function readConfiguration(args) {
-  const worldName = readOption(args, "--world", "");
-  if (!worldName) throw new Error("Pass --world with a populated game name; world selection must be explicit.");
+  const chainId = readOption(args, "--chain-id", "");
+  const gameId = readOptionalInteger(args, "--game-id");
+  if (!chainId || !gameId) throw new Error("Pass --chain-id and --game-id; game selection must be explicit.");
   const rendererMode = readOption(args, "--renderer", "webgpu-force-webgl");
   if (!["webgpu-auto", "webgpu-force-webgl"].includes(rendererMode)) {
     throw new Error("Unsupported --renderer");
@@ -122,20 +123,19 @@ function readConfiguration(args) {
   if (!Number.isFinite(timeoutMs) || timeoutMs <= 0 || !Number.isInteger(col) || !Number.isInteger(row)) {
     throw new Error("Invalid timeout or map coordinates");
   }
-  const chain = readOption(args, "--chain", "madara");
   const url = createWorldmapUrl({
     baseUrl: readOption(args, "--base-url", "http://127.0.0.1:4175"),
-    chain,
+    chainId,
     col,
+    gameId,
     rendererMode,
     row,
-    worldName,
   });
   return {
     artifactDir: resolve(readOption(args, "--artifact-dir", ".context/verification/worldmap-terrain")),
-    chain,
+    chainId,
     col,
-    gameId: readOptionalInteger(args, "--game-id"),
+    gameId,
     headed: args.includes("--headed"),
     pathname: new URL(url).pathname,
     rendererMode,
@@ -143,12 +143,11 @@ function readConfiguration(args) {
     session: `worldmap-terrain-${process.pid}`,
     timeoutMs,
     url,
-    worldName,
   };
 }
 
-function createWorldmapUrl({ baseUrl, chain, col, rendererMode, row, worldName }) {
-  const url = new URL(buildSceneSmokeUrl({ baseUrl, chain, worldName, rendererMode, scene: "map" }));
+function createWorldmapUrl({ baseUrl, chainId, col, gameId, rendererMode, row }) {
+  const url = new URL(buildSceneSmokeUrl({ baseUrl, chainId, gameId, rendererMode, scene: "map" }));
   url.searchParams.set("col", String(col));
   url.searchParams.set("row", String(row));
   return url.toString();
@@ -218,7 +217,6 @@ function expectedObservation(config, scenario) {
     previousRevision: scenario.previousRevision,
     rendererMode: config.rendererMode,
     resourcePolicy: scenario.resourcePolicy,
-    worldName: config.worldName,
   };
 }
 
@@ -484,9 +482,8 @@ function buildVerificationSummary(config, results) {
     dirty: config.revision.dirty,
     fixtureIdentity: FIXTURE_IDENTITY,
     game: {
-      chain: config.chain,
-      expectedGameId: config.gameId ?? null,
-      worldName: config.worldName,
+      chainId: config.chainId,
+      expectedGameId: config.gameId,
     },
     notExercised: REQUIRED_SCENARIOS_NOT_EXERCISED,
     requestedBackend: config.rendererMode,

@@ -28,7 +28,7 @@ describe("automatic notifications through PostgreSQL", () => {
   let outbox: ReturnType<typeof createNotificationOutbox>;
   let subscriptions: ReturnType<typeof createPushSubscriptionStore>;
   let now: number, head: number, events: HeraldHistoryEvent[];
-  const config = { url: "https://herald.test", chain: "madara", worldAddress: "0x123" };
+  const config = { url: "https://herald.test", chainId: "0xa1", worldAddress: "0x123" };
   const sent = vi.fn();
   let providerStatus = 201;
   const vapid = webpush.generateVAPIDKeys();
@@ -40,12 +40,12 @@ describe("automatic notifications through PostgreSQL", () => {
   const source = createNotificationSource(config, async (url) => {
     if (url.pathname.endsWith("/games"))
       return Response.json({
-        chain: "madara",
+        chain: "0xa1",
         world_address: "0x123",
         games: [{ game_id: 7, name: "ended-game", status: "Ended" }],
       });
     return Response.json({
-      chain: "madara",
+      chain: "0xa1",
       world_address: "0x123",
       complete_through_block: head,
       next_cursor: endOfStoryBlock(head),
@@ -112,11 +112,11 @@ describe("automatic notifications through PostgreSQL", () => {
     return {
       story: "BattleStory",
       notification: buildStoryNotification({
-        sourceId: storyEventIdentity({ chain: "madara", worldAddress: "0x123", gameId: 7 }, event.value),
+        sourceId: storyEventIdentity({ chainId: "0xa1", worldAddress: "0x123", gameId: 7 }, event.value),
         value: event.value,
         owner: "0x1",
         gameName: "ended-game",
-        target: "/enter/madara/ended-game",
+        target: "/enter/0xa1/7",
         now,
       })!,
     };
@@ -153,7 +153,7 @@ describe("automatic notifications through PostgreSQL", () => {
           id,
           token: randomUUID(),
           gameAlerts: true,
-          source: { chain: "madara", worldAddress: "0x123" },
+          source: { chainId: "0xa1", worldAddress: "0x123" },
           subscription: {
             endpoint: `https://fcm.googleapis.com/fcm/send/${index}`,
             keys: { p256dh: vapid.publicKey, auth: "A".repeat(22) },
@@ -179,7 +179,7 @@ describe("automatic notifications through PostgreSQL", () => {
     expect(new Set(sent.mock.calls.map((call) => call[1].notification.id)).size).toBe(1);
     expect(sent.mock.calls[0]![1]).toMatchObject({
       kind: "game",
-      notification: { target: "/enter/madara/ended-game" },
+      notification: { target: "/enter/0xa1/7" },
     });
     expect(ownerOf).toHaveBeenCalledTimes(2);
     outbox = createNotificationOutbox(drizzle(database.pool, { schema }));
@@ -349,13 +349,13 @@ describe("automatic notifications through PostgreSQL", () => {
   it("does not enqueue or claim deliveries belonging to a different automatic source", async () => {
     await tick();
     await database.pool.query(
-      "UPDATE notification_push_subscriptions SET game_alerts_source='appchain:0x123' WHERE owner='0x1'",
+      "UPDATE notification_push_subscriptions SET game_alerts_source='0xb2:0x123' WHERE owner='0x1'",
     );
     head = 11;
     events = [battle(100)];
     expect((await tick()).accepted).toBe(1);
     expect(sent.mock.calls[0]![1].notification.owner).toBe("0x2");
-    expect(await Effect.runPromise(outbox.claim("appchain:0x123", now))).toEqual([]);
+    expect(await Effect.runPromise(outbox.claim("0xb2:0x123", now))).toEqual([]);
   });
   it("delivers already-queued work while registry verification is unavailable", async () => {
     await tick();

@@ -1,5 +1,5 @@
 import { createBrowserGameClient } from "./game-client";
-import { requireWorldById } from "@/runtime/world/world-directory";
+import { requireOpenShard } from "@/runtime/world/shards";
 import type { WorldConfigMeta } from "@/hooks/use-world-availability";
 import { fetchHeraldGameDirectory } from "@bibliothecadao/eternum/game-client";
 import type { GameClient } from "@bibliothecadao/eternum";
@@ -12,11 +12,12 @@ export async function submitSettlement<T>(
   submit: (client: GameClient) => Promise<T>,
 ): Promise<T> {
   if (!meta.gameId) throw new Error("The selected game is not ready for settlement");
-  const world = requireWorldById(meta.worldId);
-  const directory = await fetchHeraldGameDirectory(world);
+  if (!meta.chainId) throw new Error("The selected game has no shard");
+  const shard = await requireOpenShard(meta.chainId);
+  const directory = await fetchHeraldGameDirectory(shard);
   const listing = directory.games.find((game) => game.game_id === meta.gameId);
-  if (!listing) throw new Error("The selected game is absent from the world directory");
-  const client = await createBrowserGameClient({ world, gameId: listing.game_id, presetId: listing.preset_id });
+  if (!listing) throw new Error("The selected game is absent from its shard's directory");
+  const client = await createBrowserGameClient({ shard, gameId: listing.game_id, presetId: listing.preset_id });
   try {
     client.connect(signer);
     const result = await submit(client);

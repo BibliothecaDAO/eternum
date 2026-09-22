@@ -5,7 +5,7 @@ import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
 import { resetBootstrap } from "@/init/bootstrap";
 import { buildEntryHref } from "@/play/navigation/play-route";
-import { getActiveWorld } from "@/runtime/world";
+import { getActiveGame } from "@/runtime/world";
 import { BuildingThumbs } from "@/ui/config";
 import Button from "@/ui/design-system/atoms/button";
 import { HUD_BODY, HUD_BODY_MUTED, HUD_HEADLINE } from "@/ui/design-system/atoms/hud-typography";
@@ -238,9 +238,9 @@ const useEnterActiveGameAsPlayer = () => {
   const navigate = useNavigate();
 
   return useCallback(() => {
-    const world = getActiveWorld();
+    const world = getActiveGame();
     if (!world) return;
     resetBootstrap();
-    navigate(buildEntryHref({ chain: world.chain, worldName: world.name, intent: "play", autoSettle: false }));
+    navigate(buildEntryHref({ chainId: world.chainId, gameId: world.gameId, intent: "play", autoSettle: false }));
   }, [navigate]);
 };

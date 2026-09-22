@@ -7,7 +7,7 @@ import {
   useNotificationDeliveryError,
 } from "@/pwa/local-notification-client";
 import type { NotificationDevice } from "@/pwa/notification-database";
-import { getActiveWorld } from "@/runtime/world";
+import { getActiveGame } from "@/runtime/world";
 import { buildEntryHref } from "@/play/navigation/play-route";
 import { parseNotificationPayload } from "@bibliothecadao/notifications";
 import { HUD_BODY } from "@/ui/design-system/atoms/hud-typography";
@@ -153,7 +153,7 @@ export function NotificationDeviceSettings({
 }
 
 function testNotification(owner: string) {
-  const world = getActiveWorld();
+  const world = getActiveGame();
   if (!world) throw new Error("Enter a game before sending a test notification.");
   const createdAt = Date.now();
   return parseNotificationPayload(
@@ -163,7 +163,7 @@ function testNotification(owner: string) {
       id: `test:${crypto.randomUUID()}`,
       title: "Realms notifications",
       body: "This device can receive local game notifications.",
-      target: buildEntryHref({ chain: world.chain, worldName: world.name, intent: "play", autoSettle: false }),
+      target: buildEntryHref({ chainId: world.chainId, gameId: world.gameId, intent: "play", autoSettle: false }),
       createdAt,
       expiresAt: createdAt + 120_000,
     },

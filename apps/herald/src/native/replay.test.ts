@@ -9,7 +9,7 @@ import { WorldFold } from "../world-fold";
 import { createHeraldRequestHandler } from "../http";
 import type { MadaraRpc } from "../madara-rpc";
 import type { RpcEvent, RpcBlockWithReceipts } from "../types";
-import { manifest, receipt, setup, rowEvent, rulesEvent } from "./fixtures";
+import { manifest, receipt, setup, rowEvent, rulesEvent, shardManifest } from "./fixtures";
 
 function block(number: number, events: RpcEvent[]): RpcBlockWithReceipts {
   return {
@@ -50,6 +50,7 @@ describe("native confirmed replay and transaction delivery", () => {
       createHeraldRequestHandler({
         readModels: createNativeWorldIngestion(native).readModels,
         chain: "madara",
+        manifest: shardManifest,
         worldAddress: decoder.registry.worldAddress,
         confirmedBlock: () => 13,
         chainTimestamp: () => 2160,
@@ -61,7 +62,7 @@ describe("native confirmed replay and transaction delivery", () => {
         metrics,
         undecodableEventCount: () => 0,
       });
-    for (const path of ["/madara/games", "/madara/games/1/leaderboard"]) {
+    for (const path of ["/games", "/games/1/leaderboard"]) {
       const rebuilt = await handler(restored)(new Request(`http://localhost${path}`));
       const live = await handler(uninterrupted)(new Request(`http://localhost${path}`));
       expect(rebuilt.status, await rebuilt.clone().text()).toBe(200);
@@ -199,6 +200,7 @@ it("halts a live confirmed fold atomically while leaving the process available",
   expect(fold.checkpoint()).toEqual(before);
   const handler = createHeraldRequestHandler({
     chain: "madara",
+    manifest: shardManifest,
     worldAddress: decoder.registry.worldAddress,
     confirmedBlock: () => live.confirmedBlock,
     chainTimestamp: () => live.chainTimestamp,

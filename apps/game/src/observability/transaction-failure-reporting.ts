@@ -8,7 +8,8 @@ import {
   type TransactionType,
 } from "@bibliothecadao/provider";
 import { env } from "../../env";
-import { getActiveWorld } from "@/runtime/world";
+import { getShard } from "@bibliothecadao/eternum/game-client";
+import { getActiveGame } from "@/runtime/world";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 import { resolveUserIdentity, resolveWalletIdentityMode } from "./wallet-identity";
 
@@ -181,11 +182,11 @@ const buildNormalizedReason = (error: unknown): string => {
 };
 
 const resolveDefaultContext = () => {
-  const activeWorld = getActiveWorld();
+  const activeGame = getActiveGame();
   return {
-    chain: activeWorld?.chain ?? env.VITE_PUBLIC_CHAIN,
-    worldName: activeWorld?.name,
-    worldAddress: activeWorld?.worldAddress,
+    chain: activeGame?.chainId,
+    worldName: activeGame?.name,
+    worldAddress: getShard(activeGame?.chainId)?.worldAddress,
   };
 };
 

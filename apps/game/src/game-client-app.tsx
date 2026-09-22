@@ -8,7 +8,7 @@ import { StarknetProvider } from "./hooks/context/starknet-provider";
 import { useUIStore } from "./hooks/store/use-ui-store";
 import { normalizeLegacyPlayLocation } from "./play/navigation/play-route";
 import { normalizePlayBootLocation } from "./play/navigation/play-route-boot-normalization";
-import { getActiveWorld } from "./runtime/world/store";
+import { getActiveGame } from "./runtime/world/store";
 import { resolveLegacyLandingHref } from "./ui/features/landing/navigation/landing-route-redirects";
 import { useBootDocumentState } from "./ui/modules/boot-loader";
 import { ConstructionGate } from "./ui/modules/construction-gate";
@@ -117,7 +117,7 @@ const LandingHomeRoute = () => {
 const GameRouteShell = ({ backgroundImage }: { backgroundImage: string }) => {
   const location = useLocation();
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
-  const normalizedLegacyHref = normalizeLegacyPlayLocation(location, getActiveWorld());
+  const normalizedLegacyHref = normalizeLegacyPlayLocation(location, getActiveGame());
 
   if (normalizedLegacyHref) {
     return <Navigate to={normalizedLegacyHref} replace />;

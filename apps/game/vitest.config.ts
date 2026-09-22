@@ -16,13 +16,7 @@ export default defineConfig({
     // they check are produced; the PR gate stays a behaviour suite.
     exclude: ["**/node_modules/**", "**/dist/**", ...ASSET_CHECK_FILES],
     env: {
-      VITE_PUBLIC_PLAYER_ACCOUNT_CLASS_HASH: "0x0000000000000000000000000000000000000002",
-      VITE_PUBLIC_PLAYER_REGISTRY_ADDRESS: "0x0000000000000000000000000000000000000003",
-      VITE_PUBLIC_BINDING_AUTHORITY_ADDRESS: "0x0000000000000000000000000000000000000004",
-      VITE_PUBLIC_FEE_TOKEN_ADDRESS: "0x0000000000000000000000000000000000000001",
-      VITE_PUBLIC_NODE_URL: "https://rpc.realms.test/rpc/v0_9_0",
-      VITE_PUBLIC_HERALD_URL: "https://herald.realms.test",
-      VITE_PUBLIC_ADMISSION_URL: "https://tickets.realms.test",
+      VITE_PUBLIC_SHARD_URL: "https://herald.realms.test",
       VITE_PUBLIC_IDENTITY_ORIGIN: "https://realms.test",
       VITE_PUBLIC_IDENTITY_RPC_URL: "https://identity-rpc.realms.test",
     },

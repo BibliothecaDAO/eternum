@@ -10,7 +10,6 @@ import { VitePWA } from "vite-plugin-pwa";
 import topLevelAwait from "vite-plugin-top-level-await";
 import wasm from "vite-plugin-wasm";
 import { resolveRendererViteAliases } from "./src/three/renderer-vite-config";
-import { clientDataPlugin } from "./build/client-data";
 import { PWA_PRECACHE_BUDGET_BYTES, PWA_PRECACHE_FILES } from "./build/pwa-assets.mjs";
 import { createPwaReleasePlugin } from "./build/pwa-release";
 
@@ -33,11 +32,7 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
     process.env.VITE_PUBLIC_GAME_VERSION ||
     undefined;
 
-  const plugins = [
-    clientDataPlugin(appEnv.NATIVE_WORLD_MANIFEST),
-    svgr({ dimensions: false, svgo: false, typescript: true }),
-    react(),
-  ];
+  const plugins = [svgr({ dimensions: false, svgo: false, typescript: true }), react()];
 
   if (shouldUseMkcert(isServe)) {
     plugins.unshift(mkcert() as any);

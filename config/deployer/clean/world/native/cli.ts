@@ -52,8 +52,13 @@ export async function runNativeDeployment(args: CliArgs, root: string): Promise<
     (transaction) => console.error(JSON.stringify({ event: "native_world_transaction", ...transaction })),
     declarer,
   );
+  const shard = {
+    chainId: await provider.getChainId(),
+    accountClassHash: identity.playerAccountClassHash,
+    contracts: { playerRegistry: identity.playerRegistryAddress, bindingAuthority: identity.bindingAuthorityAddress },
+  };
   writeWorldOutputs(
-    buildNativeManifest(local, report.before),
+    buildNativeManifest(local, report.before, shard),
     manifestPath,
     args["world-address-file"] ?? resolve(root, "deploy/athanor/.lab/native-world-address"),
   );

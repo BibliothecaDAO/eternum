@@ -15,7 +15,6 @@ describe("bindGameplayAccounts", () => {
     const result = await bindGameplayAccounts({
       accounts: [GUEST, OWNED],
       authority,
-      chain: "madara",
       playerRegistryAddress: REGISTRY,
       provider,
     });
@@ -39,7 +38,6 @@ describe("bindGameplayAccounts", () => {
     const result = await bindGameplayAccounts({
       accounts: [GUEST, OWNED],
       authority,
-      chain: "madara",
       playerRegistryAddress: REGISTRY,
       provider,
     });
@@ -55,7 +53,6 @@ describe("bindGameplayAccounts", () => {
       bindGameplayAccounts({
         accounts: [OWNED],
         authority: fakeAuthority(),
-        chain: "madara",
         playerRegistryAddress: REGISTRY,
         provider,
       }),
@@ -69,7 +66,6 @@ describe("bindGameplayAccounts", () => {
       bindGameplayAccounts({
         accounts: [OWNED],
         authority,
-        chain: "madara",
         playerRegistryAddress: REGISTRY,
         provider: fakeRegistry({}),
       }),

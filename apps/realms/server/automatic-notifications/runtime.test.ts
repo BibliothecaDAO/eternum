@@ -5,7 +5,7 @@ const mocks = vi.hoisted(() => ({ enabled: true, tick: vi.fn(), source: vi.fn() 
 vi.mock("../env", () => ({ serverEnv: {} }));
 vi.mock("./config", () => ({
   resolveAutomaticNotificationConfig: () =>
-    mocks.enabled ? { chain: "madara", worldAddress: "0x123", url: "https://herald.test" } : null,
+    mocks.enabled ? { chain: "madara", chainId: "0xa1", worldAddress: "0x123", url: "https://herald.test" } : null,
 }));
 vi.mock("./source", () => ({ createNotificationSource: mocks.source }));
 vi.mock("../binding", () => ({ ownerOfGameplayAccount: vi.fn(), verifyGameplayBindingChain: vi.fn() }));

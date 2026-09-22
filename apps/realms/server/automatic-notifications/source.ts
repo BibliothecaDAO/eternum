@@ -11,7 +11,7 @@ import {
 
 export interface NotificationSourceConfig {
   url: string;
-  chain: string;
+  chainId: string;
   worldAddress: string;
 }
 export function createNotificationSource(
@@ -28,15 +28,15 @@ export function createNotificationSource(
     return JSON.parse(await readNotificationBody(response, 2_000_000));
   };
   return {
-    key: `${config.chain}:${config.worldAddress}`,
+    key: `${config.chainId}:${config.worldAddress}`,
     page: async (after: StoryHistoryCursor | null): Promise<HeraldStoryHistoryPage> => {
       const query = after ? `&after=${encodeURIComponent(encodeStoryHistoryCursor(after))}` : "";
-      return validateStoryPage(await read(`${config.chain}/history/story-events?limit=100${query}`), config, after);
+      return validateStoryPage(await read(`history/story-events?limit=100${query}`), config, after);
     },
     games: async (): Promise<Map<number, string>> => {
-      const directory = (await read(`${config.chain}/games`)) as HeraldGameDirectory;
+      const directory = (await read("games")) as HeraldGameDirectory;
       if (
-        directory.chain !== config.chain ||
+        !isSourceChain(directory.chain, config) ||
         directory.world_address === undefined ||
         BigInt(directory.world_address) !== BigInt(config.worldAddress) ||
         !Array.isArray(directory.games) ||
@@ -54,6 +54,11 @@ export function createNotificationSource(
   };
 }
 
+/** Herald names its chain by chain id; any other spelling of the id is the same chain. */
+function isSourceChain(chain: unknown, config: NotificationSourceConfig): boolean {
+  return typeof chain === "string" && /^0x[0-9a-f]{1,64}$/i.test(chain) && BigInt(chain) === BigInt(config.chainId);
+}
+
 function validateStoryPage(
   value: unknown,
   config: NotificationSourceConfig,
@@ -62,7 +67,7 @@ function validateStoryPage(
   if (!value || typeof value !== "object") throw new Error("Invalid notification history");
   const page = value as HeraldStoryHistoryPage;
   if (
-    page.chain !== config.chain ||
+    !isSourceChain(page.chain, config) ||
     BigInt(page.world_address) !== BigInt(config.worldAddress) ||
     !Array.isArray(page.items) ||
     page.items.length > 100

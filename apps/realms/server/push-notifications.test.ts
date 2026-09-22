@@ -1,3 +1,4 @@
+import { expectedChainId } from "@realms-world/chain";
 import { Effect, Layer } from "effect";
 import { beforeEach, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
@@ -129,7 +130,7 @@ it("bounds and restricts requests and reports registration conflicts", async () 
   expect((await request("subscribe")).status).toBe(409);
 });
 it("sends only server-owned test text to this owner's device and expires dead endpoints", async () => {
-  const input = { owner: "0x1", id, target: "/enter/madara/game" };
+  const input = { owner: "0x1", id, target: "/enter/0xa1/7" };
   const response = await request("test", input);
   expect(response.headers.get("cache-control")).toBe("no-store");
   expect(await response.json()).toEqual({ status: "accepted" });
@@ -161,7 +162,7 @@ it("isolates request budgets by the socket-aware client supplied by the router",
 });
 
 it("exposes the configured automatic source and requires explicit matching-source consent", async () => {
-  const source = { chain: "madara", worldAddress: "0x123" };
+  const source = { chainId: `0x${BigInt(expectedChainId("madara")).toString(16)}`, worldAddress: "0x123" };
   const input = { ...registration, gameAlerts: true, source };
   expect((await request("subscribe", input)).status).toBe(503);
   mocks.automatic = true;

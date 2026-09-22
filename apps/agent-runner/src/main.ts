@@ -38,7 +38,7 @@ async function main(): Promise<number> {
     const agent = await buildAgent(model, tools, systemPrompt, resolveStreamFn(config, game, empire));
     const manifest = createRunManifest({
       dataDir,
-      chain: { chain: config.chain, rpcUrl: config.rpcUrl, heraldUrl: config.heraldUrl },
+      chain: { chain: game.client.shard.chainId, rpcUrl: game.client.shard.rpcUrl, heraldUrl: game.client.shard.url },
       game: {
         gameId: game.client.gameId,
         gameName: game.listing.name,
@@ -93,7 +93,7 @@ function describeGame(game: RunnerGame, config: RunnerConfig, empire: SettledEmp
     gameId: game.client.gameId,
     gameName: game.listing.name,
     mode: game.listing.mode,
-    chain: config.chain,
+    chain: game.client.shard.chainId,
     viewer: game.client.signer ? viewerAddress(game) : null,
     structures: empire.structures,
     explorers: empire.explorers,

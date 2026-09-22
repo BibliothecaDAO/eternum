@@ -9,7 +9,8 @@ import { Worker, isMainThread, parentPort, workerData, threadId } from "node:wor
 import path from "node:path";
 import { bindGameplayAccounts } from "@bibliothecadao/eternum";
 import { splitPlaytestRoster } from "../../../apps/launch-service/src/slots";
-import { configureGameplayAccountSubmits } from "@bibliothecadao/eternum/game-client";
+import { configureGameplayAccountSubmits, openShard } from "@bibliothecadao/eternum/game-client";
+import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
 import { Account, ec, logger } from "starknet";
 import { assertChainId } from "../../../packages/chain/chain-guard.js";
 import { launchGame } from "../../../config/deployer/clean/launch/runner";
@@ -44,12 +45,6 @@ interface HarnessCliOptions {
 
 interface GameplayContractsArtifact extends HarnessGameplayContracts {
   rpcUrl?: string;
-}
-
-interface WorldManifest {
-  world: { address: string };
-  contracts: Array<{ address: string; selector: string }>;
-  [key: string]: unknown;
 }
 
 interface LaunchedGame {
@@ -131,17 +126,15 @@ async function main(): Promise<void> {
   const options = parseHarnessArgs(process.argv.slice(2));
   if (isMainThread && options.workload === "frontier" && options.bots < 2)
     throw new Error("Frontier design run requires both player profiles");
-  const manifestPath = requiredEnvironmentValue("NATIVE_WORLD_MANIFEST", "native harness");
-  const admissionUrl = requiredEnvironmentValue("ADMISSION_URL", "native harness");
   const gameplayContractsPath = requiredEnvironmentValue("GAMEPLAY_CONTRACTS_PATH", "native harness");
   process.env.HERALD_URL = options.heraldUrl;
 
   const requests = options.functional ? undefined : measureHarnessRequests(options.rpcUrl);
   const provider = createHarnessProvider(options.rpcUrl);
-  const [chainId, gameplayContracts, manifest] = await Promise.all([
+  const [chainId, gameplayContracts, shard] = await Promise.all([
     provider.getChainId(),
     readJson<GameplayContractsArtifact>(path.resolve(REPOSITORY_ROOT, gameplayContractsPath)),
-    readJson<WorldManifest>(path.resolve(REPOSITORY_ROOT, manifestPath)),
+    openShard(options.heraldUrl, bindings.schemaIdentity),
   ]);
   assertChainId(chainId, "madara", "RPC_URL");
   if (BigInt(gameplayContracts.playerRegistryAddress) !== 0n) {
@@ -162,14 +155,13 @@ async function main(): Promise<void> {
     ...account,
     account: configureGameplayAccountSubmits(
       new Account({ provider, address: account.address, signer: account.privateKey }),
-      "madara",
+      chainId,
     ),
   }));
   const signingKeys = new Map(accounts.map(({ address, privateKey }) => [BigInt(address), privateKey]));
   const client = await connectHarnessGameClient({
     actor: accounts[0].address,
-    admissionUrl,
-    chainId,
+    shard,
     signIntent: async (actor, digest) => {
       const key = signingKeys.get(BigInt(actor.address));
       if (!key) throw new Error(`No harness signing key for ${actor.address}`);
@@ -177,10 +169,6 @@ async function main(): Promise<void> {
       return { r: signature.r, s: signature.s, publicKey: BigInt(ec.starkCurve.getStarkKey(key)) };
     },
     gameId: game.gameId,
-    gameplayContracts,
-    heraldUrl: options.heraldUrl,
-    manifest,
-    rpcUrl: options.rpcUrl,
   });
 
   try {
@@ -393,7 +381,6 @@ async function prepareGames(
       address: contracts.bindingAuthorityAddress,
       signer: requiredEnvironmentValue("BINDING_AUTHORITY_PRIVATE_KEY", "harness"),
     }),
-    chain: "madara",
     playerRegistryAddress: contracts.playerRegistryAddress,
     provider,
   });

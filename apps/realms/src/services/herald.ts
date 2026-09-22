@@ -84,18 +84,12 @@ const makeHeraldClient = () => {
       Effect.flatMap((response) => decodeBoundary(`herald:${path}`, schema)(response.body)),
     );
 
-  const directory: Effect.Effect<Directory, HeraldUnreachable | BoundaryDecodeError> = heraldGet(
-    `/${env.VITE_PUBLIC_HERALD_CHAIN}/games`,
-    Directory,
-  );
+  const directory: Effect.Effect<Directory, HeraldUnreachable | BoundaryDecodeError> = heraldGet("/games", Directory);
 
   const health: Effect.Effect<HeraldHealth, HeraldUnreachable | BoundaryDecodeError> = heraldGet("/health", Health);
 
   const gameFacts = (gameId: number) =>
-    heraldGet(
-      `/${env.VITE_PUBLIC_HERALD_CHAIN}/games/${gameId}/snapshot?models=GameRegistry,BlitzRoster,BlitzResult`,
-      Snapshot,
-    ).pipe(
+    heraldGet(`/games/${gameId}/snapshot?models=GameRegistry,BlitzRoster,BlitzResult`, Snapshot).pipe(
       Effect.flatMap((snapshot) =>
         Effect.try({
           try: () => decodeGameFacts(snapshot, gameId),

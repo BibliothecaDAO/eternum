@@ -3,17 +3,16 @@ import {
   fetchHeraldGameLeaderboard,
   fetchHeraldGameReviewSnapshot,
   fetchHeraldTransactionCount,
-  resolveGameId,
-  resolveWorldIdForGame,
+  type GameRef,
+  type Shard,
 } from "@bibliothecadao/eternum/game-client";
-import { getWorldById, type WorldDeployment } from "@/runtime/world/world-directory";
+import { requireOpenShard } from "@/runtime/world/shards";
 import {
   buildLandingLeaderboard,
   normalizeLeaderboardAddress,
   type LandingLeaderboardEntry,
 } from "@/services/leaderboard/landing-leaderboard-service";
 
-import type { GameChain as Chain } from "@realms-world/chain";
 import type { HeraldGameSnapshot, HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
 import { RESOURCE_PRECISION, tileDataToTile } from "@bibliothecadao/types";
 
@@ -78,7 +77,7 @@ export type GameReviewMapSnapshot =
 
 export interface GameReviewData {
   worldName: string;
-  chain: Chain;
+  chainId: string;
   topPlayers: LandingLeaderboardEntry[];
   leaderboard: LandingLeaderboardEntry[];
   personalScore: LandingLeaderboardEntry | null;
@@ -93,7 +92,7 @@ interface ReviewSource {
   history: HeraldHistoryEvent[];
   snapshot: HeraldGameSnapshot;
   transactionCount: number;
-  world: WorldDeployment;
+  world: Shard;
 }
 
 const record = (value: unknown): Row =>
@@ -135,17 +134,8 @@ const story = (event: HeraldHistoryEvent, variant: string): Row | null => {
   return typeof payload === "object" && payload !== null && !Array.isArray(payload) ? (payload as Row) : null;
 };
 
-const resolveReviewContext = async (worldName: string): Promise<{ gameId: number; world: WorldDeployment }> => {
-  const worldId = await resolveWorldIdForGame(worldName);
-  const world = getWorldById(worldId);
-  if (!world) throw new Error(`Game "${worldName}" was not found in the world directory.`);
-  const gameId = await resolveGameId(worldName, world.id);
-  if (!gameId || gameId <= 0) throw new Error(`Game "${worldName}" has no registry id in ${world.id}.`);
-  return { gameId, world };
-};
-
 const fetchCompleteHistory = async (
-  world: WorldDeployment,
+  world: Shard,
   gameId: number,
 ): Promise<{
   completeThroughBlock: number | null;
@@ -161,8 +151,8 @@ const fetchCompleteHistory = async (
   }
 };
 
-const loadReviewSource = async (worldName: string): Promise<ReviewSource> => {
-  const { gameId, world } = await resolveReviewContext(worldName);
+const loadReviewSource = async ({ chainId, gameId }: GameRef): Promise<ReviewSource> => {
+  const world = await requireOpenShard(chainId);
   const [snapshot, history, transactionCount] = await Promise.all([
     fetchHeraldGameReviewSnapshot(world, gameId),
     fetchCompleteHistory(world, gameId),
@@ -289,11 +279,11 @@ const highestExploredTiles = (rows: LandingLeaderboardEntry[]): GameReviewValueM
 };
 
 export const fetchGameReviewData = async (input: {
+  game: GameRef;
   worldName: string;
-  chain: Chain;
   playerAddress: string | null;
 }): Promise<GameReviewData> => {
-  const source = await loadReviewSource(input.worldName);
+  const source = await loadReviewSource(input.game);
   const finalization = buildFinalization(source);
   const activity = await fetchHeraldGameLeaderboard(source.world, source.gameId);
   const leaderboard = buildLandingLeaderboard(source.snapshot, activity.entries);
@@ -320,7 +310,7 @@ export const fetchGameReviewData = async (input: {
   };
   return {
     worldName: input.worldName,
-    chain: input.chain,
+    chainId: input.game.chainId,
     topPlayers: leaderboard.slice(0, 3),
     leaderboard,
     personalScore,

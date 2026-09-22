@@ -3,42 +3,52 @@ import { useEffect } from "react";
 import { subscribeHeraldDirectory } from "@bibliothecadao/eternum/game-client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { getWorldDirectory } from "@/runtime/world/world-directory";
-import { fetchAppchainWorldsSummary } from "./appchain-worlds-summary";
+import { listOpenShards, openKnownShards } from "@/runtime/world/shards";
+import { fetchShardWorldsSummary } from "./shard-worlds-summary";
 import { WORLD_SUMMARY_QUERY_KEY, invalidateWorldListQueries } from "./world-list-queries";
 
 /**
- * The landing games list: the union of every directory world's GameRegistry
- * summary. One request per world (two at most — blitz + eternum share the MVP
- * chain); React Query deduplicates across components. A world whose herald is
- * unreachable contributes nothing rather than failing the whole list.
+ * The landing games list: the union of every open shard's GameRegistry summary, one request per shard; React Query
+ * deduplicates across components. A shard that cannot be opened or read contributes nothing rather than failing the
+ * whole list, and is reported by URL.
  */
 async function fetchWorldsSummary(): Promise<WorldSummary[]> {
-  const perWorld = await Promise.all(
-    getWorldDirectory().map((world) =>
-      fetchAppchainWorldsSummary(world).catch((error) => {
-        console.error(`[worlds-summary] world "${world.id}" Herald directory failed`, error);
+  for (const failure of await openKnownShards()) {
+    console.error(`[worlds-summary] shard ${failure.url} could not be opened`, failure.error);
+  }
+  const perShard = await Promise.all(
+    listOpenShards().map((shard) =>
+      fetchShardWorldsSummary(shard).catch((error) => {
+        console.error(`[worlds-summary] shard ${shard.url} Herald directory failed`, error);
         return [] as WorldSummary[];
       }),
     ),
   );
-  return perWorld.flat();
+  return perShard.flat();
 }
 
 export const useWorldsSummary = () => {
   const queryClient = useQueryClient();
-  useEffect(() => {
-    const unsubscribe = getWorldDirectory().map((world) =>
-      subscribeHeraldDirectory(world, () => {
-        void invalidateWorldListQueries(queryClient);
-      }),
-    );
-    return () => unsubscribe.forEach((stop) => stop());
-  }, [queryClient]);
-  return useQuery({
+  const query = useQuery({
     queryKey: WORLD_SUMMARY_QUERY_KEY,
     queryFn: fetchWorldsSummary,
     staleTime: 25_000,
     retry: 1,
   });
+  // Shards open during the list fetch, so directory streams re-subscribe once another shard is open.
+  const shardUrls = query.dataUpdatedAt ? openShardUrls() : "";
+  useEffect(() => {
+    const unsubscribe = listOpenShards().map((shard) =>
+      subscribeHeraldDirectory(shard, () => {
+        void invalidateWorldListQueries(queryClient);
+      }),
+    );
+    return () => unsubscribe.forEach((stop) => stop());
+  }, [queryClient, shardUrls]);
+  return query;
 };
+
+const openShardUrls = (): string =>
+  listOpenShards()
+    .map((shard) => shard.url)
+    .join(" ");

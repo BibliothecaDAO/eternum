@@ -1,14 +1,14 @@
 import type { WorldSummary } from "@bibliothecadao/types";
 
 import { fetchHeraldGameDirectory } from "@bibliothecadao/eternum/game-client";
-import type { WorldDeployment } from "@/runtime/world/world-directory";
+import type { Shard } from "@bibliothecadao/eternum/game-client";
 
 /**
- * Landing-card summaries come from Herald's normalized GameRegistry directory.
- * The directory owns the joins and counts once per chain; the browser only maps
+ * Landing-card summaries come from each shard's normalized GameRegistry directory.
+ * The directory owns the joins and counts once per shard; the browser only maps
  * its transport shape to the shared landing shape.
  */
-export async function fetchAppchainWorldsSummary(world: WorldDeployment): Promise<WorldSummary[]> {
+export async function fetchShardWorldsSummary(world: Shard): Promise<WorldSummary[]> {
   const directory = await fetchHeraldGameDirectory(world);
 
   const now = Date.now();
@@ -16,8 +16,7 @@ export async function fetchAppchainWorldsSummary(world: WorldDeployment): Promis
     .filter((game) => game.name !== "" && game.mode !== null && game.game_id > 0)
     .map((game) => ({
       name: game.name,
-      chain: world.chain,
-      worldId: world.id,
+      chainId: world.chainId,
       gameId: game.game_id,
       alive: true,
       lastCheckedAt: now,

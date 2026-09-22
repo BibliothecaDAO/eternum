@@ -9,21 +9,13 @@ describe("bootstrap session", () => {
     const session = createBootstrapSession<string>();
     const execute = vi.fn(async () => "ready");
 
-    const pending = session.run({ cacheKey: "appchain:alpha", chain: "appchain", worldName: "alpha" }, execute);
+    const pending = session.run({ cacheKey: "0x1:7" }, execute);
 
     expect(session.getCachedResult()).toBeNull();
-    expect(session.getTrackedSelection()).toEqual({
-      cacheKey: "appchain:alpha",
-      chain: "appchain",
-      worldName: "alpha",
-    });
-    expect(session.getResetReason({ cacheKey: "appchain:beta", chain: "appchain", worldName: "beta" })).toBe(
-      "world-changed",
-    );
-    expect(session.getResetReason({ cacheKey: "mainnet:alpha", chain: "mainnet", worldName: "alpha" })).toBe(
-      "chain-changed",
-    );
-    expect(session.getResetReason({ cacheKey: "appchain:alpha", chain: "appchain", worldName: "alpha" })).toBeNull();
+    expect(session.getTrackedSelection()).toEqual({ cacheKey: "0x1:7" });
+    expect(session.getResetReason({ cacheKey: "0x1:8" })).toBe("game-changed");
+    expect(session.getResetReason({ cacheKey: "0x2:7" })).toBe("game-changed");
+    expect(session.getResetReason({ cacheKey: "0x1:7" })).toBeNull();
 
     await expect(pending).resolves.toBe("ready");
     expect(session.getCachedResult()).toBe("ready");
@@ -43,7 +35,7 @@ describe("bootstrap session", () => {
     session.reset();
 
     expect(secondCleanup).toHaveBeenCalledTimes(1);
-    expect(session.getTrackedSelection()).toEqual({ cacheKey: null, chain: null, worldName: null });
+    expect(session.getTrackedSelection()).toEqual({ cacheKey: null });
     expect(session.getCachedResult()).toBeNull();
   });
 });

@@ -11,12 +11,7 @@ const makeResourceBounds = (l2GasMaxAmount: bigint): ResourceBoundsBN => ({
 });
 
 const makeProvider = (scope: NonNullable<ConstructorParameters<typeof EternumProvider>[3]> = {}) =>
-  new EternumProvider(
-    { native: { version: 1 }, world: { address: "0x77" }, contracts: [] } as never,
-    "http://127.0.0.1:1",
-    undefined,
-    { gameId: 7, ...scope },
-  );
+  new EternumProvider({ world: "0x77" }, "http://127.0.0.1:1", undefined, { gameId: 7, ...scope });
 
 afterEach(() => {
   vi.useRealTimers();

@@ -1,7 +1,6 @@
 import { getPlayerName } from "@/hooks/use-player-profile";
-import { fetchHeraldGameHistory } from "@bibliothecadao/eternum/game-client";
-import { requireWorldById } from "@/runtime/world/world-directory";
-import { getActiveWorld } from "@/runtime/world";
+import { fetchHeraldGameHistory, requireShard } from "@bibliothecadao/eternum/game-client";
+import { getActiveGame } from "@/runtime/world";
 import { buildStoryEventPresentation, configManager } from "@bibliothecadao/eternum";
 import type { GameSyncEntity, HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
 import {
@@ -188,19 +187,18 @@ export const useStoryEvents = (limit: number = 100, story?: string, owner?: stri
     setup: { store },
   } = useGame();
   const streamed = useStoryEventsStore((state) => state.streamed);
-  const profile = getActiveWorld();
-  const world = requireWorldById(profile?.worldId);
+  const shard = requireShard(getActiveGame()?.chainId);
   const gameId = configManager.getActiveGameId();
-  const scope = { chain: world.chain, worldAddress: world.worldAddress, gameId };
+  const scope = { chainId: shard.chainId, worldAddress: shard.worldAddress, gameId };
   const scopeKey = storyEventScopeKey(scope);
 
   const confirmedBlock = useConnectionStore((state) => (story ? state.lastConfirmedBlock : null));
   const handshake = useConnectionStore((state) => (story ? state.lastGlobalHandshake : null));
 
   const query = useQuery({
-    queryKey: ["heraldStoryEvents", world.heraldBaseUrl, scopeKey, limit, story, owner],
+    queryKey: ["heraldStoryEvents", shard.url, scopeKey, limit, story, owner],
     queryFn: async (): Promise<StoryEventData[]> => {
-      const page = await fetchHeraldGameHistory(world, gameId, {
+      const page = await fetchHeraldGameHistory(shard, gameId, {
         limit,
         ...(story ? (EVENT_MODELS.has(story) ? { model: story } : { model: "StoryEvent", story }) : {}),
         owner,

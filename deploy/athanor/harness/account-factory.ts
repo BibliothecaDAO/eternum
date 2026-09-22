@@ -32,6 +32,7 @@ export async function createHarnessAccounts({
   gameId,
   provider,
 }: CreateHarnessAccountsOptions): Promise<HarnessAccount[]> {
+  const chainId = await provider.getChainId();
   const botIds = Array.from({ length: count }, (_, botId) => botId);
   return mapWithConcurrency(botIds, concurrency, async (botId) => {
     const privateKey = stark.randomAddress();
@@ -49,7 +50,7 @@ export async function createHarnessAccounts({
           provider,
           publicKey,
         }),
-        "madara",
+        chainId,
       );
 
       return {

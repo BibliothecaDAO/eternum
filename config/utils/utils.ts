@@ -47,7 +47,6 @@ export function getConfigFromNetwork(chain: GameChain, gameType: GameType) {
 
 export {
   GAME_ENVIRONMENTS,
-  getGameEnvironmentsForChain,
   isGameEnvironmentId,
   type GameEnvironment,
   type GameEnvironmentId,

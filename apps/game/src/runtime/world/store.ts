@@ -1,28 +1,13 @@
-import type { GameChain as Chain } from "@realms-world/chain";
-import { env } from "../../../env";
-import type { WorldProfile, WorldProfilesMap } from "./types";
+import type { GameRef } from "@bibliothecadao/eternum/game-client";
+import type { GameProfile } from "./types";
 
-const ACTIVE_KEY = "ACTIVE_WORLD_NAME";
-const CHAIN_KEY = "ACTIVE_WORLD_CHAIN";
-const PROFILES_KEY = "WORLD_PROFILES";
-const ACTIVE_WORLD_EVENT = "runtime:active-world-changed";
-const SELECTED_CHAIN_EVENT = "runtime:selected-chain-changed";
+const ACTIVE_KEY = "ACTIVE_GAME";
+const PROFILES_KEY = "GAME_PROFILES";
 
-const safeParse = <T>(raw: string | null, fallback: T): T => {
-  if (!raw) return fallback;
-  try {
-    return JSON.parse(raw) as T;
-  } catch {
-    return fallback;
-  }
-};
+type GameProfiles = Record<string, GameProfile>;
 
-const CHAIN_VALUES: Chain[] = ["madara", "appchain"];
-
-const isValidChain = (value: string | null): value is Chain => {
-  if (!value) return false;
-  return CHAIN_VALUES.includes(value as Chain);
-};
+/** One spelling of a game's name for keys and caches: its shard's chain id and its id there. */
+export const gameKey = (game: GameRef): string => `${game.chainId}:${game.gameId}`;
 
 const readStorageValue = (key: string): string | null => {
   if (typeof window === "undefined") return null;
@@ -33,139 +18,30 @@ const readStorageValue = (key: string): string | null => {
   }
 };
 
-const writeStorageValue = (key: string, value: string | null) => {
+const writeStorageValue = (key: string, value: string) => {
   if (typeof window === "undefined") return;
   try {
-    if (value === null) {
-      window.localStorage.removeItem(key);
-    } else {
-      window.localStorage.setItem(key, value);
-    }
+    window.localStorage.setItem(key, value);
   } catch {
-    // ignore storage failures
+    // A profile that is not persisted is rebuilt from the shard directory on the next entry.
   }
 };
 
-const getSelectedChain = (): Chain | null => {
-  const stored = readStorageValue(CHAIN_KEY);
-  return isValidChain(stored) ? stored : null;
-};
-
-const notifySelectedChainChanged = (chain: Chain | null) => {
-  if (typeof window === "undefined") return;
-  window.dispatchEvent(new CustomEvent<Chain | null>(SELECTED_CHAIN_EVENT, { detail: chain }));
-};
-
-const notifyActiveWorldChanged = (name: string | null) => {
-  if (typeof window === "undefined") return;
-  window.dispatchEvent(new CustomEvent<string | null>(ACTIVE_WORLD_EVENT, { detail: name }));
-};
-
-export const setSelectedChain = (chain: Chain) => {
-  writeStorageValue(CHAIN_KEY, chain);
-  notifySelectedChainChanged(chain);
-};
-
-const clearSelectedChain = () => {
-  writeStorageValue(CHAIN_KEY, null);
-  notifySelectedChainChanged(null);
-};
-
-// Chain selection is not a user concept on this client (tester-gate D2): the
-// build's env chain is the only chain. Persisted preferences from older builds
-// are deliberately ignored so a stored "mainnet" can never blank the landing.
-const ENV_CHAIN: Chain = isValidChain(env.VITE_PUBLIC_CHAIN) ? (env.VITE_PUBLIC_CHAIN as Chain) : "appchain";
-
-export const resolveChain = (_fallback: Chain): Chain => ENV_CHAIN;
-
-export const subscribeSelectedChain = (listener: (chain: Chain | null) => void): (() => void) => {
-  if (typeof window === "undefined") {
-    return () => {};
+const readGameProfiles = (): GameProfiles => {
+  try {
+    return JSON.parse(readStorageValue(PROFILES_KEY) ?? "{}") as GameProfiles;
+  } catch {
+    return {};
   }
-
-  const handleSelectedChainChanged = (event: Event) => {
-    const customEvent = event as CustomEvent<Chain | null>;
-    listener(customEvent.detail ?? getSelectedChain());
-  };
-
-  const handleStorage = (event: StorageEvent) => {
-    if (event.key !== null && event.key !== CHAIN_KEY) {
-      return;
-    }
-
-    listener(getSelectedChain());
-  };
-
-  window.addEventListener(SELECTED_CHAIN_EVENT, handleSelectedChainChanged as EventListener);
-  window.addEventListener("storage", handleStorage);
-
-  return () => {
-    window.removeEventListener(SELECTED_CHAIN_EVENT, handleSelectedChainChanged as EventListener);
-    window.removeEventListener("storage", handleStorage);
-  };
 };
 
-export const subscribeActiveWorldName = (listener: (name: string | null) => void): (() => void) => {
-  if (typeof window === "undefined") {
-    return () => {};
-  }
-
-  const handleActiveWorldChanged = (event: Event) => {
-    const customEvent = event as CustomEvent<string | null>;
-    listener(customEvent.detail ?? getActiveWorldName());
-  };
-
-  const handleStorage = (event: StorageEvent) => {
-    if (event.key !== null && event.key !== ACTIVE_KEY) {
-      return;
-    }
-
-    listener(getActiveWorldName());
-  };
-
-  window.addEventListener(ACTIVE_WORLD_EVENT, handleActiveWorldChanged as EventListener);
-  window.addEventListener("storage", handleStorage);
-
-  return () => {
-    window.removeEventListener(ACTIVE_WORLD_EVENT, handleActiveWorldChanged as EventListener);
-    window.removeEventListener("storage", handleStorage);
-  };
+export const saveGameProfile = (profile: GameProfile) => {
+  writeStorageValue(PROFILES_KEY, JSON.stringify({ ...readGameProfiles(), [gameKey(profile)]: profile }));
 };
 
-export const listWorldNames = (): string[] => {
-  const profiles = safeParse<WorldProfilesMap>(localStorage.getItem(PROFILES_KEY), {});
-  return Object.keys(profiles);
+export const setActiveGame = (game: GameRef) => writeStorageValue(ACTIVE_KEY, gameKey(game));
+
+export const getActiveGame = (): GameProfile | null => {
+  const key = readStorageValue(ACTIVE_KEY);
+  return key ? (readGameProfiles()[key] ?? null) : null;
 };
-
-const getWorldProfiles = (): WorldProfilesMap => {
-  return safeParse<WorldProfilesMap>(localStorage.getItem(PROFILES_KEY), {});
-};
-
-const saveWorldProfiles = (profiles: WorldProfilesMap) => {
-  localStorage.setItem(PROFILES_KEY, JSON.stringify(profiles));
-};
-
-export const saveWorldProfile = (profile: WorldProfile) => {
-  const profiles = getWorldProfiles();
-  profiles[profile.name] = profile;
-  saveWorldProfiles(profiles);
-};
-
-export const getWorldProfile = (name: string): WorldProfile | null => {
-  return getWorldProfiles()[name] ?? null;
-};
-
-export const getActiveWorldName = (): string | null => readStorageValue(ACTIVE_KEY);
-
-export const setActiveWorldName = (name: string) => {
-  writeStorageValue(ACTIVE_KEY, name);
-  notifyActiveWorldChanged(name);
-};
-
-export const getActiveWorld = (): WorldProfile | null => {
-  const name = getActiveWorldName();
-  if (!name) return null;
-  return getWorldProfile(name);
-};
-
-export const resolveRuntimeChain = (fallback: Chain): Chain => getActiveWorld()?.chain ?? resolveChain(fallback);

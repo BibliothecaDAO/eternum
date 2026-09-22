@@ -21,7 +21,7 @@ const manifest = {
 
 describe("native registrar", () => {
   test("uses fixed zero-price bounds on the lab chain", () => {
-    expect(resolveRegistrarExecutionDetails("madara.blitz").resourceBounds?.l2_gas).toEqual({
+    expect(resolveRegistrarExecutionDetails().resourceBounds?.l2_gas).toEqual({
       max_amount: 1_200_000_000n,
       max_price_per_unit: 0n,
     });

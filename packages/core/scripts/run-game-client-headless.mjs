@@ -2,43 +2,25 @@
 /** Boots a native game through the shared client and measures its Herald snapshot and first diff. */
 
 import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
 import { parseArgs as parseNodeArgs } from "node:util";
 
 import { createGameClient, createGameViews } from "@bibliothecadao/eternum";
-import { buildWorldDeployment, fetchHeraldGameDirectory } from "@bibliothecadao/eternum/game-client";
+import { fetchHeraldGameDirectory, openShard } from "@bibliothecadao/eternum/game-client";
 import { createMicrotaskGameSyncScheduler, disposeActiveGameSyncRuntime } from "@bibliothecadao/eternum/game-sync";
-import { RpcProvider } from "starknet";
 
 const bindings = JSON.parse(
   readFileSync(new URL("../../../contracts/l3/world-native/schema/bindings.json", import.meta.url), "utf8"),
 );
 
-const DEFAULT_CHAIN = "madara";
 const DEFAULT_TIMEOUT_MS = 60_000;
 const DEFAULT_WATCH_MS = 5_000;
-// Every deployed world is the Blitz world for now; the manifest is the one the web client bundles for the chain.
-const WORLD_ID = "blitz";
-const CHAINS = ["madara"];
-const ACCOUNT_FIELDS = [
-  ["playerAccountClassHash", "player-account-class-hash", "VITE_PUBLIC_PLAYER_ACCOUNT_CLASS_HASH"],
-  ["playerRegistryAddress", "player-registry-address", "VITE_PUBLIC_PLAYER_REGISTRY_ADDRESS"],
-  ["bindingAuthorityAddress", "binding-authority-address", "VITE_PUBLIC_BINDING_AUTHORITY_ADDRESS"],
-];
 
 const parseArgs = (args) => {
   const { values } = parseNodeArgs({
     args,
     options: {
-      manifest: { type: "string" },
-      "admission-url": { type: "string" },
-      "rpc-url": { type: "string" },
-      "herald-url": { type: "string" },
-      chain: { type: "string", default: DEFAULT_CHAIN },
+      "shard-url": { type: "string" },
       "game-id": { type: "string" },
-      "player-account-class-hash": { type: "string" },
-      "player-registry-address": { type: "string" },
-      "binding-authority-address": { type: "string" },
       "timeout-ms": { type: "string", default: String(DEFAULT_TIMEOUT_MS) },
       "watch-ms": { type: "string", default: String(DEFAULT_WATCH_MS) },
       help: { type: "boolean", short: "h", default: false },
@@ -48,23 +30,11 @@ const parseArgs = (args) => {
   if (values.help) return { help: true };
   return {
     help: false,
-    manifestPath: required(values.manifest, "NATIVE_WORLD_MANIFEST"),
-    admissionUrl: required(values["admission-url"], "VITE_PUBLIC_ADMISSION_URL"),
-    rpcUrl: required(values["rpc-url"], "VITE_PUBLIC_NODE_URL"),
-    heraldUrl: required(values["herald-url"], "VITE_PUBLIC_HERALD_URL"),
-    chain: requireKnownChain(values.chain),
+    shardUrl: required(values["shard-url"], "SHARD_URL"),
     gameId: resolveRequestedGameId(values),
-    ...resolveAccountFields(values),
     timeoutMs: requirePositiveInteger("--timeout-ms", values["timeout-ms"]),
     watchMs: requireNonNegativeInteger("--watch-ms", values["watch-ms"]),
   };
-};
-
-const requireKnownChain = (chain) => {
-  if (!CHAINS.includes(chain)) {
-    throw new Error(`--chain must be one of ${CHAINS.join(", ")}; received ${chain}`);
-  }
-  return chain;
 };
 
 const resolveRequestedGameId = (values) => {
@@ -86,48 +56,22 @@ const requireNonNegativeInteger = (flag, raw) => {
   return value;
 };
 
-/** Flags win over env; a missing field exits naming both spellings rather than booting a client that cannot settle. */
-const resolveAccountFields = (values) =>
-  Object.fromEntries(
-    ACCOUNT_FIELDS.map(([field, flag, envVar]) => {
-      const value = values[flag] ?? process.env[envVar];
-      if (!value) throw new Error(`Missing --${flag} (or ${envVar} in the environment)`);
-      return [field, value];
-    }),
-  );
-
 const required = (flag, variable) => {
   const value = flag ?? process.env[variable];
   if (!value) throw new Error(`Supply the option or ${variable}`);
   return value;
 };
 
-const readCommittedManifest = (path) => JSON.parse(readFileSync(resolve(path), "utf8"));
-
-const buildWorld = (config, manifest) =>
-  buildWorldDeployment({
-    id: WORLD_ID,
-    chain: config.chain,
-    manifest,
-    heraldBaseUrl: config.heraldUrl,
-    admissionUrl: config.admissionUrl,
-    rpcUrl: config.rpcUrl,
-    browserFacing: false,
-    playerAccountClassHash: config.playerAccountClassHash,
-    playerRegistryAddress: config.playerRegistryAddress,
-    bindingAuthorityAddress: config.bindingAuthorityAddress,
-  });
-
 /** The registry row carries the preset the game runs on, so the directory is read even when the id is given. */
-const resolveLiveGame = async (config, world) => {
-  const directory = await fetchHeraldGameDirectory(world);
+const resolveLiveGame = async (config, shard) => {
+  const directory = await fetchHeraldGameDirectory(shard);
   const game =
     config.gameId === undefined
       ? directory.games.find((candidate) => candidate.status === "Live")
       : directory.games.find((candidate) => candidate.game_id === config.gameId);
   if (!game) {
     const wanted = config.gameId === undefined ? "a Live game" : `game ${config.gameId}`;
-    throw new Error(`No ${wanted} in ${world.heraldBaseUrl}/${world.chain}/games`);
+    throw new Error(`No ${wanted} in ${shard.url}/games`);
   }
   if (config.gameId === undefined)
     console.error(`[headless] no --game-id; using first Live game ${game.game_id} (${game.name})`);
@@ -260,26 +204,23 @@ const peakRssMb = () => bytesToMb(process.resourceUsage().maxRSS * 1024);
 
 const runSmoke = async (config) => {
   const startedAt = performance.now();
-  const world = buildWorld(config, readCommittedManifest(config.manifestPath));
+  const shard = await openShard(config.shardUrl, bindings.schemaIdentity);
   const source = {
     kind: "herald",
-    game: await resolveLiveGame(config, world),
+    game: await resolveLiveGame(config, shard),
     openSocket: (url) => new WebSocket(url),
   };
-  const chainId = await new RpcProvider({ nodeUrl: world.rpcUrl }).getChainId();
   const socket = createObservedSocketFactory(source.openSocket);
   const smoke = createSmokeObserver(startedAt);
 
   const client = await withTimeout(
     createGameClient({
-      world,
+      shard,
       gameId: source.game.game_id,
       presetId: source.game.preset_id,
-      networkConfig: { rpcUrl: world.rpcUrl, manifest: readCommittedManifest(config.manifestPath) },
-      setupEnvironment: {},
       native: {
         bindings,
-        chainId,
+        chainId: shard.chainId,
         signIntent: async () => {
           throw new Error("The headless smoke is read-only");
         },
@@ -331,10 +272,7 @@ const assertSmokeHealthy = (manifest) => {
 
 const printUsage = () => {
   console.log(
-    "Usage: pnpm smoke:game-client --manifest <path> --admission-url <url> " +
-      "[--rpc-url <url>] [--herald-url <url>] [--chain <name>] [--game-id <number>] " +
-      "[--player-account-class-hash <felt>] [--player-registry-address <felt>] [--binding-authority-address <felt>] " +
-      "[--timeout-ms <n>] [--watch-ms <n>]",
+    "Usage: pnpm smoke:game-client --shard-url <url> [--game-id <number>] [--timeout-ms <n>] [--watch-ms <n>]",
   );
 };
 

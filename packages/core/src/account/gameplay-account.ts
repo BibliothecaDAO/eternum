@@ -1,5 +1,5 @@
 import { getStarkKey, utils as starknetKeyUtils } from "@scure/starknet";
-import { resolveEndpoint, type GameChain } from "@realms-world/chain";
+import { resolveEndpoint } from "@realms-world/chain";
 import { Account, addAddressPadding, hash, num, type BigNumberish, type ProviderInterface } from "starknet";
 
 const GAMEPLAY_ACCOUNT_DEPLOYMENT_POLL_MS = 50;
@@ -174,17 +174,13 @@ export function createGameplayAccountApi({
 
 export function getOrCreateGameplayKey({
   storage,
-  chain,
   chainId,
   owner,
 }: {
   storage: StorageLike;
-  chain: GameChain;
   chainId: BigNumberish;
   owner: BigNumberish;
 }): GameplayKey {
-  assertGuestAllowed(chain, owner);
-
   const existingKey = getStoredGameplayKey({ storage, chainId, owner });
   if (existingKey) {
     return existingKey;
@@ -239,12 +235,6 @@ function calculateGameplayAccountAddress(
   constructorCalldata: [string, string, string],
 ): string {
   return addAddressPadding(hash.calculateContractAddressFromHash(addressSalt, classHash, constructorCalldata, 0));
-}
-
-function assertGuestAllowed(chain: GameChain, owner: BigNumberish): void {
-  if (BigInt(owner) === 0n && chain !== "madara") {
-    throw new Error("Guest gameplay accounts are only allowed on madara");
-  }
 }
 
 function parseGameplayKey(serialized: string, storageKey: string): GameplayKey {

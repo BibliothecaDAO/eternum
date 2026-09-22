@@ -40,10 +40,11 @@ export const summaryToWorldConfigMeta = (
     startMainAt != null && endAt != null && endAt >= startMainAt ? endAt - startMainAt : null;
 
   return {
+    name: summary.name,
     mode,
     ready: summary.ready,
-    worldId: summary.worldId ?? null,
-    gameId: summary.gameId ?? null,
+    chainId: summary.chainId,
+    gameId: summary.gameId,
     startSettlingAt: summary.startSettlingAt ?? null,
     startMainAt,
     endAt,

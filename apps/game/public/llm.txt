@@ -1162,11 +1162,12 @@ Build the workspace packages, then point the client at an isolated native deploy
 ```sh
 pnpm install --frozen-lockfile
 pnpm run build:packages
-NATIVE_WORLD_MANIFEST=/absolute/path/to/native-manifest.json pnpm --dir apps/game dev
+VITE_PUBLIC_SHARD_URL=https://herald.example pnpm --dir apps/game dev
 ```
 
-Configure `VITE_PUBLIC_ADMISSION_URL` and the matching Herald and RPC endpoints in the client environment. The manifest
-must match the generated native schema. See `deploy/athanor/README.md` for the complete isolated stack setup. Do not
+The shard URL is its Herald. The client reads the chain id, node and admission endpoints, contracts and release from the
+shard's `/manifest`, and refuses a shard whose schema differs from the client's generated bindings. Players can open
+further shards by URL from the games list. See `deploy/athanor/README.md` for the complete isolated stack setup. Do not
 put deployment private keys in the browser environment.
 
 ## Read current facts

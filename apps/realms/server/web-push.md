@@ -95,7 +95,7 @@ are rejected. As with local delivery, a crash after claiming can lose an alert r
 4. Close every game tab/PWA window. An operator obtains the intended device ID from the owner-scoped subscription row
    (do not copy endpoint/key/token fields) and runs on the identity server:
 
-   `pnpm --dir apps/realms push:test <owner> <subscription-id> /enter/madara/<game>`
+   `pnpm --dir apps/realms push:test <owner> <subscription-id> /enter/<chain-id>/<game-id>`
 
 5. Verify an actual OS banner on Android Chrome and an installed iOS Home Screen app; tap it and verify normal game
    entry.

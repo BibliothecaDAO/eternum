@@ -21,7 +21,7 @@ describe("Herald game membership", () => {
     await expect(Effect.runPromise(membership.isMember("0xa", "game:8"))).resolves.toBe(false);
     await expect(Effect.runPromise(membership.isMember("0xa", "game:10"))).resolves.toBe(false);
     expect(fetchDirectory).toHaveBeenCalledOnce();
-    expect(String(fetchDirectory.mock.calls[0]?.[0])).toBe("http://herald:3003/madara/games?player=0xa");
+    expect(String(fetchDirectory.mock.calls[0]?.[0])).toBe("http://herald:3003/games?player=0xa");
     expect(HERALD_GAME_MEMBERSHIP_MODELS).toEqual(["GameRegistry", "WorldConfig", "BlitzSettlement", "Structure"]);
   });
 });

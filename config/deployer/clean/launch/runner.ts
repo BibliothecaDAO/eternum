@@ -376,7 +376,6 @@ async function waitForGameIndex(launch: PreparedLaunch): Promise<void> {
     () =>
       waitForGameRegistryById({
         gameId,
-        chain: launch.runtime.environment.chain,
         timeoutMs: launch.request.waitForFactoryIndexTimeoutMs ?? DEFAULT_APPCHAIN_GAME_INDEX_TIMEOUT_MS,
         pollIntervalMs: launch.request.waitForFactoryIndexPollMs ?? DEFAULT_APPCHAIN_GAME_INDEX_POLL_MS,
         onRetry: (attempt, elapsedMs) =>

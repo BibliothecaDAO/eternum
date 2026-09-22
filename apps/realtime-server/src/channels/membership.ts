@@ -32,13 +32,11 @@ type DirectoryFetch = (input: string | URL, init?: RequestInit) => Promise<Respo
 
 export const createHeraldMembershipResolver = ({
   heraldUrl,
-  chain = "madara",
   fetch: fetchDirectory = globalThis.fetch,
   ttlMs = 5_000,
   maxEntries = 5_000,
 }: {
   heraldUrl: string;
-  chain?: string;
   fetch?: DirectoryFetch;
   ttlMs?: number;
   maxEntries?: number;
@@ -52,7 +50,7 @@ export const createHeraldMembershipResolver = ({
     if (cached && cached.expiresAt > Date.now()) return Effect.succeed(cached.channels);
     cache.delete(playerId);
 
-    const url = new URL(`/${chain}/games`, heraldUrl);
+    const url = new URL("/games", heraldUrl);
     url.searchParams.set("player", playerId);
     return Effect.tryPromise({
       try: () => fetchDirectory(url, { headers: { accept: "application/json" } }),

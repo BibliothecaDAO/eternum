@@ -1,17 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
 import { configManager } from "@bibliothecadao/eternum";
-import { getActiveWorld } from "@/runtime/world";
-import { requireWorldById } from "@/runtime/world/world-directory";
+import { requireShard } from "@bibliothecadao/eternum/game-client";
+import { getActiveGame } from "@/runtime/world";
 import { fetchLeaderboardActivityBreakdowns } from "@/services/leaderboard/player-activity-breakdown-service";
 
 /** Historical points aggregates are warmed on game entry and shared with every leaderboard surface. */
 export function useLeaderboardActivity() {
-  const profile = getActiveWorld();
-  const world = requireWorldById(profile?.worldId);
+  const shard = requireShard(getActiveGame()?.chainId);
   const gameId = configManager.getActiveGameId();
   return useQuery({
-    queryKey: ["leaderboard-activity", world.heraldBaseUrl, world.chain, world.id, gameId],
-    queryFn: () => fetchLeaderboardActivityBreakdowns(world, gameId),
+    queryKey: ["leaderboard-activity", shard.url, gameId],
+    queryFn: () => fetchLeaderboardActivityBreakdowns(shard, gameId),
     enabled: gameId > 0,
     staleTime: Infinity,
     retry: false,

@@ -122,19 +122,19 @@ populated upgrade needs its own read/mutate check. The event-codec cutover requi
 
 Player identity deployment writes the explicit `GAMEPLAY_CONTRACTS_PATH`. No deployment output or private credential
 belongs in a tracked configuration file. The launch service and administrative commands use `ADMISSION_URL` for recorded
-execution; the client uses `VITE_PUBLIC_ADMISSION_URL` for that same node.
+execution; the client reads that same node's public admission URL from Herald's `/manifest`.
 
 ## Herald and client
 
-Create a separate PostgreSQL database and configure `HERALD_CHAIN=madara`, `HERALD_RPC_URL`, `DATABASE_URL` and
-`NATIVE_WORLD_MANIFEST`. Start Herald with `pnpm --dir apps/herald start`, or package its real workspace graph with
+Create a separate PostgreSQL database and configure `HERALD_RPC_URL`, `HERALD_PUBLIC_RPC_URL`,
+`HERALD_PUBLIC_ADMISSION_URL`, `DATABASE_URL` and `NATIVE_WORLD_MANIFEST`. Start Herald with `pnpm --dir apps/herald start`, or package its real workspace graph with
 `deploy/athanor/randomness/release/build-herald.py`. The candidate service must use that same manifest and chain.
 
-Wait for `/health` and the confirmed snapshot before connecting the client. Set its native manifest, admission and
-Herald URLs to the isolated endpoints, then run `pnpm --dir apps/game dev`. Use the client HTTPS configuration when
+Wait for `/health` and the confirmed snapshot before connecting the client. Set `VITE_PUBLIC_SHARD_URL` to the isolated
+Herald, then run `pnpm --dir apps/game dev`. Use the client HTTPS configuration when
 signing through a browser wallet. Current facts come through Herald, never a second direct state fetch.
 
-The directory is served at `/madara/games`. Compatible class upgrades do not require a Herald restart. Incompatible
+The shard manifest is served at `/manifest` and the directory at `/games`. Compatible class upgrades do not require a Herald restart. Incompatible
 schemas are explicit ingestion faults and require a planned release. Historical replay must use the matching codec.
 
 ## Gameplay validation

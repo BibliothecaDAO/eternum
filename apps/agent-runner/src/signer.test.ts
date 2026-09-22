@@ -5,11 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { RunnerConfig } from "./config";
 import { resolveRunnerSigner, signRunnerIntent } from "./signer";
 
-const SPECTATOR_CONFIG = {
-  chain: "madara",
-  rpcUrl: "https://rpc.example",
-  signer: { mode: "none" },
-} as RunnerConfig;
+const SPECTATOR_CONFIG = { signer: { mode: "none" } } as RunnerConfig;
 
 describe("resolveRunnerSigner", () => {
   it("returns null in none mode and leaves the client spectating", async () => {

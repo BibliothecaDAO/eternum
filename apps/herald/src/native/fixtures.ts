@@ -5,6 +5,7 @@ import type { RpcEvent, RpcReceipt } from "../types";
 import { NativeDecoder } from "./decoder";
 import { NativeIngestion } from "./ingestion";
 import type { NativeManifest, NativeSchema } from "./schema";
+import { buildShardManifest } from "../shard-manifest";
 export const schema = schemaJson as unknown as NativeSchema;
 export const manifest: NativeManifest = {
   world: { address: setFixture.deployment.season },
@@ -21,6 +22,10 @@ export const manifest: NativeManifest = {
     ),
   },
 };
+export const shardManifest = buildShardManifest(
+  { ...manifest, shard: { chainId: "0x4c4142", accountClassHash: "0x456", contracts: {} } },
+  { rpcUrl: "https://rpc.shard.test", admissionUrl: "https://admission.shard.test" },
+);
 export const receipt = (events: RpcEvent[], transaction_hash = "0x55"): RpcReceipt => ({
   transaction_hash,
   events,

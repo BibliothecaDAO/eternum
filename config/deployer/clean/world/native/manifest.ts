@@ -1,6 +1,7 @@
 import { hash, type Abi } from "starknet";
 import type { NativeWorld, NativeWorldManifest } from "./types";
 import type { NativePlan } from "./types";
+import type { ShardRecord } from "../../../../../apps/herald/src/shard-manifest";
 
 export function nativeDomainAbi(manifest: NativeWorldManifest, name: string): Abi {
   const schema = manifest.native?.schemas[manifest.native.activeSchema];
@@ -10,7 +11,7 @@ export function nativeDomainAbi(manifest: NativeWorldManifest, name: string): Ab
   return [...Object.values(schema.types), ...domain.entrypoints] as Abi;
 }
 
-export function buildNativeManifest(local: NativeWorld, before: NativePlan): NativeWorldManifest {
+export function buildNativeManifest(local: NativeWorld, before: NativePlan, shard: ShardRecord): NativeWorldManifest {
   const season = local.domains.find((domain) => domain.name === "season")!;
   const abis = new Map(
     local.domains
@@ -34,6 +35,7 @@ export function buildNativeManifest(local: NativeWorld, before: NativePlan): Nat
       init_calldata: domain.constructorCalldata,
     })),
     abis: [...abis.values()],
+    shard,
     native: {
       version: 1,
       deploymentBlock: local.previous?.native.deploymentBlock ?? before.blockNumber,

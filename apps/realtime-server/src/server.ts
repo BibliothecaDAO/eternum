@@ -380,7 +380,6 @@ const app = createRealtimeApp({
   ...createRealtimeDependencies({
     identityUrl,
     heraldUrl: requiredEnvironment("HERALD_URL"),
-    heraldChain: process.env.HERALD_CHAIN ?? "madara",
     gameRpcUrl: requiredEnvironment("GAME_RPC_URL"),
     playerRegistryAddress: requiredEnvironment("PLAYER_REGISTRY_ADDRESS"),
   }),

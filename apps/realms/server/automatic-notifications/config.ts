@@ -1,4 +1,4 @@
-import { GAME_CHAIN_NAMES, resolveEndpoint, type GameChain } from "@realms-world/chain";
+import { expectedChainId, GAME_CHAIN_NAMES, resolveEndpoint, type GameChain } from "@realms-world/chain";
 
 export function resolveAutomaticNotificationConfig(env: {
   WEB_PUSH_AUTOMATIC_ENABLED?: string | undefined;
@@ -26,6 +26,7 @@ export function resolveAutomaticNotificationConfig(env: {
   return {
     url,
     chain: env.NOTIFICATION_CHAIN as GameChain,
+    chainId: `0x${BigInt(expectedChainId(env.NOTIFICATION_CHAIN as GameChain)).toString(16)}`,
     worldAddress: `0x${BigInt(env.NOTIFICATION_WORLD_ADDRESS).toString(16)}`,
   };
 }

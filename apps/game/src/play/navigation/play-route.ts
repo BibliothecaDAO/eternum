@@ -1,16 +1,14 @@
 import { resolveRendererBuildMode, type RendererBuildMode } from "@/three/renderer-build-mode";
-import type { GameChain as Chain } from "@realms-world/chain";
+import type { GameRef } from "@bibliothecadao/eternum/game-client";
 
-import type { WorldProfile } from "@/runtime/world/types";
+import type { GameProfile } from "@/runtime/world/types";
 import { hasSpectateQuery, isExplicitSpectateSession } from "@/utils/spectator-session";
 
 export type PlayScene = "map" | "hex";
 type EntryIntent = "play" | "settle" | "spectate";
 export type PlayBootMode = "direct" | "map-first";
 
-export interface PlayRouteDescriptor {
-  chain: Chain;
-  worldName: string;
+export interface PlayRouteDescriptor extends GameRef {
   scene: PlayScene;
   col: number | null;
   row: number | null;
@@ -26,21 +24,25 @@ export interface PlayRouteDescriptor {
  */
 type PlayHrefInput = PlayRouteDescriptor & { spectate?: boolean };
 
-interface EntryRouteDescriptor {
-  chain: Chain;
-  worldName: string;
+interface EntryRouteDescriptor extends GameRef {
   intent: EntryIntent;
   autoSettle: boolean;
 }
 
 type LocationLike = Pick<Location, "pathname" | "search">;
 
-const CHAIN_VALUES: Chain[] = ["madara", "appchain"];
 const PLAY_SCENES: PlayScene[] = ["map", "hex"];
 const ENTRY_INTENTS: EntryIntent[] = ["play", "settle", "spectate"];
 const PLAY_BOOT_MODES: PlayBootMode[] = ["direct", "map-first"];
 
-const isValidChain = (value: string): value is Chain => CHAIN_VALUES.includes(value as Chain);
+/** A route names a game by its shard's chain id and its id there; anything else is not a game route. */
+const parseGameRef = (rawChainId: string, rawGameId: string): GameRef | null => {
+  if (!/^0x[0-9a-f]+$/i.test(rawChainId) || !/^[1-9][0-9]*$/.test(rawGameId)) return null;
+  const gameId = Number(rawGameId);
+  return Number.isSafeInteger(gameId) ? { chainId: rawChainId.toLowerCase(), gameId } : null;
+};
+
+const gamePath = (game: GameRef): string => `${game.chainId}/${game.gameId}`;
 const isPlayScene = (value: string): value is PlayScene => PLAY_SCENES.includes(value as PlayScene);
 const isEntryIntent = (value: string): value is EntryIntent => ENTRY_INTENTS.includes(value as EntryIntent);
 const isPlayBootMode = (value: string): value is PlayBootMode => PLAY_BOOT_MODES.includes(value as PlayBootMode);
@@ -76,8 +78,9 @@ export const parsePlayRoute = (location: LocationLike): PlayRouteDescriptor | nu
     return null;
   }
 
-  const [, rawChain, rawWorldName, rawScene] = match;
-  if (!isValidChain(rawChain) || !isPlayScene(rawScene)) {
+  const [, rawChainId, rawGameId, rawScene] = match;
+  const game = parseGameRef(rawChainId, rawGameId);
+  if (!game || !isPlayScene(rawScene)) {
     return null;
   }
 
@@ -89,8 +92,7 @@ export const parsePlayRoute = (location: LocationLike): PlayRouteDescriptor | nu
 
   return {
     ...parseRendererOptions(searchParams),
-    chain: rawChain,
-    worldName: decodeURIComponent(rawWorldName),
+    ...game,
     scene: rawScene,
     col: parseOptionalNumber(searchParams, "col"),
     row: parseOptionalNumber(searchParams, "row"),
@@ -128,7 +130,7 @@ export const buildPlayHref = (route: PlayHrefInput): string => {
   if (route.rendererMode) searchParams.set("rendererMode", route.rendererMode);
   if (route.verboseLogs) searchParams.set("logs", "1");
 
-  return `/play/${route.chain}/${encodeURIComponent(route.worldName)}/${route.scene}${buildSearch(searchParams)}`;
+  return `/play/${gamePath(route)}/${route.scene}${buildSearch(searchParams)}`;
 };
 
 export const parseEntryRoute = (location: LocationLike): EntryRouteDescriptor | null => {
@@ -137,8 +139,9 @@ export const parseEntryRoute = (location: LocationLike): EntryRouteDescriptor | 
     return null;
   }
 
-  const [, rawChain, rawWorldName] = match;
-  if (!isValidChain(rawChain)) {
+  const [, rawChainId, rawGameId] = match;
+  const game = parseGameRef(rawChainId, rawGameId);
+  if (!game) {
     return null;
   }
 
@@ -149,8 +152,7 @@ export const parseEntryRoute = (location: LocationLike): EntryRouteDescriptor | 
   }
 
   return {
-    chain: rawChain,
-    worldName: decodeURIComponent(rawWorldName),
+    ...game,
     intent,
     autoSettle: searchParams.get("autoSettle") === "true",
   };
@@ -167,10 +169,10 @@ export const buildEntryHref = (route: EntryRouteDescriptor): string => {
     searchParams.set("autoSettle", "true");
   }
 
-  return `/enter/${route.chain}/${encodeURIComponent(route.worldName)}${buildSearch(searchParams)}`;
+  return `/enter/${gamePath(route)}${buildSearch(searchParams)}`;
 };
 
-const resolveLegacySceneRoute = (location: LocationLike, fallbackWorld?: WorldProfile | null): string | null => {
+const resolveLegacySceneRoute = (location: LocationLike, fallbackWorld?: GameProfile | null): string | null => {
   const sceneMatch = location.pathname.match(/^\/play\/(map|hex|travel)\/?$/);
   if (!sceneMatch || !fallbackWorld) {
     return null;
@@ -181,8 +183,8 @@ const resolveLegacySceneRoute = (location: LocationLike, fallbackWorld?: WorldPr
 
   return buildPlayHref({
     ...parseRendererOptions(searchParams),
-    chain: fallbackWorld.chain,
-    worldName: fallbackWorld.name,
+    chainId: fallbackWorld.chainId,
+    gameId: fallbackWorld.gameId,
     scene,
     col: parseOptionalNumber(searchParams, "col"),
     row: parseOptionalNumber(searchParams, "row"),
@@ -192,33 +194,7 @@ const resolveLegacySceneRoute = (location: LocationLike, fallbackWorld?: WorldPr
   });
 };
 
-const resolveLegacyWorldRoute = (location: LocationLike, fallbackWorld?: WorldProfile | null): string | null => {
-  const worldMatch = location.pathname.match(/^\/play\/([^/]+)\/?$/);
-  if (!worldMatch || !fallbackWorld) {
-    return null;
-  }
-
-  const candidateWorldName = decodeURIComponent(worldMatch[1]);
-  if (isPlayScene(candidateWorldName)) {
-    return null;
-  }
-
-  const searchParams = new URLSearchParams(location.search);
-
-  return buildPlayHref({
-    ...parseRendererOptions(searchParams),
-    chain: fallbackWorld.chain,
-    worldName: candidateWorldName,
-    scene: "map",
-    col: parseOptionalNumber(searchParams, "col"),
-    row: parseOptionalNumber(searchParams, "row"),
-    spectate: hasSpectateQuery(location.search),
-    bootMode: "direct",
-    resumeScene: null,
-  });
-};
-
-const resolveBareSceneRoute = (location: LocationLike, fallbackWorld?: WorldProfile | null): string | null => {
+const resolveBareSceneRoute = (location: LocationLike, fallbackWorld?: GameProfile | null): string | null => {
   const sceneMatch = location.pathname.match(/^\/(map|hex|travel)\/?$/);
   if (!sceneMatch || !fallbackWorld) {
     return null;
@@ -229,8 +205,8 @@ const resolveBareSceneRoute = (location: LocationLike, fallbackWorld?: WorldProf
 
   return buildPlayHref({
     ...parseRendererOptions(searchParams),
-    chain: fallbackWorld.chain,
-    worldName: fallbackWorld.name,
+    chainId: fallbackWorld.chainId,
+    gameId: fallbackWorld.gameId,
     scene,
     col: parseOptionalNumber(searchParams, "col"),
     row: parseOptionalNumber(searchParams, "row"),
@@ -242,15 +218,11 @@ const resolveBareSceneRoute = (location: LocationLike, fallbackWorld?: WorldProf
 
 export const normalizeLegacyPlayLocation = (
   location: LocationLike,
-  fallbackWorld?: WorldProfile | null,
+  fallbackWorld?: GameProfile | null,
 ): string | null => {
   if (parsePlayRoute(location)) {
     return null;
   }
 
-  return (
-    resolveLegacySceneRoute(location, fallbackWorld) ??
-    resolveBareSceneRoute(location, fallbackWorld) ??
-    resolveLegacyWorldRoute(location, fallbackWorld)
-  );
+  return resolveLegacySceneRoute(location, fallbackWorld) ?? resolveBareSceneRoute(location, fallbackWorld);
 };

@@ -1,4 +1,3 @@
-import { GAME_CHAIN_NAMES } from "@realms-world/chain";
 export interface LocalNotificationPayload {
   version: 1;
   id: string;
@@ -90,13 +89,11 @@ export function isNotificationGameClient(clientUrl: string, origin: string): boo
 function notificationTargetForGameClient(clientUrl: string, origin: string): string | null {
   const client = new URL(clientUrl);
   if (client.origin !== origin) return null;
-  const match = /^\/play\/([a-z0-9_-]+)\/([a-zA-Z0-9_-]{1,100})\/(map|hex|travel)\/?$/.exec(client.pathname);
-  if (!match || !Object.hasOwn(GAME_CHAIN_NAMES, match[1])) return null;
-  return `/enter/${match[1]}/${match[2]}`;
+  const match = /^\/play\/(0x[0-9a-f]{1,64})\/([1-9][0-9]{0,15})\/(map|hex|travel)\/?$/.exec(client.pathname);
+  return match ? `/enter/${match[1]}/${match[2]}` : null;
 }
 
 function isNotificationTarget(target: string): boolean {
   if (target === "/") return true;
-  const match = /^\/enter\/([a-z0-9_-]+)\/[a-zA-Z0-9_-]{1,100}$/.exec(target);
-  return match !== null && Object.hasOwn(GAME_CHAIN_NAMES, match[1]);
+  return /^\/enter\/0x[0-9a-f]{1,64}\/[1-9][0-9]{0,15}$/.test(target);
 }

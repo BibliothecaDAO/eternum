@@ -17,6 +17,10 @@ export class MadaraRpc {
 
   constructor(private readonly url: string) {}
 
+  public chainId(): Promise<string> {
+    return this.request<string>("starknet_chainId", []);
+  }
+
   public blockNumber(): Promise<number> {
     return this.request<number>("starknet_blockNumber", []);
   }

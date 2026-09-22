@@ -57,10 +57,10 @@ describe("push subscriptions in PostgreSQL", () => {
   });
   it("upgrades preview consent idempotently and resets opt-in time when the source changes", async () => {
     expect((await run(store.find("0x1", first.id)))?.gameAlertsEnabledAt).toBeNull();
-    const upgraded = { ...first, gameAlerts: true, source: { chain: "madara" as const, worldAddress: "0x123" } };
+    const upgraded = { ...first, gameAlerts: true, source: { chainId: "0xa1", worldAddress: "0x123" } };
     await run(store.register(upgraded));
     const active = await run(store.find("0x1", first.id));
-    expect(active?.gameAlertsSource).toBe("madara:0x123");
+    expect(active?.gameAlertsSource).toBe("0xa1:0x123");
     await run(store.register(first));
     await run(store.register(upgraded));
     expect((await run(store.find("0x1", first.id)))?.gameAlertsEnabledAt).toEqual(active?.gameAlertsEnabledAt);
@@ -68,9 +68,9 @@ describe("push subscriptions in PostgreSQL", () => {
       "UPDATE notification_push_subscriptions SET game_alerts_enabled_at=now()-interval '1 hour' WHERE id=$1",
       [first.id],
     );
-    await run(store.register({ ...upgraded, source: { chain: "madara", worldAddress: "0x999" } }));
+    await run(store.register({ ...upgraded, source: { chainId: "0xa1", worldAddress: "0x999" } }));
     const changed = await run(store.find("0x1", first.id));
-    expect(changed?.gameAlertsSource).toBe("madara:0x999");
+    expect(changed?.gameAlertsSource).toBe("0xa1:0x999");
     expect(changed!.gameAlertsEnabledAt!.getTime()).toBeGreaterThan(Date.now() - 10000);
   });
   it("refreshes and clears the foreground lease only for the owner's device", async () => {
@@ -85,7 +85,7 @@ describe("push subscriptions in PostgreSQL", () => {
     expect((await run(store.findDirectMessageDevices("0x1", now))).map((device) => device.id)).toEqual([first.id]);
     expect(await run(store.setGameForeground("0x1", first.id, true, now))).toBe(true);
     const lease = (await run(store.find("0x1", first.id)))!.gameForegroundUntil;
-    await run(store.register({ ...first, gameAlerts: true, source: { chain: "madara", worldAddress: "0x456" } }));
+    await run(store.register({ ...first, gameAlerts: true, source: { chainId: "0xa1", worldAddress: "0x456" } }));
     expect((await run(store.find("0x1", first.id)))!.gameForegroundUntil).toEqual(lease);
     expect((await run(store.find("0x1", first.id)))!.gameForegroundUntil!.getTime()).toBeGreaterThan(now);
     expect((await run(store.findDirectMessageDevices("0x1", now))).some((device) => device.id === first.id)).toBe(

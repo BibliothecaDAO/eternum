@@ -28,8 +28,7 @@ export const LandingEntryRoute = () => {
       <GameEntryModal
         isOpen
         onClose={handleClose}
-        worldName={entryContext.worldName}
-        chain={entryContext.chain}
+        game={entryContext}
         isSpectateMode={entryContext.intent === "spectate"}
         autoSettleEnabled={entryContext.autoSettle}
         entryIntent={entryContext.intent === "settle" ? "settle" : "play"}

@@ -34,7 +34,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 
 import { resolvePlayerNameFelt } from "@/services/identity/player-name";
 import { useVillagePassInventory, type VillagePassInventoryItem } from "@/hooks/use-village-pass-inventory";
-import { getWorldKey, useWorldsAvailability } from "@/hooks/use-world-availability";
+import { useWorldsAvailability } from "@/hooks/use-world-availability";
 
 import { submitSettlement } from "@/services/settlement";
 import {
@@ -42,17 +42,15 @@ import {
   type PlayerStructure,
   type SettlementSnapshot,
 } from "@/runtime/world/herald-pre-session-reader";
-import { requireWorldById } from "@/runtime/world/world-directory";
+import { gameKey } from "@/runtime/world/store";
 import Button from "@/ui/design-system/atoms/button";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { getRpcUrlForChain } from "@/runtime/chain-rpc";
 import { BootstrapLoadingPanel } from "@/ui/layouts/bootstrap-loading/bootstrap-loading-panel";
 import { markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
 
 import { ResourcesIds, StructureType } from "@bibliothecadao/types";
-import { getSeasonAddresses } from "../../../../../../../contracts/utils/utils";
-import type { GameChain as Chain } from "@realms-world/chain";
+import { getShard, requireShard, type GameRef } from "@bibliothecadao/eternum/game-client";
 import { Account } from "starknet";
 import {
   isGameEntryPreflightComplete,
@@ -243,8 +241,7 @@ type VillageRevealResult = {
 interface GameEntryModalProps {
   isOpen: boolean;
   onClose: () => void;
-  worldName: string;
-  chain: Chain;
+  game: GameRef;
   isSpectateMode?: boolean;
   autoSettleEnabled?: boolean;
   /** Entry intent for route-owned landing entry */
@@ -770,12 +767,14 @@ const VillageRevealPhase = ({
 export const GameEntryModal = ({
   isOpen,
   onClose,
-  worldName,
-  chain,
+  game: routedGame,
   isSpectateMode = false,
   autoSettleEnabled = false,
   entryIntent = "play",
 }: GameEntryModalProps) => {
+  // The route rebuilds its game ref on every render; effects key on the ref's values, not its identity.
+  const { chainId, gameId } = routedGame;
+  const game = useMemo<GameRef>(() => ({ chainId, gameId }), [chainId, gameId]);
   const navigate = useNavigate();
   const account = useAccountStore((state) => state.account);
   // The chain name written at registration is the identity username, when one was chosen.
@@ -792,12 +791,8 @@ export const GameEntryModal = ({
   const autoSettleAttemptedRef = useRef(false);
   const autoSettleEntryKey = useMemo(() => {
     if (!account?.address) return null;
-    return createAutoSettleEntryKey({
-      chain,
-      worldName,
-      walletAddress: account.address,
-    });
-  }, [account?.address, chain, worldName]);
+    return createAutoSettleEntryKey({ ...game, walletAddress: account.address });
+  }, [account?.address, game]);
   const playerFeltAddress = useMemo(() => {
     if (!account?.address) return null;
     try {
@@ -807,14 +802,15 @@ export const GameEntryModal = ({
     }
   }, [account?.address]);
 
-  const worldAvailabilityInputs = useMemo(() => [{ name: worldName, chain }], [worldName, chain]);
+  const worldAvailabilityInputs = useMemo(() => [game], [game]);
   const { results: worldAvailabilityResults, isAnyLoading: isCheckingWorldAvailability } = useWorldsAvailability(
     worldAvailabilityInputs,
-    isOpen && Boolean(worldName),
+    isOpen,
     playerFeltAddress,
   );
-  const worldAvailability = worldAvailabilityResults.get(getWorldKey({ name: worldName, chain }));
+  const worldAvailability = worldAvailabilityResults.get(gameKey(game));
   const worldMeta = worldAvailability?.meta ?? null;
+  const worldName = worldMeta?.name ?? `Game ${game.gameId}`;
   const worldMode = worldMeta?.mode ?? "unknown";
   const isBlitzMode = worldMode === "blitz";
   const isEternumMode = worldMode === "eternum";
@@ -828,14 +824,11 @@ export const GameEntryModal = ({
   const entryContext = useMemo(
     () =>
       resolveEntryContextFromLandingSelection({
-        selection: {
-          name: worldName,
-          chain,
-        },
+        selection: game,
         intent: resolvedEntryIntent,
         autoSettle: autoSettleEnabled,
       }),
-    [autoSettleEnabled, chain, resolvedEntryIntent, worldName],
+    [autoSettleEnabled, game, resolvedEntryIntent],
   );
   const [preflightError, setPreflightError] = useState<Error | null>(null);
   const [preflightRetryNonce, setPreflightRetryNonce] = useState(0);
@@ -865,13 +858,13 @@ export const GameEntryModal = ({
   const entityWaitAbortControllerRef = useRef<AbortController | null>(null);
 
   const navigationEntryContext = entryContext;
-  const selectedWorldRpcUrl = useMemo(() => getRpcUrlForChain(chain), [chain]);
+  // The availability query opens the game's shard, so it is open once the game's meta is known.
+  const selectedWorldRpcUrl = worldMeta ? (getShard(game.chainId)?.rpcUrl ?? null) : null;
   const getSelectedWorldReader = useCallback(
-    () => createHeraldPreSessionReader(requireWorldById(worldMeta?.worldId), worldMeta?.gameId ?? 0),
-    [worldMeta?.gameId, worldMeta?.worldId],
+    () => createHeraldPreSessionReader(requireShard(game.chainId), game.gameId),
+    [game],
   );
-  const seasonAddresses = getSeasonAddresses(chain);
-  const villagePassAddress = worldMeta?.villagePassAddress || seasonAddresses.villagePass || null;
+  const villagePassAddress = worldMeta?.villagePassAddress || null;
   const {
     villagePassBalance,
     villagePasses,
@@ -879,7 +872,6 @@ export const GameEntryModal = ({
     error: villagePassInventoryError,
     refetch: refetchVillagePassInventory,
   } = useVillagePassInventory({
-    chain,
     ownerAddress: account?.address,
     villagePassAddress,
     rpcUrl: selectedWorldRpcUrl,
@@ -891,7 +883,7 @@ export const GameEntryModal = ({
     error: ownedStructuresErrorRaw,
     refetch: refetchOwnedStructures,
   } = useQuery({
-    queryKey: ["eternumOwnedStructures", chain, worldName, worldMeta?.gameId, account?.address],
+    queryKey: ["eternumOwnedStructures", game.chainId, game.gameId, account?.address],
     enabled: isOpen && Boolean(worldMeta?.gameId) && Boolean(account?.address),
     queryFn: async () => {
       if (!account?.address) return [];
@@ -1019,7 +1011,7 @@ export const GameEntryModal = ({
       entityWaitAbortControllerRef.current?.abort();
       entityWaitAbortControllerRef.current = null;
     };
-  }, [chain, isOpen, worldName]);
+  }, [game, isOpen]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -1179,9 +1171,8 @@ export const GameEntryModal = ({
   const waitForSettlementTarget = useCallback(
     async (targetSettleCount: number): Promise<SettlementSnapshot> => {
       const observation = await waitForSelectedWorldEntityState({
-        chain,
+        ...game,
         description: "settlement indexing",
-        gameId: worldMeta?.gameId ?? undefined,
         isTarget: ({ status }) => status != null && status.settledCount >= Math.max(1, targetSettleCount),
         modelNames: ["BlitzSettlement", "Structure"],
         onSlow: (elapsedMs) => {},
@@ -1194,8 +1185,6 @@ export const GameEntryModal = ({
         },
         signal: beginEntityWait(),
         slowAfterMs: SETTLEMENT_SYNC_TIMEOUT_MS,
-        worldId: worldMeta?.worldId,
-        worldName,
       });
 
       if (!observation.snapshot) {
@@ -1203,7 +1192,7 @@ export const GameEntryModal = ({
       }
       return observation.snapshot;
     },
-    [beginEntityWait, chain, readSettlementSnapshot, syncSettlementStateFromSnapshot, worldMeta, worldName],
+    [beginEntityWait, game, readSettlementSnapshot, syncSettlementStateFromSnapshot],
   );
 
   const waitForVillageResourceReveal = useCallback(
@@ -1215,9 +1204,8 @@ export const GameEntryModal = ({
       existingVillageIds: Set<number>;
     }): Promise<VillageRevealResult> => {
       const result = await waitForSelectedWorldEntityState<VillageRevealResult | null>({
-        chain,
+        ...game,
         description: "village resource indexing",
-        gameId: worldMeta?.gameId ?? undefined,
         isTarget: (reveal) => reveal != null,
         modelNames: ["Structure"],
         onSlow: (elapsedMs) => {},
@@ -1243,8 +1231,6 @@ export const GameEntryModal = ({
         },
         signal: beginEntityWait(),
         slowAfterMs: VILLAGE_REVEAL_SLOW_MS,
-        worldId: worldMeta?.worldId,
-        worldName,
       });
 
       if (!result) {
@@ -1252,7 +1238,7 @@ export const GameEntryModal = ({
       }
       return result;
     },
-    [beginEntityWait, chain, getSelectedWorldReader, worldMeta?.gameId, worldMeta?.worldId, worldName],
+    [beginEntityWait, game, getSelectedWorldReader],
   );
 
   // Check settlement status after bootstrap completes
@@ -1318,9 +1304,10 @@ export const GameEntryModal = ({
       return;
     }
 
-    debugLog(worldName, "Resetting modal state for", worldName, "chain:", chain);
+    debugLog(worldName, "Resetting modal state for", gameKey(game));
     resetBootstrapDependentState();
-  }, [chain, isOpen, resetBootstrapDependentState, worldName]);
+    // The display name arrives with the directory; only another game resets the modal.
+  }, [game, isOpen, resetBootstrapDependentState]);
 
   // Retry handler
   const handleRetry = useCallback(() => {
@@ -1345,8 +1332,8 @@ export const GameEntryModal = ({
     markGameEntryMilestone("enter-game-started");
 
     const entryTarget = resolveGameEntryTarget({
-      chain: navigationEntryContext.chain,
-      worldName: navigationEntryContext.worldName,
+      chainId: navigationEntryContext.chainId,
+      gameId: navigationEntryContext.gameId,
       structureEntityId: useUIStore.getState().structureEntityId,
       worldMapReturnPosition: useUIStore.getState().worldMapReturnPosition,
       isSpectateMode: navigationEntryContext.intent === "spectate",
@@ -1425,7 +1412,6 @@ export const GameEntryModal = ({
     refetchVillagePassInventory,
     refetchOwnedStructures,
     worldName,
-    chain,
   ]);
 
   const handleSettleAnotherVillage = useCallback(() => {

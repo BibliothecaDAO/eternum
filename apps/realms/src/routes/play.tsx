@@ -22,8 +22,9 @@ const statusPill = (game: DirectoryGame): { tone: PillTone; label: string } => {
   }
 };
 
-const enterUrl = (game: DirectoryGame, spectate: boolean) =>
-  `${env.VITE_PUBLIC_GAME_ORIGIN}/enter/${env.VITE_PUBLIC_HERALD_CHAIN}/${encodeURIComponent(game.name)}${spectate ? "?intent=spectate" : ""}`;
+/** The game client addresses a game by its shard's chain id and its id there. */
+const enterUrl = (chainId: string, game: DirectoryGame, spectate: boolean) =>
+  `${env.VITE_PUBLIC_GAME_ORIGIN}/enter/${chainId}/${game.game_id}${spectate ? "?intent=spectate" : ""}`;
 
 function Slot({
   slot,
@@ -115,7 +116,7 @@ function FreeSlots() {
   );
 }
 
-function GameDetail({ game, now }: { game: DirectoryGame; now: number }) {
+function GameDetail({ chainId, game, now }: { chainId: string; game: DirectoryGame; now: number }) {
   const { session } = useSession();
   const pill = statusPill(game);
   const facts = useQuery(
@@ -153,9 +154,9 @@ function GameDetail({ game, now }: { game: DirectoryGame; now: number }) {
       )}
       <div className="my-4 flex gap-3">
         {!ended && registry?.ready && (member || game.mode === "eternum") && (
-          <GoldButton onClick={() => window.open(enterUrl(game, false), "_blank")}>Enter game</GoldButton>
+          <GoldButton onClick={() => window.open(enterUrl(chainId, game, false), "_blank")}>Enter game</GoldButton>
         )}
-        <GhostButton onClick={() => window.open(enterUrl(game, true), "_blank")}>
+        <GhostButton onClick={() => window.open(enterUrl(chainId, game, true), "_blank")}>
           {ended ? "Review" : "Spectate"}
         </GhostButton>
       </div>
@@ -211,7 +212,9 @@ export function PlayScreen() {
             );
           })}
         </div>
-        {selected && <GameDetail key={selected.game_id} game={selected} now={now} />}
+        {selected && directory.kind === "ok" && (
+          <GameDetail key={selected.game_id} chainId={directory.value.chain} game={selected} now={now} />
+        )}
       </div>
     </div>
   );

@@ -11,7 +11,6 @@ const ClientEnv = Schema.Struct({
   VITE_PUBLIC_GAME_ORIGIN: Schema.NonEmptyString,
   VITE_PUBLIC_IDENTITY_RPC_URL: Schema.NonEmptyString,
   VITE_PUBLIC_HERALD_URL: Schema.NonEmptyString,
-  VITE_PUBLIC_HERALD_CHAIN: Schema.NonEmptyString,
 });
 
 export const env = Schema.decodeUnknownSync(ClientEnv, { onExcessProperty: "ignore" })(import.meta.env);

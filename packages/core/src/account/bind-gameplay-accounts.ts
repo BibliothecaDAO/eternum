@@ -1,4 +1,3 @@
-import type { GameChain } from "@realms-world/chain";
 import { type AccountInterface, type Call, CallData, num, type ProviderInterface } from "starknet";
 
 import { resolveGameTransactionResourceBounds } from "./transaction-resource-bounds";
@@ -13,7 +12,6 @@ interface BindGameplayAccountsOptions {
   accounts: readonly GameplayAccountBinding[];
   /** The binding authority: the only account the registry lets call `bind`. */
   authority: AccountInterface;
-  chain: GameChain;
   playerRegistryAddress: string;
   provider: ProviderInterface;
 }
@@ -48,7 +46,7 @@ export async function bindGameplayAccounts(
 
   const bindingTransactionHashes: string[] = [];
   for (const batch of chunk(calls, BINDING_BATCH_SIZE)) {
-    bindingTransactionHashes.push(await executeAndWait(options.authority, batch, options.chain));
+    bindingTransactionHashes.push(await executeAndWait(options.authority, batch));
   }
   return { alreadyBound, bindingTransactionHashes };
 }
@@ -88,9 +86,9 @@ const buildBindCall = (registry: string, account: GameplayAccountBinding): Call 
 });
 
 /** The authority has no Herald stream to wait on, so the bind is confirmed through the RPC receipt. */
-const executeAndWait = async (authority: AccountInterface, calls: Call[], chain: GameChain): Promise<string> => {
+const executeAndWait = async (authority: AccountInterface, calls: Call[]): Promise<string> => {
   const { transaction_hash } = await authority.execute(calls, {
-    resourceBounds: resolveGameTransactionResourceBounds(chain),
+    resourceBounds: resolveGameTransactionResourceBounds(),
     tip: 0,
   });
   const receipt = await authority.waitForTransaction(transaction_hash, { retryInterval: BINDING_RECEIPT_POLL_MS });

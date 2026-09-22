@@ -6,7 +6,7 @@ import {
   ensureGameplayAccount,
   type GameClient,
 } from "@bibliothecadao/eternum";
-import { configureGameplayAccountSubmits } from "@bibliothecadao/eternum/game-client";
+import { configureGameplayAccountSubmits, type Shard } from "@bibliothecadao/eternum/game-client";
 import { Account, BlockTag, ec, RpcProvider, stark, type AccountInterface } from "starknet";
 
 import { resolveDataDir, type RunnerConfig, type RunnerSigner } from "./config";
@@ -25,13 +25,14 @@ export async function resolveRunnerSigner(
   dataDir: string,
 ): Promise<AccountInterface | null> {
   if (config.signer.mode === "none") return null;
-  const provider = new RpcProvider({ nodeUrl: config.rpcUrl, blockIdentifier: BlockTag.PRE_CONFIRMED });
+  const { shard } = client;
+  const provider = new RpcProvider({ nodeUrl: shard.rpcUrl, blockIdentifier: BlockTag.PRE_CONFIRMED });
   const account =
     config.signer.mode === "guest"
-      ? await connectGuestAccount(config, config.signer, provider, dataDir)
-      : await connectKeyAccount(config, config.signer, provider);
+      ? await connectGuestAccount(shard, config.signer, provider, dataDir)
+      : await connectKeyAccount(shard, config.signer, provider);
   // Every send, raw or through the client's provider, takes the gameplay nonce and fee path.
-  const signer = configureGameplayAccountSubmits(account, config.chain);
+  const signer = configureGameplayAccountSubmits(account, shard.chainId);
   client.connect(signer);
   return signer;
 }
@@ -41,15 +42,16 @@ export async function resolveRunnerSigner(
  * keys on. The key persists under the data dir so a restarted runner is the same player.
  */
 const connectGuestAccount = async (
-  config: RunnerConfig,
+  shard: Shard,
   signer: Extract<RunnerSigner, { mode: "guest" }>,
   provider: RpcProvider,
   dataDir: string,
 ): Promise<Account> => {
   const key = await loadOrMintGuestKey(dataDir);
+  const authority = requireShardContract(shard, "bindingAuthority");
   const account = await ensureGameplayAccount({
-    authority: config.bindingAuthorityAddress,
-    classHash: config.playerAccountClassHash,
+    authority,
+    classHash: shard.accountClassHash,
     owner: "0x0",
     privateKey: key.privateKey,
     provider,
@@ -59,27 +61,32 @@ const connectGuestAccount = async (
     accounts: [{ owner: account.address, address: account.address }],
     authority: new Account({
       provider,
-      address: config.bindingAuthorityAddress,
+      address: authority,
       signer: signer.bindingAuthorityPrivateKey,
     }),
-    chain: config.chain,
-    playerRegistryAddress: config.playerRegistryAddress,
+    playerRegistryAddress: requireShardContract(shard, "playerRegistry"),
     provider,
   });
   return account;
 };
 
 const connectKeyAccount = (
-  config: RunnerConfig,
+  shard: Shard,
   signer: Extract<RunnerSigner, { mode: "key" }>,
   provider: RpcProvider,
 ): Promise<Account> =>
   connectGameplayAccount({
     address: signer.gameplayAccountAddress,
-    classHash: config.playerAccountClassHash,
+    classHash: shard.accountClassHash,
     privateKey: signer.gameplayPrivateKey,
     provider,
   });
+
+const requireShardContract = (shard: Shard, name: string): string => {
+  const address = shard.contracts[name];
+  if (!address) throw new Error(`Shard ${shard.url} names no ${name} contract`);
+  return address;
+};
 
 const loadOrMintGuestKey = async (dataDir: string): Promise<GameplayKey> => {
   const file = path.join(dataDir, GUEST_KEY_FILE);

@@ -6,7 +6,8 @@ import { summaryToWorldConfigMeta } from "./summary-to-world-config-meta";
 
 const baseSummary: WorldSummary = {
   name: "alpha",
-  chain: "madara",
+  chainId: "0x1",
+  gameId: 1,
   alive: true,
   ready: true,
   lastCheckedAt: 0,

@@ -6,20 +6,18 @@ import { createIdentitySessionResolver, VerifiedIdentity, type SessionResolver }
 
 export const createRealtimeDependencies = ({
   gameRpcUrl,
-  heraldChain,
   heraldUrl,
   identityUrl,
   playerRegistryAddress,
 }: {
   gameRpcUrl: string;
-  heraldChain: string;
   heraldUrl: string;
   identityUrl: string;
   playerRegistryAddress: string;
 }): { sessions: SessionResolver; membership: MembershipResolver } => {
   const gameplayAccounts = createGameplayAccountService({ rpcUrl: gameRpcUrl, playerRegistryAddress });
   const identity = createIdentitySessionResolver({ identityUrl, resolveMembershipPlayer: gameplayAccounts.resolve });
-  const membership = createHeraldMembershipResolver({ heraldUrl, chain: heraldChain });
+  const membership = createHeraldMembershipResolver({ heraldUrl });
   const services = Layer.mergeAll(
     Layer.succeed(GameplayAccounts, gameplayAccounts),
     Layer.succeed(VerifiedIdentity, identity),

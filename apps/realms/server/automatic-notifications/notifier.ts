@@ -100,7 +100,7 @@ async function resolveCandidates(
       gameName = games.get(gameId);
     if (!gameName) throw new Error("Notification game is missing from Herald directory");
     const sourceId = storyEventIdentity(
-      { chain: input.config.chain, worldAddress: input.config.worldAddress, gameId },
+      { chainId: input.config.chainId, worldAddress: input.config.worldAddress, gameId },
       event.value,
     );
     for (const account of storyRecipients(story, event.value.owner, payload)) {
@@ -114,7 +114,7 @@ async function resolveCandidates(
         value: event.value,
         owner: normalized,
         gameName,
-        target: `/enter/${input.config.chain}/${gameName}`,
+        target: `/enter/${input.config.chainId}/${gameId}`,
         now,
       });
       if (notification) candidates.set(`${normalized}:${notification.id}`, { story, notification });

@@ -1,16 +1,11 @@
-import type { GameChain } from "@realms-world/chain";
-
-export type WorldSummaryChain = GameChain;
-
 export type WorldSummaryMode = "blitz" | "eternum" | "frontier" | "duel" | "unknown";
 
 export interface WorldSummary {
   name: string;
-  chain: WorldSummaryChain;
-  /** World-directory key the game lives in ("blitz" | "eternum"). */
-  worldId?: string;
-  /** GameRegistry id inside its world — key[0] of every per-game model. */
-  gameId?: number | null;
+  /** The chain id of the shard the game lives on; with the game id it names the game. */
+  chainId: string;
+  /** GameRegistry id inside its shard — key[0] of every per-game model. */
+  gameId: number;
   alive: boolean;
   ready: boolean;
   lastCheckedAt: number;

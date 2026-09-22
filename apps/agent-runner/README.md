@@ -33,19 +33,14 @@ to be ready; it does not register or settle a player itself.
 A live run streams from OpenRouter and needs `OPENROUTER_API_KEY`; `--model-profile cheap|balanced|strong` picks the
 model (`src/model-profiles.ts`). Flags win over environment variables; every flag is listed in `src/config.ts`.
 
-| Environment variable                               | Flag                                                   | Meaning                                        |
-| -------------------------------------------------- | ------------------------------------------------------ | ---------------------------------------------- |
-| `HERALD_URL` / `VITE_PUBLIC_HERALD_URL`            | `--herald-url`                                         | Herald base URL                                |
-| `RPC_URL` / `VITE_PUBLIC_NODE_URL`                 | `--rpc-url`                                            | Chain RPC URL                                  |
-| `VITE_PUBLIC_PLAYER_ACCOUNT_CLASS_HASH`            | `--player-account-class-hash`                          | Gameplay account class                         |
-| `VITE_PUBLIC_PLAYER_REGISTRY_ADDRESS`              | `--player-registry-address`                            | Player registry contract                       |
-| `VITE_PUBLIC_BINDING_AUTHORITY_ADDRESS`            | `--binding-authority-address`                          | Binding authority account                      |
-| `BINDING_AUTHORITY_PRIVATE_KEY`                    | `--binding-authority-private-key`                      | Guest mode: binds the minted account           |
-| `GAMEPLAY_PRIVATE_KEY`, `GAMEPLAY_ACCOUNT_ADDRESS` | `--gameplay-private-key`, `--gameplay-account-address` | Key mode                                       |
-| `OPENROUTER_API_KEY`                               |                                                        | Live model calls (read by pi-ai)               |
-| `MODEL_PROFILE`                                    | `--model-profile`                                      | `cheap`, `balanced` (default), or `strong`     |
-| `NATIVE_WORLD_MANIFEST`                            | `--manifest`                                           | Required native world manifest                 |
-| `AGENT_DATA_DIR`                                   | `--data-dir`                                           | Agent files; default `./.agent-data/<game id>` |
+| Environment variable                               | Flag                                                   | Meaning                                         |
+| -------------------------------------------------- | ------------------------------------------------------ | ----------------------------------------------- |
+| `SHARD_URL`                                        | `--shard-url`                                          | The shard's Herald; its manifest names the rest |
+| `BINDING_AUTHORITY_PRIVATE_KEY`                    | `--binding-authority-private-key`                      | Guest mode: binds the minted account            |
+| `GAMEPLAY_PRIVATE_KEY`, `GAMEPLAY_ACCOUNT_ADDRESS` | `--gameplay-private-key`, `--gameplay-account-address` | Key mode                                        |
+| `OPENROUTER_API_KEY`                               |                                                        | Live model calls (read by pi-ai)                |
+| `MODEL_PROFILE`                                    | `--model-profile`                                      | `cheap`, `balanced` (default), or `strong`      |
+| `AGENT_DATA_DIR`                                   | `--data-dir`                                           | Agent files; default `./.agent-data/<game id>`  |
 
 The data dir holds `soul.md` and `skills/` (seeded from `templates/`), `memory/notes.md`, `reports.jsonl`, `directions/`
 (drop a `*.md` to direct the agent), `debug/tool-responses.log`, and `runs/<run id>.json`, the manifest.
@@ -68,15 +63,13 @@ The last line is the manifest; its `actions` block should show `planned: 1` and 
 
 `Dockerfile` builds the image the M3 supervisor runs in a sandbox. It is multi-stage: pnpm installs the runner's
 workspace slice and builds the five packages it imports, and the runtime stage carries Bun, the production
-`node_modules`, the built `packages/*/dist`, `src/` and `templates/`, the world manifest, and the two generated balance
-documents. Nothing is installed at runtime. Build from the repository root and run the offline smoke against it:
+`node_modules`, the built `packages/*/dist`, `src/` and `templates/`, and the two generated balance documents. Nothing
+is installed at runtime. Build from the repository root and run the offline smoke against it:
 
 ```sh
 docker build -f apps/agent-runner/Dockerfile -t agent-runner:dev .
 docker run --rm -v "$PWD/.agent-data/image-smoke:/data" \
-  -e VITE_PUBLIC_HERALD_URL -e VITE_PUBLIC_NODE_URL -e VITE_PUBLIC_PLAYER_ACCOUNT_CLASS_HASH \
-  -e VITE_PUBLIC_PLAYER_REGISTRY_ADDRESS -e VITE_PUBLIC_BINDING_AUTHORITY_ADDRESS \
-  agent-runner:dev --game-id 2 --signer none --offline --max-ticks 2 --heartbeat-ms 15000
+  -e SHARD_URL agent-runner:dev --game-id 2 --signer none --offline --max-ticks 2 --heartbeat-ms 15000
 ```
 
 ## M2 gate: one full Blitz
@@ -87,8 +80,7 @@ Blitz under a measured cost envelope"; the envelope is whatever that manifest re
 until a run has produced one.
 
 ```sh
-set -a; source apps/game/.env; set +a
-OPENROUTER_API_KEY=... BINDING_AUTHORITY_PRIVATE_KEY=... apps/agent-runner/scripts/play-blitz.sh --model-profile balanced
+OPENROUTER_API_KEY=... BINDING_AUTHORITY_PRIVATE_KEY=... SHARD_URL=... apps/agent-runner/scripts/play-blitz.sh --model-profile balanced
 ```
 
 It has not been run yet: the OpenRouter key and the binding authority key live on the lab box.

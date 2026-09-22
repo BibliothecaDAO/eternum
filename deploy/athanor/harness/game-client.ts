@@ -4,19 +4,12 @@ import {
   createNativeTicketSubmission,
   setChainProvenTimestampSource,
   setBlockTimestampSource,
-  resolveGameTransactionResourceBounds,
   type CreateGameClientInput,
   type GameClient,
 } from "@bibliothecadao/eternum";
-import {
-  buildWorldDeployment,
-  fetchHeraldGameDirectory,
-  type CommittedManifest,
-  type GameClientObserver,
-  type WorldDeployment,
-} from "@bibliothecadao/eternum/game-client";
+import { fetchHeraldGameDirectory, type GameClientObserver, type Shard } from "@bibliothecadao/eternum/game-client";
 import { createMicrotaskGameSyncScheduler } from "@bibliothecadao/eternum/game-sync";
-import type { Manifest, NativeWorldBindings } from "@bibliothecadao/types";
+import type { NativeWorldBindings } from "@bibliothecadao/types";
 import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
 
 export interface HarnessGameplayContracts {
@@ -28,39 +21,27 @@ export interface HarnessGameplayContracts {
 interface ConnectHarnessGameClientOptions {
   actor: string;
   gameId: number;
-  admissionUrl: string;
-  chainId: string;
+  shard: Shard;
   signIntent: NonNullable<CreateGameClientInput["native"]>["signIntent"];
-  gameplayContracts: HarnessGameplayContracts;
-  heraldUrl: string;
-  manifest: CommittedManifest;
-  rpcUrl: string;
 }
 
-// Every deployed lab world is the Blitz world; the id only labels the deployment.
-const WORLD_ID = "blitz";
 const GAME_LISTING_TIMEOUT_MS = 120_000;
 const GAME_LISTING_POLL_MS = 2_000;
 
 /** Each player reads and acts through its own Herald subscription and native store. */
 export async function connectHarnessGameClient(options: ConnectHarnessGameClientOptions): Promise<GameClient> {
-  const world = buildHarnessWorld(options);
-  const presetId = await waitForHeraldToListGame(world, options.gameId);
+  const presetId = await waitForHeraldToListGame(options.shard, options.gameId);
   const clock = createLoggingObserver(options.gameId);
   const client = await createGameClient({
     actor: options.actor,
-    world,
+    shard: options.shard,
     gameId: options.gameId,
     presetId,
-    networkConfig: { rpcUrl: options.rpcUrl, manifest: options.manifest as unknown as Manifest },
     native: {
       bindings: bindings as unknown as NativeWorldBindings,
-      chainId: options.chainId,
+      chainId: options.shard.chainId,
       signIntent: options.signIntent,
-      submitIntent: createNativeTicketSubmission(options.admissionUrl),
-    },
-    setupEnvironment: {
-      executionResourceBounds: resolveGameTransactionResourceBounds("madara"),
+      submitIntent: createNativeTicketSubmission(options.shard.admissionUrl),
     },
     scheduler: createMicrotaskGameSyncScheduler(),
     observer: clock.observer,
@@ -74,22 +55,8 @@ export async function connectHarnessGameClient(options: ConnectHarnessGameClient
   }
 }
 
-const buildHarnessWorld = (options: ConnectHarnessGameClientOptions): WorldDeployment =>
-  buildWorldDeployment({
-    id: WORLD_ID,
-    chain: "madara",
-    manifest: options.manifest,
-    heraldBaseUrl: options.heraldUrl,
-    admissionUrl: options.admissionUrl,
-    rpcUrl: options.rpcUrl,
-    browserFacing: false,
-    playerAccountClassHash: options.gameplayContracts.playerAccountClassHash,
-    playerRegistryAddress: options.gameplayContracts.playerRegistryAddress,
-    bindingAuthorityAddress: options.gameplayContracts.bindingAuthorityAddress,
-  });
-
 /** A game launched moments ago reaches Herald's directory once its registry row is folded; its row carries the preset. */
-async function waitForHeraldToListGame(world: WorldDeployment, gameId: number): Promise<number> {
+async function waitForHeraldToListGame(world: Shard, gameId: number): Promise<number> {
   const deadline = Date.now() + GAME_LISTING_TIMEOUT_MS;
   while (Date.now() <= deadline) {
     const directory = await fetchHeraldGameDirectory(world);

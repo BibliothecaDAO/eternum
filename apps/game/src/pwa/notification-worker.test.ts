@@ -18,7 +18,7 @@ const payload = {
   owner: "0x1",
   title: "Battle",
   body: "A battle was confirmed",
-  target: "/enter/madara/game-1",
+  target: "/enter/0xa1/1",
   createdAt: now,
   expiresAt: now + 120_000,
 };
@@ -26,7 +26,7 @@ function harness() {
   const handlers = new Map<string, (event: any) => void>();
   const client = {
     id: "page",
-    url: "https://game.test/play/madara/game-1/map",
+    url: "https://game.test/play/0xa1/1/map",
     focused: false,
     visibilityState: "hidden",
     focus: vi.fn(),
@@ -118,11 +118,11 @@ it("delivers once across worker restarts, respects foreground activity and stops
   expect(prepared.ok).toBe(true);
   const id = prepared.value.id;
   expect((await restarted.send("activate-push", { id })).ok).toBe(true);
-  const source = { chain: "madara", worldAddress: "0x123" };
+  const source = { chainId: "0xa1", worldAddress: "0x123" };
   const notification = {
     ...local,
     createdAt: Date.now(),
-    id: "story:v1:madara:0x123:0x7:0xabc:logical:BattleStory:0x64",
+    id: "story:v1:0xa1:0x123:0x7:0xabc:logical:BattleStory:0x64",
     tag: "thread:one",
   };
   const envelope = { version: 1, kind: "game", source, subscriptionId: id, notification };
@@ -140,12 +140,12 @@ it("delivers once across worker restarts, respects foreground activity and stops
     expect.objectContaining({ tag: "thread:one" }),
   );
   await restarted.click(envelope);
-  expect(restarted.clients.openWindow).toHaveBeenCalledWith("https://game.test/enter/madara/game-1");
+  expect(restarted.clients.openWindow).toHaveBeenCalledWith("https://game.test/enter/0xa1/1");
 
   expect((await restarted.send("revoke-push", { id })).ok).toBe(true);
   await restarted.push({
     ...envelope,
-    notification: { ...notification, id: "story:v1:madara:0x123:0x7:0xabc:logical:BattleStory:0x65" },
+    notification: { ...notification, id: "story:v1:0xa1:0x123:0x7:0xabc:logical:BattleStory:0x65" },
   });
   await restarted.click(envelope);
   expect(restarted.registration.showNotification).toHaveBeenCalledOnce();

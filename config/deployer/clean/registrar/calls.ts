@@ -6,7 +6,6 @@ import type { NativeWorldManifest } from "../world/native/types";
 import type { buildNativePreset } from "../config/native-preset";
 import { resolveGameTransactionResourceBounds } from "@bibliothecadao/eternum";
 import { Account, CallData, shortString, type Call, type RawArgs, RpcProvider } from "starknet";
-import { resolveDeploymentEnvironment } from "../environment";
 import { openLedgerGame, type LedgerTarget } from "../ledger/calls";
 import { loadRepoJsonFile } from "../shared/repo";
 import type { DeploymentEnvironmentId } from "../types";
@@ -116,13 +115,11 @@ function buildRegistrarCall(
   };
 }
 
-export function resolveRegistrarExecutionDetails(target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID) {
-  const chain = typeof target === "string" ? resolveDeploymentEnvironment(target).chain : "appchain";
-  const resourceBounds = resolveGameTransactionResourceBounds(chain);
+export function resolveRegistrarExecutionDetails() {
   return {
     version: 3 as const,
     tip: 0,
-    ...(resourceBounds ? { resourceBounds } : {}),
+    resourceBounds: resolveGameTransactionResourceBounds(),
   };
 }
 
@@ -131,7 +128,7 @@ async function executeRegistrarCall(
   call: Call,
   target: RegistrarTarget,
 ): Promise<RegistrarTransactionResult> {
-  const transaction = await account.execute(call, resolveRegistrarExecutionDetails(target));
+  const transaction = await account.execute(call, resolveRegistrarExecutionDetails());
   const receipt = await confirmedTransactionReceipt(account, transaction.transaction_hash);
   return { transactionHash: transaction.transaction_hash, receipt };
 }

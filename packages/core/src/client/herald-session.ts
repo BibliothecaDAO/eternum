@@ -1,6 +1,5 @@
 import type { GameSyncModelDefinition } from "../sync/model-manifest";
 import type { GameClientSetup } from "./game-client";
-import type { GameChain } from "@realms-world/chain";
 
 import type {
   GameSyncEntity,
@@ -51,7 +50,7 @@ export interface CreateHeraldGameSyncSessionInput {
   actor?: string;
   modelDefinition: (name: string) => GameSyncModelDefinition;
   baseUrl: string;
-  chain: GameChain;
+  chainId: string;
   entityModels: readonly string[];
   eventModels: readonly string[];
   gameId: number;
@@ -86,7 +85,7 @@ export function createHeraldGameSyncSession(
   input: CreateHeraldGameSyncSessionInput,
 ): GameSyncSessionStart & { transport: HeraldGameSyncTransport } {
   const observer = input.observer ?? {};
-  const scope: StoryEventScope = { chain: input.chain, worldAddress: input.worldAddress, gameId: input.gameId };
+  const scope: StoryEventScope = { chainId: input.chainId, worldAddress: input.worldAddress, gameId: input.gameId };
   observer.onStoryEventsReset?.();
   return {
     onLiveUpdate: observer.onLiveUpdate,
@@ -107,12 +106,12 @@ export function createHeraldGameSyncSession(
     transport: new HeraldGameSyncTransport({
       modelDefinition: input.modelDefinition,
       socketFactory: input.socketFactory,
-      url: buildHeraldGameStreamUrl(input.baseUrl, input.chain, input.gameId, input.actor),
+      url: buildHeraldGameStreamUrl(input.baseUrl, input.gameId, input.actor),
     }),
   };
 }
 
-export function buildHeraldGameStreamUrl(baseUrl: string, chain: GameChain, gameId: number, actor?: string): string {
+export function buildHeraldGameStreamUrl(baseUrl: string, gameId: number, actor?: string): string {
   if (!Number.isSafeInteger(gameId) || gameId <= 0) {
     throw new Error(`Herald requires a positive game id; received ${gameId}`);
   }
@@ -125,7 +124,7 @@ export function buildHeraldGameStreamUrl(baseUrl: string, chain: GameChain, game
   }
 
   const prefix = url.pathname.replace(/\/+$/, "");
-  url.pathname = `${prefix}/${chain}/games/${gameId}`;
+  url.pathname = `${prefix}/games/${gameId}`;
   url.search = "";
   if (actor !== undefined) url.searchParams.set("actor", `0x${BigInt(actor).toString(16)}`);
   url.hash = "";

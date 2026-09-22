@@ -174,10 +174,11 @@ describe("native deployment planning", () => {
   test("the release retains deployment identity and historical codecs across upgrades", async () => {
     const { local, rpc } = fixture();
     const plan = await inspectNativeWorld(local, rpc as unknown as RpcProvider);
-    const first = buildNativeManifest(local, plan);
+    const shard = { chainId: "0x1", accountClassHash: "0x2", contracts: {} };
+    const first = buildNativeManifest(local, plan, shard);
     local.previous = first;
     local.domains.find((domain) => domain.name === "season")!.classHash = "0x456";
-    const second = buildNativeManifest(local, { ...plan, blockNumber: 100 });
+    const second = buildNativeManifest(local, { ...plan, blockNumber: 100 }, shard);
     expect(second.native.deploymentBlock).toBe(10);
     expect(second.native.domains.season.initialClassHash).toBe("0x123");
     expect(Object.keys(second.native.domains.season.classes)).toEqual(["0x123", "0x456"]);

@@ -8,10 +8,10 @@ import {
   type SystemCallAuthHandler,
   createSystemCalls,
   type SystemCalls,
-  type Manifest,
 } from "@bibliothecadao/types";
-import type { AccountInterface, ResourceBoundsBN } from "starknet";
+import type { AccountInterface } from "starknet";
 
+import { resolveGameTransactionResourceBounds } from "../account/transaction-resource-bounds";
 import { configManager } from "../managers/config-manager";
 import {
   disposeActiveGameSyncRuntime,
@@ -27,7 +27,7 @@ import { createGameActions, type GameActions } from "./actions";
 import { setGameScope } from "./game-scope";
 import { createHeraldGameSyncSession, type GameClientObserver } from "./herald-session";
 import { createGameViews, type GameViews } from "./views";
-import type { WorldDeployment } from "./world-directory";
+import type { Shard } from "./shard";
 
 export interface GameClientSetup {
   store: NativeFactStore;
@@ -35,17 +35,12 @@ export interface GameClientSetup {
   systemCalls: SystemCalls;
 }
 
-type GameClientSetupEnvironment = { executionResourceBounds?: ResourceBoundsBN };
-
 export interface CreateGameClientInput {
   actor?: string;
   native: NativeClientConnection;
-  world: WorldDeployment;
+  shard: Shard;
   gameId: number;
   presetId: number;
-  /** The manifest and RPC URL for this deployment. */
-  networkConfig: { manifest: Manifest; rpcUrl: string };
-  setupEnvironment: GameClientSetupEnvironment;
   authHandler?: SystemCallAuthHandler;
   scheduler: GameSyncScheduler;
   socketFactory?: (url: string) => HeraldSocket;
@@ -53,7 +48,7 @@ export interface CreateGameClientInput {
 }
 
 export interface GameClient {
-  world: WorldDeployment;
+  shard: Shard;
   gameId: number;
   presetId: number;
   setup: GameClientSetup;
@@ -100,18 +95,16 @@ const selectGame = ({ gameId, presetId }: CreateGameClientInput): void => {
   setGameScope(gameId);
 };
 
-const bootstrapWorld = async (input: CreateGameClientInput): Promise<GameClientSetup> => {
-  const release = (input.networkConfig.manifest as unknown as { native?: { activeSchema: string } }).native;
-  if (!release || release.activeSchema !== input.native.bindings.schemaIdentity)
-    throw new Error("Native client bindings do not match the deployment");
-  const provider = new EternumProvider(input.networkConfig.manifest, input.networkConfig.rpcUrl, undefined, {
-    executionResourceBounds: input.setupEnvironment.executionResourceBounds,
-    gameId: input.gameId,
+const bootstrapWorld = async ({ shard, gameId, authHandler }: CreateGameClientInput): Promise<GameClientSetup> => {
+  const contracts = { world: shard.worldAddress, bridge: shard.contracts.bridge };
+  const provider = new EternumProvider(contracts, shard.rpcUrl, undefined, {
+    executionResourceBounds: resolveGameTransactionResourceBounds(),
+    gameId,
   });
   return {
     store: new NativeFactStore(),
     network: { provider },
-    systemCalls: createSystemCalls({ provider, authHandler: input.authHandler }),
+    systemCalls: createSystemCalls({ provider, authHandler }),
   };
 };
 
@@ -122,13 +115,13 @@ const startSync = async (
 ): Promise<{ projection: WorldSpatialProjection; transport: HeraldGameSyncTransport }> => {
   const session = createHeraldGameSyncSession({
     actor: input.actor,
-    baseUrl: input.world.heraldBaseUrl,
-    chain: input.world.chain,
+    baseUrl: input.shard.url,
+    chainId: input.shard.chainId,
     entityModels: input.native.bindings.models.map((model) => model.name),
     eventModels: input.native.bindings.events.map((event) => event.name),
     modelDefinition: nativeModelDefinition(input.native.bindings),
     gameId: input.gameId,
-    worldAddress: input.world.worldAddress,
+    worldAddress: input.shard.worldAddress,
     observer: input.observer,
     scheduler: input.scheduler,
     store: setupResult.store,
@@ -137,7 +130,7 @@ const startSync = async (
   session.onDispose = input.native.submitIntent.dispose;
   await runtime.startSession(session);
   setupResult.network.provider.setNativeSubmission(
-    nativeSubmission(input.native, setupResult.store, input.gameId, input.world.worldAddress, async (actor) => {
+    nativeSubmission(input.native, setupResult.store, input.gameId, input.shard.worldAddress, async (actor) => {
       session.transport.selectActor(actor);
       await waitForWorldState(
         { runtime },
@@ -194,7 +187,7 @@ const buildGameClient = (
   let views: GameViews | null = null;
   let actions: GameActions | null = null;
   const client: GameClient = {
-    world: input.world,
+    shard: input.shard,
     gameId: input.gameId,
     presetId: input.presetId,
     setup: setupResult,

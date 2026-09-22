@@ -223,7 +223,8 @@ def prepare_runtime_files(directory, environment):
         "POSTGRES_USER": "herald", "POSTGRES_DB": "herald", "POSTGRES_PASSWORD": password,
     })
     write_private_environment(directory / "herald.env", {
-        "PORT": "3003", "HERALD_CHAIN": "madara", "HERALD_RPC_URL": "http://madara:9944/rpc/v0_10_2",
+        "PORT": "3003", "HERALD_RPC_URL": "http://madara:9944/rpc/v0_10_2",
+        "HERALD_PUBLIC_RPC_URL": environment["RPC_URL"], "HERALD_PUBLIC_ADMISSION_URL": environment["ADMISSION_URL"],
         "NATIVE_WORLD_MANIFEST": "/config/native-world.json",
         "DATABASE_URL": f"postgres://herald:{password}@postgres:5432/herald",
     })

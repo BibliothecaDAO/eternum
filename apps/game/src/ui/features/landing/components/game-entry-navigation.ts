@@ -1,16 +1,14 @@
 import { normalizeWorldMapRoutePosition } from "@/play/navigation/play-route-target";
 import { buildPlayHref } from "@/play/navigation/play-route";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
-import type { GameChain as Chain } from "@realms-world/chain";
+import type { GameRef } from "@bibliothecadao/eternum/game-client";
 
 type WorldMapPosition = {
   col: number;
   row: number;
 };
 
-type ResolveGameEntryTargetInput = {
-  chain: Chain;
-  worldName: string;
+type ResolveGameEntryTargetInput = GameRef & {
   structureEntityId: number;
   worldMapReturnPosition: WorldMapPosition | null;
   isSpectateMode: boolean;
@@ -36,25 +34,23 @@ const resolveMapCenter = (mapCenterOffset?: number | null): number | null => {
 };
 
 const buildCanonicalGameEntryUrl = ({
-  chain,
-  worldName,
+  chainId,
+  gameId,
   isSpectateMode,
   worldMapPosition,
-}: {
-  chain: Chain;
-  worldName: string;
+}: GameRef & {
   isSpectateMode: boolean;
   worldMapPosition: WorldMapPosition | null;
 }) => {
   return buildPlayHref({
     bootMode: "direct",
-    chain,
+    chainId,
+    gameId,
     col: worldMapPosition?.col ?? null,
     resumeScene: null,
     row: worldMapPosition?.row ?? null,
     scene: "map",
     spectate: isSpectateMode,
-    worldName,
   });
 };
 
@@ -91,8 +87,8 @@ const buildWorldMapEntryTargetFromBootstrappedSelection = (
     spectator: input.isSpectateMode,
     structureEntityId: target.structureEntityId,
     url: buildCanonicalGameEntryUrl({
-      chain: input.chain,
-      worldName: input.worldName,
+      chainId: input.chainId,
+      gameId: input.gameId,
       worldMapPosition: target.worldMapPosition,
       isSpectateMode: input.isSpectateMode,
     }),
@@ -105,8 +101,8 @@ const buildFallbackGameEntryTarget = (input: ResolveGameEntryTargetInput): Resol
     spectator: input.isSpectateMode,
     structureEntityId: 0,
     url: buildCanonicalGameEntryUrl({
-      chain: input.chain,
-      worldName: input.worldName,
+      chainId: input.chainId,
+      gameId: input.gameId,
       worldMapPosition: null,
       isSpectateMode: input.isSpectateMode,
     }),
@@ -115,16 +111,16 @@ const buildFallbackGameEntryTarget = (input: ResolveGameEntryTargetInput): Resol
 };
 
 export const resolveGameEntryTarget = ({
-  chain,
-  worldName,
+  chainId,
+  gameId,
   structureEntityId,
   worldMapReturnPosition,
   isSpectateMode,
   mapCenterOffset,
 }: ResolveGameEntryTargetInput): ResolvedGameEntryTarget => {
   const input = {
-    chain,
-    worldName,
+    chainId,
+    gameId,
     structureEntityId,
     worldMapReturnPosition,
     isSpectateMode,

@@ -77,7 +77,7 @@ describe("gameplay account deployment", () => {
 describe("gameplay key store", () => {
   it("persists one key for each chain and owner", () => {
     const storage = createStorage();
-    const options = { storage, chain: "madara" as const, chainId: "0x1", owner: OWNER };
+    const options = { storage, chainId: "0x1", owner: OWNER };
 
     const first = getOrCreateGameplayKey(options);
     const second = getOrCreateGameplayKey(options);
@@ -87,20 +87,11 @@ describe("gameplay key store", () => {
     expect(storage.values.has(gameplayKeyStorageKey("0x1", OWNER))).toBe(true);
   });
 
-  it("allows a guest on madara and refuses one on appchain", () => {
-    expect(() =>
-      getOrCreateGameplayKey({ storage: createStorage(), chain: "madara", chainId: "0x1", owner: 0 }),
-    ).not.toThrow();
-    expect(() =>
-      getOrCreateGameplayKey({ storage: createStorage(), chain: "appchain", chainId: "0x1", owner: 0 }),
-    ).toThrow("only allowed on madara");
-  });
-
   it("fails loudly on a corrupt stored key", () => {
     const storage = createStorage();
     storage.setItem(gameplayKeyStorageKey("0x1", OWNER), "not json");
 
-    expect(() => getOrCreateGameplayKey({ storage, chain: "madara", chainId: "0x1", owner: OWNER })).toThrow(
+    expect(() => getOrCreateGameplayKey({ storage, chainId: "0x1", owner: OWNER })).toThrow(
       "Invalid gameplay key record",
     );
   });

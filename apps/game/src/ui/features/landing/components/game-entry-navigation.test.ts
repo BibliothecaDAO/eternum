@@ -11,8 +11,8 @@ describe("resolveGameEntryTarget", () => {
   it("routes player entry through the bootstrapped world-map target when one is available", () => {
     expect(
       resolveGameEntryTarget({
-        chain: "madara",
-        worldName: "kingdom-1",
+        chainId: "0xa1",
+        gameId: 3,
         structureEntityId: 77,
         worldMapReturnPosition: { col: 12, row: 34 },
         isSpectateMode: false,
@@ -20,7 +20,7 @@ describe("resolveGameEntryTarget", () => {
     ).toEqual({
       spectator: false,
       structureEntityId: 77,
-      url: "/play/madara/kingdom-1/map?col=12&row=34",
+      url: "/play/0xa1/3/map?col=12&row=34",
       worldMapPosition: { col: 12, row: 34 },
     });
   });
@@ -28,8 +28,8 @@ describe("resolveGameEntryTarget", () => {
   it("builds a canonical spectator map target from the bootstrapped world-map selection", () => {
     expect(
       resolveGameEntryTarget({
-        chain: "appchain",
-        worldName: "blitz-appchain-1",
+        chainId: "0xa1",
+        gameId: 3,
         structureEntityId: 91,
         worldMapReturnPosition: { col: 7, row: 9 },
         isSpectateMode: true,
@@ -37,15 +37,15 @@ describe("resolveGameEntryTarget", () => {
     ).toEqual({
       spectator: true,
       structureEntityId: 91,
-      url: "/play/appchain/blitz-appchain-1/map?col=7&row=9&spectate=true",
+      url: "/play/0xa1/3/map?col=7&row=9&spectate=true",
       worldMapPosition: { col: 7, row: 9 },
     });
   });
 
   it("normalizes contract-space world-map selections before building a canonical dashboard entry URL", () => {
     const result = resolveGameEntryTarget({
-      chain: "appchain",
-      worldName: "bltz-spark-702",
+      chainId: "0xa1",
+      gameId: 3,
       structureEntityId: 91,
       worldMapReturnPosition: { col: 2010831286, row: 2010831278 },
       isSpectateMode: false,
@@ -55,7 +55,7 @@ describe("resolveGameEntryTarget", () => {
     expect(result).toEqual({
       spectator: false,
       structureEntityId: 91,
-      url: "/play/appchain/bltz-spark-702/map?col=6&row=-2",
+      url: "/play/0xa1/3/map?col=6&row=-2",
       worldMapPosition: {
         col: 6,
         row: -2,
@@ -66,8 +66,8 @@ describe("resolveGameEntryTarget", () => {
   it("falls back to a canonical map route when bootstrap did not seed a structure target", () => {
     expect(
       resolveGameEntryTarget({
-        chain: "appchain",
-        worldName: "etrn-sun",
+        chainId: "0xa1",
+        gameId: 3,
         structureEntityId: 0,
         worldMapReturnPosition: null,
         isSpectateMode: false,
@@ -75,7 +75,7 @@ describe("resolveGameEntryTarget", () => {
     ).toEqual({
       spectator: false,
       structureEntityId: 0,
-      url: "/play/appchain/etrn-sun/map",
+      url: "/play/0xa1/3/map",
       worldMapPosition: null,
     });
   });
@@ -83,8 +83,8 @@ describe("resolveGameEntryTarget", () => {
   it("falls back to a canonical spectator map route when no structure target is available", () => {
     expect(
       resolveGameEntryTarget({
-        chain: "madara",
-        worldName: "etrn-dawn",
+        chainId: "0xa1",
+        gameId: 3,
         structureEntityId: 0,
         worldMapReturnPosition: null,
         isSpectateMode: true,
@@ -92,7 +92,7 @@ describe("resolveGameEntryTarget", () => {
     ).toEqual({
       spectator: true,
       structureEntityId: 0,
-      url: "/play/madara/etrn-dawn/map?spectate=true",
+      url: "/play/0xa1/3/map?spectate=true",
       worldMapPosition: null,
     });
   });

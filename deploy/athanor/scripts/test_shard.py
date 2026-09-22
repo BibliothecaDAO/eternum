@@ -79,7 +79,7 @@ class ShardTest(unittest.TestCase):
     def test_collector_output_is_the_harness_metrics_input(self):
         with tempfile.TemporaryDirectory() as temporary:
             directory = Path(temporary)
-            environment = {"RANDOMNESS_PRIVATE_KEY": "0x1"}
+            environment = {"RANDOMNESS_PRIVATE_KEY": "0x1", "RPC_URL": "http://127.0.0.1:1", "ADMISSION_URL": "http://127.0.0.1:1"}
             shard.prepare_runtime_files(directory, environment)
             config = json.loads((directory / "collector.json").read_text())
             self.assertEqual(config["service"]["pipelines"]["metrics"], {

@@ -10,9 +10,8 @@ import {
 const baseEntry: AutoSettleEntryRecord = {
   enabled: true,
   walletAddress: "0x123",
-  chain: "madara",
-  worldName: "aurora-blitz",
-  worldKey: "mainnet:aurora-blitz",
+  chainId: "0xa1",
+  gameId: 3,
   unlockAtSec: 1_234,
   armedAtMs: 100,
   opensOnUnlockEdge: true,
@@ -31,11 +30,11 @@ describe("useAutoSettleStore", () => {
   it("builds stable keys from world and wallet identity", () => {
     expect(
       createAutoSettleEntryKey({
-        chain: "madara",
-        worldName: "aurora-blitz",
+        chainId: "0xa1",
+        gameId: 3,
         walletAddress: "0xABC",
       }),
-    ).toBe("madara:aurora-blitz:0xabc");
+    ).toBe("0xa1:3:0xabc");
   });
 
   it("arms auto-settle by default and lets the player turn it off again", () => {
@@ -82,7 +81,7 @@ describe("useAutoSettleStore", () => {
     useAutoSettleStore.getState().armEntry(key, baseEntry);
 
     const persisted = window.localStorage.getItem(AUTO_SETTLE_STORAGE_KEY);
-    expect(persisted).toContain('"madara:aurora-blitz:0x123"');
+    expect(persisted).toContain('"0xa1:3:0x123"');
     expect(JSON.parse(persisted ?? "{}")).toMatchObject({
       state: {
         entries: {

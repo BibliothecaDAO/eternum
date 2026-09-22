@@ -1,22 +1,18 @@
-import { readFile } from "node:fs/promises";
 import {
   createGameClient,
   createNativeTicketSubmission,
-  resolveGameTransactionResourceBounds,
   setChainProvenTimestampSource,
   type GameClient,
 } from "@bibliothecadao/eternum";
 import {
-  buildWorldDeployment,
   fetchHeraldGameDirectory,
-  type CommittedManifest,
+  openShard,
   type GameClientObserver,
-  type WorldDeployment,
+  type Shard,
 } from "@bibliothecadao/eternum/game-client";
 import { createMicrotaskGameSyncScheduler } from "@bibliothecadao/eternum/game-sync";
 import type { GameSyncEntity, HeraldGameDirectoryEntry } from "@bibliothecadao/eternum/game-sync";
-import { type Manifest, type NativeWorldBindings, ContractAddress } from "@bibliothecadao/types";
-import { RpcProvider } from "starknet";
+import { type NativeWorldBindings, ContractAddress } from "@bibliothecadao/types";
 import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
 import { signRunnerIntent } from "./signer";
 
@@ -41,36 +37,23 @@ export interface RunnerGame {
   onSyncFailed(listener: (error: Error) => void): () => void;
 }
 
-/** The manifest carries the deployed native contract selectors used by the harness. */
-interface TaggedManifest extends CommittedManifest {
-  contracts: { selector: string; address: string; tag: string }[];
-}
-
-// Every deployed lab world is the Blitz world; the id only labels the deployment.
-const WORLD_ID = "blitz";
 const RECENT_EVENT_LIMIT = 50;
 const EVENT_SUMMARY_LENGTH = 200;
 
 export async function connectRunnerGame(config: RunnerConfig): Promise<RunnerGame> {
-  const manifest = await readCommittedManifest(config.manifestPath);
-  const world = buildRunnerWorld(config, manifest);
-  const listing = await resolveGameListing(world, config.game);
+  const shard = await openShard(config.shardUrl, bindings.schemaIdentity);
+  const listing = await resolveGameListing(shard, config.game);
   const events = createStoryEventRing();
-  const chainId = await new RpcProvider({ nodeUrl: config.rpcUrl }).getChainId();
   const syncFailures = new Set<(error: Error) => void>();
   const client = await createGameClient({
-    world,
+    shard,
     gameId: listing.game_id,
     presetId: listing.preset_id,
-    networkConfig: { rpcUrl: config.rpcUrl, manifest: manifest as unknown as Manifest },
     native: {
       bindings: bindings as unknown as NativeWorldBindings,
-      chainId,
+      chainId: shard.chainId,
       signIntent: (actor, digest) => signRunnerIntent(config, listing.game_id, actor, digest),
-      submitIntent: createNativeTicketSubmission(config.admissionUrl),
-    },
-    setupEnvironment: {
-      executionResourceBounds: resolveGameTransactionResourceBounds(config.chain),
+      submitIntent: createNativeTicketSubmission(shard.admissionUrl),
     },
     scheduler: createMicrotaskGameSyncScheduler(),
     observer: createRunnerObserver(listing.game_id, events, syncFailures),
@@ -87,40 +70,15 @@ export async function connectRunnerGame(config: RunnerConfig): Promise<RunnerGam
   };
 }
 
-const readCommittedManifest = async (manifestPath: string): Promise<TaggedManifest> => {
-  try {
-    return JSON.parse(await readFile(manifestPath, "utf8")) as TaggedManifest;
-  } catch (error) {
-    throw new Error(`Cannot read the world manifest at ${manifestPath}`, { cause: error });
-  }
-};
-
-const buildRunnerWorld = (config: RunnerConfig, manifest: CommittedManifest): WorldDeployment =>
-  buildWorldDeployment({
-    id: WORLD_ID,
-    chain: config.chain,
-    manifest,
-    heraldBaseUrl: config.heraldUrl,
-    admissionUrl: config.admissionUrl,
-    rpcUrl: config.rpcUrl,
-    browserFacing: false,
-    playerAccountClassHash: config.playerAccountClassHash,
-    playerRegistryAddress: config.playerRegistryAddress,
-    bindingAuthorityAddress: config.bindingAuthorityAddress,
-  });
-
 /** Herald's directory names the game and carries its preset; an unknown game lists what Herald does know. */
-const resolveGameListing = async (
-  world: WorldDeployment,
-  selector: RunnerGameSelector,
-): Promise<HeraldGameDirectoryEntry> => {
-  const directory = await fetchHeraldGameDirectory(world);
+const resolveGameListing = async (shard: Shard, selector: RunnerGameSelector): Promise<HeraldGameDirectoryEntry> => {
+  const directory = await fetchHeraldGameDirectory(shard);
   const listing = directory.games.find((game) =>
     "id" in selector ? game.game_id === selector.id : game.name === selector.name,
   );
   if (listing) return listing;
   const known = directory.games.map((game) => `${game.game_id}:${game.name}`).join(", ") || "none";
-  throw new Error(`Herald at ${world.heraldBaseUrl} does not list game ${describeSelector(selector)}; known: ${known}`);
+  throw new Error(`Herald at ${shard.url} does not list game ${describeSelector(selector)}; known: ${known}`);
 };
 
 const describeSelector = (selector: RunnerGameSelector): string =>

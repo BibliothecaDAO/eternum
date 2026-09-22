@@ -7,13 +7,9 @@ import { usePlayerWorldRegistrations, getWorldSummaryKey } from "@/hooks/use-pla
 import { type WorldConfigMeta } from "@/hooks/use-world-availability";
 import { useWorldsSummary } from "@/hooks/use-worlds-summary";
 import type { WorldSummary } from "@bibliothecadao/types";
-import type { WorldSelectionInput } from "@/runtime/world";
+import { getShard, type GameRef } from "@bibliothecadao/eternum/game-client";
 import { WorldCountdownDetailed, useGameTimeStatus } from "@/ui/components/world-countdown";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { useLandingNetworkState } from "../../hooks/use-landing-network-state";
-import type { LandingNetworkChain } from "../../lib/landing-network-state";
-import { getChainLabel } from "@/ui/utils/network-switch";
-import type { GameChain as Chain } from "@realms-world/chain";
 import {
   CheckCircle2,
   Eye,
@@ -30,21 +26,24 @@ import { Link } from "react-router-dom";
 
 const toPaddedFeltAddress = (address: string): string => `0x${BigInt(address).toString(16).padStart(64, "0")}`;
 
-/**
- * Chain badge - shows which network the game is on
- */
-const ChainBadge = ({ chain }: { chain: Chain }) => {
-  const chainStyles: Record<Chain, string> = {
-    madara: "text-white/70 bg-white/10 border border-white/20",
-    appchain: "text-orange/70 bg-orange/10 border border-orange/20",
-  };
-
+/** Shard badge - shows which shard hosts the game, since game ids repeat across shards. */
+const ShardBadge = ({ chainId }: { chainId: string }) => {
+  const shard = getShard(chainId);
   return (
-    <span className={cn("text-[8px] font-medium px-1 py-0.5 rounded", chainStyles[chain])}>{getChainLabel(chain)}</span>
+    <span className="text-[8px] font-medium px-1 py-0.5 rounded text-white/70 bg-white/10 border border-white/20">
+      {shard ? new URL(shard.url).host : chainId}
+    </span>
   );
 };
 
-export type WorldSelection = WorldSelectionInput;
+/** A landing choice: the game's (chain id, game id) and the name the card showed. */
+export type WorldSelection = GameRef & { name: string };
+
+const selectionOf = (game: GameData): WorldSelection => ({
+  chainId: game.chainId,
+  gameId: game.gameId,
+  name: game.name,
+});
 
 type GameStatus = "ongoing" | "upcoming" | "ended" | "unknown";
 
@@ -53,12 +52,8 @@ const isUpcomingOnlyStatusFilter = (statusFilter: GameStatus | GameStatus[] | un
   return statusFilter === "upcoming";
 };
 
-const isLiveSummaryForLandingChain = (summary: WorldSummary, selectedChain: LandingNetworkChain): boolean =>
-  summary.alive && summary.chain === selectedChain;
-
-export interface GameData {
+export interface GameData extends GameRef {
   name: string;
-  chain: Chain;
   worldAddress: string | null;
   worldKey: string;
   status: "checking" | "ok" | "fail";
@@ -254,7 +249,7 @@ const GameCard = ({
             {game.name}
           </h3>
           <div className="flex items-center gap-1">
-            {showChainBadge && <ChainBadge chain={game.chain} />}
+            {showChainBadge && <ShardBadge chainId={game.chainId} />}
             <span
               className={cn(
                 "flex-shrink-0 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded-full border",
@@ -447,8 +442,6 @@ export const UnifiedGameGrid = ({
   const account = useAccountStore((state) => state.account);
   const playerAddress = account?.address && account.address !== "0x0" ? account.address : null;
   const playerFeltLiteral = playerAddress ? toPaddedFeltAddress(playerAddress) : null;
-  const landingNetworkState = useLandingNetworkState();
-  const selectedLandingChain = landingNetworkState.preferredChain;
 
   const { isOngoing, isEnded, isUpcoming } = useGameTimeStatus();
 
@@ -461,11 +454,10 @@ export const UnifiedGameGrid = ({
     refetch: refetchSummary,
   } = useWorldsSummary();
 
-  // Only show live worlds for the chain selected in the landing network switch.
   // Dead (alive=false) worlds are excluded from the card grid — they surface separately via the modal.
   const liveSummaries = useMemo<WorldSummary[]>(
-    () => (worldsSummaryData ?? []).filter((summary) => isLiveSummaryForLandingChain(summary, selectedLandingChain)),
-    [selectedLandingChain, worldsSummaryData],
+    () => (worldsSummaryData ?? []).filter((summary) => summary.alive),
+    [worldsSummaryData],
   );
 
   // Player-scoped fields (registration, settled realm) layered on top of the
@@ -499,7 +491,8 @@ export const UnifiedGameGrid = ({
 
         return {
           name: summary.name,
-          chain: summary.chain,
+          chainId: summary.chainId,
+          gameId: summary.gameId,
           worldAddress: summary.worldAddress ?? null,
           worldKey,
           status,
@@ -700,29 +693,10 @@ export const UnifiedGameGrid = ({
               <GameCard
                 key={game.worldKey}
                 game={game}
-                onPlay={() =>
-                  (onPlayGame ?? onSelectGame)({
-                    name: game.name,
-                    chain: game.chain,
-                    worldAddress: game.worldAddress ?? undefined,
-                  })
-                }
-                onSettle={() =>
-                  onSelectGame({ name: game.name, chain: game.chain, worldAddress: game.worldAddress ?? undefined })
-                }
-                onSpectate={() =>
-                  onSpectate({ name: game.name, chain: game.chain, worldAddress: game.worldAddress ?? undefined })
-                }
-                onSeeScore={
-                  onSeeScore
-                    ? () =>
-                        onSeeScore({
-                          name: game.name,
-                          chain: game.chain,
-                          worldAddress: game.worldAddress ?? undefined,
-                        })
-                    : undefined
-                }
+                onPlay={() => (onPlayGame ?? onSelectGame)(selectionOf(game))}
+                onSettle={() => onSelectGame(selectionOf(game))}
+                onSpectate={() => onSpectate(selectionOf(game))}
+                onSeeScore={onSeeScore ? () => onSeeScore(selectionOf(game)) : undefined}
                 playerAddress={playerAddress}
                 showChainBadge={true}
               />
@@ -734,29 +708,10 @@ export const UnifiedGameGrid = ({
               <div key={game.worldKey} className="flex-shrink-0 w-[380px]">
                 <GameCard
                   game={game}
-                  onPlay={() =>
-                    (onPlayGame ?? onSelectGame)({
-                      name: game.name,
-                      chain: game.chain,
-                      worldAddress: game.worldAddress ?? undefined,
-                    })
-                  }
-                  onSettle={() =>
-                    onSelectGame({ name: game.name, chain: game.chain, worldAddress: game.worldAddress ?? undefined })
-                  }
-                  onSpectate={() =>
-                    onSpectate({ name: game.name, chain: game.chain, worldAddress: game.worldAddress ?? undefined })
-                  }
-                  onSeeScore={
-                    onSeeScore
-                      ? () =>
-                          onSeeScore({
-                            name: game.name,
-                            chain: game.chain,
-                            worldAddress: game.worldAddress ?? undefined,
-                          })
-                      : undefined
-                  }
+                  onPlay={() => (onPlayGame ?? onSelectGame)(selectionOf(game))}
+                  onSettle={() => onSelectGame(selectionOf(game))}
+                  onSpectate={() => onSpectate(selectionOf(game))}
+                  onSeeScore={onSeeScore ? () => onSeeScore(selectionOf(game)) : undefined}
                   playerAddress={playerAddress}
                   showChainBadge={true}
                 />

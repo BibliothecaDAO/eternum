@@ -2,7 +2,6 @@ import { createNativeWorldIngestion } from "./native/world-ingestion";
 import { NativeDecoder } from "./native/decoder";
 import { NativeIngestion } from "./native/ingestion";
 import { backfillNativeHistory } from "./native/load";
-import type { NativeManifest } from "./native/schema";
 import { readFile } from "node:fs/promises";
 
 import { CheckpointStore } from "./checkpoint-store";
@@ -12,16 +11,18 @@ import { MadaraRpc } from "./madara-rpc";
 import { MadaraSubscriptions } from "./madara-subscriptions";
 import type { ResumeRequest } from "./stream-protocol";
 import { HistoryStore } from "./history-store";
+import { assertShardChain, buildShardManifest, type ShardDocument } from "./shard-manifest";
 
 const CHECKPOINT_EVERY_BLOCKS = 100;
 /** How often Herald reads the sequencer clock off the pre-confirmed block. */
 const CHAIN_CLOCK_INTERVAL_MS = 500;
 
 interface HeraldConfig {
-  chain: string;
   databaseUrl: string;
   manifestPath: string;
   port: number;
+  publicAdmissionUrl: string;
+  publicRpcUrl: string;
   rpcUrl: string;
   wsUrl: string;
 }
@@ -53,19 +54,17 @@ const websocketUrl = (rpcUrl: string): string => {
 const readConfig = (): HeraldConfig => {
   const rpcUrl = requireEnvironment("HERALD_RPC_URL");
   return {
-    chain: requireEnvironment("HERALD_CHAIN"),
     databaseUrl: requireEnvironment("DATABASE_URL"),
     manifestPath: requireEnvironment("NATIVE_WORLD_MANIFEST"),
     port: readPort(),
+    publicAdmissionUrl: requireEnvironment("HERALD_PUBLIC_ADMISSION_URL"),
+    publicRpcUrl: requireEnvironment("HERALD_PUBLIC_RPC_URL"),
     rpcUrl,
     wsUrl: websocketUrl(rpcUrl),
   };
 };
 
-const streamGameId = (pathname: string, chain: string): string | undefined => {
-  const escapedChain = chain.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  return new RegExp(`^/${escapedChain}/games/([0-9]+)$`).exec(pathname)?.[1];
-};
+const streamGameId = (pathname: string): string | undefined => /^\/games\/([0-9]+)$/.exec(pathname)?.[1];
 
 const parseResume = (message: string | Buffer): ResumeRequest => {
   const request = JSON.parse(String(message)) as Partial<ResumeRequest>;
@@ -84,22 +83,23 @@ const parseResume = (message: string | Buffer): ResumeRequest => {
 
 const main = async (): Promise<void> => {
   const config = readConfig();
-  const manifest = JSON.parse(await readFile(config.manifestPath, "utf8")) as NativeManifest;
+  const manifest = JSON.parse(await readFile(config.manifestPath, "utf8")) as ShardDocument;
+  const shardManifest = buildShardManifest(manifest, {
+    rpcUrl: config.publicRpcUrl,
+    admissionUrl: config.publicAdmissionUrl,
+  });
   const native = new NativeIngestion(new NativeDecoder(manifest));
   const ingestion = createNativeWorldIngestion(native);
   const registry = ingestion.registry;
   const rpc = new MadaraRpc(config.rpcUrl);
+  const chain = await rpc.chainId();
+  assertShardChain(manifest, chain);
   const checkpointStore = new CheckpointStore(config.databaseUrl);
-  const historyStore = new HistoryStore(
-    config.databaseUrl,
-    config.chain,
-    registry.worldAddress,
-    ingestion.historyCodec,
-  );
+  const historyStore = new HistoryStore(config.databaseUrl, chain, registry.worldAddress, ingestion.historyCodec);
   await historyStore.initialize();
-  const loaded = await ingestion.load({ chain: config.chain, checkpointStore, rpc });
+  const loaded = await ingestion.load({ chain, checkpointStore, rpc });
   const liveInput = {
-    chain: config.chain,
+    chain,
     checkpointBlock: loaded.checkpointBlock,
     checkpointEveryBlocks: CHECKPOINT_EVERY_BLOCKS,
     checkpointStore,
@@ -150,7 +150,8 @@ const main = async (): Promise<void> => {
   const http = createHeraldRequestHandler({
     subscribeConfirmedChanges: (listener) => live.subscribeConfirmedChanges(listener),
     readModels: ingestion.readModels,
-    chain: config.chain,
+    chain,
+    manifest: shardManifest,
     worldAddress: registry.worldAddress,
     confirmedBlock: () => live.confirmedBlock,
     chainTimestamp: () => live.chainTimestamp,
@@ -170,9 +171,9 @@ const main = async (): Promise<void> => {
   server = Bun.serve<HeraldSocketData>({
     port: config.port,
     fetch: (request, bunServer) => {
-      if (new URL(request.url).pathname === `/${config.chain}/games/updates`) bunServer.timeout(request, 0);
       const url = new URL(request.url);
-      const gameId = streamGameId(url.pathname, config.chain);
+      if (url.pathname === "/games/updates") bunServer.timeout(request, 0);
+      const gameId = streamGameId(url.pathname);
       const actor = url.searchParams.get("actor") ?? undefined;
       if (
         actor !== undefined &&
@@ -213,7 +214,7 @@ const main = async (): Promise<void> => {
   process.once("SIGTERM", () => void shutdown(0));
   console.info(
     JSON.stringify({
-      chain: config.chain,
+      chain,
       checkpointBlock: loaded.checkpointBlock ?? null,
       confirmedBlock: live.confirmedBlock,
       epoch: live.hub.epoch,

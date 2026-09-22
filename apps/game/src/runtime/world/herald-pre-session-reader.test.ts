@@ -2,14 +2,10 @@
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import type { WorldDeployment } from "./world-directory";
+import type { Shard } from "@bibliothecadao/eternum/game-client";
 import { createHeraldPreSessionReader } from "./herald-pre-session-reader";
 
-const world = {
-  id: "blitz",
-  chain: "madara",
-  heraldBaseUrl: "https://herald.example",
-} as WorldDeployment;
+const world = { url: "https://herald.example" } as Shard;
 
 const mockFetch = vi.fn<typeof globalThis.fetch>();
 

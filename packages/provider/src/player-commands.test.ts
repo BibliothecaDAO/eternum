@@ -5,16 +5,9 @@ import { EternumProvider } from "./index";
 import { createSystemCalls } from "@bibliothecadao/types";
 
 function setup() {
-  const provider = new EternumProvider(
-    {
-      native: { version: 1, domains: { bridge: { address: "0xb1" } } },
-      world: { address: "0x77" },
-      contracts: [],
-    } as any,
-    "http://127.0.0.1:1",
-    undefined,
-    { gameId: 7 },
-  );
+  const provider = new EternumProvider({ world: "0x77", bridge: "0xb1" }, "http://127.0.0.1:1", undefined, {
+    gameId: 7,
+  });
   const submit = vi.fn(async (_signer: AccountInterface, _call: Call | Call[]) => ({ transaction_hash: "0x55" }));
   provider.setNativeSubmission(submit, bindings.commandAbi as Abi, () => 9);
   const signer = {

@@ -8,8 +8,8 @@
  * fans out one request per game.
  */
 import type { WorldSummary } from "@bibliothecadao/types";
-import { fetchHeraldGameDirectory } from "@bibliothecadao/eternum/game-client";
-import { requireWorldById, type WorldDeployment } from "@/runtime/world/world-directory";
+import { fetchHeraldGameDirectory, requireShard, type Shard } from "@bibliothecadao/eternum/game-client";
+import { gameKey } from "@/runtime/world/store";
 import { PLAYER_WORLD_REGISTRATION_QUERY_KEY } from "@/hooks/world-list-queries";
 import { useQueries } from "@tanstack/react-query";
 
@@ -23,11 +23,8 @@ interface PlayerWorldRegistrationResult {
   isAnyLoading: boolean;
 }
 
-// Landing identity is (worldId, gameId): two same-named games in different
-// worlds must never collide on React keys or query caches. chain:name remains
-// only as a fallback for rows that predate the id fields.
-export const getWorldSummaryKey = (world: Pick<WorldSummary, "name" | "chain" | "worldId" | "gameId">): string =>
-  world.worldId && world.gameId ? `${world.worldId}:${world.gameId}` : `${world.chain}:${world.name}`;
+// Landing identity is (chainId, gameId): game ids repeat across shards, so neither alone keys a card or a cache.
+export const getWorldSummaryKey = (world: Pick<WorldSummary, "chainId" | "gameId">): string => gameKey(world);
 
 interface UsePlayerWorldRegistrationsInput {
   worlds: WorldSummary[];
@@ -45,7 +42,7 @@ export const usePlayerWorldRegistrations = ({
   const deployments = collectDeployments(worlds);
   const queries = useQueries({
     queries: deployments.map((deployment) => ({
-      queryKey: [...PLAYER_WORLD_REGISTRATION_QUERY_KEY, deployment.id, playerAddress ?? "anonymous"],
+      queryKey: [...PLAYER_WORLD_REGISTRATION_QUERY_KEY, deployment.chainId, playerAddress ?? "anonymous"],
       queryFn: () => fetchHeraldGameDirectory(deployment, playerAddress ?? undefined),
       enabled: Boolean(playerAddress) && hasQueryableGame(worlds, deployment),
       staleTime: 30_000,
@@ -54,11 +51,10 @@ export const usePlayerWorldRegistrations = ({
     })),
   });
 
-  const queryByDeployment = new Map(deployments.map((deployment, index) => [deployment.id, queries[index]]));
+  const queryByDeployment = new Map(deployments.map((deployment, index) => [deployment.chainId, queries[index]]));
   const registrationsByWorldKey = new Map<string, PlayerWorldRegistration>();
   worlds.forEach((world) => {
-    const deployment = resolveDeployment(world);
-    const queryState = queryByDeployment.get(deployment.id);
+    const queryState = queryByDeployment.get(world.chainId);
     const game = queryState?.data?.games.find((candidate) => candidate.game_id === world.gameId);
     const worldKey = getWorldSummaryKey(world);
     registrationsByWorldKey.set(worldKey, registrationFromDirectory(world.mode, game?.player_state));
@@ -72,21 +68,14 @@ export const usePlayerWorldRegistrations = ({
   };
 };
 
-const resolveDeployment = (world: Pick<WorldSummary, "worldId">): WorldDeployment => requireWorldById(world.worldId);
+const collectDeployments = (worlds: readonly WorldSummary[]): Shard[] => [
+  ...new Map(worlds.map((world) => [world.chainId, requireShard(world.chainId)])).values(),
+];
 
-const collectDeployments = (worlds: readonly WorldSummary[]): WorldDeployment[] => {
-  const deployments = new Map<string, WorldDeployment>();
-  for (const world of worlds) {
-    const deployment = resolveDeployment(world);
-    deployments.set(deployment.id, deployment);
-  }
-  return [...deployments.values()];
-};
-
-const hasQueryableGame = (worlds: readonly WorldSummary[], deployment: WorldDeployment): boolean =>
+const hasQueryableGame = (worlds: readonly WorldSummary[], deployment: Shard): boolean =>
   worlds.some(
     (world) =>
-      resolveDeployment(world).id === deployment.id &&
+      world.chainId === deployment.chainId &&
       world.alive &&
       world.gameId != null &&
       (world.mode === "blitz" || world.mode === "eternum"),
