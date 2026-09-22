@@ -1,5 +1,4 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import { nativeBindings } from "@/runtime/world/native-bindings";
 import { createBrowserScheduler } from "@/sync/browser-scheduler";
 import { createGameClient, createNativeTicketSubmission, getStoredGameplayKey } from "@bibliothecadao/eternum";
 import { ec } from "starknet";
@@ -12,6 +11,8 @@ type BrowserGameInput = Pick<
 /** Renderer boot and settlement use the same deployment, signing key and Herald store. */
 export async function createBrowserGameClient(input: BrowserGameInput) {
   const chainId = input.shard.chainId;
+  // The compiled bindings load when a game is entered, never with the landing.
+  const { nativeBindings } = await import("@/runtime/world/native-bindings");
   return createGameClient({
     ...input,
     native: {

@@ -1,8 +1,8 @@
 import { getShards, openShard, requireShard, type Shard } from "@bibliothecadao/eternum/game-client";
 import { resolveEndpoint } from "@realms-world/chain";
 
+import { nativeFactSchemaIdentity } from "../../../../../contracts/l3/world-native/schema/client.gen";
 import { env } from "../../../env";
-import { nativeBindings } from "./native-bindings";
 
 const PASTED_SHARDS_KEY = "PASTED_SHARD_URLS";
 
@@ -45,7 +45,7 @@ export const openDefaultShard = async (): Promise<Shard> => {
 
 /** A pasted shard is remembered only once it opened, so a mistyped URL never persists. */
 export const addPastedShard = async (url: string): Promise<Shard> => {
-  const shard = await openShard(url, nativeBindings.schemaIdentity);
+  const shard = await openShard(url, nativeFactSchemaIdentity);
   writePastedShardUrls([...new Set([...readPastedShardUrls(), shard.url])]);
   return shard;
 };
@@ -53,7 +53,7 @@ export const addPastedShard = async (url: string): Promise<Shard> => {
 const knownShardUrls = (): string[] => [...new Set([env.VITE_PUBLIC_SHARD_URL, ...readPastedShardUrls()])];
 
 const openShardUrls = async (urls: string[]): Promise<ShardOpenFailure[]> => {
-  const results = await Promise.allSettled(urls.map((url) => openShard(url, nativeBindings.schemaIdentity)));
+  const results = await Promise.allSettled(urls.map((url) => openShard(url, nativeFactSchemaIdentity)));
   return results.flatMap((result, index) =>
     result.status === "rejected" ? [{ url: urls[index], error: toError(result.reason) }] : [],
   );

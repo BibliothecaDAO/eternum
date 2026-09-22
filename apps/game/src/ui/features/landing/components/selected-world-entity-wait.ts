@@ -1,4 +1,3 @@
-import { nativeBindings } from "@/runtime/world/native-bindings";
 import { requireOpenShard } from "@/runtime/world/shards";
 import { buildHeraldGameStreamUrl, nativeModelDefinition, type GameRef } from "@bibliothecadao/eternum/game-client";
 import { HeraldGameSyncTransport } from "@bibliothecadao/eternum/game-sync";
@@ -127,6 +126,8 @@ export const waitForSelectedWorldEntityState = async <T>(
   input: WaitForSelectedWorldEntityStateInput<T>,
 ): Promise<T> => {
   const shard = await requireOpenShard(input.chainId);
+  // The compiled bindings load when a game is entered, never with the landing.
+  const { nativeBindings } = await import("@/runtime/world/native-bindings");
   const transport = new HeraldGameSyncTransport({
     modelDefinition: nativeModelDefinition(nativeBindings),
     url: buildHeraldGameStreamUrl(shard.url, input.gameId),
