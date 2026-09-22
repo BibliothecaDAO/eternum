@@ -47,7 +47,7 @@ pub mod CombatDomain {
         ) {
             let rules = self.authorize(game_id, context);
             let key = ExplorerKey { game_id, explorer_id: command.attacker_id };
-            let mut attacker = self.troops_dispatcher().authorized_explorer(key, actor);
+            let mut attacker = self.troops_dispatcher().authorized_explorer(key, actor, context.timestamp);
             let target_key = ResourceKey { game_id, entity_id: command.defender_id };
             let target = self.structures_dispatcher().structure(target_key).expect('missing guarded structure');
             assert!(target.owner != actor, "actor owns defender");
@@ -156,8 +156,8 @@ pub mod CombatDomain {
             crate::resources::assert_unique_resources(command.steal_resources);
             let attacker_key = ExplorerKey { game_id, explorer_id: command.attacker_id };
             let defender_key = ExplorerKey { game_id, explorer_id: command.defender_id };
-            let mut attacker = self.troops_dispatcher().authorized_explorer(attacker_key, actor);
-            let mut defender = self.troops_dispatcher().explorer(defender_key).expect('missing defender');
+            let mut attacker = self.troops_dispatcher().authorized_explorer(attacker_key, actor, context.timestamp);
+            let mut defender = self.troops_dispatcher().active_explorer(defender_key, context.timestamp);
             let defender_owner = self.explorer_owner(defender_key, defender);
             assert!(defender_owner != actor, "actor owns defender");
             self.assert_battle_immunity(game_id, attacker.owner, rules, context.timestamp);
@@ -222,7 +222,7 @@ pub mod CombatDomain {
             };
             let mut guard = self.guards_dispatcher().guard(guard_key);
             let defender_key = ExplorerKey { game_id, explorer_id: command.explorer_id };
-            let mut defender = self.troops_dispatcher().explorer(defender_key).expect('missing defender');
+            let mut defender = self.troops_dispatcher().active_explorer(defender_key, context.timestamp);
             let defender_owner = self.explorer_owner(defender_key, defender);
             assert!(guard.troops.count != 0 && defender.troops.count != 0, "dead combatant");
             let coord = crate::structures::structure_coord(home.base);
@@ -284,7 +284,7 @@ pub mod CombatDomain {
             let rules = self.authorize(game_id, context);
             crate::resources::assert_unique_resources(command.steal_resources);
             let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
-            let explorer = self.troops_dispatcher().authorized_explorer(key, actor);
+            let explorer = self.troops_dispatcher().authorized_explorer(key, actor, context.timestamp);
             let target_key = ResourceKey { game_id, entity_id: command.structure_id };
             let target = self.structures_dispatcher().structure(target_key).expect('missing raid target');
             assert!(target.owner != actor, "actor owns defender");

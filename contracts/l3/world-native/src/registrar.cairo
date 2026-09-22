@@ -39,10 +39,11 @@ pub trait IGameSettlement<T> {
     ) -> u64;
 }
 
-pub fn validate_params(params: CreateGameParams, rules: crate::rules::SliceRules) {
+pub fn validate_params(params: CreateGameParams, rules: crate::rules::SliceRules, spacing: u32) {
     assert!(params.name != 0, "game name is empty");
     assert!(params.seed != 0, "game seed is zero");
     assert!(params.duration_seconds != 0, "game duration is zero");
+    crate::expeditions::validate_game(rules.epoch_seconds, spacing, params.duration_seconds);
     assert!(params.start_settling_at <= params.start_main_at, "invalid game schedule");
     assert!(
         Into::<u32, u64>::into(params.registration_start) < params.start_settling_at,
@@ -128,10 +129,7 @@ pub mod RegistrarState {
             get_dep_component!(@self, Life).assert_authority();
             assert!(preset_id != 0, "preset id zero is reserved");
             assert!(self.presets.read(preset_id) == 0, "preset already registered");
-            assert!(
-                definition.settlement.reward_profile == 1 || definition.settlement.reward_profile == 2,
-                "unknown settlement profile",
-            );
+            crate::settlement_grid::validate_spacing(definition.settlement.spacing);
             if crate::rules::rule_enabled(definition.rules, crate::rules::SPIRES) {
                 crate::spires::validate(definition.settlement.spires.expect('missing season spires'));
             } else {
@@ -209,7 +207,7 @@ pub mod RegistrarState {
         fn validate_game(
             self: @ComponentState<TContractState>, params: CreateGameParams, definition: PresetDefinition,
         ) {
-            super::validate_params(params, definition.rules);
+            super::validate_params(params, definition.rules, definition.settlement.spacing);
             let commitment = self.presets.read(params.preset_id);
             assert!(commitment != 0, "preset is not registered");
             assert!(commitment == crate::presets::commitment(definition), "preset definition mismatch");

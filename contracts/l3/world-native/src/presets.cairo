@@ -18,7 +18,7 @@ pub struct StructurePreset {
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct SettlementPreset {
-    pub reward_profile: u8,
+    pub spacing: u32,
     pub realms: crate::settlement::RealmGrants,
     pub villages: crate::village::VillageRules,
     pub spires: Option<crate::spires::SpireLayout>,
@@ -125,7 +125,7 @@ fn configure_settlement(
         } else {
             crate::settlement::SettlementMode::Single
         },
-        reward_profile: settlement.reward_profile,
+        spacing: settlement.spacing,
     };
     crate::settlement::ISettlementConfigurationDispatcherTrait::configure_settlement(
         crate::settlement::ISettlementConfigurationDispatcher { contract_address: address },

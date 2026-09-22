@@ -93,7 +93,7 @@ fn definition(blitz: bool) -> PresetDefinition {
             upgrades: array![crate::upgrades::UpgradeRecipe { costs: array![].span() }].span(),
         },
         settlement: SettlementPreset {
-            reward_profile: 1,
+            spacing: 6,
             realms: super::settlement::grants(),
             villages: super::village::village_rules(),
             spires: if blitz {
@@ -200,8 +200,7 @@ fn presets_are_immutable_and_launch_rejects_changed_preimages_before_allocating(
     assert!(
         safe(d)
             .register_preset(
-                1,
-                PresetDefinition { settlement: SettlementPreset { reward_profile: 0, ..preset.settlement }, ..preset },
+                1, PresetDefinition { settlement: SettlementPreset { spacing: 0, ..preset.settlement }, ..preset },
             )
             .is_err(),
     );
@@ -449,7 +448,7 @@ fn fixed_blitz_rosters_have_exact_spots_and_deterministic_unique_permutations() 
             assert!(player.into() < count && !seen.get(player.into()));
             seen.insert(player.into(), true);
             let coords = crate::settlement_grid::settlement_location(
-                crate::troops::Coord { alt: false, x: 1000, y: 1000 }, SettlementMode::Triple, 1, index,
+                crate::troops::Coord { alt: false, x: 1000, y: 1000 }, SettlementMode::Triple, 6, index,
             );
             assert!(coords.len() == 3);
             for coord in coords {
@@ -509,7 +508,7 @@ fn automatic_blitz_settlement_is_authorized_atomic_and_resumes_its_fixed_order()
         for realm in 0_u32..3 {
             let center = 2147483646 - games.rules(game_id).map_center_offset;
             let coord = *crate::settlement_grid::settlement_location(
-                crate::troops::Coord { alt: false, x: center, y: center }, SettlementMode::Triple, 1, batch,
+                crate::troops::Coord { alt: false, x: center, y: center }, SettlementMode::Triple, 6, batch,
             )
                 .at(realm);
             let entity_id = structure_occupant(
@@ -533,7 +532,7 @@ fn automatic_blitz_settlement_is_authorized_atomic_and_resumes_its_fixed_order()
     assert!(status_at(game, 1001) == GameStatus::Live);
     let center = 2147483646 - games.rules(game_id).map_center_offset;
     let coord = *crate::settlement_grid::settlement_location(
-        crate::troops::Coord { alt: false, x: center, y: center }, SettlementMode::Triple, 1, 0,
+        crate::troops::Coord { alt: false, x: center, y: center }, SettlementMode::Triple, 6, 0,
     )
         .at(0);
     let entity_id = structure_occupant(
@@ -659,4 +658,115 @@ fn open_preset_exploration_discovers_a_camp_and_credits_the_home_realm() {
     assert_eq!(troops.explorer(explorer).unwrap().coord, origin);
     assert_eq!(resources.resource_balance(home_slot), before + 10 * RESOURCE_PRECISION);
     assert_eq!(resources.resource_balance(ResourceSlot { entity_id: explorer_id, ..home_slot }), 0);
+}
+
+#[test]
+fn expedition_rollover_expires_armies_and_preserves_the_home_economy() {
+    let d = setup();
+    let mut preset = definition(true);
+    preset.rules.entry_rule = crate::rules::ENTRY_OPEN;
+    preset.rules.epoch_seconds = 100;
+    preset.rules.mode_rules = HOME_REWARDS;
+    preset.settlement.spacing = 1024;
+    preset.rules.map_config.shards_mines_win_probability = 0;
+    preset.rules.map_config.shards_mines_fail_probability = 1;
+    registry(d).register_preset(1, preset);
+    let game_id = registry(d)
+        .create_game(
+            CreateGameParams { dev_mode_on: true, end_grace_seconds: 0, duration_seconds: 500, ..params(false) },
+            preset,
+        );
+    // The catalogue is already loaded by deployment; this fixture pins its first realm.
+    super::resource_commands::set_fixture(d.peers.settlement, selector!("catalogue_count"), array![].span(), 8000_u32);
+    super::resource_commands::set_fixture(d.peers.settlement, selector!("traits"), array![1].span(), 0x4000001_u32);
+    assert!(
+        execute_in_game(
+            d,
+            game_id,
+            Command::SettleSeason(crate::realms::SettleSeason { name: 'home', selected_realm: Some(1) }),
+            350,
+            350,
+        ),
+    );
+    let structures = IStructuresDispatcher { contract_address: d.peers.structures };
+    let home_id = 1;
+    let home = ResourceKey { game_id, entity_id: home_id };
+    let home_before = structures.structure(home).unwrap();
+    assert_eq!(home_before.owner, d.actor);
+    let home_coord = crate::structures::structure_coord(home_before.base);
+    let map = IMapDispatcher { contract_address: d.peers.map };
+    assert!(map.tile(crate::geometry::tile_key(game_id, home_coord)).is_none());
+    let resources = IResourcesDispatcher { contract_address: d.peers.resources };
+    let labor = ResourceSlot { game_id, entity_id: home_id, resource_type: 23 };
+    let stored = resources.resource_balance(labor);
+    let producer = resources.resource_production(labor);
+    let capacity = resources.resource_weight(home).capacity;
+    let guards = IGuardsDispatcher { contract_address: d.peers.troops };
+    let category: u8 = guards.guard(GuardKey { game_id, structure_id: home_id, slot: 0 }).troops.category.into();
+    let muster = Command::CreateExplorer(
+        CreateExplorer { structure_id: home_id, category, tier: 0, amount: RESOURCE_PRECISION, direction: 0 },
+    );
+    assert!(execute_in_game(d, game_id, muster, 351, 351));
+    let old_id = *structures.structure(home).unwrap().troop_explorers.at(0);
+    let troops = ITroopsDispatcher { contract_address: d.peers.troops };
+    let old = ExplorerKey { game_id, explorer_id: old_id };
+    let yesterday = troops.explorer(old).unwrap().coord;
+    assert!(execute_in_game(d, game_id, Command::Explore(Explore { explorer_id: old_id, direction: 0 }), 360, 360));
+    let old_tile = map.tile(crate::geometry::tile_key(game_id, crate::geometry::neighbor(yesterday, 0)));
+    assert!(!execute_in_game(d, game_id, Command::Explore(Explore { explorer_id: old_id, direction: 1 }), 400, 400));
+    assert_eq!(troops.explorer(old).unwrap().coord, crate::geometry::neighbor(yesterday, 0));
+    assert!(execute_in_game(d, game_id, muster, 401, 401));
+    assert!(troops.explorer(old).is_none());
+    let new_id = *structures.structure(home).unwrap().troop_explorers.at(0);
+    let today = troops.explorer(ExplorerKey { game_id, explorer_id: new_id }).unwrap().coord;
+    assert_ne!(today.y / preset.settlement.spacing, yesterday.y / preset.settlement.spacing);
+    assert_eq!(
+        map.tile(crate::geometry::tile_key(game_id, crate::geometry::neighbor(yesterday, 0))).unwrap().data
+            / 0x20000000000,
+        old_tile.unwrap().data / 0x20000000000,
+    );
+    assert!(map.tile(crate::geometry::tile_key(game_id, crate::geometry::neighbor(today, 0))).is_none());
+    assert!(execute_in_game(d, game_id, Command::Explore(Explore { explorer_id: new_id, direction: 0 }), 420, 420));
+    assert_eq!(structures.structure(home).unwrap().base.coord_x, home_before.base.coord_x);
+    assert_eq!(resources.resource_weight(home).capacity, capacity);
+    assert_eq!(resources.resource_balance(labor), stored);
+    assert_eq!(resources.resource_production(labor), producer);
+    start_cheat_caller_address(d.peers.resources, d.peers.structures);
+    resources.grant_resource(home, 23, 0, 420);
+    stop_cheat_caller_address(d.peers.resources);
+    assert_eq!(resources.resource_balance(labor), stored + 70 * producer.production_rate.into());
+    assert_eq!(resources.resource_production(labor).production_rate, producer.production_rate);
+    assert!(execute_in_game(d, game_id, Command::LevelUp(home_id), 430, 430));
+    assert_eq!(structures.structure(home).unwrap().base.level, 1);
+    assert!(map.tile(crate::geometry::tile_key(game_id, home_coord)).is_none());
+}
+
+#[test]
+fn expedition_regions_remain_disjoint_for_every_depth_through_a_season() {
+    let start = 43200_u64;
+    let mut regions: core::dict::Felt252Dict<u32> = Default::default();
+    for day in 0_u64..91 {
+        for depth in 0_u8..4 {
+            for realm in array![1_u16, 2, 8000] {
+                let site = crate::expeditions::site(start, 86400, 1024, realm, start + day * 86400, depth);
+                let region: felt252 = Into::<u32, felt252>::into(site.x / 1024) * 0x100000000
+                    + Into::<u32, felt252>::into(site.y / 1024);
+                assert_eq!(regions.get(region), 0);
+                regions.insert(region, 1);
+                assert!(crate::expeditions::is_current(site, start, 86400, 1024, start + day * 86400));
+                assert!(!crate::expeditions::is_current(site, start, 86400, 1024, start + (day + 1) * 86400));
+            }
+        }
+    }
+    let early = crate::expeditions::site(start, 86400, 1024, 1, 86400, 0);
+    let late = crate::expeditions::site(start, 86400, 1024, 1, 172799, 0);
+    assert_eq!(early, late);
+}
+
+#[test]
+#[should_panic(expected: ("outside expedition region",))]
+fn an_expedition_cannot_move_into_yesterdays_region() {
+    let yesterday = crate::expeditions::site(0, 100, 1024, 1, 99, 0);
+    let today = crate::expeditions::site(0, 100, 1024, 1, 100, 0);
+    crate::expeditions::assert_same_region(today, yesterday, 1024);
 }

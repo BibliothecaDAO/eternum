@@ -454,7 +454,7 @@ const behaviouralFacts = {
       registrationOpens: "registration_start",
       capacity: "registration_limit",
       mode: "mode",
-      profile: "reward_profile",
+      spacing: "spacing",
     },
   },
   SettlementProgress: { domain: "realm/blitz", fields: { players: "registered", realms: "realm_count" } },

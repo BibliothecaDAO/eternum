@@ -376,7 +376,9 @@ pub mod ResourcesDomain {
             self.assert_resource_command(game_id, context.timestamp);
             let explorer = self
                 .troops_dispatcher()
-                .authorized_explorer(ExplorerKey { game_id, explorer_id: command.from_entity_id }, actor);
+                .authorized_explorer(
+                    ExplorerKey { game_id, explorer_id: command.from_entity_id }, actor, context.timestamp,
+                );
             let structure = IStructuresDispatcher { contract_address: self.lifecycle.require_active().structures }
                 .structure(ResourceKey { game_id, entity_id: command.to_entity_id })
                 .expect('missing recipient structure');
@@ -476,11 +478,12 @@ pub mod ResourcesDomain {
             assert!(command.from_entity_id != 0 && command.to_entity_id != 0, "missing explorer id");
             let from = self
                 .troops_dispatcher()
-                .authorized_explorer(ExplorerKey { game_id, explorer_id: command.from_entity_id }, actor);
+                .authorized_explorer(
+                    ExplorerKey { game_id, explorer_id: command.from_entity_id }, actor, context.timestamp,
+                );
             let to = self
                 .troops_dispatcher()
-                .explorer(ExplorerKey { game_id, explorer_id: command.to_entity_id })
-                .expect('missing recipient explorer');
+                .active_explorer(ExplorerKey { game_id, explorer_id: command.to_entity_id }, context.timestamp);
             assert!(to.owner != 0, "recipient explorer has no owner");
             assert!(crate::geometry::adjacent(from.coord, to.coord), "explorers are not adjacent");
             self.transfer_instant(game_id, command, context.timestamp);
@@ -501,8 +504,7 @@ pub mod ResourcesDomain {
                 .expect('missing sending structure');
             let to = self
                 .troops_dispatcher()
-                .explorer(ExplorerKey { game_id, explorer_id: command.to_entity_id })
-                .expect('missing recipient explorer');
+                .active_explorer(ExplorerKey { game_id, explorer_id: command.to_entity_id }, context.timestamp);
             assert!(
                 crate::geometry::adjacent(crate::structures::structure_coord(from.base), to.coord),
                 "structure and explorer are not adjacent",

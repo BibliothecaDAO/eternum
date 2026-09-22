@@ -311,7 +311,7 @@ fn construction_requirements_preserve_per_resource_seed_division_and_exclusive_m
     );
 }
 
-pub fn settlement(deployment: super::Deployment, mode: crate::settlement::SettlementMode, profile: u8) {
+pub fn settlement(deployment: super::Deployment, mode: crate::settlement::SettlementMode, spacing: u32) {
     let fields = snforge_std::fs::read_txt(@snforge_std::fs::FileTrait::new("tests/fixtures/settlement.txt"));
     let mut fields = fields.span();
     let grants: crate::settlement::RealmGrants = Serde::deserialize(ref fields).unwrap();
@@ -319,9 +319,7 @@ pub fn settlement(deployment: super::Deployment, mode: crate::settlement::Settle
     crate::settlement::ISettlementConfigurationDispatcherTrait::configure_settlement(
         crate::settlement::ISettlementConfigurationDispatcher { contract_address: deployment.peers.settlement },
         3,
-        crate::settlement::SettlementRules {
-            registration_start: 10, registration_limit: 96, mode, reward_profile: profile,
-        },
+        crate::settlement::SettlementRules { registration_start: 10, registration_limit: 96, mode, spacing },
         grants,
     );
     stop_cheat_caller_address(deployment.peers.settlement);
@@ -329,7 +327,7 @@ pub fn settlement(deployment: super::Deployment, mode: crate::settlement::Settle
 #[test]
 fn blitz_duel_multiplier_and_owner_only_shares_match_entry_rules() {
     let (deployment, hyper, from, _) = setup_mode(true);
-    settlement(deployment, crate::settlement::SettlementMode::Duel, 1);
+    settlement(deployment, crate::settlement::SettlementMode::Duel, 6);
     complete(deployment, hyper, from);
     assert_eq!(view(deployment).hyperstructure_shares(hyper).multiplier, 2);
     let before = points(deployment, deployment.actor);
@@ -350,7 +348,7 @@ fn blitz_duel_multiplier_and_owner_only_shares_match_entry_rules() {
 #[test]
 fn blitz_multiplier_counts_realms_in_the_configured_geometry_and_preserves_old_rate() {
     let (deployment, hyper, from, _) = setup_mode(true);
-    settlement(deployment, crate::settlement::SettlementMode::Single, 1);
+    settlement(deployment, crate::settlement::SettlementMode::Single, 6);
     complete(deployment, hyper, from);
     assert_eq!(view(deployment).hyperstructure_shares(hyper).multiplier, 0);
     let coord = crate::geometry::checked_neighbor_at_distance(
@@ -383,8 +381,8 @@ fn blitz_multiplier_counts_realms_in_the_configured_geometry_and_preserves_old_r
     assert_eq!(view(deployment).hyperstructure_shares(hyper).multiplier, 1);
     checkpoint(deployment, 70);
     assert_eq!(points(deployment, deployment.actor) - before, 10000);
-    assert_eq!(crate::settlement_grid::hyperstructure_scan_distance(2, crate::settlement::SettlementMode::Single), 10);
-    assert_eq!(crate::settlement_grid::hyperstructure_scan_distance(1, crate::settlement::SettlementMode::Triple), 6);
+    assert_eq!(crate::settlement_grid::hyperstructure_scan_distance(8, crate::settlement::SettlementMode::Single), 10);
+    assert_eq!(crate::settlement_grid::hyperstructure_scan_distance(6, crate::settlement::SettlementMode::Triple), 6);
 }
 #[test]
 fn duplicate_shareholders_reject_without_changing_allocation_or_accrued_points() {

@@ -1,6 +1,6 @@
 import { nativeRuleConstants as presetRule } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { nativeCommandBits } from "../../../../contracts/l3/world-native/schema/commands.gen";
-import { resolveBlitzProfileId } from "../../../source/native";
+import { nativePresetForConfig } from "../../../source/native";
 import { RESOURCE_PRECISION, ResourcesIds, type Config } from "@bibliothecadao/types";
 import { CairoCustomEnum, CairoOption, CairoOptionVariant } from "starknet";
 import {
@@ -113,6 +113,7 @@ function buildRules(config: Config) {
     spire_travel_essence_cost: scaled(config.spireTravelEssenceCost),
     mode_id: config.blitz.mode.on ? 1 : 0,
     command_mask: buildCommandMask(config.blitz.mode.on),
+    epoch_seconds: nativePresetForConfig(config).epochSeconds,
     mode_rules: config.blitz.mode.on
       ? presetRule.HOME_REWARDS |
         presetRule.DISCOVER_CAMPS |
@@ -244,7 +245,7 @@ function buildStructures(config: Config) {
 
 function buildSettlement(config: Config) {
   return {
-    reward_profile: resolveBlitzProfileId(config),
+    spacing: nativePresetForConfig(config).spacing,
     realms: {
       resources: amounts(config.startingResources, config.resources.resourcePrecision),
       starting_troops: startingTroopsByBiome.map((name) => new CairoCustomEnum({ [name]: {} })),

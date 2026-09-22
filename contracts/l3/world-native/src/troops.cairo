@@ -252,7 +252,10 @@ pub mod TroopState {
 #[starknet::interface]
 pub trait ITroops<T> {
     fn explorer(self: @T, key: ExplorerKey) -> Option<ExplorerTroops>;
-    fn authorized_explorer(self: @T, key: ExplorerKey, actor: starknet::ContractAddress) -> ExplorerTroops;
+    fn active_explorer(self: @T, key: ExplorerKey, timestamp: u64) -> ExplorerTroops;
+    fn authorized_explorer(
+        self: @T, key: ExplorerKey, actor: starknet::ContractAddress, timestamp: u64,
+    ) -> ExplorerTroops;
 }
 
 #[starknet::interface]
@@ -325,7 +328,8 @@ pub mod TroopsDomain {
             let rules = self.game_dispatcher().rules(game_id);
             let tick = timestamp / rules.tick_config.armies_tick_in_seconds;
             match command.recipient {
-                crate::relics::Recipient::Explorer => self.boost_explorer(game_id, actor, command, rule, rules, tick),
+                crate::relics::Recipient::Explorer => self
+                    .boost_explorer(game_id, actor, command, rule, rules, tick, timestamp),
                 crate::relics::Recipient::StructureGuard => self
                     .boost_guards(game_id, actor, command, rule, rules, tick),
                 crate::relics::Recipient::StructureProduction => panic!("production relic requires resources domain"),
@@ -384,11 +388,16 @@ pub mod TroopsDomain {
     }
     #[abi(embed_v0)]
     impl TroopViews of super::ITroops<ContractState> {
+        fn active_explorer(self: @ContractState, key: ExplorerKey, timestamp: u64) -> ExplorerTroops {
+            self.active_explorer_at(key, timestamp)
+        }
         fn explorer(self: @ContractState, key: ExplorerKey) -> Option<ExplorerTroops> {
             self.troops.explorer(key)
         }
-        fn authorized_explorer(self: @ContractState, key: ExplorerKey, actor: ContractAddress) -> ExplorerTroops {
-            self.owned_explorer(key, actor)
+        fn authorized_explorer(
+            self: @ContractState, key: ExplorerKey, actor: ContractAddress, timestamp: u64,
+        ) -> ExplorerTroops {
+            self.owned_explorer(key, actor, timestamp)
         }
     }
     #[abi(embed_v0)]
@@ -438,7 +447,7 @@ pub mod TroopsDomain {
                 crate::troop_management::ManageTroops::RecruitExplorer(value) => self
                     .recruit_explorer(game_id, actor, value, rules, context.timestamp),
                 crate::troop_management::ManageTroops::RemoveExplorer(id) => self
-                    .remove_managed_explorer(game_id, actor, id),
+                    .remove_managed_explorer(game_id, actor, id, context.timestamp),
                 crate::troop_management::ManageTroops::Transfer(value) => self
                     .transfer_troops(game_id, actor, value, rules, context.timestamp),
             }
@@ -491,9 +500,11 @@ pub mod TroopsDomain {
             guard.troops.stamina.reset();
             self.guards.save(key, guard);
         }
-        fn remove_managed_explorer(ref self: ContractState, game_id: u32, actor: ContractAddress, id: u32) {
+        fn remove_managed_explorer(
+            ref self: ContractState, game_id: u32, actor: ContractAddress, id: u32, timestamp: u64,
+        ) {
             let key = ExplorerKey { game_id, explorer_id: id };
-            let explorer = self.owned_explorer(key, actor);
+            let explorer = self.owned_explorer(key, actor, timestamp);
             assert!(explorer.troops.count != 0, "explorer is dead");
             self.destroy_explorer(key, explorer);
         }
@@ -549,7 +560,7 @@ pub mod TroopsDomain {
             timestamp: u64,
         ) {
             let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
-            let mut explorer = self.owned_explorer(key, actor);
+            let mut explorer = self.owned_explorer(key, actor, timestamp);
             let home = self.owned_structure(game_id, explorer.owner, actor);
             assert!(
                 crate::geometry::adjacent(explorer.coord, crate::structures::structure_coord(home.base)),
@@ -576,11 +587,15 @@ pub mod TroopsDomain {
             self.troops.update_troops(key, explorer.troops);
         }
         fn read_managed_army(
-            self: @ContractState, game_id: u32, actor: ContractAddress, army: crate::troop_management::Army,
+            self: @ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            army: crate::troop_management::Army,
+            timestamp: u64,
         ) -> ManagedArmy {
             match army {
                 crate::troop_management::Army::Explorer(id) => {
-                    let explorer = self.owned_explorer(ExplorerKey { game_id, explorer_id: id }, actor);
+                    let explorer = self.owned_explorer(ExplorerKey { game_id, explorer_id: id }, actor, timestamp);
                     let home = self.owned_structure(game_id, explorer.owner, actor);
                     ManagedArmy {
                         troops: explorer.troops, home: explorer.owner, coord: explorer.coord, level: home.base.level,
@@ -610,8 +625,8 @@ pub mod TroopsDomain {
             timestamp: u64,
         ) {
             crate::troop_management::assert_amount(command.amount);
-            let mut source = self.read_managed_army(game_id, actor, command.source);
-            let mut target = self.read_managed_army(game_id, actor, command.target);
+            let mut source = self.read_managed_army(game_id, actor, command.source, timestamp);
+            let mut target = self.read_managed_army(game_id, actor, command.target, timestamp);
             assert!(crate::geometry::adjacent(source.coord, target.coord), "armies are not adjacent");
             assert!(command.amount <= source.troops.count, "insufficient source troops");
             let target_is_explorer = match command.target {
@@ -740,6 +755,9 @@ pub mod TroopsDomain {
         ) {
             let rules = self.authorize(game_id, context);
             let home = self.owned_structure(game_id, command.structure_id, actor);
+            if rules.epoch_seconds != 0 {
+                self.expire_home_armies(game_id, home, rules, context.timestamp);
+            }
             let category = troop_type(command.category);
             let tier = troop_tier(command.tier);
             let id = self.game_dispatcher().allocate_entity(game_id);
@@ -754,7 +772,23 @@ pub mod TroopsDomain {
                     id,
                     context.timestamp,
                 );
-            let coord = neighbor(crate::structures::structure_coord(home.base), command.direction);
+            let origin = if rules.epoch_seconds == 0 {
+                crate::structures::structure_coord(home.base)
+            } else {
+                crate::expeditions::site(
+                    self.game_dispatcher().game(game_id).start_main_at,
+                    rules.epoch_seconds,
+                    self.expedition_spacing(game_id),
+                    home.metadata.realm_id,
+                    context.timestamp,
+                    0,
+                )
+            };
+            let coord = neighbor(origin, command.direction);
+            if rules.epoch_seconds != 0 {
+                self.reveal_expedition_tile(game_id, origin);
+                self.reveal_expedition_tile(game_id, coord);
+            }
             assert!(
                 command.amount <= super::max_army_size(rules.troop_limit_config, home.base.level, tier).into()
                     * RESOURCE_PRECISION,
@@ -794,10 +828,13 @@ pub mod TroopsDomain {
         ) {
             let rules = self.authorize(game_id, context);
             let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
-            let mut explorer = self.owned_explorer(key, actor);
+            let mut explorer = self.owned_explorer(key, actor, context.timestamp);
             assert!(explorer.troops.count != 0, "explorer is dead");
             self.map_dispatcher().vacate(tile_key(game_id, explorer.coord), command.explorer_id);
             let destination = neighbor(explorer.coord, command.direction);
+            if rules.epoch_seconds != 0 {
+                crate::expeditions::assert_same_region(explorer.coord, destination, self.expedition_spacing(game_id));
+            }
             let tile = tile_key(game_id, destination);
             let data = self.map_dispatcher().tile(tile).map(|tile| tile.data).unwrap_or(0);
             assert!(data % 0x20000000000 == 0, "destination occupied");
@@ -879,11 +916,16 @@ pub mod TroopsDomain {
             let rules = self.authorize(game_id, context);
             assert!(!command.directions.is_empty(), "empty movement path");
             let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
-            let mut explorer = self.owned_explorer(key, actor);
+            let mut explorer = self.owned_explorer(key, actor, context.timestamp);
             assert!(explorer.troops.count != 0, "explorer is dead");
             self.map_dispatcher().vacate(tile_key(game_id, explorer.coord), command.explorer_id);
             for direction in command.directions {
                 let destination = neighbor(explorer.coord, *direction);
+                if rules.epoch_seconds != 0 {
+                    crate::expeditions::assert_same_region(
+                        explorer.coord, destination, self.expedition_spacing(game_id),
+                    );
+                }
                 let tile = tile_key(game_id, destination);
                 let data = self.map_dispatcher().tile(tile).expect('undiscovered movement tile').data;
                 assert!(data % 0x20000000000 == 0, "movement tile occupied");
@@ -910,7 +952,7 @@ pub mod TroopsDomain {
         ) {
             self.authorize(game_id, context);
             let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
-            let mut explorer = self.owned_explorer(key, actor);
+            let mut explorer = self.owned_explorer(key, actor, context.timestamp);
             assert!(explorer.troops.count != 0, "explorer is dead");
             let spire = self
                 .map_dispatcher()
@@ -1002,6 +1044,51 @@ pub mod TroopsDomain {
     }
     #[generate_trait]
     impl Internal of InternalTrait {
+        fn expedition_spacing(self: @ContractState, game_id: u32) -> u32 {
+            crate::settlement::ISettlementViewsDispatcherTrait::settlement_rules(
+                crate::settlement::ISettlementViewsDispatcher {
+                    contract_address: self.lifecycle.require_active().settlement,
+                },
+                game_id,
+            )
+                .spacing
+        }
+        fn active_explorer_at(self: @ContractState, key: ExplorerKey, timestamp: u64) -> ExplorerTroops {
+            let explorer = self.troops.explorer(key).expect('missing explorer');
+            let rules = self.game_dispatcher().rules(key.game_id);
+            if rules.epoch_seconds != 0 {
+                assert!(
+                    crate::expeditions::is_current(
+                        explorer.coord,
+                        self.game_dispatcher().game(key.game_id).start_main_at,
+                        rules.epoch_seconds,
+                        self.expedition_spacing(key.game_id),
+                        timestamp,
+                    ),
+                    "EXPIRED_ARMY",
+                );
+            }
+            explorer
+        }
+        fn expire_home_armies(
+            ref self: ContractState, game_id: u32, home: Structure, rules: SliceRules, timestamp: u64,
+        ) {
+            let start = self.game_dispatcher().game(game_id).start_main_at;
+            let spacing = self.expedition_spacing(game_id);
+            for id in home.troop_explorers {
+                let key = ExplorerKey { game_id, explorer_id: *id };
+                let explorer = self.troops.explorer(key).expect('missing home army');
+                if !crate::expeditions::is_current(explorer.coord, start, rules.epoch_seconds, spacing, timestamp) {
+                    self.destroy_explorer(key, explorer);
+                }
+            }
+        }
+        fn reveal_expedition_tile(ref self: ContractState, game_id: u32, coord: Coord) {
+            let key = tile_key(game_id, coord);
+            if self.map_dispatcher().tile(key).is_none() {
+                self.map_dispatcher().reveal(key, self.map_dispatcher().biome(key));
+            }
+        }
         fn assert_combat(self: @ContractState) {
             assert!(get_caller_address() == self.lifecycle.require_active().combat, "only combat domain");
         }
@@ -1034,8 +1121,10 @@ pub mod TroopsDomain {
             home
         }
 
-        fn owned_explorer(self: @ContractState, key: ExplorerKey, actor: ContractAddress) -> ExplorerTroops {
-            let explorer = self.troops.explorer(key).expect('missing explorer');
+        fn owned_explorer(
+            self: @ContractState, key: ExplorerKey, actor: ContractAddress, timestamp: u64,
+        ) -> ExplorerTroops {
+            let explorer = self.active_explorer_at(key, timestamp);
             self.owned_structure(key.game_id, explorer.owner, actor);
             explorer
         }
@@ -1047,9 +1136,10 @@ pub mod TroopsDomain {
             rule: crate::relics::RelicRule,
             rules: SliceRules,
             tick: u64,
+            timestamp: u64,
         ) {
             let key = ExplorerKey { game_id, explorer_id: command.entity_id };
-            let mut explorer = self.owned_explorer(key, actor);
+            let mut explorer = self.owned_explorer(key, actor, timestamp);
             assert!(!explorer.coord.alt, "relic explorer must be on surface");
             explorer
                 .troops

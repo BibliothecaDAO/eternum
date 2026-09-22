@@ -238,7 +238,9 @@ pub mod RelicState {
             self.assert_command(game_id, context.timestamp);
             let peers = self.peers();
             let explorer = ITroopsDispatcher { contract_address: peers.troops }
-                .authorized_explorer(ExplorerKey { game_id, explorer_id: command.explorer_id }, actor);
+                .authorized_explorer(
+                    ExplorerKey { game_id, explorer_id: command.explorer_id }, actor, context.timestamp,
+                );
             assert!(crate::geometry::adjacent(explorer.coord, command.coord), "explorer is not adjacent to chest");
             IRelicMapDispatcher { contract_address: peers.map }.consume_relic_chest(game_id, command.coord);
             let mut root = context.raw_root;
@@ -420,7 +422,7 @@ pub mod RelicState {
             let peers = self.peers();
             if command.recipient == Recipient::Explorer {
                 let explorer = ITroopsDispatcher { contract_address: peers.troops }
-                    .authorized_explorer(ExplorerKey { game_id, explorer_id: command.entity_id }, actor);
+                    .authorized_explorer(ExplorerKey { game_id, explorer_id: command.entity_id }, actor, timestamp);
                 IRelicTroopsDispatcher { contract_address: peers.troops }
                     .apply_troop_relic(game_id, actor, command, rule, timestamp);
                 explorer.owner

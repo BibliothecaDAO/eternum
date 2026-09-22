@@ -117,7 +117,8 @@
       "donkey_sec_per_km_troops": 27
     },
     "faith_enabled": true,
-    "mode_rules": 9240
+    "mode_rules": 9240,
+    "epoch_seconds": 0
   },
   "resources": [
     {

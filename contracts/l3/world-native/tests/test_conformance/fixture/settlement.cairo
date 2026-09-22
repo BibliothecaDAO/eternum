@@ -89,7 +89,7 @@ fn prepare_without_entitlement(
                 } else {
                     SettlementMode::Single
                 },
-                reward_profile: 1,
+                spacing: 6,
             },
             grants,
         );
@@ -168,7 +168,7 @@ fn unprovisioned_realm(season: ContractAddress, grant_troops: bool) {
     let peers = IDomainDispatcher { contract_address: season }.domain_state().peers;
     let center = 2147483646 - IGameDispatcher { contract_address: season }.rules(8).map_center_offset;
     let coord = *world_native::settlement_grid::settlement_location(
-        world_native::troops::Coord { alt: false, x: center, y: center }, SettlementMode::Triple, 1, 0,
+        world_native::troops::Coord { alt: false, x: center, y: center }, SettlementMode::Triple, 6, 0,
     )
         .at(0);
     start_cheat_caller_address(peers.structures, peers.settlement);

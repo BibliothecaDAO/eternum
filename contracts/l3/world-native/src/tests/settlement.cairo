@@ -24,7 +24,7 @@ pub fn grants() -> crate::settlement::RealmGrants {
 }
 
 fn rules() -> SettlementRules {
-    SettlementRules { registration_start: 10, registration_limit: 96, mode: SettlementMode::Single, reward_profile: 1 }
+    SettlementRules { registration_start: 10, registration_limit: 96, mode: SettlementMode::Single, spacing: 6 }
 }
 
 fn configure(deployment: Deployment, game_id: u32, rules: SettlementRules) {
@@ -215,7 +215,7 @@ fn village_placement_shares_reservations_with_fixed_blitz_and_eternum_entries() 
                     crate::settlement_grid::settlement_location(
                         crate::troops::Coord { alt: false, x: center, y: center },
                         SettlementMode::Triple,
-                        rules().reward_profile,
+                        rules().spacing,
                         index,
                     ),
                 );

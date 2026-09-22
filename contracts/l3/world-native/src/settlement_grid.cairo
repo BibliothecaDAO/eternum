@@ -10,12 +10,13 @@ struct Distances {
     mirror_second: u32,
 }
 
-fn distances(profile: u8) -> Distances {
-    match profile {
-        1 => Distances { base: 6, step: 12, mirror_first: 9, mirror_second: 3 },
-        0 | 2 => Distances { base: 8, step: 15, mirror_first: 11, mirror_second: 4 },
-        _ => panic!("unknown settlement profile"),
-    }
+pub fn validate_spacing(spacing: u32) {
+    assert!(spacing >= 2 && spacing % 2 == 0, "invalid settlement spacing");
+}
+
+fn distances(spacing: u32) -> Distances {
+    validate_spacing(spacing);
+    Distances { base: spacing, step: spacing * 3 / 2 + 3, mirror_first: spacing + 3, mirror_second: spacing / 2 }
 }
 
 pub fn target_pool_size(registered: u16, limit: u16, mode: SettlementMode) -> u16 {
@@ -36,11 +37,11 @@ pub fn target_pool_size(registered: u16, limit: u16, mode: SettlementMode) -> u1
 }
 
 // A candidate's ordinal replaces the mutable side/ring/point cursor and stored coordinates.
-pub fn settlement_location(center: Coord, mode: SettlementMode, profile: u8, candidate: u32) -> Span<Coord> {
+pub fn settlement_location(center: Coord, mode: SettlementMode, spacing: u32, candidate: u32) -> Span<Coord> {
     if mode == SettlementMode::Duel {
         return duel_location(center, candidate);
     }
-    let distances = distances(profile);
+    let distances = distances(spacing);
     let side = candidate % 6;
     let mut point = candidate / 6;
     let mut ring = 1;
@@ -104,7 +105,7 @@ pub fn reservation_count(limit: u16, mode: SettlementMode) -> u32 {
     1 + 3 * ring * (ring + 1)
 }
 
-pub fn reservation_location(center: Coord, mode: SettlementMode, profile: u8, candidate: u32) -> Coord {
+pub fn reservation_location(center: Coord, mode: SettlementMode, spacing: u32, candidate: u32) -> Coord {
     if candidate == 0 {
         return center;
     }
@@ -117,7 +118,7 @@ pub fn reservation_location(center: Coord, mode: SettlementMode, profile: u8, ca
         };
         return neighbor_at_distance(neighbor_at_distance(center, direction, 6), 3, 3);
     }
-    let step = distances(profile).step;
+    let step = distances(spacing).step;
     let mut point = candidate - 1;
     let mut ring = 1;
     while point >= 6 * ring {
@@ -132,8 +133,8 @@ fn neighbor_at_distance(coord: Coord, direction: u8, distance: u32) -> Coord {
     checked_neighbor_at_distance(coord, direction, distance).expect('settlement geometry exhausted')
 }
 
-pub fn hyperstructure_scan_distance(profile: u8, mode: SettlementMode) -> u32 {
-    distances(profile).base + if mode == SettlementMode::Single {
+pub fn hyperstructure_scan_distance(spacing: u32, mode: SettlementMode) -> u32 {
+    distances(spacing).base + if mode == SettlementMode::Single {
         2
     } else {
         0

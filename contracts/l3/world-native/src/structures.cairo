@@ -776,7 +776,7 @@ pub mod StructuresDomain {
                 self.spend(key, *cost.resource_type, *cost.amount, context.timestamp);
             }
             self.structures.upgrade(key, record.base);
-            if record.base.category == 1 {
+            if record.base.category == 1 && self.game_dispatcher().rules(game_id).epoch_seconds == 0 {
                 let coord = Coord { alt: false, x: record.base.coord_x, y: record.base.coord_y };
                 self
                     .map_dispatcher()
@@ -806,8 +806,7 @@ pub mod StructuresDomain {
                 Option::Some(_) => key,
                 Option::None => {
                     let explorer = ITroopsDispatcher { contract_address: peers.troops }
-                        .explorer(ExplorerKey { game_id, explorer_id: command.entity_id })
-                        .expect('entity does not exist');
+                        .active_explorer(ExplorerKey { game_id, explorer_id: command.entity_id }, context.timestamp);
                     ResourceKey { game_id, entity_id: explorer.owner }
                 },
             };
@@ -1032,26 +1031,23 @@ pub mod StructuresDomain {
         ) -> ResourceKey {
             assert!(!coord.alt && record.owner != 0.try_into().unwrap(), "invalid realm owner or layer");
             let key = ResourceKey { game_id, entity_id: self.game_dispatcher().allocate_entity(game_id) };
-            let tile = self.map_dispatcher().tile(tile_key(game_id, coord)).map(|tile| tile.data).unwrap_or(0);
-            if tile % 0x20000000000 != 0 {
-                assert!(tile % 2 == 0, "tile occupied by structure");
-                let explorer_id = (tile / 512 % 0x100000000).try_into().unwrap();
-                ISettlementDisplacementDispatcher { contract_address: self.lifecycle.require_active().troops }
-                    .displace_explorer(game_id, explorer_id);
-            }
             let rules = self.game_dispatcher().rules(game_id);
-            self.reveal_structure_tile(game_id, coord);
-            self.map_dispatcher().reveal_structure_surroundings(game_id, coord);
-            self.structures.create(key, record);
             let village = record.base.category == crate::ownership::VILLAGE_CATEGORY;
-            let occupier = if village {
-                13
-            } else if record.metadata.has_wonder {
-                5
-            } else {
-                1
-            };
-            self.map_dispatcher().occupy(tile_key(game_id, coord), key.entity_id, occupier, true);
+            let on_map = rules.epoch_seconds == 0 || village;
+            if on_map {
+                self.prepare_settlement_tile(game_id, coord);
+            }
+            self.structures.create(key, record);
+            if on_map {
+                let occupier = if village {
+                    13
+                } else if record.metadata.has_wonder {
+                    5
+                } else {
+                    1
+                };
+                self.map_dispatcher().occupy(tile_key(game_id, coord), key.entity_id, occupier, true);
+            }
             let capacity = if village {
                 rules.structure_capacity_config.village_capacity
             } else {
@@ -1063,6 +1059,17 @@ pub mod StructuresDomain {
                     key, capacity.into() * RESOURCE_PRECISION, record.base.category, record.base.created_at.into(),
                 );
             key
+        }
+        fn prepare_settlement_tile(ref self: ContractState, game_id: u32, coord: Coord) {
+            let tile = self.map_dispatcher().tile(tile_key(game_id, coord)).map(|tile| tile.data).unwrap_or(0);
+            if tile % 0x20000000000 != 0 {
+                assert!(tile % 2 == 0, "tile occupied by structure");
+                let explorer_id = (tile / 512 % 0x100000000).try_into().unwrap();
+                ISettlementDisplacementDispatcher { contract_address: self.lifecycle.require_active().troops }
+                    .displace_explorer(game_id, explorer_id);
+            }
+            self.reveal_structure_tile(game_id, coord);
+            self.map_dispatcher().reveal_structure_surroundings(game_id, coord);
         }
         fn emit_structure_story(
             ref self: ContractState, key: ResourceKey, actor: ContractAddress, story: Story, timestamp: u64,

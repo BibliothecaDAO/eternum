@@ -48,7 +48,7 @@ fn setup_config(dev: bool, mode: SettlementMode, game_rules: crate::rules::Slice
     start_cheat_caller_address(deployment.peers.settlement, authority());
     ISettlementConfigurationDispatcher { contract_address: deployment.peers.settlement }
         .configure_settlement(
-            3, SettlementRules { registration_start: 0, registration_limit: 2, mode, reward_profile: 1 }, grants,
+            3, SettlementRules { registration_start: 0, registration_limit: 2, mode, spacing: 6 }, grants,
         );
     IVillagesDispatcher { contract_address: deployment.peers.settlement }
         .configure_villages(3, VillageRules { troop_delay_ticks: 2, ..village_rules() });

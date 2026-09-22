@@ -163,6 +163,7 @@ pub struct SliceRules {
     pub mode_id: u8,
     pub command_mask: u128,
     pub mode_rules: u32,
+    pub epoch_seconds: u32,
     pub entry_rule: u8,
     pub faith_enabled: bool,
     pub speed_config: SpeedConfig,

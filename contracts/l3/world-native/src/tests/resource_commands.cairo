@@ -220,7 +220,7 @@ fn explorer_transfers_keep_capacity_loss_and_reject_wrong_layers_atomically() {
     grant(deployment, from, 1, 50);
     assert_eq!(
         ITroopsDispatcher { contract_address: deployment.peers.troops }
-            .authorized_explorer(ExplorerKey { game_id: 3, explorer_id: from.entity_id }, deployment.actor)
+            .authorized_explorer(ExplorerKey { game_id: 3, explorer_id: from.entity_id }, deployment.actor, 40)
             .owner,
         home.entity_id,
     );

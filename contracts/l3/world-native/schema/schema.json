@@ -1862,6 +1862,26 @@
         },
         {
           "type": "function",
+          "name": "active_explorer",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::troops::ExplorerKey"
+            },
+            {
+              "name": "timestamp",
+              "type": "core::integer::u64"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "world_native::troops::ExplorerTroops"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
           "name": "authorized_explorer",
           "inputs": [
             {
@@ -1871,6 +1891,10 @@
             {
               "name": "actor",
               "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "timestamp",
+              "type": "core::integer::u64"
             }
           ],
           "outputs": [
@@ -9473,9 +9497,9 @@
           "feltLength": 1
         },
         {
-          "name": "reward_profile",
-          "type": "core::integer::u8",
-          "id": "0x7265776172645f70726f66696c65",
+          "name": "spacing",
+          "type": "core::integer::u32",
+          "id": "0x73706163696e67",
           "feltLength": 1
         }
       ],
@@ -9487,7 +9511,7 @@
           "registrationOpens": "registration_start",
           "capacity": "registration_limit",
           "mode": "mode",
-          "profile": "reward_profile"
+          "spacing": "spacing"
         }
       }
     },
@@ -11306,6 +11330,12 @@
           "feltLength": 1
         },
         {
+          "name": "epoch_seconds",
+          "type": "core::integer::u32",
+          "id": "0x65706f63685f7365636f6e6473",
+          "feltLength": 1
+        },
+        {
           "name": "entry_rule",
           "type": "core::integer::u8",
           "id": "0x656e7472795f72756c65",
@@ -11325,7 +11355,7 @@
         }
       ],
       "keyLength": 1,
-      "valueLength": 91
+      "valueLength": 92
     },
     {
       "name": "EntitySequence",
@@ -15115,8 +15145,8 @@
       "name": "world_native::presets::SettlementPreset",
       "members": [
         {
-          "name": "reward_profile",
-          "type": "core::integer::u8"
+          "name": "spacing",
+          "type": "core::integer::u32"
         },
         {
           "name": "realms",
@@ -15871,6 +15901,10 @@
           "type": "core::integer::u32"
         },
         {
+          "name": "epoch_seconds",
+          "type": "core::integer::u32"
+        },
+        {
           "name": "entry_rule",
           "type": "core::integer::u8"
         },
@@ -16321,8 +16355,8 @@
           "type": "world_native::settlement::SettlementMode"
         },
         {
-          "name": "reward_profile",
-          "type": "core::integer::u8"
+          "name": "spacing",
+          "type": "core::integer::u32"
         }
       ]
     },
@@ -17107,5 +17141,5 @@
       ]
     }
   },
-  "identity": "dda896875e14d22badb22e3e9370361b6ec3cb933ed18f684a36796c16fa9e0d"
+  "identity": "6bb9fd2f4e3d4641af9799d781a19a264724d3f2d52956fa82a24a10de72c641"
 }

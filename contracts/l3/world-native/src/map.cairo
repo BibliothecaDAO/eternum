@@ -315,8 +315,23 @@ pub mod MapDomain {
         fn biome(self: @ContractState, key: TileKey) -> u8 {
             let season = IGameDispatcher { contract_address: self.lifecycle.require_active().season };
             let rules = season.rules(key.game_id);
-            crate::biome::get_biome_with_climate(key.alt, key.col.into(), key.row.into(), rules.biome_climate_config)
-                .into()
+            let climate = if rules.epoch_seconds == 0 {
+                rules.biome_climate_config
+            } else {
+                let spacing = ISettlementViewsDispatcher {
+                    contract_address: self.lifecycle.require_active().settlement,
+                }
+                    .settlement_rules(key.game_id)
+                    .spacing;
+                crate::expeditions::climate(
+                    rules.biome_climate_config,
+                    Coord { alt: key.alt, x: key.col, y: key.row },
+                    season.game(key.game_id).start_main_at,
+                    rules.epoch_seconds,
+                    spacing,
+                )
+            };
+            crate::biome::get_biome_with_climate(key.alt, key.col.into(), key.row.into(), climate).into()
         }
         fn discovery(
             self: @ContractState, key: TileKey, seed: u256, hyperstructures: u32, timestamp: u64,
@@ -439,6 +454,7 @@ pub mod MapDomain {
                 crate::troops::ITroopsDispatcher { contract_address: peers.troops },
                 crate::troops::ExplorerKey { game_id, explorer_id },
                 actor,
+                context.timestamp,
             );
             assert!(!explorer.coord.alt, "extraction requires surface");
             assert!(explorer.troops.count != 0, "explorer is dead");
@@ -577,9 +593,7 @@ pub mod MapDomain {
             let mut placed = self.settlements.reserved_hyperstructures.read(game_id);
             let last = core::cmp::min(required, placed + count.into());
             while placed < last {
-                let coord = crate::settlement_grid::reservation_location(
-                    center, rules.mode, rules.reward_profile, placed,
-                );
+                let coord = crate::settlement_grid::reservation_location(center, rules.mode, rules.spacing, placed);
                 let key = tile_key(game_id, coord);
                 let previous = self.map.tile(key).map(|tile| tile.data).unwrap_or(0);
                 assert!(previous % BIOME_SCALE == 0, "occupied reservation tile");

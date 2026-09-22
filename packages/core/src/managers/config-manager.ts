@@ -454,9 +454,9 @@ export class ClientConfigManager {
       blitz_mode_on: this.rules().mode_id === 1,
       blitz_settlement_config: {
         single_realm_mode: settlement.mode === "Single",
+        spacing: settlement.spacing,
         two_player_mode: settlement.mode === "Duel",
       },
-      blitz_exploration_config: { reward_profile_id: settlement.reward_profile },
     };
   }
   getDevModeConfig() {

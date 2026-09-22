@@ -3,11 +3,11 @@ import type { BlitzBalanceProfileId } from "./blitz";
 
 export const nativePresets: Record<
   number,
-  { gameType: "eternum" | "blitz"; profile?: BlitzBalanceProfileId; rewardProfile?: number }
+  { gameType: "eternum" | "blitz"; profile?: BlitzBalanceProfileId; spacing: number; epochSeconds: number }
 > = {
-  1: { gameType: "eternum" },
-  2: { gameType: "blitz", profile: "official-60", rewardProfile: 1 },
-  3: { gameType: "blitz", profile: "official-90", rewardProfile: 2 },
+  1: { gameType: "eternum", spacing: 6, epochSeconds: 0 },
+  2: { gameType: "blitz", profile: "official-60", spacing: 6, epochSeconds: 0 },
+  3: { gameType: "blitz", profile: "official-90", spacing: 8, epochSeconds: 0 },
 };
 
 export function nativePresetForId(id: number) {
@@ -24,11 +24,12 @@ export function nativePresetIdFor(gameType: "eternum" | "blitz", profile?: Blitz
   return Number(entry[0]);
 }
 
-export function resolveBlitzProfileId(config: Config): number {
-  const preset = Object.values(nativePresets).find(
-    ({ profile }) => profile === config.blitz.exploration.rewardProfileId,
+export function nativePresetForConfig(config: Config) {
+  const preset = Object.values(nativePresets).find(({ gameType, profile }) =>
+    config.blitz.mode.on
+      ? gameType === "blitz" && profile === config.blitz.exploration.rewardProfileId
+      : gameType === "eternum",
   );
-  if (!preset?.rewardProfile)
-    throw new Error(`Unsupported Blitz reward profile "${config.blitz.exploration.rewardProfileId}"`);
-  return preset.rewardProfile;
+  if (!preset) throw new Error("Unsupported native preset configuration");
+  return preset;
 }

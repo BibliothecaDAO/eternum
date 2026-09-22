@@ -95,8 +95,12 @@ pub mod SettlementDomain {
             let mut progress = self.settlements.progress.read(game_id);
             let (realm_id, traits) = self.resolve_season_realm(key, command.selected_realm, progress.realm_count, seed);
             self.realms.reserve(game_id, realm_id, progress.realm_count);
-            let coord = ISeasonPlacementDispatcher { contract_address: peers.map }
-                .claim_season_settlement(game_id, progress.realm_count, seed);
+            let coord = if rules.epoch_seconds == 0 {
+                ISeasonPlacementDispatcher { contract_address: peers.map }
+                    .claim_season_settlement(game_id, progress.realm_count, seed)
+            } else {
+                crate::troops::Coord { alt: false, x: 0xffffffff - realm_id, y: 0xffffffff }
+            };
             let structure_id = ISettlementCreationDispatcher { contract_address: peers.structures }
                 .create_settlement(
                     game_id,
@@ -257,7 +261,7 @@ pub mod SettlementDomain {
             let coords = crate::settlement_grid::settlement_location(
                 crate::troops::Coord { alt: false, x: center, y: center },
                 rules.mode,
-                rules.reward_profile,
+                rules.spacing,
                 progress.registered.into(),
             );
             self.create_settlement_realms(game_id, player.account, coords, context);

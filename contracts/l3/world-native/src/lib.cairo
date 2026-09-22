@@ -23,6 +23,7 @@ pub mod discovery;
 pub mod economy;
 pub mod entry;
 pub mod events;
+pub mod expeditions;
 
 pub mod exploration_rewards;
 

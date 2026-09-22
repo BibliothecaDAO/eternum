@@ -14,7 +14,7 @@ pub struct SettlementRules {
     pub registration_start: u32,
     pub registration_limit: u16,
     pub mode: SettlementMode,
-    pub reward_profile: u8,
+    pub spacing: u32,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
@@ -128,10 +128,7 @@ pub mod SettlementPoolState {
                     .append(
                         SettlementLocation {
                             coords: settlement_location(
-                                center,
-                                rules.mode,
-                                rules.reward_profile,
-                                self.candidates.read((game_id, village, index)),
+                                center, rules.mode, rules.spacing, self.candidates.read((game_id, village, index)),
                             ),
                         },
                     );
@@ -186,7 +183,7 @@ pub mod SettlementPoolState {
             let previous = count;
             let mut opened = self.opened.read(key);
             while count < target {
-                let coords = settlement_location(center, rules.mode, rules.reward_profile, opened);
+                let coords = settlement_location(center, rules.mode, rules.spacing, opened);
                 opened = opened.checked_add(1).expect('settlement geometry exhausted');
                 if !self.reserve_location(game_id, coords) {
                     continue;
@@ -207,10 +204,7 @@ pub mod SettlementPoolState {
             assert!(rules.mode == SettlementMode::Triple, "Regular Blitz required");
             for index in 0_u32..rules.registration_limit.into() {
                 assert!(
-                    self
-                        .reserve_location(
-                            game_id, settlement_location(center, rules.mode, rules.reward_profile, index),
-                        ),
+                    self.reserve_location(game_id, settlement_location(center, rules.mode, rules.spacing, index)),
                     "overlapping Blitz settlement",
                 );
             }
@@ -246,7 +240,7 @@ pub mod SettlementPoolState {
             }
             self.available_count.write((game_id, village), remaining);
             self.emit_pool(game_id, village, center, rules);
-            settlement_location(center, rules.mode, rules.reward_profile, candidate)
+            settlement_location(center, rules.mode, rules.spacing, candidate)
         }
         fn emit_pool(
             ref self: ComponentState<TContractState>,
