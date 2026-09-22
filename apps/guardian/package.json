@@ -12,6 +12,8 @@
     "starknet": "catalog:web"
   },
   "devDependencies": {
-    "typescript": "catalog:web"
+    "@cloudflare/workers-types": "5.20260922.1",
+    "typescript": "catalog:web",
+    "wrangler": "4.136.3"
   }
 }

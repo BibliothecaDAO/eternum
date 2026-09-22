@@ -47,6 +47,9 @@ export const routeIdentityRequest = async (request: Request, env: IdentityEnv, a
   }
   if (pathname === "/api/notifications/preferences") return handleNotificationPreferences(request, auth, env.DB);
   if (pathname.startsWith("/api/notifications/push/")) return handlePushSubscriptions(request, auth, env.DB);
+  if (pathname === "/api/guardian" && request.method === "GET") {
+    return json({ publicKey: await env.GUARDIAN.publicKey(), accountClassHash: env.ACCOUNT_CLASS_HASH });
+  }
   if (pathname === "/api/health" && request.method === "GET") {
     return json({ service: "realms-identity", environment: env.ENVIRONMENT, version: env.VERSION.id });
   }

@@ -20,7 +20,7 @@ const IdentityVars = Schema.Struct({
 export interface IdentityEnv extends Schema.Schema.Type<typeof IdentityVars> {
   DB: D1Database;
   /** The guardian Worker, reached by service binding only. */
-  GUARDIAN?: Guardian;
+  GUARDIAN: Guardian;
   PUBLIC_RATE_LIMIT: RateLimit;
   /** The deployed version, so a deploy can tell its own answers from its predecessor's. */
   VERSION: WorkerVersionMetadata;
@@ -31,7 +31,7 @@ const decodeIdentityVars = Schema.decodeUnknownSync(IdentityVars, { onExcessProp
 export const decodeIdentityEnv = (raw: Record<string, unknown>): IdentityEnv => ({
   ...decodeIdentityVars(raw),
   DB: raw.DB as D1Database,
-  ...(raw.GUARDIAN ? { GUARDIAN: raw.GUARDIAN as Guardian } : {}),
+  GUARDIAN: raw.GUARDIAN as Guardian,
   PUBLIC_RATE_LIMIT: raw.PUBLIC_RATE_LIMIT as RateLimit,
   VERSION: raw.VERSION as WorkerVersionMetadata,
 });

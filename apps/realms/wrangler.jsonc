@@ -21,6 +21,7 @@
       },
       "d1_databases": [{ "binding": "DB", "database_name": "realms-identity-staging", "migrations_dir": "migrations" }],
       "ratelimits": [{ "name": "PUBLIC_RATE_LIMIT", "namespace_id": "1001", "simple": { "limit": 30, "period": 60 } }],
+      "services": [{ "binding": "GUARDIAN", "service": "realms-guardian-staging" }],
       "version_metadata": { "binding": "VERSION" },
     },
     "production": {
@@ -36,6 +37,7 @@
         { "binding": "DB", "database_name": "realms-identity-production", "migrations_dir": "migrations" },
       ],
       "ratelimits": [{ "name": "PUBLIC_RATE_LIMIT", "namespace_id": "1002", "simple": { "limit": 30, "period": 60 } }],
+      "services": [{ "binding": "GUARDIAN", "service": "realms-guardian" }],
       "version_metadata": { "binding": "VERSION" },
     },
   },

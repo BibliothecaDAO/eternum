@@ -26,7 +26,7 @@ class DeviceRequestError extends Data.TaggedError("DeviceRequestError")<{ code: 
 interface DeviceChangeDependencies {
   auth: IdentityAuth;
   db: D1Database;
-  guardian: Guardian | undefined;
+  guardian: Guardian;
   accountClassHash: string;
 }
 
@@ -56,7 +56,6 @@ const approveDeviceChange = (request: Request, { auth, db, guardian, accountClas
     if (!(yield* hasWayBackIn(db, session.user))) {
       return yield* new DeviceRequestError({ code: "account_not_secured", status: 403 });
     }
-    if (!guardian) return yield* new DeviceRequestError({ code: "guardian_unavailable", status: 503 });
     const guardianPublicKey = yield* Effect.promise(() => guardian.publicKey());
     const ownAccount = realmsAccountAddress(realmsId, accountClassHash, guardianPublicKey);
     if (BigInt(change.account) !== BigInt(ownAccount)) {

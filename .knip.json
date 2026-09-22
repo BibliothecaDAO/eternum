@@ -28,6 +28,14 @@
         "deploy/athanor/scripts/deploy-box-plan.mjs"
       ]
     },
+    "apps/guardian": {
+      "entry": [
+        "src/worker.ts"
+      ],
+      "ignoreDependencies": [
+        "cloudflare"
+      ]
+    },
     "apps/realms": {
       "entry": [
         "src/main.tsx",

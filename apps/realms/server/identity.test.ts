@@ -161,6 +161,14 @@ const deviceChangeFor = (realmsId: string, overrides: Partial<{ account: string;
 });
 
 describe("identity Worker", () => {
+  it("publishes the guardian key and account class a shard's manifest must carry", async () => {
+    const published = await (await createBrowser().request("/api/guardian")).json();
+    expect(published).toEqual({
+      publicKey: ec.starkCurve.getStarkKey(GUARDIAN_KEY),
+      accountClassHash: ACCOUNT_CLASS_HASH,
+    });
+  });
+
   it("refuses a device approval without a session", async () => {
     const response = await createBrowser().request("/api/devices", { body: deviceChangeFor(realmsIdOf("anyone")) });
     expect(response.status).toBe(401);
