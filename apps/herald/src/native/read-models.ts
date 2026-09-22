@@ -3,6 +3,10 @@ import {
   type HeraldGameDirectory,
   type HeraldGameDirectoryEntry,
   type HeraldLeaderboard,
+  type PlayerActivityBreakdown,
+  type ShareAllocation,
+  sharePointCutoff,
+  unclaimedSharePoints,
 } from "@bibliothecadao/eternum/game-sync";
 import { resolveDirectoryStatus, type DirectoryInput } from "../game-directory";
 import type { FoldRow } from "../types";
@@ -112,27 +116,30 @@ export function buildNativeLeaderboard(
   modelRows: (model: string) => FoldRow[],
   gameId: string,
   timestamp: number,
-  history: HeraldLeaderboard | null,
+  activity: ReadonlyMap<string, PlayerActivityBreakdown> | null,
 ): HeraldLeaderboard {
   const rows = (model: string) => gameRows(modelRows(model), gameId);
   const game = required(modelRows("GameRegistry"), gameId, "GameRegistry");
   const rules = required(modelRows("SliceRules"), gameId, "SliceRules");
   const result = rows("BlitzResult")[0];
-  if (result?.complete === true) return finalStandings(gameId, result, history);
+  if (result?.complete === true) return finalStandings(gameId, result, activity);
   const points = registeredPlayerPoints(rows("PlayerEntry"), rows("PlayerPoints"));
   addUnclaimedSharePoints(points, rows("HyperstructureShares"), game, rules, timestamp);
-  return rankPlayers(gameId, points, history);
+  return rankPlayers(gameId, points, activity);
 }
 
-function finalStandings(gameId: string, result: Row, history: HeraldLeaderboard | null): HeraldLeaderboard {
-  const activity = new Map(history?.entries.map((entry) => [address(entry.address), entry.activityBreakdown]));
+function finalStandings(
+  gameId: string,
+  result: Row,
+  activity: ReadonlyMap<string, PlayerActivityBreakdown> | null,
+): HeraldLeaderboard {
   return {
     game_id: integer(gameId).toString(),
     entries: (result.players as Row[]).map((player) => ({
       address: address(player.player),
       totalPoints: Number(integer(player.points)) / 1_000_000,
       rank: number(player.rank),
-      activityBreakdown: activity.get(address(player.player)) ?? createEmptyActivityBreakdown(),
+      activityBreakdown: activity?.get(address(player.player)) ?? createEmptyActivityBreakdown(),
     })),
   };
 }
@@ -151,19 +158,14 @@ function addUnclaimedSharePoints(
   rules: Row,
   timestamp: number,
 ): void {
-  const cutoff = pointCutoff(game, timestamp);
+  const cutoff = sharePointCutoff(
+    { dev_mode_on: game.dev_mode_on === true, end_at: integer(game.end_at) },
+    BigInt(timestamp),
+  );
   const rate = integer(record(rules.victory_points_grant_config).hyp_points_per_second);
-  for (const allocation of allocations) {
-    const elapsed = cutoff - integer(allocation.start_at);
-    if (elapsed <= 0n) continue;
-    for (const share of allocation.shareholders as Row[]) {
-      creditPoints(
-        points,
-        share.player,
-        (elapsed * rate * integer(allocation.multiplier) * integer(share.bps)) / 10_000n,
-      );
-    }
-  }
+  for (const allocation of allocations)
+    for (const share of unclaimedSharePoints(allocation as unknown as ShareAllocation, rate, cutoff))
+      creditPoints(points, share.player, share.points);
 }
 
 function creditPoints(points: Map<string, bigint>, player: unknown, amount: bigint): void {
@@ -174,15 +176,14 @@ function creditPoints(points: Map<string, bigint>, player: unknown, amount: bigi
 function rankPlayers(
   gameId: string,
   points: Map<string, bigint>,
-  history: HeraldLeaderboard | null,
+  activity: ReadonlyMap<string, PlayerActivityBreakdown> | null,
 ): HeraldLeaderboard {
-  const activity = new Map(history?.entries.map((entry) => [address(entry.address), entry.activityBreakdown]));
   const ranked = [...points].sort(([left, a], [right, b]) => (a === b ? left.localeCompare(right) : a > b ? -1 : 1));
   const entries = ranked.map(([player, value], index) => ({
     address: player,
     totalPoints: Number(value) / 1_000_000,
     rank: index + 1,
-    activityBreakdown: activity.get(player) ?? createEmptyActivityBreakdown(),
+    activityBreakdown: activity?.get(player) ?? createEmptyActivityBreakdown(),
   }));
   for (let index = 1; index < entries.length; index++) {
     if (ranked[index][1] === ranked[index - 1][1]) entries[index].rank = entries[index - 1].rank;
@@ -193,9 +194,4 @@ function rankPlayers(
 function shortString(value: unknown): string {
   const hex = integer(value).toString(16);
   return Buffer.from(hex.length % 2 ? `0${hex}` : hex, "hex").toString("utf8");
-}
-
-function pointCutoff(game: Row, timestamp: number): bigint {
-  const now = BigInt(timestamp);
-  return !game.dev_mode_on && now > integer(game.end_at) ? integer(game.end_at) : now;
 }

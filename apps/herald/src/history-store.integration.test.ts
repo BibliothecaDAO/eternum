@@ -30,7 +30,7 @@ describe("existing history progress", () => {
       expect(getBlockWithReceipts).not.toHaveBeenCalled();
       expect(await store.historyProgress()).toBe(500001);
       store.markLeaderboardReady();
-      expect(store.leaderboard("7")).not.toBeNull();
+      expect(store.activity("7")).not.toBeNull();
       expect(
         (await store.queryEvents({ gameId: "7", model: "StoryEvent", limit: 10, offset: 0 })).complete_through_block,
       ).toBe(500001);
@@ -125,15 +125,15 @@ describe("native confirmed history", () => {
           DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION ${namespace}.reject_history_commit()
       `);
       await expect(store.appendEvents(result.events, 10)).rejects.toThrow("history commit rejected");
-      expect(store.leaderboard("1")?.entries).toEqual([]);
+      expect(store.activity("1")?.size).toBe(0);
       expect(await store.historyProgress()).toBe(9);
       expect((await store.queryStoryCursor(cursor, 10)).items).toEqual([]);
       await admin.query(`DROP TRIGGER reject_history_commit ON ${namespace}.herald_history_events;
         DROP FUNCTION ${namespace}.reject_history_commit()`);
       await store.appendEvents(result.events, 10);
       await store.appendEvents(result.events, 10);
-      const before = store.leaderboard("1");
-      expect(before?.entries[0].activityBreakdown.exploration).toEqual({ count: 1, points: 5 });
+      const before = store.activity("1");
+      expect([...(before?.values() ?? [])][0].exploration).toEqual({ count: 1, points: 5 });
       expect((await store.queryStoryCursor(cursor, 10)).items.map(({ model }) => model)).toEqual([
         "PointsAwarded",
         "BattleEvent",
@@ -144,7 +144,7 @@ describe("native confirmed history", () => {
       store = new HistoryStore(url.toString(), "madara", manifest.world.address, nativeHistoryCodec);
       await store.initialize();
       store.markLeaderboardReady();
-      expect(store.leaderboard("1")).toEqual(before);
+      expect(store.activity("1")).toEqual(before);
       expect(await store.reviewSnapshot("1")).toEqual(snapshot);
       const repeated = vi.fn(() => {
         throw new Error("Finalized review must not be rebuilt");

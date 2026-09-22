@@ -27,10 +27,7 @@ interface HeraldHttpState {
   decodedModelCount: number;
   fold: SnapshotSource;
   metrics: ReplayMetrics;
-  history?: Pick<
-    HistoryStore,
-    "queryStoryCursor" | "queryEvents" | "reviewSnapshot" | "transactionCount" | "leaderboard"
-  >;
+  history?: Pick<HistoryStore, "queryStoryCursor" | "queryEvents" | "reviewSnapshot" | "transactionCount" | "activity">;
   undecodableEventCount: () => number;
 }
 
@@ -150,7 +147,7 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
         const timestamp = state.chainTimestamp();
         if (timestamp <= 0) return jsonResponse({ error: "chain_clock_unavailable" }, 503);
         return jsonResponse(
-          readModels.leaderboard(state.fold.modelRows, gameId, timestamp, state.history?.leaderboard(gameId) ?? null),
+          readModels.leaderboard(state.fold.modelRows, gameId, timestamp, state.history?.activity(gameId) ?? null),
         );
       } catch (error) {
         return jsonResponse({ error: error instanceof Error ? error.message : String(error) }, 503);

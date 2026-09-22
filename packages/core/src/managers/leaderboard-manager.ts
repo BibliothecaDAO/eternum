@@ -1,7 +1,7 @@
 import { type ContractAddress, type ID } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import { getBlockTimestamp } from "../utils/timestamp";
-import { accruedSharePoints } from "../sync/shareholder-points";
+import { sharePointCutoff, unclaimedSharePoints } from "../sync/shareholder-points";
 import { configManager } from "./config-manager";
 
 /** Standings are derived from current facts and the game clock at each read. */
@@ -47,21 +47,21 @@ export class LeaderboardManager {
     if (!shares.length) return [];
     const rules = this.store.require("SliceRules", { game_id: game });
     const clock = this.store.require("GameRegistry", { game_id: game });
-    const now = BigInt(Math.floor(getBlockTimestamp().currentBlockTimestamp));
-    const cutoff = !clock.dev_mode_on && clock.end_at > 0n && now > clock.end_at ? clock.end_at : now;
+    const cutoff = sharePointCutoff(clock, BigInt(Math.floor(getBlockTimestamp().currentBlockTimestamp)));
     const rate = BigInt(rules.victory_points_grant_config.hyp_points_per_second);
-    return shares.flatMap((row) => {
-      if (row.start_at === 0n || cutoff <= row.start_at) return [];
-      const elapsed = cutoff - row.start_at;
-      return row.shareholders.map((share) => ({
-        playerAddress: share.player,
-        basisPoints: BigInt(share.bps),
-        hyperstructureId: row.entity_id,
-        elapsed: Number(elapsed),
-        rate: Number(rate * BigInt(row.multiplier) * BigInt(share.bps)) / 10_000_000_000,
-        points: Number(accruedSharePoints(rate, BigInt(row.multiplier), BigInt(share.bps), elapsed)) / 1_000_000,
-      }));
-    });
+    return shares.flatMap((row) =>
+      unclaimedSharePoints(row, rate, cutoff).map(({ points }, index) => {
+        const share = row.shareholders[index];
+        return {
+          playerAddress: share.player,
+          basisPoints: BigInt(share.bps),
+          hyperstructureId: row.entity_id,
+          elapsed: Number(cutoff - row.start_at),
+          rate: Number(rate * BigInt(row.multiplier) * BigInt(share.bps)) / 10_000_000_000,
+          points: Number(points) / 1_000_000,
+        };
+      }),
+    );
   }
 
   getPlayerHyperstructureUnregisteredShareholderPoints(player: ContractAddress): number {

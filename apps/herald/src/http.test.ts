@@ -71,7 +71,7 @@ const httpState: Parameters<typeof createHeraldRequestHandler>[0] = {
       next_cursor: { block: 12, transaction: 2147483647, event: 2147483647 },
       items: [],
     }),
-    leaderboard: (gameId) => ({ game_id: gameId, entries: [] }),
+    activity: () => new Map(),
     queryEvents: async (query) => ({
       complete_through_block: 12,
       items: [
@@ -177,7 +177,7 @@ it("passes a battle-only history filter to the store before pagination", async (
         items: [],
       }),
       queryEvents,
-      leaderboard: () => null,
+      activity: () => null,
       reviewSnapshot: async () => snapshot,
       transactionCount: async () => ({ game_id: "7", count: 0 }),
     },

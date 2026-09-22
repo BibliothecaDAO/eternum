@@ -41,14 +41,12 @@ it("folds a real history item and every contract activity into player columns", 
     };
     board.accept(exploration.game_id, readPointsRegistration(value)!);
   }
-  const [entry] = board.snapshot("0x1c").entries;
-  expect(entry.address).toBe(exploration.value.owner);
-  expect(Object.values(entry.activityBreakdown)).toEqual(Array.from({ length: 5 }, () => ({ count: 1, points: 5 })));
-  expect(entry.totalPoints).toBe(25);
-  expect(entry.rank).toBe(1);
-  expect(board.snapshot("29").entries).toEqual([]);
-  entry.activityBreakdown.exploration.points = 999;
-  expect(board.snapshot("28").entries[0].activityBreakdown.exploration.points).toBe(5);
+  const [[address, breakdown]] = [...board.activity("0x1c")];
+  expect(address).toBe(exploration.value.owner);
+  expect(Object.values(breakdown)).toEqual(Array.from({ length: 5 }, () => ({ count: 1, points: 5 })));
+  expect(board.activity("29").size).toBe(0);
+  breakdown.exploration.points = 999;
+  expect(board.activity("28").get(address)?.exploration.points).toBe(5);
 });
 it("rejects unknown variants instead of dropping points", () => {
   expect(() =>
@@ -56,13 +54,4 @@ it("rejects unknown variants instead of dropping points", () => {
       story: { PointsRegisteredStory: { ...exploration.value.story.PointsRegisteredStory, activity: "NewActivity" } },
     }),
   ).toThrow("Unknown points activity: NewActivity");
-});
-it("ranks players by their accumulated points", () => {
-  const board = new PointsLeaderboard();
-  board.accept("28", { address: "0x1", activity: "exploration", points: 5 });
-  board.accept("28", { address: "0x2", activity: "openRelicChest", points: 250 });
-  expect(board.snapshot("28").entries.map(({ address, rank }) => ({ address, rank }))).toEqual([
-    { address: "0x2", rank: 1 },
-    { address: "0x1", rank: 2 },
-  ]);
 });

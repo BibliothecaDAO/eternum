@@ -125,7 +125,7 @@ describe("native directory and leaderboard", () => {
       11,
       0,
     );
-    const result = buildNativeLeaderboard((name) => fold.modelRows(name), "1", 30, { game_id: "1", entries: [] });
+    const result = buildNativeLeaderboard((name) => fold.modelRows(name), "1", 30, new Map());
     expect(result.entries.map(({ address, rank }) => [address, rank])).toEqual([
       ["0x222", 1],
       ["0x111", 2],

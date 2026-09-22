@@ -5,7 +5,7 @@ import {
   type HeraldStoryHistoryPage,
 } from "@bibliothecadao/eternum/game-sync";
 import { PointsLeaderboard } from "./points-leaderboard";
-import { readPointsRegistration, type HeraldLeaderboard } from "@bibliothecadao/eternum/game-sync";
+import { readPointsRegistration, type PlayerActivityBreakdown } from "@bibliothecadao/eternum/game-sync";
 import { Pool, type PoolClient } from "pg";
 
 import type {
@@ -246,8 +246,9 @@ export class HistoryStore {
     this.leaderboardReady = true;
   }
 
-  public leaderboard(gameId: string): HeraldLeaderboard | null {
-    return this.leaderboardReady ? this.points.snapshot(gameId) : null;
+  /** Each player's points by activity, once the history has been restored. */
+  public activity(gameId: string): ReadonlyMap<string, PlayerActivityBreakdown> | null {
+    return this.leaderboardReady ? this.points.activity(gameId) : null;
   }
 
   private async restorePointsLeaderboard(): Promise<void> {
