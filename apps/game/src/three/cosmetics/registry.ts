@@ -56,7 +56,7 @@ export function formatStructureCosmeticTarget(type: StructureType, stage?: strin
 /**
  * Registers a cosmetic entry while guarding against accidental duplicates.
  */
-export function registerCosmetic(entry: CosmeticRegistryEntry): CosmeticRegistryEntry {
+function registerCosmetic(entry: CosmeticRegistryEntry): CosmeticRegistryEntry {
   if (registryMap.has(entry.id)) {
     return registryMap.get(entry.id)!;
   }

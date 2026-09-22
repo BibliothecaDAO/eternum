@@ -12,7 +12,7 @@ import { getActiveWorld } from "@/runtime/world";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 import { resolveUserIdentity, resolveWalletIdentityMode } from "./wallet-identity";
 
-export type ClientTransactionSurface =
+type ClientTransactionSurface =
   | "game_provider"
   | "registration"
   | "settlement"
@@ -23,13 +23,13 @@ export type ClientTransactionSurface =
   | "cosmetics"
   | "admin";
 
-export type ClientTransactionFailureStage =
+type ClientTransactionFailureStage =
   | TransactionFailureStage
   | "wallet_rejected"
   | "validation"
   | "confirmation_unverified";
 
-export interface ClientTransactionFailureContext {
+interface ClientTransactionFailureContext {
   surface: ClientTransactionSurface;
   operation: string;
   stage: ClientTransactionFailureStage;
@@ -257,7 +257,7 @@ const buildBreadcrumbData = (context: Partial<Omit<ClientTransactionFailureConte
   });
 };
 
-export const isWalletRejectedError = (error: unknown): boolean => {
+const isWalletRejectedError = (error: unknown): boolean => {
   const readableMessage = extractReadableErrorMessage(error, "").trim();
   if (!readableMessage) {
     return false;
@@ -266,7 +266,7 @@ export const isWalletRejectedError = (error: unknown): boolean => {
   return WALLET_REJECTION_PATTERNS.some((pattern) => pattern.test(readableMessage));
 };
 
-export const resolveClientTransactionFailureStageFromError = (
+const resolveClientTransactionFailureStageFromError = (
   error: unknown,
   fallback: Extract<ClientTransactionFailureStage, "submit" | "confirmation" | "background_confirmation">,
 ): ClientTransactionFailureStage => {
