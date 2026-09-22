@@ -60,6 +60,8 @@ export const eternumTroopConfig: ConfigPatch = {
       damageScalingFactor: TROOP_DAMAGE_SCALING_FACTOR,
     },
     stamina: {
+      damageStaminaRefund: true,
+      captureStaminaRefund: 0,
       staminaGainPerTick: TROOP_STAMINA_GAIN_PER_TICK,
       staminaInitial: TROOP_STAMINA_INITIAL,
       staminaBonusValue: TROOP_STAMINA_BIOME_BONUS_VALUE,
@@ -86,6 +88,7 @@ export const eternumTroopConfig: ConfigPatch = {
       kingdomGuardSlots: 3,
       empireGuardSlots: 4,
       startingGuard: 1500,
+      campArmies: 1,
 
       mercenariesTroopLowerBound: TROOP_MERCENARIES_TROOP_LOWER_BOUND,
       mercenariesTroopUpperBound: TROOP_MERCENARIES_TROOP_UPPER_BOUND,

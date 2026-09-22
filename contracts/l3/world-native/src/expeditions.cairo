@@ -54,3 +54,33 @@ pub fn climate(config: BiomeClimateConfig, coord: Coord, start: u64, seconds: u3
         ..config,
     }
 }
+
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
+pub struct DepthRules {
+    pub supply_multiplier: u16,
+    pub guard_lower: u16,
+    pub guard_upper: u16,
+    pub mine_cap_min: u128,
+    pub mine_cap_max: u128,
+    pub mine_rate: u64,
+    pub camp_reward_min: u128,
+    pub camp_reward_max: u128,
+    pub mine_chest: bool,
+    pub reveal_site_neighbors: bool,
+}
+
+#[starknet::interface]
+pub trait IExpeditionRules<T> {
+    fn configure_depths(ref self: T, game_id: u32, depths: Span<DepthRules>);
+    fn depth_rules(self: @T, game_id: u32, depth: u8) -> DepthRules;
+}
+
+pub fn depth_rules_at(settlement: starknet::ContractAddress, game_id: u32, coord: Coord) -> DepthRules {
+    let spacing = crate::settlement::ISettlementViewsDispatcherTrait::settlement_rules(
+        crate::settlement::ISettlementViewsDispatcher { contract_address: settlement }, game_id,
+    )
+        .spacing;
+    IExpeditionRulesDispatcher { contract_address: settlement }
+        .depth_rules(game_id, (coord.y / spacing % 4).try_into().unwrap())
+}

@@ -222,6 +222,13 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
       struct("resources::Production"),
     ),
     model(
+      "ProductionReceiver",
+      ["resources"],
+      "game",
+      struct("resources::ResourceSlot"),
+      struct("resources::ProductionReceiver"),
+    ),
+    model(
       "ProductionBonus",
       ["resources"],
       "game",
@@ -340,6 +347,13 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
       method("structures", "upgrade_recipe").inputs,
       struct("upgrades::UpgradeRecipe"),
     ),
+    model(
+      "DepthRules",
+      ["settlement"],
+      "game",
+      method("settlement", "depth_rules").inputs,
+      struct("expeditions::DepthRules"),
+    ),
     model("GameRegistry", ["registry"], "game", method("registry", "game").inputs, struct("game::GameRegistry")),
     model("SliceRules", ["registry"], "game", method("registry", "rules").inputs, struct("rules::SliceRules")),
     model("EntitySequence", ["registry"], "game", method("registry", "allocate_entity").inputs, [
@@ -457,6 +471,21 @@ const behaviouralFacts = {
       spacing: "spacing",
     },
   },
+  DepthRules: {
+    domain: "expedition",
+    fields: {
+      supplies: "supply_multiplier",
+      guardLower: "guard_lower",
+      guardUpper: "guard_upper",
+      mineMinimum: "mine_cap_min",
+      mineMaximum: "mine_cap_max",
+      mineRate: "mine_rate",
+      campMinimum: "camp_reward_min",
+      campMaximum: "camp_reward_max",
+      mineChest: "mine_chest",
+      revealSiteNeighbors: "reveal_site_neighbors",
+    },
+  },
   SettlementProgress: { domain: "realm/blitz", fields: { players: "registered", realms: "realm_count" } },
   SettlementPool: { domain: "realm/blitz", fields: { availableLocations: "available" } },
   VillageRules: {
@@ -502,6 +531,7 @@ const behaviouralFacts = {
       steps: "cap_steps",
     },
   },
+  ProductionReceiver: { domain: "mines", fields: { home: "home", ends: "end_at" } },
   MinePool: { domain: "mines", fields: { kinds: "weights" } },
   Structure: {
     domain: "structures",

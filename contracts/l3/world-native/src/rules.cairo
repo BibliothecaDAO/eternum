@@ -34,6 +34,8 @@ pub struct TroopStaminaConfig {
     // Travel food costs
     pub stamina_travel_wheat_cost: u32,
     pub stamina_travel_fish_cost: u32,
+    pub damage_stamina_refund: bool,
+    pub capture_stamina_refund: u16,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
@@ -67,6 +69,7 @@ pub struct TroopLimitConfig {
     pub kingdom_guard_slots: u8,
     pub empire_guard_slots: u8,
     pub starting_guard: u32,
+    pub camp_armies: u16,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
@@ -189,6 +192,11 @@ pub const DISCOVER_HYPERSTRUCTURES: u32 = 8;
 pub const SPIRES: u32 = 16;
 pub const UNOWNED_TARGETS: u32 = 32;
 pub const CAPTURE_VILLAGES: u32 = 64;
+pub const DEPTH_CONTENTS: u32 = 128;
+pub const CAPTURE_CHESTS: u32 = 512;
+pub const HOME_MINE_PRODUCTION: u32 = 4096;
+pub const HOME_CAMP_REWARDS: u32 = 65536;
+pub const REVEAL_SUPPLIES: u32 = 262144;
 pub const SAME_OWNER_TRANSFER: u32 = 256;
 pub const SEASON_CLOSE: u32 = 1024;
 pub const RESERVED_HYPERSTRUCTURES: u32 = 2048;
@@ -368,7 +376,13 @@ pub impl TroopStaminaConfigPacking of starknet::storage_access::StorePacking<Tro
                 + value.stamina_explore_wheat_cost.into() * 0x100000000
                 + value.stamina_explore_fish_cost.into() * 0x10000000000000000
                 + value.stamina_travel_wheat_cost.into() * 0x1000000000000000000000000,
-            third: value.stamina_travel_fish_cost.into(),
+            third: value.stamina_travel_fish_cost.into()
+                + if value.damage_stamina_refund {
+                    0x100000000
+                } else {
+                    0
+                }
+                + value.capture_stamina_refund.into() * 0x200000000,
         }
     }
     fn unpack(value: PackedRuleWords) -> TroopStaminaConfig {
@@ -387,6 +401,8 @@ pub impl TroopStaminaConfigPacking of starknet::storage_access::StorePacking<Tro
             stamina_explore_fish_cost: (value.second / 0x10000000000000000 % 0x100000000).try_into().unwrap(),
             stamina_travel_wheat_cost: (value.second / 0x1000000000000000000000000).try_into().unwrap(),
             stamina_travel_fish_cost: (value.third % 0x100000000).try_into().unwrap(),
+            damage_stamina_refund: value.third / 0x100000000 % 2 == 1,
+            capture_stamina_refund: (value.third / 0x200000000).try_into().unwrap(),
         }
     }
 }
@@ -415,7 +431,8 @@ pub impl TroopLimitConfigPacking of starknet::storage_access::StorePacking<Troop
                 + value.settlement_guard_slots.into() * 0x100000000000000000000
                 + value.city_guard_slots.into() * 0x10000000000000000000000
                 + value.kingdom_guard_slots.into() * 0x1000000000000000000000000
-                + value.empire_guard_slots.into() * 0x100000000000000000000000000,
+                + value.empire_guard_slots.into() * 0x100000000000000000000000000
+                + value.camp_armies.into() * 0x10000000000000000000000000000,
         }
     }
     fn unpack(value: PackedRuleWords) -> TroopLimitConfig {
@@ -442,6 +459,7 @@ pub impl TroopLimitConfigPacking of starknet::storage_access::StorePacking<Troop
             kingdom_guard_slots: (value.third / 0x1000000000000000000000000 % 0x100).try_into().unwrap(),
             empire_guard_slots: (value.third / 0x100000000000000000000000000 % 0x100).try_into().unwrap(),
             starting_guard: (value.first / 0x1000000000000 % 0x100000000).try_into().unwrap(),
+            camp_armies: (value.third / 0x10000000000000000000000000000).try_into().unwrap(),
         }
     }
 }

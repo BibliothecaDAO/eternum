@@ -409,6 +409,7 @@ pub mod MapDomain {
             for index in 0..rewards.len() {
                 let reward = *rewards.at(index);
                 assert!(reward.resource_type > 0 && reward.resource_type <= 58, "invalid reward resource");
+                assert!(reward.amount <= reward.amount_max, "invalid exploration reward range");
                 total += reward.weight;
                 self.exploration_rewards.write((game_id, index), reward);
             }
@@ -442,6 +443,7 @@ pub mod MapDomain {
             game_id: u32,
             actor: ContractAddress,
             explorer_id: u32,
+            revealed: Option<Coord>,
             context: crate::commands::ExecutionContext,
         ) {
             let peers = self.lifecycle.require_active();
@@ -458,22 +460,38 @@ pub mod MapDomain {
             );
             assert!(!explorer.coord.alt, "extraction requires surface");
             assert!(explorer.troops.count != 0, "explorer is dead");
-            let key = tile_key(game_id, explorer.coord);
-            let tile = self.map.tile(key).expect('unrevealed extraction tile');
+            let occupied = self.map.tile(tile_key(game_id, explorer.coord)).expect('unrevealed army tile');
             assert!(
-                (tile.data / super::OCCUPIER_SCALE) % super::ENTITY_RANGE == explorer_id.into(),
+                (occupied.data / super::OCCUPIER_SCALE) % super::ENTITY_RANGE == explorer_id.into(),
                 "explorer does not occupy tile",
             );
+            let rules = games.rules(game_id);
+            let coord = if crate::rules::rule_enabled(rules, crate::rules::REVEAL_SUPPLIES) {
+                match revealed {
+                    Some(coord) => coord,
+                    None => { return; },
+                }
+            } else {
+                explorer.coord
+            };
+            let key = tile_key(game_id, coord);
+            let tile = self.map.tile(key).expect('unrevealed extraction tile');
             assert!(tile.data / BIOME_SCALE % BYTE_RANGE != 0, "tile must be revealed");
             let mut root = context.raw_root;
             let seed = crate::random::game_root(ref root, game_id, game.seed);
             if tile.data / super::REWARD_EXTRACTED_FLAG % 2 == 1 {
                 return;
             }
-            let rules = games.rules(game_id);
             let reward = crate::exploration_rewards::draw(self.extraction_rewards(game_id), seed, context.timestamp);
+            let multiplier = if crate::rules::rule_enabled(rules, crate::rules::DEPTH_CONTENTS) {
+                crate::expeditions::depth_rules_at(peers.settlement, game_id, coord).supply_multiplier
+            } else {
+                1
+            };
             let amount = crate::exploration_rewards::boosted_amount(
-                reward.amount, explorer.troops.boosts, context.timestamp / rules.tick_config.armies_tick_in_seconds,
+                reward.amount * multiplier.into(),
+                explorer.troops.boosts,
+                context.timestamp / rules.tick_config.armies_tick_in_seconds,
             );
             let receiver = crate::exploration_rewards::receiver(
                 crate::rules::rule_enabled(rules, crate::rules::HOME_REWARDS),
@@ -495,7 +513,7 @@ pub mod MapDomain {
                     actor,
                     context.timestamp,
                     crate::exploration_rewards::ExtractedReward {
-                        explorer_id, receiver, coord: explorer.coord, resource_type: reward.resource_type, amount,
+                        explorer_id, receiver, coord, resource_type: reward.resource_type, amount,
                     },
                 );
         }

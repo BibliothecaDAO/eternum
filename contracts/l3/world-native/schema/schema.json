@@ -10,6 +10,11 @@
     "SPIRES": 16,
     "UNOWNED_TARGETS": 32,
     "CAPTURE_VILLAGES": 64,
+    "DEPTH_CONTENTS": 128,
+    "CAPTURE_CHESTS": 512,
+    "HOME_MINE_PRODUCTION": 4096,
+    "HOME_CAMP_REWARDS": 65536,
+    "REVEAL_SUPPLIES": 262144,
     "SAME_OWNER_TRANSFER": 256,
     "SEASON_CLOSE": 1024,
     "RESERVED_HYPERSTRUCTURES": 2048,
@@ -1221,6 +1226,10 @@
             {
               "name": "explorer_id",
               "type": "core::integer::u32"
+            },
+            {
+              "name": "revealed",
+              "type": "core::option::Option::<world_native::troops::Coord>"
             },
             {
               "name": "context",
@@ -3032,6 +3041,34 @@
         {
           "name": "RowSet",
           "prefix": [
+            "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "model",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "keys",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            },
+            {
+              "name": "values",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            }
+          ]
+        },
+        {
+          "name": "RowSet",
+          "prefix": [
             "0x1517f684ec2bc21ca20251bbef26b7ad0434759388fc50e84858abf49e4024b",
             "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
           ],
@@ -3147,6 +3184,42 @@
         }
       ],
       "entrypoints": [
+        {
+          "type": "function",
+          "name": "configure_depths",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "depths",
+              "type": "core::array::Span::<world_native::expeditions::DepthRules>"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "depth_rules",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "depth",
+              "type": "core::integer::u8"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "world_native::expeditions::DepthRules"
+            }
+          ],
+          "state_mutability": "view"
+        },
         {
           "type": "function",
           "name": "initialize_realm_traits",
@@ -3879,6 +3952,50 @@
             }
           ],
           "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "production_receiver",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::resources::ResourceSlot"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::option::Option::<world_native::resources::ProductionReceiver>"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "redirect_production",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::resources::ResourceKey"
+            },
+            {
+              "name": "resource_type",
+              "type": "core::integer::u8"
+            },
+            {
+              "name": "receiver",
+              "type": "world_native::resources::ProductionReceiver"
+            },
+            {
+              "name": "rate",
+              "type": "core::integer::u64"
+            },
+            {
+              "name": "timestamp",
+              "type": "core::integer::u64"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
         },
         {
           "type": "function",
@@ -5363,6 +5480,30 @@
         {
           "type": "function",
           "name": "open_relic_chest",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "command",
+              "type": "world_native::relics::OpenChest"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "grant_site_chest",
           "inputs": [
             {
               "name": "game_id",
@@ -10105,6 +10246,54 @@
       }
     },
     {
+      "name": "ProductionReceiver",
+      "identity": "0x50726f64756374696f6e5265636569766572",
+      "owners": [
+        "resources"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "entity_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "resource_type",
+          "type": "core::integer::u8",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "home",
+          "type": "core::integer::u32",
+          "id": "0x686f6d65",
+          "feltLength": 1
+        },
+        {
+          "name": "end_at",
+          "type": "core::integer::u32",
+          "id": "0x656e645f6174",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 3,
+      "valueLength": 2,
+      "observation": {
+        "domain": "mines",
+        "fields": {
+          "home": "home",
+          "ends": "end_at"
+        }
+      }
+    },
+    {
       "name": "ProductionBonus",
       "identity": "0x50726f64756374696f6e426f6e7573",
       "owners": [
@@ -11124,6 +11313,105 @@
       }
     },
     {
+      "name": "DepthRules",
+      "identity": "0x446570746852756c6573",
+      "owners": [
+        "settlement"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "depth",
+          "type": "core::integer::u8",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "supply_multiplier",
+          "type": "core::integer::u16",
+          "id": "0x737570706c795f6d756c7469706c696572",
+          "feltLength": 1
+        },
+        {
+          "name": "guard_lower",
+          "type": "core::integer::u16",
+          "id": "0x67756172645f6c6f776572",
+          "feltLength": 1
+        },
+        {
+          "name": "guard_upper",
+          "type": "core::integer::u16",
+          "id": "0x67756172645f7570706572",
+          "feltLength": 1
+        },
+        {
+          "name": "mine_cap_min",
+          "type": "core::integer::u128",
+          "id": "0x6d696e655f6361705f6d696e",
+          "feltLength": 1
+        },
+        {
+          "name": "mine_cap_max",
+          "type": "core::integer::u128",
+          "id": "0x6d696e655f6361705f6d6178",
+          "feltLength": 1
+        },
+        {
+          "name": "mine_rate",
+          "type": "core::integer::u64",
+          "id": "0x6d696e655f72617465",
+          "feltLength": 1
+        },
+        {
+          "name": "camp_reward_min",
+          "type": "core::integer::u128",
+          "id": "0x63616d705f7265776172645f6d696e",
+          "feltLength": 1
+        },
+        {
+          "name": "camp_reward_max",
+          "type": "core::integer::u128",
+          "id": "0x63616d705f7265776172645f6d6178",
+          "feltLength": 1
+        },
+        {
+          "name": "mine_chest",
+          "type": "core::bool",
+          "id": "0x6d696e655f6368657374",
+          "feltLength": 1
+        },
+        {
+          "name": "reveal_site_neighbors",
+          "type": "core::bool",
+          "id": "0x72657665616c5f736974655f6e65696768626f7273",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 10,
+      "observation": {
+        "domain": "expedition",
+        "fields": {
+          "supplies": "supply_multiplier",
+          "guardLower": "guard_lower",
+          "guardUpper": "guard_upper",
+          "mineMinimum": "mine_cap_min",
+          "mineMaximum": "mine_cap_max",
+          "mineRate": "mine_rate",
+          "campMinimum": "camp_reward_min",
+          "campMaximum": "camp_reward_max",
+          "mineChest": "mine_chest",
+          "revealSiteNeighbors": "reveal_site_neighbors"
+        }
+      }
+    },
+    {
       "name": "GameRegistry",
       "identity": "0x47616d655265676973747279",
       "owners": [
@@ -11257,13 +11545,13 @@
           "name": "troop_stamina_config",
           "type": "world_native::rules::TroopStaminaConfig",
           "id": "0x74726f6f705f7374616d696e615f636f6e666967",
-          "feltLength": 14
+          "feltLength": 16
         },
         {
           "name": "troop_limit_config",
           "type": "world_native::rules::TroopLimitConfig",
           "id": "0x74726f6f705f6c696d69745f636f6e666967",
-          "feltLength": 22
+          "feltLength": 23
         },
         {
           "name": "capacity_config",
@@ -11351,7 +11639,7 @@
         }
       ],
       "keyLength": 1,
-      "valueLength": 101
+      "valueLength": 104
     },
     {
       "name": "EntitySequence",
@@ -12028,6 +12316,16 @@
         }
       ]
     },
+    "core::array::Span::<world_native::expeditions::DepthRules>": {
+      "type": "struct",
+      "name": "core::array::Span::<world_native::expeditions::DepthRules>",
+      "members": [
+        {
+          "name": "snapshot",
+          "type": "@core::array::Array::<world_native::expeditions::DepthRules>"
+        }
+      ]
+    },
     "core::array::Span::<world_native::exploration_rewards::ExplorationReward>": {
       "type": "struct",
       "name": "core::array::Span::<world_native::exploration_rewards::ExplorationReward>",
@@ -12348,6 +12646,20 @@
         }
       ]
     },
+    "core::option::Option::<world_native::resources::ProductionReceiver>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::resources::ProductionReceiver>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::resources::ProductionReceiver"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
     "core::option::Option::<world_native::rules::MapConfig>": {
       "type": "enum",
       "name": "core::option::Option::<world_native::rules::MapConfig>",
@@ -12425,6 +12737,20 @@
         {
           "name": "Some",
           "type": "world_native::trade::TradeOrder"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
+    "core::option::Option::<world_native::troops::Coord>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::troops::Coord>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::troops::Coord"
         },
         {
           "name": "None",
@@ -13602,6 +13928,52 @@
         }
       ]
     },
+    "world_native::expeditions::DepthRules": {
+      "type": "struct",
+      "name": "world_native::expeditions::DepthRules",
+      "members": [
+        {
+          "name": "supply_multiplier",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "guard_lower",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "guard_upper",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "mine_cap_min",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "mine_cap_max",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "mine_rate",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "camp_reward_min",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "camp_reward_max",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "mine_chest",
+          "type": "core::bool"
+        },
+        {
+          "name": "reveal_site_neighbors",
+          "type": "core::bool"
+        }
+      ]
+    },
     "world_native::exploration_rewards::ExplorationReward": {
       "type": "struct",
       "name": "world_native::exploration_rewards::ExplorationReward",
@@ -13612,6 +13984,10 @@
         },
         {
           "name": "amount",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "amount_max",
           "type": "core::integer::u128"
         },
         {
@@ -15145,6 +15521,10 @@
           "type": "core::integer::u32"
         },
         {
+          "name": "depths",
+          "type": "core::array::Span::<world_native::expeditions::DepthRules>"
+        },
+        {
           "name": "realms",
           "type": "world_native::settlement::RealmGrants"
         },
@@ -15534,6 +15914,20 @@
         },
         {
           "name": "last_updated_at",
+          "type": "core::integer::u32"
+        }
+      ]
+    },
+    "world_native::resources::ProductionReceiver": {
+      "type": "struct",
+      "name": "world_native::resources::ProductionReceiver",
+      "members": [
+        {
+          "name": "home",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "end_at",
           "type": "core::integer::u32"
         }
       ]
@@ -16101,6 +16495,10 @@
         {
           "name": "starting_guard",
           "type": "core::integer::u32"
+        },
+        {
+          "name": "camp_armies",
+          "type": "core::integer::u16"
         }
       ]
     },
@@ -16163,6 +16561,14 @@
         {
           "name": "stamina_travel_fish_cost",
           "type": "core::integer::u32"
+        },
+        {
+          "name": "damage_stamina_refund",
+          "type": "core::bool"
+        },
+        {
+          "name": "capture_stamina_refund",
+          "type": "core::integer::u16"
         }
       ]
     },
@@ -17173,5 +17579,5 @@
       ]
     }
   },
-  "identity": "51edc6d3d6be26472d69d493522e6a875d9fff89326037a62b1a33c3117c3975"
+  "identity": "ffa84c32c8e99b1b49659bad4933ebd93bd370db5eae529740ca0f52f4127526"
 }

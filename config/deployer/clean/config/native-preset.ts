@@ -246,6 +246,18 @@ function buildStructures(config: Config) {
 function buildSettlement(config: Config) {
   return {
     spacing: nativePresetForConfig(config).spacing,
+    depths: nativePresetForConfig(config).depths.map((depth) => ({
+      supply_multiplier: depth.supplyMultiplier,
+      guard_lower: depth.guardLower,
+      guard_upper: depth.guardUpper,
+      mine_cap_min: scaled(depth.mineCapMin),
+      mine_cap_max: scaled(depth.mineCapMax),
+      mine_rate: scaled(depth.mineRate),
+      camp_reward_min: scaled(depth.campRewardMin),
+      camp_reward_max: scaled(depth.campRewardMax),
+      mine_chest: depth.mineChest,
+      reveal_site_neighbors: depth.revealSiteNeighbors,
+    })),
     realms: {
       resources: amounts(config.startingResources, config.resources.resourcePrecision),
       starting_troops: startingTroopsByBiome.map((name) => new CairoCustomEnum({ [name]: {} })),
@@ -332,9 +344,13 @@ export function buildNativePreset(config: Config) {
       ? config.blitz.exploration.rewards.map(({ rewardId, amount, probabilityBps }) => ({
           resource_type: rewardId,
           amount,
+          amount_max: amount,
           weight: probabilityBps,
         }))
-      : eternumExplorationRewards(config.exploration.reward),
+      : eternumExplorationRewards(config.exploration.reward).map((reward) => ({
+          ...reward,
+          amount_max: reward.amount,
+        })),
     season_win_points: config.victoryPoints.pointsForWin,
   };
 }

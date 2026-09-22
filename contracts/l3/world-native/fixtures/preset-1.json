@@ -59,7 +59,9 @@
       "stamina_explore_wheat_cost": 30000000,
       "stamina_explore_fish_cost": 30000000,
       "stamina_travel_wheat_cost": 30000000,
-      "stamina_travel_fish_cost": 30000000
+      "stamina_travel_fish_cost": 30000000,
+      "damage_stamina_refund": true,
+      "capture_stamina_refund": 0
     },
     "troop_limit_config": {
       "guard_resurrection_delay": 600,
@@ -83,7 +85,8 @@
       "city_guard_slots": 2,
       "kingdom_guard_slots": 3,
       "empire_guard_slots": 4,
-      "starting_guard": 1500
+      "starting_guard": 1500,
+      "camp_armies": 1
     },
     "capacity_config": {
       "troop_capacity": 10000,

@@ -54,6 +54,8 @@ export function buildTroopDamageConfig(config: Config) {
 export function buildTroopStaminaConfig(config: Config) {
   const precision = config.resources.resourcePrecision;
   return {
+    damage_stamina_refund: config.troop.stamina.damageStaminaRefund,
+    capture_stamina_refund: config.troop.stamina.captureStaminaRefund,
     stamina_gain_per_tick: config.troop.stamina.staminaGainPerTick,
     stamina_initial: config.troop.stamina.staminaInitial,
     stamina_bonus_value: config.troop.stamina.staminaBonusValue,
@@ -83,6 +85,7 @@ export function buildTroopLimitConfig(config: Config) {
     kingdom_guard_slots: config.troop.limit.kingdomGuardSlots,
     empire_guard_slots: config.troop.limit.empireGuardSlots,
     starting_guard: config.troop.limit.startingGuard,
+    camp_armies: config.troop.limit.campArmies,
 
     mercenaries_troop_lower_bound: config.troop.limit.mercenariesTroopLowerBound,
     mercenaries_troop_upper_bound: config.troop.limit.mercenariesTroopUpperBound,

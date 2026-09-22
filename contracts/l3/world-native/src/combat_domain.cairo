@@ -114,7 +114,7 @@ pub mod CombatDomain {
                     );
                 self.combat_troops().save_explorer(key, attacker);
             }
-            self.try_capture(attacker, target_key, target, rules, context.timestamp);
+            self.try_capture(key, attacker, target_key, target, rules, context);
             if slot.is_some() {
                 let (attacker_roll, defender_roll) = rolls;
                 let winner = if attacker.troops.count == 0 && guard.count != 0 {
@@ -251,11 +251,12 @@ pub mod CombatDomain {
             self.combat_troops().save_guard(guard_key, guard);
             self
                 .try_capture(
+                    defender_key,
                     defender,
                     ResourceKey { game_id, entity_id: command.guard.structure_id },
                     home,
                     rules,
-                    context.timestamp,
+                    context,
                 );
             self
                 .emit(
@@ -458,11 +459,12 @@ pub mod CombatDomain {
         }
         fn try_capture(
             ref self: ContractState,
+            explorer_key: ExplorerKey,
             explorer: ExplorerTroops,
             key: ResourceKey,
             target: Structure,
             rules: SliceRules,
-            timestamp: u64,
+            context: ExecutionContext,
         ) {
             if explorer.troops.count == 0
                 || (crate::rules::rule_enabled(rules, crate::rules::UNOWNED_TARGETS)
@@ -481,8 +483,84 @@ pub mod CombatDomain {
                 },
                 key,
                 explorer.owner,
-                timestamp,
+                context.timestamp,
             );
+            if target.owner == 0.try_into().unwrap() {
+                self.grant_capture_rewards(explorer_key, explorer, key, target, rules, context);
+            }
+        }
+
+        fn grant_capture_rewards(
+            ref self: ContractState,
+            explorer_key: ExplorerKey,
+            mut explorer: ExplorerTroops,
+            key: ResourceKey,
+            target: Structure,
+            rules: SliceRules,
+            context: ExecutionContext,
+        ) {
+            let refund = rules.troop_stamina_config.capture_stamina_refund;
+            if refund != 0 {
+                explorer
+                    .troops
+                    .stamina
+                    .add(
+                        ref explorer.troops.boosts,
+                        explorer.troops.category,
+                        explorer.troops.tier,
+                        rules.troop_stamina_config,
+                        refund.into(),
+                        context.timestamp / rules.tick_config.armies_tick_in_seconds,
+                    );
+                self.combat_troops().save_explorer(explorer_key, explorer);
+            }
+            let camp = target.base.category == crate::camps::CAMP_CATEGORY;
+            let home_rewards = camp && crate::rules::rule_enabled(rules, crate::rules::HOME_CAMP_REWARDS);
+            let chests = crate::rules::rule_enabled(rules, crate::rules::CAPTURE_CHESTS);
+            if !home_rewards && !chests {
+                return;
+            }
+            let peers = self.lifecycle.require_active();
+            let coord = crate::structures::structure_coord(target.base);
+            let depth = if crate::rules::rule_enabled(rules, crate::rules::DEPTH_CONTENTS) {
+                Some(crate::expeditions::depth_rules_at(peers.settlement, key.game_id, coord))
+            } else {
+                None
+            };
+            let home = ResourceKey { game_id: key.game_id, entity_id: explorer.owner };
+            if home_rewards {
+                for reward in crate::camps::ICampRulesDispatcherTrait::camp_resources(
+                    crate::camps::ICampRulesDispatcher { contract_address: peers.structures }, key.game_id,
+                ) {
+                    self
+                        .resources_dispatcher()
+                        .grant_resource(home, *reward.resource_type, *reward.amount, context.timestamp);
+                }
+                if let Some(depth) = depth {
+                    let mut root = context.raw_root;
+                    let seed = crate::random::game_root(
+                        ref root, key.game_id, self.game_dispatcher().game(key.game_id).seed,
+                    );
+                    let amount = depth.camp_reward_min
+                        + crate::random::range(
+                            seed,
+                            key.entity_id.into() + 'CAMP_REWARD',
+                            depth.camp_reward_max - depth.camp_reward_min + 1,
+                        );
+                    self.resources_dispatcher().grant_resource(home, 38, amount, context.timestamp);
+                }
+            }
+            let mine_chest = target.base.category == 4 && depth.map(|value| value.mine_chest).unwrap_or(false);
+            if chests && (camp || mine_chest) {
+                let actor = self.structures_dispatcher().structure(home).expect('missing home structure').owner;
+                crate::relics::IRelicsDispatcherTrait::grant_site_chest(
+                    crate::relics::IRelicsDispatcher { contract_address: peers.economy },
+                    key.game_id,
+                    actor,
+                    crate::relics::OpenChest { explorer_id: explorer_key.explorer_id, coord },
+                    context,
+                );
+            }
         }
     }
     fn assert_structure_range(attacker: Coord, defender: Coord, range: u32) {

@@ -353,7 +353,15 @@ pub mod TroopsDomain {
                     || category == 8,
                 "invalid guarded structure category",
             );
-            let guards = super::discovery_guards(category, seed, self.game_dispatcher().rules(key.game_id), timestamp);
+            let mut rules = self.game_dispatcher().rules(key.game_id);
+            if crate::rules::rule_enabled(rules, crate::rules::DEPTH_CONTENTS) {
+                let depth = crate::expeditions::depth_rules_at(
+                    self.lifecycle.require_active().settlement, key.game_id, crate::structures::structure_coord(base),
+                );
+                rules.troop_limit_config.mercenaries_troop_lower_bound = depth.guard_lower;
+                rules.troop_limit_config.mercenaries_troop_upper_bound = depth.guard_upper;
+            }
+            let guards = super::discovery_guards(category, seed, rules, timestamp);
             assert!(base.troop_max_guard_count <= 4, "invalid guard slot limit");
             assert!(guards.len() <= base.troop_max_guard_count.into(), "guards exceed structure limit");
             for slot in 0..guards.len() {
@@ -899,6 +907,11 @@ pub mod TroopsDomain {
                     game_id,
                     actor,
                     command.explorer_id,
+                    if exploring {
+                        Some(destination)
+                    } else {
+                        None
+                    },
                     ExecutionContext { raw_root, timestamp: context.timestamp },
                 );
             }

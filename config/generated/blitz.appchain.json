@@ -920,6 +920,8 @@
         "damageScalingFactor": "36893488147419103232"
       },
       "stamina": {
+        "damageStaminaRefund": true,
+        "captureStaminaRefund": 0,
         "staminaGainPerTick": 30,
         "staminaInitial": 20,
         "staminaBonusValue": 10,
@@ -946,6 +948,7 @@
         "kingdomGuardSlots": 3,
         "empireGuardSlots": 4,
         "startingGuard": 1500,
+        "campArmies": 1,
         "mercenariesTroopLowerBound": 800,
         "mercenariesTroopUpperBound": 1600,
         "settlementDeploymentCap": 3000,

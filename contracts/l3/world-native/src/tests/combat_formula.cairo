@@ -47,7 +47,9 @@ fn stamina_config() -> TroopStaminaConfig {
         stamina_explore_stamina_cost: 30, // 30 stamina per hex
         stamina_travel_wheat_cost: 234,
         stamina_travel_fish_cost: 885,
-        stamina_travel_stamina_cost: 20 // 20 stamina per hex
+        stamina_travel_stamina_cost: 20, // 20 stamina per hex
+        damage_stamina_refund: true,
+        capture_stamina_refund: 0,
     }
 }
 
@@ -353,5 +355,19 @@ fn test_troops(category: TroopType, tier: TroopTier, troop_count: u128, stamina:
         stamina: Stamina { amount: stamina, updated_tick: 1 },
         boosts: troop_boosts(),
         battle_cooldown_end: 0,
+    }
+}
+
+#[test]
+fn an_exchange_without_a_capture_spends_the_full_attack_stamina() {
+    for count in array![1_u128, 10000] {
+        let mut attacker = test_troops(TroopType::Knight, TroopTier::T1, count, 120);
+        let mut defender = test_troops(TroopType::Knight, TroopTier::T1, 10000, 120);
+        let config = TroopStaminaConfig {
+            damage_stamina_refund: false, capture_stamina_refund: 25, ..stamina_config(),
+        };
+        attacker.attack_with_context(ref defender, context(Biome::Underground), config, damage_config(), 1, 1);
+        assert!(defender.count != 0);
+        assert_eq!(attacker.stamina.amount, 70);
     }
 }

@@ -6,6 +6,7 @@ use crate::resources::ResourceKey;
 pub struct ExplorationReward {
     pub resource_type: u8,
     pub amount: u128,
+    pub amount_max: u128,
     pub weight: u128,
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
@@ -21,7 +22,12 @@ pub trait IExtraction<T> {
     fn configure_extraction(ref self: T, game_id: u32, rewards: Span<ExplorationReward>);
     fn extraction_rewards(self: @T, game_id: u32) -> Span<ExplorationReward>;
     fn extract_exploration_reward(
-        ref self: T, game_id: u32, actor: ContractAddress, explorer_id: u32, context: ExecutionContext,
+        ref self: T,
+        game_id: u32,
+        actor: ContractAddress,
+        explorer_id: u32,
+        revealed: Option<crate::troops::Coord>,
+        context: ExecutionContext,
     );
 }
 #[starknet::interface]
@@ -39,7 +45,11 @@ pub fn draw(rewards: Span<ExplorationReward>, seed: u256, timestamp: u64) -> Exp
     for reward in rewards {
         cumulative += *reward.weight;
         if roll < cumulative {
-            return *reward;
+            return ExplorationReward {
+                amount: *reward.amount
+                    + crate::random::range(seed, timestamp.into() + 19, *reward.amount_max - *reward.amount + 1),
+                ..*reward,
+            };
         }
     }
     panic!("invalid exploration draw")

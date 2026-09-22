@@ -356,12 +356,16 @@ pub impl TroopsImpl of TroopsTrait {
         let alpha_refund_ratio = Self::_refund_multiplier(ALPHA_DAMAGE_DEALT, BRAVO_DAMAGE_DEALT);
         let mut alpha_stamina_loss_fixed: Fixed = ALPHA_STAMINA_LOSS.into();
         let alpha_refunded_stamina: Fixed = (alpha_stamina_loss_fixed * alpha_refund_ratio).ceil();
-        ALPHA_STAMINA_LOSS -= alpha_refunded_stamina.try_into().unwrap();
+        if troop_stamina_config.damage_stamina_refund {
+            ALPHA_STAMINA_LOSS -= alpha_refunded_stamina.try_into().unwrap();
+        }
 
         let bravo_refund_ratio = Self::_refund_multiplier(BRAVO_DAMAGE_DEALT, ALPHA_DAMAGE_DEALT);
         let mut bravo_stamina_loss_fixed: Fixed = BRAVO_STAMINA_LOSS.into();
         let bravo_refunded_stamina: Fixed = (bravo_stamina_loss_fixed * bravo_refund_ratio).ceil();
-        BRAVO_STAMINA_LOSS -= bravo_refunded_stamina.try_into().unwrap();
+        if troop_stamina_config.damage_stamina_refund {
+            BRAVO_STAMINA_LOSS -= bravo_refunded_stamina.try_into().unwrap();
+        }
 
         ////////////////////////////////////
         /// BATTLE TIMER REFUND

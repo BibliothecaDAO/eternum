@@ -927,6 +927,7 @@ pub mod StructuresDomain {
                 );
             }
             self.change_owner(key, owner, timestamp);
+            self.start_captured_mine(key, capturing_home, record, timestamp);
             let points = if record.owner == 0.try_into().unwrap() {
                 IPointsDispatcher { contract_address: self.lifecycle.require_active().season }
                     .register_capture(key.game_id, owner, record.base.category)
@@ -993,10 +994,19 @@ pub mod StructuresDomain {
             let id = self.game_dispatcher().allocate_entity(game_id);
             let key = ResourceKey { game_id, entity_id: id };
             let (mut record, occupier, capacity) = super::discovered_structure(
-                coord, discovery, rules.structure_capacity_config, timestamp,
+                coord, discovery, rules.structure_capacity_config, rules.troop_limit_config.camp_armies, timestamp,
             );
+            let depth = if crate::rules::rule_enabled(rules, crate::rules::DEPTH_CONTENTS) {
+                Some(crate::expeditions::depth_rules_at(self.lifecycle.require_active().settlement, game_id, coord))
+            } else {
+                None
+            };
             self.reveal_structure_tile(game_id, coord);
-            if discovery != Discovery::Mine {
+            let reveal_neighbors = match depth {
+                Some(value) => value.reveal_site_neighbors,
+                None => discovery != Discovery::Mine,
+            };
+            if reveal_neighbors {
                 self.map_dispatcher().reveal_structure_surroundings(game_id, coord);
             }
             self
@@ -1009,12 +1019,25 @@ pub mod StructuresDomain {
                     }
                         .mine_draw(MinePoolKey { game_id }, seed);
                     record.metadata.mine_kind = kind;
+                    let (cap, rate) = match depth {
+                        Some(value) => (
+                            value.mine_cap_min
+                                + crate::random::range(seed, 'RIFT_CAP', value.mine_cap_max - value.mine_cap_min + 1),
+                            value.mine_rate,
+                        ),
+                        None => (cap, config.production_rate),
+                    };
+                    let rate = if crate::rules::rule_enabled(rules, crate::rules::HOME_MINE_PRODUCTION) {
+                        0
+                    } else {
+                        rate
+                    };
                     self
                         .create_producer(
                             key,
                             coord,
                             cap,
-                            config.production_rate,
+                            rate,
                             config.resource_type,
                             config.building_category,
                             rules.building_config.base_population,
@@ -1027,22 +1050,26 @@ pub mod StructuresDomain {
                     assert!(
                         crate::rules::rule_enabled(rules, crate::rules::DISCOVER_CAMPS), "camp discovery is disabled",
                     );
-                    for resource in self.camp_resources(game_id) {
+                    if !crate::rules::rule_enabled(rules, crate::rules::HOME_CAMP_REWARDS) {
+                        for resource in self.camp_resources(game_id) {
+                            self
+                                .resources_dispatcher()
+                                .grant_resource(key, *resource.resource_type, *resource.amount, timestamp);
+                        }
+                        let labor_rate = self.resources_dispatcher().resource_rule(game_id, 23).village_rate;
+                        assert!(labor_rate != 0, "zero camp labor rate");
                         self
-                            .resources_dispatcher()
-                            .grant_resource(key, *resource.resource_type, *resource.amount, timestamp);
+                            .create_producer(
+                                key,
+                                coord,
+                                0xffffffffffffffffffffffffffffffff,
+                                labor_rate,
+                                23,
+                                25,
+                                rules.building_config.base_population,
+                                timestamp,
+                            );
                     }
-                    self
-                        .create_producer(
-                            key,
-                            coord,
-                            0xffffffffffffffffffffffffffffffff,
-                            self.resources_dispatcher().resource_rule(game_id, 23).village_rate,
-                            23,
-                            25,
-                            rules.building_config.base_population,
-                            timestamp,
-                        );
                 },
                 Discovery::None => panic!("discovery is not a structure"),
             }
@@ -1238,6 +1265,41 @@ pub mod StructuresDomain {
                     },
                 );
         }
+        fn start_captured_mine(
+            ref self: ContractState, key: ResourceKey, capturing_home: u32, record: StructureRecord, timestamp: u64,
+        ) {
+            let rules = self.game_dispatcher().rules(key.game_id);
+            if record.base.category == 4 && crate::rules::rule_enabled(rules, crate::rules::HOME_MINE_PRODUCTION) {
+                let mine = IMineRulesDispatcher { contract_address: self.lifecycle.require_active().resources }
+                    .mine_kind(crate::mines::MineKindKey { game_id: key.game_id, kind: record.metadata.mine_kind });
+                let rate = if crate::rules::rule_enabled(rules, crate::rules::DEPTH_CONTENTS) {
+                    crate::expeditions::depth_rules_at(
+                        self.lifecycle.require_active().settlement, key.game_id, super::structure_coord(record.base),
+                    )
+                        .mine_rate
+                } else {
+                    mine.production_rate
+                };
+                let end_at = self.game_dispatcher().game(key.game_id).end_at;
+                let end_at = if rules.epoch_seconds == 0 {
+                    end_at
+                } else {
+                    core::cmp::min(end_at, (timestamp / rules.epoch_seconds.into() + 1) * rules.epoch_seconds.into())
+                };
+                self
+                    .resources_dispatcher()
+                    .redirect_production(
+                        key,
+                        mine.resource_type,
+                        crate::resources::ProductionReceiver {
+                            home: capturing_home, end_at: end_at.try_into().unwrap(),
+                        },
+                        rate,
+                        timestamp,
+                    );
+            }
+        }
+
         fn change_owner(ref self: ContractState, key: ResourceKey, owner: ContractAddress, timestamp: u64) {
             let record = self.structures.record(key);
             let rules = self.game_dispatcher().rules(key.game_id);
@@ -1444,7 +1506,6 @@ pub mod StructuresDomain {
             let building_rule = self
                 .buildings
                 .rule(crate::buildings::BuildingRuleKey { game_id: key.game_id, category: building_category });
-            assert!(rate != 0, "resource cannot be produced");
             self.resources_dispatcher().start_production(key, resource_type, rate, cap, timestamp);
             self
                 .buildings
@@ -1509,6 +1570,7 @@ fn discovered_structure(
     coord: Coord,
     discovery: crate::discovery::Discovery,
     capacities: crate::rules::StructureCapacityConfig,
+    camp_armies: u16,
     timestamp: u64,
 ) -> (StructureRecord, u8, u128) {
     let (category, occupier, level, capacity) = match discovery {
@@ -1530,7 +1592,7 @@ fn discovered_structure(
         troop_explorer_count: 0,
         troop_max_guard_count: max_guards,
         troop_max_explorer_count: if discovery == Discovery::Camp {
-            1
+            camp_armies
         } else {
             0
         },

@@ -212,7 +212,11 @@ fn provision_game(peers: Peers, actor: ContractAddress, administrator: ContractA
     world_native::exploration_rewards::IExtractionDispatcherTrait::configure_extraction(
         world_native::exploration_rewards::IExtractionDispatcher { contract_address: peers.map },
         7,
-        array![world_native::exploration_rewards::ExplorationReward { resource_type: 35, amount: 10, weight: 1 }]
+        array![
+            world_native::exploration_rewards::ExplorationReward {
+                resource_type: 35, amount: 10, amount_max: 10, weight: 1,
+            },
+        ]
             .span(),
     );
     stop_cheat_caller_address(peers.map);

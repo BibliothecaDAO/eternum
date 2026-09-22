@@ -3,11 +3,28 @@ import type { BlitzBalanceProfileId } from "./blitz";
 
 export const nativePresets: Record<
   number,
-  { gameType: "eternum" | "blitz"; profile?: BlitzBalanceProfileId; spacing: number; epochSeconds: number }
+  {
+    gameType: "eternum" | "blitz";
+    profile?: BlitzBalanceProfileId;
+    spacing: number;
+    epochSeconds: number;
+    depths: Array<{
+      supplyMultiplier: number;
+      guardLower: number;
+      guardUpper: number;
+      mineCapMin: number;
+      mineCapMax: number;
+      mineRate: number;
+      campRewardMin: number;
+      campRewardMax: number;
+      mineChest: boolean;
+      revealSiteNeighbors: boolean;
+    }>;
+  }
 > = {
-  1: { gameType: "eternum", spacing: 6, epochSeconds: 0 },
-  2: { gameType: "blitz", profile: "official-60", spacing: 6, epochSeconds: 0 },
-  3: { gameType: "blitz", profile: "official-90", spacing: 8, epochSeconds: 0 },
+  1: { gameType: "eternum", spacing: 6, epochSeconds: 0, depths: [] },
+  2: { gameType: "blitz", profile: "official-60", spacing: 6, epochSeconds: 0, depths: [] },
+  3: { gameType: "blitz", profile: "official-90", spacing: 8, epochSeconds: 0, depths: [] },
 };
 
 export function nativePresetForId(id: number) {

@@ -95,6 +95,7 @@ fn definition(blitz: bool) -> PresetDefinition {
         },
         settlement: SettlementPreset {
             spacing: 6,
+            depths: array![].span(),
             realms: super::settlement::grants(),
             villages: super::village::village_rules(),
             spires: if blitz {
@@ -143,7 +144,9 @@ fn definition(blitz: bool) -> PresetDefinition {
                 )
             },
         },
-        exploration: array![crate::exploration_rewards::ExplorationReward { resource_type: 1, amount: 10, weight: 1 }]
+        exploration: array![
+            crate::exploration_rewards::ExplorationReward { resource_type: 1, amount: 10, amount_max: 10, weight: 1 },
+        ]
             .span(),
         season_win_points: 1000,
     }
@@ -928,4 +931,225 @@ fn expedition_army_limits_follow_castle_level_without_guards_or_returning_troops
         ),
     );
     assert_eq!(resources.resource_balance(slot), before);
+}
+
+#[test]
+fn surface_sites_pay_the_home_and_rift_income_stops_at_its_cap() {
+    assert_expedition_capture(0);
+}
+
+#[test]
+fn deep_sites_scale_rewards_and_guards_and_trove_income_stops_at_rollover() {
+    assert_expedition_capture(3);
+}
+
+fn assert_expedition_capture(depth: u8) {
+    let d = setup();
+    let mut preset = definition(true);
+    preset.rules.entry_rule = crate::rules::ENTRY_OPEN;
+    preset.rules.epoch_seconds = 100;
+    preset.rules.mode_rules = HOME_REWARDS
+        | DISCOVER_CAMPS
+        | crate::rules::UNOWNED_TARGETS
+        | crate::rules::DEPTH_CONTENTS
+        | crate::rules::REVEAL_SUPPLIES
+        | crate::rules::HOME_CAMP_REWARDS
+        | crate::rules::HOME_MINE_PRODUCTION
+        | crate::rules::CAPTURE_CHESTS;
+    preset.settlement.spacing = 1024;
+    preset.rules.troop_limit_config.camp_armies = 0;
+    preset.rules.troop_limit_config.starting_guard = 0;
+    preset.rules.troop_limit_config.settlement_deployment_cap = 3000;
+    preset.rules.troop_limit_config.t1_tier_modifier = 100;
+    preset.rules.battle_config.regular_immunity_ticks = 0;
+    preset
+        .rules
+        .troop_stamina_config =
+            crate::rules::TroopStaminaConfig {
+                stamina_initial: 150,
+                stamina_gain_per_tick: 0,
+                stamina_knight_max: 150,
+                stamina_attack_req: 50,
+                stamina_explore_stamina_cost: 30,
+                stamina_bonus_value: 0,
+                damage_stamina_refund: false,
+                capture_stamina_refund: 25,
+                ..preset.rules.troop_stamina_config,
+            };
+    preset.rules.map_config.shards_mines_win_probability = 0;
+    preset.rules.map_config.shards_mines_fail_probability = 1;
+    preset.rules.map_config.camp_win_probability = 1;
+    preset.rules.map_config.camp_fail_probability = 0;
+    preset.rules.map_config.relic_chest_relics_per_chest = 1;
+    let mut depths = array![];
+    for index in 0_u16..4 {
+        depths
+            .append(
+                crate::expeditions::DepthRules {
+                    supply_multiplier: index + 1,
+                    guard_lower: index + 1,
+                    guard_upper: index + 2,
+                    mine_cap_min: if index == 0 {
+                        10
+                    } else {
+                        1000
+                    } * RESOURCE_PRECISION,
+                    mine_cap_max: if index == 0 {
+                        10
+                    } else {
+                        1000
+                    } * RESOURCE_PRECISION,
+                    mine_rate: ((Into::<u16, u128>::into(index) + 1) * RESOURCE_PRECISION).try_into().unwrap(),
+                    camp_reward_min: (Into::<u16, u128>::into(index) + 1) * 100 * RESOURCE_PRECISION,
+                    camp_reward_max: (Into::<u16, u128>::into(index) + 1) * 100 * RESOURCE_PRECISION,
+                    mine_chest: index != 0,
+                    reveal_site_neighbors: false,
+                },
+            );
+    }
+    preset.settlement.depths = depths.span();
+    registry(d).register_preset(1, preset);
+    let game_id = registry(d)
+        .create_game(
+            CreateGameParams { dev_mode_on: true, end_grace_seconds: 0, duration_seconds: 500, ..params(false) },
+            preset,
+        );
+    super::resource_commands::set_fixture(d.peers.settlement, selector!("catalogue_count"), array![].span(), 8000_u32);
+    super::resource_commands::set_fixture(d.peers.settlement, selector!("traits"), array![1].span(), 0x4000001_u32);
+    assert!(
+        execute_in_game(
+            d,
+            game_id,
+            Command::SettleSeason(crate::realms::SettleSeason { name: 'home', selected_realm: Some(1) }),
+            350,
+            350,
+        ),
+    );
+    let home = ResourceKey { game_id, entity_id: 1 };
+    let resources = IResourcesDispatcher { contract_address: d.peers.resources };
+    start_cheat_caller_address(d.peers.resources, d.peers.structures);
+    resources.grant_resource(home, 26, 1000 * RESOURCE_PRECISION, 350);
+    stop_cheat_caller_address(d.peers.resources);
+    assert!(
+        execute_in_game(
+            d,
+            game_id,
+            Command::CreateExplorer(
+                CreateExplorer {
+                    structure_id: 1, category: 0, tier: 0, amount: 1000 * RESOURCE_PRECISION, direction: 0,
+                },
+            ),
+            351,
+            351,
+        ),
+    );
+    let structures = IStructuresDispatcher { contract_address: d.peers.structures };
+    let explorer_id = *structures.structure(home).unwrap().troop_explorers.at(0);
+    let troops = ITroopsDispatcher { contract_address: d.peers.troops };
+    let army_key = ExplorerKey { game_id, explorer_id };
+    let mut army = troops.explorer(army_key).unwrap();
+    let map = IMapDispatcher { contract_address: d.peers.map };
+    let original = army.coord;
+    army.coord.y += Into::<u8, u32>::into(depth) * preset.settlement.spacing;
+    if depth != 0 {
+        start_cheat_caller_address(d.peers.map, d.peers.troops);
+        let occupier: u8 = (map.tile(crate::geometry::tile_key(game_id, original)).unwrap().data / 2 % 256)
+            .try_into()
+            .unwrap();
+        map.vacate(crate::geometry::tile_key(game_id, original), explorer_id);
+        let location = crate::geometry::tile_key(game_id, army.coord);
+        map.reveal(location, map.biome(location));
+        map.occupy(location, explorer_id, occupier, false);
+        stop_cheat_caller_address(d.peers.map);
+    }
+    super::resource_commands::set_fixture(
+        d.peers.troops, selector!("explorers"), array![game_id.into(), explorer_id.into()].span(), army,
+    );
+    let supply = ResourceSlot { game_id, entity_id: 1, resource_type: 1 };
+    let before_supplies = resources.resource_balance(supply);
+    assert!(execute_in_game(d, game_id, Command::Explore(Explore { explorer_id, direction: 0 }), 360, 360));
+    let coord = crate::geometry::neighbor(army.coord, 0);
+    let map = IMapDispatcher { contract_address: d.peers.map };
+    let tile = map.tile(crate::geometry::tile_key(game_id, coord)).unwrap();
+    let camp_id: u32 = (tile.data / 512 % 0x100000000).try_into().unwrap();
+    let camp = ResourceKey { game_id, entity_id: camp_id };
+    assert_eq!(structures.structure(camp).unwrap().base.category, crate::camps::CAMP_CATEGORY);
+    assert_eq!(structures.structure(camp).unwrap().base.troop_max_explorer_count, 0);
+    assert_eq!(troops.explorer(army_key).unwrap().coord, army.coord);
+    assert_eq!(
+        resources.resource_balance(supply) - before_supplies,
+        (Into::<u8, u128>::into(depth) + 1) * 10 * RESOURCE_PRECISION,
+    );
+    let guards = IGuardsDispatcher { contract_address: d.peers.troops };
+    assert_eq!(
+        guards.guard(GuardKey { game_id, structure_id: camp_id, slot: 0 }).troops.count,
+        (Into::<u8, u128>::into(depth) + 1) * RESOURCE_PRECISION,
+    );
+    let essence = ResourceSlot { game_id, entity_id: 1, resource_type: 38 };
+    let before_essence = resources.resource_balance(essence);
+    let attack = Command::BattleGuard(crate::commands::Battle { attacker_id: explorer_id, defender_id: camp_id });
+    assert!(execute_in_game(d, game_id, attack, 361, 361));
+    assert_eq!(structures.structure(camp).unwrap().owner, d.actor);
+    assert_eq!(troops.explorer(army_key).unwrap().troops.stamina.amount, 95);
+    assert_eq!(
+        resources.resource_balance(essence) - before_essence,
+        (Into::<u8, u128>::into(depth) + 1) * 100 * RESOURCE_PRECISION,
+    );
+    assert_eq!(resources.resource_balance(ResourceSlot { entity_id: camp_id, ..essence }), 0);
+    assert_eq!(resources.resource_balance(ResourceSlot { entity_id: camp_id, resource_type: 23, ..essence }), 0);
+    assert_eq!(
+        resources
+            .resource_production(ResourceSlot { entity_id: camp_id, resource_type: 23, ..essence })
+            .production_rate,
+        0,
+    );
+    assert!(!execute_in_game(d, game_id, attack, 361, 361));
+    assert_eq!(troops.explorer(army_key).unwrap().troops.stamina.amount, 95);
+    let mut relics = 0;
+    for id in 39_u8..57 {
+        relics += resources.resource_balance(ResourceSlot { game_id, entity_id: explorer_id, resource_type: id });
+    }
+    assert_eq!(relics, RESOURCE_PRECISION);
+    let mine_coord = crate::geometry::neighbor(army.coord, 1);
+    start_cheat_block_timestamp_global(362);
+    start_cheat_caller_address(d.peers.structures, d.peers.troops);
+    let mine_id = structures.create_discovery(game_id, mine_coord, crate::discovery::Discovery::Mine, 101, 362);
+    stop_cheat_caller_address(d.peers.structures);
+    let mine = ResourceSlot { game_id, entity_id: mine_id, resource_type: 38 };
+    assert_eq!(resources.resource_production(mine).production_rate, 0);
+    assert!(
+        execute_in_game(
+            d,
+            game_id,
+            Command::BattleGuard(crate::commands::Battle { attacker_id: explorer_id, defender_id: mine_id }),
+            362,
+            362,
+        ),
+    );
+    assert_eq!(troops.explorer(army_key).unwrap().troops.stamina.amount, 70);
+    let mut total_relics = 0;
+    for id in 39_u8..57 {
+        total_relics += resources.resource_balance(ResourceSlot { game_id, entity_id: explorer_id, resource_type: id });
+    }
+    assert_eq!(total_relics, if depth == 0 {
+        1
+    } else {
+        2
+    } * RESOURCE_PRECISION);
+    let baseline = resources.resource_balance(essence);
+    for time in array![365_u64, 390, 450, 500] {
+        start_cheat_block_timestamp_global(time);
+        start_cheat_caller_address(d.peers.resources, d.peers.structures);
+        // Touching either the source or the home uses the existing lazy production settlement.
+        resources.grant_resource(ResourceKey { entity_id: mine_id, ..home }, 38, 0, time);
+        resources.grant_resource(home, 38, 0, time);
+        stop_cheat_caller_address(d.peers.resources);
+        let until = core::cmp::min(time, 400);
+        let produced = Into::<u64, u128>::into(until - 362) * (Into::<u8, u128>::into(depth) + 1) * RESOURCE_PRECISION;
+        let cap = (*depths.at(depth.into())).mine_cap_min;
+        assert_eq!(resources.resource_balance(essence) - baseline, core::cmp::min(produced, cap));
+        assert_eq!(resources.resource_balance(mine), 0);
+    }
+    assert!(resources.production_receiver(mine).is_none());
+    assert_eq!(resources.resource_production(mine).production_rate, 0);
 }

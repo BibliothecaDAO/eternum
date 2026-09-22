@@ -72,6 +72,33 @@ pub mod ResourcesDomain {
         fn resource_production(self: @ContractState, key: ResourceSlot) -> Production {
             self.resources.production(ResourceKey { game_id: key.game_id, entity_id: key.entity_id }, key.resource_type)
         }
+        fn production_receiver(
+            self: @ContractState, key: ResourceSlot,
+        ) -> Option<crate::resources::ProductionReceiver> {
+            self.resources.production_receivers.read((key.game_id, key.entity_id, key.resource_type))
+        }
+        fn redirect_production(
+            ref self: ContractState,
+            key: ResourceKey,
+            resource_type: u8,
+            receiver: crate::resources::ProductionReceiver,
+            rate: u64,
+            timestamp: u64,
+        ) {
+            self.assert_structures();
+            let rule = self.rule(key.game_id, resource_type);
+            self
+                .resources
+                .redirect_production(
+                    key,
+                    resource_type,
+                    receiver,
+                    rate,
+                    rule.unit_weight,
+                    timestamp.try_into().unwrap(),
+                    self.production_start(key.game_id),
+                );
+        }
         fn resource_weight(self: @ContractState, key: ResourceKey) -> Weight {
             self.resources.weight(key)
         }

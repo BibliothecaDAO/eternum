@@ -34,6 +34,8 @@ fn troopstaminaconfig_packing_preserves_every_field(
         stamina_explore_fish_cost,
         stamina_travel_wheat_cost,
         stamina_travel_fish_cost,
+        damage_stamina_refund: stamina_initial % 2 == 1,
+        capture_stamina_refund: stamina_attack_req,
     };
     assert!(TroopStaminaConfigPacking::unpack(TroopStaminaConfigPacking::pack(value)) == value);
     assert!(Store::<TroopStaminaConfig>::size() == 3);
@@ -79,6 +81,7 @@ fn trooplimitconfig_packing_preserves_every_field(
         kingdom_guard_slots: t3_tier_strength,
         empire_guard_slots: t1_tier_modifier,
         starting_guard: city_deployment_cap,
+        camp_armies: guard_resurrection_delay,
     };
     assert!(TroopLimitConfigPacking::unpack(TroopLimitConfigPacking::pack(value)) == value);
     assert!(Store::<TroopLimitConfig>::size() == 3);

@@ -19,6 +19,7 @@ pub struct StructurePreset {
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct SettlementPreset {
     pub spacing: u32,
+    pub depths: Span<crate::expeditions::DepthRules>,
     pub realms: crate::settlement::RealmGrants,
     pub villages: crate::village::VillageRules,
     pub spires: Option<crate::spires::SpireLayout>,
@@ -64,7 +65,9 @@ pub fn validate(preset: PresetDefinition) {
     );
 
     assert!(troops.mercenaries_troop_lower_bound < troops.mercenaries_troop_upper_bound, "invalid mercenary bounds");
-    if crate::rules::rule_enabled(preset.rules, crate::rules::DISCOVER_CAMPS) && map.camp_win_probability != 0 {
+    if crate::rules::rule_enabled(preset.rules, crate::rules::DISCOVER_CAMPS)
+        && map.camp_win_probability != 0
+        && !crate::rules::rule_enabled(preset.rules, crate::rules::HOME_CAMP_REWARDS) {
         let mut labor_rate = None;
         for rule in preset.resources.resources {
             if *rule.resource_type == 23 {
@@ -143,6 +146,9 @@ fn configure_settlement(
     );
     crate::village::IVillagesDispatcherTrait::configure_villages(
         crate::village::IVillagesDispatcher { contract_address: address }, game_id, settlement.villages,
+    );
+    crate::expeditions::IExpeditionRulesDispatcherTrait::configure_depths(
+        crate::expeditions::IExpeditionRulesDispatcher { contract_address: address }, game_id, settlement.depths,
     );
 }
 fn configure_economy(peers: Peers, game_id: u32, preset: EconomyPreset) {

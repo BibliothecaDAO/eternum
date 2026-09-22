@@ -434,6 +434,8 @@ export interface Config {
       staminaTravelWheatCost: number;
       staminaTravelFishCost: number;
       staminaTravelStaminaCost: number;
+      damageStaminaRefund: boolean;
+      captureStaminaRefund: number;
     };
     limit: {
       guardResurrectionDelay: number;
@@ -446,6 +448,7 @@ export interface Config {
       kingdomGuardSlots: number;
       empireGuardSlots: number;
       startingGuard: number;
+      campArmies: number;
 
       mercenariesTroopLowerBound: number;
       mercenariesTroopUpperBound: number;

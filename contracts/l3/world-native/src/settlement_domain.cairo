@@ -1,7 +1,7 @@
 #[starknet::contract]
 pub mod SettlementDomain {
     use core::num::traits::Zero;
-    use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
+    use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
     use starknet::{ContractAddress, get_caller_address};
     use crate::commands::ExecutionContext as DomainContext;
     use crate::entry::{ILedgerOperatorDispatcher, ILedgerOperatorDispatcherTrait};
@@ -27,6 +27,8 @@ pub mod SettlementDomain {
     impl VillageInternal = VillageState::InternalImpl<ContractState>;
     #[storage]
     struct Storage {
+        depth_configuration: Map<u32, bool>,
+        depth_rules: Map<(u32, u8), Option<crate::expeditions::DepthRules>>,
         #[substorage(v0)]
         lifecycle: Lifecycle::Storage,
         #[substorage(v0)]
@@ -39,6 +41,7 @@ pub mod SettlementDomain {
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
+        RowSet: crate::events::RowSet,
         LifecycleEvent: Lifecycle::Event,
         RealmEvent: crate::realms::RealmState::Event,
         SettlementEvent: SettlementState::Event,
@@ -47,6 +50,45 @@ pub mod SettlementDomain {
     #[constructor]
     fn constructor(ref self: ContractState, authority: ContractAddress) {
         self.lifecycle.initialize(authority);
+    }
+    #[abi(embed_v0)]
+    impl ExpeditionRules of crate::expeditions::IExpeditionRules<ContractState> {
+        fn configure_depths(ref self: ContractState, game_id: u32, depths: Span<crate::expeditions::DepthRules>) {
+            self.lifecycle.assert_configurator();
+            assert!(!self.depth_configuration.read(game_id), "immutable depth rules");
+            let rules = self.games().rules(game_id);
+            let enabled = crate::rules::rule_enabled(rules, crate::rules::DEPTH_CONTENTS);
+            assert!(depths.len() == if enabled {
+                4
+            } else {
+                0
+            }, "incomplete depth rules");
+            assert!(!enabled || rules.epoch_seconds != 0, "depths require expedition regions");
+            for index in 0..depths.len() {
+                let value = *depths.at(index);
+                assert!(value.supply_multiplier != 0, "zero supply multiplier");
+                assert!(value.guard_lower < value.guard_upper, "invalid depth guards");
+                assert!(value.mine_cap_min != 0 && value.mine_cap_min <= value.mine_cap_max, "invalid depth mine cap");
+                assert!(value.mine_rate != 0, "zero depth mine rate");
+                assert!(value.camp_reward_min <= value.camp_reward_max, "invalid camp reward");
+                self.depth_rules.write((game_id, index.try_into().unwrap()), Some(value));
+                let mut values = array![];
+                value.serialize(ref values);
+                self
+                    .emit(
+                        crate::events::RowSet {
+                            version: 1,
+                            model: 'DepthRules',
+                            keys: array![game_id.into(), index.into()].span(),
+                            values: values.span(),
+                        },
+                    );
+            }
+            self.depth_configuration.write(game_id, true);
+        }
+        fn depth_rules(self: @ContractState, game_id: u32, depth: u8) -> crate::expeditions::DepthRules {
+            self.depth_rules.read((game_id, depth)).expect('missing depth rules')
+        }
     }
     #[abi(embed_v0)]
     impl SeasonRealms of crate::realms::ISeasonRealms<ContractState> {

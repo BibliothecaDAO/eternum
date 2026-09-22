@@ -437,7 +437,10 @@ pub fn configure_extraction(deployment: super::Deployment, id: u8, amount: u128)
     crate::exploration_rewards::IExtractionDispatcherTrait::configure_extraction(
         crate::exploration_rewards::IExtractionDispatcher { contract_address: deployment.peers.map },
         3,
-        array![crate::exploration_rewards::ExplorationReward { resource_type: id, amount, weight: 1 }].span(),
+        array![
+            crate::exploration_rewards::ExplorationReward { resource_type: id, amount, amount_max: amount, weight: 1 },
+        ]
+            .span(),
     );
     stop_cheat_caller_address(deployment.peers.map);
 }
@@ -448,7 +451,7 @@ fn extract_reward(deployment: super::Deployment, explorer_id: u32, timestamp: u6
     start_cheat_caller_address(deployment.peers.map, deployment.peers.troops);
     let result = IExtractionSafeDispatcher { contract_address: deployment.peers.map }
         .extract_exploration_reward(
-            3, deployment.actor, explorer_id, ExecutionContext { timestamp, ..super::context() },
+            3, deployment.actor, explorer_id, None, ExecutionContext { timestamp, ..super::context() },
         );
     stop_cheat_caller_address(deployment.peers.map);
     result.is_ok()
@@ -467,7 +470,11 @@ fn only_movement_can_extract_a_reward() {
         assert!(
             map
                 .extract_exploration_reward(
-                    3, deployment.actor, explorer.entity_id, ExecutionContext { timestamp: 40, ..super::context() },
+                    3,
+                    deployment.actor,
+                    explorer.entity_id,
+                    None,
+                    ExecutionContext { timestamp: 40, ..super::context() },
                 )
                 .is_err(),
         );
@@ -578,7 +585,7 @@ fn extraction_requires_configuration_and_rejects_foreign_grants() {
     let (deployment, _, explorer) = setup(false);
     assert!(!extract_reward(deployment, explorer.entity_id, 40, 40));
     let map = IExtractionSafeDispatcher { contract_address: deployment.peers.map };
-    let rewards = array![ExplorationReward { resource_type: 2, amount: 10, weight: 1 }].span();
+    let rewards = array![ExplorationReward { resource_type: 2, amount: 10, amount_max: 10, weight: 1 }].span();
     assert!(map.configure_extraction(3, rewards).is_err());
     start_cheat_caller_address(deployment.peers.map, super::authority());
     assert!(map.configure_extraction(3, array![].span()).is_err());

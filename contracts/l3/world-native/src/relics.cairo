@@ -44,6 +44,9 @@ pub trait IRelics<T> {
     fn open_relic_chest(
         ref self: T, game_id: u32, actor: ContractAddress, command: OpenChest, context: ExecutionContext,
     );
+    fn grant_site_chest(
+        ref self: T, game_id: u32, actor: ContractAddress, command: OpenChest, context: ExecutionContext,
+    );
     fn apply_relic(ref self: T, game_id: u32, actor: ContractAddress, command: ApplyRelic, context: ExecutionContext);
 }
 #[starknet::interface]
@@ -243,20 +246,23 @@ pub mod RelicState {
                 );
             assert!(crate::geometry::adjacent(explorer.coord, command.coord), "explorer is not adjacent to chest");
             IRelicMapDispatcher { contract_address: peers.map }.consume_relic_chest(game_id, command.coord);
-            let mut root = context.raw_root;
-            let seed = crate::random::game_root(ref root, game_id, self.games().game(game_id).seed);
-            let config = self.games().rules(game_id);
-            let relics = super::draw_relics(
-                self.relic_rules(game_id), seed, context.timestamp, config.map_config.relic_chest_relics_per_chest,
-            );
-            let key = ResourceKey { game_id, entity_id: command.explorer_id };
-            for id in relics {
-                self.resources().grant_resource(key, *id, crate::rules::RESOURCE_PRECISION, context.timestamp);
-            }
-            let points = config.victory_points_grant_config.relic_open_points.into();
-            IPointsDispatcher { contract_address: get_dep_component!(@self, Life).require_active().season }
-                .register_relic_points(game_id, actor);
-            self.record_chest_opened(game_id, actor, command, relics, points, context.timestamp);
+            self.pay_chest(game_id, actor, command, context);
+        }
+        fn grant_site_chest(
+            ref self: ComponentState<TContractState>,
+            game_id: u32,
+            actor: ContractAddress,
+            command: OpenChest,
+            context: ExecutionContext,
+        ) {
+            assert!(get_caller_address() == self.peers().combat, "only combat domain");
+            crate::commands::assert_context_time(context.timestamp);
+            assert_playing(self.games().game(game_id), context.timestamp);
+            ITroopsDispatcher { contract_address: self.peers().troops }
+                .authorized_explorer(
+                    ExplorerKey { game_id, explorer_id: command.explorer_id }, actor, context.timestamp,
+                );
+            self.pay_chest(game_id, actor, command, context);
         }
         fn apply_relic(
             ref self: ComponentState<TContractState>,
@@ -349,6 +355,28 @@ pub mod RelicState {
         impl Life: Lifecycle::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of InternalTrait<TContractState> {
+        fn pay_chest(
+            ref self: ComponentState<TContractState>,
+            game_id: u32,
+            actor: ContractAddress,
+            command: OpenChest,
+            context: ExecutionContext,
+        ) {
+            let mut root = context.raw_root;
+            let seed = crate::random::game_root(ref root, game_id, self.games().game(game_id).seed);
+            let config = self.games().rules(game_id);
+            let relics = super::draw_relics(
+                self.relic_rules(game_id), seed, context.timestamp, config.map_config.relic_chest_relics_per_chest,
+            );
+            let key = ResourceKey { game_id, entity_id: command.explorer_id };
+            for id in relics {
+                self.resources().grant_resource(key, *id, crate::rules::RESOURCE_PRECISION, context.timestamp);
+            }
+            let points = config.victory_points_grant_config.relic_open_points.into();
+            IPointsDispatcher { contract_address: get_dep_component!(@self, Life).require_active().season }
+                .register_relic_points(game_id, actor);
+            self.record_chest_opened(game_id, actor, command, relics, points, context.timestamp);
+        }
         fn record_crafted_relic(
             ref self: ComponentState<TContractState>,
             game_id: u32,
