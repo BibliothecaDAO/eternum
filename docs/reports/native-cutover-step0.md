@@ -25,15 +25,18 @@ later on the integration branch.
 ## Deleted groups by class
 
 [Every deleted or replaced group, with its original title and class](native-cutover-step0-deleted-tests.md). The
-inventory contains 983 old titles or parameterized groups across 270 files, including partial replacements. Counts
+inventory contains 985 old titles or parameterized groups across 271 files, including partial replacements. Counts
 describe the result; the retained boundaries above are the acceptance evidence.
 
-The final deleted suite is `config/deployer/clean/tests/native-preset.integration.test.ts`:
+The fixture-dependent deleted suite is `config/deployer/clean/tests/native-preset.integration.test.ts`:
 `deployer Eternum preset registers tokens and executes a deposit and withdrawal`. Its class is a conditionally skipped
 live-fixture integration suite. It required a deployed chain, funded token, administrator and admission fixtures that CI
 does not provide. It is deleted rather than silently passing without executing. Preset validation, registrar behavior
 and native contract rules remain. There is no retained end-to-end replacement for that exact funded-token
 deposit/withdrawal scenario in the normal CI gate.
+
+Its now-orphaned intent-fixture module, two helper tests and dedicated CI step are also deleted. The provider still
+tests native command encoding and signed submission at its public boundaries.
 
 The old mock-heartbeat lease-loss group remains in the historical deletion inventory. Its behavior is now covered
 against PostgreSQL by

@@ -122,8 +122,6 @@ jobs:
           for file in config/deployer/clean/world/native/*.test.ts config/deployer/clean/tests/*.test.ts; do
             bun test "$file"
           done
-      - name: Test retained receipt recovery
-        run: bun test deploy/athanor/randomness/native-intent.test.ts
       - name: Test fail-closed deployment paths
         run: |
           node --test deploy/athanor/scripts/validate-native-target.test.mjs

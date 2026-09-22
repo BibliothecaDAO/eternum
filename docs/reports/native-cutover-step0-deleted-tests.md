@@ -1839,3 +1839,10 @@ retained boundary coverage.
 ### config/deployer/clean/tests/native-preset.integration.test.ts (file deleted)
 
 - "deployer Eternum preset registers tokens and executes a deposit and withdrawal"
+
+## orphaned fixture helpers / duplicate encoder and signing boundaries
+
+### deploy/athanor/randomness/native-intent.test.ts (file deleted)
+
+- "fixture commands use the shared compiled ABI encoder, including nested options"
+- "fixture intents use the configured signer rather than a fixed test key"
