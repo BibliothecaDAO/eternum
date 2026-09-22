@@ -36,7 +36,9 @@ export interface HeraldGameDirectoryEntry {
   mode: "blitz" | "eternum" | "frontier" | "duel" | null;
   name: string;
   player_count: number;
-  player_state: { registered: boolean; settled: boolean } | null;
+  player_state: { registered: boolean; settled: boolean; roster_member: boolean } | null;
+  /** Players on a Blitz game's fixed roster; 0 for open-entry games. */
+  roster_count: number;
   preset_id: number;
   registration: HeraldGameRegistration | null;
   settled_realms_count: number;

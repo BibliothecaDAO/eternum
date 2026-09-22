@@ -67,6 +67,8 @@ export const summaryToWorldConfigMeta = (
     registrationEndAt: summary.registrationEndAt ?? summary.startMainAt ?? null,
     devModeOn: summary.devModeOn ?? false,
     isPlayerRegistered: playerRegistration?.isPlayerRegistered ?? null,
+    isRosterMember: null,
+    rosterCount: null,
     hasPlayerSettledRealm: playerRegistration?.hasPlayerSettledRealm ?? null,
     settledPlayersCount: summary.settledPlayersCount ?? null,
     settledRealmsCount: summary.settledRealmsCount ?? null,

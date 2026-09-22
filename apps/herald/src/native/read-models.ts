@@ -32,6 +32,7 @@ interface DirectoryRows {
   settlementRules: FoldRow[];
   progress: FoldRow[];
   entries: FoldRow[];
+  rosters: FoldRow[];
 }
 
 export function buildNativeDirectory(input: DirectoryInput): HeraldGameDirectory {
@@ -41,6 +42,7 @@ export function buildNativeDirectory(input: DirectoryInput): HeraldGameDirectory
     settlementRules: rows("SettlementRules"),
     progress: rows("SettlementProgress"),
     entries: rows("PlayerEntry"),
+    rosters: rows("BlitzRoster"),
   };
   const games = rows("GameRegistry")
     .map(({ value }) => directoryEntry(value, facts, input))
@@ -49,7 +51,7 @@ export function buildNativeDirectory(input: DirectoryInput): HeraldGameDirectory
 }
 
 function directoryEntry(game: Row, facts: DirectoryRows, input: DirectoryInput): HeraldGameDirectoryEntry {
-  const { settlementRules, progress, structures, entries } = facts;
+  const { settlementRules, progress, structures, entries, rosters } = facts;
   const mode = ({ 1: "frontier", 2: "blitz", 3: "eternum", 4: "duel" } as const)[
     number(game.preset_id) as 1 | 2 | 3 | 4
   ];
@@ -61,6 +63,7 @@ function directoryEntry(game: Row, facts: DirectoryRows, input: DirectoryInput):
   );
   const realms = settlements.filter((row) => number(record(row.base).category) === 1);
   const player = input.playerAddress && address(input.playerAddress);
+  const roster = (gameRows(rosters, game.game_id)[0]?.players as Row[] | undefined) ?? [];
   const clock = {
     start_settling_at: number(game.start_settling_at),
     start_main_at: number(game.start_main_at),
@@ -89,8 +92,10 @@ function directoryEntry(game: Row, facts: DirectoryRows, input: DirectoryInput):
       ? {
           registered: gameRows(entries, game.game_id).some((row) => address(row.player) === player),
           settled: realms.some((row) => address(row.owner) === player),
+          roster_member: roster.some((row) => address(row.owner) === player),
         }
       : null,
+    roster_count: roster.length,
     registration: {
       count: state ? number(state.registered) : 0,
       max: number(settlement.registration_limit),

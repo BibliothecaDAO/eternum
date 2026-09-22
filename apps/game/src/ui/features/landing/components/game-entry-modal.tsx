@@ -43,7 +43,6 @@ import {
   type SettlementSnapshot,
 } from "@/runtime/world/herald-pre-session-reader";
 import { gameKey } from "@/runtime/world/store";
-import { feltEquals } from "@bibliothecadao/eternum/game-client";
 import Button from "@/ui/design-system/atoms/button";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
@@ -69,6 +68,7 @@ const SETTLEMENT_SYNC_TIMEOUT_MS = 90000;
 const VILLAGE_REVEAL_SLOW_MS = 45_000;
 // An Eternum settlement creates one realm; Blitz realms are settled by the launch service.
 const SEASON_SETTLEMENT_COUNT = 1;
+const ENTRY_DIRECTORY_REFETCH_MS = 10_000;
 
 const debugLog = (_worldName: string | null, ..._args: unknown[]) => {
   if (DEBUG_MODAL) {
@@ -851,10 +851,12 @@ export const GameEntryModal = ({
   }, [account?.address]);
 
   const worldAvailabilityInputs = useMemo(() => [game], [game]);
+  // The directory read model is the one source for entry: it is polled while the modal waits on readiness.
   const { results: worldAvailabilityResults, isAnyLoading: isCheckingWorldAvailability } = useWorldsAvailability(
     worldAvailabilityInputs,
     isOpen,
     playerFeltAddress,
+    ENTRY_DIRECTORY_REFETCH_MS,
   );
   const worldAvailability = worldAvailabilityResults.get(gameKey(game));
   const worldMeta = worldAvailability?.meta ?? null;
@@ -937,12 +939,6 @@ export const GameEntryModal = ({
     staleTime: 10_000,
   });
   const ownedStructuresError = ownedStructuresErrorRaw instanceof Error ? ownedStructuresErrorRaw.message : null;
-  const blitzRoster = useQuery({
-    queryKey: ["blitzRoster", chain, worldName, worldMeta?.gameId],
-    enabled: isOpen && isBlitzMode && !isSpectateMode && Boolean(worldMeta?.gameId),
-    queryFn: () => getSelectedWorldReader().fetchBlitzRoster(),
-    refetchInterval: 5_000,
-  });
   const villagePassInventoryWarning = useMemo(() => {
     if (!villagePassInventoryError) return null;
     const normalized = villagePassInventoryError.toLowerCase();
@@ -1084,13 +1080,9 @@ export const GameEntryModal = ({
   const seasonTimingValid = isDevMode || (seasonHasStarted && seasonNotEnded);
   const secondsUntilSeasonStart = seasonStartAt == null ? null : Math.max(0, seasonStartAt - nowSeconds);
   const blitzEntry = useMemo(() => {
-    if (!isBlitzMode || !worldMeta || !blitzRoster.data) return null;
-    return resolveBlitzEntry({
-      isMember: Boolean(account?.address) && blitzRoster.data.some((owner) => feltEquals(owner, account?.address)),
-      ready: worldMeta.ready,
-      ended: !seasonNotEnded,
-    });
-  }, [account?.address, blitzRoster.data, isBlitzMode, seasonNotEnded, worldMeta]);
+    if (!isBlitzMode || !worldMeta || worldMeta.isRosterMember === null) return null;
+    return resolveBlitzEntry({ isMember: worldMeta.isRosterMember, ready: worldMeta.ready, ended: !seasonNotEnded });
+  }, [isBlitzMode, seasonNotEnded, worldMeta]);
   const hasVillagePass = villagePassBalance > 0n || villagePasses.length > 0;
   const isLoadingVillagePrereqs =
     isCheckingWorldAvailability || isLoadingVillagePassInventory || isLoadingOwnedStructures || !worldMeta;
@@ -1127,11 +1119,9 @@ export const GameEntryModal = ({
 
   const worldAvailabilityErrorMessage =
     worldAvailability?.error instanceof Error ? worldAvailability.error.message : null;
-  const rosterError = blitzRoster.error instanceof Error ? blitzRoster.error : null;
   const phaseError = useMemo(
     () =>
       preflightError ??
-      rosterError ??
       resolveGameEntryBlockingError({
         worldAvailabilityErrorMessage,
         isCheckingWorldAvailability,
@@ -1141,7 +1131,6 @@ export const GameEntryModal = ({
       }),
     [
       preflightError,
-      rosterError,
       worldAvailabilityErrorMessage,
       isCheckingWorldAvailability,
       worldAvailability?.isAvailable,
@@ -1758,7 +1747,7 @@ export const GameEntryModal = ({
               <motion.div key="preparing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                 <BlitzPreparingPhase
                   settledPlayers={worldMeta?.settledPlayersCount ?? 0}
-                  rosterSize={blitzRoster.data?.length ?? 0}
+                  rosterSize={worldMeta?.rosterCount ?? 0}
                 />
               </motion.div>
             )}

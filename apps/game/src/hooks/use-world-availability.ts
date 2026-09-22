@@ -46,6 +46,10 @@ export interface WorldConfigMeta {
   devModeOn: boolean;
   // Blitz-only: whether the connected player already settled into the game.
   isPlayerRegistered: boolean | null;
+  // Blitz-only: whether the connected player is on the game's fixed roster.
+  isRosterMember: boolean | null;
+  // Blitz-only: players on the fixed roster; settlement progress is settledPlayersCount over this.
+  rosterCount: number | null;
   // Eternum-only: whether the connected player already has at least one settled realm.
   hasPlayerSettledRealm: boolean | null;
   // Global settled structure counts used by landing cards.
@@ -89,6 +93,8 @@ const emptyWorldConfigMeta = (): WorldConfigMeta => ({
   devModeOn: false,
   ready: false,
   isPlayerRegistered: null,
+  isRosterMember: null,
+  rosterCount: null,
   hasPlayerSettledRealm: null,
   settledPlayersCount: null,
   settledRealmsCount: null,
@@ -119,6 +125,7 @@ const applyDirectoryGame = (meta: WorldConfigMeta, game: HeraldGameDirectoryEntr
   meta.spiresSettledCount = game.settlement?.spires_settled_count ?? null;
   meta.mapCenterOffset = game.settlement?.map_center_offset ?? null;
   meta.settledPlayersCount = game.player_count;
+  meta.rosterCount = game.roster_count;
   meta.settledRealmsCount = game.settled_realms_count;
   meta.settledVillagesCount = game.settled_villages_count;
 };
@@ -132,6 +139,7 @@ const fetchGameMeta = async (shard: Shard, gameId: number, playerAddress?: strin
   applyDirectoryGame(meta, game);
   if (playerAddress && meta.mode === "blitz") {
     meta.isPlayerRegistered = game.player_state?.registered ?? false;
+    meta.isRosterMember = game.player_state?.roster_member ?? false;
   } else if (playerAddress && meta.mode === "eternum") {
     meta.hasPlayerSettledRealm = game.player_state?.settled ?? false;
   }
@@ -152,13 +160,19 @@ const checkWorldAvailability = async (
  * Hook to check multiple games' availability with batched queries.
  * Auto-refreshes every 30 seconds to catch registration and phase updates.
  */
-export const useWorldsAvailability = (worlds: GameRef[], enabled = true, playerAddress?: string | null) => {
+export const useWorldsAvailability = (
+  worlds: GameRef[],
+  enabled = true,
+  playerAddress?: string | null,
+  refetchIntervalMs?: number,
+) => {
   const queries = useQueries({
     queries: worlds.map((world) => ({
       // Include playerAddress in query key so it refetches when user connects
       queryKey: [...WORLD_AVAILABILITY_QUERY_KEY, gameKey(world), playerAddress ?? "anonymous"],
       queryFn: () => checkWorldAvailability(world, playerAddress),
       enabled,
+      refetchInterval: refetchIntervalMs,
       staleTime: 30 * 1000,
       gcTime: 10 * 60 * 1000,
       retry: 1,

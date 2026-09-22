@@ -27,8 +27,6 @@ export interface SettlementSnapshot {
 
 interface HeraldPreSessionReader {
   fetchAddressName: (address: string) => Promise<unknown | null>;
-  /** Owners on the game's roster fact; Blitz membership is decided by this and nothing else. */
-  fetchBlitzRoster: () => Promise<string[]>;
   fetchPlayerStructures: (owner: string) => Promise<PlayerStructure[]>;
   fetchRealmSettlements: () => Promise<StructureLocation[]>;
   fetchSettlementSnapshot: (player: string) => Promise<SettlementSnapshot>;
@@ -92,13 +90,6 @@ export const createHeraldPreSessionReader = (world: Shard, gameId: number): Hera
   fetchAddressName: async (address) => {
     const snapshot = await fetchHeraldGameSnapshot(world, gameId, ["AddressName"]);
     return snapshotModelRows(snapshot, "AddressName").find((row) => feltEquals(row.address, address))?.name ?? null;
-  },
-
-  fetchBlitzRoster: async () => {
-    const snapshot = await fetchHeraldGameSnapshot(world, gameId, ["BlitzRoster"]);
-    return snapshotModelRows(snapshot, "BlitzRoster").flatMap((row) =>
-      (row.players as { owner: unknown }[]).map((player) => toAddress(player.owner)),
-    );
   },
 
   fetchPlayerStructures: async (owner) => {
