@@ -115,7 +115,9 @@ describe("native live publication", () => {
     const { native, decoder, fold } = setup();
     const rules = decoder.decode(raw(rulesEvent()));
     if (rules.kind !== "set") throw new Error("Expected rules row");
-    rules.value.epoch_seconds = 120;
+    rules.value.epoch_seconds = 86_400;
+    const dayStart = Date.parse("2026-09-22T00:00:00Z") / 1000;
+    const beforeMidnight = dayStart + 86_399;
     fold.apply(rules);
     const homes = [1, 2].map((id) =>
       rowEvent(
@@ -174,7 +176,23 @@ describe("native live publication", () => {
     native.applyReceipt(
       fold,
       receipt([
-        rowEvent("GameRegistry", ["1"], ["7", "1", "10", "0", "1", "0", "120", "120", "86400", "0", "7"]),
+        rowEvent(
+          "GameRegistry",
+          ["1"],
+          [
+            "7",
+            "1",
+            "10",
+            "0",
+            "1",
+            "0",
+            String(dayStart + 120),
+            String(dayStart + 120),
+            String(dayStart + 864_000),
+            "0",
+            "7",
+          ],
+        ),
         rowEvent("SettlementRules", ["1"], ["0", "0", "0", "100"]),
         ...homes,
         ...armies,
@@ -185,12 +203,14 @@ describe("native live publication", () => {
         rowEvent("TileOpt", ["1", "0", "50", "50"], ["1"]),
         rowEvent("TileOpt", ["1", "0", "150", "50"], ["1"]),
         rowEvent("TileOpt", ["1", "0", "50", "150"], ["1"]),
+        rowEvent("TileOpt", ["1", "0", "50", "450"], ["1"]),
+        rowEvent("TileOpt", ["1", "0", "150", "450"], ["1"]),
       ]),
       9,
       0,
     );
-    const confirmed: RpcBlockWithReceipts = { block_number: 10, timestamp: 120, transactions: [] };
-    const pending: RpcBlockWithReceipts = { block_number: 11, timestamp: 120, transactions: [] };
+    const confirmed: RpcBlockWithReceipts = { block_number: 10, timestamp: beforeMidnight, transactions: [] };
+    const pending: RpcBlockWithReceipts = { block_number: 11, timestamp: beforeMidnight, transactions: [] };
     const live = new LiveWorld({
       native,
       registry: decoder.registry,
@@ -204,7 +224,7 @@ describe("native live publication", () => {
         getBlockWithReceipts: async (block: unknown) => (block === "pre_confirmed" ? pending : confirmed),
       } as unknown as MadaraRpc,
     });
-    await live.acceptSubscribedHead({ block_number: 10, timestamp: 120 });
+    await live.acceptSubscribedHead({ block_number: 10, timestamp: beforeMidnight });
     const messages: HeraldStreamMessage[][] = [[], []];
     const sessions = ["0xa", "0xb"].map((actor, index) => {
       const session = live.attach("1", { send: (text) => messages[index].push(JSON.parse(text)) }, actor);
@@ -252,7 +272,7 @@ describe("native live publication", () => {
     confirmed.block_number = 11;
     pending.block_number = 12;
     messages[0].length = 0;
-    await live.acceptSubscribedHead({ block_number: 11, timestamp: 120 });
+    await live.acceptSubscribedHead({ block_number: 11, timestamp: beforeMidnight });
     expect(messages[0].filter((message) => message.type === "diff").flatMap((message) => message.del)).toContainEqual({
       model: "TileOpt",
       key: depthKey,
@@ -262,9 +282,22 @@ describe("native live publication", () => {
     );
 
     const boundary = messages[0].at(-1)!;
-    live.detach(sessions[0]);
-    pending.timestamp = 240;
+    messages.forEach((stream) => {
+      stream.length = 0;
+    });
+    pending.timestamp = dayStart + 86_400;
     await live.publishChainClock();
+    for (const [index, stream] of messages.entries()) {
+      expect(stream.some((message) => message.type === "hello" || message.type === "snapshot")).toBe(false);
+      const diffs = stream.filter((message) => message.type === "diff");
+      const tiles = diffs.flatMap((message) => message.set).filter((row) => row.model === "TileOpt");
+      expect(tiles.map((row) => [Number(row.value.col), Number(row.value.row)])).toEqual([[index * 100 + 50, 450]]);
+      const yesterday = fold
+        .gameRows("TileOpt", "1")
+        .find((row) => Number(row.value.col) === index * 100 + 50 && Number(row.value.row) === 50)!;
+      expect(diffs.flatMap((message) => message.del)).toContainEqual({ model: "TileOpt", key: yesterday.key });
+    }
+    live.detach(sessions[0]);
     const reconnected: HeraldStreamMessage[] = [];
     const resumed = live.attach("1", { send: (text) => reconnected.push(JSON.parse(text)) }, "0xa");
     live.resume(resumed, { type: "resume", epoch: boundary.epoch, seq: boundary.seq });
