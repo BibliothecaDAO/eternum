@@ -49,19 +49,13 @@ Work items
    `@vercel/sandbox/proxy`, and a single pi-ai `complete()` call through it. Confirms: plan tier supports `forwardURL`,
    the OIDC token carries `sandbox_name`, streaming responses pass, `usage.cost` is present on the last chunk. Fallback
    decision if it fails: bearer-token proxy (brief §7).
-2. **Headless client smoke recovery.** Restore
-   `git show f5f226cd282^:apps/game/scripts/run-game-sync-headless-smoke.mjs` as
-   `packages/core/scripts/run-game-client-headless.mjs` on `HeraldGameSyncTransport` +
-   `createMicrotaskGameSyncScheduler`, against `https://herald.realms.party`. Confirms Node 22 `WebSocket` suffices and
-   records baseline snapshot/apply timings.
-3. **Pi runtime smoke.** `apps/agent-runner` skeleton with `@mariozechner/pi-agent-core` + `pi-ai`, one tool, the
+2. **Pi runtime smoke.** `apps/agent-runner` skeleton with `@mariozechner/pi-agent-core` + `pi-ai`, one tool, the
    `openrouter` provider, `steer()` exercised. Confirms package versions and that the runner fits a 1 vCPU / 2 GB
    sandbox.
-4. **Decisions recorded in this document:** Vercel team/project and region, OpenRouter account and initial model
+3. **Decisions recorded in this document:** Vercel team/project and region, OpenRouter account and initial model
    profile, Stripe test-mode account, per-game cost envelope target to measure in M2.
 
-Gate: the three probe scripts run from the repo with documented env, and this document lists every decision with an
-owner.
+Gate: the two probe scripts run from the repo with documented env, and this document lists every decision with an owner.
 
 Deletion: none.
 
