@@ -13,6 +13,8 @@ Required environment:
   origin- and session-gated; used on the dev testnet)
 - `RPC_URL`, `HERALD_URL`, `NATIVE_WORLD_MANIFEST`, `ADMISSION_URL`
 - `DEPLOYER_ACCOUNT_ADDRESS`, `DEPLOYER_PRIVATE_KEY` — registrar writer
+- `FRONTIER_SEASON_START` — the current Frontier season's start as an ISO UTC timestamp; omit on a shard that hosts no
+  Frontier
 
 `bun run src/main.ts` serves port 3006, freezes due slot rosters and claims durable jobs. Completing a Blitz launch
 atomically schedules its result job at the actual game end, with no Blitz grace period. Finalization completes pending
@@ -20,8 +22,8 @@ actions and hyperstructure settlement before recording results, which resume fro
 visible and can be retried by a launcher. Slot registration needs a verified identity, but not launcher privileges. No
 L2 service is required for a free slot.
 
-Frontier uses preset 1 in madara.frontier. Schedule a season through the existing create-game API with an explicit
-gameStartTime; that UTC timestamp determines the canonical season name. The durable job creates the season-long game
-with open entry and no roster. Repeating the same schedule returns its existing job, including after completion or a
-service restart. Different options for the same start time are rejected. Schedule the next season with a new start time;
-it creates a new game without carrying realms forward.
+Frontier uses preset 1 in madara.frontier and is never created through the API. At startup the service enqueues the
+season named by `FRONTIER_SEASON_START` (`frontier-<unix seconds>`), a season-long game with open entry and no roster.
+The run is keyed by that name, so a restart, including one during creation, finds the existing run instead of creating a
+second game. A new season is a new start time: set it and restart, and a new game is created without carrying realms
+forward.

@@ -1,13 +1,14 @@
 import { resolveDeploymentEnvironment } from "../../../config/deployer/clean/environment";
 import { defaultPresetForEnvironment } from "../../../config/deployer/clean/constants";
-import { nativePresetForId } from "../../../config/source/native";
+import { nativePresetForId, nativePresetIdFor } from "../../../config/source/native";
 import { Schema } from "effect";
 
 const NonEmptyString = Schema.NonEmptyString;
 const OptionalNumberRecord = Schema.optional(Schema.Record(Schema.String, Schema.Number));
 
 const SharedOptions = {
-  environment: Schema.Literals(["madara.blitz", "madara.eternum", "madara.frontier"]),
+  // Frontier is never created through the API: the season schedule owns it.
+  environment: Schema.Literals(["madara.blitz", "madara.eternum"]),
   // One preset id per game mode.
   version: Schema.optional(Schema.Literals(["1", "2", "3", "4"])),
   devModeOn: Schema.optional(Schema.Boolean),
@@ -54,6 +55,20 @@ export interface FinalizeGameRequest {
 export type LaunchJobRequest = CreateGameRequest | FinalizeGameRequest;
 export type LaunchKind = "game" | "result";
 
+/** A season is one open-entry game named by its start, so scheduling the same start twice names the same game. */
+export const frontierSeasonRequest = (seasonStart: string): CreateGameRequest => {
+  const start = Date.parse(seasonStart);
+  if (!Number.isSafeInteger(start) || start % 1000 !== 0) {
+    throw new Error("FRONTIER_SEASON_START must be an ISO timestamp on a whole second");
+  }
+  return {
+    environment: "madara.frontier",
+    version: String(nativePresetIdFor("frontier")) as "1",
+    gameName: `frontier-${start / 1000}`,
+    gameStartTime: new Date(start).toISOString(),
+  };
+};
+
 export function applyDurableLaunchDefaults(kind: "game", request: CreateGameRequest, now?: number): CreateGameRequest;
 export function applyDurableLaunchDefaults(
   kind: "result",
@@ -76,17 +91,9 @@ export function applyDurableLaunchDefaults(
   }
   if ((version === "4") !== Boolean(request.twoPlayerMode))
     throw new Error("Duel uses preset 4; other modes cannot use Duel settlement");
-  const shared = { ...request, version };
-  if (request.environment === "madara.frontier") {
-    const start = Date.parse(request.gameStartTime ?? "");
-    if (!Number.isSafeInteger(start) || start % 1000 !== 0)
-      throw new Error("Frontier requires an explicit season start time");
-    if (request.rosterOwners?.length || request.devModeOn || request.twoPlayerMode)
-      throw new Error("Frontier seasons use open entry without a roster or development mode");
-    return { ...shared, gameName: `frontier-${start / 1000}`, gameStartTime: new Date(start).toISOString() };
-  }
-  if (kind === "game" && "gameName" in shared) {
-    return { ...shared, gameStartTime: shared.gameStartTime ?? new Date(now + 15 * 60_000).toISOString() };
-  }
-  return shared;
+  return {
+    ...request,
+    version,
+    gameStartTime: request.gameStartTime ?? new Date(now + 15 * 60_000).toISOString(),
+  };
 }

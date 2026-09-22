@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { Pool } from "pg";
 import { expect, test } from "vitest";
+import { scheduleFrontierSeason } from "./schedule";
 import { PostgresLaunchStore } from "./store";
 
 const databaseUrl = process.env.LAUNCH_TEST_DATABASE_URL;
@@ -107,30 +108,33 @@ test("one Frontier season launch survives reconnects and duplicate scheduling", 
   const url = new URL(databaseUrl!);
   url.searchParams.set("options", "-c search_path=" + schema);
   let store = new PostgresLaunchStore(url.toString());
-  const request = {
-    environment: "madara.frontier" as const,
-    gameName: "frontier-season",
-    gameStartTime: "2027-01-01T00:00:00.000Z",
-  };
+  const seasonStart = "2027-01-01T00:00:00.000Z";
   try {
     await admin.query("CREATE SCHEMA " + schema);
     await store.initialize();
-    const queued = await store.enqueue("game", request);
+    const queued = await scheduleFrontierSeason(store, seasonStart);
+    expect(queued.name).toBe("frontier-1798761600");
     await store.close();
     store = new PostgresLaunchStore(url.toString());
     await store.initialize();
-    expect((await store.enqueue("game", request)).id).toBe(queued.id);
+    expect((await scheduleFrontierSeason(store, seasonStart)).id).toBe(queued.id);
     const run = (await store.claim(60_000))!;
     expect(run.id).toBe(queued.id);
-    expect(run.request).toMatchObject({ version: "1", gameStartTime: request.gameStartTime });
+    expect(run.request).toMatchObject({ version: "1", gameStartTime: seasonStart });
+    // A restart while the run is still leased must find the same run, not queue a second season.
+    await store.close();
+    store = new PostgresLaunchStore(url.toString());
+    await store.initialize();
+    expect(await scheduleFrontierSeason(store, seasonStart)).toMatchObject({ id: queued.id, status: "running" });
+    expect(await store.claim(60_000)).toBeNull();
     await store.complete(run.id, run.leaseToken, {
       environment: "madara.frontier",
       chain: "madara",
       gameType: "frontier",
       gameName: run.name,
       gameId: 9,
-      startTime: Date.parse(request.gameStartTime) / 1000,
-      startTimeIso: request.gameStartTime,
+      startTime: Date.parse(seasonStart) / 1000,
+      startTimeIso: seasonStart,
       rpcUrl: "http://rpc.test",
       configMode: "batched",
       configSteps: [],
@@ -139,11 +143,10 @@ test("one Frontier season launch survives reconnects and duplicate scheduling", 
     await store.close();
     store = new PostgresLaunchStore(url.toString());
     await store.initialize();
-    expect(await store.enqueue("game", request)).toMatchObject({ id: queued.id, status: "complete" });
+    expect(await scheduleFrontierSeason(store, seasonStart)).toMatchObject({ id: queued.id, status: "complete" });
     expect(await store.claim(60_000)).toBeNull();
     expect(await store.list("madara.frontier")).toHaveLength(1);
-    await expect(store.enqueue("game", { ...request, durationSeconds: 100 })).rejects.toThrow("different options");
-    const next = await store.enqueue("game", { ...request, gameStartTime: "2027-04-30T00:00:00.000Z" });
+    const next = await scheduleFrontierSeason(store, "2027-04-30T00:00:00.000Z");
     expect(next.id).not.toBe(queued.id);
     expect((await store.claim(60_000))?.id).toBe(next.id);
   } finally {

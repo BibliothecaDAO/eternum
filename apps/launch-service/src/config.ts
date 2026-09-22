@@ -21,6 +21,7 @@ const EnvironmentSchema = Schema.Struct({
   NATIVE_WORLD_MANIFEST: NonEmptyString,
   DEPLOYER_ACCOUNT_ADDRESS: NonEmptyString,
   DEPLOYER_PRIVATE_KEY: NonEmptyString,
+  FRONTIER_SEASON_START: Schema.optional(Schema.String),
   PORT: Schema.optional(Schema.String),
   LAUNCH_JOB_LEASE_MS: Schema.optional(Schema.String),
   LAUNCH_JOB_POLL_MS: Schema.optional(Schema.String),
@@ -38,6 +39,8 @@ export interface LaunchServiceConfig {
   manifestPath: string;
   accountAddress: string;
   privateKey: string;
+  // The season the schedule keeps created; absent on a shard that hosts no Frontier.
+  frontierSeasonStart?: string;
   port: number;
   leaseMs: number;
   pollMs: number;
@@ -76,6 +79,7 @@ export const readLaunchServiceConfig = (
           manifestPath: path.resolve(REPO_ROOT, raw.NATIVE_WORLD_MANIFEST),
           accountAddress: normalizeAddress(raw.DEPLOYER_ACCOUNT_ADDRESS),
           privateKey: raw.DEPLOYER_PRIVATE_KEY,
+          ...(raw.FRONTIER_SEASON_START ? { frontierSeasonStart: raw.FRONTIER_SEASON_START } : {}),
           port: positiveInteger(raw.PORT, 3006, "PORT"),
           leaseMs: positiveInteger(raw.LAUNCH_JOB_LEASE_MS, 120_000, "LAUNCH_JOB_LEASE_MS"),
           pollMs: positiveInteger(raw.LAUNCH_JOB_POLL_MS, 1_000, "LAUNCH_JOB_POLL_MS"),

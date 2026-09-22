@@ -1,4 +1,3 @@
-import { isDeepStrictEqual } from "node:util";
 import type { GameEnvironmentId } from "../../../config/shared/game-environments";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
@@ -104,8 +103,6 @@ export class PostgresLaunchStore implements LaunchServiceStore {
       if (inserted.rows[0]) return toRun(inserted.rows[0]);
       const existing = await this.find(kind, durableRequest.environment, name);
       if (!existing) throw new Error("Scheduled Frontier season disappeared");
-      if (!isDeepStrictEqual(existing.request, JSON.parse(JSON.stringify(durableRequest))))
-        throw new Error("Frontier season is already scheduled with different options");
       return existing;
     }
     const result = await this.pool.query<LaunchRunRow>(

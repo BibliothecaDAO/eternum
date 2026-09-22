@@ -7,6 +7,7 @@ import { createLaunchApp } from "./app";
 import { createIdentityResolver } from "./auth";
 import { readLaunchServiceConfig } from "./config";
 import { createLaunchServiceLayer } from "./layers";
+import { scheduleFrontierSeason } from "./schedule";
 import { PostgresSlotStore } from "./slot-store";
 import { PostgresLaunchStore } from "./store";
 import { launchWorkerLoop } from "./worker";
@@ -25,6 +26,13 @@ const waitForShutdown = Effect.callback<void>((resume) => {
   });
 });
 
+const scheduleSeason = (store: PostgresLaunchStore, seasonStart: string | undefined) =>
+  seasonStart
+    ? Effect.promise(() => scheduleFrontierSeason(store, seasonStart)).pipe(
+        Effect.flatMap((run) => Effect.logInfo("frontier_season_scheduled", { name: run.name, status: run.status })),
+      )
+    : Effect.logWarning("frontier_season_unscheduled", { reason: "FRONTIER_SEASON_START is not set" });
+
 const program = Effect.scoped(
   Effect.gen(function* () {
     const config = yield* readLaunchServiceConfig();
@@ -37,6 +45,7 @@ const program = Effect.scoped(
       (database) => Effect.promise(() => database.close()),
     );
 
+    yield* scheduleSeason(store, config.frontierSeasonStart);
     const slots = new PostgresSlotStore(store.pool);
     const identity = createIdentityResolver(config.identityUrl);
     const services = createLaunchServiceLayer(config, store, identity);
