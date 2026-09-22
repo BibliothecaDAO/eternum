@@ -1,8 +1,7 @@
 import { encodeNativeCommand, frameNativeIntent, type NativeCommand } from "../../../packages/provider/src/native-command";
-import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { ec, hash, RpcProvider } from "starknet";
+import { ec, hash } from "starknet";
 
 export interface NativeFixture {
   rpc: string;
@@ -15,31 +14,11 @@ export interface NativeFixture {
 
 const hex = (value: string | number | bigint) => `0x${BigInt(value).toString(16)}`;
 
-export function readFixture(path: string): NativeFixture {
-  const fixture = JSON.parse(readFileSync(path, "utf8")) as NativeFixture;
-  assert(["127.0.0.1", "localhost"].includes(new URL(fixture.rpc).hostname), "Fixture RPC must be isolated loopback");
-  assert(fixture.nativeSource, "Expected a native gameplay fixture");
-  return fixture;
-}
-
 export function commandArguments(fixture: NativeFixture, command: NativeCommand): string[] {
   const bindings = JSON.parse(
     readFileSync(resolve(fixture.nativeSource, "contracts/l3/world-native/schema/bindings.json"), "utf8"),
   );
   return encodeNativeCommand(bindings.commandAbi, command);
-}
-
-export async function admissionFor(provider: RpcProvider, fixture: NativeFixture) {
-  const admission = await provider.callContract(
-    {
-      contractAddress: fixture.execution.address,
-      entrypoint: "get_admission",
-      calldata: [fixture.game, fixture.actor],
-    },
-    "pre_confirmed",
-  );
-  assert.equal(admission.length, 6);
-  return admission;
 }
 
 export function signedRequest(fixture: NativeFixture, admission: string[], arguments_: string[], privateKey: string) {
