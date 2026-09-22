@@ -33,11 +33,12 @@ jobs:
       - name: Select validation areas
         id: paths
         env:
-          BASE_SHA:
-            ${{ github.event.pull_request.base.sha || (github.event.before != '0000000000000000000000000000000000000000'
-            && github.event.before) || 'origin/next' }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
+          if ! git cat-file -e "$BASE_SHA^{commit}" 2>/dev/null; then
+            export BASE_SHA=origin/next
+          fi
           python3 - <<'PYTHON'
           import fnmatch, json, os, subprocess
           files = subprocess.check_output(["git", "diff", "--name-only", "-z", os.environ["BASE_SHA"], os.environ["HEAD_SHA"]]).decode().split("\0")
