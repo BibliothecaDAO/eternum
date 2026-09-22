@@ -99,4 +99,59 @@ describe("native resource facts", () => {
     expect(manager.current(23)!.production).toMatchObject({ last_updated_at: 1000, production_rate: 2n });
     expect(manager.getActiveProductions()[0]).toMatchObject({ lastUpdatedAt: 1000, productionRate: 2n });
   });
+  it("projects wheat-funded training and shared storage before allowing muster", () => {
+    const store = new NativeFactStore();
+    store.applyEntityOperations([
+      upsert("0x100", { SliceRules: { ...preset.rules, game_id: 1, mode_rules: 0 } }),
+      upsert("0x1", { ResourceWeight: { ...weight(), capacity: 100n, weight: 90n } }),
+      upsert("0x2", {
+        ResourceBalance: { ...balance(), resource_type: 35, balance: 60n },
+        ResourceProduction: {
+          ...production,
+          resource_type: 35,
+          production_rate: 100n,
+          output_amount_left: (1n << 128n) - 1n,
+        },
+        ResourceRule: { game_id: 1, resource_type: 35, unit_weight: 1n, realm_rate: 100n, village_rate: 0n },
+      }),
+      upsert("0x3", {
+        ResourceBalance: { ...balance(), resource_type: 26, balance: 30n },
+        ResourceProduction: {
+          ...production,
+          resource_type: 26,
+          production_rate: 10n,
+          output_amount_left: (1n << 128n) - 1n,
+        },
+        ResourceRule: { game_id: 1, resource_type: 26, unit_weight: 1n, realm_rate: 10n, village_rate: 0n },
+        ProductionRecipe: {
+          game_id: 1,
+          resource_type: 26,
+          simple_output: 1n,
+          simple_inputs: [{ resource_type: 35, amount: 2n }],
+          complex_output: 0n,
+          complex_inputs: [],
+        },
+      }),
+    ]);
+    const manager = new ResourceManager(store, 7, 1);
+    expect(manager.balanceWithProduction(101, 26).balance).toBe(30);
+    expect(manager.balanceWithProduction(101, 35).balance).toBe(70);
+    expect(manager.balance(35)).toBe(60n);
+    store.applyEntityOperations([
+      upsert("0x1", { ResourceWeight: { ...weight(), capacity: 100n, weight: 34n } }),
+      upsert("0x2", {
+        ResourceBalance: { ...balance(), resource_type: 35, balance: 4n },
+        ResourceProduction: { ...production, resource_type: 35, production_rate: 0n },
+      }),
+    ]);
+    expect(manager.balanceWithProduction(101, 26).balance).toBe(32);
+    expect(manager.balanceWithProduction(110, 26).balance).toBe(32);
+    store.applyEntityOperations([
+      upsert("0x2", {
+        ResourceProduction: { ...production, resource_type: 35, production_rate: 4n, last_updated_at: 110 },
+      }),
+    ]);
+    expect(manager.balanceWithProduction(111, 26).balance).toBe(34);
+    expect(manager.balanceWithProduction(111, 35).balance).toBe(0);
+  });
 });

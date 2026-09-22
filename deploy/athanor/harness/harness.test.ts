@@ -113,7 +113,7 @@ describe("Madara harness workload", () => {
   it("selects Eternum and rejects deferred ledger options", () => {
     expect(parseHarnessArgs([]).gameType).toBe("blitz");
     expect(parseHarnessArgs(["--game-type", "eternum"]).gameType).toBe("eternum");
-    expect(() => parseHarnessArgs(["--game-type", "unknown"])).toThrow("--game-type must be blitz or eternum");
+    expect(() => parseHarnessArgs(["--game-type", "unknown"])).toThrow("--game-type must be blitz, eternum or frontier");
     expect(() => parseHarnessArgs(["--game-type", "eternum", "--ledger"])).toThrow(
       "Unsupported harness option --ledger",
     );

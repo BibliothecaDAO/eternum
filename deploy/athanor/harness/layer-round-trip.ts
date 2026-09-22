@@ -1,6 +1,6 @@
 import { ETHEREAL_STRIDE, tileDataToTile } from "@bibliothecadao/types";
 import { setTimeout as sleep } from "node:timers/promises";
-import type { RpcProvider } from "starknet";
+import type { HarnessProvider } from "./provider";
 import type { GameClient } from "@bibliothecadao/eternum";
 import { cubeDistance, neighbor, trackTransaction, type HarnessBot, type TrackedTransaction } from "./driver";
 import type { HarnessGame } from "./harness-game";
@@ -62,7 +62,7 @@ async function prepareRoundTrip(
 ): Promise<RoundTripContext> {
   const { store } = options.client.setup;
   const preset = store.get("SliceRules", { game_id: options.gameId });
-  if (!preset || preset.blitz_mode_on) throw new Error("Layer round trip requires an Eternum game");
+  if (!preset) throw new Error("Layer round trip requires synchronized game rules");
   const explorers = [...store.inGame("ExplorerTroops", options.gameId)].map(readExplorer);
   const tiles = readTiles(options.client);
   const spires = tiles.filter((tile) => !tile.alt && tile.occupier_type === SPIRE_OCCUPIER);

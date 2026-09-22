@@ -153,7 +153,7 @@ export function readBlitzRealmSuggestions(input: {
   realmId: ID;
   realmName: string;
   isBlitzActive: boolean;
-  tiles: TileManager;
+  tiles: Pick<TileManager, "isHexOccupied" | "existingBuildings">;
   mode?: ConstructionBuildabilityInput["mode"];
 }): BlitzSuggestionDraft[] {
   const { store, realmId, realmName, isBlitzActive, tiles, mode } = input;

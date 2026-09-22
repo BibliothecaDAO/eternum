@@ -140,6 +140,8 @@ export class ResourceManager {
     const { balance, production } = resource;
     if (!production)
       return { balance: Number(balance), hasReachedMaxCapacity: false, amountProduced: 0n, amountProducedLimited: 0n };
+    const training = this.projectTraining(currentTick, resourceId);
+    if (training) return training;
     const amountProduced = ResourceManager._amountProducedStatic(production, currentTick, resourceId);
     const amountProducedLimited = this._limitProductionByStoreCapacity(amountProduced, resourceId);
     return {
@@ -148,6 +150,68 @@ export class ResourceManager {
       amountProduced,
       amountProducedLimited,
     };
+  }
+
+  private projectTraining(currentTick: number, resourceId: ResourcesIds) {
+    if (resourceId !== 35 && (resourceId < 26 || resourceId > 34)) return;
+    const unlimited = (1n << 128n) - 1n;
+    const trainers = Array.from({ length: 9 }, (_, index) => (26 + index) as ResourcesIds)
+      .map((id) => ({ id, state: this.current(id)! }))
+      .filter(
+        ({ state }) =>
+          state.production.building_count > 0 &&
+          state.production.output_amount_left === unlimited &&
+          state.production.last_updated_at < currentTick,
+      );
+    if (!trainers.length) return;
+    const wheat = this.current(ResourcesIds.Wheat)!;
+    const farmOutput = ResourceManager._amountProducedStatic(wheat.production, currentTick, ResourcesIds.Wheat);
+    let available = wheat.balance + farmOutput;
+    const outputs = trainers.map(({ id, state }) => {
+      const recipe = this.store.require("ProductionRecipe", { game_id: this.gameId, resource_type: id });
+      const input = recipe.simple_inputs[0];
+      if (
+        recipe.simple_output === 0n ||
+        recipe.simple_inputs.length !== 1 ||
+        input.resource_type !== 35 ||
+        input.amount === 0n
+      )
+        throw new Error("Unlimited training requires a wheat recipe");
+      const expected = ResourceManager._amountProducedStatic(state.production, currentTick, id);
+      const funded = (available * recipe.simple_output) / input.amount;
+      const trained = expected < funded ? expected : funded;
+      available -= (trained * input.amount + recipe.simple_output - 1n) / recipe.simple_output;
+      return { id, state, trained };
+    });
+    const weight = this.weight()!;
+    const wheatWeight = this.store.require("ResourceRule", { game_id: this.gameId, resource_type: 35 }).unit_weight;
+    let used = weight.weight - wheat.balance * wheatWeight;
+    const storeOutput = (amount: bigint, unitWeight: bigint) => {
+      const remaining =
+        weight.capacity === unlimited ? unlimited : weight.capacity > used ? weight.capacity - used : 0n;
+      const stored = amount * unitWeight > remaining ? remaining / unitWeight : amount;
+      if (weight.capacity !== unlimited) used += stored * unitWeight;
+      return stored;
+    };
+    const storedWheat = storeOutput(available, wheatWeight);
+    if (resourceId === 35)
+      return {
+        balance: Number(storedWheat),
+        amountProduced: available - wheat.balance,
+        amountProducedLimited: storedWheat - wheat.balance,
+        hasReachedMaxCapacity: storedWheat < available,
+      };
+    for (const { id, state, trained } of outputs) {
+      const unitWeight = this.store.require("ResourceRule", { game_id: this.gameId, resource_type: id }).unit_weight;
+      const stored = storeOutput(trained, unitWeight);
+      if (id === resourceId)
+        return {
+          balance: Number(state.balance + stored),
+          amountProduced: trained,
+          amountProducedLimited: stored,
+          hasReachedMaxCapacity: stored < trained,
+        };
+    }
   }
 
   public timeUntilValueReached(currentTick: number, resourceId: ResourcesIds): number {

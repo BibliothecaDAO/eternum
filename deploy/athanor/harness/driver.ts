@@ -1,3 +1,4 @@
+import type { FrontierEvidence } from "./frontier";
 import { PROCESS_INTERVAL_MS } from "@bibliothecadao/eternum/automation";
 import type { BuildOrderWorkload } from "./build-order";
 import { setTimeout as sleep } from "node:timers/promises";
@@ -86,7 +87,8 @@ export interface HarnessBot {
 }
 
 export interface WorkloadResult {
-  profile?: "build-order" | "cadence";
+  profile?: "build-order" | "cadence" | "frontier";
+  frontier?: FrontierEvidence;
   actions: TrackedTransaction[];
   endedAt: string;
   plannedActions: number;
@@ -164,13 +166,13 @@ interface TrackTransactionOptions {
   tick?: number;
 }
 
-export type HarnessGameType = "blitz" | "eternum";
+export type HarnessGameType = "blitz" | "eternum" | "frontier";
 
 const BLITZ_STRUCTURES_PER_BOT = 3;
 const ETERNUM_STRUCTURES_PER_BOT = 1;
 
 const settlementStructureCount = (gameType: HarnessGameType) =>
-  gameType === "eternum" ? ETERNUM_STRUCTURES_PER_BOT : BLITZ_STRUCTURES_PER_BOT;
+  gameType === "blitz" ? BLITZ_STRUCTURES_PER_BOT : ETERNUM_STRUCTURES_PER_BOT;
 const TRANSACTION_TIMEOUT_MS = 30_000;
 const SETUP_TRANSACTION_TIMEOUT_MS = 120_000;
 const MODEL_UPDATE_TIMEOUT_MS = 30_000;
@@ -308,7 +310,10 @@ export async function prepareHarnessBots({
     const structures = await waitForStructures(game, structureIds);
 
     const unprepared = structures.filter((structure) => game.explorersOf(structure.structureId).length === 0);
-    const troopTypes = await waitForStartingTroopTypes(game, unprepared.map((structure) => structure.structureId));
+    const troopTypes = await waitForStartingTroopTypes(
+      game,
+      unprepared.map((structure) => structure.structureId),
+    );
     const actions = game.actionsFor(harnessAccount.account);
     for (const structure of unprepared) {
       const createExplorer = await createBotExplorer({

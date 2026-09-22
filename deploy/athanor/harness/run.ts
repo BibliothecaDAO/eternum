@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+import { launchFrontierSeason, runFrontierWorkload } from "./frontier";
 import { createBuildOrderWorkload } from "./build-order";
 import { runLayerRoundTrip } from "./layer-round-trip";
 import { closeHarnessSeason } from "./season-lifecycle";
@@ -25,7 +26,8 @@ import {
 } from "./report";
 
 interface HarnessCliOptions {
-  workload: "build-order" | "cadence";
+  workload: "build-order" | "cadence" | "frontier";
+  functional: boolean;
   gameType: HarnessGameType;
   bots: number;
   games?: number;
@@ -88,13 +90,18 @@ export function parseHarnessArgs(args: string[]): HarnessCliOptions {
   const intervalSeconds = positiveNumber(values["interval-seconds"] ?? "15", "interval-seconds");
   const setupConcurrency = positiveInteger(values["setup-concurrency"] ?? "6", "setup-concurrency");
   const gameId = values["game-id"] === undefined ? undefined : positiveInteger(values["game-id"], "game-id");
-  const workload = values.workload ?? (values["game-type"] === "eternum" ? "cadence" : "build-order");
-  if (workload !== "build-order" && workload !== "cadence")
-    throw new Error("--workload must be build-order or cadence");
   const gameType = values["game-type"] ?? "blitz";
-  if (gameType !== "blitz" && gameType !== "eternum") throw new Error("--game-type must be blitz or eternum");
+  if (gameType !== "blitz" && gameType !== "eternum" && gameType !== "frontier")
+    throw new Error("--game-type must be blitz, eternum or frontier");
+  const workload =
+    values.workload ??
+    { frontier: "frontier", eternum: "cadence", blitz: "build-order" }[values["game-type"] ?? "blitz"];
+  if (workload !== "build-order" && workload !== "cadence" && workload !== "frontier")
+    throw new Error("--workload must be build-order, cadence or frontier");
+  if ((gameType === "frontier") !== (workload === "frontier"))
+    throw new Error("Frontier requires the frontier workload");
   if (gameType === "eternum" && workload === "build-order") throw new Error("Build-order workload requires Blitz");
-  if (gameType === "eternum" && games !== undefined) throw new Error("--games requires Regular Blitz");
+  if (gameType !== "blitz" && games !== undefined) throw new Error("--games requires Regular Blitz");
   if (gameType === "blitz" && gameId !== undefined)
     throw new Error("Blitz harness creates its fixed roster before launching; omit --game-id");
   if (bots > 24 && gameId !== undefined) throw new Error("An existing game cannot be split across games");
@@ -105,6 +112,7 @@ export function parseHarnessArgs(args: string[]): HarnessCliOptions {
   return {
     gameType,
     workload,
+    functional: values.functional === "true" || workload === "frontier",
     bots,
     games,
     accountsPerGame,
@@ -126,7 +134,7 @@ async function main(): Promise<void> {
   const gameplayContractsPath = requiredEnvironmentValue("GAMEPLAY_CONTRACTS_PATH", "native harness");
   process.env.HERALD_URL = options.heraldUrl;
 
-  const requests = measureHarnessRequests(options.rpcUrl);
+  const requests = options.functional ? undefined : measureHarnessRequests(options.rpcUrl);
   const provider = createHarnessProvider(options.rpcUrl);
   const [chainId, gameplayContracts, manifest] = await Promise.all([
     provider.getChainId(),
@@ -142,7 +150,7 @@ async function main(): Promise<void> {
     : await prepareGames(options, gameplayContracts, provider);
   if (Array.isArray(prepared)) {
     provider.dispose();
-    requests.dispose();
+    requests?.dispose();
     await runRosterGroups(options, prepared);
     return;
   }
@@ -175,38 +183,49 @@ async function main(): Promise<void> {
   try {
     const harnessGame = createHarnessGame(client);
     const setupTransactions: TrackedTransaction[] = [];
-    const bots = await prepareHarnessBots({
-      gameType: options.gameType,
-      accounts,
-      game: harnessGame,
-      provider,
-      setupConcurrency: options.setupConcurrency,
-      setupTransactions,
-    });
+    const bots =
+      options.gameType === "frontier"
+        ? []
+        : await prepareHarnessBots({
+            gameType: options.gameType,
+            accounts,
+            game: harnessGame,
+            provider,
+            setupConcurrency: options.setupConcurrency,
+            setupTransactions,
+          });
 
-    const evidenceBefore = await collectHarnessEvidenceBeforeRun();
-    console.log(
-      "Waiting for every explorer to recover setup stamina to its configured capacity, then starting the measured workload",
-    );
-    const workload = await runWorkload({
-      bots,
-      buildOrder: options.workload === "build-order" ? createBuildOrderWorkload(client, harnessGame) : undefined,
-      game: harnessGame,
-      intervalSeconds: options.intervalSeconds,
-      minutes: options.minutes,
-      onReady: async () => {
-        if (workerData?.harness) await waitForWorkloadStart();
-        requests.start();
-      },
-      onTick: (completed, total) => {
-        if (completed === 1 || completed === total || completed % 5 === 0) {
-          console.log(`Scheduled workload tick ${completed}/${total}`);
-        }
-      },
-      provider,
-    });
+    const evidenceBefore = await collectHarnessEvidenceBeforeRun(options.functional);
+    if (!options.functional) console.log("Waiting for explorers to recover before measuring the workload");
+    const workload =
+      options.workload === "frontier"
+        ? await runFrontierWorkload({
+            client,
+            game: harnessGame,
+            provider,
+            accounts,
+            minutes: options.minutes,
+            setupTransactions,
+          })
+        : await runWorkload({
+            bots,
+            buildOrder: options.workload === "build-order" ? createBuildOrderWorkload(client, harnessGame) : undefined,
+            game: harnessGame,
+            intervalSeconds: options.intervalSeconds,
+            minutes: options.minutes,
+            onReady: async () => {
+              if (workerData?.harness) await waitForWorkloadStart();
+              requests?.start();
+            },
+            onTick: (completed, total) => {
+              if (completed === 1 || completed === total || completed % 5 === 0) {
+                console.log(`Scheduled workload tick ${completed}/${total}`);
+              }
+            },
+            provider,
+          });
 
-    const transportRequests = requests.finish();
+    const transportRequests = requests?.finish();
     const layerRoundTrips =
       options.gameType === "eternum"
         ? [
@@ -232,9 +251,15 @@ async function main(): Promise<void> {
           ]
         : [];
 
-    const evidence = await finishHarnessEvidence(evidenceBefore, workload.startedAt, workload.endedAt);
+    const evidence = await finishHarnessEvidence(
+      evidenceBefore,
+      workload.startedAt,
+      workload.endedAt,
+      options.functional,
+    );
     const minimumThresholdActions = resolveMinimumThresholdActions(options, workload.plannedActions);
     const report = await writeHarnessReport({
+      functional: options.functional,
       accounts,
       botCount: options.bots,
       chainId,
@@ -258,7 +283,7 @@ async function main(): Promise<void> {
   } finally {
     client.dispose();
     provider.dispose();
-    requests.dispose();
+    requests?.dispose();
   }
 }
 
@@ -270,6 +295,14 @@ async function resolveHarnessGame(options: HarnessCliOptions, rosterOwners: stri
   }
 
   const gameName = options.gameName ?? `lab-${Date.now().toString(36)}`;
+  if (options.gameType === "frontier") {
+    const provider = createHarnessProvider(options.rpcUrl);
+    try {
+      return await launchFrontierSeason(provider, gameName, options.minutes);
+    } finally {
+      provider.dispose();
+    }
+  }
   const startAt = Math.floor(Date.now() / 1_000) + 60;
   const summary = await launchGame({
     accountAddress: process.env.DEPLOYER_ACCOUNT_ADDRESS ?? MADARA_ADMIN_ADDRESS,
@@ -301,6 +334,7 @@ function parseFlags(args: string[]): Record<string, string> {
     if (
       ![
         "help",
+        "functional",
         "bots",
         "minutes",
         "interval-seconds",
@@ -318,7 +352,7 @@ function parseFlags(args: string[]): Record<string, string> {
     ) {
       throw new Error(`Unsupported harness option --${name}`);
     }
-    if (name === "help") {
+    if (name === "help" || name === "functional") {
       values[name] = "true";
       continue;
     }
@@ -432,6 +466,7 @@ function startGameWorker(options: HarnessCliOptions, game: PreparedGame, file: s
   return new Worker(import.meta.filename, {
     workerData: { harness: true },
     argv: [
+      ...(options.functional ? ["--functional"] : []),
       "--bots",
       String(game.accounts.length),
       "--prepared-game",
@@ -527,11 +562,12 @@ Usage: bun deploy/athanor/harness/run.ts [options]
   --bots <count>                 default: 96; Blitz splits into balanced games of up to 24
   --games <count>                explicit concurrent games in one process, one client worker per game
   --accounts-per-game <count>    with --games; default: 24, maximum: 24
-  --game-type <blitz|eternum>     default: blitz
+  --game-type <blitz|eternum|frontier>     default: blitz
   --minutes <minutes>            default: 10
   --interval-seconds <seconds>   default: 15
   --setup-concurrency <count>    default: 6
-  --workload <build-order|cadence> default: build-order for Blitz, cadence for Eternum
+  --workload <build-order|cadence|frontier> default: the game type’s workload
+  --functional                  omit capacity collection and latency gates (always on for Frontier)
   --prepared-game <path>         resume a prepared roster using its private account file
   --game-id <id>                 use an existing Eternum game
   --game-name <name>             name for a new game or report label for --game-id

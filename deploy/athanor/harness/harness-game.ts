@@ -70,7 +70,7 @@ export interface HarnessGame {
   minimumStaminaFor(kind: "move" | "explore"): number;
   production(structureId: ID): ProductionState | undefined;
   armyPathIndexes(): ArmyPathIndexes;
-  settle(signer: Account, owner: string, name: string, gameType: "blitz" | "eternum"): Promise<unknown>;
+  settle(signer: Account, owner: string, name: string, gameType: "blitz" | "eternum" | "frontier"): Promise<unknown>;
   produceWood(signer: Account, structureId: ID): Promise<unknown>;
   /** Runs a client action and resolves with its hash as soon as the chain accepted it; one at a time per signer. */
   submit(signer: Account, act: () => Promise<unknown>): Promise<HarnessSubmission>;

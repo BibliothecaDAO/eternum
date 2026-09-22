@@ -1,3 +1,4 @@
+import { summarizeFrontierDesign } from "./frontier";
 import type { HarnessRpcRequests } from "./provider";
 import { PROCESS_INTERVAL_MS } from "@bibliothecadao/eternum/automation";
 import type { LayerRoundTripEvidence } from "./layer-round-trip";
@@ -68,16 +69,17 @@ interface MetricSummary {
 interface HarnessEvidenceBeforeRun {
   gitDirty: boolean;
   gitRevision: string;
-  hostStateStart: Record<string, unknown>;
+  hostStateStart: Record<string, unknown> | null;
   madaraImage: { digest: string; tag: string };
 }
 
 export interface HarnessEvidence extends HarnessEvidenceBeforeRun {
   blockStats: BlockStats | null;
-  hostStateEnd: Record<string, unknown>;
+  hostStateEnd: Record<string, unknown> | null;
 }
 
 export interface HarnessReportInput {
+  functional?: boolean;
   accounts: HarnessAccount[];
   botCount: number;
   chainId: string;
@@ -118,12 +120,12 @@ const REPOSITORY_ROOT = path.resolve(import.meta.dir, "../../..");
 const BLOCK_STATS_SCRIPT = path.resolve(import.meta.dir, "../scripts/block-stats.sh");
 const HOST_STATE_SCRIPT = path.resolve(import.meta.dir, "../scripts/host-state.sh");
 
-export async function collectHarnessEvidenceBeforeRun(): Promise<HarnessEvidenceBeforeRun> {
+export async function collectHarnessEvidenceBeforeRun(functional = false): Promise<HarnessEvidenceBeforeRun> {
   const [gitRevision, gitStatus, madaraImage, hostStateStart] = await Promise.all([
     runCommand(["git", "rev-parse", "HEAD"]),
     runCommand(["git", "status", "--porcelain"]),
     readMadaraImage(),
-    captureHostState(),
+    functional ? null : captureHostState(),
   ]);
   return {
     gitDirty: gitStatus.trim().length > 0,
@@ -137,10 +139,11 @@ export async function finishHarnessEvidence(
   before: HarnessEvidenceBeforeRun,
   workloadStartedAt: string,
   workloadEndedAt: string,
+  functional = false,
 ): Promise<HarnessEvidence> {
   const [blockStats, hostStateEnd] = await Promise.all([
-    captureBlockStats(workloadStartedAt, workloadEndedAt),
-    captureHostState(),
+    functional ? null : captureBlockStats(workloadStartedAt, workloadEndedAt),
+    functional ? null : captureHostState(),
   ]);
   return { ...before, blockStats, hostStateEnd };
 }
@@ -175,10 +178,37 @@ function analyzeHarnessResult(input: HarnessReportInput) {
   const rpc = summarizeRpcLoad(input.setupTransactions, actions, input.workload.overheadRpc);
 
   const checks = {
-    acceptedOnL2P95: passesLatency(percentiles.acceptedOnL2Ms.p95, ACCEPTED_ON_L2_P95_LIMIT_MS),
+    ...(input.functional
+      ? {}
+      : {
+          acceptedOnL2P95: passesLatency(percentiles.acceptedOnL2Ms.p95, ACCEPTED_ON_L2_P95_LIMIT_MS),
+          preConfirmedP95: passesLatency(percentiles.preConfirmedMs.p95, PRECONFIRMED_P95_LIMIT_MS),
+        }),
     thresholdEligibleActions: thresholdEligibleActions >= input.minimumThresholdActions,
-    preConfirmedP95: passesLatency(percentiles.preConfirmedMs.p95, PRECONFIRMED_P95_LIMIT_MS),
     setup: setupFailures.length === 0,
+    frontierTokenCap:
+      !input.workload.frontier ||
+      input.workload.frontier.players.every((player) =>
+        player.days.every(
+          (day) =>
+            player.chests.filter(
+              (chest) =>
+                chest.epoch === Math.floor(day.startedAt / input.workload.frontier!.epochSeconds) &&
+                chest.kind === "Token",
+            ).length <= input.workload.frontier!.tokenCap,
+        ),
+      ),
+
+    frontierRollovers:
+      !input.workload.frontier ||
+      input.workload.frontier.players.every(
+        (player) =>
+          player.rollovers.filter((rollover) => rollover.currentArmies.length > 0).length >= 3 &&
+          player.rollovers.every((rollover) =>
+            rollover.currentArmies.every((id) => !rollover.previousArmies.includes(id)),
+          ),
+      ),
+
     playerProgress:
       input.workload.profile !== "build-order" ||
       summarizePlayerProgress(
@@ -242,6 +272,9 @@ function buildHarnessManifest(
     layerRoundTrips: input.layerRoundTrips ?? [],
     workload: {
       profile: input.workload.profile ?? "cadence",
+      functional: input.functional ?? false,
+      frontier: input.workload.frontier,
+      designGates: input.workload.frontier ? summarizeFrontierDesign(input.workload.frontier) : undefined,
       automationIntervalMs: input.workload.profile === "build-order" ? PROCESS_INTERVAL_MS : null,
       perPlayer: summarizePlayerProgress(
         input.accounts.map(({ botId }) => botId),
@@ -265,21 +298,26 @@ function buildHarnessManifest(
       blockingReverts: analysis.blockingReverts.length,
       revertReasons: analysis.revertReasons,
       readiness: {
-        condition: "every_explorer_at_configured_stamina_capacity",
+        condition:
+          input.workload.profile === "frontier"
+            ? "season_ready_for_open_entry"
+            : "every_explorer_at_configured_stamina_capacity",
         waitMs: input.workload.readinessWaitMs,
       },
       startedAt: input.workload.startedAt,
       endedAt: input.workload.endedAt,
-      percentiles: analysis.percentiles,
-      measuredRpc: {
-        scope:
-          "estimateInvokeFee, getBlock, getTransactionReceipt, and getTransactionStatus calls made by the harness driver",
-        ...analysis.rpc,
-        transport: input.transportRequests
-          ? summarizeTransportRequests(input.transportRequests, input.workload.actions.length)
-          : null,
-      },
-      perGame: input.games.map((game) => summarizeGameWorkload(game, analysis.actions)),
+      percentiles: input.functional ? null : analysis.percentiles,
+      measuredRpc: input.functional
+        ? null
+        : {
+            scope:
+              "estimateInvokeFee, getBlock, getTransactionReceipt, and getTransactionStatus calls made by the harness driver",
+            ...analysis.rpc,
+            transport: input.transportRequests
+              ? summarizeTransportRequests(input.transportRequests, input.workload.actions.length)
+              : null,
+          },
+      perGame: input.games.map((game) => summarizeGameWorkload(game, analysis.actions, input.functional)),
       actions: analysis.actions,
     },
     setup: {
@@ -296,11 +334,13 @@ function buildHarnessManifest(
       failures: analysis.setupFailures.length,
     },
     thresholds: {
-      limits: {
-        acceptedOnL2P95Ms: ACCEPTED_ON_L2_P95_LIMIT_MS,
-        preConfirmedP95Ms: PRECONFIRMED_P95_LIMIT_MS,
-        minimumThresholdActions: input.minimumThresholdActions,
-      },
+      limits: input.functional
+        ? null
+        : {
+            acceptedOnL2P95Ms: ACCEPTED_ON_L2_P95_LIMIT_MS,
+            preConfirmedP95Ms: PRECONFIRMED_P95_LIMIT_MS,
+            minimumThresholdActions: input.minimumThresholdActions,
+          },
       checks: analysis.checks,
     },
     evidence: {
@@ -311,7 +351,11 @@ function buildHarnessManifest(
   };
 }
 
-function summarizeGameWorkload(game: HarnessReportInput["games"][number], actions: readonly TrackedTransaction[]) {
+function summarizeGameWorkload(
+  game: HarnessReportInput["games"][number],
+  actions: readonly TrackedTransaction[],
+  functional = false,
+) {
   const gameActions = actions.filter((action) => action.gameId === game.gameId);
   const completed = gameActions.filter((action) => action.outcome === "completed");
   const failed = gameActions.filter((action) => action.outcome !== "completed");
@@ -326,7 +370,7 @@ function summarizeGameWorkload(game: HarnessReportInput["games"][number], action
     reverts: reverts.length,
     blockingReverts: reverts.filter(isThresholdBlockingFailure).length,
     revertReasons: summarizeRevertReasons(reverts),
-    percentiles: summarizePercentiles(completed),
+    percentiles: functional ? null : summarizePercentiles(completed),
   };
 }
 
