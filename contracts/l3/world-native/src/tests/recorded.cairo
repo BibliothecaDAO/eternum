@@ -149,10 +149,12 @@ pub impl FixtureSeason of FixtureSeasonTrait {
     fn hash_intent(self: ISeasonDispatcher, action: FixtureAction) -> felt252 {
         action_identity(@make_intent(self.contract_address, action))
     }
-    fn execute(self: ISeasonDispatcher, action: FixtureAction, context: DomainContext, r: felt252, s: felt252) {
+    fn execute(self: ISeasonDispatcher, action: FixtureAction, context: DomainContext, signed: Span<felt252>) {
         IRecordedExecutionDispatcher { contract_address: self.contract_address }
             .execute(
-                make_intent(self.contract_address, action), make_context(self.contract_address, action, context), r, s,
+                make_intent(self.contract_address, action),
+                make_context(self.contract_address, action, context),
+                signed,
             );
     }
 }
@@ -160,11 +162,13 @@ pub impl FixtureSeason of FixtureSeasonTrait {
 pub impl FixtureSafeSeason of FixtureSafeSeasonTrait {
     #[feature("safe_dispatcher")]
     fn execute(
-        self: ISeasonSafeDispatcher, action: FixtureAction, context: DomainContext, r: felt252, s: felt252,
+        self: ISeasonSafeDispatcher, action: FixtureAction, context: DomainContext, signed: Span<felt252>,
     ) -> Result<(), Array<felt252>> {
         IRecordedExecutionSafeDispatcher { contract_address: self.contract_address }
             .execute(
-                make_intent(self.contract_address, action), make_context(self.contract_address, action, context), r, s,
+                make_intent(self.contract_address, action),
+                make_context(self.contract_address, action, context),
+                signed,
             )
     }
 }
@@ -177,7 +181,7 @@ pub fn admission(season: ContractAddress, actor: ContractAddress) -> Result<Admi
 fn definitive_execution_failure_consumes_only_its_ticket_then_successor_executes() {
     let d = super::setup(true);
     let action = super::intent(d, 1);
-    let (r, s) = super::signature(d, action);
+    let signed = super::signature(d, action);
     let authority = super::submitter();
     snforge_std::start_cheat_caller_address(authority, super::authority());
     ISequencingAuthorityDispatcher { contract_address: authority }.configure(d.peers.season);
@@ -189,8 +193,7 @@ fn definitive_execution_failure_consumes_only_its_ticket_then_successor_executes
     let mut calldata = array![];
     make_intent(d.peers.season, action).serialize(ref calldata);
     original.serialize(ref calldata);
-    r.serialize(ref calldata);
-    s.serialize(ref calldata);
+    signed.serialize(ref calldata);
     ISequencingAccountDispatcher { contract_address: authority }
         .__execute__(
             array![
@@ -215,13 +218,13 @@ fn definitive_execution_failure_consumes_only_its_ticket_then_successor_executes
 fn failure_recording_rejects_unauthenticated_and_already_executed_tickets() {
     let d = super::setup(true);
     let action = super::intent(d, 1);
-    let (r, s) = super::signature(d, action);
+    let signed = super::signature(d, action);
     let call = IRecordedExecutionFailureSafeDispatcher { contract_address: d.peers.season };
     snforge_std::start_cheat_caller_address(d.peers.season, d.actor);
     assert!(
         call
             .reject_execution(
-                make_intent(d.peers.season, action), make_context(d.peers.season, action, super::context()), r, s,
+                make_intent(d.peers.season, action), make_context(d.peers.season, action, super::context()), signed,
             )
             .is_err(),
     );
@@ -231,7 +234,7 @@ fn failure_recording_rejects_unauthenticated_and_already_executed_tickets() {
     snforge_std::start_cheat_caller_address(d.peers.season, super::submitter());
     let original = make_context(d.peers.season, action, super::context());
     super::execute(d, action);
-    assert!(call.reject_execution(make_intent(d.peers.season, action), original, r, s).is_err());
+    assert!(call.reject_execution(make_intent(d.peers.season, action), original, signed).is_err());
     assert_eq!(head(d.peers.season, 1).order, 1);
     assert_eq!(season.next_nonce(1, d.actor), 1);
     assert_eq!(
@@ -244,11 +247,12 @@ fn failure_recording_rejects_unauthenticated_and_already_executed_tickets() {
 fn unexecuted_ticket_recovery_preserves_original_context_after_delay() {
     let d = super::setup(true);
     let action = super::intent(d, 1);
-    let (r, s) = super::signature(d, action);
+    let signed = super::signature(d, action);
     let retained_intent = make_intent(d.peers.season, action);
     let retained_context = make_context(d.peers.season, action, super::context());
     snforge_std::start_cheat_block_timestamp(d.peers.season, 86400);
-    IRecordedExecutionDispatcher { contract_address: d.peers.season }.execute(retained_intent, retained_context, r, s);
+    IRecordedExecutionDispatcher { contract_address: d.peers.season }
+        .execute(retained_intent, retained_context, signed);
     let season = ISeasonDispatcher { contract_address: d.peers.season };
     assert_eq!(head(d.peers.season, 1).timestamp, 100);
     assert_eq!(head(d.peers.season, 1).order, 1);

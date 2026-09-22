@@ -25,6 +25,10 @@ use super::receipts::RecordedReceiptsTrait;
 pub fn pair() -> StarkCurveKeyPair {
     KeyPairTrait::from_secret_key(12345)
 }
+/// The actor's device signature: `[device_key, r, s]` under the fixture's registered key.
+pub fn signed(r: felt252, s: felt252) -> Span<felt252> {
+    array![pair().public_key, r, s].span()
+}
 pub fn setup() -> ContractAddress {
     let signer: StarkCurveKeyPair = KeyPairTrait::from_secret_key(54321);
     let account_class = declare("SequencingAccount").unwrap().contract_class();
@@ -93,5 +97,6 @@ pub fn outcome(address: ContractAddress) -> Array<felt252> {
 pub fn reject_execution(
     address: ContractAddress, intent: Intent, context: ExecutionContext, r: felt252, s: felt252,
 ) -> Result<(), Array<felt252>> {
-    IRecordedExecutionFailureSafeDispatcher { contract_address: address }.reject_execution(intent, context, r, s)
+    IRecordedExecutionFailureSafeDispatcher { contract_address: address }
+        .reject_execution(intent, context, signed(r, s))
 }

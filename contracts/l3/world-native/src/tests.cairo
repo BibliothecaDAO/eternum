@@ -85,10 +85,6 @@ pub fn bind_authority(d: Deployment) -> Deployment {
         .contract_class()
         .deploy_at(@array![keypair(12345).public_key], authority())
         .unwrap();
-    let registry = ISeasonDispatcher { contract_address: d.peers.season }.authentication().registry;
-    fixtures::IRegistryFixtureDispatcherTrait::add_binding(
-        fixtures::IRegistryFixtureDispatcher { contract_address: registry }, 0x444.try_into().unwrap(), authority(),
-    );
     Deployment { actor: authority(), ..d }
 }
 
@@ -96,7 +92,8 @@ fn setup_with_domains(activate: bool, structures_class: ByteArray, troops_class:
     let pair = keypair(12345);
     recorded::deploy_submitter(submitter());
     let (actor, account_class) = deploy("AccountFixture", @array![pair.public_key]);
-    let (registry, _) = deploy("RegistryFixture", @array![0x333, actor.into()]);
+    // Authentication still carries the registry address until the registry itself is deleted; nothing reads it.
+    let registry: starknet::ContractAddress = 0x333.try_into().unwrap();
     let (season, _) = deploy(
         "SeasonDomain", @array![authority().into(), submitter().into(), registry.into(), account_class.into()],
     );
@@ -169,12 +166,17 @@ fn intent(deployment: Deployment, game_id: u32) -> Intent {
 fn context() -> ExecutionContext {
     ExecutionContext { raw_root: 987654321, timestamp: 100 }
 }
-fn signature(deployment: Deployment, action: Intent) -> (felt252, felt252) {
-    keypair(12345).sign(ISeasonDispatcher { contract_address: deployment.peers.season }.hash_intent(action)).unwrap()
+/// The actor's device signature, `[device_key, r, s]`, as the shard's account class checks it.
+fn signature(deployment: Deployment, action: Intent) -> Span<felt252> {
+    let device = keypair(12345);
+    let (r, s) = device
+        .sign(ISeasonDispatcher { contract_address: deployment.peers.season }.hash_intent(action))
+        .unwrap();
+    array![device.public_key, r, s].span()
 }
 fn execute(deployment: Deployment, action: Intent) {
-    let (r, s) = signature(deployment, action);
-    ISeasonDispatcher { contract_address: deployment.peers.season }.execute(action, context(), r, s);
+    let signed = signature(deployment, action);
+    ISeasonDispatcher { contract_address: deployment.peers.season }.execute(action, context(), signed);
 }
 
 #[test]
@@ -197,21 +199,22 @@ fn signed_actor_and_root_reach_domain_with_game_scoped_nonces() {
 fn forged_signature_actor_game_and_replayed_intent_are_rejected() {
     let deployment = setup(true);
     let action = intent(deployment, 1);
-    let (r, s) = signature(deployment, action);
+    let signed = signature(deployment, action);
     let gateway = ISeasonSafeDispatcher { contract_address: deployment.peers.season };
-    let (bad_r, bad_s) = keypair(999)
+    let unknown = keypair(999);
+    let (unknown_r, unknown_s) = unknown
         .sign(ISeasonDispatcher { contract_address: deployment.peers.season }.hash_intent(action))
         .unwrap();
     let results = IRecordedExecutionViewsDispatcher { contract_address: deployment.peers.season };
-    gateway.execute(action, context(), bad_r, bad_s).unwrap();
+    gateway.execute(action, context(), array![unknown.public_key, unknown_r, unknown_s].span()).unwrap();
     assert_eq!(results.recorded_outcome(1, 1).unwrap().reason, 'INVALID_SIGNATURE');
     let mut forged = action;
     forged.actor = 0x999.try_into().unwrap();
-    gateway.execute(forged, context(), r, s).unwrap();
+    gateway.execute(forged, context(), signed).unwrap();
     assert_eq!(results.recorded_outcome(1, 2).unwrap().reason, 'INVALID_ACTOR');
     forged = action;
     forged.game_id = 2;
-    gateway.execute(forged, context(), r, s).unwrap();
+    gateway.execute(forged, context(), signed).unwrap();
     // The forged game's action is recorded on that game's own chain.
     assert_eq!(results.recorded_outcome(2, 1).unwrap().reason, 'INVALID_SIGNATURE');
     assert!(!results.recorded_outcome(1, 1).unwrap().nonce_consumed);
@@ -219,10 +222,10 @@ fn forged_signature_actor_game_and_replayed_intent_are_rejected() {
     assert!(!results.recorded_outcome(2, 1).unwrap().nonce_consumed);
     assert_eq!(ISeasonDispatcher { contract_address: deployment.peers.season }.next_nonce(1, deployment.actor), 0);
     let successor = action;
-    let (r, s) = signature(deployment, successor);
-    gateway.execute(successor, context(), r, s).unwrap();
+    let signed = signature(deployment, successor);
+    gateway.execute(successor, context(), signed).unwrap();
     assert_eq!(results.recorded_outcome(1, 3).unwrap().status, 1);
-    gateway.execute(successor, context(), r, s).unwrap();
+    gateway.execute(successor, context(), signed).unwrap();
     assert_eq!(results.recorded_outcome(1, 4).unwrap().reason, 'STALE_NONCE');
     assert_eq!(ISeasonDispatcher { contract_address: deployment.peers.season }.next_nonce(1, deployment.actor), 1);
 }
@@ -232,10 +235,10 @@ fn forged_signature_actor_game_and_replayed_intent_are_rejected() {
 fn direct_player_submission_and_forged_domain_calls_are_rejected() {
     let deployment = setup(true);
     let action = intent(deployment, 1);
-    let (r, s) = signature(deployment, action);
+    let signed = signature(deployment, action);
     start_cheat_caller_address(deployment.peers.season, deployment.actor);
     assert!(
-        ISeasonSafeDispatcher { contract_address: deployment.peers.season }.execute(action, context(), r, s).is_err(),
+        ISeasonSafeDispatcher { contract_address: deployment.peers.season }.execute(action, context(), signed).is_err(),
     );
     start_cheat_caller_address(deployment.peers.troops, deployment.actor);
     let Command::CreateExplorer(command) = action.command else {
@@ -259,15 +262,14 @@ fn direct_player_submission_and_forged_domain_calls_are_rejected() {
 fn late_domain_failure_consumes_ticket_and_rolls_back_gameplay_rows() {
     let deployment = setup(true);
     let action = intent(deployment, 1);
-    let (r, s) = signature(deployment, action);
+    let signed = signature(deployment, action);
     let (wrapper, _) = deploy("RollbackFixture", @array![]);
     let success = IRollbackFixtureDispatcher { contract_address: wrapper }
         .attempt(
             deployment.peers.season,
             make_intent(deployment.peers.season, action),
             make_context(deployment.peers.season, action, ExecutionContext { raw_root: 0, timestamp: 100 }),
-            r,
-            s,
+            signed,
         );
     assert!(success);
     assert_eq!(ISeasonDispatcher { contract_address: deployment.peers.season }.next_nonce(1, deployment.actor), 1);
@@ -284,9 +286,9 @@ fn late_domain_failure_consumes_ticket_and_rolls_back_gameplay_rows() {
 fn gameplay_before_activation_and_reinitialization_are_rejected() {
     let deployment = setup(false);
     let action = intent(deployment, 1);
-    let (r, s) = signature(deployment, action);
+    let signed = signature(deployment, action);
     assert!(
-        ISeasonSafeDispatcher { contract_address: deployment.peers.season }.execute(action, context(), r, s).is_err(),
+        ISeasonSafeDispatcher { contract_address: deployment.peers.season }.execute(action, context(), signed).is_err(),
     );
     start_cheat_caller_address(deployment.peers.season, authority());
     assert!(IDomainSafeDispatcher { contract_address: deployment.peers.season }.configure(deployment.peers).is_err());
@@ -373,25 +375,24 @@ fn signatures_are_bound_to_deployment_command_nonce_and_deadline() {
     let first = setup(true);
     let second = setup(true);
     let action = intent(first, 1);
-    let (r, s) = signature(first, action);
+    let signed = signature(first, action);
     let gateway = ISeasonSafeDispatcher { contract_address: first.peers.season };
     let results = IRecordedExecutionViewsDispatcher { contract_address: first.peers.season };
     let mut changed = action;
     changed.command = Command::CloseSeason;
-    gateway.execute(changed, context(), r, s).unwrap();
+    gateway.execute(changed, context(), signed).unwrap();
     assert_eq!(results.recorded_outcome(1, 1).unwrap().reason, 'INVALID_SIGNATURE');
     changed = action;
     changed.nonce = 1;
-    gateway.execute(changed, context(), r, s).unwrap();
+    gateway.execute(changed, context(), signed).unwrap();
     assert_eq!(results.recorded_outcome(1, 2).unwrap().reason, 'INVALID_SIGNATURE');
     changed = action;
     assert!(!results.recorded_outcome(1, 1).unwrap().nonce_consumed);
     assert!(!results.recorded_outcome(1, 2).unwrap().nonce_consumed);
     changed.deadline = 99;
-    let (expired_r, expired_s) = signature(first, changed);
-    gateway.execute(changed, context(), expired_r, expired_s).unwrap();
+    gateway.execute(changed, context(), signature(first, changed)).unwrap();
     assert_eq!(results.recorded_outcome(1, 3).unwrap().reason, 'INVALID_ACCEPTANCE');
-    assert!(gateway.execute(action, ExecutionContext { raw_root: 1, timestamp: 101 }, r, s).is_err());
+    assert!(gateway.execute(action, ExecutionContext { raw_root: 1, timestamp: 101 }, signed).is_err());
     // Both deployments use the same test key; address binding still changes the digest.
     assert!(
         ISeasonDispatcher { contract_address: second.peers.season }
@@ -406,7 +407,8 @@ fn signatures_are_bound_to_deployment_command_nonce_and_deadline() {
 fn registered_account_with_unapproved_class_is_rejected_before_key_read() {
     let pair = keypair(12345);
     let (actor, _) = deploy("AccountFixture", @array![pair.public_key]);
-    let (registry, _) = deploy("RegistryFixture", @array![0x333, actor.into()]);
+    // Authentication still carries the registry address until the registry itself is deleted; nothing reads it.
+    let registry: starknet::ContractAddress = 0x333.try_into().unwrap();
     let wrong_class = declare("MapUpgradeFixture").unwrap().contract_class();
     let (season, _) = deploy(
         "SeasonDomain",
@@ -460,12 +462,12 @@ fn recorded_context_survives_outage_and_rejects_future_time() {
     let deployment = setup(true);
     let mut action = intent(deployment, 1);
     action.deadline = 100;
-    let (r, s) = signature(deployment, action);
+    let signed = signature(deployment, action);
     let gateway = ISeasonSafeDispatcher { contract_address: deployment.peers.season };
     start_cheat_block_timestamp(deployment.peers.season, 99);
-    assert!(gateway.execute(action, context(), r, s).is_err());
+    assert!(gateway.execute(action, context(), signed).is_err());
     start_cheat_block_timestamp(deployment.peers.season, 86500);
-    gateway.execute(action, context(), r, s).unwrap();
+    gateway.execute(action, context(), signed).unwrap();
     let troops = IFixtureDispatcher { contract_address: deployment.peers.troops };
     assert_eq!(troops.received_timestamp(), 100);
     assert_eq!(troops.received_root(), context().raw_root);
@@ -489,12 +491,12 @@ fn authority_rotates_authentication_without_replacing_the_domain() {
     assert_eq!(current.account_class, previous.account_class);
     recorded::deploy_submitter(replacement.submitter);
     let action = intent(deployment, 1);
-    let (r, s) = signature(deployment, action);
+    let signed = signature(deployment, action);
     start_cheat_caller_address(deployment.peers.season, submitter());
-    assert!(safe.execute(action, context(), r, s).is_err());
+    assert!(safe.execute(action, context(), signed).is_err());
     configure_submitter(deployment.peers.season, replacement.submitter);
     start_cheat_caller_address(deployment.peers.season, replacement.submitter);
-    gateway.execute(action, context(), r, s);
+    gateway.execute(action, context(), signed);
     assert_eq!(gateway.next_nonce(1, deployment.actor), 1);
 }
 
@@ -508,24 +510,24 @@ fn approved_account_class_can_follow_a_player_account_upgrade() {
         fixtures::IAccountUpgradeDispatcher { contract_address: deployment.actor }, *class.class_hash,
     );
     let action = intent(deployment, 1);
-    let (r, s) = signature(deployment, action);
+    let signed = signature(deployment, action);
     assert!(recorded::admission(deployment.peers.season, deployment.actor).is_err());
     let authentication = crate::season::Authentication { account_class: *class.class_hash, ..season.authentication() };
     start_cheat_caller_address(deployment.peers.season, authority());
     season.set_authentication(authentication.submitter, authentication.registry, authentication.account_class);
     start_cheat_caller_address(deployment.peers.season, submitter());
     assert!(recorded::admission(deployment.peers.season, deployment.actor).is_ok());
-    season.execute(action, context(), r, s);
+    season.execute(action, context(), signed);
     assert_eq!(season.next_nonce(1, deployment.actor), 1);
 }
 
 #[test]
 #[feature("safe_dispatcher")]
-fn admission_rejects_unregistered_actor_and_registry_round_trip_mismatch() {
+fn admission_rejects_a_non_account_and_authentication_row_keeps_its_shape() {
     let deployment = setup(true);
     assert!(recorded::admission(deployment.peers.season, 0x999.try_into().unwrap()).is_err());
     let season = ISeasonDispatcher { contract_address: deployment.peers.season };
-    let (registry, _) = deploy("RegistryRoundTripFixture", @array![]);
+    let registry: starknet::ContractAddress = 0x444.try_into().unwrap();
     let authentication = season.authentication();
     start_cheat_caller_address(deployment.peers.season, authority());
     let mut spy = spy_events();
@@ -542,7 +544,6 @@ fn admission_rejects_unregistered_actor_and_registry_round_trip_mismatch() {
         ]
             .span(),
     );
-    assert!(recorded::admission(deployment.peers.season, deployment.actor).is_err());
 }
 
 #[test]

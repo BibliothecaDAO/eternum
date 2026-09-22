@@ -13,25 +13,24 @@ pub struct ExecutionContext {
 pub struct RecordedAction {
     pub intent: Intent,
     pub context: ExecutionContext,
-    pub r: felt252,
-    pub s: felt252,
+    /// Passed unchanged to the actor account's SNIP-6 `is_valid_signature`.
+    pub signature: Span<felt252>,
 }
 
 #[starknet::interface]
 pub trait IRecordedExecution<T> {
-    fn execute(ref self: T, intent: Intent, context: ExecutionContext, r: felt252, s: felt252);
+    fn execute(ref self: T, intent: Intent, context: ExecutionContext, signature: Span<felt252>);
     fn execute_batch(ref self: T, actions: Array<RecordedAction>);
 }
 
 /// The sequencing authority attests to a definitive execution failure of this exact ticket.
 #[starknet::interface]
 pub trait IRecordedExecutionFailure<T> {
-    fn reject_execution(ref self: T, intent: Intent, context: ExecutionContext, r: felt252, s: felt252);
+    fn reject_execution(ref self: T, intent: Intent, context: ExecutionContext, signature: Span<felt252>);
 }
 
 #[derive(Copy, Drop, Serde)]
 pub struct Admission {
-    pub public_key: felt252,
     pub rules: felt252,
     pub execution_config: felt252,
     pub nonce: u64,

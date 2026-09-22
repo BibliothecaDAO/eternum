@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "3e002a8af685a571f6576bfd446f8ce53cfd8f0b9ac803fa6ceb70233c14ad1c",
+  "schemaIdentity": "ec0f117915ea10ac327ec5b184a301f797abc84932bcd529673b7094c9abed60",
   "commandAbi": [
     {
       "type": "impl",
@@ -2325,6 +2325,16 @@
     },
     {
       "type": "struct",
+      "name": "core::array::Span::<core::felt252>",
+      "members": [
+        {
+          "name": "snapshot",
+          "type": "@core::array::Array::<core::felt252>"
+        }
+      ]
+    },
+    {
+      "type": "struct",
       "name": "eternum_randomness_protocol::entrypoint::RecordedAction",
       "members": [
         {
@@ -2336,12 +2346,8 @@
           "type": "eternum_randomness_protocol::entrypoint::ExecutionContext"
         },
         {
-          "name": "r",
-          "type": "core::felt252"
-        },
-        {
-          "name": "s",
-          "type": "core::felt252"
+          "name": "signature",
+          "type": "core::array::Span::<core::felt252>"
         }
       ]
     },
@@ -2362,12 +2368,8 @@
               "type": "eternum_randomness_protocol::entrypoint::ExecutionContext"
             },
             {
-              "name": "r",
-              "type": "core::felt252"
-            },
-            {
-              "name": "s",
-              "type": "core::felt252"
+              "name": "signature",
+              "type": "core::array::Span::<core::felt252>"
             }
           ],
           "outputs": [],
@@ -2409,12 +2411,8 @@
               "type": "eternum_randomness_protocol::entrypoint::ExecutionContext"
             },
             {
-              "name": "r",
-              "type": "core::felt252"
-            },
-            {
-              "name": "s",
-              "type": "core::felt252"
+              "name": "signature",
+              "type": "core::array::Span::<core::felt252>"
             }
           ],
           "outputs": [],
@@ -2431,10 +2429,6 @@
       "type": "struct",
       "name": "eternum_randomness_protocol::entrypoint::Admission",
       "members": [
-        {
-          "name": "public_key",
-          "type": "core::felt252"
-        },
         {
           "name": "rules",
           "type": "core::felt252"
@@ -3540,16 +3534,6 @@
           "name": "timestamp",
           "type": "core::integer::u64",
           "kind": "data"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "core::array::Span::<core::felt252>",
-      "members": [
-        {
-          "name": "snapshot",
-          "type": "@core::array::Array::<core::felt252>"
         }
       ]
     },

@@ -1,7 +1,11 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { createBrowserScheduler } from "@/sync/browser-scheduler";
-import { createGameClient, createNativeTicketSubmission, getStoredGameplayKey } from "@bibliothecadao/eternum";
-import { ec } from "starknet";
+import {
+  createGameClient,
+  createNativeTicketSubmission,
+  getStoredGameplayKey,
+  signGameplayIntent,
+} from "@bibliothecadao/eternum";
 
 type BrowserGameInput = Pick<
   Parameters<typeof createGameClient>[0],
@@ -24,8 +28,7 @@ export async function createBrowserGameClient(input: BrowserGameInput) {
           throw new Error("Gameplay identity changed before signing");
         const key = getStoredGameplayKey({ storage: localStorage, chainId, owner });
         if (!key) throw new Error("Gameplay signing key is unavailable");
-        const signature = ec.starkCurve.sign(digest, key.privateKey);
-        return { r: signature.r, s: signature.s, publicKey: BigInt(key.publicKey) };
+        return signGameplayIntent(digest, key.privateKey);
       },
       submitIntent: createNativeTicketSubmission(input.shard.admissionUrl),
     },

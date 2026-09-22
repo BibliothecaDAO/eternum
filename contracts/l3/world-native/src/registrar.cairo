@@ -225,31 +225,12 @@ pub mod RegistrarState {
             if players.is_empty() {
                 return;
             }
-            let season = crate::season::ISeasonDispatcher {
-                contract_address: get_dep_component!(@self, Life).require_active().season,
-            };
-            let registry = crate::season::IPlayerRegistryDispatcher {
-                contract_address: crate::season::ISeasonDispatcherTrait::authentication(season).registry,
-            };
-            let mut owners: core::dict::Felt252Dict<bool> = Default::default();
             let mut accounts: core::dict::Felt252Dict<bool> = Default::default();
             for index in 0..players.len() {
                 let player = *players.at(index);
-                assert!(
-                    player.owner != 0.try_into().unwrap() && player.account != 0.try_into().unwrap(),
-                    "unbound roster player",
-                );
-                assert!(
-                    !owners.get(player.owner.into()) && !accounts.get(player.account.into()), "duplicate roster player",
-                );
-                owners.insert(player.owner.into(), true);
+                assert!(player.account != 0.try_into().unwrap(), "unbound roster player");
+                assert!(!accounts.get(player.account.into()), "duplicate roster player");
                 accounts.insert(player.account.into(), true);
-                assert!(
-                    crate::season::IPlayerRegistryDispatcherTrait::account_of(registry, player.owner) == player.account
-                        && crate::season::IPlayerRegistryDispatcherTrait::owner_of(registry, player.account) == player
-                            .owner,
-                    "roster binding mismatch",
-                );
                 self.data.roster_players.write((game_id, index), player);
             }
             self.data.roster_sizes.write(game_id, players.len());

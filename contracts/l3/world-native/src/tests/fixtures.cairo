@@ -106,6 +106,22 @@ pub mod TroopFixture {
     }
 }
 
+/// The SNIP-6 check of the shard's account class: one device key per fixture, signatures `[device_key, r, s]`.
+#[starknet::interface]
+pub trait IDeviceSignature<T> {
+    fn is_valid_signature(self: @T, hash: felt252, signature: Array<felt252>) -> felt252;
+}
+
+pub fn device_signature_result(key: felt252, hash: felt252, signature: Span<felt252>) -> felt252 {
+    if signature.len() == 3
+        && *signature[0] == key
+        && core::ecdsa::check_ecdsa_signature(hash, key, *signature[1], *signature[2]) {
+        starknet::VALIDATED
+    } else {
+        0
+    }
+}
+
 #[starknet::interface]
 pub trait IAccountUpgrade<T> {
     fn upgrade(ref self: T, class_hash: starknet::ClassHash);
@@ -123,52 +139,15 @@ pub mod AccountFixture {
         self.key.write(key);
     }
     #[abi(embed_v0)]
-    impl Key of crate::season::IGameplayKey<ContractState> {
-        fn get_public_key(self: @ContractState) -> felt252 {
-            self.key.read()
+    impl Signature of super::IDeviceSignature<ContractState> {
+        fn is_valid_signature(self: @ContractState, hash: felt252, signature: Array<felt252>) -> felt252 {
+            super::device_signature_result(self.key.read(), hash, signature.span())
         }
     }
     #[abi(embed_v0)]
     impl Upgrade of super::IAccountUpgrade<ContractState> {
         fn upgrade(ref self: ContractState, class_hash: starknet::ClassHash) {
             starknet::syscalls::replace_class_syscall(class_hash).unwrap();
-        }
-    }
-}
-
-#[starknet::interface]
-pub trait IRegistryFixture<T> {
-    fn add_binding(ref self: T, owner: ContractAddress, account: ContractAddress);
-}
-
-#[starknet::contract]
-pub mod RegistryFixture {
-    use starknet::ContractAddress;
-    use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
-    #[storage]
-    struct Storage {
-        owners: Map<ContractAddress, ContractAddress>,
-        accounts: Map<ContractAddress, ContractAddress>,
-    }
-    #[constructor]
-    fn constructor(ref self: ContractState, owner: ContractAddress, account: ContractAddress) {
-        self.owners.write(account, owner);
-        self.accounts.write(owner, account);
-    }
-    #[abi(embed_v0)]
-    impl Fixture of super::IRegistryFixture<ContractState> {
-        fn add_binding(ref self: ContractState, owner: ContractAddress, account: ContractAddress) {
-            self.owners.write(account, owner);
-            self.accounts.write(owner, account);
-        }
-    }
-    #[abi(embed_v0)]
-    impl Registry of crate::season::IPlayerRegistry<ContractState> {
-        fn owner_of(self: @ContractState, account: ContractAddress) -> ContractAddress {
-            self.owners.read(account)
-        }
-        fn account_of(self: @ContractState, owner: ContractAddress) -> ContractAddress {
-            self.accounts.read(owner)
         }
     }
 }
@@ -278,8 +257,7 @@ pub trait IRollbackFixture<T> {
         season: ContractAddress,
         intent: eternum_randomness_protocol::Intent,
         context: eternum_randomness_protocol::entrypoint::ExecutionContext,
-        r: felt252,
-        s: felt252,
+        signature: Span<felt252>,
     ) -> bool;
 }
 #[starknet::contract]
@@ -312,10 +290,9 @@ pub mod RollbackFixture {
             season: ContractAddress,
             intent: Intent,
             context: ExecutionContext,
-            r: felt252,
-            s: felt252,
+            signature: Span<felt252>,
         ) -> bool {
-            IRecordedExecutionSafeDispatcher { contract_address: season }.execute(intent, context, r, s).is_ok()
+            IRecordedExecutionSafeDispatcher { contract_address: season }.execute(intent, context, signature).is_ok()
         }
     }
 }
@@ -328,25 +305,9 @@ pub mod AccountUpgradeFixture {
         key: felt252,
     }
     #[abi(embed_v0)]
-    impl Key of crate::season::IGameplayKey<ContractState> {
-        fn get_public_key(self: @ContractState) -> felt252 {
-            self.key.read()
-        }
-    }
-}
-
-#[starknet::contract]
-pub mod RegistryRoundTripFixture {
-    use starknet::ContractAddress;
-    #[storage]
-    struct Storage {}
-    #[abi(embed_v0)]
-    impl Registry of crate::season::IPlayerRegistry<ContractState> {
-        fn owner_of(self: @ContractState, account: ContractAddress) -> ContractAddress {
-            0x333.try_into().unwrap()
-        }
-        fn account_of(self: @ContractState, owner: ContractAddress) -> ContractAddress {
-            0x999.try_into().unwrap()
+    impl Signature of super::IDeviceSignature<ContractState> {
+        fn is_valid_signature(self: @ContractState, hash: felt252, signature: Array<felt252>) -> felt252 {
+            super::device_signature_result(self.key.read(), hash, signature.span())
         }
     }
 }

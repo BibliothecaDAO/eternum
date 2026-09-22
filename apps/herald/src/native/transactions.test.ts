@@ -40,8 +40,7 @@ function action(game: number) {
       arguments: [2, 1],
     },
     context: { envelope: [] },
-    r: 1,
-    s: 2,
+    signature: [1, 2],
   };
 }
 

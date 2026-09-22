@@ -23,7 +23,7 @@ function setup(outcome?: string[]) {
   };
   const provider = {
     getChainId: mock(async () => "0x1"),
-    callContract: mock(async () => ["1", "2", "4", "3", "5", "1000"]),
+    callContract: mock(async () => ["2", "4", "3", "5", "1000"]),
     getTransactionStatus: mock(async () => ({ finality_status: "ACCEPTED_ON_L2" })),
     getTransactionReceipt: mock(async () => receipt),
   };
@@ -50,7 +50,7 @@ function setup(outcome?: string[]) {
         const action = hash.computePoseidonHashOnElements(signed.intent);
         expect(
           ec.starkCurve.verify(
-            new ec.starkCurve.Signature(BigInt(signed.r), BigInt(signed.s)),
+            new ec.starkCurve.Signature(BigInt(signed.signature[0]), BigInt(signed.signature[1])),
             action,
             ec.starkCurve.getPublicKey("0x1234"),
           ),
@@ -183,7 +183,7 @@ describe("native administrative command", () => {
   it("completes roster preparation only after the final ticket-scoped remaining count", async () => {
     const { input, receipt, provider, requests } = setup();
     let calls = 0;
-    provider.callContract.mockImplementation(async () => ["1", "2", "4", String(3 + calls), "5", "1000"]);
+    provider.callContract.mockImplementation(async () => ["2", "4", String(3 + calls), "5", "1000"]);
     provider.getTransactionReceipt.mockImplementation(async () => {
       receipt.events[0].data[1] = String(3 + calls);
       receipt.events[0].data[2] = calls === 0 ? "1" : "0";
@@ -204,7 +204,7 @@ describe("native administrative command", () => {
   it("stops administrative work that cannot advance", async () => {
     const { input, receipt, requests, provider } = setup();
     let calls = 0;
-    provider.callContract.mockImplementation(async () => ["1", "2", "4", String(3 + calls), "5", "1000"]);
+    provider.callContract.mockImplementation(async () => ["2", "4", String(3 + calls), "5", "1000"]);
     provider.getTransactionReceipt.mockImplementation(async () => {
       receipt.events[0].data = ["291", String(3 + calls), "1"];
       receipt.events[1].data[2] = String(3 + calls);

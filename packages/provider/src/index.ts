@@ -3,7 +3,7 @@ import type { NativeTicketIdentity } from "@bibliothecadao/types";
 export { completeNativeBatches, nativeExecutionOutcomes, requireNativeExecutionOutcome } from "./native-batch";
 export type { BatchTransactionReceipt, NativeExecutionOutcome } from "@bibliothecadao/types";
 import { requireBatchReceipt } from "./native-batch";
-export { createNativeTicketSubmission } from "./native-ticket";
+export { createNativeTicketSubmission, signGameplayIntent } from "./native-ticket";
 export type { SignedNativeIntent } from "./native-ticket";
 export { encodeNativeCommand, frameNativeIntent, nativeTaggedHash } from "./native-command";
 export type { NativeCommand, NativeCommandPayloads } from "./native-command";

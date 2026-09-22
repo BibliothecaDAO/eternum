@@ -99,7 +99,7 @@ fn run(deployment: Deployment, command: Command, timestamp: u64) -> bool {
         deadline: 10000,
         ..intent(deployment, 3),
     };
-    let (r, s) = signature(deployment, action);
+    let signed = signature(deployment, action);
     let ticket = recorded::make_intent(deployment.peers.season, action);
     let recorded_context = recorded::make_context(
         deployment.peers.season, action, ExecutionContext { timestamp, ..context() },
@@ -114,8 +114,7 @@ fn run(deployment: Deployment, command: Command, timestamp: u64) -> bool {
         },
         ticket,
         recorded_context,
-        r,
-        s,
+        signed,
     );
     IRecordedExecutionViewsDispatcher { contract_address: deployment.peers.season }
         .recorded_outcome(3, super::recorded::head(deployment.peers.season, 3).order)
@@ -136,10 +135,10 @@ fn production_pass_is_atomic_single_use_and_army_grant_uses_recorded_time() {
     assert!(!run(deployment, settle(realm, 7), 100));
     assert!(ledger.village_pass(pass).unwrap().is_none());
     start_cheat_caller_address(deployment.peers.settlement, deployment.actor);
-    assert!(ledger.register_village_pass(pass, 0x333.try_into().unwrap()).is_err());
-    start_cheat_caller_address(deployment.peers.settlement, authority());
-    ledger.register_village_pass(pass, 0x333.try_into().unwrap()).unwrap();
     assert!(ledger.register_village_pass(pass, deployment.actor).is_err());
+    start_cheat_caller_address(deployment.peers.settlement, authority());
+    ledger.register_village_pass(pass, deployment.actor).unwrap();
+    assert!(ledger.register_village_pass(pass, 0x333.try_into().unwrap()).is_err());
     stop_cheat_caller_address(deployment.peers.settlement);
     let realm_map = IMapDispatcher { contract_address: deployment.peers.map };
     for direction in 0_u8..6 {
@@ -226,8 +225,7 @@ fn development_villages_skip_passes_and_have_no_six_per_realm_limit() {
 fn register_pass(deployment: Deployment, pass_id: u16) -> VillagePassKey {
     let key = VillagePassKey { game_id: 3, pass_id };
     start_cheat_caller_address(deployment.peers.settlement, authority());
-    IVillagesDispatcher { contract_address: deployment.peers.settlement }
-        .register_village_pass(key, 0x333.try_into().unwrap());
+    IVillagesDispatcher { contract_address: deployment.peers.settlement }.register_village_pass(key, deployment.actor);
     stop_cheat_caller_address(deployment.peers.settlement);
     key
 }
@@ -385,12 +383,8 @@ fn dev_season_entitlement_with_configured_operator_and_present_pass() {
 }
 fn assert_season_entitlement_mode(dev: bool, has_operator: bool, has_entitlement: bool) {
     let (d, _) = setup(dev);
-    let owner = crate::season::IPlayerRegistryDispatcherTrait::owner_of(
-        crate::season::IPlayerRegistryDispatcher {
-            contract_address: ISeasonDispatcher { contract_address: d.peers.season }.authentication().registry,
-        },
-        d.actor,
-    );
+    // The authenticated account is the player that holds entitlements.
+    let owner = d.actor;
     if has_entitlement {
         super::resource_commands::set_fixture(
             d.peers.settlement,

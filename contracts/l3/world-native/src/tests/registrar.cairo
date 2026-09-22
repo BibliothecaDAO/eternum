@@ -36,17 +36,6 @@ fn setup() -> super::Deployment {
         IDomainDispatcher { contract_address: *address }.activate();
         stop_cheat_caller_address(*address);
     }
-    let registry = crate::season::ISeasonDispatcherTrait::authentication(
-        crate::season::ISeasonDispatcher { contract_address: d.peers.season },
-    )
-        .registry;
-    for index in 1_u32..25 {
-        crate::tests::fixtures::IRegistryFixtureDispatcherTrait::add_binding(
-            crate::tests::fixtures::IRegistryFixtureDispatcher { contract_address: registry },
-            Into::<u32, felt252>::into(1000 + index).try_into().unwrap(),
-            Into::<u32, felt252>::into(2000 + index).try_into().unwrap(),
-        );
-    }
     start_cheat_block_timestamp_global(100);
     d
 }
@@ -422,15 +411,13 @@ fn preset_registration_rejects_equal_or_reversed_mercenary_bounds() {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn fixed_blitz_rosters_require_unique_bound_players_and_regular_mode() {
+fn fixed_blitz_rosters_require_unique_accounts_and_regular_mode() {
     let d = setup();
     let preset = definition(true);
     registry(d).register_preset(1, preset);
     let player = *roster(1).at(0);
     for players in array![
         array![player, player].span(), array![RosterPlayer { account: 0.try_into().unwrap(), ..player }].span(),
-        array![RosterPlayer { owner: 999.try_into().unwrap(), ..player }].span(),
-        array![RosterPlayer { account: 2002.try_into().unwrap(), ..player }].span(),
     ] {
         assert!(
             safe(d, super::authority())

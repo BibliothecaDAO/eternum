@@ -50,9 +50,9 @@ pub mod RecordedExecutionStub {
 
     #[abi(embed_v0)]
     impl Execute of IRecordedExecution<ContractState> {
-        fn execute(ref self: ContractState, intent: Intent, context: ExecutionContext, r: felt252, s: felt252) {
+        fn execute(ref self: ContractState, intent: Intent, context: ExecutionContext, signature: Span<felt252>) {
             let epoch = self.randomness_epoch();
-            self.execute_ticket(intent, context, r, s, epoch);
+            self.execute_ticket(intent, context, signature, epoch);
         }
         fn execute_batch(ref self: ContractState, actions: Array<RecordedAction>) {
             assert!(
@@ -61,7 +61,7 @@ pub mod RecordedExecutionStub {
             );
             let epoch = self.randomness_epoch();
             for action in actions {
-                self.execute_ticket(action.intent, action.context, action.r, action.s, epoch);
+                self.execute_ticket(action.intent, action.context, action.signature, epoch);
             }
         }
     }
@@ -70,11 +70,11 @@ pub mod RecordedExecutionStub {
     impl Tickets of TicketsTrait {
         #[inline(never)]
         fn execute_ticket(
-            ref self: ContractState, intent: Intent, context: ExecutionContext, r: felt252, s: felt252, epoch: u64,
+            ref self: ContractState, intent: Intent, context: ExecutionContext, signature: Span<felt252>, epoch: u64,
         ) {
             let envelope = decode_envelope(context.envelope.span()).expect('malformed envelope');
             self.authenticate_ticket(@intent, @envelope, epoch);
-            let authentication = self.authenticate_action(@intent, @envelope, r, s);
+            let authentication = self.authenticate_action(@intent, @envelope, signature);
             let reason = match authentication {
                 Ok(()) => self.validate_action(@intent, @envelope).err(),
                 Err(reason) => Some(reason),
@@ -94,11 +94,11 @@ pub mod RecordedExecutionStub {
     #[abi(embed_v0)]
     impl Failure of IRecordedExecutionFailure<ContractState> {
         fn reject_execution(
-            ref self: ContractState, intent: Intent, context: ExecutionContext, r: felt252, s: felt252,
+            ref self: ContractState, intent: Intent, context: ExecutionContext, signature: Span<felt252>,
         ) {
             let envelope = decode_envelope(context.envelope.span()).expect('malformed envelope');
             self.authenticate_ticket(@intent, @envelope, self.randomness_epoch());
-            self.authenticate_action(@intent, @envelope, r, s).expect('unauthenticated action');
+            self.authenticate_action(@intent, @envelope, signature).expect('unauthenticated action');
             assert!(accepted_context_matches(@intent, @envelope), "invalid acceptance");
             let consumed = self.consume_nonce(@intent);
             self.recording.record(@intent, @envelope, consumed, Err('EXECUTION_FAILED'));
@@ -129,7 +129,7 @@ pub mod RecordedExecutionStub {
             consumed
         }
         fn authenticate_action(
-            self: @ContractState, intent: @Intent, envelope: @crate::Envelope, r: felt252, s: felt252,
+            self: @ContractState, intent: @Intent, envelope: @crate::Envelope, signature: Span<felt252>,
         ) -> Result<(), felt252> {
             if *intent.chain != get_tx_info().unbox().chain_id {
                 return Err('FOREIGN_CHAIN');
@@ -140,7 +140,11 @@ pub mod RecordedExecutionStub {
             if *intent.actor != self.actor.read() {
                 return Err('INVALID_ACTOR');
             }
-            if !check_ecdsa_signature(*envelope.action, self.public_key.read(), r, s) {
+            // The stub stands in for the actor's account: one device key, signatures `[device_key, r, s]`.
+            let valid = signature.len() == 3
+                && *signature[0] == self.public_key.read()
+                && check_ecdsa_signature(*envelope.action, *signature[0], *signature[1], *signature[2]);
+            if !valid {
                 return Err('INVALID_SIGNATURE');
             }
             Ok(())
@@ -174,7 +178,6 @@ pub mod RecordedExecutionStub {
             assert!(fixture_game(game) && actor == self.actor.read(), "unknown fixture actor or game");
             let head = self.recording.heads.read(game);
             Admission {
-                public_key: self.public_key.read(),
                 rules: 789,
                 execution_config: 987,
                 nonce: self.nonces.read(game),

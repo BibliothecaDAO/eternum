@@ -3,13 +3,13 @@ import {
   nativeExecutionOutcomes,
   requireNativeExecutionOutcome,
 } from "../../../../../packages/provider/src/native-batch";
-import { ec, hash, RpcProvider } from "starknet";
+import { hash, RpcProvider } from "starknet";
 import {
   encodeNativeCommand,
   frameNativeIntent,
   type NativeCommand,
 } from "../../../../../packages/provider/src/native-command";
-import { createNativeTicketSubmission } from "../../../../../packages/provider/src/native-ticket";
+import { createNativeTicketSubmission, signGameplayIntent } from "../../../../../packages/provider/src/native-ticket";
 import { nativeDomainAbi } from "./manifest";
 import { confirmedTransactionReceipt } from "../../shared/transaction";
 import type { NativeWorldManifest } from "./types";
@@ -70,15 +70,10 @@ export async function executeNativeAdminCommand(
 }
 
 async function submitAdminIntent(input: AdminCommandInput, intent: string[]) {
-  const signature = ec.starkCurve.sign(hash.computePoseidonHashOnElements(intent), input.privateKey);
+  const signature = signGameplayIntent(hash.computePoseidonHashOnElements(intent), input.privateKey);
   const submit = createNativeTicketSubmission(input.admissionUrl);
   try {
-    return await submit({
-      intent,
-      r: `0x${signature.r.toString(16)}`,
-      s: `0x${signature.s.toString(16)}`,
-      public_key: ec.starkCurve.getStarkKey(input.privateKey),
-    });
+    return await submit({ intent, signature });
   } finally {
     submit.dispose();
   }
@@ -92,8 +87,8 @@ async function buildAdminIntent(input: AdminCommandInput, season: string) {
       "pre_confirmed",
     ),
   ]);
-  if (admission.length !== 6) throw new Error("Unexpected native admission view");
-  const [, rules, , nonce, , timestamp] = admission;
+  if (admission.length !== 5) throw new Error("Unexpected native admission view");
+  const [rules, , nonce, , timestamp] = admission;
   const intent = frameNativeIntent({
     chain,
     deployment: season,

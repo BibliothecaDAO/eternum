@@ -52,13 +52,13 @@ vi.mock("starknet", async (original) => ({
 }));
 
 const vector = readFileSync(
-  new URL("../../../contracts/l3/randomness-protocol/tests/fixtures/v4.txt", import.meta.url),
+  new URL("../../../contracts/l3/randomness-protocol/tests/fixtures/v5.txt", import.meta.url),
   "utf8",
 )
   .trim()
   .split(/\s+/);
 const intentLength = Number(BigInt(vector[1]));
-const signed = { intent: vector.slice(2, 2 + intentLength), r: "0x3", s: "0x4", public_key: "0x5" };
+const signed = { intent: vector.slice(2, 2 + intentLength), signature: ["0x3", "0x4"] };
 const action = vector[2 + intentLength];
 const transports: Array<ReturnType<typeof createNativeTicketSubmission>> = [];
 const transport = () => {
