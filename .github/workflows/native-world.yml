@@ -80,6 +80,26 @@ jobs:
           scarb build
           /usr/bin/time -v scarb test
 
+  player-account:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      # The account package declares its own toolchain (repository root), not world-native's.
+      - uses: software-mansion/setup-scarb@v1
+        with:
+          tool-versions: .tool-versions
+          scarb-lock: contracts/l3/player-account/Scarb.lock
+      - uses: foundry-rs/setup-snfoundry@v3
+        with:
+          tool-versions: .tool-versions
+      - uses: software-mansion/setup-universal-sierra-compiler@v1
+      - name: Build and test the player account
+        working-directory: contracts/l3/player-account
+        run: |
+          scarb fmt --check
+          snforge test
+
   native-deployer:
     runs-on: ubuntu-latest
     timeout-minutes: 15
