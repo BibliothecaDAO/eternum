@@ -257,3 +257,18 @@ describe("identity Worker", () => {
     expect((await other.session())?.user.address ?? null).toBeNull();
   });
 });
+
+// Computed by the RealmsAccount crate (snforge: poseidon over the serialized ByteArray, device_change_hash, and
+// deploy_syscall from zero), so a change on either side fails here.
+describe("the account's own arithmetic", () => {
+  it("agrees with Cairo on the Realms id, the guardian message and the account address", () => {
+    const realmsId = realmsIdOf("0x5a3c");
+    expect(realmsId).toBe("0x734aaebc35ab0e92e58e896fd0ba9cbd02df71fb4eeac417c062061bfeb4c27");
+    expect(
+      deviceChangeHash({ chainId: CHAIN_ID, account: "0x1234", action: "REVOKE", deviceKey: "0xabc", counter: 7 }),
+    ).toBe("0x6391ae16e59af5b3e7a103409189beb1ef6ac55e4a9e2c0e02898f6b7cb390a");
+    expect(realmsAccountAddress(realmsId, ACCOUNT_CLASS_HASH, ec.starkCurve.getStarkKey(GUARDIAN_KEY))).toBe(
+      "0x3e6f9c39817718ef8deb75b935d22a0b4fb9c5e97899395b5ed07e70df3656",
+    );
+  });
+});
