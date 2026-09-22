@@ -45,7 +45,7 @@ jobs:
         run: pnpm --dir packages/notifications test
       - name: Verify authenticated preference transport
         run: pnpm --dir packages/identity test
-      - name: Test identity APIs and PostgreSQL races
+      - name: Test the identity Worker on D1
         run: pnpm --dir apps/realms test
       - name: Test launch lifecycle and PostgreSQL stores
         run: pnpm --dir apps/launch-service test
@@ -58,5 +58,6 @@ jobs:
       - name: Typecheck services
         run: |
           pnpm --dir apps/realms typecheck
+          pnpm --dir apps/guardian typecheck
           pnpm --dir apps/launch-service typecheck
           pnpm --dir apps/realtime-server typecheck

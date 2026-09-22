@@ -1,0 +1,17 @@
+{
+  "name": "@realms-world/guardian",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/guardian.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "starknet": "catalog:web"
+  },
+  "devDependencies": {
+    "typescript": "catalog:web"
+  }
+}

@@ -1,15 +1,8 @@
 import { automaticPushSourceKey } from "@bibliothecadao/notifications";
 import { useEffect, useRef, useState } from "react";
 import { identityClient } from "@/hooks/context/identity-session";
-import { getActiveGame } from "@/runtime/world";
-import { buildEntryHref } from "@/play/navigation/play-route";
 import { localNotificationCapability } from "@/pwa/local-notification-client";
-import {
-  disablePushNotifications,
-  enablePushNotifications,
-  readPushDevice,
-  sendBackgroundPushTest,
-} from "@/pwa/push-notification-client";
+import { disablePushNotifications, enablePushNotifications, readPushDevice } from "@/pwa/push-notification-client";
 import type { PushNotificationDevice } from "@/pwa/notification-database";
 import type { PushConfiguration } from "@bibliothecadao/notifications";
 import { HUD_BODY } from "@/ui/design-system/atoms/hud-typography";
@@ -23,7 +16,6 @@ export function PushNotificationSettings({ owner }: { owner: string | null }) {
   const actionPending = useRef(false);
   const refreshVersion = useRef(0);
   const [error, setError] = useState<string | null>(null);
-  const [feedback, setFeedback] = useState<string | null>(null);
   const supported = typeof PushManager !== "undefined" && !!navigator.locks;
   const capability = localNotificationCapability();
   useEffect(() => {
@@ -61,13 +53,12 @@ export function PushNotificationSettings({ owner }: { owner: string | null }) {
     };
   }, [owner, supported]);
 
-  const run = async (action: "enable" | "disable" | "test") => {
+  const run = async (action: "enable" | "disable") => {
     if (!owner || actionPending.current) return;
     actionPending.current = true;
     refreshVersion.current++;
     setBusy(true);
     setError(null);
-    setFeedback(null);
     try {
       if (action === "enable") {
         if (!config?.enabled) throw new Error("Background tests are unavailable.");
@@ -78,17 +69,9 @@ export function PushNotificationSettings({ owner }: { owner: string | null }) {
           config.directMessages === true,
         );
         setDirectMessagesEnabled(config.directMessages === true);
-      } else if (action === "disable") {
+      } else {
         await disablePushNotifications(device?.owner ?? owner);
         setDirectMessagesEnabled(false);
-      } else {
-        const world = getActiveGame();
-        if (!world) throw new Error("Enter a game before sending a test.");
-        await sendBackgroundPushTest(
-          owner,
-          buildEntryHref({ chainId: world.chainId, gameId: world.gameId, intent: "play", autoSettle: false }),
-        );
-        setFeedback("Test accepted by the push service. Your browser and OS control when it appears.");
       }
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Background notification request failed.");
@@ -160,24 +143,7 @@ export function PushNotificationSettings({ owner }: { owner: string | null }) {
                   : "Enable game alerts"}
             </button>
           )}
-          {device?.state === "active" && device.owner === owner && (
-            <button
-              type="button"
-              className={HUD_PILL_BUTTON}
-              disabled={busy || !!capability || !config?.enabled}
-              onClick={() => {
-                void run("test");
-              }}
-            >
-              Send background test
-            </button>
-          )}
         </div>
-      )}
-      {feedback && (
-        <p role="status" className={HUD_BODY}>
-          {feedback}
-        </p>
       )}
       {error && (
         <p role="alert" className="text-xs text-danger">

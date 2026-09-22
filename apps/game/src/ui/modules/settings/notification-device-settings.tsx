@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useIdentitySessionStore } from "@/hooks/context/identity-session";
+import { notificationOwnerOf, useIdentitySessionStore } from "@/hooks/context/identity-session";
 import {
   localNotificationCapability,
   notificationWorkerRequest,
@@ -62,7 +62,7 @@ export function NotificationDeviceSettings({
         if ((await Notification.requestPermission()) !== "granted")
           throw new Error("Notification permission was not granted.");
       }
-      if (useIdentitySessionStore.getState().session?.user.id !== owner)
+      if (notificationOwnerOf(useIdentitySessionStore.getState().session) !== owner)
         throw new Error("Your account changed. Reopen Settings.");
       if (action === "test") {
         const current = await readLocalNotificationDevice(owner);
@@ -78,7 +78,7 @@ export function NotificationDeviceSettings({
         );
       } else {
         const next = await notificationWorkerRequest<NotificationDevice | null>(owner, action);
-        if (useIdentitySessionStore.getState().session?.user.id !== owner) {
+        if (notificationOwnerOf(useIdentitySessionStore.getState().session) !== owner) {
           await notificationWorkerRequest(owner, "disable");
           throw new Error("Your account changed. Device delivery remains off.");
         }

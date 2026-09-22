@@ -1,57 +1,11 @@
-import { count, sql } from "drizzle-orm";
-
-import { db } from "@realms-world/db/client";
-import { starknet_mmr_updates, user } from "@realms-world/db";
-import { hasChosenIdentityName } from "@realms-world/identity";
-
 /**
- * Name uniqueness is case-insensitive; the functional unique index on
- * lower(name) is the race-proof guarantee and this pre-check only shapes the
- * error. Format rules live in name-rules.ts.
+ * Name uniqueness is case-insensitive; the unique index on lower(name) is the race-proof guarantee and this pre-check
+ * only shapes the error. Format rules live in name-rules.ts.
  */
-export const isNameTaken = async (name: string, excludeUserId?: string): Promise<boolean> => {
-  const rows = await db
-    .select({ id: user.id })
-    .from(user)
-    .where(sql`lower(${user.name}) = lower(${name})`)
-    .limit(2);
-  return rows.some((row) => row.id !== excludeUserId);
-};
-
-interface LeaderboardPlayerRow {
-  address: string;
-  name: string | null;
-  portrait: string | null;
-  games: number;
-}
-
-/**
- * The ladder's population: every player the MMR event history has seen, with
- * their game count, joined to identity names in memory (both sides store the
- * normalized address, so the join is exact).
- */
-export const leaderboardPopulation = async (limit = 500): Promise<LeaderboardPlayerRow[]> => {
-  const played = await db
-    .select({ player: starknet_mmr_updates.player, games: count() })
-    .from(starknet_mmr_updates)
-    .groupBy(starknet_mmr_updates.player)
-    .orderBy(sql`count(*) desc`)
-    .limit(limit);
-  if (played.length === 0) return [];
-
-  const identities = await db
-    .select({ id: user.id, name: user.name, image: user.image })
-    .from(user)
-    .where(sql`${user.id} in ${played.map((row) => row.player)}`);
-  const byAddress = new Map(identities.map((row) => [row.id, row]));
-
-  return played.map((row) => {
-    const identity = byAddress.get(row.player);
-    return {
-      address: row.player,
-      name: identity && hasChosenIdentityName(identity) ? identity.name : null,
-      portrait: identity?.image ?? null,
-      games: row.games,
-    };
-  });
+export const isNameTaken = async (db: D1Database, name: string, excludeUserId?: string): Promise<boolean> => {
+  const { results } = await db
+    .prepare('SELECT id FROM "user" WHERE lower(name) = lower(?) LIMIT 2')
+    .bind(name)
+    .all<{ id: string }>();
+  return results.some((row) => row.id !== excludeUserId);
 };

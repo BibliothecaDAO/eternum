@@ -1,7 +1,9 @@
-export const notificationJson = (body: unknown, status = 200) =>
+/** Identity answers are per caller, so none is cached. */
+export const json = (body: unknown, status = 200) =>
   Response.json(body, { status, headers: { "cache-control": "no-store" } });
 
-export async function readNotificationBody(request: Pick<Request, "body">, limit: number): Promise<string> {
+/** Reads at most `limit` bytes of UTF-8, so an oversized body is refused before it is buffered. */
+export async function readBody(request: Pick<Request, "body">, limit: number): Promise<string> {
   if (!request.body) throw new Error("missing_body");
   const reader = request.body.getReader();
   const chunks: Uint8Array[] = [];
@@ -26,5 +28,5 @@ export async function readNotificationBody(request: Pick<Request, "body">, limit
     bytes.set(chunk, offset);
     offset += chunk.length;
   }
-  return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  return new TextDecoder("utf-8", { fatal: true, ignoreBOM: false }).decode(bytes);
 }

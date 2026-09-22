@@ -8,6 +8,9 @@ on:
     branches: [native-services, native-world-foundation]
     paths:
       - "apps/realms/**"
+      - "apps/guardian/**"
+      - "packages/identity/**"
+      - "packages/notifications/**"
       - "pnpm-lock.yaml"
       - ".github/workflows/deploy-workers.yml"
   workflow_dispatch:
@@ -34,7 +37,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        worker: [apps/realms]
+        include:
+          - worker: apps/realms
+            package: "@realms-world/realms"
+            database: realms-identity
     env:
       TARGET: ${{ inputs.environment || 'staging' }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -54,20 +60,63 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --ignore-scripts
 
+      - name: Build workspace dependencies
+        run: pnpm --filter "${{ matrix.package }}^..." run build
+
+      # Migrations run before the code that needs them; the database is created on its environment's first deploy.
+      - name: Prepare the database
+        if: matrix.database
+        working-directory: ${{ matrix.worker }}
+        run: |
+          set -euo pipefail
+          name="${{ matrix.database }}-$TARGET"
+          if ! pnpm exec wrangler d1 list --json | jq -e --arg name "$name" 'any(.[]; .name == $name)' > /dev/null; then
+            pnpm exec wrangler d1 create "$name"
+          fi
+          pnpm exec wrangler d1 migrations apply DB --env "$TARGET" --remote
+
+      # Secrets come from the environment's GitHub secrets and are set before the code that reads them deploys.
+      - name: Set identity secrets
+        if: matrix.worker == 'apps/realms'
+        working-directory: ${{ matrix.worker }}
+        env:
+          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+          IDENTITY_RPC_URL: ${{ secrets.CLIENT_IDENTITY_RPC_URL }}
+        run: |
+          set -euo pipefail
+          for name in BETTER_AUTH_SECRET IDENTITY_RPC_URL; do
+            [ -n "${!name}" ] || { echo "::error::$name is not set for the $TARGET environment"; exit 1; }
+          done
+          jq -n '{BETTER_AUTH_SECRET: env.BETTER_AUTH_SECRET, IDENTITY_RPC_URL: env.IDENTITY_RPC_URL}' |
+            pnpm exec wrangler secret bulk --env "$TARGET"
+
       - name: Deploy
         working-directory: ${{ matrix.worker }}
         env:
           WRANGLER_OUTPUT_FILE_PATH: ${{ runner.temp }}/wrangler-output.ndjson
         run: pnpm exec wrangler deploy --env "$TARGET"
 
-      # The deploy record names the Worker's route pattern on our zone; its host serves /api/health.
-      - name: Verify the route answers
+      # The deploy record names the Worker's route pattern and the version it deployed; the route must answer
+      # /api/health from that version, not from the one it replaced.
+      - name: Verify the deployed version answers
         env:
           WRANGLER_OUTPUT_FILE_PATH: ${{ runner.temp }}/wrangler-output.ndjson
         run: |
           set -euo pipefail
-          target=$(jq -r 'select(.type == "deploy") | .targets[0]' "$WRANGLER_OUTPUT_FILE_PATH")
+          record=$(jq -c 'select(.type == "deploy")' "$WRANGLER_OUTPUT_FILE_PATH")
+          target=$(jq -r '.targets[0]' <<< "$record")
+          version=$(jq -r '.version_id' <<< "$record")
           host=${target#https://}
           host=${host%%/*}
-          curl -fsS --retry 5 --retry-delay 3 --retry-all-errors "https://$host/api/health" | tee health.json
-          jq -e --arg env "$TARGET" '.environment == $env' health.json
+          for attempt in $(seq 1 20); do
+            if curl -fsS "https://$host/api/health" > health.json &&
+              jq -e --arg env "$TARGET" --arg version "$version" \
+                '.environment == $env and .version == $version' health.json > /dev/null; then
+              cat health.json
+              exit 0
+            fi
+            sleep 3
+          done
+          echo "::error::https://$host/api/health did not answer from version $version"
+          cat health.json || true
+          exit 1

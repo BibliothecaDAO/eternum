@@ -139,8 +139,6 @@ it("uses credentialed identity routes for push setup and a device capability for
       body: JSON.stringify({ owner: "0x1", id, foreground: true }),
     }),
   ]);
-  await client.sendPushTest("0x1", id, "/enter/madara/game");
-  expect(fetch.mock.calls.at(-1)?.[0]).toBe("https://realms.test/api/notifications/push/test");
   await client.revokePushSubscription(id, id);
   expect(fetch.mock.calls.at(-1)?.[1]?.body).toBe(JSON.stringify({ id, token: id }));
   expect(fetch.mock.calls.at(-1)?.[0]).toBe("https://realms.test/api/notifications/push/revoke");

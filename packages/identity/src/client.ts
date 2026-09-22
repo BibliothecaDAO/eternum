@@ -151,7 +151,5 @@ export const createIdentityClient = ({ baseUrl, fetch = globalThis.fetch }: Iden
     setPushGameForeground: (owner: string, id: string, foreground: boolean) =>
       pushRequest<{ foreground: boolean }>("foreground", { owner, id, foreground }, { keepalive: true }),
     revokePushSubscription: (id: string, token: string) => pushRequest<{ revoked: boolean }>("revoke", { id, token }),
-    sendPushTest: (owner: string, id: string, target: string) =>
-      pushRequest<{ status: "accepted" }>("test", { owner, id, target }),
   };
 };

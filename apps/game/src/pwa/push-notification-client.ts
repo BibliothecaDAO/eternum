@@ -1,4 +1,4 @@
-import { identityClient, useIdentitySessionStore } from "@/hooks/context/identity-session";
+import { identityClient, notificationOwnerOf, useIdentitySessionStore } from "@/hooks/context/identity-session";
 import {
   automaticPushSourceKey,
   parseWebPushSubscription,
@@ -139,7 +139,7 @@ export async function reconcilePushAccount(): Promise<void> {
 }
 
 function requiresPushRevocation(device: PushNotificationDevice): boolean {
-  const owner = useIdentitySessionStore.getState().session?.user.id ?? null;
+  const owner = notificationOwnerOf(useIdentitySessionStore.getState().session) ?? null;
   return device.owner !== owner || device.state === "revoking";
 }
 
@@ -153,14 +153,6 @@ async function readInstalledPushDevice(
     if (!(await registration.pushManager?.getSubscription())) return null;
     throw error;
   }
-}
-
-export async function sendBackgroundPushTest(owner: string, target: string): Promise<void> {
-  assertCurrentOwner(owner);
-  const device = await readPushDevice();
-  if (device?.owner !== owner || device.state !== "active")
-    throw new Error("Enable background notifications on this device first.");
-  await identityClient.sendPushTest(owner, device.id, target);
 }
 
 /** Refreshes the server lease that prevents automatic push while any game window is visible. */
@@ -224,7 +216,7 @@ async function requireRegistration() {
   return registration;
 }
 function assertCurrentOwner(owner: string) {
-  if (useIdentitySessionStore.getState().session?.user.id !== owner)
+  if (notificationOwnerOf(useIdentitySessionStore.getState().session) !== owner)
     throw new Error("Your account changed. Reopen Settings.");
 }
 function publicKeyBytes(key: string): Uint8Array<ArrayBuffer> {

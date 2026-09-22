@@ -41,6 +41,9 @@ interface IdentitySessionStore {
 
 const resolveStatus = (session: Session | null): IdentitySessionStatus => (session ? "signed-in" : "anonymous");
 
+/** Notifications belong to the Realms account, named by its Realms id: every notification surface reads the owner here. */
+export const notificationOwnerOf = (session: Session | null): string | null => session?.user.realmsId ?? null;
+
 /** The signed-in user's chosen username, null before they choose one (the name then still reads as the address). */
 export const identityUsername = (session: Session | null): string | null =>
   session ? profileOfIdentityUser(session.user).name : null;

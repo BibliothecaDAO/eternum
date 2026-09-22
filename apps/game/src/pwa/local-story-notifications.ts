@@ -1,4 +1,4 @@
-import { useIdentitySessionStore } from "@/hooks/context/identity-session";
+import { notificationOwnerOf, useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useNotificationPreferenceStore } from "@/hooks/use-notification-preferences";
 import { getActiveGame } from "@/runtime/world";
@@ -54,7 +54,7 @@ async function deliverStory(value: Record<string, unknown>, scope: StoryEventSco
 }
 
 function resolveDeliveryContext(scope: StoryEventScope) {
-  const identity = useIdentitySessionStore.getState().session?.user.id;
+  const identity = notificationOwnerOf(useIdentitySessionStore.getState().session);
   const account = useAccountStore.getState().account?.address;
   const preferences = useNotificationPreferenceStore.getState();
   if (

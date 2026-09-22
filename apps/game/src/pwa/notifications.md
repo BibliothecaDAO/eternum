@@ -47,8 +47,8 @@ from the previous account.
 Claims commit before showNotification. This deliberately favors suppression of repeated alerts: a crash or OS error
 after the claim may lose a local alert, and the same ID will not retry within its lifetime. Browser acceptance is not
 proof of an OS banner. Local delivery stops when the page is frozen, discarded, or closed. Explicitly enabled automatic
-delivery continues through the [server notifier](../../../realms/server/automatic-notifications/README.md), scoped to
-the subscribed chain/world and the account's latest preference.
+delivery continues through the server notifier, scoped to the subscribed chain/world and the account's latest
+preference.
 
 Verification uses dispatcher, worker, policy and permission-control unit fixtures. The deploy-time browser lifecycle
 runner and its Playwright dependency have been removed to match the current deployment pipeline. Physical Android/iOS

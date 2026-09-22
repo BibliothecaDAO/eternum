@@ -31,8 +31,8 @@
     "apps/realms": {
       "entry": [
         "src/main.tsx",
-        "server/main.ts",
-        "server/worker.ts"
+        "server/worker.ts",
+        "server/migrate-box-users.ts"
       ],
       "ignore": [
         "dist/**"

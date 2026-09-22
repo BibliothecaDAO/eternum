@@ -1,0 +1,222 @@
+import { readFileSync } from "node:fs";
+import { isoBase64URL, isoCBOR } from "@simplewebauthn/server/helpers";
+import { buildSiwsMessage } from "@realms-world/identity";
+import { createGuardian, deviceChangeHash } from "@realms-world/guardian";
+import { ec } from "starknet";
+import { getPlatformProxy } from "wrangler";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+
+import { createIdentityAuth } from "./auth";
+import { realmsAccountAddress } from "./devices";
+import type { IdentityEnv } from "./env";
+import { realmsIdOf } from "./realms-id";
+import { routeIdentityRequest } from "./worker";
+
+const ORIGIN = "https://staging.realms.party";
+const ACCOUNT_CLASS_HASH = "0x68995feeefffc1647118073e1ff16179f07eb8eed6c8fb03cce73109f5fbacd";
+const GUARDIAN_KEY = "0x2dccce1da22003777062ee0870e9881b460a8b7eca276870f57c601f182136c";
+const CHAIN_ID = "0x5245414c4d535f53484152445f41";
+
+let proxy: Awaited<ReturnType<typeof getPlatformProxy<{ DB: D1Database }>>>;
+let env: IdentityEnv;
+let auth: ReturnType<typeof createIdentityAuth>;
+
+beforeAll(async () => {
+  proxy = await getPlatformProxy<{ DB: D1Database }>({ environment: "staging", persist: false });
+  const migration = readFileSync(new URL("../migrations/0001_identity.sql", import.meta.url), "utf8");
+  const statements = migration
+    .replace(/^--.*$/gm, "")
+    .split(";")
+    .map((statement) => statement.trim())
+    .filter(Boolean);
+  await proxy.env.DB.batch(statements.map((statement) => proxy.env.DB.prepare(statement)));
+  env = {
+    ENVIRONMENT: "staging",
+    BASE_URL: ORIGIN,
+    ACCOUNT_CLASS_HASH,
+    BETTER_AUTH_SECRET: "identity-test-secret-identity-test-secret",
+    IDENTITY_RPC_URL: "http://127.0.0.1:1",
+    DB: proxy.env.DB,
+    GUARDIAN: createGuardian(GUARDIAN_KEY),
+    PUBLIC_RATE_LIMIT: { limit: async () => ({ success: true }) },
+    VERSION: { id: "test", tag: "", timestamp: "" },
+  };
+  // The wallet contract's own signature check runs on mainnet; everything after it is under test.
+  auth = createIdentityAuth(env, async () => true);
+}, 60_000);
+
+afterAll(() => proxy?.dispose());
+
+/** A browser: one cookie jar, first-party requests to the app's /api. */
+const createBrowser = () => {
+  const cookies = new Map<string, string>();
+  const request = async (path: string, init: { method?: string; body?: unknown } = {}) => {
+    const response = await routeIdentityRequest(
+      new Request(`${ORIGIN}${path}`, {
+        method: init.method ?? (init.body === undefined ? "GET" : "POST"),
+        headers: {
+          origin: ORIGIN,
+          "content-type": "application/json",
+          cookie: [...cookies].map(([name, value]) => `${name}=${value}`).join("; "),
+        },
+        ...(init.body === undefined ? {} : { body: JSON.stringify(init.body) }),
+      }),
+      env,
+      auth,
+    );
+    for (const header of response.headers.getSetCookie()) {
+      const [pair = ""] = header.split(";");
+      const separator = pair.indexOf("=");
+      cookies.set(pair.slice(0, separator), pair.slice(separator + 1));
+    }
+    return response;
+  };
+  const session = async () =>
+    (await (await request("/api/auth/get-session")).json()) as {
+      user: { id: string; realmsId: string; address?: string | null };
+    } | null;
+  return { request, session };
+};
+
+const signInWithWallet = async (browser: ReturnType<typeof createBrowser>, address: string, path = "verify") => {
+  const { nonce } = (await (await browser.request("/api/auth/siws/nonce", { body: { address } })).json()) as {
+    nonce: string;
+  };
+  const message = buildSiwsMessage({ address, chainId: "SN_MAIN", domain: new URL(ORIGIN).host, nonce, uri: ORIGIN });
+  return browser.request(`/api/auth/siws/${path}`, {
+    body: { message: JSON.stringify(message), signature: ["0x1", "0x2"], address },
+  });
+};
+
+/** A platform authenticator with a P-256 key, answering one registration ceremony with a "none" attestation. */
+const registerPasskey = async (browser: ReturnType<typeof createBrowser>) => {
+  const options = (await (await browser.request("/api/auth/passkey/generate-register-options")).json()) as {
+    challenge: string;
+  };
+  const keys = (await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, [
+    "sign",
+  ])) as CryptoKeyPair;
+  const jwk = (await crypto.subtle.exportKey("jwk", keys.publicKey)) as JsonWebKey;
+  const publicKey = isoCBOR.encode(
+    new Map<number, number | Uint8Array>([
+      [1, 2],
+      [3, -7],
+      [-1, 1],
+      [-2, isoBase64URL.toBuffer(jwk.x!)],
+      [-3, isoBase64URL.toBuffer(jwk.y!)],
+    ]),
+  );
+  const credentialId = crypto.getRandomValues(new Uint8Array(16));
+  const rpIdHash = new Uint8Array(
+    await crypto.subtle.digest("SHA-256", new TextEncoder().encode("staging.realms.party")),
+  );
+  const authData = new Uint8Array([
+    ...rpIdHash,
+    0x45, // user present, user verified, attested credential data
+    0,
+    0,
+    0,
+    0,
+    ...new Uint8Array(16),
+    0,
+    credentialId.length,
+    ...credentialId,
+    ...publicKey,
+  ]);
+  const clientDataJSON = new Uint8Array(
+    new TextEncoder().encode(JSON.stringify({ type: "webauthn.create", challenge: options.challenge, origin: ORIGIN })),
+  );
+  const attestationObject = isoCBOR.encode(
+    new Map<string, unknown>([
+      ["fmt", "none"],
+      ["attStmt", new Map()],
+      ["authData", authData],
+    ]) as never,
+  );
+  const id = isoBase64URL.fromBuffer(credentialId);
+  return browser.request("/api/auth/passkey/verify-registration", {
+    body: {
+      response: {
+        id,
+        rawId: id,
+        type: "public-key",
+        clientExtensionResults: {},
+        response: {
+          clientDataJSON: isoBase64URL.fromBuffer(clientDataJSON),
+          attestationObject: isoBase64URL.fromBuffer(attestationObject),
+          transports: ["internal"],
+        },
+      },
+    },
+  });
+};
+
+const deviceChangeFor = (realmsId: string, overrides: Partial<{ account: string; counter: number }> = {}) => ({
+  chainId: CHAIN_ID,
+  account: realmsAccountAddress(realmsId, ACCOUNT_CLASS_HASH, ec.starkCurve.getStarkKey(GUARDIAN_KEY)),
+  action: "ADD" as const,
+  deviceKey: "0x3ab1c9",
+  counter: 1,
+  ...overrides,
+});
+
+describe("identity Worker", () => {
+  it("refuses a device approval without a session", async () => {
+    const response = await createBrowser().request("/api/devices", { body: deviceChangeFor(realmsIdOf("anyone")) });
+    expect(response.status).toBe(401);
+  });
+
+  it("keeps the anonymous user when its passkey is added, and approves only its own account's exact change", async () => {
+    const browser = createBrowser();
+    expect((await browser.request("/api/auth/sign-in/anonymous", { body: {} })).status).toBe(200);
+    const before = await browser.session();
+    expect(before?.user.realmsId).toBe(realmsIdOf(before!.user.id));
+
+    const unsecured = await browser.request("/api/devices", { body: deviceChangeFor(before!.user.realmsId) });
+    expect(unsecured.status).toBe(403);
+
+    expect((await registerPasskey(browser)).status).toBe(200);
+    const after = await browser.session();
+    expect(after?.user.id).toBe(before?.user.id);
+    expect(after?.user.realmsId).toBe(before?.user.realmsId);
+
+    const fieldPrime = `0x${(2n ** 251n + 17n * 2n ** 192n + 1n).toString(16)}`;
+    const unreduced = { ...deviceChangeFor(after!.user.realmsId), deviceKey: fieldPrime };
+    expect((await browser.request("/api/devices", { body: unreduced })).status).toBe(400);
+
+    const someoneElse = deviceChangeFor(realmsIdOf("someone-else"));
+    expect((await browser.request("/api/devices", { body: someoneElse })).status).toBe(403);
+
+    const requested = deviceChangeFor(after!.user.realmsId, { counter: 4 });
+    const approval = (await (await browser.request("/api/devices", { body: requested })).json()) as {
+      signature: [string, string];
+    };
+    const [r, s] = approval.signature;
+    const guardianKey = ec.starkCurve.getPublicKey(GUARDIAN_KEY);
+    expect(
+      ec.starkCurve.verify(new ec.starkCurve.Signature(BigInt(r), BigInt(s)), deviceChangeHash(requested), guardianKey),
+    ).toBe(true);
+    for (const altered of [
+      { ...requested, counter: 5 },
+      { ...requested, action: "REVOKE" as const },
+      { ...requested, deviceKey: "0x3ab1ca" },
+      { ...requested, chainId: "0x1" },
+    ]) {
+      expect(
+        ec.starkCurve.verify(new ec.starkCurve.Signature(BigInt(r), BigInt(s)), deviceChangeHash(altered), guardianKey),
+      ).toBe(false);
+    }
+  });
+
+  it("refuses to link a wallet that already belongs to another Realms account", async () => {
+    const wallet = "0x0456";
+    expect((await signInWithWallet(createBrowser(), wallet)).status).toBe(200);
+
+    const other = createBrowser();
+    await other.request("/api/auth/sign-in/anonymous", { body: {} });
+    const refused = await signInWithWallet(other, wallet, "link");
+    expect(refused.status).toBe(409);
+    expect(((await refused.json()) as { message: string }).message).toBe("WALLET_LINKED_ELSEWHERE");
+    expect((await other.session())?.user.address ?? null).toBeNull();
+  });
+});

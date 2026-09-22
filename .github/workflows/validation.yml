@@ -57,6 +57,7 @@ jobs:
               "services": [
                   "apps/launch-service/**",
                   "apps/realms/**",
+                  "apps/guardian/**",
                   "apps/web/**",
                   "apps/realtime-server/**",
                   "packages/**",
