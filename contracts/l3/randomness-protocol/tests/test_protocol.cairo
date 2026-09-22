@@ -35,7 +35,7 @@ struct EpochVector {
 
 #[test]
 fn canonical_cross_language_vectors() {
-    let input = read_txt(@FileTrait::new("tests/fixtures/v4.txt"));
+    let input = read_txt(@FileTrait::new("tests/fixtures/v5.txt"));
     let mut fields = input.span();
     let vectors: Array<Vector> = Serde::deserialize(ref fields).unwrap();
     let epochs: Array<EpochVector> = Serde::deserialize(ref fields).unwrap();
@@ -86,7 +86,7 @@ fn rejects_noncanonical_bytes() {
 
 #[test]
 fn rejects_malformed_envelopes() {
-    let input = read_txt(@FileTrait::new("tests/fixtures/v4.txt"));
+    let input = read_txt(@FileTrait::new("tests/fixtures/v5.txt"));
     let mut fields = input.span();
     let vectors: Array<Vector> = Serde::deserialize(ref fields).unwrap();
     for vector in vectors {
@@ -109,7 +109,7 @@ fn rejects_malformed_envelopes() {
 
 #[test]
 fn rejects_malformed_intents() {
-    let input = read_txt(@FileTrait::new("tests/fixtures/v4.txt"));
+    let input = read_txt(@FileTrait::new("tests/fixtures/v5.txt"));
     let mut fields = input.span();
     let vectors: Array<Vector> = Serde::deserialize(ref fields).unwrap();
     for vector in vectors {

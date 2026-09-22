@@ -7,11 +7,11 @@ import { defaultPresetForEnvironment } from "../../../config/deployer/clean/cons
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { Worker, isMainThread, parentPort, workerData, threadId } from "node:worker_threads";
 import path from "node:path";
-import { bindGameplayAccounts } from "@bibliothecadao/eternum";
+import { bindGameplayAccounts, signGameplayIntent } from "@bibliothecadao/eternum";
 import { splitPlaytestRoster } from "../../../apps/launch-service/src/slots";
 import { configureGameplayAccountSubmits, openShard } from "@bibliothecadao/eternum/game-client";
 import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
-import { Account, ec, logger } from "starknet";
+import { Account, logger } from "starknet";
 import { assertChainId } from "../../../packages/chain/chain-guard.js";
 import { launchGame } from "../../../config/deployer/clean/launch/runner";
 import { createHarnessAccounts, type HarnessAccount } from "./account-factory";
@@ -165,8 +165,7 @@ async function main(): Promise<void> {
     signIntent: async (actor, digest) => {
       const key = signingKeys.get(BigInt(actor.address));
       if (!key) throw new Error(`No harness signing key for ${actor.address}`);
-      const signature = ec.starkCurve.sign(digest, key);
-      return { r: signature.r, s: signature.s, publicKey: BigInt(ec.starkCurve.getStarkKey(key)) };
+      return signGameplayIntent(digest, key);
     },
     gameId: game.gameId,
   });

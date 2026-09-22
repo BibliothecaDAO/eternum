@@ -23,10 +23,6 @@ fn setup() -> (super::Deployment, ResourceKey, ResourceKey, ContractAddress) {
             30,
         ),
     );
-    let registry = ISeasonDispatcher { contract_address: d.peers.season }.authentication().registry;
-    super::fixtures::IRegistryFixtureDispatcherTrait::add_binding(
-        super::fixtures::IRegistryFixtureDispatcher { contract_address: registry }, 0x555.try_into().unwrap(), friend,
-    );
     (d, home, second, friend)
 }
 fn view(d: super::Deployment) -> IGuildsDispatcher {

@@ -107,7 +107,7 @@ pub fn execute_in_game(
         deadline: 10000,
         ..intent(deployment, game_id),
     };
-    let (r, s) = signature(deployment, action);
+    let signed = signature(deployment, action);
     start_cheat_block_timestamp_global(executed_at);
     let ticket = recorded::make_intent(deployment.peers.season, action);
     let recorded_context = recorded::make_context(
@@ -116,7 +116,8 @@ pub fn execute_in_game(
     snforge_std::cheat_caller_address(
         deployment.peers.season, super::submitter(), snforge_std::CheatSpan::TargetCalls(1),
     );
-    IRecordedExecutionDispatcher { contract_address: deployment.peers.season }.execute(ticket, recorded_context, r, s);
+    IRecordedExecutionDispatcher { contract_address: deployment.peers.season }
+        .execute(ticket, recorded_context, signed);
     IRecordedExecutionViewsDispatcher { contract_address: deployment.peers.season }
         .recorded_outcome(game_id.into(), recorded::head(deployment.peers.season, game_id).order)
         .unwrap()

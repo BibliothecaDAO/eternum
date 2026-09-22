@@ -1,10 +1,15 @@
-import { hash, WebSocketChannel } from "starknet";
+import { ec, hash, WebSocketChannel } from "starknet";
 
+/** `signature` goes unchanged to the actor account's SNIP-6 `is_valid_signature`; its layout is the account's. */
 export interface SignedNativeIntent {
   intent: string[];
-  r: string;
-  s: string;
-  public_key: string;
+  signature: string[];
+}
+
+/** The signature layout of the shard's current gameplay account class: a bare `[r, s]` from its one key. */
+export function signGameplayIntent(digest: string, privateKey: string): string[] {
+  const { r, s } = ec.starkCurve.sign(digest, privateKey);
+  return [`0x${r.toString(16)}`, `0x${s.toString(16)}`];
 }
 
 type RecordedTransaction = { transaction_hash: string; order: bigint };

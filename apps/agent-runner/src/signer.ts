@@ -4,6 +4,7 @@ import {
   bindGameplayAccounts,
   connectGameplayAccount,
   ensureGameplayAccount,
+  signGameplayIntent,
   type GameClient,
 } from "@bibliothecadao/eternum";
 import { configureGameplayAccountSubmits, type Shard } from "@bibliothecadao/eternum/game-client";
@@ -121,19 +122,14 @@ export async function signRunnerIntent(
   gameId: number,
   actor: AccountInterface,
   digest: string,
-): Promise<{ r: bigint; s: bigint; publicKey: bigint }> {
+): Promise<string[]> {
   if (config.signer.mode === "none") throw new Error("A spectator cannot sign an action");
   if (config.signer.mode === "key") {
     if (BigInt(actor.address) !== BigInt(config.signer.gameplayAccountAddress))
       throw new Error("Gameplay identity changed before signing");
-    return signGameplayIntent(digest, gameplayKey(config.signer.gameplayPrivateKey));
+    return signGameplayIntent(digest, config.signer.gameplayPrivateKey);
   }
   const key = await readStoredKey(path.join(resolveDataDir(config, gameId), GUEST_KEY_FILE));
   if (!key) throw new Error("The guest gameplay key is missing");
-  return signGameplayIntent(digest, key);
-}
-
-function signGameplayIntent(digest: string, key: GameplayKey) {
-  const signature = ec.starkCurve.sign(digest, key.privateKey);
-  return { r: signature.r, s: signature.s, publicKey: BigInt(key.publicKey) };
+  return signGameplayIntent(digest, key.privateKey);
 }

@@ -99,7 +99,7 @@ fn run(deployment: Deployment, command: Command, timestamp: u64) -> bool {
         deadline: 10000,
         ..intent(deployment, 3),
     };
-    let (r, s) = signature(deployment, action);
+    let signed = signature(deployment, action);
     let ticket = recorded::make_intent(deployment.peers.season, action);
     let recorded_context = recorded::make_context(
         deployment.peers.season, action, ExecutionContext { timestamp, ..context() },
@@ -114,8 +114,7 @@ fn run(deployment: Deployment, command: Command, timestamp: u64) -> bool {
         },
         ticket,
         recorded_context,
-        r,
-        s,
+        signed,
     );
     IRecordedExecutionViewsDispatcher { contract_address: deployment.peers.season }
         .recorded_outcome(3, super::recorded::head(deployment.peers.season, 3).order)
@@ -385,12 +384,8 @@ fn dev_season_entitlement_with_configured_operator_and_present_pass() {
 }
 fn assert_season_entitlement_mode(dev: bool, has_operator: bool, has_entitlement: bool) {
     let (d, _) = setup(dev);
-    let owner = crate::season::IPlayerRegistryDispatcherTrait::owner_of(
-        crate::season::IPlayerRegistryDispatcher {
-            contract_address: ISeasonDispatcher { contract_address: d.peers.season }.authentication().registry,
-        },
-        d.actor,
-    );
+    // The authenticated account is the player that holds entitlements.
+    let owner = d.actor;
     if has_entitlement {
         super::resource_commands::set_fixture(
             d.peers.settlement,

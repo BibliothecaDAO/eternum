@@ -45,21 +45,23 @@ pub struct IRecordedExecutionSafeDispatcher {
 }
 #[generate_trait]
 pub impl RecordedDispatcher of IRecordedExecutionDispatcherTrait {
-    fn execute(self: IRecordedExecutionDispatcher, intent: Intent, context: ExecutionContext, r: felt252, s: felt252) {
-        submit(self.contract_address, selector!("execute"), intent, context, r, s).unwrap_syscall();
+    fn execute(
+        self: IRecordedExecutionDispatcher, intent: Intent, context: ExecutionContext, signature: Span<felt252>,
+    ) {
+        submit(self.contract_address, selector!("execute"), intent, context, signature).unwrap_syscall();
     }
 }
 #[generate_trait]
 pub impl RecordedSafeDispatcher of IRecordedExecutionSafeDispatcherTrait {
     fn execute(
-        self: IRecordedExecutionSafeDispatcher, intent: Intent, context: ExecutionContext, r: felt252, s: felt252,
+        self: IRecordedExecutionSafeDispatcher, intent: Intent, context: ExecutionContext, signature: Span<felt252>,
     ) -> Result<(), Array<felt252>> {
-        submit(self.contract_address, selector!("execute"), intent, context, r, s)
+        submit(self.contract_address, selector!("execute"), intent, context, signature)
     }
 }
 #[feature("safe_dispatcher")]
 fn submit(
-    season: ContractAddress, entrypoint: felt252, intent: Intent, context: ExecutionContext, r: felt252, s: felt252,
+    season: ContractAddress, entrypoint: felt252, intent: Intent, context: ExecutionContext, signature: Span<felt252>,
 ) -> Result<(), Array<felt252>> {
     // Route through the actual authority account so callbacks from gameplay domains keep their caller.
     let account = ISeasonDispatcher { contract_address: season }.authentication().submitter;
@@ -85,8 +87,7 @@ fn submit(
     let mut calldata = array![];
     intent.serialize(ref calldata);
     context.serialize(ref calldata);
-    calldata.append(r);
-    calldata.append(s);
+    signature.serialize(ref calldata);
     ISequencingAccountSafeDispatcher { contract_address: account }
         .__execute__(array![Call { to: season, selector: entrypoint, calldata: calldata.span() }])
         .map(|_results| ())
@@ -94,6 +95,10 @@ fn submit(
 
 pub fn pair() -> StarkCurveKeyPair {
     KeyPairTrait::from_secret_key(12345)
+}
+/// The actor's device signature: `[device_key, r, s]` under the fixture account's key.
+pub fn signed(r: felt252, s: felt252) -> Span<felt252> {
+    array![pair().public_key, r, s].span()
 }
 fn deploy(name: ByteArray, args: @Array<felt252>) -> ContractAddress {
     let (address, _) = declare(name).unwrap().contract_class().deploy(args).unwrap();
@@ -120,7 +125,8 @@ pub fn setup() -> ContractAddress {
     if starknet::syscalls::get_class_hash_at_syscall(actor).unwrap() == 0.try_into().unwrap() {
         player_class.deploy_at(@array![pair().public_key], actor).unwrap();
     }
-    let registry = deploy("ProtocolRegistryFixture", @array![]);
+    // Authentication still carries a registry address until the registry is deleted; nothing reads it.
+    let registry: ContractAddress = 0x333.try_into().unwrap();
     let signer: StarkCurveKeyPair = KeyPairTrait::from_secret_key(54321);
     let account = deploy("SequencingAccount", @array![administrator.into(), signer.public_key]);
     let season = deploy(
@@ -351,37 +357,24 @@ mod ProtocolPlayerFixture {
     fn constructor(ref self: ContractState, key: felt252) {
         self.key.write(key);
     }
-    #[abi(embed_v0)]
-    impl Key of world_native::season::IGameplayKey<ContractState> {
-        fn get_public_key(self: @ContractState) -> felt252 {
-            self.key.read()
-        }
+    #[starknet::interface]
+    trait IDeviceSignature<T> {
+        fn is_valid_signature(self: @T, hash: felt252, signature: Array<felt252>) -> felt252;
     }
-}
-#[starknet::contract]
-mod ProtocolRegistryFixture {
-    use starknet::ContractAddress;
-    #[storage]
-    struct Storage {}
     #[abi(embed_v0)]
-    impl Registry of world_native::season::IPlayerRegistry<ContractState> {
-        fn owner_of(self: @ContractState, account: ContractAddress) -> ContractAddress {
-            if account == 456.try_into().unwrap() {
-                123.try_into().unwrap()
+    impl Signature of IDeviceSignature<ContractState> {
+        fn is_valid_signature(self: @ContractState, hash: felt252, signature: Array<felt252>) -> felt252 {
+            let key = self.key.read();
+            if signature.len() == 3
+                && *signature[0] == key
+                && core::ecdsa::check_ecdsa_signature(hash, key, *signature[1], *signature[2]) {
+                starknet::VALIDATED
             } else {
-                0.try_into().unwrap()
-            }
-        }
-        fn account_of(self: @ContractState, owner: ContractAddress) -> ContractAddress {
-            if owner == 123.try_into().unwrap() {
-                456.try_into().unwrap()
-            } else {
-                0.try_into().unwrap()
+                0
             }
         }
     }
 }
-
 #[test]
 #[feature("safe_dispatcher")]
 fn exploration_fixture_runs_the_real_domain() {
@@ -410,7 +403,7 @@ fn accepted_malformed_commands_are_terminal_and_cannot_stall_the_stream() {
         }
         let recorded = envelope(@action);
         let (r, s) = pair().sign(action_identity(@action)).unwrap();
-        IRecordedExecutionDispatcher { contract_address: address }.execute(action, context(@recorded), r, s);
+        IRecordedExecutionDispatcher { contract_address: address }.execute(action, context(@recorded), signed(r, s));
         let views = IRecordedExecutionViewsDispatcher { contract_address: address };
         assert!(views.recorded_outcome(7, 1).unwrap().status == 2, "malformed command must be terminal");
         let next = views.get_admission(7, 456);
@@ -420,7 +413,7 @@ fn accepted_malformed_commands_are_terminal_and_cannot_stall_the_stream() {
         let mut successor = envelope(@valid);
         successor.order = next.order;
         let (r, s) = pair().sign(action_identity(@valid)).unwrap();
-        IRecordedExecutionDispatcher { contract_address: address }.execute(valid, context(@successor), r, s);
+        IRecordedExecutionDispatcher { contract_address: address }.execute(valid, context(@successor), signed(r, s));
         assert!(views.recorded_outcome(7, 2).unwrap().status == 1, "valid successor must execute");
     }
 }
@@ -499,7 +492,7 @@ fn resource_snapshot(
 pub fn reject_execution(
     address: ContractAddress, intent: Intent, context: ExecutionContext, r: felt252, s: felt252,
 ) -> Result<(), Array<felt252>> {
-    submit(address, selector!("reject_execution"), intent, context, r, s)
+    submit(address, selector!("reject_execution"), intent, context, signed(r, s))
 }
 
 fn seed_game(registry: ContractAddress, game_id: u32, game: GameRegistry, rules: world_native::rules::SliceRules) {

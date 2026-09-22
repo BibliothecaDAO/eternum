@@ -1,7 +1,7 @@
 import { CallData, hash, type AccountInterface } from "starknet";
 import type { NativeWorldBindings } from "@bibliothecadao/types";
 import { frameNativeIntent, nativeTaggedHash, type NativeSubmission } from "@bibliothecadao/provider";
-export { createNativeTicketSubmission } from "@bibliothecadao/provider";
+export { createNativeTicketSubmission, signGameplayIntent } from "@bibliothecadao/provider";
 import type { SignedNativeIntent } from "@bibliothecadao/provider";
 import type { NativeFactStore } from "./native-fact-store";
 
@@ -9,7 +9,7 @@ export interface NativeClientConnection {
   bindings: NativeWorldBindings;
   chainId: string;
   /** Signs with the connected player's existing gameplay key. */
-  signIntent(actor: AccountInterface, digest: string): Promise<{ r: bigint; s: bigint; publicKey: bigint }>;
+  signIntent(actor: AccountInterface, digest: string): Promise<string[]>;
   /** Acceptance time and entropy are assigned only by the sequencing service. */
   submitIntent: ((action: SignedNativeIntent) => Promise<{ transaction_hash: string; order: bigint }>) & {
     dispose?: () => void;
@@ -56,12 +56,7 @@ export function nativeSubmission(
       arguments: arguments_,
     });
     const signature = await input.signIntent(actor, hash.computePoseidonHashOnElements(encoded));
-    const submitted = await input.submitIntent({
-      intent: encoded,
-      r: `0x${signature.r.toString(16)}`,
-      s: `0x${signature.s.toString(16)}`,
-      public_key: `0x${signature.publicKey.toString(16)}`,
-    });
+    const submitted = await input.submitIntent({ intent: encoded, signature });
     return {
       transaction_hash: submitted.transaction_hash,
       ticket: {

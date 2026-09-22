@@ -149,7 +149,7 @@ fn execute(season: ContractAddress, command: Command, timestamp: u64) {
 }
 fn submit(season: ContractAddress, action: Intent, envelope: Envelope) {
     let (r, s) = pair().sign(action_identity(@action)).unwrap();
-    IRecordedExecutionDispatcher { contract_address: season }.execute(action, context(@envelope), r, s);
+    IRecordedExecutionDispatcher { contract_address: season }.execute(action, context(@envelope), super::signed(r, s));
 }
 fn command() -> Command {
     Command::SettleSeason(world_native::realms::SettleSeason { name: 'retained', selected_realm: None })
@@ -198,7 +198,7 @@ fn settled_facts(season: ContractAddress) -> Array<felt252> {
     };
     let mut facts = array![];
     views.settlement_progress(8).serialize(ref facts);
-    views.player_entry(EntryKey { game_id: 8, owner: 123.try_into().unwrap() }).serialize(ref facts);
+    views.player_entry(EntryKey { game_id: 8, owner: 456.try_into().unwrap() }).serialize(ref facts);
     IStructuresDispatcher { contract_address: peers.structures }
         .structure(ResourceKey { game_id: 8, entity_id: 1 })
         .serialize(ref facts);
@@ -210,7 +210,7 @@ fn accepted_eternum_settlement_keeps_recorded_time_after_game_end() {
     let mut immediate = array![].span();
     for clock in array![1100_u64, 100000] {
         let season = prepare_without_entitlement(None, false);
-        grant_entry(season, 123.try_into().unwrap());
+        grant_entry(season, 456.try_into().unwrap());
         let (action, envelope) = accepted(season, command(), 1005);
         start_cheat_block_timestamp_global(clock);
         submit(season, action, envelope);
@@ -227,7 +227,7 @@ fn accepted_eternum_settlement_keeps_recorded_time_after_game_end() {
 }
 
 #[test]
-fn settlement_uses_the_bound_wallet_and_cannot_spend_another_owners_entitlement() {
+fn settlement_uses_the_players_account_and_cannot_spend_another_owners_entitlement() {
     let season = prepare_without_entitlement(None, false);
     grant_entry(season, 789.try_into().unwrap());
     let views = ISettlementViewsDispatcher {
@@ -238,12 +238,12 @@ fn settlement_uses_the_bound_wallet_and_cannot_spend_another_owners_entitlement(
     assert!(results.recorded_outcome(8, 1).unwrap().status == 2);
     assert!(views.player_entry(EntryKey { game_id: 8, owner: 789.try_into().unwrap() }).is_none());
     assert!(views.settlement_progress(8).realm_count == 0);
-    grant_entry(season, 123.try_into().unwrap());
+    grant_entry(season, 456.try_into().unwrap());
     execute(season, command(), 1005);
     assert!(results.recorded_outcome(8, 2).unwrap().status == 1);
     assert!(
         views
-            .player_entry(EntryKey { game_id: 8, owner: 123.try_into().unwrap() })
+            .player_entry(EntryKey { game_id: 8, owner: 456.try_into().unwrap() })
             .unwrap()
             .player == 456
             .try_into()
@@ -254,14 +254,14 @@ fn settlement_uses_the_bound_wallet_and_cannot_spend_another_owners_entitlement(
 #[test]
 fn rejected_settlement_rolls_back_entry_and_leaves_later_ticket_executable() {
     let season = prepare_without_entitlement(None, false);
-    grant_entry(season, 123.try_into().unwrap());
+    grant_entry(season, 456.try_into().unwrap());
     execute(season, Command::SettleSeason(world_native::realms::SettleSeason { name: 0, selected_realm: None }), 1005);
     let results = IRecordedExecutionViewsDispatcher { contract_address: season };
     assert!(results.recorded_outcome(8, 1).unwrap().status == 2);
     let views = ISettlementViewsDispatcher {
         contract_address: IDomainDispatcher { contract_address: season }.domain_state().peers.settlement,
     };
-    assert!(views.player_entry(EntryKey { game_id: 8, owner: 123.try_into().unwrap() }).is_none());
+    assert!(views.player_entry(EntryKey { game_id: 8, owner: 456.try_into().unwrap() }).is_none());
     assert!(views.settlement_progress(8).realm_count == 0);
     execute(season, command(), 1005);
     assert!(results.recorded_outcome(8, 2).unwrap().status == 1);

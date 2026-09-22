@@ -8,11 +8,6 @@ pub struct Authentication {
 }
 
 #[starknet::interface]
-pub trait IGameplayKey<T> {
-    fn get_public_key(self: @T) -> felt252;
-}
-
-#[starknet::interface]
 pub trait ISeason<T> {
     fn set_authentication(
         ref self: T, submitter: ContractAddress, registry: ContractAddress, approved_account_class: ClassHash,
@@ -25,7 +20,6 @@ pub trait ISeason<T> {
 
 #[starknet::contract]
 pub mod SeasonDomain {
-    use core::ecdsa::check_ecdsa_signature;
     use core::num::traits::Zero;
     use core::poseidon::poseidon_hash_span;
     use eternum_randomness_protocol::entrypoint::{
@@ -44,10 +38,7 @@ pub mod SeasonDomain {
     use crate::lifecycle::{Lifecycle, Peers};
     use crate::recording::{ExecutionHead, HeadPacking, RecordedState};
     use crate::rules::SliceRules;
-    use super::{
-        Authentication, IGameplayKeyDispatcher, IGameplayKeyDispatcherTrait, IPlayerRegistryDispatcher,
-        IPlayerRegistryDispatcherTrait,
-    };
+    use super::Authentication;
     component!(path: RecordedState, storage: recording, event: RecordingEvent);
     impl RecordingInternal = RecordedState::InternalImpl<ContractState>;
     component!(path: Lifecycle, storage: lifecycle, event: LifecycleEvent);
@@ -249,9 +240,9 @@ pub mod SeasonDomain {
 
     #[abi(embed_v0)]
     impl Execute of IRecordedExecution<ContractState> {
-        fn execute(ref self: ContractState, intent: Intent, context: ExecutionContext, r: felt252, s: felt252) {
+        fn execute(ref self: ContractState, intent: Intent, context: ExecutionContext, signature: Span<felt252>) {
             let epoch = self.randomness_epoch();
-            self.execute_ticket(intent, context, r, s, epoch);
+            self.execute_ticket(intent, context, signature, epoch);
         }
         fn execute_batch(ref self: ContractState, actions: Array<RecordedAction>) {
             assert!(
@@ -260,7 +251,7 @@ pub mod SeasonDomain {
             );
             let epoch = self.randomness_epoch();
             for action in actions {
-                self.execute_ticket(action.intent, action.context, action.r, action.s, epoch);
+                self.execute_ticket(action.intent, action.context, action.signature, epoch);
             }
         }
     }
@@ -269,12 +260,12 @@ pub mod SeasonDomain {
     impl Tickets of TicketsTrait {
         #[inline(never)]
         fn execute_ticket(
-            ref self: ContractState, intent: Intent, context: ExecutionContext, r: felt252, s: felt252, epoch: u64,
+            ref self: ContractState, intent: Intent, context: ExecutionContext, signature: Span<felt252>, epoch: u64,
         ) {
             let peers = self.lifecycle.require_active();
             let envelope = decode_envelope(context.envelope.span()).expect('malformed envelope');
             self.authenticate_ticket(@intent, @envelope, epoch);
-            let consumed = match self.authenticate_action(@intent, @envelope, r, s) {
+            let consumed = match self.authenticate_action(@intent, @envelope, signature) {
                 Ok(()) => self.consume_action_nonce(@intent),
                 Err(reason) => Err(reason),
             };
@@ -289,12 +280,12 @@ pub mod SeasonDomain {
     #[abi(embed_v0)]
     impl ExecutionFailure of IRecordedExecutionFailure<ContractState> {
         fn reject_execution(
-            ref self: ContractState, intent: Intent, context: ExecutionContext, r: felt252, s: felt252,
+            ref self: ContractState, intent: Intent, context: ExecutionContext, signature: Span<felt252>,
         ) {
             let envelope = decode_envelope(context.envelope.span()).expect('malformed envelope');
             self.authenticate_ticket(@intent, @envelope, self.randomness_epoch());
             // A transport failure cannot authorize consumption of an unauthenticated action.
-            self.authenticate_action(@intent, @envelope, r, s).expect('unauthenticated action');
+            self.authenticate_action(@intent, @envelope, signature).expect('unauthenticated action');
             assert!(accepted_context_matches(@intent, @envelope), "invalid acceptance");
             let consumed = self.consume_action_nonce(@intent).is_ok();
             self.recording.record(@intent, @envelope, consumed, Err('EXECUTION_FAILED'));
@@ -306,9 +297,9 @@ pub mod SeasonDomain {
         fn get_admission(self: @ContractState, game: felt252, actor: felt252) -> Admission {
             let game_id: u32 = game.try_into().expect('invalid game id');
             let actor: ContractAddress = actor.try_into().expect('invalid actor');
+            self.approved_account(actor).expect('unregistered actor');
             let head = self.recording.heads.read(game);
             Admission {
-                public_key: self.registered_key(actor),
                 rules: self.rules_identity(game_id),
                 execution_config: self.execution_config(),
                 nonce: self.nonces.read((game_id, actor)),
@@ -413,21 +404,32 @@ pub mod SeasonDomain {
             self.lifecycle.require_active().serialize(ref values);
             poseidon_hash_span(values.span())
         }
-        fn registered_key(self: @ContractState, actor: ContractAddress) -> felt252 {
-            self.try_registered_key(actor).expect('unregistered actor')
-        }
-        fn try_registered_key(self: @ContractState, actor: ContractAddress) -> Result<felt252, felt252> {
-            let authentication = self.authentication.read();
-            let registry = IPlayerRegistryDispatcher { contract_address: authentication.registry };
-            let owner = registry.owner_of(actor);
-            if owner.is_zero() || registry.account_of(owner) != actor {
-                return Err('INVALID_ACTOR');
-            }
+        /// Only accounts of the shard's configured class act; any address running that class is a player.
+        fn approved_account(self: @ContractState, actor: ContractAddress) -> Result<(), felt252> {
             let class = starknet::syscalls::get_class_hash_at_syscall(actor).map_err(|_error| 'INVALID_ACTOR')?;
-            if class != authentication.account_class {
+            if class != self.authentication.read().account_class {
                 return Err('INVALID_ACTOR');
             }
-            Ok(IGameplayKeyDispatcher { contract_address: actor }.get_public_key())
+            Ok(())
+        }
+        /// SNIP-6 on the actor: the account decides which device keys sign for it. A failing call is a refusal, so
+        /// one ticket cannot revert its batch.
+        fn signed_by_actor(
+            self: @ContractState, actor: ContractAddress, action: felt252, signature: Span<felt252>,
+        ) -> Result<(), felt252> {
+            let mut calldata = array![action];
+            signature.serialize(ref calldata);
+            let valid =
+                match starknet::syscalls::call_contract_syscall(
+                    actor, selector!("is_valid_signature"), calldata.span(),
+                ) {
+                Ok(result) => result.len() == 1 && *result[0] == starknet::VALIDATED,
+                Err(_error) => false,
+            };
+            if !valid {
+                return Err('INVALID_SIGNATURE');
+            }
+            Ok(())
         }
         /// Read once per call; every ticket in a batch must name this epoch.
         fn randomness_epoch(self: @ContractState) -> u64 {
@@ -501,7 +503,7 @@ pub mod SeasonDomain {
             Ok((game_id, actor))
         }
         fn authenticate_action(
-            self: @ContractState, intent: @Intent, envelope: @Envelope, r: felt252, s: felt252,
+            self: @ContractState, intent: @Intent, envelope: @Envelope, signature: Span<felt252>,
         ) -> Result<(), felt252> {
             if *intent.chain != get_tx_info().unbox().chain_id {
                 return Err('FOREIGN_CHAIN');
@@ -513,11 +515,8 @@ pub mod SeasonDomain {
             if actor.is_zero() {
                 return Err('INVALID_ACTOR');
             }
-            let public_key = self.try_registered_key(actor)?;
-            if !check_ecdsa_signature(*envelope.action, public_key, r, s) {
-                return Err('INVALID_SIGNATURE');
-            }
-            Ok(())
+            self.approved_account(actor)?;
+            self.signed_by_actor(actor, *envelope.action, signature)
         }
         fn validate_action(
             self: @ContractState, intent: @Intent, envelope: @Envelope, game_id: u32,
@@ -809,10 +808,4 @@ pub mod SeasonDomain {
         context.serialize(ref calldata);
         starknet::syscalls::call_contract_syscall(target, selector, calldata.span())
     }
-}
-
-#[starknet::interface]
-pub trait IPlayerRegistry<T> {
-    fn owner_of(self: @T, account: ContractAddress) -> ContractAddress;
-    fn account_of(self: @T, owner: ContractAddress) -> ContractAddress;
 }

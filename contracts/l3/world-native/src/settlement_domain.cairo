@@ -155,7 +155,7 @@ pub mod SettlementDomain {
         ) {
             let peers = self.lifecycle.require_active();
             assert!(get_caller_address() == peers.season, "only authenticated command domain");
-            let owner = self.bound_owner(actor);
+            let owner = actor;
             let game = self.games().game(game_id);
             let rules = self.games().rules(game_id);
             assert!(rules.entry_rule != crate::rules::ENTRY_ROSTER, "not a season game");
@@ -231,7 +231,7 @@ pub mod SettlementDomain {
         ) {
             let peers = self.lifecycle.require_active();
             assert!(get_caller_address() == peers.season, "only authenticated command domain");
-            let owner = self.bound_owner(actor);
+            let owner = actor;
             let game = self.games().game(game_id);
             let rules = self.games().rules(game_id);
             assert!(game.dev_mode_on || context.timestamp >= game.start_settling_at, "settling not started");
@@ -336,7 +336,7 @@ pub mod SettlementDomain {
             }
             let order = self.settlements.blitz_order(game_id);
             let player = *roster.at((*order.at(progress.registered.into())).into());
-            self.settlements.record_entry(EntryKey { game_id, owner: player.owner }, player.account);
+            self.settlements.record_entry(EntryKey { game_id, owner: player.account }, player.account);
             let rules = self.settlements.rules(game_id);
             let center = 2147483646 - self.games().rules(game_id).map_center_offset;
             let coords = crate::settlement_grid::settlement_location(
@@ -355,19 +355,6 @@ pub mod SettlementDomain {
     }
     #[generate_trait]
     impl Internal of InternalTrait {
-        fn bound_owner(self: @ContractState, actor: ContractAddress) -> ContractAddress {
-            let season = crate::season::ISeasonDispatcher { contract_address: self.lifecycle.require_active().season };
-            let registry = crate::season::IPlayerRegistryDispatcher {
-                contract_address: crate::season::ISeasonDispatcherTrait::authentication(season).registry,
-            };
-            let owner = crate::season::IPlayerRegistryDispatcherTrait::owner_of(registry, actor);
-            assert!(
-                owner.is_non_zero()
-                    && crate::season::IPlayerRegistryDispatcherTrait::account_of(registry, owner) == actor,
-                "unregistered actor",
-            );
-            owner
-        }
         fn games(self: @ContractState) -> IGameDispatcher {
             IGameDispatcher { contract_address: self.lifecycle.require_active().registry }
         }

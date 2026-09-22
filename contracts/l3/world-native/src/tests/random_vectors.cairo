@@ -3,7 +3,7 @@ use crate::random::range;
 
 #[test]
 fn recorded_roots_preserve_current_game_derivation() {
-    let input = read_txt(@FileTrait::new("../randomness-protocol/tests/fixtures/v4.txt"));
+    let input = read_txt(@FileTrait::new("../randomness-protocol/tests/fixtures/v5.txt"));
     let mut fields = input.span();
     let count: u32 = Serde::deserialize(ref fields).unwrap();
     for _ in 0..count {
