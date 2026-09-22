@@ -50,7 +50,7 @@ export function buildSceneSmokeUrl({ baseUrl, chainId, gameId, rendererMode, sce
   }
 
   const url = new URL(baseUrl);
-  url.pathname = `/play/${chainId}/${gameId}/${scene}`;
+  url.pathname = `/g/${chainId}/${gameId}/${scene}`;
   url.searchParams.set("col", "0");
   url.searchParams.set("row", "0");
   url.searchParams.set("spectate", "true");
@@ -382,7 +382,7 @@ async function runSceneSmoke({ artifactDir, baseUrl, game, headed, rendererMode,
   const evaluation = evaluateSceneSmokeResult({
     canvasExists,
     errors,
-    expectedPathname: `/play/${game.chainId}/${game.gameId}/${scene}`,
+    expectedPathname: `/g/${game.chainId}/${game.gameId}/${scene}`,
     openedUrl,
     unableToStartCount,
   });

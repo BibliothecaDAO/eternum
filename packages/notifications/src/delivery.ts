@@ -89,11 +89,11 @@ export function isNotificationGameClient(clientUrl: string, origin: string): boo
 function notificationTargetForGameClient(clientUrl: string, origin: string): string | null {
   const client = new URL(clientUrl);
   if (client.origin !== origin) return null;
-  const match = /^\/play\/(0x[0-9a-f]{1,64})\/([1-9][0-9]{0,15})\/(map|hex|travel)\/?$/.exec(client.pathname);
-  return match ? `/enter/${match[1]}/${match[2]}` : null;
+  const match = /^\/g\/(0x[0-9a-f]{1,64})\/([1-9][0-9]{0,15})\/(map|hex)\/?$/.exec(client.pathname);
+  return match ? `/g/${match[1]}/${match[2]}` : null;
 }
 
 function isNotificationTarget(target: string): boolean {
   if (target === "/") return true;
-  return /^\/enter\/0x[0-9a-f]{1,64}\/[1-9][0-9]{0,15}$/.test(target);
+  return /^\/g\/0x[0-9a-f]{1,64}\/[1-9][0-9]{0,15}$/.test(target);
 }

@@ -71,20 +71,10 @@ const toWorldMapPosition = (position: PositionLike): { col: number; row: number 
 };
 
 const resolvePlaySceneHref = (scene: PlayScene, position: Position): string => {
-  const playRoute = typeof window !== "undefined" ? parsePlayRoute(window.location) : null;
+  const playRoute = parsePlayRoute(window.location);
+  if (!playRoute) throw new Error(`Cannot navigate scenes outside a game route: ${window.location.pathname}`);
   const normalized = position.getNormalized();
-
-  if (playRoute) {
-    return buildPlayHref({
-      ...playRoute,
-      scene,
-      col: normalized.x,
-      row: normalized.y,
-    });
-  }
-
-  const search = `?col=${normalized.x}&row=${normalized.y}`;
-  return scene === "hex" ? `/play/hex${search}` : `/play/map${search}`;
+  return buildPlayHref({ ...playRoute, scene, col: normalized.x, row: normalized.y });
 };
 
 const useNavigateToHexView = () => {

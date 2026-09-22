@@ -5,7 +5,7 @@ const input = {
   value: { timestamp: "0x1", story: { RealmCreatedStory: {} } },
   owner: "0x1",
   gameName: "game",
-  target: "/enter/0xa1/7",
+  target: "/g/0xa1/7",
   now: 1100,
 };
 it("builds shared display content from the original event clock", () => {

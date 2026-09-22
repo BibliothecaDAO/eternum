@@ -3,29 +3,8 @@
 import { describe, expect, it } from "vitest";
 import { matchRoutePlaylist } from "./route-tracks";
 describe("matchRoutePlaylist", () => {
-  it("prefers landing overview playlist for root path", () => {
-    const match = matchRoutePlaylist("/");
-    expect(match.key).toBe("landing:overview");
-    expect(match.tracks.length).toBeGreaterThan(0);
-    expect(match.tracks).toContain("music.birds_paradise");
-  });
-
-  it("matches the markets route with a trading playlist", () => {
-    const match = matchRoutePlaylist("/markets");
-    expect(match.key).toBe("landing:markets");
-    expect(match.tracks.length).toBeGreaterThan(0);
-    expect(match.tracks).toContain("music.bumu_bun");
-  });
-
-  it("matches the amm route with a dedicated trading playlist", () => {
-    const match = matchRoutePlaylist("/amm");
-    expect(match.key).toBe("landing:amm");
-    expect(match.tracks.length).toBeGreaterThan(0);
-    expect(match.tracks).toContain("music.monophonic_mixtape_13");
-  });
-
   it("switches to blitz playlist when blitz flag is true", () => {
-    const match = matchRoutePlaylist("/play", { modeId: "blitz" });
+    const match = matchRoutePlaylist("/g/WP_REALMS_MADARA_LAB/1/map", { modeId: "blitz" });
     expect(match.key).toBe("play:blitz");
     expect(match.mode).toBe("shuffle");
     expect(match.tracks).toEqual([
@@ -40,7 +19,7 @@ describe("matchRoutePlaylist", () => {
   });
 
   it("falls back to main play playlist when not in blitz", () => {
-    const match = matchRoutePlaylist("/play/world", { modeId: "eternum" });
+    const match = matchRoutePlaylist("/g/WP_REALMS_MADARA_LAB/1/hex", { modeId: "eternum" });
     expect(match.key).toBe("play:main");
     expect(match.tracks).toContain("music.cha_cha_chi");
     expect(match.tracks).toContain("music.monophonic_mixtape_14");

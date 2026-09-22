@@ -15,8 +15,12 @@ const createIdentityProfiles = (deps: IdentityProfilesDeps) => {
   const profiles = new Map<string, IdentityProfile>();
   const requested = new Set<string>();
   const listeners = new Set<Listener>();
+  let version = 0;
 
-  const notify = () => listeners.forEach((listener) => listener());
+  const notify = () => {
+    version += 1;
+    listeners.forEach((listener) => listener());
+  };
 
   // A failed batch stays asked: retrying on the next derive would loop, since the derive is what asks. A reload
   // asks again; until then those players read by their chain name.
@@ -49,6 +53,8 @@ const createIdentityProfiles = (deps: IdentityProfilesDeps) => {
       listeners.add(listener);
       return () => listeners.delete(listener);
     },
+    /** Changes whenever an answer lands; a store snapshot for React. */
+    getVersion: (): number => version,
   };
 };
 

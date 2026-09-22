@@ -1,5 +1,5 @@
 import type { GameModeId } from "@/config/game-modes";
-import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useReducer, useRef } from "react";
+import { createContext, ReactNode, useCallback, useEffect, useMemo, useReducer, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { MatchedRoutePlaylist, matchRoutePlaylist } from "../config/route-tracks";
 import { useAudio } from "../hooks/useAudio";
@@ -214,12 +214,4 @@ export const MusicRouterProvider = ({
   }, [audioState?.muted, isReady, requestStart, setCustomTrack, skip, state]);
 
   return <BackgroundMusicContext.Provider value={value}>{children}</BackgroundMusicContext.Provider>;
-};
-
-export const useBackgroundMusic = () => {
-  const context = useContext(BackgroundMusicContext);
-  if (!context) {
-    throw new Error("useBackgroundMusic must be used within a MusicRouterProvider");
-  }
-  return context;
 };

@@ -74,7 +74,7 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
           id: "/",
           name: "Realms",
           short_name: "Realms",
-          description: "Glory awaits for those who rule the Hex",
+          description: "Fully onchain strategy: Frontier expeditions and Blitz battles",
           theme_color: "#F6C297",
           background_color: "#F6C297",
           display: "standalone",
@@ -185,24 +185,23 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
             react: "React",
             "react-dom": "ReactDOM",
           },
-          manualChunks: {
-            // Three.js ecosystem - Separate chunk for 3D graphics
-            three: ["three/webgpu"],
-
-            // Blockchain ecosystem - Separate chunk for crypto functionality
-            blockchain: ["@bibliothecadao/eternum", "@bibliothecadao/provider", "@bibliothecadao/types", "starknet"],
-
-            // React ecosystem - Core framework chunk
-            "react-vendor": ["react", "react-dom", "react-beautiful-dnd", "react-draggable"],
-
-            // UI & Animation libraries
-            "ui-libs": ["gsap", "lil-gui", "@tanstack/react-query", "zustand"],
-
-            // Utilities & Misc
-            utils: ["lodash", "uuid", "platform", "buffer", "wouter"],
-
-            // Communication & External APIs
-            external: ["graphql-request"],
+          // The shell's cold load must carry only its own modules. Vendor groups name only the library modules
+          // themselves (never their dependents or Vite's helpers), so no shell import drags a game library along;
+          // everything else splits by usage at the lazy route boundaries.
+          manualChunks: (id) => {
+            // Vite's preload helper is used by every chunk; pin it beside React so the shell never imports it from a
+            // game library chunk.
+            if (id.includes("vite/preload-helper")) return "react-vendor";
+            if (!id.includes("node_modules")) return undefined;
+            if (/node_modules\/three\//.test(id)) return "three";
+            if (/node_modules\/(starknet|@cartridge|@starknet-react|@scure|@noble)\//.test(id)) return "blockchain";
+            if (
+              /node_modules\/(react|react-dom|react-router|react-router-dom|@tanstack\/react-query|zustand|scheduler)\//.test(
+                id,
+              )
+            )
+              return "react-vendor";
+            return undefined;
           },
           inlineDynamicImports: false,
           sourcemapIgnoreList: (relativeSourcePath) => {

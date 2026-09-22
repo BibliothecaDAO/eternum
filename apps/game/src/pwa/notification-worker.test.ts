@@ -18,7 +18,7 @@ const payload = {
   owner: "0x1",
   title: "Battle",
   body: "A battle was confirmed",
-  target: "/enter/0xa1/1",
+  target: "/g/0xa1/1",
   createdAt: now,
   expiresAt: now + 120_000,
 };
@@ -26,7 +26,7 @@ function harness() {
   const handlers = new Map<string, (event: any) => void>();
   const client = {
     id: "page",
-    url: "https://game.test/play/0xa1/1/map",
+    url: "https://game.test/g/0xa1/1/map",
     focused: false,
     visibilityState: "hidden",
     focus: vi.fn(),
@@ -138,7 +138,7 @@ it("delivers once across worker restarts, respects foreground activity and stops
     expect.objectContaining({ tag: "thread:one" }),
   );
   await restarted.click(envelope);
-  expect(restarted.clients.openWindow).toHaveBeenCalledWith("https://game.test/enter/0xa1/1");
+  expect(restarted.clients.openWindow).toHaveBeenCalledWith("https://game.test/g/0xa1/1");
 
   expect((await restarted.send("revoke-push", { id })).ok).toBe(true);
   await restarted.push({

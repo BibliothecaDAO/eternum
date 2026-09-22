@@ -1,5 +1,4 @@
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
-import type { LandingEntryRouteState } from "@/ui/features/landing/lib/landing-entry-state";
 import { resolveEndpoint } from "@realms-world/chain";
 import { createIdentityClient, profileOfIdentityUser, type Session } from "@realms-world/identity";
 import { useEffect } from "react";
@@ -8,7 +7,7 @@ import { env } from "../../../env";
 
 /**
  * The identity session is the one "logged in" fact. Every surface that used to ask whether the gameplay account
- * had a non-zero address (the landing gate, the sign-in prompts, the HUD banner) reads this store instead; the
+ * had a non-zero address (the shell, the sign-in prompts, the HUD banner) reads this store instead; the
  * gameplay account is derived from the session by `GameplayAccountSync` and may lag it while it deploys.
  */
 export const identityOrigin = resolveEndpoint(env.VITE_PUBLIC_IDENTITY_ORIGIN, {
@@ -23,10 +22,10 @@ export const IDENTITY_POPOVER_ID = "identity";
 
 export type IdentitySessionStatus = "loading" | "anonymous" | "signed-in";
 
-/** A surface that needs a signed-in identity asks for one; the landing chip replays the redirect after sign-in. */
+/** A surface that needs a signed-in identity asks for one; the identity chip replays the redirect after sign-in. */
 interface SignInRequest {
   redirectTo: string;
-  redirectState?: LandingEntryRouteState;
+  redirectState?: Record<string, unknown>;
 }
 
 interface IdentitySessionStore {

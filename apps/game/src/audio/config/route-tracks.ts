@@ -45,48 +45,6 @@ const createExactMatcher = (target: string) => {
 // Curated route → playlist mapping. Higher priority wins when multiple definitions match.
 const ROUTE_TRACK_DEFINITIONS: RouteTrackDefinition[] = [
   {
-    key: "landing:overview",
-    priority: 60,
-    mode: "shuffle",
-    tracks: [
-      "music.daybreak",
-      "music.birds_paradise",
-      "music.morning_ember",
-      "music.beyond_horizon",
-      "music.monophonic_mixtape_09",
-      "music.monophonic_mixtape_11",
-    ],
-    match: createExactMatcher("/"),
-  },
-  {
-    key: "landing:markets",
-    priority: 55,
-    mode: "shuffle",
-    tracks: [
-      "music.rain_pool",
-      "music.bumu_bun",
-      "music.beyond_horizon",
-      "music.celestial_shores",
-      "music.monophonic_mixtape_12",
-      "music.monophonic_mixtape_13",
-    ],
-    match: createStartsWithMatcher("/markets"),
-  },
-  {
-    key: "landing:amm",
-    priority: 56,
-    mode: "sequence",
-    tracks: ["music.rain_pool", "music.shadow_song", "music.monophonic_mixtape_13", "music.strangers_arrival"],
-    match: createStartsWithMatcher("/amm"),
-  },
-  {
-    key: "landing:leaderboard",
-    priority: 55,
-    mode: "sequence",
-    tracks: ["music.rain_pool", "music.monophonic_mixtape_11", "music.beyond_horizon"],
-    match: createStartsWithMatcher("/leaderboard"),
-  },
-  {
     key: "play:blitz",
     priority: 90,
     mode: "shuffle",
@@ -99,7 +57,7 @@ const ROUTE_TRACK_DEFINITIONS: RouteTrackDefinition[] = [
       "music.monophonic_mixtape_13",
       "music.monophonic_mixtape_14",
     ],
-    match: (context) => context.modeId === "blitz" && createStartsWithMatcher("/play")(context),
+    match: (context) => context.modeId === "blitz" && createStartsWithMatcher("/g")(context),
   },
   {
     key: "play:main",
@@ -115,7 +73,7 @@ const ROUTE_TRACK_DEFINITIONS: RouteTrackDefinition[] = [
       "music.monophonic_mixtape_10",
       "music.monophonic_mixtape_14",
     ],
-    match: createStartsWithMatcher("/play"),
+    match: createStartsWithMatcher("/g"),
   },
   {
     key: "common:fallback",

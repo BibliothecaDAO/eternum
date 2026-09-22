@@ -153,7 +153,7 @@ if (command === "eval") {
       cameraTargetHex: { col: state.col, row: state.row },
       canvasPresent: true,
       device: { userAgent: "fake-browser", platform: "test", hardwareConcurrency: 8, deviceMemoryGiB: 16 },
-      gameIdentity: { pathname: "/play/0x1/21/map", gameId: 21, worldAddress: "0x123", worldName: "verification-fixture", tileRows: 40, structureRows: 3 },
+      gameIdentity: { pathname: "/g/0x1/21/map", gameId: 21, worldAddress: "0x123", worldName: "verification-fixture", tileRows: 40, structureRows: 3 },
       renderer: { activeMode: "webgl2-fallback" },
       resourceState: { preparedCachePages: 12, presentedPageSlots: 1, geometries: 10, textures: 5 },
       trace: [

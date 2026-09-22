@@ -7,9 +7,8 @@ import { ASSET_CHECK_FILES } from "./vitest.assets.files";
 export default defineConfig({
   plugins: [react(), wasm()],
   test: {
-    // A handful of load-sensitive files (instanced-model, game-entry-preload,
-    // play-asset-manifest) time out under full-suite parallelism but pass in
-    // isolation. One CI retry turns those known flakes from an 11-minute job
+    // Two load-sensitive files (instanced-model, game-entry-preload) time out
+    // under full-suite parallelism but pass in isolation. One CI retry turns those known flakes from an 11-minute job
     // rerun into a few retried seconds; locally failures stay loud.
     retry: process.env.CI ? 1 : 0,
     // The asset and CLI checks run through vitest.assets.config.ts (`pnpm verify:assets`) where the artefacts
@@ -56,6 +55,7 @@ export default defineConfig({
       "@bibliothecadao/eternum/automation": path.resolve(__dirname, "../../packages/core/src/automation/index.ts"),
       "@bibliothecadao/eternum/game-sync": path.resolve(__dirname, "../../packages/core/src/sync/index.ts"),
       "@bibliothecadao/eternum/game-client": path.resolve(__dirname, "../../packages/core/src/client/index.ts"),
+      "@bibliothecadao/eternum/shard": path.resolve(__dirname, "../../packages/core/src/client/shard-reader.ts"),
       "@bibliothecadao/eternum/biome": path.resolve(__dirname, "../../packages/core/src/utils/biome/biome.ts"),
       "@bibliothecadao/eternum": path.resolve(__dirname, "../../packages/core/src/index.ts"),
       // Subpath alias must precede the package root: alias matching is

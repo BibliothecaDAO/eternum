@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-22",
+    title: "One app for every game",
+    description:
+      "The lobby, results and your account now live in the game app at play.realms.party, and a game opens at its own address. The lobby loads without the 3D client, so it opens fast on a phone.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-22",
     title: "Frontier Mode Configuration",
     description: "Frontier uses its own building choices and season labels.",
     type: "fix",

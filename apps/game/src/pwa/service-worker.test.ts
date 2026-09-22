@@ -36,7 +36,7 @@ function navigate(path: string, mode = "navigate") {
 it("fetches current online HTML without caching it", async () => {
   const response = new Response("current shell");
   network.mockResolvedValue(response);
-  expect(await navigate("/play/madara/game/map").mock.calls[0][0]).toBe(response);
+  expect(await navigate("/g/0xa1/1/map").mock.calls[0][0]).toBe(response);
   expect(network).toHaveBeenCalledWith(
     expect.anything(),
     expect.objectContaining({ cache: "no-store", signal: expect.any(AbortSignal) }),
@@ -58,7 +58,7 @@ it("uses only the offline document when navigation fails or the server is unavai
 it("leaves API navigation, game assets and data fetches on the network", () => {
   expect(navigate("/api/session")).not.toHaveBeenCalled();
   expect(navigate("/models/army.glb", "cors")).not.toHaveBeenCalled();
-  expect(navigate("/play/madara/game/map", "cors")).not.toHaveBeenCalled();
+  expect(navigate("/g/0xa1/1/map", "cors")).not.toHaveBeenCalled();
   expect(network).not.toHaveBeenCalled();
 });
 

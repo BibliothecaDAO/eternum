@@ -157,7 +157,7 @@ const planAlerts = (env: IdentityEnv, shard: Required<WatchedShard>, page: Heral
             value: item.value,
             owner,
             gameName: games.get(gameId) ?? `Game ${gameId}`,
-            target: `/enter/${shard.chainId}/${gameId}`,
+            target: `/g/${shard.chainId}/${gameId}`,
             now,
           });
           if (!notification) return [];

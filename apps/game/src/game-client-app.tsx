@@ -1,47 +1,22 @@
-import { MusicRouterProvider } from "@/audio";
-import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
-import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { lazy, Suspense, useState } from "react";
+import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 
 import { env } from "../env";
 import { loadGameRouteForPlayEntry } from "./game-entry-preload";
+import { resolveEntryContextFromEntryRoute } from "./game-entry/context";
 import { StarknetProvider } from "./hooks/context/starknet-provider";
 import { useUIStore } from "./hooks/store/use-ui-store";
-import { normalizeLegacyPlayLocation } from "./play/navigation/play-route";
 import { normalizePlayBootLocation } from "./play/navigation/play-route-boot-normalization";
-import { getActiveGame } from "./runtime/world/store";
-import { resolveLegacyLandingHref } from "./ui/features/landing/navigation/landing-route-redirects";
+import { LocalNotificationLifecycle } from "./pwa/local-notification-lifecycle";
+import { GameEntryModal } from "./ui/features/game-entry/game-entry-modal";
 import { useBootDocumentState } from "./ui/modules/boot-loader";
 import { ConstructionGate } from "./ui/modules/construction-gate";
 import { LoadingScreen } from "./ui/modules/loading-screen";
 import { getRandomBackgroundImage } from "./ui/utils/utils";
-import { LocalNotificationLifecycle } from "./pwa/local-notification-lifecycle";
 
 const LazyGameRoute = lazy(loadGameRouteForPlayEntry);
 
-const LandingLayout = lazy(() =>
-  import("./ui/features/landing/landing-layout").then((module) => ({ default: module.LandingLayout })),
-);
-const LandingPlayRoute = lazy(() =>
-  import("./ui/features/landing/views/landing-play-route").then((module) => ({ default: module.LandingPlayRoute })),
-);
-const LandingEntryRoute = lazy(() =>
-  import("./ui/features/landing/views/landing-entry-route").then((module) => ({ default: module.LandingEntryRoute })),
-);
-const LandingLearnRoute = lazy(() =>
-  import("./ui/features/landing/views/landing-learn-route").then((module) => ({ default: module.LandingLearnRoute })),
-);
-const LandingNewsRoute = lazy(() =>
-  import("./ui/features/landing/views/landing-news-route").then((module) => ({ default: module.LandingNewsRoute })),
-);
-const LandingFactoryRoute = lazy(() =>
-  import("./ui/features/landing/views/landing-factory-route").then((module) => ({
-    default: module.LandingFactoryRoute,
-  })),
-);
-const FactoryV2Page = lazy(() =>
-  import("./ui/features/factory-v2").then((module) => ({ default: module.FactoryV2Page })),
-);
-
+/** Everything under `/g/:chain/:game`: the entry into a game, then its scenes. */
 export const GameClientApp = () => {
   const isConstructionMode = env.VITE_PUBLIC_CONSTRUCTION_FLAG == true;
   const [backgroundImage] = useState(() => getRandomBackgroundImage());
@@ -53,75 +28,45 @@ export const GameClientApp = () => {
   }
 
   return (
-    <>
+    <StarknetProvider>
       <LocalNotificationLifecycle />
-      <GameClientRoutes backgroundImage={backgroundImage} />
-    </>
+      <Routes>
+        <Route index element={<GameEntryRoute />} />
+        <Route path=":scene" element={<GameRouteShell backgroundImage={backgroundImage} />} />
+        <Route path="*" element={<Navigate to="/play" replace />} />
+      </Routes>
+    </StarknetProvider>
   );
 };
 
-const GameClientRoutes = ({ backgroundImage }: { backgroundImage: string }) => (
-  <StarknetProvider>
-    <Routes>
-      <Route
-        path="/"
-        element={renderLoadingRoute(
-          <MusicRouterProvider>
-            <LandingLayout />
-          </MusicRouterProvider>,
-        )}
-      >
-        <Route index element={renderLoadingRoute(<LandingHomeRoute />)} />
-        <Route path="enter/:chain/:world" element={renderLoadingRoute(<LandingEntryRoute />)} />
-        <Route path="learn" element={renderLoadingRoute(<LandingLearnRoute />)} />
-        <Route path="news" element={renderLoadingRoute(<LandingNewsRoute />)} />
-        <Route path="factory" element={renderLoadingRoute(<LandingFactoryRoute />)} />
-        <Route path="profile" element={<Navigate to="/" replace />} />
-        {/* Markets/Agora/Leaderboard are retired until their data planes
-              exist on this deployment (W6). Direct links go home. */}
-        <Route path="markets" element={<Navigate to="/" replace />} />
-        <Route path="amm" element={<Navigate to="/" replace />} />
-        <Route path="leaderboard" element={<Navigate to="/" replace />} />
-      </Route>
-
-      <Route path="/play/:chain/:world/:scene" element={<GameRouteShell backgroundImage={backgroundImage} />} />
-      <Route path="/play/*" element={<GameRouteShell backgroundImage={backgroundImage} />} />
-
-      <Route
-        path="/factory/v2"
-        element={
-          <Suspense fallback={<LoadingScreen />}>
-            <FactoryV2Page />
-          </Suspense>
-        }
-      />
-
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
-  </StarknetProvider>
-);
-
-const renderLoadingRoute = (element: ReactNode) => <Suspense fallback={<LoadingScreen />}>{element}</Suspense>;
-
-const LandingHomeRoute = () => {
+/** The doorway: settle or wait until the game is ready, then hand off to its scene. */
+const GameEntryRoute = () => {
   const location = useLocation();
-  const legacyHref = resolveLegacyLandingHref(location);
+  const navigate = useNavigate();
+  const entryContext = resolveEntryContextFromEntryRoute(location);
+  useBootDocumentState("app-ready");
 
-  if (legacyHref) {
-    return <Navigate to={legacyHref} replace />;
+  if (!entryContext) {
+    return <Navigate to="/play" replace />;
   }
 
-  return <LandingPlayRoute />;
+  return (
+    <div className="min-h-screen bg-black">
+      <GameEntryModal
+        isOpen
+        onClose={() => navigate("/play", { replace: true })}
+        game={{ chainId: entryContext.chainId, gameId: entryContext.gameId }}
+        isSpectateMode={entryContext.intent === "spectate"}
+        autoSettleEnabled={entryContext.autoSettle}
+        entryIntent={entryContext.intent === "settle" ? "settle" : "play"}
+      />
+    </div>
+  );
 };
 
 const GameRouteShell = ({ backgroundImage }: { backgroundImage: string }) => {
   const location = useLocation();
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
-  const normalizedLegacyHref = normalizeLegacyPlayLocation(location, getActiveGame());
-
-  if (normalizedLegacyHref) {
-    return <Navigate to={normalizedLegacyHref} replace />;
-  }
 
   const normalizedBootHref = showBlankOverlay ? normalizePlayBootLocation(location) : null;
   if (normalizedBootHref) {

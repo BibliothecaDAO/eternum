@@ -38,7 +38,6 @@
     },
     "apps/realms": {
       "entry": [
-        "src/main.tsx",
         "server/worker.ts",
         "server/migrate-box-users.ts"
       ],
@@ -139,6 +138,9 @@
         ],
         "@bibliothecadao/eternum/biome": [
           "../../packages/core/src/utils/biome/biome.ts"
+        ],
+        "@bibliothecadao/eternum/shard": [
+          "../../packages/core/src/client/shard-reader.ts"
         ]
       }
     },

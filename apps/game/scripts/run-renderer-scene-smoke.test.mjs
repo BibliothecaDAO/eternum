@@ -51,7 +51,7 @@ describe("buildSceneSmokeUrl", () => {
         rendererMode: "webgpu-force-webgl",
         scene: "hex",
       }),
-    ).toBe("https://127.0.0.1:4173/play/0xa1/702/hex?col=0&row=0&spectate=true&rendererMode=webgpu-force-webgl");
+    ).toBe("https://127.0.0.1:4173/g/0xa1/702/hex?col=0&row=0&spectate=true&rendererMode=webgpu-force-webgl");
   });
 
   it("requires a game instead of guessing a stale default", () => {
@@ -211,8 +211,8 @@ describe("evaluateSceneSmokeResult", () => {
       evaluateSceneSmokeResult({
         canvasExists: true,
         errors: [],
-        expectedPathname: "/play/map",
-        openedUrl: "https://127.0.0.1:4173/play/map?col=0&row=0&spectate=true",
+        expectedPathname: "/g/0xa1/1/map",
+        openedUrl: "https://127.0.0.1:4173/g/0xa1/1/map?col=0&row=0&spectate=true",
         unableToStartCount: 0,
       }),
     ).toEqual({
@@ -226,8 +226,8 @@ describe("evaluateSceneSmokeResult", () => {
       evaluateSceneSmokeResult({
         canvasExists: false,
         errors: ["Error creating WebGL context"],
-        expectedPathname: "/play/hex",
-        openedUrl: "https://127.0.0.1:4173/play/map?col=0&row=0",
+        expectedPathname: "/g/0xa1/1/hex",
+        openedUrl: "https://127.0.0.1:4173/g/0xa1/1/map?col=0&row=0",
         unableToStartCount: 1,
       }),
     ).toEqual({

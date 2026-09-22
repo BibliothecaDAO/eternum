@@ -25,6 +25,8 @@ import { World } from "./ui/layouts/world";
 import { resolveGameRouteView } from "./game-route.utils";
 import type { BootstrapTask } from "./game-entry/bootstrap-controller";
 
+if (import.meta.env.DEV) void import("./hooks/store/transaction-debug");
+
 type ReadyAppProps = {
   backgroundImage: string;
   setupResult: SetupResult;

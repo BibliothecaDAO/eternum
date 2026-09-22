@@ -1,7 +1,6 @@
 import { resolveRendererBuildMode, type RendererBuildMode } from "@/three/renderer-build-mode";
 import type { GameRef } from "@bibliothecadao/eternum/game-client";
 
-import type { GameProfile } from "@/runtime/world/types";
 import { hasSpectateQuery, isExplicitSpectateSession } from "@/utils/spectator-session";
 
 export type PlayScene = "map" | "hex";
@@ -42,7 +41,8 @@ const parseGameRef = (rawChainId: string, rawGameId: string): GameRef | null => 
   return Number.isSafeInteger(gameId) ? { chainId: rawChainId.toLowerCase(), gameId } : null;
 };
 
-const gamePath = (game: GameRef): string => `${game.chainId}/${game.gameId}`;
+/** A game lives at /g/<chain id>/<game id>; its scenes are one segment deeper. */
+const gamePath = (game: GameRef): string => `/g/${game.chainId}/${game.gameId}`;
 const isPlayScene = (value: string): value is PlayScene => PLAY_SCENES.includes(value as PlayScene);
 const isEntryIntent = (value: string): value is EntryIntent => ENTRY_INTENTS.includes(value as EntryIntent);
 const isPlayBootMode = (value: string): value is PlayBootMode => PLAY_BOOT_MODES.includes(value as PlayBootMode);
@@ -73,7 +73,7 @@ function parseRendererOptions(
 }
 
 export const parsePlayRoute = (location: LocationLike): PlayRouteDescriptor | null => {
-  const match = location.pathname.match(/^\/play\/([^/]+)\/([^/]+)\/([^/]+)\/?$/);
+  const match = location.pathname.match(/^\/g\/([^/]+)\/([^/]+)\/([^/]+)\/?$/);
   if (!match) {
     return null;
   }
@@ -130,11 +130,11 @@ export const buildPlayHref = (route: PlayHrefInput): string => {
   if (route.rendererMode) searchParams.set("rendererMode", route.rendererMode);
   if (route.verboseLogs) searchParams.set("logs", "1");
 
-  return `/play/${gamePath(route)}/${route.scene}${buildSearch(searchParams)}`;
+  return `${gamePath(route)}/${route.scene}${buildSearch(searchParams)}`;
 };
 
 export const parseEntryRoute = (location: LocationLike): EntryRouteDescriptor | null => {
-  const match = location.pathname.match(/^\/enter\/([^/]+)\/([^/]+)\/?$/);
+  const match = location.pathname.match(/^\/g\/([^/]+)\/([^/]+)\/?$/);
   if (!match) {
     return null;
   }
@@ -146,7 +146,7 @@ export const parseEntryRoute = (location: LocationLike): EntryRouteDescriptor | 
   }
 
   const searchParams = new URLSearchParams(location.search);
-  const intent = searchParams.get("intent") ?? "play";
+  const intent = hasSpectateQuery(location.search) ? "spectate" : (searchParams.get("intent") ?? "play");
   if (!isEntryIntent(intent)) {
     return null;
   }
@@ -161,7 +161,9 @@ export const parseEntryRoute = (location: LocationLike): EntryRouteDescriptor | 
 export const buildEntryHref = (route: EntryRouteDescriptor): string => {
   const searchParams = new URLSearchParams();
 
-  if (route.intent !== "play") {
+  if (route.intent === "spectate") {
+    searchParams.set("spectate", "true");
+  } else if (route.intent !== "play") {
     searchParams.set("intent", route.intent);
   }
 
@@ -169,60 +171,5 @@ export const buildEntryHref = (route: EntryRouteDescriptor): string => {
     searchParams.set("autoSettle", "true");
   }
 
-  return `/enter/${gamePath(route)}${buildSearch(searchParams)}`;
-};
-
-const resolveLegacySceneRoute = (location: LocationLike, fallbackWorld?: GameProfile | null): string | null => {
-  const sceneMatch = location.pathname.match(/^\/play\/(map|hex|travel)\/?$/);
-  if (!sceneMatch || !fallbackWorld) {
-    return null;
-  }
-
-  const scene = sceneMatch[1] as PlayScene;
-  const searchParams = new URLSearchParams(location.search);
-
-  return buildPlayHref({
-    ...parseRendererOptions(searchParams),
-    chainId: fallbackWorld.chainId,
-    gameId: fallbackWorld.gameId,
-    scene,
-    col: parseOptionalNumber(searchParams, "col"),
-    row: parseOptionalNumber(searchParams, "row"),
-    spectate: hasSpectateQuery(location.search),
-    bootMode: "direct",
-    resumeScene: null,
-  });
-};
-
-const resolveBareSceneRoute = (location: LocationLike, fallbackWorld?: GameProfile | null): string | null => {
-  const sceneMatch = location.pathname.match(/^\/(map|hex|travel)\/?$/);
-  if (!sceneMatch || !fallbackWorld) {
-    return null;
-  }
-
-  const scene = sceneMatch[1] as PlayScene;
-  const searchParams = new URLSearchParams(location.search);
-
-  return buildPlayHref({
-    ...parseRendererOptions(searchParams),
-    chainId: fallbackWorld.chainId,
-    gameId: fallbackWorld.gameId,
-    scene,
-    col: parseOptionalNumber(searchParams, "col"),
-    row: parseOptionalNumber(searchParams, "row"),
-    spectate: hasSpectateQuery(location.search),
-    bootMode: "direct",
-    resumeScene: null,
-  });
-};
-
-export const normalizeLegacyPlayLocation = (
-  location: LocationLike,
-  fallbackWorld?: GameProfile | null,
-): string | null => {
-  if (parsePlayRoute(location)) {
-    return null;
-  }
-
-  return resolveLegacySceneRoute(location, fallbackWorld) ?? resolveBareSceneRoute(location, fallbackWorld);
+  return `${gamePath(route)}${buildSearch(searchParams)}`;
 };

@@ -29,9 +29,7 @@ describe("game-entry context", () => {
   });
 
   it("parses canonical entry routes into landing entry context", () => {
-    expect(
-      resolveEntryContextFromEntryRoute(createLocation("/enter/0xa1/3", "?intent=settle&autoSettle=true")),
-    ).toEqual({
+    expect(resolveEntryContextFromEntryRoute(createLocation("/g/0xa1/3", "?intent=settle&autoSettle=true"))).toEqual({
       chainId: "0xa1",
       gameId: 3,
       intent: "settle",
@@ -41,7 +39,7 @@ describe("game-entry context", () => {
   });
 
   it("parses canonical play routes into direct play context", () => {
-    expect(resolveEntryContextFromPlayRoute(createLocation("/play/0xa1/3/map", "?spectate=true"))).toEqual({
+    expect(resolveEntryContextFromPlayRoute(createLocation("/g/0xa1/3/map", "?spectate=true"))).toEqual({
       chainId: "0xa1",
       gameId: 3,
       intent: "spectate",
@@ -59,15 +57,15 @@ describe("game-entry context", () => {
       source: "landing" as const,
     };
 
-    expect(buildEntryHrefFromEntryContext(context)).toBe("/enter/0xb2/9");
-    expect(buildPlayRouteFromEntryContext({ context })).toBe("/play/0xb2/9/hex");
+    expect(buildEntryHrefFromEntryContext(context)).toBe("/g/0xb2/9");
+    expect(buildPlayRouteFromEntryContext({ context })).toBe("/g/0xb2/9/hex");
     expect(
       buildPlayRouteFromEntryContext({
         context: { ...context, intent: "spectate" },
         col: 4,
         row: 9,
       }),
-    ).toBe("/play/0xb2/9/map?col=4&row=9&spectate=true");
+    ).toBe("/g/0xb2/9/map?col=4&row=9&spectate=true");
     expect(resolveEntryContextCacheKey(context)).toBe("0xb2:9");
   });
 });

@@ -11,6 +11,7 @@ export default defineConfig({
     "src/utils/biome/biome.ts",
     "src/managers/game-entity-keys.ts",
     "src/client/index.ts",
+    "src/client/shard-reader.ts",
     "src/sync/index.ts",
     "src/sync/model-manifest.ts",
   ],

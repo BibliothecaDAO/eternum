@@ -1,4 +1,4 @@
-import { getShards, openShard, requireShard, type Shard } from "@bibliothecadao/eternum/game-client";
+import { getShards, openShard, requireShard, type Shard } from "@bibliothecadao/eternum/shard";
 import { resolveEndpoint } from "@realms-world/chain";
 
 import { nativeFactSchemaIdentity } from "../../../../../contracts/l3/world-native/schema/client.gen";

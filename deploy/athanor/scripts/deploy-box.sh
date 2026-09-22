@@ -118,11 +118,10 @@ install_workspace() { as_realms pnpm --dir "$REPO_DIR" install --frozen-lockfile
 
 build_shared_packages() { as_realms pnpm --dir "$REPO_DIR" run build:packages; }
 
-# Identity is the one unit with build steps of its own: the SPA bundle and the session schema.
+# Identity is the one unit with a build step of its own: the session schema.
 prepare_service() {
   if [ "$1" = realms-identity ]; then
     as_realms env DATABASE_SSL=false pnpm --dir "$REPO_DIR" --filter @realms-world/db push
-    as_realms pnpm --dir "$REPO_DIR" --filter @realms-world/realms build
   fi
 }
 

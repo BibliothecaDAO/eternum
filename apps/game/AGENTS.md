@@ -106,7 +106,7 @@ VITE_PUBLIC_GRAPHICS_DEV=true npx -y node@20.19.0 $(which pnpm) --dir /path/to/r
 If `npx` reports duplicate workspace names from the monorepo, run the command from `/tmp` and pass the absolute `pnpm`
 path as shown above.
 
-2. Open a headed browser on the game landing page with a persistent profile. If the player is already logged in,
+2. Open a headed browser on the app shell (the home page) with a persistent profile. If the player is already logged in,
    continue immediately. If no wallet/account is visible, ask the user to log in themselves. Do not ask for credentials.
 
 ```bash
@@ -120,11 +120,12 @@ npx -y agent-browser --session game-check \
    `eternum_account_store.state.accountName`. If both are already present, do not wait for the user; proceed to the live
    game.
 
-4. Prefer `YOUR ACTIVE GAMES` with an `Enter` button. This is a live, playable game where the logged-in account is
-   registered. Use spectate or review only if the user explicitly asks for it or no playable registered game exists.
+4. Prefer a game under `Your games` on the home page with an `Enter game` button. This is a live, playable game where
+   the logged-in account is registered. Use spectate or review only if the user explicitly asks for it or no playable
+   registered game exists.
 
 5. For requests about UI "in the game" or "current live game", enter the live match first and use in-game controls. Do
-   not use landing routes such as `/leaderboard` unless the user explicitly asks for the global landing leaderboard.
+   not use shell routes such as `/results` unless the user explicitly asks for the results page.
 
 6. Known in-game controls:
    - In-game leaderboard: top-right social/leaderboard icon opens the `Leaderboard` popup.
@@ -178,7 +179,7 @@ npx -y agent-browser --session spectator-check errors
 
 Expected pass signals:
 
-1. URL contains `/play/map` and `spectate=true`.
+1. URL contains `/g/` and `spectate=true`.
 2. `main-canvas` exists (`true`).
 3. `Unable to Start` count is `0`.
 

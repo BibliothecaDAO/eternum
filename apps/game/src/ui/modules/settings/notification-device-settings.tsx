@@ -7,7 +7,7 @@ import {
   useNotificationDeliveryError,
 } from "@/pwa/local-notification-client";
 import type { NotificationDevice } from "@/pwa/notification-database";
-import { getActiveGame } from "@/runtime/world";
+import { getActiveGame } from "@/runtime/world/store";
 import { buildEntryHref } from "@/play/navigation/play-route";
 import { parseNotificationPayload } from "@bibliothecadao/notifications";
 import { HUD_BODY } from "@/ui/design-system/atoms/hud-typography";

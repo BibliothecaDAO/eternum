@@ -18,6 +18,10 @@
       "types": "./dist/client/index.d.ts",
       "import": "./dist/client/index.js"
     },
+    "./shard": {
+      "types": "./dist/client/shard-reader.d.ts",
+      "import": "./dist/client/shard-reader.js"
+    },
     "./game-sync": {
       "types": "./dist/sync/index.d.ts",
       "import": "./dist/sync/index.js"

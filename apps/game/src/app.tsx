@@ -1,9 +1,20 @@
 import { lazy, Suspense, type ReactNode } from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import "./index.css";
 import { PwaUpdatePrompt } from "./pwa/pwa-update-prompt";
 import { PwaInstallRuntime } from "./pwa/pwa-install-control";
+import { AccountPage } from "./shell/account";
+import { AppShell } from "./shell/app-shell";
+import { FactoryPage } from "./shell/factory";
+import { HomePage } from "./shell/home";
+import { LearnPage } from "./shell/learn";
+import { NewsPage } from "./shell/news";
+import { NotFoundPage } from "./shell/not-found";
+import { PlayPage } from "./shell/play";
+import { PlayerPage } from "./shell/player";
+import { ResultsPage } from "./shell/results";
 
 const DebugThreeChunkView = lazy(() =>
   import("./ui/features/debug/three-chunk-debug-view").then((module) => ({ default: module.ThreeChunkDebugView })),
@@ -41,88 +52,108 @@ const GameClientApp = lazy(() => import("./game-client-app").then((module) => ({
 
 const AppFallback = () => <div className="min-h-screen bg-black" />;
 
-const DebugRouteShell = ({ children }: { children: ReactNode }) => (
-  <Suspense fallback={<AppFallback />}>{children}</Suspense>
-);
+const LazyRoute = ({ children }: { children: ReactNode }) => <Suspense fallback={<AppFallback />}>{children}</Suspense>;
 
-const GameClientRouteShell = () => (
-  <Suspense fallback={<AppFallback />}>
-    <GameClientApp />
-  </Suspense>
-);
+const shellQueryClient = new QueryClient({
+  defaultOptions: { queries: { refetchOnWindowFocus: false, refetchOnReconnect: false, retry: 1 } },
+});
 
+/**
+ * One app: the shell (home, play, results, account) is the cold path and carries no game module; a game, with the
+ * 3D client and its mode's screens, loads only under `/g/:chain/:game`.
+ */
 function App() {
   return (
     <BrowserRouter>
-      <PwaUpdatePrompt />
-      <PwaInstallRuntime />
-      <Routes>
-        <Route
-          path="/lab/*"
-          element={
-            <DebugRouteShell>
-              <GraphicsLabView />
-            </DebugRouteShell>
-          }
-        />
-        <Route
-          path="/debug/three-chunks"
-          element={
-            <DebugRouteShell>
-              <DebugThreeChunkView />
-            </DebugRouteShell>
-          }
-        />
-        <Route
-          path="/debug/procedural-characters"
-          element={
-            <DebugRouteShell>
-              <DebugProceduralCharacterGymView />
-            </DebugRouteShell>
-          }
-        />
-        <Route
-          path="/debug/procedural-character-benchmark"
-          element={
-            <DebugRouteShell>
-              <DebugProceduralCharacterBenchmarkView />
-            </DebugRouteShell>
-          }
-        />
-        <Route
-          path="/debug/procedural-world-gym"
-          element={
-            <DebugRouteShell>
-              <DebugProceduralWorldGymView />
-            </DebugRouteShell>
-          }
-        />
-        <Route
-          path="/debug/terrain-props"
-          element={
-            <DebugRouteShell>
-              <DebugTerrainPropView />
-            </DebugRouteShell>
-          }
-        />
-        <Route
-          path="/debug/procedural-terrain-benchmark"
-          element={
-            <DebugRouteShell>
-              <DebugProceduralTerrainBenchmarkView />
-            </DebugRouteShell>
-          }
-        />
-        <Route
-          path="/debug/world-fx"
-          element={
-            <DebugRouteShell>
-              <DebugWorldFxGymView />
-            </DebugRouteShell>
-          }
-        />
-        <Route path="*" element={<GameClientRouteShell />} />
-      </Routes>
+      <QueryClientProvider client={shellQueryClient}>
+        <PwaUpdatePrompt />
+        <PwaInstallRuntime />
+        <Routes>
+          <Route element={<AppShell />}>
+            <Route index element={<HomePage />} />
+            <Route path="play" element={<PlayPage />} />
+            <Route path="results" element={<ResultsPage />} />
+            <Route path="account" element={<AccountPage />} />
+            <Route path="p/:address" element={<PlayerPage />} />
+            <Route path="learn" element={<LearnPage />} />
+            <Route path="news" element={<NewsPage />} />
+            <Route path="factory" element={<FactoryPage />} />
+            <Route path="*" element={<NotFoundPage />} />
+          </Route>
+          <Route
+            path="/g/:chain/:game/*"
+            element={
+              <LazyRoute>
+                <GameClientApp />
+              </LazyRoute>
+            }
+          />
+          <Route
+            path="/lab/*"
+            element={
+              <LazyRoute>
+                <GraphicsLabView />
+              </LazyRoute>
+            }
+          />
+          <Route
+            path="/debug/three-chunks"
+            element={
+              <LazyRoute>
+                <DebugThreeChunkView />
+              </LazyRoute>
+            }
+          />
+          <Route
+            path="/debug/procedural-characters"
+            element={
+              <LazyRoute>
+                <DebugProceduralCharacterGymView />
+              </LazyRoute>
+            }
+          />
+          <Route
+            path="/debug/procedural-character-benchmark"
+            element={
+              <LazyRoute>
+                <DebugProceduralCharacterBenchmarkView />
+              </LazyRoute>
+            }
+          />
+          <Route
+            path="/debug/procedural-world-gym"
+            element={
+              <LazyRoute>
+                <DebugProceduralWorldGymView />
+              </LazyRoute>
+            }
+          />
+          <Route
+            path="/debug/terrain-props"
+            element={
+              <LazyRoute>
+                <DebugTerrainPropView />
+              </LazyRoute>
+            }
+          />
+          <Route
+            path="/debug/procedural-terrain-benchmark"
+            element={
+              <LazyRoute>
+                <DebugProceduralTerrainBenchmarkView />
+              </LazyRoute>
+            }
+          />
+          <Route
+            path="/debug/world-fx"
+            element={
+              <LazyRoute>
+                <DebugWorldFxGymView />
+              </LazyRoute>
+            }
+          />
+        </Routes>
+      </QueryClientProvider>
     </BrowserRouter>
   );
 }

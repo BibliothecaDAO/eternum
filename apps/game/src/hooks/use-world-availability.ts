@@ -4,7 +4,6 @@
  * Herald's directory on the game's shard resolves registry/config metadata and the connected player's settlement
  * state. The card grid rides the same directory through the bulk worlds summary.
  */
-import { WORLD_AVAILABILITY_QUERY_KEY } from "@/hooks/world-list-queries";
 import type { HeraldGameDirectoryEntry } from "@bibliothecadao/eternum/game-sync";
 import type { ResolvedGameMode } from "@/config/game-modes/resolved-mode";
 import { fetchHeraldGameDirectory, type GameRef, type Shard } from "@bibliothecadao/eternum/game-client";
@@ -169,7 +168,7 @@ export const useWorldsAvailability = (
   const queries = useQueries({
     queries: worlds.map((world) => ({
       // Include playerAddress in query key so it refetches when user connects
-      queryKey: [...WORLD_AVAILABILITY_QUERY_KEY, gameKey(world), playerAddress ?? "anonymous"],
+      queryKey: ["worldAvailability", gameKey(world), playerAddress ?? "anonymous"],
       queryFn: () => checkWorldAvailability(world, playerAddress),
       enabled,
       refetchInterval: refetchIntervalMs,
