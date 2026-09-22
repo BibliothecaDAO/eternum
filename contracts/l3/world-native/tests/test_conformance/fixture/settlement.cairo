@@ -108,9 +108,11 @@ fn prepare_without_entitlement(
         IBlitzReservationsSafeDispatcher { contract_address: peers.map }.initialize_reservations(8).unwrap();
         stop_cheat_caller_address(peers.map);
     }
-    snforge_std::cheat_caller_address(peers.registry, 222.try_into().unwrap(), snforge_std::CheatSpan::TargetCalls(1));
-    ILedgerOperatorDispatcher { contract_address: peers.registry }.set_ledger_operator(222.try_into().unwrap());
-    stop_cheat_caller_address(peers.registry);
+    snforge_std::cheat_caller_address(
+        peers.settlement, 222.try_into().unwrap(), snforge_std::CheatSpan::TargetCalls(1),
+    );
+    ILedgerOperatorDispatcher { contract_address: peers.settlement }.set_ledger_operator(222.try_into().unwrap());
+    stop_cheat_caller_address(peers.settlement);
     season
 }
 
@@ -452,7 +454,7 @@ fn provision_and_upgrade_is_one_atomic_recorded_action() {
         let season = prepare_with_resources(
             Some(array![ResourceAmount { resource_type: 1, amount: 100 * RESOURCE_PRECISION }].span()),
         );
-        let upgrade_rules = IDomainDispatcher { contract_address: season }.domain_state().peers.structures;
+        let upgrade_rules = IDomainDispatcher { contract_address: season }.domain_state().peers.settlement;
         start_cheat_caller_address(upgrade_rules, 222.try_into().unwrap());
         IUpgradeRulesDispatcher { contract_address: upgrade_rules }
             .configure_upgrades(

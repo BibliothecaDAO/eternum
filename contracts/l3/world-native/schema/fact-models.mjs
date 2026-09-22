@@ -74,10 +74,10 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
     model("SpireLayout", ["map"], "game", method("map", "spire_layout").inputs, struct("spires::SpireLayout")),
     model(
       "LedgerOperator",
-      ["registry"],
+      ["settlement"],
       "deployment",
       domainKey,
-      [{ name: "operator", type: method("registry", "ledger_operator").outputs[0].type }],
+      [{ name: "operator", type: method("settlement", "ledger_operator").outputs[0].type }],
       "address",
     ),
     model("CampResources", ["structures"], "game", method("structures", "camp_resources").inputs, [
@@ -347,16 +347,16 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
     ),
     model(
       "UpgradeLimits",
-      ["structures"],
+      ["settlement"],
       "game",
-      method("structures", "upgrade_limits").inputs,
+      method("settlement", "upgrade_limits").inputs,
       struct("upgrades::UpgradeLimits"),
     ),
     model(
       "UpgradeRecipe",
-      ["structures"],
+      ["settlement"],
       "game",
-      method("structures", "upgrade_recipe").inputs,
+      method("settlement", "upgrade_recipe").inputs,
       struct("upgrades::UpgradeRecipe"),
     ),
     model(

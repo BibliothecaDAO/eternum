@@ -17,14 +17,14 @@ fn save(d: super::Deployment, key: ResourceKey, row: StructureRecord) {
     );
 }
 fn upgrade_rules(d: super::Deployment) {
-    start_cheat_caller_address(d.peers.structures, super::authority());
-    IUpgradeRulesDispatcher { contract_address: d.peers.structures }
+    start_cheat_caller_address(d.peers.settlement, super::authority());
+    IUpgradeRulesDispatcher { contract_address: d.peers.settlement }
         .configure_upgrades(
             3,
             UpgradeLimits { realm_max: 1, village_max: 1 },
             array![UpgradeRecipe { costs: array![ResourceAmount { resource_type: 23, amount: 17 }].span() }].span(),
         );
-    stop_cheat_caller_address(d.peers.structures);
+    stop_cheat_caller_address(d.peers.settlement);
 }
 
 #[test]

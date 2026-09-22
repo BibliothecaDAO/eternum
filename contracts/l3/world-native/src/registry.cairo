@@ -2,7 +2,6 @@
 pub mod RegistryDomain {
     use starknet::get_caller_address;
     use starknet::storage::StorageMapReadAccess;
-    use crate::entry::EntryAdministration;
     use crate::game::{GameRegistry, GameState};
     use crate::guilds::GuildState;
     use crate::lifecycle::Lifecycle;
@@ -12,9 +11,6 @@ pub mod RegistryDomain {
     impl GameInternal = GameState::InternalImpl<ContractState>;
     component!(path: Lifecycle, storage: lifecycle, event: LifecycleEvent);
     component!(path: GuildState, storage: guilds, event: GuildEvent);
-    component!(path: EntryAdministration, storage: entry, event: EntryEvent);
-    #[abi(embed_v0)]
-    impl Entry = EntryAdministration::LedgerOperatorImpl<ContractState>;
     component!(path: RegistrarState, storage: registrar, event: RegistrarEvent);
     #[abi(embed_v0)]
     impl Registrar = RegistrarState::RegistrarImpl<ContractState>;
@@ -33,8 +29,6 @@ pub mod RegistryDomain {
         #[substorage(v0)]
         guilds: GuildState::Storage,
         #[substorage(v0)]
-        entry: EntryAdministration::Storage,
-        #[substorage(v0)]
         registrar: RegistrarState::Storage,
     }
     #[event]
@@ -43,7 +37,6 @@ pub mod RegistryDomain {
         GameEvent: GameState::Event,
         LifecycleEvent: Lifecycle::Event,
         GuildEvent: GuildState::Event,
-        EntryEvent: EntryAdministration::Event,
         RegistrarEvent: RegistrarState::Event,
     }
     #[abi(embed_v0)]

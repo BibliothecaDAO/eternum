@@ -4,7 +4,7 @@ pub mod SettlementDomain {
     use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
     use starknet::{ContractAddress, get_caller_address};
     use crate::commands::ExecutionContext as DomainContext;
-    use crate::entry::{ILedgerOperatorDispatcher, ILedgerOperatorDispatcherTrait};
+    use crate::entry::EntryAdministration;
     use crate::game::{IGameDispatcher, IGameDispatcherTrait};
     use crate::lifecycle::Lifecycle;
     use crate::names::{INamesDispatcher, INamesDispatcherTrait, SetAddressName};
@@ -14,6 +14,7 @@ pub mod SettlementDomain {
         ISettlementPoolDispatcherTrait, PlayerEntry, RealmCreation, RealmGrants, SettlementCreation, SettlementProgress,
         SettlementRules, SettlementState, VillageCreation,
     };
+    use crate::upgrades::{UpgradeLimits, UpgradeRecipe, UpgradeState};
     use crate::village::{SettleVillage, VillagePass, VillagePassKey, VillageRules, VillageState};
     component!(path: Lifecycle, storage: lifecycle, event: LifecycleEvent);
     #[abi(embed_v0)]
@@ -25,8 +26,17 @@ pub mod SettlementDomain {
     impl SettlementInternal = SettlementState::InternalImpl<ContractState>;
     component!(path: VillageState, storage: villages, event: VillageEvent);
     impl VillageInternal = VillageState::InternalImpl<ContractState>;
+    component!(path: EntryAdministration, storage: entry, event: EntryEvent);
+    #[abi(embed_v0)]
+    impl Entry = EntryAdministration::LedgerOperatorImpl<ContractState>;
+    component!(path: UpgradeState, storage: upgrades, event: UpgradeEvent);
+    impl UpgradeInternal = UpgradeState::InternalImpl<ContractState>;
     #[storage]
     struct Storage {
+        #[substorage(v0)]
+        entry: EntryAdministration::Storage,
+        #[substorage(v0)]
+        upgrades: UpgradeState::Storage,
         depth_configuration: Map<u32, bool>,
         depth_rules: Map<(u32, u8), Option<crate::expeditions::DepthRules>>,
         #[substorage(v0)]
@@ -41,6 +51,8 @@ pub mod SettlementDomain {
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
+        EntryEvent: EntryAdministration::Event,
+        UpgradeEvent: UpgradeState::Event,
         RowSet: crate::events::RowSet,
         LifecycleEvent: Lifecycle::Event,
         RealmEvent: crate::realms::RealmState::Event,
@@ -51,6 +63,23 @@ pub mod SettlementDomain {
     fn constructor(ref self: ContractState, authority: ContractAddress) {
         self.lifecycle.initialize(authority);
     }
+    #[abi(embed_v0)]
+    impl UpgradeRules of crate::upgrades::IUpgradeRules<ContractState> {
+        fn configure_upgrades(
+            ref self: ContractState, game_id: u32, limits: UpgradeLimits, recipes: Span<UpgradeRecipe>,
+        ) {
+            self.lifecycle.assert_configurator();
+            self.games().game(game_id);
+            self.upgrades.configure(game_id, limits, recipes);
+        }
+        fn upgrade_limits(self: @ContractState, game_id: u32) -> UpgradeLimits {
+            self.upgrades.limits(game_id)
+        }
+        fn upgrade_recipe(self: @ContractState, game_id: u32, level: u8) -> UpgradeRecipe {
+            self.upgrades.recipe(game_id, level)
+        }
+    }
+
     #[abi(embed_v0)]
     impl ExpeditionRules of crate::expeditions::IExpeditionRules<ContractState> {
         fn configure_depths(ref self: ContractState, game_id: u32, depths: Span<crate::expeditions::DepthRules>) {
@@ -189,7 +218,7 @@ pub mod SettlementDomain {
         }
         fn register_village_pass(ref self: ContractState, key: VillagePassKey, owner: ContractAddress) {
             assert!(key.game_id != 0, "game id zero is reserved");
-            let operator = self.ledger_operator();
+            let operator = self.entry.operator.read();
             assert!(operator.is_non_zero() && get_caller_address() == operator, "only ledger operator");
             self.villages.register(key, owner);
         }
@@ -273,7 +302,7 @@ pub mod SettlementDomain {
             if games.ownership_rules_ready(key.game_id) {
                 assert!(games.rules(key.game_id).entry_rule != crate::rules::ENTRY_ROSTER, "Blitz uses a fixed roster");
             }
-            let operator = self.ledger_operator();
+            let operator = self.entry.operator.read();
             assert!(operator.is_non_zero() && get_caller_address() == operator, "only ledger operator");
             assert!(key.owner.is_non_zero(), "invalid entitlement owner");
             self.settlements.register_entitlement(key, entitlement);
@@ -338,9 +367,6 @@ pub mod SettlementDomain {
                 "unregistered actor",
             );
             owner
-        }
-        fn ledger_operator(self: @ContractState) -> ContractAddress {
-            ILedgerOperatorDispatcher { contract_address: self.lifecycle.require_active().registry }.ledger_operator()
         }
         fn games(self: @ContractState) -> IGameDispatcher {
             IGameDispatcher { contract_address: self.lifecycle.require_active().registry }
