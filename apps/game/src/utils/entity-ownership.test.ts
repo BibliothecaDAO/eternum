@@ -33,7 +33,7 @@ const fixture = () => {
       troop_max_explorer_count: 1,
       starting_troops_granted: false,
     },
-    metadata: { realm_id: 1, order: 0, has_wonder: false, village_realm: 0, mine_kind: 0 },
+    metadata: { realm_id: 1, order: 0, has_wonder: false, village_realm: 0, mine_kind: 0, attunement: 0 },
   });
   return { store, write };
 };
