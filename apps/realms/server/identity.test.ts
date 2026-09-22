@@ -208,6 +208,43 @@ describe("identity Worker", () => {
     }
   });
 
+  it("saves preferences by revision, caps devices per account and revokes a device only with its token", async () => {
+    const browser = createBrowser();
+    await browser.request("/api/auth/sign-in/anonymous", { body: {} });
+    const owner = (await browser.session())!.user.realmsId;
+
+    const save = (revision: number) =>
+      browser.request("/api/notifications/preferences", { body: { owner, level: "important", revision } });
+    expect(((await (await save(0)).json()) as { revision: number }).revision).toBe(1);
+    expect((await save(0)).status).toBe(409);
+
+    const device = (index: number) => {
+      const id = `00000000-0000-4000-8000-${index.toString().padStart(12, "0")}`;
+      const subscription = {
+        endpoint: `https://fcm.googleapis.com/fcm/send/device-${index}`,
+        keys: { p256dh: "B".repeat(87), auth: "A".repeat(22) },
+      };
+      return { owner, id, token: id.replace("4000", "4001"), subscription };
+    };
+    for (let index = 0; index < 10; index++) {
+      expect((await browser.request("/api/notifications/push/subscribe", { body: device(index) })).status).toBe(200);
+    }
+    const eleventh = await browser.request("/api/notifications/push/subscribe", { body: device(10) });
+    expect(await eleventh.json()).toEqual({ error: "subscription_limit" });
+
+    const first = device(0);
+    const status = async () =>
+      (
+        (await (await browser.request("/api/notifications/push/status", { body: { owner, id: first.id } })).json()) as {
+          registered: boolean;
+        }
+      ).registered;
+    await createBrowser().request("/api/notifications/push/revoke", { body: { id: first.id, token: device(1).token } });
+    expect(await status()).toBe(true);
+    await createBrowser().request("/api/notifications/push/revoke", { body: { id: first.id, token: first.token } });
+    expect(await status()).toBe(false);
+  });
+
   it("refuses to link a wallet that already belongs to another Realms account", async () => {
     const wallet = "0x0456";
     expect((await signInWithWallet(createBrowser(), wallet)).status).toBe(200);
