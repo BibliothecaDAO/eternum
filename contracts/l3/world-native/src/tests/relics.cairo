@@ -1,3 +1,4 @@
+use core::dict::{Felt252Dict, Felt252DictTrait};
 use snforge_std::{start_cheat_block_timestamp_global, start_cheat_caller_address, stop_cheat_caller_address};
 use crate::commands::{Command, ExecutionContext};
 use crate::exploration_rewards::{
@@ -6,9 +7,9 @@ use crate::exploration_rewards::{
 };
 use crate::map::{IMapDispatcher, IMapDispatcherTrait};
 use crate::relics::{
-    ApplyRelic, IRelicMapDispatcher, IRelicMapDispatcherTrait, IRelicMapSafeDispatcher, IRelicMapSafeDispatcherTrait,
-    IRelicsDispatcher, IRelicsDispatcherTrait, IRelicsSafeDispatcher, IRelicsSafeDispatcherTrait, OpenChest, Recipient,
-    RelicRule,
+    ApplyRelic, ChestGround, ChestKind, ChestRules, IRelicMapDispatcher, IRelicMapDispatcherTrait,
+    IRelicMapSafeDispatcher, IRelicMapSafeDispatcherTrait, IRelicsDispatcher, IRelicsDispatcherTrait,
+    IRelicsSafeDispatcher, IRelicsSafeDispatcherTrait, OpenChest, Recipient, RelicRule, roll_chest,
 };
 use crate::resources::{IResourcesDispatcher, IResourcesDispatcherTrait, ResourceKey, ResourceSlot};
 use crate::rules::RESOURCE_PRECISION;
@@ -85,7 +86,7 @@ fn setup(blitz: bool) -> (super::Deployment, ResourceKey, ResourceKey) {
     config.victory_points_grant_config.relic_open_points = 77;
     let (deployment, home, _) = setup_with_rules(config);
     start_cheat_caller_address(deployment.peers.relics, super::authority());
-    view(deployment).configure_relics(3, rules());
+    view(deployment).configure_relics(3, rules(), None);
     stop_cheat_caller_address(deployment.peers.relics);
     grant(deployment, home, 26, 10 * RESOURCE_PRECISION);
     grant(deployment, home, 38, 10000 * RESOURCE_PRECISION);
@@ -360,7 +361,7 @@ fn opening_a_chest_draws_with_replacement_once_and_replay_cannot_reopen_it() {
 fn relic_configuration_and_internal_effects_reject_foreign_callers() {
     let (deployment, home, explorer) = setup(false);
     let safe = IRelicsSafeDispatcher { contract_address: deployment.peers.relics };
-    assert!(safe.configure_relics(1, rules()).is_err());
+    assert!(safe.configure_relics(1, rules(), None).is_err());
     assert!(
         safe
             .apply_relic(
@@ -372,8 +373,8 @@ fn relic_configuration_and_internal_effects_reject_foreign_callers() {
             .is_err(),
     );
     start_cheat_caller_address(deployment.peers.relics, super::authority());
-    assert!(safe.configure_relics(3, rules()).is_err());
-    assert!(safe.configure_relics(1, array![].span()).is_err());
+    assert!(safe.configure_relics(3, rules(), None).is_err());
+    assert!(safe.configure_relics(1, array![].span(), None).is_err());
     stop_cheat_caller_address(deployment.peers.relics);
     let map = IRelicMapSafeDispatcher { contract_address: deployment.peers.map };
     let coord = troop(deployment, explorer).coord;
@@ -639,4 +640,63 @@ fn chest_search_skips_the_explorers_vacated_start_tile() {
     assert!(map.tile(crate::geometry::tile_key(3, vacated)).is_none());
     let tile = map.tile(crate::geometry::tile_key(3, Coord { x: 2000212, ..vacated })).unwrap();
     assert_eq!(tile.data / 2 % 256, 34);
+}
+
+#[test]
+fn chest_tables_control_type_quality_pity_and_token_cap() {
+    let rules = ChestRules { loose_one_in: 94, relic_probability: 9000, cosmetic_probability: 900, token_cap: 1 };
+    let grounds = array![
+        ChestGround { common: 7800, uncommon: 1800, rare: 350, pity: 400 },
+        ChestGround { common: 6000, uncommon: 3000, rare: 800, pity: 100 },
+        ChestGround { common: 4200, uncommon: 3800, rare: 1500, pity: 40 },
+        ChestGround { common: 2500, uncommon: 4300, rare: 2300, pity: 20 },
+    ];
+    for ground in grounds {
+        let mut counts: Felt252Dict<u32> = Default::default();
+        for seed in 0_u32..2000 {
+            let rolled = roll_chest(rules, ground, 0, 0, seed.into(), 100);
+            let kind: felt252 = match rolled.kind {
+                ChestKind::Relic => 0,
+                ChestKind::Cosmetic => 1,
+                ChestKind::Token => 2,
+            };
+            counts.insert(kind, counts.get(kind) + 1);
+            let quality: felt252 = 10 + Into::<u8, felt252>::into(rolled.quality);
+            counts.insert(quality, counts.get(quality) + 1);
+        }
+        let expected = array![
+            (0, 1800_u32), (1, 180), (2, 20), (10, Into::<u16, u32>::into(ground.common) / 5),
+            (11, Into::<u16, u32>::into(ground.uncommon) / 5), (12, Into::<u16, u32>::into(ground.rare) / 5),
+            (
+                13,
+                (10000
+                    - Into::<u16, u32>::into(ground.common)
+                    - Into::<u16, u32>::into(ground.uncommon)
+                    - Into::<u16, u32>::into(ground.rare))
+                    / 5,
+            ),
+        ];
+        for (bucket, expected) in expected {
+            let actual = counts.get(bucket);
+            let difference = core::cmp::max(actual, expected) - core::cmp::min(actual, expected);
+            let variance = expected * (2000 - expected) / 2000;
+            assert!(actual != 0 && difference * difference <= 16 * variance + 1, "chest distribution outside table");
+        }
+    }
+    let ground = ChestGround { common: 10000, uncommon: 0, rare: 0, pity: 3 };
+    let relics = ChestRules { relic_probability: 10000, cosmetic_probability: 0, ..rules };
+    let first = roll_chest(relics, ground, 0, 0, 77, 100);
+    let second = roll_chest(relics, ground, first.pity, 0, 77, 101);
+    let third = roll_chest(relics, ground, second.pity, 0, 77, 102);
+    assert_eq!((first.quality, first.pity), (0, 1));
+    assert_eq!((second.quality, second.pity), (0, 2));
+    assert_eq!((third.quality, third.pity), (3, 0));
+    let tokens = ChestRules { relic_probability: 0, cosmetic_probability: 0, ..rules };
+    let before_cap = roll_chest(tokens, ground, 2, 0, 77, 100);
+    let capped = roll_chest(tokens, ground, 2, 1, 77, 100);
+    assert_eq!((before_cap.kind, before_cap.quality, before_cap.pity), (ChestKind::Token, 0, 2));
+    assert_eq!((capped.kind, capped.quality, capped.pity), (ChestKind::Relic, 3, 0));
+    let cosmetics = ChestRules { relic_probability: 0, cosmetic_probability: 10000, ..rules };
+    let cosmetic = roll_chest(cosmetics, ground, 2, 1, 77, 100);
+    assert_eq!((cosmetic.kind, cosmetic.quality, cosmetic.pity), (ChestKind::Cosmetic, 0, 2));
 }

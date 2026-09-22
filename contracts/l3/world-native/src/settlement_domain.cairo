@@ -66,6 +66,12 @@ pub mod SettlementDomain {
             assert!(!enabled || rules.epoch_seconds != 0, "depths require expedition regions");
             for index in 0..depths.len() {
                 let value = *depths.at(index);
+                let ground = value.chest;
+                assert!(
+                    Into::<u16, u32>::into(ground.common) + ground.uncommon.into() + ground.rare.into() <= 10000,
+                    "invalid chest quality probabilities",
+                );
+                assert!(ground.pity != 0, "zero relic pity threshold");
                 assert!(
                     index != 0 || (value.entry_stamina == 0 && value.attunement_cost == 0),
                     "surface needs no attunement",

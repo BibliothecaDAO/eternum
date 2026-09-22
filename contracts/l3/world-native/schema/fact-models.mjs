@@ -33,6 +33,10 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
         value: "zero",
         meaning: "No players have settled or registered realms in this game.",
       };
+    if (row.name === "ChestRules")
+      row.absence = { parent: "RelicRules", value: "empty", meaning: "This game uses interval relic chests." };
+    if (row.name === "ChestPity" || row.name === "ChestTokens")
+      row.absence = { value: "zero", meaning: "No chests have advanced this counter." };
     if (row.name === "VillageRaid")
       row.absence = { value: "zero", meaning: "The village has not been successfully raided." };
     if (row.name === "LedgerOperator")
@@ -106,6 +110,14 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
     model("RelicRules", ["relics"], "game", method("relics", "relic_rules").inputs, [
       { name: "rules", type: method("relics", "relic_rules").outputs[0].type },
     ]),
+    model("ChestRules", ["relics"], "game", method("relics", "chest_rules").inputs, struct("relics::ChestRules")),
+    model("ChestPity", ["relics"], "game", method("relics", "chest_pity").inputs, [
+      { name: "count", type: "core::integer::u16" },
+    ]),
+    model("ChestTokens", ["relics"], "game", method("relics", "chest_tokens").inputs, [
+      { name: "count", type: "core::integer::u16" },
+    ]),
+    model("ChestReward", ["relics"], "game", method("relics", "chest_reward").inputs, struct("relics::ChestReward")),
     model("RelicDiscovery", ["map"], "game", method("map", "relic_discovery_time").inputs, [
       { name: "last_at", type: "core::integer::u64" },
     ]),

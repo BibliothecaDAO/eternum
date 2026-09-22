@@ -260,6 +260,7 @@ function buildSettlement(config: Config) {
       reveal_site_neighbors: depth.revealSiteNeighbors,
       entry_stamina: depth.entryStamina,
       attunement_cost: scaled(depth.attunementCost),
+      chest: depth.chest,
     })),
     realms: {
       resources: amounts(config.startingResources, config.resources.resourcePrecision),
@@ -283,7 +284,17 @@ function buildSettlement(config: Config) {
 }
 
 function buildEconomy(config: Config, tokens: Array<{ resource_type: number; token: string }>) {
+  const chests = nativePresetForConfig(config).chests;
   return {
+    chests:
+      chests === null
+        ? new CairoOption(CairoOptionVariant.None)
+        : new CairoOption(CairoOptionVariant.Some, {
+            loose_one_in: chests.looseOneIn,
+            relic_probability: chests.relicProbability,
+            cosmetic_probability: chests.cosmeticProbability,
+            token_cap: chests.tokenCap,
+          }),
     trade: { max_count: config.trade.maxCount },
     banks: {
       lp_fee_num: config.banks.lpFeesNumerator,

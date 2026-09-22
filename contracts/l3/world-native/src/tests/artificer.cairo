@@ -34,7 +34,7 @@ fn setup(blitz: bool) -> (super::Deployment, ResourceKey) {
     let (d, home, _) = setup_with_rules(rules);
     start_cheat_caller_address(d.peers.relics, super::authority());
     view(d).configure_artificer(3, 10 * RESOURCE_PRECISION);
-    IRelicsDispatcher { contract_address: d.peers.relics }.configure_relics(3, super::relics::rules());
+    IRelicsDispatcher { contract_address: d.peers.relics }.configure_relics(3, super::relics::rules(), None);
     stop_cheat_caller_address(d.peers.relics);
     grant(d, home, RESEARCH, 20 * RESOURCE_PRECISION);
     (d, home)

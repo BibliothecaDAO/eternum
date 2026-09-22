@@ -36,6 +36,7 @@ pub struct EconomyPreset {
     pub banks: crate::market::BankRules,
     pub hyperstructures: crate::hyperstructures::HyperstructureRules,
     pub relics: Span<crate::relics::RelicRule>,
+    pub chests: Option<crate::relics::ChestRules>,
     pub research_cost: u128,
     pub withdrawals: Option<WithdrawalPreset>,
 }
@@ -165,7 +166,7 @@ fn configure_economy(peers: Peers, game_id: u32, preset: EconomyPreset) {
         preset.hyperstructures,
     );
     crate::relics::IRelicsDispatcherTrait::configure_relics(
-        crate::relics::IRelicsDispatcher { contract_address: peers.relics }, game_id, preset.relics,
+        crate::relics::IRelicsDispatcher { contract_address: peers.relics }, game_id, preset.relics, preset.chests,
     );
     crate::artificer::IArtificerDispatcherTrait::configure_artificer(
         crate::artificer::IArtificerDispatcher { contract_address: peers.relics }, game_id, preset.research_cost,

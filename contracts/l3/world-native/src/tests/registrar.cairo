@@ -1,5 +1,8 @@
 use eternum_randomness_protocol::entrypoint::IRecordedExecutionViewsDispatcher;
-use snforge_std::{start_cheat_block_timestamp_global, start_cheat_caller_address, stop_cheat_caller_address};
+use snforge_std::{
+    EventSpyTrait, EventsFilterTrait, start_cheat_block_timestamp_global, start_cheat_caller_address,
+    stop_cheat_caller_address,
+};
 use crate::commands::{Command, CreateExplorer, Explore};
 use crate::game::{GameStatus, IGameDispatcher, IGameDispatcherTrait, status_at};
 use crate::guards::{GuardKey, IGuardsDispatcher, IGuardsDispatcherTrait};
@@ -12,6 +15,7 @@ use crate::registrar::{
     CreateGameParams, IRegistrarDispatcher, IRegistrarDispatcherTrait, IRegistrarSafeDispatcher,
     IRegistrarSafeDispatcherTrait, RosterPlayer,
 };
+use crate::relics::{ChestGround, ChestKind, ChestRules, IRelicsDispatcher, IRelicsDispatcherTrait};
 use crate::resources::{IResourcesDispatcher, IResourcesDispatcherTrait, ResourceKey, ResourceRule, ResourceSlot};
 use crate::rules::{DISCOVER_CAMPS, DISCOVER_CHESTS, HOME_REWARDS, RESOURCE_PRECISION};
 use crate::season::{ISeasonDispatcher, ISeasonDispatcherTrait};
@@ -115,6 +119,7 @@ fn definition(blitz: bool) -> PresetDefinition {
                 super::hyperstructures::rules()
             },
             relics: super::relics::rules(),
+            chests: None,
             research_cost: 100,
             withdrawals: if blitz {
                 None
@@ -1006,6 +1011,7 @@ fn assert_expedition_capture(depth: u8) {
                     reveal_site_neighbors: false,
                     entry_stamina: 0,
                     attunement_cost: 0,
+                    chest: crate::relics::ChestGround { common: 10000, uncommon: 0, rare: 0, pity: 20 },
                 },
             );
     }
@@ -1191,6 +1197,7 @@ fn depth_entry_requires_attunement_and_spends_only_the_selected_depth_stamina() 
                         20 + 10 * depth
                     },
                     attunement_cost: Into::<u16, u128>::into(depth) * 100 * RESOURCE_PRECISION,
+                    chest: crate::relics::ChestGround { common: 10000, uncommon: 0, rare: 0, pity: 20 },
                 },
             );
     }
@@ -1261,4 +1268,170 @@ fn depth_entry_requires_attunement_and_spends_only_the_selected_depth_stamina() 
     let balance = resources.resource_balance(essence);
     assert!(!execute_in_game(d, game_id, buy, 351, 351));
     assert_eq!(resources.resource_balance(essence), balance);
+}
+
+#[test]
+fn reveal_chests_pay_once_record_capped_claims_and_expire_army_relics_at_rollover() {
+    let d = setup();
+    let mut preset = definition(true);
+    preset.rules.entry_rule = crate::rules::ENTRY_OPEN;
+    preset.rules.epoch_seconds = 100;
+    preset.rules.mode_rules = HOME_REWARDS
+        | DISCOVER_CHESTS
+        | crate::rules::REVEAL_SUPPLIES
+        | crate::rules::DEPTH_CONTENTS;
+    preset.settlement.spacing = 1024;
+    preset.rules.troop_limit_config.starting_guard = 0;
+    preset.rules.map_config.shards_mines_win_probability = 0;
+    preset.rules.map_config.shards_mines_fail_probability = 1;
+    preset.rules.troop_stamina_config.stamina_initial = 150;
+    preset.rules.troop_stamina_config.stamina_knight_max = 150;
+    preset.rules.troop_stamina_config.stamina_gain_per_tick = 0;
+    preset.rules.troop_stamina_config.stamina_explore_stamina_cost = 1;
+    let mut depths = array![];
+    for depth in 0_u16..4 {
+        depths
+            .append(
+                crate::expeditions::DepthRules {
+                    supply_multiplier: 1,
+                    guard_lower: 1,
+                    guard_upper: 2,
+                    mine_cap_min: RESOURCE_PRECISION,
+                    mine_cap_max: RESOURCE_PRECISION,
+                    mine_rate: 1,
+                    camp_reward_min: 0,
+                    camp_reward_max: 0,
+                    mine_chest: depth != 0,
+                    reveal_site_neighbors: false,
+                    entry_stamina: 0,
+                    attunement_cost: 0,
+                    chest: ChestGround { common: 10000, uncommon: 0, rare: 0, pity: 2 },
+                },
+            );
+    }
+    preset.settlement.depths = depths.span();
+    preset
+        .economy
+        .chests = Some(ChestRules { loose_one_in: 1, relic_probability: 0, cosmetic_probability: 5000, token_cap: 1 });
+    let mut relics = array![];
+    for index in 0..18_u32 {
+        relics
+            .append(
+                crate::relics::RelicRule {
+                    essence_cost: 0, draw_weight: if index == 0 {
+                        1
+                    } else {
+                        0
+                    }, ..*preset.economy.relics.at(index),
+                },
+            );
+    }
+    preset.economy.relics = relics.span();
+    registry(d).register_preset(1, preset);
+    let game_id = registry(d)
+        .create_game(
+            CreateGameParams { dev_mode_on: true, end_grace_seconds: 0, duration_seconds: 500, ..params(false) },
+            preset,
+        );
+    super::resource_commands::set_fixture(d.peers.settlement, selector!("catalogue_count"), array![].span(), 8000_u32);
+    super::resource_commands::set_fixture(d.peers.settlement, selector!("traits"), array![1].span(), 0x4000001_u32);
+    assert!(
+        execute_in_game(
+            d,
+            game_id,
+            Command::SettleSeason(crate::realms::SettleSeason { name: 'home', selected_realm: Some(1) }),
+            350,
+            350,
+        ),
+    );
+    let home = ResourceKey { game_id, entity_id: 1 };
+    let resources = IResourcesDispatcher { contract_address: d.peers.resources };
+    start_cheat_caller_address(d.peers.resources, d.peers.structures);
+    resources.grant_resource(home, 26, 10 * RESOURCE_PRECISION, 350);
+    stop_cheat_caller_address(d.peers.resources);
+    let muster = Command::CreateExplorer(
+        CreateExplorer { structure_id: 1, category: 0, tier: 0, amount: RESOURCE_PRECISION, direction: 0 },
+    );
+    assert!(execute_in_game(d, game_id, muster, 351, 351));
+    let structures = IStructuresDispatcher { contract_address: d.peers.structures };
+    let explorer_id = *structures.structure(home).unwrap().troop_explorers.at(0);
+    let relics = IRelicsDispatcher { contract_address: d.peers.relics };
+    let mut spy = snforge_std::spy_events();
+    let mut opened = 0_u32;
+    let explore = Command::Explore(Explore { explorer_id, direction: 0 });
+    for timestamp in array![360_u64, 361, 365, 366, 368] {
+        assert!(execute_in_game(d, game_id, explore, timestamp, timestamp));
+        opened += 1;
+    }
+    assert!(execute_in_game(d, game_id, Command::Explore(Explore { explorer_id, direction: 3 }), 372, 372));
+    assert!(execute_in_game(d, game_id, explore, 373, 373));
+    let timestamp = 374;
+    assert_eq!(relics.chest_tokens(game_id, d.actor, 3), 1);
+    let common = ResourceSlot { game_id, entity_id: explorer_id, resource_type: 39 };
+    let epic = ResourceSlot { resource_type: 40, ..common };
+    assert!(resources.resource_balance(common) >= RESOURCE_PRECISION);
+    assert!(resources.resource_balance(epic) >= RESOURCE_PRECISION);
+    assert_eq!(resources.resource_balance(ResourceSlot { entity_id: 1, ..common }), 0);
+    let essence = ResourceSlot { game_id, entity_id: 1, resource_type: 38 };
+    let before_essence = resources.resource_balance(essence);
+    let apply = Command::ApplyRelic(
+        crate::relics::ApplyRelic {
+            entity_id: explorer_id, relic_id: 39, recipient: crate::relics::Recipient::Explorer,
+        },
+    );
+    assert!(execute_in_game(d, game_id, apply, timestamp, timestamp));
+    assert_eq!(resources.resource_balance(essence), before_essence);
+    let pity = relics.chest_pity(game_id, d.actor, 0);
+    assert_eq!(pity, 1);
+    assert!(!execute_in_game(d, game_id, apply, 400, 400));
+    assert!(execute_in_game(d, game_id, muster, 400, 400));
+    assert!(!resources.has_resource(ResourceKey { game_id, entity_id: explorer_id }));
+    assert_eq!(relics.chest_pity(game_id, d.actor, 0), pity);
+    let second = *structures.structure(home).unwrap().troop_explorers.at(0);
+    for timestamp in 410_u64..414 {
+        assert!(
+            execute_in_game(
+                d, game_id, Command::Explore(Explore { explorer_id: second, direction: 0 }), timestamp, timestamp,
+            ),
+        );
+        opened += 1;
+    }
+    assert_eq!(relics.chest_tokens(game_id, d.actor, 3), 1);
+    assert_eq!(relics.chest_tokens(game_id, d.actor, 4), 1);
+    let mut paid = 0_u32;
+    let mut cosmetic_claims = 0_u32;
+    let mut token_claims = 0_u32;
+    for (_, event) in spy.get_events().emitted_by(d.peers.relics).events.span() {
+        if *event.keys.at(1) == selector!("StoryEvent") {
+            let mut data = event.data.span();
+            let story: crate::ownership::Story = Serde::deserialize(ref data).unwrap();
+            if let crate::ownership::Story::ChestReward(reward) = story {
+                paid += 1;
+                assert_eq!(reward.player, d.actor);
+                assert_eq!(reward.depth, 0);
+                assert!(reward.explorer_id == explorer_id || reward.explorer_id == second);
+                assert_eq!(reward.epoch, if reward.explorer_id == explorer_id {
+                    3
+                } else {
+                    4
+                });
+                if reward.kind != ChestKind::Relic {
+                    let id: u32 = (*event.keys.at(4)).try_into().unwrap();
+                    assert_eq!(relics.chest_reward(game_id, id).unwrap(), reward);
+                    assert_eq!(reward.relic_id, 0);
+                    assert_eq!(reward.quality, 0);
+                    if reward.kind == ChestKind::Token {
+                        token_claims += 1;
+                    } else {
+                        cosmetic_claims += 1;
+                    }
+                } else {
+                    assert!(reward.relic_id == 39 || reward.relic_id == 40);
+                }
+            }
+        }
+    }
+    assert_eq!(paid, opened);
+    assert_eq!(token_claims, 2);
+    assert!(cosmetic_claims != 0);
 }

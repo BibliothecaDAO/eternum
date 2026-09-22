@@ -70,6 +70,7 @@ pub struct DepthRules {
     pub reveal_site_neighbors: bool,
     pub entry_stamina: u16,
     pub attunement_cost: u128,
+    pub chest: crate::relics::ChestGround,
 }
 
 #[starknet::interface]

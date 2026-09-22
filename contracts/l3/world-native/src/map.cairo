@@ -507,6 +507,17 @@ pub mod MapDomain {
                 context.timestamp,
             );
             self.map.write_occupancy(key, tile.data + super::REWARD_EXTRACTED_FLAG);
+            if crate::rules::rule_enabled(rules, crate::rules::REVEAL_SUPPLIES)
+                && crate::rules::rule_enabled(rules, crate::rules::DISCOVER_CHESTS)
+                && tile.data % 2 == 0 {
+                crate::relics::IRelicsDispatcherTrait::grant_reveal_chest(
+                    crate::relics::IRelicsDispatcher { contract_address: peers.relics },
+                    game_id,
+                    actor,
+                    crate::relics::OpenChest { explorer_id, coord },
+                    context,
+                );
+            }
             self
                 .record_extraction(
                     game_id,
@@ -532,6 +543,13 @@ pub mod MapDomain {
             let games = IGameDispatcher { contract_address: peers.registry };
             let rules = games.rules(game_id);
             if !crate::rules::rule_enabled(rules, crate::rules::DISCOVER_CHESTS) || coord.alt {
+                return;
+            }
+            if rules.epoch_seconds != 0
+                && crate::relics::IRelicsDispatcherTrait::chest_rules(
+                    crate::relics::IRelicsDispatcher { contract_address: peers.relics }, game_id,
+                )
+                    .is_some() {
                 return;
             }
             if self.last_relic_discovery.read(game_id)

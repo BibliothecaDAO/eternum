@@ -61,6 +61,7 @@ pub enum Story {
     ExplorerDeleteStory: crate::troop_management::ExplorerRemoved,
     GuardDeleteStory: crate::troop_management::GuardSlot,
     TroopsTransferred: crate::troop_management::TransferTroops,
+    ChestReward: crate::relics::ChestReward,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]

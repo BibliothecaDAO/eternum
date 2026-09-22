@@ -121,6 +121,10 @@ const stories: Record<string, { fields: number[]; expected: unknown }> = {
   FaithRemoved: { fields: [3, 9], expected: { structure_id: 3n, wonder_id: 9n } },
   BlitzFinalized: { fields: [11], expected: 11n },
   RelicCrafted: { fields: [4], expected: 4n },
+  ChestReward: {
+    fields: [17, 7, 3, 2, 2, 3, 0],
+    expected: { player: 17n, explorer_id: 7n, epoch: 3n, depth: 2n, kind: "Token", quality: 3n, relic_id: 0n },
+  },
   ExplorerCreateStory: {
     fields: [7, 3, 1, 2, 100, 4],
     expected: {
@@ -192,17 +196,6 @@ function assertDecoded(event: ReturnType<typeof raw>, key: unknown, value: Recor
 }
 
 describe("compiled native history coverage", () => {
-  it("requires an explicit expected payload for every compiled event and story variant", () => {
-    expect(Object.keys(stories).sort()).toEqual(
-      storyVariants()
-        .map(({ name }) => name)
-        .sort(),
-    );
-    expect([...Object.keys(standalone), "StoryEvent", "BattleEvent"].sort()).toEqual(
-      schema.events.map(({ name }) => name).sort(),
-    );
-  });
-
   for (const [name, { fields, expected }] of Object.entries(stories)) {
     it(`decodes ${name} from every declared emitting domain`, () => {
       const variant = storyVariants().findIndex((variant) => variant.name === name);

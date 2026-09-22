@@ -5908,6 +5908,118 @@
             {
               "name": "rules",
               "type": "core::array::Span::<world_native::relics::RelicRule>"
+            },
+            {
+              "name": "chests",
+              "type": "core::option::Option::<world_native::relics::ChestRules>"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "chest_rules",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::option::Option::<world_native::relics::ChestRules>"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "chest_pity",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "player",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "depth",
+              "type": "core::integer::u8"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::integer::u16"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "chest_tokens",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "player",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "epoch",
+              "type": "core::integer::u64"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::integer::u16"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "chest_reward",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "result_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::option::Option::<world_native::relics::ChestReward>"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "grant_reveal_chest",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "command",
+              "type": "world_native::relics::OpenChest"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
             }
           ],
           "outputs": [],
@@ -8695,6 +8807,198 @@
       ],
       "keyLength": 1,
       "valueLength": null
+    },
+    {
+      "name": "ChestRules",
+      "identity": "0x436865737452756c6573",
+      "owners": [
+        "relics"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "loose_one_in",
+          "type": "core::integer::u16",
+          "id": "0x6c6f6f73655f6f6e655f696e",
+          "feltLength": 1
+        },
+        {
+          "name": "relic_probability",
+          "type": "core::integer::u16",
+          "id": "0x72656c69635f70726f626162696c697479",
+          "feltLength": 1
+        },
+        {
+          "name": "cosmetic_probability",
+          "type": "core::integer::u16",
+          "id": "0x636f736d657469635f70726f626162696c697479",
+          "feltLength": 1
+        },
+        {
+          "name": "token_cap",
+          "type": "core::integer::u16",
+          "id": "0x746f6b656e5f636170",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": 4,
+      "absence": {
+        "parent": "RelicRules",
+        "value": "empty",
+        "meaning": "This game uses interval relic chests."
+      }
+    },
+    {
+      "name": "ChestPity",
+      "identity": "0x436865737450697479",
+      "owners": [
+        "relics"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "player",
+          "type": "core::starknet::contract_address::ContractAddress",
+          "feltLength": 1
+        },
+        {
+          "name": "depth",
+          "type": "core::integer::u8",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "count",
+          "type": "core::integer::u16",
+          "id": "0x636f756e74",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 3,
+      "valueLength": 1,
+      "absence": {
+        "value": "zero",
+        "meaning": "No chests have advanced this counter."
+      }
+    },
+    {
+      "name": "ChestTokens",
+      "identity": "0x4368657374546f6b656e73",
+      "owners": [
+        "relics"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "player",
+          "type": "core::starknet::contract_address::ContractAddress",
+          "feltLength": 1
+        },
+        {
+          "name": "epoch",
+          "type": "core::integer::u64",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "count",
+          "type": "core::integer::u16",
+          "id": "0x636f756e74",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 3,
+      "valueLength": 1,
+      "absence": {
+        "value": "zero",
+        "meaning": "No chests have advanced this counter."
+      }
+    },
+    {
+      "name": "ChestReward",
+      "identity": "0x4368657374526577617264",
+      "owners": [
+        "relics"
+      ],
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "result_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "player",
+          "type": "core::starknet::contract_address::ContractAddress",
+          "id": "0x706c61796572",
+          "feltLength": 1
+        },
+        {
+          "name": "explorer_id",
+          "type": "core::integer::u32",
+          "id": "0x6578706c6f7265725f6964",
+          "feltLength": 1
+        },
+        {
+          "name": "epoch",
+          "type": "core::integer::u64",
+          "id": "0x65706f6368",
+          "feltLength": 1
+        },
+        {
+          "name": "depth",
+          "type": "core::integer::u8",
+          "id": "0x6465707468",
+          "feltLength": 1
+        },
+        {
+          "name": "kind",
+          "type": "world_native::relics::ChestKind",
+          "id": "0x6b696e64",
+          "feltLength": 1
+        },
+        {
+          "name": "quality",
+          "type": "core::integer::u8",
+          "id": "0x7175616c697479",
+          "feltLength": 1
+        },
+        {
+          "name": "relic_id",
+          "type": "core::integer::u8",
+          "id": "0x72656c69635f6964",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 7
     },
     {
       "name": "RelicDiscovery",
@@ -11529,10 +11833,16 @@
           "type": "core::integer::u128",
           "id": "0x617474756e656d656e745f636f7374",
           "feltLength": 1
+        },
+        {
+          "name": "chest",
+          "type": "world_native::relics::ChestGround",
+          "id": "0x6368657374",
+          "feltLength": 4
         }
       ],
       "keyLength": 2,
-      "valueLength": 12,
+      "valueLength": 16,
       "observation": {
         "domain": "expedition",
         "fields": {
@@ -12780,6 +13090,34 @@
         {
           "name": "Some",
           "type": "world_native::presets::WithdrawalPreset"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
+    "core::option::Option::<world_native::relics::ChestReward>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::relics::ChestReward>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::relics::ChestReward"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
+    "core::option::Option::<world_native::relics::ChestRules>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::relics::ChestRules>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::relics::ChestRules"
         },
         {
           "name": "None",
@@ -14142,6 +14480,10 @@
         {
           "name": "attunement_cost",
           "type": "core::integer::u128"
+        },
+        {
+          "name": "chest",
+          "type": "world_native::relics::ChestGround"
         }
       ]
     },
@@ -15534,6 +15876,10 @@
         {
           "name": "TroopsTransferred",
           "type": "world_native::troop_management::TransferTroops"
+        },
+        {
+          "name": "ChestReward",
+          "type": "world_native::relics::ChestReward"
         }
       ]
     },
@@ -15620,6 +15966,10 @@
         {
           "name": "relics",
           "type": "core::array::Span::<world_native::relics::RelicRule>"
+        },
+        {
+          "name": "chests",
+          "type": "core::option::Option::<world_native::relics::ChestRules>"
         },
         {
           "name": "research_cost",
@@ -15991,6 +16341,46 @@
         }
       ]
     },
+    "world_native::relics::ChestGround": {
+      "type": "struct",
+      "name": "world_native::relics::ChestGround",
+      "members": [
+        {
+          "name": "common",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "uncommon",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "rare",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "pity",
+          "type": "core::integer::u16"
+        }
+      ]
+    },
+    "world_native::relics::ChestKind": {
+      "type": "enum",
+      "name": "world_native::relics::ChestKind",
+      "variants": [
+        {
+          "name": "Relic",
+          "type": "()"
+        },
+        {
+          "name": "Cosmetic",
+          "type": "()"
+        },
+        {
+          "name": "Token",
+          "type": "()"
+        }
+      ]
+    },
     "world_native::relics::ChestOpened": {
       "type": "struct",
       "name": "world_native::relics::ChestOpened",
@@ -16010,6 +16400,62 @@
         {
           "name": "points",
           "type": "core::integer::u128"
+        }
+      ]
+    },
+    "world_native::relics::ChestReward": {
+      "type": "struct",
+      "name": "world_native::relics::ChestReward",
+      "members": [
+        {
+          "name": "player",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "explorer_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "epoch",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "depth",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "kind",
+          "type": "world_native::relics::ChestKind"
+        },
+        {
+          "name": "quality",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "relic_id",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
+    "world_native::relics::ChestRules": {
+      "type": "struct",
+      "name": "world_native::relics::ChestRules",
+      "members": [
+        {
+          "name": "loose_one_in",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "relic_probability",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "cosmetic_probability",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "token_cap",
+          "type": "core::integer::u16"
         }
       ]
     },
@@ -17782,5 +18228,5 @@
       ]
     }
   },
-  "identity": "1380165265821058d236866f5c58c3e269238678c8a23872d3f6466c09c80093"
+  "identity": "392af290f0fd2c5f55fd6edb63d226f5a1c99c7efcb74f1274c018b3f51df5a4"
 }

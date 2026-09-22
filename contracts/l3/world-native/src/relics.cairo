@@ -37,9 +37,96 @@ pub struct ChestOpened {
     pub relics: Span<u8>,
     pub points: u128,
 }
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
+pub struct ChestGround {
+    pub common: u16,
+    pub uncommon: u16,
+    pub rare: u16,
+    pub pity: u16,
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
+pub struct ChestRules {
+    pub loose_one_in: u16,
+    pub relic_probability: u16,
+    pub cosmetic_probability: u16,
+    pub token_cap: u16,
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
+#[allow(starknet::store_no_default_variant)]
+pub enum ChestKind {
+    Relic,
+    Cosmetic,
+    Token,
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
+pub struct ChestReward {
+    pub player: ContractAddress,
+    pub explorer_id: u32,
+    pub epoch: u64,
+    pub depth: u8,
+    pub kind: ChestKind,
+    pub quality: u8,
+    pub relic_id: u8,
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct ChestRoll {
+    pub kind: ChestKind,
+    pub quality: u8,
+    pub pity: u16,
+}
+
+pub fn roll_chest(
+    rules: ChestRules, ground: ChestGround, pity: u16, tokens: u16, seed: u256, timestamp: u64,
+) -> ChestRoll {
+    let type_roll = crate::random::range(seed, Into::<u64, u128>::into(timestamp) + 31, 10000);
+    let kind = if type_roll < rules.relic_probability.into() {
+        ChestKind::Relic
+    } else if type_roll < Into::<u16, u128>::into(rules.relic_probability) + rules.cosmetic_probability.into() {
+        ChestKind::Cosmetic
+    } else if tokens < rules.token_cap {
+        ChestKind::Token
+    } else {
+        ChestKind::Relic
+    };
+    let quality_roll = crate::random::range(seed, Into::<u64, u128>::into(timestamp) + 37, 10000);
+    let mut quality = if quality_roll < ground.common.into() {
+        0
+    } else if quality_roll < Into::<u16, u128>::into(ground.common) + ground.uncommon.into() {
+        1
+    } else if quality_roll < Into::<u16, u128>::into(ground.common) + ground.uncommon.into() + ground.rare.into() {
+        2
+    } else {
+        3
+    };
+    let mut next_pity = pity;
+    if kind == ChestKind::Relic {
+        if pity + 1 >= ground.pity {
+            quality = 3;
+        }
+        next_pity = if quality == 3 {
+            0
+        } else {
+            pity + 1
+        };
+    }
+    ChestRoll { kind, quality, pity: next_pity }
+}
+
 #[starknet::interface]
 pub trait IRelics<T> {
-    fn configure_relics(ref self: T, game_id: u32, rules: Span<RelicRule>);
+    fn configure_relics(ref self: T, game_id: u32, rules: Span<RelicRule>, chests: Option<ChestRules>);
+    fn chest_rules(self: @T, game_id: u32) -> Option<ChestRules>;
+    fn chest_pity(self: @T, game_id: u32, player: ContractAddress, depth: u8) -> u16;
+    fn chest_tokens(self: @T, game_id: u32, player: ContractAddress, epoch: u64) -> u16;
+    fn chest_reward(self: @T, game_id: u32, result_id: u32) -> Option<ChestReward>;
+    fn grant_reveal_chest(
+        ref self: T, game_id: u32, actor: ContractAddress, command: OpenChest, context: ExecutionContext,
+    );
     fn relic_rules(self: @T, game_id: u32) -> Span<RelicRule>;
     fn open_relic_chest(
         ref self: T, game_id: u32, actor: ContractAddress, command: OpenChest, context: ExecutionContext,
@@ -185,6 +272,10 @@ pub mod RelicState {
     pub struct Storage {
         pub relic_rules: Map<(u32, u8), RelicRule>,
         pub relic_configured: Map<u32, bool>,
+        pub chest_rules: Map<u32, Option<super::ChestRules>>,
+        pub chest_pity: Map<(u32, ContractAddress, u8), u16>,
+        pub chest_tokens: Map<(u32, ContractAddress, u64), u16>,
+        pub chest_rewards: Map<(u32, u32), Option<super::ChestReward>>,
         pub artificer_costs: Map<u32, Option<u128>>,
     }
     #[event]
@@ -200,9 +291,26 @@ pub mod RelicState {
         impl Life: Lifecycle::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of super::IRelics<ComponentState<TContractState>> {
-        fn configure_relics(ref self: ComponentState<TContractState>, game_id: u32, rules: Span<RelicRule>) {
+        fn configure_relics(
+            ref self: ComponentState<TContractState>,
+            game_id: u32,
+            rules: Span<RelicRule>,
+            chests: Option<super::ChestRules>,
+        ) {
             get_dep_component!(@self, Life).assert_configurator();
-            self.games().game(game_id);
+            let game_rules = self.games().rules(game_id);
+            if let Some(value) = chests {
+                assert!(
+                    game_rules.epoch_seconds != 0
+                        && crate::rules::rule_enabled(game_rules, crate::rules::DEPTH_CONTENTS),
+                    "chest tables require depth rules",
+                );
+                assert!(value.loose_one_in != 0, "empty loose chest lottery");
+                assert!(
+                    Into::<u16, u32>::into(value.relic_probability) + value.cosmetic_probability.into() <= 10000,
+                    "invalid chest type probabilities",
+                );
+            }
             assert!(!self.relic_configured.read(game_id), "relic rules already configured");
             assert!(rules.len() == 18, "all eighteen relic rules required");
             let mut total: u128 = 0;
@@ -214,6 +322,17 @@ pub mod RelicState {
             assert!(total != 0, "empty relic discovery pool");
             assert!(*rules.at(6).uses == 1 && *rules.at(7).uses == 2, "invalid reveal radii");
             self.relic_configured.write(game_id, true);
+            self.chest_rules.write(game_id, chests);
+            if let Some(chest_rules) = chests {
+                let mut values = array![];
+                chest_rules.serialize(ref values);
+                self
+                    .emit(
+                        crate::events::RowSet {
+                            version: 1, model: 'ChestRules', keys: array![game_id.into()].span(), values: values.span(),
+                        },
+                    );
+            }
             let mut values = array![];
             rules.serialize(ref values);
             self
@@ -223,6 +342,50 @@ pub mod RelicState {
                     },
                 );
         }
+        fn chest_rules(self: @ComponentState<TContractState>, game_id: u32) -> Option<super::ChestRules> {
+            assert!(self.relic_configured.read(game_id), "missing chest rules");
+            self.chest_rules.read(game_id)
+        }
+        fn chest_pity(self: @ComponentState<TContractState>, game_id: u32, player: ContractAddress, depth: u8) -> u16 {
+            self.chest_pity.read((game_id, player, depth))
+        }
+        fn chest_tokens(
+            self: @ComponentState<TContractState>, game_id: u32, player: ContractAddress, epoch: u64,
+        ) -> u16 {
+            self.chest_tokens.read((game_id, player, epoch))
+        }
+        fn chest_reward(
+            self: @ComponentState<TContractState>, game_id: u32, result_id: u32,
+        ) -> Option<super::ChestReward> {
+            self.chest_rewards.read((game_id, result_id))
+        }
+        fn grant_reveal_chest(
+            ref self: ComponentState<TContractState>,
+            game_id: u32,
+            actor: ContractAddress,
+            command: OpenChest,
+            context: ExecutionContext,
+        ) {
+            assert!(get_caller_address() == self.peers().map, "only map domain");
+            crate::commands::assert_context_time(context.timestamp);
+            let Some(rules) = self.chest_rules(game_id) else {
+                return;
+            };
+            let game = self.games().game(game_id);
+            assert_playing(game, context.timestamp);
+            ITroopsDispatcher { contract_address: self.peers().troops }
+                .authorized_explorer(
+                    ExplorerKey { game_id, explorer_id: command.explorer_id }, actor, context.timestamp,
+                );
+            let mut root = context.raw_root;
+            let seed = crate::random::game_root(ref root, game_id, game.seed);
+            if crate::random::range(
+                seed, Into::<u64, u128>::into(context.timestamp) + 29, rules.loose_one_in.into(),
+            ) == 0 {
+                self.pay_expedition_chest(game_id, actor, command, context, rules);
+            }
+        }
+
         fn relic_rules(self: @ComponentState<TContractState>, game_id: u32) -> Span<RelicRule> {
             assert!(self.relic_configured.read(game_id), "missing relic rules");
             let mut rules = array![];
@@ -362,6 +525,10 @@ pub mod RelicState {
             command: OpenChest,
             context: ExecutionContext,
         ) {
+            if let Some(rules) = self.chest_rules(game_id) {
+                self.pay_expedition_chest(game_id, actor, command, context, rules);
+                return;
+            }
             let mut root = context.raw_root;
             let seed = crate::random::game_root(ref root, game_id, self.games().game(game_id).seed);
             let config = self.games().rules(game_id);
@@ -377,6 +544,147 @@ pub mod RelicState {
                 .register_relic_points(game_id, actor);
             self.record_chest_opened(game_id, actor, command, relics, points, context.timestamp);
         }
+
+        fn pay_expedition_chest(
+            ref self: ComponentState<TContractState>,
+            game_id: u32,
+            actor: ContractAddress,
+            command: OpenChest,
+            context: ExecutionContext,
+            rules: super::ChestRules,
+        ) {
+            let game = self.games().game(game_id);
+            let game_rules = self.games().rules(game_id);
+            let spacing = crate::settlement::ISettlementViewsDispatcherTrait::settlement_rules(
+                crate::settlement::ISettlementViewsDispatcher { contract_address: self.peers().settlement }, game_id,
+            )
+                .spacing;
+            let depth: u8 = (command.coord.y / spacing % 4).try_into().unwrap();
+            let epoch = context.timestamp / game_rules.epoch_seconds.into();
+            let old_pity = self.chest_pity.read((game_id, actor, depth));
+            let tokens = self.chest_tokens.read((game_id, actor, epoch));
+            let mut root = context.raw_root;
+            let seed = crate::random::game_root(ref root, game_id, game.seed);
+            let ground = crate::expeditions::IExpeditionRulesDispatcherTrait::depth_rules(
+                crate::expeditions::IExpeditionRulesDispatcher { contract_address: self.peers().settlement },
+                game_id,
+                depth,
+            )
+                .chest;
+            let roll = super::roll_chest(rules, ground, old_pity, tokens, seed, context.timestamp);
+            let relic_id = self.grant_rolled_relic(game_id, command.explorer_id, roll, seed, context.timestamp);
+            self.write_chest_counters(game_id, actor, depth, epoch, roll, old_pity, tokens);
+            let reward = super::ChestReward {
+                player: actor,
+                explorer_id: command.explorer_id,
+                epoch,
+                depth,
+                kind: roll.kind,
+                quality: roll.quality,
+                relic_id,
+            };
+            self.record_expedition_chest(game_id, reward, context.timestamp);
+        }
+
+        fn grant_rolled_relic(
+            ref self: ComponentState<TContractState>,
+            game_id: u32,
+            explorer_id: u32,
+            roll: super::ChestRoll,
+            seed: u256,
+            timestamp: u64,
+        ) -> u8 {
+            if roll.kind == super::ChestKind::Relic {
+                let drawn = *super::draw_relics(self.relic_rules(game_id), seed, timestamp + 41, 1).at(0);
+                let strength = if roll.quality < 2 {
+                    0
+                } else {
+                    1
+                };
+                let id = super::FIRST_RELIC + (drawn - super::FIRST_RELIC) / 2 * 2 + strength;
+                self
+                    .resources()
+                    .grant_resource(
+                        ResourceKey { game_id, entity_id: explorer_id },
+                        id,
+                        crate::rules::RESOURCE_PRECISION,
+                        timestamp,
+                    );
+                id
+            } else {
+                0
+            }
+        }
+
+        fn write_chest_counters(
+            ref self: ComponentState<TContractState>,
+            game_id: u32,
+            actor: ContractAddress,
+            depth: u8,
+            epoch: u64,
+            roll: super::ChestRoll,
+            old_pity: u16,
+            tokens: u16,
+        ) {
+            if roll.pity != old_pity {
+                self.chest_pity.write((game_id, actor, depth), roll.pity);
+                self
+                    .emit(
+                        crate::events::RowSet {
+                            version: 1,
+                            model: 'ChestPity',
+                            keys: array![game_id.into(), actor.into(), depth.into()].span(),
+                            values: array![roll.pity.into()].span(),
+                        },
+                    );
+            }
+            if roll.kind == super::ChestKind::Token {
+                self.chest_tokens.write((game_id, actor, epoch), tokens + 1);
+                self
+                    .emit(
+                        crate::events::RowSet {
+                            version: 1,
+                            model: 'ChestTokens',
+                            keys: array![game_id.into(), actor.into(), epoch.into()].span(),
+                            values: array![(tokens + 1).into()].span(),
+                        },
+                    );
+            }
+        }
+
+        fn record_expedition_chest(
+            ref self: ComponentState<TContractState>, game_id: u32, reward: super::ChestReward, timestamp: u64,
+        ) {
+            let id = self.games().allocate_entity(game_id);
+            if reward.kind != super::ChestKind::Relic {
+                self.chest_rewards.write((game_id, id), Some(reward));
+                let mut values = array![];
+                reward.serialize(ref values);
+                self
+                    .emit(
+                        crate::events::RowSet {
+                            version: 1,
+                            model: 'ChestReward',
+                            keys: array![game_id.into(), id.into()].span(),
+                            values: values.span(),
+                        },
+                    );
+            }
+            self
+                .emit(
+                    crate::ownership::StoryEvent {
+                        version: 1,
+                        game_id,
+                        id,
+                        entity_id: Some(reward.explorer_id),
+                        owner: Some(reward.player),
+                        timestamp: timestamp,
+                        tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                        story: crate::ownership::Story::ChestReward(reward),
+                    },
+                );
+        }
+
         fn record_crafted_relic(
             ref self: ComponentState<TContractState>,
             game_id: u32,

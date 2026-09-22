@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "1380165265821058d236866f5c58c3e269238678c8a23872d3f6466c09c80093",
+  "schemaIdentity": "392af290f0fd2c5f55fd6edb63d226f5a1c99c7efcb74f1274c018b3f51df5a4",
   "commandAbi": [
     {
       "type": "impl",
@@ -3322,6 +3322,58 @@
     },
     {
       "type": "enum",
+      "name": "world_native::relics::ChestKind",
+      "variants": [
+        {
+          "name": "Relic",
+          "type": "()"
+        },
+        {
+          "name": "Cosmetic",
+          "type": "()"
+        },
+        {
+          "name": "Token",
+          "type": "()"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::relics::ChestReward",
+      "members": [
+        {
+          "name": "player",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "explorer_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "epoch",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "depth",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "kind",
+          "type": "world_native::relics::ChestKind"
+        },
+        {
+          "name": "quality",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "relic_id",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
+    {
+      "type": "enum",
       "name": "world_native::ownership::Story",
       "variants": [
         {
@@ -3443,6 +3495,10 @@
         {
           "name": "TroopsTransferred",
           "type": "world_native::troop_management::TransferTroops"
+        },
+        {
+          "name": "ChestReward",
+          "type": "world_native::relics::ChestReward"
         }
       ]
     },
@@ -3742,6 +3798,22 @@
     },
     {
       "name": "RelicRules",
+      "scope": "game"
+    },
+    {
+      "name": "ChestRules",
+      "scope": "game"
+    },
+    {
+      "name": "ChestPity",
+      "scope": "game"
+    },
+    {
+      "name": "ChestTokens",
+      "scope": "game"
+    },
+    {
+      "name": "ChestReward",
       "scope": "game"
     },
     {
