@@ -3,7 +3,7 @@ name: validation
 on:
   pull_request:
   push:
-    branches: [next]
+    branches: [next, "native-*"]
 
 permissions:
   contents: read
@@ -33,7 +33,9 @@ jobs:
       - name: Select validation areas
         id: paths
         env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          BASE_SHA:
+            ${{ github.event.pull_request.base.sha || (github.event.before != '0000000000000000000000000000000000000000'
+            && github.event.before) || 'origin/next' }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           python3 - <<'PYTHON'
