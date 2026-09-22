@@ -53,11 +53,12 @@ meta: {
 
 # Game Entry
 
-Sign in with your Realms identity and register for a free Blitz slot before registration closes. Your gameplay account
-is prepared through the existing sign-in flow. Registration requires no token payment or season pass.
+Free Blitz slots close every day at 11:00 and 20:00 UTC. The next slot opens as soon as the previous one closes, so
+there is always one to register for. Sign in with your Realms identity and register before the slot closes; no token
+payment or season pass is needed, and nobody schedules the slot by hand.
 
-When registration closes, the roster is fixed and split into balanced Regular Blitz games of up to 24 players. For
-example, 25 players form games of 13 and 12. Each player belongs to one game; registration order determines grouping.
+When the slot closes, its roster is fixed and split into Regular Blitz games of up to 24 players. For example, 25
+players form games of 13 and 12. Each player belongs to one game; registration order determines grouping.
 
 ## Automatic settlement
 
@@ -65,15 +66,16 @@ The game shuffles its fixed roster and settles three realms per player, with pro
 There is no manual settlement race. Play starts only after every player's realms are ready; everyone gets the same
 scheduled game duration. Realm names come from their realm IDs.
 
-Your slot shows your assigned game. Enter through your game card once it is ready. A one-player slot creates a
-one-player game; an empty slot creates no game. Duel is outside this playtest flow.
+Your slot shows your assigned game until the next slot closes. Opening the game before it is ready shows your realms
+being prepared, with the roster's progress; a player who is not on the roster can only spectate. A one-player slot
+creates a one-player game; an empty slot creates no game. Duel has no free slot flow.
 
 ## Results
 
 At the end, the game finishes hyperstructure point settlement and records every player's final victory points and rank.
 Ties share a competition rank: scores of 100, 100 and 50 rank 1, 1 and 3. Players with zero VP tie last.
 
-These free playtests award no chests, token payouts or MMR changes.
+Free slots award no chests or token payouts.
 
 
 
@@ -92,12 +94,11 @@ meta: {
 Realms: Blitz is a real-time strategy variant of Eternum designed for rapid, competitive play. In each 60-minute match,
 players strategically manage resources, explore territories, and engage in high-intensity military confrontations.
 Blitz's streamlined mechanics and accelerated gameplay require swift decision-making and adaptability, resulting in a
-high skill ceiling that rewards skill and experience. Both human and AI agent players compete under the same ruleset,
-making Blitz a true test of strategic mastery regardless of who—or what—controls the armies. The no-stakes Recruit
-bracket allows new players to learn the game, while experienced Lords can sharpen their skills in preparation for
-higher-stakes games. Lords can compete for $LORDS token stakes in Gladiator bracket, while Warrior bracket games form
-the core of a Blitz 'series'—where success brings additional Loot Chest rewards and invitations to the coveted Elite
-bracket, which offers even greater prizes!
+high skill ceiling that rewards skill and experience. Both human and AI agent players compete under the same ruleset.
+
+Blitz runs in free slots: one closes every day at 11:00 UTC and one at 20:00 UTC. Register during the window, and when
+the slot closes the roster is split into games of up to 24 players, realms are settled for everyone automatically, and
+the game starts once every player's realms are ready. See [Game Entry](/blitz/game-entry).
 
 ## Rule Summary
 
@@ -193,127 +194,9 @@ and control World Structures. Victory Points are awarded for:
 
 ### Victory
 
-Victory Points (VP) determine leaderboard ranking. The players with the highest number of VP at the end of the 60
-minutes share in the $LORDS prize pool. This pool is made up of the cumulative entry fees that players pay to enter the
-game.
-
-## Blitz Variants
-
-Blitz games come in many forms, and can be configured and deployed by anyone. But the majority of Blitz games are
-deployed by the core team in the following forms:
-
-### Recruit Bracket
-
-* **No Stakes**: Free-to-enter bracket for introduction, playtesting and practice.
-* **No Entry Cost**: No $LORDS required to participate.
-* **Frequency**: Games run multiple times per day on a rotating schedule.
-
-### Gladiator Bracket
-
-* **$LORDS Stakes**: Competitive games with $LORDS stakes.
-* **Entry Cost**: Players pay a $LORDS entry fee, contributing to the prize pool.
-* **Prize Distribution**: Top-ranking Lords share the prize pool.
-* **Frequency**: Games run on a rotating schedule.
-
-### Warrior Bracket
-
-* **Series Games**: These games form part of a competitive Blitz Series.
-* **$LORDS Stakes**: Competitive games requiring a $LORDS entry fee, contributing to a prize pool.
-* **Prize Distribution**: Top-ranking Lords share the prize pool.
-* **Additional Rewards**: Blitz Rewards Chests containing cosmetic items.
-* **Special Invites**: Highest placing players win tradable NFT invites to the Elite bracket.
-* **Frequency**: Games run daily during prime time for key timezones (USA, Europe, Asia-Pacific).
-
-### Elite Bracket
-
-* **Series Games**: These games represent the highest level of play in a competitive Blitz Series.
-* **Ticket Entry Cost**: Entry requires an NFT invite from Warrior bracket (no additional $LORDS cost).
-* **Prize Pool**: Large, DAO-funded prize pool.
-* **Rewards**: Elite Blitz Rewards Chests containing cosmetic items.
-* **Frequency**: A limited number of games run in the final week of a Blitz series.
-
-### Blitz Series
-
-While Recruit and Gladiator games can be deployed and played as frequently as the player base demands, games with stakes
-(Warrior/Elite) are organized into 'series'. Each series takes place between Eternum seasons to bridge the gap in
-gameplay and provide continuous competitive opportunities.
-
-## Matchmaking Rating (MMR)
-
-Blitz features an onchain Matchmaking Rating system that tracks player skill across rated games. After each rated match,
-the system evaluates your final rank relative to the lobby's average skill level and adjusts your rating accordingly.
-MMR is persistent across games and is tracked via a non-transferable onchain token, providing a transparent and
-verifiable measure of long-term performance. For full details, see the [MMR](/blitz/mmr) page.
-
-## Rewards
-
-Successful Blitz players can earn various rewards including:
-
-* **$LORDS Token**: Prize pool distributions for top players.
-* **Loot Chests**: Blitz Rewards Chests and Elite Blitz Rewards Chests containing consumables and cosmetic items.
-* **Elite Entry Tickets**: NFT invites to Elite bracket games for top Warrior bracket performers.
-
-
-
----
-
-file: docs/pages/blitz/mmr.mdx
-meta: {
-  "title": "Blitz MMR",
-  "description": "How Blitz Matchmaking Rating works and how updates are claimed"
-}
-
-# Blitz MMR
-
-Blitz MMR (Matchmaking Rating) is an onchain skill rating that tracks player performance across rated Blitz games. It is
-enabled on a per-world basis; if a world has MMR disabled, no ratings are tracked.
-
-## What MMR Measures
-
-MMR is a **persistent rating** intended to reflect long-term performance rather than a single match outcome. After a
-game ends, the system updates each eligible player’s MMR based on:
-
-* Your **final rank** in the match
-* Your **expected performance** relative to the lobby’s median MMR
-* Lobby size scaling (larger lobbies produce more stable deltas)
-
-## Eligibility (Who Gets Rated)
-
-Only players who are:
-
-* **Registered** in the match, and
-* Have **non-zero recorded points**
-
-are included in the rated update.
-
-## How the Update Is Calculated (High Level)
-
-Blitz uses a percentile-based update that compares:
-
-* **Expected percentile** (from a logistic curve around the lobby median), vs.
-* **Actual percentile** (from your finishing rank)
-
-The resulting delta is capped (diminishing returns) and includes a small mean-regression term toward the configured
-distribution mean.
-
-> Implementation note: the onchain calculator follows an 8-step formula including median MMR, expected/actual
-> percentile, capped delta, split-lobby adjustment, and mean regression.
-
-## Claim / Update Flow (Commit + Claim)
-
-MMR updates are applied after the match completes via a single action in the client:
-
-1. **Finalize ranking** for the match (MMR cannot update until final ranking exists).
-2. Open **Social → MMR**.
-3. Click **Update MMR**.
-
-When you click Update MMR, the client:
-
-* Fetches current MMR values for eligible players from the MMR token contract
-* Sorts players by current MMR (lowest → highest) as required by the commit call
-* Submits a single onchain transaction to commit the game’s MMR update and apply new ratings
-
-Once committed, the update cannot be run again for that match.
+Victory Points (VP) determine leaderboard ranking. When the 60 minutes end, every player's final rank and VP are
+recorded on chain and shown on the results tab and the game review. Free slots have no entry fee and no prize pool. See
+[Game Results](/blitz/prize-pool).
 
 
 
@@ -336,7 +219,7 @@ finish with zero points share last place, including registered players who never
 The result becomes final only when the complete roster has been recorded. Interrupted finalization resumes from its
 recorded progress. The leaderboard and game review show these native results.
 
-There are no chest awards, MMR updates or token payouts in the current free playtest flow.
+There are no chest awards or token payouts in the free slot flow. Results show player names.
 
 
 
@@ -687,7 +570,7 @@ meta: {
   descriptions and column layout.
 * [Blitz/Armies](/blitz/military/armies): Converted Deployment Caps to inline HTML table with fixed layout.
 * [Blitz/Game Entry](/blitz/game-entry): Minor content adjustments.
-* [Blitz/MMR](/blitz/mmr): Removed redundant content.
+* Blitz/MMR: Removed redundant content.
 * [Development/Getting Started](/development/getting-started): Added setup notes.
 * Multiple Eternum section pages: Minor cross-reference and link fixes.
 
@@ -979,7 +862,7 @@ meta: {
 
 ### New Features
 
-* [Blitz/MMR](/blitz/mmr): Documented Blitz MMR, eligibility, and the commit + claim update flow in the client.
+* Blitz/MMR: Documented Blitz MMR, eligibility, and the commit + claim update flow in the client.
 * [Blitz/Key Concepts](/blitz/key-concepts): Added an MMR overview and link to the dedicated page.
 
 ### Content Updates
@@ -1292,8 +1175,8 @@ pnpm run build:packages
 
 ## Isolated development stack
 
-Follow `deploy/athanor/README.md` to configure a separate Madara node, PostgreSQL database, native deployment,
-Herald, identity service and admission endpoint. Ports, volumes and credentials belong to that environment. Do not run a
+Follow `deploy/athanor/README.md` to configure a separate Madara node, PostgreSQL database, native deployment, Herald,
+identity service and admission endpoint. Ports, volumes and credentials belong to that environment. Do not run a
 development deployment against a live game stack.
 
 Native deployment and launch use the existing CLI under `config/deployer/clean/cli`. Supply a native manifest path and
@@ -1995,6 +1878,203 @@ contain between 300,000 and 3 million ancient fragments in incremental amounts (
 some time for the full amount of ancient fragments to be produced by the structure, and the more that the mine contains,
 the longer it will take. Lords will need to ensure that their mines are adequately defended from rivals, however they
 only have one defense slot to support a guard army.
+
+
+
+---
+
+file: docs/pages/frontier/chests.mdx
+meta: {
+  "title": "Chests",
+  "description": "What a chest holds and how good it is"
+}
+
+# Chests
+
+A chest opens the moment you earn it, where the army stands. There is nothing to carry home and nothing anyone can take.
+
+## Two rolls
+
+**What it is.** The same everywhere: nine chests in ten hold a relic, about one in eleven a cosmetic, and one in a
+hundred a token claim. Deeper is better, not different.
+
+**How good it is.** Set by the ground you were standing on.
+
+| Ground       | Common | Uncommon | Rare | Epic |
+| ------------ | ------ | -------- | ---- | ---- |
+| Surface      | 78%    | 18%      | 3.5% | 0.5% |
+| Ethereal I   | 60%    | 30%      | 8%   | 2%   |
+| Ethereal II  | 42%    | 38%      | 15%  | 5%   |
+| Ethereal III | 25%    | 43%      | 23%  | 9%   |
+
+## What each kind does
+
+* **Relics** stay on the army that found them and cost nothing to activate.
+* **Cosmetics** go to your account, drawn from the ones you do not own yet.
+* **Token claims** are recorded on your account for payout later; the payout itself is not part of this season.
+
+No chest is ever a blank. Every one gives a relic, a cosmetic or a token claim.
+
+
+
+---
+
+file: docs/pages/frontier/expedition.mdx
+meta: {
+  "title": "The Expedition",
+  "description": "Today's map, the sites on it, the spire, and the rollover"
+}
+
+# The Expedition
+
+## Today's map
+
+Every expedition starts on fresh fog. Your realm stands at the edge of its own region, and armies can move only inside
+that region. Nobody arrives too late and no map is farmed dry.
+
+## What a tile can hold
+
+| Tile        | Where       | Chance     | What it gives                                                   |
+| ----------- | ----------- | ---------- | --------------------------------------------------------------- |
+| Supplies    | Every layer | Most tiles | Essence, labor or troops, sent straight home. No tile is empty. |
+| Rift        | Surface     | Rare       | Guarded Essence, most of a day's haul; produces into the realm. |
+| Camp        | Every layer | Rare       | A guarded outpost. Clear it for its chest and 25 stamina back.  |
+| Trove       | Ethereal    | Rare       | Rifts give way to troves below: heavily guarded, with a chest.  |
+| Loose chest | Every layer | Rare       | A lucky find in the fog, on top of the ones you fight for.      |
+
+Everything found on the map goes home the moment it is picked up. An army never grows in the field and never carries
+anything worth losing. Troops found today join tomorrow's muster.
+
+## Fighting a camp
+
+A camp shows its strength before you attack. Guards run 800 to 1,600 on the surface and far more below, so what counts
+as a safe fight moves as the realm grows. Winning refunds 25 stamina and opens the site's chest where the army stands.
+Losing refunds nothing.
+
+## The spire and its depths
+
+Once your realm is attuned, a spire stands on its ring. Bring an army beside your realm, tap the spire, and pick a depth
+you have unlocked. Entering costs stamina, more for deeper ground, and the trip is one way for the day. Deeper ground
+pays roughly four times the surface at Ethereal I, and double again each step down, with guards to match.
+
+## The rollover
+
+At 00:00 UTC the expedition ends. The map and its fog, every camp, rift and trove, and every army you sent out are gone.
+Your realm is raised on the next map with its castle, barracks, plots, spire, uncommitted garrison and stored wheat,
+labor and Essence. The game tells you when the new expedition has begun and takes you to your realm.
+
+
+
+---
+
+file: docs/pages/frontier/introduction.mdx
+meta: {
+  "title": "Frontier",
+  "description": "A treasure hunt in daily expeditions"
+}
+
+# Realms: Frontier
+
+Explore the unknown. Find the gold. Nobody can take your realm.
+
+Frontier is a treasure hunt in daily expeditions. You send armies out of your realm into the fog, fight what guards the
+land, and bring home Essence and chests. It is free to play, you fight the wilds and never other players, and the map is
+new every expedition while your realm keeps what it earned.
+
+## One expedition, one day
+
+An expedition runs for one day, from 00:00 UTC to the next. You commit troops in the morning and they do not come back:
+a committed army is spent whether it dies or not. What comes back is Essence, and Essence is what makes your realm
+stronger for tomorrow.
+
+1. **Muster.** Troops leave the garrison as armies of 150 stamina, paying wheat on every step.
+2. **Explore.** The map is hidden until you walk it. What sits on a tile is decided the moment an army reveals it, so
+   nobody can scout ahead.
+3. **Clear.** Camps, rifts and troves are guarded. A camp shows its strength before you attack. Win and you get 25
+   stamina back; lose and the 50 is gone with the troops.
+4. **Bring it home.** Everything found goes straight to the realm. Chests open the moment you earn them.
+
+At the end of the day the map and every army on it are gone. Your realm is raised again on the next map with everything
+you built.
+
+## What carries over
+
+| Gone at the end of every expedition | Rebuilt with your realm, every time | Kept on your account    |
+| ----------------------------------- | ----------------------------------- | ----------------------- |
+| The map and its fog                 | Castle, barracks, plots, the spire  | Chests and token claims |
+| Camps, rifts and troves             | The garrison you did not commit     | Cosmetics               |
+| Every army you sent out             | Stored wheat, labor and Essence     | Your record             |
+
+## Stamina sets the pace
+
+An army holds 150 stamina and recovers 30 an hour, so a full bar takes five hours. Revealing a tile costs 30, moving
+over known ground 10, and an attack 50. Clearing a camp refunds 25, so a fight you win is the cheapest thing you can do.
+The army panel shows how long until an army is rested.
+
+## Your realm is never attacked
+
+No player can raid, besiege or take it, and no player can fight your armies. The realm has no guard slots because it
+needs none, and armies cannot be sent home, stationed or rescued: deployed is deployed.
+
+## Nothing is handed out
+
+No daily gift, no consolation chest. What you bring home is what you cleared and what you were lucky enough to walk
+into. Frontier has no trade, market, bridge, guilds, faith, hyperstructures or automation.
+
+
+
+---
+
+file: docs/pages/frontier/realm.mdx
+meta: {
+  "title": "Your Realm",
+  "description": "Founding, the board, and the three ladders"
+}
+
+# Your Realm
+
+## Founding
+
+Open the Frontier season, found a realm and name it once. From then on it is raised again on every new map, in its own
+stretch of wilderness. Entry is free and open for the whole season, so a player who arrives in week five starts the same
+way as one who arrived on day one.
+
+A new realm starts with 2,000 troops, 5,000 wheat, 2,000 labor, no Essence and six plots around the castle.
+
+## The board
+
+Upgrades are buildings you place on the realm's own small board. Six buildings, one job each:
+
+| Building     | Produces         | Its job                             | Wants as a neighbour |
+| ------------ | ---------------- | ----------------------------------- | -------------------- |
+| Castle       | Labor            | You can always build. Grants plots. | —                    |
+| Farm         | Wheat            | Feeds training and marching         | Storehouse           |
+| Barracks     | Troops           | How much you can commit tomorrow    | Farm, Castle         |
+| Workshop     | Labor            | Builds and upgrades faster          | Castle               |
+| Storehouse   | Storage capacity | Absence costs less                  | Farm, Workshop       |
+| Workers' hut | Population       | How many buildings you can have     | Castle               |
+
+Every bonus is a gain, never a loss. A hex has six sides, you have six plots at first, and every building wants a
+neighbour that some other building also wants, so a plot spent on one pair denies another. When you choose a plot, the
+build menu lists each building's wanted neighbours and marks the ones that plot already has.
+
+Each further copy of the same building costs more labor than the last. Knocking a building down refunds half its labor,
+and a demolition that would leave the realm over capacity is refused. Storage burns the overflow: production never
+pauses, and the cap holds about a day of output.
+
+The board is paid in labor, never in Essence.
+
+## The three ladders
+
+Essence found on the map is the only upgrade currency. Each rung costs roughly double the last, so the next one always
+sits about a week away.
+
+* **Castle.** How many armies you can field, and the plot rings around it.
+* **Barracks.** How hard your troops hit: tiers I, II and III.
+* **Attunement.** Opens the Ethereal layer below the surface, one depth at a time. Once attuned, a spire stands on your
+  realm's ring.
+
+The realm panel shows each ladder's next rung and its Essence price.
 
 
 
@@ -3865,16 +3945,14 @@ and strategy of their Lord.
 
 ## Registration
 
-All Lords willing to participate in a Blitz game are required to register prior to the start of the game. The
-'Registration Phase' is different for each bracket, but in all cases it is used to predetermine the number of players
-and establish the size of the game world. Each wallet address can only be registered once per Blitz game.
+Lords register for a free slot before it closes at 11:00 or 20:00 UTC. The roster fixed at that moment sets the number
+of players in each game and the size of its world. Each Realms account registers once per slot.
 
 ## Settling
 
-Realms can be settled as soon as the game officially starts. This will confirm a Lord's participation in the game and
-place their Realms in a randomized spawn position. If a Lord fails to settle their Realms, their spawn position will
-remain empty throughout the game and any entry fee paid during registration will be forfeit. Lords should settle their
-Realms as soon as possible after the game starts to avoid falling behind their neighbors.
+Nobody settles by hand. When the slot closes, the launch service settles three Realms for every player on the roster in
+a shuffled order, each at a randomized spawn position, and the game opens only once every player's Realms are ready. A
+player who opens the game earlier sees the roster's settlement progress.
 
 ### Settling Algorithm
 
