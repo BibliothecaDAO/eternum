@@ -1,16 +1,5 @@
+import type { ShardManifest } from "@bibliothecadao/eternum/game-sync";
 import type { NativeManifest } from "./native/schema";
-
-/** Everything a client needs to open this shard beyond the shard's own URL. */
-export interface ShardManifest {
-  version: 1;
-  chainId: string;
-  releaseId: string;
-  schemaHash: string;
-  rpcUrl: string;
-  admissionUrl: string;
-  accountClassHash: string;
-  contracts: Record<string, string>;
-}
 
 /** The part of the deployment document the deployer records about the shard itself. */
 export interface ShardRecord {

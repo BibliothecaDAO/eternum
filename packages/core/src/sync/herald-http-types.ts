@@ -48,6 +48,18 @@ export interface HeraldGameDirectoryEntry {
   status: HeraldGameStatus;
 }
 
+/** GET /manifest: everything a client needs to open a shard beyond the shard's own URL. */
+export interface ShardManifest {
+  version: 1;
+  chainId: string;
+  releaseId: string;
+  schemaHash: string;
+  rpcUrl: string;
+  admissionUrl: string;
+  accountClassHash: string;
+  contracts: Record<string, string>;
+}
+
 export interface HeraldGameDirectory {
   chain: string;
   world_address?: string;

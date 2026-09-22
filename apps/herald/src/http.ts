@@ -3,7 +3,7 @@ import { buildNativeDirectory, buildNativeLeaderboard } from "./native/read-mode
 import type { DirectoryInput } from "./game-directory";
 import type { FoldRow, GameSnapshot, ReplayMetrics } from "./types";
 import type { HistoryQuery, HistoryStore } from "./history-store";
-import type { ShardManifest } from "./shard-manifest";
+import type { ShardManifest } from "@bibliothecadao/eternum/game-sync";
 
 interface SnapshotSource {
   modelRows: (model: string) => FoldRow[];

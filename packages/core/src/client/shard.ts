@@ -1,21 +1,12 @@
 import { resolveEndpoint } from "@realms-world/chain";
 
+import type { ShardManifest } from "../sync/herald-http-types";
+
 /**
  * A shard is one chain with its games, reached through one URL: its Herald. Everything else a client needs — the
  * chain id, the node and admission endpoints, the contracts and the release — comes from the manifest Herald serves.
  * A game is named by (chain id, game id) because game ids are only unique within a shard.
  */
-export interface ShardManifest {
-  version: 1;
-  chainId: string;
-  releaseId: string;
-  schemaHash: string;
-  rpcUrl: string;
-  admissionUrl: string;
-  accountClassHash: string;
-  contracts: Record<string, string>;
-}
-
 export interface Shard {
   /** Herald's origin: games directory, snapshots, history and the game streams live under it. */
   url: string;
