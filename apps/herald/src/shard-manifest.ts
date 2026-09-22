@@ -6,6 +6,7 @@ export interface ShardRecord {
   chainId: string;
   accountClassHash: string;
   contracts: Record<string, string>;
+  guardianPublicKey: string;
 }
 
 export type ShardDocument = NativeManifest & { shard?: ShardRecord };
@@ -30,6 +31,7 @@ export function buildShardManifest(document: ShardDocument, endpoints: ShardEndp
       ...Object.fromEntries(Object.entries(document.native.domains).map(([name, domain]) => [name, domain.address])),
       ...shard.contracts,
     },
+    guardianPublicKey: shard.guardianPublicKey,
   };
 }
 
@@ -42,5 +44,8 @@ export function assertShardChain(document: ShardDocument, nodeChainId: string): 
 
 function requireShardRecord(document: ShardDocument): ShardRecord {
   if (!document.shard) throw new Error("Deployment document has no shard record; redeploy with the current deployer");
+  // Realms accounts accept device keys only under the guardian's signature, so a shard without one cannot host them.
+  if (!/^0x[0-9a-f]{1,64}$/i.test(document.shard.guardianPublicKey ?? ""))
+    throw new Error("Shard record has no guardian public key; initialize the shard with one");
   return document.shard;
 }

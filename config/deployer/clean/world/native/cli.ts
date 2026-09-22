@@ -58,6 +58,7 @@ export async function runNativeDeployment(args: CliArgs, root: string): Promise<
     chainId: manifest.shard.chainId,
     accountClassHash: identity.playerAccountClassHash,
     contracts: { playerRegistry: identity.playerRegistryAddress, bindingAuthority: identity.bindingAuthorityAddress },
+    guardianPublicKey: manifest.shard.guardianPublicKey,
   };
   writeWorldOutputs(
     buildNativeManifest(local, report.before, shard),

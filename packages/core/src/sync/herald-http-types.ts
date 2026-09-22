@@ -58,6 +58,8 @@ export interface ShardManifest {
   admissionUrl: string;
   accountClassHash: string;
   contracts: Record<string, string>;
+  /** The key that authorizes device keys on this shard's Realms accounts. */
+  guardianPublicKey: string;
 }
 
 export interface HeraldGameDirectory {

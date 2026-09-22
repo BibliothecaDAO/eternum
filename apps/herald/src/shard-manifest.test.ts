@@ -5,7 +5,12 @@ import { assertShardChain, buildShardManifest } from "./shard-manifest";
 
 const document = {
   ...manifest,
-  shard: { chainId: "0x4c4142", accountClassHash: "0x456", contracts: { playerRegistry: "0x789" } },
+  shard: {
+    chainId: "0x4c4142",
+    accountClassHash: "0x456",
+    contracts: { playerRegistry: "0x789" },
+    guardianPublicKey: "0xabc",
+  },
 };
 
 it("serves the shard's chain, release, endpoints and every contract a client calls", () => {
@@ -17,8 +22,17 @@ it("serves the shard's chain, release, endpoints and every contract a client cal
     rpcUrl: "https://rpc.test",
     admissionUrl: "https://admission.test",
     accountClassHash: "0x456",
+    guardianPublicKey: "0xabc",
   });
   expect(served.contracts).toMatchObject({ season: manifest.native.domains.season.address, playerRegistry: "0x789" });
+});
+
+it("refuses a shard record without a guardian public key", () => {
+  const endpoints = { rpcUrl: "https://rpc.test", admissionUrl: "https://admission.test" };
+  const { guardianPublicKey: _, ...unguarded } = document.shard;
+  expect(() => buildShardManifest({ ...document, shard: unguarded as typeof document.shard }, endpoints)).toThrow(
+    "no guardian public key",
+  );
 });
 
 it("refuses a node whose chain differs from the shard it serves", () => {

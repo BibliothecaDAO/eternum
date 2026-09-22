@@ -13,6 +13,7 @@ const manifest = (chainId: string) => ({
   admissionUrl: "https://admission.shard.test",
   accountClassHash: "0x2",
   contracts: { season: "0x77", bridge: "0x78" },
+  guardianPublicKey: "0x9",
 });
 
 const serve = (body: unknown) =>
