@@ -27,9 +27,7 @@ describe("normalizePlayBootLocation", () => {
         pathname: "/play/0xb2/9/hex",
         search: "?col=4&row=9&rendererMode=webgpu-force-webgl&logs=1",
       }),
-    ).toBe(
-      "/play/0xb2/9/map?col=4&row=9&boot=map-first&resumeScene=hex&rendererMode=webgpu-force-webgl&logs=1",
-    );
+    ).toBe("/play/0xb2/9/map?col=4&row=9&boot=map-first&resumeScene=hex&rendererMode=webgpu-force-webgl&logs=1");
   });
 
   it("does not rewrite in-progress map-first handoff routes back to the world map", () => {
