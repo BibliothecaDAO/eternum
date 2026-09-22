@@ -568,7 +568,7 @@ pub mod MapDomain {
                 );
         }
         fn consume_relic_chest(ref self: ContractState, game_id: u32, coord: Coord) {
-            assert!(get_caller_address() == self.lifecycle.require_active().economy, "only economy domain");
+            assert!(get_caller_address() == self.lifecycle.require_active().relics, "only relics domain");
             let key = tile_key(game_id, coord);
             let tile = self.map.tile(key).expect('missing chest tile');
             assert!(tile.data % 2 == 0 && (tile.data / 2) % BYTE_RANGE == 34, "tile is not a relic chest");

@@ -84,9 +84,9 @@ fn setup(blitz: bool) -> (super::Deployment, ResourceKey, ResourceKey) {
     config.tick_config.armies_tick_in_seconds = 10;
     config.victory_points_grant_config.relic_open_points = 77;
     let (deployment, home, _) = setup_with_rules(config);
-    start_cheat_caller_address(deployment.peers.economy, super::authority());
+    start_cheat_caller_address(deployment.peers.relics, super::authority());
     view(deployment).configure_relics(3, rules());
-    stop_cheat_caller_address(deployment.peers.economy);
+    stop_cheat_caller_address(deployment.peers.relics);
     grant(deployment, home, 26, 10 * RESOURCE_PRECISION);
     grant(deployment, home, 38, 10000 * RESOURCE_PRECISION);
     assert!(
@@ -110,7 +110,7 @@ fn setup(blitz: bool) -> (super::Deployment, ResourceKey, ResourceKey) {
     (deployment, home, explorer)
 }
 fn view(deployment: super::Deployment) -> IRelicsDispatcher {
-    IRelicsDispatcher { contract_address: deployment.peers.economy }
+    IRelicsDispatcher { contract_address: deployment.peers.relics }
 }
 fn troop(deployment: super::Deployment, key: ResourceKey) -> crate::troops::ExplorerTroops {
     ITroopsDispatcher { contract_address: deployment.peers.troops }
@@ -359,7 +359,7 @@ fn opening_a_chest_draws_with_replacement_once_and_replay_cannot_reopen_it() {
 #[feature("safe_dispatcher")]
 fn relic_configuration_and_internal_effects_reject_foreign_callers() {
     let (deployment, home, explorer) = setup(false);
-    let safe = IRelicsSafeDispatcher { contract_address: deployment.peers.economy };
+    let safe = IRelicsSafeDispatcher { contract_address: deployment.peers.relics };
     assert!(safe.configure_relics(1, rules()).is_err());
     assert!(
         safe
@@ -371,10 +371,10 @@ fn relic_configuration_and_internal_effects_reject_foreign_callers() {
             )
             .is_err(),
     );
-    start_cheat_caller_address(deployment.peers.economy, super::authority());
+    start_cheat_caller_address(deployment.peers.relics, super::authority());
     assert!(safe.configure_relics(3, rules()).is_err());
     assert!(safe.configure_relics(1, array![].span()).is_err());
-    stop_cheat_caller_address(deployment.peers.economy);
+    stop_cheat_caller_address(deployment.peers.relics);
     let map = IRelicMapSafeDispatcher { contract_address: deployment.peers.map };
     let coord = troop(deployment, explorer).coord;
     assert!(map.discover_relic_chest(3, coord, coord, 123, 40).is_err());
@@ -399,7 +399,7 @@ fn relic_configuration_and_internal_effects_reject_foreign_callers() {
         )
             .is_err(),
     );
-    start_cheat_caller_address(deployment.peers.economy, deployment.peers.season);
+    start_cheat_caller_address(deployment.peers.relics, deployment.peers.season);
     start_cheat_block_timestamp_global(40);
     assert!(
         safe
@@ -465,7 +465,7 @@ fn only_movement_can_extract_a_reward() {
     start_cheat_block_timestamp_global(40);
     let map = IExtractionSafeDispatcher { contract_address: deployment.peers.map };
     let before = balance(deployment, explorer, 2);
-    for caller in array![deployment.actor, deployment.peers.season, deployment.peers.economy] {
+    for caller in array![deployment.actor, deployment.peers.season, deployment.peers.relics] {
         start_cheat_caller_address(deployment.peers.map, caller);
         assert!(
             map

@@ -87,6 +87,7 @@ pub mod RegistryDomain {
                     || caller == peers.resources
                     || caller == peers.bridge
                     || caller == peers.economy
+                    || caller == peers.relics
                     || caller == peers.prizes,
                 "only gameplay domain",
             );

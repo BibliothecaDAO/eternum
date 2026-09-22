@@ -18,6 +18,7 @@ const contracts = {
   settlement: "SettlementDomain",
   resources: "ResourcesDomain",
   economy: "EconomyDomain",
+  relics: "RelicsDomain",
   prizes: "PrizesDomain",
   registry: "RegistryDomain",
   combat: "CombatDomain",

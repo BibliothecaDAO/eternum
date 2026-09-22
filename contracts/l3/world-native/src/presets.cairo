@@ -165,10 +165,10 @@ fn configure_economy(peers: Peers, game_id: u32, preset: EconomyPreset) {
         preset.hyperstructures,
     );
     crate::relics::IRelicsDispatcherTrait::configure_relics(
-        crate::relics::IRelicsDispatcher { contract_address: address }, game_id, preset.relics,
+        crate::relics::IRelicsDispatcher { contract_address: peers.relics }, game_id, preset.relics,
     );
     crate::artificer::IArtificerDispatcherTrait::configure_artificer(
-        crate::artificer::IArtificerDispatcher { contract_address: address }, game_id, preset.research_cost,
+        crate::artificer::IArtificerDispatcher { contract_address: peers.relics }, game_id, preset.research_cost,
     );
     if let Some(withdrawals) = preset.withdrawals {
         crate::bridge::IBridgeDispatcherTrait::configure_deposits(

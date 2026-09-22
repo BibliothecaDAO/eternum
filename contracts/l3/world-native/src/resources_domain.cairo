@@ -318,8 +318,8 @@ pub mod ResourcesDomain {
         ) {
             let peers = self.lifecycle.require_active();
             assert!(
-                get_caller_address() == peers.economy || get_caller_address() == peers.bridge,
-                "only economy or bridge domain",
+                get_caller_address() == peers.relics || get_caller_address() == peers.bridge,
+                "only relics or bridge domain",
             );
             crate::commands::assert_context_time(timestamp);
             let rules = IGameDispatcher { contract_address: self.lifecycle.require_active().registry }
@@ -631,6 +631,7 @@ pub mod ResourcesDomain {
             assert!(
                 caller == peers.structures
                     || caller == peers.economy
+                    || caller == peers.relics
                     || caller == peers.troops
                     || caller == peers.combat
                     || caller == peers.bridge

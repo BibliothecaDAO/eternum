@@ -11,7 +11,7 @@ use super::resource_commands::{
     assert_terminal_rejection, execute, execute_recorded_at, grant, set_fixture, setup_with_rules,
 };
 fn view(d: super::Deployment) -> IArtificerDispatcher {
-    IArtificerDispatcher { contract_address: d.peers.economy }
+    IArtificerDispatcher { contract_address: d.peers.relics }
 }
 fn setup(blitz: bool) -> (super::Deployment, ResourceKey) {
     let mut rules = super::recorded::rules();
@@ -32,10 +32,10 @@ fn setup(blitz: bool) -> (super::Deployment, ResourceKey) {
         crate::rules::ENTRY_ENTITLEMENT
     };
     let (d, home, _) = setup_with_rules(rules);
-    start_cheat_caller_address(d.peers.economy, super::authority());
+    start_cheat_caller_address(d.peers.relics, super::authority());
     view(d).configure_artificer(3, 10 * RESOURCE_PRECISION);
-    IRelicsDispatcher { contract_address: d.peers.economy }.configure_relics(3, super::relics::rules());
-    stop_cheat_caller_address(d.peers.economy);
+    IRelicsDispatcher { contract_address: d.peers.relics }.configure_relics(3, super::relics::rules());
+    stop_cheat_caller_address(d.peers.relics);
     grant(d, home, RESEARCH, 20 * RESOURCE_PRECISION);
     (d, home)
 }
@@ -108,10 +108,10 @@ fn rejected_crafting_preserves_balances_and_consumes_the_ticket() {
 #[feature("safe_dispatcher")]
 fn crafting_configuration_and_calls_are_authorized_immutable_and_game_scoped() {
     let (d, home) = setup(false);
-    let safe = IArtificerSafeDispatcher { contract_address: d.peers.economy };
+    let safe = IArtificerSafeDispatcher { contract_address: d.peers.relics };
     assert!(safe.configure_artificer(2, 1).is_err());
     assert!(safe.craft_relic(3, d.actor, home.entity_id, super::context()).is_err());
-    start_cheat_caller_address(d.peers.economy, super::authority());
+    start_cheat_caller_address(d.peers.relics, super::authority());
     assert!(safe.configure_artificer(3, 1).is_err());
     view(d).configure_artificer(2, 5);
     assert_eq!(view(d).artificer_cost(2), 5);

@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "88d24bbc123aa2de8b78c0f8cfbd7b506fd44d17fbcf6b72b4524ff7e1a7e535",
+  "schemaIdentity": "1380165265821058d236866f5c58c3e269238678c8a23872d3f6466c09c80093",
   "commandAbi": [
     {
       "type": "impl",
@@ -2574,6 +2574,10 @@
         },
         {
           "name": "bridge",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "relics",
           "type": "core::starknet::contract_address::ContractAddress"
         }
       ]

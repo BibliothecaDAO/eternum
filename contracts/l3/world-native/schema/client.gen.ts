@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "88d24bbc123aa2de8b78c0f8cfbd7b506fd44d17fbcf6b72b4524ff7e1a7e535";
+export const nativeFactSchemaIdentity = "1380165265821058d236866f5c58c3e269238678c8a23872d3f6466c09c80093";
 export const nativeRuleConstants = {
   "ENTRY_ENTITLEMENT": 0,
   "ENTRY_OPEN": 1,
@@ -105,7 +105,7 @@ export interface NativeRows {
   EntitySequence: { readonly game_id: number; readonly next_entity_id: number };
   PlayerPoints: { readonly game_id: number; readonly address: bigint; readonly points: bigint };
   PointsTotal: { readonly game_id: number; readonly total: bigint };
-  DomainState: { readonly address: bigint; readonly authority: bigint; readonly peers: { readonly season: bigint; readonly map: bigint; readonly structures: bigint; readonly troops: bigint; readonly settlement: bigint; readonly resources: bigint; readonly economy: bigint; readonly prizes: bigint; readonly registry: bigint; readonly combat: bigint; readonly bridge: bigint }; readonly active: boolean };
+  DomainState: { readonly address: bigint; readonly authority: bigint; readonly peers: { readonly season: bigint; readonly map: bigint; readonly structures: bigint; readonly troops: bigint; readonly settlement: bigint; readonly resources: bigint; readonly economy: bigint; readonly prizes: bigint; readonly registry: bigint; readonly combat: bigint; readonly bridge: bigint; readonly relics: bigint }; readonly active: boolean };
   DomainClass: { readonly address: bigint; readonly class_hash: bigint };
   Authentication: { readonly address: bigint; readonly submitter: bigint; readonly registry: bigint; readonly account_class: bigint };
   OwnershipRulesReady: { readonly game_id: number; readonly ready: boolean };
@@ -1643,7 +1643,8 @@ export const nativeFactModels = {
         "prizes": "felt",
         "registry": "felt",
         "combat": "felt",
-        "bridge": "felt"
+        "bridge": "felt",
+        "relics": "felt"
       },
       "active": "boolean"
     }

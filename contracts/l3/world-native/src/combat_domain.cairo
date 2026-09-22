@@ -554,7 +554,7 @@ pub mod CombatDomain {
             if chests && (camp || mine_chest) {
                 let actor = self.structures_dispatcher().structure(home).expect('missing home structure').owner;
                 crate::relics::IRelicsDispatcherTrait::grant_site_chest(
-                    crate::relics::IRelicsDispatcher { contract_address: peers.economy },
+                    crate::relics::IRelicsDispatcher { contract_address: peers.relics },
                     key.game_id,
                     actor,
                     crate::relics::OpenChest { explorer_id: explorer_key.explorer_id, coord },

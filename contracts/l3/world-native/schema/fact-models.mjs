@@ -86,7 +86,7 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
     model("GuildWhitelist", ["registry"], "game", struct("guilds::WhitelistKey"), [
       { name: "allowed", type: "core::bool" },
     ]),
-    model("ArtificerCost", ["economy"], "game", method("economy", "artificer_cost").inputs, [
+    model("ArtificerCost", ["relics"], "game", method("relics", "artificer_cost").inputs, [
       { name: "research", type: "core::integer::u128" },
     ]),
     model(
@@ -103,8 +103,8 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
     model("ExtractionRewards", ["map"], "game", method("map", "extraction_rewards").inputs, [
       { name: "rewards", type: method("map", "extraction_rewards").outputs[0].type },
     ]),
-    model("RelicRules", ["economy"], "game", method("economy", "relic_rules").inputs, [
-      { name: "rules", type: method("economy", "relic_rules").outputs[0].type },
+    model("RelicRules", ["relics"], "game", method("relics", "relic_rules").inputs, [
+      { name: "rules", type: method("relics", "relic_rules").outputs[0].type },
     ]),
     model("RelicDiscovery", ["map"], "game", method("map", "relic_discovery_time").inputs, [
       { name: "last_at", type: "core::integer::u64" },

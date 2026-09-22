@@ -171,8 +171,9 @@ fn point_history_keeps_each_awards_activity_and_amount_without_a_second_balance(
     let mut spy = snforge_std::spy_events();
     start_cheat_caller_address(deployment.peers.season, deployment.peers.troops);
     points(deployment).register_exploration(3, deployment.actor);
-    start_cheat_caller_address(deployment.peers.season, deployment.peers.economy);
+    start_cheat_caller_address(deployment.peers.season, deployment.peers.relics);
     points(deployment).register_relic_points(3, deployment.actor);
+    start_cheat_caller_address(deployment.peers.season, deployment.peers.economy);
     points(deployment).register_hyperstructure_points(3, deployment.actor, 123);
     start_cheat_caller_address(deployment.peers.season, deployment.peers.structures);
     points(deployment).register_capture(3, deployment.actor, 2);

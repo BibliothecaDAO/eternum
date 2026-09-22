@@ -322,7 +322,7 @@ pub mod TroopsDomain {
             rule: crate::relics::RelicRule,
             timestamp: u64,
         ) {
-            assert!(get_caller_address() == self.lifecycle.require_active().economy, "only economy domain");
+            assert!(get_caller_address() == self.lifecycle.require_active().relics, "only relics domain");
             crate::commands::assert_context_time(timestamp);
             assert_playing(self.game_dispatcher().game(game_id), timestamp);
             let rules = self.game_dispatcher().rules(game_id);

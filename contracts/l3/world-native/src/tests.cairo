@@ -105,6 +105,7 @@ fn setup_with_domains(activate: bool, structures_class: ByteArray, troops_class:
     let (settlement, _) = deploy("SettlementDomain", @array![authority().into()]);
     let (resources, _) = deploy("ResourcesDomain", @array![authority().into()]);
     let (economy, _) = deploy("EconomyDomain", @array![authority().into()]);
+    let (relics, _) = deploy("RelicsDomain", @array![authority().into()]);
     let (prizes, _) = deploy("PrizesDomain", @array![authority().into()]);
     let (registry_domain, _) = deploy("RegistryDomain", @array![authority().into()]);
     let (combat, _) = deploy("CombatDomain", @array![authority().into()]);
@@ -121,9 +122,11 @@ fn setup_with_domains(activate: bool, structures_class: ByteArray, troops_class:
         registry: registry_domain,
         combat,
         bridge,
+        relics,
     };
     for address in array![
         season, map, structures, troops, settlement, resources, economy, prizes, registry_domain, combat, bridge,
+        relics,
     ] {
         start_cheat_caller_address(address, authority());
         IDomainDispatcher { contract_address: address }.configure(peers);
@@ -131,12 +134,14 @@ fn setup_with_domains(activate: bool, structures_class: ByteArray, troops_class:
     if activate {
         for address in array![
             season, map, structures, troops, settlement, resources, economy, prizes, registry_domain, combat, bridge,
+            relics,
         ] {
             IDomainDispatcher { contract_address: address }.activate();
         }
     }
     for address in array![
         season, map, structures, troops, settlement, resources, economy, prizes, registry_domain, combat, bridge,
+        relics,
     ] {
         stop_cheat_caller_address(address);
     }
@@ -411,6 +416,7 @@ fn registered_account_with_unapproved_class_is_rejected_before_key_read() {
     let (settlement, _) = deploy("SettlementDomain", @array![authority().into()]);
     let (resources, _) = deploy("ResourcesDomain", @array![authority().into()]);
     let (economy, _) = deploy("EconomyDomain", @array![authority().into()]);
+    let (relics, _) = deploy("RelicsDomain", @array![authority().into()]);
     let (prizes, _) = deploy("PrizesDomain", @array![authority().into()]);
     let (registry_domain, _) = deploy("RegistryDomain", @array![authority().into()]);
     let (combat, _) = deploy("CombatDomain", @array![authority().into()]);
@@ -427,9 +433,11 @@ fn registered_account_with_unapproved_class_is_rejected_before_key_read() {
         registry: registry_domain,
         combat,
         bridge,
+        relics,
     };
     for address in array![
         season, map, structures, troops, settlement, resources, economy, prizes, registry_domain, combat, bridge,
+        relics,
     ] {
         start_cheat_caller_address(address, authority());
         IDomainDispatcher { contract_address: address }.configure(peers);
@@ -576,6 +584,7 @@ fn activation_rejects_peer_mismatch_authority_mismatch_and_double_activation() {
         let (settlement, _) = deploy("SettlementDomain", @array![authority().into()]);
         let (resources, _) = deploy("ResourcesDomain", @array![authority().into()]);
         let (economy, _) = deploy("EconomyDomain", @array![authority().into()]);
+        let (relics, _) = deploy("RelicsDomain", @array![authority().into()]);
         let (prizes, _) = deploy("PrizesDomain", @array![authority().into()]);
         let (registry_domain, _) = deploy("RegistryDomain", @array![authority().into()]);
         let (combat, _) = deploy("CombatDomain", @array![authority().into()]);
@@ -592,6 +601,7 @@ fn activation_rejects_peer_mismatch_authority_mismatch_and_double_activation() {
             registry: registry_domain,
             combat,
             bridge,
+            relics,
         };
         for address in array![season, structures, troops, settlement] {
             start_cheat_caller_address(address, authority());

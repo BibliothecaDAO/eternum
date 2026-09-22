@@ -62,6 +62,7 @@ pub mod registrar;
 pub mod registry;
 
 pub mod relics;
+pub mod relics_domain;
 pub mod resources;
 pub mod resources_domain;
 pub mod rules;

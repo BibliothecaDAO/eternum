@@ -4767,84 +4767,6 @@
         {
           "name": "RowSet",
           "prefix": [
-            "0x290a08c6ab68498a377b8f273bd5f696816ceb60f3cf345badb48f949797e6c",
-            "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
-          ],
-          "members": [
-            {
-              "name": "version",
-              "type": "core::integer::u8",
-              "kind": "key"
-            },
-            {
-              "name": "model",
-              "type": "core::felt252",
-              "kind": "key"
-            },
-            {
-              "name": "keys",
-              "type": "core::array::Span::<core::felt252>",
-              "kind": "data"
-            },
-            {
-              "name": "values",
-              "type": "core::array::Span::<core::felt252>",
-              "kind": "data"
-            }
-          ]
-        },
-        {
-          "name": "StoryEvent",
-          "prefix": [
-            "0x290a08c6ab68498a377b8f273bd5f696816ceb60f3cf345badb48f949797e6c",
-            "0x33b7d96bc1ff34b0a89214516b6ef5d2b8bdd9c301222eda2a1e96f78b84b96"
-          ],
-          "members": [
-            {
-              "name": "version",
-              "type": "core::integer::u8",
-              "kind": "key"
-            },
-            {
-              "name": "game_id",
-              "type": "core::integer::u32",
-              "kind": "key"
-            },
-            {
-              "name": "id",
-              "type": "core::integer::u32",
-              "kind": "key"
-            },
-            {
-              "name": "owner",
-              "type": "core::option::Option::<core::starknet::contract_address::ContractAddress>",
-              "kind": "key"
-            },
-            {
-              "name": "entity_id",
-              "type": "core::option::Option::<core::integer::u32>",
-              "kind": "key"
-            },
-            {
-              "name": "tx_hash",
-              "type": "core::felt252",
-              "kind": "key"
-            },
-            {
-              "name": "story",
-              "type": "world_native::ownership::Story",
-              "kind": "data"
-            },
-            {
-              "name": "timestamp",
-              "type": "core::integer::u64",
-              "kind": "data"
-            }
-          ]
-        },
-        {
-          "name": "RowSet",
-          "prefix": [
             "0x61d4b9617fb1ccccaeb638efd7a0e8ff6e8828044372a3067db727c753c2da",
             "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
           ],
@@ -5495,166 +5417,6 @@
         },
         {
           "type": "function",
-          "name": "configure_relics",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "rules",
-              "type": "core::array::Span::<world_native::relics::RelicRule>"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "relic_rules",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::array::Span::<world_native::relics::RelicRule>"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "open_relic_chest",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "actor",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "command",
-              "type": "world_native::relics::OpenChest"
-            },
-            {
-              "name": "context",
-              "type": "world_native::commands::ExecutionContext"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "grant_site_chest",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "actor",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "command",
-              "type": "world_native::relics::OpenChest"
-            },
-            {
-              "name": "context",
-              "type": "world_native::commands::ExecutionContext"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "apply_relic",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "actor",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "command",
-              "type": "world_native::relics::ApplyRelic"
-            },
-            {
-              "name": "context",
-              "type": "world_native::commands::ExecutionContext"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "configure_artificer",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "research_cost",
-              "type": "core::integer::u128"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "artificer_cost",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::integer::u128"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "craft_relic",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "actor",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "structure_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "context",
-              "type": "world_native::commands::ExecutionContext"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
           "name": "configure_hyperstructures",
           "inputs": [
             {
@@ -5974,6 +5736,322 @@
             {
               "name": "class_hash",
               "type": "core::starknet::class_hash::ClassHash"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        }
+      ]
+    },
+    "relics": {
+      "contract": "RelicsDomain",
+      "events": [
+        {
+          "name": "RowSet",
+          "prefix": [
+            "0x1517f684ec2bc21ca20251bbef26b7ad0434759388fc50e84858abf49e4024b",
+            "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "model",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "keys",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            },
+            {
+              "name": "values",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            }
+          ]
+        },
+        {
+          "name": "RowSet",
+          "prefix": [
+            "0x290a08c6ab68498a377b8f273bd5f696816ceb60f3cf345badb48f949797e6c",
+            "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "model",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "keys",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            },
+            {
+              "name": "values",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            }
+          ]
+        },
+        {
+          "name": "StoryEvent",
+          "prefix": [
+            "0x290a08c6ab68498a377b8f273bd5f696816ceb60f3cf345badb48f949797e6c",
+            "0x33b7d96bc1ff34b0a89214516b6ef5d2b8bdd9c301222eda2a1e96f78b84b96"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "game_id",
+              "type": "core::integer::u32",
+              "kind": "key"
+            },
+            {
+              "name": "id",
+              "type": "core::integer::u32",
+              "kind": "key"
+            },
+            {
+              "name": "owner",
+              "type": "core::option::Option::<core::starknet::contract_address::ContractAddress>",
+              "kind": "key"
+            },
+            {
+              "name": "entity_id",
+              "type": "core::option::Option::<core::integer::u32>",
+              "kind": "key"
+            },
+            {
+              "name": "tx_hash",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "story",
+              "type": "world_native::ownership::Story",
+              "kind": "data"
+            },
+            {
+              "name": "timestamp",
+              "type": "core::integer::u64",
+              "kind": "data"
+            }
+          ]
+        }
+      ],
+      "entrypoints": [
+        {
+          "type": "function",
+          "name": "domain_state",
+          "inputs": [],
+          "outputs": [
+            {
+              "type": "world_native::lifecycle::DomainState"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "configure",
+          "inputs": [
+            {
+              "name": "peers",
+              "type": "world_native::lifecycle::Peers"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "activate",
+          "inputs": [],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "upgrade",
+          "inputs": [
+            {
+              "name": "class_hash",
+              "type": "core::starknet::class_hash::ClassHash"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "configure_relics",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "rules",
+              "type": "core::array::Span::<world_native::relics::RelicRule>"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "relic_rules",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::array::Span::<world_native::relics::RelicRule>"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "open_relic_chest",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "command",
+              "type": "world_native::relics::OpenChest"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "grant_site_chest",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "command",
+              "type": "world_native::relics::OpenChest"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "apply_relic",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "command",
+              "type": "world_native::relics::ApplyRelic"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "configure_artificer",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "research_cost",
+              "type": "core::integer::u128"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "artificer_cost",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::integer::u128"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "craft_relic",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "structure_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
             }
           ],
           "outputs": [],
@@ -8438,7 +8516,7 @@
       "name": "ArtificerCost",
       "identity": "0x417274696669636572436f7374",
       "owners": [
-        "economy"
+        "relics"
       ],
       "scope": "game",
       "keys": [
@@ -8597,7 +8675,7 @@
       "name": "RelicRules",
       "identity": "0x52656c696352756c6573",
       "owners": [
-        "economy"
+        "relics"
       ],
       "scope": "game",
       "keys": [
@@ -11804,6 +11882,7 @@
         "settlement",
         "resources",
         "economy",
+        "relics",
         "prizes",
         "registry",
         "combat",
@@ -11829,7 +11908,7 @@
           "name": "peers",
           "type": "world_native::lifecycle::Peers",
           "id": "0x7065657273",
-          "feltLength": 11
+          "feltLength": 12
         },
         {
           "name": "active",
@@ -11839,7 +11918,7 @@
         }
       ],
       "keyLength": 1,
-      "valueLength": 13
+      "valueLength": 14
     },
     {
       "name": "DomainClass",
@@ -11852,6 +11931,7 @@
         "settlement",
         "resources",
         "economy",
+        "relics",
         "prizes",
         "registry",
         "combat",
@@ -12106,6 +12186,7 @@
         "structures",
         "resources",
         "economy",
+        "relics",
         "prizes",
         "bridge"
       ],
@@ -14760,6 +14841,10 @@
         },
         {
           "name": "bridge",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "relics",
           "type": "core::starknet::contract_address::ContractAddress"
         }
       ]
@@ -17697,5 +17782,5 @@
       ]
     }
   },
-  "identity": "88d24bbc123aa2de8b78c0f8cfbd7b506fd44d17fbcf6b72b4524ff7e1a7e535"
+  "identity": "1380165265821058d236866f5c58c3e269238678c8a23872d3f6466c09c80093"
 }

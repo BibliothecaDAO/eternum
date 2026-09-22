@@ -179,7 +179,7 @@ pub mod SeasonDomain {
     #[abi(embed_v0)]
     impl Points of crate::game::IPoints<ContractState> {
         fn register_relic_points(ref self: ContractState, game_id: u32, actor: ContractAddress) {
-            assert!(get_caller_address() == self.lifecycle.require_active().economy, "only economy domain");
+            assert!(get_caller_address() == self.lifecycle.require_active().relics, "only relics domain");
             let points = self.games().rules(game_id).victory_points_grant_config.relic_open_points;
             self.register_points(game_id, actor, points.into(), crate::game::PointActivity::RelicChest);
         }
@@ -594,7 +594,7 @@ pub mod SeasonDomain {
             },
             Command::CraftRelic(value) => {
                 value.serialize(ref calldata);
-                (peers.economy, selector!("craft_relic"))
+                (peers.relics, selector!("craft_relic"))
             },
             Command::RecordBlitzResults(value) => {
                 value.serialize(ref calldata);
@@ -671,11 +671,11 @@ pub mod SeasonDomain {
             },
             Command::OpenRelicChest(value) => {
                 value.serialize(ref calldata);
-                (peers.economy, selector!("open_relic_chest"))
+                (peers.relics, selector!("open_relic_chest"))
             },
             Command::ApplyRelic(value) => {
                 value.serialize(ref calldata);
-                (peers.economy, selector!("apply_relic"))
+                (peers.relics, selector!("apply_relic"))
             },
             Command::CreateTradeOrder(value) => {
                 value.serialize(ref calldata);
