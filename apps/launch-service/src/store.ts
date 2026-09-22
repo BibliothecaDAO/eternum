@@ -93,38 +93,26 @@ export class PostgresLaunchStore implements LaunchServiceStore {
     const durableRequest = applyDurableLaunchDefaults(kind, request);
     const id = randomUUID();
     const name = launchName(kind, durableRequest);
-    if (durableRequest.environment === "madara.frontier") {
-      const inserted = await this.pool.query<LaunchRunRow>(
-        "INSERT INTO launch_runs (id, kind, environment, name, request, status) " +
-          "VALUES ($1, $2, $3, $4, $5::jsonb, 'queued') " +
-          "ON CONFLICT (kind, environment, name) DO NOTHING RETURNING *",
-        [id, kind, durableRequest.environment, name, JSON.stringify(durableRequest)],
-      );
-      if (inserted.rows[0]) return toRun(inserted.rows[0]);
-      const existing = await this.find(kind, durableRequest.environment, name);
-      if (!existing) throw new Error("Scheduled Frontier season disappeared");
-      return existing;
-    }
+    // One rule for every environment: a running or complete run is handed back as it is (create_game is
+    // idempotent by name, so nothing is lost); anything else is queued again with the new request.
     const result = await this.pool.query<LaunchRunRow>(
       `INSERT INTO launch_runs (id, kind, environment, name, request, status)
        VALUES ($1, $2, $3, $4, $5::jsonb, 'queued')
        ON CONFLICT (kind, environment, name) DO UPDATE SET
-         id = CASE WHEN launch_runs.status = 'running' THEN launch_runs.id ELSE EXCLUDED.id END,
-         request = CASE WHEN launch_runs.status = 'running' THEN launch_runs.request ELSE EXCLUDED.request END,
-         status = CASE WHEN launch_runs.status = 'running' THEN launch_runs.status ELSE 'queued' END,
-         attempts = CASE WHEN launch_runs.status = 'running' THEN launch_runs.attempts ELSE 0 END,
-         available_at = CASE WHEN launch_runs.status = 'running' THEN launch_runs.available_at ELSE now() END,
-         claimed_until = CASE WHEN launch_runs.status = 'running' THEN launch_runs.claimed_until ELSE NULL END,
-         lease_token = CASE WHEN launch_runs.status = 'running' THEN launch_runs.lease_token ELSE NULL END,
-         error_message = CASE WHEN launch_runs.status = 'running' THEN launch_runs.error_message ELSE NULL END,
-         completed_at = CASE WHEN launch_runs.status = 'running' THEN launch_runs.completed_at ELSE NULL END,
-         updated_at = now()
+         id = CASE WHEN launch_runs.status IN ('running', 'complete') THEN launch_runs.id ELSE EXCLUDED.id END,
+         request = CASE WHEN launch_runs.status IN ('running', 'complete') THEN launch_runs.request ELSE EXCLUDED.request END,
+         status = CASE WHEN launch_runs.status IN ('running', 'complete') THEN launch_runs.status ELSE 'queued' END,
+         attempts = CASE WHEN launch_runs.status IN ('running', 'complete') THEN launch_runs.attempts ELSE 0 END,
+         available_at = CASE WHEN launch_runs.status IN ('running', 'complete') THEN launch_runs.available_at ELSE now() END,
+         claimed_until = CASE WHEN launch_runs.status IN ('running', 'complete') THEN launch_runs.claimed_until ELSE NULL END,
+         lease_token = CASE WHEN launch_runs.status IN ('running', 'complete') THEN launch_runs.lease_token ELSE NULL END,
+         error_message = CASE WHEN launch_runs.status IN ('running', 'complete') THEN launch_runs.error_message ELSE NULL END,
+         completed_at = CASE WHEN launch_runs.status IN ('running', 'complete') THEN launch_runs.completed_at ELSE NULL END,
+         updated_at = CASE WHEN launch_runs.status IN ('running', 'complete') THEN launch_runs.updated_at ELSE now() END
        RETURNING *`,
       [id, kind, durableRequest.environment, name, JSON.stringify(durableRequest)],
     );
-    const run = toRun(result.rows[0]!);
-    if (run.status === "running" && run.id !== id) throw new Error(`${kind} launch "${name}" is already running`);
-    return run;
+    return toRun(result.rows[0]!);
   }
 
   async list(environment: GameEnvironmentId, kind?: LaunchKind): Promise<LaunchRun[]> {

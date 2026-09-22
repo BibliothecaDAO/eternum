@@ -25,5 +25,6 @@ L2 service is required for a free slot.
 Frontier uses preset 1 in madara.frontier and is never created through the API. At startup the service enqueues the
 season named by `FRONTIER_SEASON_START` (`frontier-<unix seconds>`), a season-long game with open entry and no roster.
 The run is keyed by that name, so a restart, including one during creation, finds the existing run instead of creating a
-second game. A new season is a new start time: set it and restart, and a new game is created without carrying realms
-forward.
+second game; a season whose launch failed is queued again at the next start, which is safe because create_game is
+idempotent by name. A new season is a new start time: set it and restart, and a new game is created without carrying
+realms forward.

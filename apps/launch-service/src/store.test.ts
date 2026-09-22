@@ -117,15 +117,18 @@ test("one Frontier season launch survives reconnects and duplicate scheduling", 
     await store.close();
     store = new PostgresLaunchStore(url.toString());
     await store.initialize();
-    expect((await scheduleFrontierSeason(store, seasonStart)).id).toBe(queued.id);
+    // Scheduling again before the run is claimed queues the same season once more, under the same name.
+    const rescheduled = await scheduleFrontierSeason(store, seasonStart);
+    expect(rescheduled).toMatchObject({ name: queued.name, status: "queued" });
+    expect(await store.list("madara.frontier")).toHaveLength(1);
     const run = (await store.claim(60_000))!;
-    expect(run.id).toBe(queued.id);
+    expect(run.id).toBe(rescheduled.id);
     expect(run.request).toMatchObject({ version: "1", gameStartTime: seasonStart });
     // A restart while the run is still leased must find the same run, not queue a second season.
     await store.close();
     store = new PostgresLaunchStore(url.toString());
     await store.initialize();
-    expect(await scheduleFrontierSeason(store, seasonStart)).toMatchObject({ id: queued.id, status: "running" });
+    expect(await scheduleFrontierSeason(store, seasonStart)).toMatchObject({ id: run.id, status: "running" });
     expect(await store.claim(60_000)).toBeNull();
     await store.complete(run.id, run.leaseToken, {
       environment: "madara.frontier",
@@ -143,7 +146,28 @@ test("one Frontier season launch survives reconnects and duplicate scheduling", 
     await store.close();
     store = new PostgresLaunchStore(url.toString());
     await store.initialize();
-    expect(await scheduleFrontierSeason(store, seasonStart)).toMatchObject({ id: queued.id, status: "complete" });
+    expect(await scheduleFrontierSeason(store, seasonStart)).toMatchObject({ id: run.id, status: "complete" });
+    await store.pool.query("UPDATE launch_runs SET status = 'failed', error_message = 'rpc down' WHERE id = $1", [
+      run.id,
+    ]);
+    const requeued = await scheduleFrontierSeason(store, seasonStart);
+    expect(requeued).toMatchObject({ name: queued.name, status: "queued", attempts: 0 });
+    expect(requeued.errorMessage).toBeUndefined();
+    const retried = (await store.claim(60_000))!;
+    expect(retried.name).toBe(queued.name);
+    await store.complete(retried.id, retried.leaseToken, {
+      environment: "madara.frontier",
+      chain: "madara",
+      gameType: "frontier",
+      gameName: retried.name,
+      gameId: 9,
+      startTime: Date.parse(seasonStart) / 1000,
+      startTimeIso: seasonStart,
+      rpcUrl: "http://rpc.test",
+      configMode: "batched",
+      configSteps: [],
+      dryRun: false,
+    });
     expect(await store.claim(60_000)).toBeNull();
     expect(await store.list("madara.frontier")).toHaveLength(1);
     const next = await scheduleFrontierSeason(store, "2027-04-30T00:00:00.000Z");

@@ -39,8 +39,7 @@ const respondWithRun = async (
     const run = await store.enqueue(kind, request);
     return context.json(toFactoryRunRecord(run), 202);
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    return context.json({ error: message }, message.includes("already running") ? 409 : 500);
+    return context.json({ error: error instanceof Error ? error.message : String(error) }, 500);
   }
 };
 
