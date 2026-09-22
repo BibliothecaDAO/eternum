@@ -10,24 +10,19 @@ import {
   getGuildFromPlayerAddress,
 } from "@bibliothecadao/eternum";
 import { useGame, useNativeRow, useResourceManager, useNativeRevision } from "@bibliothecadao/react";
-import { ContractAddress, ID, TickIds } from "@bibliothecadao/types";
+import { ContractAddress, ID } from "@bibliothecadao/types";
+import { buildProjectedStaminaDisplayModel } from "@/lib/army-stamina/presentation";
+import type { ArmyStaminaPresentation } from "@/lib/army-stamina/types";
 import { useCallback, useMemo, useState } from "react";
 
 interface UseArmyEntityDetailOptions {
   armyEntityId: ID;
 }
 
-interface StaminaDisplayData {
-  isRecharging: boolean;
-  displayCurrent: number;
-  displayRatio: number;
-  secondsUntilFull: number;
-}
-
 interface DerivedArmyData {
   stamina: { amount: bigint; updated_tick: bigint };
   maxStamina: number;
-  staminaDisplay: StaminaDisplayData | null;
+  staminaDisplay: ArmyStaminaPresentation | null;
   playerGuild?: { name: string } | undefined;
   addressName?: string;
   isMine: boolean;
@@ -49,7 +44,7 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
   } = useGame();
   const mode = useGameModeConfig();
 
-  const { currentArmiesTick } = useBlockTimestamp();
+  const { currentArmiesTick, armiesTickTimeRemaining } = useBlockTimestamp();
   const userAddress = ContractAddress(account.address);
   const [isLoadingDelete, setIsLoadingDelete] = useState(false);
   const explorer = useNativeRow("ExplorerTroops", {
@@ -83,20 +78,16 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
   const derivedData: DerivedArmyData | undefined = useMemo(() => {
     if (!explorer) return undefined;
 
-    // staminaSnapshot.current is the computed regen value from
-    // StaminaManager.getStamina(troops, currentArmiesTick). Use directly.
-    const computedAmount = staminaSnapshot?.current ?? 0;
     const maxStamina = staminaSnapshot?.max ?? 0;
     const stamina = staminaSnapshot?.stamina ?? { amount: 0n, updated_tick: 0n };
-    const gainPerTick = configManager.getRefillPerTick();
-    const ticksUntilFull = gainPerTick > 0 ? Math.ceil(Math.max(0, maxStamina - computedAmount) / gainPerTick) : 0;
-    const staminaDisplay: StaminaDisplayData | null = staminaSnapshot
-      ? {
-          isRecharging: computedAmount >= 0 && computedAmount < maxStamina,
-          displayCurrent: computedAmount,
-          displayRatio: maxStamina > 0 ? computedAmount / maxStamina : 0,
-          secondsUntilFull: ticksUntilFull * Number(configManager.getTick(TickIds.Armies)),
-        }
+    const staminaDisplay = staminaSnapshot
+      ? buildProjectedStaminaDisplayModel({
+          committedCurrent: staminaSnapshot.current,
+          committedMax: maxStamina,
+          armiesTickTimeRemaining,
+          currentArmiesTick,
+          troops: staminaSnapshot.troops,
+        })
       : null;
 
     const guild = owner ? getGuildFromPlayerAddress(owner, store) : undefined;

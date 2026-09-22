@@ -52,6 +52,8 @@ export interface GameModeConfig {
   rules: {
     isBuildingTypeAllowed: (key: string) => boolean;
     autoAllocateHyperstructureShares: boolean;
+    /** Whether resources move between a player's structures at all; Frontier sends every find straight home. */
+    allowsTransfers: boolean;
   };
   structure: {
     getName: (
@@ -145,6 +147,7 @@ const blitzConfig: GameModeConfig = {
   rules: {
     isBuildingTypeAllowed: buildBuildingRule(BLITZ_BUILDING_EXCLUSIONS),
     autoAllocateHyperstructureShares: true,
+    allowsTransfers: true,
   },
   structure: buildStructureHelpers(true),
   assets: {
@@ -188,6 +191,7 @@ const eternumConfig: GameModeConfig = {
   rules: {
     isBuildingTypeAllowed: buildBuildingRule(new Set()),
     autoAllocateHyperstructureShares: false,
+    allowsTransfers: true,
   },
   structure: buildStructureHelpers(false),
   assets: {
@@ -221,6 +225,7 @@ const frontierConfig: GameModeConfig = {
     isBuildingTypeAllowed: (key) =>
       ["WorkersHut", "Storehouse", "ResourceWheat", "ResourceKnightT1", "ResourceLabor"].includes(key),
     autoAllocateHyperstructureShares: false,
+    allowsTransfers: false,
   },
 };
 const duelConfig: GameModeConfig = {

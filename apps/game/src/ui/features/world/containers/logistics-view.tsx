@@ -14,8 +14,6 @@ import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 
 const TAB_KEYS = ["arrivals", "transfer", "automation", "balances"] as const;
 type LogisticsTab = (typeof TAB_KEYS)[number];
-// Frontier moves nothing between structures: its logistics view keeps arrivals and balances only.
-const MANUAL_TAB_KEYS = ["arrivals", "balances"] as const;
 
 const tabClass =
   "!mx-0 min-h-11 flex items-center justify-center rounded-md border border-gold/20 bg-black/25 px-3 py-1.5 text-center text-[11px] font-semibold uppercase tracking-[0.14em] text-gold/75 transition hover:border-gold/40 hover:text-gold";
@@ -41,8 +39,12 @@ export const LogisticsView = ({ hasArrivals }: LogisticsViewProps) => {
   const arrivedArrivalsNumber = useUIStore((state) => state.arrivedArrivalsNumber);
   const pendingArrivalsNumber = useUIStore((state) => state.pendingArrivalsNumber);
 
-  const showAutomation = useGameModeConfig().ui.showAutomation;
-  const tabKeys: readonly LogisticsTab[] = showAutomation ? TAB_KEYS : MANUAL_TAB_KEYS;
+  const mode = useGameModeConfig();
+  const showTransfer = mode.rules.allowsTransfers;
+  const showAutomation = mode.ui.showAutomation;
+  const tabKeys: readonly LogisticsTab[] = TAB_KEYS.filter(
+    (key) => (key !== "transfer" || showTransfer) && (key !== "automation" || showAutomation),
+  );
   const selectedIndex = Math.max(0, tabKeys.indexOf(activeTabKey));
   const totalArrivals = arrivedArrivalsNumber + pendingArrivalsNumber;
   // Ready-to-claim is more urgent (green) than still-in-flight (gold); pick the
@@ -73,7 +75,7 @@ export const LogisticsView = ({ hasArrivals }: LogisticsViewProps) => {
               )}
             </span>
           </Tabs.Tab>
-          {showAutomation && <Tabs.Tab className={tabClass}>Transfer</Tabs.Tab>}
+          {showTransfer && <Tabs.Tab className={tabClass}>Transfer</Tabs.Tab>}
           {showAutomation && <Tabs.Tab className={tabClass}>Automation</Tabs.Tab>}
           <Tabs.Tab className={tabClass}>Balances</Tabs.Tab>
         </Tabs.List>
@@ -81,7 +83,7 @@ export const LogisticsView = ({ hasArrivals }: LogisticsViewProps) => {
           <Tabs.Panel className="h-full overflow-y-auto">
             <ResourceArrivals hasArrivals={hasArrivals} />
           </Tabs.Panel>
-          {showAutomation && (
+          {showTransfer && (
             <Tabs.Panel className="h-full overflow-y-auto">
               <TransferAutomationPanel initialSourceId={transferPanelSourceId ?? undefined} />
             </Tabs.Panel>
