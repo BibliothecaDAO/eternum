@@ -32,6 +32,7 @@ pub mod SeasonDomain {
         Admission, ExecutionContext, IRecordedExecution, IRecordedExecutionFailure, IRecordedExecutionViews,
         RecordedAction, accepted_context_matches, authenticate_submission,
     };
+    use eternum_randomness_protocol::epochs::{IRandomnessEpochsDispatcher, IRandomnessEpochsDispatcherTrait};
     use eternum_randomness_protocol::{Envelope, Intent, action_identity, decode_envelope};
     use starknet::storage::{
         Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess, StoragePointerWriteAccess,
@@ -248,11 +249,31 @@ pub mod SeasonDomain {
 
     #[abi(embed_v0)]
     impl Execute of IRecordedExecution<ContractState> {
-        #[inline(never)]
         fn execute(ref self: ContractState, intent: Intent, context: ExecutionContext, r: felt252, s: felt252) {
+            let epoch = self.randomness_epoch();
+            self.execute_ticket(intent, context, r, s, epoch);
+        }
+        fn execute_batch(ref self: ContractState, actions: Array<RecordedAction>) {
+            assert!(
+                !actions.is_empty() && actions.len() <= eternum_randomness_protocol::entrypoint::MAX_EXECUTION_BATCH,
+                "invalid execution batch size",
+            );
+            let epoch = self.randomness_epoch();
+            for action in actions {
+                self.execute_ticket(action.intent, action.context, action.r, action.s, epoch);
+            }
+        }
+    }
+
+    #[generate_trait]
+    impl Tickets of TicketsTrait {
+        #[inline(never)]
+        fn execute_ticket(
+            ref self: ContractState, intent: Intent, context: ExecutionContext, r: felt252, s: felt252, epoch: u64,
+        ) {
             let peers = self.lifecycle.require_active();
             let envelope = decode_envelope(context.envelope.span()).expect('malformed envelope');
-            self.authenticate_ticket(@intent, @envelope);
+            self.authenticate_ticket(@intent, @envelope, epoch);
             let consumed = match self.authenticate_action(@intent, @envelope, r, s) {
                 Ok(()) => self.consume_action_nonce(@intent),
                 Err(reason) => Err(reason),
@@ -263,15 +284,6 @@ pub mod SeasonDomain {
             };
             self.recording.record(@intent, @envelope, consumed.is_ok(), outcome);
         }
-        fn execute_batch(ref self: ContractState, actions: Array<RecordedAction>) {
-            assert!(
-                !actions.is_empty() && actions.len() <= eternum_randomness_protocol::entrypoint::MAX_EXECUTION_BATCH,
-                "invalid execution batch size",
-            );
-            for action in actions {
-                self.execute(action.intent, action.context, action.r, action.s);
-            }
-        }
     }
 
     #[abi(embed_v0)]
@@ -280,7 +292,7 @@ pub mod SeasonDomain {
             ref self: ContractState, intent: Intent, context: ExecutionContext, r: felt252, s: felt252,
         ) {
             let envelope = decode_envelope(context.envelope.span()).expect('malformed envelope');
-            self.authenticate_ticket(@intent, @envelope);
+            self.authenticate_ticket(@intent, @envelope, self.randomness_epoch());
             // A transport failure cannot authorize consumption of an unauthenticated action.
             self.authenticate_action(@intent, @envelope, r, s).expect('unauthenticated action');
             assert!(accepted_context_matches(@intent, @envelope), "invalid acceptance");
@@ -417,12 +429,16 @@ pub mod SeasonDomain {
             }
             Ok(IGameplayKeyDispatcher { contract_address: actor }.get_public_key())
         }
-        fn authenticate_ticket(self: @ContractState, intent: @Intent, envelope: @Envelope) {
-            let submitter = self.authentication.read().submitter;
-            authenticate_submission(submitter);
+        /// Read once per call; every ticket in a batch must name this epoch.
+        fn randomness_epoch(self: @ContractState) -> u64 {
+            IRandomnessEpochsDispatcher { contract_address: self.authentication.read().submitter }
+                .current_randomness_epoch()
+        }
+        fn authenticate_ticket(self: @ContractState, intent: @Intent, envelope: @Envelope, epoch: u64) {
+            authenticate_submission(self.authentication.read().submitter);
             assert!(*envelope.action == action_identity(intent), "altered action");
             assert!(*envelope.execution_config == self.execution_config(), "execution config mismatch");
-            self.recording.require_next(submitter, intent, envelope);
+            self.recording.require_next(intent, envelope, epoch);
         }
         fn execute_action(
             ref self: ContractState,

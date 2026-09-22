@@ -17,6 +17,7 @@ pub mod RecordedExecutionStub {
         Admission, ExecutionContext, IRecordedExecution, IRecordedExecutionFailure, RecordedAction,
         accepted_context_matches, authenticate_submission,
     };
+    use crate::epochs::{IRandomnessEpochsDispatcher, IRandomnessEpochsDispatcherTrait};
     use crate::recording::{ExecutionHead, HeadPacking, RecordedState};
     use crate::{Intent, action_identity, decode_envelope};
     component!(path: RecordedState, storage: recording, event: RecordingEvent);
@@ -49,10 +50,30 @@ pub mod RecordedExecutionStub {
 
     #[abi(embed_v0)]
     impl Execute of IRecordedExecution<ContractState> {
-        #[inline(never)]
         fn execute(ref self: ContractState, intent: Intent, context: ExecutionContext, r: felt252, s: felt252) {
+            let epoch = self.randomness_epoch();
+            self.execute_ticket(intent, context, r, s, epoch);
+        }
+        fn execute_batch(ref self: ContractState, actions: Array<RecordedAction>) {
+            assert!(
+                !actions.is_empty() && actions.len() <= crate::entrypoint::MAX_EXECUTION_BATCH,
+                "invalid execution batch size",
+            );
+            let epoch = self.randomness_epoch();
+            for action in actions {
+                self.execute_ticket(action.intent, action.context, action.r, action.s, epoch);
+            }
+        }
+    }
+
+    #[generate_trait]
+    impl Tickets of TicketsTrait {
+        #[inline(never)]
+        fn execute_ticket(
+            ref self: ContractState, intent: Intent, context: ExecutionContext, r: felt252, s: felt252, epoch: u64,
+        ) {
             let envelope = decode_envelope(context.envelope.span()).expect('malformed envelope');
-            self.authenticate_ticket(@intent, @envelope);
+            self.authenticate_ticket(@intent, @envelope, epoch);
             let authentication = self.authenticate_action(@intent, @envelope, r, s);
             let reason = match authentication {
                 Ok(()) => self.validate_action(@intent, @envelope).err(),
@@ -68,15 +89,6 @@ pub mod RecordedExecutionStub {
             };
             self.recording.record(@intent, @envelope, consumed, outcome);
         }
-        fn execute_batch(ref self: ContractState, actions: Array<RecordedAction>) {
-            assert!(
-                !actions.is_empty() && actions.len() <= crate::entrypoint::MAX_EXECUTION_BATCH,
-                "invalid execution batch size",
-            );
-            for action in actions {
-                self.execute(action.intent, action.context, action.r, action.s);
-            }
-        }
     }
 
     #[abi(embed_v0)]
@@ -85,7 +97,7 @@ pub mod RecordedExecutionStub {
             ref self: ContractState, intent: Intent, context: ExecutionContext, r: felt252, s: felt252,
         ) {
             let envelope = decode_envelope(context.envelope.span()).expect('malformed envelope');
-            self.authenticate_ticket(@intent, @envelope);
+            self.authenticate_ticket(@intent, @envelope, self.randomness_epoch());
             self.authenticate_action(@intent, @envelope, r, s).expect('unauthenticated action');
             assert!(accepted_context_matches(@intent, @envelope), "invalid acceptance");
             let consumed = self.consume_nonce(@intent);
@@ -95,13 +107,16 @@ pub mod RecordedExecutionStub {
 
     #[generate_trait]
     impl Internal of InternalTrait {
-        fn authenticate_ticket(self: @ContractState, intent: @Intent, envelope: @crate::Envelope) {
-            let submitter = self.submitter.read();
-            authenticate_submission(submitter);
+        /// Read once per call; every ticket in a batch must name this epoch.
+        fn randomness_epoch(self: @ContractState) -> u64 {
+            IRandomnessEpochsDispatcher { contract_address: self.submitter.read() }.current_randomness_epoch()
+        }
+        fn authenticate_ticket(self: @ContractState, intent: @Intent, envelope: @crate::Envelope, epoch: u64) {
+            authenticate_submission(self.submitter.read());
             let action = action_identity(intent);
             assert!(*envelope.action == action, "altered action");
             assert!(*envelope.execution_config == 987, "execution config mismatch");
-            self.recording.require_next(submitter, intent, envelope);
+            self.recording.require_next(intent, envelope, epoch);
         }
         fn consume_nonce(ref self: ContractState, intent: @Intent) -> bool {
             let consumed = fixture_game(*intent.game_id)

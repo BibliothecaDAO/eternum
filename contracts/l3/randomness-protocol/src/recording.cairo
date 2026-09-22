@@ -51,10 +51,9 @@ pub fn following_state(previous_state: felt252, envelope: @Envelope, event: Exec
 
 #[starknet::component]
 pub mod RecordedState {
+    use starknet::get_block_timestamp;
     use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
-    use starknet::{ContractAddress, get_block_timestamp};
     use crate::entrypoint::timestamp_in_bounds;
-    use crate::epochs::{IRandomnessEpochsDispatcher, IRandomnessEpochsDispatcherTrait};
     use crate::{Envelope, Intent};
     use super::{ExecutionHead, ExecutionRecorded, HeadPacking, following_state};
 
@@ -71,14 +70,11 @@ pub mod RecordedState {
     #[generate_trait]
     pub impl InternalImpl<TContractState, +HasComponent<TContractState>> of InternalTrait<TContractState> {
         /// The action is its own game's next, no earlier than that game's head, drawn from the open epoch.
-        fn require_next(
-            self: @ComponentState<TContractState>, submitter: ContractAddress, intent: @Intent, envelope: @Envelope,
-        ) {
+        fn require_next(self: @ComponentState<TContractState>, intent: @Intent, envelope: @Envelope, epoch: u64) {
             let head = self.heads.read(*intent.game_id);
             assert!(*envelope.order == head.order + 1, "out of order");
             assert!(timestamp_in_bounds(*envelope.timestamp, get_block_timestamp()), "future execution time");
             assert!(*envelope.timestamp >= head.timestamp, "backwards execution time");
-            let epoch = IRandomnessEpochsDispatcher { contract_address: submitter }.current_randomness_epoch();
             assert!(*envelope.epoch == epoch, "stale randomness epoch");
         }
         fn record(
