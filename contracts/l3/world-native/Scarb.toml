@@ -8,6 +8,7 @@ cairo-version = "=2.17.0"
 starknet = "=2.17.0"
 eternum_randomness_protocol = { path = "../randomness-protocol" }
 eternum_cubit = { path = "vendor/cubit" }
+games_storage = { path = "storage" }
 
 [dev-dependencies]
 snforge_std = "=0.64.0"

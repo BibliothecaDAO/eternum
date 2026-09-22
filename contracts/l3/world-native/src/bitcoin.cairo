@@ -110,20 +110,15 @@ pub fn phase_end(phase: u64, interval: u64) -> u64 {
 pub mod BitcoinState {
     const CONTRIBUTOR_INDEX_LIMIT: u64 = 0x100000000;
     use starknet::ContractAddress;
-    use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
+    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
     use crate::events::RowSet;
     use crate::resources::ResourceKey;
     use super::{ClaimKey, Contribution, ContributionKey, MineFunding, Phase, PhaseKey, PhaseStatus};
 
     #[storage]
     pub struct Storage {
-        pub phases: Map<(u32, u64), Phase>,
-        pub contributions: Map<(u32, u64, ContractAddress), Contribution>,
-        pub contributor_indices: Map<(u32, u64, ContractAddress), u32>,
-        pub labor_prefixes: Map<(u32, u64, u64), u128>,
-        pub contributors: Map<(u32, u64, u32), ContractAddress>,
-        pub mines: Map<(u32, u32), MineFunding>,
-        pub claimed: Map<(u32, u64, u32), bool>,
+        #[flat]
+        pub data: games_storage::bitcoin::BitcoinStateStorage<Phase, Contribution, MineFunding>,
     }
 
     #[event]
@@ -135,13 +130,13 @@ pub mod BitcoinState {
     #[generate_trait]
     pub impl InternalImpl<TContractState, +HasComponent<TContractState>> of InternalTrait<TContractState> {
         fn mine(self: @ComponentState<TContractState>, key: ResourceKey) -> MineFunding {
-            let funding = self.mines.read((key.game_id, key.entity_id));
+            let funding = self.data.mines.read((key.game_id, key.entity_id));
             assert!(funding.eligible_from != 0, "unknown Bitcoin mine");
             funding
         }
         fn register_mine(ref self: ComponentState<TContractState>, key: ResourceKey, next_phase: u64) {
             assert!(
-                next_phase != 0 && self.mines.read((key.game_id, key.entity_id)).eligible_from == 0,
+                next_phase != 0 && self.data.mines.read((key.game_id, key.entity_id)).eligible_from == 0,
                 "Bitcoin mine already registered",
             );
             self.write_mine(key, MineFunding { eligible_from: next_phase, next_phase, ..Default::default() });
@@ -167,7 +162,7 @@ pub mod BitcoinState {
             self.write_mine(key, funding);
         }
         fn write_mine(ref self: ComponentState<TContractState>, key: ResourceKey, funding: MineFunding) {
-            self.mines.write((key.game_id, key.entity_id), funding);
+            self.data.mines.write((key.game_id, key.entity_id), funding);
             let mut values = array![];
             funding.serialize(ref values);
             self
@@ -181,14 +176,14 @@ pub mod BitcoinState {
                 );
         }
         fn was_claimed(self: @ComponentState<TContractState>, key: ClaimKey) -> bool {
-            self.claimed.read((key.game_id, key.phase, key.mine_id))
+            self.data.claimed.read((key.game_id, key.phase, key.mine_id))
         }
         fn complete_claim(ref self: ComponentState<TContractState>, key: ClaimKey, mut funding: MineFunding) {
             assert!(!self.was_claimed(key), "Bitcoin prize already claimed");
             assert!(key.phase == funding.next_phase, "claim earlier Bitcoin phase first");
             funding.next_phase += 1;
             self.write_mine(ResourceKey { game_id: key.game_id, entity_id: key.mine_id }, funding);
-            self.claimed.write((key.game_id, key.phase, key.mine_id), true);
+            self.data.claimed.write((key.game_id, key.phase, key.mine_id), true);
             self
                 .emit(
                     RowSet {
@@ -218,7 +213,7 @@ pub mod BitcoinState {
             while bit != 0 {
                 let next = index + bit;
                 if next <= phase.contributors.into() {
-                    let weight = self.labor_prefixes.read((key.game_id, key.phase, next));
+                    let weight = self.data.labor_prefixes.read((key.game_id, key.phase, next));
                     if roll >= weight {
                         roll -= weight;
                         index = next;
@@ -230,14 +225,14 @@ pub mod BitcoinState {
         }
 
         fn phase(self: @ComponentState<TContractState>, key: PhaseKey) -> Phase {
-            self.phases.read((key.game_id, key.phase))
+            self.data.phases.read((key.game_id, key.phase))
         }
         fn contribution(self: @ComponentState<TContractState>, key: ContributionKey) -> Contribution {
-            self.contributions.read((key.game_id, key.phase, key.player))
+            self.data.contributions.read((key.game_id, key.phase, key.player))
         }
         fn contributor(self: @ComponentState<TContractState>, key: PhaseKey, index: u32) -> ContractAddress {
             assert!(index < self.phase(key).contributors, "unknown Bitcoin contributor");
-            self.contributors.read((key.game_id, key.phase, index))
+            self.data.contributors.read((key.game_id, key.phase, index))
         }
         fn contribute(ref self: ComponentState<TContractState>, key: ContributionKey, structure_id: u32, amount: u128) {
             let phase_key = PhaseKey { game_id: key.game_id, phase: key.phase };
@@ -247,13 +242,13 @@ pub mod BitcoinState {
             let mut contribution = self.contribution(key);
             if contribution.labor == 0 {
                 contribution.structure_id = structure_id;
-                self.contributor_indices.write((key.game_id, key.phase, key.player), phase.contributors);
-                self.contributors.write((key.game_id, key.phase, phase.contributors), key.player);
+                self.data.contributor_indices.write((key.game_id, key.phase, key.player), phase.contributors);
+                self.data.contributors.write((key.game_id, key.phase, phase.contributors), key.player);
                 phase.contributors += 1;
             }
             contribution.labor += amount;
             phase.total_labor += amount;
-            self.contributions.write((key.game_id, key.phase, key.player), contribution);
+            self.data.contributions.write((key.game_id, key.phase, key.player), contribution);
             self.add_labor_prefixes(key, amount);
             let mut values = array![];
             contribution.serialize(ref values);
@@ -269,12 +264,12 @@ pub mod BitcoinState {
             self.write_phase(phase_key, phase);
         }
         fn add_labor_prefixes(ref self: ComponentState<TContractState>, key: ContributionKey, amount: u128) {
-            let mut index: u64 = self.contributor_indices.read((key.game_id, key.phase, key.player)).into();
+            let mut index: u64 = self.data.contributor_indices.read((key.game_id, key.phase, key.player)).into();
             index += 1;
             // Update future prefixes too, so appending a contributor never rebuilds earlier sums.
             while index < CONTRIBUTOR_INDEX_LIMIT {
                 let slot = (key.game_id, key.phase, index);
-                self.labor_prefixes.write(slot, self.labor_prefixes.read(slot) + amount);
+                self.data.labor_prefixes.write(slot, self.data.labor_prefixes.read(slot) + amount);
                 index += index & (CONTRIBUTOR_INDEX_LIMIT - index);
             }
         }
@@ -294,7 +289,7 @@ pub mod BitcoinState {
             self.write_phase(key, phase);
         }
         fn write_phase(ref self: ComponentState<TContractState>, key: PhaseKey, phase: Phase) {
-            self.phases.write((key.game_id, key.phase), phase);
+            self.data.phases.write((key.game_id, key.phase), phase);
             let mut values = array![];
             phase.serialize(ref values);
             self

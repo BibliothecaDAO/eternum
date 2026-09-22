@@ -42,15 +42,14 @@ pub trait IStructureUpgrades<T> {
 
 #[starknet::component]
 pub mod UpgradeState {
-    use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
+    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
     use crate::events::RowSet;
     use super::{ResourceAmount, UpgradeLimits, UpgradeRecipe};
 
     #[storage]
     pub struct Storage {
-        pub limits: Map<u32, Option<UpgradeLimits>>,
-        pub cost_counts: Map<(u32, u8), u32>,
-        pub upgrade_costs: Map<(u32, u8, u32), ResourceAmount>,
+        #[flat]
+        pub data: games_storage::upgrades::UpgradeStateStorage<UpgradeLimits, ResourceAmount>,
     }
 
     #[event]
@@ -62,15 +61,15 @@ pub mod UpgradeState {
     #[generate_trait]
     pub impl InternalImpl<TContractState, +HasComponent<TContractState>> of InternalTrait<TContractState> {
         fn limits(self: @ComponentState<TContractState>, game_id: u32) -> UpgradeLimits {
-            self.limits.read(game_id).expect('missing upgrade rules')
+            self.data.limits.read(game_id).expect('missing upgrade rules')
         }
 
         fn recipe(self: @ComponentState<TContractState>, game_id: u32, level: u8) -> UpgradeRecipe {
             let limits = self.limits(game_id);
             assert!(level > 0 && (level <= limits.realm_max || level <= limits.village_max), "invalid upgrade level");
             let mut costs = array![];
-            for index in 0..self.cost_counts.read((game_id, level)) {
-                costs.append(self.upgrade_costs.read((game_id, level, index)));
+            for index in 0..self.data.cost_counts.read((game_id, level)) {
+                costs.append(self.data.upgrade_costs.read((game_id, level, index)));
             }
             UpgradeRecipe { costs: costs.span() }
         }
@@ -78,13 +77,13 @@ pub mod UpgradeState {
         fn configure(
             ref self: ComponentState<TContractState>, game_id: u32, limits: UpgradeLimits, recipes: Span<UpgradeRecipe>,
         ) {
-            assert!(self.limits.read(game_id).is_none(), "immutable upgrade rules");
+            assert!(self.data.limits.read(game_id).is_none(), "immutable upgrade rules");
             assert!(limits.realm_max <= 3 && limits.village_max <= 3, "unsupported troop limit level");
             assert!(
                 recipes.len() == core::cmp::max(limits.realm_max, limits.village_max).into(),
                 "incomplete upgrade recipes",
             );
-            self.limits.write(game_id, Some(limits));
+            self.data.limits.write(game_id, Some(limits));
             let mut values = array![];
             limits.serialize(ref values);
             self
@@ -95,11 +94,11 @@ pub mod UpgradeState {
                 );
             let mut level = 1_u8;
             for recipe in recipes {
-                self.cost_counts.write((game_id, level), recipe.costs.len());
+                self.data.cost_counts.write((game_id, level), recipe.costs.len());
                 let mut index = 0;
                 for cost in recipe.costs {
                     assert!(*cost.resource_type > 0 && *cost.resource_type <= 58, "invalid resource type");
-                    self.upgrade_costs.write((game_id, level, index), *cost);
+                    self.data.upgrade_costs.write((game_id, level, index), *cost);
                     index += 1;
                 }
                 let mut values = array![];

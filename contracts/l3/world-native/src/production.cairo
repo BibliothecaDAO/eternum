@@ -117,17 +117,15 @@ pub struct RecipeTerms {
 
 #[starknet::component]
 pub mod ProductionState {
-    use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
+    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
     use crate::events::RowSet;
     use crate::resources::{ResourceAmount, ResourceKey};
     use super::{ProductionBonus, ProductionRecipe, RecipeConfig, RecipeKey, RecipeTerms};
 
     #[storage]
     pub struct Storage {
-        pub configured: Map<u32, bool>,
-        pub terms: Map<(u32, u8), RecipeTerms>,
-        pub inputs: Map<(u32, u8, bool, u8), ResourceAmount>,
-        pub bonuses: Map<(u32, u32), ProductionBonus>,
+        #[flat]
+        pub data: games_storage::production::ProductionStateStorage<RecipeTerms, ResourceAmount, ProductionBonus>,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -138,7 +136,7 @@ pub mod ProductionState {
     #[generate_trait]
     pub impl InternalImpl<TContractState, +HasComponent<TContractState>> of InternalTrait<TContractState> {
         fn configure(ref self: ComponentState<TContractState>, game_id: u32, recipes: Span<RecipeConfig>) {
-            assert!(!self.configured.read(game_id), "immutable production recipes");
+            assert!(!self.data.configured.read(game_id), "immutable production recipes");
             assert!(recipes.len() == 58, "incomplete production recipes");
             let mut expected = 1_u8;
             for config in recipes {
@@ -150,7 +148,7 @@ pub mod ProductionState {
                     simple_count: recipe.simple_inputs.len().try_into().unwrap(),
                     complex_count: recipe.complex_inputs.len().try_into().unwrap(),
                 };
-                self.terms.write((game_id, expected), terms);
+                self.data.terms.write((game_id, expected), terms);
                 self.write_inputs(game_id, expected, false, recipe.simple_inputs);
                 self.write_inputs(game_id, expected, true, recipe.complex_inputs);
                 let mut values = array![];
@@ -166,7 +164,7 @@ pub mod ProductionState {
                     );
                 expected += 1;
             }
-            self.configured.write(game_id, true);
+            self.data.configured.write(game_id, true);
             self
                 .emit(
                     RowSet {
@@ -178,9 +176,9 @@ pub mod ProductionState {
                 );
         }
         fn recipe(self: @ComponentState<TContractState>, key: RecipeKey) -> ProductionRecipe {
-            assert!(self.configured.read(key.game_id), "missing production recipes");
+            assert!(self.data.configured.read(key.game_id), "missing production recipes");
             assert!(key.resource_type > 0 && key.resource_type <= 58, "invalid production resource");
-            let terms = self.terms.read((key.game_id, key.resource_type));
+            let terms = self.data.terms.read((key.game_id, key.resource_type));
             ProductionRecipe {
                 simple_output: terms.simple_output,
                 complex_output: terms.complex_output,
@@ -189,7 +187,7 @@ pub mod ProductionState {
             }
         }
         fn bonus(self: @ComponentState<TContractState>, key: ResourceKey) -> ProductionBonus {
-            self.bonuses.read((key.game_id, key.entity_id))
+            self.data.bonuses.read((key.game_id, key.entity_id))
         }
         fn write_inputs(
             ref self: ComponentState<TContractState>,
@@ -201,7 +199,7 @@ pub mod ProductionState {
             let mut index = 0_u8;
             for input in inputs {
                 assert!(*input.resource_type > 0 && *input.resource_type <= 58, "invalid recipe input");
-                self.inputs.write((game_id, resource_type, complex, index), *input);
+                self.data.inputs.write((game_id, resource_type, complex, index), *input);
                 index += 1;
             }
         }
@@ -210,7 +208,7 @@ pub mod ProductionState {
         ) -> Span<ResourceAmount> {
             let mut inputs = array![];
             for index in 0..count {
-                inputs.append(self.inputs.read((key.game_id, key.resource_type, complex, index)));
+                inputs.append(self.data.inputs.read((key.game_id, key.resource_type, complex, index)));
             }
             inputs.span()
         }

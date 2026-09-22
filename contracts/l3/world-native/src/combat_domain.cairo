@@ -24,9 +24,10 @@ pub mod CombatDomain {
     impl LifeInternal = Lifecycle::InternalImpl<ContractState>;
     #[storage]
     struct Storage {
+        #[flat]
+        pub data: games_storage::combat_domain::CombatDomainStorage,
         #[substorage(v0)]
         lifecycle: Lifecycle::Storage,
-        village_raids: starknet::storage::Map<(u32, u32), u64>,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -208,7 +209,7 @@ pub mod CombatDomain {
             self.game_dispatcher().allocate_entity(game_id);
         }
         fn village_last_raided(self: @ContractState, key: ResourceKey) -> u64 {
-            self.village_raids.read((key.game_id, key.entity_id))
+            self.data.village_raids.read((key.game_id, key.entity_id))
         }
         fn guard_attack(
             ref self: ContractState,
@@ -400,7 +401,7 @@ pub mod CombatDomain {
             let village = target.base.category == 5;
             let tick = timestamp / rules.tick_config.armies_tick_in_seconds;
             if village {
-                let last = self.village_raids.read((game_id, command.structure_id));
+                let last = self.data.village_raids.read((game_id, command.structure_id));
                 if last != 0 && tick < last + rules.battle_config.village_raid_immunity_ticks.into() {
                     for resource in command.steal_resources {
                         assert!(
@@ -415,7 +416,7 @@ pub mod CombatDomain {
                     game_id, command.structure_id, command.explorer_id, command.steal_resources, true, timestamp,
                 );
             if village {
-                self.village_raids.write((game_id, command.structure_id), tick);
+                self.data.village_raids.write((game_id, command.structure_id), tick);
                 self
                     .emit(
                         crate::events::RowSet {

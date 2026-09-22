@@ -34,7 +34,7 @@ pub mod RealmPoolFixture {
         }
         fn catalogue(self: @ContractState) -> RealmCatalogue {
             RealmCatalogue {
-                initialized: self.realms.catalogue_count.read(), digest: self.realms.catalogue_digest.read(),
+                initialized: self.realms.data.catalogue_count.read(), digest: self.realms.data.catalogue_digest.read(),
             }
         }
         fn traits(self: @ContractState, id: u32) -> RealmTraits {

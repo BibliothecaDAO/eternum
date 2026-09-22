@@ -16,7 +16,8 @@ pub mod EntryAdministration {
 
     #[storage]
     pub struct Storage {
-        pub operator: ContractAddress,
+        #[flat]
+        pub data: games_storage::entry::EntryAdministrationStorage,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -31,11 +32,11 @@ pub mod EntryAdministration {
         +Drop<TContractState>,
     > of super::ILedgerOperator<ComponentState<TContractState>> {
         fn ledger_operator(self: @ComponentState<TContractState>) -> ContractAddress {
-            self.operator.read()
+            self.data.operator.read()
         }
         fn set_ledger_operator(ref self: ComponentState<TContractState>, operator: ContractAddress) {
             get_dep_component!(@self, Life).assert_authority();
-            self.operator.write(operator);
+            self.data.operator.write(operator);
             self
                 .emit(
                     RowSet {

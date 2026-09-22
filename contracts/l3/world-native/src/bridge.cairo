@@ -57,7 +57,7 @@ pub trait IDepositToken<T> {
 
 #[starknet::component]
 pub mod BridgeState {
-    use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
+    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
     use starknet::{ContractAddress, get_caller_address, get_contract_address};
     use crate::commands::ExecutionContext;
     use crate::events::RowSet;
@@ -75,7 +75,8 @@ pub mod BridgeState {
 
     #[storage]
     pub struct Storage {
-        pub deposits: Map<u32, Option<DepositRules>>,
+        #[flat]
+        pub data: games_storage::bridge::BridgeStateStorage<DepositRules>,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -94,13 +95,13 @@ pub mod BridgeState {
         fn configure_deposits(ref self: ComponentState<TContractState>, game_id: u32, rules: DepositRules) {
             get_dep_component!(@self, Life).assert_configurator();
             self.games().game(game_id);
-            assert!(self.deposits.read(game_id).is_none(), "deposit rules already configured");
+            assert!(self.data.deposits.read(game_id).is_none(), "deposit rules already configured");
             let total: u32 = rules.realm_fee_bps.into()
                 + rules.velords_fee_bps.into()
                 + rules.season_fee_bps.into()
                 + rules.client_fee_bps.into();
             assert!(total <= 10000, "deposit fees exceed amount");
-            self.deposits.write(game_id, Some(rules));
+            self.data.deposits.write(game_id, Some(rules));
             let mut values = array![];
             rules.serialize(ref values);
             self
@@ -111,7 +112,7 @@ pub mod BridgeState {
                 );
         }
         fn deposit_rules(self: @ComponentState<TContractState>, game_id: u32) -> DepositRules {
-            self.deposits.read(game_id).expect('missing deposit rules')
+            self.data.deposits.read(game_id).expect('missing deposit rules')
         }
         fn deposit_resource(
             ref self: ComponentState<TContractState>,

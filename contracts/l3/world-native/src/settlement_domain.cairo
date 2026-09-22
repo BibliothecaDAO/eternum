@@ -1,7 +1,7 @@
 #[starknet::contract]
 pub mod SettlementDomain {
     use core::num::traits::Zero;
-    use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
+    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
     use starknet::{ContractAddress, get_caller_address};
     use crate::commands::ExecutionContext as DomainContext;
     use crate::entry::EntryAdministration;
@@ -33,12 +33,12 @@ pub mod SettlementDomain {
     impl UpgradeInternal = UpgradeState::InternalImpl<ContractState>;
     #[storage]
     struct Storage {
+        #[flat]
+        pub data: games_storage::settlement_domain::SettlementDomainStorage<crate::expeditions::DepthRules>,
         #[substorage(v0)]
         entry: EntryAdministration::Storage,
         #[substorage(v0)]
         upgrades: UpgradeState::Storage,
-        depth_configuration: Map<u32, bool>,
-        depth_rules: Map<(u32, u8), Option<crate::expeditions::DepthRules>>,
         #[substorage(v0)]
         lifecycle: Lifecycle::Storage,
         #[substorage(v0)]
@@ -84,7 +84,7 @@ pub mod SettlementDomain {
     impl ExpeditionRules of crate::expeditions::IExpeditionRules<ContractState> {
         fn configure_depths(ref self: ContractState, game_id: u32, depths: Span<crate::expeditions::DepthRules>) {
             self.lifecycle.assert_configurator();
-            assert!(!self.depth_configuration.read(game_id), "immutable depth rules");
+            assert!(!self.data.depth_configuration.read(game_id), "immutable depth rules");
             let rules = self.games().rules(game_id);
             let enabled = crate::rules::rule_enabled(rules, crate::rules::DEPTH_CONTENTS);
             assert!(depths.len() == if enabled {
@@ -110,7 +110,7 @@ pub mod SettlementDomain {
                 assert!(value.mine_cap_min != 0 && value.mine_cap_min <= value.mine_cap_max, "invalid depth mine cap");
                 assert!(value.mine_rate != 0, "zero depth mine rate");
                 assert!(value.camp_reward_min <= value.camp_reward_max, "invalid camp reward");
-                self.depth_rules.write((game_id, index.try_into().unwrap()), Some(value));
+                self.data.depth_rules.write((game_id, index.try_into().unwrap()), Some(value));
                 let mut values = array![];
                 value.serialize(ref values);
                 self
@@ -123,10 +123,10 @@ pub mod SettlementDomain {
                         },
                     );
             }
-            self.depth_configuration.write(game_id, true);
+            self.data.depth_configuration.write(game_id, true);
         }
         fn depth_rules(self: @ContractState, game_id: u32, depth: u8) -> crate::expeditions::DepthRules {
-            self.depth_rules.read((game_id, depth)).expect('missing depth rules')
+            self.data.depth_rules.read((game_id, depth)).expect('missing depth rules')
         }
     }
     #[abi(embed_v0)]
@@ -137,14 +137,14 @@ pub mod SettlementDomain {
         }
         fn realm_catalogue(self: @ContractState) -> crate::realms::RealmCatalogue {
             crate::realms::RealmCatalogue {
-                initialized: self.realms.catalogue_count.read(), digest: self.realms.catalogue_digest.read(),
+                initialized: self.realms.data.catalogue_count.read(), digest: self.realms.data.catalogue_digest.read(),
             }
         }
         fn realm_traits(self: @ContractState, realm_id: u32) -> crate::realms::RealmTraits {
             self.realms.traits(realm_id)
         }
         fn available_realm(self: @ContractState, game_id: u32, index: u32) -> u32 {
-            self.realms.available(game_id, index, self.settlements.progress.read(game_id).realm_count)
+            self.realms.available(game_id, index, self.settlements.data.progress.read(game_id).realm_count)
         }
         fn settle_season(
             ref self: ContractState,
@@ -173,7 +173,7 @@ pub mod SettlementDomain {
             }
             let mut root = context.raw_root;
             let seed = crate::random::game_root(ref root, game_id, game.seed);
-            let mut progress = self.settlements.progress.read(game_id);
+            let mut progress = self.settlements.data.progress.read(game_id);
             let (realm_id, traits) = self.resolve_season_realm(key, command.selected_realm, progress.realm_count, seed);
             self.realms.reserve(game_id, realm_id, progress.realm_count);
             let coord = if rules.epoch_seconds == 0 {
@@ -218,7 +218,7 @@ pub mod SettlementDomain {
         }
         fn register_village_pass(ref self: ContractState, key: VillagePassKey, owner: ContractAddress) {
             assert!(key.game_id != 0, "game id zero is reserved");
-            let operator = self.entry.operator.read();
+            let operator = self.entry.data.operator.read();
             assert!(operator.is_non_zero() && get_caller_address() == operator, "only ledger operator");
             self.villages.register(key, owner);
         }
@@ -245,7 +245,7 @@ pub mod SettlementDomain {
             let seed = crate::random::game_root(ref raw_root, game_id, game.seed);
             let village_rules = self.villages.rules(game_id);
             let resource = crate::village::select_resource(village_rules.resource_pool, seed, context.timestamp);
-            let progress = self.settlements.progress.read(game_id);
+            let progress = self.settlements.data.progress.read(game_id);
             let coord = ISettlementPoolDispatcher { contract_address: peers.map }
                 .claim_village(game_id, progress.registered, seed);
             let village_id = ISettlementCreationDispatcher { contract_address: peers.structures }
@@ -283,10 +283,10 @@ pub mod SettlementDomain {
             self.settlements.rules(game_id)
         }
         fn settlement_progress(self: @ContractState, game_id: u32) -> SettlementProgress {
-            self.settlements.progress.read(game_id)
+            self.settlements.data.progress.read(game_id)
         }
         fn player_has_settled(self: @ContractState, game_id: u32, player: ContractAddress) -> bool {
-            self.settlements.entered_players.read((game_id, player))
+            self.settlements.data.entered_players.read((game_id, player))
         }
         fn player_entry(self: @ContractState, key: EntryKey) -> Option<PlayerEntry> {
             self.settlements.entry(key)
@@ -302,13 +302,13 @@ pub mod SettlementDomain {
             if games.ownership_rules_ready(key.game_id) {
                 assert!(games.rules(key.game_id).entry_rule != crate::rules::ENTRY_ROSTER, "Blitz uses a fixed roster");
             }
-            let operator = self.entry.operator.read();
+            let operator = self.entry.data.operator.read();
             assert!(operator.is_non_zero() && get_caller_address() == operator, "only ledger operator");
             assert!(key.owner.is_non_zero(), "invalid entitlement owner");
             self.settlements.register_entitlement(key, entitlement);
         }
         fn entry_entitlement(self: @ContractState, key: EntryKey) -> Option<crate::settlement::EntryEntitlement> {
-            self.settlements.entitlements.read((key.game_id, key.owner))
+            self.settlements.data.entitlements.read((key.game_id, key.owner))
         }
     }
     #[abi(embed_v0)]
@@ -325,7 +325,7 @@ pub mod SettlementDomain {
             let roster = crate::registrar::IRegistrarDispatcherTrait::blitz_roster(
                 crate::registrar::IRegistrarDispatcher { contract_address: peers.registry }, game_id,
             );
-            let progress = self.settlements.progress.read(game_id);
+            let progress = self.settlements.data.progress.read(game_id);
             if progress.registered.into() == roster.len() {
                 return 0;
             }
@@ -387,6 +387,7 @@ pub mod SettlementDomain {
             }
             let entitlement = self
                 .settlements
+                .data
                 .entitlements
                 .read((key.game_id, key.owner))
                 .expect('missing entitlement');
@@ -404,7 +405,7 @@ pub mod SettlementDomain {
             let structures = ISettlementCreationDispatcher {
                 contract_address: self.lifecycle.require_active().structures,
             };
-            let mut progress = self.settlements.progress.read(game_id);
+            let mut progress = self.settlements.data.progress.read(game_id);
             let mut first_realm = 0;
             for coord in coords {
                 progress.realm_count += 1;

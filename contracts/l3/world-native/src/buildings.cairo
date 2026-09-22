@@ -169,7 +169,7 @@ pub trait IBuildingRules<T> {
 
 #[starknet::component]
 pub mod BuildingState {
-    use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
+    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
     use crate::events::{RowDeleted, RowSet};
     use crate::resources::ResourceAmount;
     use super::{
@@ -178,13 +178,10 @@ pub mod BuildingState {
     };
     #[storage]
     pub struct Storage {
-        pub buildings: Map<(u32, bool, u32, u32, u32, u32), Building>,
-        pub structure_buildings: Map<(u32, u32), StructureBuildings>,
-        pub configured: Map<u32, bool>,
-        pub board_terms: Map<u32, Option<super::BoardTerms>>,
-        pub board_neighbors: Map<(u32, u8), super::NeighborBonus>,
-        pub terms: Map<(u32, u8), BuildingTerms>,
-        pub costs: Map<(u32, u8, bool, u8), ResourceAmount>,
+        #[flat]
+        pub data: games_storage::buildings::BuildingStateStorage<
+            Building, StructureBuildings, super::BoardTerms, super::NeighborBonus, BuildingTerms, ResourceAmount,
+        >,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -200,13 +197,14 @@ pub mod BuildingState {
             rules: Span<BuildingRuleConfig>,
             board: Option<super::BoardRules>,
         ) {
-            assert!(!self.configured.read(game_id), "immutable building rules");
+            assert!(!self.data.configured.read(game_id), "immutable building rules");
             assert!(rules.len() == 40, "incomplete building rules");
             let mut expected = 1_u8;
             for config in rules {
                 assert!(*config.category == expected, "building rules must be ordered");
                 let rule = *config.rule;
                 self
+                    .data
                     .terms
                     .write(
                         (game_id, expected),
@@ -242,9 +240,10 @@ pub mod BuildingState {
                     assert!(
                         bonus.building > 0 && bonus.building <= 40 && bonus.neighbor <= 40, "invalid neighbor category",
                     );
-                    self.board_neighbors.write((game_id, index), bonus);
+                    self.data.board_neighbors.write((game_id, index), bonus);
                 }
                 self
+                    .data
                     .board_terms
                     .write(
                         game_id,
@@ -267,7 +266,7 @@ pub mod BuildingState {
                         },
                     );
             }
-            self.configured.write(game_id, true);
+            self.data.configured.write(game_id, true);
             self
                 .emit(
                     RowSet {
@@ -279,13 +278,13 @@ pub mod BuildingState {
                 );
         }
         fn board(self: @ComponentState<TContractState>, game_id: u32) -> Option<super::BoardRules> {
-            assert!(self.configured.read(game_id), "missing building rules");
-            let Some(terms) = self.board_terms.read(game_id) else {
+            assert!(self.data.configured.read(game_id), "missing building rules");
+            let Some(terms) = self.data.board_terms.read(game_id) else {
                 return None;
             };
             let mut neighbors = array![];
             for index in 0..terms.neighbor_count {
-                neighbors.append(self.board_neighbors.read((game_id, index)));
+                neighbors.append(self.data.board_neighbors.read((game_id, index)));
             }
             Some(
                 super::BoardRules {
@@ -298,9 +297,9 @@ pub mod BuildingState {
             )
         }
         fn rule(self: @ComponentState<TContractState>, key: BuildingRuleKey) -> BuildingRule {
-            assert!(self.configured.read(key.game_id), "missing building rules");
+            assert!(self.data.configured.read(key.game_id), "missing building rules");
             assert!(key.category > 0 && key.category <= 40, "invalid building category");
-            let terms = self.terms.read((key.game_id, key.category));
+            let terms = self.data.terms.read((key.game_id, key.category));
             BuildingRule {
                 population_cost: terms.population_cost,
                 capacity_grant: terms.capacity_grant,
@@ -318,7 +317,7 @@ pub mod BuildingState {
             for index in 0..costs.len() {
                 let cost = *costs.at(index);
                 assert!(cost.resource_type > 0 && cost.resource_type <= 58, "invalid building cost resource");
-                self.costs.write((game_id, category, complex, index.try_into().unwrap()), cost);
+                self.data.costs.write((game_id, category, complex, index.try_into().unwrap()), cost);
             }
         }
         fn read_costs(
@@ -326,13 +325,13 @@ pub mod BuildingState {
         ) -> Span<ResourceAmount> {
             let mut costs = array![];
             for index in 0..count {
-                costs.append(self.costs.read((key.game_id, key.category, complex, index)));
+                costs.append(self.data.costs.read((key.game_id, key.category, complex, index)));
             }
             costs.span()
         }
         fn building(self: @ComponentState<TContractState>, key: BuildingKey) -> Option<Building> {
             let storage_key = (key.game_id, key.alt, key.outer_col, key.outer_row, key.inner_col, key.inner_row);
-            let building = self.buildings.read(storage_key);
+            let building = self.data.buildings.read(storage_key);
             if building.category != 0 {
                 Some(building)
             } else {
@@ -348,7 +347,7 @@ pub mod BuildingState {
             base_population: u32,
         ) {
             assert!(self.building(key).is_none(), "building location occupied");
-            let mut counts = self.structure_buildings.read((key.game_id, building.outer_entity_id));
+            let mut counts = self.data.structure_buildings.read((key.game_id, building.outer_entity_id));
             change_count(ref counts, building.category, true);
             counts.population.current += population_cost.into();
             counts.population.max += capacity_grant.into();
@@ -365,7 +364,7 @@ pub mod BuildingState {
             rule: BuildingRule,
             base_population: u32,
         ) {
-            let mut counts = self.structure_buildings.read((key.game_id, building.outer_entity_id));
+            let mut counts = self.data.structure_buildings.read((key.game_id, building.outer_entity_id));
             change_count(ref counts, building.category, false);
             counts.population.current -= rule.population_cost.into();
             counts.population.max -= rule.capacity_grant.into();
@@ -374,6 +373,7 @@ pub mod BuildingState {
             );
             self.write_counts(key.game_id, building.outer_entity_id, counts);
             self
+                .data
                 .buildings
                 .write(
                     (key.game_id, key.alt, key.outer_col, key.outer_row, key.inner_col, key.inner_row),
@@ -385,6 +385,7 @@ pub mod BuildingState {
         }
         fn write_building(ref self: ComponentState<TContractState>, key: BuildingKey, building: Building) {
             self
+                .data
                 .buildings
                 .write((key.game_id, key.alt, key.outer_col, key.outer_row, key.inner_col, key.inner_row), building);
             let mut keys = array![];
@@ -396,7 +397,7 @@ pub mod BuildingState {
         fn write_counts(
             ref self: ComponentState<TContractState>, game_id: u32, entity_id: u32, counts: StructureBuildings,
         ) {
-            self.structure_buildings.write((game_id, entity_id), counts);
+            self.data.structure_buildings.write((game_id, entity_id), counts);
             let mut values = array![];
             counts.serialize(ref values);
             self

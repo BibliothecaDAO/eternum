@@ -45,7 +45,7 @@ pub trait IGuilds<T> {
 }
 #[starknet::component]
 pub mod GuildState {
-    use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
+    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
     use starknet::{ContractAddress, get_caller_address};
     use crate::commands::ExecutionContext;
     use crate::events::{RowDeleted, RowSet};
@@ -56,10 +56,8 @@ pub mod GuildState {
     use super::{CreateGuild, Guild, JoinGuild, SetWhitelist, WhitelistKey};
     #[storage]
     pub struct Storage {
-        pub guilds: Map<(u32, ContractAddress), Guild>,
-        pub members: Map<(u32, ContractAddress), ContractAddress>,
-        pub member_count: Map<(u32, ContractAddress), u16>,
-        pub whitelist: Map<(u32, ContractAddress, ContractAddress), bool>,
+        #[flat]
+        pub data: games_storage::guilds::GuildStateStorage<Guild>,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -77,10 +75,10 @@ pub mod GuildState {
         fn guild_member(
             self: @ComponentState<TContractState>, game_id: u32, actor: ContractAddress,
         ) -> ContractAddress {
-            self.members.read((game_id, actor))
+            self.data.members.read((game_id, actor))
         }
         fn guild(self: @ComponentState<TContractState>, game_id: u32, guild_id: ContractAddress) -> Option<Guild> {
-            let value = self.guilds.read((game_id, guild_id));
+            let value = self.data.guilds.read((game_id, guild_id));
             if value.name == 0 {
                 None
             } else {
@@ -88,7 +86,7 @@ pub mod GuildState {
             }
         }
         fn guild_whitelisted(self: @ComponentState<TContractState>, key: WhitelistKey) -> bool {
-            self.whitelist.read((key.game_id, key.guild_id, key.player))
+            self.data.whitelist.read((key.game_id, key.guild_id, key.player))
         }
         fn create_guild(
             ref self: ComponentState<TContractState>,
@@ -103,7 +101,7 @@ pub mod GuildState {
             assert!(self.guild(game_id, actor).is_none(), "guild already exists");
             self.detach_member(game_id, actor);
             let guild = Guild { public: command.public, name: command.name };
-            self.guilds.write((game_id, actor), guild);
+            self.data.guilds.write((game_id, actor), guild);
             let mut values = array![];
             guild.serialize(ref values);
             self
@@ -132,7 +130,7 @@ pub mod GuildState {
                     || self.guild_whitelisted(WhitelistKey { game_id, guild_id: command.guild_id, player: actor }),
                 "player is not whitelisted",
             );
-            if self.members.read((game_id, actor)) == command.guild_id {
+            if self.data.members.read((game_id, actor)) == command.guild_id {
                 return;
             }
             self.detach_member(game_id, actor);
@@ -142,7 +140,7 @@ pub mod GuildState {
             ref self: ComponentState<TContractState>, game_id: u32, actor: ContractAddress, context: ExecutionContext,
         ) {
             self.authorize(game_id, context.timestamp);
-            assert!(self.members.read((game_id, actor)) != 0.try_into().unwrap(), "not a guild member");
+            assert!(self.data.members.read((game_id, actor)) != 0.try_into().unwrap(), "not a guild member");
             self.detach_member(game_id, actor);
         }
         fn set_guild_whitelist(
@@ -155,7 +153,7 @@ pub mod GuildState {
             self.authorize(game_id, context.timestamp);
             self.guild(game_id, actor).expect('guild does not exist');
             self.require_structure(game_id, command.player, command.owned_structure_id);
-            self.whitelist.write((game_id, actor, command.player), command.allowed);
+            self.data.whitelist.write((game_id, actor, command.player), command.allowed);
             let keys = array![game_id.into(), actor.into(), command.player.into()].span();
             if command.allowed {
                 self.emit(RowSet { version: 1, model: 'GuildWhitelist', keys, values: array![1].span() });
@@ -171,7 +169,7 @@ pub mod GuildState {
             context: ExecutionContext,
         ) {
             self.authorize(game_id, context.timestamp);
-            assert!(self.members.read((game_id, member)) == actor, "not a member of this guild");
+            assert!(self.data.members.read((game_id, member)) == actor, "not a member of this guild");
             self.detach_member(game_id, member);
         }
     }
@@ -202,8 +200,8 @@ pub mod GuildState {
         fn attach_member(
             ref self: ComponentState<TContractState>, game_id: u32, player: ContractAddress, guild_id: ContractAddress,
         ) {
-            self.member_count.write((game_id, guild_id), self.member_count.read((game_id, guild_id)) + 1);
-            self.members.write((game_id, player), guild_id);
+            self.data.member_count.write((game_id, guild_id), self.data.member_count.read((game_id, guild_id)) + 1);
+            self.data.members.write((game_id, player), guild_id);
             self
                 .emit(
                     RowSet {
@@ -215,19 +213,19 @@ pub mod GuildState {
                 );
         }
         fn detach_member(ref self: ComponentState<TContractState>, game_id: u32, player: ContractAddress) {
-            let guild_id = self.members.read((game_id, player));
+            let guild_id = self.data.members.read((game_id, player));
             if guild_id == 0.try_into().unwrap() {
                 return;
             }
-            self.members.write((game_id, player), 0.try_into().unwrap());
+            self.data.members.write((game_id, player), 0.try_into().unwrap());
             self
                 .emit(
                     RowDeleted { version: 1, model: 'GuildMember', keys: array![game_id.into(), player.into()].span() },
                 );
-            let remaining = self.member_count.read((game_id, guild_id)) - 1;
-            self.member_count.write((game_id, guild_id), remaining);
+            let remaining = self.data.member_count.read((game_id, guild_id)) - 1;
+            self.data.member_count.write((game_id, guild_id), remaining);
             if remaining == 0 {
-                self.guilds.write((game_id, guild_id), Guild { name: 0, public: false });
+                self.data.guilds.write((game_id, guild_id), Guild { name: 0, public: false });
                 self
                     .emit(
                         RowDeleted { version: 1, model: 'Guild', keys: array![game_id.into(), guild_id.into()].span() },

@@ -17,6 +17,7 @@ mod resource_commands;
 mod resources;
 mod rule_storage;
 mod settlement;
+mod shared_storage;
 mod spires;
 mod structure_storage;
 mod trade;

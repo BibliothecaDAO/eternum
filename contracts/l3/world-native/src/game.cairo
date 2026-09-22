@@ -113,15 +113,13 @@ fn assert_grace_end(game: GameRegistry, now: u64) {
 
 #[starknet::component]
 pub mod GameState {
-    use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
+    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
     use crate::events::RowSet;
     use super::{GameRegistry, SliceRules};
     #[storage]
     pub struct Storage {
-        pub games: Map<u32, GameRegistry>,
-        pub rules: Map<u32, SliceRules>,
-        pub next_entity: Map<u32, u32>,
-        pub ownership_rules_ready: Map<u32, bool>,
+        #[flat]
+        pub data: games_storage::game::GameStateStorage<GameRegistry, SliceRules>,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -131,16 +129,16 @@ pub mod GameState {
     #[generate_trait]
     pub impl InternalImpl<TContractState, +HasComponent<TContractState>> of InternalTrait<TContractState> {
         fn game(self: @ComponentState<TContractState>, game_id: u32) -> GameRegistry {
-            assert!(self.ownership_rules_ready.read(game_id), "game does not exist");
-            self.games.read(game_id)
+            assert!(self.data.ownership_rules_ready.read(game_id), "game does not exist");
+            self.data.games.read(game_id)
         }
         #[inline(never)]
         fn rules(self: @ComponentState<TContractState>, game_id: u32) -> SliceRules {
             let _ = self.game(game_id);
-            self.rules.read(game_id)
+            self.data.rules.read(game_id)
         }
         fn create(ref self: ComponentState<TContractState>, game_id: u32, game: GameRegistry, rules: SliceRules) {
-            assert!(game_id != 0 && !self.ownership_rules_ready.read(game_id), "game already exists or reserved");
+            assert!(game_id != 0 && !self.data.ownership_rules_ready.read(game_id), "game already exists or reserved");
             assert!(game.creator != 0.try_into().unwrap() && game.preset_id != 0, "invalid game identity");
             assert!(
                 game.start_main_at >= game.start_settling_at && game.end_at > game.start_main_at, "invalid game times",
@@ -151,8 +149,8 @@ pub mod GameState {
                 assert!(rules.bitcoin_mine_config.prize_per_phase != 0, "zero Bitcoin prize");
             }
             assert!(rules.bitcoin_mine_config.owner_cut_bps <= 10000, "invalid Bitcoin owner cut");
-            self.rules.write(game_id, rules);
-            self.ownership_rules_ready.write(game_id, true);
+            self.data.rules.write(game_id, rules);
+            self.data.ownership_rules_ready.write(game_id, true);
             self
                 .emit(
                     RowSet {
@@ -162,7 +160,7 @@ pub mod GameState {
                         values: array![1].span(),
                     },
                 );
-            self.next_entity.write(game_id, 1);
+            self.data.next_entity.write(game_id, 1);
             self.write_game(game_id, game);
             let mut values = array![];
             rules.serialize(ref values);
@@ -175,7 +173,7 @@ pub mod GameState {
             self.emit_counter(game_id, 1);
         }
         fn write_game(ref self: ComponentState<TContractState>, game_id: u32, game: GameRegistry) {
-            self.games.write(game_id, game);
+            self.data.games.write(game_id, game);
             let mut values = array![];
             game.serialize(ref values);
             self
@@ -187,8 +185,8 @@ pub mod GameState {
         }
         fn allocate(ref self: ComponentState<TContractState>, game_id: u32) -> u32 {
             let _ = self.game(game_id);
-            let id = self.next_entity.read(game_id);
-            self.next_entity.write(game_id, id + 1);
+            let id = self.data.next_entity.read(game_id);
+            self.data.next_entity.write(game_id, id + 1);
             self.emit_counter(game_id, id + 1);
             id
         }

@@ -62,7 +62,7 @@ pub mod ResourcesDomain {
             self.arrivals.read(key)
         }
         fn has_resource(self: @ContractState, key: ResourceKey) -> bool {
-            self.resources.resource_exists.read((key.game_id, key.entity_id))
+            self.resources.data.resource_exists.read((key.game_id, key.entity_id))
         }
         fn resource_balance(self: @ContractState, key: ResourceSlot) -> u128 {
             self.resources.balance(ResourceKey { game_id: key.game_id, entity_id: key.entity_id }, key.resource_type)
@@ -73,7 +73,7 @@ pub mod ResourcesDomain {
         fn production_receiver(
             self: @ContractState, key: ResourceSlot,
         ) -> Option<crate::resources::ProductionReceiver> {
-            self.resources.production_receivers.read((key.game_id, key.entity_id, key.resource_type))
+            self.resources.data.production_receivers.read((key.game_id, key.entity_id, key.resource_type))
         }
         fn redirect_production(
             ref self: ContractState,
@@ -103,13 +103,14 @@ pub mod ResourcesDomain {
         fn configure_resources(ref self: ContractState, game_id: u32, rules: Span<ResourceRule>) {
             self.lifecycle.assert_configurator();
             let _ = self.game_dispatcher().game(game_id);
-            assert!(!self.resources.resources_configured.read(game_id), "resource rules already configured");
+            assert!(!self.resources.data.resources_configured.read(game_id), "resource rules already configured");
             assert!(rules.len() == 58, "incomplete resource rules");
             for index in 0_u32..58 {
                 let rule = *rules.at(index);
                 assert!(rule.resource_type.into() == index + 1, "resource rules must be ordered");
                 self
                     .resources
+                    .data
                     .resource_rules
                     .write(
                         (game_id, rule.resource_type),
@@ -131,7 +132,7 @@ pub mod ResourcesDomain {
                         },
                     );
             }
-            self.resources.resources_configured.write(game_id, true);
+            self.resources.data.resources_configured.write(game_id, true);
             self
                 .emit(
                     RowSet {
@@ -327,7 +328,7 @@ pub mod ResourcesDomain {
             crate::relics::boost_production(
                 ref bonus, relic_id, rule, (timestamp / rules.tick_config.armies_tick_in_seconds).try_into().unwrap(),
             );
-            self.production.bonuses.write((key.game_id, key.entity_id), bonus);
+            self.production.data.bonuses.write((key.game_id, key.entity_id), bonus);
             let mut values = array![];
             bonus.serialize(ref values);
             self

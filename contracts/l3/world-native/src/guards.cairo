@@ -40,13 +40,14 @@ pub trait IGuards<T> {
 
 #[starknet::component]
 pub mod GuardState {
-    use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
+    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
     use crate::events::{RowDeleted, RowSet};
     use crate::resources::ResourceKey;
     use super::{Guard, GuardKey};
     #[storage]
     pub struct Storage {
-        pub guards: Map<(u32, u32, u8), Guard>,
+        #[flat]
+        pub data: games_storage::guards::GuardStateStorage<Guard>,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -58,13 +59,13 @@ pub mod GuardState {
     pub impl InternalImpl<TContractState, +HasComponent<TContractState>> of InternalTrait<TContractState> {
         fn guard(self: @ComponentState<TContractState>, key: GuardKey) -> Guard {
             assert!(key.slot < 4, "invalid guard slot");
-            self.guards.read((key.game_id, key.structure_id, key.slot))
+            self.data.guards.read((key.game_id, key.structure_id, key.slot))
         }
         fn save(ref self: ComponentState<TContractState>, key: GuardKey, guard: Guard) {
             if self.guard(key) == guard {
                 return;
             }
-            self.guards.write((key.game_id, key.structure_id, key.slot), guard);
+            self.data.guards.write((key.game_id, key.structure_id, key.slot), guard);
             let mut keys = array![];
             key.serialize(ref keys);
             let mut values = array![];

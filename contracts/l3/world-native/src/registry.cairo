@@ -48,7 +48,7 @@ pub mod RegistryDomain {
         }
 
         fn ownership_rules_ready(self: @ContractState, game_id: u32) -> bool {
-            self.games.ownership_rules_ready.read(game_id)
+            self.games.data.ownership_rules_ready.read(game_id)
         }
 
         fn game(self: @ContractState, game_id: u32) -> GameRegistry {

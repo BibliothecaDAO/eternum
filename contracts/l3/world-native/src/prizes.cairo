@@ -51,13 +51,13 @@ pub mod PrizesDomain {
     #[abi(embed_v0)]
     impl FaithViews of crate::faith::IFaithOwnershipViews<ContractState> {
         fn wonder_faith(self: @ContractState, key: ResourceKey) -> WonderFaith {
-            self.faith.faith_wonders.read((key.game_id, key.entity_id))
+            self.faith.data.faith_wonders.read((key.game_id, key.entity_id))
         }
         fn faithful_structure(self: @ContractState, key: ResourceKey) -> FaithfulStructure {
-            self.faith.faith_pledges.read((key.game_id, key.entity_id))
+            self.faith.data.faith_pledges.read((key.game_id, key.entity_id))
         }
         fn player_faith_points(self: @ContractState, key: PlayerFaithKey) -> PlayerFaithPoints {
-            self.faith.faith_players.read((key.game_id, key.player, key.wonder_id))
+            self.faith.data.faith_players.read((key.game_id, key.player, key.wonder_id))
         }
         fn wonder_faith_winners(self: @ContractState, game_id: u32) -> WonderFaithWinners {
             self.faith.winners(game_id)

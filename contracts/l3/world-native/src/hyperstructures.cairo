@@ -99,7 +99,7 @@ pub fn required_amount(seed: felt252, cost: ConstructionResource) -> u128 {
 
 #[starknet::component]
 pub mod HyperstructureState {
-    use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
+    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
     use starknet::{ContractAddress, get_caller_address};
     use crate::events::{RowMemberSet, RowSet};
     use crate::game::{IGameDispatcher, IGameDispatcherTrait, IPointsDispatcher, IPointsDispatcherTrait, assert_playing};
@@ -118,21 +118,10 @@ pub mod HyperstructureState {
 
     #[storage]
     pub struct Storage {
-        pub hyper_states: Map<(u32, u32), Hyperstructure>,
-        pub hyper_ids: Map<(u32, u32), u32>,
-        pub hyper_counts: Map<u32, u32>,
-        pub hyper_exists: Map<(u32, u32), bool>,
-        pub hyper_progress: Map<(u32, u32, u8), u128>,
-        // Length plus one distinguishes an empty Blitz recipe from missing configuration.
-        pub hyper_rule_count: Map<u32, u32>,
-        pub hyper_shards: Map<u32, u128>,
-        pub hyper_costs: Map<(u32, u32), ConstructionResource>,
-        pub hyper_share_count: Map<(u32, u32), u32>,
-        pub hyper_share_start: Map<(u32, u32), u64>,
-        pub hyper_multiplier: Map<(u32, u32), u8>,
-        pub hyper_shares: Map<(u32, u32, u32), Share>,
-        pub final_checkpoint_cursor: Map<u32, u32>,
-        pub close_attempt: Map<u32, Option<(u64, u32, u32)>>,
+        #[flat]
+        pub data: games_storage::hyperstructures::HyperstructureStateStorage<
+            Hyperstructure, ConstructionResource, Share,
+        >,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -154,7 +143,7 @@ pub mod HyperstructureState {
         ) {
             get_dep_component!(@self, Life).assert_configurator();
             self.games().game(game_id);
-            assert!(self.hyper_rule_count.read(game_id) == 0, "hyperstructure rules already configured");
+            assert!(self.data.hyper_rule_count.read(game_id) == 0, "hyperstructure rules already configured");
             assert!(
                 !rules.resources.is_empty()
                     || !crate::rules::rule_enabled(self.games().rules(game_id), crate::rules::DISCOVER_HYPERSTRUCTURES),
@@ -173,10 +162,10 @@ pub mod HyperstructureState {
                         "duplicate construction resource",
                     );
                 }
-                self.hyper_costs.write((game_id, index), cost);
+                self.data.hyper_costs.write((game_id, index), cost);
             }
-            self.hyper_rule_count.write(game_id, rules.resources.len() + 1);
-            self.hyper_shards.write(game_id, rules.initialize_shards);
+            self.data.hyper_rule_count.write(game_id, rules.resources.len() + 1);
+            self.data.hyper_shards.write(game_id, rules.initialize_shards);
             let mut values = array![];
             rules.serialize(ref values);
             self
@@ -193,14 +182,14 @@ pub mod HyperstructureState {
             self.rules(game_id)
         }
         fn hyperstructure(self: @ComponentState<TContractState>, key: ResourceKey) -> Option<Hyperstructure> {
-            if self.hyper_exists.read((key.game_id, key.entity_id)) {
+            if self.data.hyper_exists.read((key.game_id, key.entity_id)) {
                 Some(self.state(key))
             } else {
                 None
             }
         }
         fn hyperstructure_progress(self: @ComponentState<TContractState>, key: ResourceSlot) -> u128 {
-            self.hyper_progress.read((key.game_id, key.entity_id, key.resource_type))
+            self.data.hyper_progress.read((key.game_id, key.entity_id, key.resource_type))
         }
         fn hyperstructure_requirement(self: @ComponentState<TContractState>, key: ResourceSlot) -> u128 {
             let state = self.state(ResourceKey { game_id: key.game_id, entity_id: key.entity_id });
@@ -210,12 +199,16 @@ pub mod HyperstructureState {
             self.shares(key)
         }
         fn hyperstructure_count(self: @ComponentState<TContractState>, game_id: u32) -> u32 {
-            self.hyper_counts.read(game_id)
+            self.data.hyper_counts.read(game_id)
         }
         fn completed_hyperstructure_count(self: @ComponentState<TContractState>, game_id: u32) -> u32 {
             let mut count = 0;
-            for index in 0..self.hyper_counts.read(game_id) {
-                if self.hyper_states.read((game_id, self.hyper_ids.read((game_id, index)))).stage == Stage::Complete {
+            for index in 0..self.data.hyper_counts.read(game_id) {
+                if self
+                    .data
+                    .hyper_states
+                    .read((game_id, self.data.hyper_ids.read((game_id, index))))
+                    .stage == Stage::Complete {
                     count += 1;
                 }
             }
@@ -225,11 +218,11 @@ pub mod HyperstructureState {
             ref self: ComponentState<TContractState>, key: ResourceKey, seed: felt252, completed: bool,
         ) {
             assert!(get_caller_address() == self.peers().structures, "only structures domain");
-            assert!(!self.hyper_exists.read((key.game_id, key.entity_id)), "hyperstructure already exists");
-            self.hyper_exists.write((key.game_id, key.entity_id), true);
-            let count = self.hyper_counts.read(key.game_id);
-            self.hyper_ids.write((key.game_id, count), key.entity_id);
-            self.hyper_counts.write(key.game_id, count + 1);
+            assert!(!self.data.hyper_exists.read((key.game_id, key.entity_id)), "hyperstructure already exists");
+            self.data.hyper_exists.write((key.game_id, key.entity_id), true);
+            let count = self.data.hyper_counts.read(key.game_id);
+            self.data.hyper_ids.write((key.game_id, count), key.entity_id);
+            self.data.hyper_counts.write(key.game_id, count + 1);
             self
                 .write_state(
                     key,
@@ -351,11 +344,12 @@ pub mod HyperstructureState {
             crate::commands::assert_context_time(timestamp);
             self.games().game(game_id);
             let (cutoff, start, count) = self
+                .data
                 .close_attempt
                 .read(game_id)
-                .unwrap_or((timestamp, 0, self.hyper_counts.read(game_id)));
+                .unwrap_or((timestamp, 0, self.data.hyper_counts.read(game_id)));
             let end = self.checkpoint_batch(game_id, cutoff, start, count);
-            self.close_attempt.write(game_id, if end == count {
+            self.data.close_attempt.write(game_id, if end == count {
                 None
             } else {
                 Some((cutoff, end, count))
@@ -367,10 +361,10 @@ pub mod HyperstructureState {
             crate::commands::assert_context_time(timestamp);
             let game = self.games().game(game_id);
             assert!(game.end_at != 0 && timestamp >= game.end_at, "game not ended");
-            let count = self.hyper_counts.read(game_id);
-            let start = self.final_checkpoint_cursor.read(game_id);
+            let count = self.data.hyper_counts.read(game_id);
+            let start = self.data.final_checkpoint_cursor.read(game_id);
             let end = self.checkpoint_batch(game_id, game.end_at, start, count);
-            self.final_checkpoint_cursor.write(game_id, end);
+            self.data.final_checkpoint_cursor.write(game_id, end);
             count - end
         }
     }
@@ -386,8 +380,8 @@ pub mod HyperstructureState {
         ) -> u32 {
             let end = start + core::cmp::min(8, count - start);
             for index in start..end {
-                let id = self.hyper_ids.read((game_id, index));
-                if self.hyper_states.read((game_id, id)).stage == Stage::Complete {
+                let id = self.data.hyper_ids.read((game_id, index));
+                if self.data.hyper_states.read((game_id, id)).stage == Stage::Complete {
                     self.checkpoint(ResourceKey { game_id, entity_id: id }, cutoff);
                 }
             }
@@ -403,13 +397,13 @@ pub mod HyperstructureState {
             IGameDispatcher { contract_address: self.peers().registry }
         }
         fn rules(self: @ComponentState<TContractState>, game_id: u32) -> HyperstructureRules {
-            let count = self.hyper_rule_count.read(game_id);
+            let count = self.data.hyper_rule_count.read(game_id);
             assert!(count != 0, "hyperstructure rules missing");
             let mut resources = array![];
             for index in 0..count - 1 {
-                resources.append(self.hyper_costs.read((game_id, index)));
+                resources.append(self.data.hyper_costs.read((game_id, index)));
             }
-            HyperstructureRules { initialize_shards: self.hyper_shards.read(game_id), resources: resources.span() }
+            HyperstructureRules { initialize_shards: self.data.hyper_shards.read(game_id), resources: resources.span() }
         }
         fn cost(self: @ComponentState<TContractState>, game_id: u32, resource_type: u8) -> ConstructionResource {
             for cost in self.rules(game_id).resources {
@@ -420,8 +414,8 @@ pub mod HyperstructureState {
             panic!("resource is not a construction requirement")
         }
         fn state(self: @ComponentState<TContractState>, key: ResourceKey) -> Hyperstructure {
-            assert!(self.hyper_exists.read((key.game_id, key.entity_id)), "hyperstructure does not exist");
-            self.hyper_states.read((key.game_id, key.entity_id))
+            assert!(self.data.hyper_exists.read((key.game_id, key.entity_id)), "hyperstructure does not exist");
+            self.data.hyper_states.read((key.game_id, key.entity_id))
         }
         fn structure(self: @ComponentState<TContractState>, key: ResourceKey) -> Structure {
             IStructuresDispatcher { contract_address: self.peers().structures }
@@ -451,7 +445,7 @@ pub mod HyperstructureState {
             }
         }
         fn write_state(ref self: ComponentState<TContractState>, key: ResourceKey, state: Hyperstructure) {
-            self.hyper_states.write((key.game_id, key.entity_id), state);
+            self.data.hyper_states.write((key.game_id, key.entity_id), state);
             let mut values = array![];
             state.serialize(ref values);
             self
@@ -475,13 +469,13 @@ pub mod HyperstructureState {
             assert!(amount != 0, "contribution must be positive");
             let cost = self.cost(slot.game_id, slot.resource_type);
             let needed = super::required_amount(seed, cost);
-            let current = self.hyper_progress.read((slot.game_id, slot.entity_id, slot.resource_type));
+            let current = self.data.hyper_progress.read((slot.game_id, slot.entity_id, slot.resource_type));
             assert!(current < needed, "resource contribution complete");
             let amount = core::cmp::min(amount, needed - current);
             assert!(amount % crate::rules::RESOURCE_PRECISION == 0, "fractional contribution");
             IResourcesDispatcher { contract_address: self.peers().resources }
                 .spend_resource(from, slot.resource_type, amount, timestamp);
-            self.hyper_progress.write((slot.game_id, slot.entity_id, slot.resource_type), current + amount);
+            self.data.hyper_progress.write((slot.game_id, slot.entity_id, slot.resource_type), current + amount);
             self
                 .emit(
                     RowSet {
@@ -498,6 +492,7 @@ pub mod HyperstructureState {
         fn is_complete(self: @ComponentState<TContractState>, key: ResourceKey, seed: felt252) -> bool {
             for cost in self.rules(key.game_id).resources {
                 if self
+                    .data
                     .hyper_progress
                     .read((key.game_id, key.entity_id, *cost.resource_type)) != super::required_amount(seed, *cost) {
                     return false;
@@ -508,21 +503,21 @@ pub mod HyperstructureState {
         fn shares(self: @ComponentState<TContractState>, key: ResourceKey) -> ShareAllocation {
             self.state(key);
             let mut shareholders = array![];
-            for index in 0..self.hyper_share_count.read((key.game_id, key.entity_id)) {
-                shareholders.append(self.hyper_shares.read((key.game_id, key.entity_id, index)));
+            for index in 0..self.data.hyper_share_count.read((key.game_id, key.entity_id)) {
+                shareholders.append(self.data.hyper_shares.read((key.game_id, key.entity_id, index)));
             }
             ShareAllocation {
-                start_at: self.hyper_share_start.read((key.game_id, key.entity_id)),
-                multiplier: self.hyper_multiplier.read((key.game_id, key.entity_id)),
+                start_at: self.data.hyper_share_start.read((key.game_id, key.entity_id)),
+                multiplier: self.data.hyper_multiplier.read((key.game_id, key.entity_id)),
                 shareholders: shareholders.span(),
             }
         }
         fn write_shares(ref self: ComponentState<TContractState>, key: ResourceKey, shares: ShareAllocation) {
-            self.hyper_share_count.write((key.game_id, key.entity_id), shares.shareholders.len());
-            self.hyper_share_start.write((key.game_id, key.entity_id), shares.start_at);
-            self.hyper_multiplier.write((key.game_id, key.entity_id), shares.multiplier);
+            self.data.hyper_share_count.write((key.game_id, key.entity_id), shares.shareholders.len());
+            self.data.hyper_share_start.write((key.game_id, key.entity_id), shares.start_at);
+            self.data.hyper_multiplier.write((key.game_id, key.entity_id), shares.multiplier);
             for index in 0..shares.shareholders.len() {
-                self.hyper_shares.write((key.game_id, key.entity_id, index), *shares.shareholders.at(index));
+                self.data.hyper_shares.write((key.game_id, key.entity_id, index), *shares.shareholders.at(index));
             }
             let mut values = array![];
             shares.serialize(ref values);
@@ -558,7 +553,7 @@ pub mod HyperstructureState {
                 let points: u128 = points.try_into().unwrap();
                 self.register_share_points(key, *share.player, points, timestamp);
             }
-            self.hyper_share_start.write((key.game_id, key.entity_id), cutoff);
+            self.data.hyper_share_start.write((key.game_id, key.entity_id), cutoff);
             self
                 .emit(
                     RowMemberSet {

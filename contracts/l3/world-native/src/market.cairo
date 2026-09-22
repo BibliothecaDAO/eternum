@@ -175,16 +175,13 @@ pub fn resource_price(market: Market) -> u128 {
 
 #[starknet::component]
 pub mod MarketState {
-    use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
+    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
     use crate::events::{RowDeleted, RowSet};
     use super::{BankRules, LiquidityKey, Market, MarketKey};
     #[storage]
     pub struct Storage {
-        pub markets: Map<(u32, u8), Market>,
-        pub liquidity: Map<(u32, starknet::ContractAddress, u8), u128>,
-        pub bank_names: Map<(u32, u32), felt252>,
-        pub bank_rules: Map<u32, BankRules>,
-        pub bank_rules_configured: Map<u32, bool>,
+        #[flat]
+        pub data: games_storage::market::MarketStateStorage<Market, BankRules>,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -195,15 +192,15 @@ pub mod MarketState {
     #[generate_trait]
     pub impl InternalImpl<TContractState, +HasComponent<TContractState>> of InternalTrait<TContractState> {
         fn configure(ref self: ComponentState<TContractState>, game_id: u32, rules: BankRules) {
-            assert!(!self.bank_rules_configured.read(game_id), "bank rules already configured");
+            assert!(!self.data.bank_rules_configured.read(game_id), "bank rules already configured");
             assert!(
                 rules.lp_fee_num < rules.lp_fee_denom
                     && rules.owner_fee_num <= rules.owner_fee_denom
                     && rules.owner_fee_denom != 0,
                 "invalid bank fee ratio",
             );
-            self.bank_rules_configured.write(game_id, true);
-            self.bank_rules.write(game_id, rules);
+            self.data.bank_rules_configured.write(game_id, true);
+            self.data.bank_rules.write(game_id, rules);
             let mut values = array![];
             rules.serialize(ref values);
             self
@@ -214,14 +211,14 @@ pub mod MarketState {
                 );
         }
         fn rules(self: @ComponentState<TContractState>, game_id: u32) -> BankRules {
-            assert!(self.bank_rules_configured.read(game_id), "missing bank rules");
-            self.bank_rules.read(game_id)
+            assert!(self.data.bank_rules_configured.read(game_id), "missing bank rules");
+            self.data.bank_rules.read(game_id)
         }
         fn market(self: @ComponentState<TContractState>, key: MarketKey) -> Market {
-            self.markets.read((key.game_id, key.resource_type))
+            self.data.markets.read((key.game_id, key.resource_type))
         }
         fn write_market(ref self: ComponentState<TContractState>, key: MarketKey, market: Market) {
-            self.markets.write((key.game_id, key.resource_type), market);
+            self.data.markets.write((key.game_id, key.resource_type), market);
             let mut values = array![];
             market.serialize(ref values);
             self
@@ -235,10 +232,10 @@ pub mod MarketState {
                 );
         }
         fn shares(self: @ComponentState<TContractState>, key: LiquidityKey) -> u128 {
-            self.liquidity.read((key.game_id, key.owner, key.resource_type))
+            self.data.liquidity.read((key.game_id, key.owner, key.resource_type))
         }
         fn write_shares(ref self: ComponentState<TContractState>, key: LiquidityKey, shares: u128) {
-            self.liquidity.write((key.game_id, key.owner, key.resource_type), shares);
+            self.data.liquidity.write((key.game_id, key.owner, key.resource_type), shares);
             let mut keys = array![];
             key.serialize(ref keys);
             if shares == 0 {
@@ -253,7 +250,7 @@ pub mod MarketState {
             }
         }
         fn name_bank(ref self: ComponentState<TContractState>, key: crate::resources::ResourceKey, name: felt252) {
-            self.bank_names.write((key.game_id, key.entity_id), name);
+            self.data.bank_names.write((key.game_id, key.entity_id), name);
             self
                 .emit(
                     RowSet {

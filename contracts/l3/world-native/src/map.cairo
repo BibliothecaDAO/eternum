@@ -25,7 +25,7 @@ pub struct TileOpt {
 
 #[starknet::component]
 pub mod MapState {
-    use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
+    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
     use crate::events::{RowMemberSet, RowSet};
     use super::{
         BIOME_SCALE, BYTE_RANGE, ENTITY_RANGE, OCCUPIER_SCALE, RESERVED_HYPERSTRUCTURE, TileKey, TileOpt,
@@ -34,8 +34,8 @@ pub mod MapState {
 
     #[storage]
     pub struct Storage {
-        pub tiles: Map<(u32, bool, u32, u32), u128>,
-        pub exists: Map<(u32, bool, u32, u32), bool>,
+        #[flat]
+        pub data: games_storage::map::MapStateStorage,
     }
 
     #[event]
@@ -49,8 +49,8 @@ pub mod MapState {
     pub impl InternalImpl<TContractState, +HasComponent<TContractState>> of InternalTrait<TContractState> {
         fn tile(self: @ComponentState<TContractState>, key: TileKey) -> Option<TileOpt> {
             let storage_key = (key.game_id, key.alt, key.col, key.row);
-            if self.exists.read(storage_key) {
-                Some(TileOpt { data: self.tiles.read(storage_key) })
+            if self.data.exists.read(storage_key) {
+                Some(TileOpt { data: self.data.tiles.read(storage_key) })
             } else {
                 None
             }
@@ -64,9 +64,9 @@ pub mod MapState {
             let previous = tile.map(|tile| tile.data).unwrap_or(coordinate_bits(key));
             assert!((previous / BIOME_SCALE) % BYTE_RANGE == 0, "tile already revealed");
             let data = previous + biome.into() * BIOME_SCALE;
-            self.tiles.write(storage_key, data);
+            self.data.tiles.write(storage_key, data);
             if tile.is_none() {
-                self.exists.write(storage_key, true);
+                self.data.exists.write(storage_key, true);
             }
             let mut keys = array![];
             key.serialize(ref keys);
@@ -129,10 +129,10 @@ pub mod MapState {
 
         fn write_occupancy(ref self: ComponentState<TContractState>, key: TileKey, data: u128) {
             let storage_key = (key.game_id, key.alt, key.col, key.row);
-            let existed = self.exists.read(storage_key);
-            self.tiles.write(storage_key, data);
+            let existed = self.data.exists.read(storage_key);
+            self.data.tiles.write(storage_key, data);
             if !existed {
-                self.exists.write(storage_key, true);
+                self.data.exists.write(storage_key, true);
             }
             let mut keys = array![];
             key.serialize(ref keys);
@@ -194,10 +194,10 @@ pub mod MapDomain {
 
     #[storage]
     struct Storage {
-        spire_layouts: starknet::storage::Map<u32, Option<crate::spires::SpireLayout>>,
-        exploration_rewards: starknet::storage::Map<(u32, u32), crate::exploration_rewards::ExplorationReward>,
-        exploration_reward_count: starknet::storage::Map<u32, u32>,
-        last_relic_discovery: starknet::storage::Map<u32, u64>,
+        #[flat]
+        pub data: games_storage::map::MapDomainStorage<
+            crate::spires::SpireLayout, crate::exploration_rewards::ExplorationReward,
+        >,
         #[substorage(v0)]
         lifecycle: Lifecycle::Storage,
         #[substorage(v0)]
@@ -225,13 +225,13 @@ pub mod MapDomain {
             let peers = self.lifecycle.require_active();
             let games = IGameDispatcher { contract_address: peers.registry };
             assert!(crate::rules::rule_enabled(games.rules(game_id), crate::rules::SPIRES), "spires are disabled");
-            assert!(self.spire_layouts.read(game_id).is_none(), "spires already initialized");
+            assert!(self.data.spire_layouts.read(game_id).is_none(), "spires already initialized");
             crate::spires::validate(layout);
             let center = self.map_center(game_id);
             for ordinal in 0_u32..layout.count.into() {
                 self.create_spire(game_id, crate::spires::location(center, layout, ordinal));
             }
-            self.spire_layouts.write(game_id, Some(layout));
+            self.data.spire_layouts.write(game_id, Some(layout));
             let mut values = array![];
             layout.serialize(ref values);
             self
@@ -242,7 +242,7 @@ pub mod MapDomain {
                 );
         }
         fn spire_layout(self: @ContractState, game_id: u32) -> Option<crate::spires::SpireLayout> {
-            self.spire_layouts.read(game_id)
+            self.data.spire_layouts.read(game_id)
         }
     }
     #[abi(embed_v0)]
@@ -272,7 +272,7 @@ pub mod MapDomain {
     #[abi(embed_v0)]
     impl Settlements of crate::settlement::ISettlementPool<ContractState> {
         fn reserved_hyperstructures(self: @ContractState, game_id: u32) -> u32 {
-            self.settlements.reserved_hyperstructures.read(game_id)
+            self.settlements.data.reserved_hyperstructures.read(game_id)
         }
         fn settlement_pool(self: @ContractState, game_id: u32) -> SettlementPool {
             let settlement = self.lifecycle.require_active().settlement;
@@ -296,7 +296,7 @@ pub mod MapDomain {
     impl Reservations of crate::settlement::IBlitzReservations<ContractState> {
         fn initialize_reservations(ref self: ContractState, game_id: u32) {
             assert!(get_caller_address() == self.lifecycle.require_active().registry, "only registrar domain");
-            if self.settlements.reserved_hyperstructures.read(game_id) != 0 {
+            if self.settlements.data.reserved_hyperstructures.read(game_id) != 0 {
                 return;
             }
             let rules = ISettlementViewsDispatcher { contract_address: self.lifecycle.require_active().settlement }
@@ -403,7 +403,7 @@ pub mod MapDomain {
         ) {
             self.lifecycle.assert_configurator();
             IGameDispatcher { contract_address: self.lifecycle.require_active().registry }.game(game_id);
-            assert!(self.exploration_reward_count.read(game_id) == 0, "immutable extraction rewards");
+            assert!(self.data.exploration_reward_count.read(game_id) == 0, "immutable extraction rewards");
             assert!(!rewards.is_empty(), "empty exploration pool");
             let mut total: u128 = 0;
             for index in 0..rewards.len() {
@@ -411,10 +411,10 @@ pub mod MapDomain {
                 assert!(reward.resource_type > 0 && reward.resource_type <= 58, "invalid reward resource");
                 assert!(reward.amount <= reward.amount_max, "invalid exploration reward range");
                 total += reward.weight;
-                self.exploration_rewards.write((game_id, index), reward);
+                self.data.exploration_rewards.write((game_id, index), reward);
             }
             assert!(total != 0, "empty exploration pool");
-            self.exploration_reward_count.write(game_id, rewards.len());
+            self.data.exploration_reward_count.write(game_id, rewards.len());
             let mut values = array![];
             rewards.serialize(ref values);
             self
@@ -430,11 +430,11 @@ pub mod MapDomain {
         fn extraction_rewards(
             self: @ContractState, game_id: u32,
         ) -> Span<crate::exploration_rewards::ExplorationReward> {
-            let count = self.exploration_reward_count.read(game_id);
+            let count = self.data.exploration_reward_count.read(game_id);
             assert!(count != 0, "missing extraction rewards");
             let mut rewards = array![];
             for index in 0..count {
-                rewards.append(self.exploration_rewards.read((game_id, index)));
+                rewards.append(self.data.exploration_rewards.read((game_id, index)));
             }
             rewards.span()
         }
@@ -532,7 +532,7 @@ pub mod MapDomain {
     #[abi(embed_v0)]
     impl RelicMap of crate::relics::IRelicMap<ContractState> {
         fn relic_discovery_time(self: @ContractState, game_id: u32) -> u64 {
-            self.last_relic_discovery.read(game_id)
+            self.data.last_relic_discovery.read(game_id)
         }
         fn discover_relic_chest(
             ref self: ContractState, game_id: u32, coord: Coord, excluded: Coord, seed: u256, timestamp: u64,
@@ -552,7 +552,7 @@ pub mod MapDomain {
                     .is_some() {
                 return;
             }
-            if self.last_relic_discovery.read(game_id)
+            if self.data.last_relic_discovery.read(game_id)
                 + Into::<u16, u64>::into(rules.map_config.relic_discovery_interval_sec) > timestamp {
                 return;
             }
@@ -565,7 +565,7 @@ pub mod MapDomain {
                 if destination != excluded
                     && destination != coord
                     && data % BIOME_SCALE == 0
-                    && !self.settlements.reserved.read((game_id, destination.x, destination.y)) {
+                    && !self.settlements.data.reserved.read((game_id, destination.x, destination.y)) {
                     if data / BIOME_SCALE % BYTE_RANGE == 0 {
                         self.map.reveal(key, self.biome(key));
                     }
@@ -574,7 +574,7 @@ pub mod MapDomain {
                 }
                 destination = crate::geometry::neighbor(destination, 0);
             }
-            self.last_relic_discovery.write(game_id, timestamp);
+            self.data.last_relic_discovery.write(game_id, timestamp);
             self
                 .emit(
                     crate::events::RowSet {
@@ -626,7 +626,7 @@ pub mod MapDomain {
                 .settlement_rules(game_id);
             let required = crate::settlement_grid::reservation_count(rules.registration_limit, rules.mode);
             let center = self.map_center(game_id);
-            let mut placed = self.settlements.reserved_hyperstructures.read(game_id);
+            let mut placed = self.settlements.data.reserved_hyperstructures.read(game_id);
             let last = core::cmp::min(required, placed + count.into());
             while placed < last {
                 let coord = crate::settlement_grid::reservation_location(center, rules.mode, rules.spacing, placed);
@@ -639,8 +639,8 @@ pub mod MapDomain {
                 self.map.reserve_hyperstructure(key);
                 placed += 1;
             }
-            if placed != self.settlements.reserved_hyperstructures.read(game_id) {
-                self.settlements.reserved_hyperstructures.write(game_id, placed);
+            if placed != self.settlements.data.reserved_hyperstructures.read(game_id) {
+                self.settlements.data.reserved_hyperstructures.write(game_id, placed);
                 self
                     .emit(
                         crate::events::RowSet {

@@ -133,7 +133,7 @@ pub mod EconomyDomain {
             self.markets.rules(game_id)
         }
         fn bank_name(self: @ContractState, key: ResourceKey) -> felt252 {
-            self.markets.bank_names.read((key.game_id, key.entity_id))
+            self.markets.data.bank_names.read((key.game_id, key.entity_id))
         }
         fn market(self: @ContractState, key: MarketKey) -> Market {
             self.markets.market(key)
@@ -592,7 +592,7 @@ pub mod EconomyDomain {
             );
             assert!(command.expires_at.into() > timestamp, "expires at is in the past");
             assert!(
-                self.trades.open_count.read((game_id, command.maker_id)) < self.trades.rules(game_id).max_count,
+                self.trades.data.open_count.read((game_id, command.maker_id)) < self.trades.rules(game_id).max_count,
                 "trade count exceeds max",
             );
         }

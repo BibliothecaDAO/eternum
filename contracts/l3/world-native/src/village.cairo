@@ -72,18 +72,15 @@ pub fn select_resource(pool: Span<VillageResource>, seed: u256, timestamp: u64) 
 #[starknet::component]
 pub mod VillageState {
     use starknet::ContractAddress;
-    use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
+    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
     use crate::events::RowSet;
     use crate::resources::ResourceAmount;
     use super::{VillagePass, VillagePassKey, VillageResource, VillageRules};
 
     #[storage]
     pub struct Storage {
-        pub village_delay: Map<u32, Option<u16>>,
-        pub village_grant_count: Map<u32, u32>,
-        pub village_grants: Map<(u32, u32), ResourceAmount>,
-        pub village_pool: Map<(u32, u8), VillageResource>,
-        pub village_passes: Map<(u32, u16), Option<VillagePass>>,
+        #[flat]
+        pub data: games_storage::village::VillageStateStorage<ResourceAmount, VillageResource, VillagePass>,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -93,7 +90,7 @@ pub mod VillageState {
     #[generate_trait]
     pub impl InternalImpl<TContractState, +HasComponent<TContractState>> of InternalTrait<TContractState> {
         fn configure(ref self: ComponentState<TContractState>, game_id: u32, rules: VillageRules) {
-            assert!(self.village_delay.read(game_id).is_none(), "immutable village rules");
+            assert!(self.data.village_delay.read(game_id).is_none(), "immutable village rules");
             assert!(rules.resource_pool.len() == 22, "incomplete village resource pool");
             let mut total = 0_u128;
             let mut seen = 0_u32;
@@ -110,13 +107,13 @@ pub mod VillageState {
                 assert!((seen & bit) == 0, "duplicate village resource outcome");
                 seen = seen | bit;
                 total += choice.weight;
-                self.village_pool.write((game_id, index), choice);
+                self.data.village_pool.write((game_id, index), choice);
             }
             assert!(total > 0, "empty village resource pool");
-            self.village_delay.write(game_id, Some(rules.troop_delay_ticks));
-            self.village_grant_count.write(game_id, rules.resources.len());
+            self.data.village_delay.write(game_id, Some(rules.troop_delay_ticks));
+            self.data.village_grant_count.write(game_id, rules.resources.len());
             for index in 0..rules.resources.len() {
-                self.village_grants.write((game_id, index), *rules.resources.at(index));
+                self.data.village_grants.write((game_id, index), *rules.resources.at(index));
             }
             let mut values = array![];
             rules.serialize(ref values);
@@ -128,19 +125,19 @@ pub mod VillageState {
                 );
         }
         fn rules(self: @ComponentState<TContractState>, game_id: u32) -> VillageRules {
-            let troop_delay_ticks = self.village_delay.read(game_id).expect('missing village rules');
+            let troop_delay_ticks = self.data.village_delay.read(game_id).expect('missing village rules');
             let mut resources = array![];
-            for index in 0..self.village_grant_count.read(game_id) {
-                resources.append(self.village_grants.read((game_id, index)));
+            for index in 0..self.data.village_grant_count.read(game_id) {
+                resources.append(self.data.village_grants.read((game_id, index)));
             }
             let mut resource_pool = array![];
             for index in 0..22_u8 {
-                resource_pool.append(self.village_pool.read((game_id, index)));
+                resource_pool.append(self.data.village_pool.read((game_id, index)));
             }
             VillageRules { troop_delay_ticks, resources: resources.span(), resource_pool: resource_pool.span() }
         }
         fn pass(self: @ComponentState<TContractState>, key: VillagePassKey) -> Option<VillagePass> {
-            self.village_passes.read((key.game_id, key.pass_id))
+            self.data.village_passes.read((key.game_id, key.pass_id))
         }
         fn register(ref self: ComponentState<TContractState>, key: VillagePassKey, owner: ContractAddress) {
             assert!(owner != 0.try_into().unwrap(), "empty village pass owner");
@@ -163,7 +160,7 @@ pub mod VillageState {
             self.write_pass(key, VillagePass { owner, village_id });
         }
         fn write_pass(ref self: ComponentState<TContractState>, key: VillagePassKey, pass: VillagePass) {
-            self.village_passes.write((key.game_id, key.pass_id), Some(pass));
+            self.data.village_passes.write((key.game_id, key.pass_id), Some(pass));
             let mut values = array![];
             pass.serialize(ref values);
             self

@@ -31,7 +31,7 @@ pub trait IBlitzResults<T> {
 
 #[starknet::component]
 pub mod BlitzResultState {
-    use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
+    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
     use starknet::{ContractAddress, get_caller_address, get_tx_info};
     use crate::commands::ExecutionContext;
     use crate::events::RowSet;
@@ -45,8 +45,8 @@ pub mod BlitzResultState {
     // One immutable result per roster position; count is the resumable batch cursor.
     #[storage]
     pub struct Storage {
-        pub results: Map<(u32, u8), PlayerResult>,
-        pub count: Map<u32, u8>,
+        #[flat]
+        pub data: games_storage::blitz_results::BlitzResultStateStorage<PlayerResult>,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -64,8 +64,8 @@ pub mod BlitzResultState {
         fn blitz_result(self: @ComponentState<TContractState>, game_id: u32) -> BlitzResult {
             let roster = self.roster(game_id);
             let mut players = array![];
-            for index in 0..self.count.read(game_id) {
-                players.append(self.results.read((game_id, index)));
+            for index in 0..self.data.count.read(game_id) {
+                players.append(self.data.results.read((game_id, index)));
             }
             let complete = !roster.is_empty() && players.len() == roster.len();
             let commitment = if complete {
@@ -84,7 +84,7 @@ pub mod BlitzResultState {
         ) -> u64 {
             self.authorize(game_id, actor, context.timestamp);
             let roster = self.roster(game_id);
-            let count = self.count.read(game_id);
+            let count = self.data.count.read(game_id);
             let end = Into::<u8, u32>::into(command.start) + command.players.len();
             assert!(!command.players.is_empty() && command.players.len() <= 8, "invalid result batch size");
             assert!(end <= roster.len(), "too many result players");
@@ -105,9 +105,9 @@ pub mod BlitzResultState {
                 let index: u8 = (Into::<u8, u32>::into(count) + offset).try_into().unwrap();
                 let result = *command.players.at(offset);
                 self.validate_player(game_id, roster, points.span(), index, result);
-                self.results.write((game_id, index), result);
+                self.data.results.write((game_id, index), result);
             }
-            self.count.write(game_id, end.try_into().unwrap());
+            self.data.count.write(game_id, end.try_into().unwrap());
             self.emit_result(game_id, actor, context.timestamp);
             (roster.len() - end).into()
         }
@@ -149,7 +149,9 @@ pub mod BlitzResultState {
             );
             for offset in 0..command.players.len() {
                 let index: u8 = (Into::<u8, u32>::into(command.start) + offset).try_into().unwrap();
-                assert!(self.results.read((game_id, index)) == *command.players.at(offset), "conflicting result retry");
+                assert!(
+                    self.data.results.read((game_id, index)) == *command.players.at(offset), "conflicting result retry",
+                );
             }
         }
         fn validate_player(
@@ -175,12 +177,12 @@ pub mod BlitzResultState {
             assert!(result.rank == expected_rank && result.rank <= index + 1, "omitted higher result");
             assert!(member, "result player outside roster");
             for previous in 0..index {
-                assert!(self.results.read((game_id, previous)).player != result.player, "duplicate result player");
+                assert!(self.data.results.read((game_id, previous)).player != result.player, "duplicate result player");
             }
             let rank = if index == 0 {
                 1
             } else {
-                let previous = self.results.read((game_id, index - 1));
+                let previous = self.data.results.read((game_id, index - 1));
                 assert!(previous.points >= result.points, "results not ordered by points");
                 if previous.points == result.points {
                     previous.rank

@@ -1,0 +1,14 @@
+[package]
+name = "games_storage"
+version = "0.1.0"
+edition = "2024_07"
+cairo-version = "=2.17.0"
+
+[dependencies]
+starknet = "=2.17.0"
+
+[lib]
+
+[tool.fmt]
+max-line-length = 120
+sort-module-level-items = true

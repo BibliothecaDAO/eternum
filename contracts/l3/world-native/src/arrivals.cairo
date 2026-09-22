@@ -45,15 +45,15 @@ pub fn arrival_key(game_id: u32, entity_id: u32, interval: u64, timestamp: u64, 
 
 #[starknet::component]
 pub mod ArrivalState {
-    use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
+    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
     use crate::events::{RowDeleted, RowSet};
     use crate::resources::ResourceAmount;
     use super::{Arrival, ArrivalKey, INDEX_SCALE, SLOTS_PER_DAY};
 
     #[storage]
     pub struct Storage {
-        pub arrival_bounds: Map<(u32, u32, u64, u8), u64>,
-        pub arrival_items: Map<(u32, u32, u64, u8, u32), ResourceAmount>,
+        #[flat]
+        pub data: games_storage::arrivals::ArrivalStateStorage<ResourceAmount>,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -65,7 +65,7 @@ pub mod ArrivalState {
     pub impl InternalImpl<TContractState, +HasComponent<TContractState>> of InternalTrait<TContractState> {
         fn enqueue(ref self: ComponentState<TContractState>, key: ArrivalKey, values: Span<ResourceAmount>) {
             let storage_key = (key.game_id, key.entity_id, key.day, key.slot);
-            let bounds = self.arrival_bounds.read(storage_key);
+            let bounds = self.data.arrival_bounds.read(storage_key);
             let start: u32 = (bounds / INDEX_SCALE).try_into().unwrap();
             let mut count: u32 = (bounds % INDEX_SCALE).try_into().unwrap();
             let mut changed = false;
@@ -75,7 +75,7 @@ pub mod ArrivalState {
                 }
                 let mut index = start;
                 while index < start + count {
-                    let stored = self.arrival_items.read((key.game_id, key.entity_id, key.day, key.slot, index));
+                    let stored = self.data.arrival_items.read((key.game_id, key.entity_id, key.day, key.slot, index));
                     if stored.resource_type == *value.resource_type {
                         break;
                     }
@@ -85,16 +85,16 @@ pub mod ArrivalState {
                     count += 1;
                     *value
                 } else {
-                    let stored = self.arrival_items.read((key.game_id, key.entity_id, key.day, key.slot, index));
+                    let stored = self.data.arrival_items.read((key.game_id, key.entity_id, key.day, key.slot, index));
                     ResourceAmount { amount: stored.amount + *value.amount, ..stored }
                 };
-                self.arrival_items.write((key.game_id, key.entity_id, key.day, key.slot, index), item);
+                self.data.arrival_items.write((key.game_id, key.entity_id, key.day, key.slot, index), item);
                 changed = true;
             }
             if changed {
                 let updated = Into::<u32, u64>::into(start) * INDEX_SCALE + count.into();
                 if updated != bounds {
-                    self.arrival_bounds.write(storage_key, updated);
+                    self.data.arrival_bounds.write(storage_key, updated);
                 }
                 let mut keys = array![];
                 key.serialize(ref keys);
@@ -105,12 +105,12 @@ pub mod ArrivalState {
         }
         fn read(self: @ComponentState<TContractState>, key: ArrivalKey) -> Arrival {
             assert!(key.slot > 0 && key.slot <= SLOTS_PER_DAY, "invalid arrival slot");
-            let bounds = self.arrival_bounds.read((key.game_id, key.entity_id, key.day, key.slot));
+            let bounds = self.data.arrival_bounds.read((key.game_id, key.entity_id, key.day, key.slot));
             let start: u32 = (bounds / INDEX_SCALE).try_into().unwrap();
             let count: u32 = (bounds % INDEX_SCALE).try_into().unwrap();
             let mut resources = array![];
             for index in start..start + count {
-                resources.append(self.arrival_items.read((key.game_id, key.entity_id, key.day, key.slot, index)));
+                resources.append(self.data.arrival_items.read((key.game_id, key.entity_id, key.day, key.slot, index)));
             }
             Arrival { resources: resources.span() }
         }
@@ -119,7 +119,7 @@ pub mod ArrivalState {
                 return;
             }
             let storage_key = (key.game_id, key.entity_id, key.day, key.slot);
-            let bounds = self.arrival_bounds.read(storage_key);
+            let bounds = self.data.arrival_bounds.read(storage_key);
             let start: u32 = (bounds / INDEX_SCALE).try_into().unwrap();
             let length: u32 = (bounds % INDEX_SCALE).try_into().unwrap();
             assert!(count <= length, "arrival prefix exceeds slot");
@@ -129,7 +129,7 @@ pub mod ArrivalState {
             } else {
                 (start + count).into() * INDEX_SCALE + remaining.into()
             };
-            self.arrival_bounds.write(storage_key, bounds);
+            self.data.arrival_bounds.write(storage_key, bounds);
             let mut keys = array![];
             key.serialize(ref keys);
             if remaining == 0 {

@@ -61,16 +61,14 @@ pub fn cap(config: MineKindConfig, seed: u256) -> u128 {
 
 #[starknet::component]
 pub mod MineState {
-    use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
+    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
     use crate::events::RowSet;
     use super::{MineKindConfig, MineKindEntry, MineKindKey, MinePoolKey, MineWeight};
 
     #[storage]
     pub struct Storage {
-        pub mine_configured: Map<u32, bool>,
-        pub mine_kinds: Map<(u32, u8), MineKindConfig>,
-        pub mine_pool_count: Map<u32, u8>,
-        pub mine_weights: Map<(u32, u8), MineWeight>,
+        #[flat]
+        pub data: games_storage::mines::MineStateStorage<MineKindConfig, MineWeight>,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -86,7 +84,7 @@ pub mod MineState {
             kinds: Span<MineKindEntry>,
             surface: Span<MineWeight>,
         ) {
-            assert!(!self.mine_configured.read(game_id), "immutable mine configuration");
+            assert!(!self.data.mine_configured.read(game_id), "immutable mine configuration");
             assert!(!kinds.is_empty() && kinds.len() <= 255, "invalid mine kind count");
             let mut previous = 0_u8;
             for entry in kinds {
@@ -101,7 +99,7 @@ pub mod MineState {
                 );
                 assert!(config.resource_type != 0, "mine must produce a resource");
                 let _ = config.cap_min * Into::<u32, u128>::into(config.cap_steps);
-                self.mine_kinds.write((game_id, *entry.kind), config);
+                self.data.mine_kinds.write((game_id, *entry.kind), config);
                 let mut values = array![];
                 config.serialize(ref values);
                 self
@@ -115,19 +113,19 @@ pub mod MineState {
                     );
             }
             self.write_pool(MinePoolKey { game_id }, surface);
-            self.mine_configured.write(game_id, true);
+            self.data.mine_configured.write(game_id, true);
         }
         fn kind(self: @ComponentState<TContractState>, key: MineKindKey) -> MineKindConfig {
-            assert!(self.mine_configured.read(key.game_id), "missing mine configuration");
-            let config = self.mine_kinds.read((key.game_id, key.kind));
+            assert!(self.data.mine_configured.read(key.game_id), "missing mine configuration");
+            let config = self.data.mine_kinds.read((key.game_id, key.kind));
             assert!(config.production_rate != 0, "unknown mine kind");
             config
         }
         fn pool(self: @ComponentState<TContractState>, key: MinePoolKey) -> Span<MineWeight> {
-            assert!(self.mine_configured.read(key.game_id), "missing mine configuration");
+            assert!(self.data.mine_configured.read(key.game_id), "missing mine configuration");
             let mut weights = array![];
-            for index in 0..self.mine_pool_count.read(key.game_id) {
-                weights.append(self.mine_weights.read((key.game_id, index)));
+            for index in 0..self.data.mine_pool_count.read(key.game_id) {
+                weights.append(self.data.mine_weights.read((key.game_id, index)));
             }
             weights.span()
         }
@@ -139,10 +137,12 @@ pub mod MineState {
                 assert!(entry.kind > previous, "mine weights must be ordered");
                 previous = entry.kind;
                 assert!(entry.weight != 0, "zero mine weight");
-                assert!(self.mine_kinds.read((key.game_id, entry.kind)).production_rate != 0, "unknown pooled mine");
-                self.mine_weights.write((key.game_id, index), entry);
+                assert!(
+                    self.data.mine_kinds.read((key.game_id, entry.kind)).production_rate != 0, "unknown pooled mine",
+                );
+                self.data.mine_weights.write((key.game_id, index), entry);
             }
-            self.mine_pool_count.write(key.game_id, count);
+            self.data.mine_pool_count.write(key.game_id, count);
             let mut values = array![];
             weights.serialize(ref values);
             self

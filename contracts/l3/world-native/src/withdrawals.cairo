@@ -70,14 +70,13 @@ pub fn transfer_or_mint(token: ContractAddress, recipient: ContractAddress, amou
 #[starknet::component]
 pub mod WithdrawalState {
     use starknet::ContractAddress;
-    use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
+    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
     use crate::events::RowSet;
     use super::{ResourceToken, Retention, WithdrawalRules, WithdrawalTerms};
     #[storage]
     pub struct Storage {
-        pub terms: Map<u32, WithdrawalTerms>,
-        pub retention: Map<(u32, u32), Retention>,
-        pub tokens: Map<(u32, u8), ContractAddress>,
+        #[flat]
+        pub data: games_storage::withdrawals::WithdrawalStateStorage<WithdrawalTerms, Retention>,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -89,7 +88,7 @@ pub mod WithdrawalState {
         fn configure(
             ref self: ComponentState<TContractState>, game_id: u32, rules: WithdrawalRules, tokens: Span<ResourceToken>,
         ) {
-            assert!(self.terms.read(game_id).retention_count == 0, "withdrawal rules already configured");
+            assert!(self.data.terms.read(game_id).retention_count == 0, "withdrawal rules already configured");
             assert!(!rules.retention.is_empty(), "missing withdrawal retention table");
             assert!(
                 rules.velords_recipient != 0.try_into().unwrap() && rules.season_recipient != 0.try_into().unwrap(),
@@ -105,9 +104,10 @@ pub mod WithdrawalState {
                 assert!(
                     retention.troop_percent <= 100 && retention.resource_percent <= 100, "invalid withdrawal retention",
                 );
-                self.retention.write((game_id, index), retention);
+                self.data.retention.write((game_id, index), retention);
             }
             self
+                .data
                 .terms
                 .write(
                     game_id,
@@ -139,10 +139,10 @@ pub mod WithdrawalState {
                     "invalid resource token",
                 );
                 assert!(
-                    self.tokens.read((game_id, *token.resource_type)) == 0.try_into().unwrap(),
+                    self.data.tokens.read((game_id, *token.resource_type)) == 0.try_into().unwrap(),
                     "duplicate resource token",
                 );
-                self.tokens.write((game_id, *token.resource_type), *token.token);
+                self.data.tokens.write((game_id, *token.resource_type), *token.token);
                 self
                     .emit(
                         RowSet {
@@ -155,11 +155,11 @@ pub mod WithdrawalState {
             }
         }
         fn rules(self: @ComponentState<TContractState>, game_id: u32) -> WithdrawalRules {
-            let terms = self.terms.read(game_id);
+            let terms = self.data.terms.read(game_id);
             assert!(terms.retention_count != 0, "missing withdrawal rules");
             let mut retention = array![];
             for index in 0..terms.retention_count {
-                retention.append(self.retention.read((game_id, index)));
+                retention.append(self.data.retention.read((game_id, index)));
             }
             WithdrawalRules {
                 paused: terms.paused,
@@ -173,7 +173,7 @@ pub mod WithdrawalState {
             }
         }
         fn token(self: @ComponentState<TContractState>, key: crate::market::MarketKey) -> ContractAddress {
-            let token = self.tokens.read((key.game_id, key.resource_type));
+            let token = self.data.tokens.read((key.game_id, key.resource_type));
             assert!(token != 0.try_into().unwrap(), "resource is not whitelisted");
             token
         }
@@ -188,9 +188,9 @@ pub mod WithdrawalState {
             if resource_type == crate::resources::LORDS {
                 return amount;
             }
-            let count = self.terms.read(game_id).retention_count;
+            let count = self.data.terms.read(game_id).retention_count;
             assert!(count != 0, "missing withdrawal rules");
-            let rate = self.retention.read((game_id, core::cmp::min(completed, count - 1)));
+            let rate = self.data.retention.read((game_id, core::cmp::min(completed, count - 1)));
             let percent: u256 = if crate::resources::is_troop_resource(resource_type) {
                 rate.troop_percent.into()
             } else {

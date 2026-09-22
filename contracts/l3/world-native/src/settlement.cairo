@@ -88,7 +88,7 @@ pub trait ISettlementPool<T> {
 #[starknet::component]
 pub mod SettlementPoolState {
     use core::num::traits::CheckedAdd;
-    use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
+    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
     use crate::events::RowSet;
     use crate::settlement_grid::{settlement_location, target_pool_size};
     use crate::troops::Coord;
@@ -96,11 +96,8 @@ pub mod SettlementPoolState {
 
     #[storage]
     pub struct Storage {
-        pub reserved_hyperstructures: Map<u32, u32>,
-        pub opened: Map<(u32, bool), u32>,
-        pub available_count: Map<(u32, bool), u16>,
-        pub candidates: Map<(u32, bool, u16), u32>,
-        pub reserved: Map<(u32, u32, u32), bool>,
+        #[flat]
+        pub data: games_storage::settlement::SettlementPoolStateStorage,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -123,17 +120,17 @@ pub mod SettlementPoolState {
             self: @ComponentState<TContractState>, game_id: u32, village: bool, center: Coord, rules: SettlementRules,
         ) -> SettlementPool {
             let mut available = array![];
-            for index in 0..self.available_count.read((game_id, village)) {
+            for index in 0..self.data.available_count.read((game_id, village)) {
                 available
                     .append(
                         SettlementLocation {
                             coords: settlement_location(
-                                center, rules.mode, rules.spacing, self.candidates.read((game_id, village, index)),
+                                center, rules.mode, rules.spacing, self.data.candidates.read((game_id, village, index)),
                             ),
                         },
                     );
             }
-            SettlementPool { opened: self.opened.read((game_id, village)), available: available.span() }
+            SettlementPool { opened: self.data.opened.read((game_id, village)), available: available.span() }
         }
         fn claim(
             ref self: ComponentState<TContractState>,
@@ -179,23 +176,23 @@ pub mod SettlementPoolState {
             target: u16,
         ) -> bool {
             let key = (game_id, village);
-            let mut count = self.available_count.read(key);
+            let mut count = self.data.available_count.read(key);
             let previous = count;
-            let mut opened = self.opened.read(key);
+            let mut opened = self.data.opened.read(key);
             while count < target {
                 let coords = settlement_location(center, rules.mode, rules.spacing, opened);
                 opened = opened.checked_add(1).expect('settlement geometry exhausted');
                 if !self.reserve_location(game_id, coords) {
                     continue;
                 }
-                self.candidates.write((game_id, village, count), opened - 1);
+                self.data.candidates.write((game_id, village, count), opened - 1);
                 count += 1;
             }
             if count == previous {
                 return false;
             }
-            self.available_count.write(key, count);
-            self.opened.write(key, opened);
+            self.data.available_count.write(key, count);
+            self.data.opened.write(key, opened);
             true
         }
         fn reserve_blitz_locations(
@@ -211,12 +208,12 @@ pub mod SettlementPoolState {
         }
         fn reserve_location(ref self: ComponentState<TContractState>, game_id: u32, coords: Span<Coord>) -> bool {
             for coord in coords {
-                if self.reserved.read((game_id, *coord.x, *coord.y)) {
+                if self.data.reserved.read((game_id, *coord.x, *coord.y)) {
                     return false;
                 }
             }
             for coord in coords {
-                self.reserved.write((game_id, *coord.x, *coord.y), true);
+                self.data.reserved.write((game_id, *coord.x, *coord.y), true);
             }
             true
         }
@@ -228,17 +225,18 @@ pub mod SettlementPoolState {
             rules: SettlementRules,
             seed: u256,
         ) -> Span<Coord> {
-            let count = self.available_count.read((game_id, village));
+            let count = self.data.available_count.read((game_id, village));
             assert!(count != 0, "no open settlements");
             let selected: u16 = crate::random::range(seed, 98139, count.into()).try_into().unwrap();
-            let candidate = self.candidates.read((game_id, village, selected));
+            let candidate = self.data.candidates.read((game_id, village, selected));
             let remaining = count - 1;
             if selected != remaining {
                 self
+                    .data
                     .candidates
-                    .write((game_id, village, selected), self.candidates.read((game_id, village, remaining)));
+                    .write((game_id, village, selected), self.data.candidates.read((game_id, village, remaining)));
             }
-            self.available_count.write((game_id, village), remaining);
+            self.data.available_count.write((game_id, village), remaining);
             self.emit_pool(game_id, village, center, rules);
             settlement_location(center, rules.mode, rules.spacing, candidate)
         }
@@ -271,23 +269,20 @@ pub mod SettlementPoolState {
 #[starknet::component]
 pub mod SettlementState {
     use core::num::traits::Zero;
-    use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
+    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
     use crate::events::RowSet;
     use super::{EntryEntitlement, EntryKey, PlayerEntry, RealmGrants, SettlementProgress, SettlementRules};
     #[storage]
     pub struct Storage {
-        pub settlement_rules: Map<u32, Option<SettlementRules>>,
-        pub grant_counts: Map<u32, u32>,
-        pub realm_grants: Map<(u32, u32), crate::resources::ResourceAmount>,
-        pub progress: Map<u32, SettlementProgress>,
-        pub blitz_order: Map<(u32, u32), u8>,
-        pub blitz_order_size: Map<u32, u32>,
-        pub entries: Map<(u32, starknet::ContractAddress), Option<PlayerEntry>>,
-        pub starting_troops: Map<(u32, u8), crate::troops::TroopType>,
-        pub realm_resource_counts: Map<u32, u8>,
-        pub realm_resources: Map<(u32, u8), u8>,
-        pub entitlements: Map<(u32, starknet::ContractAddress), Option<EntryEntitlement>>,
-        pub entered_players: Map<(u32, starknet::ContractAddress), bool>,
+        #[flat]
+        pub data: games_storage::settlement::SettlementStateStorage<
+            SettlementRules,
+            crate::resources::ResourceAmount,
+            SettlementProgress,
+            PlayerEntry,
+            crate::troops::TroopType,
+            EntryEntitlement,
+        >,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -297,30 +292,31 @@ pub mod SettlementState {
     #[generate_trait]
     pub impl InternalImpl<TContractState, +HasComponent<TContractState>> of InternalTrait<TContractState> {
         fn rules(self: @ComponentState<TContractState>, game_id: u32) -> SettlementRules {
-            self.settlement_rules.read(game_id).expect('missing settlement rules')
+            self.data.settlement_rules.read(game_id).expect('missing settlement rules')
         }
         fn configure(
             ref self: ComponentState<TContractState>, game_id: u32, rules: SettlementRules, grants: RealmGrants,
         ) {
-            assert!(self.settlement_rules.read(game_id).is_none(), "immutable settlement rules");
+            assert!(self.data.settlement_rules.read(game_id).is_none(), "immutable settlement rules");
             assert!(rules.registration_limit <= 96, "registration capacity exceeds limit");
             assert!(grants.starting_troops.len() == 17, "incomplete biome starting troops");
             for index in 0_u32..17 {
                 self
+                    .data
                     .starting_troops
                     .write((game_id, (index + 1).try_into().unwrap()), *grants.starting_troops.at(index));
             }
             assert!(grants.realm_resources.len() <= 16, "realm resources exceed packed capacity");
-            self.realm_resource_counts.write(game_id, grants.realm_resources.len().try_into().unwrap());
+            self.data.realm_resource_counts.write(game_id, grants.realm_resources.len().try_into().unwrap());
             for index in 0..grants.realm_resources.len() {
                 let resource = *grants.realm_resources.at(index);
                 assert!(resource >= 1 && resource <= 58, "invalid realm resource");
-                self.realm_resources.write((game_id, index.try_into().unwrap()), resource);
+                self.data.realm_resources.write((game_id, index.try_into().unwrap()), resource);
             }
-            self.grant_counts.write(game_id, grants.resources.len());
+            self.data.grant_counts.write(game_id, grants.resources.len());
             let mut index = 0;
             for grant in grants.resources {
-                self.realm_grants.write((game_id, index), *grant);
+                self.data.realm_grants.write((game_id, index), *grant);
                 index += 1;
             }
             let mut values = array![];
@@ -331,7 +327,7 @@ pub mod SettlementState {
                         version: 1, model: 'RealmGrants', keys: array![game_id.into()].span(), values: values.span(),
                     },
                 );
-            self.settlement_rules.write(game_id, Some(rules));
+            self.data.settlement_rules.write(game_id, Some(rules));
             let mut values = array![];
             rules.serialize(ref values);
             self
@@ -347,16 +343,16 @@ pub mod SettlementState {
         fn grants(self: @ComponentState<TContractState>, game_id: u32) -> RealmGrants {
             let _ = self.rules(game_id);
             let mut resources = array![];
-            for index in 0..self.grant_counts.read(game_id) {
-                resources.append(self.realm_grants.read((game_id, index)));
+            for index in 0..self.data.grant_counts.read(game_id) {
+                resources.append(self.data.realm_grants.read((game_id, index)));
             }
             let mut starting_troops = array![];
             for biome in 1_u8..18 {
-                starting_troops.append(self.starting_troops.read((game_id, biome)));
+                starting_troops.append(self.data.starting_troops.read((game_id, biome)));
             }
             let mut realm_resources = array![];
-            for index in 0..self.realm_resource_counts.read(game_id) {
-                realm_resources.append(self.realm_resources.read((game_id, index)));
+            for index in 0..self.data.realm_resource_counts.read(game_id) {
+                realm_resources.append(self.data.realm_resources.read((game_id, index)));
             }
             RealmGrants {
                 resources: resources.span(),
@@ -365,17 +361,17 @@ pub mod SettlementState {
             }
         }
         fn entry(self: @ComponentState<TContractState>, key: EntryKey) -> Option<PlayerEntry> {
-            self.entries.read((key.game_id, key.owner))
+            self.data.entries.read((key.game_id, key.owner))
         }
         fn register_entitlement(
             ref self: ComponentState<TContractState>, key: EntryKey, entitlement: EntryEntitlement,
         ) {
-            let previous = self.entitlements.read((key.game_id, key.owner));
+            let previous = self.data.entitlements.read((key.game_id, key.owner));
             if let Some(previous) = previous {
                 assert!(previous == entitlement, "conflicting entry entitlement");
                 return;
             }
-            self.entitlements.write((key.game_id, key.owner), Some(entitlement));
+            self.data.entitlements.write((key.game_id, key.owner), Some(entitlement));
             let mut values = array![];
             entitlement.serialize(ref values);
             self
@@ -395,16 +391,16 @@ pub mod SettlementState {
             requires_entitlement: bool,
         ) {
             assert!(key.owner.is_non_zero(), "gameplay account is not bound");
-            assert!(self.entries.read((key.game_id, key.owner)).is_none(), "owner already settled");
+            assert!(self.data.entries.read((key.game_id, key.owner)).is_none(), "owner already settled");
             if requires_entitlement {
-                assert!(self.entitlements.read((key.game_id, key.owner)).is_some(), "entry entitlement required");
+                assert!(self.data.entitlements.read((key.game_id, key.owner)).is_some(), "entry entitlement required");
             }
             self.record_entry(key, player);
         }
         fn record_entry(ref self: ComponentState<TContractState>, key: EntryKey, player: starknet::ContractAddress) {
             assert!(key.owner.is_non_zero(), "gameplay account is not bound");
-            self.entries.write((key.game_id, key.owner), Some(PlayerEntry { player }));
-            self.entered_players.write((key.game_id, player), true);
+            self.data.entries.write((key.game_id, key.owner), Some(PlayerEntry { player }));
+            self.data.entered_players.write((key.game_id, player), true);
             self
                 .emit(
                     RowSet {
@@ -417,18 +413,18 @@ pub mod SettlementState {
         }
         fn blitz_order(self: @ComponentState<TContractState>, game_id: u32) -> Span<u8> {
             let mut players = array![];
-            for index in 0..self.blitz_order_size.read(game_id) {
-                players.append(self.blitz_order.read((game_id, index)));
+            for index in 0..self.data.blitz_order_size.read(game_id) {
+                players.append(self.data.blitz_order.read((game_id, index)));
             }
             players.span()
         }
         fn initialize_blitz_order(ref self: ComponentState<TContractState>, game_id: u32, count: u32, root: u256) {
-            assert!(self.blitz_order_size.read(game_id) == 0, "settlement order already fixed");
+            assert!(self.data.blitz_order_size.read(game_id) == 0, "settlement order already fixed");
             let players = super::shuffle_roster(count, root);
             for index in 0..players.len() {
-                self.blitz_order.write((game_id, index), *players.at(index));
+                self.data.blitz_order.write((game_id, index), *players.at(index));
             }
-            self.blitz_order_size.write(game_id, count);
+            self.data.blitz_order_size.write(game_id, count);
             let mut values = array![];
             players.serialize(ref values);
             self
@@ -442,7 +438,7 @@ pub mod SettlementState {
                 );
         }
         fn write_progress(ref self: ComponentState<TContractState>, game_id: u32, progress: SettlementProgress) {
-            self.progress.write(game_id, progress);
+            self.data.progress.write(game_id, progress);
             let mut values = array![];
             progress.serialize(ref values);
             self

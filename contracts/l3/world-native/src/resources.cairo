@@ -115,7 +115,7 @@ fn has_production(resource_type: u8) -> bool {
 
 #[starknet::component]
 pub mod ResourceState {
-    use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
+    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
     use crate::events::{RowDeleted, RowSet};
     use crate::production::ProductionState::InternalTrait as RecipeInternal;
     use crate::production::{ProductionState, RecipeKey};
@@ -125,15 +125,8 @@ pub mod ResourceState {
     };
     #[storage]
     pub struct Storage {
-        pub resource_rules: Map<(u32, u8), (u128, u128)>,
-        pub resources_configured: Map<u32, bool>,
-        pub balances: Map<(u32, u32, u8), u128>,
-        pub productions: Map<(u32, u32, u8), Production>,
-        pub production_receivers: Map<(u32, u32, u8), Option<ProductionReceiver>>,
-        pub incoming_count: Map<(u32, u32, u8), u32>,
-        pub incoming_sources: Map<(u32, u32, u8, u32), u32>,
-        pub weights: Map<(u32, u32), Weight>,
-        pub resource_exists: Map<(u32, u32), bool>,
+        #[flat]
+        pub data: games_storage::resources::ResourceStateStorage<Production, ProductionReceiver, Weight>,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -146,9 +139,9 @@ pub mod ResourceState {
         TContractState, +HasComponent<TContractState>, impl Recipes: ProductionState::HasComponent<TContractState>,
     > of InternalTrait<TContractState> {
         fn rule(self: @ComponentState<TContractState>, game_id: u32, resource_type: u8) -> super::ResourceRule {
-            assert!(self.resources_configured.read(game_id), "missing resource rules");
+            assert!(self.data.resources_configured.read(game_id), "missing resource rules");
             assert_resource(resource_type);
-            let (unit_weight, rates) = self.resource_rules.read((game_id, resource_type));
+            let (unit_weight, rates) = self.data.resource_rules.read((game_id, resource_type));
             super::ResourceRule {
                 resource_type,
                 unit_weight,
@@ -176,8 +169,8 @@ pub mod ResourceState {
                 self.write_balance(key, resource_type, 0);
                 self.write_production(key, resource_type, Default::default());
             }
-            self.weights.write((key.game_id, key.entity_id), Default::default());
-            self.resource_exists.write((key.game_id, key.entity_id), false);
+            self.data.weights.write((key.game_id, key.entity_id), Default::default());
+            self.data.resource_exists.write((key.game_id, key.entity_id), false);
             self
                 .emit(
                     RowDeleted {
@@ -189,7 +182,7 @@ pub mod ResourceState {
         }
         fn change_capacity(ref self: ComponentState<TContractState>, key: ResourceKey, amount: u128, increase: bool) {
             self.assert_exists(key);
-            let mut weight = self.weights.read((key.game_id, key.entity_id));
+            let mut weight = self.data.weights.read((key.game_id, key.entity_id));
             if weight.capacity != 0xffffffffffffffffffffffffffffffff {
                 weight.capacity = if increase {
                     weight.capacity + amount
@@ -201,21 +194,21 @@ pub mod ResourceState {
         }
         fn initialize(ref self: ComponentState<TContractState>, key: ResourceKey, capacity: u128) {
             assert!(key.game_id != 0 && key.entity_id != 0, "reserved resource key");
-            assert!(!self.resource_exists.read((key.game_id, key.entity_id)), "resources already initialized");
+            assert!(!self.data.resource_exists.read((key.game_id, key.entity_id)), "resources already initialized");
             let weight = Weight { capacity, weight: 0 };
-            self.weights.write((key.game_id, key.entity_id), weight);
-            self.resource_exists.write((key.game_id, key.entity_id), true);
+            self.data.weights.write((key.game_id, key.entity_id), weight);
+            self.data.resource_exists.write((key.game_id, key.entity_id), true);
             self.emit_weight(key, weight);
         }
         #[inline(never)]
         fn assert_exists(self: @ComponentState<TContractState>, key: ResourceKey) {
-            assert!(self.resource_exists.read((key.game_id, key.entity_id)), "missing resource owner");
+            assert!(self.data.resource_exists.read((key.game_id, key.entity_id)), "missing resource owner");
         }
         #[inline(never)]
         fn balance(self: @ComponentState<TContractState>, key: ResourceKey, resource_type: u8) -> u128 {
             self.assert_exists(key);
             assert_resource(resource_type);
-            self.balances.read((key.game_id, key.entity_id, resource_type))
+            self.data.balances.read((key.game_id, key.entity_id, resource_type))
         }
         #[inline(never)]
         fn production(self: @ComponentState<TContractState>, key: ResourceKey, resource_type: u8) -> Production {
@@ -224,11 +217,11 @@ pub mod ResourceState {
             if !has_production(resource_type) {
                 return Default::default();
             }
-            self.productions.read((key.game_id, key.entity_id, resource_type))
+            self.data.productions.read((key.game_id, key.entity_id, resource_type))
         }
         fn weight(self: @ComponentState<TContractState>, key: ResourceKey) -> Weight {
             self.assert_exists(key);
-            self.weights.read((key.game_id, key.entity_id))
+            self.data.weights.read((key.game_id, key.entity_id))
         }
 
         fn settle_resource(
@@ -330,7 +323,7 @@ pub mod ResourceState {
             ref self: ComponentState<TContractState>, key: ResourceKey, amount: u128, adding: bool,
         ) {
             self.assert_exists(key);
-            let mut weight = self.weights.read((key.game_id, key.entity_id));
+            let mut weight = self.data.weights.read((key.game_id, key.entity_id));
             if weight.capacity == 0xffffffffffffffffffffffffffffffff {
                 return;
             }
@@ -355,7 +348,7 @@ pub mod ResourceState {
             if resource_type == 35 || super::is_troop_resource(resource_type) {
                 self.settle_training(key, now, start_at);
             }
-            let receiver = self.production_receivers.read((key.game_id, key.entity_id, resource_type));
+            let receiver = self.data.production_receivers.read((key.game_id, key.entity_id, resource_type));
             if let Some(receiver) = receiver {
                 self
                     .settle_resource(
@@ -369,7 +362,7 @@ pub mod ResourceState {
             let mut resource = SettledResource {
                 balance: self.balance(key, resource_type),
                 production: self.production(key, resource_type),
-                weight: self.weights.read((key.game_id, key.entity_id)),
+                weight: self.data.weights.read((key.game_id, key.entity_id)),
             };
             resource
                 .production
@@ -454,7 +447,7 @@ pub mod ResourceState {
             assert!(home.entity_id != key.entity_id, "production cannot receive itself");
             assert!(resource_type != 35 && resource_type != 36 && has_production(resource_type), "uncapped production");
             assert!(rate != 0 && receiver.end_at > now, "invalid production interval");
-            let previous = self.production_receivers.read((key.game_id, key.entity_id, resource_type));
+            let previous = self.data.production_receivers.read((key.game_id, key.entity_id, resource_type));
             if let Some(previous) = previous {
                 self
                     .settle_resource(
@@ -478,9 +471,9 @@ pub mod ResourceState {
             production.building_count = 1;
             production.last_updated_at = now;
             self.write_production(key, resource_type, production);
-            let index = self.incoming_count.read((key.game_id, receiver.home, resource_type));
-            self.incoming_sources.write((key.game_id, receiver.home, resource_type, index), key.entity_id);
-            self.incoming_count.write((key.game_id, receiver.home, resource_type), index + 1);
+            let index = self.data.incoming_count.read((key.game_id, receiver.home, resource_type));
+            self.data.incoming_sources.write((key.game_id, receiver.home, resource_type, index), key.entity_id);
+            self.data.incoming_count.write((key.game_id, receiver.home, resource_type), index + 1);
             self.write_production_receiver(key, resource_type, Some(receiver));
         }
 
@@ -492,13 +485,13 @@ pub mod ResourceState {
             unit_weight: u128,
             now: u32,
         ) {
-            let initial_count = self.incoming_count.read((key.game_id, key.entity_id, resource_type));
+            let initial_count = self.data.incoming_count.read((key.game_id, key.entity_id, resource_type));
             let mut count = initial_count;
             let mut index = 0;
             while index < count {
-                let source_id = self.incoming_sources.read((key.game_id, key.entity_id, resource_type, index));
+                let source_id = self.data.incoming_sources.read((key.game_id, key.entity_id, resource_type, index));
                 let source = ResourceKey { game_id: key.game_id, entity_id: source_id };
-                let receiver = self.production_receivers.read((key.game_id, source_id, resource_type));
+                let receiver = self.data.production_receivers.read((key.game_id, source_id, resource_type));
                 let mut finished = true;
                 if let Some(receiver) = receiver {
                     if receiver.home == key.entity_id {
@@ -524,14 +517,14 @@ pub mod ResourceState {
                 }
                 if finished {
                     count -= 1;
-                    let last = self.incoming_sources.read((key.game_id, key.entity_id, resource_type, count));
-                    self.incoming_sources.write((key.game_id, key.entity_id, resource_type, index), last);
+                    let last = self.data.incoming_sources.read((key.game_id, key.entity_id, resource_type, count));
+                    self.data.incoming_sources.write((key.game_id, key.entity_id, resource_type, index), last);
                 } else {
                     index += 1;
                 }
             }
             if count != initial_count {
-                self.incoming_count.write((key.game_id, key.entity_id, resource_type), count);
+                self.data.incoming_count.write((key.game_id, key.entity_id, resource_type), count);
             }
         }
 
@@ -541,7 +534,7 @@ pub mod ResourceState {
             resource_type: u8,
             receiver: Option<ProductionReceiver>,
         ) {
-            self.production_receivers.write((key.game_id, key.entity_id, resource_type), receiver);
+            self.data.production_receivers.write((key.game_id, key.entity_id, resource_type), receiver);
             let keys = array![key.game_id.into(), key.entity_id.into(), resource_type.into()].span();
             match receiver {
                 Some(value) => {
@@ -563,10 +556,10 @@ pub mod ResourceState {
         #[inline(never)]
         fn write_balance(ref self: ComponentState<TContractState>, key: ResourceKey, resource_type: u8, balance: u128) {
             let storage_key = (key.game_id, key.entity_id, resource_type);
-            if self.balances.read(storage_key) == balance {
+            if self.data.balances.read(storage_key) == balance {
                 return;
             }
-            self.balances.write(storage_key, balance);
+            self.data.balances.write(storage_key, balance);
             let keys = array![key.game_id.into(), key.entity_id.into(), resource_type.into()].span();
             if balance == 0 {
                 self.emit(RowDeleted { version: 1, model: 'ResourceBalance', keys });
@@ -587,10 +580,10 @@ pub mod ResourceState {
                 production
             };
             let storage_key = (key.game_id, key.entity_id, resource_type);
-            if self.productions.read(storage_key) == production {
+            if self.data.productions.read(storage_key) == production {
                 return;
             }
-            self.productions.write(storage_key, production);
+            self.data.productions.write(storage_key, production);
             let keys = array![key.game_id.into(), key.entity_id.into(), resource_type.into()].span();
             if production == Default::default() {
                 self.emit(RowDeleted { version: 1, model: 'ResourceProduction', keys });
@@ -602,10 +595,10 @@ pub mod ResourceState {
         }
         #[inline(never)]
         fn write_weight(ref self: ComponentState<TContractState>, key: ResourceKey, weight: Weight) {
-            if self.weights.read((key.game_id, key.entity_id)) == weight {
+            if self.data.weights.read((key.game_id, key.entity_id)) == weight {
                 return;
             }
-            self.weights.write((key.game_id, key.entity_id), weight);
+            self.data.weights.write((key.game_id, key.entity_id), weight);
             self.emit_weight(key, weight);
         }
         fn emit_weight(ref self: ComponentState<TContractState>, key: ResourceKey, weight: Weight) {

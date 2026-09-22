@@ -52,7 +52,8 @@ pub mod Lifecycle {
 
     #[storage]
     pub struct Storage {
-        pub state: DomainState,
+        #[flat]
+        pub data: games_storage::lifecycle::LifecycleStorage<DomainState>,
     }
 
     #[event]
@@ -64,12 +65,12 @@ pub mod Lifecycle {
     #[embeddable_as(DomainImpl)]
     impl Domain<TContractState, +HasComponent<TContractState>> of super::IDomain<ComponentState<TContractState>> {
         fn domain_state(self: @ComponentState<TContractState>) -> DomainState {
-            self.state.read()
+            self.data.state.read()
         }
 
         fn configure(ref self: ComponentState<TContractState>, peers: Peers) {
             self.assert_authority();
-            let mut state = self.state.read();
+            let mut state = self.data.state.read();
             assert!(state.peers.season.is_zero(), "already configured");
             let addresses = peers.addresses();
             let mut contains_self = false;
@@ -88,7 +89,7 @@ pub mod Lifecycle {
 
         fn activate(ref self: ComponentState<TContractState>) {
             self.assert_authority();
-            let mut state = self.state.read();
+            let mut state = self.data.state.read();
             assert!(!state.active, "already active");
             let peers = state.peers;
             assert!(peers.season.is_non_zero(), "not configured");
@@ -120,7 +121,7 @@ pub mod Lifecycle {
     pub impl InternalImpl<TContractState, +HasComponent<TContractState>> of InternalTrait<TContractState> {
         fn initialize(ref self: ComponentState<TContractState>, authority: ContractAddress) {
             assert!(authority.is_non_zero(), "zero authority");
-            assert!(self.state.read().authority.is_zero(), "already initialized");
+            assert!(self.data.state.read().authority.is_zero(), "already initialized");
             self
                 .write_state(
                     DomainState {
@@ -146,12 +147,12 @@ pub mod Lifecycle {
 
         #[inline(never)]
         fn assert_authority(self: @ComponentState<TContractState>) {
-            assert!(get_caller_address() == self.state.read().authority, "only authority");
+            assert!(get_caller_address() == self.data.state.read().authority, "only authority");
         }
 
         #[inline(never)]
         fn assert_configurator(self: @ComponentState<TContractState>) {
-            let state = self.state.read();
+            let state = self.data.state.read();
             let caller = get_caller_address();
             assert!(state.active, "domain inactive");
             assert!(caller == state.authority || caller == state.peers.registry, "only authority or registrar");
@@ -159,13 +160,13 @@ pub mod Lifecycle {
 
         #[inline(never)]
         fn require_active(self: @ComponentState<TContractState>) -> Peers {
-            let state = self.state.read();
+            let state = self.data.state.read();
             assert!(state.active, "domain inactive");
             state.peers
         }
 
         fn write_state(ref self: ComponentState<TContractState>, state: DomainState) {
-            self.state.write(state);
+            self.data.state.write(state);
             let mut values = array![];
             state.serialize(ref values);
             self

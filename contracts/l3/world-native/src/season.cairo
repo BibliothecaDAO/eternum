@@ -56,10 +56,8 @@ pub mod SeasonDomain {
 
     #[storage]
     struct Storage {
-        player_points: Map<(u32, ContractAddress), u128>,
-        season_points: Map<u32, u128>,
-        win_thresholds: Map<u32, Option<u128>>,
-        close_initiators: Map<u32, Option<ContractAddress>>,
+        #[flat]
+        data: games_storage::season::SeasonPointsStorage,
         #[substorage(v0)]
         lifecycle: Lifecycle::Storage,
         authentication: Authentication,
@@ -90,8 +88,8 @@ pub mod SeasonDomain {
         fn configure_season_win(ref self: ContractState, game_id: u32, points: u128) {
             self.lifecycle.assert_configurator();
             self.games().game(game_id);
-            assert!(self.win_thresholds.read(game_id).is_none(), "season win threshold already configured");
-            self.win_thresholds.write(game_id, Some(points));
+            assert!(self.data.win_thresholds.read(game_id).is_none(), "season win threshold already configured");
+            self.data.win_thresholds.write(game_id, Some(points));
             self
                 .emit(
                     RowSet {
@@ -103,7 +101,7 @@ pub mod SeasonDomain {
                 );
         }
         fn season_win_threshold(self: @ContractState, game_id: u32) -> u128 {
-            self.win_thresholds.read(game_id).expect('missing season win threshold')
+            self.data.win_thresholds.read(game_id).expect('missing season win threshold')
         }
         fn close_season(ref self: ContractState, game_id: u32, actor: ContractAddress, context: DomainContext) -> u64 {
             let peers = self.lifecycle.require_active();
@@ -117,10 +115,10 @@ pub mod SeasonDomain {
             );
             let threshold = self.season_win_threshold(game_id);
             assert!(threshold != 0, "season win threshold is zero");
-            let initiator = match self.close_initiators.read(game_id) {
+            let initiator = match self.data.close_initiators.read(game_id) {
                 Some(initiator) => initiator,
                 None => {
-                    self.close_initiators.write(game_id, Some(actor));
+                    self.data.close_initiators.write(game_id, Some(actor));
                     actor
                 },
             };
@@ -132,8 +130,8 @@ pub mod SeasonDomain {
             if remaining != 0 {
                 return remaining.into();
             }
-            self.close_initiators.write(game_id, None);
-            if self.player_points.read((game_id, initiator)) < threshold {
+            self.data.close_initiators.write(game_id, None);
+            if self.data.player_points.read((game_id, initiator)) < threshold {
                 return 0;
             }
             game.end_at = context.timestamp;
@@ -187,10 +185,10 @@ pub mod SeasonDomain {
             self.register_points(game_id, actor, amount, crate::game::PointActivity::Hyperstructure);
         }
         fn player_points(self: @ContractState, game_id: u32, actor: ContractAddress) -> u128 {
-            self.player_points.read((game_id, actor))
+            self.data.player_points.read((game_id, actor))
         }
         fn season_points(self: @ContractState, game_id: u32) -> u128 {
-            self.season_points.read(game_id)
+            self.data.season_points.read(game_id)
         }
         fn register_capture(ref self: ContractState, game_id: u32, actor: ContractAddress, category: u8) -> u128 {
             assert!(get_caller_address() == self.lifecycle.require_active().structures, "only structures domain");
@@ -349,10 +347,10 @@ pub mod SeasonDomain {
                 return;
             }
             self.emit(crate::game::PointsAwarded { version: 1, game_id, player: actor, activity, points: amount });
-            let points = self.player_points.read((game_id, actor)) + amount;
-            let total = self.season_points.read(game_id) + amount;
-            self.player_points.write((game_id, actor), points);
-            self.season_points.write(game_id, total);
+            let points = self.data.player_points.read((game_id, actor)) + amount;
+            let total = self.data.season_points.read(game_id) + amount;
+            self.data.player_points.write((game_id, actor), points);
+            self.data.season_points.write(game_id, total);
             self
                 .emit(
                     RowSet {

@@ -98,7 +98,7 @@ fn game_rules(game_id: u32, params: CreateGameParams, preset: crate::rules::Slic
 #[starknet::component]
 pub mod RegistrarState {
     use starknet::storage::{
-        Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess, StoragePointerWriteAccess,
+        StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess, StoragePointerWriteAccess,
     };
     use starknet::{get_caller_address, get_contract_address};
     use crate::events::RowSet;
@@ -110,12 +110,8 @@ pub mod RegistrarState {
     use super::{CreateGameParams, RosterPlayer, build_game, game_rules};
     #[storage]
     pub struct Storage {
-        pub presets: Map<u32, felt252>,
-        pub next_game: u32,
-        pub launch_ids: Map<felt252, u32>,
-        pub launch_commitments: Map<felt252, felt252>,
-        pub roster_sizes: Map<u32, u32>,
-        pub roster_players: Map<(u32, u32), RosterPlayer>,
+        #[flat]
+        pub data: games_storage::registrar::RegistrarStateStorage<RosterPlayer>,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -142,7 +138,7 @@ pub mod RegistrarState {
             }
             let commitment = crate::presets::commitment(definition);
             assert!(commitment != 0, "empty preset commitment");
-            self.presets.write(preset_id, commitment);
+            self.data.presets.write(preset_id, commitment);
             // Registration calldata retains the definition; launches supply its checked preimage.
             let values = array![commitment];
             self
@@ -153,20 +149,20 @@ pub mod RegistrarState {
                 );
         }
         fn preset_commitment(self: @ComponentState<TContractState>, preset_id: u32) -> felt252 {
-            self.presets.read(preset_id)
+            self.data.presets.read(preset_id)
         }
         fn next_game_id(self: @ComponentState<TContractState>) -> u32 {
-            self.next_game.read()
+            self.data.next_game.read()
         }
         fn game_id_by_name(self: @ComponentState<TContractState>, name: felt252) -> u32 {
-            self.launch_ids.read(name)
+            self.data.launch_ids.read(name)
         }
         fn blitz_roster(self: @ComponentState<TContractState>, game_id: u32) -> Span<RosterPlayer> {
-            let count = self.roster_sizes.read(game_id);
+            let count = self.data.roster_sizes.read(game_id);
             assert!(count != 0, "game has no Blitz roster");
             let mut players = array![];
             for index in 0..count {
-                players.append(self.roster_players.read((game_id, index)));
+                players.append(self.data.roster_players.read((game_id, index)));
             }
             players.span()
         }
@@ -180,13 +176,13 @@ pub mod RegistrarState {
             params.serialize(ref encoded);
             definition.serialize(ref encoded);
             let commitment = core::poseidon::poseidon_hash_span(encoded.span());
-            let previous = self.launch_ids.read(params.name);
+            let previous = self.data.launch_ids.read(params.name);
             if previous != 0 {
-                assert!(self.launch_commitments.read(params.name) == commitment, "conflicting game launch");
+                assert!(self.data.launch_commitments.read(params.name) == commitment, "conflicting game launch");
                 return previous;
             }
             self.validate_preset(params.preset_id, crate::presets::commitment(definition));
-            let game_id = self.next_game.read();
+            let game_id = self.data.next_game.read();
             assert!(game_id != 0 && game_id < 0xffffffff, "game identity space exhausted");
             self.register_roster(game_id, params.roster);
             let game = build_game(params, get_caller_address());
@@ -203,8 +199,8 @@ pub mod RegistrarState {
                 spacing: definition.settlement.spacing,
             };
             crate::presets::initialize_game(peers, game_id, definition, settlement_rules);
-            self.launch_ids.write(params.name, game_id);
-            self.launch_commitments.write(params.name, commitment);
+            self.data.launch_ids.write(params.name, game_id);
+            self.data.launch_commitments.write(params.name, commitment);
             self.write_next_game(game_id + 1);
             game_id
         }
@@ -217,11 +213,11 @@ pub mod RegistrarState {
         +Drop<TContractState>,
     > of InternalTrait<TContractState> {
         fn initialize(ref self: ComponentState<TContractState>) {
-            assert!(self.next_game.read() == 0, "registrar already initialized");
+            assert!(self.data.next_game.read() == 0, "registrar already initialized");
             self.write_next_game(1);
         }
         fn validate_preset(self: @ComponentState<TContractState>, preset_id: u32, definition_commitment: felt252) {
-            let commitment = self.presets.read(preset_id);
+            let commitment = self.data.presets.read(preset_id);
             assert!(commitment != 0, "preset is not registered");
             assert!(commitment == definition_commitment, "preset definition mismatch");
         }
@@ -254,9 +250,9 @@ pub mod RegistrarState {
                             .owner,
                     "roster binding mismatch",
                 );
-                self.roster_players.write((game_id, index), player);
+                self.data.roster_players.write((game_id, index), player);
             }
-            self.roster_sizes.write(game_id, players.len());
+            self.data.roster_sizes.write(game_id, players.len());
             let mut values = array![];
             players.serialize(ref values);
             self
@@ -267,7 +263,7 @@ pub mod RegistrarState {
                 );
         }
         fn write_next_game(ref self: ComponentState<TContractState>, next: u32) {
-            self.next_game.write(next);
+            self.data.next_game.write(next);
             self
                 .emit(
                     RowSet {

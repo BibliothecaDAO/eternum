@@ -117,7 +117,7 @@ pub trait IFaithOwnership<T> {
 #[starknet::component]
 pub mod FaithState {
     use starknet::ContractAddress;
-    use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
+    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
     use crate::commands::ExecutionContext;
     use crate::events::{RowDeleted, RowSet};
     use crate::game::{IGameDispatcher, IGameDispatcherTrait};
@@ -129,13 +129,10 @@ pub mod FaithState {
 
     #[storage]
     pub struct Storage {
-        pub faith_wonders: Map<(u32, u32), WonderFaith>,
-        pub faith_pledges: Map<(u32, u32), FaithfulStructure>,
-        pub faith_players: Map<(u32, ContractAddress, u32), PlayerFaithPoints>,
-        pub faith_wonder_count: Map<u32, u32>,
-        pub faith_wonder_ids: Map<(u32, u32), u32>,
-        pub faith_rules: Map<u32, Option<super::FaithRules>>,
-        pub prize_checkpoint: Map<u32, (u32, u128, u32)>,
+        #[flat]
+        pub data: games_storage::faith::FaithStateStorage<
+            WonderFaith, FaithfulStructure, PlayerFaithPoints, super::FaithRules,
+        >,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -154,9 +151,9 @@ pub mod FaithState {
         fn configure_faith(ref self: ComponentState<TContractState>, game_id: u32, rules: super::FaithRules) {
             get_dep_component!(@self, Life).assert_configurator();
             self.games().game(game_id);
-            assert!(self.faith_rules.read(game_id).is_none(), "faith rules already configured");
+            assert!(self.data.faith_rules.read(game_id).is_none(), "faith rules already configured");
             assert!(rules.owner_share_bps <= 10000, "invalid faith owner share");
-            self.faith_rules.write(game_id, Some(rules));
+            self.data.faith_rules.write(game_id, Some(rules));
             let mut values = array![];
             rules.serialize(ref values);
             self
@@ -167,7 +164,7 @@ pub mod FaithState {
                 );
         }
         fn faith_rules(self: @ComponentState<TContractState>, game_id: u32) -> super::FaithRules {
-            self.faith_rules.read(game_id).expect('missing faith rules')
+            self.data.faith_rules.read(game_id).expect('missing faith rules')
         }
         fn pledge_faith(
             ref self: ComponentState<TContractState>,
@@ -196,17 +193,17 @@ pub mod FaithState {
         ) {
             let game = self.authorize(game_id, context.timestamp);
             crate::game::assert_playing(game, context.timestamp);
-            let pledge = self.faith_pledges.read((game_id, structure_id));
+            let pledge = self.data.faith_pledges.read((game_id, structure_id));
             assert!(pledge.wonder_id != 0, "structure is not faithful");
             self.refresh_wonder(game_id, pledge.wonder_id, context.timestamp, game.end_at);
             let structure = self.structure(game_id, structure_id);
             self.transfer(game_id, structure_id, structure.owner, context.timestamp, game.end_at);
-            let mut wonder = self.faith_wonders.read((game_id, pledge.wonder_id));
+            let mut wonder = self.data.faith_wonders.read((game_id, pledge.wonder_id));
             assert!(actor == structure.owner || actor == wonder.last_recorded_owner, "only structure or wonder owner");
             if structure_id == pledge.wonder_id {
                 assert!(wonder.num_structures_pledged <= 1, "wonder has active pledges");
             }
-            let pledge = self.faith_pledges.read((game_id, structure_id));
+            let pledge = self.data.faith_pledges.read((game_id, structure_id));
             self.remove_pledge(game_id, structure_id, pledge, ref wonder, context.timestamp, game.end_at);
             self.record_removal(game_id, structure.owner, structure_id, pledge.wonder_id, context.timestamp);
         }
@@ -230,7 +227,7 @@ pub mod FaithState {
         ) {
             let game = self.authorize(game_id, context.timestamp);
             crate::game::assert_playing(game, context.timestamp);
-            if self.faith_pledges.read((game_id, structure_id)).wonder_id != 0 {
+            if self.data.faith_pledges.read((game_id, structure_id)).wonder_id != 0 {
                 let structure = self.structure(game_id, structure_id);
                 self.transfer(game_id, structure_id, structure.owner, context.timestamp, game.end_at);
             }
@@ -245,7 +242,7 @@ pub mod FaithState {
             let game = self.authorize(game_id, context.timestamp);
             self.require_started(game, context.timestamp);
             self.wonder(game_id, wonder_id);
-            let mut wonder = self.faith_wonders.read((game_id, wonder_id));
+            let mut wonder = self.data.faith_wonders.read((game_id, wonder_id));
             self.settle_wonder(game_id, wonder_id, ref wonder, context.timestamp, game.end_at);
             self.write_wonder(game_id, wonder_id, wonder);
         }
@@ -272,12 +269,12 @@ pub mod FaithState {
     > of PrizeSettlementTrait<TContractState> {
         fn settle_faith_wonders(ref self: ComponentState<TContractState>, game_id: u32, timestamp: u64) -> u32 {
             let game = self.authorize_prizes(game_id, timestamp);
-            let (start, mut high_score, mut winners) = self.prize_checkpoint.read(game_id);
-            let count = self.faith_wonder_count.read(game_id);
+            let (start, mut high_score, mut winners) = self.data.prize_checkpoint.read(game_id);
+            let count = self.data.faith_wonder_count.read(game_id);
             let end = start + core::cmp::min(8, count - start);
             for index in start..end {
-                let id = self.faith_wonder_ids.read((game_id, index));
-                let mut wonder = self.faith_wonders.read((game_id, id));
+                let id = self.data.faith_wonder_ids.read((game_id, index));
+                let mut wonder = self.data.faith_wonders.read((game_id, id));
                 self.settle_wonder(game_id, id, ref wonder, game.end_at, game.end_at);
                 self.write_wonder(game_id, id, wonder);
                 if wonder.claimed_points > high_score {
@@ -287,13 +284,13 @@ pub mod FaithState {
                     winners += 1;
                 }
             }
-            self.prize_checkpoint.write(game_id, (end, high_score, winners));
+            self.data.prize_checkpoint.write(game_id, (end, high_score, winners));
             count - end
         }
         fn faith_winner_count(self: @ComponentState<TContractState>, game_id: u32, wonder_id: u32) -> u32 {
-            let (cursor, high_score, winners) = self.prize_checkpoint.read(game_id);
-            assert!(cursor == self.faith_wonder_count.read(game_id), "faith settlement incomplete");
-            if high_score != 0 && self.faith_wonders.read((game_id, wonder_id)).claimed_points == high_score {
+            let (cursor, high_score, winners) = self.data.prize_checkpoint.read(game_id);
+            assert!(cursor == self.data.faith_wonder_count.read(game_id), "faith settlement incomplete");
+            if high_score != 0 && self.data.faith_wonders.read((game_id, wonder_id)).claimed_points == high_score {
                 winners
             } else {
                 0
@@ -371,7 +368,7 @@ pub mod FaithState {
             structure: StructureRecord,
             timestamp: u64,
         ) -> FaithfulStructure {
-            let rules = self.faith_rules.read(game_id).expect('missing faith rules');
+            let rules = self.data.faith_rules.read(game_id).expect('missing faith rules');
             let rate = if structure.metadata.has_wonder {
                 rules.wonder_rate
             } else if structure.base.category == 1 {
@@ -399,19 +396,19 @@ pub mod FaithState {
             structure: StructureRecord,
         ) {
             assert!(
-                self.faith_pledges.read((game_id, command.structure_id)).wonder_id == 0,
+                self.data.faith_pledges.read((game_id, command.structure_id)).wonder_id == 0,
                 "structure is already faithful",
             );
             let wonder = self.wonder(game_id, command.wonder_id);
             assert!(wonder.owner != 0.try_into().unwrap(), "wonder has no owner");
             if command.structure_id != command.wonder_id {
                 assert!(
-                    self.faith_pledges.read((game_id, command.wonder_id)).wonder_id == command.wonder_id,
+                    self.data.faith_pledges.read((game_id, command.wonder_id)).wonder_id == command.wonder_id,
                     "wonder must pledge to itself first",
                 );
                 if structure.metadata.has_wonder {
                     assert!(
-                        self.faith_wonders.read((game_id, command.structure_id)).num_structures_pledged == 0,
+                        self.data.faith_wonders.read((game_id, command.structure_id)).num_structures_pledged == 0,
                         "submitting wonder has active pledges",
                     );
                 }
@@ -420,11 +417,11 @@ pub mod FaithState {
         fn refresh_wonder(ref self: ComponentState<TContractState>, game_id: u32, id: u32, timestamp: u64, end: u64) {
             let structure = self.wonder(game_id, id);
             assert!(structure.owner != 0.try_into().unwrap(), "wonder has no owner");
-            let mut wonder = self.faith_wonders.read((game_id, id));
+            let mut wonder = self.data.faith_wonders.read((game_id, id));
             if wonder.last_recorded_owner == 0.try_into().unwrap() {
-                let count = self.faith_wonder_count.read(game_id);
-                self.faith_wonder_ids.write((game_id, count), id);
-                self.faith_wonder_count.write(game_id, count + 1);
+                let count = self.data.faith_wonder_count.read(game_id);
+                self.data.faith_wonder_ids.write((game_id, count), id);
+                self.data.faith_wonder_count.write(game_id, count + 1);
                 self.settle_wonder(game_id, id, ref wonder, timestamp, end);
                 wonder.last_recorded_owner = structure.owner;
                 self.write_wonder(game_id, id, wonder);
@@ -439,7 +436,7 @@ pub mod FaithState {
             timestamp: u64,
             end: u64,
         ) {
-            let mut wonder = self.faith_wonders.read((game_id, pledge.wonder_id));
+            let mut wonder = self.data.faith_wonders.read((game_id, pledge.wonder_id));
             self.settle_wonder(game_id, pledge.wonder_id, ref wonder, timestamp, end);
             wonder.claim_per_sec += pledge.fp_to_wonder_owner_per_sec.into() + pledge.fp_to_struct_owner_per_sec.into();
             wonder.owner_claim_per_sec += pledge.fp_to_wonder_owner_per_sec.into();
@@ -519,7 +516,7 @@ pub mod FaithState {
                 );
         }
         fn write_pledge(ref self: ComponentState<TContractState>, game_id: u32, id: u32, pledge: FaithfulStructure) {
-            self.faith_pledges.write((game_id, id), pledge);
+            self.data.faith_pledges.write((game_id, id), pledge);
             let keys = array![game_id.into(), id.into()].span();
             if pledge.wonder_id == 0 {
                 self.emit(RowDeleted { version: 1, model: 'FaithfulStructure', keys });
@@ -615,7 +612,7 @@ pub mod FaithState {
             now: u64,
             season_end: u64,
         ) {
-            let mut wonder = self.faith_wonders.read((game_id, structure_id));
+            let mut wonder = self.data.faith_wonders.read((game_id, structure_id));
             if wonder.last_recorded_owner != 0.try_into().unwrap() && wonder.last_recorded_owner != new_owner {
                 self.settle_wonder(game_id, structure_id, ref wonder, now, season_end);
                 self
@@ -636,7 +633,7 @@ pub mod FaithState {
                 wonder.last_recorded_owner = new_owner;
                 self.write_wonder(game_id, structure_id, wonder);
             }
-            let mut pledge = self.faith_pledges.read((game_id, structure_id));
+            let mut pledge = self.data.faith_pledges.read((game_id, structure_id));
             if pledge.wonder_id != 0 && pledge.last_recorded_owner != new_owner {
                 let rate = pledge.fp_to_struct_owner_per_sec.into();
                 self
@@ -691,7 +688,7 @@ pub mod FaithState {
             } else {
                 now
             };
-            let mut points = self.faith_players.read((game_id, player, wonder_id));
+            let mut points = self.data.faith_players.read((game_id, player, wonder_id));
             let elapsed = if points.last_updated_at > 0 && end_time > points.last_updated_at {
                 end_time - points.last_updated_at
             } else {
@@ -707,7 +704,7 @@ pub mod FaithState {
                 points.points_per_sec_as_owner -= owner_delta;
                 points.points_per_sec_as_pledger -= pledger_delta;
             }
-            self.faith_players.write((game_id, player, wonder_id), points);
+            self.data.faith_players.write((game_id, player, wonder_id), points);
             let mut values = array![];
             points.serialize(ref values);
             self
@@ -721,7 +718,7 @@ pub mod FaithState {
                 );
         }
         fn write_wonder(ref self: ComponentState<TContractState>, game_id: u32, wonder_id: u32, wonder: WonderFaith) {
-            self.faith_wonders.write((game_id, wonder_id), wonder);
+            self.data.faith_wonders.write((game_id, wonder_id), wonder);
             let mut values = array![];
             wonder.serialize(ref values);
             self
@@ -737,9 +734,9 @@ pub mod FaithState {
         fn winners(self: @ComponentState<TContractState>, game_id: u32) -> WonderFaithWinners {
             let mut high_score = 0_u128;
             let mut ids = array![];
-            for index in 0..self.faith_wonder_count.read(game_id) {
-                let id = self.faith_wonder_ids.read((game_id, index));
-                let score = self.faith_wonders.read((game_id, id)).claimed_points;
+            for index in 0..self.data.faith_wonder_count.read(game_id) {
+                let id = self.data.faith_wonder_ids.read((game_id, index));
+                let score = self.data.faith_wonders.read((game_id, id)).claimed_points;
                 if score > high_score {
                     high_score = score;
                     ids = array![id];

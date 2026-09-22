@@ -255,7 +255,7 @@ pub fn boost_production(ref bonus: crate::production::ProductionBonus, id: u8, r
 
 #[starknet::component]
 pub mod RelicState {
-    use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
+    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
     use starknet::{ContractAddress, get_caller_address};
     use crate::game::{IGameDispatcher, IGameDispatcherTrait, IPointsDispatcher, IPointsDispatcherTrait, assert_playing};
     use crate::lifecycle::Lifecycle::InternalTrait as LifeInternalTrait;
@@ -270,13 +270,8 @@ pub mod RelicState {
     };
     #[storage]
     pub struct Storage {
-        pub relic_rules: Map<(u32, u8), RelicRule>,
-        pub relic_configured: Map<u32, bool>,
-        pub chest_rules: Map<u32, Option<super::ChestRules>>,
-        pub chest_pity: Map<(u32, ContractAddress, u8), u16>,
-        pub chest_tokens: Map<(u32, ContractAddress, u64), u16>,
-        pub chest_rewards: Map<(u32, u32), Option<super::ChestReward>>,
-        pub artificer_costs: Map<u32, Option<u128>>,
+        #[flat]
+        pub data: games_storage::relics::RelicStateStorage<RelicRule, super::ChestRules, super::ChestReward>,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -311,18 +306,18 @@ pub mod RelicState {
                     "invalid chest type probabilities",
                 );
             }
-            assert!(!self.relic_configured.read(game_id), "relic rules already configured");
+            assert!(!self.data.relic_configured.read(game_id), "relic rules already configured");
             assert!(rules.len() == 18, "all eighteen relic rules required");
             let mut total: u128 = 0;
             for index in 0..18_u32 {
                 let rule = *rules.at(index);
                 total += rule.draw_weight;
-                self.relic_rules.write((game_id, super::FIRST_RELIC + index.try_into().unwrap()), rule);
+                self.data.relic_rules.write((game_id, super::FIRST_RELIC + index.try_into().unwrap()), rule);
             }
             assert!(total != 0, "empty relic discovery pool");
             assert!(*rules.at(6).uses == 1 && *rules.at(7).uses == 2, "invalid reveal radii");
-            self.relic_configured.write(game_id, true);
-            self.chest_rules.write(game_id, chests);
+            self.data.relic_configured.write(game_id, true);
+            self.data.chest_rules.write(game_id, chests);
             if let Some(chest_rules) = chests {
                 let mut values = array![];
                 chest_rules.serialize(ref values);
@@ -343,21 +338,21 @@ pub mod RelicState {
                 );
         }
         fn chest_rules(self: @ComponentState<TContractState>, game_id: u32) -> Option<super::ChestRules> {
-            assert!(self.relic_configured.read(game_id), "missing chest rules");
-            self.chest_rules.read(game_id)
+            assert!(self.data.relic_configured.read(game_id), "missing chest rules");
+            self.data.chest_rules.read(game_id)
         }
         fn chest_pity(self: @ComponentState<TContractState>, game_id: u32, player: ContractAddress, depth: u8) -> u16 {
-            self.chest_pity.read((game_id, player, depth))
+            self.data.chest_pity.read((game_id, player, depth))
         }
         fn chest_tokens(
             self: @ComponentState<TContractState>, game_id: u32, player: ContractAddress, epoch: u64,
         ) -> u16 {
-            self.chest_tokens.read((game_id, player, epoch))
+            self.data.chest_tokens.read((game_id, player, epoch))
         }
         fn chest_reward(
             self: @ComponentState<TContractState>, game_id: u32, result_id: u32,
         ) -> Option<super::ChestReward> {
-            self.chest_rewards.read((game_id, result_id))
+            self.data.chest_rewards.read((game_id, result_id))
         }
         fn grant_reveal_chest(
             ref self: ComponentState<TContractState>,
@@ -387,10 +382,10 @@ pub mod RelicState {
         }
 
         fn relic_rules(self: @ComponentState<TContractState>, game_id: u32) -> Span<RelicRule> {
-            assert!(self.relic_configured.read(game_id), "missing relic rules");
+            assert!(self.data.relic_configured.read(game_id), "missing relic rules");
             let mut rules = array![];
             for id in super::FIRST_RELIC..super::LAST_RELIC + 1 {
-                rules.append(self.relic_rules.read((game_id, id)));
+                rules.append(self.data.relic_rules.read((game_id, id)));
             }
             rules.span()
         }
@@ -439,8 +434,8 @@ pub mod RelicState {
                 command.relic_id >= super::FIRST_RELIC && command.relic_id <= super::LAST_RELIC,
                 "invalid relic resource",
             );
-            assert!(self.relic_configured.read(game_id), "missing relic rules");
-            let rule = self.relic_rules.read((game_id, command.relic_id));
+            assert!(self.data.relic_configured.read(game_id), "missing relic rules");
+            let rule = self.data.relic_rules.read((game_id, command.relic_id));
             let payer = self.apply_effect(game_id, actor, command, rule, context.timestamp);
             self
                 .resources()
@@ -470,8 +465,8 @@ pub mod RelicState {
         fn configure_artificer(ref self: ComponentState<TContractState>, game_id: u32, research_cost: u128) {
             get_dep_component!(@self, Life).assert_configurator();
             self.games().game(game_id);
-            assert!(self.artificer_costs.read(game_id).is_none(), "artificer already configured");
-            self.artificer_costs.write(game_id, Some(research_cost));
+            assert!(self.data.artificer_costs.read(game_id).is_none(), "artificer already configured");
+            self.data.artificer_costs.write(game_id, Some(research_cost));
             self
                 .emit(
                     crate::events::RowSet {
@@ -483,7 +478,7 @@ pub mod RelicState {
                 );
         }
         fn artificer_cost(self: @ComponentState<TContractState>, game_id: u32) -> u128 {
-            self.artificer_costs.read(game_id).expect('missing artificer cost')
+            self.data.artificer_costs.read(game_id).expect('missing artificer cost')
         }
         fn craft_relic(
             ref self: ComponentState<TContractState>,
@@ -561,8 +556,8 @@ pub mod RelicState {
                 .spacing;
             let depth: u8 = (command.coord.y / spacing % 4).try_into().unwrap();
             let epoch = context.timestamp / game_rules.epoch_seconds.into();
-            let old_pity = self.chest_pity.read((game_id, actor, depth));
-            let tokens = self.chest_tokens.read((game_id, actor, epoch));
+            let old_pity = self.data.chest_pity.read((game_id, actor, depth));
+            let tokens = self.data.chest_tokens.read((game_id, actor, epoch));
             let mut root = context.raw_root;
             let seed = crate::random::game_root(ref root, game_id, game.seed);
             let ground = crate::expeditions::IExpeditionRulesDispatcherTrait::depth_rules(
@@ -627,7 +622,7 @@ pub mod RelicState {
             tokens: u16,
         ) {
             if roll.pity != old_pity {
-                self.chest_pity.write((game_id, actor, depth), roll.pity);
+                self.data.chest_pity.write((game_id, actor, depth), roll.pity);
                 self
                     .emit(
                         crate::events::RowSet {
@@ -639,7 +634,7 @@ pub mod RelicState {
                     );
             }
             if roll.kind == super::ChestKind::Token {
-                self.chest_tokens.write((game_id, actor, epoch), tokens + 1);
+                self.data.chest_tokens.write((game_id, actor, epoch), tokens + 1);
                 self
                     .emit(
                         crate::events::RowSet {
@@ -657,7 +652,7 @@ pub mod RelicState {
         ) {
             let id = self.games().allocate_entity(game_id);
             if reward.kind != super::ChestKind::Relic {
-                self.chest_rewards.write((game_id, id), Some(reward));
+                self.data.chest_rewards.write((game_id, id), Some(reward));
                 let mut values = array![];
                 reward.serialize(ref values);
                 self

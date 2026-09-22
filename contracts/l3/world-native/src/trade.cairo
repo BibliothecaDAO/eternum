@@ -101,18 +101,14 @@ pub trait IEconomyDelivery<T> {
 
 #[starknet::component]
 pub mod TradeState {
-    use starknet::storage::{
-        Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerWriteAccess,
-    };
+    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerWriteAccess};
     use crate::events::{RowDeleted, RowMemberSet, RowSet};
     use super::{TradeKey, TradeOrder, TradeRules};
 
     #[storage]
     pub struct Storage {
-        pub orders: Map<(u32, u32), TradeOrder>,
-        pub open_count: Map<(u32, u32), u8>,
-        pub rules: Map<u32, TradeRules>,
-        pub configured: Map<u32, bool>,
+        #[flat]
+        pub data: games_storage::trade::TradeStateStorage<TradeOrder, TradeRules>,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -124,9 +120,9 @@ pub mod TradeState {
     #[generate_trait]
     pub impl InternalImpl<TContractState, +HasComponent<TContractState>> of InternalTrait<TContractState> {
         fn configure(ref self: ComponentState<TContractState>, game_id: u32, rules: TradeRules) {
-            assert!(!self.configured.read(game_id), "trade rules already configured");
-            self.configured.write(game_id, true);
-            self.rules.write(game_id, rules);
+            assert!(!self.data.configured.read(game_id), "trade rules already configured");
+            self.data.configured.write(game_id, true);
+            self.data.rules.write(game_id, rules);
             self
                 .emit(
                     RowSet {
@@ -138,11 +134,11 @@ pub mod TradeState {
                 );
         }
         fn rules(self: @ComponentState<TContractState>, game_id: u32) -> TradeRules {
-            assert!(self.configured.read(game_id), "missing trade rules");
-            self.rules.read(game_id)
+            assert!(self.data.configured.read(game_id), "missing trade rules");
+            self.data.rules.read(game_id)
         }
         fn order(self: @ComponentState<TContractState>, key: TradeKey) -> Option<TradeOrder> {
-            let order = self.orders.read((key.game_id, key.trade_id));
+            let order = self.data.orders.read((key.game_id, key.trade_id));
             if order.maker_id == 0 {
                 None
             } else {
@@ -150,14 +146,14 @@ pub mod TradeState {
             }
         }
         fn create(ref self: ComponentState<TContractState>, key: TradeKey, order: TradeOrder) {
-            let count = self.open_count.read((key.game_id, order.maker_id));
+            let count = self.data.open_count.read((key.game_id, order.maker_id));
             assert!(count < self.rules(key.game_id).max_count, "trade count exceeds max");
             assert!(self.order(key).is_none(), "trade already exists");
-            self.open_count.write((key.game_id, order.maker_id), count + 1);
+            self.data.open_count.write((key.game_id, order.maker_id), count + 1);
             self.write(key, order);
         }
         fn write(ref self: ComponentState<TContractState>, key: TradeKey, order: TradeOrder) {
-            self.orders.write((key.game_id, key.trade_id), order);
+            self.data.orders.write((key.game_id, key.trade_id), order);
             let mut values = array![];
             order.serialize(ref values);
             self
@@ -176,7 +172,7 @@ pub mod TradeState {
                 self.remove(key, order);
                 return;
             }
-            self.orders.entry((key.game_id, key.trade_id)).remaining_lots.write(order.remaining_lots);
+            self.data.orders.entry((key.game_id, key.trade_id)).remaining_lots.write(order.remaining_lots);
             self
                 .emit(
                     RowMemberSet {
@@ -189,9 +185,9 @@ pub mod TradeState {
                 );
         }
         fn remove(ref self: ComponentState<TContractState>, key: TradeKey, order: TradeOrder) {
-            let count = self.open_count.read((key.game_id, order.maker_id));
-            self.open_count.write((key.game_id, order.maker_id), count - 1);
-            self.orders.entry((key.game_id, key.trade_id)).maker_id.write(0);
+            let count = self.data.open_count.read((key.game_id, order.maker_id));
+            self.data.open_count.write((key.game_id, order.maker_id), count - 1);
+            self.data.orders.entry((key.game_id, key.trade_id)).maker_id.write(0);
             self
                 .emit(
                     RowDeleted {

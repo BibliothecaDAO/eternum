@@ -177,13 +177,13 @@ pub struct BattleEvent {
 
 #[starknet::component]
 pub mod TroopState {
-    use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
+    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
     use crate::events::{RowDeleted, RowMemberSet, RowSet};
     use super::{ExplorerKey, ExplorerTroops, Troops};
     #[storage]
     pub struct Storage {
-        pub explorers: Map<(u32, u32), ExplorerTroops>,
-        pub exists: Map<(u32, u32), bool>,
+        #[flat]
+        pub data: games_storage::troops::TroopStateStorage<ExplorerTroops>,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -195,8 +195,8 @@ pub mod TroopState {
     #[generate_trait]
     pub impl InternalImpl<TContractState, +HasComponent<TContractState>> of InternalTrait<TContractState> {
         fn explorer(self: @ComponentState<TContractState>, key: ExplorerKey) -> Option<ExplorerTroops> {
-            if self.exists.read((key.game_id, key.explorer_id)) {
-                Some(self.explorers.read((key.game_id, key.explorer_id)))
+            if self.data.exists.read((key.game_id, key.explorer_id)) {
+                Some(self.data.explorers.read((key.game_id, key.explorer_id)))
             } else {
                 None
             }
@@ -204,8 +204,8 @@ pub mod TroopState {
         fn create(ref self: ComponentState<TContractState>, key: ExplorerKey, explorer: ExplorerTroops) {
             assert!(key.game_id != 0 && key.explorer_id != 0, "reserved explorer key");
             assert!(self.explorer(key).is_none(), "explorer already exists");
-            self.explorers.write((key.game_id, key.explorer_id), explorer);
-            self.exists.write((key.game_id, key.explorer_id), true);
+            self.data.explorers.write((key.game_id, key.explorer_id), explorer);
+            self.data.exists.write((key.game_id, key.explorer_id), true);
 
             let mut keys = array![];
             key.serialize(ref keys);
@@ -215,7 +215,7 @@ pub mod TroopState {
         }
         fn save(ref self: ComponentState<TContractState>, key: ExplorerKey, explorer: ExplorerTroops) {
             assert!(self.explorer(key).is_some(), "missing explorer");
-            self.explorers.write((key.game_id, key.explorer_id), explorer);
+            self.data.explorers.write((key.game_id, key.explorer_id), explorer);
             let mut keys = array![];
             key.serialize(ref keys);
             let mut values = array![];
@@ -225,7 +225,7 @@ pub mod TroopState {
         fn update_troops(ref self: ComponentState<TContractState>, key: ExplorerKey, troops: Troops) {
             let mut explorer = self.explorer(key).expect('missing explorer');
             explorer.troops = troops;
-            self.explorers.write((key.game_id, key.explorer_id), explorer);
+            self.data.explorers.write((key.game_id, key.explorer_id), explorer);
             let mut keys = array![];
             key.serialize(ref keys);
             let mut values = array![];
@@ -241,7 +241,7 @@ pub mod TroopState {
             self.explorer(key).expect('missing explorer');
 
             // The existence bit is authoritative; recreation overwrites the complete value.
-            self.exists.write((key.game_id, key.explorer_id), false);
+            self.data.exists.write((key.game_id, key.explorer_id), false);
             let mut keys = array![];
             key.serialize(ref keys);
             self.emit(RowDeleted { version: 1, model: 'ExplorerTroops', keys: keys.span() });

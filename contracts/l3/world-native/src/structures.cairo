@@ -134,15 +134,15 @@ pub struct StructureRecord {
 #[starknet::component]
 pub mod StructureState {
     use starknet::storage::{
-        Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess,
+        StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess,
         StoragePointerWriteAccess,
     };
     use crate::events::{RowMemberSet, RowSet};
     use super::{ContractAddress, ResourceKey, Structure, StructureRecord};
     #[storage]
     pub struct Storage {
-        pub structures: Map<(u32, u32), StructureRecord>,
-        pub explorers: Map<(u32, u32, u16), u32>,
+        #[flat]
+        pub data: games_storage::structures::StructureStateStorage<StructureRecord>,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -153,12 +153,12 @@ pub mod StructureState {
     #[generate_trait]
     pub impl InternalImpl<TContractState, +HasComponent<TContractState>> of InternalTrait<TContractState> {
         fn owner(self: @ComponentState<TContractState>, key: ResourceKey) -> ContractAddress {
-            self.structures.entry((key.game_id, key.entity_id)).owner.read()
+            self.data.structures.entry((key.game_id, key.entity_id)).owner.read()
         }
         fn mark_starting_troops(ref self: ComponentState<TContractState>, key: ResourceKey) {
             let mut base = self.record(key).base;
             base.starting_troops_granted = true;
-            self.structures.entry((key.game_id, key.entity_id)).base.write(base);
+            self.data.structures.entry((key.game_id, key.entity_id)).base.write(base);
             self.emit_base(key, base);
         }
         fn emit_base(ref self: ComponentState<TContractState>, key: ResourceKey, base: super::StructureBase) {
@@ -176,11 +176,11 @@ pub mod StructureState {
                 );
         }
         fn exists(self: @ComponentState<TContractState>, key: ResourceKey) -> bool {
-            self.structures.entry((key.game_id, key.entity_id)).base.read().category != 0
+            self.data.structures.entry((key.game_id, key.entity_id)).base.read().category != 0
         }
         fn record(self: @ComponentState<TContractState>, key: ResourceKey) -> StructureRecord {
             assert!(self.exists(key), "missing structure");
-            self.structures.read((key.game_id, key.entity_id))
+            self.data.structures.read((key.game_id, key.entity_id))
         }
         fn structure(self: @ComponentState<TContractState>, key: ResourceKey) -> Option<Structure> {
             if !self.exists(key) {
@@ -189,7 +189,7 @@ pub mod StructureState {
             let record = self.record(key);
             let mut explorers = array![];
             for index in 0..record.base.troop_explorer_count {
-                explorers.append(self.explorers.read((key.game_id, key.entity_id, index)));
+                explorers.append(self.data.explorers.read((key.game_id, key.entity_id, index)));
             }
             Some(
                 Structure {
@@ -206,7 +206,7 @@ pub mod StructureState {
                 key.game_id != 0 && key.entity_id != 0 && record.base.category != 0 && !self.exists(key),
                 "invalid new structure",
             );
-            self.structures.write((key.game_id, key.entity_id), record);
+            self.data.structures.write((key.game_id, key.entity_id), record);
             let mut keys = array![];
             key.serialize(ref keys);
             let mut values = array![];
@@ -217,10 +217,10 @@ pub mod StructureState {
             ref self: ComponentState<TContractState>, key: ResourceKey, owner: starknet::ContractAddress,
         ) {
             assert!(self.exists(key), "missing structure");
-            if self.structures.entry((key.game_id, key.entity_id)).owner.read() == owner {
+            if self.data.structures.entry((key.game_id, key.entity_id)).owner.read() == owner {
                 return;
             }
-            self.structures.entry((key.game_id, key.entity_id)).owner.write(owner);
+            self.data.structures.entry((key.game_id, key.entity_id)).owner.write(owner);
             self
                 .emit(
                     RowMemberSet {
@@ -242,7 +242,7 @@ pub mod StructureState {
             let (explorers, guards) = crate::upgrades::troop_limits(config, base.level);
             base.troop_max_explorer_count = explorers;
             base.troop_max_guard_count = guards;
-            self.structures.entry((key.game_id, key.entity_id)).base.write(base);
+            self.data.structures.entry((key.game_id, key.entity_id)).base.write(base);
             self.emit_base(key, base);
         }
         fn append_explorer(ref self: ComponentState<TContractState>, key: ResourceKey, explorer_id: u32) {
@@ -250,9 +250,9 @@ pub mod StructureState {
             assert!(
                 record.base.troop_explorer_count < record.base.troop_max_explorer_count, "structure explorer limit",
             );
-            self.explorers.write((key.game_id, key.entity_id, record.base.troop_explorer_count), explorer_id);
+            self.data.explorers.write((key.game_id, key.entity_id, record.base.troop_explorer_count), explorer_id);
             record.base.troop_explorer_count += 1;
-            self.structures.entry((key.game_id, key.entity_id)).base.write(record.base);
+            self.data.structures.entry((key.game_id, key.entity_id)).base.write(record.base);
             self.emit_explorers(key);
         }
         fn remove_explorer(ref self: ComponentState<TContractState>, key: ResourceKey, explorer_id: u32) {
@@ -260,17 +260,17 @@ pub mod StructureState {
             let mut found = false;
             let mut next = 0;
             for index in 0..record.base.troop_explorer_count {
-                let id = self.explorers.read((key.game_id, key.entity_id, index));
+                let id = self.data.explorers.read((key.game_id, key.entity_id, index));
                 if id == explorer_id {
                     found = true;
                 } else {
-                    self.explorers.write((key.game_id, key.entity_id, next), id);
+                    self.data.explorers.write((key.game_id, key.entity_id, next), id);
                     next += 1;
                 }
             }
             assert!(found, "explorer absent from structure");
             record.base.troop_explorer_count = next;
-            self.structures.entry((key.game_id, key.entity_id)).base.write(record.base);
+            self.data.structures.entry((key.game_id, key.entity_id)).base.write(record.base);
             self.emit_explorers(key);
         }
         fn emit_explorers(ref self: ComponentState<TContractState>, key: ResourceKey) {
@@ -328,7 +328,7 @@ pub trait IStructures<T> {
 #[starknet::contract]
 pub mod StructuresDomain {
     use starknet::storage::{
-        Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess,
+        StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess,
         StoragePointerWriteAccess,
     };
     use starknet::{ContractAddress, get_block_timestamp, get_caller_address};
@@ -361,16 +361,14 @@ pub mod StructuresDomain {
     impl StructureInternal = StructureState::InternalImpl<ContractState>;
     #[storage]
     struct Storage {
+        #[flat]
+        pub data: games_storage::structures::StructuresDomainStorage<crate::resources::ResourceAmount>,
         #[substorage(v0)]
         lifecycle: Lifecycle::Storage,
-        camp_resource_count: Map<u32, Option<u32>>,
-        camp_grants: Map<(u32, u32), crate::resources::ResourceAmount>,
         #[substorage(v0)]
         structures: StructureState::Storage,
         #[substorage(v0)]
         buildings: BuildingState::Storage,
-        address_names: Map<ContractAddress, felt252>,
-        entity_names: Map<(u32, u32), felt252>,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -387,13 +385,13 @@ pub mod StructuresDomain {
         fn configure_camps(ref self: ContractState, game_id: u32, resources: Span<crate::resources::ResourceAmount>) {
             self.lifecycle.assert_configurator();
             let _ = self.game_dispatcher().game(game_id);
-            assert!(self.camp_resource_count.read(game_id).is_none(), "camp resources already configured");
+            assert!(self.data.camp_resource_count.read(game_id).is_none(), "camp resources already configured");
             for index in 0..resources.len() {
                 let resource = *resources.at(index);
                 let _ = self.resources_dispatcher().resource_rule(game_id, resource.resource_type);
-                self.camp_grants.write((game_id, index), resource);
+                self.data.camp_grants.write((game_id, index), resource);
             }
-            self.camp_resource_count.write(game_id, Some(resources.len()));
+            self.data.camp_resource_count.write(game_id, Some(resources.len()));
             let mut values = array![];
             resources.serialize(ref values);
             self
@@ -404,10 +402,10 @@ pub mod StructuresDomain {
                 );
         }
         fn camp_resources(self: @ContractState, game_id: u32) -> Span<crate::resources::ResourceAmount> {
-            let count = self.camp_resource_count.read(game_id).expect('camp resources not configured');
+            let count = self.data.camp_resource_count.read(game_id).expect('camp resources not configured');
             let mut resources = array![];
             for index in 0..count {
-                resources.append(self.camp_grants.read((game_id, index)));
+                resources.append(self.data.camp_grants.read((game_id, index)));
             }
             resources.span()
         }
@@ -487,7 +485,7 @@ pub mod StructuresDomain {
             self.buildings.building(key)
         }
         fn structure_buildings(self: @ContractState, key: ResourceKey) -> StructureBuildings {
-            self.buildings.structure_buildings.read((key.game_id, key.entity_id))
+            self.buildings.data.structure_buildings.read((key.game_id, key.entity_id))
         }
         fn create_discovery(
             ref self: ContractState, game_id: u32, coord: Coord, discovery: Discovery, seed: u256, timestamp: u64,
@@ -695,7 +693,7 @@ pub mod StructuresDomain {
             self.erect_building(key, actor, base, location, coord, command.category, rule, context.timestamp);
             self.apply_board_effects(key, before, self.neighbor_effects(key, base, coord), context.timestamp);
             let mut count = crate::buildings::category_count(
-                self.buildings.structure_buildings.read((game_id, command.structure_id)), command.category,
+                self.buildings.data.structure_buildings.read((game_id, command.structure_id)), command.category,
             );
             if self.buildings.board(game_id).is_some() && command.category == 25 {
                 count -= 1;
@@ -823,7 +821,7 @@ pub mod StructuresDomain {
                     record.metadata.attunement = next;
                 },
             }
-            self.structures.structures.entry((game_id, command.structure_id)).metadata.write(record.metadata);
+            self.structures.data.structures.entry((game_id, command.structure_id)).metadata.write(record.metadata);
             let mut values = array![];
             record.metadata.serialize(ref values);
             self
@@ -877,7 +875,7 @@ pub mod StructuresDomain {
     #[abi(embed_v0)]
     impl Names of crate::names::INames<ContractState> {
         fn entity_name(self: @ContractState, key: ResourceKey) -> crate::names::AddressName {
-            crate::names::AddressName { name: self.entity_names.read((key.game_id, key.entity_id)) }
+            crate::names::AddressName { name: self.data.entity_names.read((key.game_id, key.entity_id)) }
         }
         fn set_entity_name(
             ref self: ContractState,
@@ -900,7 +898,7 @@ pub mod StructuresDomain {
                 },
             };
             assert!(self.structures.record(home).owner == actor, "actor does not own entity");
-            self.entity_names.write((game_id, command.entity_id), command.name);
+            self.data.entity_names.write((game_id, command.entity_id), command.name);
             self
                 .emit(
                     RowSet {
@@ -912,7 +910,7 @@ pub mod StructuresDomain {
                 );
         }
         fn address_name(self: @ContractState, address: ContractAddress) -> crate::names::AddressName {
-            crate::names::AddressName { name: self.address_names.read(address) }
+            crate::names::AddressName { name: self.data.address_names.read(address) }
         }
         fn set_address_name(
             ref self: ContractState,
@@ -930,8 +928,8 @@ pub mod StructuresDomain {
                 self.structures.exists(ResourceKey { game_id, entity_id: command.owned_structure_id }),
                 "actor does not own structure",
             );
-            assert!(self.structures.structures.entry(key).owner.read() == actor, "actor does not own structure");
-            self.address_names.write(actor, command.name);
+            assert!(self.structures.data.structures.entry(key).owner.read() == actor, "actor does not own structure");
+            self.data.address_names.write(actor, command.name);
             self
                 .emit(
                     RowSet {
@@ -1210,7 +1208,7 @@ pub mod StructuresDomain {
         }
         fn provision_realm_economy(ref self: ContractState, key: ResourceKey, timestamp: u64) {
             let record = self.structures.record(key);
-            let counts = self.buildings.structure_buildings.read((key.game_id, key.entity_id));
+            let counts = self.buildings.data.structure_buildings.read((key.game_id, key.entity_id));
             const LABOR_COUNT_SCALE: u128 = 0x10000000000000000;
             assert!(counts.packed_counts_2 / LABOR_COUNT_SCALE % 256 == 0, "realm already provisioned");
             let coord = Coord { alt: false, x: record.base.coord_x, y: record.base.coord_y };
@@ -1435,7 +1433,7 @@ pub mod StructuresDomain {
             crate::commands::assert_context_time(timestamp);
             assert_playing(self.game_dispatcher().game(key.game_id), timestamp);
             assert!(self.structures.owner(key) == actor, "actor does not own structure");
-            let base = self.structures.structures.entry((key.game_id, key.entity_id)).base.read();
+            let base = self.structures.data.structures.entry((key.game_id, key.entity_id)).base.read();
             assert!(
                 base.category == 1 || base.category == 5 || base.category == 7, "structure does not support production",
             );
@@ -1469,7 +1467,7 @@ pub mod StructuresDomain {
             if category == 25 && self.buildings.board(key.game_id).is_some() {
                 return;
             }
-            let resources = self.structures.structures.entry((key.game_id, key.entity_id)).resources_packed.read();
+            let resources = self.structures.data.structures.entry((key.game_id, key.entity_id)).resources_packed.read();
             assert!(crate::buildings::can_produce(category, resources), "structure cannot produce building resource");
         }
         fn neighbor_effects(
@@ -1594,7 +1592,7 @@ pub mod StructuresDomain {
                     );
             }
             if new_population != old_population {
-                let mut counts = self.buildings.structure_buildings.read((key.game_id, key.entity_id));
+                let mut counts = self.buildings.data.structure_buildings.read((key.game_id, key.entity_id));
                 counts.population.max = counts.population.max + new_population - old_population;
                 assert!(
                     counts.population.current <= counts.population.max

@@ -10,6 +10,10 @@ name = "eternum_randomness_protocol"
 version = "0.1.0"
 
 [[package]]
+name = "games_storage"
+version = "0.1.0"
+
+[[package]]
 name = "snforge_scarb_plugin"
 version = "0.64.0"
 source = "registry+https://scarbs.xyz/"
@@ -30,5 +34,6 @@ version = "0.1.0"
 dependencies = [
  "eternum_cubit",
  "eternum_randomness_protocol",
+ "games_storage",
  "snforge_std",
 ]
