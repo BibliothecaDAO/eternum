@@ -11,7 +11,7 @@ interface IdentityProfilesDeps {
  * The client's copy of identity's public profiles, keyed by gameplay account address (the address a chain name is
  * registered under). Addresses are asked for once, in batches; the answer wakes whoever derives player rows.
  */
-export const createIdentityProfiles = (deps: IdentityProfilesDeps) => {
+const createIdentityProfiles = (deps: IdentityProfilesDeps) => {
   const profiles = new Map<string, IdentityProfile>();
   const requested = new Set<string>();
   const listeners = new Set<Listener>();

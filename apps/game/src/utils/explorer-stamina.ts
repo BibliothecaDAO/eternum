@@ -1,5 +1,1 @@
-export {
-  getExplorerStaminaSnapshot,
-  getTroopsStaminaUpdatedTick,
-  selectFreshestTroopsSnapshot,
-} from "@/lib/army-stamina/source-resolution";
+export { getExplorerStaminaSnapshot } from "@/lib/army-stamina/source-resolution";

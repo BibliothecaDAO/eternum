@@ -20,7 +20,7 @@ export interface MovementStaminaResolution {
   };
 }
 
-export const calculateMovementStaminaCost = (actionPath: MovementStaminaPathStep[]): number =>
+const calculateMovementStaminaCost = (actionPath: MovementStaminaPathStep[]): number =>
   actionPath.reduce((total, pathStep) => {
     const staminaCost = pathStep.staminaCost ?? 0;
     return Number.isFinite(staminaCost) ? total + staminaCost : total;

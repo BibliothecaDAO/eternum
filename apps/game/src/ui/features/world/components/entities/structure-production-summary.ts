@@ -49,7 +49,7 @@ const isProductionBuilding = (
   return Boolean(getProducedResource(Number(building.category)));
 };
 
-export const buildStructureProductionSummary = ({
+const buildStructureProductionSummary = ({
   productionBuildings,
   resources,
   currentDefaultTick,

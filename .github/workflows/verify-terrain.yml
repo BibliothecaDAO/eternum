@@ -46,8 +46,8 @@ jobs:
 
       - name: Verify worldmap presentation and authoritative update integration
         run: >-
-          pnpm --dir apps/game test src/three/scenes/worldmap src/three/renderer-frame-runtime.test.ts
-          src/three/frame-budget-work-queue.test.ts src/three/utils/chunk-geometry.test.ts src/three/perf/worldmap
+          pnpm --dir apps/game test src/three/scenes/worldmap src/three/frame-budget-work-queue.test.ts
+          src/three/utils/chunk-geometry.test.ts src/three/perf/worldmap
 
       - name: Start auth-free terrain host
         env:

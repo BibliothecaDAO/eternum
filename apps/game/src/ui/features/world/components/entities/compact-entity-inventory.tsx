@@ -154,7 +154,7 @@ export const buildDisplayItems = (
   });
 };
 
-export const filterDisplayItems = (items: DisplayItem[], filter: CompactInventoryFilter = "all") => {
+const filterDisplayItems = (items: DisplayItem[], filter: CompactInventoryFilter = "all") => {
   if (filter === "resources") return items.filter((item) => !item.isRelic);
   if (filter === "relics") return items.filter((item) => item.isRelic);
   if (filter === "usableRelics") return items.filter((item) => item.isRelic && item.canActivate && !item.isActive);

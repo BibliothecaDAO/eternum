@@ -61,7 +61,7 @@ export const clearPendingReservedHyperstructureCreation = (hexCoords: HexPositio
 
 export const subscribeBlitzHyperstructureCreationPending = subscribePendingReservedHyperstructureCreation;
 
-export const createActiveWorldBlitzHyperstructure = async ({
+const createActiveWorldBlitzHyperstructure = async ({
   account,
   hexCoords,
   systemCalls,

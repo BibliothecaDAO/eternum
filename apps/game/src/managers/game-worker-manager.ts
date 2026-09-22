@@ -172,7 +172,7 @@ function hasWorldStateEntries(worldState: GameWorkerWorldState): boolean {
   return worldState.armies.length > 0 || worldState.exploredTiles.length > 0 || worldState.structures.length > 0;
 }
 
-export const createGameWorkerManager = (input: CreateGameWorkerManagerInput = {}): GameWorkerManager =>
+const createGameWorkerManager = (input: CreateGameWorkerManagerInput = {}): GameWorkerManager =>
   new GameWorkerManager({
     createWorker: input.createWorker ?? (() => new GameWorker()),
     incrementCounter: input.incrementCounter ?? incrementWorldmapRenderCounter,

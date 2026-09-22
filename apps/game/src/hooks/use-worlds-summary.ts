@@ -13,7 +13,7 @@ import { WORLD_SUMMARY_QUERY_KEY, invalidateWorldListQueries } from "./world-lis
  * chain); React Query deduplicates across components. A world whose herald is
  * unreachable contributes nothing rather than failing the whole list.
  */
-export async function fetchWorldsSummary(): Promise<WorldSummary[]> {
+async function fetchWorldsSummary(): Promise<WorldSummary[]> {
   const perWorld = await Promise.all(
     getWorldDirectory().map((world) =>
       fetchAppchainWorldsSummary(world).catch((error) => {

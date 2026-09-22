@@ -4,7 +4,7 @@ export type WorldmapStoreState = ReturnType<typeof useUIStore.getState>;
 
 type WorldmapSliceListener<TSlice> = (nextSlice: TSlice, previousSlice: TSlice) => void;
 
-export interface WorldmapStoreApi {
+interface WorldmapStoreApi {
   getState: () => WorldmapStoreState;
   subscribe: <TSlice>(
     selector: (state: WorldmapStoreState) => TSlice,

@@ -3,7 +3,7 @@ import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
 import type { ResourceArrivalInfo } from "@bibliothecadao/types";
 import { formatTime } from "@bibliothecadao/eternum";
 
-export function summarizeIncomingCaravans(arrivals: readonly ResourceArrivalInfo[], structureId: number, now: number) {
+function summarizeIncomingCaravans(arrivals: readonly ResourceArrivalInfo[], structureId: number, now: number) {
   const incoming = arrivals.filter(
     (arrival) => arrival.structureEntityId === structureId && Number(arrival.arrivesAt) > now,
   );

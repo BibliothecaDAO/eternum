@@ -5,14 +5,14 @@ interface EmojiPickerProps {
   onClose: () => void;
 }
 
-export const EMOJI_CATEGORIES = {
+const EMOJI_CATEGORIES = {
   General: ["😀", "😂", "😍", "🤔", "😢", "😮", "👍", "👎", "🔥", "🎉"],
   War: ["⚔️", "🛡️", "🏹", "💣", "💥", "💀", "🩸", "🎯", "🎖️", "🏆"],
   Castle: ["🏰", "🏯", "🧱", "🔨", "👑", "💎", "💰", "📜", "🗺️"],
 } as const;
 
 // Keep flat export for backward compat with tests
-export const EMOJIS = Object.values(EMOJI_CATEGORIES).flat();
+const EMOJIS = Object.values(EMOJI_CATEGORIES).flat();
 
 export const EmojiPicker: React.FC<EmojiPickerProps> = ({ onEmojiSelect, onClose }) => {
   const [selectedCategory, setSelectedCategory] = React.useState<string>("all");

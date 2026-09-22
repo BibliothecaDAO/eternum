@@ -10,11 +10,7 @@ import type {
 } from "./procedural-character-assets";
 import { disposeSkinnedSceneTemplates } from "./skinned-asset-resources";
 
-export type QuaterniusCharacterAssetDefinition = ProceduralCharacterAssetDefinition;
-
-export const QUATERNIUS_CHARACTER_ASSETS: Readonly<
-  Record<ProceduralCharacterAssetId, QuaterniusCharacterAssetDefinition>
-> = {
+const QUATERNIUS_CHARACTER_ASSETS: Readonly<Record<ProceduralCharacterAssetId, ProceduralCharacterAssetDefinition>> = {
   base: {
     adapterId: "quaternius-universal",
     id: "base",
@@ -34,10 +30,6 @@ export const QUATERNIUS_CHARACTER_ASSETS: Readonly<
     url: "/models/characters/quaternius/ranger-male.glb",
   },
 };
-
-export const QUATERNIUS_REQUIRED_BONE_NAMES = resolveHumanoidRigRequiredBoneNames(
-  resolveHumanoidRigAdapter("quaternius-universal"),
-);
 
 const HEAD_SOURCE_MESH_NAMES = ["Eyebrows", "Eyes", "SuperHero_Male"] as const;
 const HEAD_NECK_RANGE = 0.42;
@@ -78,11 +70,7 @@ function disposeQuaterniusCharacterAssetTemplates(assets: readonly LoadedProcedu
   disposeSkinnedSceneTemplates(assets.map(({ gltf }) => gltf.scene));
 }
 
-export function resolveQuaterniusCharacterAsset(id: ProceduralCharacterAssetId): QuaterniusCharacterAssetDefinition {
-  return QUATERNIUS_CHARACTER_ASSETS[id];
-}
-
-function validateQuaterniusCharacterAsset(definition: QuaterniusCharacterAssetDefinition, gltf: GLTF): void {
+function validateQuaterniusCharacterAsset(definition: ProceduralCharacterAssetDefinition, gltf: GLTF): void {
   const adapter = resolveHumanoidRigAdapter(definition.adapterId);
   const missingBones = resolveHumanoidRigRequiredBoneNames(adapter).filter(
     (boneName) => !(gltf.scene.getObjectByName(boneName) instanceof Bone),

@@ -258,13 +258,6 @@
     "apps/game/src/ui/features/cosmetics/lib/loadout-scope.ts": [
       "exports"
     ],
-    "apps/game/src/ui/features/cosmetics/model/index.ts": [
-      "exports",
-      "files"
-    ],
-    "apps/game/src/ui/features/cosmetics/model/use-cosmetic-loadout-store.ts": [
-      "types"
-    ],
     "apps/game/src/hooks/use-world-preview-entry.ts": [
       "types"
     ],
@@ -437,16 +430,7 @@
     "apps/game/src/ui/features/cosmetics/components/collection-progress.tsx": [
       "files"
     ],
-    "apps/game/src/ui/features/cosmetics/components/cosmetic-gallery.tsx": [
-      "files"
-    ],
     "apps/game/src/ui/features/cosmetics/components/cosmetic-model-viewer.tsx": [
-      "files"
-    ],
-    "apps/game/src/ui/features/cosmetics/components/cosmetic-showcase.tsx": [
-      "files"
-    ],
-    "apps/game/src/ui/features/cosmetics/components/cosmetic-tile.tsx": [
       "files"
     ],
     "apps/game/src/ui/features/cosmetics/components/index.ts": [
