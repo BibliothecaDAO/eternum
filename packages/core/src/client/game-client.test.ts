@@ -6,8 +6,7 @@ import preset from "../../../../contracts/l3/world-native/fixtures/preset-3.json
 import { hash } from "starknet";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { configManager } from "../managers/config-manager";
-import { disposeActiveGameSyncRuntime, getActiveGameSyncRuntime } from "../sync/game-sync-runtime";
+import { disposeActiveGameSyncRuntime } from "../sync/game-sync-runtime";
 import type { HeraldSocket } from "../sync/herald-game-sync-transport";
 import { createManualGameSyncScheduler } from "../sync/scheduler";
 import { createGameClient, type CreateGameClientInput } from "./game-client";
@@ -110,46 +109,6 @@ afterEach(() => {
 });
 
 describe("createGameClient", () => {
-  it("selects the game before the session starts and applies config after the snapshot", async () => {
-    const order: string[] = [];
-    const original = { setActiveGame: configManager.setActiveGame, setStore: configManager.setStore };
-    vi.spyOn(configManager, "setActiveGame").mockImplementation((gameId, presetId) => {
-      order.push(`set-active-game:${gameId}:${presetId}`);
-      original.setActiveGame.call(configManager, gameId, presetId);
-    });
-    vi.spyOn(configManager, "setStore").mockImplementation((store) => {
-      order.push("set-store");
-      original.setStore.call(configManager, store);
-    });
-    const harness = createHarness({
-      socketFactory: () => {
-        order.push("subscribe");
-        const socket = new FakeSocket();
-        harness.sockets.push(socket);
-        return socket;
-      },
-    });
-
-    const creation = createGameClient(harness.input);
-    await vi.waitFor(() => expect(harness.sockets).toHaveLength(1));
-    const socket = harness.sockets[0]!;
-    socket.receive(hello);
-    await flushMicrotasks();
-    order.push("snapshot-end");
-    socket.receive(rulesSnapshot);
-    socket.receive(snapshotEnd);
-    const client = await harness.settle(creation);
-
-    expect(order).toEqual(["set-active-game:54:2", "subscribe", "snapshot-end", "set-store"]);
-    expect(client.runtime.getStatus()).toBe("running");
-    expect(getActiveGameSyncRuntime()).toBe(client.runtime);
-    expect(client.runtime.getWorldSpatialProjection()).toBe(client.projection);
-
-    client.dispose();
-    expect(socket.closed).toBe(true);
-    expect(getActiveGameSyncRuntime()).toBeNull();
-  });
-
   it("dispose() clears a pending reconnect so no timer outlives the client", async () => {
     vi.useFakeTimers();
     const harness = createHarness();

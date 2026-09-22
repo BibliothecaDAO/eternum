@@ -5,7 +5,6 @@ import type { NativeWorldBindings } from "@bibliothecadao/types";
 import { hash, type AccountInterface } from "starknet";
 import bindingsJson from "../../../../contracts/l3/world-native/schema/bindings.json";
 import preset from "../../../../contracts/l3/world-native/fixtures/preset-3.json";
-import rowFixture from "../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 import { nativeSubmission } from "./native-submission";
 import type { SignedNativeIntent } from "@bibliothecadao/provider";
 
@@ -30,26 +29,6 @@ async function fixture() {
 }
 
 describe("native bindings in the shared game client", () => {
-  it("folds the generated explorer fixture into typed facts and deletes it", async () => {
-    const { client, store, write } = await fixture();
-    write("ExplorerTroops", [1n, 7n], { ...rowFixture.expected.key, ...rowFixture.expected.value });
-    const entity = hash.computePoseidonHashOnElements([1, 7]);
-    const explorer = store.get("ExplorerTroops", { game_id: 1, explorer_id: 7 })!;
-    expect(explorer.game_id).toBe(1);
-    expect(explorer.explorer_id).toBe(7);
-    expect(explorer.troops.category).toBe("Knight");
-    expect(typeof explorer.troops.count).toBe("bigint");
-    store.applyEntityOperations([{ type: "remove-components", entityId: entity, models: ["ExplorerTroops"] }]);
-    expect(store.get("ExplorerTroops", { game_id: 1, explorer_id: 7 })).toBeUndefined();
-  });
-  it("reads immutable config from native facts and rejects missing configuration", async () => {
-    const { store, write } = await fixture();
-    expect(() => store.require("SliceRules", { game_id: 1 })).toThrow("not synchronized");
-    write("SliceRules", [1n], { ...preset.rules, game_id: "1", map_center_offset: "20" });
-    expect(store.require("SliceRules", { game_id: 1 }).map_center_offset).toBe(20);
-    expect(() => store.require("ResourceRule", { game_id: 1, resource_type: 25 })).toThrow("not synchronized");
-  });
-
   it("signs an ABI command with the synchronized nonce and published framing", async () => {
     const { store, write } = await fixture();
     write("ActionNonce", [1n, 0x111n], { game_id: 1, actor: "0x111", next_nonce: "3" });

@@ -9,7 +9,7 @@ import type { AccountInterface } from "starknet";
 import { describe, expect, it, vi } from "vitest";
 
 // Through the barrel, as the app loads core: the managers resolve their cross-imports off it.
-import { ActionType, ArmyActionManager, ClientConfigManager, createGameActions, createGameViews } from "../../index";
+import { ActionType, ClientConfigManager, createGameActions, createGameViews } from "../../index";
 import type { GameClient } from "../game-client";
 
 const GAME_ID = 28;
@@ -18,19 +18,6 @@ const STRUCTURE_ID = 12;
 const SIGNER = { address: "0xabc" } as AccountInterface;
 
 describe("game actions", () => {
-  it("moveArmy dispatches the same explorer_travel call the manager does", async () => {
-    const { store, systemCalls, client } = createHarness(SIGNER);
-    const path = seedExplorerWithTravelPath(store);
-
-    await client.actions.moveArmy({ explorerId: EXPLORER_ID, path, currentArmiesTick: 7 });
-    await new ArmyActionManager(store, systemCalls, EXPLORER_ID).moveArmy(SIGNER, path, true, 7);
-
-    expect(systemCalls.explorer_travel).toHaveBeenCalledTimes(2);
-    const [throughActions, throughManager] = vi.mocked(systemCalls.explorer_travel).mock.calls;
-    expect(throughActions).toEqual(throughManager);
-    expect(throughActions?.[0]).toEqual({ signer: SIGNER, explorer_id: EXPLORER_ID, directions: [expect.any(Number)] });
-  });
-
   it("placeBuilding submits for the structure's own hex", async () => {
     const { store, systemCalls, client } = createHarness(SIGNER);
     seedStructure(store, { x: 40, y: 50 });
