@@ -45,9 +45,10 @@ export const handleDeviceChange = (request: Request, dependencies: DeviceChangeD
 
 const approveDeviceChange = (request: Request, { auth, db, guardian, accountClassHash }: DeviceChangeDependencies) =>
   Effect.gen(function* () {
-    const session = yield* Effect.promise(() =>
-      auth.api.getSession({ headers: request.headers, query: { disableCookieCache: true } }),
-    );
+    const session = yield* Effect.tryPromise({
+      try: () => auth.api.getSession({ headers: request.headers, query: { disableCookieCache: true } }),
+      catch: () => new DeviceRequestError({ code: "authentication_unavailable", status: 503 }),
+    });
     if (!session) return yield* new DeviceRequestError({ code: "unauthorized", status: 401 });
     const realmsId = session.user.realmsId;
     if (!realmsId) return yield* Effect.die(new Error(`user ${session.user.id} has no Realms id`));
