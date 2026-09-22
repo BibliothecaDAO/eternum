@@ -8,7 +8,8 @@ import { schema as nativeSchema, setup } from "./native/fixtures";
 import type { MadaraRpc } from "./madara-rpc";
 
 const databaseUrl = process.env.HERALD_TEST_DATABASE_URL;
-describe.skipIf(!databaseUrl)("existing history progress", () => {
+if (!databaseUrl) throw new Error("HERALD_TEST_DATABASE_URL is required for the PostgreSQL suite");
+describe("existing history progress", () => {
   it("preserves the deployed checkpoint on restart without requesting a genesis replay", async () => {
     const admin = new Pool({ connectionString: databaseUrl });
     const schema = `history_test_${randomUUID().replaceAll("-", "")}`;
@@ -42,7 +43,7 @@ describe.skipIf(!databaseUrl)("existing history progress", () => {
 });
 
 // Uses persisted receipt positions: ties within a block must not skip events at a page boundary.
-describe.skipIf(!databaseUrl)("confirmed story cursor", () => {
+describe("confirmed story cursor", () => {
   it("waits for backfill, initializes at head, pages ties, and drains ended-game records without rewinding history", async () => {
     const admin = new Pool({ connectionString: databaseUrl });
     const schema = `story_cursor_${randomUUID().replaceAll("-", "")}`;
@@ -89,7 +90,7 @@ describe.skipIf(!databaseUrl)("confirmed story cursor", () => {
   });
 });
 
-describe.skipIf(!databaseUrl)("native confirmed history", () => {
+describe("native confirmed history", () => {
   it("rebuilds native activity, combat history and review across restart without mirroring state", async () => {
     const { createNativeHistoryCodec } = await import("./native/history");
     const { setup, receipt, rowEvent, battleEvent, schema: nativeSchema, manifest } = await import("./native/fixtures");
@@ -117,6 +118,18 @@ describe.skipIf(!databaseUrl)("native confirmed history", () => {
         10,
         0,
       );
+      await admin.query(`
+        CREATE FUNCTION ${namespace}.reject_history_commit() RETURNS trigger LANGUAGE plpgsql AS $$
+          BEGIN RAISE EXCEPTION 'history commit rejected'; END $$;
+        CREATE CONSTRAINT TRIGGER reject_history_commit AFTER INSERT ON ${namespace}.herald_history_events
+          DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION ${namespace}.reject_history_commit()
+      `);
+      await expect(store.appendEvents(result.events, 10)).rejects.toThrow("history commit rejected");
+      expect(store.leaderboard("1")?.entries).toEqual([]);
+      expect(await store.historyProgress()).toBe(9);
+      expect((await store.queryStoryCursor(cursor, 10)).items).toEqual([]);
+      await admin.query(`DROP TRIGGER reject_history_commit ON ${namespace}.herald_history_events;
+        DROP FUNCTION ${namespace}.reject_history_commit()`);
       await store.appendEvents(result.events, 10);
       await store.appendEvents(result.events, 10);
       const before = store.leaderboard("1");

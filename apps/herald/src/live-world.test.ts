@@ -245,6 +245,20 @@ describe("native live publication", () => {
         snapshots.find((message) => message.model === "TileOpt")?.rows.map((row) => Number(row.value.col)),
       ).toEqual([index * 100 + 50]);
     }
+    messages.forEach((stream) => {
+      stream.length = 0;
+    });
+    live.acceptReceipt({
+      ...receipt(
+        [rowEvent("TileOpt", ["1", "0", "150", "50"], ["2"]), rowEvent("ResourceBalance", ["1", "2", "28"], ["180"])],
+        "0x70",
+      ),
+      finality_status: "PRE_CONFIRMED",
+    });
+    expect(messages[0]).toEqual([]);
+    const otherRegion = messages[1].filter((message) => message.type === "diff");
+    expect(otherRegion).toHaveLength(1);
+    expect(otherRegion[0].set.map((row) => row.model).sort()).toEqual(["ResourceBalance", "TileOpt"]);
     const surfaceKey = fold
       .gameRows("TileOpt", "1")
       .find((row) => Number(row.value.col) === 50 && Number(row.value.row) === 50)!.key;
