@@ -2,7 +2,8 @@ import { randomUUID } from "node:crypto";
 import { Pool } from "pg";
 import { describe, expect, it, vi } from "vitest";
 import { HistoryStore } from "./history-store";
-import { backfillNativeHistory } from "./native/load";
+import { loadNativeWorld } from "./native/load";
+import { WorldFold } from "./world-fold";
 import { createNativeHistoryCodec } from "./native/history";
 import { schema as nativeSchema, setup } from "./native/fixtures";
 import type { MadaraRpc } from "./madara-rpc";
@@ -25,11 +26,18 @@ describe("existing history progress", () => {
       await store.close();
       store = new HistoryStore(url.toString(), "madara", "0x123", createNativeHistoryCodec(nativeSchema));
       await store.initialize();
+      const { native, decoder } = setup();
       const getBlockWithReceipts = vi.fn();
-      await backfillNativeHistory(setup().native, { getBlockWithReceipts } as unknown as MadaraRpc, store, 500001);
+      const checkpointStore = {
+        initialize: vi.fn(),
+        load: vi.fn(async () => ({ fold: new WorldFold(decoder.registry), confirmedBlock: 500001 })),
+        save: vi.fn(),
+      };
+      const rpc = { blockNumber: async () => 500001, getBlockWithReceipts } as unknown as MadaraRpc;
+      await loadNativeWorld({ chain: "madara", checkpointStore, history: store, native, rpc });
       expect(getBlockWithReceipts).not.toHaveBeenCalled();
+      expect(checkpointStore.save).not.toHaveBeenCalled();
       expect(await store.historyProgress()).toBe(500001);
-      store.markLeaderboardReady();
       expect(store.activity("7")).not.toBeNull();
       expect(
         (await store.queryEvents({ gameId: "7", model: "StoryEvent", limit: 10, offset: 0 })).complete_through_block,
@@ -44,7 +52,7 @@ describe("existing history progress", () => {
 
 // Uses persisted receipt positions: ties within a block must not skip events at a page boundary.
 describe("confirmed story cursor", () => {
-  it("waits for backfill, initializes at head, pages ties, and drains ended-game records without rewinding history", async () => {
+  it("initializes at head, pages ties, and drains ended-game records without rewinding history", async () => {
     const admin = new Pool({ connectionString: databaseUrl });
     const schema = `story_cursor_${randomUUID().replaceAll("-", "")}`;
     await admin.query(`CREATE SCHEMA ${schema}`);
@@ -54,8 +62,6 @@ describe("confirmed story cursor", () => {
     try {
       await store.initialize();
       await store.appendEvents([], 10);
-      await expect(store.queryStoryCursor(null, 2)).rejects.toThrow("not ready");
-      store.markLeaderboardReady();
       const initial = await store.queryStoryCursor(null, 2);
       expect(initial.items).toEqual([]);
       for (const [transaction, event, game] of [
@@ -104,7 +110,6 @@ describe("native confirmed history", () => {
     try {
       await store.initialize();
       await store.appendEvents([], 9);
-      store.markLeaderboardReady();
       const cursor = (await store.queryStoryCursor(null, 2)).next_cursor;
       const { native, fold } = setup();
       const award = nativeSchema.domains.season.events.find(({ name }) => name === "PointsAwarded")!;
@@ -125,7 +130,7 @@ describe("native confirmed history", () => {
           DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION ${namespace}.reject_history_commit()
       `);
       await expect(store.appendEvents(result.events, 10)).rejects.toThrow("history commit rejected");
-      expect(store.activity("1")?.size).toBe(0);
+      expect(store.activity("1").size).toBe(0);
       expect(await store.historyProgress()).toBe(9);
       expect((await store.queryStoryCursor(cursor, 10)).items).toEqual([]);
       await admin.query(`DROP TRIGGER reject_history_commit ON ${namespace}.herald_history_events;
@@ -133,7 +138,7 @@ describe("native confirmed history", () => {
       await store.appendEvents(result.events, 10);
       await store.appendEvents(result.events, 10);
       const before = store.activity("1");
-      expect([...(before?.values() ?? [])][0].exploration).toEqual({ count: 1, points: 5 });
+      expect([...before.values()][0].exploration).toEqual({ count: 1, points: 5 });
       expect((await store.queryStoryCursor(cursor, 10)).items.map(({ model }) => model)).toEqual([
         "PointsAwarded",
         "BattleEvent",
@@ -143,7 +148,6 @@ describe("native confirmed history", () => {
       await store.close();
       store = new HistoryStore(url.toString(), "madara", manifest.world.address, nativeHistoryCodec);
       await store.initialize();
-      store.markLeaderboardReady();
       expect(store.activity("1")).toEqual(before);
       expect(await store.reviewSnapshot("1")).toEqual(snapshot);
       const repeated = vi.fn(() => {

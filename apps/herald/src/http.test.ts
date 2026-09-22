@@ -177,7 +177,7 @@ it("passes a battle-only history filter to the store before pagination", async (
         items: [],
       }),
       queryEvents,
-      activity: () => null,
+      activity: () => new Map(),
       reviewSnapshot: async () => snapshot,
       transactionCount: async () => ({ game_id: "7", count: 0 }),
     },

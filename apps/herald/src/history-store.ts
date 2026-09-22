@@ -98,7 +98,6 @@ export class HistoryStore {
   private readonly pool: Pool;
   private readonly points = new PointsLeaderboard();
   private readonly frozenReviews = new Set<string>();
-  private leaderboardReady = false;
   private writeQueue = Promise.resolve();
   private writeFailure?: Error;
 
@@ -242,13 +241,9 @@ export class HistoryStore {
     );
   }
 
-  public markLeaderboardReady(): void {
-    this.leaderboardReady = true;
-  }
-
-  /** Each player's points by activity, once the history has been restored. */
-  public activity(gameId: string): ReadonlyMap<string, PlayerActivityBreakdown> | null {
-    return this.leaderboardReady ? this.points.activity(gameId) : null;
+  /** Each player's points by activity. */
+  public activity(gameId: string): ReadonlyMap<string, PlayerActivityBreakdown> {
+    return this.points.activity(gameId);
   }
 
   private async restorePointsLeaderboard(): Promise<void> {
@@ -325,9 +320,8 @@ export class HistoryStore {
     return value === undefined ? null : Number(value);
   }
 
-  /** Cursor consumers wait for startup backfill without distrusting or replacing the existing progress marker. */
+  /** Pages story history forward from a consumer cursor; the progress marker never rewinds. */
   public async queryStoryCursor(after: StoryHistoryCursor | null, limit: number): Promise<HeraldStoryHistoryPage> {
-    if (!this.leaderboardReady) throw new Error("Story history is not ready");
     if (!Number.isInteger(limit) || limit < 1 || limit > 500) throw new Error("Invalid story page size");
     const head = await this.historyProgress();
     if (head === null) throw new Error("Story history has no complete head");

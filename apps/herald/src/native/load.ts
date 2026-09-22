@@ -4,16 +4,18 @@ import type { MadaraRpc } from "../madara-rpc";
 import { WorldFold } from "../world-fold";
 import { NativeReceiptRejected, type NativeIngestion } from "./ingestion";
 
+/** One replay brings the fold and the history to the chain head; history is always written before the checkpoint. */
 export async function loadNativeWorld(input: {
   chain: string;
   checkpointStore: Pick<CheckpointStore, "initialize" | "load" | "save">;
+  history: Pick<HistoryStore, "appendEvents" | "historyProgress">;
   rpc: MadaraRpc;
   native: NativeIngestion;
 }) {
   const started = performance.now();
   const registry = input.native.decoder.registry;
   await input.checkpointStore.initialize();
-  const checkpoint = await input.checkpointStore.load(input.chain, registry);
+  const checkpoint = await resumableCheckpoint(input);
   const targetBlock = await input.rpc.blockNumber();
   let confirmedBlock = checkpoint?.confirmedBlock ?? 0;
   if (checkpoint && checkpoint.confirmedBlock > targetBlock) throw new Error("Native checkpoint is ahead of chain");
@@ -27,6 +29,10 @@ export async function loadNativeWorld(input: {
       toBlock: targetBlock,
     });
     metrics = replay.metrics;
+    await input.history.appendEvents(
+      replay.events.filter((event) => event.kind === "event"),
+      targetBlock,
+    );
     confirmedBlock = targetBlock;
     if (!checkpoint) await input.checkpointStore.save(input.chain, confirmedBlock, fold);
   } catch (error) {
@@ -42,22 +48,10 @@ export async function loadNativeWorld(input: {
   };
 }
 
-export async function backfillNativeHistory(
-  native: NativeIngestion,
-  rpc: MadaraRpc,
-  history: HistoryStore,
-  through: number,
-): Promise<void> {
-  if (native.halted) return;
-  if (((await history.historyProgress()) ?? -1) >= through) return;
-  const result = await native.replay({
-    fold: new WorldFold(native.decoder.registry),
-    rpc,
-    fromBlock: 0,
-    toBlock: through,
-  });
-  await history.appendEvents(
-    result.events.filter((event) => event.kind === "event"),
-    through,
-  );
+/** A checkpoint the history does not reach would leave a gap in history, so both are rebuilt from genesis instead. */
+async function resumableCheckpoint(input: Parameters<typeof loadNativeWorld>[0]) {
+  const checkpoint = await input.checkpointStore.load(input.chain, input.native.decoder.registry);
+  if (!checkpoint) return undefined;
+  const historyThrough = (await input.history.historyProgress()) ?? -1;
+  return historyThrough >= checkpoint.confirmedBlock ? checkpoint : undefined;
 }

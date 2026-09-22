@@ -1,7 +1,6 @@
 import { createNativeWorldIngestion } from "./native/world-ingestion";
 import { NativeDecoder } from "./native/decoder";
 import { NativeIngestion } from "./native/ingestion";
-import { backfillNativeHistory } from "./native/load";
 import { readFile } from "node:fs/promises";
 
 import { CheckpointStore } from "./checkpoint-store";
@@ -97,7 +96,7 @@ const main = async (): Promise<void> => {
   const checkpointStore = new CheckpointStore(config.databaseUrl);
   const historyStore = new HistoryStore(config.databaseUrl, chain, registry.worldAddress, ingestion.historyCodec);
   await historyStore.initialize();
-  const loaded = await ingestion.load({ chain, checkpointStore, rpc });
+  const loaded = await ingestion.load({ chain, checkpointStore, history: historyStore, rpc });
   const liveInput = {
     chain,
     checkpointBlock: loaded.checkpointBlock,
@@ -226,16 +225,6 @@ const main = async (): Promise<void> => {
       wsUrl: config.wsUrl,
     }),
   );
-  void backfillNativeHistory(native, rpc, historyStore, loaded.confirmedBlock)
-    .then(() => historyStore.markLeaderboardReady())
-    .catch((error) => {
-      console.error(
-        JSON.stringify({
-          error: error instanceof Error ? error.message : String(error),
-          event: "herald_history_backfill_failed",
-        }),
-      );
-    });
 };
 
 await main();

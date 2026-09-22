@@ -144,6 +144,28 @@ describe("native confirmed replay and transaction delivery", () => {
   });
 });
 
+it("rebuilds state and history from genesis in one replay when history lags the checkpoint", async () => {
+  const { native, decoder } = setup();
+  const blocks = wireHistory();
+  const rpc = {
+    blockNumber: vi.fn(async () => 13),
+    getBlockWithReceipts: vi.fn(async (number: number) => blocks[number - 10]),
+  } as unknown as MadaraRpc;
+  const stale = new WorldFold(decoder.registry);
+  const checkpointStore = {
+    initialize: vi.fn(),
+    load: vi.fn(async () => ({ fold: stale, confirmedBlock: 12 })),
+    save: vi.fn(),
+  };
+  const history = { appendEvents: vi.fn(), historyProgress: vi.fn(async () => 11) };
+  const loaded = await loadNativeWorld({ chain: "madara", checkpointStore, history, native, rpc });
+  expect(rpc.getBlockWithReceipts).toHaveBeenCalledTimes(4);
+  expect(loaded.fold).not.toBe(stale);
+  expect(history.appendEvents).toHaveBeenCalledOnce();
+  expect(history.appendEvents.mock.calls[0]![1]).toBe(13);
+  expect(checkpointStore.save).toHaveBeenCalledWith("madara", 13, loaded.fold);
+});
+
 it("halts a confirmed rejection at the last checkpoint without killing receipt subscriptions or startup", async () => {
   const { native, decoder, fold } = setup();
   const before = fold.checkpoint();
@@ -156,7 +178,8 @@ it("halts a confirmed rejection at the last checkpoint without killing receipt s
     load: vi.fn(async () => ({ fold, confirmedBlock: 9 })),
     save: vi.fn(),
   };
-  const loaded = await loadNativeWorld({ chain: "madara", checkpointStore, native, rpc });
+  const history = { appendEvents: vi.fn(), historyProgress: vi.fn(async () => 9) };
+  const loaded = await loadNativeWorld({ chain: "madara", checkpointStore, history, native, rpc });
   expect(loaded.confirmedBlock).toBe(9);
   expect(loaded.fold.checkpoint()).toEqual(before);
   expect(native.halted).toMatchObject({ block: 10 });
