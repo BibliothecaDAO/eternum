@@ -45,7 +45,7 @@ export const createFakeGame = (signer: AccountInterface | null = PLAYER_SIGNER):
     registration_start: 0,
     registration_limit: 100,
     mode: "Triple",
-    reward_profile: 1,
+    spacing: 6,
   });
   ClientConfigManager.instance().setStore(store);
   const projection = new WorldSpatialProjection({
