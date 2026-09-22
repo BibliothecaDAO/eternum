@@ -17,8 +17,7 @@
     "apps/amm-indexer/apibara.config.ts",
     "apps/amm-indexer/indexers/ammv2.indexer.ts",
     "apps/amm-indexer/indexers/factory-client.ts",
-    "apps/indexer/drizzle.config.ts",
-    "packages/db/drizzle.config.ts"
+    "apps/indexer/drizzle.config.ts"
   ],
   "ignoreWorkspaces": [
     "packages/ammv2-sdk"
@@ -262,9 +261,6 @@
       "types"
     ],
     "packages/core/src/data/abi/SeasonPass.ts": [
-      "exports"
-    ],
-    "packages/core/src/data/realm-names.ts": [
       "exports"
     ],
     "packages/core/src/index.ts": [

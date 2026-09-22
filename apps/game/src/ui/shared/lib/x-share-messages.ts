@@ -34,11 +34,6 @@ type TemplateVariables = {
   placement: string;
   eventLabel: string;
   pointsLabel: string;
-  profileTitle: string;
-  shareName: string;
-  tierLabel: string;
-  mmrLabel: string;
-  profileUrl: string;
 };
 
 export const formatSocialText = (template: string, variables: Partial<TemplateVariables>): string => {
@@ -80,30 +75,6 @@ export const buildBlitzShareMessageText = ({
     placement,
     eventLabel,
     pointsLabel,
-  });
-};
-
-const profileShareTemplate = `{profileTitle}\n\nPlayer: {shareName}\nTier: {tierLabel}\nMMR: {mmrLabel}\n\n${tweetFooter}`;
-
-export const buildProfileShareMessage = ({
-  isOwnProfile,
-  shareName,
-  tierLabel,
-  mmrLabel,
-  profileUrl,
-}: {
-  isOwnProfile: boolean;
-  shareName: string;
-  tierLabel: string;
-  mmrLabel: string;
-  profileUrl: string;
-}): string => {
-  return formatSocialText(profileShareTemplate, {
-    profileTitle: isOwnProfile ? "My Realms Blitz profile" : "Realms Blitz profile",
-    shareName,
-    tierLabel,
-    mmrLabel,
-    profileUrl,
   });
 };
 

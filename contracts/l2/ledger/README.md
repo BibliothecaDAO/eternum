@@ -53,30 +53,3 @@ live-gate artifact.
 pnpm ledger:check-live-assets:mainnet
 pnpm ledger:upgrade-live-assets:mainnet
 ```
-
-## Sponsored first games
-
-Register a dedicated zero-entry-fee ledger preset, then launch a game with a target sponsored pool. Funding is
-idempotent: retries top the game up only to the requested pool.
-
-```sh
-bun config/deployer/clean/registrar/register-preset.ts \
-  --preset-id <id> \
-  --environment madara.blitz \
-  --balance-profile official-60 \
-  --ledger <ledger-address> \
-  --ledger-rpc-url <mainnet-rpc> \
-  --sponsored
-
-bun config/deployer/clean/cli/create.ts \
-  --environment madara.blitz \
-  --game <game-name> \
-  --start-time <unix-or-iso> \
-  --version <id> \
-  --ledger <ledger-address> \
-  --ledger-rpc-url <mainnet-rpc> \
-  --lords <lords-address> \
-  --sponsored-pool-lords <whole-lords>
-```
-
-The funding account comes from `LEDGER_TREASURY_ADDRESS` and `LEDGER_TREASURY_PRIVATE_KEY`.
