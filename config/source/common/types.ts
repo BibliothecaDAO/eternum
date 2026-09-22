@@ -1,6 +1,6 @@
 import type { GameChain } from "@realms-world/chain";
 
-export type GameType = "blitz" | "eternum";
+export type GameType = "blitz" | "eternum" | "frontier" | "duel";
 
 export interface BuildConfigOptions {
   chain: GameChain;

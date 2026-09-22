@@ -1,3 +1,4 @@
+import { nativePresetForId, nativePresetIdFor } from "../../../source/native";
 import { CallData, uint256 } from "starknet";
 import type { DeploymentGameType } from "../types";
 
@@ -35,16 +36,16 @@ export function buildLedgerEconomicPreset(
   gameType: DeploymentGameType,
   options: { sponsored?: boolean } = {},
 ): LedgerEconomicPreset {
-  const isBlitz = gameType === "blitz";
+  const balance = nativePresetForId(nativePresetIdFor(gameType)).ledger;
   return {
-    entry_fee: lords(isBlitz && !options.sponsored ? 500n : 0n),
-    protocol_cut_bps: isBlitz ? 2_000 : 0,
+    entry_fee: lords(options.sponsored ? 0n : BigInt(balance.entryFee)),
+    protocol_cut_bps: balance.protocolCutBps,
     paid_fraction_bps: 2_000,
     decay_bps: 9_600,
-    sword_price: lords(isBlitz ? 500n : 0n),
-    shield_price: lords(isBlitz ? 500n : 0n),
+    sword_price: lords(BigInt(balance.swordPrice)),
+    shield_price: lords(BigInt(balance.shieldPrice)),
     mmr: {
-      enabled: isBlitz,
+      enabled: balance.mmrEnabled,
       mean: 1_500,
       spread: 450,
       max_delta: 45,
@@ -53,9 +54,9 @@ export function buildLedgerEconomicPreset(
       min_players: 6,
     },
     pm: {
-      fee_bps: isBlitz ? 500 : 0,
-      liability_cap: lords(isBlitz ? 10_000n : 0n),
-      seed: lords(isBlitz ? 100n : 0n),
+      fee_bps: balance.predictionFeeBps,
+      liability_cap: lords(BigInt(balance.liabilityCap)),
+      seed: lords(BigInt(balance.seed)),
       claim_window_seconds: 604_800,
     },
   };

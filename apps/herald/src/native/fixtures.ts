@@ -60,7 +60,6 @@ export function rulesEvent(gameId = "1") {
     return ["0"];
   };
   const values = model.members.flatMap((member) => {
-    if (member.name === "mode_id") return ["1"];
     if (member.name === "victory_points_grant_config") {
       const definition = schema.types[member.type];
       if (definition.type !== "struct") throw new Error("Expected point rules");

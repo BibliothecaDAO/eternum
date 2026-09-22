@@ -1,6 +1,6 @@
-import { RealmLevels, ResourcesIds } from "../../../packages/types/src/constants";
-import type { ResourceCost } from "../../../packages/types/src/types/common";
-import type { ConfigPatch } from "../common/merge-config";
+import { RealmLevels, ResourcesIds } from "../../../../packages/types/src/constants";
+import type { ResourceCost } from "../../../../packages/types/src/types/common";
+import type { ConfigPatch } from "../merge-config";
 
 const REALM_MAX_LEVEL = Object.keys(RealmLevels).length / 2;
 const VILLAGE_MAX_LEVEL = 1;
@@ -27,7 +27,7 @@ export const REALM_UPGRADE_COSTS: Record<number, ResourceCost[]> = {
   ],
 };
 
-export const blitzRealmLevelConfig: ConfigPatch = {
+export const arenaRealmLevelConfig: ConfigPatch = {
   realmUpgradeCosts: REALM_UPGRADE_COSTS,
   realmMaxLevel: REALM_MAX_LEVEL,
   villageMaxLevel: VILLAGE_MAX_LEVEL,

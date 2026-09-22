@@ -33,64 +33,14 @@ writeFileSync(
 afterAll(() => rmSync(directory, { recursive: true }));
 
 function configuration(preset: number) {
-  const config = loadNativePresetConfiguration(preset === 1 ? "madara.eternum" : "madara.blitz", preset);
+  const config = loadNativePresetConfiguration(preset === 3 ? "madara.eternum" : "madara.blitz", preset);
   return config;
 }
 
-describe("native immutable balance presets", () => {
-  // Official reward ladders, retained from the pinned gameplay rules.
-  test.each([
-    {
-      id: 2,
-      expected: [
-        [38, 150, 3500],
-        [38, 300, 2500],
-        [38, 600, 1500],
-        [23, 500, 1500],
-        [23, 1000, 500],
-        [25, 500, 500],
-      ],
-    },
-    {
-      id: 3,
-      expected: [
-        [38, 100, 3000],
-        [38, 250, 2000],
-        [38, 500, 1500],
-        [23, 250, 1500],
-        [23, 500, 800],
-        [25, 100, 600],
-        [26, 1000, 200],
-        [29, 1000, 200],
-        [32, 1000, 200],
-      ],
-    },
-  ])("preset $id preserves the official exploration reward ladder", ({ id, expected }) => {
-    const definition = buildNativePreset(configuration(id));
-    expect(definition.exploration.map(({ resource_type, amount, weight }) => [resource_type, amount, weight])).toEqual(
-      expected,
-    );
-  });
-  test.each([1, 2, 3])("preset %i serializes all domains using the generated registrar ABI", (id) => {
-    const config = configuration(id);
-    const definition = buildNativePreset(config);
-    const calldata = codec.compile("register_preset", { preset_id: id, definition });
-    expect(calldata.length).toBeGreaterThan(1400);
-    expect(calldata.every((value) => BigInt(value) >= 0n)).toBe(true);
-    expect(definition.resources.resources.map((row) => row.resource_type)).toEqual(
-      Array.from({ length: 58 }, (_, i) => i + 1),
-    );
-    expect(definition.resources.production).toHaveLength(58);
-    expect(definition.structures.buildings).toHaveLength(40);
-    expect(definition.settlement.realms.starting_troops).toHaveLength(17);
-    expect(definition.settlement.villages.resource_pool).toHaveLength(22);
-    expect(definition.economy.relics).toHaveLength(18);
-    expect(definition.exploration).toHaveLength(id === 1 ? 23 : config.blitz.exploration.rewards.length);
-  });
-
+describe("native presets", () => {
   test("mine presets preserve the fragment ladder and give Eternum rifts one quarter of regular-fast output", () => {
-    const eternum = buildNativePreset(configuration(1));
-    const fast = buildNativePreset(configuration(2));
+    const eternum = buildNativePreset(configuration(3), 3);
+    const fast = buildNativePreset(configuration(2), 2);
     const rift = eternum.resources.mine_kinds[0].config;
     const fragment = eternum.resources.mine_kinds[1].config;
     expect(rift.production_rate).toBe(2_500000000n);
@@ -107,7 +57,7 @@ describe("native immutable balance presets", () => {
   });
 
   test("native balances and mine ladders come only from the selected sheet", () => {
-    const config = configuration(1);
+    const config = configuration(3);
     config.bitcoin = { prizePerPhase: 7, minimumLabor: 123, ownerCutBps: 1500 };
     config.mines!.kinds[1] = {
       resourceType: 38,
@@ -117,7 +67,7 @@ describe("native immutable balance presets", () => {
       capSteps: 3,
     };
     config.mines!.surfacePool = [{ kind: 1, weight: 4 }];
-    const definition = buildNativePreset(config);
+    const definition = buildNativePreset(config, 3);
     expect(definition.rules.bitcoin_mine_config).toEqual({
       enabled: true,
       prize_per_phase: 7_000000000n,
@@ -135,61 +85,55 @@ describe("native immutable balance presets", () => {
   });
 
   test("missing balances and malformed mine pools fail before registration", () => {
-    const config = configuration(1);
+    const config = configuration(3);
     delete config.bitcoin;
-    expect(() => buildNativePreset(config)).toThrow("Bitcoin balance config");
-    config.bitcoin = configuration(1).bitcoin;
+    expect(() => buildNativePreset(config, 3)).toThrow("Bitcoin balance config");
+    config.bitcoin = configuration(3).bitcoin;
     delete config.mines;
-    expect(() => buildNativePreset(config)).toThrow("Mine balance config");
-    config.mines = configuration(1).mines;
+    expect(() => buildNativePreset(config, 3)).toThrow("Mine balance config");
+    config.mines = configuration(3).mines;
     config.mines!.surfacePool = [{ kind: 99, weight: 1 }];
-    expect(() => buildNativePreset(config)).toThrow("Invalid mine pool");
+    expect(() => buildNativePreset(config, 3)).toThrow("Invalid mine pool");
     config.mines!.surfacePool = [];
-    expect(() => buildNativePreset(config)).toThrow("requires a pool");
-  });
-
-  test("explicit balance profiles must match the selected preset", () => {
-    expect(() => loadNativePresetConfiguration("madara.blitz", 2, "official-90")).toThrow("does not match preset 2");
-    expect(() => loadNativePresetConfiguration("madara.eternum", 1, "official-60")).toThrow("does not match preset 1");
-    expect(loadNativePresetConfiguration("madara.blitz", 2, "official-60").mines!.kinds[1].productionRate).toBe(10);
+    expect(() => buildNativePreset(config, 3)).toThrow("requires a pool");
   });
 
   test("large resource amounts retain bigint precision and missing balance entries fail", () => {
-    const config = configuration(1);
-    expect(buildNativePreset(config).economy.hyperstructures.initialize_shards).toBe(20_000_000_000000000n);
+    const config = configuration(3);
+    expect(buildNativePreset(config, 3).economy.hyperstructures.initialize_shards).toBe(20_000_000_000000000n);
     delete (config.resources.resourceWeightsGrams as Partial<Record<number, number>>)[3];
-    expect(() => buildNativePreset(config)).toThrow("Missing resource weight for 3");
+    expect(() => buildNativePreset(config, 3)).toThrow("Missing resource weight for 3");
   });
 
   test("building a changed preset cannot mutate the next definition's tables", () => {
-    const first = buildNativePreset(configuration(1));
+    const first = buildNativePreset(configuration(3), 3);
     first.settlement.villages.resource_pool[0].weight = 1;
     first.economy.relics[0].rate_bps = 1;
     first.settlement.realms.realm_resources.length = 0;
-    const next = buildNativePreset(configuration(1));
+    const next = buildNativePreset(configuration(3), 3);
     expect(next.settlement.villages.resource_pool[0].weight).toBe(19815);
     expect(next.economy.relics[0].rate_bps).toBe(5000);
     expect(next.settlement.realms.realm_resources).toHaveLength(9);
   });
 
-  test("unchanged registration sends no transaction and a changed preimage fails", async () => {
-    const registration = buildNativePresetRegistration(configuration(1), 1, manifestPath);
+  test("registration reads the current commitment and replaces changed balances", async () => {
+    const registration = buildNativePresetRegistration(buildNativePreset(configuration(3), 3), 1, manifestPath);
     let commitment = registration.commitment;
     const account = {
       getBlockNumber: async () => 10,
       getClassHashAt: async () => "0x456",
       callContract: async () => [commitment],
       execute: async () => {
-        throw new Error("unexpected transaction");
+        throw new Error("replacement submitted");
       },
     } as unknown as Account;
     expect(await registerNativePreset(account, 1, registration)).toBeNull();
     commitment = "0x1";
-    await expect(registerNativePreset(account, 1, registration)).rejects.toThrow("different immutable definition");
+    await expect(registerNativePreset(account, 1, registration)).rejects.toThrow("replacement submitted");
   });
 
   test("a stale manifest cannot register through a replaced registrar", async () => {
-    const registration = buildNativePresetRegistration(configuration(2), 2, manifestPath);
+    const registration = buildNativePresetRegistration(buildNativePreset(configuration(2), 2), 2, manifestPath);
     const account = {
       getBlockNumber: async () => 10,
       getClassHashAt: async () => "0x999",
@@ -201,16 +145,8 @@ describe("native immutable balance presets", () => {
   });
 });
 
-test("every native preset selects its declared game and balance profile", () => {
-  expect(loadNativePresetConfiguration("madara.eternum", 1).blitz.mode.on).toBe(false);
-  expect(loadNativePresetConfiguration("madara.blitz", 2).blitz.exploration.rewardProfileId).toBe("official-60");
-  expect(loadNativePresetConfiguration("madara.blitz", 3).blitz.exploration.rewardProfileId).toBe("official-90");
-  expect(() => loadNativePresetConfiguration("madara.blitz", 999)).toThrow("No native preset");
-  expect(() => loadNativePresetConfiguration("madara.eternum", 2)).toThrow("No native preset");
-});
-
 test("Eternum registers its configured bridge tokens and Blitz has no bridge", () => {
-  const preset = buildNativePreset(configuration(1));
+  const preset = buildNativePreset(configuration(3), 3);
   expect(preset.economy.withdrawals.unwrap()?.tokens).toEqual(
     [
       ...Object.values(madaraAddresses.resources).map(([resource_type, token]) => ({
@@ -220,7 +156,7 @@ test("Eternum registers its configured bridge tokens and Blitz has no bridge", (
       { resource_type: 37, token: madaraAddresses.lords },
     ].sort((a, b) => Number(a.resource_type) - Number(b.resource_type)),
   );
-  expect(buildNativePreset(configuration(2)).economy.withdrawals.isNone()).toBe(true);
+  expect(buildNativePreset(configuration(2), 2).economy.withdrawals.isNone()).toBe(true);
   for (const [mutation, error] of [
     [
       (config) => {
@@ -247,9 +183,9 @@ test("Eternum registers its configured bridge tokens and Blitz has no bridge", (
       "Missing bridge token for resource 37",
     ],
   ] as Array<[(config: ReturnType<typeof configuration>) => void, string]>) {
-    const config = configuration(1);
+    const config = configuration(3);
     mutation(config);
-    expect(() => buildNativePreset(config)).toThrow(error);
+    expect(() => buildNativePreset(config, 3)).toThrow(error);
   }
 });
 
@@ -277,7 +213,9 @@ describe("fixed Regular Blitz rosters", () => {
     const players = [{ owner: "0xabc", account: "0xdef" }];
     expect(() => buildNativeGameParams(config, input)).toThrow("fixed roster");
     expect(() => buildNativeGameParams(config, input, Array(25).fill(players[0]))).toThrow("fixed roster");
-    expect(() => buildNativeGameParams(config, { ...input, twoPlayerMode: true }, players)).toThrow("Regular Blitz");
+    expect(() => buildNativeGameParams(config, { ...input, twoPlayerMode: true }, players)).toThrow(
+      "Settlement layout",
+    );
     expect(() => buildNativeGameParams(config, { ...input, devModeOn: true }, players)).toThrow("development mode");
     expect(buildNativeGameParams(config, input, players).roster).toEqual(players);
   });

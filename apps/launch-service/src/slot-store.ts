@@ -47,7 +47,7 @@ async function queueSlotGames(client: PoolClient, slot: PlaytestSlot, groups: Pl
     const gameName = `${slot.name}-${index + 1}`;
     const request = {
       environment: "madara.blitz",
-      version: String(nativePresetIdFor("blitz", "official-60")),
+      version: String(nativePresetIdFor("blitz")),
       gameName,
       gameStartTime: slot.closesAt,
       devModeOn: false,

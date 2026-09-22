@@ -2172,11 +2172,7 @@
       "pointsForRelicDiscovery": "1000000000"
     },
     "blitz": {
-      "mode": {
-        "on": false
-      },
       "exploration": {
-        "rewardProfileId": "official-90",
         "rewards": []
       },
       "registration": {
@@ -2408,6 +2404,7 @@
           ]
         }
       }
-    }
+    },
+    "presetId": 3
   }
 }

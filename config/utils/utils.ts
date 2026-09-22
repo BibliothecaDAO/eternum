@@ -1,10 +1,7 @@
-import {
-  applyBlitzBalanceProfile,
-  BLITZ_OFFICIAL_DURATION_MINUTES,
-  resolveBlitzBalanceProfileIdFromDurationMinutes,
-  resolveBlitzBalanceProfileIdFromDurationSeconds,
-  type BlitzBalanceProfileId,
-} from "../source/blitz";
+import duelMadaraConfig from "../generated/duel.madara.json";
+import duelAppchainConfig from "../generated/duel.appchain.json";
+import frontierMadaraConfig from "../generated/frontier.madara.json";
+
 import type { GameType } from "../source/common/types";
 import type { GameChain } from "@realms-world/chain";
 export type { GameType };
@@ -18,6 +15,8 @@ type NetworkConfigDocument = {
 };
 
 const configs: Record<GameType, Partial<Record<GameChain, NetworkConfigDocument>>> = {
+  duel: { madara: duelMadaraConfig, appchain: duelAppchainConfig },
+  frontier: { madara: frontierMadaraConfig },
   blitz: {
     madara: blitzMadaraConfig,
     appchain: blitzAppchainConfig,
@@ -31,7 +30,7 @@ const configs: Record<GameType, Partial<Record<GameChain, NetworkConfigDocument>
 function resolveConfigDocument(chain: GameChain, gameType: GameType): NetworkConfigDocument {
   const gameConfigs = configs[gameType];
   if (!gameConfigs) {
-    throw new Error(`Invalid game type: ${gameType}. Must be "blitz" or "eternum".`);
+    throw new Error(`Invalid game type: ${gameType}. Must be "blitz", "eternum", "frontier" or "duel".`);
   }
 
   const configDocument = gameConfigs[chain];
@@ -46,24 +45,6 @@ export function getConfigFromNetwork(chain: GameChain, gameType: GameType) {
   return resolveConfigDocument(chain, gameType).configuration as any;
 }
 
-export function resolveBlitzConfigForDuration(chain: GameChain, durationMinutes: number | null | undefined) {
-  const baseConfig = getConfigFromNetwork(chain, "blitz");
-  const profileId = resolveBlitzBalanceProfileIdFromDurationMinutes(durationMinutes);
-
-  if (!profileId) {
-    return structuredClone(baseConfig);
-  }
-
-  return applyBlitzBalanceProfile(baseConfig, profileId);
-}
-
-export {
-  applyBlitzBalanceProfile,
-  BLITZ_OFFICIAL_DURATION_MINUTES,
-  resolveBlitzBalanceProfileIdFromDurationMinutes,
-  resolveBlitzBalanceProfileIdFromDurationSeconds,
-};
-export type { BlitzBalanceProfileId };
 export {
   GAME_ENVIRONMENTS,
   getGameEnvironmentsForChain,

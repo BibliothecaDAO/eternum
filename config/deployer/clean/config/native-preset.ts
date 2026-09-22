@@ -1,6 +1,5 @@
 import { nativeRuleConstants as presetRule } from "../../../../contracts/l3/world-native/schema/client.gen";
-import { nativeCommandBits } from "../../../../contracts/l3/world-native/schema/commands.gen";
-import { nativePresetForConfig } from "../../../source/native";
+import { nativePresetForId } from "../../../source/native";
 import { RESOURCE_PRECISION, ResourcesIds, type Config } from "@bibliothecadao/types";
 import { CairoCustomEnum, CairoOption, CairoOptionVariant } from "starknet";
 import {
@@ -12,14 +11,7 @@ import {
   buildTroopLimitConfig,
   buildTroopStaminaConfig,
 } from "../registrar/preset";
-import {
-  blitzRealmResources,
-  eternumExplorationRewards,
-  relicRules,
-  startingTroopsByBiome,
-  villageResourcePool,
-  withdrawalRetention,
-} from "./native-preset-data";
+import { villageResourcePool, withdrawalRetention } from "../../../source/common/native-data";
 
 function required<T>(values: Record<number, T> | Record<string, T>, key: number, name: string): T {
   const value = (values as Record<number, T | undefined>)[key];
@@ -42,39 +34,10 @@ function hasNoProduction(resource: number) {
   return (resource >= 39 && resource <= 56) || resource === 58;
 }
 
-function buildCommandMask(blitz: boolean): bigint {
-  const disabled: Array<keyof typeof nativeCommandBits> = blitz
-    ? [
-        "TransferStructureOwnership",
-        "TransferStructureResourcesToExplorer",
-        "BurnLaborForResourceProduction",
-        "CreateTradeOrder",
-        "AcceptTradeOrder",
-        "CancelTradeOrder",
-        "CreateBanks",
-        "BuyFromBank",
-        "SellToBank",
-        "AddBankLiquidity",
-        "RemoveBankLiquidity",
-        "PledgeFaith",
-        "RemoveFaith",
-        "UpdateWonderOwnership",
-        "UpdateFaithfulOwnership",
-        "ClaimWonderPoints",
-        "ClaimPlayerFaithPoints",
-        "Raid",
-      ]
-    : [];
-  disabled.push("EnterDepth", "BuyRealmUpgrade");
-  let mask = Object.values(nativeCommandBits).reduce((mask, bit) => mask | BigInt(bit), 0n);
-  for (const command of disabled) mask &= ~BigInt(nativeCommandBits[command]);
-  return mask;
-}
-
-function buildRules(config: Config) {
+function buildRules(config: Config, preset: ReturnType<typeof nativePresetForId>) {
   const faith = config.faith;
   if (!faith) throw new Error("Native faith config is required");
-  const bitcoinEnabled = !config.blitz.mode.on && config.exploration.bitcoinMineWinProbability > 0;
+  const bitcoinEnabled = preset.bitcoinEnabled;
   return {
     battle_config: {
       regular_immunity_ticks: config.battle.regularImmunityTicks,
@@ -112,24 +75,10 @@ function buildRules(config: Config) {
     },
     map_center_offset: config.settlement.center,
     spire_travel_essence_cost: scaled(config.spireTravelEssenceCost),
-    mode_id: config.blitz.mode.on ? 1 : 0,
-    command_mask: buildCommandMask(config.blitz.mode.on),
-    epoch_seconds: nativePresetForConfig(config).epochSeconds,
-    mode_rules: config.blitz.mode.on
-      ? presetRule.HOME_REWARDS |
-        presetRule.DISCOVER_CAMPS |
-        presetRule.DISCOVER_CHESTS |
-        presetRule.CAPTURE_VILLAGES |
-        presetRule.SAME_OWNER_TRANSFER |
-        presetRule.RESERVED_HYPERSTRUCTURES |
-        presetRule.OWNER_ONLY_SHARES |
-        presetRule.HYPERSTRUCTURE_MULTIPLIERS |
-        presetRule.PRODUCTION_START
-      : presetRule.DISCOVER_HYPERSTRUCTURES |
-        presetRule.SPIRES |
-        presetRule.SEASON_CLOSE |
-        presetRule.DEV_VILLAGE_ENTRY,
-    entry_rule: config.blitz.mode.on ? presetRule.ENTRY_ROSTER : presetRule.ENTRY_ENTITLEMENT,
+    command_mask: preset.commandMask,
+    epoch_seconds: preset.epochSeconds,
+    mode_rules: preset.modeRules,
+    entry_rule: preset.entryRule,
     faith_enabled: faith.enabled,
     speed_config: {
       donkey_sec_per_km: config.speed.donkey_for_resources,
@@ -202,11 +151,11 @@ function buildMines(config: Config) {
   };
 }
 
-function buildStructures(config: Config) {
+function buildStructures(config: Config, preset: ReturnType<typeof nativePresetForId>) {
   const faith = config.faith;
   if (!faith) throw new Error("Native faith config is required");
   const precision = config.resources.resourcePrecision;
-  const board = nativePresetForConfig(config).board;
+  const board = preset.board;
   return {
     board:
       board === null
@@ -261,10 +210,11 @@ function buildStructures(config: Config) {
   };
 }
 
-function buildSettlement(config: Config) {
+function buildSettlement(config: Config, preset: ReturnType<typeof nativePresetForId>) {
   return {
-    spacing: nativePresetForConfig(config).spacing,
-    depths: nativePresetForConfig(config).depths.map((depth) => ({
+    mode: new CairoCustomEnum({ [preset.settlementMode]: {} }),
+    spacing: preset.spacing,
+    depths: preset.depths.map((depth) => ({
       supply_multiplier: depth.supplyMultiplier,
       guard_lower: depth.guardLower,
       guard_upper: depth.guardUpper,
@@ -281,15 +231,15 @@ function buildSettlement(config: Config) {
     })),
     realms: {
       resources: amounts(config.startingResources, config.resources.resourcePrecision),
-      starting_troops: startingTroopsByBiome.map((name) => new CairoCustomEnum({ [name]: {} })),
-      realm_resources: [...blitzRealmResources],
+      starting_troops: preset.startingTroops.map((name) => new CairoCustomEnum({ [name]: {} })),
+      realm_resources: [...preset.realmResources],
     },
     villages: {
       troop_delay_ticks: config.battle.delaySeconds,
       resources: amounts(config.villageStartingResources, config.resources.resourcePrecision),
       resource_pool: villageResourcePool.map((choice) => ({ ...choice })),
     },
-    spires: config.blitz.mode.on
+    spires: !(preset.modeRules & presetRule.SPIRES)
       ? new CairoOption(CairoOptionVariant.None)
       : new CairoOption(CairoOptionVariant.Some, {
           count: config.settlement.spires_max_count,
@@ -300,8 +250,12 @@ function buildSettlement(config: Config) {
   };
 }
 
-function buildEconomy(config: Config, tokens: Array<{ resource_type: number; token: string }>) {
-  const chests = nativePresetForConfig(config).chests;
+function buildEconomy(
+  config: Config,
+  preset: ReturnType<typeof nativePresetForId>,
+  tokens: Array<{ resource_type: number; token: string }>,
+) {
+  const chests = preset.chests;
   return {
     chests:
       chests === null
@@ -328,11 +282,11 @@ function buildEconomy(config: Config, tokens: Array<{ resource_type: number; tok
         points: resource.resource_completion_points,
       })),
     },
-    relics: relicRules.map((rule) => ({ ...rule })),
+    relics: preset.relics.map((rule) => ({ ...rule })),
     research_cost: config.artificer!.research_cost_for_relic,
     withdrawals: new CairoOption<ReturnType<typeof buildWithdrawals>>(
-      config.blitz.mode.on ? CairoOptionVariant.None : CairoOptionVariant.Some,
-      config.blitz.mode.on ? undefined : buildWithdrawals(config, tokens),
+      tokens.length === 0 ? CairoOptionVariant.None : CairoOptionVariant.Some,
+      tokens.length === 0 ? undefined : buildWithdrawals(config, tokens),
     ),
   };
 }
@@ -361,27 +315,18 @@ function buildWithdrawals(config: Config, tokens: Array<{ resource_type: number;
   };
 }
 
-export function buildNativePreset(config: Config) {
+export function buildNativePreset(config: Config, presetId: number) {
+  const preset = nativePresetForId(presetId);
   validateRequiredNativeConfig(config);
-  const bridgeTokens = config.blitz.mode.on ? [] : resolveBridgeTokens(config);
+  const bridgeTokens = resolveBridgeTokens(config, preset.bridgeResources);
   return {
-    rules: buildRules(config),
+    rules: buildRules(config, preset),
     resources: buildResources(config),
-    structures: buildStructures(config),
-    settlement: buildSettlement(config),
-    economy: buildEconomy(config, bridgeTokens),
+    structures: buildStructures(config, preset),
+    settlement: buildSettlement(config, preset),
+    economy: buildEconomy(config, preset, bridgeTokens),
 
-    exploration: config.blitz.mode.on
-      ? config.blitz.exploration.rewards.map(({ rewardId, amount, probabilityBps }) => ({
-          resource_type: rewardId,
-          amount,
-          amount_max: amount,
-          weight: probabilityBps,
-        }))
-      : eternumExplorationRewards(config.exploration.reward).map((reward) => ({
-          ...reward,
-          amount_max: reward.amount,
-        })),
+    exploration: preset.supplies.map((reward) => ({ ...reward })),
     season_win_points: config.victoryPoints.pointsForWin,
   };
 }
@@ -444,7 +389,8 @@ function validateRequiredNativeConfig(config: Config): void {
     throw new Error("Native research cost is required and must be nonnegative");
 }
 
-function resolveBridgeTokens(config: Config) {
+function resolveBridgeTokens(config: Config, resources: readonly number[]) {
+  if (resources.length === 0) return [];
   const addresses = config.setup?.addresses;
   const configured = addresses?.resources;
   if (!configured || typeof configured !== "object" || Array.isArray(configured))
@@ -465,5 +411,11 @@ function resolveBridgeTokens(config: Config) {
       throw new Error(`Missing bridge token for resource ${resource_type}`);
     seen.add(resource_type);
   }
-  return tokens.map((entry) => ({ ...entry })).sort((a, b) => a.resource_type - b.resource_type);
+  return resources
+    .map((resource_type) => {
+      const token = tokens.find((entry) => entry.resource_type === resource_type)?.token;
+      if (!token) throw new Error(`Missing bridge token for resource ${resource_type}`);
+      return { resource_type, token };
+    })
+    .sort((a, b) => a.resource_type - b.resource_type);
 }

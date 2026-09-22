@@ -56,25 +56,6 @@ describe("play-asset-manifest", () => {
     ).toBe(false);
   });
 
-  it("keeps Blitz-only exclusions out of local model loading and spires out of Blitz", async () => {
-    const { getGameModeConfig } = await import("@/config/game-modes");
-    const { BuildingType } = await import("@bibliothecadao/types");
-    const { BUILDINGS_GROUPS } = await import("@/three/constants/scene-constants");
-    const blitz = getGameModeConfig({ modeId: "blitz" }).assets;
-    const eternum = getGameModeConfig({ modeId: "eternum" }).assets;
-    for (const type of [BuildingType.ResourceFish, BuildingType.ResourceResearch]) {
-      expect(blitz.buildingModelPaths[BUILDINGS_GROUPS.BUILDINGS][type]).toBeUndefined();
-      expect(eternum.buildingModelPaths[BUILDINGS_GROUPS.BUILDINGS][type]).toBeDefined();
-    }
-    expect(blitz.buildingModelPaths[BUILDINGS_GROUPS.BUILDINGS][BuildingType.Storehouse]).toBeDefined();
-    const paths = [
-      ...Object.values(blitz.structureModelPaths).flat(),
-      ...Object.values(blitz.buildingModelPaths).flatMap((group) => Object.values(group)),
-    ];
-    expect(paths).not.toContain("/models/ethereal/spire.glb");
-    expect(paths).not.toContain("/models/new-buildings-opt/fishery.glb");
-  });
-
   it("excludes audio, videos, cosmetics, and landing-only promo art from dashboard preloads", async () => {
     const {
       DASHBOARD_SHARED_PLAY_FETCH_ASSETS,

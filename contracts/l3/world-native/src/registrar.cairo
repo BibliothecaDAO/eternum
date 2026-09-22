@@ -10,7 +10,6 @@ pub struct CreateGameParams {
     pub duration_seconds: u64,
     pub end_grace_seconds: u32,
     pub dev_mode_on: bool,
-    pub mode: crate::settlement::SettlementMode,
     pub roster: Span<RosterPlayer>,
     pub registration_start: u32,
     pub biome_climate: crate::rules::BiomeClimateConfig,
@@ -39,11 +38,13 @@ pub trait IGameSettlement<T> {
     ) -> u64;
 }
 
-pub fn validate_params(params: CreateGameParams, rules: crate::rules::SliceRules, spacing: u32) {
+pub fn validate_params(
+    params: CreateGameParams, rules: crate::rules::SliceRules, settlement: crate::presets::SettlementPreset,
+) {
     assert!(params.name != 0, "game name is empty");
     assert!(params.seed != 0, "game seed is zero");
     assert!(params.duration_seconds != 0, "game duration is zero");
-    crate::expeditions::validate_game(rules.epoch_seconds, spacing, params.duration_seconds);
+    crate::expeditions::validate_game(rules.epoch_seconds, settlement.spacing, params.duration_seconds);
     assert!(params.start_settling_at <= params.start_main_at, "invalid game schedule");
     assert!(
         Into::<u32, u64>::into(params.registration_start) < params.start_settling_at,
@@ -54,11 +55,13 @@ pub fn validate_params(params: CreateGameParams, rules: crate::rules::SliceRules
     }
     if rules.entry_rule == crate::rules::ENTRY_ROSTER {
         assert!(params.roster.len() > 0 && params.roster.len() <= 24, "invalid Blitz roster size");
-        assert!(params.mode == crate::settlement::SettlementMode::Triple, "Regular Blitz required");
+        if settlement.mode == crate::settlement::SettlementMode::Duel {
+            assert!(params.roster.len() == 2, "Duel requires two players");
+        }
         assert!(!params.dev_mode_on, "free Blitz does not use development mode");
     } else {
         assert!(params.roster.is_empty(), "Eternum does not use a fixed roster");
-        assert!(params.mode != crate::settlement::SettlementMode::Duel, "Eternum does not use Duel settlement");
+        assert!(settlement.mode != crate::settlement::SettlementMode::Duel, "Eternum does not use Duel settlement");
     }
 }
 pub fn map_center_offset(game_id: u32, seed: felt252) -> u32 {
@@ -130,14 +133,13 @@ pub mod RegistrarState {
         fn register_preset(ref self: ComponentState<TContractState>, preset_id: u32, definition: PresetDefinition) {
             get_dep_component!(@self, Life).assert_authority();
             assert!(preset_id != 0, "preset id zero is reserved");
-            assert!(self.presets.read(preset_id) == 0, "preset already registered");
+            crate::presets::validate(definition);
             crate::settlement_grid::validate_spacing(definition.settlement.spacing);
             if crate::rules::rule_enabled(definition.rules, crate::rules::SPIRES) {
                 crate::spires::validate(definition.settlement.spires.expect('missing season spires'));
             } else {
                 assert!(definition.settlement.spires.is_none(), "spires are disabled");
             }
-            crate::presets::validate(definition);
             let commitment = crate::presets::commitment(definition);
             assert!(commitment != 0, "empty preset commitment");
             self.presets.write(preset_id, commitment);
@@ -173,16 +175,17 @@ pub mod RegistrarState {
         ) -> u32 {
             get_dep_component!(@self, Life).assert_authority();
             let peers = get_dep_component!(@self, Life).require_active();
-            super::validate_params(params, definition.rules, definition.settlement.spacing);
-            self.validate_preset(params.preset_id, crate::presets::commitment(definition));
+            super::validate_params(params, definition.rules, definition.settlement);
             let mut encoded = array![];
             params.serialize(ref encoded);
+            definition.serialize(ref encoded);
             let commitment = core::poseidon::poseidon_hash_span(encoded.span());
             let previous = self.launch_ids.read(params.name);
             if previous != 0 {
                 assert!(self.launch_commitments.read(params.name) == commitment, "conflicting game launch");
                 return previous;
             }
+            self.validate_preset(params.preset_id, crate::presets::commitment(definition));
             let game_id = self.next_game.read();
             assert!(game_id != 0 && game_id < 0xffffffff, "game identity space exhausted");
             self.register_roster(game_id, params.roster);
@@ -193,7 +196,7 @@ pub mod RegistrarState {
                 registration_start: params.registration_start,
                 registration_limit: params.roster.len().try_into().unwrap(),
                 mode: if definition.rules.entry_rule == crate::rules::ENTRY_ROSTER {
-                    params.mode
+                    definition.settlement.mode
                 } else {
                     crate::settlement::SettlementMode::Single
                 },

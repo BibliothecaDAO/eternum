@@ -30,7 +30,7 @@ export const createEternumGame = (gameName: string, gameStartTime: string) =>
     environment: "madara.eternum",
     gameName,
     gameStartTime,
-    version: "1",
+    version: "3",
     devModeOn: false,
   });
 export const retryFactoryRun = (run: FactoryRun) =>

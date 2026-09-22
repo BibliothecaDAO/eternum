@@ -1,3 +1,5 @@
+import { nativePresetForId } from "../../../source/native";
+import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { CapacityConfig, type Config } from "@bibliothecadao/types";
 import { hash, shortString } from "starknet";
 import { BLITZ_REGISTRATION_COUNT_CAP } from "../constants";
@@ -141,8 +143,8 @@ function resolveRegistrationSchedule(startMainAt: number, chainTimestamp: number
   return { registrationStartAt: startSettlingAt - 1, startSettlingAt };
 }
 
-function resolveRegistrationCountMax(config: Config, twoPlayerMode: boolean): number {
-  if (!config.blitz.mode.on) {
+function resolveRegistrationCountMax(config: Config, presetId: number, twoPlayerMode: boolean): number {
+  if (nativePresetForId(presetId).entryRule !== nativeRuleConstants.ENTRY_ROSTER) {
     if (twoPlayerMode) {
       throw new Error("Eternum seasons do not support two-player mode");
     }
@@ -176,7 +178,7 @@ function deriveGameSeed(input: CreateGamePayloadInput): string {
 
 export function buildCreateGameParams(config: Config, input: CreateGamePayloadInput): Record<string, unknown> {
   const { registrationStartAt, startSettlingAt } = resolveRegistrationSchedule(input.startMainAt, input.chainTimestamp);
-  const registrationCountMax = resolveRegistrationCountMax(config, input.twoPlayerMode);
+  const registrationCountMax = resolveRegistrationCountMax(config, input.presetId, input.twoPlayerMode);
 
   return {
     name: shortString.encodeShortString(input.gameName),
@@ -187,7 +189,7 @@ export function buildCreateGameParams(config: Config, input: CreateGamePayloadIn
     end_grace_seconds: resolveEndGraceSeconds(config),
 
     dev_mode_on: input.devModeOn,
-    single_realm_mode: !config.blitz.mode.on || input.singleRealmMode,
+    single_realm_mode: nativePresetForId(input.presetId).settlementMode === "Single" || input.singleRealmMode,
     two_player_mode: input.twoPlayerMode,
     registration_count_max: registrationCountMax,
     registration_start_at: registrationStartAt,

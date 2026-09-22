@@ -57,7 +57,7 @@ pub const ETERNUM_RULES: u32 = crate::rules::DISCOVER_HYPERSTRUCTURES
     + crate::rules::DEV_VILLAGE_ENTRY;
 
 pub fn rules() -> crate::rules::SliceRules {
-    let data = read_txt(@FileTrait::new("tests/fixtures/preset-1.txt"));
+    let data = read_txt(@FileTrait::new("tests/fixtures/preset-3.txt"));
     let mut fields = data.span();
     Serde::deserialize(ref fields).unwrap()
 }
@@ -68,7 +68,7 @@ pub fn create_games(registry: ContractAddress, authority: ContractAddress) {
             game_id,
             GameRegistry {
                 name: 'fixture',
-                preset_id: 1,
+                preset_id: 3,
                 creator: authority,
                 settled: false,
                 ready: true,

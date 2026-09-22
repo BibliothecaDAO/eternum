@@ -1,5 +1,5 @@
-import { ResourcesIds } from "../../../packages/types/src/constants";
-import type { ConfigPatch } from "../common/merge-config";
+import { ResourcesIds } from "../../../../packages/types/src/constants";
+import type { ConfigPatch } from "../merge-config";
 
 const TROOP_DAMAGE_RAID_PERCENT_NUM = 1_000; //10%
 
@@ -49,7 +49,7 @@ const TROOP_CITY_DEPLOYMENT_CAP = 15_000;
 const TROOP_KINGDOM_DEPLOYMENT_CAP = 45_000;
 const TROOP_EMPIRE_DEPLOYMENT_CAP = 90_000;
 
-export const blitzTroopConfig: ConfigPatch = {
+export const arenaTroopConfig: ConfigPatch = {
   troop: {
     damage: {
       t1DamageValue: TROOP_BASE_DAMAGE,

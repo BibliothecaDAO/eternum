@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { isEternumDeploymentEnvironment, resolveDeploymentEnvironment } from "../environment";
+import { resolveDeploymentEnvironment } from "../environment";
 
 describe("resolveDeploymentEnvironment", () => {
   test("resolves the Madara Blitz balance environment", () => {
@@ -16,9 +16,5 @@ describe("resolveDeploymentEnvironment", () => {
     expect(() => resolveDeploymentEnvironment("invalid.blitz")).toThrow(
       'Unsupported environment "invalid.blitz". Expected one of: madara.blitz',
     );
-  });
-
-  test("keeps eternum-only launch gates separate from blitz", () => {
-    expect(isEternumDeploymentEnvironment(resolveDeploymentEnvironment("madara.blitz"))).toBe(false);
   });
 });

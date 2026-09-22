@@ -1,4 +1,4 @@
-// Tables from the pinned game rules, stored as immutable native configuration.
+// Tables from the pinned game rules, owned by the mode configuration.
 const RESOURCE_ORDER = [3, 1, 2, 4, 6, 8, 5, 11, 7, 15, 14, 20, 13, 12, 16, 21, 18, 17, 10, 19, 9, 22];
 const VILLAGE_WEIGHTS = [
   19815, 15556, 15062, 10556, 8951, 7130, 5031, 3920, 3673, 2531, 1358, 926, 988, 1049, 710, 741, 556, 494, 401, 278,
@@ -42,7 +42,7 @@ export const startingTroopsByBiome = [
   "Knight",
 ] as const;
 
-export const blitzRealmResources = [3, 2, 4, 5, 11, 7, 19, 9, 22];
+export const realmResourcePool = [3, 2, 4, 5, 11, 7, 19, 9, 22];
 
 const RELIC_RATES = [
   5000, 10000, 2000, 4000, 2000, 4000, 0, 0, 10000, 20000, 1500, 3000, 2000, 4000, 2000, 2000, 1500, 3000,

@@ -1,6 +1,6 @@
-import { BuildingType, getProducedResource, ResourcesIds } from "../../../packages/types/src/constants";
-import type { ResourceCost } from "../../../packages/types/src/types/common";
-import type { ConfigPatch } from "../common/merge-config";
+import { BuildingType, getProducedResource, ResourcesIds } from "../../../../packages/types/src/constants";
+import type { ResourceCost } from "../../../../packages/types/src/types/common";
+import type { ConfigPatch } from "../merge-config";
 
 type ResourceInputsById = Record<number, ResourceCost[]>;
 
@@ -328,7 +328,7 @@ export const SIMPLE_BUILDING_COSTS: ResourceInputsById = {
   [BuildingType.ResourceResearch]: [{ resource: ResourcesIds.Labor, amount: 360 }], // Artificer's Workshop (labor-only)
 };
 
-export const blitzBuildingConfig: ConfigPatch = {
+export const arenaBuildingConfig: ConfigPatch = {
   buildings: {
     buildingCapacity: BUILDING_CAPACITY,
     buildingPopulation: BUILDING_POPULATION,

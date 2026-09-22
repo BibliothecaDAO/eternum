@@ -179,7 +179,9 @@ def deploy_world(config, directory, environment):
     bun("config/deployer/clean/cli/deploy-world.ts", *command, "--inspect", name="world-inspect")
     environment["DEPLOYER_ACCOUNT_ADDRESS"] = identity["operatorAccountAddress"]
     bun("config/deployer/clean/registrar/register-preset.ts", "--environment", "madara.blitz",
-        "--preset-id", "2", "--balance-profile", "official-60", name="blitz-preset")
+        "--preset-id", "2", name="blitz-preset")
+    bun("config/deployer/clean/registrar/register-preset.ts", "--environment", "madara.frontier",
+        "--preset-id", "1", name="frontier-preset")
     return authority
 
 

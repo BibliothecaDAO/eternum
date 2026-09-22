@@ -4,7 +4,7 @@ import { NativeFactStore } from "./native-fact-store";
 import type { NativeWorldBindings } from "@bibliothecadao/types";
 import { hash, type AccountInterface } from "starknet";
 import bindingsJson from "../../../../contracts/l3/world-native/schema/bindings.json";
-import preset from "../../../../contracts/l3/world-native/fixtures/preset-1.json";
+import preset from "../../../../contracts/l3/world-native/fixtures/preset-3.json";
 import rowFixture from "../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 import { nativeSubmission } from "./native-submission";
 import type { SignedNativeIntent } from "@bibliothecadao/provider";

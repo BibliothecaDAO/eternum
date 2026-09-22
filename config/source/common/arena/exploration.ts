@@ -1,7 +1,7 @@
-import { ResourcesIds } from "../../../packages/types/src/constants";
-import type { ConfigPatch } from "../common/merge-config";
+import { ResourcesIds } from "../../../../packages/types/src/constants";
+import type { ConfigPatch } from "../merge-config";
 
-const baseBlitzExplorationRewards = [
+const baseArenaExplorationRewards = [
   { rewardId: ResourcesIds.Essence, amount: 100, probabilityBps: 3_000 },
   { rewardId: ResourcesIds.Essence, amount: 250, probabilityBps: 2_000 },
   { rewardId: ResourcesIds.Essence, amount: 500, probabilityBps: 1_500 },
@@ -13,7 +13,7 @@ const baseBlitzExplorationRewards = [
   { rewardId: ResourcesIds.Paladin, amount: 1_000, probabilityBps: 200 },
 ] as const;
 
-export const blitzExplorationConfig: ConfigPatch = {
+export const arenaExplorationConfig: ConfigPatch = {
   exploration: {
     reward: 750,
     shardsMinesFailProbability: 49_000,
@@ -34,8 +34,7 @@ export const blitzExplorationConfig: ConfigPatch = {
   },
   blitz: {
     exploration: {
-      rewardProfileId: "official-90",
-      rewards: [...baseBlitzExplorationRewards],
+      rewards: [...baseArenaExplorationRewards],
     },
   },
 };

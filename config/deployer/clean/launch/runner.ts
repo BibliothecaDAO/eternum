@@ -1,3 +1,5 @@
+import { nativePresetForId } from "../../../source/native";
+import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { buildNativeGameParams, loadNativePresetConfiguration } from "../registrar/native-preset";
 import { buildNativePreset } from "../config/native-preset";
 import { setTimeout as sleep } from "node:timers/promises";
@@ -250,10 +252,11 @@ async function ensureSponsoredLedgerPool(launch: PreparedLaunch, gameId: number)
 
 async function buildRegistrarGameParams(launch: PreparedLaunch) {
   const owners = launch.request.rosterOwners ?? [];
-  const roster = launch.config.blitz.mode.on
+  const fixedRoster = nativePresetForId(launch.runtime.presetId).entryRule === nativeRuleConstants.ENTRY_ROSTER;
+  const roster = fixedRoster
     ? await resolveBlitzRoster(launch.runtime.provider, owners, launch.runtime.environment.id)
     : [];
-  if (!launch.config.blitz.mode.on && owners.length) throw new Error("Eternum does not use a fixed roster");
+  if (!fixedRoster && owners.length) throw new Error("Eternum does not use a fixed roster");
   const block = await launch.runtime.provider.getBlock("latest");
   return buildNativeGameParams(
     launch.config,
@@ -333,7 +336,10 @@ async function createGame(launch: PreparedLaunch): Promise<void> {
         params,
         environmentId,
         ledger,
-        buildNativePreset(loadNativePresetConfiguration(environmentId, launch.runtime.presetId)),
+        buildNativePreset(
+          loadNativePresetConfiguration(environmentId, launch.runtime.presetId),
+          launch.runtime.presetId,
+        ),
       ),
     {
       start: `Creating "${launch.request.gameName}" through the persistent registrar`,
@@ -388,11 +394,12 @@ async function waitForGameIndex(launch: PreparedLaunch): Promise<void> {
 
 async function createAndSettleGame(launch: PreparedLaunch): Promise<void> {
   const admissionUrl = launch.request.admissionUrl ?? process.env.ADMISSION_URL;
-  if (launch.config.blitz.mode.on && !admissionUrl) {
+  const fixedRoster = nativePresetForId(launch.runtime.presetId).entryRule === nativeRuleConstants.ENTRY_ROSTER;
+  if (fixedRoster && !admissionUrl) {
     throw new Error("ADMISSION_URL is required for automatic Blitz settlement");
   }
   await createGame(launch);
-  if (!launch.config.blitz.mode.on) return;
+  if (!fixedRoster) return;
   launch.summary.finalizeAt = await settleBlitzRoster(
     launch.runtime.provider,
     await resolveGameId(launch),
@@ -411,7 +418,7 @@ async function executeLaunchStep(launch: PreparedLaunch, stepId: LaunchGameStepI
     await waitForGameIndex(launch);
     return;
   }
-  throw new Error(`Launch step "${stepId}" is retired; persistent games are configured by their immutable preset`);
+  throw new Error(`Launch step "${stepId}" is retired; persistent games are configured from a preset at creation`);
 }
 
 async function finishLaunch(launch: PreparedLaunch): Promise<LaunchGameSummary> {

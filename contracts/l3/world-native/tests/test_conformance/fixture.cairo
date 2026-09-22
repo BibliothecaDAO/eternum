@@ -180,7 +180,7 @@ fn configure_execution(season: ContractAddress) {
     start_cheat_block_timestamp_global(1100);
 }
 fn provision_game(peers: Peers, actor: ContractAddress, administrator: ContractAddress) {
-    let data = read_txt(@FileTrait::new("tests/fixtures/preset-1.txt"));
+    let data = read_txt(@FileTrait::new("tests/fixtures/preset-3.txt"));
     let mut fields = data.span();
     let rules: world_native::rules::SliceRules = Serde::deserialize(ref fields).unwrap();
     let resources: Span<ResourceRule> = Serde::deserialize(ref fields).unwrap();
@@ -191,7 +191,7 @@ fn provision_game(peers: Peers, actor: ContractAddress, administrator: ContractA
         7,
         GameRegistry {
             name: 'conformance',
-            preset_id: 1,
+            preset_id: 3,
             creator: administrator,
             settled: false,
             ready: true,

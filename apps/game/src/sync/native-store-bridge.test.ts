@@ -2,7 +2,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
 import { configManager } from "@bibliothecadao/eternum";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import preset from "../../../../contracts/l3/world-native/fixtures/preset-1.json";
+import preset from "../../../../contracts/l3/world-native/fixtures/preset-3.json";
 import { hash } from "starknet";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { installNativeStoreBridge } from "./native-store-bridge";
@@ -40,7 +40,7 @@ const createHarness = () => {
   const game = {
     game_id: 1,
     name: "0",
-    preset_id: 1,
+    preset_id: 3,
     creator: "0x123",
     settled: false,
     ready: true,

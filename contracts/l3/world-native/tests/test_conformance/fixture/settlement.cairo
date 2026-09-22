@@ -45,7 +45,7 @@ fn prepare_without_entitlement(
 ) -> ContractAddress {
     let season = setup();
     let peers = IDomainDispatcher { contract_address: season }.domain_state().peers;
-    let input = read_txt(@FileTrait::new("tests/fixtures/preset-1.txt"));
+    let input = read_txt(@FileTrait::new("tests/fixtures/preset-3.txt"));
     let mut fields = input.span();
     let mut rules: world_native::rules::SliceRules = Serde::deserialize(ref fields).unwrap();
     let resources: Span<ResourceRule> = Serde::deserialize(ref fields).unwrap();

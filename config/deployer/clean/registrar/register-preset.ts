@@ -1,6 +1,7 @@
+import { nativePresetForId } from "../../../source/native";
+import { buildNativePreset } from "../config/native-preset";
 import { Account, RpcProvider } from "starknet";
 import { assertProviderChain } from "@realms-world/chain";
-import type { BlitzBalanceProfileId } from "../../../source/blitz";
 import { DEPLOYMENT_ENVIRONMENTS } from "../constants";
 import { isDeploymentEnvironmentId, resolveDeploymentEnvironment } from "../environment";
 import { createLedgerAdminAccount, registerLedgerPreset, type LedgerTarget } from "../ledger/calls";
@@ -8,14 +9,12 @@ import { buildLedgerEconomicPreset, buildRegisterLedgerPresetCalldata } from "..
 import { resolveAccountCredentials } from "../shared/credentials";
 import { requireRpcUrl } from "../shared/rpc";
 import type { DeploymentEnvironmentId } from "../types";
-import { validatePresetBalanceProfile } from "./preset-profile";
 import { buildNativePresetRegistration, registerNativePreset, loadNativePresetConfiguration } from "./native-preset";
 
 interface RegisterPresetOptions {
   presetId: number;
   environmentId: DeploymentEnvironmentId;
   rpcUrl?: string;
-  balanceProfile?: BlitzBalanceProfileId;
   ledgerAddress?: string;
   ledgerRpcUrl?: string;
   sponsored: boolean;
@@ -31,21 +30,18 @@ function readArgument(name: string): string | undefined {
 function parseOptions(): RegisterPresetOptions {
   const presetId = Number(readArgument("--preset-id"));
   const environmentId = readArgument("--environment") ?? "madara.blitz";
-  const balanceProfile = readArgument("--balance-profile") as BlitzBalanceProfileId | undefined;
   if (!Number.isInteger(presetId) || presetId <= 0) {
     throw new Error(
-      "Usage: bun config/deployer/clean/registrar/register-preset.ts --preset-id <n> [--ledger <address> --ledger-rpc-url <mainnet RPC>] [--environment madara.blitz] [--balance-profile official-60|official-90] [--native-manifest path] [--sponsored] [--dry-run]",
+      "Usage: bun config/deployer/clean/registrar/register-preset.ts --preset-id <n> [--ledger <address> --ledger-rpc-url <mainnet RPC>] [--environment madara.blitz] [--native-manifest path] [--sponsored] [--dry-run]",
     );
   }
   if (!isDeploymentEnvironmentId(environmentId)) {
     throw new Error(`--environment must be one of: ${Object.keys(DEPLOYMENT_ENVIRONMENTS).join(", ")}`);
   }
-  validatePresetBalanceProfile(environmentId, balanceProfile);
   return {
     presetId,
     environmentId,
     rpcUrl: readArgument("--rpc-url") || process.env.RPC_URL,
-    balanceProfile,
     ledgerAddress: readArgument("--ledger") || process.env.LEDGER_ADDRESS,
     ledgerRpcUrl: readArgument("--ledger-rpc-url") || process.env.LEDGER_RPC_URL,
     sponsored: process.argv.includes("--sponsored"),
@@ -69,15 +65,14 @@ function resolveOptionalLedgerTarget(options: RegisterPresetOptions): LedgerTarg
 }
 
 export async function registerEnvironmentPreset(options: RegisterPresetOptions): Promise<void> {
-  const config = loadNativePresetConfiguration(options.environmentId, options.presetId, options.balanceProfile);
+  const config = loadNativePresetConfiguration(options.environmentId, options.presetId);
   const registration = buildRegistration(config, options);
   const { calldata } = registration;
-  const ledgerPreset = buildLedgerEconomicPreset(resolveDeploymentEnvironment(options.environmentId).gameType, {
+  const ledgerPreset = buildLedgerEconomicPreset(nativePresetForId(options.presetId).gameType, {
     sponsored: options.sponsored,
   });
   const summary = {
     presetId: options.presetId,
-    balanceProfile: config.blitz.mode.on ? config.blitz.exploration.rewardProfileId : null,
     calldataLength: calldata.length,
     ...registration.summary,
     sponsored: options.sponsored,
@@ -131,7 +126,11 @@ export async function registerEnvironmentPreset(options: RegisterPresetOptions):
 }
 
 function buildRegistration(config: ReturnType<typeof loadNativePresetConfiguration>, options: RegisterPresetOptions) {
-  const native = buildNativePresetRegistration(config, options.presetId, options.nativeManifest);
+  const native = buildNativePresetRegistration(
+    buildNativePreset(config, options.presetId),
+    options.presetId,
+    options.nativeManifest,
+  );
   return {
     native,
     calldata: native.calldata,

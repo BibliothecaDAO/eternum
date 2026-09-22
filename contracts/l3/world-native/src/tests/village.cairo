@@ -53,7 +53,7 @@ fn setup_config(dev: bool, mode: SettlementMode, game_rules: crate::rules::Slice
     IVillagesDispatcher { contract_address: deployment.peers.settlement }
         .configure_villages(3, VillageRules { troop_delay_ticks: 2, ..village_rules() });
     stop_cheat_caller_address(deployment.peers.settlement);
-    let data = read_txt(@FileTrait::new("tests/fixtures/preset-1.txt"));
+    let data = read_txt(@FileTrait::new("tests/fixtures/preset-3.txt"));
     let mut fields = data.span();
     let _: crate::rules::SliceRules = Serde::deserialize(ref fields).unwrap();
     let resources: Span<ResourceRule> = Serde::deserialize(ref fields).unwrap();

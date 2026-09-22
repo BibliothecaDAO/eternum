@@ -30,7 +30,7 @@ describe("native game configuration", () => {
     try {
       const params = buildCreateGameParams(config, {
         gameName: "bltz-a2",
-        presetId: 3,
+        presetId: 4,
         startMainAt: 2_000_000_000,
         chainTimestamp: 1_999_990_000,
         durationSeconds: 7_200,
@@ -42,7 +42,7 @@ describe("native game configuration", () => {
 
       // A launcher clock ahead of the chain cannot delay recorded settlement.
       expect(params).toMatchObject({
-        preset_id: 3,
+        preset_id: 4,
         start_settling_at: 1_999_990_000,
         start_main_at: 2_000_000_000,
         duration_seconds: 7_200,
@@ -68,7 +68,7 @@ describe("native game configuration", () => {
     try {
       const params = buildCreateGameParams(config, {
         gameName: "bltz-late",
-        presetId: 3,
+        presetId: 2,
         startMainAt: 2_000_000_000,
         chainTimestamp: 2_000_000_500,
         durationSeconds: 3_600,
@@ -92,7 +92,7 @@ describe("native game configuration", () => {
     const capacityConfig = structuredClone(config);
     const createGameInput = {
       gameName: "bltz-capacity",
-      presetId: 3,
+      presetId: 2,
       startMainAt: 2_000_000_000,
       chainTimestamp: 1_999_990_000,
       durationSeconds: 3_600,

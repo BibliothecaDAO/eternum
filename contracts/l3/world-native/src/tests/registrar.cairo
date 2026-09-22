@@ -99,6 +99,11 @@ fn definition(blitz: bool) -> PresetDefinition {
             upgrades: array![crate::upgrades::UpgradeRecipe { costs: array![].span() }].span(),
         },
         settlement: SettlementPreset {
+            mode: if blitz {
+                SettlementMode::Triple
+            } else {
+                SettlementMode::Single
+            },
             spacing: 6,
             depths: array![].span(),
             realms: super::settlement::grants(),
@@ -183,11 +188,6 @@ fn params(blitz: bool) -> CreateGameParams {
             10
         },
         dev_mode_on: false,
-        mode: if blitz {
-            SettlementMode::Triple
-        } else {
-            SettlementMode::Single
-        },
         roster: if blitz {
             roster(2)
         } else {
@@ -202,28 +202,51 @@ fn params(blitz: bool) -> CreateGameParams {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn presets_are_immutable_and_launch_rejects_changed_preimages_before_allocating() {
+fn launch_rejects_unregistered_or_stale_presets_before_allocating() {
     let d = setup();
     let preset = definition(true);
     assert!(safe(d, super::authority()).create_game(params(true), preset).is_err());
     assert!(safe(d, super::authority()).register_preset(0, preset).is_err());
-    assert!(
-        safe(d, super::authority())
-            .register_preset(
-                1, PresetDefinition { settlement: SettlementPreset { spacing: 0, ..preset.settlement }, ..preset },
-            )
-            .is_err(),
-    );
     assert!(safe(d, d.actor).register_preset(1, preset).is_err());
     registry(d).register_preset(1, preset);
     assert_eq!(registry(d).preset_commitment(1), crate::presets::commitment(preset));
-    assert!(safe(d, super::authority()).register_preset(1, preset).is_err());
     assert!(
         safe(d, super::authority())
-            .create_game(params(true), PresetDefinition { season_win_points: 2, ..preset })
+            .create_game(
+                params(true),
+                PresetDefinition { rules: crate::rules::SliceRules { mode_rules: 0, ..preset.rules }, ..preset },
+            )
             .is_err(),
     );
     assert_eq!(registry(d).next_game_id(), 1);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn replacing_a_preset_changes_only_new_games_and_requires_authority() {
+    let d = setup();
+    let original = definition(true);
+    registry(d).register_preset(1, original);
+    let old_id = registry(d).create_game(params(true), original);
+    let mut changed = original;
+    changed.rules.troop_stamina_config.stamina_explore_stamina_cost += 1;
+    assert!(safe(d, d.actor).register_preset(1, changed).is_err());
+    assert_eq!(registry(d).preset_commitment(1), crate::presets::commitment(original));
+    registry(d).register_preset(1, changed);
+    assert_eq!(registry(d).preset_commitment(1), crate::presets::commitment(changed));
+    assert_eq!(registry(d).create_game(params(true), original), old_id);
+    let next_params = CreateGameParams { name: 'next', ..params(true) };
+    assert!(safe(d, super::authority()).create_game(next_params, original).is_err());
+    let new_id = registry(d).create_game(next_params, changed);
+    let games = IGameDispatcher { contract_address: d.peers.registry };
+    assert_eq!(
+        games.rules(old_id).troop_stamina_config.stamina_explore_stamina_cost,
+        original.rules.troop_stamina_config.stamina_explore_stamina_cost,
+    );
+    assert_eq!(
+        games.rules(new_id).troop_stamina_config.stamina_explore_stamina_cost,
+        changed.rules.troop_stamina_config.stamina_explore_stamina_cost,
+    );
 }
 
 #[test]
@@ -302,7 +325,6 @@ fn invalid_schedules_modes_and_registration_limits_never_allocate() {
         CreateGameParams { registration_start: 200, ..params(true) },
         CreateGameParams { roster: roster(25), ..params(true) },
         CreateGameParams { roster: array![].span(), ..params(true) },
-        CreateGameParams { mode: SettlementMode::Duel, ..params(true) },
     ] {
         assert!(safe(d, super::authority()).create_game(input, preset).is_err());
     }
@@ -417,11 +439,6 @@ fn fixed_blitz_rosters_require_unique_bound_players_and_regular_mode() {
         );
         assert_eq!(registry(d).next_game_id(), 1);
     }
-    assert!(
-        safe(d, super::authority())
-            .create_game(CreateGameParams { mode: SettlementMode::Single, ..params(true) }, preset)
-            .is_err(),
-    );
     assert!(
         safe(d, super::authority())
             .create_game(CreateGameParams { dev_mode_on: true, ..params(true) }, preset)
@@ -616,7 +633,6 @@ fn recorded_roster_batches_block_early_play_and_report_ticket_progress() {
 fn open_preset_exploration_discovers_a_camp_and_credits_the_home_realm() {
     let d = setup();
     let mut preset = definition(true);
-    preset.rules.mode_id = 7;
     preset.rules.command_mask = super::recorded::BLITZ_COMMAND_MASK;
     preset.rules.mode_rules = HOME_REWARDS | DISCOVER_CAMPS | DISCOVER_CHESTS;
     preset.rules.entry_rule = crate::rules::ENTRY_OPEN;

@@ -14,7 +14,3 @@ export function resolveDeploymentEnvironment(value: string): DeploymentEnvironme
 
   return DEPLOYMENT_ENVIRONMENTS[value];
 }
-
-export function isEternumDeploymentEnvironment(environment: DeploymentEnvironment): boolean {
-  return environment.gameType === "eternum";
-}

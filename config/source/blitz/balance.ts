@@ -1,20 +1,20 @@
 import { BuildingType, RealmLevels, ResourcesIds } from "../../../packages/types/src/constants";
-import { COMPLEX_BUILDING_COSTS, SIMPLE_BUILDING_COSTS } from "./building";
-import { VICTORY_POINTS_MULTIPLIER } from "./points";
-import type { BlitzBalanceProfile } from "./shared";
+import { COMPLEX_BUILDING_COSTS, SIMPLE_BUILDING_COSTS } from "../common/arena/building";
+import { VICTORY_POINTS_MULTIPLIER } from "../common/arena/points";
+import type { ConfigPatch } from "../common/merge-config";
 import {
-  buildBlitzStartingResources,
+  buildArenaStartingResources,
   buildComplexBuildingCost,
   buildEliteBuildingCost,
-  buildOfficialBlitzComplexRecipes,
-  buildOfficialBlitzResourceOutputs,
-  buildOfficialBlitzSimpleRecipes,
-} from "./shared";
+  buildOfficialArenaComplexRecipes,
+  buildOfficialArenaResourceOutputs,
+  buildOfficialArenaSimpleRecipes,
+} from "../common/arena/shared";
 
-export const OFFICIAL_60_BLITZ_DURATION_MINUTES = 60;
-export const OFFICIAL_60_BLITZ_DURATION_SECONDS = OFFICIAL_60_BLITZ_DURATION_MINUTES * 60;
+export const BLITZ_DURATION_MINUTES = 60;
+export const BLITZ_DURATION_SECONDS = BLITZ_DURATION_MINUTES * 60;
 
-const official60BlitzComplexBuildingCosts = {
+const blitzComplexBuildingCosts = {
   ...COMPLEX_BUILDING_COSTS,
   [BuildingType.ResourceAdamantine]: [
     { resource: ResourcesIds.Labor, amount: 240 },
@@ -45,7 +45,7 @@ const official60BlitzComplexBuildingCosts = {
   [BuildingType.ResourcePaladinT3]: buildEliteBuildingCost(ResourcesIds.Gold, ResourcesIds.Dragonhide, 600),
 };
 
-const official60BlitzSimpleBuildingCosts = {
+const blitzSimpleBuildingCosts = {
   ...SIMPLE_BUILDING_COSTS,
   [BuildingType.ResourceCoal]: [{ resource: ResourcesIds.Labor, amount: 150 }],
   [BuildingType.ResourceCopper]: [{ resource: ResourcesIds.Labor, amount: 540 }],
@@ -56,7 +56,7 @@ const official60BlitzSimpleBuildingCosts = {
   [BuildingType.WorkersHut]: [{ resource: ResourcesIds.Labor, amount: 100 }],
 };
 
-const official60BlitzRealmUpgradeCosts = {
+const blitzRealmUpgradeCosts = {
   [RealmLevels.Settlement]: [],
   [RealmLevels.City]: [],
   [RealmLevels.Kingdom]: [
@@ -75,7 +75,7 @@ const official60BlitzRealmUpgradeCosts = {
   ],
 };
 
-const official60BlitzStartingResources = buildBlitzStartingResources(
+const blitzStartingResources = buildArenaStartingResources(
   {
     [ResourcesIds.Wheat]: 1_000,
     [ResourcesIds.Labor]: 1_500,
@@ -87,7 +87,7 @@ const official60BlitzStartingResources = buildBlitzStartingResources(
   5_000,
 );
 
-const official60BlitzExplorationRewards = [
+const blitzExplorationRewards = [
   { rewardId: ResourcesIds.Essence, amount: 150, probabilityBps: 3_500 },
   { rewardId: ResourcesIds.Essence, amount: 300, probabilityBps: 2_500 },
   { rewardId: ResourcesIds.Essence, amount: 600, probabilityBps: 1_500 },
@@ -96,55 +96,54 @@ const official60BlitzExplorationRewards = [
   { rewardId: ResourcesIds.Donkey, amount: 500, probabilityBps: 500 },
 ] as const;
 
-function buildOfficial60BlitzResourceOutputs() {
+function buildBlitzResourceOutputs() {
   return {
-    ...buildOfficialBlitzResourceOutputs(2),
+    ...buildOfficialArenaResourceOutputs(2),
     [ResourcesIds.Donkey]: 3,
     [ResourcesIds.Essence]: 20,
   };
 }
 
-const official60BlitzStaminaConfig = {
+const blitzStaminaConfig = {
   staminaInitial: 30,
   staminaGainPerTick: 30,
 };
 
-const official60BlitzVictoryPointConfig = {
+const blitzVictoryPointConfig = {
   pointsForTileExploration: 5n * BigInt(VICTORY_POINTS_MULTIPLIER),
   pointsForNonHyperstructureClaimAgainstBandits: 250n * BigInt(VICTORY_POINTS_MULTIPLIER),
   pointsForRelicDiscovery: 250n * BigInt(VICTORY_POINTS_MULTIPLIER),
   pointsForHyperstructureClaimAgainstBandits: 1_000n * BigInt(VICTORY_POINTS_MULTIPLIER),
 };
 
-export const official60BlitzProfile: BlitzBalanceProfile = {
+export const blitzBalance: ConfigPatch = {
   mines: {
     kinds: { 1: { productionRate: 10 } },
   },
   season: {
-    durationSeconds: OFFICIAL_60_BLITZ_DURATION_SECONDS,
+    durationSeconds: BLITZ_DURATION_SECONDS,
   },
   blitz: {
     exploration: {
-      rewardProfileId: "official-60",
-      rewards: [...official60BlitzExplorationRewards],
+      rewards: [...blitzExplorationRewards],
     },
   },
   resources: {
-    productionByComplexRecipe: buildOfficialBlitzComplexRecipes(2),
-    productionByComplexRecipeOutputs: buildOfficial60BlitzResourceOutputs(),
-    productionBySimpleRecipe: buildOfficialBlitzSimpleRecipes(2),
-    productionBySimpleRecipeOutputs: buildOfficial60BlitzResourceOutputs(),
+    productionByComplexRecipe: buildOfficialArenaComplexRecipes(2),
+    productionByComplexRecipeOutputs: buildBlitzResourceOutputs(),
+    productionBySimpleRecipe: buildOfficialArenaSimpleRecipes(2),
+    productionBySimpleRecipeOutputs: buildBlitzResourceOutputs(),
   },
   troop: {
-    stamina: official60BlitzStaminaConfig,
+    stamina: blitzStaminaConfig,
   },
-  victoryPoints: official60BlitzVictoryPointConfig,
+  victoryPoints: blitzVictoryPointConfig,
   buildings: {
-    complexBuildingCosts: official60BlitzComplexBuildingCosts,
-    simpleBuildingCost: official60BlitzSimpleBuildingCosts,
+    complexBuildingCosts: blitzComplexBuildingCosts,
+    simpleBuildingCost: blitzSimpleBuildingCosts,
   },
-  realmUpgradeCosts: official60BlitzRealmUpgradeCosts,
-  startingResources: official60BlitzStartingResources,
+  realmUpgradeCosts: blitzRealmUpgradeCosts,
+  startingResources: blitzStartingResources,
   campStartingResources: [
     { resource: ResourcesIds.Wheat, min_amount: 500, max_amount: 500 },
     { resource: ResourcesIds.Labor, min_amount: 5_000, max_amount: 5_000 },

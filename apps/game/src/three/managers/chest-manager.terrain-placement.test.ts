@@ -3,7 +3,7 @@ import { Matrix4, Scene, Vector3 } from "three";
 import { configManager } from "@bibliothecadao/eternum";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import type { WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
-import preset from "../../../../../contracts/l3/world-native/fixtures/preset-1.json";
+import preset from "../../../../../contracts/l3/world-native/fixtures/preset-3.json";
 
 vi.mock("../scenes/hexagon-scene", () => ({ CameraView: { Close: 1, Medium: 2, Far: 3 } }));
 vi.mock("../utils/utils", () => ({ gltfLoader: { loadAsync: vi.fn() } }));

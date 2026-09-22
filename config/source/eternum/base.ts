@@ -1,3 +1,4 @@
+import { eternumPreset } from "./native";
 import type { ConfigPatch } from "../common/merge-config";
 import { buildCommonBaseConfig } from "../common/base-config";
 import { mergeConfigPatches } from "../common/merge-config";
@@ -22,11 +23,7 @@ const eternumVillageConfig: ConfigPatch = {
 
 const eternumBlitzModeConfig: ConfigPatch = {
   blitz: {
-    mode: {
-      on: false,
-    },
     exploration: {
-      rewardProfileId: "official-90",
       rewards: [],
     },
     registration: {
@@ -53,6 +50,7 @@ const eternumSettlementConfig: ConfigPatch = {
 
 export const eternumBaseConfig: ConfigPatch = mergeConfigPatches(
   buildCommonBaseConfig(),
+  { presetId: eternumPreset.id },
   {
     mines: {
       kinds: { 1: { productionRate: 2.5 } },

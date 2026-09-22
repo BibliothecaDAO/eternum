@@ -121,7 +121,6 @@
     },
     "blitz": {
       "exploration": {
-        "rewardProfileId": "official-90",
         "rewards": [
           {
             "rewardId": 38,
@@ -169,9 +168,6 @@
             "probabilityBps": 200
           }
         ]
-      },
-      "mode": {
-        "on": true
       },
       "registration": {
         "fee_token": "0x124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49",
@@ -1827,6 +1823,7 @@
           ]
         }
       }
-    }
+    },
+    "presetId": 2
   }
 }

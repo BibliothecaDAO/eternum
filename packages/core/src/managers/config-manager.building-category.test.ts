@@ -3,7 +3,7 @@ import { BuildingType, CapacityConfig, TickIds } from "@bibliothecadao/types";
 import { hash } from "starknet";
 import { NativeFactStore } from "../client/native-fact-store";
 import { ClientConfigManager } from "./config-manager";
-import preset from "../../../../contracts/l3/world-native/fixtures/preset-1.json";
+import preset from "../../../../contracts/l3/world-native/fixtures/preset-3.json";
 
 function fixture(gameId = 54) {
   const store = new NativeFactStore();

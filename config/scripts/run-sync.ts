@@ -7,7 +7,7 @@ import type { GameType } from "../utils/environment";
 
 const VALID_NETWORKS: GameChain[] = ["madara", "appchain"];
 const DEFAULT_GAME_TYPES: GameType[] = ["eternum", "blitz"];
-const VALID_GAME_TYPES: GameType[] = [...DEFAULT_GAME_TYPES];
+const VALID_GAME_TYPES: GameType[] = [...DEFAULT_GAME_TYPES, "frontier"];
 
 interface SyncTarget {
   gameTypes: GameType[];

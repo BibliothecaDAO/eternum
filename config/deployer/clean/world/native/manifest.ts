@@ -33,7 +33,6 @@ export function buildNativeManifest(local: NativeWorld, before: NativePlan): Nat
       selector: hash.getSelectorFromName(domain.name),
       init_calldata: domain.constructorCalldata,
     })),
-    events: [],
     abis: [...abis.values()],
     native: {
       version: 1,

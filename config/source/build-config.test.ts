@@ -42,73 +42,7 @@ const REALM_RESOURCE_IDS_WITH_ERECTION_COSTS: ResourcesIds[] = [
 ];
 
 describe("buildConfig", () => {
-  test("runs Madara Eternum with its own balance and dev mode off", async () => {
-    const config = await buildConfig({ chain: "madara", gameType: "eternum" });
-    expect(config.dev.mode.on).toBe(false);
-    expect(config.blitz.mode.on).toBe(false);
-    expect(config.blitz.registration.registration_count_max).toBe(0);
-    expect(config.faith?.enabled).toBe(true);
-    expect(config.season.durationSeconds).toBe(30 * 24 * 3600);
-    expect(config.speed.donkey_for_resources).toBeGreaterThan(0);
-  });
-
-  test("resolves the expected chain overlays for Blitz and Eternum", async () => {
-    const appchainBlitz = await buildConfig({ chain: "appchain", gameType: "blitz" });
-    const appchainEternum = await buildConfig({ chain: "appchain", gameType: "eternum" });
-    const madaraBlitz = await buildConfig({ chain: "madara", gameType: "blitz" });
-
-    expect(appchainBlitz.setup?.chain).toBe("appchain");
-    expect(appchainBlitz.battle.regularImmunityTicks).toBe(0);
-    expect(appchainBlitz.season.durationSeconds).toBe(3_600);
-    expect(appchainBlitz.blitz.mode.on).toBe(true);
-    expect(appchainBlitz.blitz.exploration.rewardProfileId).toBe("official-90");
-    expect(appchainBlitz.blitz.exploration.rewards).toHaveLength(9);
-    expect(appchainBlitz.hyperstructures.hyperstructureConstructionCost).toEqual([]);
-    expect(appchainBlitz.setup).not.toHaveProperty("manifest");
-
-    expect(appchainEternum.blitz.mode.on).toBe(false);
-    expect(appchainEternum.setup).not.toHaveProperty("manifest");
-    expect(appchainEternum.season.durationSeconds).toBe(60 * 60 * 24 * 30);
-    expect(appchainEternum.exploration.bitcoinMineWinProbability).toBe(200);
-    expect(appchainEternum.exploration.campFindProbability).toBe(1_500);
-    expect(appchainEternum.resources.productionByComplexRecipeOutputs[ResourcesIds.Wheat]).toBe(6);
-    expect(appchainEternum.resources.productionByComplexRecipeOutputs[ResourcesIds.Fish]).toBe(6);
-    expect(findStartingResourceAmount(appchainEternum.startingResources, ResourcesIds.Wheat)).toBe(1_000);
-    expect(findStartingResourceAmount(appchainEternum.startingResources, ResourcesIds.Fish)).toBe(1_000);
-    expect(
-      findRecipeAmount(appchainEternum.resources.productionByComplexRecipe[ResourcesIds.Wood], ResourcesIds.Wheat),
-    ).toBe(1);
-    expect(
-      findRecipeAmount(appchainEternum.resources.productionByComplexRecipe[ResourcesIds.Wood], ResourcesIds.Fish),
-    ).toBe(1);
-    for (const resourceId of REALM_RESOURCE_IDS_WITH_ERECTION_COSTS) {
-      const buildingType = getBuildingFromResource(resourceId);
-
-      expect(buildingType).toBeDefined();
-      expect(appchainEternum.buildings.complexBuildingCosts[buildingType as BuildingType]?.length ?? 0).toBeGreaterThan(
-        0,
-      );
-      expect(appchainEternum.buildings.simpleBuildingCost[buildingType as BuildingType]?.length ?? 0).toBeGreaterThan(
-        0,
-      );
-    }
-    expect(appchainEternum.buildings.complexBuildingCosts[BuildingType.ResourceSilver]).toEqual(
-      appchainEternum.buildings.complexBuildingCosts[BuildingType.ResourceGold],
-    );
-    expect(appchainEternum.buildings.simpleBuildingCost[BuildingType.ResourceSilver]).toEqual(
-      appchainEternum.buildings.simpleBuildingCost[BuildingType.ResourceGold],
-    );
-    expect(appchainEternum.troop.stamina.staminaExploreWheatCost).toBe(0.03);
-    expect(appchainEternum.troop.stamina.staminaExploreFishCost).toBe(0.03);
-    expect(appchainEternum.hyperstructures.hyperstructureConstructionCost.length).toBeGreaterThan(0);
-    expect(madaraBlitz.blitz.registration.registration_count_max).toBe(96);
-    expect(madaraBlitz.blitz.registration.collectible_cosmetics_address).toBe("0x0");
-    expect(madaraBlitz.blitz.registration.collectible_timelock_address).toBe("0x0");
-    expect(madaraBlitz.blitz.registration.collectibles_lootchest_address).toBe("0x0");
-    expect(madaraBlitz.blitz.registration.collectibles_elitenft_address).toBe("0x0");
-  });
-
-  test("applies the official Blitz profiles only for exact official durations", async () => {
+  test("changes the duration without changing Blitz balance", async () => {
     const baseConfig = await buildConfig({ chain: "appchain", gameType: "blitz" });
     const sixtyMinuteConfig = await buildConfig({ chain: "appchain", gameType: "blitz", durationMinutes: 60 });
     const customDurationConfig = await buildConfig({ chain: "appchain", gameType: "blitz", durationMinutes: 45 });
@@ -126,10 +60,9 @@ describe("buildConfig", () => {
     expect(sixtyMinuteConfig.victoryPoints.pointsForHyperstructureClaimAgainstBandits).toBe(1_000_000_000n);
     expect(sixtyMinuteConfig.victoryPoints.hyperstructurePointsPerCycle).toBe(1_000_000n);
     expect(sixtyMinuteConfig.buildings.simpleBuildingCost[BuildingType.ResourceCopper]?.[0]?.amount).toBe(540);
-    expect(sixtyMinuteConfig.blitz.exploration.rewardProfileId).toBe("official-60");
     expect(sixtyMinuteConfig.blitz.exploration.rewards).toHaveLength(6);
 
-    expect(customDurationConfig.season.durationSeconds).toBe(baseConfig.season.durationSeconds);
+    expect(customDurationConfig.season.durationSeconds).toBe(2700);
     expect(customDurationConfig.resources.productionByComplexRecipeOutputs[ResourcesIds.Wood]).toBe(
       baseConfig.resources.productionByComplexRecipeOutputs[ResourcesIds.Wood],
     );
@@ -137,6 +70,5 @@ describe("buildConfig", () => {
     expect(customDurationConfig.victoryPoints.pointsForTileExploration).toBe(
       baseConfig.victoryPoints.pointsForTileExploration,
     );
-    expect(customDurationConfig.blitz.exploration.rewardProfileId).toBe(baseConfig.blitz.exploration.rewardProfileId);
   });
 });

@@ -1,5 +1,5 @@
 interface RegistrationCapacityConfig {
-  mode: "blitz" | "eternum" | "unknown";
+  mode: "blitz" | "eternum" | "frontier" | "duel" | "unknown";
   registrationCountMax: number | null;
   twoPlayerMode: boolean;
 }
@@ -10,7 +10,7 @@ export const resolveEffectiveRegistrationCountMax = (
   config: Pick<RegistrationCapacityConfig, "mode" | "registrationCountMax" | "twoPlayerMode"> | null | undefined,
 ): number | null => {
   if (!config) return null;
-  if (config.mode === "blitz" && config.twoPlayerMode) {
+  if ((config.mode === "blitz" || config.mode === "duel") && config.twoPlayerMode) {
     return TWO_PLAYER_MODE_REGISTRATION_CAPACITY;
   }
   return config.registrationCountMax;

@@ -2,7 +2,7 @@
 
 import { BUILDINGS_CENTER, BuildingType, getNeighborHexes, type SystemCalls } from "@bibliothecadao/types";
 import { NativeFactStore } from "../native-fact-store";
-import preset from "../../../../../contracts/l3/world-native/fixtures/preset-1.json";
+import preset from "../../../../../contracts/l3/world-native/fixtures/preset-3.json";
 import explorerFixture from "../../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 import { hash } from "starknet";
 import type { AccountInterface } from "starknet";

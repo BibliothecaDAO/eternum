@@ -19,6 +19,7 @@ pub struct StructurePreset {
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct SettlementPreset {
+    pub mode: crate::settlement::SettlementMode,
     pub spacing: u32,
     pub depths: Span<crate::expeditions::DepthRules>,
     pub realms: crate::settlement::RealmGrants,

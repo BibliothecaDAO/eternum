@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "893ad8d2cc96bd6b3465ad978e77f518345b482b48e58a66a6148a7245d655b6",
+  "schemaIdentity": "3ca6efed9759ab69120e3137978848241210cd3ee03150aa1615fabfa78e712f",
   "commandAbi": [
     {
       "type": "impl",
@@ -2124,10 +2124,6 @@
         {
           "name": "spire_travel_essence_cost",
           "type": "core::integer::u128"
-        },
-        {
-          "name": "mode_id",
-          "type": "core::integer::u8"
         },
         {
           "name": "command_mask",

@@ -1,6 +1,6 @@
-import { RESOURCE_PRECISION, RESOURCE_RARITY, ResourcesIds } from "../../../packages/types/src/constants";
-import type { ResourceCost, ResourceMinMax } from "../../../packages/types/src/types/common";
-import type { ConfigPatch } from "../common/merge-config";
+import { RESOURCE_PRECISION, RESOURCE_RARITY, ResourcesIds } from "../../../../packages/types/src/constants";
+import type { ResourceCost, ResourceMinMax } from "../../../../packages/types/src/types/common";
+import type { ConfigPatch } from "../merge-config";
 
 type ResourceInputsById = Record<number, ResourceCost[]>;
 type ResourceOutputsById = Record<number, number>;
@@ -324,7 +324,7 @@ export const RESOURCE_PRODUCTION_INPUT_RESOURCES_SIMPLE_SYSTEM: ResourceInputsBy
   [ResourcesIds.Research]: [], // No simple recipe
 };
 
-export const blitzResourceConfig: ConfigPatch = {
+export const arenaResourceConfig: ConfigPatch = {
   resources: {
     resourcePrecision: RESOURCE_PRECISION,
     productionByComplexRecipe: RESOURCE_PRODUCTION_INPUT_RESOURCES,

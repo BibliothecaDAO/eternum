@@ -5,11 +5,12 @@ import type { GameChain } from "@realms-world/chain";
  * list a new deployment adds itself to: the factory page offers the entries
  * for its build chain, and the launch worker accepts exactly these ids.
  */
-export type GameEnvironmentGameType = "blitz" | "eternum";
+export type GameEnvironmentGameType = import("../source/common/types").GameType;
 
 export const GAME_ENVIRONMENTS = [
   { id: "madara.blitz", chain: "madara", gameType: "blitz" },
   { id: "madara.eternum", chain: "madara", gameType: "eternum" },
+  { id: "madara.frontier", chain: "madara", gameType: "frontier" },
 ] as const satisfies readonly { id: string; chain: GameChain; gameType: GameEnvironmentGameType }[];
 
 export type GameEnvironment = (typeof GAME_ENVIRONMENTS)[number];

@@ -1,3 +1,4 @@
+import { nativeCommandBits } from "../../../../contracts/l3/world-native/schema/commands.gen";
 import {
   BiomeType,
   BuildingType,
@@ -326,7 +327,7 @@ export class ClientConfigManager {
   }
   getExploreReward() {
     const rules = this.rules();
-    const reward_resource = rules.mode_id === 1 ? ResourcesIds.Essence : ResourcesIds.AncientFragment;
+    const reward_resource = this.game().preset_id !== 3 ? ResourcesIds.Essence : ResourcesIds.AncientFragment;
     const resource_amount = rules.map_config.reward_resource_amount;
     return {
       reward_resource,
@@ -448,16 +449,14 @@ export class ClientConfigManager {
   getBuildingConfig() {
     return this.rules().building_config;
   }
-  getBlitzConfig() {
-    const settlement = this.facts().require("SettlementRules", { game_id: this.gameId });
-    return {
-      blitz_mode_on: this.rules().mode_id === 1,
-      blitz_settlement_config: {
-        single_realm_mode: settlement.mode === "Single",
-        spacing: settlement.spacing,
-        two_player_mode: settlement.mode === "Duel",
-      },
-    };
+  getPresetId(): number {
+    return this.game().preset_id;
+  }
+  isCommandEnabled(command: keyof typeof nativeCommandBits): boolean {
+    return (this.rules().command_mask & BigInt(nativeCommandBits[command])) !== 0n;
+  }
+  getSettlementConfig() {
+    return this.facts().require("SettlementRules", { game_id: this.gameId });
   }
   getDevModeConfig() {
     return { dev_mode_on: this.game().dev_mode_on };

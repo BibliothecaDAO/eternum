@@ -172,7 +172,6 @@ pub struct SliceRules {
     pub victory_points_grant_config: VictoryPointsGrantConfig,
     pub map_center_offset: u32,
     pub spire_travel_essence_cost: u128,
-    pub mode_id: u8,
     pub command_mask: u128,
     pub mode_rules: u32,
     pub epoch_seconds: u32,

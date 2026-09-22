@@ -146,7 +146,7 @@ export function createHarnessGame(client: GameClient): HarnessGame {
     armyPathIndexes: () => buildArmyPathIndexes(client),
     settle: (signer, _owner, name) => systemCalls.settle_season({ signer, name: shortString.encodeShortString(name) }),
     produceWood: (signer, structureId) => {
-      const produce = configManager.getBlitzConfig().blitz_mode_on
+      const produce = !configManager.isCommandEnabled("BurnLaborForResourceProduction")
         ? systemCalls.burn_resource_for_resource_production
         : systemCalls.burn_labor_for_resource_production;
       return produce({

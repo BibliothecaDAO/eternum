@@ -6,7 +6,7 @@ import type {
 import type { GameChain } from "@realms-world/chain";
 
 export type DeploymentChain = GameChain;
-export type DeploymentGameType = "blitz" | "eternum";
+export type DeploymentGameType = import("../../source/common/types").GameType;
 export type DeploymentEnvironmentId = import("../../shared/game-environments").GameEnvironmentId;
 export type ExecutionMode = "batched" | "sequential";
 export type LaunchTargetKind = "game";

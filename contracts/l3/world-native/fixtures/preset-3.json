@@ -121,7 +121,6 @@
     },
     "map_center_offset": 20,
     "spire_travel_essence_cost": "10000000000",
-    "mode_id": 0,
     "command_mask": "73786976294838206463",
     "entry_rule": 0,
     "speed_config": {

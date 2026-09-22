@@ -1,6 +1,9 @@
 import { WebSocketChannel, type RpcProvider } from "starknet";
 
-export async function confirmedTransactionReceipt(provider: RpcProvider, transactionHash: string) {
+export async function confirmedTransactionReceipt(
+  provider: RpcProvider,
+  transactionHash: string,
+): Promise<Awaited<ReturnType<RpcProvider["getTransactionReceipt"]>> & { block_number: number }> {
   const channel = new WebSocketChannel({
     nodeUrl: provider.channel.nodeUrl.replace(/^http/, "ws"),
     autoReconnect: true,
@@ -46,8 +49,6 @@ async function readConfirmedReceipt(provider: RpcProvider, channel: WebSocketCha
   if (!("block_number" in receipt) || !Number.isSafeInteger(receipt.block_number))
     throw new Error(`Transaction ${transactionHash} has no confirmed block`);
   if (receipt.execution_status !== "SUCCEEDED")
-    throw new Error(
-      `Transaction ${transactionHash} transaction reverted: ${"revert_reason" in receipt ? receipt.revert_reason : receipt.execution_status}`,
-    );
+    throw new Error(`Transaction ${transactionHash} transaction reverted: ${receipt.revert_reason}`);
   return receipt;
 }

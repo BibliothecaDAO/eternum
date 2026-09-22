@@ -132,4 +132,4 @@ export function divideWithPrecision(
   return Number(Number(a).toFixed(round));
 }
 
-export const getIsBlitz = () => !!configManager.getBlitzConfig()?.blitz_mode_on;
+export const getIsBlitz = () => [2, 4].includes(configManager.getPresetId());

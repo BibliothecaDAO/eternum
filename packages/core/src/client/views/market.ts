@@ -1,6 +1,7 @@
 import { type ID, type MarketInterface, ResourcesIds } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../native-fact-store";
 import { configManager } from "../../managers/config-manager";
+import { getIsBlitz } from "../../utils/utils";
 import { computeTrades } from "../../utils/trades";
 
 export interface MarketView {
@@ -17,7 +18,7 @@ export const readOpenTrades = (store: NativeFactStore, currentBlockTimestamp: nu
     store.inGame("TradeOrder", configManager.getActiveGameId()),
     currentBlockTimestamp,
     store,
-    configManager.getBlitzConfig().blitz_mode_on,
+    getIsBlitz(),
   );
 
 export const readMarket = (trades: MarketInterface[], playerStructureIds: ID[]): MarketView => ({

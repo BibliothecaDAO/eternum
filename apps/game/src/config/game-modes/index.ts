@@ -9,9 +9,8 @@ import {
   getResourceTiers,
 } from "@bibliothecadao/types";
 import { BUILDINGS_GROUPS, buildingModelPaths, getStructureModelPaths } from "@/three/constants/scene-constants";
-import { resolveGameModeFromBlitzFlag } from "./resolved-mode";
 
-export type GameModeId = "eternum" | "blitz";
+export type GameModeId = "frontier" | "blitz" | "eternum" | "duel";
 
 export type VillageIconKey = "castle" | "tent";
 
@@ -214,34 +213,44 @@ const eternumConfig: GameModeConfig = {
   },
 };
 
-const GAME_MODE_BY_ID: Record<GameModeId, GameModeConfig> = {
-  blitz: blitzConfig,
-  eternum: eternumConfig,
+const frontierConfig: GameModeConfig = {
+  ...blitzConfig,
+  id: "frontier",
+  displayName: "Frontier",
+  labels: {
+    ...blitzConfig.labels,
+    timelineSubject: "Season",
+    shareEventLabel: "Realms Frontier",
+    endgameCardTitle: "Realms Frontier",
+    endgameCardSubtitle: "Season Results",
+  },
+  resources: {
+    getTiers: blitzConfig.resources.getTiers,
+    canManageResource: () => false,
+    canShowProductionShortcut: () => false,
+  },
+  rules: {
+    isBuildingTypeAllowed: (key) =>
+      ["WorkersHut", "Storehouse", "ResourceWheat", "ResourceKnightT1", "ResourceLabor"].includes(key),
+    autoAllocateHyperstructureShares: false,
+  },
+};
+const duelConfig: GameModeConfig = {
+  ...blitzConfig,
+  id: "duel",
+  displayName: "Duel",
+  labels: { ...blitzConfig.labels, shareEventLabel: "Realms Duel", endgameCardTitle: "Realms Duel" },
+};
+const GAME_MODE_BY_ID: Record<number, GameModeConfig> = {
+  1: frontierConfig,
+  2: blitzConfig,
+  3: eternumConfig,
+  4: duelConfig,
 };
 
-type GameModeConfigOptions = {
-  modeId?: GameModeId;
-  blitzModeOn?: unknown;
-};
-
-const resolveRuntimeGameModeId = (blitzModeOn: unknown): GameModeId => {
-  const resolvedMode = resolveGameModeFromBlitzFlag(blitzModeOn);
-  if (resolvedMode === "blitz" || resolvedMode === "eternum") {
-    return resolvedMode;
-  }
-  return "eternum";
-};
-
-const resolveGameModeConfig = (options: GameModeConfigOptions = {}): GameModeConfig => {
-  if (options.modeId) {
-    return GAME_MODE_BY_ID[options.modeId];
-  }
-
-  const worldBlitzModeOnFlag = options.blitzModeOn ?? configManager.getBlitzConfig()?.blitz_mode_on;
-  return GAME_MODE_BY_ID[resolveRuntimeGameModeId(worldBlitzModeOnFlag)];
-};
-
-export const getGameModeConfig = (options: GameModeConfigOptions = {}): GameModeConfig =>
-  resolveGameModeConfig(options);
-
-export const getGameModeId = (options: GameModeConfigOptions = {}): GameModeId => getGameModeConfig(options).id;
+export function getGameModeConfig(presetId = configManager.getPresetId()): GameModeConfig {
+  const config = GAME_MODE_BY_ID[presetId];
+  if (!config) throw new Error(`Unknown native preset ${presetId}`);
+  return config;
+}
+export const getGameModeId = (): GameModeId => getGameModeConfig().id;

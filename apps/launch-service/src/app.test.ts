@@ -165,7 +165,7 @@ describe("launch service authorization", () => {
       new Request(request.url, {
         method: "POST",
         headers: request.headers,
-        body: JSON.stringify({ environment: "madara.eternum", gameName: "eternum-factory-test", version: "1" }),
+        body: JSON.stringify({ environment: "madara.eternum", gameName: "eternum-factory-test", version: "3" }),
       }),
     );
     expect(response.status).toBe(202);
@@ -220,7 +220,7 @@ describe("launch service authorization", () => {
     expect((await app.request(invalid)).status).toBe(400);
   });
 
-  test("launches a Duel on preset 3 and stores version:3", async () => {
+  test("launches a Duel on preset 4 and stores version:4", async () => {
     const { app, store } = createApp(identity(ALLOWED_ADDRESS));
     const request = launchRequest();
     request.headers.set("content-type", "application/json");
@@ -228,7 +228,7 @@ describe("launch service authorization", () => {
       body: JSON.stringify({
         environment: "madara.blitz",
         gameName: "bltz-duel-game",
-        version: "3",
+        version: "4",
         twoPlayerMode: true,
         devModeOn: false,
       }),
@@ -236,7 +236,7 @@ describe("launch service authorization", () => {
 
     expect((await app.request(duel)).status).toBe(202);
     const run = await store.find("game", "madara.blitz", "bltz-duel-game");
-    expect(run && "version" in run.request ? run.request.version : undefined).toBe("3");
+    expect(run && "version" in run.request ? run.request.version : undefined).toBe("4");
   });
 
   test("launches a real game dev-off and stores devModeOn:false", async () => {

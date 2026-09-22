@@ -1,3 +1,4 @@
+import { nativeRuleConstants } from "../../../contracts/l3/world-native/schema/client.gen";
 import { hash } from "starknet";
 import { normalizeFelt, toJsonValue, type ModelRegistry } from "./model-registry";
 import type {
@@ -248,7 +249,7 @@ export class WorldFold {
         const gameId = BigInt(value.game_id as string).toString();
         const config = rules.get(gameId);
         if (!config) throw new Error(`Finalized game ${gameId} has no rules`);
-        return Number(config.mode_id) !== 1 || results.has(gameId);
+        return (Number(config.mode_rules) & nativeRuleConstants.SEASON_CLOSE) !== 0 || results.has(gameId);
       })
       .map(({ value }) => BigInt(value.game_id as string).toString());
   }

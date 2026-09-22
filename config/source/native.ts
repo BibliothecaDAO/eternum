@@ -1,74 +1,27 @@
-import type { Config } from "../../packages/types/src/types/common";
-import type { BlitzBalanceProfileId } from "./blitz";
+import { frontierPreset } from "./frontier/native";
+import { blitzPreset } from "./blitz/native";
+import { eternumPreset } from "./eternum/native";
+import { duelPreset } from "./duel/native";
+import type { NativePreset } from "./common/native-preset";
+import type { GameType } from "./common/types";
 
-export const nativePresets: Record<
-  number,
-  {
-    gameType: "eternum" | "blitz";
-    profile?: BlitzBalanceProfileId;
-    spacing: number;
-    epochSeconds: number;
-    board: null | {
-      demolitionRefundBps: number;
-      workshopRate: number;
-      barracksIICost: number;
-      barracksIIICost: number;
-      neighbors: Array<{
-        building: number;
-        neighbor: number;
-        productionBps: number;
-        capacityBps: number;
-        population: number;
-      }>;
-    };
-    chests: null | {
-      looseOneIn: number;
-      relicProbability: number;
-      cosmeticProbability: number;
-      tokenCap: number;
-    };
-    depths: Array<{
-      supplyMultiplier: number;
-      guardLower: number;
-      guardUpper: number;
-      mineCapMin: number;
-      mineCapMax: number;
-      mineRate: number;
-      campRewardMin: number;
-      campRewardMax: number;
-      mineChest: boolean;
-      revealSiteNeighbors: boolean;
-      entryStamina: number;
-      attunementCost: number;
-      chest: { common: number; uncommon: number; rare: number; pity: number };
-    }>;
-  }
-> = {
-  1: { gameType: "eternum", spacing: 6, epochSeconds: 0, chests: null, board: null, depths: [] },
-  2: { gameType: "blitz", profile: "official-60", spacing: 6, epochSeconds: 0, chests: null, board: null, depths: [] },
-  3: { gameType: "blitz", profile: "official-90", spacing: 8, epochSeconds: 0, chests: null, board: null, depths: [] },
+const modes: Record<GameType, NativePreset> = {
+  frontier: frontierPreset,
+  blitz: blitzPreset,
+  eternum: eternumPreset,
+  duel: duelPreset,
 };
+export const nativePresets: Record<number, NativePreset> = Object.fromEntries(
+  Object.values(modes).map((preset) => [preset.id, preset]),
+);
 
-export function nativePresetForId(id: number) {
+export function nativePresetForId(id: number): NativePreset {
   const preset = nativePresets[id];
   if (!preset) throw new Error(`Unsupported native preset ${id}`);
   return preset;
 }
-
-export function nativePresetIdFor(gameType: "eternum" | "blitz", profile?: BlitzBalanceProfileId): number {
-  const entry = Object.entries(nativePresets).find(
-    ([, preset]) => preset.gameType === gameType && preset.profile === profile,
-  );
-  if (!entry) throw new Error(`No native preset for ${gameType}${profile ? ` profile ${profile}` : ""}`);
-  return Number(entry[0]);
-}
-
-export function nativePresetForConfig(config: Config) {
-  const preset = Object.values(nativePresets).find(({ gameType, profile }) =>
-    config.blitz.mode.on
-      ? gameType === "blitz" && profile === config.blitz.exploration.rewardProfileId
-      : gameType === "eternum",
-  );
-  if (!preset) throw new Error("Unsupported native preset configuration");
-  return preset;
+export function nativePresetIdFor(gameType: GameType): number {
+  const preset = modes[gameType];
+  if (!preset) throw new Error("No native preset for " + gameType);
+  return preset.id;
 }

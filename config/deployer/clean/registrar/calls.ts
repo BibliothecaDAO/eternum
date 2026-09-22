@@ -1,3 +1,4 @@
+import { buildNativePresetRegistration } from "./native-preset";
 import { confirmedTransactionReceipt } from "../shared/transaction";
 import { completeNativeAdminCommand } from "../world/native/command";
 import { nativeDomainAbi } from "../world/native/manifest";
@@ -285,7 +286,19 @@ export async function createRegistrarGame(
   nativeDefinition?: ReturnType<typeof buildNativePreset>,
 ): Promise<CreateRegistrarGameResult> {
   const context = resolveRegistrarContext(target);
-  if (!nativeDefinition) throw new Error("Native game creation requires its immutable preset definition");
+  if (!nativeDefinition) throw new Error("Native game creation requires its current preset definition");
+  const presetId = Number((params as { preset_id: number }).preset_id);
+  const registration = buildNativePresetRegistration(nativeDefinition, presetId, context.manifest);
+  const [commitment] = await account.callContract(
+    {
+      contractAddress: registration.address,
+      entrypoint: "preset_commitment",
+      calldata: [presetId],
+    },
+    "latest",
+  );
+  if (commitment === undefined || BigInt(commitment) !== BigInt(registration.commitment))
+    throw new Error("Current preset differs from the launch configuration; reload its balance before creating a game");
   const calldata = new CallData(nativeDomainAbi(context.manifest, "registry")).compile("create_game", {
     params: params as RawArgs,
     definition: nativeDefinition,
@@ -301,10 +314,6 @@ export async function createRegistrarGame(
     gameId,
     openLedgerTxHash: ledgerResult?.transactionHash,
   };
-}
-
-export function isRegistrarAlreadyRegisteredError(error: unknown): boolean {
-  return /preset already registered/i.test(error instanceof Error ? error.message : String(error));
 }
 
 export async function settleBlitzRoster(

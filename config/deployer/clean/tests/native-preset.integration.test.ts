@@ -41,17 +41,17 @@ test.skipIf(!fixturePath)(
     const registry = manifest.native.domains.registry.address;
     const bridge = manifest.native.domains.bridge.address;
     const config = loadEnvironmentConfiguration("madara.eternum");
-    const definition = buildNativePreset(config);
+    const definition = buildNativePreset(config, 3);
     const stoneToken = definition.economy.withdrawals
       .unwrap()
       ?.tokens.find(({ resource_type }) => resource_type === ResourcesIds.Stone)?.token;
     if (!stoneToken) throw new Error("Configured Stone token is required");
     const [next] = await provider.callContract({ contractAddress: registry, entrypoint: "next_game_id" });
-    const presetId = 1000 + Number(BigInt(next));
-    await registerNativePreset(actor, presetId, buildNativePresetRegistration(config, presetId, manifestPath));
+    const presetId = 3;
+    await registerNativePreset(actor, presetId, buildNativePresetRegistration(definition, presetId, manifestPath));
     const block = await provider.getBlock("latest");
     const params = buildNativeGameParams(config, {
-      gameName: `preset-bridge-${presetId}`,
+      gameName: `preset-bridge-${next}`,
       presetId,
       startMainAt: block.timestamp,
       chainTimestamp: block.timestamp,

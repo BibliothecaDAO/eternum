@@ -1,4 +1,5 @@
-import preset from "../../../../contracts/l3/world-native/fixtures/preset-1.json";
+import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
+import preset from "../../../../contracts/l3/world-native/fixtures/preset-3.json";
 import { describe, expect, it, vi } from "vitest";
 import { NativeFactStore } from "../client/native-fact-store";
 import { ResourceManager } from "./resource-manager";
@@ -37,7 +38,7 @@ const production = {
 describe("native resource facts", () => {
   it("reads sparse resources and observes a transaction once, including deletion", () => {
     const store = new NativeFactStore();
-    store.applyEntityOperations([upsert("0x100", { SliceRules: { ...preset.rules, game_id: 1, mode_id: 0 } })]);
+    store.applyEntityOperations([upsert("0x100", { SliceRules: { ...preset.rules, game_id: 1, mode_rules: 0 } })]);
     const manager = new ResourceManager(store, 7, 1);
     store.applyEntityOperations([upsert("0x1", { ResourceWeight: weight() })]);
     const changed = vi.fn();
@@ -66,7 +67,7 @@ describe("native resource facts", () => {
 
   it("scopes reads and notifications to their game and requires a resource owner", () => {
     const store = new NativeFactStore();
-    store.applyEntityOperations([upsert("0x100", { SliceRules: { ...preset.rules, game_id: 1, mode_id: 0 } })]);
+    store.applyEntityOperations([upsert("0x100", { SliceRules: { ...preset.rules, game_id: 1, mode_rules: 0 } })]);
     const first = new ResourceManager(store, 7, 1);
     const second = new ResourceManager(store, 7, 2);
     const changed = vi.fn();
@@ -83,7 +84,10 @@ describe("native resource facts", () => {
     const store = new NativeFactStore();
     store.applyEntityOperations([
       upsert("0x1", { ResourceWeight: weight(), ResourceProduction: { ...production, last_updated_at: 100 } }),
-      upsert("0x2", { SliceRules: { ...preset.rules, game_id: 1, mode_id: 1 }, GameRegistry: game }),
+      upsert("0x2", {
+        SliceRules: { ...preset.rules, game_id: 1, mode_rules: nativeRuleConstants.PRODUCTION_START },
+        GameRegistry: game,
+      }),
     ]);
     const manager = new ResourceManager(store, 7, 1);
     const changed = vi.fn();

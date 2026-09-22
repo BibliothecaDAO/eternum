@@ -1,4 +1,4 @@
-import type { ConfigPatch } from "../common/merge-config";
+import type { ConfigPatch } from "../merge-config";
 
 export const VICTORY_POINTS_MULTIPLIER = 1_000_000;
 const VICTORY_POINTS_FOR_WIN = 0n * BigInt(VICTORY_POINTS_MULTIPLIER);
@@ -8,7 +8,7 @@ const AWARDED_POINTS_FOR_TILE_EXPLORATION = 10n * BigInt(VICTORY_POINTS_MULTIPLI
 const AWARDED_POINTS_FOR_NON_HYPERSTRUCTURE_CLAIM_AGAINST_BANDITS = 500n * BigInt(VICTORY_POINTS_MULTIPLIER);
 const AWARDED_POINTS_FOR_HYPERSTRUCTURE_CLAIM_AGAINST_BANDITS = 3_000n * BigInt(VICTORY_POINTS_MULTIPLIER);
 
-export const blitzVictoryPointConfig: ConfigPatch = {
+export const arenaVictoryPointConfig: ConfigPatch = {
   victoryPoints: {
     pointsForWin: VICTORY_POINTS_FOR_WIN,
     hyperstructurePointsPerCycle: AWARDED_POINTS_FOR_HYPERSTRUCTURE_HODL_PER_SECOND,

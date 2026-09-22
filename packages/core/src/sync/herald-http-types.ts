@@ -33,7 +33,7 @@ export interface HeraldGameDirectoryEntry {
   clock: HeraldGameClock;
   dev_mode_on: boolean;
   game_id: number;
-  mode: "blitz" | "eternum" | null;
+  mode: "blitz" | "eternum" | "frontier" | "duel" | null;
   name: string;
   player_count: number;
   player_state: { registered: boolean; settled: boolean } | null;

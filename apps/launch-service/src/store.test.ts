@@ -25,7 +25,7 @@ test.skipIf(!databaseUrl).each([false, true])(
       await store.initialize();
       expect((await store.find("game", "madara.blitz", blitz.name))?.id).toBe(blitz.id);
       expect((await store.list("madara.eternum")).map((run) => run.id)).toEqual([eternum.id]);
-      expect("version" in eternum.request && eternum.request.version).toBe("1");
+      expect("version" in eternum.request && eternum.request.version).toBe("3");
       await expect(
         store.pool.query("UPDATE launch_runs SET environment = 'unsupported' WHERE id = $1", [eternum.id]),
       ).rejects.toThrow("launch_runs_environment_check");
@@ -104,3 +104,55 @@ test.skipIf(!databaseUrl)(
     }
   },
 );
+
+test.skipIf(!databaseUrl)("one Frontier season launch survives reconnects and duplicate scheduling", async () => {
+  const schema = "frontier_test_" + randomUUID().replaceAll("-", "");
+  const admin = new Pool({ connectionString: databaseUrl });
+  const url = new URL(databaseUrl!);
+  url.searchParams.set("options", "-c search_path=" + schema);
+  let store = new PostgresLaunchStore(url.toString());
+  const request = {
+    environment: "madara.frontier" as const,
+    gameName: "frontier-season",
+    gameStartTime: "2027-01-01T00:00:00.000Z",
+  };
+  try {
+    await admin.query("CREATE SCHEMA " + schema);
+    await store.initialize();
+    const queued = await store.enqueue("game", request);
+    await store.close();
+    store = new PostgresLaunchStore(url.toString());
+    await store.initialize();
+    expect((await store.enqueue("game", request)).id).toBe(queued.id);
+    const run = (await store.claim(60_000))!;
+    expect(run.id).toBe(queued.id);
+    expect(run.request).toMatchObject({ version: "1", gameStartTime: request.gameStartTime });
+    await store.complete(run.id, run.leaseToken, {
+      environment: "madara.frontier",
+      chain: "madara",
+      gameType: "frontier",
+      gameName: run.name,
+      gameId: 9,
+      startTime: Date.parse(request.gameStartTime) / 1000,
+      startTimeIso: request.gameStartTime,
+      rpcUrl: "http://rpc.test",
+      configMode: "batched",
+      configSteps: [],
+      dryRun: false,
+    });
+    await store.close();
+    store = new PostgresLaunchStore(url.toString());
+    await store.initialize();
+    expect(await store.enqueue("game", request)).toMatchObject({ id: queued.id, status: "complete" });
+    expect(await store.claim(60_000)).toBeNull();
+    expect(await store.list("madara.frontier")).toHaveLength(1);
+    await expect(store.enqueue("game", { ...request, durationSeconds: 100 })).rejects.toThrow("different options");
+    const next = await store.enqueue("game", { ...request, gameStartTime: "2027-04-30T00:00:00.000Z" });
+    expect(next.id).not.toBe(queued.id);
+    expect((await store.claim(60_000))?.id).toBe(next.id);
+  } finally {
+    await store.close();
+    await admin.query("DROP SCHEMA " + schema + " CASCADE");
+    await admin.end();
+  }
+});

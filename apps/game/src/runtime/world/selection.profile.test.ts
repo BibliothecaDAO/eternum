@@ -44,7 +44,7 @@ describe("game entry profile resolution", () => {
           confirmed_block: 500629,
           games: [
             { name: "blitz-daily-0001", game_id: 3, preset_id: 2 },
-            { name: "eternum-fresh-01", game_id: 2, preset_id: 1 },
+            { name: "eternum-fresh-01", game_id: 2, preset_id: 3 },
           ],
         }),
       ),
@@ -86,7 +86,7 @@ describe("game entry profile resolution", () => {
   it("resolves a first-time Eternum entry from the same directory", async () => {
     const { profile } = await applyWorldSelection({ name: "eternum-fresh-01", chain: "madara" }, "madara");
 
-    expect(profile).toMatchObject({ gameId: 2, presetId: 1, worldAddress: deployment.worldAddress });
+    expect(profile).toMatchObject({ gameId: 2, presetId: 3, worldAddress: deployment.worldAddress });
     expect(getWorldProfile("eternum-fresh-01")).toEqual(profile);
   });
 

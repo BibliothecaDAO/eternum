@@ -29,7 +29,6 @@ const required = (rows: FoldRow[], gameId: unknown, model: string): Row => {
 
 interface DirectoryRows {
   structures: FoldRow[];
-  rules: FoldRow[];
   settlementRules: FoldRow[];
   progress: FoldRow[];
   entries: FoldRow[];
@@ -39,7 +38,6 @@ export function buildNativeDirectory(input: DirectoryInput): HeraldGameDirectory
   const rows = (model: string) => input.fold.modelRows(model);
   const facts: DirectoryRows = {
     structures: rows("Structure"),
-    rules: rows("SliceRules"),
     settlementRules: rows("SettlementRules"),
     progress: rows("SettlementProgress"),
     entries: rows("PlayerEntry"),
@@ -51,8 +49,11 @@ export function buildNativeDirectory(input: DirectoryInput): HeraldGameDirectory
 }
 
 function directoryEntry(game: Row, facts: DirectoryRows, input: DirectoryInput): HeraldGameDirectoryEntry {
-  const { rules, settlementRules, progress, structures, entries } = facts;
-  const config = required(rules, game.game_id, "SliceRules");
+  const { settlementRules, progress, structures, entries } = facts;
+  const mode = ({ 1: "frontier", 2: "blitz", 3: "eternum", 4: "duel" } as const)[
+    number(game.preset_id) as 1 | 2 | 3 | 4
+  ];
+  if (!mode) throw new Error("Unknown native game mode");
   const settlement = required(settlementRules, game.game_id, "SettlementRules");
   const state = gameRows(progress, game.game_id)[0];
   const settlements = gameRows(structures, game.game_id).filter(
@@ -70,7 +71,7 @@ function directoryEntry(game: Row, facts: DirectoryRows, input: DirectoryInput):
     game_id: number(game.game_id),
     name: shortString(game.name),
     preset_id: number(game.preset_id),
-    mode: number(config.mode_id) === 1 ? "blitz" : "eternum",
+    mode,
     dev_mode_on: game.dev_mode_on === true,
     ready: game.ready === true,
     status:

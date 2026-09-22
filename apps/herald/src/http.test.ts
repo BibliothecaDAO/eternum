@@ -35,7 +35,7 @@ const httpState: Parameters<typeof createHeraldRequestHandler>[0] = {
             value: {
               game_id: "0x7",
               name: "0x74657374",
-              preset_id: "0x1",
+              preset_id: "0x2",
               settled: false,
               ready: true,
               dev_mode_on: false,
@@ -51,7 +51,7 @@ const httpState: Parameters<typeof createHeraldRequestHandler>[0] = {
         return [
           {
             key: "0x7",
-            value: { game_id: "7", mode_id: 1, victory_points_grant_config: { hyp_points_per_second: "1" } },
+            value: { game_id: "7", mode_rules: 0, victory_points_grant_config: { hyp_points_per_second: "1" } },
           },
         ];
       if (model === "SettlementRules")

@@ -1,3 +1,4 @@
+import { isDeepStrictEqual } from "node:util";
 import type { GameEnvironmentId } from "../../../config/shared/game-environments";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
@@ -93,6 +94,20 @@ export class PostgresLaunchStore implements LaunchServiceStore {
     const durableRequest = applyDurableLaunchDefaults(kind, request);
     const id = randomUUID();
     const name = launchName(kind, durableRequest);
+    if (durableRequest.environment === "madara.frontier") {
+      const inserted = await this.pool.query<LaunchRunRow>(
+        "INSERT INTO launch_runs (id, kind, environment, name, request, status) " +
+          "VALUES ($1, $2, $3, $4, $5::jsonb, 'queued') " +
+          "ON CONFLICT (kind, environment, name) DO NOTHING RETURNING *",
+        [id, kind, durableRequest.environment, name, JSON.stringify(durableRequest)],
+      );
+      if (inserted.rows[0]) return toRun(inserted.rows[0]);
+      const existing = await this.find(kind, durableRequest.environment, name);
+      if (!existing) throw new Error("Scheduled Frontier season disappeared");
+      if (!isDeepStrictEqual(existing.request, JSON.parse(JSON.stringify(durableRequest))))
+        throw new Error("Frontier season is already scheduled with different options");
+      return existing;
+    }
     const result = await this.pool.query<LaunchRunRow>(
       `INSERT INTO launch_runs (id, kind, environment, name, request, status)
        VALUES ($1, $2, $3, $4, $5::jsonb, 'queued')

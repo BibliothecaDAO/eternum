@@ -1,3 +1,4 @@
+import { resolveDeploymentEnvironment } from "../../../config/deployer/clean/environment";
 import type { GameEnvironmentId } from "../../../config/shared/game-environments";
 import type { LaunchGameSummary } from "../../../config/deployer/clean/types";
 import type { LaunchJobRequest, LaunchKind } from "./schemas";
@@ -63,7 +64,7 @@ export const toFactoryRunRecord = (run: LaunchRun) => {
     runId: run.id,
     environment: run.environment,
     chain: "madara",
-    gameType: run.environment === "madara.eternum" ? "eternum" : "blitz",
+    gameType: resolveDeploymentEnvironment(run.environment).gameType,
     status: publicStatus(run.status),
     executionMode: "fast_trial",
     requestedLaunchStep: "full",

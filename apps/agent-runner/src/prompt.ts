@@ -20,7 +20,7 @@ export interface ToolGuideEntry {
 interface GameSummaryInput {
   gameId: number;
   gameName: string;
-  mode: "blitz" | "eternum" | null;
+  mode: "blitz" | "eternum" | "frontier" | "duel" | null;
   chain: string;
   /** The signer's address, or null while spectating. */
   viewer: string | null;
@@ -37,9 +37,11 @@ export const renderGameSection = (gameSummary: string): string => `# The game\n\
 export const renderGameSummary = (input: GameSummaryInput): string =>
   [
     `Game ${input.gameId} "${input.gameName}" (${input.mode ?? "unknown mode"}) on the ${input.chain} chain.`,
-    input.mode === "blitz"
+    input.mode === "blitz" || input.mode === "duel"
       ? "Blitz is a short timed match: a fixed number of hours, a small map, and victory points from exploration, fights, chests, and hyperstructures. Every tick counts."
-      : "Eternum is the long format: days of play, a large map, and an economy that rewards patient building and trade.",
+      : input.mode === "frontier"
+        ? "Frontier keeps a season-long realm and rolls the expedition map and field armies over daily."
+        : "Eternum is the long format: days of play, a large map, and an economy that rewards patient building and trade.",
     input.viewer
       ? `I play as ${input.viewer}. My structures: ${renderIds(input.structures)}. My explorers: ${renderIds(input.explorers)}.`
       : "I am spectating: no signer is connected, so act refuses to submit and I can only observe and plan.",

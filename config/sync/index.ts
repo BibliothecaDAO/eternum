@@ -2,7 +2,7 @@ import type { GameChain } from "@realms-world/chain";
 import { saveResolvedConfigJson, type GameType } from "../utils/environment";
 
 const VALID_NETWORKS: GameChain[] = ["madara", "appchain"];
-const VALID_GAME_TYPES: GameType[] = ["blitz", "eternum"];
+const VALID_GAME_TYPES: GameType[] = ["blitz", "eternum", "frontier", "duel"];
 
 function printSyncUsage(): void {
   console.error(`Usage: bun run ./sync/index.ts <network> <game_type>`);

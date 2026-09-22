@@ -1,6 +1,7 @@
 import type { GameChain } from "@realms-world/chain";
 
-export type GameType = "blitz" | "eternum";
+import type { GameType } from "../source/common/types";
+export type { GameType };
 
 import fs from "fs";
 import path from "path";

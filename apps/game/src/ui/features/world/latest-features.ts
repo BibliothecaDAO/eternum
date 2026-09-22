@@ -34,6 +34,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-09-22",
+    title: "Frontier Mode Configuration",
+    description: "Frontier uses its own building choices and season labels.",
+    type: "fix",
+    gameSlug: "frontier",
+  },
+  {
     date: "2026-09-19",
     title: "Transfer Eternum Structure Ownership",
     description:

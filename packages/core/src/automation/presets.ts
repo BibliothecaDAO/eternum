@@ -40,7 +40,7 @@ export const resolveProductionPercentages = (
   percentages: ResourceAutomationPercentages,
   resourceId: ResourcesIds,
 ): ResourceAutomationPercentages => {
-  if (configManager.getBlitzConfig().blitz_mode_on) {
+  if (!configManager.isCommandEnabled("BurnLaborForResourceProduction")) {
     return {
       resourceToResource: clampPercent(percentages.resourceToResource),
       laborToResource: 0,
@@ -116,7 +116,7 @@ const buildSmartPresetAllocations = (
         allocations,
         presentT1,
         presentT1.map(() => 5),
-        configManager.getBlitzConfig().blitz_mode_on ? "resource" : "labor",
+        configManager.isCommandEnabled("BurnLaborForResourceProduction") ? "labor" : "resource",
       );
     } else if (!hasHigherResources) {
       // Complete T1 only: 30% each on resource slider.
@@ -239,7 +239,9 @@ export const getAutomationOverallocation = (
     if (isAutomationResourceBlocked(resourceId, entityType)) {
       return;
     }
-    const percentages = configManager.getBlitzConfig().blitz_mode_on ? { ...stored, laborToResource: 0 } : stored;
+    const percentages = configManager.isCommandEnabled("BurnLaborForResourceProduction")
+      ? stored
+      : { ...stored, laborToResource: 0 };
     const rawComplexInputs = configManager.complexSystemResourceInputs[resourceId] ?? [];
     const complexInputs = rawComplexInputs.filter(
       (input: { resource: ResourcesIds }) =>

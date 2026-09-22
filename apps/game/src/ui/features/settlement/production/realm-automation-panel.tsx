@@ -86,7 +86,7 @@ export const RealmAutomationPanel = ({
   producedResources,
   entityType = "realm",
 }: RealmAutomationPanelProps) => {
-  const laborEnabled = !configManager.getBlitzConfig().blitz_mode_on;
+  const laborEnabled = configManager.isCommandEnabled("BurnLaborForResourceProduction");
   const upsertRealm = useAutomationStore((state) => state.upsertRealm);
   const setRealmPreset = useAutomationStore((state) => state.setRealmPreset);
   const setResourcePercentages = useAutomationStore((state) => state.setResourcePercentages);

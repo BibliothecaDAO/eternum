@@ -334,8 +334,6 @@ export interface ResourceOutputs {
   [key: number]: number;
 }
 
-export type BlitzExplorationRewardProfileId = "official-60" | "official-90";
-
 export interface BlitzExplorationReward {
   rewardId: ResourcesIds;
   amount: number;
@@ -343,6 +341,7 @@ export interface BlitzExplorationReward {
 }
 
 export interface Config {
+  presetId: number;
   spireTravelEssenceCost: number;
   village: {
     village_pass_nft_address: string;
@@ -550,11 +549,7 @@ export interface Config {
     };
   };
   blitz: {
-    mode: {
-      on: boolean;
-    };
     exploration: {
-      rewardProfileId: BlitzExplorationRewardProfileId;
       rewards: BlitzExplorationReward[];
     };
     registration: {

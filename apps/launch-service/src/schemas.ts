@@ -1,3 +1,4 @@
+import { resolveDeploymentEnvironment } from "../../../config/deployer/clean/environment";
 import { defaultPresetForEnvironment } from "../../../config/deployer/clean/constants";
 import { nativePresetForId } from "../../../config/source/native";
 import { Schema } from "effect";
@@ -6,9 +7,9 @@ const NonEmptyString = Schema.NonEmptyString;
 const OptionalNumberRecord = Schema.optional(Schema.Record(Schema.String, Schema.Number));
 
 const SharedOptions = {
-  environment: Schema.Literals(["madara.blitz", "madara.eternum"]),
-  // Registrar presets: 1 = Eternum, 2 = Regular Fast, 3 = Duel.
-  version: Schema.optional(Schema.Literals(["1", "2", "3"])),
+  environment: Schema.Literals(["madara.blitz", "madara.eternum", "madara.frontier"]),
+  // One preset id per game mode.
+  version: Schema.optional(Schema.Literals(["1", "2", "3", "4"])),
   devModeOn: Schema.optional(Schema.Boolean),
   twoPlayerMode: Schema.optional(Schema.Boolean),
   singleRealmMode: Schema.optional(Schema.Boolean),
@@ -27,8 +28,8 @@ export const CreateGameRequestSchema = Schema.Struct({
 });
 
 interface SharedLaunchOptions {
-  environment: "madara.blitz" | "madara.eternum";
-  version?: "1" | "2" | "3";
+  environment: "madara.blitz" | "madara.eternum" | "madara.frontier";
+  version?: "1" | "2" | "3" | "4";
   devModeOn?: boolean;
   twoPlayerMode?: boolean;
   singleRealmMode?: boolean;
@@ -67,13 +68,23 @@ export function applyDurableLaunchDefaults(
 ): LaunchJobRequest {
   if (kind === "result") return request;
   if (!("gameName" in request) || "gameId" in request) throw new Error("Invalid game request");
-  const version = request.version ?? (defaultPresetForEnvironment(request.environment) as "1" | "2");
-  if (
-    nativePresetForId(Number(version)).gameType !== (request.environment === "madara.eternum" ? "eternum" : "blitz")
-  ) {
+  const version =
+    request.version ?? (defaultPresetForEnvironment(request.environment) as NonNullable<CreateGameRequest["version"]>);
+  const preset = nativePresetForId(Number(version));
+  if (preset.environmentGameType !== resolveDeploymentEnvironment(request.environment).gameType) {
     throw new Error("Preset does not match the requested game format");
   }
+  if ((version === "4") !== Boolean(request.twoPlayerMode))
+    throw new Error("Duel uses preset 4; other modes cannot use Duel settlement");
   const shared = { ...request, version };
+  if (request.environment === "madara.frontier") {
+    const start = Date.parse(request.gameStartTime ?? "");
+    if (!Number.isSafeInteger(start) || start % 1000 !== 0)
+      throw new Error("Frontier requires an explicit season start time");
+    if (request.rosterOwners?.length || request.devModeOn || request.twoPlayerMode)
+      throw new Error("Frontier seasons use open entry without a roster or development mode");
+    return { ...shared, gameName: `frontier-${start / 1000}`, gameStartTime: new Date(start).toISOString() };
+  }
   if (kind === "game" && "gameName" in shared) {
     return { ...shared, gameStartTime: shared.gameStartTime ?? new Date(now + 15 * 60_000).toISOString() };
   }

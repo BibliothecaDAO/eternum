@@ -49,7 +49,7 @@ export const ResourceProductionControls = ({
   const ordersAllowed = useUIStore(canIssueOrders);
   const currentDefaultTick = useCurrentDefaultTick();
 
-  const laborEnabled = !configManager.getBlitzConfig().blitz_mode_on;
+  const laborEnabled = configManager.isCommandEnabled("BurnLaborForResourceProduction");
   const useRawResources = !laborEnabled || requestedRawResources;
   const laborConfig = useMemo(
     () => (laborEnabled ? configManager.getLaborConfig(selectedResource) : undefined),

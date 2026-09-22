@@ -7,13 +7,13 @@ import { divideByPrecision } from "./utils";
 const HYPERSTRUCTURE_REALM_COUNT_TWO_PLAYER_MODE = 2;
 
 export const getHyperstructureRealmCheckRadius = () => {
-  const { spacing, single_realm_mode } = configManager.getBlitzConfig().blitz_settlement_config;
+  const { spacing, mode } = configManager.getSettlementConfig();
   if (!Number.isSafeInteger(spacing) || spacing < 2) throw new Error("Invalid settlement spacing");
-  return spacing + (single_realm_mode ? 2 : 0);
+  return spacing + (mode === "Single" ? 2 : 0);
 };
 
 export const getEffectiveHyperstructureRealmCount = (realmCountWithinRadius: number): number => {
-  const isTwoPlayerMode = configManager.getBlitzConfig().blitz_settlement_config.two_player_mode;
+  const isTwoPlayerMode = configManager.getSettlementConfig().mode === "Duel";
   return isTwoPlayerMode ? HYPERSTRUCTURE_REALM_COUNT_TWO_PLAYER_MODE : realmCountWithinRadius;
 };
 

@@ -14,8 +14,9 @@ bun config/deployer/clean/cli/create.ts \
 ```
 
 Required configuration is `NATIVE_WORLD_MANIFEST`, `ADMISSION_URL`, `RPC_URL`, `DEPLOYER_ACCOUNT_ADDRESS` and
-`DEPLOYER_PRIVATE_KEY`. Start time accepts Unix seconds, milliseconds or ISO 8601. `--version` selects an immutable
-registered preset. Per-game balance overrides cannot mutate a registered preset.
+`DEPLOYER_PRIVATE_KEY`. Start time accepts Unix seconds, milliseconds or ISO 8601. `--version` selects the game mode:
+Frontier 1, Blitz 2, Eternum 3 or Duel 4. Duel is outside the free-slot flow. The authority can replace a preset under
+its existing id. Launches check its current commitment; games retain the configuration copied when they were created.
 
 Launch state is durable in the service's PostgreSQL store. Creation schedules a result job atomically, using the actual
 game end and grace period after auto-settlement. Result jobs checkpoint remaining points, submit bounded rank and VP

@@ -1,0 +1,95 @@
+import type { ConfigPatch } from "../merge-config";
+import { buildCommonBaseConfig } from "../base-config";
+import { mergeConfigPatches } from "../merge-config";
+import { arenaBuildingConfig } from "./building";
+import { arenaExplorationConfig } from "./exploration";
+import { arenaHyperstructureConfig } from "./hyperstructures";
+import { arenaRealmLevelConfig } from "./levels";
+import { arenaVictoryPointConfig } from "./points";
+import { arenaResourceConfig } from "./resources";
+import { arenaTroopConfig } from "./troop";
+
+const BLITZ_REGISTRATION_COUNT_MAX = 24;
+const BLITZ_REGISTRATION_DELAY_SECONDS = 10;
+const BLITZ_COLLECTIBLE_COSMETICS_MAX_ITEMS = 5;
+const BLITZ_DISABLED_BANK_NAME = "Disabled Bank";
+
+const blitzModeConfig: ConfigPatch = {
+  blitz: {
+    registration: {
+      registration_count_max: BLITZ_REGISTRATION_COUNT_MAX,
+      registration_delay_seconds: BLITZ_REGISTRATION_DELAY_SECONDS,
+      collectible_cosmetics_max_items: BLITZ_COLLECTIBLE_COSMETICS_MAX_ITEMS,
+      collectible_cosmetics_address: "0x0",
+      collectible_timelock_address: "0x0",
+      collectibles_lootchest_address: "0x0",
+      collectibles_elitenft_address: "0x0",
+    },
+  },
+};
+
+const blitzSeasonConfig: ConfigPatch = {
+  season: {
+    endGraceSeconds: 0,
+  },
+};
+
+const blitzVillageConfig: ConfigPatch = {
+  village: {
+    village_pass_nft_address: "0x0",
+  },
+};
+
+const blitzTradeConfig: ConfigPatch = {
+  faith: {
+    enabled: false,
+    wonder_base_fp_per_sec: 0,
+    realm_fp_per_sec: 0,
+    village_fp_per_sec: 0,
+    owner_share_percent: 0,
+  },
+  artificer: { research_cost_for_relic: 0 },
+  trade: {
+    maxCount: 0,
+  },
+  banks: {
+    name: BLITZ_DISABLED_BANK_NAME,
+    lordsCost: 0,
+    lpFeesNumerator: 0,
+    lpFeesDenominator: 100,
+    ownerFeesNumerator: 0,
+    ownerFeesDenominator: 100,
+    maxNumBanks: 0,
+    ammStartingLiquidity: {},
+    lordsLiquidityPerResource: 0,
+  },
+};
+
+const blitzSettlementConfig: ConfigPatch = {
+  settlement: {
+    spires_layer_distance: 0,
+    spires_max_count: 0,
+    spires_settled_count: 0,
+  },
+};
+
+export const arenaBaseConfig: ConfigPatch = mergeConfigPatches(
+  buildCommonBaseConfig(),
+  {
+    mines: {
+      surfacePool: [{ kind: 1, weight: 1 }],
+    },
+  },
+  arenaExplorationConfig,
+  arenaResourceConfig,
+  arenaTroopConfig,
+  arenaBuildingConfig,
+  arenaHyperstructureConfig,
+  arenaRealmLevelConfig,
+  arenaVictoryPointConfig,
+  blitzModeConfig,
+  blitzSeasonConfig,
+  blitzVillageConfig,
+  blitzTradeConfig,
+  blitzSettlementConfig,
+);

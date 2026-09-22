@@ -28,7 +28,7 @@ it("sends free-slot and Eternum requests through the authenticated service", asy
     environment: "madara.eternum",
     gameName: "long-game",
     gameStartTime: "2099-01-02T12:00:00Z",
-    version: "1",
+    version: "3",
     devModeOn: false,
   });
 });

@@ -3,11 +3,11 @@ import { describe, expect, it } from "vitest";
 import { buildNativeDirectory, buildNativeLeaderboard } from "./read-models";
 import { receipt, rowEvent, rulesEvent, setup } from "./fixtures";
 
-function gameEvent(game = "1", settled = "0", dev = "0") {
+function gameEvent(game = "1", settled = "0", dev = "0", preset = "2") {
   return rowEvent(
     "GameRegistry",
     [game],
-    ["0x426c69747a", "1", "0x111", settled, "1", dev, "10", "20", "200", "10", "42"],
+    ["0x426c69747a", preset, "0x111", settled, "1", dev, "10", "20", "200", "10", "42"],
   );
 }
 function world() {
@@ -69,6 +69,8 @@ describe("native directory and leaderboard", () => {
     for (const name of ["LastBattle", "WorldConfig", "PresetConfig", "BlitzSettlement"])
       expect(models).not.toContain(name);
     expect(models).toContain("ResourceProduction");
+    native.applyReceipt(fold, receipt([gameEvent("1", "1", "0", "1")]), 13, 0);
+    expect(buildNativeDirectory(input).games.find((game) => game.game_id === 1)?.mode).toBe("frontier");
   });
 
   it("adds unsettled shares with contract rounding, caps at game end, and never double counts checkpointed points", () => {
@@ -132,7 +134,7 @@ describe("native directory and leaderboard", () => {
     const { fold, native } = setup();
     native.applyReceipt(fold, receipt([gameEvent()]), 10, 0);
     expect(() => buildNativeDirectory({ chain: "madara", confirmedBlock: 10, timestamp: 30, fold })).toThrow(
-      "Missing native SliceRules",
+      "Missing native SettlementRules",
     );
     expect(() => buildNativeLeaderboard((name) => fold.modelRows(name), "1", 30, null)).toThrow(
       "Missing native SliceRules",

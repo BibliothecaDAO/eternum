@@ -1,7 +1,7 @@
-import { ResourcesIds } from "../../../packages/types/src/constants";
-import type { ConfigPatch } from "../common/merge-config";
+import { ResourcesIds } from "../../../../packages/types/src/constants";
+import type { ConfigPatch } from "../merge-config";
 
-export const blitzHyperstructureConfig: ConfigPatch = {
+export const arenaHyperstructureConfig: ConfigPatch = {
   hyperstructures: {
     hyperstructureInitializationShardsCost: {
       resource: ResourcesIds.AncientFragment,

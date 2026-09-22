@@ -19,3 +19,9 @@ atomically schedules its result job at the actual game end, with no Blitz grace 
 actions and hyperstructure settlement before recording results, which resume from the chain cursor. Failed jobs remain
 visible and can be retried by a launcher. Slot registration needs a verified identity, but not launcher privileges. No
 L2 service is required for a free slot.
+
+Frontier uses preset 1 in madara.frontier. Schedule a season through the existing create-game API with an explicit
+gameStartTime; that UTC timestamp determines the canonical season name. The durable job creates the season-long game
+with open entry and no roster. Repeating the same schedule returns its existing job, including after completion or a
+service restart. Different options for the same start time are rejected. Schedule the next season with a new start time;
+it creates a new game without carrying realms forward.

@@ -2,7 +2,7 @@ import type { GameChain } from "@realms-world/chain";
 
 export type WorldSummaryChain = GameChain;
 
-export type WorldSummaryMode = "blitz" | "eternum" | "unknown";
+export type WorldSummaryMode = "blitz" | "eternum" | "frontier" | "duel" | "unknown";
 
 export interface WorldSummary {
   name: string;

@@ -8,7 +8,6 @@ const STANDARD_BLITZ_CHAIN_CONFIG: ConfigPatch = {
   season: {
     startSettlingAfterSeconds: 59,
     startMainAfterSeconds: 60,
-    durationSeconds: 60 * 60 * 2,
   },
   battle: {
     regularImmunityTicks: 0,
@@ -50,9 +49,7 @@ function resolveAppchainBlitzRegistrationConfig(context: EnvironmentContext): Co
   // Override with APPCHAIN_REGISTRATION_DELAY_SECONDS.
   const delaySeconds = Number(process.env.APPCHAIN_REGISTRATION_DELAY_SECONDS) || 20;
 
-  // A 30-day default game can never be observed ending on a dev chain.
-  // 1h default matches the on-chain default preset 2 (official-60 / "Regular Fast").
-  const durationSeconds = Number(process.env.APPCHAIN_GAME_DURATION_SECONDS) || 60 * 60;
+  const durationSeconds = process.env.APPCHAIN_GAME_DURATION_SECONDS;
 
   return {
     // Real games, not a sandbox: dev mode bypasses the registration window and
@@ -62,9 +59,7 @@ function resolveAppchainBlitzRegistrationConfig(context: EnvironmentContext): Co
         on: false,
       },
     },
-    season: {
-      durationSeconds,
-    },
+    ...(durationSeconds === undefined ? {} : { season: { durationSeconds: Number(durationSeconds) } }),
     blitz: {
       registration: {
         registration_delay_seconds: delaySeconds,
@@ -81,10 +76,6 @@ export function resolveBlitzChainConfig(chain: GameChain, context: EnvironmentCo
       // immunity in a mode that has none).
       return mergeConfigPatches(STANDARD_BLITZ_CHAIN_CONFIG, madaraBlitzConfig);
     case "appchain":
-      // dev appchain (WP_REALMS_DEV): REAL mainnet game balance, free entry.
-      // (The local-style dev balance shipped to testers as presets 2/3 —
-      // presets are immutable, so the corrected rulebooks register as new
-      // preset ids and the catalog points at them.)
       return mergeConfigPatches(
         STANDARD_BLITZ_CHAIN_CONFIG,
         resolveBlitzContractAddressConfig(context),

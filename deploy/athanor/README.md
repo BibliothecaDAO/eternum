@@ -54,7 +54,7 @@ execution and compilation mode. The runner refuses existing project state and CP
 
 Supply `DEPLOYER_ACCOUNT_ADDRESS` and `DEPLOYER_PRIVATE_KEY` from the isolated devnet. The runner creates private
 credentials and volumes, deploys identity, binds a gameplay operator and deploys the native world under it, registers
-the Regular Blitz preset and starts Herald. Each shard exports upstream node metrics through its own pinned OTLP
+the Frontier and Regular Blitz presets and starts Herald. Each shard exports upstream node metrics through its own pinned OTLP
 collector into its private run directory; `harness.env` points the existing block reporter at that output. The run
 directory holds its compose configuration, manifest, logs and private `harness.env`. It starts no live services. Failed
 runs retain their volumes for inspection; choose a fresh shard id for a new run.
@@ -97,7 +97,7 @@ bun config/deployer/clean/cli/deploy-world.ts \
 bun deploy/athanor/harness/native/prepare-authority.ts "$NATIVE_WORLD_SEED" "$NATIVE_WORLD_MANIFEST"
 export DEPLOYER_ACCOUNT_ADDRESS="$(jq -er .operatorAccountAddress "$GAMEPLAY_CONTRACTS_PATH")"
 bun config/deployer/clean/registrar/register-preset.ts \
-  --environment madara.blitz --preset-id 2 --balance-profile official-60
+  --environment madara.blitz --preset-id 2
 ```
 
 The deployer declares classes through `DEPLOYER_ACCOUNT_ADDRESS` and administers the world through identity's bound

@@ -2,15 +2,16 @@ import { configManager } from "@bibliothecadao/eternum";
 import { useNativeRow } from "@bibliothecadao/react";
 import { useMemo } from "react";
 import { getGameModeConfig } from "./index";
-import { resolveGameModeFromBlitzFlag, type ResolvedGameMode } from "./resolved-mode";
+import { type ResolvedGameMode } from "./resolved-mode";
 
-const useBlitzMode = () => {
-  const rules = useNativeRow("SliceRules", { game_id: configManager.getActiveGameId() });
-  if (!rules) throw new Error("Native game rules are not synchronized");
-  return rules.mode_id === 1;
+const usePresetId = () => {
+  const game = useNativeRow("GameRegistry", { game_id: configManager.getActiveGameId() });
+  if (!game) throw new Error("Native game rules are not synchronized");
+  return game.preset_id;
 };
-export const useResolvedWorldGameMode = (): ResolvedGameMode => resolveGameModeFromBlitzFlag(useBlitzMode());
+export const useResolvedWorldGameMode = (): ResolvedGameMode => useGameModeConfig().id;
+
 export const useGameModeConfig = () => {
-  const blitzModeOn = useBlitzMode();
-  return useMemo(() => getGameModeConfig({ blitzModeOn }), [blitzModeOn]);
+  const presetId = usePresetId();
+  return useMemo(() => getGameModeConfig(presetId), [presetId]);
 };
