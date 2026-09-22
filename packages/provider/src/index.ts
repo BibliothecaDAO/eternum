@@ -93,7 +93,6 @@ const DEFAULT_FEE_ESTIMATE_TIMEOUT_MS = 5_000;
 // keep it briefly so the eventual submit/confirmation failure can surface it.
 const ESTIMATE_ERROR_TTL_MS = 60_000;
 const DEFAULT_TRANSACTION_SUBMIT_TIMEOUT_MS = 20_000;
-const EXPLORE_RESOURCE_BOUNDS_CACHE_TTL_MS = 15_000;
 export const SUBMISSION_TIMEOUT_UNCERTAIN_MESSAGE =
   "Submission timed out before a tx hash was returned. Check wallet/activity before retrying.";
 const formatTimeoutDuration = (timeoutMs: number): string =>
@@ -179,11 +178,6 @@ type ActorExecutionLock = {
   resolve: () => void;
 };
 
-type CachedExploreExecutionDetails = {
-  cachedAtMs: number;
-  resourceBounds: ResourceBoundsBN;
-};
-
 type TransactionFailureError = Error & {
   transactionFailureStage?: TransactionFailureStage;
   /** Raw receipt revert reason, verbatim, attached on the revert path. */
@@ -238,7 +232,6 @@ export class EternumProvider extends EventEmitter {
   private readonly TRANSACTION_SUBMIT_TIMEOUT_MS = DEFAULT_TRANSACTION_SUBMIT_TIMEOUT_MS;
   private readonly FEE_ESTIMATE_TIMEOUT_MS = DEFAULT_FEE_ESTIMATE_TIMEOUT_MS;
   private pendingActorExecutionLocks = new Map<string, ActorExecutionLock>();
-  private cachedExploreExecutionDetails = new Map<string, CachedExploreExecutionDetails>();
   private lastEstimateError?: { error: unknown; atMs: number };
   private readonly retryConfig?: RetryConfig;
   private nativeSubmission?: NativeSubmission;
@@ -345,38 +338,6 @@ export class EternumProvider extends EventEmitter {
     return Array.isArray(transactionDetails) ? transactionDetails : [transactionDetails];
   }
 
-  private serializeTransactionCacheValue(value: unknown): string {
-    if (Array.isArray(value)) {
-      return `[${value.map((item) => this.serializeTransactionCacheValue(item)).join(",")}]`;
-    }
-
-    if (typeof value === "bigint") {
-      return value.toString();
-    }
-
-    if (value === undefined) {
-      return "undefined";
-    }
-
-    if (value === null) {
-      return "null";
-    }
-
-    return String(value);
-  }
-
-  private buildTransactionCacheSignature(transactionDetails: AllowArray<Call>): string {
-    return this.getTransactionCalls(transactionDetails)
-      .map((detail) => {
-        const contractAddress = this.normalizeAddress(detail.contractAddress) ?? String(detail.contractAddress);
-        const calldata = Array.isArray(detail.calldata)
-          ? detail.calldata.map((item) => this.serializeTransactionCacheValue(item)).join(",")
-          : "";
-        return `${contractAddress}:${detail.entrypoint}:${calldata}`;
-      })
-      .join("|");
-  }
-
   private getExploreTransactionExplorerId(calls: AllowArray<Call>): string | undefined {
     const call = this.getTransactionCalls(calls).find(
       ({ entrypoint }) => entrypoint === "Explore" || entrypoint === "Move",
@@ -390,66 +351,6 @@ export class EternumProvider extends EventEmitter {
     transactionDetails: AllowArray<Call>,
   ): string | undefined {
     return this.nativeSubmission ? `native:${this.gameId}:${this.normalizeAddress(signer.address)}` : undefined;
-  }
-
-  private getExploreExecutionDetailsCacheKey(
-    txType: TransactionType | undefined,
-    signer: Account | AccountInterface,
-    transactionDetails: AllowArray<Call>,
-  ): string | undefined {
-    if (txType !== TransactionType.EXPLORE) {
-      return undefined;
-    }
-
-    const signerAddress = this.normalizeAddress((signer as { address?: BigNumberish }).address);
-    if (!signerAddress) {
-      return undefined;
-    }
-
-    const worldAddress = this.normalizeAddress(this.contracts.world) ?? "unknown";
-    const nodeUrl = (this.provider as any)?.channel?.nodeUrl;
-    const transactionSignature = this.buildTransactionCacheSignature(transactionDetails);
-    return `${String(nodeUrl ?? "unknown")}:${worldAddress}:${signerAddress}:${txType}:${transactionSignature}`;
-  }
-
-  private getCachedExploreExecutionDetails(cacheKey: string | undefined): UniversalDetails | undefined {
-    if (!cacheKey) {
-      return undefined;
-    }
-
-    const cached = this.cachedExploreExecutionDetails.get(cacheKey);
-    if (!cached) {
-      return undefined;
-    }
-
-    if (Date.now() - cached.cachedAtMs > EXPLORE_RESOURCE_BOUNDS_CACHE_TTL_MS) {
-      this.cachedExploreExecutionDetails.delete(cacheKey);
-      return undefined;
-    }
-
-    return {
-      version: 3,
-      resourceBounds: cached.resourceBounds,
-    };
-  }
-
-  private cacheExploreExecutionDetails(cacheKey: string | undefined, resourceBounds: ResourceBoundsBN): void {
-    if (!cacheKey) {
-      return;
-    }
-
-    this.cachedExploreExecutionDetails.set(cacheKey, {
-      cachedAtMs: Date.now(),
-      resourceBounds,
-    });
-  }
-
-  private invalidateExploreExecutionDetailsCache(cacheKey: string | undefined): void {
-    if (!cacheKey) {
-      return;
-    }
-
-    this.cachedExploreExecutionDetails.delete(cacheKey);
   }
 
   private shouldRefreshExecutionDetailsAfterSubmitError(error: unknown): boolean {
@@ -495,16 +396,11 @@ export class EternumProvider extends EventEmitter {
   private async getV3ExecutionDetails(
     signer: Account | AccountInterface,
     transactionDetails: AllowArray<Call>,
-    options?: { cacheKey?: string; forceRefresh?: boolean },
   ): Promise<UniversalDetails> {
     const details: UniversalDetails = { version: 3, tip: 0 };
     if (this.nativeSubmission) return details;
     if (this.executionResourceBounds) {
       return { ...details, resourceBounds: this.executionResourceBounds };
-    }
-    const cached = !options?.forceRefresh ? this.getCachedExploreExecutionDetails(options?.cacheKey) : undefined;
-    if (cached) {
-      return { ...details, ...cached };
     }
 
     const estimateInvokeFee = (signer as any)?.estimateInvokeFee;
@@ -528,8 +424,6 @@ export class EternumProvider extends EventEmitter {
       if (!resourceBounds) {
         return details;
       }
-
-      this.cacheExploreExecutionDetails(options?.cacheKey, resourceBounds);
 
       return {
         ...details,
@@ -583,7 +477,6 @@ export class EternumProvider extends EventEmitter {
     signer: Account | AccountInterface,
     transactionDetails: AllowArray<Call>,
     executionDetails: UniversalDetails,
-    options?: { executionDetailsCacheKey?: string },
   ): Promise<SubmittedTransaction> {
     if (this.nativeSubmission) return this.nativeSubmission(signer, transactionDetails);
     if (this.retryConfig && this.retryConfig.maxRetries > 0) {
@@ -593,11 +486,7 @@ export class EternumProvider extends EventEmitter {
         this.retryConfig,
         async (error, attempt) => {
           if (this.shouldRefreshExecutionDetailsAfterSubmitError(error)) {
-            this.invalidateExploreExecutionDetailsCache(options?.executionDetailsCacheKey);
-            currentExecutionDetails = await this.getV3ExecutionDetails(signer, transactionDetails, {
-              cacheKey: options?.executionDetailsCacheKey,
-              forceRefresh: true,
-            });
+            currentExecutionDetails = await this.getV3ExecutionDetails(signer, transactionDetails);
           }
           console.warn(`[provider] Retry attempt ${attempt} for transaction: ${extractErrorMessage(error)}`);
         },
@@ -796,13 +685,8 @@ export class EternumProvider extends EventEmitter {
       ...(isMultipleTransactions ? { transactionCount: transactionDetails.length } : {}),
       ...(batchDetails && batchDetails.length > 0 ? { batchDetails } : {}),
     });
-    const executionDetailsCacheKey = this.getExploreExecutionDetailsCacheKey(txType, signer, transactionDetails);
     const executionDetailsPromise =
-      txType === TransactionType.EXPLORE
-        ? this.getV3ExecutionDetails(signer, transactionDetails, {
-            cacheKey: executionDetailsCacheKey,
-          })
-        : undefined;
+      txType === TransactionType.EXPLORE ? this.getV3ExecutionDetails(signer, transactionDetails) : undefined;
     // The prefetch can reject (preflight abort) before the guard/lock awaits
     // below reach it; park a handler so the window never surfaces as an
     // unhandled rejection. The await inside the try still observes the error.
@@ -842,9 +726,7 @@ export class EternumProvider extends EventEmitter {
       // release as a submit failure.
       const executionDetails = executionDetailsPromise
         ? await executionDetailsPromise
-        : await this.getV3ExecutionDetails(signer, transactionDetails, {
-            cacheKey: executionDetailsCacheKey,
-          });
+        : await this.getV3ExecutionDetails(signer, transactionDetails);
       if (txType === TransactionType.EXPLORE) {
         this.emit("transactionProgress", {
           stage: "explore_execution_details_ready",
@@ -859,16 +741,11 @@ export class EternumProvider extends EventEmitter {
           signerAddress: transactionMeta.signerAddress,
         });
       }
-      submitPromise = this.submitTransaction(signer, transactionDetails, executionDetails, {
-        executionDetailsCacheKey,
-      });
+      submitPromise = this.submitTransaction(signer, transactionDetails, executionDetails);
       tx = await this.waitForTransactionSubmission(submitPromise);
     } catch (error) {
       const message = extractErrorMessage(error);
       const submitFailure = classifySubmitFailure(error);
-      if (this.shouldRefreshExecutionDetailsAfterSubmitError(error)) {
-        this.invalidateExploreExecutionDetailsCache(executionDetailsCacheKey);
-      }
       if (submitPromise && submitFailure.failureKind === "submission_timeout_no_hash") {
         this.observeLateSubmittedTransaction(submitPromise, transactionMeta, releaseActorExecutionLock);
         releaseActorExecutionLock = undefined;
