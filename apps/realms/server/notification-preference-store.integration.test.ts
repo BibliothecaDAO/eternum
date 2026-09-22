@@ -9,7 +9,8 @@ vi.mock("@realms-world/db/client", () => ({ db: {} }));
 import { createNotificationPreferenceStore } from "./notification-preference-store";
 
 const databaseUrl = process.env.IDENTITY_TEST_DATABASE_URL;
-describe.skipIf(!databaseUrl)("notification preferences in PostgreSQL", () => {
+if (!databaseUrl) throw new Error("IDENTITY_TEST_DATABASE_URL is required for the PostgreSQL suite");
+describe("notification preferences in PostgreSQL", () => {
   let testDatabase: Awaited<ReturnType<typeof createNotificationTestDatabase>>;
   let pool: Pool;
   let store: ReturnType<typeof promiseStore>;

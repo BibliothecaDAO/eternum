@@ -22,7 +22,8 @@ import { WebPushSender, createWebPushSender } from "../web-push-sender";
 import { createAutomaticNotifier } from "./notifier";
 import { createNotificationSource } from "./source";
 const url = process.env.IDENTITY_TEST_DATABASE_URL;
-describe.skipIf(!url)("automatic notifications through PostgreSQL", () => {
+if (!url) throw new Error("IDENTITY_TEST_DATABASE_URL is required for the PostgreSQL suite");
+describe("automatic notifications through PostgreSQL", () => {
   let database: Awaited<ReturnType<typeof createNotificationTestDatabase>>;
   let outbox: ReturnType<typeof createNotificationOutbox>;
   let subscriptions: ReturnType<typeof createPushSubscriptionStore>;

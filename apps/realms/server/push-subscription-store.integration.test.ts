@@ -7,7 +7,8 @@ import { createNotificationTestDatabase } from "./notification-test-database";
 vi.mock("@realms-world/db/client", () => ({ db: {} }));
 import { createPushSubscriptionStore } from "./push-subscription-store";
 const databaseUrl = process.env.IDENTITY_TEST_DATABASE_URL;
-describe.skipIf(!databaseUrl)("push subscriptions in PostgreSQL", () => {
+if (!databaseUrl) throw new Error("IDENTITY_TEST_DATABASE_URL is required for the PostgreSQL suite");
+describe("push subscriptions in PostgreSQL", () => {
   let database: Awaited<ReturnType<typeof createNotificationTestDatabase>>;
   let store: ReturnType<typeof createPushSubscriptionStore>;
   const run = Effect.runPromise;
