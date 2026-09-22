@@ -66,6 +66,7 @@ it("covers every native story and tests every cumulative level", () => {
       "BankLiquidity",
       "HyperstructurePoints",
       "RelicChestOpened",
+      "ChestReward",
       "ExplorationReward",
       "SeasonEnded",
       "FaithPledged",

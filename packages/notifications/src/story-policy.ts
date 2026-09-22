@@ -14,6 +14,7 @@ const STORY_RULES = {
   BankLiquidity: { level: "all", recipients: "owner" },
   HyperstructurePoints: { level: "all", recipients: "owner" },
   RelicChestOpened: { level: "all", recipients: "owner" },
+  ChestReward: { level: "all", recipients: "owner" },
   ExplorationReward: { level: "all", recipients: "owner" },
   SeasonEnded: { level: "all", recipients: "owner" },
   FaithPledged: { level: "all", recipients: "owner" },
