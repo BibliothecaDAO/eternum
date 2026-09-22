@@ -6,7 +6,7 @@ import type { HistoryQuery, HistoryStore } from "./history-store";
 
 interface SnapshotSource {
   modelRows: (model: string) => FoldRow[];
-  snapshot: (gameId: string, confirmedBlock: number, models?: readonly string[]) => GameSnapshot;
+  snapshot: (gameId: string, confirmedBlock: number, models?: readonly string[], actor?: string) => GameSnapshot;
 }
 
 interface WorldReadModels {
@@ -202,7 +202,12 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
 
     try {
       const models = requestedModels(url);
-      const snapshot = state.fold.snapshot(match[1], state.confirmedBlock(), models);
+      const snapshot = state.fold.snapshot(
+        match[1],
+        state.confirmedBlock(),
+        models,
+        url.searchParams.get("actor") ?? undefined,
+      );
       return jsonResponse(selectModels(snapshot, models));
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);

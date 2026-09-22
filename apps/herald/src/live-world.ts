@@ -1,3 +1,4 @@
+import { GameSubscription } from "./game-subscription";
 import { NativeReceiptRejected, type NativeIngestion } from "./native/ingestion";
 import { normalizeFelt, type ModelRegistry } from "./model-registry";
 import type { CheckpointStore } from "./checkpoint-store";
@@ -94,7 +95,7 @@ export class LiveWorld {
 
   private readonly diffLatency: DiffLatencyMonitor;
 
-  private readonly transactionGames = new Map<string, string[]>();
+  private readonly transactionGames = new Map<string, { gameId: string; actor: string }[]>();
 
   private readonly native: NativeIngestion;
 
@@ -126,7 +127,12 @@ export class LiveWorld {
   }
 
   public snapshot(gameId: string, models?: readonly string[], actor?: string): GameSnapshot {
-    return this.confirmedFold.snapshot(gameId, this.confirmedBlockValue, models, actor);
+    return this.confirmedFold.subscriptionSnapshot(
+      gameId,
+      this.confirmedBlockValue,
+      this.confirmedFold.subscriptionScope(gameId, actor, this.lastClockTimestamp),
+      models,
+    );
   }
 
   public modelRows(model: string) {
@@ -148,14 +154,32 @@ export class LiveWorld {
 
   public attach(gameId: string, socket: StreamSocket, actor?: string): GameStreamSession {
     this.knownGames.add(gameId);
-    return this.hub.attach({
+    return this.hub.attach(this.subscription(gameId, socket, actor));
+  }
+
+  public selectActor(session: GameStreamSession, actor: string | undefined): void {
+    this.hub.selectActor(session, this.subscription(session.gameId, session.socket, actor));
+  }
+
+  private subscription(gameId: string, socket: StreamSocket, actor?: string) {
+    const subscription = new GameSubscription(
+      gameId,
+      actor,
+      (preconfirmed) => (preconfirmed ? this.overlayFold : this.confirmedFold),
+      () => this.confirmedBlockValue,
+      () => this.lastClockTimestamp,
+    );
+    return {
+      actor,
       confirmedBlock: this.confirmedBlockValue,
       gameId,
-      overlay: () => this.snapshotOverlay(gameId),
+      expedition: subscription.expedition,
+      overlay: () => subscription.overlay(this.snapshotOverlay(gameId)),
       preconfirmedBlock: this.preconfirmedBlockValue,
-      snapshot: () => this.snapshot(gameId, undefined, actor),
+      snapshot: () => subscription.snapshot(),
+      project: (body: Parameters<GameSubscription["project"]>[0]) => subscription.project(body),
       socket,
-    });
+    };
   }
 
   public resume(session: GameStreamSession, request: ResumeRequest): void {
@@ -444,7 +468,7 @@ export class LiveWorld {
   ): void {
     const identity = normalizeFelt(hash);
     try {
-      setBoundedTransactionEntry(this.transactionGames, identity, this.native.transactionGameIds(transaction));
+      setBoundedTransactionEntry(this.transactionGames, identity, this.native.transactionScopes(transaction));
     } catch (error) {
       this.native.rejectRouting(identity, error);
     }
@@ -453,17 +477,22 @@ export class LiveWorld {
 
   private publishTransactionReceipt(hash: string, _sender: string | null | undefined, receipt: RpcReceipt): void {
     const status = receipt.execution_status === "REVERTED" ? "REVERTED" : receipt.finality_status;
-    for (const gameId of this.transactionGames.get(hash) ?? []) {
+    const scopes = this.transactionGames.get(hash) ?? [];
+    for (const gameId of new Set(scopes.map((scope) => scope.gameId))) {
       if (this.knownGames.has(gameId))
-        this.hub.publishTransaction(gameId, {
-          block: receipt.block_number ?? null,
-          hash,
-          revert_reason: receipt.revert_reason,
-          ...(receipt.executions !== undefined
-            ? { executions: receipt.executions.filter((outcome) => BigInt(outcome.gameId) === BigInt(gameId)) }
-            : {}),
-          status,
-        });
+        this.hub.publishTransaction(
+          gameId,
+          {
+            block: receipt.block_number ?? null,
+            hash,
+            revert_reason: receipt.revert_reason,
+            ...(receipt.executions !== undefined
+              ? { executions: receipt.executions.filter((outcome) => BigInt(outcome.gameId) === BigInt(gameId)) }
+              : {}),
+            status,
+          },
+          scopes.filter((scope) => scope.gameId === gameId).map((scope) => scope.actor),
+        );
       if (receipt.finality_status !== "PRE_CONFIRMED") this.input.historyStore?.recordTransaction(gameId, receipt);
     }
     if (receipt.finality_status !== "PRE_CONFIRMED") {

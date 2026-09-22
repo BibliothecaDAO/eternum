@@ -48,6 +48,7 @@ export interface GameClientObserver {
 }
 
 export interface CreateHeraldGameSyncSessionInput {
+  actor?: string;
   modelDefinition: (name: string) => GameSyncModelDefinition;
   baseUrl: string;
   chain: GameChain;
@@ -106,12 +107,12 @@ export function createHeraldGameSyncSession(
     transport: new HeraldGameSyncTransport({
       modelDefinition: input.modelDefinition,
       socketFactory: input.socketFactory,
-      url: buildHeraldGameStreamUrl(input.baseUrl, input.chain, input.gameId),
+      url: buildHeraldGameStreamUrl(input.baseUrl, input.chain, input.gameId, input.actor),
     }),
   };
 }
 
-export function buildHeraldGameStreamUrl(baseUrl: string, chain: GameChain, gameId: number): string {
+export function buildHeraldGameStreamUrl(baseUrl: string, chain: GameChain, gameId: number, actor?: string): string {
   if (!Number.isSafeInteger(gameId) || gameId <= 0) {
     throw new Error(`Herald requires a positive game id; received ${gameId}`);
   }
@@ -126,6 +127,7 @@ export function buildHeraldGameStreamUrl(baseUrl: string, chain: GameChain, game
   const prefix = url.pathname.replace(/\/+$/, "");
   url.pathname = `${prefix}/${chain}/games/${gameId}`;
   url.search = "";
+  if (actor !== undefined) url.searchParams.set("actor", `0x${BigInt(actor).toString(16)}`);
   url.hash = "";
   return url.toString();
 }

@@ -1,8 +1,8 @@
 # Herald
 
 Herald restores the native world's confirmed fold from PostgreSQL, replays the gap from Madara block receipts, and
-maintains a replaceable pre-confirmed overlay through RPC subscriptions. Clients receive game-scoped snapshots, ordered
-diffs, ticket outcomes and heads over one WebSocket.
+maintains a replaceable pre-confirmed overlay through RPC subscriptions. Clients receive player-scoped snapshots,
+ordered diffs, ticket outcomes and heads over one WebSocket.
 
 The native release manifest identifies domain addresses and codecs. Generated schema artifacts describe keys, member
 ownership and recursive Cairo types. An address remains authoritative through a compatible class upgrade; unknown event
@@ -32,11 +32,22 @@ upstream subscriptions before serving.
 - `GET /<chain>/games/<game_id>/history?model=StoryEvent&limit=50&offset=0`
 - `GET /<chain>/games/<game_id>/review/snapshot`
 - `GET /<chain>/games/<game_id>/transactions/count`
-- `WS /<chain>/games/<game_id>`
+- `WS /<chain>/games/<game_id>?actor=<gameplay_account>`
 
 The server sends `hello`. The client answers `resume{epoch,seq}` with its last applied boundary; an empty epoch requests
 a snapshot. A retained boundary replays later messages. An expired or different epoch returns a model-chunked snapshot
 followed by live messages after that atomic boundary.
+
+Selecting an actor sends `select_actor{actor}` on the existing socket (`actor: null` returns to spectating). Herald
+answers with one atomic `scope` replacement of actor rows, retaining shared game configuration. Nonces, recorded
+executions and transaction outcomes reach their actor only. Each actor has its own replay sequence.
+
+For games with expedition epochs, the subscription contains the player's realm, current armies and regions occupied by
+those armies. With no army, the current surface region is available for muster. A new day removes the previous day's
+armies, sites, tiles and rewards, while home production remains. Incoming rift producers belong to the receiving home
+until Cairo settles their final output, including after the expedition ends; their old map sites and tiles are excluded.
+HTTP snapshots apply the same `actor` scope. Scope membership retains keys only; current facts remain in the confirmed
+fold and its provisional overlay.
 
 ## Fold and recovery
 

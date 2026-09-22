@@ -20,7 +20,7 @@ import {
   SupersededGameSyncStartError,
   type GameSyncRuntime,
 } from "../sync/game-sync-runtime";
-import type { HeraldSocket } from "../sync/herald-game-sync-transport";
+import type { HeraldGameSyncTransport, HeraldSocket } from "../sync/herald-game-sync-transport";
 import type { GameSyncScheduler } from "../sync/scheduler";
 import { WorldSpatialProjection } from "../sync/world-spatial-projection";
 import { createGameActions, type GameActions } from "./actions";
@@ -38,6 +38,7 @@ export interface GameClientSetup {
 type GameClientSetupEnvironment = { executionResourceBounds?: ResourceBoundsBN };
 
 export interface CreateGameClientInput {
+  actor?: string;
   native: NativeClientConnection;
   world: WorldDeployment;
   gameId: number;
@@ -83,9 +84,9 @@ export async function createGameClient(input: CreateGameClientInput): Promise<Ga
   input.observer?.onSetupCompleted?.(setupResult);
   const runtime = installFreshGameSyncRuntime();
   try {
-    const projection = await startSync(runtime, setupResult, input);
+    const { projection, transport } = await startSync(runtime, setupResult, input);
     applyGameConfig(setupResult);
-    return buildGameClient(input, setupResult, runtime, projection);
+    return buildGameClient(input, setupResult, runtime, projection, transport);
   } catch (error) {
     // A superseding session owns the runtime now; anything else leaves a half-started client to tear down.
     if (!(error instanceof SupersededGameSyncStartError)) disposeRuntime(runtime);
@@ -118,8 +119,9 @@ const startSync = async (
   runtime: GameSyncRuntime,
   setupResult: GameClientSetup,
   input: CreateGameClientInput,
-): Promise<WorldSpatialProjection> => {
+): Promise<{ projection: WorldSpatialProjection; transport: HeraldGameSyncTransport }> => {
   const session = createHeraldGameSyncSession({
+    actor: input.actor,
     baseUrl: input.world.heraldBaseUrl,
     chain: input.world.chain,
     entityModels: input.native.bindings.models.map((model) => model.name),
@@ -154,7 +156,7 @@ const startSync = async (
     },
   );
   routeTransactionWaitsThroughStream(setupResult, runtime);
-  return installWorldSpatialProjection(runtime, setupResult);
+  return { projection: installWorldSpatialProjection(runtime, setupResult), transport: session.transport };
 };
 
 /** Herald's stream carries transaction status, so submits wait on the stream instead of polling the RPC. */
@@ -186,6 +188,7 @@ const buildGameClient = (
   setupResult: GameClientSetup,
   runtime: GameSyncRuntime,
   projection: WorldSpatialProjection,
+  transport: HeraldGameSyncTransport,
 ): GameClient => {
   let signer: AccountInterface | null = null;
   let views: GameViews | null = null;
@@ -207,10 +210,12 @@ const buildGameClient = (
       return (actions ??= createGameActions(client));
     },
     connect: (next) => {
+      transport.selectActor(next.address);
       signer = next;
       views = null;
     },
     disconnect: () => {
+      transport.selectActor(undefined);
       signer = null;
       views = null;
     },

@@ -3,13 +3,16 @@ import { decodeMembers } from "./serde";
 import type { NativeManifest } from "./schema";
 
 /** Receipt routing only. Authentication and game mutations are enforced by execution. */
-export function transactionGameIds(manifest: NativeManifest, calldata: string[] | undefined): string[] {
+export function transactionScopes(
+  manifest: NativeManifest,
+  calldata: string[] | undefined,
+): { gameId: string; actor: string }[] {
   if (!calldata?.length) return [];
   const schema = manifest.native.schemas[manifest.native.activeSchema];
   const commands = schema.domains.season.entrypoints.filter((entry) =>
     entry.inputs.some((member) => member.name === "intent" || member.name === "actions"),
   );
-  const games = new Set<string>();
+  const scopes = new Map<string, { gameId: string; actor: string }>();
   for (const call of accountCalls(calldata)) {
     if (BigInt(call.address) !== BigInt(manifest.world.address)) continue;
     const command = commands.find((entry) => BigInt(call.selector) === BigInt(hash.getSelectorFromName(entry.name)));
@@ -17,10 +20,12 @@ export function transactionGameIds(manifest: NativeManifest, calldata: string[] 
     const decoded = decodeMembers(schema, command.inputs, call.calldata);
     const actions = command.name === "execute_batch" ? (decoded.actions as Record<string, unknown>[]) : [decoded];
     for (const action of actions) {
-      games.add(String(BigInt((action.intent as Record<string, bigint>).game_id)));
+      const intent = action.intent as Record<string, bigint>;
+      const scope = { gameId: String(BigInt(intent.game_id)), actor: String(BigInt(intent.actor)) };
+      scopes.set(`${scope.gameId}:${scope.actor}`, scope);
     }
   }
-  return [...games];
+  return [...scopes.values()];
 }
 
 function accountCalls(calldata: string[]) {

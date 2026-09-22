@@ -1,3 +1,4 @@
+import { isScopedGameSyncModel } from "@bibliothecadao/eternum/game-sync-models";
 import { randomUUID } from "node:crypto";
 
 import type { GameSnapshot } from "./types";
@@ -17,6 +18,9 @@ interface RingEntry {
 }
 
 interface GameStreamState {
+  actor?: string;
+  gameId: string;
+  project?: (body: PublishedBody) => PublishedBody[];
   ring: RingEntry[];
   seq: number;
   subscribers: Set<GameStreamSession>;
@@ -31,8 +35,10 @@ export interface SnapshotOverlayDiff {
 
 type PublishedMessage = Extract<HeraldStreamMessage, { type: "diff" | "overlay_reset" | "tx" | "head" }>;
 type PublishBody<Message> = Message extends unknown ? Omit<Message, "epoch" | "seq"> : never;
+export type PublishedBody = PublishBody<PublishedMessage>;
 
 export interface GameStreamSession {
+  actor?: string;
   active: boolean;
   boundary: number;
   gameId: string;
@@ -42,6 +48,9 @@ export interface GameStreamSession {
 }
 
 interface AttachInput {
+  actor?: string;
+  expedition?: boolean;
+  project?: (body: PublishedBody) => PublishedBody[];
   confirmedBlock: number;
   gameId: string;
   preconfirmedBlock: number | null;
@@ -59,8 +68,9 @@ export class GameStreamHub {
   }
 
   public attach(input: AttachInput): GameStreamSession {
-    const state = this.game(input.gameId);
+    const state = this.game(input);
     const session: GameStreamSession = {
+      actor: input.actor,
       active: false,
       boundary: state.seq,
       gameId: input.gameId,
@@ -76,7 +86,7 @@ export class GameStreamHub {
     }
     this.send(session.socket, {
       confirmed_block: input.confirmedBlock,
-      epoch: this.epoch,
+      epoch: this.streamEpoch(input.gameId, input.actor),
       preconfirmed_block: input.preconfirmedBlock,
       seq: session.boundary,
       type: "hello",
@@ -86,7 +96,7 @@ export class GameStreamHub {
 
   public resume(session: GameStreamSession, request: ResumeRequest): void {
     if (session.active) throw new Error("Stream session already resumed");
-    const state = this.game(session.gameId);
+    const state = this.games.get(this.streamKey(session.gameId, session.actor))!;
     const canResume = this.canResume(state, request);
     const resumeFrom = canResume ? request.seq : session.boundary;
 
@@ -99,7 +109,36 @@ export class GameStreamHub {
   }
 
   public detach(session: GameStreamSession): void {
-    this.games.get(session.gameId)?.subscribers.delete(session);
+    this.games.get(this.streamKey(session.gameId, session.actor))?.subscribers.delete(session);
+  }
+
+  public selectActor(session: GameStreamSession, input: AttachInput): void {
+    if (!session.active) throw new Error("Resume before selecting an actor");
+    const state = this.game(input);
+    const snapshot = input.snapshot();
+    const overlay = input.overlay();
+    this.detach(session);
+    session.actor = input.actor;
+    session.boundary = state.seq;
+    state.subscribers.add(session);
+    this.send(session.socket, {
+      type: "scope",
+      epoch: this.streamEpoch(input.gameId, input.actor),
+      seq: state.seq,
+      actor: input.actor,
+      expedition: input.expedition === true,
+      set: snapshot.models.flatMap(({ model, rows }) =>
+        isScopedGameSyncModel(model, input.expedition === true) ? rows.map((row) => ({ ...row, model })) : [],
+      ),
+    });
+    for (const diff of overlay)
+      this.send(session.socket, {
+        ...diff,
+        type: "diff",
+        preconfirmed: true,
+        epoch: this.streamEpoch(input.gameId, input.actor),
+        seq: state.seq,
+      });
   }
 
   public publishDiff(
@@ -116,8 +155,9 @@ export class GameStreamHub {
   public publishTransaction(
     gameId: string,
     input: Omit<Extract<HeraldStreamMessage, { type: "tx" }>, "epoch" | "seq" | "type">,
+    actors: readonly string[],
   ): void {
-    this.publish(gameId, { ...input, type: "tx" });
+    this.publish(gameId, { ...input, type: "tx" }, actors);
   }
 
   /** A confirmed head, or with `preconfirmed` the sequencer clock read off the pre-confirmed block. */
@@ -125,30 +165,53 @@ export class GameStreamHub {
     this.publish(gameId, { block, preconfirmed, timestamp, type: "head" });
   }
 
-  private publish(gameId: string, body: PublishBody<PublishedMessage>): void {
-    const state = this.games.get(gameId);
-    if (!state) return;
-    const message = { ...body, epoch: this.epoch, seq: ++state.seq } as HeraldStreamMessage;
-    // Serialized once: every subscriber receives the same string, and resume replays it from the ring.
-    const serialized = JSON.stringify(message);
-    state.ring.push({ recordedAt: Date.now(), seq: message.seq, serialized });
-    this.pruneRing(state);
-    for (const subscriber of state.subscribers) {
-      if (subscriber.active) subscriber.socket.send(serialized);
+  private publish(gameId: string, body: PublishedBody, actors?: readonly string[]): void {
+    for (const state of this.games.values()) {
+      if (state.gameId !== gameId) continue;
+      if (actors && (state.actor === undefined || !actors.some((actor) => BigInt(actor) === BigInt(state.actor!))))
+        continue;
+      for (const projected of state.project ? state.project(body) : [body]) {
+        const message = { ...projected, epoch: this.streamEpoch(state.gameId, state.actor), seq: ++state.seq };
+        const serialized = JSON.stringify(message);
+        state.ring.push({ recordedAt: Date.now(), seq: message.seq, serialized });
+        this.pruneRing(state);
+        for (const subscriber of state.subscribers) if (subscriber.active) subscriber.socket.send(serialized);
+      }
     }
   }
 
-  private game(gameId: string): GameStreamState {
-    let state = this.games.get(gameId);
+  private streamEpoch(gameId: string, actor?: string): string {
+    return `${this.epoch}:${gameId}:${actor === undefined ? "" : BigInt(actor).toString()}`;
+  }
+
+  private streamKey(gameId: string, actor?: string): string {
+    return `${gameId}:${actor === undefined ? "" : BigInt(actor).toString()}`;
+  }
+
+  private game(input: AttachInput): GameStreamState {
+    const key = this.streamKey(input.gameId, input.actor);
+    let state = this.games.get(key);
     if (!state) {
-      state = { ring: [], seq: 0, subscribers: new Set() };
-      this.games.set(gameId, state);
+      state = {
+        actor: input.actor,
+        gameId: input.gameId,
+        project: input.project,
+        ring: [],
+        seq: 0,
+        subscribers: new Set(),
+      };
+      this.games.set(key, state);
     }
     return state;
   }
 
   private canResume(state: GameStreamState, request: ResumeRequest): boolean {
-    if (request.epoch !== this.epoch || !Number.isSafeInteger(request.seq) || request.seq < 0) return false;
+    if (
+      request.epoch !== this.streamEpoch(state.gameId, state.actor) ||
+      !Number.isSafeInteger(request.seq) ||
+      request.seq < 0
+    )
+      return false;
     if (request.seq > state.seq) return false;
     const oldest = state.ring[0]?.seq ?? state.seq + 1;
     return request.seq >= oldest - 1;
@@ -158,18 +221,22 @@ export class GameStreamHub {
     if (!session.snapshot) throw new Error("Stream session has no snapshot boundary");
     for (const model of session.snapshot.models) {
       this.send(session.socket, {
-        epoch: this.epoch,
+        epoch: this.streamEpoch(session.gameId, session.actor),
         model: model.model,
         rows: model.rows,
         seq: session.boundary,
         type: "snapshot",
       });
     }
-    this.send(session.socket, { epoch: this.epoch, seq: session.boundary, type: "snapshot_end" });
+    this.send(session.socket, {
+      epoch: this.streamEpoch(session.gameId, session.actor),
+      seq: session.boundary,
+      type: "snapshot_end",
+    });
     for (const overlay of session.overlay ?? []) {
       this.send(session.socket, {
         ...overlay,
-        epoch: this.epoch,
+        epoch: this.streamEpoch(session.gameId, session.actor),
         preconfirmed: true,
         seq: session.boundary,
         type: "diff",

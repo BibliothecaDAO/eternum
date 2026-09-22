@@ -157,7 +157,7 @@ const main = async (): Promise<void> => {
     decodedModelCount: registry.bySelector.size,
     fold: {
       modelRows: (model) => live.modelRows(model),
-      snapshot: (gameId, _confirmedBlock, models) => live.snapshot(gameId, models),
+      snapshot: (gameId, _confirmedBlock, models, actor) => live.snapshot(gameId, models, actor),
     },
     history: historyStore,
     metrics: loaded.metrics,
@@ -189,7 +189,15 @@ const main = async (): Promise<void> => {
       message: (socket, message) => {
         try {
           if (!socket.data.session) throw new Error("Stream session is not attached");
-          live.resume(socket.data.session, parseResume(message));
+          const request = JSON.parse(String(message)) as { type?: string; actor?: string | null };
+          if (request.type === "select_actor") {
+            if (
+              request.actor !== null &&
+              (typeof request.actor !== "string" || !/^0x[0-9a-f]{1,64}$/i.test(request.actor))
+            )
+              throw new Error("Invalid gameplay account");
+            live.selectActor(socket.data.session, request.actor ?? undefined);
+          } else live.resume(socket.data.session, parseResume(message));
         } catch (error) {
           const reason = error instanceof Error ? error.message : String(error);
           socket.close(1008, reason);

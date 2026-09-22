@@ -1,5 +1,5 @@
 import type { NativeExecutionOutcome } from "@bibliothecadao/types";
-import type { GameSyncModelDefinition } from "./model-manifest";
+import { isScopedGameSyncModel, type GameSyncModelDefinition } from "./model-manifest";
 import type {
   GameSyncSnapshotPage,
   GameSyncEntity,
@@ -37,6 +37,7 @@ type HeraldMessage =
     })
   | (HeraldMessageBase & { type: "snapshot"; model: string; rows: HeraldRow[] })
   | (HeraldMessageBase & { type: "snapshot_end" })
+  | (HeraldMessageBase & { type: "scope"; actor?: string; expedition: boolean; set: HeraldSet[] })
   | (HeraldMessageBase & {
       type: "diff";
       block: number | null;
@@ -165,6 +166,8 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
   private socket?: HeraldSocket;
   private reconnectTimer?: ReturnType<typeof setTimeout>;
   private helloTimer?: ReturnType<typeof setTimeout>;
+  private pendingActor?: string | null;
+  private resumed = false;
   private epoch = "";
   private seq = 0;
   private attachedThroughBlock = Number.MAX_SAFE_INTEGER;
@@ -181,14 +184,21 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
     this.socketFactory = options.socketFactory ?? ((url) => new WebSocket(url) as unknown as HeraldSocket);
   }
 
-  public selectActor(actor: string): void {
+  public selectActor(actor: string | undefined): void {
     const url = new URL(this.options.url);
-    const address = `0x${BigInt(actor).toString(16)}`;
+    const address = actor === undefined ? null : `0x${BigInt(actor).toString(16)}`;
     if (url.searchParams.get("actor") === address) return;
-    url.searchParams.set("actor", address);
+    if (address === null) url.searchParams.delete("actor");
+    else url.searchParams.set("actor", address);
     this.options.url = url.toString();
-    this.forceFreshSnapshot = true;
-    if (this.socket) this.reconnectSocket(this.socket);
+    this.pendingActor = address;
+    this.sendActorSelection();
+  }
+
+  private sendActorSelection(): void {
+    if (!this.resumed || !this.socket || this.pendingActor === undefined) return;
+    this.socket.send(JSON.stringify({ type: "select_actor", actor: this.pendingActor }));
+    this.pendingActor = undefined;
   }
 
   public async subscribe(handlers: GameSyncSubscriptionHandlers): Promise<GameSyncWriter> {
@@ -246,6 +256,7 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
 
   private connect(): void {
     if (this.stopped) return;
+    this.resumed = false;
     const socket = this.socketFactory(this.options.url);
     this.socket = socket;
     this.helloTimer = setTimeout(() => {
@@ -289,6 +300,10 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
         this.acceptHello(message);
         return;
       }
+      if (message.type === "scope") {
+        this.acceptScope(message);
+        return;
+      }
       if (message.type === "snapshot") {
         this.acceptSnapshotChunk(message, serialized.length);
         return;
@@ -322,7 +337,20 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
         seq: this.forceFreshSnapshot ? 0 : this.seq,
       }),
     );
+    this.resumed = true;
+    this.sendActorSelection();
     this.ready.resolve();
+  }
+
+  private acceptScope(message: Extract<HeraldMessage, { type: "scope" }>): void {
+    const next = new Set(message.set.map((row) => rowIdentity(row.model, row.key)));
+    const del = [...this.currentRows.values()].filter(
+      (row) => isScopedGameSyncModel(row.model, message.expedition) && !next.has(rowIdentity(row.model, row.key)),
+    );
+    this.acceptDiff({ ...message, type: "diff", block: null, preconfirmed: false, del });
+    this.epoch = message.epoch;
+    this.seq = message.seq;
+    this.acceptingSnapshotOverlay = true;
   }
 
   private acceptSnapshotChunk(message: Extract<HeraldMessage, { type: "snapshot" }>, bytesReceived: number): void {
@@ -359,7 +387,7 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
   }
 
   private acceptSequencedMessage(
-    message: Exclude<HeraldMessage, { type: "hello" | "snapshot" | "snapshot_end" }>,
+    message: Exclude<HeraldMessage, { type: "hello" | "snapshot" | "snapshot_end" | "scope" }>,
   ): void {
     if (this.acceptSnapshotOverlay(message)) return;
     this.acceptingSnapshotOverlay = false;
@@ -376,7 +404,7 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
   }
 
   private acceptSnapshotOverlay(
-    message: Exclude<HeraldMessage, { type: "hello" | "snapshot" | "snapshot_end" }>,
+    message: Exclude<HeraldMessage, { type: "hello" | "snapshot" | "snapshot_end" | "scope" }>,
   ): boolean {
     if (!this.acceptingSnapshotOverlay || message.type !== "diff") return false;
     if (!message.preconfirmed || message.epoch !== this.epoch || message.seq !== this.seq) return false;

@@ -92,25 +92,50 @@ afterEach(() => {
 });
 
 describe("HeraldGameSyncTransport", () => {
-  it("requests a fresh actor snapshot once and keeps that actor on reconnect", async () => {
+  it("changes actor rows in place and resumes that actor after reconnect", async () => {
     vi.useFakeTimers();
     const harness = streamHarness();
     const subscribed = harness.transport.subscribe(harness.handlers);
-    harness.sockets[0].receive(hello("epoch-a", 0));
+    const socket = harness.sockets[0];
+    socket.receive(hello("epoch-a", 0));
     const writer = await subscribed;
-    snapshot("epoch-a", 0, "0x1", 1).forEach((message) => harness.sockets[0].receive(message));
+    snapshot("epoch-a", 0, "0x1", 1).forEach((message) => socket.receive(message));
     await harness.transport.fetchSnapshotPage();
     harness.transport.selectActor("0x000111");
-    expect(harness.sockets[0].closed).toBe(true);
+    expect(socket.sent.at(-1)).toEqual({ type: "select_actor", actor: "0x111" });
+    expect(socket.closed).toBe(false);
+    socket.receive({
+      type: "scope",
+      epoch: "epoch-a:273",
+      seq: 5,
+      actor: "0x111",
+      expedition: false,
+      set: [{ model: "ActionNonce", key: "0x2", value: { actor: "0x111", next_nonce: "4" } }],
+    });
+    expect(harness.entities.at(-1)?.models).toEqual({ ActionNonce: { actor: "0x111", next_nonce: "4" } });
+    expect(
+      harness.entities.some(
+        (entity) => Object.keys(entity.models.ExplorerTroops ?? {}).length === 0 && "ExplorerTroops" in entity.models,
+      ),
+    ).toBe(false);
+    harness.transport.selectActor("0x222");
+    socket.receive({
+      type: "scope",
+      epoch: "epoch-a:546",
+      seq: 1,
+      actor: "0x222",
+      expedition: false,
+      set: [{ model: "ActionNonce", key: "0x3", value: { actor: "0x222", next_nonce: "0" } }],
+    });
+    expect(harness.entities.slice(-2)).toEqual([
+      { hashed_keys: "0x3", models: { ActionNonce: { actor: "0x222", next_nonce: "0" } } },
+      { hashed_keys: "0x2", models: { ActionNonce: {} } },
+    ]);
+    socket.close();
     await vi.advanceTimersByTimeAsync(200);
-    expect(new URL(harness.urls[1]).searchParams.get("actor")).toBe("0x111");
-    harness.sockets[1].receive(hello("epoch-a", 5));
-    expect(harness.sockets[1].sent).toContainEqual({ type: "resume", epoch: "", seq: 0 });
-    harness.transport.selectActor("0x111");
-    expect(harness.sockets[1].closed).toBe(false);
-    harness.sockets[1].close();
-    await vi.advanceTimersByTimeAsync(200);
-    expect(harness.urls[2]).toBe(harness.urls[1]);
+    expect(new URL(harness.urls[1]).searchParams.get("actor")).toBe("0x222");
+    harness.sockets[1].receive(hello("epoch-a:546", 2));
+    expect(harness.sockets[1].sent.at(-1)).toEqual({ type: "resume", epoch: "epoch-a:546", seq: 1 });
     writer.cancel();
   });
   it("preserves each story event's provisional or confirmed block metadata", async () => {

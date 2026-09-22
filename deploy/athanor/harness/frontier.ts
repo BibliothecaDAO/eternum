@@ -156,6 +156,7 @@ export interface FrontierEvidence {
   >;
 }
 interface RunFrontierOptions {
+  onReady?: () => Promise<void>;
   client: GameClient;
   game: HarnessGame;
   provider: HarnessProvider;
@@ -169,11 +170,11 @@ export async function runFrontierWorkload(options: RunFrontierOptions): Promise<
   const { client, game, accounts, provider } = options;
   const rules = client.setup.store.require("SliceRules", { game_id: game.gameId });
   if (rules.epoch_seconds !== EPOCH_SECONDS) throw new Error("Frontier design run requires its accelerated season");
-  if (accounts.length < 2) throw new Error("Frontier design run requires both player profiles");
   await game.waitUntilPlaying();
   const players: Player[] = [];
   for (const identity of accounts) players.push(await settleFrontierPlayer(options, identity));
   for (const player of players) observeDay(client, game, player);
+  await options.onReady?.();
   const startedAt = new Date().toISOString();
   const deadline = Date.now() + options.minutes * 60000;
   const actions: TrackedTransaction[] = [];

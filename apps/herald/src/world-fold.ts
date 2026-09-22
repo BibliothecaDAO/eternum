@@ -1,3 +1,9 @@
+import {
+  gameSyncRegion,
+  rowInGameSyncScope,
+  syncScalar,
+  type GameSyncScope,
+} from "@bibliothecadao/eternum/game-sync-models";
 import { nativeRuleConstants } from "../../../contracts/l3/world-native/schema/client.gen";
 import { hash } from "starknet";
 import { normalizeFelt, toJsonValue, type ModelRegistry } from "./model-registry";
@@ -234,6 +240,92 @@ export class WorldFold {
     return snapshot;
   }
 
+  public gameRows(model: string, gameId: string): FoldRow[] {
+    return [...this.materializedGameRows(model, BigInt(gameId)).entries()].map(([key, row]) => ({
+      key,
+      value: asJsonRecord({ ...row.key, ...row.value }),
+    }));
+  }
+
+  public subscriptionScope(gameId: string, actor: string | undefined, timestamp: number): GameSyncScope {
+    if (actor !== undefined && (BigInt(actor) <= 0n || BigInt(actor) >= (1n << 251n) - 256n))
+      throw new Error("Invalid gameplay account");
+    const scope: GameSyncScope = { actor };
+    const rules = this.gameRows("SliceRules", gameId)[0]?.value;
+    const game = this.gameRows("GameRegistry", gameId)[0]?.value;
+    if (!rules && game) throw new Error("Game subscription requires its rules");
+    if (!rules || Number(rules.epoch_seconds) === 0) return scope;
+    const settlement = this.gameRows("SettlementRules", gameId)[0]?.value;
+    if (!game || !settlement || Number(settlement.spacing) <= 0)
+      throw new Error("Expedition scope requires game and settlement rules");
+    const spacing = Number(settlement.spacing);
+    const epoch =
+      Math.floor(timestamp / Number(rules.epoch_seconds)) -
+      Math.floor(Number(game.start_main_at) / Number(rules.epoch_seconds));
+    const owners = new Set<string>(actor === undefined ? [] : [syncScalar(actor)]);
+    for (const { value } of this.gameRows("PlayerEntry", gameId)) {
+      if (actor !== undefined && syncScalar(value.player) === syncScalar(actor)) owners.add(syncScalar(value.owner));
+    }
+    const structures = this.gameRows("Structure", gameId);
+    const homes = structures.filter(
+      ({ value }) => owners.has(syncScalar(value.owner)) && Number((value.base as DecodedRecord).category) === 1,
+    );
+    const realms = new Set(homes.map(({ value }) => syncScalar(value.entity_id)));
+    const realmTraits = new Set(homes.map(({ value }) => syncScalar((value.metadata as DecodedRecord).realm_id)));
+    const regions = new Set<string>();
+    const armies = this.gameRows("ExplorerTroops", gameId).filter(({ value }) => {
+      const coord = value.coord as DecodedRecord;
+      return (
+        realms.has(syncScalar(value.owner)) &&
+        BigInt((value.troops as DecodedRecord).count as string) > 0n &&
+        coord.alt !== true &&
+        Math.floor(Number(coord.y) / spacing / 4) === epoch
+      );
+    });
+    // With no current army, morning muster starts on the surface.
+    if (epoch >= 0 && armies.length === 0)
+      for (const realm of realmTraits) regions.add(`${Number(realm) - 1}:${epoch * 4}`);
+    for (const { value } of armies) {
+      const region = gameSyncRegion(value.coord as DecodedRecord, spacing);
+      if (region !== undefined) regions.add(region);
+    }
+    const entities = new Set([...realms, ...armies.map(({ value }) => syncScalar(value.explorer_id))]);
+    for (const { value } of structures) {
+      const base = value.base as DecodedRecord;
+      const region = gameSyncRegion({ alt: base.alt, x: base.coord_x, y: base.coord_y }, spacing);
+      if (Number(base.category) !== 1 && region !== undefined && regions.has(region))
+        entities.add(syncScalar(value.entity_id));
+    }
+    const productionSources = new Set(
+      this.gameRows("ProductionReceiver", gameId)
+        .filter(({ value }) => realms.has(syncScalar(value.home)))
+        .map(({ value }) => syncScalar(value.entity_id)),
+    );
+    scope.expedition = { epoch, spacing, owners, realms, realmTraits, regions, entities, productionSources };
+    return scope;
+  }
+
+  public subscriptionSnapshot(
+    gameId: string,
+    block: number,
+    scope: GameSyncScope,
+    models?: readonly string[],
+  ): GameSnapshot {
+    const snapshot = this.snapshot(
+      gameId,
+      block,
+      models,
+      models && !models.includes("ActionNonce") ? undefined : scope.actor,
+    );
+    return {
+      ...snapshot,
+      models: snapshot.models.map(({ model, rows }) => ({
+        model,
+        rows: rows.filter(({ value }) => rowInGameSyncScope(model, value, scope)),
+      })),
+    };
+  }
+
   public finalizedGameIds(): readonly string[] {
     const rules = new Map(
       this.modelRows("SliceRules").map(({ value }) => [BigInt(value.game_id as string).toString(), value]),
@@ -302,6 +394,7 @@ export class WorldFold {
   }
 
   private eventGameId(event: DecodedWorldEvent, existing?: StoredModelRow): string | undefined {
+    if (event.kind === "event" && event.value.game_id !== undefined) return scalarGameId(event.value, event.model.name);
     if (event.model.scope === "deployment") return undefined;
     if (event.kind === "set" || event.kind === "event") return scalarGameId(event.key, event.model.name);
     if (!existing) {

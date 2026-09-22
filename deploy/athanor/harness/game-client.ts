@@ -26,6 +26,7 @@ export interface HarnessGameplayContracts {
 }
 
 interface ConnectHarnessGameClientOptions {
+  actor: string;
   gameId: number;
   admissionUrl: string;
   chainId: string;
@@ -41,12 +42,13 @@ const WORLD_ID = "blitz";
 const GAME_LISTING_TIMEOUT_MS = 120_000;
 const GAME_LISTING_POLL_MS = 2_000;
 
-/** One client per run: the game lives in the native store once, and every bot reads and acts through it. */
+/** Each player reads and acts through its own Herald subscription and native store. */
 export async function connectHarnessGameClient(options: ConnectHarnessGameClientOptions): Promise<GameClient> {
   const world = buildHarnessWorld(options);
   const presetId = await waitForHeraldToListGame(world, options.gameId);
   const clock = createLoggingObserver(options.gameId);
   const client = await createGameClient({
+    actor: options.actor,
     world,
     gameId: options.gameId,
     presetId,

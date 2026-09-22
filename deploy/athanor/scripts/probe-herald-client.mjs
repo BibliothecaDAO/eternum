@@ -8,16 +8,21 @@ const ws = new WebSocket(url);
 ws.onopen = () => log({ ev: "open" });
 ws.onmessage = (e) => {
   const m = JSON.parse(e.data);
-  if (m.type === "hello") { log({ ev: "hello", epoch: m.epoch, seq: m.seq, confirmed: m.confirmed_block, pre: m.preconfirmed_block });
-    ws.send(JSON.stringify({ type: "resume", epoch: last.epoch, seq: last.seq })); return; }
+  log({ ...m, ev: m.type });
+  if (m.type === "hello") {
+    ws.send(JSON.stringify({ type: "resume", epoch: last.epoch, seq: last.seq }));
+    return;
+  }
   last = { epoch: m.epoch, seq: m.seq };
-  const summary = { ev: m.type, seq: m.seq };
-  if (m.type === "snapshot") { summary.model = m.model; summary.rows = m.rows.length; }
-  if (m.type === "diff") { summary.block = m.block; summary.pre = m.preconfirmed; summary.set = m.set.map((s) => s.model + ":" + s.key.slice(0, 10)); summary.del = m.del.length; }
-  if (m.type === "tx") { summary.hash = m.hash.slice(0, 14); summary.status = m.status; summary.reason = m.revert_reason; }
-  if (m.type === "head") { summary.block = m.block; }
-  if (m.type === "overlay_reset") { summary.confirmed = m.confirmed_block; }
-  log(summary);
 };
-ws.onclose = (e) => { log({ ev: "close", code: e.code, reason: e.reason, last }); process.exit(0); };
-setTimeout(() => { log({ ev: "timeout", last }); ws.close(); }, Number(secondsArg ?? 30) * 1000);
+ws.onclose = (e) => {
+  log({ ev: "close", code: e.code, reason: e.reason, last });
+  process.exit(0);
+};
+setTimeout(
+  () => {
+    log({ ev: "timeout", last });
+    ws.close();
+  },
+  Number(secondsArg ?? 30) * 1000,
+);

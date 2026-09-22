@@ -1,5 +1,5 @@
 import { nativeExecutionOutcomes } from "@bibliothecadao/provider";
-import { transactionGameIds } from "./transactions";
+import { transactionScopes } from "./transactions";
 import type { MadaraRpc } from "../madara-rpc";
 import { normalizeFelt } from "../model-registry";
 import type {
@@ -57,8 +57,8 @@ export class NativeIngestion {
     );
   }
 
-  transactionGameIds(transaction: Pick<RpcTransaction, "calldata">): string[] {
-    return transactionGameIds(this.decoder.manifest, transaction.calldata);
+  transactionScopes(transaction: Pick<RpcTransaction, "calldata">) {
+    return transactionScopes(this.decoder.manifest, transaction.calldata);
   }
 
   applyReceipt(fold: WorldFold, receipt: RpcReceipt, blockNumber: number | null, transactionIndex: number) {

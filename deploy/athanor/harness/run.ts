@@ -129,6 +129,8 @@ export function parseHarnessArgs(args: string[]): HarnessCliOptions {
 
 async function main(): Promise<void> {
   const options = parseHarnessArgs(process.argv.slice(2));
+  if (isMainThread && options.workload === "frontier" && options.bots < 2)
+    throw new Error("Frontier design run requires both player profiles");
   const manifestPath = requiredEnvironmentValue("NATIVE_WORLD_MANIFEST", "native harness");
   const admissionUrl = requiredEnvironmentValue("ADMISSION_URL", "native harness");
   const gameplayContractsPath = requiredEnvironmentValue("GAMEPLAY_CONTRACTS_PATH", "native harness");
@@ -148,10 +150,10 @@ async function main(): Promise<void> {
   const prepared = options.preparedGamePath
     ? await readJson<PreparedGame>(path.resolve(options.preparedGamePath))
     : await prepareGames(options, gameplayContracts, provider);
-  if (Array.isArray(prepared)) {
+  if (Array.isArray(prepared) || prepared.accounts.length > 1) {
     provider.dispose();
     requests?.dispose();
-    await runRosterGroups(options, prepared);
+    await runRosterGroups(options, Array.isArray(prepared) ? prepared : [prepared]);
     return;
   }
   const { game } = prepared;
@@ -165,6 +167,7 @@ async function main(): Promise<void> {
   }));
   const signingKeys = new Map(accounts.map(({ address, privateKey }) => [BigInt(address), privateKey]));
   const client = await connectHarnessGameClient({
+    actor: accounts[0].address,
     admissionUrl,
     chainId,
     signIntent: async (actor, digest) => {
@@ -205,6 +208,7 @@ async function main(): Promise<void> {
             provider,
             accounts,
             minutes: options.minutes,
+            onReady: workerData?.harness ? waitForWorkloadStart : undefined,
             setupTransactions,
           })
         : await runWorkload({
@@ -425,6 +429,7 @@ interface GameWorkerReport {
 }
 
 async function runRosterGroups(options: HarnessCliOptions, games: PreparedGame[]): Promise<void> {
+  const players = games.flatMap(({ game, accounts }) => accounts.map((account) => ({ game, accounts: [account] })));
   const directory = path.join(HARNESS_OUTPUT_DIRECTORY, `rosters-${Date.now()}`);
   await mkdir(directory, { recursive: true, mode: 0o700 });
   const workers: Worker[] = [];
@@ -432,13 +437,13 @@ async function runRosterGroups(options: HarnessCliOptions, games: PreparedGame[]
   let failure: unknown;
   try {
     const paths = await Promise.all(
-      games.map(async (game) => {
-        const file = path.join(directory, `${game.game.gameId}.json`);
+      players.map(async (game) => {
+        const file = path.join(directory, `${game.game.gameId}-${game.accounts[0].botId}.json`);
         await writeFile(file, JSON.stringify(game), { mode: 0o600 });
         return file;
       }),
     );
-    for (const [index, game] of games.entries()) workers.push(startGameWorker(options, game, paths[index]));
+    for (const [index, game] of players.entries()) workers.push(startGameWorker(options, game, paths[index]));
     await waitForGameWorkers(workers, reports);
   } catch (error) {
     failure = error;
@@ -447,7 +452,7 @@ async function runRosterGroups(options: HarnessCliOptions, games: PreparedGame[]
   }
   const passed =
     !failure &&
-    reports.length === games.length &&
+    reports.length === players.length &&
     reports.every((report) => report.passed && report.pid === process.pid);
   const summary = {
     passed,
@@ -465,8 +470,18 @@ async function runRosterGroups(options: HarnessCliOptions, games: PreparedGame[]
 function startGameWorker(options: HarnessCliOptions, game: PreparedGame, file: string): Worker {
   return new Worker(import.meta.filename, {
     workerData: { harness: true },
+    env: {
+      ...process.env,
+      HARNESS_OUTPUT_DIRECTORY: path.join(
+        path.dirname(file),
+        "players",
+        `${game.game.gameId}-${game.accounts[0].botId}`,
+      ),
+    },
     argv: [
       ...(options.functional ? ["--functional"] : []),
+      "--game-type",
+      options.gameType,
       "--bots",
       String(game.accounts.length),
       "--prepared-game",
@@ -560,7 +575,7 @@ function printUsage(): void {
 Usage: bun deploy/athanor/harness/run.ts [options]
 
   --bots <count>                 default: 96; Blitz splits into balanced games of up to 24
-  --games <count>                explicit concurrent games in one process, one client worker per game
+  --games <count>                explicit concurrent games in one process, one client worker per player
   --accounts-per-game <count>    with --games; default: 24, maximum: 24
   --game-type <blitz|eternum|frontier>     default: blitz
   --minutes <minutes>            default: 10

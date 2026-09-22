@@ -2,7 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 import { LiveWorld } from "./live-world";
 import type { HistoryStore } from "./history-store";
 import type { MadaraRpc } from "./madara-rpc";
-import { receipt, rowEvent, setup } from "./native/fixtures";
+import { raw, receipt, rowEvent, rulesEvent, setup } from "./native/fixtures";
+import type { HeraldStreamMessage } from "./stream-protocol";
 import type { RpcBlockWithReceipts } from "./types";
 
 function fixture(historyStore?: HistoryStore) {
@@ -108,5 +109,189 @@ describe("native live publication", () => {
     await live.acceptSubscribedHead({ block_number: 10, timestamp: 100 });
     const diffs = messages.filter((message) => message.type === "diff");
     expect(diffs.some((message) => (message.del as unknown[]).length === 1)).toBe(true);
+  });
+
+  it("keeps two expedition scopes isolated through depth changes, overlay reset, reconnect and rollover", async () => {
+    const { native, decoder, fold } = setup();
+    const rules = decoder.decode(raw(rulesEvent()));
+    if (rules.kind !== "set") throw new Error("Expected rules row");
+    rules.value.epoch_seconds = 120;
+    fold.apply(rules);
+    const homes = [1, 2].map((id) =>
+      rowEvent(
+        "Structure",
+        ["1", String(id)],
+        [
+          String(id + 9),
+          "0",
+          "0",
+          "2",
+          "120",
+          "1",
+          "0",
+          "0",
+          "0",
+          "1",
+          "0",
+          "0",
+          "0",
+          String(id),
+          "0",
+          "0",
+          "0",
+          "0",
+          "1",
+          "0",
+        ],
+      ),
+    );
+    const armies = [1, 2].map((id) =>
+      rowEvent(
+        "ExplorerTroops",
+        ["1", String(id * 10)],
+        [
+          String(id),
+          "0",
+          "0",
+          "1000",
+          "120",
+          "1",
+          "0",
+          "0",
+          "0",
+          "0",
+          "0",
+          "0",
+          "0",
+          "0",
+          "0",
+          "0",
+          String(id * 100 - 50),
+          "50",
+        ],
+      ),
+    );
+    native.applyReceipt(
+      fold,
+      receipt([
+        rowEvent("GameRegistry", ["1"], ["7", "1", "10", "0", "1", "0", "120", "120", "86400", "0", "7"]),
+        rowEvent("SettlementRules", ["1"], ["0", "0", "0", "100"]),
+        ...homes,
+        ...armies,
+        rowEvent("ResourceBalance", ["1", "1", "28"], ["100"]),
+        rowEvent("ResourceBalance", ["1", "2", "28"], ["200"]),
+        rowEvent("ProductionReceiver", ["1", "99", "29"], ["1", "240"]),
+        rowEvent("ResourceProduction", ["1", "99", "29"], ["1", "10", "100", "120"]),
+        rowEvent("TileOpt", ["1", "0", "50", "50"], ["1"]),
+        rowEvent("TileOpt", ["1", "0", "150", "50"], ["1"]),
+        rowEvent("TileOpt", ["1", "0", "50", "150"], ["1"]),
+      ]),
+      9,
+      0,
+    );
+    const confirmed: RpcBlockWithReceipts = { block_number: 10, timestamp: 120, transactions: [] };
+    const pending: RpcBlockWithReceipts = { block_number: 11, timestamp: 120, transactions: [] };
+    const live = new LiveWorld({
+      native,
+      registry: decoder.registry,
+      chain: "madara",
+      checkpointEveryBlocks: 100,
+      checkpointStore: { save: async () => undefined },
+      confirmedBlock: 9,
+      confirmedFold: fold,
+      rpc: {
+        getPreconfirmedHeader: async () => pending,
+        getBlockWithReceipts: async (block: unknown) => (block === "pre_confirmed" ? pending : confirmed),
+      } as unknown as MadaraRpc,
+    });
+    await live.acceptSubscribedHead({ block_number: 10, timestamp: 120 });
+    const messages: HeraldStreamMessage[][] = [[], []];
+    const sessions = ["0xa", "0xb"].map((actor, index) => {
+      const session = live.attach("1", { send: (text) => messages[index].push(JSON.parse(text)) }, actor);
+      live.resume(session, { type: "resume", epoch: "", seq: 0 });
+      return session;
+    });
+    for (const [index, stream] of messages.entries()) {
+      const snapshots = stream.filter((message) => message.type === "snapshot");
+      expect(
+        snapshots.find((message) => message.model === "Structure")?.rows.map((row) => Number(row.value.entity_id)),
+      ).toEqual([index + 1]);
+      expect(
+        snapshots
+          .find((message) => message.model === "ExplorerTroops")
+          ?.rows.map((row) => Number(row.value.explorer_id)),
+      ).toEqual([(index + 1) * 10]);
+      expect(
+        snapshots.find((message) => message.model === "TileOpt")?.rows.map((row) => Number(row.value.col)),
+      ).toEqual([index * 100 + 50]);
+    }
+    const surfaceKey = fold
+      .gameRows("TileOpt", "1")
+      .find((row) => Number(row.value.col) === 50 && Number(row.value.row) === 50)!.key;
+    const depthKey = fold.gameRows("TileOpt", "1").find((row) => Number(row.value.row) === 150)!.key;
+    messages.forEach((stream) => {
+      stream.length = 0;
+    });
+    const descended = { ...armies[0], data: [...armies[0].data] };
+    descended.data[descended.data.length - 1] = "150";
+    live.acceptReceipt({
+      ...receipt([descended, rowEvent("ResourceBalance", ["1", "1", "28"], ["80"])], "0x71"),
+      finality_status: "PRE_CONFIRMED",
+    });
+    const depthDiffs = messages[0].filter((message) => message.type === "diff");
+    expect(depthDiffs).toHaveLength(1);
+    expect(depthDiffs[0].set).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ model: "TileOpt", key: depthKey }),
+        expect.objectContaining({ model: "ResourceBalance", value: expect.objectContaining({ balance: "0x50" }) }),
+      ]),
+    );
+    expect(depthDiffs[0].del).toContainEqual({ model: "TileOpt", key: surfaceKey });
+    expect(messages[1]).toEqual([]);
+
+    confirmed.block_number = 11;
+    pending.block_number = 12;
+    messages[0].length = 0;
+    await live.acceptSubscribedHead({ block_number: 11, timestamp: 120 });
+    expect(messages[0].filter((message) => message.type === "diff").flatMap((message) => message.del)).toContainEqual({
+      model: "TileOpt",
+      key: depthKey,
+    });
+    expect(messages[0].filter((message) => message.type === "diff").flatMap((message) => message.set)).toContainEqual(
+      expect.objectContaining({ model: "TileOpt", key: surfaceKey }),
+    );
+
+    const boundary = messages[0].at(-1)!;
+    live.detach(sessions[0]);
+    pending.timestamp = 240;
+    await live.publishChainClock();
+    const reconnected: HeraldStreamMessage[] = [];
+    const resumed = live.attach("1", { send: (text) => reconnected.push(JSON.parse(text)) }, "0xa");
+    live.resume(resumed, { type: "resume", epoch: boundary.epoch, seq: boundary.seq });
+    expect(reconnected.some((message) => message.type === "snapshot")).toBe(false);
+    const removed = reconnected.filter((message) => message.type === "diff").flatMap((message) => message.del);
+    expect(removed).toContainEqual({ model: "TileOpt", key: surfaceKey });
+    expect(removed.some((row) => row.model === "ExplorerTroops")).toBe(true);
+    expect(removed.some((row) => row.model === "Structure" || row.model === "ResourceBalance")).toBe(false);
+    const today = live.snapshot("1", undefined, "0xa");
+    expect(today.models.find((model) => model.model === "ExplorerTroops")?.rows).toEqual([]);
+    expect(today.models.find((model) => model.model === "Structure")?.rows).toHaveLength(1);
+    expect(
+      today.models.find((model) => model.model === "ProductionReceiver")?.rows.map((row) => Number(row.value.home)),
+    ).toEqual([1]);
+    expect(
+      today.models
+        .find((model) => model.model === "ResourceProduction")
+        ?.rows.map((row) => Number(row.value.entity_id)),
+    ).toEqual([99]);
+
+    reconnected.length = 0;
+    live.selectActor(resumed, "0xb");
+    expect(reconnected.some((message) => message.type === "snapshot")).toBe(false);
+    const selection = reconnected.find((message) => message.type === "scope")!;
+    expect(selection.set.filter((row) => row.model === "Structure").map((row) => Number(row.value.entity_id))).toEqual([
+      2,
+    ]);
+    expect(selection.set.some((row) => row.model === "SliceRules")).toBe(false);
   });
 });

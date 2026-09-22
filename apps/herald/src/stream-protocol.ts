@@ -16,6 +16,7 @@ export type HeraldStreamMessage =
     })
   | (StreamMessageBase & { type: "snapshot"; model: string; rows: FoldRow[] })
   | (StreamMessageBase & { type: "snapshot_end" })
+  | (StreamMessageBase & { type: "scope"; actor?: string; expedition: boolean; set: FoldSet[] })
   | (StreamMessageBase & {
       type: "diff";
       block: number | null;
