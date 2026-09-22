@@ -198,6 +198,12 @@ describe("native live publication", () => {
         ...armies,
         rowEvent("ResourceBalance", ["1", "1", "28"], ["100"]),
         rowEvent("ResourceBalance", ["1", "2", "28"], ["200"]),
+        ...[1, 2, 10, 20].flatMap((entityId) => [
+          rowEvent("ResourceWeight", ["1", String(entityId)], ["1000", "100"]),
+          rowEvent("EntityName", ["1", String(entityId)], [String(entityId)]),
+        ]),
+        rowEvent("ProductionReceiver", ["1", "100", "29"], ["2", "240"]),
+        rowEvent("ResourceProduction", ["1", "100", "29"], ["1", "10", "100", "120"]),
         rowEvent("ProductionReceiver", ["1", "99", "29"], ["1", "240"]),
         rowEvent("ResourceProduction", ["1", "99", "29"], ["1", "10", "100", "120"]),
         rowEvent("TileOpt", ["1", "0", "50", "50"], ["1"]),
@@ -233,6 +239,18 @@ describe("native live publication", () => {
     });
     for (const [index, stream] of messages.entries()) {
       const snapshots = stream.filter((message) => message.type === "snapshot");
+      const foreignEntities = new Set(index === 0 ? [2, 20, 100] : [1, 10, 99]);
+      for (const snapshot of snapshots) {
+        const codec = decoder.registry.persistent.find(({ definition }) => definition.name === snapshot.model)!;
+        const entityKeys = codec.manifest.members.filter(
+          ({ key, name }) => key && ["entity_id", "explorer_id", "structure_id", "mine_id", "wonder_id"].includes(name),
+        );
+        for (const row of snapshot.rows) {
+          for (const { name } of entityKeys) {
+            expect(foreignEntities.has(Number(row.value[name])), `${snapshot.model}.${name}`).toBe(false);
+          }
+        }
+      }
       expect(
         snapshots.find((message) => message.model === "Structure")?.rows.map((row) => Number(row.value.entity_id)),
       ).toEqual([index + 1]);
