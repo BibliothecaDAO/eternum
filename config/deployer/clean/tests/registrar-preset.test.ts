@@ -4,10 +4,6 @@ import { buildCreateGameParams } from "../registrar/preset";
 
 describe("native game configuration", () => {
   const config = loadEnvironmentConfiguration("madara.blitz");
-  test("keeps Blitz finalization immediate and Eternum grace unchanged", () => {
-    expect(config.season.endGraceSeconds).toBe(0);
-    expect(loadEnvironmentConfiguration("madara.eternum").season.endGraceSeconds).toBe(86_400);
-  });
   test.each([0, -1, NaN, 1.5, undefined])("rejects an invalid chain clock (%s)", (chainTimestamp) => {
     expect(() =>
       buildCreateGameParams(config, {

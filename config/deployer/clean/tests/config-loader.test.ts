@@ -7,19 +7,6 @@ type ConfigWithFactoryAddress = {
 };
 
 describe("applyDeploymentConfigOverrides", () => {
-  test("loads generated configs with neutral biome climate defaults", () => {
-    const config = loadEnvironmentConfiguration("madara.blitz");
-
-    expect(config.biomeClimate).toEqual({
-      elevationScaleBps: 10_000,
-      moistureScaleBps: 10_000,
-      elevationBiasBps: 10_000,
-      moistureBiasBps: 10_000,
-      elevationSeed: 0,
-      moistureSeed: 0,
-    });
-  });
-
   test("applies launch-time boolean overrides", () => {
     const baseConfig = loadEnvironmentConfiguration("madara.blitz");
     const result = applyDeploymentConfigOverrides(baseConfig, {

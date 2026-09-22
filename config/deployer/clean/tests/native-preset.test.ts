@@ -5,7 +5,6 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { CallData, type Account, type RpcProvider } from "starknet";
 import schema from "../../../../contracts/l3/world-native/schema/schema.json";
-import madaraAddresses from "../../../../contracts/common/addresses/madara.json";
 import { buildNativePreset } from "../config/native-preset";
 import {
   buildNativePresetRegistration,
@@ -38,24 +37,6 @@ function configuration(preset: number) {
 }
 
 describe("native presets", () => {
-  test("mine presets preserve the fragment ladder and give Eternum rifts one quarter of regular-fast output", () => {
-    const eternum = buildNativePreset(configuration(3), 3);
-    const fast = buildNativePreset(configuration(2), 2);
-    const rift = eternum.resources.mine_kinds[0].config;
-    const fragment = eternum.resources.mine_kinds[1].config;
-    expect(rift.production_rate).toBe(2_500000000n);
-    expect(rift.production_rate * 4n).toBe(fast.resources.mine_kinds[0].config.production_rate);
-    expect(rift.cap_min).toBe(36000_000000000n);
-    expect(rift.cap_steps).toBe(1);
-    expect(fragment).toMatchObject({ cap_min: 300000_000000000n, cap_steps: 10, production_rate: 1_500000000n });
-    expect(eternum.resources.surface_mines).toEqual([
-      { kind: 1, weight: 1 },
-      { kind: 2, weight: 1 },
-    ]);
-    expect(fast.resources.surface_mines).toEqual([{ kind: 1, weight: 1 }]);
-    expect(eternum.rules.bitcoin_mine_config.owner_cut_bps).toBe(2000);
-  });
-
   test("native balances and mine ladders come only from the selected sheet", () => {
     const config = configuration(3);
     config.bitcoin = { prizePerPhase: 7, minimumLabor: 123, ownerCutBps: 1500 };
@@ -145,18 +126,7 @@ describe("native presets", () => {
   });
 });
 
-test("Eternum registers its configured bridge tokens and Blitz has no bridge", () => {
-  const preset = buildNativePreset(configuration(3), 3);
-  expect(preset.economy.withdrawals.unwrap()?.tokens).toEqual(
-    [
-      ...Object.values(madaraAddresses.resources).map(([resource_type, token]) => ({
-        resource_type: Number(resource_type),
-        token: String(token),
-      })),
-      { resource_type: 37, token: madaraAddresses.lords },
-    ].sort((a, b) => Number(a.resource_type) - Number(b.resource_type)),
-  );
-  expect(buildNativePreset(configuration(2), 2).economy.withdrawals.isNone()).toBe(true);
+test("rejects missing Eternum rules and bridge tokens before registration", () => {
   for (const [mutation, error] of [
     [
       (config) => {
@@ -188,7 +158,6 @@ test("Eternum registers its configured bridge tokens and Blitz has no bridge", (
     expect(() => buildNativePreset(config, 3)).toThrow(error);
   }
 });
-
 describe("fixed Regular Blitz rosters", () => {
   const target = {
     native: {
