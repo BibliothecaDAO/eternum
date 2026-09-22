@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { LiveWorld } from "./live-world";
 import type { HistoryStore } from "./history-store";
 import type { MadaraRpc } from "./madara-rpc";
-import { raw, receipt, rowEvent, rulesEvent, setup } from "./native/fixtures";
+import { raw, receipt, rowEvent, rulesEvent, schema, setup } from "./native/fixtures";
 import type { HeraldStreamMessage } from "./stream-protocol";
 import type { RpcBlockWithReceipts } from "./types";
 
@@ -240,17 +240,19 @@ describe("native live publication", () => {
     for (const [index, stream] of messages.entries()) {
       const snapshots = stream.filter((message) => message.type === "snapshot");
       const foreignEntities = new Set(index === 0 ? [2, 20, 100] : [1, 10, 99]);
+      const checkedEntityKeys = new Set<string>();
       for (const snapshot of snapshots) {
-        const codec = decoder.registry.persistent.find(({ definition }) => definition.name === snapshot.model)!;
-        const entityKeys = codec.manifest.members.filter(
-          ({ key, name }) => key && ["entity_id", "explorer_id", "structure_id", "mine_id", "wonder_id"].includes(name),
-        );
+        const model = schema.models.find(({ name }) => name === snapshot.model)!;
+        // Entity-id aliases become u32 in the schema; check every non-game u32 key, including spatial keys.
+        const entityKeys = model.keys.filter(({ name, type }) => name !== "game_id" && type === "core::integer::u32");
         for (const row of snapshot.rows) {
           for (const { name } of entityKeys) {
+            checkedEntityKeys.add(`${snapshot.model}.${name}`);
             expect(foreignEntities.has(Number(row.value[name])), `${snapshot.model}.${name}`).toBe(false);
           }
         }
       }
+      expect(checkedEntityKeys.size).toBeGreaterThan(0);
       expect(
         snapshots.find((message) => message.model === "Structure")?.rows.map((row) => Number(row.value.entity_id)),
       ).toEqual([index + 1]);
