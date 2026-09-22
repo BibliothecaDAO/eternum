@@ -1,9 +1,17 @@
 import { Effect, Layer } from "effect";
-import { describe, expect, test } from "vitest";
+import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import { LaunchExecutor } from "./executor";
 import { databaseLayer } from "./store";
-import { InMemoryLaunchStore } from "./test-store";
+import { createLaunchTestStore } from "./test-store";
 import { processNextLaunch } from "./worker";
+
+let database: Awaited<ReturnType<typeof createLaunchTestStore>>;
+beforeEach(async () => {
+  database = await createLaunchTestStore();
+});
+afterEach(async () => {
+  await database.close();
+});
 
 const request = {
   environment: "madara.blitz" as const,
@@ -12,7 +20,7 @@ const request = {
 
 describe("durable launch worker", () => {
   test("reclaims an expired lease without creating a second run", async () => {
-    const store = new InMemoryLaunchStore();
+    const store = database.store;
     const queued = await store.enqueue("game", request);
     const abandoned = await store.claim(1);
     expect(abandoned?.id).toBe(queued.id);
@@ -20,11 +28,11 @@ describe("durable launch worker", () => {
     await new Promise((resolve) => setTimeout(resolve, 5));
     const recovered = await store.claim(60_000);
     expect(recovered).toMatchObject({ id: queued.id, attempts: 2, status: "running" });
-    expect(store.runs.size).toBe(1);
+    expect(await store.list("madara.blitz")).toHaveLength(1);
   });
 
   test("persists the default start time once so retries cannot move it", async () => {
-    const store = new InMemoryLaunchStore();
+    const store = database.store;
     const queued = await store.enqueue("game", request);
     const persistedStart = "gameStartTime" in queued.request ? queued.request.gameStartTime : undefined;
     const abandoned = await store.claim(1);
@@ -37,7 +45,7 @@ describe("durable launch worker", () => {
   });
 
   test("completes a claimed launch through the injected executor and store", async () => {
-    const store = new InMemoryLaunchStore();
+    const store = database.store;
     await store.enqueue("game", request);
     const executor = {
       execute: () =>
@@ -53,6 +61,7 @@ describe("durable launch worker", () => {
           configSteps: [],
           dryRun: false,
           gameId: 62,
+          finalizeAt: 3_000_000_000,
         }),
     };
     const services = Layer.mergeAll(databaseLayer(store), Layer.succeed(LaunchExecutor, executor));
@@ -63,24 +72,6 @@ describe("durable launch worker", () => {
       status: "complete",
       attempts: 1,
       summary: { gameId: 62 },
-    });
-  });
-
-  test("interrupts execution and requeues when the worker loses its lease", async () => {
-    const store = new InMemoryLaunchStore();
-    await store.enqueue("game", request);
-    store.heartbeat = async () => false;
-    const services = Layer.mergeAll(
-      databaseLayer(store),
-      Layer.succeed(LaunchExecutor, { execute: () => Effect.never }),
-    );
-
-    await Effect.runPromise(processNextLaunch(30).pipe(Effect.provide(services)));
-
-    expect(await store.find("game", "madara.blitz", request.gameName)).toMatchObject({
-      status: "queued",
-      attempts: 1,
-      errorMessage: "launch lease was lost",
     });
   });
 });

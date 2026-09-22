@@ -1,9 +1,9 @@
 import { Effect } from "effect";
-import { describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { createLaunchApp } from "./app";
 import type { IdentityResolver } from "./auth";
-import { InMemoryLaunchStore } from "./test-store";
-import type { SlotStore } from "./slots";
+import { createLaunchTestStore } from "./test-store";
+import { PostgresSlotStore } from "./slot-store";
 
 const ALLOWED_ORIGIN = "https://play.realms.party";
 const ALLOWED_ADDRESS = "0x123";
@@ -12,19 +12,19 @@ const identity = (address: string | null): IdentityResolver => ({
   resolve: () => Effect.succeed(address ? { address } : null),
 });
 
-const slotStore = (): SlotStore => ({
-  create: vi.fn(),
-  list: vi.fn().mockResolvedValue([]),
-  register: vi.fn(),
-  freeze: vi.fn(),
-  freezeNextDue: vi.fn(),
+let database: Awaited<ReturnType<typeof createLaunchTestStore>>;
+beforeEach(async () => {
+  database = await createLaunchTestStore();
+});
+afterEach(async () => {
+  await database.close();
 });
 
 const createApp = (
   resolver: IdentityResolver,
-  store = new InMemoryLaunchStore(),
+  store = database.store,
   allowAnyLauncher = false,
-  slots = slotStore(),
+  slots = new PostgresSlotStore(store.pool),
   verifyPlayer = vi.fn(async (_owner: string) => {}),
 ) => ({
   app: createLaunchApp({
@@ -57,18 +57,18 @@ describe("free slot registration", () => {
 
   test("binds registration to the verified identity, without requiring launcher privileges", async () => {
     const { app, slots, verifyPlayer } = createApp(identity("0x456"));
+    await slots.create("friday", "2099-01-01T00:00:00Z");
     const response = await app.request(registerRequest());
     expect(response.status).toBe(200);
-    expect(slots.register).toHaveBeenCalledTimes(1);
-    expect(slots.register).toHaveBeenCalledWith("friday", "0x456");
+    expect((await slots.list())[0].registrations.map(({ owner }) => owner)).toEqual(["0x456"]);
     expect(verifyPlayer).toHaveBeenCalledWith("0x456");
   });
 
   test("does not freeze an unbound identity into the roster", async () => {
-    const slots = slotStore();
+    const slots = new PostgresSlotStore(database.store.pool);
     const { app } = createApp(
       identity("0x456"),
-      new InMemoryLaunchStore(),
+      database.store,
       false,
       slots,
       vi.fn(async () => {
@@ -76,7 +76,7 @@ describe("free slot registration", () => {
       }),
     );
     expect((await app.request(registerRequest())).status).toBe(503);
-    expect(slots.register).not.toHaveBeenCalled();
+    expect(await slots.list()).toEqual([]);
   });
 
   test("does not register unauthenticated or cross-origin requests", async () => {
@@ -85,7 +85,7 @@ describe("free slot registration", () => {
     const request = registerRequest();
     request.headers.set("origin", "https://untrusted.example");
     expect((await app.request(request)).status).toBe(403);
-    expect(slots.register).not.toHaveBeenCalled();
+    expect(await slots.list()).toEqual([]);
   });
 
   test("only launchers can create or close slots", async () => {
@@ -100,8 +100,7 @@ describe("free slot registration", () => {
       );
       expect(response.status).toBe(403);
     }
-    expect(slots.create).not.toHaveBeenCalled();
-    expect(slots.freeze).not.toHaveBeenCalled();
+    expect(await slots.list()).toEqual([]);
   });
 
   test("slot reads need no wallet and malformed schedules do not reach storage", async () => {
@@ -115,7 +114,7 @@ describe("free slot registration", () => {
       }),
     );
     expect(response.status).toBe(400);
-    expect(slots.create).not.toHaveBeenCalled();
+    expect(await slots.list()).toEqual([]);
   });
 });
 
@@ -154,7 +153,7 @@ describe("launch service authorization", () => {
   });
 
   test("with a wildcard allowlist, any verified session may launch", async () => {
-    const { app } = createApp(identity("0x456"), new InMemoryLaunchStore(), true);
+    const { app } = createApp(identity("0x456"), database.store, true);
     expect((await app.request(launchRequest())).status).toBe(202);
   });
 

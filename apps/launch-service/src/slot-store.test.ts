@@ -5,8 +5,9 @@ import { PostgresLaunchStore } from "./store";
 import { PostgresSlotStore } from "./slot-store";
 
 const databaseUrl = process.env.LAUNCH_TEST_DATABASE_URL;
+if (!databaseUrl) throw new Error("LAUNCH_TEST_DATABASE_URL is required for the PostgreSQL suite");
 
-test.skipIf(!databaseUrl)("registration and frozen groups survive concurrency and service restart", async () => {
+test("registration and frozen groups survive concurrency and service restart", async () => {
   const schema = `slot_test_${randomUUID().replaceAll("-", "")}`;
   const admin = new Pool({ connectionString: databaseUrl });
   const url = new URL(databaseUrl!);
@@ -80,7 +81,7 @@ test.skipIf(!databaseUrl)("registration and frozen groups survive concurrency an
   }
 });
 
-test.skipIf(!databaseUrl)("the worker freezes zero and single-player slots without inventing players", async () => {
+test("the worker freezes zero and single-player slots without inventing players", async () => {
   const schema = `slot_test_${randomUUID().replaceAll("-", "")}`;
   const admin = new Pool({ connectionString: databaseUrl });
   const url = new URL(databaseUrl!);
