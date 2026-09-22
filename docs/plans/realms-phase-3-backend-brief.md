@@ -213,10 +213,10 @@ reaching an L3 command, or the reverse, is caught by convention today and by not
   READMEs and the briefs. `ammv2` is L2 by design §5 (the live RealmsSwap on mainnet, 35 LORDS pools); the in-game AMM
   is the bank inside `game` and needs no move.
 - **Make the split enforce itself:** one chain guard module the deployer, operator, harness and live-assets scripts all
-  import — the expected chain id per target derived from the chain name (`SN_MAIN` for every L2 command, the lab's
-  `WP_REALMS_MADARA_LAB` for every L3 command, `WP_REALMS_DEV` for the appchain), asserted once at the chokepoint where
-  each command builds its provider. The three inline copies are deleted. `RPC_URL` (L3) and `LEDGER_RPC_URL` (L2) are
-  read explicitly with a loud miss; the `VITE_PUBLIC_NODE_URL` fallback goes.
+  import — the expected chain id per target derived from the chain name (`SN_MAIN` for every L2 command, the shard
+  manifest's chain id for every L3 command), asserted once at the chokepoint where each command builds its provider. The
+  three inline copies are deleted. `RPC_URL` (L3) and `LEDGER_RPC_URL` (L2) are read explicitly with a loud miss; the
+  `VITE_PUBLIC_NODE_URL` fallback goes.
 
 **Gate T:** the tree is exactly `l2/`, `l3/`, `common/`, `scripts-runtime/`, `utils/`; every Scarb workflow is green on
 the new paths and `pnpm run knip` is clean; a test per direction shows an L3 command refusing a mainnet `RPC_URL` and an

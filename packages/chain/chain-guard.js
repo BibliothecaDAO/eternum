@@ -1,20 +1,11 @@
 export const CHAIN_NAMES = Object.freeze({
   mainnet: "SN_MAIN",
   sepolia: "SN_SEPOLIA",
-  appchain: "WP_REALMS_DEV",
-  madara: "WP_REALMS_MADARA_LAB",
-});
-
-export const GAME_CHAIN_NAMES = Object.freeze({
-  appchain: CHAIN_NAMES.appchain,
-  madara: CHAIN_NAMES.madara,
 });
 
 const CHAIN_LABELS = Object.freeze({
   mainnet: "Starknet mainnet",
   sepolia: "Starknet Sepolia",
-  appchain: "appchain",
-  madara: "madara",
 });
 
 export function encodeChainName(chainName) {
@@ -27,6 +18,8 @@ export function encodeChainName(chainName) {
 }
 
 export function expectedChainId(target) {
+  if (typeof target === "object" && target !== null)
+    return shardChainId(target);
   const chainName = CHAIN_NAMES[target];
   if (!chainName) throw new Error(`Unsupported chain target "${target}"`);
   return encodeChainName(chainName);
@@ -38,7 +31,7 @@ export function assertChainId(actualChainId, target, environmentName) {
     actualChainId,
     expected,
     environmentName,
-    CHAIN_LABELS[target],
+    typeof target === "object" ? "the manifest shard" : CHAIN_LABELS[target],
   );
 }
 
@@ -60,4 +53,19 @@ export async function assertProviderChain(provider, target, environmentName) {
   const chainId = await provider.getChainId();
   assertChainId(chainId, target, environmentName);
   return chainId;
+}
+
+export function shardChainId(manifest) {
+  const chainId = manifest?.shard?.chainId;
+  if (
+    typeof chainId !== "string" ||
+    !/^0x[0-9a-f]+$/i.test(chainId) ||
+    BigInt(chainId) <= 0n ||
+    BigInt(chainId) >= (1n << 251n) + 17n * (1n << 192n) + 1n
+  ) {
+    throw new Error(
+      "Shard manifest requires a nonzero felt shard.chainId in hexadecimal; initialize a fresh shard",
+    );
+  }
+  return `0x${BigInt(chainId).toString(16)}`;
 }

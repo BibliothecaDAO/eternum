@@ -1,9 +1,10 @@
 import { nativePresetForId } from "../../../source/native";
 import { buildNativePreset } from "../config/native-preset";
 import { Account, RpcProvider } from "starknet";
+import { readShardManifest } from "@realms-world/chain/shard-manifest";
 import { assertProviderChain } from "@realms-world/chain";
 import { DEPLOYMENT_ENVIRONMENTS } from "../constants";
-import { isDeploymentEnvironmentId, resolveDeploymentEnvironment } from "../environment";
+import { isDeploymentEnvironmentId } from "../environment";
 import { createLedgerAdminAccount, registerLedgerPreset, type LedgerTarget } from "../ledger/calls";
 import { buildLedgerEconomicPreset, buildRegisterLedgerPresetCalldata } from "../ledger/economics";
 import { resolveAccountCredentials } from "../shared/credentials";
@@ -86,10 +87,9 @@ export async function registerEnvironmentPreset(options: RegisterPresetOptions):
   }
 
   const ledgerTarget = resolveOptionalLedgerTarget(options);
-  const environment = resolveDeploymentEnvironment(options.environmentId);
   const provider = new RpcProvider({ nodeUrl: requireRpcUrl(options.rpcUrl, "--rpc-url or RPC_URL") });
   await Promise.all([
-    assertProviderChain(provider, environment.chain, "RPC_URL"),
+    assertProviderChain(provider, readShardManifest(options.nativeManifest), "RPC_URL"),
     ...(ledgerTarget
       ? [assertProviderChain(new RpcProvider({ nodeUrl: ledgerTarget.rpcUrl }), "mainnet", "LEDGER_RPC_URL")]
       : []),

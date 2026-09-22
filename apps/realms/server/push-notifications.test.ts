@@ -1,6 +1,6 @@
-import { expectedChainId } from "@realms-world/chain";
+import { rmSync } from "node:fs";
 import { Effect, Layer } from "effect";
-import { beforeEach, expect, it, vi } from "vitest";
+import { afterAll, beforeEach, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   session: vi.fn(),
   register: vi.fn(),
@@ -12,11 +12,18 @@ const mocks = vi.hoisted(() => ({
   send: vi.fn(),
   enabled: true,
   automatic: false,
+  manifestDirectory: "",
 }));
 vi.mock("./auth", () => ({ auth: { api: { getSession: mocks.session } } }));
 vi.mock("./env", async () => {
   const { default: webpush } = await import("web-push");
   const keys = webpush.generateVAPIDKeys();
+  const { mkdtempSync, writeFileSync } = await import("node:fs");
+  const { tmpdir } = await import("node:os");
+  const { join } = await import("node:path");
+  mocks.manifestDirectory = mkdtempSync(join(tmpdir(), "push-shard-"));
+  const manifestPath = join(mocks.manifestDirectory, "manifest.json");
+  writeFileSync(manifestPath, JSON.stringify({ shard: { chainId: "0xa1" }, world: { address: "0x123" } }));
   return {
     serverEnv: {
       WEB_PUSH_ENABLED: "true",
@@ -28,8 +35,7 @@ vi.mock("./env", async () => {
         return mocks.automatic ? "true" : "false";
       },
       NOTIFICATION_HERALD_URL: "https://herald.test",
-      NOTIFICATION_CHAIN: "madara",
-      NOTIFICATION_WORLD_ADDRESS: "0x123",
+      NATIVE_WORLD_MANIFEST: manifestPath,
     },
   };
 });
@@ -162,7 +168,7 @@ it("isolates request budgets by the socket-aware client supplied by the router",
 });
 
 it("exposes the configured automatic source and requires explicit matching-source consent", async () => {
-  const source = { chainId: `0x${BigInt(expectedChainId("madara")).toString(16)}`, worldAddress: "0x123" };
+  const source = { chainId: "0xa1", worldAddress: "0x123" };
   const input = { ...registration, gameAlerts: true, source };
   expect((await request("subscribe", input)).status).toBe(503);
   mocks.automatic = true;
@@ -196,3 +202,5 @@ it("persists explicit DM readiness and reports it without exposing subscription 
   });
   expect((await request("subscribe", { ...registration, directMessages: "true" })).status).toBe(400);
 });
+
+afterAll(() => rmSync(mocks.manifestDirectory, { recursive: true }));

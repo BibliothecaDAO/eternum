@@ -1,33 +1,28 @@
 import duelMadaraConfig from "../generated/duel.madara.json";
-import duelAppchainConfig from "../generated/duel.appchain.json";
 import frontierMadaraConfig from "../generated/frontier.madara.json";
 
 import type { GameType } from "../source/common/types";
-import type { GameChain } from "@realms-world/chain";
+import type { ConfigurationNetwork } from "../shared/game-environments";
 export type { GameType };
-import blitzAppchainConfig from "../generated/blitz.appchain.json";
 import blitzMadaraConfig from "../generated/blitz.madara.json";
-import eternumAppchainConfig from "../generated/eternum.appchain.json";
 import eternumMadaraConfig from "../generated/eternum.madara.json";
 
 type NetworkConfigDocument = {
   configuration: any;
 };
 
-const configs: Record<GameType, Partial<Record<GameChain, NetworkConfigDocument>>> = {
-  duel: { madara: duelMadaraConfig, appchain: duelAppchainConfig },
+const configs: Record<GameType, Partial<Record<ConfigurationNetwork, NetworkConfigDocument>>> = {
+  duel: { madara: duelMadaraConfig },
   frontier: { madara: frontierMadaraConfig },
   blitz: {
     madara: blitzMadaraConfig,
-    appchain: blitzAppchainConfig,
   },
   eternum: {
     madara: eternumMadaraConfig,
-    appchain: eternumAppchainConfig,
   },
 };
 
-function resolveConfigDocument(chain: GameChain, gameType: GameType): NetworkConfigDocument {
+function resolveConfigDocument(chain: ConfigurationNetwork, gameType: GameType): NetworkConfigDocument {
   const gameConfigs = configs[gameType];
   if (!gameConfigs) {
     throw new Error(`Invalid game type: ${gameType}. Must be "blitz", "eternum", "frontier" or "duel".`);
@@ -41,7 +36,7 @@ function resolveConfigDocument(chain: GameChain, gameType: GameType): NetworkCon
   return configDocument;
 }
 
-export function getConfigFromNetwork(chain: GameChain, gameType: GameType) {
+export function getConfigFromNetwork(chain: ConfigurationNetwork, gameType: GameType) {
   return resolveConfigDocument(chain, gameType).configuration as any;
 }
 

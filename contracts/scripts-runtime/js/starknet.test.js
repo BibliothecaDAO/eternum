@@ -23,11 +23,4 @@ describe("asset-script chain guard", () => {
 
     await expect(assertSelectedProviderChain(provider)).rejects.toThrow("STARKNET_EXPECTED_CHAIN_ID");
   });
-
-  it("refuses a mainnet RPC when the appchain is selected", async () => {
-    process.env.STARKNET_NETWORK = "appchain";
-    const provider = { getChainId: async () => expectedChainId("mainnet") };
-
-    await expect(assertSelectedProviderChain(provider)).rejects.toThrow("STARKNET_RPC is not appchain");
-  });
 });

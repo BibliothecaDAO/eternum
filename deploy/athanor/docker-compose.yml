@@ -42,7 +42,7 @@ services:
     environment:
       RUST_LOG: ${MADARA_LOG:-info}
     volumes:
-      - ./chain-config.yaml:/config/chain-config.yaml:ro
+      - ${CHAIN_CONFIG_PATH:?Set CHAIN_CONFIG_PATH to the initialized shard config}:/config/chain-config.yaml:ro
       - madara-data:/data
     ports:
       - "127.0.0.1:5050:9944"   # Starknet JSON-RPC. NOT 5060/5061: those are SIP ports on the WHATWG fetch
@@ -85,7 +85,7 @@ services:
     environment:
       RUST_LOG: ${MADARA_LOG:-info}
     volumes:
-      - ./chain-config.yaml:/config/chain-config.yaml:ro
+      - ${CHAIN_CONFIG_PATH:?Set CHAIN_CONFIG_PATH to the initialized shard config}:/config/chain-config.yaml:ro
       - madara-replica-data:/data
     ports:
       - "127.0.0.1:5055:9944"   # replica RPC (confirmed reads)
@@ -133,7 +133,7 @@ services:
       default:
         aliases: [madara]
     volumes:
-      - ./chain-config.yaml:/config/chain-config.yaml:ro
+      - ${CHAIN_CONFIG_PATH:?Set CHAIN_CONFIG_PATH to the initialized shard config}:/config/chain-config.yaml:ro
       - madara-replica-data:/data
     ports:
       - "127.0.0.1:5050:9944"

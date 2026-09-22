@@ -2,28 +2,40 @@ import { describe, expect, it } from "vitest";
 
 import {
   assertChainId,
-  CHAIN_NAMES,
   encodeChainName,
   expectedChainId,
 } from "../chain-guard.js";
 
 describe("chain guard", () => {
-  it("derives every expected id from its chain name", () => {
-    expect(expectedChainId("mainnet")).toBe(
-      encodeChainName(CHAIN_NAMES.mainnet),
+  it("rejects another shard and a manifest without its chain identity", () => {
+    const first = { shard: { chainId: encodeChainName("SHARD_A") } };
+    const second = { shard: { chainId: encodeChainName("SHARD_B") } };
+    expect(() =>
+      assertChainId(first.shard.chainId, first, "RPC_URL"),
+    ).not.toThrow();
+    expect(() => assertChainId(second.shard.chainId, first, "RPC_URL")).toThrow(
+      "manifest shard",
     );
-    expect(expectedChainId("sepolia")).toBe(
-      encodeChainName(CHAIN_NAMES.sepolia),
-    );
-    expect(expectedChainId("appchain")).toBe(
-      encodeChainName(CHAIN_NAMES.appchain),
-    );
-    expect(expectedChainId("madara")).toBe(encodeChainName(CHAIN_NAMES.madara));
-    expect(expectedChainId("mainnet")).toBe("0x534e5f4d41494e");
-    expect(expectedChainId("appchain")).toBe("0x57505f5245414c4d535f444556");
-    expect(expectedChainId("madara")).toBe(
-      "0x57505f5245414c4d535f4d41444152415f4c4142",
-    );
+    expect(() =>
+      expectedChainId({
+        chainId: first.shard.chainId,
+      } as unknown as typeof first),
+    ).toThrow("shard.chainId");
+    for (const chainId of [
+      undefined,
+      "",
+      "0x0",
+      "SHARD_A",
+      "0x" + "f".repeat(64),
+    ]) {
+      expect(() =>
+        assertChainId(
+          first.shard.chainId,
+          { shard: { chainId } } as typeof first,
+          "RPC_URL",
+        ),
+      ).toThrow("chainId");
+    }
   });
 
   it("compares equivalent decimal and hexadecimal ids", () => {
@@ -38,13 +50,17 @@ describe("chain guard", () => {
 
   it("refuses a mainnet RPC for an L3 command", () => {
     expect(() =>
-      assertChainId(expectedChainId("mainnet"), "madara", "RPC_URL"),
-    ).toThrow("RPC_URL is not madara");
+      assertChainId(
+        expectedChainId("mainnet"),
+        { shard: { chainId: encodeChainName("SHARD_A") } },
+        "RPC_URL",
+      ),
+    ).toThrow("RPC_URL is not the manifest shard");
   });
 
   it("refuses a lab RPC for an L2 command", () => {
     expect(() =>
-      assertChainId(expectedChainId("madara"), "mainnet", "LEDGER_RPC_URL"),
+      assertChainId(encodeChainName("SHARD_A"), "mainnet", "LEDGER_RPC_URL"),
     ).toThrow("LEDGER_RPC_URL is not Starknet mainnet");
   });
 });

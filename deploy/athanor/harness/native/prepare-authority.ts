@@ -1,4 +1,7 @@
-import { readFile, writeFile } from "node:fs/promises";
+import type { NativeWorldManifest } from "../../../../config/deployer/clean/world/native/types";
+import { assertProviderChain } from "../../../../packages/chain/chain-guard.js";
+import { readShardManifest } from "../../../../packages/chain/shard-manifest.js";
+import { writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { ec, hash, RpcProvider, uint256 } from "starknet";
 import { createMadaraAccount } from "../../../../config/deployer/clean/shared/madara-account";
@@ -31,6 +34,7 @@ const constructorCalldata = [admin.address, ec.starkCurve.getStarkKey(SIGNING_KE
 const salt = hash.starknetKeccak(`${seed}:sequencing-authority`).toString();
 const address = hash.calculateContractAddressFromHash(salt, artifact.classHash, constructorCalldata, 0);
 
+await assertProviderChain(provider, readShardManifest(process.argv[3] ?? process.env.NATIVE_WORLD_MANIFEST), "RPC_URL");
 await prepareAccount();
 await fundAccount();
 if (process.argv[3]) await bindWorld(process.argv[3]);
@@ -74,7 +78,8 @@ async function fundAccount() {
 }
 
 async function bindWorld(path: string) {
-  const manifest = JSON.parse(await readFile(path, "utf8"));
+  const manifest = readShardManifest<NativeWorldManifest>(path);
+  await assertProviderChain(provider, manifest, "RPC_URL");
   if (!manifest.native) throw new Error("Expected a native manifest");
   // The pinned account stores this immutable peer under its named storage slot.
   const current = BigInt(await provider.getStorageAt(address, hash.starknetKeccak("deployment"), "latest"));

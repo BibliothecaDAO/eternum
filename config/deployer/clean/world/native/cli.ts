@@ -1,6 +1,7 @@
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { RpcProvider } from "starknet";
+import { readShardManifest } from "@realms-world/chain/shard-manifest";
 import { assertProviderChain } from "@realms-world/chain";
 import type { CliArgs } from "../../cli/args";
 import { createMadaraAccount } from "../../shared/madara-account";
@@ -18,10 +19,11 @@ export async function runNativeDeployment(args: CliArgs, root: string): Promise<
   const authority = identity.operatorAccountAddress;
   if (!authority) throw new Error("Identity deployment requires a bound operatorAccountAddress");
   const provider = new RpcProvider({ nodeUrl: args["rpc-url"] ?? requiredEnvironment("RPC_URL") });
-  await assertProviderChain(provider, "madara", "RPC_URL");
-  const previous = existsSync(manifestPath)
-    ? (JSON.parse(readFileSync(manifestPath, "utf8")) as NativeWorldManifest)
-    : undefined;
+  const manifest = readShardManifest<NativeWorldManifest>(manifestPath);
+  await assertProviderChain(provider, manifest, "RPC_URL");
+  if (!manifest.native && Object.keys(manifest).some((key) => key !== "shard"))
+    throw new Error("Cannot replace a non-native deployment manifest");
+  const previous = manifest.native ? manifest : undefined;
   const local = loadNativeWorld({
     artifacts: args.artifacts ?? resolve(root, "contracts/l3/world-native/target/dev"),
     schemaPath: args.schema ?? resolve(root, "contracts/l3/world-native/schema/schema.json"),
@@ -53,7 +55,7 @@ export async function runNativeDeployment(args: CliArgs, root: string): Promise<
     declarer,
   );
   const shard = {
-    chainId: await provider.getChainId(),
+    chainId: manifest.shard.chainId,
     accountClassHash: identity.playerAccountClassHash,
     contracts: { playerRegistry: identity.playerRegistryAddress, bindingAuthority: identity.bindingAuthorityAddress },
   };

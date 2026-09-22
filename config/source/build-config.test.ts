@@ -43,9 +43,9 @@ const REALM_RESOURCE_IDS_WITH_ERECTION_COSTS: ResourcesIds[] = [
 
 describe("buildConfig", () => {
   test("changes the duration without changing Blitz balance", async () => {
-    const baseConfig = await buildConfig({ chain: "appchain", gameType: "blitz" });
-    const sixtyMinuteConfig = await buildConfig({ chain: "appchain", gameType: "blitz", durationMinutes: 60 });
-    const customDurationConfig = await buildConfig({ chain: "appchain", gameType: "blitz", durationMinutes: 45 });
+    const baseConfig = await buildConfig({ chain: "madara", gameType: "blitz" });
+    const sixtyMinuteConfig = await buildConfig({ chain: "madara", gameType: "blitz", durationMinutes: 60 });
+    const customDurationConfig = await buildConfig({ chain: "madara", gameType: "blitz", durationMinutes: 45 });
 
     expect(sixtyMinuteConfig.season.durationSeconds).toBe(3_600);
     expect(sixtyMinuteConfig.resources.productionByComplexRecipeOutputs[ResourcesIds.Donkey]).toBe(3);

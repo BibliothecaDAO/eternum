@@ -237,9 +237,9 @@ to retry around it.
 
 **Evidence.**
 
-- `GAME_CHAIN_NAMES` (`packages/chain/chain-guard.js:8-11`) has exactly two chains: `appchain` (`WP_REALMS_DEV`) and
-  `madara`. `appchain` is the AWS-hosted dev appchain at `http://52.54.98.119`; it answers 403 and is being switched
-  off. The shared env list (`config/shared/game-environments.ts`) already carries `madara.blitz` alone.
+- `GAME_CHAIN_NAMES` (`packages/chain/chain-guard.js:8-11`) has exactly two chains: the retired `appchain` and `madara`.
+  `appchain` is the AWS-hosted dev appchain at `http://52.54.98.119`; it answers 403 and is being switched off. The
+  shared env list (`config/shared/game-environments.ts`) already carries `madara.blitz` alone.
 - Everything under the `appchain` id is therefore unreachable configuration: two game profiles + two manifests
   (`contracts/l3/game/dojo_appchain_blitz.toml`, `dojo_appchain_eternum.toml`, plus the hyphenated duplicates
   `dojo_appchain-blitz.toml`, `dojo_appchain-eternum.toml`, `manifest_appchain_blitz.json`,

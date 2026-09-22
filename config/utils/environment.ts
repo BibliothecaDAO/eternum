@@ -1,4 +1,4 @@
-import type { GameChain } from "@realms-world/chain";
+import type { ConfigurationNetwork } from "../shared/game-environments";
 
 import type { GameType } from "../source/common/types";
 export type { GameType };
@@ -13,7 +13,7 @@ function bigIntReplacer(_key: string, value: unknown) {
   return typeof value === "bigint" ? value.toString() : value;
 }
 
-export async function saveResolvedConfigJson(chain: GameChain, gameType: GameType) {
+export async function saveResolvedConfigJson(chain: ConfigurationNetwork, gameType: GameType) {
   const configurationJson = await buildConfig({
     chain,
     gameType,
@@ -36,60 +36,6 @@ export async function saveResolvedConfigJson(chain: GameChain, gameType: GameTyp
   fs.renameSync(tmpPath, targetPath);
 }
 
-/**
- * Displays a stylized console output indicating the current network environment.
- *
- * @remarks
- * Uses ANSI escape codes for colored console output.
- * Each network type has its own unique color scheme and emoji identifiers:
- *
- * @example
- * ```typescript
- * logNetwork('local'); // Displays green-colored local environment banner
- * ```
- */
-export function logNetwork(network: GameChain): void {
-  interface NetworkStyle {
-    colors: {
-      primary: string;
-      secondary: string;
-    };
-    emoji: string;
-    label: string;
-  }
-
-  const NETWORK_STYLES: Record<GameChain, NetworkStyle> = {
-    madara: {
-      colors: {
-        primary: "\x1b[38;5;83m",
-        secondary: "\x1b[38;5;156m",
-      },
-      emoji: "🌿",
-      label: "MADARA LAB",
-    },
-    appchain: {
-      colors: {
-        primary: "\x1b[38;5;208m",
-        secondary: "\x1b[38;5;214m",
-      },
-      emoji: "⛓️",
-      label: "REALMS APPCHAIN (DEV)",
-    },
-  };
-
-  const style = NETWORK_STYLES[network];
-  const { primary, secondary } = style.colors;
-  const reset = "\x1b[0m";
-  const bold = "\x1b[1m";
-  const white = "\x1b[38;5;255m";
-
-  console.log(`
-    ${primary}┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-    ┃                                            ┃
-    ┃  ${secondary}╭──────────── ENVIRONMENT ────────────╮${primary}  ┃
-    ┃  ${secondary}│    ${bold}${white}${style.emoji} ${style.label} ${style.emoji}${reset}${secondary}     │${primary}  ┃
-    ┃  ${secondary}╰─────────────────────────────────────╯${primary}  ┃
-    ┃                                            ┃
-    ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛${reset}`);
-  console.log("\n\n");
+export function logNetwork(network: ConfigurationNetwork): void {
+  console.log(`Configuration profile: ${network}`);
 }

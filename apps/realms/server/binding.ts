@@ -1,4 +1,5 @@
-import { resolveEndpoint, expectedChainId, type GameChain } from "@realms-world/chain";
+import { readShardManifest } from "@realms-world/chain/shard-manifest";
+import { resolveEndpoint, expectedChainId } from "@realms-world/chain";
 import { Account, RpcProvider, num } from "starknet";
 import { z } from "zod";
 
@@ -46,8 +47,9 @@ export const gameplayAccountOf = async (owner: string): Promise<string | null> =
   return account;
 };
 
-export async function verifyGameplayBindingChain(chain: GameChain): Promise<void> {
-  if (BigInt(await createGameplayProvider().getChainId()) !== BigInt(expectedChainId(chain)))
+export async function verifyGameplayBindingChain(chainId: string): Promise<void> {
+  const expected = BigInt(expectedChainId(readShardManifest(serverEnv.NATIVE_WORLD_MANIFEST)));
+  if (BigInt(chainId) !== expected || BigInt(await createGameplayProvider().getChainId()) !== expected)
     throw new Error("Notification source and gameplay registry chains differ");
 }
 

@@ -2,9 +2,6 @@
   "name": "eternum-config-deploy",
   "scripts": {
     "sync:madara:blitz": "bun run ./scripts/run-sync.ts madara blitz",
-    "sync:appchain": "bun run ./scripts/run-sync.ts appchain",
-    "sync:appchain:blitz": "bun run ./scripts/run-sync.ts appchain blitz",
-    "sync:appchain:eternum": "bun run ./scripts/run-sync.ts appchain eternum",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "sync:madara:eternum": "bun run ./scripts/run-sync.ts madara eternum"

@@ -3,7 +3,7 @@
 # refuses partial configs, and a silent default here is a silent default in every measurement.
 config_version: 2
 chain_name: "Realms Madara Lab"
-chain_id: "WP_REALMS_MADARA_LAB"
+# shard.py supplies chain_id from the initialized shard manifest.
 feeder_gateway_url: "http://localhost:8080/feeder_gateway/"
 gateway_url: "http://localhost:8080/gateway/"
 native_fee_token_address: "0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d"

@@ -1,5 +1,5 @@
 import { getSeasonAddresses } from "../../../contracts/utils/utils";
-import type { GameChain } from "@realms-world/chain";
+import type { ConfigurationNetwork } from "../../shared/game-environments";
 import type { ConfigPatch } from "./merge-config";
 
 interface EnvironmentAddresses extends Record<string, string | undefined> {
@@ -11,7 +11,7 @@ interface EnvironmentAddresses extends Record<string, string | undefined> {
 }
 
 export interface EnvironmentContext {
-  chain: GameChain;
+  chain: ConfigurationNetwork;
   addresses: EnvironmentAddresses;
   startMainAt: number;
   startSettlingAt: number;
@@ -24,7 +24,7 @@ export function resolveConfiguredAddress(address: string | undefined | null, nam
   return address;
 }
 
-export function resolveEnvironmentContext(chain: GameChain): EnvironmentContext {
+export function resolveEnvironmentContext(chain: ConfigurationNetwork): EnvironmentContext {
   return {
     chain,
     addresses: getSeasonAddresses(chain) as unknown as EnvironmentAddresses,

@@ -40,6 +40,8 @@ def cpu_numbers(value):
 def validate_configuration(config, allowed_cpus):
     if not re.fullmatch(r"[a-z][a-z0-9-]{0,39}", config["shard"]):
         raise ValueError("shard must be a lowercase identifier")
+    if not re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]{0,30}", config.get("chain_id", "")):
+        raise ValueError("chain_id must be a unique 1-31 character ASCII shard name")
     for key in ("madara_image", "herald_image"):
         if not re.fullmatch(r"(?:[^\s]+@)?sha256:[a-f0-9]{64}", config[key]):
             raise ValueError(f"{key} must be pinned by digest")
@@ -245,7 +247,7 @@ def save_harness_environment(directory, environment):
 def deployment_manifest(config, compose, directory, manifest, rpc_rtt, herald_rtt):
     return {
         **config, "project": compose["name"], "revision": read(["git", "rev-parse", "HEAD"]),
-        "metrics_image": METRICS_IMAGE,
+        "chainId": manifest["shard"]["chainId"], "metrics_image": METRICS_IMAGE,
         "slice_limits": {name: Path(f"/sys/fs/cgroup/athanor.slice/{name}").read_text().strip()
                          for name in ("cpu.max", "memory.max", "memory.high", "memory.swap.max")},
         "chain_config_sha256": hashlib.sha256((directory / "chain-config.yaml").read_bytes()).hexdigest(),
@@ -253,6 +255,15 @@ def deployment_manifest(config, compose, directory, manifest, rpc_rtt, herald_rt
         "herald_url": f"http://127.0.0.1:{config['port_base'] + 1}", "rtt_ms": {"rpc": rpc_rtt, "herald": herald_rtt},
         "world": manifest["world"]["address"], "native_schema": manifest["native"]["activeSchema"],
     }
+
+
+def initialize_shard_identity(config, directory):
+    chain_id = "0x" + config["chain_id"].encode("ascii").hex()
+    write_json(directory / "native-world.json", {"shard": {"chainId": chain_id}})
+    template = Path(config["chain_config"]).read_text()
+    # Identity belongs to the initialized shard, not to a benchmark template.
+    template = re.sub(r"^chain_id:.*\n?", "", template, flags=re.MULTILINE)
+    (directory / "chain-config.yaml").write_text(template + f'\nchain_id: "{config["chain_id"]}"\n')
 
 
 def start_shard(config, directory):
@@ -264,7 +275,7 @@ def start_shard(config, directory):
     directory = directory.resolve()
     environment = deployment_environment(config, directory)
     directory.mkdir(mode=0o700, parents=True, exist_ok=False)
-    shutil.copyfile(config["chain_config"], directory / "chain-config.yaml")
+    initialize_shard_identity(config, directory)
     write_json(directory / "configuration.json", config)
     node_environment = prepare_runtime_files(directory, environment)
     compose = compose_configuration(config, directory)

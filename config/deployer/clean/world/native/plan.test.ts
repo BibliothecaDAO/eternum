@@ -179,6 +179,7 @@ describe("native deployment planning", () => {
     local.previous = first;
     local.domains.find((domain) => domain.name === "season")!.classHash = "0x456";
     const second = buildNativeManifest(local, { ...plan, blockNumber: 100 }, shard);
+    expect(second.shard.chainId).toBe(first.shard.chainId);
     expect(second.native.deploymentBlock).toBe(10);
     expect(second.native.domains.season.initialClassHash).toBe("0x123");
     expect(Object.keys(second.native.domains.season.classes)).toEqual(["0x123", "0x456"]);

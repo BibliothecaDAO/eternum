@@ -1,9 +1,11 @@
 #!/usr/bin/env bun
 import { completeNativeAdminCommand } from "../world/native/command";
+import type { NativeWorldManifest } from "../world/native/types";
 import type { NativeCommand } from "../../../../packages/provider/src/native-command";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { RpcProvider } from "starknet";
+import { readShardManifest } from "@realms-world/chain/shard-manifest";
 import { assertProviderChain } from "@realms-world/chain";
 import { parseArgs, type CliArgs } from "./args";
 import { runNativeDeployment } from "../world/native/cli";
@@ -41,10 +43,11 @@ async function runAdministrativeCommand(args: CliArgs) {
   if (!accountAddress || !privateKey || !admissionUrl)
     throw new Error("Native credentials and ADMISSION_URL are required");
   const provider = new RpcProvider({ nodeUrl: args["rpc-url"] });
-  await assertProviderChain(provider, "madara", "--rpc-url");
+  const manifest = readShardManifest<NativeWorldManifest>(args.manifest);
+  await assertProviderChain(provider, manifest, "--rpc-url");
   const result = await completeNativeAdminCommand({
     provider,
-    manifest: JSON.parse(readFileSync(args.manifest, "utf8")),
+    manifest,
     gameId: Number(args["game-id"]),
     accountAddress,
     privateKey,

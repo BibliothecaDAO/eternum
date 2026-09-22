@@ -12,20 +12,12 @@ export function confirmNonLocalDeployment(chain: string): void {
     return;
   }
 
-  // Color mapping for different chains
-  const chainColors: Record<string, string> = {
-    appchain: "35", // Magenta
-    default: "33", // Yellow
-  };
-
-  const chainColor = chainColors[chain.toLowerCase()] || chainColors.default;
-
   const warningBox = `
     \x1b[1;33m╔════════════════════ WARNING ════════════════════╗
     ║                                                 ║
     ║          SETTING CONFIGURATIONS FOR:            ║
     ║                                                 ║
-    ║            \x1b[1;${chainColor}m>>> ${chain.toUpperCase()} NETWORK <<<\x1b[1;33m              
+    ║            \x1b[1;33m>>> ${chain.toUpperCase()} NETWORK <<<\x1b[1;33m
     ║                                                 ║
     ║   \x1b[1;36mAre you sure you want to proceed? (yes/no)\x1b[1;33m   ║
     ║                                                 ║

@@ -3,9 +3,9 @@ import type {
   FactoryBlitzRegistrationOverrides,
   FactoryMapConfigOverrides,
 } from "@bibliothecadao/types";
-import type { GameChain } from "@realms-world/chain";
+import type { ConfigurationNetwork } from "../../shared/game-environments";
 
-export type DeploymentChain = GameChain;
+export type DeploymentChain = ConfigurationNetwork;
 export type DeploymentGameType = import("../../source/common/types").GameType;
 export type DeploymentEnvironmentId = import("../../shared/game-environments").GameEnvironmentId;
 export type ExecutionMode = "batched" | "sequential";

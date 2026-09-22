@@ -1,7 +1,7 @@
 import { duelBaseConfig } from "./duel/base";
 import { frontierBaseConfig } from "./frontier/base";
 import type { Config } from "../../packages/types/src/types/common";
-import type { GameChain } from "@realms-world/chain";
+import type { ConfigurationNetwork } from "../shared/game-environments";
 import { blitzBaseConfig } from "./blitz";
 import {
   buildEnvironmentContextConfig,
@@ -24,7 +24,7 @@ function resolveBaseGameConfig(gameType: GameType) {
 
 const chainConfigByMode: Record<
   GameType,
-  (chain: GameChain, context: EnvironmentContext) => ReturnType<typeof resolveBlitzChainConfig>
+  (chain: ConfigurationNetwork, context: EnvironmentContext) => ReturnType<typeof resolveBlitzChainConfig>
 > = {
   frontier: () => ({}),
   blitz: resolveBlitzChainConfig,

@@ -4,6 +4,7 @@ import { buildNativeGameParams, loadNativePresetConfiguration } from "../registr
 import { buildNativePreset } from "../config/native-preset";
 import { setTimeout as sleep } from "node:timers/promises";
 import { Account, RpcProvider, shortString } from "starknet";
+import { readShardManifest } from "@realms-world/chain/shard-manifest";
 import { assertProviderChain } from "@realms-world/chain";
 import { applyDeploymentConfigOverrides } from "../config/config-loader";
 import {
@@ -168,7 +169,7 @@ function createLaunchAccount(launch: PreparedLaunch): Account {
 }
 
 async function assertLaunchChainTargets(launch: PreparedLaunch): Promise<void> {
-  await assertProviderChain(launch.runtime.provider, launch.runtime.environment.chain, "RPC_URL");
+  await assertProviderChain(launch.runtime.provider, readShardManifest(process.env.NATIVE_WORLD_MANIFEST), "RPC_URL");
 }
 
 async function buildRegistrarGameParams(launch: PreparedLaunch) {

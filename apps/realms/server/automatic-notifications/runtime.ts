@@ -27,7 +27,7 @@ export function startAutomaticNotifications() {
     config,
     source: createNotificationSource(config),
     ownerOf: ownerOfGameplayAccount,
-    verifyChain: () => verifyGameplayBindingChain(config.chain),
+    verifyChain: () => verifyGameplayBindingChain(config.chainId),
   });
   const tick = notifier.tick.pipe(
     Effect.provide(NotificationOutbox.layer),

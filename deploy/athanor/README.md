@@ -12,8 +12,7 @@ selecting its supported capacity.
 ## Live holdovers
 
 Until the native cutover's fresh genesis, the running live stack retains its `madara-lab` compose project and container
-names, the `WP_REALMS_MADARA_LAB` chain ID and its existing tunnel hostnames. Source-directory changes do not rename,
-restart or switch that stack. Candidate projects use `athanor-<shard>` with disjoint ports and volumes. Set
+names, chain ID and tunnel hostnames. Source-directory changes do not rename, restart or switch that stack. Candidate projects use `athanor-<shard>` with disjoint ports and volumes. Set
 `COMPOSE_PROJECT_NAME` when starting a shard, and `MADARA_CONTAINER` when measuring a separately named running node. The
 three live holdovers are removed only at the approved traffic switch.
 
@@ -48,8 +47,13 @@ python3 deploy/athanor/randomness/release/build.py /path/to/madara REVISION BUIL
 ```
 
 Use that node digest and a Herald release digest with `scripts/shard.py CONFIGURATION RUN_DIRECTORY`. The configuration
-names `shard`, `port_base` (three free loopback ports above 27999), `cpuset`, `node_memory_mib`, `madara_image`,
-`herald_image`, `chain_config` and `node_flags`. Both images must be pinned by digest. Flags explicitly select native
+names `shard`, `chain_id`, `port_base` (three free loopback ports above 27999), `cpuset`, `node_memory_mib`,
+`madara_image`, `herald_image`, `chain_config` and `node_flags`. Choose a unique `chain_id` of 1–31 ASCII letters,
+digits, underscores or hyphens, beginning with a letter. The runner writes its hex encoding to `native-world.json` at `shard.chainId`
+before deployment and renders the node configuration with the same identity. The checked-in chain configuration is a
+template; initialize it through the runner before starting a node. For the baseline compose profiles, set
+`CHAIN_CONFIG_PATH` to that rendered file; compose refuses to start without it. Deployment, preset and harness commands check their
+RPC against the manifest before submitting. Both images must be pinned by digest. Flags explicitly select native
 execution and compilation mode. The runner refuses existing project state and CPUs outside `athanor.slice`.
 
 Supply `DEPLOYER_ACCOUNT_ADDRESS` and `DEPLOYER_PRIVATE_KEY` from the isolated devnet. The runner creates private
@@ -95,7 +99,11 @@ Load credentials from a private, gitignored environment file under `.lab/`. The 
 `RPC_URL`, `DEPLOYER_ACCOUNT_ADDRESS`, `DEPLOYER_PRIVATE_KEY`, `BINDING_AUTHORITY_ADDRESS`, `RANDOMNESS_PRIVATE_KEY`,
 `NATIVE_AUTHORITY_FILE`, `GAMEPLAY_CONTRACTS_PATH`, `BINDING_AUTHORITY_PRIVATE_KEY` and `NATIVE_WORLD_MANIFEST`. The
 sequencing authority output contains its signing credential; keep it private. `NATIVE_WORLD_MANIFEST` must point to the
-isolated world's output, not another stack's manifest.
+isolated shard's output. For manual initialization, write `{ "shard": { "chainId": "0x..." } }` there first, using the hex encoding
+of the unique ASCII chain ID in the node configuration. The deployer asserts the node reports this identity, then preserves it in `shard.chainId` alongside
+`shard.accountClassHash` and `shard.contracts`. Only fresh shards are supported: manifests without
+`shard.chainId`, including the earlier top-level `chainId` shape, must be replaced by a fresh initialization with new
+node state. E1 provides no migration of an existing chain.
 
 On the already prepared isolated chain:
 

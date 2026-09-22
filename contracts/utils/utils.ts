@@ -1,4 +1,3 @@
-import appchainSeasonAddresses from "../../contracts/common/addresses/appchain.json";
 import localSeasonAddresses from "../../contracts/common/addresses/local.json";
 import madaraSeasonAddresses from "../../contracts/common/addresses/madara.json";
 import mainnetSeasonAddresses from "../../contracts/common/addresses/mainnet.json";
@@ -67,9 +66,6 @@ export function getSeasonAddresses(chain: string): SeasonAddresses {
       case "madara":
         addresses = madaraSeasonAddresses;
         break;
-      case "appchain":
-        addresses = appchainSeasonAddresses;
-        break;
       default:
         throw new Error(`Invalid chain: ${chain}`);
     }
@@ -80,7 +76,6 @@ export function getSeasonAddresses(chain: string): SeasonAddresses {
 }
 
 const REQUIRED_ADDRESS_KEYS: Record<string, readonly string[]> = {
-  appchain: ["strk", "factoryDeployer"],
   local: ["strk"],
   madara: ["strk", "factoryDeployer"],
   mainnet: ["strk", "lords", "seasonPass", "villagePass", "realms"],

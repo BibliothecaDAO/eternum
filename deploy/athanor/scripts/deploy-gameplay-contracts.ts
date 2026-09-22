@@ -5,6 +5,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { type Account, addAddressPadding, ec, hash, RpcProvider } from "starknet";
 import { ensureGameplayAccount, bindGameplayAccounts } from "@bibliothecadao/eternum";
+import { readShardManifest } from "../../../packages/chain/shard-manifest.js";
 import { assertProviderChain } from "../../../packages/chain/chain-guard.js";
 
 import {
@@ -126,7 +127,7 @@ function writeDeploymentResult(result: GameplayDeploymentResult): void {
 
 async function deployGameplayContracts(): Promise<GameplayDeploymentResult> {
   const provider = new RpcProvider({ nodeUrl: RPC_URL });
-  await assertProviderChain(provider, "madara", "RPC_URL");
+  await assertProviderChain(provider, readShardManifest(process.env.NATIVE_WORLD_MANIFEST), "RPC_URL");
   buildGameplayContracts();
   const account = createMadaraAccount(provider, DEPLOYER_ADDRESS, DEPLOYER_PRIVATE_KEY);
   const { playerAccountClassHash, playerRegistryClassHash } = await declareGameplayContracts(account);

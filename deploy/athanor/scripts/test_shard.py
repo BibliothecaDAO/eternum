@@ -10,7 +10,7 @@ import shard
 
 def configuration():
     return {
-        "shard": "smoke", "port_base": 28050, "cpuset": "8-11,20-23", "node_memory_mib": 16384,
+        "shard": "smoke", "chain_id": "SHARD_A", "port_base": 28050, "cpuset": "8-11,20-23", "node_memory_mib": 16384,
         "madara_image": "sha256:" + "a" * 64, "herald_image": "sha256:" + "b" * 64,
         "chain_config": "/tmp/chain-config.yaml",
         "node_flags": ["--enable-native-execution=true", "--native-compilation-mode=async"],
@@ -23,6 +23,7 @@ class ShardTest(unittest.TestCase):
         allowed = set(range(8, 12)) | set(range(20, 24))
         shard.validate_configuration(config, allowed)
         for key, value in (
+            ("chain_id", ""), ("chain_id", "a" * 32), ("chain_id", "a\nb"),
             ("port_base", 5050), ("cpuset", "0-23"), ("node_memory_mib", 65536),
             ("madara_image", "madara:latest"), ("shard", "../live"),
             ("node_flags", ["--base-path=/live"]),
@@ -30,6 +31,22 @@ class ShardTest(unittest.TestCase):
         ):
             with self.subTest(key=key, value=value), self.assertRaises(ValueError):
                 shard.validate_configuration({**config, key: value}, allowed)
+
+    def test_initialization_replaces_template_identity_for_each_shard(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            template = root / "template.yaml"
+            template.write_text('chain_name: "Template"\nchain_id: "OLD_SHARD"\n')
+            for name in ("SHARD_A", "SHARD_B"):
+                directory = root / name
+                directory.mkdir()
+                shard.initialize_shard_identity({"chain_id": name, "chain_config": str(template)}, directory)
+                manifest = json.loads((directory / "native-world.json").read_text())
+                self.assertEqual(bytes.fromhex(manifest["shard"]["chainId"][2:]).decode(), name)
+                config = (directory / "chain-config.yaml").read_text()
+                self.assertEqual(config.count("chain_id:"), 1)
+                self.assertIn(f'chain_id: "{name}"', config)
+                self.assertNotIn("OLD_SHARD", config)
 
     def test_shards_have_distinct_projects_ports_volumes_and_databases(self):
         first = configuration()

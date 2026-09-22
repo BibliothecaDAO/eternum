@@ -17,13 +17,12 @@ Keep the VAPID configuration described in [Web Push setup](../web-push.md), and 
 
 - `WEB_PUSH_AUTOMATIC_ENABLED=true` (defaults off; requires `WEB_PUSH_ENABLED=true`)
 - `NOTIFICATION_HERALD_URL=https://herald.realms.party`
-- `NOTIFICATION_CHAIN=madara`
-- `NOTIFICATION_WORLD_ADDRESS=<the world address from Herald's deployed manifest>`
+- `NATIVE_WORLD_MANIFEST=<path to the shard deployment document>`
 
-The source response must match the configured chain/world. The worker checks the gameplay RPC chain against the shared
-chain registry before each pass. PlayerRegistry reads use the identity server's `GAME_RPC_URL` and
-`PLAYER_REGISTRY_ADDRESS`; do not point them at a different gameplay deployment. Owner reads explicitly use the latest
-confirmed block, and RPC calls have a ten-second timeout.
+The source response must match the manifest chain/world. The worker checks the gameplay RPC chain against the manifest
+identity before each pass. PlayerRegistry reads use the identity server's `GAME_RPC_URL` and `PLAYER_REGISTRY_ADDRESS`;
+do not point them at a different gameplay deployment. Owner reads explicitly use the latest confirmed block, and RPC
+calls have a ten-second timeout.
 
 Existing test subscriptions are not upgraded automatically. Players explicitly choose **Enable game alerts** on an
 existing device, or **Enable background notifications** on a new device. Setup checks worker compatibility and activates

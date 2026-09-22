@@ -136,7 +136,7 @@ async function main(): Promise<void> {
     readJson<GameplayContractsArtifact>(path.resolve(REPOSITORY_ROOT, gameplayContractsPath)),
     openShard(options.heraldUrl, bindings.schemaIdentity),
   ]);
-  assertChainId(chainId, "madara", "RPC_URL");
+  assertChainId(chainId, { shard }, "RPC_URL");
   if (BigInt(gameplayContracts.playerRegistryAddress) !== 0n) {
     requiredEnvironmentValue("BINDING_AUTHORITY_PRIVATE_KEY", "harness with PlayerRegistry");
   }
