@@ -117,8 +117,8 @@ export interface WorkerWorkloadSummary {
   thresholdEligibleActions: number;
   /** When this worker's first action left, so the driver can show how tight the release was. */
   firstSubmitAt: string | null;
-  preConfirmedMs: number[];
-  acceptedOnL2Ms: number[];
+  admissionToVisibleMs: number[];
+  heraldConfirmedLagMs: number[];
 }
 
 export interface HarnessReportInput {
@@ -144,6 +144,7 @@ export interface HarnessReportInput {
 interface PercentileSummary {
   acceptedOnL2Ms: LatencyPercentiles;
   admissionToVisibleMs: LatencyPercentiles;
+  heraldConfirmedLagMs: LatencyPercentiles;
   preConfirmedMs: LatencyPercentiles;
   submitDelayMs: LatencyPercentiles;
   submitMs: LatencyPercentiles;
@@ -155,9 +156,10 @@ interface LatencyPercentiles {
   p99: number | null;
 }
 
-const PRECONFIRMED_P95_LIMIT_MS = 1_000;
-const ACCEPTED_ON_L2_P95_LIMIT_MS = 4_000;
-const CLOSE_BLOCK_P95_LIMIT_MS = 300;
+// The owner's bars (2026-09-23): the player sees a pre-confirmed result fast, Herald keeps up with the node, and
+// nothing fails. Block close, pre-confirmed and accepted-on-L2 latencies are reported beside them as diagnostics.
+const ADMISSION_TO_VISIBLE_P95_LIMIT_MS = 250;
+const HERALD_CONFIRMED_LAG_P95_LIMIT_MS = 500;
 export const HARNESS_OUTPUT_DIRECTORY = path.resolve(
   process.env.HARNESS_OUTPUT_DIRECTORY ?? path.resolve(import.meta.dir, "../.lab/runs"),
 );
@@ -211,7 +213,7 @@ function summarizeWorkerWorkload(
   input: HarnessReportInput,
   analysis: ReturnType<typeof analyzeHarnessResult>,
 ): WorkerWorkloadSummary {
-  const latencies = (field: "preConfirmedMs" | "acceptedOnL2Ms") =>
+  const latencies = (field: "admissionToVisibleMs" | "heraldConfirmedLagMs") =>
     analysis.completedActions.flatMap((action) => (action[field] === undefined ? [] : [action[field]]));
   return {
     gameId: input.games[0]!.gameId,
@@ -220,8 +222,8 @@ function summarizeWorkerWorkload(
     plannedActions: input.workload.plannedActions,
     thresholdEligibleActions: analysis.thresholdEligibleActions,
     firstSubmitAt: analysis.actions[0]?.submitStartedAt ?? null,
-    preConfirmedMs: latencies("preConfirmedMs"),
-    acceptedOnL2Ms: latencies("acceptedOnL2Ms"),
+    admissionToVisibleMs: latencies("admissionToVisibleMs"),
+    heraldConfirmedLagMs: latencies("heraldConfirmedLagMs"),
   };
 }
 
@@ -230,19 +232,20 @@ export function assessRosterRun(input: {
   functional: boolean;
   workers: WorkerWorkloadSummary[];
   minimumThresholdActions: number;
-  evidence: HarnessEvidence | null;
 }) {
   const plannedActions = input.workers.reduce((sum, worker) => sum + worker.plannedActions, 0);
   const thresholdEligibleActions = input.workers.reduce((sum, worker) => sum + worker.thresholdEligibleActions, 0);
-  const preConfirmedMs = input.workers.flatMap((worker) => worker.preConfirmedMs);
-  const acceptedOnL2Ms = input.workers.flatMap((worker) => worker.acceptedOnL2Ms);
+  const admissionToVisibleMs = input.workers.flatMap((worker) => worker.admissionToVisibleMs);
+  const heraldConfirmedLagMs = input.workers.flatMap((worker) => worker.heraldConfirmedLagMs);
   const percentiles = {
-    preConfirmedMs: { p50: percentile(preConfirmedMs, 50), p95: percentile(preConfirmedMs, 95) },
-    acceptedOnL2Ms: { p50: percentile(acceptedOnL2Ms, 50), p95: percentile(acceptedOnL2Ms, 95) },
+    admissionToVisibleMs: { p50: percentile(admissionToVisibleMs, 50), p95: percentile(admissionToVisibleMs, 95) },
+    heraldConfirmedLagMs: { p50: percentile(heraldConfirmedLagMs, 50), p95: percentile(heraldConfirmedLagMs, 95) },
   };
   const checks = {
     thresholdEligibleActions: thresholdEligibleActions >= input.minimumThresholdActions,
-    ...(input.functional ? {} : latencyChecks(percentiles.acceptedOnL2Ms.p95, percentiles.preConfirmedMs.p95, input.evidence)),
+    ...(input.functional
+      ? {}
+      : latencyChecks(percentiles.admissionToVisibleMs.p95, percentiles.heraldConfirmedLagMs.p95)),
   };
   return {
     checks,
@@ -261,16 +264,11 @@ function releaseSpread(workers: WorkerWorkloadSummary[]): number | null {
   return first.length === 0 ? null : Math.max(...first) - Math.min(...first);
 }
 
-/** A run is judged only on its own samples: a latency with no samples fails its budget, never passes as zero. */
-export function latencyChecks(
-  acceptedOnL2P95: number | null,
-  preConfirmedP95: number | null,
-  evidence: HarnessEvidence | null,
-) {
+/** A run is judged only on its own samples: a latency with no samples fails its bar, never passes as zero. */
+export function latencyChecks(admissionToVisibleP95: number | null, heraldConfirmedLagP95: number | null) {
   return {
-    acceptedOnL2P95: passesLatency(acceptedOnL2P95, ACCEPTED_ON_L2_P95_LIMIT_MS),
-    preConfirmedP95: passesLatency(preConfirmedP95, PRECONFIRMED_P95_LIMIT_MS),
-    closeBlockP95: passesCloseCost(evidence?.blockStats ?? null),
+    admissionToVisibleP95: passesLatency(admissionToVisibleP95, ADMISSION_TO_VISIBLE_P95_LIMIT_MS),
+    heraldConfirmedLagP95: passesLatency(heraldConfirmedLagP95, HERALD_CONFIRMED_LAG_P95_LIMIT_MS),
   };
 }
 
@@ -280,9 +278,8 @@ function gateLimits(functional: boolean, minimumThresholdActions: number) {
     ...(functional
       ? {}
       : {
-          acceptedOnL2P95Ms: ACCEPTED_ON_L2_P95_LIMIT_MS,
-          preConfirmedP95Ms: PRECONFIRMED_P95_LIMIT_MS,
-          closeBlockP95Ms: CLOSE_BLOCK_P95_LIMIT_MS,
+          admissionToVisibleP95Ms: ADMISSION_TO_VISIBLE_P95_LIMIT_MS,
+          heraldConfirmedLagP95Ms: HERALD_CONFIRMED_LAG_P95_LIMIT_MS,
         }),
   };
 }
@@ -311,7 +308,7 @@ function analyzeHarnessResult(input: HarnessReportInput) {
           thresholdEligibleActions: thresholdEligibleActions >= input.gates.minimumThresholdActions,
           ...(input.functional
             ? {}
-            : latencyChecks(percentiles.acceptedOnL2Ms.p95, percentiles.preConfirmedMs.p95, input.gates.evidence)),
+            : latencyChecks(percentiles.admissionToVisibleMs.p95, percentiles.heraldConfirmedLagMs.p95)),
         }),
     setup: setupFailures.length === 0,
     ...(input.workload.frontier && input.functional ? frontierDesignChecks(input.workload.frontier) : {}),
@@ -626,6 +623,7 @@ function summarizePercentiles(actions: TrackedTransaction[]): PercentileSummary 
   return {
     acceptedOnL2Ms: latencyPercentiles(actions, "acceptedOnL2Ms"),
     admissionToVisibleMs: latencyPercentiles(actions, "admissionToVisibleMs"),
+    heraldConfirmedLagMs: latencyPercentiles(actions, "heraldConfirmedLagMs"),
     preConfirmedMs: latencyPercentiles(actions, "preConfirmedMs"),
     submitDelayMs: latencyPercentiles(actions, "submitDelayMs"),
     submitMs: latencyPercentiles(actions, "submitMs"),
@@ -634,7 +632,7 @@ function summarizePercentiles(actions: TrackedTransaction[]): PercentileSummary 
 
 function latencyPercentiles(
   actions: TrackedTransaction[],
-  field: "acceptedOnL2Ms" | "admissionToVisibleMs" | "preConfirmedMs" | "submitDelayMs" | "submitMs",
+  field: keyof PercentileSummary,
 ): LatencyPercentiles {
   const values = actions.flatMap((action) => (action[field] === undefined ? [] : [action[field]]));
   return { p50: percentile(values, 50), p95: percentile(values, 95), p99: percentile(values, 99) };
@@ -644,13 +642,8 @@ function passesLatency(value: number | null, limit: number): boolean {
   return value !== null && value <= limit;
 }
 
-/** The close-cost bar: block close p95 within the limit, measured from the node's own close_block lines. */
-function passesCloseCost(blockStats: BlockStats | null): boolean {
-  return blockStats !== null && passesLatency(blockStats.closeBlockMs.p95, CLOSE_BLOCK_P95_LIMIT_MS);
-}
-
-// Block stats carry the close-cost bar, so a measured run cannot pass without them: a failed read (log rotation, a
-// window spanning a container restart, an empty window) is a failed run, never a null figure.
+// Block stats are the run's close-cost diagnostic, so a measured run cannot pass without them: a failed read (log
+// rotation, a window spanning a container restart, an empty window) is a failed run, never a null figure.
 async function captureBlockStats(since: string, until: string): Promise<BlockStats> {
   const output = await runCommand([BLOCK_STATS_SCRIPT, "--since", since, "--until", until, "--json"]);
   const summary = JSON.parse(output) as Omit<BlockStats, "window">;

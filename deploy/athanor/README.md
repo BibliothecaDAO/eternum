@@ -193,9 +193,12 @@ failed. Run reports remain in `.lab/runs/`; measurements and exact revision/imag
 
 A roster run drives every player as a worker thread of one process and asserts its gates once, over the whole run, in
 `rosters-<time>/summary.json`: the action threshold (3,500 for the frozen 96-player configuration, otherwise every
-planned action), pre-confirmed p95 ≤ 1 s, accepted-on-L2 p95 ≤ 4 s and block close p95 ≤ 300 ms. Host state and block
-stats are read once by the driver, never per worker, and a block-stats read that fails or finds no closed block fails
-the run. The summary records the driver's placement (host, pid, cpuset, cgroup, available threads) and, per game, the
+planned action) and the owner's bars: submit to pre-confirmed visible in the client p95 ≤ 250 ms
+(`admissionToVisibleMs`), Herald's confirmed state behind the node p95 ≤ 500 ms (`heraldConfirmedLagMs`: Herald's
+confirmed notice for the transaction minus the node's ACCEPTED_ON_L2 for it, both on the driver's clock), and zero
+failures. Pre-confirmed, accepted-on-L2 and block close latencies are reported beside them as diagnostics. Host state
+and block stats are read once by the driver, never per worker, and a block-stats read that fails or finds no closed
+block fails the run. The summary records the driver's placement (host, pid, cpuset, cgroup, available threads) and, per game, the
 number of transactions its settlement burst took at start. Worker reports under `players/` carry no gates of their own.
 
 The capacity campaign's shapes are run configurations of the same harness. `--preset <id>` names the preset new games

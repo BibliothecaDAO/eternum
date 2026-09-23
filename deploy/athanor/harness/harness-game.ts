@@ -1,5 +1,6 @@
 import { requireNativeExecutionOutcome } from "@bibliothecadao/provider";
 import { setTimeout as sleep } from "node:timers/promises";
+import type { HeraldConfirmations } from "./game-client";
 import {
   buildArmyPathIndexes,
   configManager,
@@ -42,6 +43,8 @@ export interface ProductionState {
 export interface HarnessSubmission {
   transactionHash: string;
   confirmed?: Promise<unknown>;
+  /** When Herald reported the transaction confirmed, in driver-clock milliseconds. */
+  heraldConfirmedAtMs?: Promise<number>;
 }
 
 interface SubmittedEvent {
@@ -81,7 +84,7 @@ export interface HarnessGame {
 export const EXPLORER_TROOP_COUNT = 10;
 const T1_TROOP_TYPES: readonly TroopType[] = [TroopType.Knight, TroopType.Paladin, TroopType.Crossbowman];
 
-export function createHarnessGame(client: GameClient): HarnessGame {
+export function createHarnessGame(client: GameClient, heraldConfirmations?: HeraldConfirmations): HarnessGame {
   const { store, systemCalls } = client.setup;
   const game_id = client.gameId;
   const awaitingHash = new Set<string>();
@@ -156,7 +159,7 @@ export function createHarnessGame(client: GameClient): HarnessGame {
         produced_resource_types: [ResourcesIds.Wood],
       });
     },
-    submit: (signer, act) => captureSubmission(client, awaitingHash, signer.address, act),
+    submit: (signer, act) => captureSubmission(client, heraldConfirmations, awaitingHash, signer.address, act),
     waitFor: (read, timeoutMs, describe) => waitForWorldState(client, read, timeoutMs, describe),
   };
 }
@@ -188,6 +191,7 @@ async function waitUntilPlaying({ setup: { store }, gameId: game_id }: GameClien
  */
 const captureSubmission = (
   client: GameClient,
+  heraldConfirmations: HeraldConfirmations | undefined,
   awaitingHash: Set<string>,
   signerAddress: string,
   act: () => Promise<unknown>,
@@ -209,6 +213,7 @@ const captureSubmission = (
       const ticket = event.ticket;
       resolve({
         transactionHash: event.transactionHash,
+        heraldConfirmedAtMs: heraldConfirmations?.confirmedAt(event.transactionHash),
         confirmed: client.runtime.waitForTransaction(event.transactionHash).then((transaction) => {
           if (transaction.status === "REVERTED") throw new Error(transaction.revertReason ?? "Transaction reverted");
           const outcome = requireNativeExecutionOutcome(transaction.executions, ticket);

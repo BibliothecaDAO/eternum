@@ -76,10 +76,42 @@ describe("transaction confirmation deadline", () => {
     expect(result.outcome).toBe("driver_failed");
     expect(result.error).toContain("disconnected");
   });
+  it("measures Herald's confirmed state behind the node on one clock", async () => {
+    let clock = 1_000;
+    const now = spyOn(Date, "now").mockImplementation(() => clock);
+    const provider = {
+      subscribeTransactionStatus: async () => {
+        clock = 1_400;
+        return statusSubscription({ finality_status: "ACCEPTED_ON_L2" });
+      },
+      getTransactionReceipt: async () => ({ block_number: 42 }),
+    } as unknown as HarnessProvider;
+    try {
+      const result = await trackTransaction({
+        botId: 1,
+        gameId: 1,
+        kind: "explore",
+        stage: "workload",
+        provider,
+        send: async () => ({
+          transactionHash: "0x123",
+          confirmed: Promise.resolve(),
+          heraldConfirmedAtMs: Promise.resolve(1_700),
+        }),
+      });
+      expect(result.outcome).toBe("completed");
+      expect(result.acceptedOnL2At).toBe(new Date(1_400).toISOString());
+      expect(result.heraldConfirmedAt).toBe(new Date(1_700).toISOString());
+      expect(result.heraldConfirmedLagMs).toBe(300);
+    } finally {
+      now.mockRestore();
+    }
+  });
   it("accepts setup sends without a Herald barrier and completed action barriers", async () => {
     const setup = await track(undefined);
     expect(setup.outcome).toBe("completed");
     expect(setup.admissionToVisibleMs).toBeUndefined();
+    expect(setup.heraldConfirmedLagMs).toBeUndefined();
     expect((await track(Promise.resolve())).outcome).toBe("completed");
   });
 });

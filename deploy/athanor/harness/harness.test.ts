@@ -35,7 +35,7 @@ import {
   summarizeRevertReasons,
   summarizeRpcMetrics,
 } from "./report";
-import type { HarnessEvidence, WorkerWorkloadSummary } from "./report";
+import type { WorkerWorkloadSummary } from "./report";
 import { createHarnessProvider, parseHarnessArgs } from "./run";
 import { BlockTag } from "starknet";
 import { EventEmitter } from "node:events";
@@ -437,15 +437,16 @@ describe("Madara harness workload", () => {
 });
 
 describe("Madara harness reporting", () => {
-  it("fails a run's pre-confirmed budget when the run has no pre-confirmed samples", () => {
-    expect(latencyChecks(40, null, null).preConfirmedP95).toBe(false);
-    expect(latencyChecks(40, 40, null).preConfirmedP95).toBe(true);
+  it("fails a bar when the run has no samples for it", () => {
+    expect(latencyChecks(40, null)).toEqual({ admissionToVisibleP95: true, heraldConfirmedLagP95: false });
+    expect(latencyChecks(null, 40)).toEqual({ admissionToVisibleP95: false, heraldConfirmedLagP95: true });
   });
 
   it("asserts the action threshold and the latency bars over every worker of a roster run", () => {
     const worker = (
       thresholdEligibleActions: number,
-      preConfirmedMs: number[],
+      admissionToVisibleMs: number[],
+      heraldConfirmedLagMs: number[] = admissionToVisibleMs.map((value) => value + 100),
       firstSubmitAt: string | null = "2026-09-23T00:00:00.000Z",
     ): WorkerWorkloadSummary => ({
       gameId: 1,
@@ -454,23 +455,19 @@ describe("Madara harness reporting", () => {
       plannedActions: 40,
       thresholdEligibleActions,
       firstSubmitAt,
-      preConfirmedMs,
-      acceptedOnL2Ms: preConfirmedMs.map((value) => value + 100),
+      admissionToVisibleMs,
+      heraldConfirmedLagMs,
     });
-    const evidence = (closeBlockP95: number) =>
-      ({ blockStats: { closeBlockMs: { p50: 100, p95: closeBlockP95, max: closeBlockP95 } } }) as HarnessEvidence;
     // One bot short of its own plan does not fail the run while the total clears the bar.
     const passing = assessRosterRun({
       functional: false,
-      workers: [worker(40, [200, 900]), worker(30, [300, 400], "2026-09-23T00:00:00.250Z")],
+      workers: [worker(40, [120, 250]), worker(30, [90, 200], [300, 500], "2026-09-23T00:00:00.250Z")],
       minimumThresholdActions: 70,
-      evidence: evidence(299),
     });
     expect(passing.checks).toEqual({
       thresholdEligibleActions: true,
-      acceptedOnL2P95: true,
-      preConfirmedP95: true,
-      closeBlockP95: true,
+      admissionToVisibleP95: true,
+      heraldConfirmedLagP95: true,
     });
     expect(passing).toMatchObject({
       passed: true,
@@ -478,23 +475,23 @@ describe("Madara harness reporting", () => {
       thresholdEligibleActions: 70,
       releaseSpreadMs: 250,
     });
-    expect(passing.percentiles?.preConfirmedMs.p95).toBe(900);
+    expect(passing.percentiles?.admissionToVisibleMs.p95).toBe(250);
+    expect(passing.percentiles?.heraldConfirmedLagMs.p95).toBe(500);
 
     expect(
       assessRosterRun({
         functional: false,
-        workers: [worker(40, [200]), worker(29, [300])],
+        workers: [worker(40, [200]), worker(29, [251], [501])],
         minimumThresholdActions: 70,
-        evidence: evidence(301),
       }).checks,
-    ).toMatchObject({ thresholdEligibleActions: false, closeBlockP95: false });
-    // A failed block-stats read leaves no evidence, and the close-cost bar cannot pass without it.
+    ).toEqual({ thresholdEligibleActions: false, admissionToVisibleP95: false, heraldConfirmedLagP95: false });
+    // A run with no measured lag cannot pass the Herald bar by default.
     expect(
-      assessRosterRun({ functional: false, workers: [worker(40, [1])], minimumThresholdActions: 40, evidence: null })
-        .checks.closeBlockP95,
+      assessRosterRun({ functional: false, workers: [worker(40, [1], [])], minimumThresholdActions: 40 })
+        .checks.heraldConfirmedLagP95,
     ).toBe(false);
     expect(
-      assessRosterRun({ functional: true, workers: [worker(40, [])], minimumThresholdActions: 40, evidence: null }),
+      assessRosterRun({ functional: true, workers: [worker(40, [])], minimumThresholdActions: 40 }),
     ).toMatchObject({ passed: true, checks: { thresholdEligibleActions: true }, percentiles: null });
   });
 

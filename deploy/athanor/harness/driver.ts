@@ -56,6 +56,9 @@ export interface TrackedTransaction {
   finalityStatus?: string;
   failureClass?: WorkloadFailureClass;
   gameId: number;
+  /** Herald's confirmed state behind the node: its confirmed notice minus the node's ACCEPTED_ON_L2, one clock. */
+  heraldConfirmedAt?: string;
+  heraldConfirmedLagMs?: number;
   kind: string;
   outcome: TransactionOutcome;
   preConfirmedAt?: string;
@@ -987,7 +990,7 @@ async function waitForConfirmation(
     if (result.outcome !== "completed") return result;
     const failure = await confirmed;
     return failure === undefined
-      ? { ...result, ...visibility }
+      ? { ...result, ...visibility, ...(await heraldConfirmedLag(submission, result)) }
       : {
           ...result,
           outcome: isGameplayRejection(failure) ? ("rejected" as const) : ("driver_failed" as const),
@@ -1000,6 +1003,18 @@ async function waitForConfirmation(
     clearTimeout(timer!);
     stop.abort();
   }
+}
+
+async function heraldConfirmedLag(
+  submission: HarnessSubmission,
+  result: Partial<TrackedTransaction>,
+): Promise<Partial<TrackedTransaction>> {
+  if (!submission.heraldConfirmedAtMs || result.acceptedOnL2At === undefined) return {};
+  const heraldConfirmedAtMs = await submission.heraldConfirmedAtMs;
+  return {
+    heraldConfirmedAt: toIso(heraldConfirmedAtMs),
+    heraldConfirmedLagMs: heraldConfirmedAtMs - Date.parse(result.acceptedOnL2At),
+  };
 }
 
 async function waitForReceiptLifecycle(
@@ -1239,7 +1254,7 @@ function driverFailure({
  */
 const GAMEPLAY_REJECTION = /Native action rejected: (?:GAMEPLAY_REJECTED|COMMAND_DISABLED|ROSTER_NOT_READY)\b/;
 
-export function isGameplayRejection(error: unknown): boolean {
+function isGameplayRejection(error: unknown): boolean {
   return GAMEPLAY_REJECTION.test(errorMessage(error));
 }
 

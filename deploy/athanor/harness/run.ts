@@ -167,7 +167,7 @@ async function main(): Promise<void> {
     ),
   }));
   const signingKeys = new Map(accounts.map(({ address, privateKey }) => [BigInt(address), privateKey]));
-  const client = await connectHarnessGameClient({
+  const { client, heraldConfirmations } = await connectHarnessGameClient({
     actor: accounts[0].address,
     shard,
     signIntent: async (actor, digest) => {
@@ -179,7 +179,7 @@ async function main(): Promise<void> {
   });
 
   try {
-    const harnessGame = createHarnessGame(client);
+    const harnessGame = createHarnessGame(client, heraldConfirmations);
     const setupTransactions: TrackedTransaction[] = [];
     const bots =
       options.gameType === "frontier"
@@ -459,7 +459,6 @@ async function runRosterGroups(options: HarnessCliOptions, games: PreparedGame[]
       options,
       workloads.reduce((sum, workload) => sum + workload.plannedActions, 0),
     ),
-    evidence,
   });
   const workersPassed =
     reports.length === players.length && reports.every((report) => report.passed && report.pid === process.pid);

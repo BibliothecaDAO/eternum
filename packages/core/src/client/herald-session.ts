@@ -9,6 +9,7 @@ import type {
   GameSyncSessionStart,
   GameSyncStore,
   GameSyncSnapshotProgress,
+  GameSyncTransaction,
 } from "../sync/game-sync-types";
 import { HeraldGameSyncTransport, type HeraldSocket } from "../sync/herald-game-sync-transport";
 import type { GameSyncScheduler } from "../sync/scheduler";
@@ -32,6 +33,8 @@ export interface GameClientObserver {
   onLiveApplyFailed?: (error: Error) => void;
   /** Herald reported a head: a confirmed block, or the pre-confirmed sequencer clock. */
   onHead?: (head: GameSyncHead) => void;
+  /** Herald reported a transaction's status, pre-confirmed first and then confirmed with its block. */
+  onTransaction?: (transaction: GameSyncTransaction) => void;
   /** A story event row arrived on the live stream, scoped to the chain, world and game it belongs to. */
   onStoryEvent?: (event: GameSyncEvent, scope: StoryEventScope, confirmation: GameSyncEventConfirmation) => void;
   /** A new session starts; story events from the previous one are stale. */
@@ -111,6 +114,7 @@ export function createHeraldGameSyncSession(
     onTransactionEntitiesReceived: observer.onDiffReceived,
     onSubscriptionActive: observer.onSubscriptionActive,
     onHead: observer.onHead,
+    onTransaction: observer.onTransaction,
     scheduler: input.scheduler,
     snapshotModels: input.entityModels,
     store: input.store,

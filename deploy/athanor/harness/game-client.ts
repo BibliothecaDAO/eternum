@@ -8,7 +8,7 @@ import {
   type GameClient,
 } from "@bibliothecadao/eternum";
 import { fetchHeraldGameDirectory, type GameClientObserver, type Shard } from "@bibliothecadao/eternum/game-client";
-import { createMicrotaskGameSyncScheduler } from "@bibliothecadao/eternum/game-sync";
+import { createMicrotaskGameSyncScheduler, type GameSyncTransaction } from "@bibliothecadao/eternum/game-sync";
 import type { NativeWorldBindings } from "@bibliothecadao/types";
 import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
 
@@ -26,10 +26,24 @@ interface ConnectHarnessGameClientOptions {
 const GAME_LISTING_TIMEOUT_MS = 120_000;
 const GAME_LISTING_POLL_MS = 2_000;
 
+/**
+ * When Herald reported each transaction confirmed, on this process's clock: the same clock that saw the node accept
+ * it, so the difference is Herald's confirmed state behind the node with no clock skew in it.
+ */
+export interface HeraldConfirmations {
+  confirmedAt(transactionHash: string): Promise<number>;
+}
+
+export interface HarnessGameClient {
+  client: GameClient;
+  heraldConfirmations: HeraldConfirmations;
+}
+
 /** Each player reads and acts through its own Herald subscription and native store. */
-export async function connectHarnessGameClient(options: ConnectHarnessGameClientOptions): Promise<GameClient> {
+export async function connectHarnessGameClient(options: ConnectHarnessGameClientOptions): Promise<HarnessGameClient> {
   const presetId = await waitForHeraldToListGame(options.shard, options.gameId);
-  const clock = createLoggingObserver(options.gameId);
+  const heraldConfirmations = createHeraldConfirmations();
+  const clock = createLoggingObserver(options.gameId, heraldConfirmations);
   const client = await createGameClient({
     actor: options.actor,
     shard: options.shard,
@@ -46,11 +60,34 @@ export async function connectHarnessGameClient(options: ConnectHarnessGameClient
   });
   try {
     await clock.ready();
-    return client;
+    return { client, heraldConfirmations };
   } catch (error) {
     client.dispose();
     throw error;
   }
+}
+
+function createHeraldConfirmations() {
+  const confirmedAtMs = new Map<string, number>();
+  const waiters = new Map<string, Array<(atMs: number) => void>>();
+  const key = (hash: string) => `0x${BigInt(hash).toString(16)}`;
+  return {
+    record(transaction: GameSyncTransaction): void {
+      if (transaction.block === null || !["ACCEPTED_ON_L2", "ACCEPTED_ON_L1"].includes(transaction.status)) return;
+      const hash = key(transaction.hash);
+      if (confirmedAtMs.has(hash)) return;
+      const atMs = Date.now();
+      confirmedAtMs.set(hash, atMs);
+      waiters.get(hash)?.forEach((resolve) => resolve(atMs));
+      waiters.delete(hash);
+    },
+    confirmedAt(transactionHash: string): Promise<number> {
+      const hash = key(transactionHash);
+      const known = confirmedAtMs.get(hash);
+      if (known !== undefined) return Promise.resolve(known);
+      return new Promise((resolve) => waiters.set(hash, [...(waiters.get(hash) ?? []), resolve]));
+    },
+  };
 }
 
 /** A game launched moments ago reaches Herald's directory once its registry row is folded; its row carries the preset. */
@@ -65,7 +102,7 @@ async function waitForHeraldToListGame(world: Shard, gameId: number): Promise<nu
   throw new Error(`Herald did not list game ${gameId} within ${GAME_LISTING_TIMEOUT_MS / 1_000} seconds`);
 }
 
-const createLoggingObserver = (gameId: number) => {
+const createLoggingObserver = (gameId: number, confirmations: ReturnType<typeof createHeraldConfirmations>) => {
   let confirmedTimestamp: number | null = null;
   let onConfirmed: (() => void) | undefined;
   setChainProvenTimestampSource(() => confirmedTimestamp);
@@ -80,6 +117,7 @@ const createLoggingObserver = (gameId: number) => {
         onConfirmed?.();
       }
     },
+    onTransaction: (transaction) => confirmations.record(transaction),
     onSubscriptionActive: () => console.log(`Game client subscribed to game ${gameId}`),
     onSnapshotPhaseCompleted: (phase, durationMs) =>
       console.log(`Game client snapshot ${phase} completed in ${Math.round(durationMs)} ms`),
