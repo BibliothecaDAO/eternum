@@ -1,4 +1,5 @@
-import { normalizeWorldMapRoutePosition } from "@/play/navigation/play-route-target";
+import { mapRouteHex } from "@/play/navigation/play-route";
+import type { Position } from "@bibliothecadao/eternum";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 import { readActivePlayerStructures } from "@/sync/fact-views";
 import { ID } from "@bibliothecadao/types";
@@ -34,11 +35,9 @@ export interface RealmStore {
   structureEntityId: ID;
   lastControlledStructureEntityId: ID;
   isSpectating: boolean;
+  /** Where the world map re-opens: a map URL's hex, normalized (mapRouteHex). */
   worldMapReturnPosition: { col: number; row: number } | null;
-  setStructureEntityId: (
-    structureEntityId: ID,
-    options?: { spectator?: boolean; worldMapPosition?: { col: number; row: number } },
-  ) => void;
+  setStructureEntityId: (structureEntityId: ID, options?: { spectator?: boolean; worldMapPosition?: Position }) => void;
   setLastControlledStructureEntityId: (structureEntityId: ID) => void;
   exitSpectatorMode: () => void;
   arrivedArrivalsNumber: number;
@@ -56,10 +55,7 @@ export const createRealmStoreSlice = (
   lastControlledStructureEntityId: UNDEFINED_STRUCTURE_ENTITY_ID,
   isSpectating: false,
   worldMapReturnPosition: null,
-  setStructureEntityId: (
-    structureEntityId: ID,
-    options?: { spectator?: boolean; worldMapPosition?: { col: number; row: number } },
-  ) =>
+  setStructureEntityId: (structureEntityId: ID, options?: { spectator?: boolean; worldMapPosition?: Position }) =>
     set((state: RealmStore) => {
       const normalizedId = normalizeStructureId(structureEntityId);
       if (normalizedId === null) {
@@ -89,7 +85,7 @@ export const createRealmStoreSlice = (
       };
 
       if (options?.worldMapPosition) {
-        updates.worldMapReturnPosition = normalizeWorldMapRoutePosition(options.worldMapPosition);
+        updates.worldMapReturnPosition = mapRouteHex(options.worldMapPosition);
       }
 
       if (shouldSpectate) {

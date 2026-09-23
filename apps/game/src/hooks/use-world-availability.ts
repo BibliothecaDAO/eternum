@@ -32,7 +32,6 @@ interface WorldConfigMeta {
   spiresSettledCount: number | null;
   settlementLayerMax: number | null;
   settlementLayersSkipped: number | null;
-  mapCenterOffset: number | null;
   seasonPassAddress: string | null;
   villagePassAddress: string | null;
   registrationCount: number | null;
@@ -80,7 +79,6 @@ const emptyWorldConfigMeta = (): WorldConfigMeta => ({
   spiresSettledCount: null,
   settlementLayerMax: null,
   settlementLayersSkipped: null,
-  mapCenterOffset: null,
   seasonPassAddress: null,
   villagePassAddress: null,
   registrationCount: null,
@@ -122,7 +120,6 @@ const applyDirectoryGame = (meta: WorldConfigMeta, game: HeraldGameDirectoryEntr
   meta.spiresLayerDistance = game.settlement?.spires_layer_distance ?? null;
   meta.spiresMaxCount = game.settlement?.spires_max_count ?? null;
   meta.spiresSettledCount = game.settlement?.spires_settled_count ?? null;
-  meta.mapCenterOffset = game.settlement?.map_center_offset ?? null;
   meta.settledPlayersCount = game.player_count;
   meta.rosterCount = game.roster_count;
   meta.settledRealmsCount = game.settled_realms_count;

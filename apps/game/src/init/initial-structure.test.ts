@@ -29,8 +29,9 @@ vi.mock("@/hooks/store/use-account-store", () => ({
   },
 }));
 vi.mock("@/utils/spectator-session", () => ({ isExplicitSpectateSession: () => false }));
-vi.mock("@bibliothecadao/eternum", () => ({
-  configManager: { getActiveGameId: () => 1 },
+vi.mock("@bibliothecadao/eternum", async (importOriginal) => ({
+  Position: (await importOriginal<typeof import("@bibliothecadao/eternum")>()).Position,
+  configManager: { getActiveGameId: () => 1, getMapCenter: () => 0 },
   structureMapPosition: (_store: unknown, structure: { base: { coord_x: number; coord_y: number } }) => ({
     x: structure.base.coord_x,
     y: structure.base.coord_y,

@@ -24,7 +24,7 @@ import { resolveStoredWorldmapCameraDistance, useCameraZoomStore } from "@/hooks
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getCurrentPlayRouteBootToken, usePlayRouteReadinessStore } from "@/game-entry/play-route-readiness-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
-import { buildPlayHref, parsePlayRoute } from "@/play/navigation/play-route";
+import { buildPlayHref, mapRouteHex, parsePlayRoute } from "@/play/navigation/play-route";
 import { resolvePlayRouteWorldPosition } from "@/play/navigation/play-route-target";
 import {
   clearPendingReservedHyperstructureCreation,
@@ -615,7 +615,8 @@ function resolveExploreClientLatencyPhase(stage: string | undefined): ClientActi
 function reopenWorldMapAt(hex: HexPosition): void {
   const route = parsePlayRoute(window.location);
   if (!route) throw new Error(`Cannot re-open the world map outside a game route: ${window.location.pathname}`);
-  window.location.replace(buildPlayHref({ ...route, scene: "map", col: hex.col, row: hex.row }));
+  const position = Position.fromNormalized({ x: hex.col, y: hex.row });
+  window.location.replace(buildPlayHref({ ...route, scene: "map", ...mapRouteHex(position) }));
 }
 
 /** An action path's contract hex, as the scene hex its helpers work in. */
@@ -2350,11 +2351,7 @@ export default class WorldmapScene extends WarpTravel {
     const accountAddress = ContractAddress(useAccountStore.getState().account?.address || "");
     const isMine = structure.owner === accountAddress;
 
-    const contractPosition = Position.fromNormalized({ x: hexCoords.col, y: hexCoords.row }).getContract();
-    const worldMapPosition =
-      Number.isFinite(Number(contractPosition?.x)) && Number.isFinite(Number(contractPosition?.y))
-        ? { col: Number(contractPosition?.x), row: Number(contractPosition?.y) }
-        : undefined;
+    const worldMapPosition = Position.fromNormalized({ x: hexCoords.col, y: hexCoords.row });
 
     const shouldSpectate = this.state.isSpectating || !isMine;
 
@@ -3157,9 +3154,8 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private showSelectedStructure(structureId: ID, hex: HexPosition): void {
-    const contract = Position.fromNormalized({ x: hex.col, y: hex.row }).getContract();
     this.state.setStructureEntityId(structureId, {
-      worldMapPosition: { col: contract.x, row: contract.y },
+      worldMapPosition: Position.fromNormalized({ x: hex.col, y: hex.row }),
       spectator: !canIssueOrders(),
     });
     const position = getWorldPositionForHex(hex);
@@ -8611,7 +8607,7 @@ export default class WorldmapScene extends WarpTravel {
     this.handleHexSelection(sceneHex, true);
     this.onStructureSelection(structure.entityId, sceneHex);
 
-    const worldMapPosition = { col: Number(structure.position.x), row: Number(structure.position.y) };
+    const worldMapPosition = Position.fromContract(structure.position);
     this.state.setStructureEntityId(structure.entityId, {
       worldMapPosition,
       spectator: this.state.isSpectating,
@@ -8642,7 +8638,7 @@ export default class WorldmapScene extends WarpTravel {
       const sceneHex = { col: normalizedPosition.x, row: normalizedPosition.y };
       this.handleHexSelection(sceneHex, true);
       this.onStructureSelection(structure.entityId, sceneHex);
-      const worldMapPosition = { col: Number(structure.position.x), row: Number(structure.position.y) };
+      const worldMapPosition = Position.fromContract(structure.position);
       this.state.setStructureEntityId(structure.entityId, {
         worldMapPosition,
         spectator: this.state.isSpectating,

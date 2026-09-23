@@ -13,7 +13,7 @@ interface WorldmapInteractionState {
     structureId: ID,
     options: {
       spectator: boolean;
-      worldMapPosition?: { col: number; row: number };
+      worldMapPosition?: Position;
     },
   ): void;
 }
@@ -38,7 +38,7 @@ export function createWorldmapInteractionAdapter({
       hexCoords: HexPosition;
       structureId: ID;
       spectator: boolean;
-      worldMapPosition?: { col: number; row: number };
+      worldMapPosition?: Position;
     }) {
       state.setStructureEntityId(input.structureId, {
         spectator: input.spectator,

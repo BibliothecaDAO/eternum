@@ -76,12 +76,15 @@ describe("resolvePlayRouteTarget", () => {
     });
   });
 
-  it("normalizes contract-space route coordinates into canonical world-map positions", () => {
-    const routeWorldPosition = resolvePlayRouteTarget(
-      createLocation("/g/0xa1/702/map", "?col=2010831286&row=2010831278"),
-    ).routeWorldPosition;
-
-    expect(routeWorldPosition).toEqual({ col: 6, row: -2 });
+  it("reads a map URL's hex as written, whatever its distance from the map centre", () => {
+    expect(resolvePlayRouteTarget(createLocation("/g/0xa1/702/map", "?col=6&row=-2")).routeWorldPosition).toEqual({
+      col: 6,
+      row: -2,
+    });
+    // A Frontier site lies about 2^31 hexes from the centre; its normalized hex is not mistaken for a contract one.
+    expect(
+      resolvePlayRouteTarget(createLocation("/g/0xa1/1/map", "?col=-2010817430&row=-2010811630")).routeWorldPosition,
+    ).toEqual({ col: -2010817430, row: -2010811630 });
   });
 
   it("returns a non-canonical fallback when the location is not a canonical play route", () => {
