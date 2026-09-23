@@ -614,7 +614,8 @@ function planExpedition(client: GameClient, game: HarnessGame, player: Player): 
       .filter((id): id is number => Boolean(id))
       .map((id) => client.setup.store.get("Structure", { game_id: client.gameId, entity_id: id }))
       .find((site) => site && site.owner === 0n && (site.base.category === 4 || site.base.category === 7));
-    if (target && amount >= stamina.stamina_attack_req) {
+    if (target) {
+      if (holdsForSite(amount, stamina.stamina_attack_req)) continue;
       let campAttempt = day.campAttempts.find(
         (attempt) => attempt.armyId === army.explorer_id && attempt.siteId === target.entity_id,
       );
@@ -694,6 +695,10 @@ function planExpedition(client: GameClient, game: HarnessGame, player: Player): 
       }
     }
   }
+}
+/** An army beside a guard site waits to attack it: exploring on would walk it away from the capture it found. */
+export function holdsForSite(stamina: number, attackRequirement: number): boolean {
+  return stamina < attackRequirement;
 }
 function pathToUnexplored(client: GameClient, army: Army): number | undefined {
   const spacing = client.setup.store.require("SettlementRules", { game_id: client.gameId }).spacing;

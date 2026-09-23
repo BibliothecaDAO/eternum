@@ -45,6 +45,7 @@ import { BlockTag } from "starknet";
 import { EventEmitter } from "node:events";
 import type { Worker } from "node:worker_threads";
 import { waitForGameWorkers } from "./run";
+import { holdsForSite } from "./frontier";
 
 const TEST_ENDPOINTS = { RPC_URL: "http://127.0.0.1:28310/rpc/v0_10_2", HERALD_URL: "http://127.0.0.1:28311" };
 const savedEndpoints = { RPC_URL: process.env.RPC_URL, HERALD_URL: process.env.HERALD_URL };
@@ -195,6 +196,13 @@ describe("Madara harness workload", () => {
     expect(neighbor({ x: 110, y: 100 }, 0)).toEqual({ x: 111, y: 100 });
     expect(oppositeDirection(0)).toBe(3);
     expect(oppositeDirection(5)).toBe(2);
+  });
+
+  it("holds a Frontier army beside a guard site until it can attack, instead of exploring past it", () => {
+    const attackRequirement = 50;
+    expect(holdsForSite(30, attackRequirement)).toBe(true);
+    expect(holdsForSite(49, attackRequirement)).toBe(true);
+    expect(holdsForSite(50, attackRequirement)).toBe(false);
   });
 
   it("rotates among all explorers instead of reserving a remembered frontier", () => {
