@@ -128,11 +128,10 @@ The harness requires explicit `DEPLOYER_ACCOUNT_ADDRESS` and `DEPLOYER_PRIVATE_K
 
 For ordered trials, use `scripts/shard.py --matrix MATRIX_JSON RUN_DIRECTORY`. The matrix contains `configurations` (an
 ordered list of shard configurations), `workload` (`games`, `accounts_per_game`, `minutes`, `interval_seconds`,
-`setup_concurrency`, `workload`) and `live` (`container`, `chain_config`). The guard and matrix both read
-`deploy/athanor/live-budget.json`; the live container and chain configuration are read only for host snapshots. The
-guard must be running before deployment. Each trial stores its configuration, deployment, workload reports and start/end
-host snapshots under the run directory. A failed workload or exceeded live budget aborts the matrix. Each completed or
-failed candidate is stopped with its volumes retained; the next configuration starts fresh.
+`setup_concurrency`, `workload`) and `live` (`container`, `chain_config`). The live container and chain configuration
+are read only for host snapshots. Each trial stores its configuration, deployment, workload reports, live-health samples
+and start/end host snapshots under the run directory. A failed workload aborts the matrix; the live budget never does.
+Each completed or failed candidate is stopped with its volumes retained; the next configuration starts fresh.
 
 The checked-in live budget replaces the box-only budget file. Its 2026-09-22 baseline used 130 confirmed-diff windows
 from 13:20–15:30 UTC while the candidate was frozen: window p95 ranged from 225 to 237 ms. The 300 ms confirmed budget
@@ -141,10 +140,11 @@ observations), with window p95 from 2 to 41 ms; their budget is 60 ms. Twelve li
 responses from 2.3 to 13.8 ms; the health budget is 50 ms and lag allowance remains three blocks. Disk reserves remain
 10 GiB for the candidate and 100 GiB for the host. Raw measurements stay with the run artifacts.
 
-The same condition must exceed its budget in two consecutive observed windows before the guard freezes the candidate or
-the matrix aborts. A healthy observation resets that condition. Digest streams are counted independently; empty polls
-and zero-count digests neither advance nor reset their streaks. Monitoring errors also require two consecutive failed
-polls. The guard logs the pause timestamp; after investigating, restart the guard and thaw only `athanor.slice`.
+The live budget is a measurement, not a rule. `athanor-live-guard` samples live every five seconds into
+`/opt/athanor/logs/live-guard.jsonl`, and each timed workload records the same samples in its `live-health.jsonl`. A
+sample lists the budgets it exceeded (`over_budget`), the budgets it could not measure, and what the slice was doing: the
+isolated-stack lock holder and the cores it used since the previous sample. Nothing is paused; the slice's core pin and
+these budgets are tuned from that log.
 
 The runner starts the gateway after deployment with the new world's sequencing account and address. The gateway
 persists its epoch secret in its own volume. Pending assignments are volatile across restart; recorded nonces prevent

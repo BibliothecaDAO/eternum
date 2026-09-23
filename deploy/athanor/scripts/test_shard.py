@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 import shard
 
@@ -177,7 +177,7 @@ class ShardTest(unittest.TestCase):
             shard.write_private_environment(Path(temporary) / "gateway.env", {"KEY": "value\nOTHER=bad"})
 
     def test_matrix_runs_in_order_and_stops_only_its_own_projects(self):
-        for failure in (None, RuntimeError("live budget exceeded")):
+        for failure in (None, RuntimeError("workload failed")):
             with self.subTest(failure=failure), tempfile.TemporaryDirectory() as temporary:
                 root = Path(temporary)
                 budget = root / "budget.json"
@@ -197,12 +197,12 @@ class ShardTest(unittest.TestCase):
                     (directory / "harness.env").write_text("COMPOSE_PROJECT_NAME=athanor-smoke\n")
 
                 with patch.object(shard, "start_shard", side_effect=start), \
-                     patch.object(shard, "check_live_budget"), patch.object(shard, "capture_hosts") as hosts, \
-                     patch.object(shard.subprocess, "run"), patch.object(shard, "run") as stop, \
-                     patch.object(shard, "run_guarded_workload", side_effect=failure):
+                     patch.object(shard, "capture_hosts") as hosts, \
+                     patch.object(shard, "run") as stop, \
+                     patch.object(shard, "run_workload", side_effect=failure):
                     output = root / "matrix"
                     if failure:
-                        with self.assertRaisesRegex(RuntimeError, "live budget"):
+                        with self.assertRaisesRegex(RuntimeError, "workload failed"):
                             shard.run_matrix(matrix, output)
                     else:
                         self.assertTrue(shard.run_matrix(matrix, output)["passed"])
@@ -212,18 +212,6 @@ class ShardTest(unittest.TestCase):
                         self.assertEqual(call.args[0][-2:], [str(output / name / "compose.json"), "stop"])
                         result = json.loads((output / name / "matrix-result.json").read_text())
                         self.assertEqual(result["passed"], failure is None)
-
-    def test_guard_failure_terminates_the_workload(self):
-        with tempfile.TemporaryDirectory() as temporary:
-            process = MagicMock(pid=999)
-            process.poll.return_value = None
-            with patch.object(shard.subprocess, "Popen", return_value=process), \
-                 patch.object(shard, "check_live_budget", side_effect=RuntimeError("budget")), \
-                 patch.object(shard.os, "killpg") as terminate:
-                with self.assertRaisesRegex(RuntimeError, "budget"):
-                    shard.run_guarded_workload(["bun", "harness"], Path(temporary), {}, {})
-                terminate.assert_called_once_with(999, shard.signal.SIGTERM)
-                process.wait.assert_called_once_with(timeout=10)
 
 
 if __name__ == "__main__":

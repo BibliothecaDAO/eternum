@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
-"""Pause isolated candidate work when the live stack leaves its declared budget."""
+"""Record live health beside candidate load. Each sample lists the declared live budgets it exceeded and what the
+isolated slice was doing, so the slice's pin and the budgets are tuned on evidence. Nothing is paused."""
 
 import json
 from decimal import Decimal
 from pathlib import Path
 import shutil
 import subprocess
-import sys
 import time
 from urllib.request import Request, urlopen
 
 
 LIVE_BUDGET_PATH = Path(__file__).resolve().parents[1] / "live-budget.json"
+SLICE = Path("/sys/fs/cgroup/athanor.slice")
+LOCK = Path("/opt/athanor/isolated-stack.lock")
 
 
 def read_json(url, payload=None):
@@ -54,7 +56,8 @@ def read_digests(since, until):
     return digests
 
 
-def budget_failures(budget, health, digests, disk_free, root_free, streaks):
+def over_budget(budget, health, digests, disk_free, root_free):
+    """The declared live budgets one sample exceeded."""
     observations = [
         ("live Herald lag", health["lag_blocks"] > budget["max_lag_blocks"]),
         ("live health response latency", health["health_ms"] > budget["max_health_ms"]),
@@ -65,12 +68,7 @@ def budget_failures(budget, health, digests, disk_free, root_free, streaks):
         (f"live {event['kind']} p95", event["p95Ms"] > budget["digest_p95_ms"][event["kind"]])
         for event in digests if event["count"] > 0
     )
-    failures = []
-    for reason, exceeded in observations:
-        streaks[reason] = streaks.get(reason, 0) + 1 if exceeded else 0
-        if streaks[reason] >= 2 and reason not in failures:
-            failures.append(reason)
-    return failures
+    return list(dict.fromkeys(reason for reason, exceeded in observations if exceeded))
 
 
 def unmeasured_budgets(digests):
@@ -83,45 +81,39 @@ def unmeasured_budgets(digests):
     return []
 
 
-def pause_candidate(reasons):
-    # The guard runs outside this slice; live services never belong to it.
-    subprocess.run(["systemctl", "freeze", "athanor.slice"], check=True, timeout=10)
-    print(json.dumps({"event": "candidate_paused", "at": time.time(), "reasons": reasons}), flush=True)
+def slice_activity(previous_usage, seconds):
+    """Who holds the isolated stack and how many cores the slice used since the previous sample."""
+    try:
+        lock = LOCK.read_text().splitlines()[0]
+    except (OSError, IndexError):
+        lock = None
+    stat = dict(line.split() for line in (SLICE / "cpu.stat").read_text().splitlines())
+    usage = int(stat["usage_usec"])
+    cores = None if previous_usage is None or seconds <= 0 else round((usage - previous_usage) / (seconds * 1e6), 2)
+    return {"lock": lock, "cpu_cores": cores}, usage
 
 
-def monitor(budget):
+def sample_live(budget, since, until):
+    health = check_health()
+    digests = read_digests(since, until)
+    exceeded = over_budget(budget, health, digests,
+                           shutil.disk_usage("/opt/athanor").free, shutil.disk_usage("/").free)
+    return {"event": "live_health", **health, "digests": digests, "over_budget": exceeded,
+            "unmeasured": unmeasured_budgets(digests)}
+
+
+def record(budget):
     since = time.time()
-    streaks = {}
-    unavailable_windows = 0
+    usage = None
     while True:
-        next_since = time.time()
+        until = time.time()
+        activity, usage = slice_activity(usage, until - since)
         try:
-            health = check_health()
-            digests = read_digests(since, next_since)
-            failures = budget_failures(
-                budget, health, digests,
-                shutil.disk_usage("/opt/athanor").free, shutil.disk_usage("/").free, streaks,
-            )
+            sample = sample_live(budget, since, until)
         except Exception as error:
-            unavailable_windows += 1
-            print(json.dumps({"event": "candidate_live_monitoring_unavailable", "at": time.time(),
-                              "error": type(error).__name__}), flush=True)
-            if unavailable_windows >= 2:
-                pause_candidate([f"live monitoring unavailable: {type(error).__name__}"])
-                return 1
-            time.sleep(5)
-            continue
-        unavailable_windows = 0
-        print(json.dumps({"event": "candidate_live_health", "at": next_since,
-                          **health, "digests": digests}), flush=True)
-        unmeasured = unmeasured_budgets(digests)
-        if unmeasured:
-            print(json.dumps({"event": "candidate_live_unmeasured", "at": next_since, "budgets": unmeasured}),
-                  file=sys.stderr, flush=True)
-        if failures:
-            pause_candidate(failures)
-            return 1
-        since = next_since
+            sample = {"event": "live_health_unavailable", "error": type(error).__name__}
+        print(json.dumps({**sample, "at": until, "slice": activity}), flush=True)
+        since = until
         time.sleep(5)
 
 
@@ -129,7 +121,7 @@ def main():
     budget = json.loads(LIVE_BUDGET_PATH.read_text())
     if not Path("/opt/athanor").is_mount():
         raise SystemExit("candidate disk is not mounted")
-    return monitor(budget)
+    record(budget)
 
 
 if __name__ == "__main__":
