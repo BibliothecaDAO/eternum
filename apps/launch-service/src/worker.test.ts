@@ -11,7 +11,7 @@ import { afterAll, beforeAll, expect, it } from "vitest";
  */
 const ORIGIN = "https://staging.realms.party";
 const LAUNCHER = "0x123";
-const MANIFEST_URL = "https://shard.test/native-world.json";
+const SHARD_URL = "https://shard.test";
 
 let mf: Miniflare;
 let db: D1Database;
@@ -36,16 +36,13 @@ beforeAll(async () => {
       ENVIRONMENT: "staging",
       BASE_URL: ORIGIN,
       LAUNCHER_ALLOWLIST: LAUNCHER,
-      RPC_URL: "https://shard.test/rpc",
-      ADMISSION_URL: "https://shard.test/admission",
-      HERALD_URL: "https://shard.test/herald",
-      NATIVE_WORLD_MANIFEST_URL: MANIFEST_URL,
+      SHARD_URL,
       DEPLOYER_ACCOUNT_ADDRESS: "0x456",
       DEPLOYER_PRIVATE_KEY: "0x1",
       VERSION: { id: "workerd-test", tag: "", timestamp: "" },
     },
     outboundService: (request: Request) =>
-      new Response(`${request.url} unavailable`, { status: request.url === MANIFEST_URL ? 503 : 599 }),
+      new Response(`${request.url} unavailable`, { status: request.url === `${SHARD_URL}/manifest` ? 503 : 599 }),
   });
   db = (await mf.getD1Database("DB")) as unknown as D1Database;
   const migrations = new URL("../migrations/", import.meta.url);
@@ -85,9 +82,6 @@ it("ticks the schedule, queues an authorized launch and records the registrar's 
     run = await db.prepare("SELECT status, attempts, error_message FROM launch_runs").first();
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
-  expect(run).toMatchObject({
-    status: "queued",
-    attempts: 1,
-    error_message: `World manifest ${MANIFEST_URL} answered 503`,
-  });
+  expect(run).toMatchObject({ status: "queued", attempts: 1 });
+  expect(run?.error_message).toMatch(new RegExp(`^Shard ${SHARD_URL} manifest failed: 503`));
 }, 60_000);

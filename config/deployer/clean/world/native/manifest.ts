@@ -1,14 +1,37 @@
 import { hash, type Abi } from "starknet";
-import type { NativeWorld, NativeWorldManifest } from "./types";
+import type { NativeWorld, NativeWorldManifest, RegistrarWorld } from "./types";
 import type { NativePlan } from "./types";
 import type { ShardRecord } from "../../../../../apps/herald/src/shard-manifest";
+import type { NativeSchema } from "../../../../../apps/herald/src/native/schema";
 
-export function nativeDomainAbi(manifest: NativeWorldManifest, name: string): Abi {
+export function nativeDomainAbi(manifest: RegistrarWorld, name: string): Abi {
   const schema = manifest.native?.schemas[manifest.native.activeSchema];
   const domain = schema?.domains[name];
   if (!domain) throw new Error(`Manifest has no native ${name} ABI`);
   // Resolve entrypoints within their owning domain.
   return [...Object.values(schema.types), ...domain.entrypoints] as Abi;
+}
+
+/**
+ * A shard's world as its public manifest names it, with the schema this release was built with. The caller has already
+ * refused a shard whose schema differs; every domain the schema declares must have an address.
+ */
+export function registrarWorldOf(
+  shard: { chainId: string; contracts: Record<string, string>; worldAddress: string },
+  schema: NativeSchema,
+): RegistrarWorld {
+  const domains = Object.fromEntries(
+    Object.keys(schema.domains).map((name) => {
+      const address = shard.contracts[name];
+      if (!address) throw new Error(`Shard ${shard.chainId} names no ${name} contract`);
+      return [name, { address }];
+    }),
+  );
+  return {
+    native: { activeSchema: schema.identity, schemas: { [schema.identity]: schema }, domains },
+    world: { address: shard.worldAddress },
+    shard: { chainId: shard.chainId },
+  };
 }
 
 export function buildNativeManifest(local: NativeWorld, before: NativePlan, shard: ShardRecord): NativeWorldManifest {

@@ -1,8 +1,8 @@
-import { buildNativePresetRegistration } from "./native-preset";
+import { presetRegistrationCall } from "./native-preset";
 import { confirmedTransactionReceipt } from "../shared/transaction";
 import { completeNativeAdminCommand } from "../world/native/command";
 import { nativeDomainAbi } from "../world/native/manifest";
-import type { NativeWorldManifest } from "../world/native/types";
+import type { RegistrarWorld } from "../world/native/types";
 import type { buildNativePreset } from "../config/native-preset";
 import { resolveGameTransactionResourceBounds } from "@bibliothecadao/eternum";
 import { Account, CallData, shortString, type Call, type RawArgs, RpcProvider } from "starknet";
@@ -22,7 +22,7 @@ interface ManifestContract {
   abi?: ManifestAbiEntry[];
 }
 
-export type RegistrarManifest = NativeWorldManifest;
+export type RegistrarManifest = RegistrarWorld;
 
 export interface RegistrarTransactionResult {
   transactionHash: string;
@@ -144,7 +144,7 @@ export function resolveCreatedGameId(
   return resolveNativeCreatedGameId(receipt, context.manifest);
 }
 
-function resolveNativeCreatedGameId(receipt: unknown, manifest: NativeWorldManifest): number | undefined {
+function resolveNativeCreatedGameId(receipt: unknown, manifest: RegistrarWorld): number | undefined {
   const schema = manifest.native.schemas[manifest.native.activeSchema];
   const model = schema.models.find((model) => model.name === "GameRegistry");
   const layouts = schema.domains.registry.events.filter((event) => event.name === "RowSet");
@@ -269,7 +269,7 @@ export async function createRegistrarGame(
   const context = resolveRegistrarContext(target);
   if (!nativeDefinition) throw new Error("Native game creation requires its current preset definition");
   const presetId = Number((params as { preset_id: number }).preset_id);
-  const registration = buildNativePresetRegistration(nativeDefinition, presetId, context.manifest);
+  const registration = presetRegistrationCall(nativeDefinition, presetId, context.manifest);
   const [commitment] = await account.callContract(
     {
       contractAddress: registration.address,

@@ -13,7 +13,7 @@ import type { Config } from "@bibliothecadao/types";
 import { buildCreateGameParams, type CreateGamePayloadInput } from "./preset";
 import { buildNativePreset } from "../config/native-preset";
 import { waitForSuccess } from "../shared/declare";
-import type { NativeWorldManifest } from "../world/native/types";
+import type { NativeWorldManifest, RegistrarWorld } from "../world/native/types";
 import { nativeDomainAbi } from "../world/native/manifest";
 
 export function buildNativePresetRegistration(
@@ -23,17 +23,28 @@ export function buildNativePresetRegistration(
 ) {
   const manifest =
     typeof target === "string" ? (JSON.parse(readFileSync(target, "utf8")) as NativeWorldManifest) : target;
-  const registry = manifest.native?.domains.registry;
-  const contract = manifest.contracts.find((entry) => entry.address === registry?.address);
-  if (!registry || !contract) throw new Error("Manifest has no native registrar");
-  const codec = new CallData(nativeDomainAbi(manifest, "registry"));
+  const call = presetRegistrationCall(definition, presetId, manifest);
+  const contract = manifest.contracts.find((entry) => entry.address === call.address);
+  if (!contract) throw new Error("Manifest has no native registrar");
+  return { ...call, classHash: contract.class_hash };
+}
+
+/** The register_preset call for a definition and the commitment the registrar keeps for it. */
+export function presetRegistrationCall(
+  definition: ReturnType<typeof buildNativePreset>,
+  presetId: number,
+  world: RegistrarWorld,
+) {
+  const registry = world.native?.domains.registry;
+  if (!registry) throw new Error("Manifest has no native registrar");
+  const codec = new CallData(nativeDomainAbi(world, "registry"));
   const calldata = codec.compile("register_preset", { preset_id: presetId, definition });
   const commitment = hash.computePoseidonHashOnElements([
     shortString.encodeShortString("NATIVE_PRESET"),
     1,
     ...calldata.slice(1),
   ]);
-  return { address: registry.address, classHash: contract.class_hash, calldata, commitment };
+  return { address: registry.address, calldata, commitment };
 }
 
 export async function registerNativePreset(

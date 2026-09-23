@@ -749,9 +749,9 @@ importers:
 
   apps/launch-service:
     dependencies:
-      '@realms-world/chain':
+      '@bibliothecadao/eternum':
         specifier: workspace:*
-        version: link:../../packages/chain
+        version: link:../../packages/core
       effect:
         specifier: 4.0.0-rc.108
         version: 4.0.0-rc.108

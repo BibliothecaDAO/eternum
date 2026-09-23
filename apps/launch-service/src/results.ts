@@ -4,7 +4,7 @@ import {
   executeNativeAdminCommand,
 } from "../../../config/deployer/clean/world/native/command";
 import { nativeDomainAbi } from "../../../config/deployer/clean/world/native/manifest";
-import type { NativeWorldManifest } from "../../../config/deployer/clean/world/native/types";
+import type { RegistrarWorld } from "../../../config/deployer/clean/world/native/types";
 import type { NativeCommand } from "../../../packages/provider/src/native-command";
 import type { FinalizedGameSummary } from "./model";
 import type { FinalizeGameRequest } from "./schemas";
@@ -17,7 +17,7 @@ interface ResultProgress {
 }
 interface ResultTarget {
   provider: RpcProvider;
-  manifest: NativeWorldManifest;
+  manifest: RegistrarWorld;
   admissionUrl: string;
   accountAddress: string;
   privateKey: string;
@@ -87,7 +87,7 @@ function view<T>(
 export async function finalizeGame(
   request: FinalizeGameRequest,
   rpc: { url: string; admissionUrl: string },
-  credentials: { manifest: NativeWorldManifest; accountAddress: string; privateKey: string },
+  credentials: { manifest: RegistrarWorld; accountAddress: string; privateKey: string },
 ): Promise<FinalizedGameSummary> {
   const target: ResultTarget = {
     ...credentials,

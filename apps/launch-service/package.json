@@ -8,7 +8,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@realms-world/chain": "workspace:*",
+    "@bibliothecadao/eternum": "workspace:*",
     "effect": "4.0.0-rc.108",
     "hono": "^4.9.12"
   },

@@ -15,6 +15,17 @@ export interface NativeWorldManifest {
   abis: Abi;
   shard: ShardRecord;
 }
+/**
+ * What the registrar, administrative commands and result recording read of a shard's world: its chain, its domain
+ * addresses and the schema they run. A deployment document carries it all; so does a shard's public manifest together
+ * with the schema this release was built with.
+ */
+export interface RegistrarWorld {
+  native: Pick<NativeRelease, "activeSchema" | "schemas"> & { domains: Record<string, { address: string }> };
+  world: { address: string };
+  shard: Pick<ShardRecord, "chainId">;
+}
+
 export interface NativeAuthentication {
   submitter: string;
   registry: string;

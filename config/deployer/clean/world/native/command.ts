@@ -12,7 +12,7 @@ import {
 import { createNativeTicketSubmission, signGameplayIntent } from "../../../../../packages/provider/src/native-ticket";
 import { nativeDomainAbi } from "./manifest";
 import { confirmedTransactionReceipt } from "../../shared/transaction";
-import type { NativeWorldManifest } from "./types";
+import type { RegistrarWorld } from "./types";
 
 const administrativeCommands = new Set<NativeCommand["kind"]>([
   "SettleBlitzRoster",
@@ -25,7 +25,7 @@ const repeatableBatches = new Set<NativeCommand["kind"]>(["SettleBlitzRoster", "
 
 type AdminCommandInput = {
   provider: RpcProvider;
-  manifest: NativeWorldManifest;
+  manifest: RegistrarWorld;
   admissionUrl: string;
   gameId: number;
   accountAddress: string;

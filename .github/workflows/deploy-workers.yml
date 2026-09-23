@@ -3,9 +3,9 @@ name: Deploy Workers
 # Deploys the central-service Workers to Cloudflare. Staging, which the isolated box stack uses, deploys on every push to
 # the native branches; production deploys only by dispatch, at the cutover. Each environment has its own D1 databases
 # and secrets. The guardian Worker is deployed by the owner alone and is not listed here. The launch Worker targets the
-# shard its environment's variables name (LAUNCH_RPC_URL, LAUNCH_ADMISSION_URL, LAUNCH_HERALD_URL,
-# LAUNCH_WORLD_MANIFEST_URL, LAUNCH_DEPLOYER_ACCOUNT_ADDRESS, LAUNCHER_ALLOWLIST and, where Frontier runs,
-# FRONTIER_SEASON_START) and signs with its LAUNCH_DEPLOYER_PRIVATE_KEY secret.
+# shard its environment's LAUNCH_SHARD_URL names (the shard's Herald, whose /manifest says the rest), with
+# LAUNCH_DEPLOYER_ACCOUNT_ADDRESS, LAUNCHER_ALLOWLIST and, where Frontier runs, FRONTIER_SEASON_START, and signs with its
+# LAUNCH_DEPLOYER_PRIVATE_KEY secret.
 on:
   push:
     branches: [native-services, native-world-foundation]
@@ -128,17 +128,14 @@ jobs:
         working-directory: ${{ matrix.worker }}
         env:
           WRANGLER_OUTPUT_FILE_PATH: ${{ runner.temp }}/wrangler-output.ndjson
-          RPC_URL: ${{ vars.LAUNCH_RPC_URL }}
-          ADMISSION_URL: ${{ vars.LAUNCH_ADMISSION_URL }}
-          HERALD_URL: ${{ vars.LAUNCH_HERALD_URL }}
-          NATIVE_WORLD_MANIFEST_URL: ${{ vars.LAUNCH_WORLD_MANIFEST_URL }}
+          SHARD_URL: ${{ vars.LAUNCH_SHARD_URL }}
           DEPLOYER_ACCOUNT_ADDRESS: ${{ vars.LAUNCH_DEPLOYER_ACCOUNT_ADDRESS }}
           LAUNCHER_ALLOWLIST: ${{ vars.LAUNCHER_ALLOWLIST }}
           FRONTIER_SEASON_START: ${{ vars.FRONTIER_SEASON_START }}
         run: |
           set -euo pipefail
           args=()
-          for name in RPC_URL ADMISSION_URL HERALD_URL NATIVE_WORLD_MANIFEST_URL DEPLOYER_ACCOUNT_ADDRESS LAUNCHER_ALLOWLIST; do
+          for name in SHARD_URL DEPLOYER_ACCOUNT_ADDRESS LAUNCHER_ALLOWLIST; do
             [ -n "${!name}" ] || { echo "::error::the $TARGET environment has no variable for $name"; exit 1; }
             args+=(--var "$name:${!name}")
           done

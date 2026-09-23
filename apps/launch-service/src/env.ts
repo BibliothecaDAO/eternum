@@ -12,11 +12,8 @@ const LaunchVars = Schema.Struct({
   BASE_URL: Schema.NonEmptyString,
   /** Comma-separated Starknet addresses allowed to launch games; a wildcard is refused. */
   LAUNCHER_ALLOWLIST: Schema.NonEmptyString,
-  RPC_URL: Schema.NonEmptyString,
-  ADMISSION_URL: Schema.NonEmptyString,
-  HERALD_URL: Schema.NonEmptyString,
-  /** The shard's deployment document: registrar addresses, ABIs and chain identity. */
-  NATIVE_WORLD_MANIFEST_URL: Schema.NonEmptyString,
+  /** The shard launches write to: its Herald, whose /manifest names the chain, node, admission and contracts. */
+  SHARD_URL: Schema.NonEmptyString,
   DEPLOYER_ACCOUNT_ADDRESS: Schema.NonEmptyString,
   DEPLOYER_PRIVATE_KEY: Schema.NonEmptyString,
   /** The current Frontier season's start, as an ISO UTC time; absent on a shard that hosts no Frontier. */

@@ -1,8 +1,7 @@
 // The launch Worker. It serves /api/factory/* and /api/slots/* on the app's origin, beside identity, which owns the
-// session it checks. The shard it launches on (RPC_URL, ADMISSION_URL, HERALD_URL, NATIVE_WORLD_MANIFEST_URL), its
-// registrar account (DEPLOYER_ACCOUNT_ADDRESS), its launchers (LAUNCHER_ALLOWLIST) and the Frontier season
-// (FRONTIER_SEASON_START) are the environment's GitHub variables, and DEPLOYER_PRIVATE_KEY its secret; the deploy
-// workflow sets them. Production deploys only at the cutover, when the box's launch service stops: two schedulers
+// session it checks. The shard it launches on (SHARD_URL, its Herald), its registrar account
+// (DEPLOYER_ACCOUNT_ADDRESS), its launchers (LAUNCHER_ALLOWLIST) and the Frontier season (FRONTIER_SEASON_START) are the
+// environment's GitHub variables, and DEPLOYER_PRIVATE_KEY its secret; the deploy workflow sets them. Production deploys only at the cutover, when the box's launch service stops: two schedulers
 // would each freeze the same slots.
 {
   "$schema": "../../node_modules/wrangler/config-schema.json",

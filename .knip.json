@@ -35,7 +35,10 @@
     },
     "apps/launch-service": {
       "entry": ["src/worker.ts"],
-      "ignoreDependencies": ["cloudflare"]
+      "ignoreDependencies": ["cloudflare"],
+      "paths": {
+        "@bibliothecadao/eternum/shard": ["../../packages/core/src/client/shard-reader.ts"]
+      }
     },
     "apps/guardian": {
       "entry": [

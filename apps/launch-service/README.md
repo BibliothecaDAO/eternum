@@ -8,8 +8,9 @@ signed-in Realms account with a linked wallet from the app's origin; launch muta
 
 Configuration, per environment (see `wrangler.jsonc` and `.github/workflows/deploy-workers.yml`):
 
-- `RPC_URL`, `ADMISSION_URL`, `HERALD_URL` — the shard it launches on
-- `NATIVE_WORLD_MANIFEST_URL` — that shard's deployment document, read at each launch
+- `SHARD_URL` — the shard it launches on: its Herald, whose `/manifest` names the chain, node, admission endpoint and
+  contracts. It is read at each launch, and a shard running a release other than the one this Worker was built with is
+  refused; the ABIs are that release's committed schema.
 - `DEPLOYER_ACCOUNT_ADDRESS` and the secret `DEPLOYER_PRIVATE_KEY` — the registrar writer
 - `LAUNCHER_ALLOWLIST` — comma-separated Starknet addresses; a wildcard is refused
 - `FRONTIER_SEASON_START` — the current Frontier season's start as an ISO UTC time; omit where no Frontier runs

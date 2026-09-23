@@ -3,7 +3,7 @@ import { createRosterVerifier } from "../../../config/deployer/clean/registrar/c
 import { createLaunchApp } from "./app";
 import { createIdentityResolver } from "./auth";
 import { decodeLaunchEnv, type LaunchEnv } from "./env";
-import { loadWorldManifest } from "./executor";
+import { readLaunchShard } from "./executor";
 import { runLaunchSchedule } from "./schedule";
 import { D1SlotStore } from "./slot-store";
 import { D1LaunchStore } from "./store";
@@ -35,6 +35,8 @@ const launchAppOf = (env: LaunchEnv) =>
     identity: createIdentityResolver(env.BASE_URL, (url, init) => env.IDENTITY.fetch(url, init)),
     store: new D1LaunchStore(env.DB),
     slots: new D1SlotStore(env.DB),
-    verifyPlayer: async (owner) =>
-      createRosterVerifier(env.RPC_URL, await loadWorldManifest(env.NATIVE_WORLD_MANIFEST_URL))(owner),
+    verifyPlayer: async (owner) => {
+      const { shard, world } = await readLaunchShard(env.SHARD_URL);
+      await createRosterVerifier(shard.rpcUrl, world)(owner);
+    },
   });

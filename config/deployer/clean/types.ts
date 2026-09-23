@@ -4,7 +4,7 @@ import type {
   FactoryMapConfigOverrides,
 } from "@bibliothecadao/types";
 import type { ConfigurationNetwork } from "../../shared/game-environments";
-import type { NativeWorldManifest } from "./world/native/types";
+import type { RegistrarWorld } from "./world/native/types";
 
 export type DeploymentChain = ConfigurationNetwork;
 export type DeploymentGameType = import("../../source/common/types").GameType;
@@ -36,8 +36,8 @@ export interface LaunchGameResumeStepState {
 }
 
 export interface LaunchGameRequest {
-  /** The shard's deployment document: the registrar and the chain the launch writes to. */
-  manifest: NativeWorldManifest;
+  /** The shard's world: the registrar and the chain the launch writes to. */
+  manifest: RegistrarWorld;
   heraldUrl?: string;
   admissionUrl?: string;
   rosterOwners?: readonly string[];

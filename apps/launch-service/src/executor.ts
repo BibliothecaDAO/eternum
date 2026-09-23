@@ -1,10 +1,13 @@
 import { finalizeGame } from "./results";
 import { Context, Effect, Layer } from "effect";
-import { shardChainId } from "@realms-world/chain/chain-guard";
+import { openShard, type Shard } from "@bibliothecadao/eternum/shard";
 import { launchGame } from "../../../config/deployer/clean/launch/runner";
 import type { LaunchRunStore } from "../../../config/deployer/clean/launch/run-store";
 import type { LaunchGameRequest } from "../../../config/deployer/clean/types";
-import type { NativeWorldManifest } from "../../../config/deployer/clean/world/native/types";
+import { registrarWorldOf } from "../../../config/deployer/clean/world/native/manifest";
+import type { RegistrarWorld } from "../../../config/deployer/clean/world/native/types";
+import type { NativeSchema } from "../../../apps/herald/src/native/schema";
+import schema from "../../../contracts/l3/world-native/schema/schema.json";
 import type { LaunchEnv } from "./env";
 import { LaunchExecutionFailure } from "./errors";
 import type { LaunchRun, LaunchSummary } from "./model";
@@ -12,10 +15,7 @@ import type { CreateGameRequest } from "./schemas";
 
 /** The shard a launch writes to and the registrar key it writes with. */
 interface LaunchTarget {
-  rpcUrl: string;
-  admissionUrl: string;
-  heraldUrl: string;
-  manifestUrl: string;
+  shardUrl: string;
   accountAddress: string;
   privateKey: string;
 }
@@ -27,21 +27,20 @@ interface LaunchExecutorService {
 export class LaunchExecutor extends Context.Service<LaunchExecutor, LaunchExecutorService>()("launch/LaunchExecutor") {}
 
 export const launchTargetOf = (env: LaunchEnv): LaunchTarget => ({
-  rpcUrl: env.RPC_URL,
-  admissionUrl: env.ADMISSION_URL,
-  heraldUrl: env.HERALD_URL,
-  manifestUrl: env.NATIVE_WORLD_MANIFEST_URL,
+  shardUrl: env.SHARD_URL,
   accountAddress: env.DEPLOYER_ACCOUNT_ADDRESS,
   privateKey: env.DEPLOYER_PRIVATE_KEY,
 });
 
-/** The shard's deployment document, read at each use so a redeployed world needs no Worker redeploy. */
-export const loadWorldManifest = async (manifestUrl: string): Promise<NativeWorldManifest> => {
-  const response = await fetch(manifestUrl, { signal: AbortSignal.timeout(10_000) });
-  if (!response.ok) throw new Error(`World manifest ${manifestUrl} answered ${response.status}`);
-  const manifest = (await response.json()) as NativeWorldManifest;
-  shardChainId(manifest);
-  return manifest;
+const RELEASE_SCHEMA = schema as unknown as NativeSchema;
+
+/**
+ * The shard as its Herald's /manifest describes it, read at each use so a redeployed world needs no Worker redeploy.
+ * The ABIs are the ones this release was built with; a shard running another release is refused.
+ */
+export const readLaunchShard = async (shardUrl: string): Promise<{ shard: Shard; world: RegistrarWorld }> => {
+  const shard = await openShard(shardUrl, RELEASE_SCHEMA.identity);
+  return { shard, world: registrarWorldOf(shard, RELEASE_SCHEMA) };
 };
 
 const requirePersistedStartTime = (request: CreateGameRequest): string => {
@@ -52,12 +51,12 @@ const requirePersistedStartTime = (request: CreateGameRequest): string => {
 const buildGameRequest = (
   request: CreateGameRequest,
   target: LaunchTarget,
-  manifest: NativeWorldManifest,
+  { shard, world }: Awaited<ReturnType<typeof readLaunchShard>>,
 ): LaunchGameRequest => ({
-  manifest,
-  heraldUrl: target.heraldUrl,
-  admissionUrl: target.admissionUrl,
-  rpcUrl: target.rpcUrl,
+  manifest: world,
+  heraldUrl: shard.url,
+  admissionUrl: shard.admissionUrl,
+  rpcUrl: shard.rpcUrl,
   accountAddress: target.accountAddress,
   privateKey: target.privateKey,
   environmentId: request.environment,
@@ -75,15 +74,15 @@ const buildGameRequest = (
 });
 
 const executeRun = async (run: LaunchRun, store: LaunchRunStore, target: LaunchTarget): Promise<LaunchSummary> => {
-  const manifest = await loadWorldManifest(target.manifestUrl);
+  const launchShard = await readLaunchShard(target.shardUrl);
   if (run.kind === "game" && !("gameId" in run.request)) {
-    return launchGame(buildGameRequest(run.request, target, manifest), store);
+    return launchGame(buildGameRequest(run.request, target, launchShard), store);
   }
   if (run.kind === "result" && "gameId" in run.request) {
     return finalizeGame(
       run.request,
-      { url: target.rpcUrl, admissionUrl: target.admissionUrl },
-      { manifest, accountAddress: target.accountAddress, privateKey: target.privateKey },
+      { url: launchShard.shard.rpcUrl, admissionUrl: launchShard.shard.admissionUrl },
+      { manifest: launchShard.world, accountAddress: target.accountAddress, privateKey: target.privateKey },
     );
   }
   throw new Error(`Stored request does not match ${run.kind} launch ${run.id}`);
