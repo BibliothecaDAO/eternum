@@ -12,6 +12,7 @@ import shard
 def configuration():
     return {
         "shard": "smoke", "chain_id": "SHARD_A", "port_base": 28050, "cpuset": "8-11,20-23", "node_memory_mib": 16384,
+        "player_capacity": 96,
         "madara_image": "sha256:" + "a" * 64, "herald_image": "sha256:" + "b" * 64,
         "chain_config": "/tmp/chain-config.yaml",
         "guardian_url": "https://identity.test/api/guardian",
@@ -28,7 +29,7 @@ class ShardTest(unittest.TestCase):
         shard.validate_configuration(config, allowed)
         for key, value in (
             ("chain_id", ""), ("chain_id", "a" * 32), ("chain_id", "a\nb"),
-            ("port_base", 5050), ("cpuset", "0-23"), ("node_memory_mib", 65536),
+            ("port_base", 5050), ("cpuset", "0-23"), ("node_memory_mib", 65536), ("player_capacity", 0),
             ("madara_image", "madara:latest"), ("shard", "../live"),
             ("node_flags", ["--base-path=/live"]),
             ("node_flags", ["--enable-native-execution=true"]),

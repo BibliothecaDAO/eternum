@@ -23,6 +23,8 @@ use std::{net::SocketAddr, path::PathBuf};
 pub struct GatewayConfig {
     pub node: NodeConfig,
     pub listen: SocketAddr,
+    /// The shard's admission connection budget, derived from its player capacity by the shard runner.
+    pub max_connections: u32,
     pub epoch_secret: PathBuf,
 }
 
@@ -31,13 +33,13 @@ pub async fn run(config: GatewayConfig) -> anyhow::Result<()> {
     let node = node::Node::connect(config.node).await?;
     let api = service::GameApi::new(node);
     tokio::spawn(api.clone().run_forever(config.epoch_secret));
-    serve(api, config.listen).await
+    serve(api, config.listen, config.max_connections).await
 }
 
 /// One JSON-RPC module per TCP connection, so each carries its peer for the per-address cap.
-async fn serve(api: service::GameApi, listen: SocketAddr) -> anyhow::Result<()> {
+async fn serve(api: service::GameApi, listen: SocketAddr, max_connections: u32) -> anyhow::Result<()> {
     let (stop, _server) = stop_channel();
-    let builder = Server::builder().to_service_builder();
+    let builder = Server::builder().max_connections(max_connections).to_service_builder();
     let make_service = make_service_fn(move |connection: &AddrStream| {
         let module = api.rpc(connection.remote_addr().ip());
         let (builder, stop) = (builder.clone(), stop.clone());

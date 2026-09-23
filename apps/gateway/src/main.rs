@@ -22,6 +22,9 @@ async fn main() -> anyhow::Result<()> {
             key: felt("RANDOMNESS_PRIVATE_KEY")?,
         },
         listen: required("GATEWAY_LISTEN")?.parse().context("GATEWAY_LISTEN is not a socket address")?,
+        max_connections: required("GATEWAY_MAX_CONNECTIONS")?
+            .parse()
+            .context("GATEWAY_MAX_CONNECTIONS is not a connection count")?,
         epoch_secret: required("RANDOMNESS_EPOCH_SECRET")?.into(),
     })
     .await

@@ -23,6 +23,10 @@ ROOT = Path(__file__).resolve().parents[3]
 POSTGRES_IMAGE = "postgres@sha256:18cfe3ef5e6815560c98237d6216d1e5119702fb0f3894c8785dd58b8bbe5d73"
 METRICS_IMAGE = "otel/opentelemetry-collector-contrib@sha256:fd328de2552466ad78385e1b1289c3f2402b1c45f265b252aab1955b42845ac1"
 DOCKER = ["sudo", "-n", "docker"]
+# Admission connections: each player holds about two (a 100-connection node refused a 96-player slot at its
+# 48th player), plus a fixed allowance for the sequencing authority, Herald and tooling.
+CONNECTIONS_PER_PLAYER = 2
+TOOLING_CONNECTIONS = 32
 
 
 def cpu_numbers(value):
@@ -38,6 +42,10 @@ def cpu_numbers(value):
     return numbers
 
 
+def admission_connections(config):
+    return config["player_capacity"] * CONNECTIONS_PER_PLAYER + TOOLING_CONNECTIONS
+
+
 def validate_configuration(config, allowed_cpus):
     if not re.fullmatch(r"[a-z][a-z0-9-]{0,39}", config["shard"]):
         raise ValueError("shard must be a lowercase identifier")
@@ -50,6 +58,8 @@ def validate_configuration(config, allowed_cpus):
     for key in ("madara_image", "herald_image", *(["gateway_image"] if "gateway_image" in config else [])):
         if not re.fullmatch(r"(?:[^\s]+@)?sha256:[a-f0-9]{64}", config[key]):
             raise ValueError(f"{key} must be pinned by digest")
+    if not isinstance(config["player_capacity"], int) or not 1 <= config["player_capacity"] <= 1024:
+        raise ValueError("player_capacity must be the shard's player count, 1 to 1024")
     port = config["port_base"]
     if not isinstance(port, int) or not 28000 <= port <= 65532:
         raise ValueError("reserve three isolated ports above 27999")
@@ -113,7 +123,8 @@ def compose_configuration(config, directory):
     node_command = [
         f"--name={project}", "--devnet", "--base-path=/data", "--db-fsync", "--db-wal",
         "--chain-config-path=/config/chain-config.yaml", "--rpc-external", "--rpc-cors=all",
-        "--rpc-port=9944", "--no-charge-fee", "--l1-sync-disabled",
+        "--rpc-port=9944", f"--rpc-max-connections={admission_connections(config)}", "--no-charge-fee",
+        "--l1-sync-disabled",
         "--otel-collector-endpoint=http://metrics:4317", "--otel-export-metrics=true", *config["node_flags"],
     ]
     return {
@@ -334,6 +345,7 @@ def start_shard(config, directory):
             **{key: node_environment[key] for key in ("RANDOMNESS_ACCOUNT", "RANDOMNESS_DEPLOYMENT",
                                                       "RANDOMNESS_PRIVATE_KEY", "RUST_LOG")},
             "RANDOMNESS_EPOCH_SECRET": "/data/game-epoch-secret.json", "GATEWAY_LISTEN": "0.0.0.0:9950",
+            "GATEWAY_MAX_CONNECTIONS": admission_connections(config),
             "NODE_RPC_URL": "http://madara:9944/rpc/v0_10_2", "NODE_WS_URL": "ws://madara:9944/rpc/v0_10_2",
         })
         services.append("gateway")
