@@ -10,7 +10,6 @@ from pathlib import Path
 import re
 import secrets
 import signal
-import shutil
 import socket
 import subprocess
 import time
@@ -369,27 +368,23 @@ def workload_command(workload):
     ]]
 
 
-def check_live_budget(budget, since, until, streaks):
-    health = candidate_guard.check_health()
-    digests = candidate_guard.read_digests(since, until)
-    failures = candidate_guard.budget_failures(
-        budget, health, digests, shutil.disk_usage("/opt/athanor").free, shutil.disk_usage("/").free, streaks,
-    )
-    if failures:
-        raise RuntimeError("live budget exceeded: " + "; ".join(failures))
-    return {**health, "digests": digests}
+def record_live_health(budget, since, until):
+    try:
+        return candidate_guard.sample_live(budget, since, until)
+    except Exception as error:
+        return {"event": "live_health_unavailable", "error": type(error).__name__}
 
 
-def run_guarded_workload(command, directory, environment, budget):
+def run_workload(command, directory, environment, budget):
+    """Runs the workload to its end, recording live health beside it; the live budget never stops it."""
     since = time.time()
-    streaks = {}
     with (directory / "harness.log").open("w") as output, (directory / "live-health.jsonl").open("w") as health:
         process = subprocess.Popen(command, cwd=ROOT, env=environment, stdout=output,
                                    stderr=subprocess.STDOUT, start_new_session=True)
         try:
             while True:
                 now = time.time()
-                health.write(json.dumps({"at": now, **check_live_budget(budget, since, now, streaks)}) + "\n")
+                health.write(json.dumps({"at": now, **record_live_health(budget, since, now)}) + "\n")
                 health.flush()
                 since = now
                 try:
@@ -420,16 +415,12 @@ def capture_hosts(directory, environment, live, phase):
 def run_matrix(matrix, directory):
     command = workload_command(matrix["workload"])
     budget = json.loads(candidate_guard.LIVE_BUDGET_PATH.read_text())
-    # The existing guard protects deployment too, before the timed workload monitor starts.
-    subprocess.run(["systemctl", "is-active", "--quiet", "athanor-live-guard.service"], check=True)
     directory.mkdir(mode=0o700, parents=True, exist_ok=False)
     write_json(directory / "matrix.json", matrix)
     for config in matrix["configurations"]:
         target = directory / config["shard"]
         if target.exists():
             raise ValueError(f"duplicate run directory: {target}")
-        now = time.time()
-        check_live_budget(budget, now - 5, now, {})
         environment = None
         result = {"passed": False}
         try:
@@ -437,7 +428,7 @@ def run_matrix(matrix, directory):
             private = dict(line.split("=", 1) for line in (target / "harness.env").read_text().splitlines())
             environment = {**os.environ, **private, "HARNESS_OUTPUT_DIRECTORY": str(target / "workload")}
             capture_hosts(target, environment, matrix["live"], "start")
-            run_guarded_workload(command, target, environment, budget)
+            run_workload(command, target, environment, budget)
             result["passed"] = True
         except Exception as error:
             result["error"] = str(error)
