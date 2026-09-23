@@ -19,6 +19,9 @@ interface TransactionGas {
   l1DataGas: number;
   l1Gas: number;
   l2Gas: number;
+  /** Cairo steps and builtin applications when the node's receipts carry them; null when they do not. */
+  steps: number | null;
+  builtins: Record<string, number> | null;
 }
 
 export interface GasTotals {
@@ -58,6 +61,11 @@ export interface GasSummary {
     byStage: Record<TransactionStage, GasTotals>;
   };
   blocks: { first: number | null; last: number | null };
+  /**
+   * Cairo steps and builtins per action kind, from the receipts. Unavailable, never zero, when the run executed
+   * natively (native execution reports no steps) or when the node's receipts carry no step counters at all.
+   */
+  resources: { available: false; reason: string } | { available: true; byKind: Record<string, KindResources> };
   /** The harness's gas inside the node's reported block range against the node's close-block total for it. */
   reconciliation: {
     nodeBlocks: { first: number; last: number } | null;
@@ -79,10 +87,18 @@ interface NodeGasWindow {
   l2GasConsumed: number;
 }
 
+export interface KindResources {
+  transactions: number;
+  steps: number;
+  builtins: Record<string, number>;
+}
+
 export interface CollectGasOptions {
   transactions: readonly CollectedTransaction[];
   reader: TransactionReceiptReader;
   node: NodeGasWindow | null;
+  /** Whether the node executed natively during the run, as the host state records it; null when unknown. */
+  nativeExecution: boolean | null;
   concurrency?: number;
 }
 
@@ -91,7 +107,7 @@ const STAGES: TransactionStage[] = ["setup", "workload", "finalization"];
 export async function collectGas(options: CollectGasOptions): Promise<GasSummary> {
   const hashes = [...new Set(options.transactions.flatMap((record) => record.transactionHash ?? []))];
   const receipts = await readTransactionGas(options.reader, hashes, options.concurrency);
-  return summarizeGas(options.transactions, receipts, options.node);
+  return summarizeGas(options.transactions, receipts, options.node, options.nativeExecution);
 }
 
 /** Reads every receipt once, after the window; a missing receipt is recorded as null, never as zero gas. */
@@ -133,6 +149,7 @@ function summarizeGas(
   transactions: readonly CollectedTransaction[],
   receipts: ReadonlyMap<string, TransactionGas | null>,
   node: NodeGasWindow | null,
+  nativeExecution: boolean | null,
 ): GasSummary {
   const attempts = dropIdenticalResubmissions(transactions);
   const retried = new Set(laterAttemptsOfSameAction(attempts));
@@ -199,6 +216,7 @@ function summarizeGas(
       >,
     },
     blocks: { first: blocks.length ? Math.min(...blocks) : null, last: blocks.length ? Math.max(...blocks) : null },
+    resources: summarizeResources(attempts, receipts, nativeExecution),
     reconciliation: {
       nodeBlocks,
       nodeL2Gas: node?.l2GasConsumed ?? null,
@@ -207,6 +225,31 @@ function summarizeGas(
       reconciled: node && harnessInNodeBlocks !== null ? node.l2GasConsumed === harnessInNodeBlocks : null,
     },
   };
+}
+
+function summarizeResources(
+  attempts: readonly CollectedTransaction[],
+  receipts: ReadonlyMap<string, TransactionGas | null>,
+  nativeExecution: boolean | null,
+): GasSummary["resources"] {
+  if (nativeExecution) return { available: false, reason: "native execution reports no Cairo steps or builtins" };
+  const executed = attempts.flatMap((record) => {
+    const gas = record.transactionHash === undefined ? null : receipts.get(record.transactionHash);
+    return gas ? [{ record, gas }] : [];
+  });
+  if (executed.length === 0) return { available: false, reason: "no executed transaction to read" };
+  // A receipt without counters, or with zero steps, is a node that does not report them, never a free transaction.
+  if (executed.some(({ gas }) => gas.steps === null || gas.steps === 0 || gas.builtins === null)) {
+    return { available: false, reason: "the node's receipts carry no Cairo step or builtin counters" };
+  }
+  const byKind: Record<string, KindResources> = {};
+  for (const { record, gas } of executed) {
+    const kind = (byKind[record.kind] ??= { transactions: 0, steps: 0, builtins: {} });
+    kind.transactions += 1;
+    kind.steps += gas.steps!;
+    for (const [builtin, count] of Object.entries(gas.builtins!)) kind.builtins[builtin] = (kind.builtins[builtin] ?? 0) + count;
+  }
+  return { available: true, byKind };
 }
 
 /** The same hash recorded twice is one transaction the node executed once; the first record keeps its place. */
@@ -259,7 +302,7 @@ function parseTransactionGas(receipt: unknown): TransactionGas {
   const record = receipt as {
     actual_fee?: { amount?: string };
     block_number?: number;
-    execution_resources?: { l1_gas?: number; l1_data_gas?: number; l2_gas?: number };
+    execution_resources?: ExecutionResources;
     execution_status?: string;
     transaction_hash?: string;
   };
@@ -274,7 +317,30 @@ function parseTransactionGas(receipt: unknown): TransactionGas {
     l1DataGas: resources.l1_data_gas ?? 0,
     l1Gas: resources.l1_gas ?? 0,
     l2Gas: resources.l2_gas,
+    ...parseComputation(resources),
   };
+}
+
+/** RPC v0.8 and later report gas only; a node that still lists steps and `<name>_builtin_applications` is read too. */
+interface ExecutionResources {
+  l1_gas?: number;
+  l1_data_gas?: number;
+  l2_gas?: number;
+  steps?: number;
+  computation_resources?: { steps?: number; [counter: string]: unknown };
+  [counter: string]: unknown;
+}
+
+function parseComputation(resources: ExecutionResources): Pick<TransactionGas, "steps" | "builtins"> {
+  const source = resources.computation_resources ?? resources;
+  if (typeof source.steps !== "number") return { steps: null, builtins: null };
+  const builtins: Record<string, number> = {};
+  for (const [counter, count] of Object.entries(source)) {
+    if (counter.endsWith("_builtin_applications") && typeof count === "number") {
+      builtins[counter.slice(0, -"_builtin_applications".length)] = count;
+    }
+  }
+  return { steps: source.steps, builtins };
 }
 
 const isTransactionMissing = (error: unknown): boolean =>

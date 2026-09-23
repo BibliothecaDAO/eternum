@@ -56,6 +56,7 @@ describe("gas collector", () => {
       transactions,
       reader,
       node: { blocks: { first: 11, last: 13 }, l2GasConsumed: 810 },
+      nativeExecution: null,
     });
 
     expect(summary.transactions).toEqual({
@@ -92,19 +93,67 @@ describe("gas collector", () => {
       ],
       reader,
       node: { blocks: { first: 11, last: 11 }, l2GasConsumed: 345 },
+      nativeExecution: false,
     });
     expect(summary.transactions).toMatchObject({ unique: 2, receiptsFetched: 1, receiptsMissing: 1 });
     expect(summary.reconciliation).toMatchObject({ harnessL2GasInNodeBlocks: 300, deltaL2Gas: 45, reconciled: false });
   });
 
   it("leaves the reconciliation open when the node reported no window", async () => {
-    const summary = await collectGas({ transactions: [record(HASH.move, "workload", "move", "completed", 0)], reader, node: null });
+    const summary = await collectGas({
+      transactions: [record(HASH.move, "workload", "move", "completed", 0)],
+      reader,
+      node: null,
+      nativeExecution: false,
+    });
     expect(summary.reconciliation).toEqual({
       nodeBlocks: null,
       nodeL2Gas: null,
       harnessL2GasInNodeBlocks: null,
       deltaL2Gas: null,
       reconciled: null,
+    });
+    expect(summary.resources).toEqual({
+      available: false,
+      reason: "the node's receipts carry no Cairo step or builtin counters",
+    });
+  });
+
+  it("reports steps and builtins as unavailable, never zero, for a native run, and per kind when a node lists them", async () => {
+    const withSteps = (l2Gas: number, steps: number, pedersen: number) => ({
+      ...receipt(l2Gas, 30),
+      execution_resources: {
+        l1_gas: 0,
+        l1_data_gas: 0,
+        l2_gas: l2Gas,
+        steps,
+        pedersen_builtin_applications: pedersen,
+        range_check_builtin_applications: 3,
+      },
+    });
+    const listing: TransactionReceiptReader = {
+      getTransactionReceipt: async (hash) => (hash === HASH.move ? withSteps(300, 1_200, 4) : withSteps(150, 800, 1)),
+    };
+    const transactions = [
+      record(HASH.move, "workload", "move", "completed", 0),
+      record(HASH.firstProduce, "workload", "produce", "completed", 1),
+      record(HASH.retriedProduce, "workload", "produce", "completed", 2),
+    ];
+
+    const native = await collectGas({ transactions, reader: listing, node: null, nativeExecution: true });
+    expect(native.resources).toEqual({ available: false, reason: "native execution reports no Cairo steps or builtins" });
+
+    const zeroSteps: TransactionReceiptReader = { getTransactionReceipt: async () => withSteps(300, 0, 0) };
+    const nativeReceipts = await collectGas({ transactions, reader: zeroSteps, node: null, nativeExecution: null });
+    expect(nativeReceipts.resources.available).toBe(false);
+
+    const listed = await collectGas({ transactions, reader: listing, node: null, nativeExecution: false });
+    expect(listed.resources).toEqual({
+      available: true,
+      byKind: {
+        move: { transactions: 1, steps: 1_200, builtins: { pedersen: 4, range_check: 3 } },
+        produce: { transactions: 2, steps: 1_600, builtins: { pedersen: 2, range_check: 6 } },
+      },
     });
   });
 });

@@ -310,7 +310,14 @@ function collectRunGas(input: HarnessReportInput): Promise<GasSummary> {
     transactions: [...input.setupTransactions, ...input.workload.actions, ...drills, ...finalizations],
     reader: input.receipts,
     node: blockStats ? { blocks: blockStats.blocks, l2GasConsumed: blockStats.transactions.l2GasConsumed } : null,
+    nativeExecution: readNativeExecution(input.gates?.evidence.hostStateStart ?? null),
   });
+}
+
+/** host-state.sh records the flag the Madara container was started with; null when the host state is missing. */
+function readNativeExecution(hostState: Record<string, unknown> | null): boolean | null {
+  const madara = hostState?.madara as { nativeExecution?: unknown } | undefined;
+  return typeof madara?.nativeExecution === "boolean" ? madara.nativeExecution : null;
 }
 
 function analyzeHarnessResult(input: HarnessReportInput) {
