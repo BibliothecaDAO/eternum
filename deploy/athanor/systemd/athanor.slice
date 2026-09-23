@@ -2,8 +2,6 @@
 Description=Isolated native candidate resource budget
 
 [Slice]
-AllowedCPUs=8-11,20-23
-CPUQuota=400%
 CPUWeight=20
 MemoryHigh=44G
 MemoryMax=48G

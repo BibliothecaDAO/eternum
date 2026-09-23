@@ -297,7 +297,8 @@ def deployment_manifest(config, compose, directory, manifest, rpc_rtt, herald_rt
         **config, "project": compose["name"], "revision": read(["git", "rev-parse", "HEAD"]),
         "chainId": manifest["shard"]["chainId"], "metrics_image": METRICS_IMAGE,
         "slice_limits": {name: Path(f"/sys/fs/cgroup/athanor.slice/{name}").read_text().strip()
-                         for name in ("cpu.max", "memory.max", "memory.high", "memory.swap.max")},
+                         for name in ("cpu.max", "cpuset.cpus.effective", "memory.max", "memory.high",
+                                      "memory.swap.max")},
         "chain_config_sha256": hashlib.sha256((directory / "chain-config.yaml").read_bytes()).hexdigest(),
         "node_command": compose["services"]["madara"]["command"], "rpc_url": f"http://127.0.0.1:{config['port_base']}/rpc/v0_10_2",
         "herald_url": f"http://127.0.0.1:{config['port_base'] + 1}", "admission_url": admission_url(config),
