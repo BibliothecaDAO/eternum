@@ -10,6 +10,7 @@ import {
   assertGameplayAccountClassDeclared,
   connectGameplayAccount,
   createGameplayAccountApi,
+  type GameplayAccountApi,
   ensureGameplayAccount,
   getOrCreateGameplayKey,
   getStoredGameplayKey,
@@ -23,7 +24,10 @@ import { useCallback, useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { addAddressPadding, num } from "starknet";
 
-const gameplayAccountApi = createGameplayAccountApi({ baseUrl: identityOrigin });
+let gameplayAccountApi: GameplayAccountApi | null = null;
+/** Built on first use: the API lives on the page's own origin, which exists only once a document does. */
+const gameplayAccountApiOf = (): GameplayAccountApi =>
+  (gameplayAccountApi ??= createGameplayAccountApi({ baseUrl: identityOrigin() }));
 
 // The gameplay account is an identity-level fact of a shard, not per-game state. On the landing it targets the
 // default shard, so a signed-in user provisions and binds before any game is entered; a route naming a game
@@ -107,7 +111,7 @@ export function GameplayAccountSync({ children }: { children: ReactNode }) {
                 provider,
                 address: account.address,
                 publicKey: key.publicKey,
-                api: gameplayAccountApi,
+                api: gameplayAccountApiOf(),
                 isCurrent: () => active && canIssueOrders(),
               }),
             ),
@@ -165,7 +169,7 @@ async function recoverBoundGameplayAccount({
 }) {
   const currentPublicKey = await readGameplayAccountPublicKey(provider, boundAccount);
   if (needsRotation || BigInt(currentPublicKey) !== BigInt(key.publicKey)) {
-    await rotateBoundGameplaySigner(gameplayAccountApi, boundAccount, key.publicKey);
+    await rotateBoundGameplaySigner(gameplayAccountApiOf(), boundAccount, key.publicKey);
   }
   return connectGameplayAccount({ address: boundAccount, classHash, privateKey: key.privateKey, provider });
 }
@@ -191,6 +195,6 @@ async function deployAndBindGameplayAccount({
     provider,
     publicKey: key.publicKey,
   });
-  await gameplayAccountApi.bind(account.address, key.publicKey);
+  await gameplayAccountApiOf().bind(account.address, key.publicKey);
   return account;
 }

@@ -9,7 +9,6 @@ const envSchema = z.object({
   // The shard this build opens by default. Its manifest names the chain, node, admission service and
   // contracts; shards the player pastes are opened the same way.
   VITE_PUBLIC_SHARD_URL: z.string().url(),
-  VITE_PUBLIC_IDENTITY_ORIGIN: z.string().url(),
   VITE_PUBLIC_IDENTITY_RPC_URL: z.string().url(),
   // Optional public mainnet RPC handed to the cross-origin Controller keychain, which cannot fetch
   // a loopback host (Private Network Access); the lab therefore points it at a public node.

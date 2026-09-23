@@ -13,6 +13,9 @@ import { resolveRendererViteAliases } from "./src/three/renderer-vite-config";
 import { PWA_PRECACHE_BUDGET_BYTES, PWA_PRECACHE_FILES } from "./build/pwa-assets.mjs";
 import { createPwaReleasePlugin } from "./build/pwa-release";
 
+/** The isolated box stack's app and its identity Worker, which every development build signs in against. */
+const STAGING_ORIGIN = "https://staging.realms.party";
+
 // https://vitejs.dev/config/
 export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
   const isServe = command === "serve";
@@ -126,6 +129,16 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
     server: {
       host: true,
       allowedHosts: ["play.realms.test"],
+      // Identity is served under this app's own /api. In dev that is the staging Worker, reached through the dev
+      // server so the browser still sees one origin; the Origin header is rewritten because the Worker trusts only its own.
+      proxy: {
+        "/api": {
+          target: STAGING_ORIGIN,
+          changeOrigin: true,
+          headers: { origin: STAGING_ORIGIN },
+          cookieDomainRewrite: "",
+        },
+      },
     },
     resolve: {
       dedupe: ["three"],

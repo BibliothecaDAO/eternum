@@ -63,5 +63,5 @@ const createIdentityProfiles = (deps: IdentityProfilesDeps) => {
 const normalize = (account: string | bigint): string => `0x${BigInt(account).toString(16)}`;
 
 export const identityProfiles = createIdentityProfiles({
-  fetchProfiles: (accounts) => fetchIdentityProfiles(identityOrigin, accounts),
+  fetchProfiles: (accounts) => fetchIdentityProfiles(identityOrigin(), accounts),
 });

@@ -13,7 +13,7 @@ if (!cookieDomain) {
 
 export const auth = betterAuth({
   baseURL: env.VITE_BASE_URL,
-  trustedOrigins: [env.VITE_BASE_URL, env.VITE_PUBLIC_GAME_ORIGIN],
+  trustedOrigins: [env.VITE_BASE_URL],
   advanced: {
     useSecureCookies: true,
     crossSubDomainCookies: {

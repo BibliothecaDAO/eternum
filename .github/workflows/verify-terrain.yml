@@ -32,7 +32,6 @@ jobs:
       - name: Start auth-free terrain host
         env:
           VITE_PUBLIC_SHARD_URL: http://127.0.0.1:1
-          VITE_PUBLIC_IDENTITY_ORIGIN: http://127.0.0.1:1
           VITE_PUBLIC_IDENTITY_RPC_URL: http://127.0.0.1:1
         run: |
           pnpm --dir apps/game dev --host 127.0.0.1 --port 4173 > terrain-vite.log 2>&1 &

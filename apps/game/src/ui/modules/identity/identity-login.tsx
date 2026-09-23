@@ -40,8 +40,8 @@ export const IdentityLogin = ({ className = "" }: IdentityLoginProps) => {
         const nextSession = await identityClient.signIn({
           address: addAddressPadding(account.address),
           chainId: "SN_MAIN",
-          domain: new URL(identityOrigin).host,
-          uri: identityOrigin,
+          domain: window.location.host,
+          uri: identityOrigin(),
           signTypedData: async (message) => stark.formatSignature(await account.signMessage(message)),
         });
         applySession(nextSession);

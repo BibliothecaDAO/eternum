@@ -4,15 +4,13 @@ import {
   bindGameplayAccount,
   rotateGameplayAccountKey,
 } from "@/lib/gameplay-account";
-import { handleApiCors } from "@/lib/api-cors";
 import { auth } from "@/utils/auth";
 import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/api/gameplay-account/$action")({
   server: {
     handlers: {
-      OPTIONS: ({ request }) => handleApiCors(request),
-      POST: ({ request, params }) => handleApiCors(request, () => handleGameplayAccountRequest(request, params.action)),
+      POST: ({ request, params }) => handleGameplayAccountRequest(request, params.action),
     },
   },
 });

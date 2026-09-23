@@ -1,4 +1,4 @@
-import { isLoopbackOrigin, resolveEndpoint } from "@realms-world/chain";
+import { resolveEndpoint } from "@realms-world/chain";
 import {
   parseNotificationPreferences,
   type NotificationPreferences,
@@ -12,7 +12,8 @@ import type { IdentityChainId, Session } from "./types";
 export type SignTypedData = (message: SiwsTypedData) => Promise<string[]>;
 
 export interface IdentityClientOptions {
-  baseUrl: string;
+  /** The identity API root: `/api` when it is served under the page's own origin, or an absolute URL. */
+  apiUrl: string;
   fetch?: typeof globalThis.fetch;
 }
 
@@ -32,34 +33,28 @@ const readJson = async <T>(response: Response): Promise<T> => {
   return (await response.json()) as T;
 };
 
-export const createIdentityClient = ({ baseUrl, fetch = globalThis.fetch }: IdentityClientOptions) => {
-  const authBaseUrl = resolveEndpoint(baseUrl, { name: "identity base URL", browserFacing: true });
-  const storage =
-    typeof window !== "undefined" && isLoopbackOrigin(window.location.origin) ? window.localStorage : null;
-  const tokenKey = `identity-session:${authBaseUrl}`;
-  const request = (path: string, init?: RequestInit, requestBase = authBaseUrl) => {
-    const token = storage?.getItem(tokenKey);
-    return fetch(`${requestBase}${path}`, {
+const resolveApiUrl = (apiUrl: string): string =>
+  apiUrl.startsWith("/")
+    ? apiUrl.replace(/\/$/, "")
+    : resolveEndpoint(apiUrl, { name: "identity API URL", browserFacing: true });
+
+export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: IdentityClientOptions) => {
+  const api = resolveApiUrl(apiUrl);
+  const request = (path: string, init?: RequestInit) =>
+    fetch(`${api}${path}`, {
       ...init,
       credentials: "include",
-      headers: {
-        "content-type": "application/json",
-        ...(token ? { authorization: `Bearer ${token}` } : {}),
-        ...init?.headers,
-      },
+      headers: { "content-type": "application/json", ...init?.headers },
     });
-  };
 
   const getSession = async (): Promise<Session | null> => {
-    const response = await request("/get-session", { method: "GET" });
-    const session = response.status === 401 ? null : await readJson<Session | null>(response);
-    if (!session) storage?.removeItem(tokenKey);
-    return session;
+    const response = await request("/auth/get-session", { method: "GET" });
+    return response.status === 401 ? null : await readJson<Session | null>(response);
   };
 
   /** Changes the chosen username or portrait; the server answers 422 with its reason when a name breaks a rule. */
   const updateUser = async (body: { name?: string; image?: string | null }): Promise<void> => {
-    const response = await request("/update-user", { method: "POST", body: JSON.stringify(body) });
+    const response = await request("/auth/update-user", { method: "POST", body: JSON.stringify(body) });
     if (response.ok) return;
     const reason = await response
       .json()
@@ -69,15 +64,14 @@ export const createIdentityClient = ({ baseUrl, fetch = globalThis.fetch }: Iden
   };
 
   const signOut = async (): Promise<void> => {
-    const response = await request("/sign-out", { method: "POST", body: JSON.stringify({}) });
+    const response = await request("/auth/sign-out", { method: "POST", body: JSON.stringify({}) });
     if (!response.ok) {
       throw new Error(`Identity request failed with status ${response.status}`);
     }
-    storage?.removeItem(tokenKey);
   };
 
   const signIn = async (options: SignInOptions): Promise<Session> => {
-    const nonceResponse = await request("/siws/nonce", {
+    const nonceResponse = await request("/auth/siws/nonce", {
       method: "POST",
       body: JSON.stringify({ address: options.address }),
     });
@@ -85,8 +79,8 @@ export const createIdentityClient = ({ baseUrl, fetch = globalThis.fetch }: Iden
     const message = buildSiwsMessage({ ...options, nonce });
     const signature = await options.signTypedData(message);
 
-    const { token } = await readJson<{ token: string }>(
-      await request("/siws/verify", {
+    await readJson(
+      await request("/auth/siws/verify", {
         method: "POST",
         body: JSON.stringify({
           address: options.address,
@@ -96,21 +90,22 @@ export const createIdentityClient = ({ baseUrl, fetch = globalThis.fetch }: Iden
       }),
     );
 
-    storage?.setItem(tokenKey, token);
     const session = await getSession();
     if (!session) throw new Error("Identity session was not created");
     return session;
   };
 
-  const preferencesUrl = new URL("../notifications/preferences", `${authBaseUrl}/`).toString();
   const getNotificationPreferences = async (): Promise<NotificationPreferences> =>
     parseNotificationPreferences(
-      await readJson(await request("", { method: "GET", cache: "no-store" }, preferencesUrl)),
+      await readJson(await request("/notifications/preferences", { method: "GET", cache: "no-store" })),
     );
   const saveNotificationPreferences = async (
     preferences: NotificationPreferences,
   ): Promise<NotificationPreferences> => {
-    const response = await request("", { method: "POST", body: JSON.stringify(preferences) }, preferencesUrl);
+    const response = await request("/notifications/preferences", {
+      method: "POST",
+      body: JSON.stringify(preferences),
+    });
     if (response.status === 409)
       throw new Error("Preferences changed on another device. Reload them before saving again.");
     if (response.status === 403 || response.status === 401)
@@ -118,20 +113,15 @@ export const createIdentityClient = ({ baseUrl, fetch = globalThis.fetch }: Iden
     return parseNotificationPreferences(await readJson(response));
   };
 
-  const pushUrl = new URL("../notifications/push", `${authBaseUrl}/`).toString();
   const pushRequest = async <T>(action: string, body?: unknown, options: { keepalive?: boolean } = {}): Promise<T> =>
     readJson<T>(
-      await request(
-        `/${action}`,
-        {
-          ...(body === undefined
-            ? { method: "GET", cache: "no-store" as const }
-            : { method: "POST", body: JSON.stringify(body) }),
-          keepalive: options.keepalive,
-          signal: AbortSignal.timeout(10_000),
-        },
-        pushUrl,
-      ),
+      await request(`/notifications/push/${action}`, {
+        ...(body === undefined
+          ? { method: "GET", cache: "no-store" as const }
+          : { method: "POST", body: JSON.stringify(body) }),
+        keepalive: options.keepalive,
+        signal: AbortSignal.timeout(10_000),
+      }),
     );
   return {
     getSession,

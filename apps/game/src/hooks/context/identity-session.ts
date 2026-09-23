@@ -1,21 +1,17 @@
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
-import { resolveEndpoint } from "@realms-world/chain";
 import { createIdentityClient, profileOfIdentityUser, type Session } from "@realms-world/identity";
 import { useEffect } from "react";
 import { create } from "zustand";
-import { env } from "../../../env";
 
 /**
  * The identity session is the one "logged in" fact. Every surface that used to ask whether the gameplay account
  * had a non-zero address (the shell, the sign-in prompts, the HUD banner) reads this store instead; the
  * gameplay account is derived from the session by `GameplayAccountSync` and may lag it while it deploys.
  */
-export const identityOrigin = resolveEndpoint(env.VITE_PUBLIC_IDENTITY_ORIGIN, {
-  name: "VITE_PUBLIC_IDENTITY_ORIGIN",
-  browserFacing: true,
-});
+/** The identity Worker answers under this app's own /api, so its origin is the page's and no request crosses origins. */
+export const identityOrigin = (): string => window.location.origin;
 
-export const identityClient = createIdentityClient({ baseUrl: `${identityOrigin}/api/auth` });
+export const identityClient = createIdentityClient({ apiUrl: "/api" });
 
 /** The identity chip's popover id: sign-in requests open it wherever the chip is mounted. */
 export const IDENTITY_POPOVER_ID = "identity";

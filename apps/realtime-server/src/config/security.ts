@@ -1,4 +1,3 @@
-import { isLoopbackOrigin } from "@realms-world/chain";
 export interface SecurityConfig {
   allowedOrigins: ReadonlySet<string>;
   globalConnectionCap: number;
@@ -28,6 +27,18 @@ export const readSecurityConfig = (environment = process.env): SecurityConfig =>
   messagesPerSecond: positiveInteger(environment.CHAT_MESSAGES_PER_SECOND, 5),
   messageBurst: positiveInteger(environment.CHAT_MESSAGE_BURST, 10),
 });
+
+const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
+
+/** A developer's own machine is always allowed, so local dev needs no CORS_ORIGIN entry. */
+const isLoopbackOrigin = (origin: string): boolean => {
+  try {
+    const url = new URL(origin);
+    return (url.protocol === "http:" || url.protocol === "https:") && LOOPBACK_HOSTS.has(url.hostname);
+  } catch {
+    return false;
+  }
+};
 
 export const isAllowedOrigin = (origin: string | undefined, allowedOrigins: ReadonlySet<string>): boolean =>
   Boolean(origin && (allowedOrigins.has(origin) || isLoopbackOrigin(origin)));

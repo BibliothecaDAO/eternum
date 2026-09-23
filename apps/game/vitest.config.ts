@@ -16,7 +16,6 @@ export default defineConfig({
     exclude: ["**/node_modules/**", "**/dist/**", ...ASSET_CHECK_FILES],
     env: {
       VITE_PUBLIC_SHARD_URL: "https://herald.realms.test",
-      VITE_PUBLIC_IDENTITY_ORIGIN: "https://realms.test",
       VITE_PUBLIC_IDENTITY_RPC_URL: "https://identity-rpc.realms.test",
     },
     globals: true,

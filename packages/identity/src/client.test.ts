@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { createIdentityClient } from "./client";
 
@@ -6,7 +6,7 @@ describe("identity client", () => {
   it("uses the credentialed identity transport for preference reads and conditional saves", async () => {
     const preferences = { owner: "0x1", level: "standard", revision: 2 };
     const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(async () => Response.json(preferences));
-    const client = createIdentityClient({ baseUrl: "https://realms.test/api/auth", fetch });
+    const client = createIdentityClient({ apiUrl: "https://realms.test/api", fetch });
     expect(await client.getNotificationPreferences()).toEqual(preferences);
     expect(fetch.mock.calls[0]).toEqual([
       "https://realms.test/api/notifications/preferences",
@@ -34,7 +34,7 @@ describe("identity client", () => {
       .mockResolvedValueOnce(Response.json({ token: "token-1" }))
       .mockResolvedValueOnce(Response.json(session));
     const signTypedData = vi.fn().mockResolvedValue(["0x1", "0x2"]);
-    const client = createIdentityClient({ baseUrl: "https://realms.test/api/auth", fetch });
+    const client = createIdentityClient({ apiUrl: "https://realms.test/api", fetch });
 
     await expect(
       client.signIn({
@@ -54,7 +54,7 @@ describe("identity client", () => {
 
   it("posts the sign-out with credentials so the play client can end the session", async () => {
     const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(Response.json({ success: true }));
-    const client = createIdentityClient({ baseUrl: "https://realms.test/api/auth", fetch });
+    const client = createIdentityClient({ apiUrl: "https://realms.test/api", fetch });
 
     await expect(client.signOut()).resolves.toBeUndefined();
 
@@ -64,56 +64,15 @@ describe("identity client", () => {
 
   it("returns null when no session exists", async () => {
     const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(new Response(null, { status: 401 }));
-    const client = createIdentityClient({ baseUrl: "https://realms.test/api/auth", fetch });
+    const client = createIdentityClient({ apiUrl: "https://realms.test/api", fetch });
 
     await expect(client.getSession()).resolves.toBeNull();
   });
 });
 
-afterEach(() => vi.unstubAllGlobals());
-it.each([
-  "http://localhost:4183",
-  "https://127.0.0.1:4183",
-  "http://[::1]:4183",
-  "https://play.realms.party",
-  "https://localhost.attacker.invalid",
-])("selects session transport and persists across reload for %s", async (origin) => {
-  const stored = new Map<string, string>();
-  const localStorage = {
-    getItem: (key: string) => stored.get(key) ?? null,
-    setItem: (key: string, value: string) => stored.set(key, value),
-    removeItem: (key: string) => stored.delete(key),
-  };
-  vi.stubGlobal("window", { location: { origin }, localStorage });
-  const session = { session: { id: "test" }, user: { id: "player" } };
-  const fetch = vi
-    .fn<typeof globalThis.fetch>()
-    .mockResolvedValueOnce(Response.json({ nonce: "nonce" }))
-    .mockResolvedValueOnce(Response.json({ token: "session-token" }))
-    .mockImplementation(async () => Response.json(session));
-  const options = { baseUrl: "https://realms.test/api/auth", fetch };
-  await createIdentityClient(options).signIn({
-    address: "0x123",
-    chainId: "SN_MAIN",
-    domain: "realms.test",
-    uri: "https://realms.test",
-    signTypedData: async () => ["0x1"],
-  });
-  const reloaded = createIdentityClient(options);
-  await reloaded.getSession();
-  const loopback = !origin.includes("realms.party") && !origin.includes("attacker");
-  expect(stored.size).toBe(loopback ? 1 : 0);
-  expect(new Headers(fetch.mock.calls.at(-1)?.[1]?.headers).get("authorization")).toBe(
-    loopback ? "Bearer session-token" : null,
-  );
-  expect(fetch.mock.calls.at(-1)?.[1]?.credentials).toBe("include");
-  await reloaded.signOut();
-  expect(stored.size).toBe(0);
-});
-
 it("uses credentialed identity routes for push setup and a device capability for post-logout revocation", async () => {
   const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(async () => Response.json({ enabled: false }));
-  const client = createIdentityClient({ baseUrl: "https://realms.test/api/auth", fetch });
+  const client = createIdentityClient({ apiUrl: "https://realms.test/api", fetch });
   await client.getPushConfiguration();
   expect(fetch.mock.calls.at(-1)?.[0]).toBe("https://realms.test/api/notifications/push/config");
   const id = "11111111-1111-4111-8111-111111111111";
@@ -154,7 +113,7 @@ it("bounds a stalled push request with an abort signal", async () => {
           init!.signal!.addEventListener("abort", () => reject(init!.signal!.reason), { once: true });
         }),
     );
-    const client = createIdentityClient({ baseUrl: "https://realms.test/api/auth", fetch });
+    const client = createIdentityClient({ apiUrl: "https://realms.test/api", fetch });
     const request = client.getPushSubscriptionStatus("0x1", "device");
     const rejected = expect(request).rejects.toThrow("Timed out");
     expect(timeout).toHaveBeenCalledWith(10_000);
