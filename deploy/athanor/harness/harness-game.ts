@@ -7,6 +7,7 @@ import {
   createGameActions,
   FELT_CENTER,
   getBlockTimestamp,
+  getTileAt,
   ResourceManager,
   StaminaManager,
   multiplyByPrecision,
@@ -73,12 +74,21 @@ export interface HarnessGame {
   minimumStaminaFor(kind: "move" | "explore"): number;
   production(structureId: ID): ProductionState | undefined;
   armyPathIndexes(): ArmyPathIndexes;
+  /** The block the bot's facts were confirmed through, or null before Herald names one. */
+  factHeadBlock(): number | null;
+  /** A surface hex as the bot's facts show it. */
+  tileView(coord: Coord): TileView;
   settle(signer: Account, owner: string, name: string, gameType: "blitz" | "eternum" | "frontier"): Promise<unknown>;
   produceWood(signer: Account, structureId: ID): Promise<unknown>;
   /** Runs a client action and resolves with its hash as soon as the chain accepted it; one at a time per signer. */
   submit(signer: Account, act: () => Promise<unknown>): Promise<HarnessSubmission>;
   /** Resolves once `read` returns a value; re-read after every applied sync slice. */
   waitFor<T>(read: () => T | undefined, timeoutMs: number, describe: () => string): Promise<T>;
+}
+
+export interface TileView {
+  explored: boolean;
+  occupierId: number;
 }
 
 export const EXPLORER_TROOP_COUNT = 10;
@@ -147,6 +157,11 @@ export function createHarnessGame(client: GameClient, heraldConfirmations?: Hera
       };
     },
     armyPathIndexes: () => buildArmyPathIndexes(client),
+    factHeadBlock: () => heraldConfirmations?.confirmedBlock() ?? null,
+    tileView: ({ x, y }) => {
+      const tile = getTileAt(store, false, x, y, game_id);
+      return { explored: Boolean(tile?.biome), occupierId: Number(tile?.occupier_id ?? 0) };
+    },
     settle: (signer, _owner, name) => systemCalls.settle_season({ signer, name: shortString.encodeShortString(name) }),
     produceWood: (signer, structureId) => {
       const produce = !configManager.isCommandEnabled("BurnLaborForResourceProduction")

@@ -32,6 +32,8 @@ const GAME_LISTING_POLL_MS = 2_000;
  */
 export interface HeraldConfirmations {
   confirmedAt(transactionHash: string): Promise<number>;
+  /** The last block Herald confirmed: the head a bot's facts describe when it plans. */
+  confirmedBlock(): number | null;
 }
 
 export interface HarnessGameClient {
@@ -65,7 +67,12 @@ function createHeraldConfirmations() {
   const confirmedAtMs = new Map<string, number>();
   const waiters = new Map<string, Array<(atMs: number) => void>>();
   const key = (hash: string) => `0x${BigInt(hash).toString(16)}`;
+  let confirmedBlock: number | null = null;
   return {
+    recordConfirmedHead(block: number): void {
+      confirmedBlock = block;
+    },
+    confirmedBlock: () => confirmedBlock,
     record(transaction: GameSyncTransaction): void {
       if (transaction.block === null || !["ACCEPTED_ON_L2", "ACCEPTED_ON_L1"].includes(transaction.status)) return;
       const hash = key(transaction.hash);
@@ -105,7 +112,10 @@ const createLoggingObserver = (gameId: number, confirmations: ReturnType<typeof 
   });
   const observer: GameClientObserver = {
     onHead: (head) => {
-      if (!head.preconfirmed) confirmedTimestamp = head.timestamp;
+      if (!head.preconfirmed) {
+        confirmedTimestamp = head.timestamp;
+        confirmations.recordConfirmedHead(head.block);
+      }
     },
     onTransaction: (transaction) => confirmations.record(transaction),
     onSubscriptionActive: () => console.log(`Game client subscribed to game ${gameId}`),

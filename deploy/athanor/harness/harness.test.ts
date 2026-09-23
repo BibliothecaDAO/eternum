@@ -9,6 +9,7 @@ import type { Account } from "starknet";
 import { mapWithConcurrency, type HarnessAccount } from "./account-factory";
 import {
   chooseOutwardDirection,
+  classifyExplorerRejection,
   classifyWorkloadFailure,
   classifyWorkloadRevertReason,
   createRpcMetrics,
@@ -225,7 +226,52 @@ describe("Madara harness workload", () => {
         { failureClass: "gameplay_rejection" },
         { failureClass: "chain_or_driver" },
       ]),
-    ).toEqual({ gameRuleLimit: 0, harnessPathing: 0, gameplayRejection: 2, chainOrDriver: 1 });
+    ).toEqual({ gameRuleLimit: 0, harnessPathing: 0, gameplayRejection: 2, gameplayRace: 0, chainOrDriver: 1 });
+  });
+
+  it("counts a rejection whose open target changed after the bot's view as a race, not a blocking failure", () => {
+    const open = { explored: false, occupierId: 0 };
+    const rejected = (): TrackedTransaction => ({
+      botId: 15,
+      gameId: 7,
+      kind: "explore",
+      outcome: "rejected",
+      failureClass: "gameplay_rejection",
+      revertReason: "other",
+      rpc: createRpcMetrics(),
+      stage: "workload",
+      submitStartedAt: "2026-09-23T17:58:40.025Z",
+    });
+    const plan = (targetInView = open, factHeadBlock: number | null = 15464) => ({
+      direction: 3,
+      explorerId: 1988,
+      factHeadBlock,
+      from: { x: 11, y: 10 },
+      target: { x: 10, y: 10 },
+      targetInView,
+    });
+
+    const race = rejected();
+    classifyExplorerRejection(race, "explore", plan(), { explored: true, occupierId: 1978 });
+    expect(race).toMatchObject({ failureClass: "gameplay_race", revertReason: "tile_contention" });
+    expect(isThresholdBlockingFailure(race)).toBe(false);
+    expect(summarizeFailureClasses([race])).toMatchObject({ gameplayRace: 1, gameplayRejection: 0 });
+
+    const alreadyTaken = rejected();
+    classifyExplorerRejection(alreadyTaken, "explore", plan({ explored: true, occupierId: 1978 }), {
+      explored: true,
+      occupierId: 1978,
+    });
+    expect(alreadyTaken.failureClass).toBe("gameplay_rejection");
+    expect(isThresholdBlockingFailure(alreadyTaken)).toBe(true);
+
+    const unchanged = rejected();
+    classifyExplorerRejection(unchanged, "explore", plan(), open);
+    expect(unchanged.failureClass).toBe("gameplay_rejection");
+
+    const noView = rejected();
+    classifyExplorerRejection(noView, "explore", plan(open, null), { explored: true, occupierId: 1978 });
+    expect(noView.failureClass).toBe("gameplay_rejection");
   });
 
   it("records a lost Herald clock without fetching a block per action", async () => {
@@ -843,6 +889,8 @@ function fakeWorld(extraExplorer?: [number, ExplorerRow]): FakeWorld {
       exploredHexes: new Map(),
       chestHexes: new Map(),
     }),
+    factHeadBlock: () => 1,
+    tileView: (coord) => ({ explored: explored.has(key(coord)), occupierId: 0 }),
     settle: async () => {},
     produceWood: async (_signer, structureId) => {
       const current = production.get(structureId)!;

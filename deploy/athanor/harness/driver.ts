@@ -15,12 +15,18 @@ import {
   type HarnessGame,
   type HarnessSubmission,
   type ProductionState,
+  type TileView,
 } from "./harness-game";
 
 export type WorkloadActionKind = "move" | "explore" | "produce";
 export type TransactionStage = "setup" | "workload" | "finalization";
 export type MeasuredRpcMethod = "estimateInvokeFee" | "getBlock" | "getTransactionStatus";
-export type WorkloadFailureClass = "game_rule_limit" | "harness_pathing" | "gameplay_rejection" | "chain_or_driver";
+export type WorkloadFailureClass =
+  | "game_rule_limit"
+  | "harness_pathing"
+  | "gameplay_rejection"
+  | "gameplay_race"
+  | "chain_or_driver";
 export type WorkloadRevertReason = "tile_contention" | "stamina" | "labor" | "other";
 export type TransactionOutcome =
   | "completed"
@@ -53,6 +59,8 @@ export interface TrackedTransaction {
   botId: number;
   error?: string;
   exploreRequested?: boolean;
+  /** What a move or explore was planned on, so a rejection can be judged against the bot's own view. */
+  explorerPlan?: ExplorerPlanEvidence;
   finalityStatus?: string;
   failureClass?: WorkloadFailureClass;
   gameId: number;
@@ -75,6 +83,18 @@ export interface TrackedTransaction {
   tick?: number;
   transactionHash?: string;
   visibleAt?: string;
+}
+
+interface ExplorerPlanEvidence {
+  direction: number;
+  explorerId: ID;
+  /** The block the bot's facts were confirmed through when it planned; null when Herald had named none. */
+  factHeadBlock: number | null;
+  from: Coord;
+  target: Coord;
+  targetInView: TileView;
+  /** The target as the facts showed it once the chain's outcome for this action had arrived. */
+  targetAfter?: TileView;
 }
 
 export interface HarnessBot {
@@ -744,6 +764,7 @@ async function runExplorerAction({
   selectedExplorer.lastUsedAt = actionIndex;
   const reservation = pathReservations.reserve(selectedExplorer.explorerId, plan.from, plan.target);
   const before = requireExplorer(game, selectedExplorer.explorerId);
+  const evidence = recordExplorerPlan(game, plan);
 
   const transaction = await trackTransaction({
     actionIndex,
@@ -765,8 +786,12 @@ async function runExplorerAction({
     stage,
     tick,
   });
+  transaction.explorerPlan = evidence;
   if (transaction.outcome !== "completed") {
     pathReservations.cancel(reservation);
+    if (transaction.failureClass === "gameplay_rejection") {
+      classifyExplorerRejection(transaction, kind, evidence, game.tileView(plan.target));
+    }
     return transaction;
   }
 
@@ -788,6 +813,43 @@ async function runExplorerAction({
   }
   return transaction;
 }
+
+function recordExplorerPlan(game: HarnessGame, plan: ExplorerActionPlan): ExplorerPlanEvidence {
+  return {
+    direction: plan.direction,
+    explorerId: plan.explorer.explorerId,
+    factHeadBlock: game.factHeadBlock(),
+    from: plan.from,
+    target: plan.target,
+    targetInView: game.tileView(plan.target),
+  };
+}
+
+/**
+ * A rejected step whose target was open in the bot's own view and changed before the chain ran it lost a race to
+ * another player's action: it is counted apart, is not blocking, and the bot re-plans from fresh facts next tick. A
+ * target already closed in its view is the bot's bug, and a step with no view to judge by cannot be classified; both
+ * stay blocking gameplay rejections.
+ */
+export function classifyExplorerRejection(
+  transaction: TrackedTransaction,
+  kind: "move" | "explore",
+  plan: ExplorerPlanEvidence,
+  targetAfter: TileView,
+): void {
+  plan.targetAfter = targetAfter;
+  if (plan.factHeadBlock === null || !isOpenTarget(kind, plan.targetInView)) return;
+  if (sameTileView(plan.targetInView, targetAfter)) return;
+  transaction.failureClass = "gameplay_race";
+  transaction.revertReason = "tile_contention";
+}
+
+/** An explore opens an unexplored hex and a move enters an explored one; neither may enter an occupied hex. */
+const isOpenTarget = (kind: "move" | "explore", tile: TileView): boolean =>
+  tile.occupierId === 0 && tile.explored === (kind === "move");
+
+const sameTileView = (left: TileView, right: TileView): boolean =>
+  left.explored === right.explored && left.occupierId === right.occupierId;
 
 /**
  * The client plans every legal step from the explorer's synchronized position (occupancy, biome stamina, food); the harness
