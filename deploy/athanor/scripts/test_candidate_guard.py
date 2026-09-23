@@ -15,21 +15,32 @@ class CandidateGuardTests(unittest.TestCase):
 
     def test_latency_requires_two_consecutive_nonempty_windows_per_stream(self):
         streaks = {}
+        pre = lambda count, p95=0: {"kind": "preconfirmed", "count": count, "p95Ms": p95}
+        confirmed = lambda count, p95=0: {"kind": "confirmed", "count": count, "p95Ms": p95}
         windows = [
             ([], []),
-            ([{"kind": "confirmed", "count": 30, "p95Ms": 251}], []),
+            ([pre(2, 10), confirmed(30, 251)], []),
             ([], []),
-            ([{"kind": "confirmed", "count": 30, "p95Ms": 250}], []),
-            ([{"kind": "confirmed", "count": 30, "p95Ms": 251},
-              {"kind": "preconfirmed", "count": 2, "p95Ms": 51}], []),
-            ([{"kind": "confirmed", "count": 0, "p95Ms": 0}], []),
-            ([{"kind": "confirmed", "count": 30, "p95Ms": 251}], ["live confirmed p95"]),
-            ([{"kind": "confirmed", "count": 30, "p95Ms": 250},
-              {"kind": "preconfirmed", "count": 2, "p95Ms": 51}], ["live preconfirmed p95"]),
+            ([pre(2, 10), confirmed(30, 250)], []),
+            ([pre(2, 51), confirmed(30, 251)], []),
+            ([pre(0), confirmed(0)], []),
+            ([pre(2, 10), confirmed(30, 251)], ["live confirmed p95"]),
+            ([pre(2, 51), confirmed(30, 250)], []),
+            ([pre(2, 51), confirmed(30, 250)], ["live preconfirmed p95"]),
         ]
         for digests, expected in windows:
             with self.subTest(digests=digests):
                 self.assertEqual(budget_failures(self.budget, self.health, digests, 20, 200, streaks), expected)
+
+    def test_confirmed_diffs_without_preconfirmed_samples_fail_after_two_windows(self):
+        streaks = {}
+        empty = [{"kind": "preconfirmed", "count": 0}, {"kind": "confirmed", "count": 30, "p95Ms": 100}]
+        self.assertEqual(budget_failures(self.budget, self.health, empty, 20, 200, streaks), [])
+        self.assertEqual(budget_failures(self.budget, self.health, [], 20, 200, streaks), [])
+        self.assertEqual(budget_failures(self.budget, self.health, empty, 20, 200, streaks),
+                         ["live preconfirmed digest empty"])
+        sampled = [{"kind": "preconfirmed", "count": 30, "p95Ms": 20}, {"kind": "confirmed", "count": 30, "p95Ms": 100}]
+        self.assertEqual(budget_failures(self.budget, self.health, sampled, 20, 200, streaks), [])
 
     def test_lag_health_and_disk_exceedance_requires_two_windows_and_resets(self):
         streaks = {}

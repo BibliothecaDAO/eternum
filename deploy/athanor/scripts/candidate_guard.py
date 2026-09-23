@@ -64,6 +64,10 @@ def budget_failures(budget, health, digests, disk_free, root_free, streaks):
         (f"live {event['kind']} p95", event["p95Ms"] > budget["digest_p95_ms"][event["kind"]])
         for event in digests if event["count"] > 0
     )
+    # Herald digests every kind together; confirmed diffs with no pre-confirmed samples mean that budget measures nothing.
+    counts = {event["kind"]: event["count"] for event in digests}
+    if counts.get("confirmed", 0) > 0:
+        observations.append(("live preconfirmed digest empty", counts.get("preconfirmed", 0) == 0))
     failures = []
     for reason, exceeded in observations:
         streaks[reason] = streaks.get(reason, 0) + 1 if exceeded else 0

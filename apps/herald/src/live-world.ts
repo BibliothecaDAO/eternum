@@ -58,6 +58,8 @@ const setBoundedTransactionEntry = <Value>(map: Map<string, Value>, key: string,
   }
 };
 
+const overlayIdentity = (receipt: RpcReceipt): string => `receipt:${normalizeFelt(receipt.transaction_hash)}`;
+
 export class LiveWorld {
   private readonly changeListeners = new Set<(models: ReadonlySet<string>) => void>();
 
@@ -206,7 +208,7 @@ export class LiveWorld {
 
   public acceptReceipt(receipt: RpcReceipt): void {
     if (this.native.halted) return;
-    if (receipt.finality_status === "PRE_CONFIRMED" && !this.applyOverlayReceipt(receipt, null, 0)) return;
+    if (receipt.finality_status === "PRE_CONFIRMED" && !this.publishPreconfirmedReceipt(receipt)) return;
     let actionReceipt: RpcReceipt;
     try {
       actionReceipt = this.native.actionReceipt(this.overlayFold, receipt);
@@ -273,7 +275,11 @@ export class LiveWorld {
 
     const confirmed = await this.applyConfirmedThrough(head.block_number);
     await this.freezeFinalizedReviewSnapshots();
-    for (const [block, changes] of confirmed.changes) this.broadcastConfirmedChanges(changes, block);
+    let publishedChanges = false;
+    for (const [block, changes] of confirmed.changes) {
+      this.broadcastConfirmedChanges(changes, block);
+      publishedChanges ||= changes.length > 0;
+    }
     // Subscriptions can miss a receipt during reconnect or fall behind a confirmed head.
     // Replay publishes outcomes after their authoritative rows, so client barriers recover too.
     for (const { receipt, transaction } of confirmed.transactions) {
@@ -284,7 +290,8 @@ export class LiveWorld {
     this.resetOverlay();
     await this.rebuildOverlay();
     this.publishOverlayReverts();
-    this.diffLatency.record("confirmed", performance.now() - startedAt);
+    // An empty head publishes no diff, so it is not a confirmed sample.
+    if (publishedChanges) this.diffLatency.record("confirmed", performance.now() - startedAt);
     this.lastClockTimestamp = Math.max(this.lastClockTimestamp, head.timestamp);
     for (const gameId of this.knownGames) this.hub.publishHead(gameId, head.block_number, head.timestamp);
     this.checkpointIfDue();
@@ -443,8 +450,17 @@ export class LiveWorld {
       this.applyOverlayReceipt(receipt, block.block_number, transactionIndex);
   }
 
+  /** Applies a pre-confirmed receipt to the overlay, recording its arrival-to-publish latency the first time. */
+  private publishPreconfirmedReceipt(receipt: RpcReceipt): boolean {
+    const arrivedAt = performance.now();
+    const firstArrival = !this.overlayEvents.has(overlayIdentity(receipt));
+    if (!this.applyOverlayReceipt(receipt, null, 0)) return false;
+    if (firstArrival) this.diffLatency.record("preconfirmed", performance.now() - arrivedAt);
+    return true;
+  }
+
   private applyOverlayReceipt(receipt: RpcReceipt, block: number | null, index: number): boolean {
-    const identity = `receipt:${normalizeFelt(receipt.transaction_hash)}`;
+    const identity = overlayIdentity(receipt);
     if (this.overlayEvents.has(identity)) return true;
     let result: ReturnType<NativeIngestion["applyReceipt"]>;
     try {

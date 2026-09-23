@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import setFixture from "../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 import deleted from "../../../../contracts/l3/world-native/schema/fixtures/row-deleted.json";
 import malformed from "../../../../contracts/l3/world-native/schema/fixtures/malformed-row.json";
+import { DiffLatencyMonitor } from "../diff-latency";
 import { LiveWorld } from "../live-world";
 import { WorldFold } from "../world-fold";
 import { createHeraldRequestHandler } from "../http";
@@ -85,9 +86,11 @@ describe("native confirmed replay and transaction delivery", () => {
     await expect(native.replay({ fold, rpc, fromBlock: 10, toBlock: 11 })).rejects.toThrow("disconnected");
     expect(fold.checkpoint()).toEqual(before);
   });
-  it("publishes both domains in one diff only after the full receipt arrives", () => {
+  it("publishes both domains in one diff only after the full receipt arrives, sampling its latency once", () => {
     const { native, decoder, fold } = setup();
     const messages: Record<string, unknown>[] = [];
+    const diffLatency = new DiffLatencyMonitor();
+    const sampled = vi.spyOn(diffLatency, "record");
     const live = new LiveWorld({
       native,
       registry: decoder.registry,
@@ -96,6 +99,7 @@ describe("native confirmed replay and transaction delivery", () => {
       checkpointStore: { save: vi.fn() },
       confirmedBlock: 9,
       confirmedFold: fold,
+      diffLatency,
       rpc: {} as MadaraRpc,
     });
     const connection = live.attach("1", { send: (text) => messages.push(JSON.parse(text)) });
@@ -113,6 +117,7 @@ describe("native confirmed replay and transaction delivery", () => {
     expect((diffs[0].set as { model: string }[]).map((row) => row.model).sort()).toEqual(["ExplorerTroops", "TileOpt"]);
     live.acceptReceipt({ ...receipt([setFixture.raw, map], "0x77"), finality_status: "PRE_CONFIRMED" });
     expect(messages.filter((message) => message.type === "diff")).toHaveLength(1);
+    expect(sampled.mock.calls).toEqual([["preconfirmed", expect.any(Number)]]);
   });
   it.each([
     malformed.raw,

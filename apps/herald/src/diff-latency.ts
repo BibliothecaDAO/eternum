@@ -1,9 +1,9 @@
-type DiffKind = "preconfirmed" | "confirmed";
+const DIFF_KINDS = ["preconfirmed", "confirmed"] as const;
+type DiffKind = (typeof DIFF_KINDS)[number];
 
 interface LatencyWindow {
   count: number;
   samples: number[];
-  startedAt: number;
 }
 
 const SLOW_DIFF_MS = 200;
@@ -12,12 +12,17 @@ const MAX_SAMPLES_PER_WINDOW = 2_048;
 
 const nearestRank = (sorted: number[], quantile: number): number => sorted[Math.ceil(quantile * sorted.length) - 1]!;
 
+const emptyWindows = () => new Map(DIFF_KINDS.map((kind) => [kind, { count: 0, samples: [] } as LatencyWindow]));
+
 /**
- * Fold-to-publish latency per diff kind. A slow diff is logged as it happens; a per-kind digest is logged lazily by
- * the first record at least a window after the previous digest, so idle kinds stay silent and no timer runs.
+ * Publish latency per diff kind: a pre-confirmed receipt's arrival to its publish, and a confirmed head's fold to its
+ * publish. A slow diff is logged as it happens. One window spans every kind and closes lazily on the first record a
+ * window after it opened, logging a digest for each kind, so a kind with no samples in an active window reads as a
+ * zero count rather than silence. An idle Herald opens no window and logs nothing.
  */
 export class DiffLatencyMonitor {
-  private readonly windows = new Map<DiffKind, LatencyWindow>();
+  private windowStartedAt: number | null = null;
+  private windows = emptyWindows();
 
   constructor(
     private readonly now: () => number = () => performance.now(),
@@ -29,35 +34,28 @@ export class DiffLatencyMonitor {
       this.log.warn(JSON.stringify({ durationMs: Math.round(durationMs), event: "herald_diff_slow", kind }));
     }
     const now = this.now();
-    const window = this.windowFor(kind, now);
+    this.windowStartedAt ??= now;
+    const window = this.windows.get(kind)!;
     window.count += 1;
     // Percentiles come from the window's first samples so memory stays bounded; the count still covers every diff.
     if (window.samples.length < MAX_SAMPLES_PER_WINDOW) window.samples.push(durationMs);
-    const windowMs = now - window.startedAt;
+    const windowMs = now - this.windowStartedAt;
     if (windowMs < DIGEST_WINDOW_MS) return;
-    this.log.info(JSON.stringify(this.digest(kind, window, windowMs)));
-    this.windows.set(kind, { count: 0, samples: [], startedAt: now });
+    for (const [digestKind, digestWindow] of this.windows)
+      this.log.info(JSON.stringify(digest(digestKind, digestWindow, windowMs)));
+    this.windowStartedAt = now;
+    this.windows = emptyWindows();
   }
+}
 
-  private windowFor(kind: DiffKind, now: number): LatencyWindow {
-    let window = this.windows.get(kind);
-    if (!window) {
-      window = { count: 0, samples: [], startedAt: now };
-      this.windows.set(kind, window);
-    }
-    return window;
-  }
-
-  private digest(kind: DiffKind, window: LatencyWindow, windowMs: number) {
-    const sorted = [...window.samples].sort((left, right) => left - right);
-    return {
-      count: window.count,
-      event: "herald_diff_latency_digest",
-      kind,
-      maxMs: Math.round(sorted.at(-1)!),
-      p50Ms: Math.round(nearestRank(sorted, 0.5)),
-      p95Ms: Math.round(nearestRank(sorted, 0.95)),
-      windowMs: Math.round(windowMs),
-    };
-  }
+function digest(kind: DiffKind, window: LatencyWindow, windowMs: number) {
+  const base = { count: window.count, event: "herald_diff_latency_digest", kind, windowMs: Math.round(windowMs) };
+  if (window.count === 0) return base;
+  const sorted = [...window.samples].sort((left, right) => left - right);
+  return {
+    ...base,
+    maxMs: Math.round(sorted.at(-1)!),
+    p50Ms: Math.round(nearestRank(sorted, 0.5)),
+    p95Ms: Math.round(nearestRank(sorted, 0.95)),
+  };
 }
