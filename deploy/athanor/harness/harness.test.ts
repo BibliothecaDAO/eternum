@@ -604,6 +604,30 @@ describe("Madara harness reporting", () => {
       "blockifier_commit_phase_aborts_total",
     ]);
   });
+  it("summarizes the gateway's admission over the window, with an unknown p95 past the last bound", async () => {
+    const bucketsWith = (entries: Record<number, number>) =>
+      Array.from({ length: QUEUE_WAIT_BOUNDS.length + 1 }, (_, index) => entries[index] ?? 0);
+    const scrape = (time: number, gateway: GatewayScrape) => metricsRow(time, 0, 0, 1, 1, 1, gateway);
+    const before = { depth: 2, accepted: 10, executed: 0, transactions: 0, wait: { count: 0, sum: 0, buckets: bucketsWith({}) } };
+    const after = {
+      depth: 6,
+      accepted: 40,
+      executed: 30,
+      transactions: 3,
+      wait: { count: 30, sum: 1.5, buckets: bucketsWith({ 3: 20, 4: 9, 5: 1 }) },
+    };
+    const output = await readBlockStats([blockRow(10, 1, 10)], [scrape(0, before), scrape(5_000_000_000, after)]);
+    expect(output.admission).toEqual({
+      queueDepth: { max: 6, p50: 2, p95: 6 },
+      acceptedTicketsPerSecond: 6,
+      ticketsPerTransaction: 10,
+      queueWaitMs: { count: 30, meanMs: 50, p95UpperBoundMs: 100 },
+    });
+
+    const slow = { ...after, wait: { count: 30, sum: 1_200, buckets: bucketsWith({ 12: 30 }) } };
+    const stalled = await readBlockStats([blockRow(10, 1, 10)], [scrape(0, before), scrape(5_000_000_000, slow)]);
+    expect(stalled.admission.queueWaitMs).toEqual({ count: 30, meanMs: 40_000, p95UpperBoundMs: null });
+  });
   it("reads a pair's counters as window deltas, per cache kind for the hash cache", async () => {
     const counters = (time: number, calls: number, hits: number, transactions: number) => ({
       resourceMetrics: [
@@ -837,7 +861,57 @@ function blockRow(blockNumber: number, transactions: number, blockProductionMs: 
   };
 }
 
-function metricsRow(time: number, transactions: number, ready: number, attempts: number, committed: number, start = 1) {
+/** The gateway's admission series as the pinned collector exports them: double sums and a per-bucket histogram. */
+const QUEUE_WAIT_BOUNDS = [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 30];
+interface GatewayScrape {
+  depth: number;
+  accepted: number;
+  executed: number;
+  transactions: number;
+  wait: { count: number; sum: number; buckets: number[] };
+}
+const IDLE_GATEWAY: GatewayScrape = {
+  depth: 0,
+  accepted: 0,
+  executed: 0,
+  transactions: 0,
+  wait: { count: 0, sum: 0, buckets: Array(QUEUE_WAIT_BOUNDS.length + 1).fill(0) },
+};
+
+function gatewayMetrics(time: number, start: number, gateway: GatewayScrape) {
+  const point = { timeUnixNano: String(time), startTimeUnixNano: String(start) };
+  const sum = (name: string, value: number) => ({ name, sum: { dataPoints: [{ ...point, asDouble: value }] } });
+  return [
+    { name: "gateway_admission_queue_depth", gauge: { dataPoints: [{ ...point, asDouble: gateway.depth }] } },
+    sum("gateway_admission_accepted_tickets", gateway.accepted),
+    sum("gateway_executed_tickets", gateway.executed),
+    sum("gateway_ticket_transactions", gateway.transactions),
+    {
+      name: "gateway_admission_queue_wait_seconds",
+      histogram: {
+        dataPoints: [
+          {
+            ...point,
+            count: String(gateway.wait.count),
+            sum: gateway.wait.sum,
+            bucketCounts: gateway.wait.buckets.map(String),
+            explicitBounds: QUEUE_WAIT_BOUNDS,
+          },
+        ],
+      },
+    },
+  ];
+}
+
+function metricsRow(
+  time: number,
+  transactions: number,
+  ready: number,
+  attempts: number,
+  committed: number,
+  start = 1,
+  gateway: GatewayScrape = IDLE_GATEWAY,
+) {
   const metric = (name: string, value: number, counter = false) => ({
     name,
     [counter ? "sum" : "gauge"]: {
@@ -855,6 +929,7 @@ function metricsRow(time: number, transactions: number, ready: number, attempts:
               metric("mempool_preconfirmed_transaction_statuses", 0),
               metric("blockifier_execution_attempts_total", attempts, true),
               metric("blockifier_committed_transactions_total", committed, true),
+              ...gatewayMetrics(time, start, gateway),
             ],
           },
         ],

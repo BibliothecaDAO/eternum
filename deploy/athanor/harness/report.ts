@@ -28,6 +28,13 @@ interface BlockStats {
   blockifier: Record<"transactions" | "validationAttempts" | "aborts" | "commitPhaseAborts", number | null>;
   hashCache: Record<string, { calls?: number | null; hits?: number | null; hitRate: number | null }>;
   l2GasPerBusyBlock: MetricSummary;
+  /** The gateway's admission over the window; queueWaitMs.p95UpperBoundMs is null past the last bucket bound. */
+  admission: {
+    queueDepth: MetricSummary;
+    acceptedTicketsPerSecond: number | null;
+    ticketsPerTransaction: number | null;
+    queueWaitMs: { count: number | null; meanMs: number | null; p95UpperBoundMs: number | null };
+  };
   executionAmplification: {
     attempts: number | null;
     committed: number | null;

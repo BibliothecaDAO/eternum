@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Summarize structured block logs and the node's OTLP metric export."""
+"""Summarize structured block logs and the OTLP metric export of the node and the gateway."""
 
 import argparse
 from collections import namedtuple
@@ -30,6 +30,12 @@ NODE_SERIES = (
     Series("exec_hash_cache_hits_total", "hits", "counter", "hash-cache", "kind"),
     Series("exec_hash_cache_misses_total", "misses", "counter", "hash-cache", "kind"),
     Series("exec_hash_cache_capacity_clears_total", "capacityClears", "counter", "hash-cache", "kind"),
+    # The gateway's admission series (stream C), scraped into the same file; its counters have no _total suffix.
+    Series("gateway_admission_queue_depth", "queueDepth", "gauge", EVERY_RUN),
+    Series("gateway_admission_accepted_tickets", "acceptedTickets", "counter", EVERY_RUN),
+    Series("gateway_executed_tickets", "executedTickets", "counter", EVERY_RUN),
+    Series("gateway_ticket_transactions", "ticketTransactions", "counter", EVERY_RUN),
+    Series("gateway_admission_queue_wait_seconds", "queueWait", "histogram", EVERY_RUN),
 )
 SERIES_BY_NAME = {series.name: series for series in NODE_SERIES}
 
@@ -93,7 +99,8 @@ def read_metrics(path, since, until):
 
 
 def read_series_points(series, metric, since, until, points):
-    for point in metric.get("gauge", metric.get("sum", {})).get("dataPoints", []):
+    data = metric.get("gauge") or metric.get("sum") or metric.get("histogram") or {}
+    for point in data.get("dataPoints", []):
         timestamp = int(point["timeUnixNano"])
         if (since is not None and timestamp < since) or (until is not None and timestamp > until):
             continue
@@ -101,8 +108,20 @@ def read_series_points(series, metric, since, until, points):
         if any(existing["timestamp"] == timestamp for existing in points.get(key, [])):
             raise ValueError("Metrics input contains multiple node series")
         points.setdefault(key, []).append(
-            {"timestamp": timestamp, "value": int(point["asInt"]), "start": point.get("startTimeUnixNano")}
+            {"timestamp": timestamp, "value": point_value(series, point), "start": point.get("startTimeUnixNano")}
         )
+
+
+def point_value(series, point):
+    """A point's value: a number for gauges and counters (integer or double), the counts for a histogram."""
+    if series.kind == "histogram":
+        return {
+            "count": int(point["count"]),
+            "sum": float(point["sum"]),
+            "buckets": [int(count) for count in point["bucketCounts"]],
+            "bounds": [float(bound) for bound in point["explicitBounds"]],
+        }
+    return int(point["asInt"]) if "asInt" in point else float(point["asDouble"])
 
 
 def label_of(point, label):
@@ -116,14 +135,37 @@ def label_of(point, label):
 
 def counter_delta(points):
     """The counter's growth over the window, without counting across a reset (a new start time or a lower value)."""
-    delta = intervals = resets = 0
+    delta = intervals = resets = elapsed = 0
     for previous, current in zip(points, points[1:]):
         if current["start"] != previous["start"] or current["value"] < previous["value"]:
             resets += 1
             continue
         delta += current["value"] - previous["value"]
+        elapsed += current["timestamp"] - previous["timestamp"]
         intervals += 1
-    return {"delta": delta if intervals else None, "intervals": intervals, "resets": resets}
+    return {
+        "delta": delta if intervals else None,
+        "intervals": intervals,
+        "resets": resets,
+        "seconds": elapsed / 1e9 if intervals else None,
+    }
+
+
+def histogram_delta(points):
+    """A histogram's growth over the window, by the same reset rule: its count, sum and per-bucket counts."""
+    count = total = 0
+    buckets = None
+    for previous, current in zip(points, points[1:]):
+        before, after = previous["value"], current["value"]
+        if current["start"] != previous["start"] or after["count"] < before["count"]:
+            continue
+        count += after["count"] - before["count"]
+        total += after["sum"] - before["sum"]
+        grown = [a - b for a, b in zip(after["buckets"], before["buckets"])]
+        buckets = grown if buckets is None else [a + b for a, b in zip(buckets, grown)]
+    if buckets is None:
+        return None
+    return {"count": count, "sum": total, "buckets": buckets, "bounds": points[-1]["value"]["bounds"]}
 
 
 def missing_series(points, pair):
@@ -190,6 +232,37 @@ def summarize_hash_cache(points):
         calls, hits = cache.get("calls"), cache.get("hits")
         cache["hitRate"] = hits / calls if calls and hits is not None else None
     return caches
+
+
+def summarize_admission(points):
+    """The gateway over the window: queue depth, accepted tickets per second, tickets per batch transaction and wait."""
+    depth = gauge_values(points, "gateway_admission_queue_depth")
+    accepted = counter_delta(points.get(("gateway_admission_accepted_tickets", None), []))
+    executed = counter_delta(points.get(("gateway_executed_tickets", None), []))["delta"]
+    transactions = counter_delta(points.get(("gateway_ticket_transactions", None), []))["delta"]
+    return {
+        "queueDepth": metric(depth),
+        "acceptedTicketsPerSecond": (
+            accepted["delta"] / accepted["seconds"] if accepted["delta"] is not None and accepted["seconds"] else None
+        ),
+        "ticketsPerTransaction": executed / transactions if executed is not None and transactions else None,
+        "queueWaitMs": queue_wait(histogram_delta(points.get(("gateway_admission_queue_wait_seconds", None), []))),
+    }
+
+
+def queue_wait(histogram):
+    """Mean wait and the upper bound of the bucket holding the 95th percentile; past the last bound it is unknown."""
+    if histogram is None or histogram["count"] == 0:
+        return {"count": histogram["count"] if histogram else None, "meanMs": None, "p95UpperBoundMs": None}
+    threshold = 0.95 * histogram["count"]
+    cumulative = 0
+    p95 = None
+    for index, bucket in enumerate(histogram["buckets"]):
+        cumulative += bucket
+        if cumulative >= threshold:
+            p95 = histogram["bounds"][index] * 1000 if index < len(histogram["bounds"]) else None
+            break
+    return {"count": histogram["count"], "meanMs": histogram["sum"] / histogram["count"] * 1000, "p95UpperBoundMs": p95}
 
 
 def metric(values, include_p50=True, include_p95=True):
@@ -261,6 +334,7 @@ def summarize(rows, points, pair=None):
         "executionAmplification": execution_amplification(points),
         "blockifier": summarize_blockifier(points),
         "hashCache": summarize_hash_cache(points),
+        "admission": summarize_admission(points),
     }
     summary["slowestBlock"] = summarize_slowest_block(busy or complete, mempool)
     return summary
