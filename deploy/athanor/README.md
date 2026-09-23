@@ -6,9 +6,8 @@ sequencer and the admission gateway orders signed actions beside it; Herald serv
 
 ATHANOR contains the isolated box deployment and gameplay harness. `scripts/shard.py` initializes a fresh shard from
 pinned images, an explicit chain identity and the published guardian identity, then starts its compose project. See
-"Isolated node and release" below for the inputs. The staging candidate also runs a static client and temporary launch
-service beside the shards; identity and the other central services use the staging Workers. The public compose package
-follows in E3, and launch moves to its Worker in K7 before the release deployment.
+"Isolated node and release" below for the inputs. The staging candidate also serves the static client beside the shards;
+identity, launches and the other central services use the staging Workers. The public compose package follows in E3.
 
 ## Live holdovers
 
@@ -112,18 +111,18 @@ matches that published hash, and the game's authentication and Herald use the sa
 with the repository root's declared toolchain before starting the shard runner; build the game with its workspace's
 toolchain.
 
-Run the pinned upstream node image with the gateway, as above. Set each shard's public RPC and admission URLs to
-its staging tunnel hostnames, not its loopback deployment endpoints; the admission hostname routes to the gateway. Herald has a 6 GiB memory limit:
-the 96-player run was OOM-killed at 2 GiB; stream D will size it from C3's measured peak. Herald restarts on failure so a
-node restart does not leave it down. The app uses `staging.realms.party`, whose `/api/*` routes remain on K's staging
-Worker. The temporary launch service uses that identity origin and an explicit address allowlist; never `*`.
-`candidate-services.yml` replaces the old candidate's Vite dev server and launch host unit with a static client and
-an allowlisted launch container. Build the app with
-`VITE_PUBLIC_LAUNCH_SERVICE_URL=https://staging.realms.party/launch`; the static server strips `/launch` before proxying
-to the service, so the browser sends its existing identity cookie. The owner-approved staging launcher is
+Every shard uses the pinned upstream Madara image and admission gateway described above. Set each shard's public RPC
+and admission URLs to their separate staging tunnel hostnames. Herald has the owner-approved 24 GiB memory limit and
+restarts on failure so a node restart does not leave it down.
+
+The app uses `staging.realms.party`, whose `/api/*` routes belong to K's staging Workers. `candidate-services.yml`
+replaces the old candidate's Vite dev server with a static client. Build it with
+`VITE_PUBLIC_SHARD_URL=https://staging-herald.realms.party`; launch requests use the app's own origin. The launch Worker
+reads the RPC, admission and contract addresses from `SHARD_URL=https://staging-herald.realms.party`; the box runs no launch or identity service. Configure
+its registrar credentials from the primary shard's private `harness.env` and its Frontier season start through K's
+staging deployment. The owner-approved `LAUNCHER_ALLOWLIST` is
 `0x055be462e718c4166d656d11f89e341115b8bc82389c3762a10eade04fcb225d` only. Further launchers require the owner's word.
-The private launch environment supplies its separate database URL, operator credentials and season start; its shard
-network, checkout, manifest directory, user IDs and runtime image digests are explicit compose inputs.
+The static client's checkout and Caddy image digest are explicit compose inputs.
 
 Use a separate staging tunnel connector, disjoint ports and fresh volumes for both shards. Hold the shared
 `/opt/athanor/isolated-stack.lock` during deployment and verification. Verify the app, launch service and both public

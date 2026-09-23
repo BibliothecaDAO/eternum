@@ -152,7 +152,7 @@ def compose_configuration(config, directory):
             },
             # Herald exits when it loses the node and replays from its checkpoint on restart.
             "herald": {
-                **budget, "image": config["herald_image"], "mem_limit": "6g", "memswap_limit": "6g",
+                **budget, "image": config["herald_image"], "mem_limit": "24g", "memswap_limit": "24g",
                 "restart": "on-failure",
                 "env_file": [str(directory / "herald.env")], "ports": [f"127.0.0.1:{base + 1}:3003"],
                 "volumes": [f"{directory / 'native-world.json'}:/config/native-world.json:ro"],
@@ -346,13 +346,18 @@ def start_shard(config, directory):
     write_json(directory / "configuration.json", config)
     prepare_runtime_files(directory, environment)
     compose = compose_configuration(config, directory)
-    write_json(directory / "compose.json", compose)
+    # Compose resolves every service's env_file, even when up names only the bootstrap services.
+    bootstrap_services = ("metrics", "madara", "postgres")
+    write_json(directory / "compose.json", {
+        **compose, "services": {name: compose["services"][name] for name in bootstrap_services},
+    })
     command = [*DOCKER, "compose", "-f", str(directory / "compose.json")]
-    run([*command, "up", "-d", "metrics", "madara", "postgres"], directory, "bootstrap-start")
+    run([*command, "up", "-d", *bootstrap_services], directory, "bootstrap-start")
     wait_for_endpoint(environment["RPC_URL"], rpc=True)
     authority = deploy_world(config, directory, environment)
     manifest = json.loads((directory / "native-world.json").read_text())
     write_gateway_environment(config, directory, environment, authority, manifest["world"]["address"])
+    write_json(directory / "compose.json", compose)
     run([*command, "up", "-d", "herald", "gateway"], directory, "shard-start")
     rpc_rtt = wait_for_endpoint(environment["RPC_URL"], rpc=True)
     herald_rtt = wait_for_endpoint(environment["HERALD_URL"] + "/health")
