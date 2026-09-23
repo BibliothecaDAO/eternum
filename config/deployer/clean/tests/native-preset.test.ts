@@ -6,6 +6,7 @@ import { join } from "node:path";
 import { CallData, type Account, type RpcProvider } from "starknet";
 import schema from "../../../../contracts/l3/world-native/schema/schema.json";
 import { buildNativePreset } from "../config/native-preset";
+import { FRONTIER_ACCELERATED_PRESET_ID, nativeGameModeOf } from "../../../source/common/native-preset-modes";
 import {
   buildNativePresetRegistration,
   registerNativePreset,
@@ -37,6 +38,37 @@ function configuration(preset: number) {
 }
 
 describe("native presets", () => {
+  test("the accelerated Frontier preset is Frontier with every season clock 120 times faster, under its own id", () => {
+    const canonical = buildNativePreset(loadNativePresetConfiguration("madara.frontier", 1), 1);
+    const accelerated = buildNativePreset(
+      loadNativePresetConfiguration("madara.frontier", FRONTIER_ACCELERATED_PRESET_ID),
+      FRONTIER_ACCELERATED_PRESET_ID,
+    );
+
+    expect(canonical.rules.epoch_seconds).toBe(86_400);
+    expect(accelerated.rules.epoch_seconds).toBe(720);
+    expect(accelerated.rules.tick_config.armies_tick_in_seconds).toBe(
+      canonical.rules.tick_config.armies_tick_in_seconds / 120,
+    );
+    expect(accelerated.resources.resources.map(({ realm_rate }) => realm_rate)).toEqual(
+      canonical.resources.resources.map(({ realm_rate }) => realm_rate * 120n),
+    );
+    expect(
+      buildNativePresetRegistration(accelerated, FRONTIER_ACCELERATED_PRESET_ID, manifestPath).commitment,
+    ).not.toBe(buildNativePresetRegistration(canonical, 1, manifestPath).commitment);
+  });
+
+  test("every preset id names the mode it plays, and an unknown id fails by name", () => {
+    expect([1, 2, 3, 4, FRONTIER_ACCELERATED_PRESET_ID].map(nativeGameModeOf)).toEqual([
+      "frontier",
+      "blitz",
+      "eternum",
+      "duel",
+      "frontier",
+    ]);
+    expect(() => nativeGameModeOf(9)).toThrow("Unknown native preset 9");
+  });
+
   test("native balances and mine ladders come only from the selected sheet", () => {
     const config = configuration(3);
     config.bitcoin = { prizePerPhase: 7, minimumLabor: 123, ownerCutBps: 1500 };

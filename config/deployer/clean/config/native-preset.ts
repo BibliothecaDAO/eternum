@@ -319,7 +319,7 @@ export function buildNativePreset(config: Config, presetId: number) {
   const preset = nativePresetForId(presetId);
   validateRequiredNativeConfig(config);
   const bridgeTokens = resolveBridgeTokens(config, preset.bridgeResources);
-  return {
+  const definition = {
     rules: buildRules(config, preset),
     resources: buildResources(config),
     structures: buildStructures(config, preset),
@@ -329,6 +329,30 @@ export function buildNativePreset(config: Config, presetId: number) {
     exploration: preset.supplies.map((reward) => ({ ...reward })),
     season_win_points: config.victoryPoints.pointsForWin,
   };
+  if (preset.clockScale) scaleSeasonClocks(definition, preset.clockScale);
+  return definition;
+}
+
+/** A fixture preset plays its mode's season this many times faster: a shorter day, faster army ticks, more output. */
+function scaleSeasonClocks(definition: ReturnType<typeof buildNativePreset>, scale: number): void {
+  requireWholeDivision(definition.rules.epoch_seconds, scale, "epoch_seconds");
+  requireWholeDivision(definition.rules.tick_config.armies_tick_in_seconds, scale, "armies_tick_in_seconds");
+  definition.rules.epoch_seconds /= scale;
+  definition.rules.tick_config.armies_tick_in_seconds /= scale;
+  for (const resource of definition.resources.resources) {
+    resource.realm_rate *= BigInt(scale);
+    resource.village_rate *= BigInt(scale);
+  }
+  const board = definition.structures.board.unwrap();
+  if (!board || typeof board !== "object" || !("workshop_rate" in board) || typeof board.workshop_rate !== "bigint")
+    throw new Error("A scaled season requires a workshop rate");
+  board.workshop_rate *= BigInt(scale);
+  for (const depth of definition.settlement.depths) depth.mine_rate *= BigInt(scale);
+  for (const mine of definition.resources.mine_kinds) mine.config.production_rate *= BigInt(scale);
+}
+
+function requireWholeDivision(value: number, scale: number, name: string): void {
+  if (!Number.isInteger(value / scale)) throw new Error(`${name} ${value} does not divide by clock scale ${scale}`);
 }
 
 function validateMineConfig(config: Config): void {
