@@ -29,6 +29,11 @@ jobs:
       - name: Check for unused files, exports and types
         run: pnpm run knip
 
+      - name: Check committed env files name no third-party RPC
+        run: |
+          node --test scripts/check-committed-env-rpc.test.mjs
+          node scripts/check-committed-env-rpc.mjs
+
       - name: Check changed-file formatting
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}

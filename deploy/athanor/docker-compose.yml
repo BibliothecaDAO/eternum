@@ -154,7 +154,8 @@ services:
   caddy:
     image: ${CADDY_IMAGE:-caddy:2-alpine}
     environment:
-      IDENTITY_RPC_UPSTREAM: ${IDENTITY_RPC_UPSTREAM:-https://rpc.starknet.lava.build}
+      # The team's keyed mainnet RPC; never a public default. Unset, the identity-rpc site has no upstream and fails.
+      IDENTITY_RPC_UPSTREAM: ${IDENTITY_RPC_UPSTREAM:-}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - ./.lab/certs:/certs:ro

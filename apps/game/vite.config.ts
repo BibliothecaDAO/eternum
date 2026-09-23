@@ -13,6 +13,22 @@ import { resolveRendererViteAliases } from "./src/three/renderer-vite-config";
 import { PWA_PRECACHE_BUDGET_BYTES, PWA_PRECACHE_FILES } from "./build/pwa-assets.mjs";
 import { createPwaReleasePlugin } from "./build/pwa-release";
 
+/**
+ * The identity RPC is the team's keyed mainnet URL and is never committed: a build without it would ship a public,
+ * rate-limited node that fails sign-in under load. Checked once Vite has resolved its env, so the dev server and the
+ * build fail at once, by name; tools that only read this file for its settings (knip) are not stopped by it.
+ */
+const requireIdentityRpcUrl = (): PluginOption => ({
+  name: "require-identity-rpc-url",
+  configResolved(config) {
+    if (!config.env.VITE_PUBLIC_IDENTITY_RPC_URL?.trim()) {
+      throw new Error(
+        "VITE_PUBLIC_IDENTITY_RPC_URL is required: the team's Alchemy mainnet URL, from .env.local or the CLIENT_IDENTITY_RPC_URL secret",
+      );
+    }
+  },
+});
+
 /** The isolated box stack's app and its identity Worker, which every development build signs in against. */
 const STAGING_ORIGIN = "https://staging.realms.party";
 
@@ -35,7 +51,7 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
     process.env.VITE_PUBLIC_GAME_VERSION ||
     undefined;
 
-  const plugins = [svgr({ dimensions: false, svgo: false, typescript: true }), react()];
+  const plugins = [requireIdentityRpcUrl(), svgr({ dimensions: false, svgo: false, typescript: true }), react()];
 
   if (shouldUseMkcert(isServe)) {
     plugins.unshift(mkcert() as any);
