@@ -80,6 +80,29 @@ jobs:
           scarb build
           /usr/bin/time -v scarb test
 
+  gateway:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: apps/gateway
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install the pinned Rust toolchain
+        run: rustup toolchain install
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            apps/gateway/target
+          key: gateway-${{ hashFiles('apps/gateway/Cargo.lock', 'apps/gateway/rust-toolchain.toml') }}
+      - name: Check, lint and test the admission gateway
+        run: |
+          cargo fmt --check
+          cargo clippy --all-targets --locked -- -D warnings
+          cargo test --locked
+
   player-account:
     runs-on: ubuntu-latest
     timeout-minutes: 15

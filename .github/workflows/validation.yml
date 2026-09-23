@@ -65,6 +65,7 @@ jobs:
                   "contracts/l3/world-native/schema/**"
               ],
               "native": [
+                  "apps/gateway/**",
                   "contracts/l3/**",
                   "packages/**",
                   "config/**",
